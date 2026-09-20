@@ -1,0 +1,77 @@
+name: optional integration
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos-integration:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: "4"
+      VECLIB_MAXIMUM_THREADS: "4"
+      JEPA_TEST_RENDER: "0"
+      PYTORCH_ENABLE_MPS_FALLBACK: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.3"
+      - name: Install locked optional runtime and compatibility dependencies
+        run: >-
+          uv sync --locked
+          --extra learning --extra sim --extra lewm --extra data --extra compatibility
+      - name: Fetch audited upstream sources and robot assets
+        run: |
+          uv run --no-sync python scripts/fetch_assets.py
+          uv run --no-sync python scripts/fetch_lewm.py
+          uv run --no-sync python scripts/fetch_lerobot.py
+      - name: Run CPU model, data reader, physics, control, and hardware mock checks
+        env:
+          UV_OFFLINE: "1"
+          HF_HUB_OFFLINE: "1"
+          HF_DATASETS_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          LEROBOT_SOURCE: third_party/lerobot
+        run: |
+          uv run --no-sync python -c "import torch, transformers, einops, mujoco, pyarrow, pandas, PIL, av; torch.set_num_threads(4); print('MPS available:', torch.backends.mps.is_available())"
+          uv run --no-sync pytest tests --junitxml=integration-results.xml
+      - name: Reject skipped optional integrations
+        if: always()
+        run: |
+          uv run --no-sync --offline python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          report = Path('integration-results.xml')
+          if not report.is_file():
+              raise SystemExit('No integration test report was produced')
+          tests = ET.parse(report).findall('.//testcase')
+          allowed = ('graphics opt-in', 'MPS unavailable')
+          unexpected = [
+              (case.get('classname'), case.get('name'), skipped.get('message', ''))
+              for case in tests
+              if (skipped := case.find('skipped')) is not None
+              and not any(reason in skipped.get('message', '') for reason in allowed)
+          ]
+          if unexpected:
+              raise SystemExit(f'Unexpected skipped integration coverage: {unexpected}')
+          reader = [case for case in tests if case.get('name', '').startswith('test_official_lerobot_reader')]
+          if not reader or any(case.find('skipped') is not None for case in reader):
+              raise SystemExit('Pinned official LeRobot reader test did not execute')
+          print(f'Checked {len(tests)} integration cases; only graphics/MPS availability skips allowed')
+          PY
+      - name: Capture dependency license inventory
+        if: always()
+        run: uv run --no-sync --offline python scripts/dependency_inventory.py > integration-dependencies.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-optional-integration-evidence
+          path: |
+            integration-results.xml
+            integration-dependencies.json
+          if-no-files-found: warn

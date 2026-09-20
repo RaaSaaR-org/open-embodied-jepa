@@ -1,0 +1,238 @@
+"""Bounded synthetic runner evidence, including split isolation and budget failures."""
+
+import json
+from dataclasses import replace
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+pytest.importorskip("torch")
+pytest.importorskip("pyarrow")
+pytest.importorskip("pandas")
+pytest.importorskip("PIL")
+
+from embodied_jepa.contracts import ContractError  # noqa: E402
+from embodied_jepa.data import DatasetStore, deterministic_fixture  # noqa: E402
+from embodied_jepa.training import EpisodeCache, train  # noqa: E402
+
+
+@pytest.fixture
+def corpus(tmp_path):
+    fixture = deterministic_fixture()
+    store = DatasetStore.create(
+        tmp_path / "corpus",
+        fps=20,
+        state_schema=fixture.state_schema,
+        action_manifest={"physical_scale": [0.01] * 14, "software_fixture_only": True},
+        provenance={"source": "procedural unit-test fixture", "license": "Apache-2.0"},
+        robot_type="software_fixture",
+    )
+    for index in range(6):
+        store.write_episode(
+            replace(
+                fixture,
+                episode_id=f"episode-{index}",
+                session_id=f"session-{index}",
+                observations={"onboard_rgb": np.roll(fixture.observations["head"], index, axis=2)},
+            )
+        )
+    store.freeze_splits(seed=3)
+    return store
+
+
+@pytest.mark.parametrize("backend", ["native_jepa", "leworldmodel"])
+def test_training_best_latest_curves_and_no_test_decoding(corpus, tmp_path, monkeypatch, backend):
+    if backend == "leworldmodel":
+        pytest.importorskip("transformers")
+        if not Path("third_party/le-wm/jepa.py").exists():
+            pytest.skip("optional upstream source absent")
+    original = DatasetStore.read_episode
+    reads = []
+    excluded = set(corpus.manifest["splits"]["test"] + corpus.manifest["splits"]["holdout"])
+
+    def recorded_read(self, episode_id):
+        assert episode_id not in excluded
+        reads.append(episode_id)
+        return original(self, episode_id)
+
+    monkeypatch.setattr(DatasetStore, "read_episode", recorded_read)
+    output = tmp_path / f"{backend}.pt"
+    report = train(
+        corpus.root,
+        backend,
+        output,
+        steps=3,
+        batch_size=2,
+        horizon=2,
+        validation_every=2,
+        validation_batches=1,
+        max_seconds=60,
+        model_config={"hidden_dim": 32},
+    )
+    assert report["status"] == "completed"
+    assert report["completed_steps"] == 3
+    assert report["best_step"] in (0, 2, 3)
+    assert report["best_checkpoint_exists"] and report["latest_checkpoint_exists"]
+    assert len(reads) == len(set(reads))  # decoded once, independent of train/validation steps
+    assert set(reads) == set(corpus.manifest["splits"]["train"] + corpus.manifest["splits"]["val"])
+    assert not report["test_samples_loaded"]
+    assert report["provenance"]["dataset_hash"] == corpus.manifest_hash
+    events = [
+        json.loads(line) for line in Path(report["artifacts"]["curves"]).read_text().splitlines()
+    ]
+    assert [event["step"] for event in events if event["kind"] == "train"] == [1, 2, 3]
+    validation = [event for event in events if event["kind"] == "validation"]
+    assert [event["step"] for event in validation] == [0, 2, 3]
+    assert report["best_validation_mse"] == min(event["prediction_mse"] for event in validation)
+    assert validation[0]["horizons"]["8"]["status"] == "unavailable"
+    assert len({event["horizons"]["2"]["cohort_sha256"] for event in validation}) == 1
+    import torch
+
+    best = torch.load(output, weights_only=True)
+    latest = torch.load(Path(report["artifacts"]["latest"]), weights_only=True)
+    assert best["updates"] == report["best_step"]
+    assert latest["updates"] == latest["metadata"]["runner_state"]["step"] == 3
+    assert latest["metadata"]["runner_state"]["sampler_rng"] == report["sampler_rng"]
+    with pytest.raises(FileExistsError, match="overwrite"):
+        train(corpus.root, backend, output, steps=1)
+
+
+def test_sampler_is_deterministic_and_memory_preflight_is_bounded(corpus):
+    cache = EpisodeCache(corpus, memory_limit_bytes=16 * 1024**3)
+    first = cache.sample("train", 2, 8, np.random.default_rng(7))
+    second = cache.sample("train", 2, 8, np.random.default_rng(7))
+    assert first.episode_ids == second.episode_ids
+    np.testing.assert_array_equal(first.timestamps, second.timestamps)
+    with pytest.raises(ContractError, match="memory budget"):
+        EpisodeCache(corpus, memory_limit_bytes=1)
+
+
+def test_time_budget_preserves_partial_report_without_claiming_completion(corpus, tmp_path):
+    report = train(corpus.root, "native_jepa", tmp_path / "timeout.pt", max_seconds=1e-12)
+    assert report["status"] == "time_budget"
+    assert report["completed_steps"] == 0
+    assert report["best_step"] is None
+    assert not report["best_checkpoint_exists"]
+    saved = json.loads((tmp_path / "timeout.run.json").read_text())
+    assert saved["status"] == "time_budget"
+
+
+def test_unavailable_horizon_failure_is_preserved(corpus, tmp_path):
+    with pytest.raises(ContractError, match="no windows"):
+        train(corpus.root, "native_jepa", tmp_path / "failed.pt", horizon=8)
+    saved = json.loads((tmp_path / "failed.run.json").read_text())
+    assert saved["status"] == "failed"
+    assert saved["completed_steps"] == 0
+    assert not saved["latest_checkpoint_exists"]
+
+
+def test_nonfinite_training_failure_does_not_disappear(corpus, tmp_path, monkeypatch):
+    from embodied_jepa.models import NativeJEPA
+
+    monkeypatch.setattr(NativeJEPA, "train_step", lambda *args: {"loss": float("nan")})
+    with pytest.raises(ContractError, match="non-finite"):
+        train(
+            corpus.root,
+            "native_jepa",
+            tmp_path / "nonfinite.pt",
+            steps=1,
+            batch_size=2,
+            horizon=2,
+            validation_batches=1,
+        )
+    saved = json.loads((tmp_path / "nonfinite.run.json").read_text())
+    assert saved["status"] == "failed"
+    assert "non-finite" in saved["error"]
+    assert saved["completed_steps"] == 0
+    assert saved["best_step"] == 0
+
+
+def test_unfrozen_or_leaking_splits_rejected(corpus):
+    original = corpus.manifest["splits"]
+    corpus.manifest["splits"] = None
+    with pytest.raises(ContractError, match="sealed"):
+        EpisodeCache(corpus, memory_limit_bytes=16 * 1024**3)
+    corpus.manifest["splits"] = original | {"val": original["train"]}
+    with pytest.raises(ContractError, match="overlap"):
+        EpisodeCache(corpus, memory_limit_bytes=16 * 1024**3)
+
+
+def test_noncollapsed_selector_rejects_tiny_loss_and_ranks_relative_error(
+    corpus, tmp_path, monkeypatch
+):
+    from embodied_jepa.models import NativeJEPA
+
+    # Initial collapsed state has the smallest raw MSE. Step two has smaller raw
+    # MSE than step one but predicts worse relative to its own persistence control.
+    def diagnostics(self, batch):
+        mse, persistence, collapsed, std = (
+            (1e-10, 1e-8, 1.0, 0.0001),
+            (2.0, 4.0, 0.0, 0.8),
+            (0.1, 0.05, 0.0, 0.7),
+        )[self.updates]
+        return {
+            "prediction_mse": mse,
+            "persistence_mse": persistence,
+            "collapsed_fraction": collapsed,
+            "latent_std_mean": std,
+        }
+
+    monkeypatch.setattr(NativeJEPA, "diagnostics", diagnostics)
+    report = train(
+        corpus.root,
+        "native_jepa",
+        tmp_path / "selected.pt",
+        steps=2,
+        batch_size=2,
+        horizon=4,
+        validation_every=1,
+        validation_batches=1,
+        selection="noncollapsed_relative",
+    )
+    assert report["status"] == "completed"
+    assert report["best_step"] == 1
+    assert report["best_selection_score"] == 0.5
+    assert report["best_validation_mse"] == 2.0
+    baseline, first, last = [event["selection"] for event in report["validation"]]
+    assert not baseline["eligible"] and not baseline["selected"]
+    assert baseline["rejection_reasons"] == [
+        "collapsed_fraction_above_0.05",
+        "latent_std_mean_below_0.1",
+    ]
+    assert first["selected"]
+    assert last["eligible"] and not last["selected"]
+    assert last["score"] == 2.0
+
+
+def test_no_eligible_checkpoint_reports_selection_failure_and_preserves_latest(
+    corpus, tmp_path, monkeypatch
+):
+    from embodied_jepa.models import NativeJEPA
+
+    monkeypatch.setattr(
+        NativeJEPA,
+        "diagnostics",
+        lambda *args: {
+            "prediction_mse": 1e-12,
+            "persistence_mse": 0.0,
+            "collapsed_fraction": 0.5,
+            "latent_std_mean": 0.09,
+        },
+    )
+    report = train(
+        corpus.root,
+        "native_jepa",
+        tmp_path / "ineligible.pt",
+        steps=1,
+        batch_size=2,
+        horizon=4,
+        validation_every=1,
+        validation_batches=1,
+        selection="noncollapsed_relative",
+    )
+    assert report["status"] == "selection_failed"
+    assert report["best_step"] is None and report["best_selection_score"] is None
+    assert not report["best_checkpoint_exists"]
+    assert report["latest_checkpoint_exists"] and report["completed_steps"] == 1
+    assert all(not event["selection"]["eligible"] for event in report["validation"])
