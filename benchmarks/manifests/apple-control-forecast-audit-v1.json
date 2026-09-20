@@ -1,0 +1,424 @@
+{
+  "accepted_branch_commands": 137,
+  "artifact_files_indexed": 322,
+  "artifact_index_sha256": "802a8b6cef49cd020b1a04d57f6c9cc61fc33a8401cb51db8aa1f2afa927921d",
+  "artifact_root": "outputs/apple-control-forecast-audit-v1",
+  "branches": [
+    {
+      "executed_steps": 16,
+      "initial_goal_distance": 0.3055877089500427,
+      "kind": "winner",
+      "rejected_step": null,
+      "root_step": 119,
+      "scored_cost": 0.24091953039169312,
+      "stage_any": {
+        "grasp": false,
+        "place": false,
+        "reach": false,
+        "release": false,
+        "success": false,
+        "transport": false
+      },
+      "status": "completed",
+      "stop_reason": null
+    },
+    {
+      "executed_steps": 16,
+      "initial_goal_distance": 0.3055877089500427,
+      "kind": "demonstration",
+      "rejected_step": null,
+      "root_step": 119,
+      "scored_cost": 0.2412269562482834,
+      "stage_any": {
+        "grasp": false,
+        "place": false,
+        "reach": false,
+        "release": false,
+        "success": false,
+        "transport": false
+      },
+      "status": "completed",
+      "stop_reason": null
+    },
+    {
+      "executed_steps": 16,
+      "initial_goal_distance": 0.3055877089500427,
+      "kind": "hold",
+      "rejected_step": null,
+      "root_step": 119,
+      "scored_cost": 0.29534754157066345,
+      "stage_any": {
+        "grasp": false,
+        "place": false,
+        "reach": false,
+        "release": false,
+        "success": false,
+        "transport": false
+      },
+      "status": "completed",
+      "stop_reason": null
+    },
+    {
+      "executed_steps": 16,
+      "initial_goal_distance": 0.25590330362319946,
+      "kind": "winner",
+      "rejected_step": null,
+      "root_step": 300,
+      "scored_cost": 0.15524336695671082,
+      "stage_any": {
+        "grasp": false,
+        "place": false,
+        "reach": false,
+        "release": false,
+        "success": false,
+        "transport": false
+      },
+      "status": "completed",
+      "stop_reason": null
+    },
+    {
+      "executed_steps": 16,
+      "initial_goal_distance": 0.25590330362319946,
+      "kind": "demonstration",
+      "rejected_step": null,
+      "root_step": 300,
+      "scored_cost": 0.17424148321151733,
+      "stage_any": {
+        "grasp": false,
+        "place": false,
+        "reach": false,
+        "release": false,
+        "success": false,
+        "transport": false
+      },
+      "status": "completed",
+      "stop_reason": null
+    },
+    {
+      "executed_steps": 16,
+      "initial_goal_distance": 0.25590330362319946,
+      "kind": "hold",
+      "rejected_step": null,
+      "root_step": 300,
+      "scored_cost": 0.17883455753326416,
+      "stage_any": {
+        "grasp": false,
+        "place": false,
+        "reach": false,
+        "release": false,
+        "success": false,
+        "transport": false
+      },
+      "status": "completed",
+      "stop_reason": null
+    },
+    {
+      "executed_steps": 9,
+      "initial_goal_distance": 0.32482606172561646,
+      "kind": "winner",
+      "rejected_step": 10,
+      "root_step": 550,
+      "scored_cost": 0.24998317658901215,
+      "stage_any": {
+        "grasp": false,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "transport": false
+      },
+      "status": "command_rejected",
+      "stop_reason": "right joint rate limit"
+    },
+    {
+      "executed_steps": 16,
+      "initial_goal_distance": 0.32482606172561646,
+      "kind": "demonstration",
+      "rejected_step": null,
+      "root_step": 550,
+      "scored_cost": 0.2716495394706726,
+      "stage_any": {
+        "grasp": false,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "transport": false
+      },
+      "status": "completed",
+      "stop_reason": null
+    },
+    {
+      "executed_steps": 16,
+      "initial_goal_distance": 0.32482606172561646,
+      "kind": "hold",
+      "rejected_step": null,
+      "root_step": 550,
+      "scored_cost": 0.28501975536346436,
+      "stage_any": {
+        "grasp": false,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "transport": false
+      },
+      "status": "completed",
+      "stop_reason": null
+    }
+  ],
+  "command": ".venv/bin/python scripts/audit_apple_control_forecasts.py --original outputs/apple-control-development-v2 --output outputs/apple-control-forecast-audit-v1",
+  "completed_16_step_branches": 8,
+  "environment": {
+    "packages": {
+      "mujoco": "3.13.0",
+      "numpy": "2.5.3",
+      "torch": "2.14.0"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.13 (main, Aug  7 2026, 02:15:23) [Clang 22.1.3 ]"
+  },
+  "exit_code": 0,
+  "experiment": "apple-control-forecast-audit-v1",
+  "final_cohort_executed": false,
+  "format_version": 1,
+  "frozen_runtime_source": "outputs/apple-control-development-v2/source",
+  "guard_rejected_branches": 1,
+  "identities": {
+    "action": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+    "asset_manifest": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+    "calibration": "e4c95b35754cc4bf3121e16cb565619623a97ccbc9880d470f9933a9f7e72e8a",
+    "checkpoint": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+    "dataset_manifest": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+    "protocol": "5ae728e2e0fff64915502816e98d8b473faf1e2117d9a2c5e9a939cbd5db14cd",
+    "repository_revision": "c86a076a81f0fe97c550f421ad4d2d453f52debd",
+    "resolved_plan": "7eb098108367556c236fe109976f6fac009e9fde2bca78f410fd4e43f2610188",
+    "script": "8100a861a1637f04bd832a82ef762265ca87723199ea99e6062d3e74edc40c0f",
+    "trace": "921eacf54ca7cb131ef5fe1abb7f99e32af11bb5423dc56fae459664286df4c2",
+    "waypoints": "c77e243606578043ee46be94c3369728f730fdc71cee211660682746ad712ae3"
+  },
+  "integrity_verified_after": true,
+  "interpretation": "All matched replays pass. Root119/300 winners improve image cost most among three audited candidates; root550 winner fails a future joint-rate guard. Forecast bias remains with identical applied action labels; this does not uniquely identify servo/unobserved-state/model contributions or establish successful manipulation.",
+  "kind": "development_open_loop_forecast_diagnostic",
+  "maximum_applied_scored_difference": 0.0,
+  "metric_columns": [
+    "root_step",
+    "kind",
+    "horizon",
+    "status",
+    "predicted_goal_distance",
+    "observed_goal_distance",
+    "raw_rgb_grid_mse",
+    "qpos_mse_rad2",
+    "qvel_mse_rad2_s2"
+  ],
+  "metrics": [
+    [
+      119,
+      "winner",
+      1,
+      "measured",
+      0.30907514691352844,
+      0.28169938921928406,
+      5.8215744502376765e-05,
+      1.9512310700520175e-06,
+      0.009948781691491604
+    ],
+    [
+      119,
+      "winner",
+      16,
+      "measured",
+      0.24091948568820953,
+      0.09822645783424377,
+      0.0020413692109286785,
+      0.0008109280606731772,
+      0.007785056717693806
+    ],
+    [
+      119,
+      "demonstration",
+      1,
+      "measured",
+      0.3091100752353668,
+      0.28558099269866943,
+      4.408113090903498e-05,
+      2.6368054477643454e-06,
+      0.00729540316388011
+    ],
+    [
+      119,
+      "demonstration",
+      16,
+      "measured",
+      0.24122697114944458,
+      0.10592202842235565,
+      0.003021445358172059,
+      0.0006903659086674452,
+      0.009403308853507042
+    ],
+    [
+      119,
+      "hold",
+      1,
+      "measured",
+      0.3085275888442993,
+      0.28558099269866943,
+      4.35078727605287e-05,
+      2.590528993096086e-06,
+      0.007298424374312162
+    ],
+    [
+      119,
+      "hold",
+      16,
+      "measured",
+      0.29534757137298584,
+      0.28376254439353943,
+      0.00022803188767284155,
+      0.0002556993276812136,
+      0.006475743837654591
+    ],
+    [
+      300,
+      "winner",
+      1,
+      "measured",
+      0.2371007800102234,
+      0.29471689462661743,
+      6.549731915583834e-05,
+      2.8268623282201588e-05,
+      0.018409010022878647
+    ],
+    [
+      300,
+      "winner",
+      16,
+      "measured",
+      0.15524336695671082,
+      0.11485766619443893,
+      0.001117898034863174,
+      0.012528962455689907,
+      0.037539292126894
+    ],
+    [
+      300,
+      "demonstration",
+      1,
+      "measured",
+      0.23982101678848267,
+      0.28819069266319275,
+      5.954007792752236e-05,
+      4.054045712109655e-05,
+      0.00889492966234684
+    ],
+    [
+      300,
+      "demonstration",
+      16,
+      "measured",
+      0.17424148321151733,
+      0.2072741836309433,
+      0.0004742264864034951,
+      0.010874476283788681,
+      0.0880260169506073
+    ],
+    [
+      300,
+      "hold",
+      1,
+      "measured",
+      0.23576167225837708,
+      0.2940518260002136,
+      6.932504038559273e-05,
+      4.612060365616344e-05,
+      0.010806068778038025
+    ],
+    [
+      300,
+      "hold",
+      16,
+      "measured",
+      0.17883455753326416,
+      0.3006726801395416,
+      0.00037385549512691796,
+      0.010614661499857903,
+      0.0603196956217289
+    ],
+    [
+      550,
+      "winner",
+      1,
+      "measured",
+      0.3116481304168701,
+      0.31370511651039124,
+      2.5576458938303404e-05,
+      7.177403313107789e-05,
+      0.012381473556160927
+    ],
+    [
+      550,
+      "winner",
+      16,
+      "unavailable",
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    [
+      550,
+      "demonstration",
+      1,
+      "measured",
+      0.3201025128364563,
+      0.3151403069496155,
+      2.122905607393477e-05,
+      6.350131297949702e-05,
+      0.011754541657865047
+    ],
+    [
+      550,
+      "demonstration",
+      16,
+      "measured",
+      0.2716495394706726,
+      0.27903950214385986,
+      0.0007965388358570635,
+      0.03721828758716583,
+      0.010990602895617485
+    ],
+    [
+      550,
+      "hold",
+      1,
+      "measured",
+      0.3162408769130707,
+      0.38738390803337097,
+      6.352079071803018e-05,
+      7.24448764231056e-05,
+      0.012099447660148144
+    ],
+    [
+      550,
+      "hold",
+      16,
+      "measured",
+      0.28501975536346436,
+      0.40072181820869446,
+      0.0008788208360783756,
+      0.03632913529872894,
+      0.007718395441770554
+    ]
+  ],
+  "plan_sha256": "7798defce54538d64acd1c6566798ecdf986968a435eded95af35b8cb036c4b9",
+  "planned_branches": 9,
+  "planning_steps_checked": 551,
+  "replayed_commands": 550,
+  "report_sha256": "f3cafa675591c2a0342e3a3b85c2758e6934de3fac270a8469b8288f0ad9f048",
+  "source_revision": "c86a076a81f0fe97c550f421ad4d2d453f52debd",
+  "supervisor_wall_seconds": 55.45458912849426,
+  "test_images_decoded": false,
+  "worker_cpu_seconds": 54.799719
+}
