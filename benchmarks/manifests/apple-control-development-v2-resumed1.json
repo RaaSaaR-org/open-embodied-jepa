@@ -1,0 +1,279 @@
+{
+  "action_manifest_sha256": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+  "artifact_root": "outputs/apple-control-development-v2-resumed1",
+  "artifact_sha256": {
+    "43000-learned.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "43000-persistence.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "attempts/43000-learned/report.json": "5336cc7bbe3dd688b45df2d2d9831b198039c12c336186d5033b40514f6e5cf5",
+    "attempts/43000-learned/started.json": "8bf76fdc48b10fbf15486040703760a1dc72f5da3d26e6c5c5112cb21dbb6367",
+    "attempts/43000-learned/trace.jsonl": "8b60a6fbac127c8dee95fef4a91c153ac529be6825f3570621f41257a3effc75",
+    "attempts/43000-persistence/started.json": "633a78c22251791f0d4bd4ee82c684bb2b7242a377fcbe11e9f25e3d27b0a1f8",
+    "attempts/43000-persistence/trace.jsonl": "dd06ab00402165cd661522a810e3942bcafbc51b7bc2c5ec42d91935ba0b3e8c",
+    "audit.json": "a6aff94d9cee84cd3c887024b773325f08e46cac1809ae18d68a45f3c198e8b1",
+    "audit_results.py": "ab0528db377d42ae076f36863b7e0f4340f182ccc36e0077d9bae079671af372",
+    "calibration.json": "e4c95b35754cc4bf3121e16cb565619623a97ccbc9880d470f9933a9f7e72e8a",
+    "plan.json": "d89ef33b1d624681423144bdbc6f326472cbde7650993a08501f6c2823226ba8",
+    "prepare.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "report.json": "10429b073d46ed5bc542c74e5711868ddfe6d237333681f9c69e5f8084f8a720",
+    "resolved_plan.json": "4c38f15435ab1bf7683195f3323d245b7d4a66d2cbfa4967deba999470a8eba7",
+    "waypoints.npz": "c77e243606578043ee46be94c3369728f730fdc71cee211660682746ad712ae3"
+  },
+  "asset_manifest_sha256": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+  "audit_summary": {
+    "applied_commands": 1846,
+    "calibration_directed_neighbors": 36,
+    "calibration_directed_overlaps": 12,
+    "calibration_goals": 19,
+    "calibration_overlapping_goals": 10,
+    "exact_projected_applied": 1843,
+    "maximum_action_difference": 7.450580596923828e-09,
+    "original_interrupted_matching_prefix_commands": 574,
+    "payloads_verified": 566,
+    "post_run_checks": {
+      "action": true,
+      "asset_payloads": true,
+      "assets": true,
+      "calibration.json": true,
+      "calibration_train_only": true,
+      "checkpoint": true,
+      "dataset_manifest": true,
+      "dataset_payloads": true,
+      "live_source": true,
+      "snapshot_source": true,
+      "waypoints.npz": true
+    },
+    "unmatched_pending": 0
+  },
+  "checkpoint_sha256": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+  "command": [
+    ".venv/bin/python",
+    "scripts/evaluate_apple.py",
+    "--dataset",
+    "data/apple-branches-v1",
+    "--checkpoint",
+    "checkpoints/apple-branches-h16-sensor-v1/sensor.pt",
+    "--output",
+    "outputs/apple-control-development-v2-resumed1",
+    "--stage",
+    "development",
+    "--seeds",
+    "43000",
+    "43001",
+    "--modes",
+    "learned",
+    "persistence",
+    "dynamics_shuffle",
+    "--max-seconds",
+    "600",
+    "--max-steps",
+    "1000",
+    "--stride",
+    "28",
+    "--dwell",
+    "3",
+    "--horizon",
+    "16",
+    "--candidates",
+    "16",
+    "--iterations",
+    "2",
+    "--control-timeout",
+    "5"
+  ],
+  "completed": 1,
+  "dataset_manifest_sha256": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+  "denominator_interpretation": "Six planned attempts retained; one completed, one budget-truncated, four unstarted. Not a completed six-episode performance estimate.",
+  "exit_code": 2,
+  "experiment": "apple-control-development-v2-resumed1",
+  "final_cohort_executed": false,
+  "format_version": 1,
+  "kind": "budget_censored_negative_development_control_diagnostic",
+  "launch_record": "outputs/apple-control-development-v2-resumed1-launch.json",
+  "launch_sha256": "42e4935bd377c09a944f7094233e204ce1f9b410e44fba820434ca8f06c67f88",
+  "not_started": 4,
+  "observed_successes": 0,
+  "planned": 6,
+  "records": [
+    {
+      "attempt_id": "43000-learned",
+      "error": "",
+      "executed_steps": 1000,
+      "mode": "learned",
+      "reset": {
+        "object_xy": [
+          0.33609782248446995,
+          -0.1745237836137705
+        ],
+        "plate_xy": [
+          0.49570860713247383,
+          -0.08681057995105047
+        ],
+        "seed": 43000
+      },
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": false,
+        "object_height_m": 0.7666328181575391,
+        "object_plate_distance_m": 0.46615004462610027,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 43000,
+      "status": "completed",
+      "success": false,
+      "supervisor": {
+        "returncode": 0,
+        "status": "exited"
+      },
+      "termination_reason": "step_limit",
+      "wall_seconds": 166.27060890197754
+    },
+    {
+      "attempt_id": "43000-persistence",
+      "executed_steps": 846,
+      "execution_uncertain": false,
+      "mode": "persistence",
+      "reported_success_before_failure": false,
+      "reset": {
+        "object_xy": [
+          0.33609782248446995,
+          -0.1745237836137705
+        ],
+        "plate_xy": [
+          0.49570860713247383,
+          -0.08681057995105047
+        ],
+        "seed": 43000
+      },
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": false,
+        "object_height_m": 0.7666328181575404,
+        "object_plate_distance_m": 0.18212415438245308,
+        "place": false,
+        "reach": false,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 43000,
+      "started": true,
+      "status": "hard_wall_timeout",
+      "success": false,
+      "supervisor": {
+        "returncode": -9,
+        "status": "hard_wall_timeout"
+      },
+      "worker_report_status": "hard_wall_timeout"
+    },
+    {
+      "attempt_id": "43000-dynamics_shuffle",
+      "executed_steps": 0,
+      "execution_uncertain": false,
+      "mode": "dynamics_shuffle",
+      "reset": {
+        "object_xy": [
+          0.33609782248446995,
+          -0.1745237836137705
+        ],
+        "plate_xy": [
+          0.49570860713247383,
+          -0.08681057995105047
+        ],
+        "seed": 43000
+      },
+      "score": {},
+      "seed": 43000,
+      "started": false,
+      "status": "not_started_budget",
+      "success": false,
+      "supervisor": null
+    },
+    {
+      "attempt_id": "43001-learned",
+      "executed_steps": 0,
+      "execution_uncertain": false,
+      "mode": "learned",
+      "reset": {
+        "object_xy": [
+          0.33619467744453907,
+          -0.18043987131822
+        ],
+        "plate_xy": [
+          0.49527959648492503,
+          -0.09336901461840785
+        ],
+        "seed": 43001
+      },
+      "score": {},
+      "seed": 43001,
+      "started": false,
+      "status": "not_started_budget",
+      "success": false,
+      "supervisor": null
+    },
+    {
+      "attempt_id": "43001-persistence",
+      "executed_steps": 0,
+      "execution_uncertain": false,
+      "mode": "persistence",
+      "reset": {
+        "object_xy": [
+          0.33619467744453907,
+          -0.18043987131822
+        ],
+        "plate_xy": [
+          0.49527959648492503,
+          -0.09336901461840785
+        ],
+        "seed": 43001
+      },
+      "score": {},
+      "seed": 43001,
+      "started": false,
+      "status": "not_started_budget",
+      "success": false,
+      "supervisor": null
+    },
+    {
+      "attempt_id": "43001-dynamics_shuffle",
+      "executed_steps": 0,
+      "execution_uncertain": false,
+      "mode": "dynamics_shuffle",
+      "reset": {
+        "object_xy": [
+          0.33619467744453907,
+          -0.18043987131822
+        ],
+        "plate_xy": [
+          0.49527959648492503,
+          -0.09336901461840785
+        ],
+        "seed": 43001
+      },
+      "score": {},
+      "seed": 43001,
+      "started": false,
+      "status": "not_started_budget",
+      "success": false,
+      "supervisor": null
+    }
+  ],
+  "source_revision": "b14eb5a64d00f732a929aa6acedaaeecf05f7811",
+  "system": {
+    "device": "cpu",
+    "machine": "arm64",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.13",
+    "torch_threads": 4
+  },
+  "timed_out": 1,
+  "wall_seconds": 595.2370181083679
+}

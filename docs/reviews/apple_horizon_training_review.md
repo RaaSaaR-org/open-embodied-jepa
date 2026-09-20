@@ -13,3 +13,11 @@ Independent focused command: `PYTHONPATH=src .venv/bin/pytest -q tests/test_trai
 Metadata-only corpus verification found TRAIN H16 window counts 12,735 original / 384 branch, and VAL 1,457 / 144. Under unbalanced H16 sampling branch exposure would be approximately 2.93% and 8.99%, respectively. Explicit equal quotas raise both to 50%, as declared. No payload or model diagnostic was needed for this count.
 
 Task readiness: implementation, bounded prospective protocol, split/provenance checks and focused regressions are met. The full 3,000-update attempt and unchanged matched causal gate remain **unverified until executed**. No production training, physics or diagnostic experiment was run by this review. No learned-control success or permission to bypass a failed gate is implied.
+
+## Post-execution evidence review
+
+Coordinator record of the contracts agent's subsequent independent saved-evidence audit: all eight diagnostic summaries and their bootstrap intervals were recomputed from saved pairs. Checkpoint, split, action, normalization membership (410 TRAIN episodes), sampling-group files, configuration and source hashes were checked. No blocking discrepancy was found. The earlier unverified-experiment statement describes the pre-execution review; training and the matched diagnostic have now completed.
+
+The unchanged primary VAL H16 gate passes: 89.40% action assignment and 81.41% endpoint error reduction, with a 76.70–85.32% root-bootstrap interval for reduction. This remains evidence from 18 correlated roots across three VAL parents, not a manipulation-success result. The selected update-3000 checkpoint and full evidence are linked in `apple_branch_h16_diagnostics_results_v1.md` and its compact manifest.
+
+The coordinator also reviewed the final source diff and the resumed control report. The bounded physical comparison produced one completed learned failure, one persistence timeout and four unstarted attempts; no grasp or placement was achieved. Its 1,846 acknowledged commands and immutable inputs were audited by the simulation agent. No complete six-episode performance estimate or learned control advantage is supported. The first 574 resumed learned commands duplicate the interrupted run, so they are not independent observations. TASK-033 and final acceptance remain open.
