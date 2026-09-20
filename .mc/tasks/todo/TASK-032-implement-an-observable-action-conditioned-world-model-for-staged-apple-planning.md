@@ -4,7 +4,7 @@ aliases:
 - TASK-032
 title: Implement an observable action-conditioned world model for staged apple planning
 slug: implement-an-observable-action-conditioned-world-model-for-staged-apple-planning
-status: backlog
+status: in-progress
 priority: 1
 owner: ''
 projects: []
@@ -20,6 +20,7 @@ created: 2026-09-20
 updated: 2026-09-20
 ---
 
+
 # Implement a world model whose predictions support apple control
 
 ## Acceptance criteria
@@ -33,3 +34,4 @@ updated: 2026-09-20
 ## Authorization and workflow
 
 User requested completion toward a working world-model apple pick-and-place MVP on 2026-09-20, with subagents and end-to-end delivery. Coordinator owns Git and task state. Experiments are bounded and recorded before execution.
+%% mc-links: [[TASK-031]] %%
