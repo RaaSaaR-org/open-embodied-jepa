@@ -1,0 +1,10 @@
+# Design template; intentionally smaller than the final common benchmark.
+extends: reach_smoke.example.yaml
+runtime:
+  device: auto
+embodiment:
+  transport: mujoco
+planner:
+  horizon: 4
+  samples: 64
+  iterations: 2

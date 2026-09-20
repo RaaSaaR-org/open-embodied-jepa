@@ -1,0 +1,12 @@
+# Future-port design template. Requires TASK-021/022/026 and actual hardware.
+extends: common_mvp.example.yaml
+embodiment:
+  transport: unitree_sdk2
+deployment:
+  enabled: false
+  network_interface: null
+  dds_domain: null
+  calibration_manifest: null
+  robot_configuration: null
+  observation_timeout_ms: null
+# Runtime must require complete validated values and explicit hardware enablement.

@@ -1,0 +1,8 @@
+# Design template. Resolved by the future configuration loader.
+extends: common_mvp.example.yaml
+task:
+  name: reach_target
+evaluation:
+  training_seeds: [0]
+  episodes_per_training_seed: 5
+# Inheritance and merging require TASK-006; this is not a runnable command.

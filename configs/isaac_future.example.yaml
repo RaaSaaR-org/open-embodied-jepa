@@ -1,0 +1,8 @@
+# Future-port design template. Requires TASK-022/025 and suitable compute.
+extends: common_mvp.example.yaml
+embodiment:
+  transport: isaac_lab
+simulation:
+  engine_version: null
+  asset_manifest: null
+# Select a tested device on the future host and archive the resolved config.

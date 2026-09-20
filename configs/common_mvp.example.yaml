@@ -1,0 +1,40 @@
+# Design template only. Runtime config validation is TASK-006.
+# Nulls are unresolved prerequisites and must fail runtime validation.
+schema_version: 0
+mode: common
+seed: 0
+runtime:
+  device: auto  # Prefer verified MPS support; record any CPU fallback.
+world_model:
+  backend: native_jepa  # Sole backend override for the comparison: leworldmodel
+embodiment:
+  backend: unitree_g1_dex3
+  transport: mujoco
+  action_schema: ee_delta_grasp_v0
+  action_manifest: null
+  control_hz: null
+dataset:
+  format: lerobot
+  root: null
+  manifest: null
+  split_manifest: null
+planner:
+  backend: cem
+  horizon: 8
+  samples: 500
+  iterations: 4
+  elite_fraction: 0.1
+  terminal_goal_cost: true
+  action_penalty: 0.0
+  execute_steps: 1
+  timeout_ms: null
+task:
+  name: apple_to_plate
+  goal_type: image
+  goal_manifest: null
+  task_manifest: null
+evaluation:
+  training_seeds: [0, 1, 2]
+  reset_manifest: null
+  episodes_per_training_seed: 50
+  output_root: outputs
