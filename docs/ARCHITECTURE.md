@@ -90,3 +90,41 @@ Transition fields follow PRD §9; `SequenceBatch` is the training representation
 Action `t` applies between snapshot `t` and `t+1`. Interior terminal markers fail validation; a last-step marker may be true or false. A loader must independently check that all rows come from the declared episode/session; the value object cannot recover provenance from pixels. Terminal here is a collection boundary, not a reinforcement-learning bootstrap flag. Arrays must have exact declared dtypes and nonempty axes; inputs are copied into read-only buffers to protect snapshots from reused sensor memory. The constructors do not resize images, normalize states, guess timestamps, or coerce types. `from_mapping` rejects unknown and missing required fields. Dataset normalization statistics come from the training split only.
 
 CEM configuration declares horizon, candidates, elite count, iterations, seed, normalized bounds, and optional shared penalties. Candidate memory is chunked inside the model adapter. Keep evaluation budget and common-mode policy fixed. MPC owns observation, goal encoding, plan, execution, termination, and logging. No model is allowed to select an alternate planner in common mode.
+
+## Optional candidate feasibility preview (TASK-029)
+
+`CEMConfig.project_candidates=true` enables the version-1 `CandidateProjector`
+contract in `constraints.py`. An embodiment previews normalized `[B,K,T,14]`
+requests and returns projected target actions plus a `[B,K]` feasibility mask.
+The common planner scores those actions, excludes infeasible sequences, fits
+its sampling distribution to the corresponding original requests, and executes
+the winning projected first action. A missing projector or an entirely
+infeasible batch fails closed. Both model adapters remain unchanged.
+
+G1 snapshots full-precision measured robot joints and previous commanded targets
+when observing. It uses the same workspace, IK, joint-target-rate and mirrored
+hand-synergy checks as execution, with scratch kinematics containing only robot
+measurements. It tries each requested arm delta at scales 1, 1/2, …, 1/64, then
+0; failure at every scale excludes the sequence. Zero EE delta is not a
+universally feasible hold when measured joints lag commanded targets.
+
+Grasp bounds advance from each preceding projected command. Later arm poses
+assume measured joints reach their commanded targets: this is a kinematic
+surrogate, not a prediction of contact or tracking. Only the next action can be
+checked against current measurements; MPC observes and projects again after
+execution. Existing freshness, measured-velocity, transport and deadline checks
+remain authoritative. Projection never steps the live simulator or reads object
+state, contacts or task scores.
+
+Configured CEM bounds constrain sampled requests. Workspace and grasp-rate
+projection may change those requests (including absolute grasps outside the
+requested interval), while retaining the canonical `[-1,1]` action bounds.
+Traces distinguish `sampled_action`, `projected_action`, `requested_action`
+(the command sent to execution), and `action` (the accepted target).
+Projection time is included in the control deadline and reported separately.
+The option defaults to false; new comparison configurations must explicitly
+enable it. Execution now also recomputes robot kinematics from the measured
+snapshot, correcting live MuJoCo transforms that can lag integrated joint state.
+Consequently historical trajectories are not promised bit-for-bit reproduction
+under new code. Compare projection off/on on the same revised runtime; archived
+results remain valid and untouched (a missing flag in schema-v1 means false).

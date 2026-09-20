@@ -203,6 +203,7 @@ class ExperimentConfig:
                 raw.get("planner", {}),
                 (
                     "backend",
+                    "project_candidates",
                     "horizon",
                     "samples",
                     "iterations",

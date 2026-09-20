@@ -173,7 +173,12 @@ def validate_results(run_manifest, episodes):
     _text(env.get("mujoco"), "run.environment.mujoco")
     planner = _mapping(run["planner"], "run.planner")
     names = set(CEMConfig.__dataclass_fields__)
-    _require(set(planner) == names, "run.planner", "requires the complete resolved CEM budget")
+    # Schema-v1 archives predate this opt-in flag; omission means legacy false.
+    _require(
+        set(planner) in (names, names - {"project_candidates"}),
+        "run.planner",
+        "requires the complete resolved CEM budget",
+    )
     for name in ("action_penalty", "minimum_std"):
         _number(planner[name], f"run.planner.{name}")
     for name in ("lower_bounds", "upper_bounds"):
@@ -271,6 +276,25 @@ def validate_results(run_manifest, episodes):
                 raise ValueError(f"{tp}: unapplied command cannot have an applied action")
             if "requested_action" in trace:
                 _action(trace["requested_action"], f"{tp}.requested_action")
+            for name in ("sampled_action", "projected_action"):
+                if name in trace:
+                    _action(trace[name], f"{tp}.{name}")
+            if budget.project_candidates and "requested_action" in trace:
+                _action(trace.get("sampled_action"), f"{tp}.sampled_action")
+                _action(trace.get("projected_action"), f"{tp}.projected_action")
+                _require(
+                    trace["projected_action"] == trace["requested_action"],
+                    tp,
+                    "execution request must equal model-scored projected action",
+                )
+            if budget.project_candidates and "candidate_evaluations" in trace:
+                _number(trace.get("projection_seconds"), f"{tp}.projection_seconds")
+                _integer(trace.get("feasible_candidates"), f"{tp}.feasible_candidates", 1)
+                _require(
+                    trace["feasible_candidates"] <= trace["candidate_evaluations"],
+                    tp,
+                    "feasible count exceeds evaluated candidates",
+                )
             for name in (
                 "planning_seconds",
                 "control_seconds",

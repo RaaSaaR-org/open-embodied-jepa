@@ -106,3 +106,9 @@ An independent replay of the two successful archived trajectories against the co
 The newer [controller v1](experiments/manipulation_controller_v1.md) used valid separated resets and retained all six failures. Its full closure caused thumb velocity stops after transport; gentle closure avoided some stops but failed to lift. The separately declared [v2](experiments/manipulation_controller_v2.md) shortened transfer dwell and gradually opened above the container, without changing physics or safety limits. All four frozen cube→plate/target trials passed the ordered scorer. `EarlyReleaseOracleManipulationPolicy` exposes this 745-command privileged collection policy.
 
 A fixed supplementary batch, `data/manipulation-release-v1`, attempted 24 resets over four seen pairings and stored 18 episodes / 9,483 transitions: 9 full successes, 8 velocity stops, 6 invalid reset failures, and 1 completed policy without task success. It includes release/retreat frames and retains all valid failed prefixes. Splits remain 14/2/2; eight successful episodes fall in train, zero in validation and one in test. Apple→Plate remains excluded. These are scripted data-collection outcomes, not learned-policy or hardware results.
+
+The optional [candidate feasibility preview](ARCHITECTURE.md#optional-candidate-feasibility-preview-task-029)
+lets CEM score rate-feasible arm and grasp targets with
+`planner.project_candidates: true`. It is a simulation kinematics implementation;
+Isaac and physical transports need their own validated preview adapters. It does
+not relax execution guards or establish collision-free motion.

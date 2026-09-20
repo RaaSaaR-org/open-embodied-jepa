@@ -4,7 +4,7 @@ aliases:
 - TASK-029
 title: Project planner candidates through actuator feasibility before latent prediction
 slug: project-planner-candidates-through-actuator-feasibility-before-latent-prediction
-status: backlog
+status: in-progress
 priority: 2
 owner: ''
 projects: []
@@ -19,6 +19,7 @@ due_date: ''
 created: 2026-09-20
 updated: 2026-09-20
 ---
+
 
 
 # Project planner candidates through actuator feasibility before latent prediction
@@ -36,3 +37,26 @@ The frozen MVP comparison scores requested absolute grasp targets while the embo
 - Found by independent model/planner review before the final MVP evaluation; see `docs/reviews/runtime-review.md`.
 - Source, dataset and model checkpoints remain immutable during the current six-run experiment. No post-result tuning or silent checkpoint-hash migration. Treat the inspected v0 cohort as development evidence in follow-up work; do not relabel reused outcomes as a newly sealed test.
 %% mc-links: [[TASK-020]] %%
+
+### Implementation scope
+
+- Isolated branch `fix/task-029-planner-feasibility`; user `CLAUDE.md` left untouched.
+- Add opt-in shared candidate projection, robot-only snapshot/kinematics, common
+  target-preparation checks, horizon-consistent grasp targets, feasibility masks,
+  and sampled/projected/requested/applied trace separation. Models/checkpoints,
+  action schema, physical limits, original frozen experiment artifacts unchanged.
+- Independent contract review and independent behavior-test work delegated.
+- New paired development comparison will use fixed seed-1 checkpoints, reused
+  environment seeds 20000–20004, projection off/on, both backends, 100-step cap,
+  and 600-second total budget; preregister before execution. This is a bounded
+  control diagnostic, not a fresh sealed generalization or full-horizon result.
+
+### Pre-experiment validation
+
+- Full optional suite: `PYTHONPATH=src JEPA_TEST_RENDER=1
+  LEROBOT_SOURCE=third_party/lerobot .venv/bin/python -m pytest -q` → **351 passed**.
+- Ruff lint/format and `git diff --check` passed.
+- Independent review found and verified fixes for legacy schema-v1 compatibility
+  and stale MuJoCo derived kinematics; all 400 original episodes still validate.
+- Independent randomized physics check: 40/40 projected first commands accepted
+  exactly. See `docs/reviews/feasibility-review.md` and behavior regressions.

@@ -203,3 +203,31 @@ def test_historical_missing_stage_measurements_are_not_silently_upgraded(records
     episodes[0]["score"].pop("grasp")
     with pytest.raises(ValueError, match="missing stage grasp"):
         validate_results(run, episodes)
+
+
+def test_legacy_projection_omission_stays_valid_without_rewriting_archives(records):
+    run, episodes = records
+    run["planner"].pop("project_candidates")
+    original = copy.deepcopy(run)
+    validate_results(run, episodes)
+    assert run == original
+    run["planner"].pop("horizon")
+    with pytest.raises(ValueError, match="complete resolved"):
+        validate_results(run, episodes)
+
+
+def test_projected_results_require_scored_and_executed_action_agreement(records):
+    run, episodes = records
+    run["planner"]["project_candidates"] = True
+    trace = episodes[0]["trace"][0]
+    trace.update(
+        sampled_action=[0.5] * 14,
+        projected_action=[0.0] * 14,
+        requested_action=[0.0] * 14,
+        projection_seconds=0.005,
+        feasible_candidates=16,
+    )
+    validate_results(run, episodes)
+    trace["requested_action"][0] = 0.25
+    with pytest.raises(ValueError, match="model-scored"):
+        validate_results(run, episodes)
