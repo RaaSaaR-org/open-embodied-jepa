@@ -432,6 +432,10 @@ class Embodiment(Protocol):
 
     def denormalize_action(self, action: FloatArray) -> FloatArray: ...
 
+    def stop(self, reason: str) -> None:
+        """Hold/stop without treating a zero grasp command as a safe hold."""
+        ...
+
 
 @runtime_checkable
 class Transport(Protocol):

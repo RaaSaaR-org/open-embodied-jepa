@@ -19,6 +19,20 @@ lewm = [
     "einops>=0.8,<1",
     "transformers>=4.50,<5",
 ]
+data = [
+    "datasets>=4,<5",
+    "pandas>=2.2,<4",
+    "pillow>=11,<13",
+    "pyarrow>=21,<24",
+]
+compatibility = [
+    "accelerate>=1.10,<2",
+    "av>=15,<16",
+    "deepdiff>=7,<9",
+    "draccus==0.10.0",
+    "jsonlines>=4,<5",
+    "torchvision>=0.22,<1",
+]
 
 [dependency-groups]
 dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
