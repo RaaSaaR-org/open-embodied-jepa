@@ -4,7 +4,7 @@ aliases:
 - TASK-032
 title: Implement an observable action-conditioned world model for staged apple planning
 slug: implement-an-observable-action-conditioned-world-model-for-staged-apple-planning
-status: in-progress
+status: review
 priority: 1
 owner: ''
 projects: []
@@ -21,6 +21,7 @@ updated: 2026-09-20
 ---
 
 
+
 # Implement a world model whose predictions support apple control
 
 ## Acceptance criteria
@@ -35,3 +36,7 @@ updated: 2026-09-20
 
 User requested completion toward a working world-model apple pick-and-place MVP on 2026-09-20, with subagents and end-to-end delivery. Coordinator owns Git and task state. Experiments are bounded and recorded before execution.
 %% mc-links: [[TASK-031]] %%
+
+## Execution evidence
+
+sensor_wm implements learned visual+proprioceptive residual prediction with frozen training normalization, image-only goals, checkpoint provenance and action controls. Dense image-waypoint shooting MPC ranks projected candidates through opaque learned predictions. No simulator truth enters inference. Independent waypoint and training reviews fixed stale-acknowledgement handling and supervision gaps. Synthetic learning and actual generic sensor training integration pass. Physical learned-control evidence is TASK033/034, not claimed here.

@@ -4,7 +4,7 @@ aliases:
 - TASK-033
 title: Train and validate apple world-model dynamics and closed-loop development control
 slug: train-and-validate-apple-world-model-dynamics-and-closed-loop-development-contro
-status: backlog
+status: in-progress
 priority: 1
 owner: ''
 projects: []
@@ -22,6 +22,7 @@ created: 2026-09-20
 updated: 2026-09-20
 ---
 
+
 # Train and pass dynamics and closed-loop development gates
 
 ## Acceptance criteria
@@ -35,3 +36,8 @@ updated: 2026-09-20
 ## Authorization and workflow
 
 User requested completion toward a working world-model apple pick-and-place MVP on 2026-09-20, with subagents and end-to-end delivery. Coordinator owns Git and task state. Experiments are bounded and recorded before execution.
+%% mc-links: [[TASK-030]] [[TASK-031]] [[TASK-032]] %%
+
+## Execution evidence
+
+Initial training protocol and supervised runner committed before execution. Planned3000updates,B16,H8,seed0,CPU4,1800s totalwall. Data/source/protocol hashes mandatory. Physical learned ApplePlate remains unproven; all negative results retained.
