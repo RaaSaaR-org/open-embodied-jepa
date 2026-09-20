@@ -1,0 +1,367 @@
+{
+  "action_contrast_gate": {
+    "train": {
+      "available_roots": 48,
+      "passed": true,
+      "passing_roots": 48
+    },
+    "val": {
+      "available_roots": 18,
+      "passed": true,
+      "passing_roots": 18
+    }
+  },
+  "artifact_root": "data/apple-branches-v1",
+  "audit": {
+    "byte_checks": {
+      "original_payloads_byte_equal": 32,
+      "test_payloads_byte_equal": 3
+    },
+    "canonical_branch_count": 528,
+    "canonical_transitions": 8448,
+    "contrast_gates": {
+      "train": {
+        "available_roots": 48,
+        "passed": true,
+        "passing_roots": 48
+      },
+      "val": {
+        "available_roots": 18,
+        "passed": true,
+        "passing_roots": 18
+      }
+    },
+    "decoded_parent_ids": [
+      "apple-42000",
+      "apple-42001",
+      "apple-42004",
+      "apple-42005",
+      "apple-42007",
+      "apple-42008",
+      "apple-42009",
+      "apple-42012",
+      "apple-42013",
+      "apple-42019",
+      "apple-42031"
+    ],
+    "findings": [],
+    "max_wall_seconds": 120,
+    "path": "outputs/apple-branches-v1-audit.json",
+    "root_initial_tensors_checked": 66,
+    "script": "scripts/audit_apple_branches.py",
+    "script_sha256": "78474b9316d37c59e7fc2ce25ceff2c0c606fc83ecf9d707baac64885e4db2fd",
+    "sha256": "bfe3119c3fb17bbc7707739a65944cc6442f1bb5eb7f436c843b27ae90ddee22",
+    "status": "passed",
+    "supervised_wall_seconds": 6.1303220831323415,
+    "test_images_decoded": false,
+    "wall_seconds": 5.953166584018618
+  },
+  "commands": {
+    "audit": "PYTHONPATH=src .venv/bin/python scripts/audit_apple_branches.py --source data/apple-task-v1 --dataset data/apple-branches-v1 --output outputs/apple-branches-v1-audit.json",
+    "collection": "PYTHONPATH=src .venv/bin/python scripts/collect_apple_branches.py --output data/apple-branches-v1"
+  },
+  "counts": {
+    "branch_transitions": 8448,
+    "planned_branches": 528,
+    "planned_roots": 66,
+    "split_counts": {
+      "holdout": 0,
+      "test": 3,
+      "train": 410,
+      "val": 147
+    },
+    "statuses": {
+      "completed": 528
+    },
+    "total_episodes": 560,
+    "total_transitions": 24580
+  },
+  "dataset_sha256": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+  "environment": {
+    "capture": "post-collection inventory; environment was not modified during collection",
+    "machine": "arm64",
+    "packages": {
+      "Pillow": "12.3.0",
+      "mujoco": "3.13.0",
+      "numpy": "2.5.3",
+      "pandas": "3.0.6",
+      "pyarrow": "23.0.1",
+      "torch": "2.14.0"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.13 (main, Aug  7 2026, 02:15:23) [Clang 22.1.3 ]",
+    "python_executable": "/Users/sebastian/develop/emai/experiments/JEPA/jepa-apple-mvp/.venv/bin/python"
+  },
+  "environment_sha256": "7124be56d6ce293fe6ff2fcc734b0f6e2ac4117c508ea0ad0d3893cb5c5afcaa",
+  "experiment": "apple-branches-v1",
+  "final_control_cohort_executed": false,
+  "format_version": 1,
+  "identity": {
+    "action_sha256": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+    "assets_sha256": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+    "parent_sha256": "d70edd9daaeec58e80a4e6a743980c049335a03f2b32b7d42bbac5ec5bc579df",
+    "protocol_sha256": "cca8de2f376302504194de1b83579f686653b11e3f1f1788c62324146dce008d",
+    "script_sha256": "7f0595c0513c39aca6d4d9094a01d245111d7af414c80d0633cd43e9fc7544ee",
+    "source": {
+      "dirty": false,
+      "python_source_sha256": "ce0039430419c2d81fe895e114d20a1e28b3dc02a8f5639039fcb65851fdc229",
+      "revision": "662a1ab1092b4b4653f1145dc673dc001cc8cc22"
+    }
+  },
+  "incidental_worktree_event": "An unrelated untracked audit script and its test briefly existed during collection and was moved outside the repository before completion. Coordinator reports no tracked/runtime/collector/protocol changes; frozen revision, dirty flag, Python source digest, script/protocol/action/assets and parent payload checks passed before/after. This is not a continuous filesystem trace.",
+  "kind": "matched_action_data_collection_with_independent_artifact_audit",
+  "limitations": [
+    "Action-contrast screen is a whole-frame threshold and does not prove task object visibility or learned action ranking.",
+    "Environment inventory captured after collection, not included in the preregistered plan hash.",
+    "No training or learned-control evaluation was run by this collector."
+  ],
+  "parent_dataset_sha256": "d70edd9daaeec58e80a4e6a743980c049335a03f2b32b7d42bbac5ec5bc579df",
+  "phase_pair_summary": [
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.1432434767484665,
+      "median_rgb_rms": 0.06502911023133731,
+      "pairs": 224,
+      "phase": "orient",
+      "split": "train",
+      "visually_distinct_pairs": 208
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.14313814043998718,
+      "median_rgb_rms": 0.07570082110085874,
+      "pairs": 224,
+      "phase": "orient",
+      "split": "train",
+      "visually_distinct_pairs": 208
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.17712675780057907,
+      "median_rgb_rms": 0.09331714157910106,
+      "pairs": 224,
+      "phase": "descend",
+      "split": "train",
+      "visually_distinct_pairs": 216
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.1773609071969986,
+      "median_rgb_rms": 0.11735797826572493,
+      "pairs": 224,
+      "phase": "descend",
+      "split": "train",
+      "visually_distinct_pairs": 216
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.16144738346338272,
+      "median_rgb_rms": 0.07823545080021188,
+      "pairs": 224,
+      "phase": "close",
+      "split": "train",
+      "visually_distinct_pairs": 216
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.1621750369668007,
+      "median_rgb_rms": 0.10930043088321711,
+      "pairs": 224,
+      "phase": "close",
+      "split": "train",
+      "visually_distinct_pairs": 216
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.11675157397985458,
+      "median_rgb_rms": 0.09415377809262093,
+      "pairs": 224,
+      "phase": "lift",
+      "split": "train",
+      "visually_distinct_pairs": 216
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.09803729504346848,
+      "median_rgb_rms": 0.11488590128405149,
+      "pairs": 224,
+      "phase": "lift",
+      "split": "train",
+      "visually_distinct_pairs": 216
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.15887319296598434,
+      "median_rgb_rms": 0.1487175769771304,
+      "pairs": 224,
+      "phase": "transfer",
+      "split": "train",
+      "visually_distinct_pairs": 216
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.15092937648296356,
+      "median_rgb_rms": 0.1842306218618495,
+      "pairs": 224,
+      "phase": "transfer",
+      "split": "train",
+      "visually_distinct_pairs": 216
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.11841072142124176,
+      "median_rgb_rms": 0.058058667792855595,
+      "pairs": 224,
+      "phase": "release_high",
+      "split": "train",
+      "visually_distinct_pairs": 224
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.11237167939543724,
+      "median_rgb_rms": 0.06914301746901466,
+      "pairs": 224,
+      "phase": "release_high",
+      "split": "train",
+      "visually_distinct_pairs": 224
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.1432575136423111,
+      "median_rgb_rms": 0.06615298291430341,
+      "pairs": 84,
+      "phase": "orient",
+      "split": "val",
+      "visually_distinct_pairs": 82
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.14321079850196838,
+      "median_rgb_rms": 0.07454919634818014,
+      "pairs": 84,
+      "phase": "orient",
+      "split": "val",
+      "visually_distinct_pairs": 82
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.17796999216079712,
+      "median_rgb_rms": 0.09294813274052288,
+      "pairs": 84,
+      "phase": "descend",
+      "split": "val",
+      "visually_distinct_pairs": 81
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.17804519087076187,
+      "median_rgb_rms": 0.11819161770475109,
+      "pairs": 84,
+      "phase": "descend",
+      "split": "val",
+      "visually_distinct_pairs": 82
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.16019640117883682,
+      "median_rgb_rms": 0.07579800220303065,
+      "pairs": 84,
+      "phase": "close",
+      "split": "val",
+      "visually_distinct_pairs": 83
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.16052524000406265,
+      "median_rgb_rms": 0.11255501098578996,
+      "pairs": 84,
+      "phase": "close",
+      "split": "val",
+      "visually_distinct_pairs": 82
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.11695180833339691,
+      "median_rgb_rms": 0.09614494199493755,
+      "pairs": 84,
+      "phase": "lift",
+      "split": "val",
+      "visually_distinct_pairs": 81
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.10213318467140198,
+      "median_rgb_rms": 0.12054763443697934,
+      "pairs": 84,
+      "phase": "lift",
+      "split": "val",
+      "visually_distinct_pairs": 81
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.15880389511585236,
+      "median_rgb_rms": 0.1477495795383669,
+      "pairs": 84,
+      "phase": "transfer",
+      "split": "val",
+      "visually_distinct_pairs": 81
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.1471172273159027,
+      "median_rgb_rms": 0.17298162654797253,
+      "pairs": 84,
+      "phase": "transfer",
+      "split": "val",
+      "visually_distinct_pairs": 82
+    },
+    {
+      "horizon": 8,
+      "median_actual_action_rms": 0.09223202988505363,
+      "median_rgb_rms": 0.05337621290122588,
+      "pairs": 84,
+      "phase": "release_high",
+      "split": "val",
+      "visually_distinct_pairs": 84
+    },
+    {
+      "horizon": 16,
+      "median_actual_action_rms": 0.14021530747413635,
+      "median_rgb_rms": 0.05897756426991685,
+      "pairs": 84,
+      "phase": "release_high",
+      "split": "val",
+      "visually_distinct_pairs": 84
+    }
+  ],
+  "plan_sha256": "0ef751656fe887fc58106f6e4a980efe136523b74418a91e4667f5acde599160",
+  "report_sha256": "9d85fcd08d813fa8f81b6e440b9cd7ef2a36cf5d65f8b462dd96168c6002f8ea",
+  "status": "completed",
+  "test_decoded": false,
+  "test_payloads": [
+    {
+      "copy_sha256": "dd994196f259056a4842cd9c0a2e05c1e032ec5c78f1656eb89df9b52814591d",
+      "episode_id": "apple-42018",
+      "relative_path": "data/chunk-000/file-018.parquet",
+      "source_sha256": "dd994196f259056a4842cd9c0a2e05c1e032ec5c78f1656eb89df9b52814591d"
+    },
+    {
+      "copy_sha256": "cad88ec827d6e6a123de14046102aced078813c76a1fe619c73460be31f10c81",
+      "episode_id": "apple-42026",
+      "relative_path": "data/chunk-000/file-026.parquet",
+      "source_sha256": "cad88ec827d6e6a123de14046102aced078813c76a1fe619c73460be31f10c81"
+    },
+    {
+      "copy_sha256": "0997490d30759098d2fd6bb3d09b98d5903ab0a87699dc7a4620d62cc6be0b31",
+      "episode_id": "apple-42027",
+      "relative_path": "data/chunk-000/file-027.parquet",
+      "source_sha256": "0997490d30759098d2fd6bb3d09b98d5903ab0a87699dc7a4620d62cc6be0b31"
+    }
+  ],
+  "timing": {
+    "process_cpu_seconds": 370.709255,
+    "supervisor_wall_seconds": 386.5346125829965,
+    "true_wall_seconds": 386.3981407501269
+  },
+  "training_ready": true
+}

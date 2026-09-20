@@ -1,0 +1,111 @@
+{
+  "artifacts": {
+    "configuration.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "model_config.json": "fcdfbe85381a258c18ed921de530c9cc40a15607ce23991354b580a518b2992a",
+    "registration.json": "af30c5447a8a3ea41cd95f1dfee11cc40c77199735aa625cb48a09db57198dc9",
+    "resolved_model.json": "caad079a163bfd79d7cf0be157124174c29e72ff371496ba787ed1de9f867ae2",
+    "sensor.latest.pt": "5e6b6dfed83075c399cf5508784347e7689789199bb0636636b9dbcddd181d34",
+    "sensor.metrics.jsonl": "cea0cf4b52285da8a639815d3130cd156fa2141a83febb1abd99e84d4697799c",
+    "sensor.pt": "6c93b950cdc938df3fb121537c53ce62d585fe9df07db7265415ca01749fd3cb",
+    "sensor.run.json": "42e146c3faa52e30cd4aaf9bbbf7628555b5764dfb7b2d8d03d41eaea4439d3e",
+    "training.log": "8fc0cac9fc92a45444ea1adb5417478feb8bdb404968652b711011e482c18e08"
+  },
+  "completed_steps": 3000,
+  "conclusion": "Causal H16 gate remains failed; see matched branch diagnostic, not aggregate validation loss.",
+  "configuration": {
+    "backend": "sensor_wm",
+    "batch_size": 16,
+    "cpu_threads": 4,
+    "device": "cpu",
+    "horizon": 8,
+    "memory_limit_gib": 16,
+    "seed": 0,
+    "selection": "raw_mse",
+    "steps": 3000,
+    "validation_batches": 4,
+    "validation_every": 300
+  },
+  "dataset_sha256": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+  "experiment": "apple_branch_training_v1",
+  "local_output": "checkpoints/apple-branches-sensor-v1",
+  "protocol_sha256": "f24202f9da10d353569e08ed108114a54e080bb6b645c65eb000da63613470c1",
+  "schema_version": 1,
+  "selected_step": 2700,
+  "selected_validation": {
+    "elapsed_seconds": 28.200434874976054,
+    "horizons": {
+      "1": {
+        "cohort_sha256": "c79de18e27e6bacb61e8304b0981be0265bd8d95aafa17cf3014d53e32afb435",
+        "metrics": {
+          "action_effect_rms": 0.005109875230118632,
+          "metric_definition_version": 3.0,
+          "persistence_mse": 0.00958103034645319,
+          "prediction_mse": 0.005004892649594694,
+          "proprio_prediction_mse": 0.05989020597189665,
+          "shuffled_action_mse": 0.005021919263526797,
+          "shuffled_actions_changed": 1.0,
+          "zero_action_mse": 0.005030691623687744
+        },
+        "status": "measured",
+        "windows": 64
+      },
+      "4": {
+        "cohort_sha256": "de89fbca551cc93015cb8e67f84b235ded064fd9859278a9b179063857529793",
+        "metrics": {
+          "action_effect_rms": 0.014020651113241911,
+          "metric_definition_version": 3.0,
+          "persistence_mse": 0.06082974188029766,
+          "prediction_mse": 0.018992886412888765,
+          "proprio_prediction_mse": 0.07850243849679828,
+          "shuffled_action_mse": 0.018908509518951178,
+          "shuffled_actions_changed": 1.0,
+          "zero_action_mse": 0.019197060028091073
+        },
+        "status": "measured",
+        "windows": 64
+      },
+      "8": {
+        "cohort_sha256": "5d38af018c606705bb18848cd5da2b0bd5cf103467a157e851b2a19d9e004803",
+        "metrics": {
+          "action_effect_rms": 0.01908860355615616,
+          "metric_definition_version": 3.0,
+          "persistence_mse": 0.06103144073858857,
+          "prediction_mse": 0.013680551899597049,
+          "proprio_prediction_mse": 0.05161428265273571,
+          "shuffled_action_mse": 0.013811265584081411,
+          "shuffled_actions_changed": 1.0,
+          "zero_action_mse": 0.01447372231632471
+        },
+        "status": "measured",
+        "windows": 64
+      }
+    },
+    "kind": "validation",
+    "metric_definition_version": 3.0,
+    "prediction_mse": 0.013680551899597049,
+    "selection": {
+      "eligible": true,
+      "horizon": 8,
+      "method": "raw_mse",
+      "metric_definition_version": 3.0,
+      "rejection_reasons": [],
+      "score": 0.013680551899597049,
+      "selected": true,
+      "selection_reason": "new_best"
+    },
+    "selection_horizon": 8,
+    "step": 2700
+  },
+  "source": {
+    "dirty": false,
+    "python_source_sha256": "ce0039430419c2d81fe895e114d20a1e28b3dc02a8f5639039fcb65851fdc229",
+    "revision": "5138e808751cf8164c9b64a2dad27113d76b6f8e"
+  },
+  "status": "completed",
+  "supervisor_timing": {
+    "elapsed_seconds": 32.708554666955024,
+    "monotonic_elapsed_seconds": 32.708554666955024,
+    "wall_clock_elapsed_seconds": 32.70830988883972
+  },
+  "test_samples_loaded": false
+}

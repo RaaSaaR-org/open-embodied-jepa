@@ -16,6 +16,7 @@ from embodied_jepa.registry import EMBODIMENTS, MODELS, PLANNERS, TASKS
 
 MODELS.register("native_jepa", "embodied_jepa.models:NativeJEPA")
 MODELS.register("leworldmodel", "embodied_jepa.models:LeWM")
+MODELS.register("sensor_wm", "embodied_jepa.models.sensor:SensorWorldModel")
 MODELS.register("jepa_wms", "embodied_jepa.models:JEPAWMs")
 EMBODIMENTS.register("unitree_g1_dex3", "embodied_jepa.embodiment:G1Embodiment")
 PLANNERS.register("cem", "embodied_jepa.planning:CEMPlanner")

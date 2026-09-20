@@ -1,0 +1,7 @@
+# Independent apple branch preparation review
+
+2026-09-21, reviewer contracts agent. Read-only review of TASK036 `embodiment.py`, saved-snapshot/boundary regressions in `test_projection.py`, and `joint_limit_precision_v1.md`. No blocking finding. The scratch IK seed is clamped before early convergence; exact physical limits are validated before inward float32 conversion. Arm rate checks use the quantized target in shared projection/execution preparation. Live state, physical limits, residual tolerances and transport guards remain unchanged. The first saved failing snapshot is embedded in an automated regression; reports cover all three original cases without rewriting historical outcomes.
+
+Also reviewed the fixed `branches_v1` training profile/readiness checks and prospective protocol: unchanged model, seed0, B16/H8, 3000 updates, raw-MSE selection, 600-second outer deadline, and report/dataset hash binding. No blocking finding. The collection readiness flag is collection evidence, not a learned causal-performance result.
+
+Independent command: `PYTHONPATH=src .venv/bin/pytest -q tests/test_projection.py tests/test_embodiment.py tests/test_simulation.py tests/test_apple_training.py` — **55 passed, 1 graphics-opt-in skipped in 1.71 seconds**. Review is independent of the mechanics fix and collector authors, but reviewer authored the original sensor model and original training supervisor. No maintainer approval or hardware validation is implied. Branch collection itself receives separate review from the simulator agent.

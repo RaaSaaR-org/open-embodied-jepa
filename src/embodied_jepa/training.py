@@ -193,6 +193,7 @@ def selection_decision(diagnostics, selection, training_horizon):
         result["rejection_reasons"].append("required_validation_horizon_unavailable")
         return result
     metrics = measured["metrics"]
+    result["metric_definition_version"] = metrics.get("metric_definition_version", 2)
     if selection == "noncollapsed_relative":
         if metrics.get("metric_definition_version") != 2:
             result["rejection_reasons"].append("unsupported_metric_definition_version")
@@ -379,6 +380,7 @@ def train(
             }
         error = diagnostics[str(horizon)]["metrics"]["prediction_mse"]
         decision = selection_decision(diagnostics, selection, horizon)
+        report["selection"]["metric_definition_version"] = decision["metric_definition_version"]
         improved = decision["eligible"] and (best_score is None or decision["score"] < best_score)
         decision["selected"] = improved
         decision["selection_reason"] = (
@@ -390,7 +392,7 @@ def train(
         )
         event = {
             "kind": "validation",
-            "metric_definition_version": 2,
+            "metric_definition_version": decision["metric_definition_version"],
             "step": completed,
             "elapsed_seconds": clock.elapsed(),
             "selection_horizon": decision["horizon"],
@@ -457,6 +459,29 @@ def train(
         report["model_config"] = model.config
         report["model_implementation_sha256"] = model.implementation_sha256
         report["model_source_revision"] = model.source_revision
+        fit_normalization = getattr(model, "fit_normalization", None)
+        if callable(fit_normalization):
+            # Optional model-owned preprocessing sees only sealed training episodes.
+            # Stream bounded chunks, including every transition exactly once.
+            def normalization_batches():
+                for name in cache.split_ids["train"]:
+                    episode = cache.episodes[name]
+                    chunk = min(64, model.capabilities.max_horizon)
+                    for start in range(0, episode.transitions, chunk):
+                        check_budget()
+                        yield episode.sequence(start, min(chunk, episode.transitions - start))
+
+            fit_normalization(
+                normalization_batches(), training_episode_ids=cache.split_ids["train"]
+            )
+            report["normalization"] = {
+                "episode_ids": list(cache.split_ids["train"]),
+                "source": "sealed training split only",
+                "transitions": sum(
+                    cache.episodes[name].transitions for name in cache.split_ids["train"]
+                ),
+            }
+            check_budget()
         validate()  # Untrained baseline can legitimately remain best after a negative run.
         for step in range(1, steps + 1):
             check_budget()
@@ -491,7 +516,16 @@ def train(
     finally:
         try:
             if model is not None:
-                checkpoint(paths["latest"])
+                try:
+                    checkpoint(paths["latest"])
+                except Exception as error:
+                    # A model can fail before it has a valid fitted preprocessing
+                    # state. Preserve that failure and the report even if no
+                    # loadable latest checkpoint can be written.
+                    report["latest_checkpoint_error"] = f"{type(error).__name__}: {error}"
+                    if failed is None and report["status"] == "completed":
+                        failed = error
+                        report["status"] = "failed"
             synchronize()
             report.update(
                 completed_steps=completed,
@@ -520,7 +554,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument(
-        "--backend", choices=("native_jepa", "leworldmodel", "jepa_wms"), required=True
+        "--backend", choices=("native_jepa", "leworldmodel", "sensor_wm", "jepa_wms"), required=True
     )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--steps", type=int, default=500)

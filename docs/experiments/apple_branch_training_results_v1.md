@@ -1,0 +1,9 @@
+# Matched-branch training v1 results
+
+One registered training attempt completed all **3,000 updates in 32.71 supervisor wall seconds**, within its 600-second cap. The selected raw-validation-MSE checkpoint is update **2700**, SHA256 `6c93b950cdc938df3fb121537c53ce62d585fe9df07db7265415ca01749fd3cb`. No TEST images were decoded. Source revision was `5138e80`; all registered input/source/configuration integrity checks passed.
+
+The model architecture, seed 0, batch 16, horizon 8 and optimizer recipe match the original sensor training. The new audited corpus contains 32 full demonstrations and 528 matched action branches. TRAIN-only normalization was refitted, and the unchanged uniform-window sampler supplied training/validation windows. The larger action effect and improved paired prediction cannot establish manipulation success.
+
+The [matched diagnostic](apple_branch_diagnostics_results_v1.md) found improved action assignment and error reduction, but the primary VAL H16 gate still failed: 73.87% ranking accuracy and 6.26% own-action error reduction versus the required 70% and 10%. H8 is a prespecified secondary result and cannot replace that gate. No new physical controller or final-cohort run followed this failed gate.
+
+See the [prospective protocol](apple_branch_training_v1.md), [full selected validation summary and artifact identities](../../benchmarks/manifests/apple-branch-training-v1.json), and local `checkpoints/apple-branches-sensor-v1/{registration,supervisor}.json` for exact configuration, split/action/source hashes and reproduce command. Raw losses from the old and new corpus are not directly comparable because both the evaluation distribution and frozen normalization changed; the matched diagnostic uses the same branch cohort and raw visual errors for the comparison.

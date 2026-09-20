@@ -35,13 +35,16 @@ def corpus(tmp_path):
                 episode_id=f"episode-{index}",
                 session_id=f"session-{index}",
                 observations={"onboard_rgb": np.roll(fixture.observations["head"], index, axis=2)},
+                # This runner fixture supplies every procedural state field;
+                # missing-state behavior is covered by backend contract tests.
+                state_mask=np.ones_like(fixture.state_mask),
             )
         )
     store.freeze_splits(seed=3)
     return store
 
 
-@pytest.mark.parametrize("backend", ["native_jepa", "leworldmodel"])
+@pytest.mark.parametrize("backend", ["native_jepa", "leworldmodel", "sensor_wm"])
 def test_training_best_latest_curves_and_no_test_decoding(corpus, tmp_path, monkeypatch, backend):
     if backend == "leworldmodel":
         pytest.importorskip("transformers")
@@ -108,6 +111,45 @@ def test_sampler_is_deterministic_and_memory_preflight_is_bounded(corpus):
         EpisodeCache(corpus, memory_limit_bytes=1)
 
 
+def test_optional_model_normalization_uses_every_training_transition_only(
+    corpus, tmp_path, monkeypatch
+):
+    from embodied_jepa.models import NativeJEPA
+
+    observed = []
+    declared = []
+
+    def fit(self, batches, *, training_episode_ids):
+        declared.extend(training_episode_ids)
+        for batch in batches:
+            assert set(batch.episode_ids) <= set(training_episode_ids)
+            observed.extend(
+                (name, float(timestamp))
+                for name, times in zip(batch.episode_ids, batch.timestamps, strict=True)
+                for timestamp in times[:-1]
+            )
+
+    monkeypatch.setattr(NativeJEPA, "fit_normalization", fit, raising=False)
+    report = train(
+        corpus.root,
+        "native_jepa",
+        tmp_path / "normalized.pt",
+        steps=1,
+        batch_size=2,
+        horizon=2,
+        validation_batches=1,
+        model_config={"hidden_dim": 32},
+    )
+    expected = [
+        (name, float(timestamp))
+        for name in corpus.manifest["splits"]["train"]
+        for timestamp in corpus.read_episode(name).timestamps[:-1]
+    ]
+    assert observed == expected
+    assert declared == corpus.manifest["splits"]["train"]
+    assert report["normalization"]["transitions"] == len(expected)
+
+
 def test_time_budget_preserves_partial_report_without_claiming_completion(corpus, tmp_path):
     report = train(corpus.root, "native_jepa", tmp_path / "timeout.pt", max_seconds=1e-12)
     assert report["status"] == "time_budget"
@@ -116,6 +158,28 @@ def test_time_budget_preserves_partial_report_without_claiming_completion(corpus
     assert not report["best_checkpoint_exists"]
     saved = json.loads((tmp_path / "timeout.run.json").read_text())
     assert saved["status"] == "time_budget"
+
+
+def test_normalization_failure_and_unwritable_checkpoint_preserve_original_report(
+    corpus, tmp_path, monkeypatch
+):
+    from embodied_jepa.models import NativeJEPA
+
+    def fail_fit(*args, **kwargs):
+        raise ContractError("normalization failure")
+
+    def fail_save(*args, **kwargs):
+        raise ContractError("cannot save unfitted model")
+
+    monkeypatch.setattr(NativeJEPA, "fit_normalization", fail_fit, raising=False)
+    monkeypatch.setattr(NativeJEPA, "save", fail_save)
+    with pytest.raises(ContractError, match="normalization failure"):
+        train(corpus.root, "native_jepa", tmp_path / "unfitted.pt", horizon=2)
+    saved = json.loads((tmp_path / "unfitted.run.json").read_text())
+    assert saved["status"] == "failed"
+    assert "normalization failure" in saved["error"]
+    assert "cannot save unfitted" in saved["latest_checkpoint_error"]
+    assert not saved["latest_checkpoint_exists"]
 
 
 def test_unavailable_horizon_failure_is_preserved(corpus, tmp_path):

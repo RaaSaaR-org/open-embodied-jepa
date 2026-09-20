@@ -96,6 +96,17 @@ class G1Embodiment:
             for side in ("left", "right")
         }
         self.actuator_for_joint = {int(j): i for i, j in enumerate(simulation.joint_ids)}
+        # Transport targets use float32. Round each physical endpoint inward so
+        # every representable command remains inside the unchanged MJCF bound.
+        self._command_limits = self.model.jnt_range.astype(np.float32)
+        lower_outside = self._command_limits[:, 0] < self.model.jnt_range[:, 0]
+        upper_outside = self._command_limits[:, 1] > self.model.jnt_range[:, 1]
+        self._command_limits[lower_outside, 0] = np.nextafter(
+            self._command_limits[lower_outside, 0], np.float32(np.inf)
+        )
+        self._command_limits[upper_outside, 1] = np.nextafter(
+            self._command_limits[upper_outside, 1], np.float32(-np.inf)
+        )
         self._scratch = self.mj.MjData(self.model)
         self._observation = None
         self._observation_wall = 0.0
@@ -202,7 +213,11 @@ class G1Embodiment:
         scratch.qvel[:] = 0
         ids = self.arm_ids[side]
         qadr, vadr = self.model.jnt_qposadr[ids], self.model.jnt_dofadr[ids]
-        limits = self.model.jnt_range[ids]
+        limits = self._command_limits[ids].astype(np.float64)
+        # MuJoCo joint limits are soft: measured q may be slightly outside a
+        # hard command bound. Clamp the scratch seed BEFORE convergence can
+        # return it; the real measured pose and live physics remain untouched.
+        scratch.qpos[qadr] = np.clip(scratch.qpos[qadr], limits[:, 0], limits[:, 1])
         site_id = self.model.site(f"{side}_ee").id
         base = data.body("pelvis")
         base_rotation = base.xmat.reshape(3, 3)
@@ -210,7 +225,7 @@ class G1Embodiment:
         target_rotation = base_rotation @ rotation
         jacp, jacr = np.zeros((3, self.model.nv)), np.zeros((3, self.model.nv))
         for _ in range(self.manifest["ik_iterations"]):
-            self.mj.mj_forward(self.model, scratch)
+            self._forward_kinematics(scratch)
             current_rotation = scratch.site_xmat[site_id].reshape(3, 3)
             dp = target_position - scratch.site_xpos[site_id]
             error_quaternion = np.empty(4)
@@ -238,6 +253,20 @@ class G1Embodiment:
             )
         return None
 
+    def _joint_commands(self, values, ids):
+        """Validate physical targets, then preserve their float32 bound safety."""
+        values = np.asarray(values)
+        physical = self.model.jnt_range[ids]
+        if (
+            values.shape != (len(ids),)
+            or not np.isfinite(values).all()
+            or np.any(values < physical[:, 0])
+            or np.any(values > physical[:, 1])
+        ):
+            raise ContractError("prepared joint targets exceed MJCF limits")
+        bounds = self._command_limits[ids]
+        return np.clip(values.astype(np.float32), bounds[:, 0], bounds[:, 1])
+
     def _prepare_side(self, applied, targets, side_index, side, *, data=None):
         """Shared acceptance calculation on caller-owned action/target working copies."""
         previous_targets = targets.copy()
@@ -264,6 +293,7 @@ class G1Embodiment:
         )
         if solution is None:
             raise ContractError(f"{side} IK failed")
+        solution = self._joint_commands(solution, self.arm_ids[side])
         indices = np.array([self.actuator_for_joint[int(i)] for i in self.arm_ids[side]])
         if np.any(np.abs(solution - previous_targets[indices]) > max_delta + 1e-6):
             raise ContractError(f"{side} joint rate limit")
@@ -291,14 +321,24 @@ class G1Embodiment:
             reasons.append(f"{side} grasp rate")
             applied[12 + side_index] = grasp
         hand_targets = opened + (grasp + 1) * 0.5 * (closed - opened)
-        targets[hand_indices] = hand_targets
+        targets[hand_indices] = self._joint_commands(hand_targets, self.hand_ids[side])
         return reasons
+
+    def _forward_kinematics(self, data):
+        """Refresh poses and joint Jacobians without unrelated contact/dynamics solves.
+
+        mj_kinematics updates body/site poses; mj_comPos updates the global
+        joint axes needed by mj_jacSite. Neither performs time integration.
+        This is only used for scratch IK and command-target preview states.
+        """
+        self.mj.mj_kinematics(self.model, data)
+        self.mj.mj_comPos(self.model, data)
 
     def _snapshot_kinematics(self):
         """Robot-only kinematics consistent with the latest measured joint snapshot."""
         data = self.mj.MjData(self.model)
         data.qpos[self.sim.qadr] = self._projection_q
-        self.mj.mj_forward(self.model, data)
+        self._forward_kinematics(data)
         return data
 
     def project_candidates(self, requested):
@@ -332,7 +372,7 @@ class G1Embodiment:
             self.mj.mj_resetData(self.model, data)
             data.qpos[self.sim.qadr] = initial_q
             targets = initial_targets.copy()
-            self.mj.mj_forward(self.model, data)
+            self._forward_kinematics(data)
             for step in range(requested.shape[2]):
                 applied = actions[0, candidate, step].copy()
                 for side_index, side in enumerate(("left", "right")):
@@ -355,7 +395,7 @@ class G1Embodiment:
                     break
                 actions[0, candidate, step] = applied
                 data.qpos[self.sim.qadr] = targets
-                self.mj.mj_forward(self.model, data)
+                self._forward_kinematics(data)
         return CandidateProjection(actions, feasible)
 
     def execute(self, normalized_action):
