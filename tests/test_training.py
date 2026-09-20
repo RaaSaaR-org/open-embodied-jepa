@@ -381,3 +381,179 @@ def test_suspended_host_budget_exits_before_loading_data(corpus, tmp_path, monke
     assert report["elapsed_seconds"] == report["wall_clock_elapsed_seconds"] == 65.0
     assert report["monotonic_elapsed_seconds"] == report["process_cpu_seconds"] == 0.0
     assert "cache" not in report
+
+
+@pytest.fixture
+def grouped_corpus(tmp_path):
+    """Observed software fixture with unequal episode/window counts, never robot evidence."""
+    base = deterministic_fixture()
+    store = DatasetStore.create(
+        tmp_path / "grouped",
+        fps=20,
+        state_schema=base.state_schema,
+        action_manifest={"synthetic": True},
+        provenance={"synthetic": True},
+    )
+    groups = {
+        "train": [["train-original", "train-short"], ["train-branch"]],
+        "val": [["val-original"], ["val-branch"]],
+    }
+    for name, length in [
+        ("train-original", 32),
+        ("train-short", 20),
+        ("train-branch", 16),
+        ("val-original", 32),
+        ("val-branch", 16),
+        ("test", 16),
+    ]:
+        index = np.arange(length + 1) % 5
+        actions = np.tile(base.actions, (length // 4 + 1, 1))[:length]
+        store.write_episode(
+            replace(
+                base,
+                episode_id=name,
+                session_id=name,
+                observations={"onboard_rgb": base.observations["head"][index]},
+                robot_states=base.robot_states[index],
+                state_mask=np.ones((length + 1, 2), np.bool_),
+                timestamps=np.arange(length + 1, dtype=np.float64) / 20,
+                actions=actions,
+                raw_actions=actions * 0.01,
+            )
+        )
+    splits = {name: [x for group in sets for x in group] for name, sets in groups.items()} | {
+        "test": ["test"],
+        "holdout": [],
+    }
+    store.freeze_split_assignments(splits, provenance={"synthetic": True}, heldout_combinations=())
+    return store, groups
+
+
+def test_group_sampler_equal_quotas_uniform_windows_and_reproducibility(grouped_corpus):
+    from collections import Counter
+
+    store, groups = grouped_corpus
+    cache = EpisodeCache(store, memory_limit_bytes=16 * 1024**3, sampling_groups=groups)
+    first = cache.sample("train", 16, 1600, np.random.default_rng(19))
+    second = cache.sample("train", 16, 1600, np.random.default_rng(19))
+    assert first.episode_ids == second.episode_ids
+    np.testing.assert_array_equal(first.timestamps, second.timestamps)
+    counts = Counter(first.episode_ids)
+    assert counts["train-branch"] == 800 and counts["train-original"] + counts["train-short"] == 800
+    # Original group has 17 vs 5 eligible windows, not equal episode probabilities.
+    assert 0.70 < counts["train-original"] / 800 < 0.84
+    val = cache.sample("val", 16, 16, np.random.default_rng(2))
+    assert Counter(val.episode_ids) == {"val-original": 8, "val-branch": 8}
+    with pytest.raises(ContractError, match="divisible"):
+        cache.sample("val", 16, 3, np.random.default_rng(2))
+    with pytest.raises(ContractError, match="no horizon-17"):
+        cache.sample("val", 17, 16, np.random.default_rng(2))
+
+
+@pytest.mark.parametrize("bad_kind", ["test", "duplicate", "missing", "empty", "wrong_keys"])
+def test_invalid_group_membership_rejected_before_any_decode(grouped_corpus, monkeypatch, bad_kind):
+    import copy
+
+    store, groups = grouped_corpus
+    bad = copy.deepcopy(groups)
+    if bad_kind == "test":
+        bad["train"][1] = ["test"]
+    if bad_kind == "duplicate":
+        bad["train"][1].append("train-original")
+    if bad_kind == "missing":
+        bad["train"][0].pop()
+    if bad_kind == "empty":
+        bad["val"][0] = []
+    if bad_kind == "wrong_keys":
+        bad["test"] = []
+    monkeypatch.setattr(
+        DatasetStore, "read_episode", lambda *args: pytest.fail("must validate before decode")
+    )
+    with pytest.raises(ContractError, match="sampling groups|groups"):
+        EpisodeCache(store, memory_limit_bytes=16 * 1024**3, sampling_groups=bad)
+
+
+def test_uniform_default_sampler_preserves_historical_rng_draws(corpus):
+    cache = EpisodeCache(corpus, memory_limit_bytes=16 * 1024**3)
+    names, cumulative = cache.index("train", 2)
+    offsets = np.random.default_rng(17).integers(int(cumulative[-1]), size=16)
+    expected = []
+    for offset in offsets:
+        index = int(np.searchsorted(cumulative, offset, side="right"))
+        before = int(cumulative[index - 1]) if index else 0
+        expected.append((names[index], int(offset) - before))
+    batch = cache.sample("train", 2, 16, np.random.default_rng(17))
+    assert batch.episode_ids == tuple(name for name, _ in expected)
+    np.testing.assert_allclose(batch.timestamps[:, 0], [start / 20 for _, start in expected])
+
+
+def test_balanced_h16_checkpoint_and_fixed_validation_cohort(grouped_corpus, tmp_path, monkeypatch):
+    import torch
+
+    from embodied_jepa.training import json_hash
+
+    store, groups = grouped_corpus
+    original = DatasetStore.read_episode
+
+    def checked(self, name):
+        assert name != "test"
+        return original(self, name)
+
+    monkeypatch.setattr(DatasetStore, "read_episode", checked)
+    output = tmp_path / "balanced.pt"
+    report = train(
+        store.root,
+        "sensor_wm",
+        output,
+        steps=2,
+        batch_size=16,
+        horizon=16,
+        validation_every=1,
+        validation_batches=1,
+        max_seconds=30,
+        sampling_groups=groups,
+        model_config={"hidden_dim": 16},
+    )
+    assert report["status"] == "completed" and report["selection"]["horizon"] == 16
+    assert report["selection"]["method"] == "raw_mse"
+    assert report["sampling"]["groups"] == groups
+    assert report["provenance"]["sampling_groups_hash"] == json_hash(groups)
+    assert report["cache"]["group_windows"] == {"train": [22, 1], "val": [17, 1]}
+    assert len({v["horizons"]["16"]["cohort_sha256"] for v in report["validation"]}) == 1
+    checkpoint = torch.load(output, weights_only=True)
+    assert checkpoint["metadata"]["runner_state"]["sampling"] == report["sampling"]
+    assert checkpoint["metadata"]["sampling_groups_hash"] == json_hash(groups)
+
+
+def test_cli_loads_explicit_group_file(monkeypatch, tmp_path):
+    import sys
+
+    import embodied_jepa.training as module
+
+    groups = {"train": [["a"], ["b"]], "val": [["c"], ["d"]]}
+    path = tmp_path / "groups.json"
+    path.write_text(json.dumps(groups))
+
+    def fake_train(**args):
+        assert args["sampling_groups"] == groups
+        return dict(
+            status="completed", completed_steps=0, best_step=0, best_validation_mse=0, artifacts={}
+        )
+
+    monkeypatch.setattr(module, "train", fake_train)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "training",
+            "--dataset",
+            "synthetic",
+            "--backend",
+            "sensor_wm",
+            "--output",
+            "synthetic.pt",
+            "--sampling-groups",
+            str(path),
+        ],
+    )
+    assert module.main() == 0

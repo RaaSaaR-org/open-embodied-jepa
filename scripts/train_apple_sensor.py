@@ -33,6 +33,62 @@ FIXED = {
     "memory_limit_gib": 16,
 }
 
+H16_DATASET_SHA = "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331"
+BASE_FIXED = FIXED.copy()
+
+
+def profile_settings(profile):
+    if profile == "sensor_v1":
+        return (
+            "apple_sensor_training_v1",
+            "docs/experiments/apple_sensor_training_v1.md",
+            1800.0,
+            BASE_FIXED.copy(),
+        )
+    if profile == "branches_v1":
+        return (
+            "apple_branch_training_v1",
+            "docs/experiments/apple_branch_training_v1.md",
+            600.0,
+            BASE_FIXED.copy(),
+        )
+    if profile == "branches_h16_v1":
+        return (
+            "apple_branch_training_h16_v1",
+            "docs/experiments/apple_branch_training_h16_v1.md",
+            600.0,
+            BASE_FIXED | {"horizon": 16},
+        )
+    raise ValueError("unknown training profile")
+
+
+def derive_sampling_groups(manifest):
+    rows = {row["episode_id"]: row for row in manifest["episodes"]}
+    groups = {}
+    for split in ("train", "val"):
+        ids = manifest["splits"][split]
+        original, branches = [], []
+        for name in sorted(ids):
+            parent = rows[name].get("metadata", {}).get("parent_episode_id")
+            if parent is None:
+                original.append(name)
+            else:
+                if not isinstance(parent, str) or parent not in ids or parent == name:
+                    raise ValueError("branch parent must belong to the same allowed split")
+                if rows[parent].get("metadata", {}).get("parent_episode_id") is not None:
+                    raise ValueError("branch parent must be an original demonstration")
+                if rows[parent]["session_id"] != rows[name]["session_id"]:
+                    raise ValueError("branch and parent must retain their common session")
+                branches.append(name)
+        if not original or not branches:
+            raise ValueError(f"{split} needs original and intervention episode groups")
+        for group in (original, branches):
+            if not any(rows[name]["length"] - 1 >= 16 for name in group):
+                raise ValueError(f"{split} group has no H16 windows")
+        groups[split] = [original, branches]
+    return groups
+
+
 # This child imports the actual model under the parent's existing time budget.
 # It resolves configuration only; it cannot decode episodes or optimize weights.
 RESOLVE_CONFIG = """
@@ -111,7 +167,7 @@ def source_identity(root):
 
 def verify(root, dataset, expected):
     source = source_identity(root)
-    if EXPERIMENT == "apple_branch_training_v1":
+    if EXPERIMENT in ("apple_branch_training_v1", "apple_branch_training_h16_v1"):
         collection = json.loads((dataset / "branch_report.json").read_text())
         if (
             collection.get("status") != "completed"
@@ -120,6 +176,11 @@ def verify(root, dataset, expected):
             or collection.get("dataset_sha256") != expected["dataset_sha256"]
         ):
             raise ValueError("branch corpus has not passed the frozen collection/contrast gate")
+    if (
+        EXPERIMENT == "apple_branch_training_h16_v1"
+        and expected["dataset_sha256"] != H16_DATASET_SHA
+    ):
+        raise ValueError("H16 profile requires the preregistered branch corpus")
     actual = {
         "source_sha256": source["python_source_sha256"],
         "dataset_sha256": digest(dataset / "meta/jepa_manifest.json"),
@@ -230,6 +291,19 @@ def run(
             config_path = output / "model_config.json"
             write(config_path, resolved["config"])
             registered = {resolved_path: digest(resolved_path), config_path: digest(config_path)}
+            sampling = None
+            if EXPERIMENT == "apple_branch_training_h16_v1":
+                groups = derive_sampling_groups(manifest)
+                groups_path = output / "sampling_groups.json"
+                write(groups_path, groups)
+                registered[groups_path] = digest(groups_path)
+                sampling = {
+                    "path": str(groups_path),
+                    "sha256": digest(groups_path),
+                    "groups_sha256": json_hash(groups),
+                    "groups": groups,
+                    "quotas_per_batch": {"train": [8, 8], "val": [8, 8]},
+                }
             checkpoint = output / "sensor.pt"
             command = [
                 sys.executable,
@@ -245,6 +319,8 @@ def run(
             for key, value in FIXED.items():
                 if key != "cpu_threads":
                     command.extend(("--" + key.replace("_", "-"), str(value)))
+            if sampling is not None:
+                command.extend(("--sampling-groups", sampling["path"]))
             command.extend(("--max-seconds", str(clock.remaining())))
             registration = {
                 "schema_version": 1,
@@ -253,6 +329,7 @@ def run(
                 "expected": expected,
                 "model": resolved,
                 "model_config_sha256": digest(config_path),
+                "sampling": sampling,
                 "fixed": FIXED,
                 "dataset": str(dataset),
                 "output": str(checkpoint),
@@ -302,6 +379,13 @@ def run(
                     if name in provenance and provenance[name] != expected_value:
                         raise ValueError(f"child {name} provenance changed")
                 if child_report["status"] == "completed":
+                    if sampling is not None and (
+                        provenance.get("sampling_groups_hash") != sampling["groups_sha256"]
+                        or child_report.get("sampling", {}).get("groups") != sampling["groups"]
+                        or child_report.get("selection", {}).get("horizon") != 16
+                        or child_report.get("selection", {}).get("method") != "raw_mse"
+                    ):
+                        raise ValueError("child did not use frozen balanced H16 groups/selector")
                     required_provenance = {
                         "dataset_hash",
                         "split_hash",
@@ -364,20 +448,19 @@ def run(
 
 
 def main():
-    global EXPERIMENT, PROTOCOL, MAX_SECONDS
+    global EXPERIMENT, PROTOCOL, MAX_SECONDS, FIXED
     clock = Clock(include_entry=True)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile", choices=("sensor_v1", "branches_v1"), default="sensor_v1")
+    parser.add_argument(
+        "--profile", choices=("sensor_v1", "branches_v1", "branches_h16_v1"), default="sensor_v1"
+    )
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--source-sha256", required=True)
     parser.add_argument("--dataset-sha256", required=True)
     parser.add_argument("--protocol-sha256", required=True)
     args = parser.parse_args()
-    if args.profile == "branches_v1":
-        EXPERIMENT = "apple_branch_training_v1"
-        PROTOCOL = "docs/experiments/apple_branch_training_v1.md"
-        MAX_SECONDS = 600.0
+    EXPERIMENT, PROTOCOL, MAX_SECONDS, FIXED = profile_settings(args.profile)
     report = run(
         args.dataset,
         args.output,

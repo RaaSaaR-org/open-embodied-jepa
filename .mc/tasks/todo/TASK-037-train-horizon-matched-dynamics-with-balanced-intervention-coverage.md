@@ -1,0 +1,42 @@
+---
+id: TASK-037
+aliases:
+- TASK-037
+title: Train horizon-matched dynamics with balanced intervention coverage
+slug: train-horizon-matched-dynamics-with-balanced-intervention-coverage
+status: in-progress
+priority: 1
+owner: ''
+projects: []
+customers: []
+tags:
+- apple-pnp
+- world-model
+- training
+sprint: ''
+depends_on:
+- "[[TASK-035]]"
+due_date: ''
+created: 2026-09-21
+updated: 2026-09-21
+---
+
+
+# Train horizon-matched dynamics with balanced intervention coverage
+
+## Description
+
+Matched branch data improved VAL H16 action assignment to73.87%, but raw endpoint error reduction was6.26%, below the frozen10% gate. H8 secondary results passed. Test the hypothesis that training at H16 with explicitly balanced intervention coverage improves longer-horizon causal prediction. A naive H16 uniform-window sampler would reduce each16-step branch from9 H8 windows to1 H16 window, diluting the intervention cohort; preserve half-batch intervention coverage explicitly.
+
+## Acceptance Criteria
+
+- [ ] Add optional explicit split-scoped sampling groups to generic training, preserving the default uniform-window behavior; validate disjoint complete TRAIN/VAL group membership and no TEST leakage.
+- [ ] Preregister one bounded sensor_wm attempt: same architecture, seed0,3000 updates,B16,H16,600 wall seconds,16GiB;8 nominal/full-demo windows and8 intervention windows per train/validation batch, sampled uniformly within each group. Select by H16 raw validation MSE.
+- [ ] Freeze group/config/data/source/protocol hashes; keep original checkpoints, data, failed gates and final cohort untouched.
+- [ ] Compare selected checkpoint against original and branch-v1 evidence using the unchanged matched causal metric and VAL H16 gate; preserve failure outcomes. No automatic physical run when gate fails.
+- [ ] Independent code/scientific review, focused/full required checks, reproducible evidence, and reviewed PR delivery.
+
+## Notes
+
+Collector corpus: `data/apple-branches-v1`, manifest SHA256 `6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331`. Implementation agent owns generic sampling and bounded supervisor profile/protocol; coordinator owns MC/Git and experiment authorization. Architecture and model implementation remain unchanged for strict checkpoint compatibility. This jointly changes horizon and sampling support; attribute any difference to that declared training configuration, not horizon alone.
+%% mc-links: [[TASK-035]] %%
