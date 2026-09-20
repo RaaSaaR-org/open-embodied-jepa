@@ -327,6 +327,10 @@ def verify_plan_inputs(plan, *, source_root=None):
     ):
         if digest(source_root / relative) != plan[key]:
             raise ContractError("frozen action or asset manifest changed")
+    assets = json.loads((source_root / "assets/manifest.json").read_text())
+    for relative, expected in assets.get("sha256", {}).items():
+        if digest(source_root / "third_party/unitree_mujoco" / relative) != expected:
+            raise ContractError("frozen upstream asset contents changed")
 
 
 def prepare_worker(output):

@@ -119,6 +119,7 @@ def test_frozen_input_hash_verification_rejects_checkpoint_drift(tmp_path, monke
     for path in files.values():
         path.write_text("immutable fixture")
     files["dataset_manifest"].write_text(json.dumps({"sha256": {}}))
+    files["asset"].write_text(json.dumps({"sha256": {}}))
     plan = {
         "checkpoint": str(files["checkpoint"]),
         "checkpoint_sha256": module.digest(files["checkpoint"]),

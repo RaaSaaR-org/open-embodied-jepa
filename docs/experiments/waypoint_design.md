@@ -35,4 +35,31 @@ if decision.action is not None:
     trace = controller.acknowledge(robot.execute(decision.action))
 ```
 
-Ten lightweight opaque-model tests pass in 0.05 seconds. They verify opposite learned dynamics select opposite actions from identical demonstration proposals, projection precedes scoring, invalid candidates are masked, consecutive observed-image dwell controls progress, fresh observations/acknowledgements/budgets are enforced, transport clipping informs future holds, ablations are reproducible, persistence does not call dynamics, nonfinite inputs fail, and exploration variance does not collapse across steps. These are software evidence, not learned MuJoCo manipulation results.
+Eleven lightweight opaque-model tests pass, including acknowledgement-clock freshness. They verify opposite learned dynamics select opposite actions from identical demonstration proposals, projection precedes scoring, invalid candidates are masked, consecutive observed-image dwell controls progress, fresh observations/acknowledgements/budgets are enforced, transport clipping informs future holds, ablations are reproducible, persistence does not call dynamics, nonfinite inputs fail, and exploration variance does not collapse across steps. These are software evidence, not learned MuJoCo manipulation results.
+
+
+## Frozen evaluation runner
+
+`scripts/evaluate_apple.py` prepares and supervises evaluation in isolated child processes. Development seeds are43000–43004; final seeds44000–44019 are opt-in and require an explicit development-selection manifest. The initial development protocol selects seeds43000/43001 and modes learned/persistence/dynamics_shuffle, with horizon4,16candidates,two rounds,1,000commands, five-second control deadlines and a600-second total wall budget. Seed and mode subsets are explicit arguments saved before execution. Default task reset centers are object(.34,−.18), plate(.49,−.09), with independent ±.006m jitter. All modes receive identical resets. The controller uses only the right arm and hand under the same normalized bounds; candidate projection is mandatory.
+
+Before physics, select the lexicographically first successful **nominal training** apple/plate demonstration. Goals occur every10frames and include the final frame. Default dwell is three consecutive observed-image matches. Candidate proposals consist only of complete action windows within the preceding10demonstration frames; frame0 has no proposal. Stored robot states and phase labels never become goals or transition conditions.
+
+Thresholds are calibrated before evaluation using only training RGB. For each goal, take the maximum of (a)1.1times the largest image distance from its±2-frame neighborhood, (b)the median positive adjacent-frame distance in the selected demo, with a1e−12floor, and (c)1.1times the90th percentile of corresponding-frame distances from successful nominal training episodes. An episode contributes only where that observed frame exists; no end clamping or extrapolation is used. Save all source episode IDs, indices, individual distances, quantiles, thresholds and image hashes. Also record previous/next waypoint distances, threshold-overlap flags and counts. Overlapping goals can make dwell a temporal scaffold; these diagnostics are disclosure, not an automatic threshold adjustment. Persistence/shuffle ablations remain necessary.
+
+Preparation writes `calibration.json`, `waypoints.npz` and `resolved_plan.json` before constructing a physics environment. The parent snapshots Python source, configuration and asset manifests, verifies checkpoint/dataset/split/action/state/normalization provenance, and hashes generated artifacts. Checkpoint, dataset files, source, action/asset manifests, registered upstream asset files, calibration and waypoints are checked before and after attempts. Changes invalidate the comparison and prevent remaining attempts.
+
+The supervisor clock starts before NumPy/runtime imports and input hashing. It counts host suspension and reserves five seconds of the declared budget for finalization. A killed process group retains flushed command-pending/result events, so incomplete execution is marked uncertain rather than omitted. Every planned attempt remains in the denominator, including preparation failures, rejected commands, timeouts and unstarted attempts. Per-attempt supervisor status/return code overrides an apparently completed worker report if the child failed afterward. The CLI exits2for infrastructure failures, integrity changes, deadline misses or incomplete comparisons; completed physical task failures remain normal completed negative results. No completed waypoint list is automatically scored as a successful manipulation.
+
+Runner/controller validation:27lightweight tests pass in0.10seconds, without physics or training experiments. Coverage includes train-only nominal selection and calibration, exact action-window provenance, matching reset cohorts, input drift after a completed attempt, nonzero child exits, hard-wall process-group termination, partial trace recovery, control deadline rejection before actuation, retained timing after acknowledgement, and exit-code semantics.
+
+Example development command, to run only after the coordinator freezes the protocol and checkpoint:
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/evaluate_apple.py \
+  --dataset data/apple-v1 --checkpoint checkpoints/apple/sensor.pt \
+  --output outputs/apple-development-v1 --stage development \
+  --seeds 43000 43001 --modes learned persistence dynamics_shuffle \
+  --max-seconds 600 --max-steps 1000 --stride 10 --dwell 3
+```
+
+Paths in this example are placeholders; the runner requires real sealed data and compatible checkpoint artifacts, refuses existing outputs, and performs no fallback to a scripted oracle. No physics evaluation was executed while implementing this runner.
