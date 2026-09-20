@@ -4,7 +4,7 @@ aliases:
 - TASK-039
 title: Test short committed world-model plans for apple pick and place
 slug: test-short-committed-world-model-plans-for-apple-pick-and-place
-status: in-progress
+status: review
 priority: 1
 owner: ''
 projects: []
@@ -21,6 +21,7 @@ created: 2026-09-21
 updated: 2026-09-21
 ---
 
+
 # Test short committed world-model plans for apple pick and place
 
 ## Description
@@ -33,7 +34,7 @@ Saved-state diagnostic TASK-038 found that selected H16 plans made useful progre
 - [x] Observe image progress and dwell every command; discard commitment on goal advancement, reproject cached commands against current measurements, and fresh-search once if infeasible or altered. Actual execute rejection remains terminal. Preserve full-H16 warm state, acknowledgement, freshness and combined planning deadline.
 - [x] Trace original plan identity, committed offset and freshly validated action without representing reused scores as fresh ranking; verify meaningful controller/timeout failure cases and independent review.
 - [x] Preregister one unchanged-model development comparison: two development seeds, learned/persistence/shuffle, max 1,000 commands, four-command commitment, 90-wall-second attempt caps within 600 global wall. Preserve all planned statuses and no final-cohort exposure.
-- [ ] Run the bounded comparison once; report stage success, failures, latency, command acceptance and model ablations with provenance. No threshold relaxation or automatic retry.
+- [x] Run the bounded comparison once; report stage success, failures, latency, command acceptance and model ablations with provenance. No threshold relaxation or automatic retry.
 - [ ] Deliver reviewed implementation/evidence through a PR; keep physical acceptance open unless the actual success criteria pass.
 
 ## Ownership
@@ -43,3 +44,8 @@ Coordinator owns MissionControl and Git. Implementation agent owns waypoint/eval
 ## Implementation review
 
 Controller implementation passed independent review and 24 focused tests. A separate historical comparator matched default-one actions, costs, random state, waypoint progress and H16 warm arrays across 144 synthetic transitions (three modes/four seeds). The prospective protocol retains the frozen model/goals and explicitly discloses the new per-attempt allocation rule. Final controller/evaluator tests passed 58 cases in 0.13 seconds; the full optional/rendering suite passed 488 cases before the final evaluator-only correction. All lint/format and MC checks passed. Independent reviews found no remaining blocker. The bounded physical comparison remains pending until the reviewed source and protocol are committed.
+%% mc-links: [[TASK-038]] %%
+
+## Completed development comparison
+
+Source `acf5c67`: all six attempts started within 462.529 seconds. Both learned runs completed 1,000 commands; four controls reached their 90-second attempt allocation with soft timeouts. No attempt reached, grasped or placed the apple. Independent evidence audit verified 4,382 acknowledgments, 2,741 exact cached actions, eight tiny fresh-search roundoff clippings, all input identities and no pending execution uncertainty. See `docs/experiments/apple_control_commitment_results_v1.md` and its compact manifest. PR #9: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/9. Software checks pass; merge pending. Physical acceptance remains open in TASK-033.

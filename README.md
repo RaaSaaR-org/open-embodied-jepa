@@ -20,7 +20,9 @@ still fails: the resumed development comparison completed one learned run with
 reach but no grasp, timed out one persistence control, and left four attempts
 unstarted under its fixed budget. A [saved-state forecast audit](docs/experiments/apple_control_forecast_results_v1.md)
 reproduced the stalled trace and found useful progress from complete chosen plans
-at two states, motivating a separate short-commitment controller experiment.
+at two states. The subsequent [four-command comparison](docs/experiments/apple_control_commitment_results_v1.md)
+started all six attempts but reached no physical stage (two completed learned
+failures and four timed-out controls).
 Prediction accuracy and short-branch progress do not establish manipulation success.
 The fresh 20-reset final cohort remains unexecuted. This is a separate task-specific
 mode; the historical unseen-pair benchmark above is unchanged. The optional
