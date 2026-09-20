@@ -183,6 +183,18 @@ def test_mps_forward_backward_and_costs(backend, batch, tmp_path):
     latent, goal, actions = inputs(model, batch)
     costs = model.distance(model.predict(latent, actions), goal)
     assert np.isfinite(costs).all()
+    diagnostics = model.diagnostics(batch)
+    assert all(np.isfinite(value) for value in diagnostics.values())
+    # Transfer float32 to CPU first, then form a double-precision rank reference.
+    # Fusing device transfer and double conversion corrupted MPS values on this Mac.
+    with torch.no_grad():
+        pixels, _ = model.pixels(batch.observations, sequence=True)
+        target = model.goal_embed(pixels).cpu().numpy().astype(np.float64)
+    energy = np.linalg.svd(target - target.mean(0), compute_uv=False) ** 2
+    probabilities = energy[energy > 0] / energy.sum()
+    expected_rank = float(np.exp(-(probabilities * np.log(probabilities)).sum()))
+    assert diagnostics["target_effective_rank_available"] == 1
+    assert diagnostics["target_effective_rank"] == pytest.approx(expected_rank, rel=1e-5)
     path = tmp_path / "mps.pt"
     model.save(path)
     restored = model_class(backend)(batch.state_schema, device="mps", seed=5)

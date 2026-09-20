@@ -264,7 +264,9 @@ class VisualModel(nn.Module):
         rank_available = target_samples.numel() <= 1_000_000 and min(target_samples.shape) <= 512
         effective_rank = 0.0
         if rank_available:
-            centered = target_samples.to(device="cpu", dtype=torch.float64)
+            # Transfer before casting: fused MPS->CPU float64 conversion can corrupt
+            # values on the validated PyTorch/macOS combination.
+            centered = target_samples.cpu().double()
             centered = centered - centered.mean(0)
             energy = torch.linalg.svdvals(centered).square()
             total_energy = energy.sum().item()

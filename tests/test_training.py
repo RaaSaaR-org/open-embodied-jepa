@@ -272,3 +272,48 @@ def test_selector_requires_target_diversity_even_when_online_is_healthy():
     )
     assert not rejected["eligible"]
     assert rejected["rejection_reasons"] == ["unsupported_metric_definition_version"]
+
+
+def test_budget_clock_counts_host_suspend_and_survives_clock_rollback():
+    from embodied_jepa.training import BudgetReached, RunClock
+
+    values = {"wall": 1000.0, "monotonic": 100.0, "cpu": 10.0}
+    clock = RunClock(
+        wall_clock=lambda: values["wall"],
+        monotonic_clock=lambda: values["monotonic"],
+        cpu_clock=lambda: values["cpu"],
+    )
+    values.update(wall=1065.0, monotonic=106.0, cpu=12.0)
+    snapshot = clock.snapshot()
+    assert snapshot == {
+        "elapsed_seconds": 65.0,
+        "wall_clock_elapsed_seconds": 65.0,
+        "monotonic_elapsed_seconds": 6.0,
+        "process_cpu_seconds": 2.0,
+    }
+    with pytest.raises(BudgetReached, match="time_budget"):
+        clock.check(60)
+    # A backward wall-clock correction cannot extend the monotonic deadline.
+    values.update(wall=900.0, monotonic=170.0, cpu=13.0)
+    assert clock.elapsed() == 70.0
+    assert clock.snapshot()["wall_clock_elapsed_seconds"] == -100.0
+    with pytest.raises(BudgetReached, match="time_budget"):
+        clock.check(60)
+
+
+def test_suspended_host_budget_exits_before_loading_data(corpus, tmp_path, monkeypatch):
+    from embodied_jepa import training
+
+    values = {"wall": 100.0, "monotonic": 0.0, "cpu": 0.0}
+    clock = training.RunClock(
+        wall_clock=lambda: values["wall"],
+        monotonic_clock=lambda: values["monotonic"],
+        cpu_clock=lambda: values["cpu"],
+    )
+    values["wall"] = 165.0  # Simulate sleep before the first budget check.
+    monkeypatch.setattr(training, "RunClock", lambda: clock)
+    report = training.train(corpus.root, "native_jepa", tmp_path / "suspended.pt", max_seconds=60)
+    assert report["status"] == "time_budget" and report["completed_steps"] == 0
+    assert report["elapsed_seconds"] == report["wall_clock_elapsed_seconds"] == 65.0
+    assert report["monotonic_elapsed_seconds"] == report["process_cpu_seconds"] == 0.0
+    assert "cache" not in report

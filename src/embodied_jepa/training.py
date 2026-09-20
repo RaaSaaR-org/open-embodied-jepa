@@ -60,6 +60,35 @@ class BudgetReached(Exception):
     pass
 
 
+class RunClock:
+    """Keep host suspension in budgets without confusing elapsed and CPU time."""
+
+    def __init__(self, *, wall_clock=None, monotonic_clock=None, cpu_clock=None):
+        self.wall_clock = wall_clock or time.time
+        self.monotonic_clock = monotonic_clock or time.perf_counter
+        self.cpu_clock = cpu_clock or time.process_time
+        self.wall_start = self.wall_clock()
+        self.monotonic_start = self.monotonic_clock()
+        self.cpu_start = self.cpu_clock()
+
+    def snapshot(self):
+        wall = self.wall_clock() - self.wall_start
+        monotonic = self.monotonic_clock() - self.monotonic_start
+        return {
+            "elapsed_seconds": max(0.0, wall, monotonic),
+            "wall_clock_elapsed_seconds": wall,
+            "monotonic_elapsed_seconds": monotonic,
+            "process_cpu_seconds": self.cpu_clock() - self.cpu_start,
+        }
+
+    def elapsed(self):
+        return self.snapshot()["elapsed_seconds"]
+
+    def check(self, max_seconds):
+        if self.elapsed() >= max_seconds:
+            raise BudgetReached("time_budget")
+
+
 class EpisodeCache:
     """Decode each selected episode once; compact indices sample windows uniformly."""
 
@@ -236,7 +265,7 @@ def train(
         raise FileExistsError("refusing to overwrite existing training artifacts")
     output.parent.mkdir(parents=True, exist_ok=True)
     source = source_identity()
-    start = time.perf_counter()
+    clock = RunClock()
     memory_limit = int(memory_limit_gib * GIB)
     sampler = np.random.default_rng(seed)
     original_threads = torch.get_num_threads()
@@ -283,6 +312,13 @@ def train(
         },
         "validation": [],
         "test_samples_loaded": False,
+        "timing_definitions": {
+            "elapsed_seconds": "max(wall-clock delta, monotonic delta, 0); budget clock",
+            "wall_clock_elapsed_seconds": "time.time delta; includes host suspension/clock changes",
+            "monotonic_elapsed_seconds": "perf_counter delta; may exclude host suspension",
+            "process_cpu_seconds": "process_time delta; aggregate process CPU, not elapsed time",
+            "update_seconds": "synchronized perf_counter delta around a model update",
+        },
     }
     for package in ("transformers", "einops", "pyarrow", "pandas", "pillow"):
         try:
@@ -296,8 +332,7 @@ def train(
             torch.mps.synchronize()
 
     def check_budget():
-        if time.perf_counter() - start >= max_seconds:
-            raise BudgetReached("time_budget")
+        clock.check(max_seconds)
         if peak_rss_bytes() > memory_limit:
             raise BudgetReached("memory_budget")
 
@@ -357,7 +392,7 @@ def train(
             "kind": "validation",
             "metric_definition_version": 2,
             "step": completed,
-            "elapsed_seconds": time.perf_counter() - start,
+            "elapsed_seconds": clock.elapsed(),
             "selection_horizon": decision["horizon"],
             "selection": decision,
             "prediction_mse": error,
@@ -439,7 +474,7 @@ def train(
                     "step": step,
                     "metrics": dict(metrics),
                     "update_seconds": time.perf_counter() - update_start,
-                    "elapsed_seconds": time.perf_counter() - start,
+                    "elapsed_seconds": clock.elapsed(),
                 }
             )
             if step % validation_every == 0 or step == steps:
@@ -463,7 +498,7 @@ def train(
                 best_step=best_step,
                 best_validation_mse=best_error,
                 best_selection_score=best_score,
-                elapsed_seconds=time.perf_counter() - start,
+                **clock.snapshot(),
                 peak_host_rss_bytes=peak_rss_bytes(),
                 rss_scope="process-lifetime host RSS high-water mark",
                 sampler_rng=sampler.bit_generator.state,

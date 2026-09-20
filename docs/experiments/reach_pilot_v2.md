@@ -75,3 +75,22 @@ model behavior with commit `304abb0` and the preserved v1 runner/selector with
 `7676619` (both also precede `0ee5817`). Do not rewrite old checkpoint hashes to
 force loading under changed code. Keep old outputs and their original metric
 semantics; metric definition version 2 applies only to new runs.
+
+## Post-run portability correction
+
+V2 trained and validated diagnostics on CPU only. Its exact source is preserved
+in commit `772b5ab`; both learned reaching runs scored 1/5 on the development
+cohort (hold/random 0/5, oracle 5/5), which is not evidence of reliable control.
+A later MPS-only diagnostic check found that a fused MPS→CPU float64 conversion
+produced corrupted values in the installed Torch/macOS combination. The new code
+transfers to CPU **before** casting to float64, with a regression comparing both
+backends' MPS effective ranks against an independent NumPy CPU reference. This
+changes the strict implementation hash; reproduce V2 checkpoints with `772b5ab`
+instead of rewriting them. No architecture/optimizer changes or V2 retraining
+were made for this portability fix.
+
+New runner versions also budget `max(wall-clock elapsed, monotonic elapsed)` so
+host suspension cannot silently extend a run whose monotonic clock pauses.
+Reports separate wall-clock, monotonic, and aggregate process CPU time. Historical
+V2 timings retain their original perf-counter definition; they are not retrofitted
+with measurements that were not captured.
