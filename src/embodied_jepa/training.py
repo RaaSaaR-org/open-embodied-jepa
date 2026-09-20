@@ -11,6 +11,7 @@ import resource
 import subprocess
 import sys
 import time
+from collections.abc import Mapping
 from pathlib import Path
 
 import numpy as np
@@ -92,7 +93,9 @@ class RunClock:
 class EpisodeCache:
     """Decode each selected episode once; compact indices sample windows uniformly."""
 
-    def __init__(self, store, *, memory_limit_bytes, check_budget=lambda: None):
+    def __init__(
+        self, store, *, memory_limit_bytes, check_budget=lambda: None, sampling_groups=None
+    ):
         splits = store.manifest.get("splits")
         if not splits or not splits.get("train") or not splits.get("val"):
             raise ContractError("training requires sealed nonempty train and val splits")
@@ -102,6 +105,7 @@ class EpisodeCache:
         excluded = set(splits.get("test", [])) | set(splits.get("holdout", []))
         if excluded & (set(self.split_ids["train"]) | set(self.split_ids["val"])):
             raise ContractError("training/validation overlaps a test or holdout split")
+        self.sampling_groups = self.validate_groups(sampling_groups, self.split_ids)
         rows = {row["episode_id"]: row for row in store.manifest["episodes"]}
         groups = [
             {rows[name]["session_id"] for name in self.split_ids[split]}
@@ -144,30 +148,74 @@ class EpisodeCache:
                     raise BudgetReached("memory_budget")
         self._indices = {}
 
-    def index(self, split, horizon):
-        key = split, horizon
+    @staticmethod
+    def validate_groups(sampling_groups, split_ids):
+        if sampling_groups is None:
+            return None
+        if not isinstance(sampling_groups, Mapping) or set(sampling_groups) != {"train", "val"}:
+            raise ContractError("sampling groups must contain exactly train and val")
+        copied = {}
+        for split, allowed in split_ids.items():
+            groups = sampling_groups[split]
+            if not isinstance(groups, list) or not groups:
+                raise ContractError(f"{split} sampling groups must be a nonempty list")
+            flattened = []
+            for group in groups:
+                if (
+                    not isinstance(group, list)
+                    or not group
+                    or any(not isinstance(x, str) for x in group)
+                ):
+                    raise ContractError(f"{split} groups must contain nonempty episode-ID lists")
+                flattened.extend(group)
+            if len(flattened) != len(set(flattened)) or set(flattened) != set(allowed):
+                raise ContractError(
+                    f"{split} groups require exact disjoint split coverage; no TEST leakage"
+                )
+            copied[split] = [list(group) for group in groups]
+        return copied
+
+    def index(self, split, horizon, group=None):
+        key = split, horizon, group
         if key not in self._indices:
-            names = [
-                name for name in self.split_ids[split] if self.episodes[name].transitions >= horizon
-            ]
+            source = self.split_ids[split] if group is None else self.sampling_groups[split][group]
+            names = [name for name in source if self.episodes[name].transitions >= horizon]
             counts = [self.episodes[name].transitions - horizon + 1 for name in names]
             self._indices[key] = names, np.cumsum(counts, dtype=np.int64)
         return self._indices[key]
 
-    def count(self, split, horizon):
-        _, cumulative = self.index(split, horizon)
+    def count(self, split, horizon, group=None):
+        _, cumulative = self.index(split, horizon, group)
         return int(cumulative[-1]) if len(cumulative) else 0
 
+    def require_sampleable(self, split, horizon, batch_size):
+        if not self.count(split, horizon):
+            raise ContractError(f"{split} has no windows at configured horizon {horizon}")
+        if self.sampling_groups is not None:
+            count = len(self.sampling_groups[split])
+            if batch_size % count:
+                raise ContractError(f"batch size must be divisible by {split} sampling group count")
+            for group in range(count):
+                if not self.count(split, horizon, group):
+                    raise ContractError(
+                        f"{split} sampling group {group} has no horizon-{horizon} windows"
+                    )
+
     def sample(self, split, horizon, batch_size, rng):
-        names, cumulative = self.index(split, horizon)
-        if not len(cumulative):
-            raise ContractError(f"{split} has no complete horizon-{horizon} windows")
-        selected = rng.integers(int(cumulative[-1]), size=batch_size)
+        self.require_sampleable(split, horizon, batch_size)
+        groups = [None] if self.sampling_groups is None else range(len(self.sampling_groups[split]))
+        quota = batch_size // len(groups)
         batches = []
-        for offset in selected:
-            index = int(np.searchsorted(cumulative, offset, side="right"))
-            before = int(cumulative[index - 1]) if index else 0
-            batches.append(self.episodes[names[index]].sequence(int(offset) - before, horizon))
+        for group in groups:
+            names, cumulative = self.index(split, horizon, group)
+            selected = rng.integers(int(cumulative[-1]), size=quota)
+            for offset in selected:
+                index = int(np.searchsorted(cumulative, offset, side="right"))
+                before = int(cumulative[index - 1]) if index else 0
+                batches.append(self.episodes[names[index]].sequence(int(offset) - before, horizon))
+        # Randomize only grouped order so default RNG trajectories remain identical.
+        if self.sampling_groups is not None:
+            batches = [batches[i] for i in rng.permutation(len(batches))]
         return concatenate_batches(batches)
 
 
@@ -229,6 +277,7 @@ def train(
     model_config=None,
     memory_limit_gib=16.0,
     selection="raw_mse",
+    sampling_groups=None,
 ):
     """Train a fixed budget; `output` is best-by-validation, `.latest.pt` is last state."""
     import torch
@@ -345,7 +394,7 @@ def train(
         model.metadata["runner_state"] = {
             "step": completed,
             "sampler_rng": sampler.bit_generator.state,
-            "sampling": "uniform_train_windows_with_replacement",
+            "sampling": report["sampling"],
             "validation_cohort_seed": seed + 10001,
             "selection": report["selection"],
         }
@@ -426,15 +475,37 @@ def train(
         }
         report["provenance"] = metadata.copy()
         report["dataset_provenance"] = store.manifest["provenance"]
-        cache = EpisodeCache(store, memory_limit_bytes=memory_limit, check_budget=check_budget)
+        cache = EpisodeCache(
+            store,
+            memory_limit_bytes=memory_limit,
+            check_budget=check_budget,
+            sampling_groups=sampling_groups,
+        )
+        report["sampling"] = {
+            "method": "uniform_windows_with_replacement"
+            if sampling_groups is None
+            else "equal_group_quota_uniform_windows_with_replacement",
+            "groups": cache.sampling_groups,
+            "groups_sha256": json_hash(cache.sampling_groups)
+            if sampling_groups is not None
+            else None,
+        }
+        if sampling_groups is not None:
+            metadata["sampling_groups_hash"] = report["sampling"]["groups_sha256"]
+            report["provenance"] = metadata.copy()
         for split in ("train", "val"):
-            if not cache.count(split, horizon):
-                raise ContractError(f"{split} has no windows at configured horizon {horizon}")
+            cache.require_sampleable(split, horizon, batch_size)
         report["cache"] = {
             "decoded_bytes": cache.decoded_bytes,
             "episode_ids": cache.split_ids,
             "train_windows": cache.count("train", horizon),
             "val_windows": cache.count("val", horizon),
+            "group_windows": {
+                split: [cache.count(split, horizon, index) for index in range(len(groups))]
+                for split, groups in cache.sampling_groups.items()
+            }
+            if cache.sampling_groups is not None
+            else None,
         }
         # Bound canonical copies and float image conversion before allocating a batch.
         max_window = max(length for length in (horizon, 1, 4, 8) if cache.count("val", length))
@@ -568,6 +639,11 @@ def main():
     parser.add_argument(
         "--model-config", type=Path, help="JSON mapping of backend config overrides"
     )
+    parser.add_argument(
+        "--sampling-groups",
+        type=Path,
+        help="JSON train/val mapping to disjoint episode-ID groups with equal quotas",
+    )
     parser.add_argument("--memory-limit-gib", type=float, default=16)
     parser.add_argument(
         "--selection", choices=("raw_mse", "noncollapsed_relative"), default="raw_mse"
@@ -575,6 +651,8 @@ def main():
     args = vars(parser.parse_args())
     if args["model_config"] is not None:
         args["model_config"] = json.loads(args["model_config"].read_text())
+    if args["sampling_groups"] is not None:
+        args["sampling_groups"] = json.loads(args["sampling_groups"].read_text())
     report = train(**args)
     print(
         json.dumps(

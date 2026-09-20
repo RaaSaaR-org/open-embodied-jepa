@@ -1,0 +1,2538 @@
+{
+  "schema_version": 1,
+  "experiment": "apple_branch_h16_diagnostics_v1",
+  "status": "completed",
+  "primary_gate_passed": true,
+  "primary": "VAL H16, ranking>=0.70, endpoint error reduction>=0.10, bootstrap95% lower reduction>0; >=6 roots from>=2parent sessions",
+  "identity": {
+    "baseline_checkpoint": "3a5c5e7ba77556b6ce4251f05af72dc86df0121807d913ca8b444db60026e3ee",
+    "baseline_dataset": "d70edd9daaeec58e80a4e6a743980c049335a03f2b32b7d42bbac5ec5bc579df",
+    "branch_report": "9d85fcd08d813fa8f81b6e440b9cd7ef2a36cf5d65f8b462dd96168c6002f8ea",
+    "branches": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+    "checkpoint_helper": "c1703a88825c4531bf4a6317e0cbf90af36be7f5433eb1cfe7796e86059ed22b",
+    "new_checkpoint": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+    "protocol": "5926fd9a4006f12d2e35d2163313ed02b261ee16ee2915dfbdaba69ad56c035c",
+    "python_source_sha256": "afc33e36302bc4519a21fd7473f6932fe61f0665ede4a70c17e9c2e0ed7856ef",
+    "script": "aee4d5d8556d5b980bf8f4880295e96e34d0fd88e64c1ffd111fe88936455c8f",
+    "source_revision": "1b109833ee1518c67a08276e8590daae39ccf6a0"
+  },
+  "environment": {
+    "device": "cpu",
+    "packages": {
+      "Pillow": "12.3.0",
+      "numpy": "2.5.3",
+      "pandas": "3.0.6",
+      "pyarrow": "23.0.1",
+      "torch": "2.14.0"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.13 (main, Aug  7 2026, 02:15:23) [Clang 22.1.3 ]",
+    "torch_threads": 1
+  },
+  "planned_roots": 66,
+  "completed_roots": 66,
+  "decoded_branch_episodes": 528,
+  "test_images_decoded": false,
+  "supervisor": {
+    "completed_roots": 66,
+    "planned_roots": 66,
+    "returncode": 0,
+    "timeout": false,
+    "true_wall_seconds": 8.328259944915771
+  },
+  "worker_cpu_seconds": 7.732534,
+  "summaries": [
+    {
+      "accuracy": 0.7071451889160225,
+      "accuracy_ci95": [
+        0.6783543086928505,
+        0.7335903318325196
+      ],
+      "error_reduction": 0.014842101255316376,
+      "error_reduction_ci95": [
+        0.013107034433291498,
+        0.016335588336290976
+      ],
+      "gate_passed": false,
+      "horizon": 8,
+      "informative_pairs": 1296,
+      "informative_roots": 48,
+      "model": "original",
+      "own_visual_mse": 0.001924512922001074,
+      "pairs": 1344,
+      "parent_accuracy_ci95": [
+        0.6971530904473616,
+        0.7167673303741016
+      ],
+      "parent_error_reduction_ci95": [
+        0.014254440173462824,
+        0.01533887171015357
+      ],
+      "parent_sessions": 8,
+      "phases": {
+        "close": {
+          "accuracy": 0.5717592592592592,
+          "accuracy_ci95": [
+            0.548611111111111,
+            0.601851851851852
+          ],
+          "error_reduction": 0.030898902421895746,
+          "error_reduction_ci95": [
+            0.03020484815696227,
+            0.03164262726434157
+          ],
+          "gate_passed": false,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0006944861849020796,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.5485532407407406,
+            0.6018518518518519
+          ],
+          "parent_error_reduction_ci95": [
+            0.030218738366762598,
+            0.03163958222142395
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.0007166292419208696
+        },
+        "descend": {
+          "accuracy": 0.7592592592592594,
+          "accuracy_ci95": [
+            0.7592592592592594,
+            0.7592592592592594
+          ],
+          "error_reduction": 0.016067671454326082,
+          "error_reduction_ci95": [
+            0.014914896969797425,
+            0.017253518712304735
+          ],
+          "gate_passed": false,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0010955089762689938,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.7592592592592594,
+            0.7592592592592594
+          ],
+          "parent_error_reduction_ci95": [
+            0.01503483880455252,
+            0.01722863490903282
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.0011133987007909767
+        },
+        "lift": {
+          "accuracy": 0.7569444444444445,
+          "accuracy_ci95": [
+            0.7384259259259259,
+            0.7731481481481481
+          ],
+          "error_reduction": 0.006689889828491502,
+          "error_reduction_ci95": [
+            0.004580079721731028,
+            0.008651476771215232
+          ],
+          "gate_passed": false,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0023804939973396597,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.7384259259259259,
+            0.7731481481481481
+          ],
+          "parent_error_reduction_ci95": [
+            0.004485762337582522,
+            0.008665315927196795
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.0023965264955660573
+        },
+        "orient": {
+          "accuracy": 0.7740384615384615,
+          "accuracy_ci95": [
+            0.75,
+            0.7980769230769229
+          ],
+          "error_reduction": 0.01388666277983297,
+          "error_reduction_ci95": [
+            0.012756993570428473,
+            0.01497955873062961
+          ],
+          "gate_passed": false,
+          "informative_pairs": 208,
+          "informative_roots": 8,
+          "own_visual_mse": 0.00034259344542638597,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.7524038461538461,
+            0.7956730769230769
+          ],
+          "parent_error_reduction_ci95": [
+            0.012805389061231178,
+            0.014907296120356019
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.00034741792093812436
+        },
+        "release_high": {
+          "accuracy": 0.5915178571428571,
+          "accuracy_ci95": [
+            0.5736607142857143,
+            0.6116071428571428
+          ],
+          "error_reduction": 0.006708758324984299,
+          "error_reduction_ci95": [
+            0.006389872861410059,
+            0.006981318603832589
+          ],
+          "gate_passed": false,
+          "informative_pairs": 224,
+          "informative_roots": 8,
+          "own_visual_mse": 0.00038346637984432164,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.5736607142857143,
+            0.6116071428571429
+          ],
+          "parent_error_reduction_ci95": [
+            0.006372826043529511,
+            0.006969784939580953
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.0003860563385192758
+        },
+        "transfer": {
+          "accuracy": 0.7893518518518519,
+          "accuracy_ci95": [
+            0.7754629629629628,
+            0.7962962962962963
+          ],
+          "error_reduction": 0.016341511640767248,
+          "error_reduction_ci95": [
+            0.01585003376711016,
+            0.016778404447812013
+          ],
+          "gate_passed": false,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.006650528548225001,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.7754629629629628,
+            0.7962962962962963
+          ],
+          "parent_error_reduction_ci95": [
+            0.0158223250210501,
+            0.016752771334170673
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.006761013732843653
+        }
+      },
+      "primary": false,
+      "roots": 48,
+      "split": "train",
+      "ties": 0,
+      "wrong_visual_mse": 0.0019535070717631594
+    },
+    {
+      "accuracy": 0.7278598137973139,
+      "accuracy_ci95": [
+        0.7070264804639806,
+        0.7455534940560985
+      ],
+      "error_reduction": 0.009907096220605704,
+      "error_reduction_ci95": [
+        0.008171594331943505,
+        0.011643976493614415
+      ],
+      "gate_passed": false,
+      "horizon": 16,
+      "informative_pairs": 1296,
+      "informative_roots": 48,
+      "model": "original",
+      "own_visual_mse": 0.00423528628122023,
+      "pairs": 1344,
+      "parent_accuracy_ci95": [
+        0.7183175620675623,
+        0.7344485568443903
+      ],
+      "parent_error_reduction_ci95": [
+        0.009560757853810187,
+        0.01026291117345202
+      ],
+      "parent_sessions": 8,
+      "phases": {
+        "close": {
+          "accuracy": 0.7384259259259258,
+          "accuracy_ci95": [
+            0.7337962962962962,
+            0.7407407407407406
+          ],
+          "error_reduction": 0.010082147203202663,
+          "error_reduction_ci95": [
+            0.009636431071697163,
+            0.010525444568628806
+          ],
+          "gate_passed": false,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0025791048589140966,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.7337962962962962,
+            0.7407407407407406
+          ],
+          "parent_error_reduction_ci95": [
+            0.009658989998317661,
+            0.010517068435245105
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.002605372609078013
+        },
+        "descend": {
+          "accuracy": 0.7685185185185187,
+          "accuracy_ci95": [
+            0.7592592592592594,
+            0.7824074074074074
+          ],
+          "error_reduction": 0.019268276759281888,
+          "error_reduction_ci95": [
+            0.014999338324626289,
+            0.023753231649696702
+          ],
+          "gate_passed": false,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.002957233781688518,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.7592592592592594,
+            0.7824074074074074
+          ],
+          "parent_error_reduction_ci95": [
+            0.015107533449888808,
+            0.02363822026264495
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.0030153340731313046
+        },
+        "lift": {
+          "accuracy": 0.6064814814814814,
+          "accuracy_ci95": [
+            0.5439814814814815,
+            0.6435185185185186
+          ],
+          "error_reduction": -2.2618916211802897e-05,
+          "error_reduction_ci95": [
+            -0.0011086964827249413,
+            0.0010684156930795012
+          ],
+          "gate_passed": false,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.004844189463053933,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.548611111111111,
+            0.6458333333333333
+          ],
+          "parent_error_reduction_ci95": [
+            -0.0011353875431595272,
+            0.0010530650856000882
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.004844079895216661
+        },
+        "orient": {
+          "accuracy": 0.7548076923076923,
+          "accuracy_ci95": [
+            0.7379807692307693,
+            0.7692307692307693
+          ],
+          "error_reduction": 0.011754609418343276,
+          "error_reduction_ci95": [
+            0.010146072669395063,
+            0.013384588968114569
+          ],
+          "gate_passed": false,
+          "informative_pairs": 208,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0007934658915473847,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.7403846153846154,
+            0.7668269230769231
+          ],
+          "parent_error_reduction_ci95": [
+            0.010307693690147645,
+            0.013277238178332023
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.0008029037110715693
+        },
+        "release_high": {
+          "accuracy": 0.7165178571428572,
+          "accuracy_ci95": [
+            0.7142857142857143,
+            0.7209821428571429
+          ],
+          "error_reduction": 0.022233288298449838,
+          "error_reduction_ci95": [
+            0.02140097276351737,
+            0.022961869336820137
+          ],
+          "gate_passed": false,
+          "informative_pairs": 224,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0009768600332660882,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.7142857142857143,
+            0.7209821428571429
+          ],
+          "parent_error_reduction_ci95": [
+            0.021388363767232976,
+            0.022954856274427615
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.000999072704741723
+        },
+        "transfer": {
+          "accuracy": 0.7824074074074074,
+          "accuracy_ci95": [
+            0.7685185185185184,
+            0.7939814814814814
+          ],
+          "error_reduction": 0.010326451396533876,
+          "error_reduction_ci95": [
+            0.009583173057600567,
+            0.011138278090938229
+          ],
+          "gate_passed": false,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.013260863658851358,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.7685185185185185,
+            0.7939814814814814
+          ],
+          "parent_error_reduction_ci95": [
+            0.009584343395478806,
+            0.011075077718996648
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.013399230157827131
+        }
+      },
+      "primary": false,
+      "roots": 48,
+      "split": "train",
+      "ties": 0,
+      "wrong_visual_mse": 0.004277665525177734
+    },
+    {
+      "accuracy": 0.7377023696468139,
+      "accuracy_ci95": [
+        0.7003949882422105,
+        0.7691544566544566
+      ],
+      "error_reduction": 0.01500323756858768,
+      "error_reduction_ci95": [
+        0.01077495579612063,
+        0.018399184974956743
+      ],
+      "gate_passed": false,
+      "horizon": 8,
+      "informative_pairs": 492,
+      "informative_roots": 18,
+      "model": "original",
+      "own_visual_mse": 0.0019142405841602883,
+      "pairs": 504,
+      "parent_accuracy_ci95": [
+        0.7250881834215166,
+        0.7542226292226292
+      ],
+      "parent_error_reduction_ci95": [
+        0.014835215136749014,
+        0.015251868982012695
+      ],
+      "parent_sessions": 3,
+      "phases": {
+        "close": {
+          "accuracy": 0.7354497354497355,
+          "accuracy_ci95": [
+            0.6428571428571429,
+            0.7857142857142857
+          ],
+          "error_reduction": 0.03793030704949263,
+          "error_reduction_ci95": [
+            0.03513123321029066,
+            0.04088787916942216
+          ],
+          "gate_passed": false,
+          "informative_pairs": 83,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0006801030768837604,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.6428571428571429,
+            0.7857142857142857
+          ],
+          "parent_error_reduction_ci95": [
+            0.03513123321029066,
+            0.04088787916942216
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0007069166421800458
+        },
+        "descend": {
+          "accuracy": 0.7716049382716049,
+          "accuracy_ci95": [
+            0.7592592592592592,
+            0.7962962962962963
+          ],
+          "error_reduction": 0.01954882585665174,
+          "error_reduction_ci95": [
+            0.016554737530046992,
+            0.02328387013082145
+          ],
+          "gate_passed": false,
+          "informative_pairs": 81,
+          "informative_roots": 3,
+          "own_visual_mse": 0.001099813416523695,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.7592592592592592,
+            0.7962962962962963
+          ],
+          "parent_error_reduction_ci95": [
+            0.016554737530046992,
+            0.02328387013082145
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0011217421586389932
+        },
+        "lift": {
+          "accuracy": 0.7222222222222222,
+          "accuracy_ci95": [
+            0.7222222222222222,
+            0.7222222222222222
+          ],
+          "error_reduction": 0.003499428710530439,
+          "error_reduction_ci95": [
+            0.0017940827768911927,
+            0.005240861077767667
+          ],
+          "gate_passed": false,
+          "informative_pairs": 81,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0024660441680972316,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.7222222222222222,
+            0.7222222222222222
+          ],
+          "parent_error_reduction_ci95": [
+            0.0017940827768911927,
+            0.005240861077767667
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0024747042190915915
+        },
+        "orient": {
+          "accuracy": 0.7934981684981685,
+          "accuracy_ci95": [
+            0.7678571428571429,
+            0.826923076923077
+          ],
+          "error_reduction": 0.014633126462780699,
+          "error_reduction_ci95": [
+            0.013584628828784084,
+            0.015558466591143127
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0003333916479127915,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.7678571428571429,
+            0.826923076923077
+          ],
+          "parent_error_reduction_ci95": [
+            0.013584628828784084,
+            0.015558466591143127
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.00033834265882716285
+        },
+        "release_high": {
+          "accuracy": 0.6071428571428572,
+          "accuracy_ci95": [
+            0.5535714285714286,
+            0.6428571428571429
+          ],
+          "error_reduction": 0.006535570580015859,
+          "error_reduction_ci95": [
+            0.005049694209653399,
+            0.0072633112806511635
+          ],
+          "gate_passed": false,
+          "informative_pairs": 84,
+          "informative_roots": 3,
+          "own_visual_mse": 0.00035875032742859776,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.5535714285714286,
+            0.6428571428571429
+          ],
+          "parent_error_reduction_ci95": [
+            0.005049694209653399,
+            0.0072633112806511635
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0003611103898687621
+        },
+        "transfer": {
+          "accuracy": 0.7962962962962963,
+          "accuracy_ci95": [
+            0.7962962962962963,
+            0.7962962962962963
+          ],
+          "error_reduction": 0.01655710852824044,
+          "error_reduction_ci95": [
+            0.016172764507381143,
+            0.0168834965372876
+          ],
+          "gate_passed": false,
+          "informative_pairs": 81,
+          "informative_roots": 3,
+          "own_visual_mse": 0.006547340868115655,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.7962962962962963,
+            0.7962962962962963
+          ],
+          "parent_error_reduction_ci95": [
+            0.016172764507381143,
+            0.0168834965372876
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.006657570993591007
+        }
+      },
+      "primary": false,
+      "roots": 18,
+      "split": "val",
+      "ties": 0,
+      "wrong_visual_mse": 0.0019433978436995943
+    },
+    {
+      "accuracy": 0.6845294623072401,
+      "accuracy_ci95": [
+        0.6348003012933567,
+        0.734769069664903
+      ],
+      "error_reduction": 0.011838640438904036,
+      "error_reduction_ci95": [
+        0.006557366813857618,
+        0.020554490773182336
+      ],
+      "gate_passed": false,
+      "horizon": 16,
+      "informative_pairs": 493,
+      "informative_roots": 18,
+      "model": "original",
+      "own_visual_mse": 0.004174896424470525,
+      "pairs": 504,
+      "parent_accuracy_ci95": [
+        0.6412037037037037,
+        0.7204755121421788
+      ],
+      "parent_error_reduction_ci95": [
+        0.00902995635691961,
+        0.015795663016680117
+      ],
+      "parent_sessions": 3,
+      "phases": {
+        "close": {
+          "accuracy": 0.7383156966490301,
+          "accuracy_ci95": [
+            0.6964285714285715,
+            0.7777777777777778
+          ],
+          "error_reduction": 0.016075138017888402,
+          "error_reduction_ci95": [
+            0.011280939943530965,
+            0.01974285423380273
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0026098441998797157,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.6964285714285715,
+            0.7777777777777778
+          ],
+          "parent_error_reduction_ci95": [
+            0.011280939943530965,
+            0.01974285423380273
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0026524832339556883
+        },
+        "descend": {
+          "accuracy": 0.6792328042328042,
+          "accuracy_ci95": [
+            0.48214285714285715,
+            0.7962962962962963
+          ],
+          "error_reduction": 0.04327484507315227,
+          "error_reduction_ci95": [
+            0.015737248863550657,
+            0.08107232564935385
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.002975841673593236,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.48214285714285715,
+            0.7962962962962963
+          ],
+          "parent_error_reduction_ci95": [
+            0.015737248863550657,
+            0.08107232564935385
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.003110445730697624
+        },
+        "lift": {
+          "accuracy": 0.5864197530864197,
+          "accuracy_ci95": [
+            0.48148148148148145,
+            0.6851851851851852
+          ],
+          "error_reduction": -0.001294815298302776,
+          "error_reduction_ci95": [
+            -0.0015212051175685914,
+            -0.0009826197192330799
+          ],
+          "gate_passed": false,
+          "informative_pairs": 81,
+          "informative_roots": 3,
+          "own_visual_mse": 0.005309845374057783,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.48148148148148145,
+            0.6851851851851852
+          ],
+          "parent_error_reduction_ci95": [
+            -0.0015212051175685914,
+            -0.0009826197192330799
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.005302978995727536
+        },
+        "orient": {
+          "accuracy": 0.7152014652014652,
+          "accuracy_ci95": [
+            0.5714285714285714,
+            0.7884615384615384
+          ],
+          "error_reduction": 0.01307532265978495,
+          "error_reduction_ci95": [
+            0.011301421849957416,
+            0.014712174500522868
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.000765033081371014,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.5714285714285714,
+            0.7884615384615384
+          ],
+          "parent_error_reduction_ci95": [
+            0.011301421849957416,
+            0.014712174500522868
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0007751686617390052
+        },
+        "release_high": {
+          "accuracy": 0.5952380952380952,
+          "accuracy_ci95": [
+            0.5714285714285714,
+            0.6428571428571429
+          ],
+          "error_reduction": 0.015492255971796487,
+          "error_reduction_ci95": [
+            0.009272171420327546,
+            0.02807742522091694
+          ],
+          "gate_passed": false,
+          "informative_pairs": 84,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0008700741621266518,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.5714285714285714,
+            0.6428571428571429
+          ],
+          "parent_error_reduction_ci95": [
+            0.009272171420327546,
+            0.02807742522091694
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.000883765686358813
+        },
+        "transfer": {
+          "accuracy": 0.7927689594356261,
+          "accuracy_ci95": [
+            0.7857142857142857,
+            0.7962962962962963
+          ],
+          "error_reduction": 0.008388325344057868,
+          "error_reduction_ci95": [
+            0.008120207828462678,
+            0.008788530081213608
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.012518740055794751,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.7857142857142857,
+            0.7962962962962963
+          ],
+          "parent_error_reduction_ci95": [
+            0.008120207828462678,
+            0.008788530081213608
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.012624639640450339
+        }
+      },
+      "primary": true,
+      "roots": 18,
+      "split": "val",
+      "ties": 0,
+      "wrong_visual_mse": 0.004224913658154835
+    },
+    {
+      "accuracy": 0.8730932454890786,
+      "accuracy_ci95": [
+        0.8477975077584451,
+        0.8972048134157503
+      ],
+      "error_reduction": 0.8656628050949716,
+      "error_reduction_ci95": [
+        0.841361152322327,
+        0.8844421993520092
+      ],
+      "gate_passed": true,
+      "horizon": 8,
+      "informative_pairs": 1296,
+      "informative_roots": 48,
+      "model": "branches",
+      "own_visual_mse": 0.00037882941168213414,
+      "pairs": 1344,
+      "parent_accuracy_ci95": [
+        0.8629616910866912,
+        0.8839094932844932
+      ],
+      "parent_error_reduction_ci95": [
+        0.8468431574829878,
+        0.8809809088314617
+      ],
+      "parent_sessions": 8,
+      "phases": {
+        "close": {
+          "accuracy": 0.9259259259259258,
+          "accuracy_ci95": [
+            0.9166666666666666,
+            0.9351851851851851
+          ],
+          "error_reduction": 0.8902547893269752,
+          "error_reduction_ci95": [
+            0.8861651866951074,
+            0.8947766623539545
+          ],
+          "gate_passed": true,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0001331269925988939,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.9166666666666666,
+            0.9351851851851851
+          ],
+          "parent_error_reduction_ci95": [
+            0.8861217879801477,
+            0.8945989730823847
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.001213055146392974
+        },
+        "descend": {
+          "accuracy": 0.9166666666666667,
+          "accuracy_ci95": [
+            0.9074074074074074,
+            0.9305555555555556
+          ],
+          "error_reduction": 0.8788201465823303,
+          "error_reduction_ci95": [
+            0.8683472553714155,
+            0.8873028330550439
+          ],
+          "gate_passed": true,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0002551503567465934,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.9074074074074074,
+            0.9305555555555556
+          ],
+          "parent_error_reduction_ci95": [
+            0.8682378851640201,
+            0.8872207670187666
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.0021055509604155777
+        },
+        "lift": {
+          "accuracy": 0.8796296296296295,
+          "accuracy_ci95": [
+            0.8703703703703703,
+            0.8935185185185185
+          ],
+          "error_reduction": 0.8920456718260532,
+          "error_reduction_ci95": [
+            0.8826019854027052,
+            0.90011532461706
+          ],
+          "gate_passed": true,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.00040890480563070416,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.8703703703703703,
+            0.8935185185185184
+          ],
+          "parent_error_reduction_ci95": [
+            0.8826012311272153,
+            0.9004763598859177
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.003787757402110233
+        },
+        "orient": {
+          "accuracy": 0.9567307692307693,
+          "accuracy_ci95": [
+            0.9471153846153847,
+            0.9615384615384616
+          ],
+          "error_reduction": 0.658431861765522,
+          "error_reduction_ci95": [
+            0.6401951214514305,
+            0.6751560058106725
+          ],
+          "gate_passed": true,
+          "informative_pairs": 208,
+          "informative_roots": 8,
+          "own_visual_mse": 0.00014714301977829356,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.9471153846153847,
+            0.9615384615384616
+          ],
+          "parent_error_reduction_ci95": [
+            0.6392046838678987,
+            0.6749262699837018
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.0004307867254213377
+        },
+        "release_high": {
+          "accuracy": 0.703125,
+          "accuracy_ci95": [
+            0.6919642857142856,
+            0.71875
+          ],
+          "error_reduction": 0.32721913263747193,
+          "error_reduction_ci95": [
+            0.3172927952350348,
+            0.33737102005902664
+          ],
+          "gate_passed": true,
+          "informative_pairs": 224,
+          "informative_roots": 8,
+          "own_visual_mse": 0.00029284892746415735,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.6919642857142856,
+            0.7187499999999999
+          ],
+          "parent_error_reduction_ci95": [
+            0.3160831964185259,
+            0.33747656067613624
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.0004352812953974146
+        },
+        "transfer": {
+          "accuracy": 0.8564814814814814,
+          "accuracy_ci95": [
+            0.8125,
+            0.900462962962963
+          ],
+          "error_reduction": 0.8842355872421062,
+          "error_reduction_ci95": [
+            0.8525681512433706,
+            0.9122587092083941
+          ],
+          "gate_passed": true,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0010358023678741623,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.8148148148148148,
+            0.9027777777777778
+          ],
+          "parent_error_reduction_ci95": [
+            0.8535679100845657,
+            0.9132485262505069
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.008947502459502883
+        }
+      },
+      "primary": false,
+      "roots": 48,
+      "split": "train",
+      "ties": 0,
+      "wrong_visual_mse": 0.0028199889982067367
+    },
+    {
+      "accuracy": 0.9103136446886443,
+      "accuracy_ci95": [
+        0.8852077079941663,
+        0.9338816974884682
+      ],
+      "error_reduction": 0.8412297644092599,
+      "error_reduction_ci95": [
+        0.8172855596666903,
+        0.862959490936461
+      ],
+      "gate_passed": true,
+      "horizon": 16,
+      "informative_pairs": 1296,
+      "informative_roots": 48,
+      "model": "branches",
+      "own_visual_mse": 0.0010478313556694203,
+      "pairs": 1344,
+      "parent_accuracy_ci95": [
+        0.9056977407237822,
+        0.9157310691815899
+      ],
+      "parent_error_reduction_ci95": [
+        0.8214070919177707,
+        0.8588793239910071
+      ],
+      "parent_sessions": 8,
+      "phases": {
+        "close": {
+          "accuracy": 0.9722222222222222,
+          "accuracy_ci95": [
+            0.9629629629629629,
+            0.9814814814814815
+          ],
+          "error_reduction": 0.8909888214641266,
+          "error_reduction_ci95": [
+            0.8865037029295296,
+            0.895031822547219
+          ],
+          "gate_passed": true,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0005256401550637007,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.9652777777777777,
+            0.9814814814814815
+          ],
+          "parent_error_reduction_ci95": [
+            0.886441255534214,
+            0.8950300303523507
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.004821892232737608
+        },
+        "descend": {
+          "accuracy": 1.0,
+          "accuracy_ci95": [
+            1.0,
+            1.0
+          ],
+          "error_reduction": 0.8966318552418294,
+          "error_reduction_ci95": [
+            0.8869557646171119,
+            0.9066727525994138
+          ],
+          "gate_passed": true,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0006045340168283372,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            1.0,
+            1.0
+          ],
+          "parent_error_reduction_ci95": [
+            0.8876355409653557,
+            0.9060355401290473
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.005848358972124752
+        },
+        "lift": {
+          "accuracy": 0.8935185185185185,
+          "accuracy_ci95": [
+            0.8796296296296295,
+            0.9074074074074074
+          ],
+          "error_reduction": 0.8768467769279111,
+          "error_reduction_ci95": [
+            0.8653238004883731,
+            0.8880288158632339
+          ],
+          "gate_passed": true,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.001105128670907881,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.8796296296296297,
+            0.9074074074074073
+          ],
+          "parent_error_reduction_ci95": [
+            0.8653312184751137,
+            0.8876441026316428
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.008973607375756492
+        },
+        "orient": {
+          "accuracy": 0.966346153846154,
+          "accuracy_ci95": [
+            0.9615384615384616,
+            0.9759615384615385
+          ],
+          "error_reduction": 0.7368622646997993,
+          "error_reduction_ci95": [
+            0.7267582668398086,
+            0.7454777617867984
+          ],
+          "gate_passed": true,
+          "informative_pairs": 208,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0003231873337986494,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.9615384615384616,
+            0.9759615384615385
+          ],
+          "parent_error_reduction_ci95": [
+            0.726618455212482,
+            0.7457331697447388
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.001228205956207463
+        },
+        "release_high": {
+          "accuracy": 0.7455357142857142,
+          "accuracy_ci95": [
+            0.7343749999999999,
+            0.7566964285714286
+          ],
+          "error_reduction": 0.39789044028251286,
+          "error_reduction_ci95": [
+            0.381446941949681,
+            0.4120803049031869
+          ],
+          "gate_passed": true,
+          "informative_pairs": 224,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0007594882184613588,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.7321428571428572,
+            0.7566964285714286
+          ],
+          "parent_error_reduction_ci95": [
+            0.38061970070420786,
+            0.4116210686324367
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.001261378774350825
+        },
+        "transfer": {
+          "accuracy": 0.8842592592592592,
+          "accuracy_ci95": [
+            0.8634259259259259,
+            0.9050925925925926
+          ],
+          "error_reduction": 0.8299982565038376,
+          "error_reduction_ci95": [
+            0.7894509242471485,
+            0.8702066107087926
+          ],
+          "gate_passed": true,
+          "informative_pairs": 216,
+          "informative_roots": 8,
+          "own_visual_mse": 0.0029690097389565955,
+          "pairs": 224,
+          "parent_accuracy_ci95": [
+            0.8634259259259259,
+            0.9050925925925926
+          ],
+          "parent_error_reduction_ci95": [
+            0.7899852059403165,
+            0.870516400155885
+          ],
+          "parent_sessions": 8,
+          "roots": 8,
+          "ties": 0,
+          "wrong_visual_mse": 0.017464584056007742
+        }
+      },
+      "primary": false,
+      "roots": 48,
+      "split": "train",
+      "ties": 0,
+      "wrong_visual_mse": 0.006599671227864149
+    },
+    {
+      "accuracy": 0.8404558404558407,
+      "accuracy_ci95": [
+        0.7922075673811786,
+        0.883568206484873
+      ],
+      "error_reduction": 0.8528063662373886,
+      "error_reduction_ci95": [
+        0.7965766019729432,
+        0.8829329337217745
+      ],
+      "gate_passed": true,
+      "horizon": 8,
+      "informative_pairs": 492,
+      "informative_roots": 18,
+      "model": "branches",
+      "own_visual_mse": 0.00041002923513783885,
+      "pairs": 504,
+      "parent_accuracy_ci95": [
+        0.8294583502916837,
+        0.8548280423280423
+      ],
+      "parent_error_reduction_ci95": [
+        0.8109461460746326,
+        0.8736233932015591
+      ],
+      "parent_sessions": 3,
+      "phases": {
+        "close": {
+          "accuracy": 0.8251763668430335,
+          "accuracy_ci95": [
+            0.7857142857142857,
+            0.875
+          ],
+          "error_reduction": 0.7783194020526208,
+          "error_reduction_ci95": [
+            0.7044134453707964,
+            0.8601204607146473
+          ],
+          "gate_passed": false,
+          "informative_pairs": 83,
+          "informative_roots": 3,
+          "own_visual_mse": 0.00027455636477040894,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.7857142857142857,
+            0.875
+          ],
+          "parent_error_reduction_ci95": [
+            0.7044134453707964,
+            0.8601204607146473
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0012385223033166892
+        },
+        "descend": {
+          "accuracy": 0.9197530864197532,
+          "accuracy_ci95": [
+            0.9074074074074074,
+            0.9444444444444443
+          ],
+          "error_reduction": 0.8665147685290484,
+          "error_reduction_ci95": [
+            0.8579857924767053,
+            0.8811127526554053
+          ],
+          "gate_passed": false,
+          "informative_pairs": 81,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0002720816265525768,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.9074074074074074,
+            0.9444444444444443
+          ],
+          "parent_error_reduction_ci95": [
+            0.8579857924767053,
+            0.8811127526554053
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0020382901056120637
+        },
+        "lift": {
+          "accuracy": 0.8024691358024691,
+          "accuracy_ci95": [
+            0.7777777777777778,
+            0.8148148148148148
+          ],
+          "error_reduction": 0.8546669177203305,
+          "error_reduction_ci95": [
+            0.7857940457952275,
+            0.8928873957109745
+          ],
+          "gate_passed": false,
+          "informative_pairs": 81,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0005599142824382992,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.7777777777777778,
+            0.8148148148148148
+          ],
+          "parent_error_reduction_ci95": [
+            0.7857940457952275,
+            0.8928873957109745
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.003852627864596147
+        },
+        "orient": {
+          "accuracy": 0.9395604395604394,
+          "accuracy_ci95": [
+            0.9285714285714285,
+            0.9615384615384616
+          ],
+          "error_reduction": 0.6221730061337407,
+          "error_reduction_ci95": [
+            0.5966999181000381,
+            0.6469233794071982
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.00015717318078697356,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.9285714285714285,
+            0.9615384615384616
+          ],
+          "parent_error_reduction_ci95": [
+            0.5966999181000381,
+            0.6469233794071982
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.00041599246040797364
+        },
+        "release_high": {
+          "accuracy": 0.6607142857142857,
+          "accuracy_ci95": [
+            0.5892857142857143,
+            0.7142857142857143
+          ],
+          "error_reduction": 0.30530597509771173,
+          "error_reduction_ci95": [
+            0.2595832190662236,
+            0.32893510439941764
+          ],
+          "gate_passed": false,
+          "informative_pairs": 84,
+          "informative_roots": 3,
+          "own_visual_mse": 0.00029485625496558247,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.5892857142857143,
+            0.7142857142857143
+          ],
+          "parent_error_reduction_ci95": [
+            0.2595832190662236,
+            0.32893510439941764
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0004244404650047987
+        },
+        "transfer": {
+          "accuracy": 0.8950617283950617,
+          "accuracy_ci95": [
+            0.8888888888888888,
+            0.9074074074074074
+          ],
+          "error_reduction": 0.8968899902589944,
+          "error_reduction_ci95": [
+            0.8528107334584005,
+            0.9234509762335861
+          ],
+          "gate_passed": false,
+          "informative_pairs": 81,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0009015937013131923,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.8888888888888888,
+            0.9074074074074074
+          ],
+          "parent_error_reduction_ci95": [
+            0.8528107334584005,
+            0.9234509762335861
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.008743997828899825
+        }
+      },
+      "primary": false,
+      "roots": 18,
+      "split": "val",
+      "ties": 0,
+      "wrong_visual_mse": 0.002785645171306249
+    },
+    {
+      "accuracy": 0.894027269027269,
+      "accuracy_ci95": [
+        0.8656606831954055,
+        0.9255519236422014
+      ],
+      "error_reduction": 0.8141299381503038,
+      "error_reduction_ci95": [
+        0.7669794977208433,
+        0.8531931554153994
+      ],
+      "gate_passed": true,
+      "horizon": 16,
+      "informative_pairs": 493,
+      "informative_roots": 18,
+      "model": "branches",
+      "own_visual_mse": 0.0011709442552987571,
+      "pairs": 504,
+      "parent_accuracy_ci95": [
+        0.867283950617284,
+        0.9080518247184914
+      ],
+      "parent_error_reduction_ci95": [
+        0.7478126740899915,
+        0.8473704737824135
+      ],
+      "parent_sessions": 3,
+      "phases": {
+        "close": {
+          "accuracy": 0.8727954144620811,
+          "accuracy_ci95": [
+            0.8035714285714285,
+            0.9629629629629629
+          ],
+          "error_reduction": 0.7913379601929346,
+          "error_reduction_ci95": [
+            0.7125080586617196,
+            0.8728956535159028
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0010024444771395927,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.8035714285714285,
+            0.9629629629629629
+          ],
+          "parent_error_reduction_ci95": [
+            0.7125080586617196,
+            0.8728956535159028
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.004804153539697398
+        },
+        "descend": {
+          "accuracy": 0.9940476190476191,
+          "accuracy_ci95": [
+            0.9821428571428571,
+            1.0
+          ],
+          "error_reduction": 0.9101550815488673,
+          "error_reduction_ci95": [
+            0.9026034725476114,
+            0.9169094449050058
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0005124944580231347,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.9821428571428571,
+            1.0
+          ],
+          "parent_error_reduction_ci95": [
+            0.9026034725476114,
+            0.9169094449050058
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.005704211956092811
+        },
+        "lift": {
+          "accuracy": 0.8703703703703703,
+          "accuracy_ci95": [
+            0.8703703703703703,
+            0.8703703703703703
+          ],
+          "error_reduction": 0.825199108336866,
+          "error_reduction_ci95": [
+            0.7576393294225289,
+            0.8678765642558319
+          ],
+          "gate_passed": false,
+          "informative_pairs": 81,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0016063103196498603,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.8703703703703703,
+            0.8703703703703703
+          ],
+          "parent_error_reduction_ci95": [
+            0.7576393294225289,
+            0.8678765642558319
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.009189371429211286
+        },
+        "orient": {
+          "accuracy": 0.9395604395604394,
+          "accuracy_ci95": [
+            0.9285714285714285,
+            0.9615384615384616
+          ],
+          "error_reduction": 0.725273756674306,
+          "error_reduction_ci95": [
+            0.7188197058777046,
+            0.7293737278500763
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0003229408158027655,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.9285714285714285,
+            0.9615384615384616
+          ],
+          "parent_error_reduction_ci95": [
+            0.7188197058777046,
+            0.7293737278500763
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.001175500425053722
+        },
+        "release_high": {
+          "accuracy": 0.8273809523809524,
+          "accuracy_ci95": [
+            0.7678571428571429,
+            0.8571428571428571
+          ],
+          "error_reduction": 0.3665341917061997,
+          "error_reduction_ci95": [
+            0.278545889615908,
+            0.45486720893540034
+          ],
+          "gate_passed": false,
+          "informative_pairs": 84,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0006754925672707725,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.7678571428571429,
+            0.8571428571428571
+          ],
+          "parent_error_reduction_ci95": [
+            0.278545889615908,
+            0.45486720893540034
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0010663441632156416
+        },
+        "transfer": {
+          "accuracy": 0.8600088183421518,
+          "accuracy_ci95": [
+            0.8333333333333334,
+            0.9074074074074074
+          ],
+          "error_reduction": 0.8167638170971836,
+          "error_reduction_ci95": [
+            0.711770110008204,
+            0.8803504755539472
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0029059828939064156,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.8333333333333334,
+            0.9074074074074074
+          ],
+          "parent_error_reduction_ci95": [
+            0.711770110008204,
+            0.8803504755539472
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.015859219766915095
+        }
+      },
+      "primary": true,
+      "roots": 18,
+      "split": "val",
+      "ties": 0,
+      "wrong_visual_mse": 0.006299800213364326
+    }
+  ],
+  "training": {
+    "completed_steps": 3000,
+    "best_step": 3000,
+    "sampling": {
+      "groups": {
+        "train": [
+          [
+            "apple-42000",
+            "apple-42001",
+            "apple-42002",
+            "apple-42003",
+            "apple-42004",
+            "apple-42005",
+            "apple-42006",
+            "apple-42008",
+            "apple-42009",
+            "apple-42010",
+            "apple-42011",
+            "apple-42012",
+            "apple-42013",
+            "apple-42014",
+            "apple-42015",
+            "apple-42016",
+            "apple-42017",
+            "apple-42020",
+            "apple-42021",
+            "apple-42022",
+            "apple-42023",
+            "apple-42024",
+            "apple-42025",
+            "apple-42028",
+            "apple-42029",
+            "apple-42030"
+          ],
+          [
+            "apple-42000-close-closed",
+            "apple-42000-close-half_motion",
+            "apple-42000-close-hold",
+            "apple-42000-close-open",
+            "apple-42000-close-recorded",
+            "apple-42000-close-reverse_rotation",
+            "apple-42000-close-reverse_translation",
+            "apple-42000-close-up",
+            "apple-42000-descend-closed",
+            "apple-42000-descend-half_motion",
+            "apple-42000-descend-hold",
+            "apple-42000-descend-open",
+            "apple-42000-descend-recorded",
+            "apple-42000-descend-reverse_rotation",
+            "apple-42000-descend-reverse_translation",
+            "apple-42000-descend-up",
+            "apple-42000-lift-closed",
+            "apple-42000-lift-half_motion",
+            "apple-42000-lift-hold",
+            "apple-42000-lift-open",
+            "apple-42000-lift-recorded",
+            "apple-42000-lift-reverse_rotation",
+            "apple-42000-lift-reverse_translation",
+            "apple-42000-lift-up",
+            "apple-42000-orient-closed",
+            "apple-42000-orient-half_motion",
+            "apple-42000-orient-hold",
+            "apple-42000-orient-open",
+            "apple-42000-orient-recorded",
+            "apple-42000-orient-reverse_rotation",
+            "apple-42000-orient-reverse_translation",
+            "apple-42000-orient-up",
+            "apple-42000-release_high-closed",
+            "apple-42000-release_high-half_motion",
+            "apple-42000-release_high-hold",
+            "apple-42000-release_high-open",
+            "apple-42000-release_high-recorded",
+            "apple-42000-release_high-reverse_rotation",
+            "apple-42000-release_high-reverse_translation",
+            "apple-42000-release_high-up",
+            "apple-42000-transfer-closed",
+            "apple-42000-transfer-half_motion",
+            "apple-42000-transfer-hold",
+            "apple-42000-transfer-open",
+            "apple-42000-transfer-recorded",
+            "apple-42000-transfer-reverse_rotation",
+            "apple-42000-transfer-reverse_translation",
+            "apple-42000-transfer-up",
+            "apple-42001-close-closed",
+            "apple-42001-close-half_motion",
+            "apple-42001-close-hold",
+            "apple-42001-close-open",
+            "apple-42001-close-recorded",
+            "apple-42001-close-reverse_rotation",
+            "apple-42001-close-reverse_translation",
+            "apple-42001-close-up",
+            "apple-42001-descend-closed",
+            "apple-42001-descend-half_motion",
+            "apple-42001-descend-hold",
+            "apple-42001-descend-open",
+            "apple-42001-descend-recorded",
+            "apple-42001-descend-reverse_rotation",
+            "apple-42001-descend-reverse_translation",
+            "apple-42001-descend-up",
+            "apple-42001-lift-closed",
+            "apple-42001-lift-half_motion",
+            "apple-42001-lift-hold",
+            "apple-42001-lift-open",
+            "apple-42001-lift-recorded",
+            "apple-42001-lift-reverse_rotation",
+            "apple-42001-lift-reverse_translation",
+            "apple-42001-lift-up",
+            "apple-42001-orient-closed",
+            "apple-42001-orient-half_motion",
+            "apple-42001-orient-hold",
+            "apple-42001-orient-open",
+            "apple-42001-orient-recorded",
+            "apple-42001-orient-reverse_rotation",
+            "apple-42001-orient-reverse_translation",
+            "apple-42001-orient-up",
+            "apple-42001-release_high-closed",
+            "apple-42001-release_high-half_motion",
+            "apple-42001-release_high-hold",
+            "apple-42001-release_high-open",
+            "apple-42001-release_high-recorded",
+            "apple-42001-release_high-reverse_rotation",
+            "apple-42001-release_high-reverse_translation",
+            "apple-42001-release_high-up",
+            "apple-42001-transfer-closed",
+            "apple-42001-transfer-half_motion",
+            "apple-42001-transfer-hold",
+            "apple-42001-transfer-open",
+            "apple-42001-transfer-recorded",
+            "apple-42001-transfer-reverse_rotation",
+            "apple-42001-transfer-reverse_translation",
+            "apple-42001-transfer-up",
+            "apple-42004-close-closed",
+            "apple-42004-close-half_motion",
+            "apple-42004-close-hold",
+            "apple-42004-close-open",
+            "apple-42004-close-recorded",
+            "apple-42004-close-reverse_rotation",
+            "apple-42004-close-reverse_translation",
+            "apple-42004-close-up",
+            "apple-42004-descend-closed",
+            "apple-42004-descend-half_motion",
+            "apple-42004-descend-hold",
+            "apple-42004-descend-open",
+            "apple-42004-descend-recorded",
+            "apple-42004-descend-reverse_rotation",
+            "apple-42004-descend-reverse_translation",
+            "apple-42004-descend-up",
+            "apple-42004-lift-closed",
+            "apple-42004-lift-half_motion",
+            "apple-42004-lift-hold",
+            "apple-42004-lift-open",
+            "apple-42004-lift-recorded",
+            "apple-42004-lift-reverse_rotation",
+            "apple-42004-lift-reverse_translation",
+            "apple-42004-lift-up",
+            "apple-42004-orient-closed",
+            "apple-42004-orient-half_motion",
+            "apple-42004-orient-hold",
+            "apple-42004-orient-open",
+            "apple-42004-orient-recorded",
+            "apple-42004-orient-reverse_rotation",
+            "apple-42004-orient-reverse_translation",
+            "apple-42004-orient-up",
+            "apple-42004-release_high-closed",
+            "apple-42004-release_high-half_motion",
+            "apple-42004-release_high-hold",
+            "apple-42004-release_high-open",
+            "apple-42004-release_high-recorded",
+            "apple-42004-release_high-reverse_rotation",
+            "apple-42004-release_high-reverse_translation",
+            "apple-42004-release_high-up",
+            "apple-42004-transfer-closed",
+            "apple-42004-transfer-half_motion",
+            "apple-42004-transfer-hold",
+            "apple-42004-transfer-open",
+            "apple-42004-transfer-recorded",
+            "apple-42004-transfer-reverse_rotation",
+            "apple-42004-transfer-reverse_translation",
+            "apple-42004-transfer-up",
+            "apple-42005-close-closed",
+            "apple-42005-close-half_motion",
+            "apple-42005-close-hold",
+            "apple-42005-close-open",
+            "apple-42005-close-recorded",
+            "apple-42005-close-reverse_rotation",
+            "apple-42005-close-reverse_translation",
+            "apple-42005-close-up",
+            "apple-42005-descend-closed",
+            "apple-42005-descend-half_motion",
+            "apple-42005-descend-hold",
+            "apple-42005-descend-open",
+            "apple-42005-descend-recorded",
+            "apple-42005-descend-reverse_rotation",
+            "apple-42005-descend-reverse_translation",
+            "apple-42005-descend-up",
+            "apple-42005-lift-closed",
+            "apple-42005-lift-half_motion",
+            "apple-42005-lift-hold",
+            "apple-42005-lift-open",
+            "apple-42005-lift-recorded",
+            "apple-42005-lift-reverse_rotation",
+            "apple-42005-lift-reverse_translation",
+            "apple-42005-lift-up",
+            "apple-42005-orient-closed",
+            "apple-42005-orient-half_motion",
+            "apple-42005-orient-hold",
+            "apple-42005-orient-open",
+            "apple-42005-orient-recorded",
+            "apple-42005-orient-reverse_rotation",
+            "apple-42005-orient-reverse_translation",
+            "apple-42005-orient-up",
+            "apple-42005-release_high-closed",
+            "apple-42005-release_high-half_motion",
+            "apple-42005-release_high-hold",
+            "apple-42005-release_high-open",
+            "apple-42005-release_high-recorded",
+            "apple-42005-release_high-reverse_rotation",
+            "apple-42005-release_high-reverse_translation",
+            "apple-42005-release_high-up",
+            "apple-42005-transfer-closed",
+            "apple-42005-transfer-half_motion",
+            "apple-42005-transfer-hold",
+            "apple-42005-transfer-open",
+            "apple-42005-transfer-recorded",
+            "apple-42005-transfer-reverse_rotation",
+            "apple-42005-transfer-reverse_translation",
+            "apple-42005-transfer-up",
+            "apple-42008-close-closed",
+            "apple-42008-close-half_motion",
+            "apple-42008-close-hold",
+            "apple-42008-close-open",
+            "apple-42008-close-recorded",
+            "apple-42008-close-reverse_rotation",
+            "apple-42008-close-reverse_translation",
+            "apple-42008-close-up",
+            "apple-42008-descend-closed",
+            "apple-42008-descend-half_motion",
+            "apple-42008-descend-hold",
+            "apple-42008-descend-open",
+            "apple-42008-descend-recorded",
+            "apple-42008-descend-reverse_rotation",
+            "apple-42008-descend-reverse_translation",
+            "apple-42008-descend-up",
+            "apple-42008-lift-closed",
+            "apple-42008-lift-half_motion",
+            "apple-42008-lift-hold",
+            "apple-42008-lift-open",
+            "apple-42008-lift-recorded",
+            "apple-42008-lift-reverse_rotation",
+            "apple-42008-lift-reverse_translation",
+            "apple-42008-lift-up",
+            "apple-42008-orient-closed",
+            "apple-42008-orient-half_motion",
+            "apple-42008-orient-hold",
+            "apple-42008-orient-open",
+            "apple-42008-orient-recorded",
+            "apple-42008-orient-reverse_rotation",
+            "apple-42008-orient-reverse_translation",
+            "apple-42008-orient-up",
+            "apple-42008-release_high-closed",
+            "apple-42008-release_high-half_motion",
+            "apple-42008-release_high-hold",
+            "apple-42008-release_high-open",
+            "apple-42008-release_high-recorded",
+            "apple-42008-release_high-reverse_rotation",
+            "apple-42008-release_high-reverse_translation",
+            "apple-42008-release_high-up",
+            "apple-42008-transfer-closed",
+            "apple-42008-transfer-half_motion",
+            "apple-42008-transfer-hold",
+            "apple-42008-transfer-open",
+            "apple-42008-transfer-recorded",
+            "apple-42008-transfer-reverse_rotation",
+            "apple-42008-transfer-reverse_translation",
+            "apple-42008-transfer-up",
+            "apple-42009-close-closed",
+            "apple-42009-close-half_motion",
+            "apple-42009-close-hold",
+            "apple-42009-close-open",
+            "apple-42009-close-recorded",
+            "apple-42009-close-reverse_rotation",
+            "apple-42009-close-reverse_translation",
+            "apple-42009-close-up",
+            "apple-42009-descend-closed",
+            "apple-42009-descend-half_motion",
+            "apple-42009-descend-hold",
+            "apple-42009-descend-open",
+            "apple-42009-descend-recorded",
+            "apple-42009-descend-reverse_rotation",
+            "apple-42009-descend-reverse_translation",
+            "apple-42009-descend-up",
+            "apple-42009-lift-closed",
+            "apple-42009-lift-half_motion",
+            "apple-42009-lift-hold",
+            "apple-42009-lift-open",
+            "apple-42009-lift-recorded",
+            "apple-42009-lift-reverse_rotation",
+            "apple-42009-lift-reverse_translation",
+            "apple-42009-lift-up",
+            "apple-42009-orient-closed",
+            "apple-42009-orient-half_motion",
+            "apple-42009-orient-hold",
+            "apple-42009-orient-open",
+            "apple-42009-orient-recorded",
+            "apple-42009-orient-reverse_rotation",
+            "apple-42009-orient-reverse_translation",
+            "apple-42009-orient-up",
+            "apple-42009-release_high-closed",
+            "apple-42009-release_high-half_motion",
+            "apple-42009-release_high-hold",
+            "apple-42009-release_high-open",
+            "apple-42009-release_high-recorded",
+            "apple-42009-release_high-reverse_rotation",
+            "apple-42009-release_high-reverse_translation",
+            "apple-42009-release_high-up",
+            "apple-42009-transfer-closed",
+            "apple-42009-transfer-half_motion",
+            "apple-42009-transfer-hold",
+            "apple-42009-transfer-open",
+            "apple-42009-transfer-recorded",
+            "apple-42009-transfer-reverse_rotation",
+            "apple-42009-transfer-reverse_translation",
+            "apple-42009-transfer-up",
+            "apple-42012-close-closed",
+            "apple-42012-close-half_motion",
+            "apple-42012-close-hold",
+            "apple-42012-close-open",
+            "apple-42012-close-recorded",
+            "apple-42012-close-reverse_rotation",
+            "apple-42012-close-reverse_translation",
+            "apple-42012-close-up",
+            "apple-42012-descend-closed",
+            "apple-42012-descend-half_motion",
+            "apple-42012-descend-hold",
+            "apple-42012-descend-open",
+            "apple-42012-descend-recorded",
+            "apple-42012-descend-reverse_rotation",
+            "apple-42012-descend-reverse_translation",
+            "apple-42012-descend-up",
+            "apple-42012-lift-closed",
+            "apple-42012-lift-half_motion",
+            "apple-42012-lift-hold",
+            "apple-42012-lift-open",
+            "apple-42012-lift-recorded",
+            "apple-42012-lift-reverse_rotation",
+            "apple-42012-lift-reverse_translation",
+            "apple-42012-lift-up",
+            "apple-42012-orient-closed",
+            "apple-42012-orient-half_motion",
+            "apple-42012-orient-hold",
+            "apple-42012-orient-open",
+            "apple-42012-orient-recorded",
+            "apple-42012-orient-reverse_rotation",
+            "apple-42012-orient-reverse_translation",
+            "apple-42012-orient-up",
+            "apple-42012-release_high-closed",
+            "apple-42012-release_high-half_motion",
+            "apple-42012-release_high-hold",
+            "apple-42012-release_high-open",
+            "apple-42012-release_high-recorded",
+            "apple-42012-release_high-reverse_rotation",
+            "apple-42012-release_high-reverse_translation",
+            "apple-42012-release_high-up",
+            "apple-42012-transfer-closed",
+            "apple-42012-transfer-half_motion",
+            "apple-42012-transfer-hold",
+            "apple-42012-transfer-open",
+            "apple-42012-transfer-recorded",
+            "apple-42012-transfer-reverse_rotation",
+            "apple-42012-transfer-reverse_translation",
+            "apple-42012-transfer-up",
+            "apple-42013-close-closed",
+            "apple-42013-close-half_motion",
+            "apple-42013-close-hold",
+            "apple-42013-close-open",
+            "apple-42013-close-recorded",
+            "apple-42013-close-reverse_rotation",
+            "apple-42013-close-reverse_translation",
+            "apple-42013-close-up",
+            "apple-42013-descend-closed",
+            "apple-42013-descend-half_motion",
+            "apple-42013-descend-hold",
+            "apple-42013-descend-open",
+            "apple-42013-descend-recorded",
+            "apple-42013-descend-reverse_rotation",
+            "apple-42013-descend-reverse_translation",
+            "apple-42013-descend-up",
+            "apple-42013-lift-closed",
+            "apple-42013-lift-half_motion",
+            "apple-42013-lift-hold",
+            "apple-42013-lift-open",
+            "apple-42013-lift-recorded",
+            "apple-42013-lift-reverse_rotation",
+            "apple-42013-lift-reverse_translation",
+            "apple-42013-lift-up",
+            "apple-42013-orient-closed",
+            "apple-42013-orient-half_motion",
+            "apple-42013-orient-hold",
+            "apple-42013-orient-open",
+            "apple-42013-orient-recorded",
+            "apple-42013-orient-reverse_rotation",
+            "apple-42013-orient-reverse_translation",
+            "apple-42013-orient-up",
+            "apple-42013-release_high-closed",
+            "apple-42013-release_high-half_motion",
+            "apple-42013-release_high-hold",
+            "apple-42013-release_high-open",
+            "apple-42013-release_high-recorded",
+            "apple-42013-release_high-reverse_rotation",
+            "apple-42013-release_high-reverse_translation",
+            "apple-42013-release_high-up",
+            "apple-42013-transfer-closed",
+            "apple-42013-transfer-half_motion",
+            "apple-42013-transfer-hold",
+            "apple-42013-transfer-open",
+            "apple-42013-transfer-recorded",
+            "apple-42013-transfer-reverse_rotation",
+            "apple-42013-transfer-reverse_translation",
+            "apple-42013-transfer-up"
+          ]
+        ],
+        "val": [
+          [
+            "apple-42007",
+            "apple-42019",
+            "apple-42031"
+          ],
+          [
+            "apple-42007-close-closed",
+            "apple-42007-close-half_motion",
+            "apple-42007-close-hold",
+            "apple-42007-close-open",
+            "apple-42007-close-recorded",
+            "apple-42007-close-reverse_rotation",
+            "apple-42007-close-reverse_translation",
+            "apple-42007-close-up",
+            "apple-42007-descend-closed",
+            "apple-42007-descend-half_motion",
+            "apple-42007-descend-hold",
+            "apple-42007-descend-open",
+            "apple-42007-descend-recorded",
+            "apple-42007-descend-reverse_rotation",
+            "apple-42007-descend-reverse_translation",
+            "apple-42007-descend-up",
+            "apple-42007-lift-closed",
+            "apple-42007-lift-half_motion",
+            "apple-42007-lift-hold",
+            "apple-42007-lift-open",
+            "apple-42007-lift-recorded",
+            "apple-42007-lift-reverse_rotation",
+            "apple-42007-lift-reverse_translation",
+            "apple-42007-lift-up",
+            "apple-42007-orient-closed",
+            "apple-42007-orient-half_motion",
+            "apple-42007-orient-hold",
+            "apple-42007-orient-open",
+            "apple-42007-orient-recorded",
+            "apple-42007-orient-reverse_rotation",
+            "apple-42007-orient-reverse_translation",
+            "apple-42007-orient-up",
+            "apple-42007-release_high-closed",
+            "apple-42007-release_high-half_motion",
+            "apple-42007-release_high-hold",
+            "apple-42007-release_high-open",
+            "apple-42007-release_high-recorded",
+            "apple-42007-release_high-reverse_rotation",
+            "apple-42007-release_high-reverse_translation",
+            "apple-42007-release_high-up",
+            "apple-42007-transfer-closed",
+            "apple-42007-transfer-half_motion",
+            "apple-42007-transfer-hold",
+            "apple-42007-transfer-open",
+            "apple-42007-transfer-recorded",
+            "apple-42007-transfer-reverse_rotation",
+            "apple-42007-transfer-reverse_translation",
+            "apple-42007-transfer-up",
+            "apple-42019-close-closed",
+            "apple-42019-close-half_motion",
+            "apple-42019-close-hold",
+            "apple-42019-close-open",
+            "apple-42019-close-recorded",
+            "apple-42019-close-reverse_rotation",
+            "apple-42019-close-reverse_translation",
+            "apple-42019-close-up",
+            "apple-42019-descend-closed",
+            "apple-42019-descend-half_motion",
+            "apple-42019-descend-hold",
+            "apple-42019-descend-open",
+            "apple-42019-descend-recorded",
+            "apple-42019-descend-reverse_rotation",
+            "apple-42019-descend-reverse_translation",
+            "apple-42019-descend-up",
+            "apple-42019-lift-closed",
+            "apple-42019-lift-half_motion",
+            "apple-42019-lift-hold",
+            "apple-42019-lift-open",
+            "apple-42019-lift-recorded",
+            "apple-42019-lift-reverse_rotation",
+            "apple-42019-lift-reverse_translation",
+            "apple-42019-lift-up",
+            "apple-42019-orient-closed",
+            "apple-42019-orient-half_motion",
+            "apple-42019-orient-hold",
+            "apple-42019-orient-open",
+            "apple-42019-orient-recorded",
+            "apple-42019-orient-reverse_rotation",
+            "apple-42019-orient-reverse_translation",
+            "apple-42019-orient-up",
+            "apple-42019-release_high-closed",
+            "apple-42019-release_high-half_motion",
+            "apple-42019-release_high-hold",
+            "apple-42019-release_high-open",
+            "apple-42019-release_high-recorded",
+            "apple-42019-release_high-reverse_rotation",
+            "apple-42019-release_high-reverse_translation",
+            "apple-42019-release_high-up",
+            "apple-42019-transfer-closed",
+            "apple-42019-transfer-half_motion",
+            "apple-42019-transfer-hold",
+            "apple-42019-transfer-open",
+            "apple-42019-transfer-recorded",
+            "apple-42019-transfer-reverse_rotation",
+            "apple-42019-transfer-reverse_translation",
+            "apple-42019-transfer-up",
+            "apple-42031-close-closed",
+            "apple-42031-close-half_motion",
+            "apple-42031-close-hold",
+            "apple-42031-close-open",
+            "apple-42031-close-recorded",
+            "apple-42031-close-reverse_rotation",
+            "apple-42031-close-reverse_translation",
+            "apple-42031-close-up",
+            "apple-42031-descend-closed",
+            "apple-42031-descend-half_motion",
+            "apple-42031-descend-hold",
+            "apple-42031-descend-open",
+            "apple-42031-descend-recorded",
+            "apple-42031-descend-reverse_rotation",
+            "apple-42031-descend-reverse_translation",
+            "apple-42031-descend-up",
+            "apple-42031-lift-closed",
+            "apple-42031-lift-half_motion",
+            "apple-42031-lift-hold",
+            "apple-42031-lift-open",
+            "apple-42031-lift-recorded",
+            "apple-42031-lift-reverse_rotation",
+            "apple-42031-lift-reverse_translation",
+            "apple-42031-lift-up",
+            "apple-42031-orient-closed",
+            "apple-42031-orient-half_motion",
+            "apple-42031-orient-hold",
+            "apple-42031-orient-open",
+            "apple-42031-orient-recorded",
+            "apple-42031-orient-reverse_rotation",
+            "apple-42031-orient-reverse_translation",
+            "apple-42031-orient-up",
+            "apple-42031-release_high-closed",
+            "apple-42031-release_high-half_motion",
+            "apple-42031-release_high-hold",
+            "apple-42031-release_high-open",
+            "apple-42031-release_high-recorded",
+            "apple-42031-release_high-reverse_rotation",
+            "apple-42031-release_high-reverse_translation",
+            "apple-42031-release_high-up",
+            "apple-42031-transfer-closed",
+            "apple-42031-transfer-half_motion",
+            "apple-42031-transfer-hold",
+            "apple-42031-transfer-open",
+            "apple-42031-transfer-recorded",
+            "apple-42031-transfer-reverse_rotation",
+            "apple-42031-transfer-reverse_translation",
+            "apple-42031-transfer-up"
+          ]
+        ]
+      },
+      "groups_sha256": "fa9401314ce5dcf393e0ddf26cc0403609694f80357522c91e11cdfd5c48ea3a",
+      "path": "/Users/sebastian/develop/emai/experiments/JEPA/open-embodied-jepa/checkpoints/apple-branches-h16-sensor-v1/sampling_groups.json",
+      "quotas_per_batch": {
+        "train": [
+          8,
+          8
+        ],
+        "val": [
+          8,
+          8
+        ]
+      },
+      "sha256": "5a049d5372874b663dcfa93e238e777fc3ea7c44caa169006bcf84daf43f3f36"
+    },
+    "report_sha256": "350cc5da7cd08c189b4a0adb86d16a52d70219b8bfe7d1daf5ed74104d54fc5a"
+  },
+  "historical_comparison": {
+    "prior_report_sha256": "24c1ca96fa801bdaca6d18dbbe34ab0d52aa0da69658e4646659365883d09135",
+    "original_baseline_summaries_exactly_reproduced": true,
+    "ordered_decoded_cohort_exactly_matches": true,
+    "prior_branch_val_h16": {
+      "accuracy": 0.73866899561344,
+      "accuracy_ci95": [
+        0.6906084656084656,
+        0.7853387995749107
+      ],
+      "error_reduction": 0.06259268635997983,
+      "error_reduction_ci95": [
+        0.04803230882022846,
+        0.08809577280892357
+      ],
+      "gate_passed": false,
+      "horizon": 16,
+      "informative_pairs": 493,
+      "informative_roots": 18,
+      "model": "branches",
+      "own_visual_mse": 0.0038285065150485747,
+      "pairs": 504,
+      "parent_accuracy_ci95": [
+        0.7228835978835978,
+        0.7510598968932302
+      ],
+      "parent_error_reduction_ci95": [
+        0.05985516645000655,
+        0.06649345036374488
+      ],
+      "parent_sessions": 3,
+      "phases": {
+        "close": {
+          "accuracy": 0.8291446208112875,
+          "accuracy_ci95": [
+            0.7962962962962963,
+            0.8518518518518517
+          ],
+          "error_reduction": 0.1788916225908309,
+          "error_reduction_ci95": [
+            0.16818051169429182,
+            0.19378726664623114
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.002238087508256869,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.7962962962962963,
+            0.8518518518518517
+          ],
+          "parent_error_reduction_ci95": [
+            0.16818051169429182,
+            0.19378726664623114
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0027256907490320254
+        },
+        "descend": {
+          "accuracy": 0.7081128747795414,
+          "accuracy_ci95": [
+            0.6428571428571429,
+            0.7592592592592592
+          ],
+          "error_reduction": 0.04421022578167377,
+          "error_reduction_ci95": [
+            0.036502976641513474,
+            0.04852036920546343
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0029814601636261144,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.6428571428571429,
+            0.7592592592592592
+          ],
+          "parent_error_reduction_ci95": [
+            0.036502976641513474,
+            0.04852036920546343
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.003119368133086005
+        },
+        "lift": {
+          "accuracy": 0.7222222222222223,
+          "accuracy_ci95": [
+            0.6481481481481481,
+            0.7962962962962963
+          ],
+          "error_reduction": 0.056716658940755726,
+          "error_reduction_ci95": [
+            0.05008278551081746,
+            0.06359051446199326
+          ],
+          "gate_passed": false,
+          "informative_pairs": 81,
+          "informative_roots": 3,
+          "own_visual_mse": 0.004934196310106343,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.6481481481481481,
+            0.7962962962962963
+          ],
+          "parent_error_reduction_ci95": [
+            0.05008278551081746,
+            0.06359051446199326
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.005230874007130847
+        },
+        "orient": {
+          "accuracy": 0.8727106227106227,
+          "accuracy_ci95": [
+            0.8392857142857143,
+            0.9038461538461539
+          ],
+          "error_reduction": 0.13175517403947523,
+          "error_reduction_ci95": [
+            0.12445970209561585,
+            0.14039145680482668
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0006470875176045154,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.8392857142857143,
+            0.9038461538461539
+          ],
+          "parent_error_reduction_ci95": [
+            0.12445970209561585,
+            0.14039145680482668
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.000745282319291282
+        },
+        "release_high": {
+          "accuracy": 0.6428571428571428,
+          "accuracy_ci95": [
+            0.5892857142857143,
+            0.7321428571428571
+          ],
+          "error_reduction": 0.013939396568457663,
+          "error_reduction_ci95": [
+            0.011490186858774454,
+            0.017930804969954695
+          ],
+          "gate_passed": false,
+          "informative_pairs": 84,
+          "informative_roots": 3,
+          "own_visual_mse": 0.0010874772806779393,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.5892857142857143,
+            0.7321428571428571
+          ],
+          "parent_error_reduction_ci95": [
+            0.011490186858774454,
+            0.017930804969954695
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.0011028503490489953
+        },
+        "transfer": {
+          "accuracy": 0.6569664902998236,
+          "accuracy_ci95": [
+            0.5740740740740741,
+            0.7857142857142857
+          ],
+          "error_reduction": 0.04300813102504286,
+          "error_reduction_ci95": [
+            0.037488709101812234,
+            0.04573914830050674
+          ],
+          "gate_passed": false,
+          "informative_pairs": 82,
+          "informative_roots": 3,
+          "own_visual_mse": 0.011082730310019667,
+          "pairs": 84,
+          "parent_accuracy_ci95": [
+            0.5740740740740741,
+            0.7857142857142857
+          ],
+          "parent_error_reduction_ci95": [
+            0.037488709101812234,
+            0.04573914830050674
+          ],
+          "parent_sessions": 3,
+          "roots": 3,
+          "ties": 0,
+          "wrong_visual_mse": 0.01158079882318173
+        }
+      },
+      "primary": true,
+      "roots": 18,
+      "split": "val",
+      "ties": 0,
+      "wrong_visual_mse": 0.0040841440634618136
+    }
+  },
+  "artifact_directory": "outputs/apple-branches-h16-diagnostics-v1",
+  "artifacts_sha256": {
+    "report.json": "fa203f01bce53b2ac575fabe21c710471daa0354a696ff8f47be200357783d13",
+    "child.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "supervisor.json": "6bd1443884e59a2323662be462d53ed34881af234d773b5fd8797332660199df",
+    "registration.json": "a024a2c445ef75523639076e83a9d303c35f8622433b5f8a52e04b441f59531d"
+  },
+  "interpretation": "The preregistered VAL H16 causal-prediction gate passes. Horizon and original/intervention sampling weights changed jointly. This is development prediction evidence and does not establish closed-loop manipulation success.",
+  "limitations": [
+    "Only three validation parent sessions; roots share histories",
+    "Whole-frame RGB divergence is not object segmentation/contact visibility",
+    "Two training factors changed jointly; cannot attribute improvement to horizon alone",
+    "Checkpoint was selected using weighted validation rollout MSE, not matched diagnostic scores",
+    "No physical controller rollout or hardware operation in this diagnostic"
+  ]
+}

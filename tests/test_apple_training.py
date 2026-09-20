@@ -264,3 +264,151 @@ def test_branch_profile_requires_completed_matched_contrast_evidence(fixture, mo
         )
     else:
         assert report["started_runs"] == 0
+
+
+def prepare_h16_fixture(fixture, monkeypatch):
+    experiment, protocol, seconds, fixed = runner.profile_settings("branches_h16_v1")
+    monkeypatch.setattr(runner, "EXPERIMENT", experiment)
+    monkeypatch.setattr(runner, "PROTOCOL", protocol)
+    monkeypatch.setattr(runner, "MAX_SECONDS", seconds)
+    monkeypatch.setattr(runner, "FIXED", fixed)
+    path = fixture["root"] / protocol
+    path.write_text("synthetic H16 prospective protocol")
+    fixture = fixture | {"expected_protocol_sha256": runner.digest(path)}
+    manifest_path = fixture["dataset"] / "meta/jepa_manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["episodes"] = []
+    for split in ("train", "val"):
+        parent = split
+        branch = split + "-branch"
+        manifest["splits"][split].append(branch)
+        manifest["episodes"].extend(
+            [
+                {"episode_id": parent, "session_id": parent, "length": 33, "metadata": {}},
+                {
+                    "episode_id": branch,
+                    "session_id": parent,
+                    "length": 17,
+                    "metadata": {"parent_episode_id": parent},
+                },
+            ]
+        )
+    manifest["episodes"].append(
+        {"episode_id": "test", "session_id": "test", "length": 17, "metadata": {}}
+    )
+    manifest_path.write_text(json.dumps(manifest))
+    fixture["expected_dataset_sha256"] = runner.digest(manifest_path)
+    monkeypatch.setattr(runner, "H16_DATASET_SHA", fixture["expected_dataset_sha256"])
+    (fixture["dataset"] / "branch_report.json").write_text(
+        json.dumps(
+            {
+                "status": "completed",
+                "training_ready": True,
+                "action_contrast_gate_passed": True,
+                "dataset_sha256": fixture["expected_dataset_sha256"],
+            }
+        )
+    )
+    return fixture
+
+
+@pytest.mark.parametrize("mutate_groups", [False, True])
+def test_h16_profile_freezes_groups_before_child_and_checks_frozen_bytes(
+    fixture, monkeypatch, mutate_groups
+):
+    fixture = prepare_h16_fixture(fixture, monkeypatch)
+    complete = complete_supervisor(fixture)
+
+    def supervised(command, log, clock, root, *, on_start=None):
+        result = complete(command, log, clock, root, on_start=on_start)
+        if "-m" in command:
+            registration = json.loads((fixture["output"] / "registration.json").read_text())
+            sampling = registration["sampling"]
+            path = Path(command[command.index("--sampling-groups") + 1])
+            assert sampling["sha256"] == runner.digest(path)
+            assert sampling["quotas_per_batch"] == {"train": [8, 8], "val": [8, 8]}
+            assert sampling["groups"] == {
+                "train": [["train"], ["train-branch"]],
+                "val": [["val"], ["val-branch"]],
+            }
+            assert registration["fixed"]["horizon"] == 16
+            childpath = fixture["output"] / "sensor.run.json"
+            child = json.loads(childpath.read_text())
+            child["provenance"]["sampling_groups_hash"] = sampling["groups_sha256"]
+            child["sampling"] = {"groups": sampling["groups"]}
+            child["selection"] = {"horizon": 16, "method": "raw_mse"}
+            childpath.write_text(json.dumps(child))
+            if mutate_groups:
+                path.write_text(path.read_text() + " ")
+        return result
+
+    monkeypatch.setattr(runner, "supervise", supervised)
+    report = runner.run(**fixture)
+    assert report["status"] == (
+        "failed_integrity_or_orchestration" if mutate_groups else "completed"
+    )
+    if mutate_groups:
+        assert "registered configuration changed" in report["error"]
+
+
+def test_h16_group_derivation_rejects_cross_split_parent_and_empty_group():
+    manifest = {
+        "splits": {"train": ["a", "b"], "val": ["c", "d"], "test": ["z"]},
+        "episodes": [
+            {
+                "episode_id": name,
+                "session_id": parent or name,
+                "length": 17,
+                "metadata": {"parent_episode_id": parent} if parent else {},
+            }
+            for name, parent in [("a", None), ("b", "a"), ("c", None), ("d", "c"), ("z", None)]
+        ],
+    }
+    assert runner.derive_sampling_groups(manifest)["train"] == [["a"], ["b"]]
+    manifest["episodes"][1]["metadata"]["parent_episode_id"] = "z"
+    with pytest.raises(ValueError, match="same allowed split"):
+        runner.derive_sampling_groups(manifest)
+    manifest["episodes"][1]["metadata"] = {}
+    with pytest.raises(ValueError, match="original and intervention"):
+        runner.derive_sampling_groups(manifest)
+
+
+def test_new_profile_cli_preserves_older_profiles(monkeypatch, tmp_path):
+    original = runner.BASE_FIXED.copy()
+    assert runner.profile_settings("branches_v1")[3] == original
+    assert runner.profile_settings("sensor_v1")[3] == original
+    for name in ("EXPERIMENT", "PROTOCOL", "MAX_SECONDS", "FIXED"):
+        monkeypatch.setattr(runner, name, getattr(runner, name))
+
+    def fake_run(*args, **kwargs):
+        assert runner.FIXED == original | {"horizon": 16}
+        assert runner.MAX_SECONDS == 600 and runner.EXPERIMENT == "apple_branch_training_h16_v1"
+        return {
+            "status": "completed",
+            "timing": {},
+            "planned_runs": 1,
+            "started_runs": 1,
+            "completed_runs": 1,
+        }
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            str(SCRIPT),
+            "--profile",
+            "branches_h16_v1",
+            "--dataset",
+            str(tmp_path / "data"),
+            "--output",
+            str(tmp_path / "out"),
+            "--source-sha256",
+            "a" * 64,
+            "--dataset-sha256",
+            "b" * 64,
+            "--protocol-sha256",
+            "c" * 64,
+        ],
+    )
+    assert runner.main() == 0

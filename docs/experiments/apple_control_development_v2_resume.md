@@ -1,0 +1,9 @@
+# Control v2 continuation after user pause
+
+The user paused work during the first control-v2 attempt, then explicitly requested continuation. The original output `outputs/apple-control-development-v2` is preserved as an interrupted attempt. No evaluation process remains active. Its partial trace is not a completed episode or a successful comparison; an independent interruption audit records the recoverable execution state and any uncertainty.
+
+Resume with a new, separately registered six-attempt development comparison at `outputs/apple-control-development-v2-resumed1`. Use the exact checkpoint, dataset, seeds, attempt order, image calibration procedure, scorer, limits, H16/stride28/K16/two-round controller, and 600-second total budget from `apple_control_development_v2.md`. The H16 causal gate already passed and remains unchanged. This continuation is prompted by the user's pause/resume, not by performance-based tuning. No final-cohort seeds are used.
+
+Start each attempt from its declared reset because the interrupted process cannot restore the complete planner/RNG state from the partial log. Retain both the original interruption and this new comparison in the study accounting; do not overwrite or count the partial run as a completed physical failure/success. Within this new comparison there are no retries, budget extensions, replacements, or outcome-selected cancellations. A failed/incomplete comparison remains evidence and requires a separately specified next experiment.
+
+Before launch, bind the passing diagnostic, checkpoint, dataset, original protocol, this addendum, code revision and exact command in a new launch JSON. Snapshot runtime and retain all planned attempts, including unstarted/interrupted records, using the existing runner. The only planned difference from the original v2 command is the new output directory. The renewed resource budget is 600 true-wall seconds including setup and finalization.

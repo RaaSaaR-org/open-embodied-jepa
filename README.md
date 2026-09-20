@@ -13,8 +13,12 @@ finished 20/20 matched attempts after a roughly 2.1× projection speedup, with
 Task-specific apple work now adds a learned RGB/proprioceptive `sensor_wm`,
 TRAIN-image waypoint planning, 31/32 successful scripted collection episodes, and
 528 audited matched action branches. The first learned-control diagnostic was
-**0/6 placements**. Additional branch data improved causal prediction, but the
-[primary H16 prediction gate remains unmet](docs/experiments/apple_branch_diagnostics_results_v1.md).
+**0/6 placements**. Balanced H16 training now passes the
+[primary causal-prediction gate](docs/experiments/apple_branch_h16_diagnostics_results_v1.md)
+with 89.40% action assignment and 81.41% endpoint error reduction. Physical control
+still fails: the resumed development comparison completed one learned run with
+reach but no grasp, timed out one persistence control, and left four attempts
+unstarted under its fixed budget. Prediction accuracy does not establish manipulation success.
 The fresh 20-reset final cohort remains unexecuted. This is a separate task-specific
 mode; the historical unseen-pair benchmark above is unchanged. The optional
 [JEPA-WMs adapter](docs/experiments/jepa_wms_spike.md) has CPU software compatibility
