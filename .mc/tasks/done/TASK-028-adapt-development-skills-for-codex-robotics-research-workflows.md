@@ -4,7 +4,7 @@ aliases:
 - TASK-028
 title: Adapt development skills for Codex robotics research workflows
 slug: adapt-development-skills-for-codex-robotics-research-workflows
-status: review
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -20,6 +20,7 @@ updated: 2026-09-20
 ---
 
 
+
 # Adapt development skills for Codex robotics research workflows
 
 ## Description
@@ -28,11 +29,11 @@ Adapt the five workflow concepts from robot-management-system/.claude/skills int
 
 ## Acceptance Criteria
 
-- [ ] Five namespaced skills exist in .agents/skills with valid SKILL.md frontmatter and Codex UI metadata.
-- [ ] Workflows cover research design, bounded experiments, controls/provenance, CPU/MPS and simulator evidence, scoped review, and verified authorized merges.
-- [ ] Original Claude-specific dependencies and forced delegation are removed; supported MC fields and current project contracts are used.
-- [ ] AGENTS.md and usage documentation explain invocation/discovery; current parent workspace symlinks resolve without changing global skills.
-- [ ] Skill validation, YAML/reference checks, MC validation, and diff checks pass; author review and limitations are recorded.
+- [x] Five namespaced skills exist in .agents/skills with valid SKILL.md frontmatter and Codex UI metadata.
+- [x] Workflows cover research design, bounded experiments, controls/provenance, CPU/MPS and simulator evidence, scoped review, and verified authorized merges.
+- [x] Original Claude-specific dependencies and forced delegation are removed; supported MC fields and current project contracts are used.
+- [x] AGENTS.md and usage documentation explain invocation/discovery; current parent workspace symlinks resolve without changing global skills.
+- [x] Skill validation, YAML/reference checks, MC validation, and diff checks pass; author review and limitations are recorded.
 
 ## Notes
 
@@ -45,3 +46,7 @@ Source workflow concepts: grill, plan, implement, review, ship. Adapted skills: 
 - `mc validate`, `mc index`, and `git diff --check` passed.
 - Author walkthrough: unknown experimental outcomes become bounded investigations; a negative result can meet research acceptance without proving engineering success; review-only prompts do not authorize mutations; missing CI is distinguished from passing checks; a changed PR head requires revalidation; hardware execution is not implied by shipping code.
 - Reviewed software/workflow consistency, every acceptance criterion, and the applicability of research evidence. No blocking finding remains. This is author review and structural validation, not independent agent testing, runtime training validation, or a live test of skill selection in a fresh Codex session.
+
+PR: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/1
+
+All deliverable-based acceptance criteria are met on the reviewed branch. Merge is pending at this commit; completion here records the skill/documentation deliverable and does not assert a merged state. The PR provides the authoritative merge record.
