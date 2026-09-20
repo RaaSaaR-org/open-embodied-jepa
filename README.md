@@ -18,7 +18,10 @@ TRAIN-image waypoint planning, 31/32 successful scripted collection episodes, an
 with 89.40% action assignment and 81.41% endpoint error reduction. Physical control
 still fails: the resumed development comparison completed one learned run with
 reach but no grasp, timed out one persistence control, and left four attempts
-unstarted under its fixed budget. Prediction accuracy does not establish manipulation success.
+unstarted under its fixed budget. A [saved-state forecast audit](docs/experiments/apple_control_forecast_results_v1.md)
+reproduced the stalled trace and found useful progress from complete chosen plans
+at two states, motivating a separate short-commitment controller experiment.
+Prediction accuracy and short-branch progress do not establish manipulation success.
 The fresh 20-reset final cohort remains unexecuted. This is a separate task-specific
 mode; the historical unseen-pair benchmark above is unchanged. The optional
 [JEPA-WMs adapter](docs/experiments/jepa_wms_spike.md) has CPU software compatibility

@@ -88,6 +88,7 @@ class WaypointConfig:
     candidates: int = 16
     iterations: int = 2
     max_steps: int = 1000
+    commitment_steps: int = 1
     seed: int = 0
     proposal_std: float = 0.15
     minimum_std: float = 0.05
@@ -98,9 +99,11 @@ class WaypointConfig:
     device: str = "cpu"
 
     def __post_init__(self):
-        for name in ("horizon", "candidates", "iterations", "max_steps"):
+        for name in ("horizon", "candidates", "iterations", "max_steps", "commitment_steps"):
             if type(getattr(self, name)) is not int or getattr(self, name) < 1:
                 raise ContractError(f"{name} must be a positive integer")
+        if self.commitment_steps > self.horizon:
+            raise ContractError("commitment_steps cannot exceed horizon")
         if self.candidates < 3 or self.max_steps > 1000:
             raise ContractError("require at least three candidates and at most1000steps")
         if type(self.seed) is not int or self.seed < 0:
@@ -177,6 +180,7 @@ class WaypointController:
         self.pending = None
         self.termination_reason = None
         self._goal_latents = {}
+        self._commitment = None
 
     def _distance(self, images, waypoint):
         values = np.asarray(self.progress_distance(images, waypoint.images))
@@ -211,7 +215,15 @@ class WaypointController:
         observed_distance = self._distance(observation.images, waypoint)
         self.dwell = self.dwell + 1 if observed_distance <= waypoint.threshold else 0
         advanced = self.dwell >= waypoint.dwell_observations
+        advance_abort = None
+        if advanced and self._commitment is not None:
+            advance_abort = {
+                "abort_reason": "waypoint_advanced",
+                "plan_step": self._commitment["trace"]["plan_step"],
+                "commitment_offset": self._commitment["offset"],
+            }
         if advanced:
+            self._commitment = None
             self.goal_index += 1
             self.dwell = 0
             if self.goal_index == len(self.waypoints):
@@ -223,12 +235,73 @@ class WaypointController:
                         "observed_distance": observed_distance,
                         "waypoint_advanced": True,
                         "observation_timestamp": timestamp,
+                        "cache_validation": advance_abort,
+                        "commitment_remaining": 0,
                     },
                     self.termination_reason,
                 )
             waypoint = self.waypoints[self.goal_index]
             observed_distance = self._distance(observation.images, waypoint)
         cfg = self.config
+        cache_validation = advance_abort
+        if self._commitment is not None:
+            cache = self._commitment
+            offset = cache["offset"]
+            original = cache["projected"][offset]
+            projection_start = time.perf_counter()
+            refreshed = projector(original[None, None, None].copy())
+            if not isinstance(refreshed, CandidateProjection) or refreshed.actions.shape != (
+                1,
+                1,
+                1,
+                14,
+            ):
+                raise ContractError("projector changed cached command contract")
+            valid = bool(refreshed.feasible[0, 0])
+            unchanged = np.array_equal(refreshed.actions[0, 0, 0], original)
+            cache_validation = {
+                "plan_step": cache["trace"]["plan_step"],
+                "commitment_offset": offset,
+                "original_scored_action": original.tolist(),
+                "refreshed_projected_action": refreshed.actions[0, 0, 0].tolist(),
+                "feasible": valid,
+                "unchanged": unchanged,
+                "projection_seconds": time.perf_counter() - projection_start,
+                "abort_reason": None
+                if valid and unchanged
+                else ("infeasible_cached_command" if not valid else "changed_cached_command"),
+            }
+            if valid and unchanged:
+                action = original.copy()
+                action.setflags(write=False)
+                trace = cache["trace"].copy()
+                # The assigned cost belongs to the original search, including shuffled
+                # ablation assignments. It is never a newly scored cached forecast.
+                trace.update(
+                    step=self.steps,
+                    decision_kind="commitment",
+                    commitment_offset=offset,
+                    commitment_remaining=cfg.commitment_steps - offset,
+                    selected_round=None,
+                    rounds=[],
+                    candidate_evaluations=0,
+                    goal_dwell_observed=self.dwell,
+                    observed_distance=observed_distance,
+                    waypoint_advanced=advanced,
+                    observation_timestamp=timestamp,
+                    sampled_action=cache["requested"][offset].tolist(),
+                    projected_action=action.tolist(),
+                    cache_validation=cache_validation,
+                    planning_seconds=time.perf_counter() - start,
+                )
+                trace.pop("selected_requested_sequence", None)
+                trace.pop("selected_projected_sequence", None)
+                self.last_timestamp = timestamp
+                # Warm always retains the full prediction horizon. The short
+                # commitment counter never determines pending sequence shape.
+                self.pending = (action, self.warm.copy(), trace)
+                return WaypointDecision(action, trace)
+            self._commitment = None
         lower, upper = (
             np.array(cfg.lower_bounds, np.float32),
             np.array(cfg.upper_bounds, np.float32),
@@ -319,6 +392,16 @@ class WaypointController:
         action.setflags(write=False)
         trace = {
             "step": self.steps,
+            "decision_kind": "search",
+            "plan_step": self.steps,
+            "plan_observation_timestamp": timestamp,
+            "plan_goal_index": self.goal_index,
+            "plan_goal_image_sha256": waypoint.image_hash,
+            "plan_horizon": cfg.horizon,
+            "commitment_offset": 0,
+            "commitment_remaining": cfg.commitment_steps,
+            "selected_cost_semantics": "original_search_assigned_endpoint_cost",
+            "cache_validation": cache_validation,
             "goal_index": self.goal_index,
             "goal_source_id": waypoint.source_id,
             "goal_image_sha256": waypoint.image_hash,
@@ -338,6 +421,17 @@ class WaypointController:
             "candidate_evaluations": cfg.candidates * cfg.iterations,
             "planning_seconds": time.perf_counter() - start,
         }
+        if cfg.commitment_steps > 1:
+            trace["selected_requested_sequence"] = best["requested"].tolist()
+            trace["selected_projected_sequence"] = best["projected"].tolist()
+            trace["plan_selected_round"] = best["round"]
+            trace["plan_selected_index"] = best["index"]
+            self._commitment = {
+                "offset": 0,
+                "requested": best["requested"].copy(),
+                "projected": best["projected"].copy(),
+                "trace": trace.copy(),
+            }
         self.last_timestamp = timestamp
         self.pending = (action, best["projected"], trace)
         return WaypointDecision(action, trace)
@@ -367,8 +461,23 @@ class WaypointController:
         self.pending = None
         if result.applied_action is None:
             self.termination_reason = "execution_rejected"
+            trace["commitment_abort_reason"] = "execution_rejected"
+            self._commitment = None
         else:
             self.last_grasps = result.applied_action[12:].copy()
             self.warm = np.concatenate((sequence[1:], sequence[-1:])).copy()
             # Warm starts remain proposals, including when transport clips further.
+            if self._commitment is not None:
+                self._commitment["offset"] += 1
+                if not np.array_equal(result.applied_action, action):
+                    trace["commitment_abort_reason"] = "applied_action_changed"
+                    self._commitment = None
+                elif self._commitment["offset"] >= self.config.commitment_steps:
+                    trace["commitment_clear_reason"] = "commitment_completed"
+                    self._commitment = None
+        trace["commitment_remaining_after_ack"] = (
+            0
+            if self._commitment is None
+            else self.config.commitment_steps - self._commitment["offset"]
+        )
         return trace

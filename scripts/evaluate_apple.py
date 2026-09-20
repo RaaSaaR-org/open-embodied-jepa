@@ -32,6 +32,13 @@ from embodied_jepa.waypoint_planning import (  # noqa: E402
 MODES = ("learned", "persistence", "dynamics_shuffle", "hold", "random")
 
 
+def validate_attempt_budget(seconds):
+    if seconds is not None and (
+        isinstance(seconds, bool) or not np.isfinite(seconds) or not 0 < seconds <= 1800
+    ):
+        raise ValueError("attempt wall budget must lie in (0,1800]seconds")
+
+
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -57,6 +64,8 @@ def make_plan(
     iterations=2,
     proposals=True,
     control_timeout=5.0,
+    commitment_steps=1,
+    attempt_max_seconds=None,
 ):
     if stage not in ("development", "final"):
         raise ValueError("stage must be development or final")
@@ -75,6 +84,7 @@ def make_plan(
         raise ValueError("unknown or repeated control mode")
     if not np.isfinite(max_seconds) or not 0 < max_seconds <= 1800:
         raise ValueError("hard wall budget must lie in (0,1800]seconds")
+    validate_attempt_budget(attempt_max_seconds)
     if not np.isfinite(control_timeout) or control_timeout <= 0:
         raise ValueError("control timeout must be positive and finite")
     if type(stride) is not int or stride < 1 or type(dwell) is not int or dwell < 1:
@@ -86,6 +96,7 @@ def make_plan(
         candidates=candidates,
         iterations=iterations,
         max_steps=max_steps,
+        commitment_steps=commitment_steps,
         lower_bounds=lower,
         upper_bounds=upper,
     )
@@ -107,6 +118,7 @@ def make_plan(
         "seeds": seeds,
         "modes": modes,
         "max_seconds": max_seconds,
+        "attempt_max_seconds": attempt_max_seconds,
         "finalization_reserve_seconds": min(5.0, max_seconds / 10),
         "control_timeout_seconds": float(control_timeout),
         "controller": asdict(config),
@@ -385,7 +397,8 @@ def load_waypoints(output, plan):
         ]
 
 
-def attempt_worker(output, attempt_id):
+def attempt_worker(output, attempt_id, *, attempt_seconds=None):
+    validate_attempt_budget(attempt_seconds)
     from embodied_jepa.embodiment import G1Embodiment
     from embodied_jepa.simulation import MuJoCoSimulation
     from embodied_jepa.task import AppleToPlateTask
@@ -400,7 +413,13 @@ def attempt_worker(output, attempt_id):
     score, failure, reason, steps = {"success": False}, "", "step_limit", 0
     current = {}
     stage = "load"
-    start = time.time()
+    start, start_mono = time.time(), time.monotonic()
+
+    def attempt_expired():
+        if attempt_seconds is None:
+            return False
+        elapsed = max(0.0, time.time() - ENTRY_CLOCK[0], time.monotonic() - ENTRY_CLOCK[1])
+        return elapsed >= attempt_seconds - min(5.0, attempt_seconds / 10)
 
     def record(row):
         with (folder / "trace.jsonl").open("a") as stream:
@@ -439,6 +458,10 @@ def attempt_worker(output, attempt_id):
         rng = np.random.default_rng(trial["seed"])
         last_grasps = np.array(config.initial_grasps, np.float32)
         for step in range(config.max_steps):
+            if attempt_expired():
+                reason = "attempt_timeout"
+                record({"event": "attempt_timeout", "executed": False, "stage": "before_observe"})
+                break
             control_start_wall, control_start_mono = time.time(), time.monotonic()
             stage = "observe"
             observation = robot.observe()
@@ -475,6 +498,14 @@ def attempt_worker(output, attempt_id):
                 reason = "deadline_miss"
                 record(current | {"event": "deadline_miss", "executed": False, "reason": reason})
                 break
+            if attempt_expired():
+                reason = "attempt_timeout"
+                record(
+                    current
+                    | {"event": "attempt_timeout", "executed": False, "stage": "before_execute"}
+                )
+                break
+            current["checkpoint_sha256"] = plan.get("checkpoint_sha256")
             record(current | {"event": "command_pending", "executed": None})
             stage = "execute"
             result = robot.execute(command)
@@ -490,6 +521,7 @@ def attempt_worker(output, attempt_id):
                     execution_timestamp=result.timestamp,
                 )
             current["control_seconds"] = control_elapsed
+            current["checkpoint_sha256"] = plan.get("checkpoint_sha256")
             accepted = result.applied_action is not None
             steps += int(accepted)
             if accepted:
@@ -520,13 +552,16 @@ def attempt_worker(output, attempt_id):
             robot.stop(reason)
             robot.close()
     report = trial | {
-        "status": "completed",
+        "status": "attempt_timeout" if reason == "attempt_timeout" else "completed",
+        "attempt_allocated_seconds": attempt_seconds,
         "termination_reason": reason,
         "error": failure,
         "executed_steps": steps,
         "score": score,
         "success": bool(score["success"]),
-        "wall_seconds": time.time() - start,
+        "wall_seconds": max(0.0, time.time() - start, time.monotonic() - start_mono)
+        if attempt_seconds is None
+        else max(0.0, time.time() - ENTRY_CLOCK[0], time.monotonic() - ENTRY_CLOCK[1]),
     }
     write(folder / "report.json", report)
 
@@ -538,17 +573,20 @@ def supervise(command, *, cwd, log, remaining, popen=subprocess.Popen, sleep=tim
         process = popen(
             command, cwd=cwd, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True
         )
-        while process.poll() is None:
+        while True:
+            returncode = process.poll()
             elapsed = max(time.time() - start_wall, time.monotonic() - start_mono)
             if elapsed >= remaining:
-                try:
-                    os.killpg(process.pid, 9)
-                except ProcessLookupError:
-                    pass
-                process.wait()
+                if returncode is None:
+                    try:
+                        os.killpg(process.pid, 9)
+                    except ProcessLookupError:
+                        pass
+                    process.wait()
                 return {"status": "hard_wall_timeout", "returncode": process.returncode}
+            if returncode is not None:
+                return {"status": "exited", "returncode": returncode}
             sleep(min(0.1, max(0.001, remaining - elapsed)))
-        return {"status": "exited", "returncode": process.returncode}
 
 
 def summarize_attempt(output, trial, fallback):
@@ -580,7 +618,7 @@ def summarize_attempt(output, trial, fallback):
 def clean_completion(records):
     return bool(records) and all(
         r.get("status") == "completed"
-        and r.get("termination_reason") not in ("runtime_error", "deadline_miss")
+        and r.get("termination_reason") not in ("runtime_error", "deadline_miss", "attempt_timeout")
         and r.get("provenance_valid", True)
         for r in records
     )
@@ -615,6 +653,8 @@ def run(args, *, start_clock=None):
         iterations=args.iterations,
         proposals=not args.no_proposals,
         control_timeout=args.control_timeout,
+        commitment_steps=getattr(args, "commitment_steps", 1),
+        attempt_max_seconds=getattr(args, "attempt_max_seconds", None),
     )
     if args.stage == "final" and args.selection is None:
         raise ValueError("final cohort requires an explicit frozen development-selection JSON")
@@ -687,12 +727,17 @@ def run(args, *, start_clock=None):
         )
     )
     records = []
-    ready = preparation["returncode"] == 0 and (output / "resolved_plan.json").exists()
+    ready = (
+        preparation["status"] == "exited"
+        and preparation["returncode"] == 0
+        and (output / "resolved_plan.json").exists()
+    )
     resolved = json.loads((output / "resolved_plan.json").read_text()) if ready else None
     resolved_digest = digest(output / "resolved_plan.json") if ready else None
     invalid = ""
     for trial in plan["attempts"]:
         outcome = None
+        allocation = None
         fallback = "preparation_failed" if not ready else "not_started_budget"
         if invalid:
             fallback = "not_started_invalid_inputs"
@@ -703,11 +748,26 @@ def run(args, *, start_clock=None):
                 if remaining() <= 0:
                     fallback = "not_started_budget"
                 else:
+                    available = remaining()
+                    requested_cap = plan["attempt_max_seconds"]
+                    allocated = (
+                        available if requested_cap is None else min(requested_cap, available)
+                    )
+                    allocation = {
+                        "requested_seconds": requested_cap,
+                        "allocated_seconds": allocated,
+                        "global_remaining_seconds": available,
+                        "global_shortened": requested_cap is not None and allocated < requested_cap,
+                    }
+                    command = worker + ["--worker", "attempt"]
+                    if requested_cap is not None:
+                        command += ["--worker-attempt-seconds", str(allocated)]
+                    command += ["--attempt-id", trial["attempt_id"]]
                     outcome = supervise(
-                        worker + ["--worker", "attempt", "--attempt-id", trial["attempt_id"]],
+                        command,
                         cwd=snapshot,
                         log=output / f"{trial['attempt_id']}.log",
-                        remaining=remaining(),
+                        remaining=allocated,
                     )
                     fallback = outcome["status"] if outcome["returncode"] else "missing_report"
                     verify_plan_inputs(plan, source_root=snapshot)
@@ -717,15 +777,33 @@ def run(args, *, start_clock=None):
                 fallback = "invalid_inputs"
         record = summarize_attempt(output, trial, fallback)
         record["supervisor"] = outcome
+        record["attempt_allocation"] = allocation
         if outcome is not None and (outcome["returncode"] != 0 or outcome["status"] != "exited"):
             record.update(
                 worker_report_status=record["status"],
                 reported_success_before_failure=record["success"],
                 success=False,
-                status="hard_wall_timeout"
+                status=(
+                    "attempt_timeout"
+                    if allocation
+                    and allocation["requested_seconds"] is not None
+                    and not allocation["global_shortened"]
+                    else "hard_wall_timeout"
+                )
                 if outcome["status"] == "hard_wall_timeout"
                 else "child_failed",
             )
+        if record["status"] in ("attempt_timeout", "hard_wall_timeout"):
+            scope = (
+                "attempt"
+                if allocation
+                and allocation["requested_seconds"] is not None
+                and not allocation["global_shortened"]
+                else "global"
+            )
+            record["timeout_scope"] = scope
+            record["status"] = "attempt_timeout" if scope == "attempt" else "hard_wall_timeout"
+            record["success"] = False
         if invalid:
             record.update(status=fallback, provenance_valid=False, provenance_error=invalid)
             for prior in records:
@@ -763,6 +841,8 @@ def main():
     parser.add_argument("--modes", choices=MODES, nargs="+", default=list(MODES))
     parser.add_argument("--max-seconds", type=float, default=600)
     parser.add_argument("--max-steps", type=int, default=1000)
+    parser.add_argument("--attempt-max-seconds", type=float)
+    parser.add_argument("--commitment-steps", type=int, default=1)
     parser.add_argument("--control-timeout", type=float, default=5.0)
     parser.add_argument("--stride", type=int, default=10)
     parser.add_argument("--dwell", type=int, default=3)
@@ -773,10 +853,12 @@ def main():
     parser.add_argument("--worker", choices=("prepare", "attempt"), help=argparse.SUPPRESS)
     parser.add_argument("--worker-output", help=argparse.SUPPRESS)
     parser.add_argument("--attempt-id", help=argparse.SUPPRESS)
+    parser.add_argument("--worker-attempt-seconds", type=float, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    validate_attempt_budget(args.worker_attempt_seconds)
     if args.worker:
         prepare_worker(args.worker_output) if args.worker == "prepare" else attempt_worker(
-            args.worker_output, args.attempt_id
+            args.worker_output, args.attempt_id, attempt_seconds=args.worker_attempt_seconds
         )
         return
     if not all((args.dataset, args.checkpoint, args.output)):
