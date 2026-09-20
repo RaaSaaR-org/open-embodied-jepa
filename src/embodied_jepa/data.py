@@ -10,6 +10,8 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import shutil
+import tempfile
 from collections.abc import Iterator, Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -227,6 +229,65 @@ class DatasetStore:
         }
         _write_json(root / MANIFEST, manifest)
         return cls(root)
+
+    def fork_unsealed(self, root: str | Path, *, provenance: Mapping[str, Any]) -> DatasetStore:
+        """Copy encoded episodes without decoding images; retain immutable split lineage.
+
+        The new corpus may append episodes, but sealing must preserve every original
+        episode and parent session partition. Normalization is deliberately discarded.
+        """
+        root = Path(root).resolve()
+        if root.exists():
+            raise FileExistsError(f"refusing to overwrite dataset {root}")
+        if not provenance or self.manifest.get("splits") is None:
+            raise ContractError("encoded fork requires provenance and a sealed source")
+        fresh = DatasetStore(self.root)
+        original_hash = fresh.manifest_hash
+        manifest = json.loads(_json_bytes(fresh.manifest))
+        inherited = manifest["splits"]
+        manifest["provenance"] = dict(provenance) | {
+            "encoded_source": {
+                "manifest_sha256": original_hash,
+                "provenance": manifest["provenance"],
+                "splits": inherited,
+                "sessions": {
+                    name: sorted(
+                        {r["session_id"] for r in manifest["episodes"] if r["episode_id"] in ids}
+                    )
+                    for name, ids in inherited.items()
+                },
+            }
+        }
+        manifest["splits"] = None
+        manifest.pop("split_policy", None)
+        manifest.pop("normalization", None)
+        for relative in (
+            "meta/jepa_splits.json",
+            "meta/stats.json",
+            "meta/jepa_normalization.json",
+        ):
+            manifest["sha256"].pop(relative, None)
+        root.parent.mkdir(parents=True, exist_ok=True)
+        staging = Path(tempfile.mkdtemp(prefix=f".{root.name}-", dir=root.parent))
+        try:
+            for relative in manifest["sha256"]:
+                source = fresh.root / relative
+                target = staging / relative
+                if Path(relative).is_absolute() or ".." in Path(relative).parts:
+                    raise ContractError("invalid encoded source path")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, target)
+            _write_json(staging / MANIFEST, manifest)
+            DatasetStore(staging).verify()
+            if DatasetStore(fresh.root).manifest_hash != original_hash:
+                raise ContractError("encoded source changed during copy")
+            if root.exists():
+                raise FileExistsError(f"output appeared during copy: {root}")
+            staging.rename(root)
+        except BaseException:
+            shutil.rmtree(staging)
+            raise
+        return DatasetStore(root)
 
     @property
     def manifest_hash(self) -> str:
@@ -527,6 +588,8 @@ class DatasetStore:
         heldout_combinations: tuple[tuple[str, str], ...] = (("apple", "plate"),),
     ) -> Mapping[str, list[str]]:
         """Deterministic whole-session split; any held-out pairing reserves its entire session."""
+        if self.manifest.get("provenance", {}).get("encoded_source"):
+            raise ContractError("encoded forks require preserved explicit split assignments")
         if self.manifest["splits"] is not None:
             raise ContractError("splits already frozen")
         if (
@@ -606,6 +669,22 @@ class DatasetStore:
             raise ContractError("train/val/test partitions must be nonempty")
         self.verify()
         assignment = {episode_id: name for name, ids in splits.items() for episode_id in ids}
+        inherited = self.manifest.get("provenance", {}).get("encoded_source")
+        if inherited:
+            for name, ids in inherited["splits"].items():
+                if any(assignment.get(episode_id) != name for episode_id in ids):
+                    raise ContractError("encoded source episode partition must be preserved")
+            parent_sessions = {
+                session: name
+                for name, sessions in inherited["sessions"].items()
+                for session in sessions
+            }
+            if any(
+                parent_sessions.get(row["session_id"], assignment[row["episode_id"]])
+                != assignment[row["episode_id"]]
+                for row in self.manifest["episodes"]
+            ):
+                raise ContractError("encoded source parent session partition must be preserved")
         sessions = {}
         reserved = set(heldout_combinations)
         for row in self.manifest["episodes"]:
