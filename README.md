@@ -2,9 +2,11 @@
 
 One robot stack. One benchmark. Many world models.
 
-An MVP planning workspace for interchangeable action-conditioned latent world models on Unitree G1 EDU4 with dual Dex3 hands. Start in MuJoCo on macOS and compare `native_jepa` with `leworldmodel` through the same dataset, CEM planner, task, and evaluation.
+A research framework in development for interchangeable action-conditioned latent world models on Unitree G1 EDU4 with dual Dex3 hands. Start in MuJoCo on macOS and compare `native_jepa` with `leworldmodel` through the same dataset, CEM planner, task, and evaluation.
 
-**Status:** planning and directory scaffold prepared; model training, simulation, and robot control are not implemented yet. Configuration files are design templates, not runnable experiments.
+**Status:** Mac CPU/MPS and real G1/dual-Dex3 MuJoCo feasibility verified; core contracts, packaging and CI implemented. LeWM upstream forward/backward and recursive action-conditioned prediction run on CPU and MPS. Dataset collection, trained manipulation and the comparative MVP benchmark remain in progress. Files ending `.example.yaml` remain design templates.
+
+See [setup](docs/SETUP.md), [resource measurements](docs/RESOURCES.md), [MuJoCo evidence](docs/MUJOCO_SPIKE.md), and [LeWM evidence](docs/LEWM_SPIKE.md) for reproducible commands and limitations.
 
 ## Start here
 
