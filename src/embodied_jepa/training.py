@@ -554,7 +554,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument(
-        "--backend", choices=("native_jepa", "leworldmodel", "sensor_wm"), required=True
+        "--backend", choices=("native_jepa", "leworldmodel", "sensor_wm", "jepa_wms"), required=True
     )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--steps", type=int, default=500)

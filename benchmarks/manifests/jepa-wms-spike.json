@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "task": "TASK-024",
+  "scope": "software conformance only; no manipulation or learning performance claim",
+  "source_manifest": "src/embodied_jepa/models/jepa_wms_source.json",
+  "source_revision": "13cf1d9c7e476f53c17714d2e0f1dc239a883ce0",
+  "source_license": "CC-BY-NC-4.0",
+  "upstream_code_modified": false,
+  "pretrained_weights_downloaded": false,
+  "python": "3.12.13",
+  "torch": "2.14.0",
+  "einops": "0.8.2",
+  "timm": {
+    "version": "1.0.19",
+    "license": "Apache-2.0",
+    "wheels": [
+      {
+        "url": "https://files.pythonhosted.org/packages/dc/74/661c63260cccf19ed5932e8b3f22f95ecd8bb34b9d9e6af9e1e7b961f254/timm-1.0.19-py3-none-any.whl",
+        "hash": "sha256:c07b56c32f3d3226c656f75c1b5479c08eb34eefed927c82fd8751a852f47931",
+        "size": 2497950,
+        "upload-time": "2025-07-24T03:04:03.097Z"
+      }
+    ],
+    "license_sha256": "71b111620fa32c17a80ccd6db2da759d31a591e497d8b5f382174f59d1b59d49"
+  },
+  "device": "cpu",
+  "threads": 1,
+  "budget_cpu_seconds": 60,
+  "fixture": {
+    "batch": 3,
+    "transitions": 2,
+    "image_size": 16,
+    "patch_size": 8,
+    "token_dim": 16,
+    "latent_dim": 64,
+    "encoder_depth": 1,
+    "predictor_depth": 1,
+    "actions": 14
+  },
+  "checks": {
+    "tests_passed": 9,
+    "test_wall_seconds": 1.31,
+    "exit": 0,
+    "wall_seconds": 1.462537500075996,
+    "cpu_seconds": 1.261526
+  },
+  "initial_attempt": {
+    "passed": 7,
+    "failed": 2,
+    "cause": "test fixture omitted RobotState timestamp and attempted invalid shape config before checkpoint assertion; corrected fixtures, source runtime unchanged"
+  },
+  "limitations": [
+    "Random initialization and synthetic sequences only",
+    "No pretrained encoder or checkpoint adoption",
+    "Different compact architecture and EMA loss from full upstream recipe",
+    "Only CPU tested; MPS/CUDA not advertised",
+    "No MuJoCo or real-hardware execution in this spike",
+    "All upstream code treated as noncommercial despite inconsistent predictor MIT header"
+  ],
+  "final_provenance_regression": {
+    "exit": 0,
+    "wall_seconds": 1.3738969159312546,
+    "cpu_seconds": 1.170722
+  },
+  "additional_checks": {
+    "config_and_result_schema_tests": 61,
+    "ruff": "passed",
+    "format": "passed",
+    "uv_lock_check": "passed",
+    "git_diff_check": "passed",
+    "wheel_contains_source_manifest_not_upstream_tree": true
+  }
+}

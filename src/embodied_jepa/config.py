@@ -17,6 +17,7 @@ from embodied_jepa.registry import EMBODIMENTS, MODELS, PLANNERS, TASKS
 MODELS.register("native_jepa", "embodied_jepa.models:NativeJEPA")
 MODELS.register("leworldmodel", "embodied_jepa.models:LeWM")
 MODELS.register("sensor_wm", "embodied_jepa.models.sensor:SensorWorldModel")
+MODELS.register("jepa_wms", "embodied_jepa.models:JEPAWMs")
 EMBODIMENTS.register("unitree_g1_dex3", "embodied_jepa.embodiment:G1Embodiment")
 PLANNERS.register("cem", "embodied_jepa.planning:CEMPlanner")
 TASKS.register("reach", "embodied_jepa.task:ReachTask")
@@ -158,13 +159,13 @@ class ExperimentConfig:
         if type(model.get("history", 1)) is not int or model.get("history", 1) != 1:
             raise ValueError("current observation interface requires history=1")
         checkpoints = _mapping(
-            model.get("checkpoints", {}), ("native_jepa", "leworldmodel"), "checkpoints"
+            model.get("checkpoints", {}), ("native_jepa", "leworldmodel", "jepa_wms"), "checkpoints"
         )
         checkpoint = _path(
             checkpoints.get(backend), path.parent, "checkpoint", must_exist=require_checkpoint
         )
         settings = _mapping(
-            model.get("settings", {}), ("native_jepa", "leworldmodel"), "model settings"
+            model.get("settings", {}), ("native_jepa", "leworldmodel", "jepa_wms"), "model settings"
         )
         selected_settings = settings.get(backend, {})
         if not isinstance(selected_settings, dict):
