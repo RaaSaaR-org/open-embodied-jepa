@@ -337,3 +337,224 @@ def test_kinematics_only_projection_matches_full_forward_reference(
     np.testing.assert_array_equal(optimized.feasible, reference.feasible)
     np.testing.assert_array_equal(optimized.actions, reference.actions)
     assert_unchanged(robot, before)
+
+
+def test_late_trace_soft_limit_penetration_projects_and_executes(robot):
+    # Frozen v1 seed 43000 shuffled-mode snapshot, after 266 applied commands.
+    # Its right wrist is 2.865e-5 rad beyond the soft physical lower limit.
+    robot.sim.data.qpos[:] = [
+        4.651409052837103e-10,
+        7.100253913717978e-10,
+        1.8571526028845454e-10,
+        -1.8254969861537525e-10,
+        3.2768317672773074e-11,
+        -1.710050685164244e-11,
+        4.6482647364921416e-10,
+        -7.087757894851854e-10,
+        -1.8406364319188426e-10,
+        -1.8147249064711373e-10,
+        3.2614087675537215e-11,
+        1.7006523710795975e-11,
+        3.1482703558407864e-05,
+        6.064357304583442e-05,
+        0.00010598284769721867,
+        0.00011508628335347255,
+        -5.53232049629079e-07,
+        1.4077593794482577e-05,
+        0.07999834618194755,
+        -2.4370502594415487e-07,
+        -3.2428864232048027e-06,
+        3.110304698721261e-07,
+        -1.2531310644672271e-09,
+        -0.19999995422992642,
+        0.10000000909825059,
+        -1.718717500390721e-07,
+        -0.10000003781446533,
+        -1.7666342646158656e-07,
+        -0.10000003880698799,
+        -0.07769035440553933,
+        -0.643218708464201,
+        0.6299000097727935,
+        0.22716417770218283,
+        -1.9722486538427482,
+        0.6177417286704698,
+        0.14452126422309283,
+        5.745055044860235e-05,
+        0.18702158744205588,
+        -0.11733821816015325,
+        0.01588854091249046,
+        0.1190941317564853,
+        0.01584947732580924,
+        0.11908629500988138,
+        0.33609782310175207,
+        -0.17452378288249193,
+        0.7666328181575404,
+        1.0,
+        3.362527938303625e-08,
+        -2.8383927289962176e-08,
+        2.384836854761278e-21,
+    ]
+    robot.sim.data.qvel[:] = [
+        2.5416045928010613e-11,
+        4.252198791619922e-11,
+        1.7048320418714197e-10,
+        -6.535327565782096e-11,
+        4.351107197106351e-11,
+        -2.6268656724198057e-11,
+        2.0905388787484537e-11,
+        -3.6135496443263506e-11,
+        -1.2459863222811126e-10,
+        -5.123361611554955e-11,
+        2.8895640184528917e-11,
+        1.7254725843434313e-11,
+        0.0009294869032422543,
+        -0.0002007454173819622,
+        -0.0002142032131647395,
+        5.89141475202307e-06,
+        -6.465027729709666e-07,
+        3.649574500112511e-06,
+        5.772330113217308e-06,
+        -7.970437994693567e-08,
+        4.020554322551883e-06,
+        8.232956301831453e-06,
+        3.249981611508115e-09,
+        8.925009301794115e-09,
+        -5.246270230130008e-09,
+        -6.591892502277153e-07,
+        -1.3967354292646345e-07,
+        -5.179844902125478e-07,
+        -1.127519550362784e-07,
+        -0.012088363282822274,
+        -0.012723883705487311,
+        -0.009084044568522607,
+        0.2079635065901768,
+        -0.0007821241685964715,
+        -0.03133741865326527,
+        -0.2656405880649722,
+        -3.2050126073414085e-05,
+        -0.15880970415310292,
+        -0.2535228283609724,
+        0.19902791550871407,
+        0.3044394856293716,
+        0.19946010854547683,
+        0.3045215884181343,
+        4.404827336213031e-11,
+        5.218271925677807e-11,
+        -1.891143245744269e-14,
+        4.798879572929892e-09,
+        -4.050860504537502e-09,
+        7.060820059080919e-22,
+    ]
+    robot.sim.targets[:] = [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.00011632026871666312,
+        9.961959221982397e-07,
+        1.661775604588911e-05,
+        0.07999859750270844,
+        -2.2545273736795934e-07,
+        -3.2214986731560202e-06,
+        1.8315247416467173e-06,
+        -0.0780772715806961,
+        -0.6454635262489319,
+        0.6280215978622437,
+        0.24051827192306519,
+        -1.9722199440002441,
+        0.6146355867385864,
+        0.13089454174041748,
+        0.0,
+        -0.20000000298023224,
+        0.10000000149011612,
+        0.0,
+        -0.10000000149011612,
+        0.0,
+        -0.10000000149011612,
+        0.0,
+        0.12727272510528564,
+        -0.19090908765792847,
+        0.08181818574666977,
+        0.20000000298023224,
+        0.08181818574666977,
+        0.20000000298023224,
+    ]
+    robot.sim.data.time = 13.300000000001111
+    action = np.array(
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, -0.8181818127632141],
+        dtype=np.float32,
+    )
+    robot.mj.mj_forward(robot.model, robot.sim.data)
+    robot.observe()
+    joint = robot.model.joint("right_wrist_roll_joint")
+    lower = robot.model.jnt_range[joint.id, 0]
+    assert robot.sim.data.qpos[joint.qposadr[0]] < lower
+    before = snapshot(robot)
+    projection = robot.project_candidates(action[None, None, None])
+    assert projection.feasible[0, 0]
+    np.testing.assert_array_equal(projection.actions[0, 0, 0], action)
+    assert_unchanged(robot, before)
+    result = robot.execute(projection.actions[0, 0, 0])
+    assert result.applied_action is not None, result.reason
+    np.testing.assert_array_equal(result.applied_action, action)
+    limits = robot.model.jnt_range[robot.sim.joint_ids]
+    assert np.all(robot.sim.targets >= limits[:, 0])
+    assert np.all(robot.sim.targets <= limits[:, 1])
+    assert robot.sim.data.time == pytest.approx(before["time"] + robot.sim.control_dt)
+
+
+@pytest.mark.parametrize("endpoint", [0, 1])
+def test_transport_quantization_stays_inside_exact_bounds_and_rejects_real_violations(
+    robot, endpoint
+):
+    ids = robot.sim.joint_ids
+    limits = robot.model.jnt_range[ids]
+    desired = limits[:, endpoint]
+    # Several exact MJCF endpoints cannot be represented as float32 without
+    # rounding outside the interval; the safety rule itself remains exact.
+    nearest = desired.astype(np.float32)
+    outside = (nearest < limits[:, 0]) | (nearest > limits[:, 1])
+    assert outside.any()
+    commands = robot._joint_commands(desired, ids)
+    assert commands.dtype == np.float32
+    assert np.all(commands >= limits[:, 0]) and np.all(commands <= limits[:, 1])
+    np.testing.assert_array_equal(commands[~outside], nearest[~outside])
+    inward = np.nextafter(nearest[outside], np.float32(np.inf if endpoint == 0 else -np.inf))
+    np.testing.assert_array_equal(commands[outside], inward)
+    # Boundary representation repair is not permission to clip invalid targets.
+    bad = desired.copy()
+    bad[0] = np.nextafter(bad[0], -np.inf if endpoint == 0 else np.inf)
+    with pytest.raises(ContractError, match="MJCF limits"):
+        robot._joint_commands(bad, ids)
+
+
+def test_projection_rejects_out_of_limit_solver_result_before_transport(robot, monkeypatch):
+    original = robot.solve_ik
+
+    def bad_ik(side, *args, **kwargs):
+        solution = original(side, *args, **kwargs)
+        if solution is not None:
+            solution[0] = robot.model.jnt_range[robot.arm_ids[side][0], 1] + 0.001
+        return solution
+
+    monkeypatch.setattr(robot, "solve_ik", bad_ik)
+    request = np.zeros((1, 1, 1, 14), np.float32)
+    request[..., 12:] = -1
+    before = snapshot(robot)
+    projected = robot.project_candidates(request)
+    assert not projected.feasible[0, 0]
+    assert_unchanged(robot, before)
+    result = robot.execute(request[0, 0, 0])
+    assert result.applied_action is None and "MJCF limits" in result.reason
+    assert robot.sim.data.time == before["time"]
