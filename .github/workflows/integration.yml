@@ -23,12 +23,13 @@ jobs:
       - name: Install locked optional runtime and compatibility dependencies
         run: >-
           uv sync --locked
-          --extra learning --extra sim --extra lewm --extra data --extra compatibility
+          --extra learning --extra sim --extra lewm --extra data --extra compatibility --extra jepa-wms
       - name: Fetch audited upstream sources and robot assets
         run: |
           uv run --no-sync python scripts/fetch_assets.py
           uv run --no-sync python scripts/fetch_lewm.py
           uv run --no-sync python scripts/fetch_lerobot.py
+          uv run --no-sync python scripts/fetch_jepa_wms.py --accept-noncommercial-source
       - name: Run CPU model, data reader, physics, control, and hardware mock checks
         env:
           UV_OFFLINE: "1"
@@ -36,6 +37,7 @@ jobs:
           HF_DATASETS_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
           LEROBOT_SOURCE: third_party/lerobot
+          JEPA_WMS_SOURCE: third_party/jepa-wms
         run: |
           uv run --no-sync python -c "import torch, transformers, einops, mujoco, pyarrow, pandas, PIL, av; torch.set_num_threads(4); print('MPS available:', torch.backends.mps.is_available())"
           uv run --no-sync pytest tests --junitxml=integration-results.xml

@@ -1,0 +1,17 @@
+{
+  "repository": "https://github.com/facebookresearch/jepa-wms",
+  "revision": "13cf1d9c7e476f53c17714d2e0f1dc239a883ce0",
+  "license": "CC-BY-NC-4.0",
+  "files": {
+    "LICENSE": "1b0556efdc7e72b17b706c041002c6cdc1e0aa257f5e5676ea0f887b2f0854ec",
+    "THIRD-PARTY-LICENSES.md": "0f1abb76162518fa228cbb3cf704f8cd46bab4cff6f4b208fea878bb7c3501bc",
+    "pyproject.toml": "d0f8a2c19ac191f8ccf8e3d7a325277dd93927a5421b9a2a5c87f0ffdfbcf8ba",
+    "src/utils/tensors.py": "a19ba8e3494b801394352d18f565befeed9a7e47d3e3ea72b20a050cfab66c1a",
+    "src/masks/utils.py": "ce0608c69376733b560c060d97e854e283b072c2b916431c91e09c143a93910c",
+    "src/models/utils/modules.py": "aabc4baa04036c05142a4e314d1712141a38e31611121d56d21674750f303fe8",
+    "src/models/utils/patch_embed.py": "486aa52b2279086f4e48a69e3aff5c62ac729049b18875129fd4bcec989a8fc1",
+    "src/models/utils/pos_embs.py": "bc0c2f1ef55a7b8511efa4c4724249eccdbb850d7c26bf6082bd780cb15a8bd3",
+    "src/models/vision_transformer.py": "d9b04503af9b451241704836b1934ac26b80395dddf7b3a8218f613db5364f1d",
+    "src/models/ac_predictor.py": "80ca6c22ea68702e19ea47f52d89b395a4dd07e62cba81ba626d4bfe265ae87d"
+  }
+}

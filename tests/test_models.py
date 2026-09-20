@@ -1,5 +1,6 @@
 """Synthetic contract evidence; these tests make no learned-control claims."""
 
+import os
 from dataclasses import replace
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from embodied_jepa.models import NativeJEPA  # noqa: E402
 @pytest.fixture(autouse=True)
 def bounded_threads():
     original = torch.get_num_threads()
-    torch.set_num_threads(4)
+    torch.set_num_threads(int(os.environ.get("JEPA_TEST_THREADS", "4")))
     yield
     torch.set_num_threads(original)
 
@@ -39,6 +40,14 @@ def batch():
 def model_class(backend):
     if backend == "native":
         return NativeJEPA
+    if backend == "jepa_wms":
+        pytest.importorskip("timm")
+        source = Path(os.environ.get("JEPA_WMS_SOURCE", "third_party/jepa-wms"))
+        if not source.exists():
+            pytest.skip("optional pinned JEPA-WMs source absent")
+        from embodied_jepa.models import JEPAWMs
+
+        return JEPAWMs
     pytest.importorskip("transformers")
     if not Path("third_party/le-wm/jepa.py").exists():
         pytest.skip("optional pinned LeWM source absent; run scripts/fetch_lewm.py")
@@ -47,12 +56,21 @@ def model_class(backend):
     return LeWM
 
 
-@pytest.fixture(params=["native", "lewm"])
+@pytest.fixture(params=["native", "lewm", "jepa_wms"])
 def model(request, batch):
+    extra = {}
+    if request.param == "jepa_wms":
+        extra = {
+            "image_size": 16,
+            "patch_size": 8,
+            "token_dim": 16,
+            "accept_noncommercial_source": True,
+            "source_path": os.environ.get("JEPA_WMS_SOURCE", "third_party/jepa-wms"),
+        }
     return model_class(request.param)(
         batch.state_schema,
         seed=3,
-        config={"candidate_chunk_size": 2, "hidden_dim": 48},
+        config={"candidate_chunk_size": 2, "hidden_dim": 48} | extra,
         metadata={"dataset_hash": "synthetic-fixture", "action_hash": "test-action-v0"},
     )
 
@@ -125,7 +143,7 @@ def test_rejects_checkpoint_schema_provenance_and_config(model, batch, tmp_path)
     model.save(path)
     for kwargs in (
         {"state_schema": replace(batch.state_schema, units=("degree",))},
-        {"config": model.config | {"image_size": model.config["image_size"] * 2}},
+        {"config": model.config | {"learning_rate": model.config["learning_rate"] * 2}},
         {"metadata": {"dataset_hash": "different-data"}},
         {"metadata": {"action_hash": "different-calibration"}},
     ):
