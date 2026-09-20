@@ -38,10 +38,12 @@ tests/test_waypoint_planning.py tests/test_training.py` passed 25 tests in 2.78 
 normalization transition coverage, validation cohort determinism, budget failures,
 original-error preservation and best/latest records.
 
-The normalization test currently uses a NativeJEPA stub hook. A real `sensor_wm`
-runner smoke remains necessary before the long attempt; the coordinator is
-preparing that integration check. Unit tests on the actual sensor backend already
-exercise train-only fitting, learning, save/load and MPS separately.
+The normalization-coverage test uses a NativeJEPA stub hook. The coordinator
+subsequently added `sensor_wm` to the actual short runner integration test, using
+a procedural fixture with observed state fields, and reported all **15 training
+tests passing**. This closes the previously pending real-backend runner smoke;
+it remains synthetic software evidence. Unit tests on the actual sensor backend
+also exercise train-only fitting, learning, save/load and MPS separately.
 
 One protocol wording correction was sent to the coordinator: uniform admissible
 window sampling does not give every transition equal multiplicity. Near-boundary
