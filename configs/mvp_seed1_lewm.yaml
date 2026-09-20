@@ -1,0 +1,3 @@
+extends: mvp_seed1.yaml
+world_model:
+  backend: leworldmodel

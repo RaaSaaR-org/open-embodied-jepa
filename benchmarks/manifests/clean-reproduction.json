@@ -1,0 +1,208 @@
+{
+  "source_revision": "4d2588d93dcbc7e5ed07623fe2bd2c7cceb24381",
+  "clean_worktree_status": "",
+  "environment": "New detached checkout and fresh .venv on the same Mac; uv cached wheels permitted; upstream sources fetched independently",
+  "lock_sha256": "310fc2fb4655a1f6d836c4808789c568af63d9aa738db384be5c974c215d6059",
+  "commands": [
+    "uv sync --locked --extra learning --extra sim --extra lewm --extra data --extra compatibility",
+    ".venv/bin/python scripts/fetch_assets.py",
+    ".venv/bin/python scripts/fetch_lewm.py",
+    ".venv/bin/python scripts/fetch_lerobot.py",
+    ".venv/bin/python scripts/reproduce_smoke.py --name clean-smoke",
+    "JEPA_TEST_RENDER=1 LEROBOT_SOURCE=third_party/lerobot .venv/bin/pytest -q --junitxml=outputs/clean-tests.xml",
+    ".venv/bin/ruff check src tests scripts",
+    ".venv/bin/ruff format --check src tests scripts"
+  ],
+  "tests": {
+    "passed": 329,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 18.65
+  },
+  "lint": "passed",
+  "format": "52 files already formatted",
+  "smoke_report": {
+    "purpose": "Small real-simulation data\u2192train\u2192reload\u2192backend-swap check, not research acceptance.",
+    "commands": [
+      {
+        "label": "collect",
+        "command": [
+          "/private/tmp/jepa-mvp-reproduction-20260920/.venv/bin/python",
+          "-m",
+          "embodied_jepa.collection",
+          "--output",
+          "/private/tmp/jepa-mvp-reproduction-20260920/data/clean-smoke",
+          "--episodes",
+          "12",
+          "--steps",
+          "30",
+          "--seed",
+          "5000"
+        ],
+        "returncode": 0
+      },
+      {
+        "label": "train-native_jepa",
+        "command": [
+          "/private/tmp/jepa-mvp-reproduction-20260920/.venv/bin/python",
+          "-m",
+          "embodied_jepa.training",
+          "--dataset",
+          "/private/tmp/jepa-mvp-reproduction-20260920/data/clean-smoke",
+          "--backend",
+          "native_jepa",
+          "--output",
+          "/private/tmp/jepa-mvp-reproduction-20260920/checkpoints/clean-smoke/native_jepa.pt",
+          "--steps",
+          "100",
+          "--batch-size",
+          "8",
+          "--horizon",
+          "4",
+          "--seed",
+          "7",
+          "--device",
+          "cpu",
+          "--max-seconds",
+          "120",
+          "--validation-every",
+          "50",
+          "--validation-batches",
+          "1",
+          "--selection",
+          "raw_mse"
+        ],
+        "returncode": 0
+      },
+      {
+        "label": "train-leworldmodel",
+        "command": [
+          "/private/tmp/jepa-mvp-reproduction-20260920/.venv/bin/python",
+          "-m",
+          "embodied_jepa.training",
+          "--dataset",
+          "/private/tmp/jepa-mvp-reproduction-20260920/data/clean-smoke",
+          "--backend",
+          "leworldmodel",
+          "--output",
+          "/private/tmp/jepa-mvp-reproduction-20260920/checkpoints/clean-smoke/leworldmodel.pt",
+          "--steps",
+          "100",
+          "--batch-size",
+          "8",
+          "--horizon",
+          "4",
+          "--seed",
+          "7",
+          "--device",
+          "cpu",
+          "--max-seconds",
+          "120",
+          "--validation-every",
+          "50",
+          "--validation-batches",
+          "1",
+          "--selection",
+          "raw_mse"
+        ],
+        "returncode": 0
+      },
+      {
+        "label": "evaluate-native_jepa",
+        "command": [
+          "/private/tmp/jepa-mvp-reproduction-20260920/.venv/bin/python",
+          "-m",
+          "embodied_jepa.benchmark",
+          "--config",
+          "/private/tmp/jepa-mvp-reproduction-20260920/outputs/clean-smoke/native.yaml",
+          "--run-id",
+          "native_jepa"
+        ],
+        "returncode": 0
+      },
+      {
+        "label": "evaluate-leworldmodel",
+        "command": [
+          "/private/tmp/jepa-mvp-reproduction-20260920/.venv/bin/python",
+          "-m",
+          "embodied_jepa.benchmark",
+          "--config",
+          "/private/tmp/jepa-mvp-reproduction-20260920/outputs/clean-smoke/lewm.yaml",
+          "--run-id",
+          "leworldmodel"
+        ],
+        "returncode": 0
+      }
+    ],
+    "complete": true,
+    "limitation": "100 updates, raw-loss selection, two five-step episodes; software integration only"
+  },
+  "relocated_artifacts": "outputs/clean-reproduction/{outputs,data,checkpoints}/clean-smoke; original absolute paths retained as provenance",
+  "dataset_sha256": "fdc4fc8afd664065f51e6f5fa90dddfc891d6f6b5bf70db20151c9c4ecaa7c6b",
+  "backend_outcomes": {
+    "native_jepa": {
+      "checkpoint_sha256": "5b78de933a6c228ff422ab60c748fdf7e88a90fbca4006d5d305e46e667c2850",
+      "training_updates": 100,
+      "summary": {
+        "episodes": 2,
+        "successes": 0,
+        "success_rate": 0.0,
+        "wilson95": [
+          0,
+          0.6576197724933469
+        ],
+        "termination_reasons": {
+          "step_limit": 2
+        },
+        "stages": {
+          "reach": 0,
+          "grasp": 0,
+          "transport": 0,
+          "place": 0,
+          "release": 0
+        },
+        "plan_latency_seconds": {
+          "p50": 0.0005940624978393316,
+          "p95": 0.0008076292113400993,
+          "missing_reason": null
+        },
+        "candidates_per_second": 52242.41496507231,
+        "candidates_missing_reason": null,
+        "deadline_misses": 0,
+        "peak_process_rss_bytes": 1422442496
+      }
+    },
+    "leworldmodel": {
+      "checkpoint_sha256": "ab8586d3c9730a2307fa9427fc00b0857e35d787d6b523b691c128241cab74b1",
+      "training_updates": 100,
+      "summary": {
+        "episodes": 2,
+        "successes": 0,
+        "success_rate": 0.0,
+        "wilson95": [
+          0,
+          0.6576197724933469
+        ],
+        "termination_reasons": {
+          "step_limit": 2
+        },
+        "stages": {
+          "reach": 0,
+          "grasp": 0,
+          "transport": 0,
+          "place": 0,
+          "release": 0
+        },
+        "plan_latency_seconds": {
+          "p50": 0.004736166913062334,
+          "p95": 0.005162153590936213,
+          "missing_reason": null
+        },
+        "candidates_per_second": 6719.677726808805,
+        "candidates_missing_reason": null,
+        "deadline_misses": 0,
+        "peak_process_rss_bytes": 1607106560
+      }
+    }
+  }
+}

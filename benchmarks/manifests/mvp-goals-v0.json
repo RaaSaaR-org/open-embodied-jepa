@@ -1,0 +1,1042 @@
+{
+  "schema_version": 1,
+  "task": "apple_to_plate",
+  "seeds": [
+    20000,
+    20001,
+    20002,
+    20003,
+    20004,
+    20005,
+    20006,
+    20007,
+    20008,
+    20009,
+    20010,
+    20011,
+    20012,
+    20013,
+    20014,
+    20015,
+    20016,
+    20017,
+    20018,
+    20019,
+    20020,
+    20021,
+    20022,
+    20023,
+    20024,
+    20025,
+    20026,
+    20027,
+    20028,
+    20029,
+    20030,
+    20031,
+    20032,
+    20033,
+    20034,
+    20035,
+    20036,
+    20037,
+    20038,
+    20039,
+    20040,
+    20041,
+    20042,
+    20043,
+    20044,
+    20045,
+    20046,
+    20047,
+    20048,
+    20049
+  ],
+  "thresholds": {
+    "version": "tabletop_proxy_v0",
+    "reach_tolerance_m": 0.025,
+    "dwell_s": 0.15,
+    "lift_height_m": 0.05,
+    "plate_radius_m": 0.04,
+    "support_tolerance_m": 0.012,
+    "resting_speed_m_s": 0.1
+  },
+  "complete": true,
+  "reset_distribution": {
+    "version": "manipulation_training_xy_v0",
+    "object_center_xy_m": [
+      0.34,
+      -0.18
+    ],
+    "container_center_xy_m": [
+      0.49,
+      -0.09
+    ],
+    "independent_uniform_jitter_m": 0.006,
+    "rng": "numpy.default_rng(seed), object XY then container XY",
+    "appearance": "same procedural apple/plate appearances seen separately in training"
+  },
+  "asset_manifest_sha256": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+  "action_manifest_sha256": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+  "runtime_source_hashes": {
+    "simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+    "embodiment.py": "7e2f7a36b06955275ddd7be33f25be56959f291861f45c88b9216192cab9d9de",
+    "task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+    "goals.py": "82b8ea44d25e7c861abf2bb463c9543f4a75c85923ced7fb7be14ffd59d6a489",
+    "collection.py": "55cf6373120933fdbb43aa274e2164753f21848d819e6f786c0b862514b19745",
+    "contracts.py": "d9ceedad9198bca60891c0292108822455e1761505c43522f5013363ff0fcb7b"
+  },
+  "episodes": [
+    {
+      "seed": 20000,
+      "reset": {
+        "seed": 20000,
+        "object_xy": [
+          0.3403214731237705,
+          -0.17517601742929353
+        ],
+        "plate_xy": [
+          0.484283930166313,
+          -0.08776300149237001
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20000.png",
+      "sha256": "66fce34f51353c3380d4c85c4dad2f68d6029ac7add80c687dec92df835419be"
+    },
+    {
+      "seed": 20001,
+      "reset": {
+        "seed": 20001,
+        "object_xy": [
+          0.3348302627737101,
+          -0.1764639179637973
+        ],
+        "plate_xy": [
+          0.495523455214548,
+          -0.09102237662651587
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20001.png",
+      "sha256": "8f9ec2833b88fb40f6176403663559d595a7a7a785663ad62480b92fd34ec2b1"
+    },
+    {
+      "seed": 20002,
+      "reset": {
+        "seed": 20002,
+        "object_xy": [
+          0.3434099383721796,
+          -0.18573840979749356
+        ],
+        "plate_xy": [
+          0.4934120806548047,
+          -0.0949464898755887
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20002.png",
+      "sha256": "0d68dbcb6ba9a6c53ab1a121da442c54677332e97a15e4f2ea2dcb1057913b0b"
+    },
+    {
+      "seed": 20003,
+      "reset": {
+        "seed": 20003,
+        "object_xy": [
+          0.33817058321309884,
+          -0.1810426723930367
+        ],
+        "plate_xy": [
+          0.4943743804126193,
+          -0.08882515617619668
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20003.png",
+      "sha256": "9a597932440a09db43133899004716015debc68638deaa1947dc44bce7c809c3"
+    },
+    {
+      "seed": 20004,
+      "reset": {
+        "seed": 20004,
+        "object_xy": [
+          0.3418370024728961,
+          -0.17830802508685187
+        ],
+        "plate_xy": [
+          0.48420129490640895,
+          -0.088508289206454
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20004.png",
+      "sha256": "fc325e903177048c78e84c9b63f87da4f68336aa7d0430a9e4f7a0150322f4cb"
+    },
+    {
+      "seed": 20005,
+      "reset": {
+        "seed": 20005,
+        "object_xy": [
+          0.33860798820825666,
+          -0.18250343879814743
+        ],
+        "plate_xy": [
+          0.4949831586884448,
+          -0.08770427381968067
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20005.png",
+      "sha256": "11ce9013250725758fec006a2728471b8b657192c940a229c7a19ff48074a3db"
+    },
+    {
+      "seed": 20006,
+      "reset": {
+        "seed": 20006,
+        "object_xy": [
+          0.33633548235406713,
+          -0.18515123490779697
+        ],
+        "plate_xy": [
+          0.48567787318326905,
+          -0.08525011101670411
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20006.png",
+      "sha256": "7aba217fdc72651baa9a50c6f564f1b7e89e243db6bf88d7c8f69826333352ff"
+    },
+    {
+      "seed": 20007,
+      "reset": {
+        "seed": 20007,
+        "object_xy": [
+          0.34381060847585565,
+          -0.18345987446394804
+        ],
+        "plate_xy": [
+          0.49582845075375104,
+          -0.08606017805650606
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20007.png",
+      "sha256": "b8ea04c641829013c45277ebe5ec8f9389232cae51408a262a49224a473d016d"
+    },
+    {
+      "seed": 20008,
+      "reset": {
+        "seed": 20008,
+        "object_xy": [
+          0.3450908455269591,
+          -0.17799696168428084
+        ],
+        "plate_xy": [
+          0.4935901983584168,
+          -0.0910948452924299
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20008.png",
+      "sha256": "ba5a5b78c61bf5b86167e6b2d06ccf705a88cb55e24510aecbba462484959826"
+    },
+    {
+      "seed": 20009,
+      "reset": {
+        "seed": 20009,
+        "object_xy": [
+          0.33819741481283366,
+          -0.18136071945732085
+        ],
+        "plate_xy": [
+          0.4898962872242506,
+          -0.09362758389297443
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20009.png",
+      "sha256": "cb6b7e2b87bd698e34298dd5c7bac0f04c748de0612ac38873e41ba35f5c9c03"
+    },
+    {
+      "seed": 20010,
+      "reset": {
+        "seed": 20010,
+        "object_xy": [
+          0.3422251011009846,
+          -0.18495196833969618
+        ],
+        "plate_xy": [
+          0.4950378236072398,
+          -0.08688196502176009
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20010.png",
+      "sha256": "e0985d8d3f056b2d7b3d50d9992d6485a9775ba018cdca75b4a80ea6af733a0d"
+    },
+    {
+      "seed": 20011,
+      "reset": {
+        "seed": 20011,
+        "object_xy": [
+          0.33506142986794063,
+          -0.1826482765483321
+        ],
+        "plate_xy": [
+          0.48437983894744735,
+          -0.09000248663311719
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20011.png",
+      "sha256": "4c1121fd5aa6cf686dbe5f91b3ab80187d110a8f0442bcdc2febdf295ee20a1d"
+    },
+    {
+      "seed": 20012,
+      "reset": {
+        "seed": 20012,
+        "object_xy": [
+          0.33437050210224456,
+          -0.18187435274687136
+        ],
+        "plate_xy": [
+          0.4898100838850251,
+          -0.08431897174722536
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20012.png",
+      "sha256": "d220c74ce96c410e98aa0b0a6d120c78c04bc102e4386e5f877be8ebf2478b15"
+    },
+    {
+      "seed": 20013,
+      "reset": {
+        "seed": 20013,
+        "object_xy": [
+          0.3436632223560566,
+          -0.17644085902473328
+        ],
+        "plate_xy": [
+          0.4843779210974062,
+          -0.0924682838040573
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20013.png",
+      "sha256": "fe5e3a975d04fbd0f3fde51ae5f6d974467d1d5f2253cf75c4513c8bf1a9239d"
+    },
+    {
+      "seed": 20014,
+      "reset": {
+        "seed": 20014,
+        "object_xy": [
+          0.34386356594127115,
+          -0.1812172428418741
+        ],
+        "plate_xy": [
+          0.48691976693991973,
+          -0.08679173863187338
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20014.png",
+      "sha256": "d864ac23242841c942b8e04309df1fd25417d30270085c34c84cd7ba03fd0d19"
+    },
+    {
+      "seed": 20015,
+      "reset": {
+        "seed": 20015,
+        "object_xy": [
+          0.34127631109974305,
+          -0.17605851565564443
+        ],
+        "plate_xy": [
+          0.48586427987127684,
+          -0.09264038198221702
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20015.png",
+      "sha256": "a09a95b15bb3dc12b56d48fc318a53a53e1667161637bd571fd678b0d55826f9"
+    },
+    {
+      "seed": 20016,
+      "reset": {
+        "seed": 20016,
+        "object_xy": [
+          0.3392828013329926,
+          -0.18554805518433315
+        ],
+        "plate_xy": [
+          0.49361082709332427,
+          -0.08512312992550107
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20016.png",
+      "sha256": "2dd903a474420cc8f93d55df9f6186965a07a7fb73695ddf8ec3630a9d93960d"
+    },
+    {
+      "seed": 20017,
+      "reset": {
+        "seed": 20017,
+        "object_xy": [
+          0.3395503274499024,
+          -0.17781283660767053
+        ],
+        "plate_xy": [
+          0.4918567395940337,
+          -0.09090773330685843
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20017.png",
+      "sha256": "1898703023e28631b1400f7540f183c8109a8497f9a93daf0f8566b9c9397d04"
+    },
+    {
+      "seed": 20018,
+      "reset": {
+        "seed": 20018,
+        "object_xy": [
+          0.3387183507066335,
+          -0.18062351823759207
+        ],
+        "plate_xy": [
+          0.4907187338843721,
+          -0.08921656883001686
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20018.png",
+      "sha256": "837ca8186385c385206c616be7232a0c80e19704607e3072805476b47f1eb8bd"
+    },
+    {
+      "seed": 20019,
+      "reset": {
+        "seed": 20019,
+        "object_xy": [
+          0.33529286948793124,
+          -0.181471737093297
+        ],
+        "plate_xy": [
+          0.48483591311282864,
+          -0.08731177279875182
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20019.png",
+      "sha256": "e3982a9e0368497ef62a6b28e80b4b332ce22e13d8cfdea919c0c19e93bdc11f"
+    },
+    {
+      "seed": 20020,
+      "reset": {
+        "seed": 20020,
+        "object_xy": [
+          0.3384620022679545,
+          -0.17933849735968008
+        ],
+        "plate_xy": [
+          0.4878730608164452,
+          -0.08770290743063813
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20020.png",
+      "sha256": "9c40d8dbe2561ccac1b3f77e36a86417fc41fac10849faefb1e4f6e4b0df24c0"
+    },
+    {
+      "seed": 20021,
+      "reset": {
+        "seed": 20021,
+        "object_xy": [
+          0.33655974535003413,
+          -0.18222311836487104
+        ],
+        "plate_xy": [
+          0.48638246029755783,
+          -0.08686977423062359
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20021.png",
+      "sha256": "3410042864e9ffeebf8df31ac116976f78b293921df06ad34912bc1dea1898f9"
+    },
+    {
+      "seed": 20022,
+      "reset": {
+        "seed": 20022,
+        "object_xy": [
+          0.33956518461126833,
+          -0.17678847656289257
+        ],
+        "plate_xy": [
+          0.4863785470202286,
+          -0.08709545457916211
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20022.png",
+      "sha256": "492676366619b41f696dbccd89af8b401a6db7e31148f66fee4e782d2a800884"
+    },
+    {
+      "seed": 20023,
+      "reset": {
+        "seed": 20023,
+        "object_xy": [
+          0.3434895460899917,
+          -0.17638531093005003
+        ],
+        "plate_xy": [
+          0.49069521180452474,
+          -0.09374418843023254
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20023.png",
+      "sha256": "e446b5ba145ef43a60c3785f616afde4157a31131e925ff69b6cd605705002f1"
+    },
+    {
+      "seed": 20024,
+      "reset": {
+        "seed": 20024,
+        "object_xy": [
+          0.3342313581968179,
+          -0.17531875034914876
+        ],
+        "plate_xy": [
+          0.4870219632008297,
+          -0.09070050649471975
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20024.png",
+      "sha256": "728a8e5f27347c6fce72623dedd6796ab851a4f82e90982e8a34077e0c982fc4"
+    },
+    {
+      "seed": 20025,
+      "reset": {
+        "seed": 20025,
+        "object_xy": [
+          0.33960557337192826,
+          -0.18453971090420515
+        ],
+        "plate_xy": [
+          0.4893389514046155,
+          -0.09255700868535116
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20025.png",
+      "sha256": "3ca80d3d2408a849daf67cc918f5c089ccce39e124d666b9ea2b4ceeeba51eab"
+    },
+    {
+      "seed": 20026,
+      "reset": {
+        "seed": 20026,
+        "object_xy": [
+          0.33794772479938906,
+          -0.17892501161509444
+        ],
+        "plate_xy": [
+          0.4847417108416256,
+          -0.08560574522142271
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20026.png",
+      "sha256": "fcdc36597bad3c61e5caacbb3851e66388aaa9c990f39041d56238815c5da4d5"
+    },
+    {
+      "seed": 20027,
+      "reset": {
+        "seed": 20027,
+        "object_xy": [
+          0.33951315714382235,
+          -0.1798332069394251
+        ],
+        "plate_xy": [
+          0.4867975714206708,
+          -0.0945921955006817
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20027.png",
+      "sha256": "06716ed7e10a1e7a6fc86fbd444d7bf401625ed3212f0e62a4ca41053db2788e"
+    },
+    {
+      "seed": 20028,
+      "reset": {
+        "seed": 20028,
+        "object_xy": [
+          0.3361654128237193,
+          -0.17807184686547622
+        ],
+        "plate_xy": [
+          0.4925593520325275,
+          -0.09193278338340566
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20028.png",
+      "sha256": "c618699583f7a36e8ac65c73a6f9898e05db442a22c07c1a41df5270d1478e69"
+    },
+    {
+      "seed": 20029,
+      "reset": {
+        "seed": 20029,
+        "object_xy": [
+          0.3357251109301039,
+          -0.1847376003559753
+        ],
+        "plate_xy": [
+          0.4917561904949751,
+          -0.08640797665168964
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20029.png",
+      "sha256": "74e79dc6bfa78d1d8219f131ab7df5c9e3e97876d16ffeba0c51b527ae5e3173"
+    },
+    {
+      "seed": 20030,
+      "reset": {
+        "seed": 20030,
+        "object_xy": [
+          0.33832715310306816,
+          -0.17931774571702316
+        ],
+        "plate_xy": [
+          0.4932291561572702,
+          -0.08763989505238759
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20030.png",
+      "sha256": "c48aeabc4c09d0ad24f10bb477a1c0f35f411798016aab886b8347406f6086e1"
+    },
+    {
+      "seed": 20031,
+      "reset": {
+        "seed": 20031,
+        "object_xy": [
+          0.3433009591251243,
+          -0.17780206675860294
+        ],
+        "plate_xy": [
+          0.4934316102984453,
+          -0.0901004192654532
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20031.png",
+      "sha256": "60e6b5763d1c5fc4543353893bc19b5309067e15b7d70c8e5faa2361af7e5d21"
+    },
+    {
+      "seed": 20032,
+      "reset": {
+        "seed": 20032,
+        "object_xy": [
+          0.3379982883475421,
+          -0.18319551001362427
+        ],
+        "plate_xy": [
+          0.48990090911704737,
+          -0.09182844070632505
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20032.png",
+      "sha256": "583e4fee6fd6ec54a28e03461904de079c731a91670aefc2f36b8c37d6b9f8eb"
+    },
+    {
+      "seed": 20033,
+      "reset": {
+        "seed": 20033,
+        "object_xy": [
+          0.3415005759226127,
+          -0.18270877160174231
+        ],
+        "plate_xy": [
+          0.4873136019025476,
+          -0.08433761285661426
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20033.png",
+      "sha256": "30214d604b3d875d4ea90ca1b29a474c9bba53a58b73d9c0df2fb192f8ef3a28"
+    },
+    {
+      "seed": 20034,
+      "reset": {
+        "seed": 20034,
+        "object_xy": [
+          0.33400402314866473,
+          -0.18042869860815705
+        ],
+        "plate_xy": [
+          0.48975578573351597,
+          -0.09365339251324915
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20034.png",
+      "sha256": "b00b30113827732f3c675916b391d5097098cf0dfd0860b62405528310de881e"
+    },
+    {
+      "seed": 20035,
+      "reset": {
+        "seed": 20035,
+        "object_xy": [
+          0.3416568867908883,
+          -0.1827525271189869
+        ],
+        "plate_xy": [
+          0.4845952749502888,
+          -0.09454997140059573
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20035.png",
+      "sha256": "25ee8eeb3deacb88aadbcd76dd79f50df989bdfba9505f25b97186391502d5e8"
+    },
+    {
+      "seed": 20036,
+      "reset": {
+        "seed": 20036,
+        "object_xy": [
+          0.3427633644698456,
+          -0.17442470094102447
+        ],
+        "plate_xy": [
+          0.48984382891060935,
+          -0.09164711907254691
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20036.png",
+      "sha256": "ee6e0510554b413d26a3cbccbe6fe94f71c139e811624f8a42812f624dd137af"
+    },
+    {
+      "seed": 20037,
+      "reset": {
+        "seed": 20037,
+        "object_xy": [
+          0.34593503161837236,
+          -0.182312053544436
+        ],
+        "plate_xy": [
+          0.49325962549069013,
+          -0.09437292336948568
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20037.png",
+      "sha256": "77785d15487711e882d99ad6568ad2519a2f66ff18d99493b460795bafe0c6a4"
+    },
+    {
+      "seed": 20038,
+      "reset": {
+        "seed": 20038,
+        "object_xy": [
+          0.3439262453301134,
+          -0.18459682471127994
+        ],
+        "plate_xy": [
+          0.4911684626176426,
+          -0.08416571260547753
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20038.png",
+      "sha256": "e1da05c9ef80afd530afecbe682e4eece79c3a0eea72919650a6303b1cb3a679"
+    },
+    {
+      "seed": 20039,
+      "reset": {
+        "seed": 20039,
+        "object_xy": [
+          0.34420393448912834,
+          -0.1797022964630007
+        ],
+        "plate_xy": [
+          0.4915421819280201,
+          -0.08882762119936563
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20039.png",
+      "sha256": "0ac2134f0289f8e6fc0668eb86e5691e88b5214b4cb0e3790691e936680d55a1"
+    },
+    {
+      "seed": 20040,
+      "reset": {
+        "seed": 20040,
+        "object_xy": [
+          0.3443336418823511,
+          -0.1802229137767995
+        ],
+        "plate_xy": [
+          0.48456899041113294,
+          -0.0869368906114645
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20040.png",
+      "sha256": "2bbf25fcc357aa3d182d3849aefc75c166eb20003a16afbeba0682cf7adfc6db"
+    },
+    {
+      "seed": 20041,
+      "reset": {
+        "seed": 20041,
+        "object_xy": [
+          0.3447871586587108,
+          -0.17558594419214094
+        ],
+        "plate_xy": [
+          0.486261714072317,
+          -0.08875143573075957
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20041.png",
+      "sha256": "13f87890cee5a5d6fd2bb85b6eba80b0a5ad1f9817c8cf5a68ffd1c8ead99d9e"
+    },
+    {
+      "seed": 20042,
+      "reset": {
+        "seed": 20042,
+        "object_xy": [
+          0.3431876404695521,
+          -0.18303605820205512
+        ],
+        "plate_xy": [
+          0.4907287044576305,
+          -0.08614092335319921
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20042.png",
+      "sha256": "45a9c05d94ce8e796a32f40c0c936d7576bcf354282ec9adfda85707613b926c"
+    },
+    {
+      "seed": 20043,
+      "reset": {
+        "seed": 20043,
+        "object_xy": [
+          0.34092192672825405,
+          -0.180841708797458
+        ],
+        "plate_xy": [
+          0.48590445556750167,
+          -0.09091938957311735
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20043.png",
+      "sha256": "c379a59c397e6e1c13e05e90f98562c784b532f07cb61071f6aa2a76e927008c"
+    },
+    {
+      "seed": 20044,
+      "reset": {
+        "seed": 20044,
+        "object_xy": [
+          0.34079934451724564,
+          -0.1832314013133909
+        ],
+        "plate_xy": [
+          0.4943343377432825,
+          -0.0860506098998672
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20044.png",
+      "sha256": "07316199785ed4f714e24453b86a32e8b3f3595b37ef43acff5b329baed3acc7"
+    },
+    {
+      "seed": 20045,
+      "reset": {
+        "seed": 20045,
+        "object_xy": [
+          0.335434316523108,
+          -0.18356202402598493
+        ],
+        "plate_xy": [
+          0.4950634415821848,
+          -0.09299760071832287
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20045.png",
+      "sha256": "db3e6a4af223b781dfd05f6d637f05fc1529a47c8487977fbc877a6a54400ddc"
+    },
+    {
+      "seed": 20046,
+      "reset": {
+        "seed": 20046,
+        "object_xy": [
+          0.3366498743470707,
+          -0.18326977513892195
+        ],
+        "plate_xy": [
+          0.49270796764279495,
+          -0.08820152901318201
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20046.png",
+      "sha256": "38badaaa04c8fb0a5e8adab97b754bcb575045feb076391383e5955de34ee8bd"
+    },
+    {
+      "seed": 20047,
+      "reset": {
+        "seed": 20047,
+        "object_xy": [
+          0.3388722686210693,
+          -0.1847598812544857
+        ],
+        "plate_xy": [
+          0.4871348490160644,
+          -0.08817821804218536
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20047.png",
+      "sha256": "a1074bbdaefcc9477dfd339788f8178cff18283ef25dd006615b1b0e47656fd4"
+    },
+    {
+      "seed": 20048,
+      "reset": {
+        "seed": 20048,
+        "object_xy": [
+          0.3392613490564849,
+          -0.17560181075426318
+        ],
+        "plate_xy": [
+          0.49540251106009675,
+          -0.09292813717334383
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20048.png",
+      "sha256": "e42aad00d5e3360cbb1765643e79f24bc2a475c0e8efb5129b1d351694ca809d"
+    },
+    {
+      "seed": 20049,
+      "reset": {
+        "seed": 20049,
+        "object_xy": [
+          0.33533768972413763,
+          -0.1791539800391929
+        ],
+        "plate_xy": [
+          0.4870383313249556,
+          -0.08566440153237108
+        ],
+        "object_kind": "apple",
+        "container_kind": "plate"
+      },
+      "target_base": null,
+      "image": "goal-20049.png",
+      "sha256": "1a0b45b01cb52d2b668d106c8b8d175dce0b25d9f3f6f52ec07d506bf0dde179"
+    }
+  ]
+}

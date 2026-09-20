@@ -36,3 +36,7 @@ PRD §19 sets no numerical final success threshold. Do not invent a promised ful
 Write `run.json`, `episodes.jsonl`, `summary.json`, resolved configuration, dependency snapshot, and rollout references under `outputs/<run_id>/`. Schema version 1 must require run ID, timestamp, source revision, backend/checkpoint hash, common/native mode, dataset/split/action hashes, environment/device, simulator engine/version, planner budget, train/eval seeds, task version, per-stage success, termination reason, timings, and replans. Missing measurements use null plus a reason, never a fabricated zero. Store model metrics separately when they are not meaningful per episode.
 
 TASK-023 assembles an acceptance report linking every PRD criterion to commands, checks, checkpoints, run IDs, and results. No physical outcome may be inferred from a simulator result.
+
+## Executed MVP protocol
+
+The proposed cohort above was adopted as 50 fixed Apple→Plate resets for each of three training seeds per model, plus 50 hold and 50 random controls. The preregistered [training protocol](experiments/mvp_final.md) and [evaluation protocol](experiments/mvp_evaluation.md) define exact budgets, reset distributions, limitations and failure accounting. The goal manifest and compact corpus manifest are versioned under `benchmarks/manifests/`; large local payloads are kept out of Git. [Clean reproduction](experiments/clean_reproduction.md) separately verifies installation and a small end-to-end run.

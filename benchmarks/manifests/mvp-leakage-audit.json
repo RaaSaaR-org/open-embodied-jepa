@@ -1,0 +1,195 @@
+{
+  "dataset": {
+    "episodes": 184,
+    "manifest_sha256": "200246b34bd18cb30c8c711879c42a5ed2f31a62c99b96c1b347e37aa57512b7",
+    "observations": 42311,
+    "pair_counts": {
+      "apple->bowl": 47,
+      "banana->bowl": 45,
+      "cube->plate": 47,
+      "cube->target": 45
+    },
+    "path": "data/mvp-v0",
+    "reserved_apple_plate_episodes": [],
+    "split_episodes": {
+      "holdout": 0,
+      "test": 19,
+      "train": 146,
+      "val": 19
+    },
+    "split_sessions": {
+      "holdout": 0,
+      "test": 19,
+      "train": 146,
+      "val": 19
+    },
+    "transitions": 42127
+  },
+  "exact_rgb_audit": {
+    "cameras": [
+      "observation.images.onboard_rgb"
+    ],
+    "cross_split_duplicates": {
+      "holdout__test": {
+        "cross_split_frame_pair_count": 0,
+        "distinct_rgb_hashes": 0,
+        "examples": [],
+        "frame_occurrences": {
+          "holdout": 0,
+          "test": 0
+        }
+      },
+      "holdout__train": {
+        "cross_split_frame_pair_count": 0,
+        "distinct_rgb_hashes": 0,
+        "examples": [],
+        "frame_occurrences": {
+          "holdout": 0,
+          "train": 0
+        }
+      },
+      "holdout__val": {
+        "cross_split_frame_pair_count": 0,
+        "distinct_rgb_hashes": 0,
+        "examples": [],
+        "frame_occurrences": {
+          "holdout": 0,
+          "val": 0
+        }
+      },
+      "test__train": {
+        "cross_split_frame_pair_count": 0,
+        "distinct_rgb_hashes": 0,
+        "examples": [],
+        "frame_occurrences": {
+          "test": 0,
+          "train": 0
+        }
+      },
+      "test__val": {
+        "cross_split_frame_pair_count": 0,
+        "distinct_rgb_hashes": 0,
+        "examples": [],
+        "frame_occurrences": {
+          "test": 0,
+          "val": 0
+        }
+      },
+      "train__val": {
+        "cross_split_frame_pair_count": 0,
+        "distinct_rgb_hashes": 0,
+        "examples": [],
+        "frame_occurrences": {
+          "train": 0,
+          "val": 0
+        }
+      }
+    },
+    "distinct_rgb_hashes": 42303,
+    "frame_counts_by_split": {
+      "test": 4519,
+      "train": 33623,
+      "val": 4169
+    },
+    "frame_shapes": {
+      "[96, 96, 3]": 42311
+    },
+    "interpretation": "Exact repeated RGB frames are reported separately from session/episode overlap. Stationary poses, renderer quantization and common backgrounds can yield identical frames across independent sessions; duplicates alone do not prove copied transitions or label leakage. Near-duplicates and semantic similarity are not tested.",
+    "method": "SHA-256(compact JSON [H,W,3] UTF-8 + NUL + decoded RGB uint8 C-order bytes); all stored observation frames including final T+1 row; no compression-byte or perceptual comparison.",
+    "total_frame_occurrences": 42311
+  },
+  "frozen_goals": {
+    "corpus_matches_by_split": {
+      "holdout": {
+        "corpus_frame_occurrences": 0,
+        "distinct_goal_images": 0,
+        "examples": [],
+        "goal_seeds": []
+      },
+      "test": {
+        "corpus_frame_occurrences": 0,
+        "distinct_goal_images": 0,
+        "examples": [],
+        "goal_seeds": []
+      },
+      "train": {
+        "corpus_frame_occurrences": 0,
+        "distinct_goal_images": 0,
+        "examples": [],
+        "goal_seeds": []
+      },
+      "val": {
+        "corpus_frame_occurrences": 0,
+        "distinct_goal_images": 0,
+        "examples": [],
+        "goal_seeds": []
+      }
+    },
+    "distinct_rgb_hashes": 50,
+    "entries": 50,
+    "frame_shapes": {
+      "[96, 96, 3]": 50
+    },
+    "goal_seeds_overlap_collection_seeds": [],
+    "manifest_sha256": "eef30af440d40064efecc98a84a68d4388f9f60d1151104b4859a8f9934ee38e"
+  },
+  "integrity": {
+    "all_assembled_episode_shard_hashes_verified": 184,
+    "dataset_and_goal_manifests_unchanged_during_audit": true,
+    "source_manifest_and_split_hashes_verified": 3
+  },
+  "limitations": [
+    "No pixel-level fitting or model selection occurred.",
+    "Exact hash comparison does not prove absence of near-duplicate scenes, semantic correlations or unrecorded shared sessions.",
+    "Training/validation/test all contain shared procedural appearances; held-out claim is only apple->plate pairing.",
+    "A negative exact-goal match applies to stored RGB resolutions and byte content, not derived/preprocessed tensors."
+  ],
+  "normalization": {
+    "episode_ids_equal_train": true,
+    "fit_split": "train",
+    "test_or_val_used": false
+  },
+  "preserved_source_assignments": {
+    "cross_split_session_overlaps": {
+      "holdout__test": [],
+      "holdout__train": [],
+      "holdout__val": [],
+      "test__train": [],
+      "test__val": [],
+      "train__val": []
+    },
+    "membership_errors": [],
+    "sources": [
+      {
+        "episodes_checked": 100,
+        "manifest_sha256": "9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f",
+        "source": "data/reach-pilot-v0",
+        "split_sha256": "1ea36512e2a4dfeaf8c815aabbe2f1c3d79189ef6d26f638b2907c41183aad73"
+      },
+      {
+        "episodes_checked": 66,
+        "manifest_sha256": "8152aa39ce50de0bc37d639051836310e7c2056be932c4d33b00ca58c62d19ec",
+        "source": "data/manipulation-pilot-v0",
+        "split_sha256": "534aaf34b65d43a222d424d73356026ff0b3332ccaa5510f1ad5dcfc93a1d176"
+      },
+      {
+        "episodes_checked": 18,
+        "manifest_sha256": "f156c1b9816eefffbca929f0fe20413efce4334c9fd25760d57b764e1b991980",
+        "source": "data/manipulation-release-v1",
+        "split_sha256": "9dccae77b03dbb746a173a279ef117881a5ab54fedf95658cd18085f0c6862fb"
+      }
+    ]
+  },
+  "purpose": "Independent read-only split/frame/goal leakage audit; test pixels accessed only for exact duplicate detection, never training, fitting or selection.",
+  "resources": {
+    "elapsed_seconds": 5.151857852935791,
+    "execution": "serial, nice +10, Arrow CPU/IO threads 1",
+    "pillow": "12.3.0",
+    "pyarrow": "23.0.1",
+    "python": "3.12.13",
+    "wall_budget_seconds": 120
+  },
+  "schema_version": 1,
+  "source_revision": "e57e28b53eb682102b882dbada937fbcefffb01f",
+  "timestamp_utc": "2026-09-20T11:49:15.843876+00:00"
+}

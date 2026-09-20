@@ -1,0 +1,5 @@
+extends: reach_pilot.yaml
+world_model:
+  checkpoints:
+    native_jepa: ../checkpoints/reach-pilot-v2/native_jepa.pt
+    leworldmodel: ../checkpoints/reach-pilot-v2/leworldmodel.pt

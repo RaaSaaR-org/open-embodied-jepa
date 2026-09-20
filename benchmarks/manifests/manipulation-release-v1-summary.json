@@ -1,0 +1,135 @@
+{
+  "provenance": {
+    "producer": "privileged scripted MuJoCo manipulation collector",
+    "policy": "fixed EarlyReleaseOracleManipulationPolicy opening_ramp=0.08; no tuning during collection",
+    "simulated": true,
+    "physical_hardware": false,
+    "license": "project-generated data; upstream robot assets retain BSD-3-Clause",
+    "source_revision": "a9f2460caf93837ea73786657cb5d1b914e1fd05",
+    "implementation_sha256": {
+      "manipulation_collection.py": "d1052b4a5075a9fbfb7e9e7f602bf7ce93e5c6796f02cad05a379a5e30ec999c",
+      "collection.py": "55cf6373120933fdbb43aa274e2164753f21848d819e6f786c0b862514b19745",
+      "simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+      "embodiment.py": "7e2f7a36b06955275ddd7be33f25be56959f291861f45c88b9216192cab9d9de",
+      "scripted.py": "c28ab20aa0c09742f2e31c0f3bc618fbceb421e963cc7f077514d23e39d5fa93",
+      "task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+      "data.py": "8785c697132d09e1a29a389756d869dbe7691cd462e841714d6959b6085348c8"
+    },
+    "asset_manifest_sha256": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+    "asset_revision": "ffa21a1e811a4ffd5d31d0318674c950f73eb62c",
+    "plan_sha256": "717646f8f085e86a80e4d1236d25a96f08d0c449d971fcc221d13a941086b66b",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.13",
+    "dependencies": {
+      "mujoco": "3.13.0",
+      "numpy": "2.5.3",
+      "pillow": "12.3.0",
+      "pyarrow": "23.0.1"
+    },
+    "held_out_pair": [
+      "apple",
+      "plate"
+    ],
+    "collection_seed": 3000,
+    "clock_policy": "max(wall-clock elapsed, monotonic elapsed); includes host suspension",
+    "start_unix_time": 1789904476.369642
+  },
+  "attempted_episodes": 24,
+  "unattempted_episodes": 0,
+  "unattempted_budget_episodes": 0,
+  "unattempted_interrupted_episodes": 0,
+  "interrupt_requested": false,
+  "stored_episodes": 18,
+  "transitions": 9483,
+  "successes": 9,
+  "success_denominator": 24,
+  "stage_counts": {
+    "reach": 18,
+    "grasp": 9,
+    "transport": 9,
+    "place": 9,
+    "release": 9
+  },
+  "pair_attempts": {
+    "cube->target": 6,
+    "banana->bowl": 6,
+    "apple->bowl": 6,
+    "cube->plate": 6
+  },
+  "phase_transition_counts": {
+    "orient": 2340,
+    "descend": 1440,
+    "close": 794,
+    "lift": 1509,
+    "transfer": 600,
+    "release_high": 1000,
+    "lower_open": 1000,
+    "retreat": 800
+  },
+  "splits": {
+    "val": [
+      "manip-003010",
+      "manip-003014"
+    ],
+    "test": [
+      "manip-003012",
+      "manip-003018"
+    ],
+    "train": [
+      "manip-003000",
+      "manip-003002",
+      "manip-003003",
+      "manip-003005",
+      "manip-003006",
+      "manip-003007",
+      "manip-003011",
+      "manip-003013",
+      "manip-003015",
+      "manip-003016",
+      "manip-003019",
+      "manip-003021",
+      "manip-003022",
+      "manip-003023"
+    ],
+    "holdout": []
+  },
+  "dataset_hash": "f156c1b9816eefffbca929f0fe20413efce4334c9fd25760d57b764e1b991980",
+  "wall_seconds": 119.17970991134644,
+  "active_seconds": 119.177742165979,
+  "storage_bytes": 86945329,
+  "plan": {
+    "kind": "manipulation_release_v1",
+    "policy_name": "early_release_v1",
+    "policy_options": {
+      "opening_ramp": 0.08
+    },
+    "object_center": [
+      0.34,
+      -0.18
+    ],
+    "container_center": [
+      0.45,
+      -0.1
+    ],
+    "reset_jitter_m": 0.006,
+    "requested_episodes": 24,
+    "max_commands": 745,
+    "max_wall_seconds": 300.0,
+    "finalization_reserve_seconds": 30.0,
+    "seed": 3000,
+    "width": 96,
+    "fps": 20,
+    "minimum_stored_transitions": 8,
+    "split_ratios": [
+      0.8,
+      0.1,
+      0.1
+    ],
+    "held_out_pair": [
+      "apple",
+      "plate"
+    ],
+    "policy": "fixed EarlyReleaseOracleManipulationPolicy opening_ramp=0.08; no tuning during collection",
+    "success": "ordered AppleToPlateTask scorer, applied equally to all training pairs"
+  }
+}

@@ -40,7 +40,7 @@ The raw scene loads with `nq=50`, `nv=49`, `nu=43`, 45 bodies including world, a
 | End-effector parent | `{side}_wrist_yaw_link`; palm is geometry on this body, not a separate palm body |
 | Original sensor site | `imu`; no source camera or end-effector site |
 
-**Never equate qpos order, actuator order, or SDK hand message order.** Left and right hand actuator ordering differs; the upstream SDK hand table orders index before middle. Resolve named joints and actuator transmission addresses explicitly. The source controls are torque motors; feeding target positions directly into `data.ctrl` would be incorrect. The probe uses clipped PD torques solely to hold the zero pose for this feasibility test.
+**Never equate qpos order, actuator order, or SDK hand message order.** Left and right hand ordering differs. The subsequently pinned official XR Dex3 controller uses middle-before-index on the left and index-before-middle on the right, matching this MJCF; semantic grasp manifests may use another order. See `HARDWARE.md` for the exact SDK/XR source mapping. Resolve named joints and actuator transmission addresses explicitly. The source controls are torque motors; feeding target positions directly into `data.ctrl` would be incorrect. The probe uses clipped PD torques solely to hold the zero pose for this feasibility test.
 
 The generated probe removes only the pelvis free joint (`nq=nv=43`) and adds floor/light, overview camera, torso-attached `onboard_rgb`, and `{left,right}_ee` sites. Pelvis height remains the upstream 0.793 m. The camera at torso offset `(0.08, 0, 0.35)` m and each wrist EE offset `(0.12, 0, 0)` m are explicit simulation conventions, not measured hardware extrinsics. The RGB optical axes face forward/downward and image both hands.
 
