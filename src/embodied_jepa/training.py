@@ -193,6 +193,7 @@ def selection_decision(diagnostics, selection, training_horizon):
         result["rejection_reasons"].append("required_validation_horizon_unavailable")
         return result
     metrics = measured["metrics"]
+    result["metric_definition_version"] = metrics.get("metric_definition_version", 2)
     if selection == "noncollapsed_relative":
         if metrics.get("metric_definition_version") != 2:
             result["rejection_reasons"].append("unsupported_metric_definition_version")
@@ -379,6 +380,7 @@ def train(
             }
         error = diagnostics[str(horizon)]["metrics"]["prediction_mse"]
         decision = selection_decision(diagnostics, selection, horizon)
+        report["selection"]["metric_definition_version"] = decision["metric_definition_version"]
         improved = decision["eligible"] and (best_score is None or decision["score"] < best_score)
         decision["selected"] = improved
         decision["selection_reason"] = (
@@ -390,7 +392,7 @@ def train(
         )
         event = {
             "kind": "validation",
-            "metric_definition_version": 2,
+            "metric_definition_version": decision["metric_definition_version"],
             "step": completed,
             "elapsed_seconds": clock.elapsed(),
             "selection_horizon": decision["horizon"],
@@ -514,7 +516,16 @@ def train(
     finally:
         try:
             if model is not None:
-                checkpoint(paths["latest"])
+                try:
+                    checkpoint(paths["latest"])
+                except Exception as error:
+                    # A model can fail before it has a valid fitted preprocessing
+                    # state. Preserve that failure and the report even if no
+                    # loadable latest checkpoint can be written.
+                    report["latest_checkpoint_error"] = f"{type(error).__name__}: {error}"
+                    if failed is None and report["status"] == "completed":
+                        failed = error
+                        report["status"] = "failed"
             synchronize()
             report.update(
                 completed_steps=completed,

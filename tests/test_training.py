@@ -35,13 +35,16 @@ def corpus(tmp_path):
                 episode_id=f"episode-{index}",
                 session_id=f"session-{index}",
                 observations={"onboard_rgb": np.roll(fixture.observations["head"], index, axis=2)},
+                # This runner fixture supplies every procedural state field;
+                # missing-state behavior is covered by backend contract tests.
+                state_mask=np.ones_like(fixture.state_mask),
             )
         )
     store.freeze_splits(seed=3)
     return store
 
 
-@pytest.mark.parametrize("backend", ["native_jepa", "leworldmodel"])
+@pytest.mark.parametrize("backend", ["native_jepa", "leworldmodel", "sensor_wm"])
 def test_training_best_latest_curves_and_no_test_decoding(corpus, tmp_path, monkeypatch, backend):
     if backend == "leworldmodel":
         pytest.importorskip("transformers")
@@ -155,6 +158,28 @@ def test_time_budget_preserves_partial_report_without_claiming_completion(corpus
     assert not report["best_checkpoint_exists"]
     saved = json.loads((tmp_path / "timeout.run.json").read_text())
     assert saved["status"] == "time_budget"
+
+
+def test_normalization_failure_and_unwritable_checkpoint_preserve_original_report(
+    corpus, tmp_path, monkeypatch
+):
+    from embodied_jepa.models import NativeJEPA
+
+    def fail_fit(*args, **kwargs):
+        raise ContractError("normalization failure")
+
+    def fail_save(*args, **kwargs):
+        raise ContractError("cannot save unfitted model")
+
+    monkeypatch.setattr(NativeJEPA, "fit_normalization", fail_fit, raising=False)
+    monkeypatch.setattr(NativeJEPA, "save", fail_save)
+    with pytest.raises(ContractError, match="normalization failure"):
+        train(corpus.root, "native_jepa", tmp_path / "unfitted.pt", horizon=2)
+    saved = json.loads((tmp_path / "unfitted.run.json").read_text())
+    assert saved["status"] == "failed"
+    assert "normalization failure" in saved["error"]
+    assert "cannot save unfitted" in saved["latest_checkpoint_error"]
+    assert not saved["latest_checkpoint_exists"]
 
 
 def test_unavailable_horizon_failure_is_preserved(corpus, tmp_path):

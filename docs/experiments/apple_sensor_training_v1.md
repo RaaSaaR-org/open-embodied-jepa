@@ -36,8 +36,9 @@ Its image-goal distance never invents goal joint state.
 - Write `checkpoints/apple-sensor-v1/sensor.pt` plus the runner's latest, curve and
   report artifacts. Existing paths are refused; negative results are retained.
 
-Uniform training-window sampling gives every recorded transition equal chance;
-collection deliberately balances nominal and perturbed episodes. This does not
+Uniform training-window sampling gives every admissible training window equal
+chance; overlapping windows give boundary transitions different multiplicities.
+Collection deliberately balances nominal and perturbed episodes. This does not
 imply equal time in each manipulation phase. Record actual per-phase coverage and
 flag insufficient failed-action support as a limitation rather than claiming a
 balanced phase sampler that is not implemented.
