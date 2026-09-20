@@ -210,7 +210,7 @@ class G1Embodiment:
         target_rotation = base_rotation @ rotation
         jacp, jacr = np.zeros((3, self.model.nv)), np.zeros((3, self.model.nv))
         for _ in range(self.manifest["ik_iterations"]):
-            self.mj.mj_forward(self.model, scratch)
+            self._forward_kinematics(scratch)
             current_rotation = scratch.site_xmat[site_id].reshape(3, 3)
             dp = target_position - scratch.site_xpos[site_id]
             error_quaternion = np.empty(4)
@@ -294,11 +294,21 @@ class G1Embodiment:
         targets[hand_indices] = hand_targets
         return reasons
 
+    def _forward_kinematics(self, data):
+        """Refresh poses and joint Jacobians without unrelated contact/dynamics solves.
+
+        mj_kinematics updates body/site poses; mj_comPos updates the global
+        joint axes needed by mj_jacSite. Neither performs time integration.
+        This is only used for scratch IK and command-target preview states.
+        """
+        self.mj.mj_kinematics(self.model, data)
+        self.mj.mj_comPos(self.model, data)
+
     def _snapshot_kinematics(self):
         """Robot-only kinematics consistent with the latest measured joint snapshot."""
         data = self.mj.MjData(self.model)
         data.qpos[self.sim.qadr] = self._projection_q
-        self.mj.mj_forward(self.model, data)
+        self._forward_kinematics(data)
         return data
 
     def project_candidates(self, requested):
@@ -332,7 +342,7 @@ class G1Embodiment:
             self.mj.mj_resetData(self.model, data)
             data.qpos[self.sim.qadr] = initial_q
             targets = initial_targets.copy()
-            self.mj.mj_forward(self.model, data)
+            self._forward_kinematics(data)
             for step in range(requested.shape[2]):
                 applied = actions[0, candidate, step].copy()
                 for side_index, side in enumerate(("left", "right")):
@@ -355,7 +365,7 @@ class G1Embodiment:
                     break
                 actions[0, candidate, step] = applied
                 data.qpos[self.sim.qadr] = targets
-                self.mj.mj_forward(self.model, data)
+                self._forward_kinematics(data)
         return CandidateProjection(actions, feasible)
 
     def execute(self, normalized_action):

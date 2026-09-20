@@ -309,3 +309,31 @@ def test_projection_acceptance_after_physics_refreshes_cached_ee_transforms(robo
         result = robot.execute(action)
         assert result.applied_action is not None, f"step {step}: {result.reason}"
         np.testing.assert_allclose(result.applied_action, action, atol=2e-6, rtol=0)
+
+
+@pytest.mark.parametrize("after_motion", [False, True])
+def test_kinematics_only_projection_matches_full_forward_reference(
+    robot, monkeypatch, after_motion
+):
+    if after_motion:
+        command = np.zeros(14, np.float32)
+        command[2] = command[8] = -0.3
+        command[5] = command[11] = 0.25
+        command[12:] = -1
+        for _ in range(4):
+            result = robot.execute(command)
+            assert result.applied_action is not None, result.reason
+            robot.observe()
+    # Wide both-arm requests exercise backtracking and feasibility decisions.
+    command = np.random.default_rng(341).uniform(-1, 1, (1, 12, 3, 14)).astype(np.float32)
+    before = snapshot(robot)
+    optimized = robot.project_candidates(command)
+    assert_unchanged(robot, before)
+    # This is the pre-optimization reference: full mj_forward at every scratch refresh.
+    monkeypatch.setattr(
+        robot, "_forward_kinematics", lambda data: robot.mj.mj_forward(robot.model, data)
+    )
+    reference = robot.project_candidates(command)
+    np.testing.assert_array_equal(optimized.feasible, reference.feasible)
+    np.testing.assert_array_equal(optimized.actions, reference.actions)
+    assert_unchanged(robot, before)
