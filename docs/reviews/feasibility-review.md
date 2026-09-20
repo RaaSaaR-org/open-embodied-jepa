@@ -36,3 +36,14 @@ The shared synchronized-kinematics correction also applies with projection off,
 so the causal comparison is off/on under the same revised runtime, not a promise
 of bit-identical historical trajectories. Physical robot and Isaac previews are
 not implemented. Experiment outcomes are reported separately after execution.
+
+
+## Post-experiment independent audit
+
+The independent reviewer validated all 15 completed records, recomputed episode
+metrics and paired summaries, checked pinned inputs and clean source identity,
+and verified every derived goal's original pixel/reset lineage. All 666 executed
+projected actions matched projected/requested/accepted values exactly. The audit
+confirmed four native and three LeWM completed pairs, the native reach at 20003,
+two LeWM deadline stops, and zero grasp/place successes. One interrupted and four
+unstarted episodes retain unknown outcomes and remain visible in the manifest.
