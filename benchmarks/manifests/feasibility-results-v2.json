@@ -87,7 +87,9 @@
         },
         "termination_reason": "stopped"
       },
-      "episode_sha256": null
+      "episode_sha256": "ad54b295c53dc0f50addd9f4f4b16cd7fdad2a42fa9a23358c0710723b50e31b",
+      "config_sha256": "d7c61d1dda8faa051c8ecbac808c9ca91c318158627b06c257c8a47eafaf4c1c",
+      "goal_manifest_sha256": "0a10473e81b6271d3b5472182d2b2900ebcf2f7e9e81ab0a41b758e642aa1fd5"
     },
     {
       "run_id": "20000-native_jepa-projection-on",
@@ -152,7 +154,9 @@
         },
         "termination_reason": "step_limit"
       },
-      "episode_sha256": null
+      "episode_sha256": "ad70b979a6d135de51502d29a65c6808117afaf28bc763c10e4da28115f7660e",
+      "config_sha256": "af4531bcc11a3a9aa340130b08a5a8857d8f26b45b649e22b7e252458eec521f",
+      "goal_manifest_sha256": "0a10473e81b6271d3b5472182d2b2900ebcf2f7e9e81ab0a41b758e642aa1fd5"
     },
     {
       "run_id": "20000-leworldmodel-projection-off",
@@ -217,7 +221,9 @@
         },
         "termination_reason": "stopped"
       },
-      "episode_sha256": null
+      "episode_sha256": "0f1e22bdb097f75b4e72a4ca3f24c3df61a66941030b6e9cf9ed1ed5e8a29eea",
+      "config_sha256": "f1181965dfac79a12a698491cfaa77506f97aa8723c9148cd30e14494c55bae5",
+      "goal_manifest_sha256": "0a10473e81b6271d3b5472182d2b2900ebcf2f7e9e81ab0a41b758e642aa1fd5"
     },
     {
       "run_id": "20000-leworldmodel-projection-on",
@@ -282,7 +288,9 @@
         },
         "termination_reason": "step_limit"
       },
-      "episode_sha256": null
+      "episode_sha256": "d30ea045e2a38d70aa51f8a7134aab6c13a727bbc3c78239d0b66ac800a7f8d0",
+      "config_sha256": "3a09dfde84964b83cac57004c3fe56d3824f8aeb30b59d4780edf4e94d1cdb79",
+      "goal_manifest_sha256": "0a10473e81b6271d3b5472182d2b2900ebcf2f7e9e81ab0a41b758e642aa1fd5"
     },
     {
       "run_id": "20001-native_jepa-projection-off",
@@ -347,7 +355,9 @@
         },
         "termination_reason": "stopped"
       },
-      "episode_sha256": null
+      "episode_sha256": "1425fdb10a34fa672284598fcdea885d3f4c0f81ed3d29743488ee65557a9224",
+      "config_sha256": "0900a27b7ee5df7f78e30c2f4a616315053e12b5a8c482c4f100e897321098eb",
+      "goal_manifest_sha256": "bbb378b4d81a22b295e618da4415a4b4a0db65598f3766c59d99632747d58355"
     },
     {
       "run_id": "20001-native_jepa-projection-on",
@@ -412,7 +422,9 @@
         },
         "termination_reason": "step_limit"
       },
-      "episode_sha256": null
+      "episode_sha256": "e05cf6f0afd5925c30a2c3cb38fc5a1dec1023808763a37df58d2dcd72b53cf8",
+      "config_sha256": "4edfbd96f39ba2c77d2bcaa16f0cfe1d692225631b98ed2303d53deb0dc3c66e",
+      "goal_manifest_sha256": "bbb378b4d81a22b295e618da4415a4b4a0db65598f3766c59d99632747d58355"
     },
     {
       "run_id": "20001-leworldmodel-projection-off",
@@ -477,7 +489,9 @@
         },
         "termination_reason": "stopped"
       },
-      "episode_sha256": null
+      "episode_sha256": "930f9ccdc57d825cc2b2ac07bdfc4c1ae98c0a593c51bab623e030bdc3be8ef2",
+      "config_sha256": "1699bc60b6556d19b736dcef684b3980d7e4701bbf31661d49668cd54c0bfe47",
+      "goal_manifest_sha256": "bbb378b4d81a22b295e618da4415a4b4a0db65598f3766c59d99632747d58355"
     },
     {
       "run_id": "20001-leworldmodel-projection-on",
@@ -542,7 +556,9 @@
         },
         "termination_reason": "step_limit"
       },
-      "episode_sha256": null
+      "episode_sha256": "23b5fe8a183e0bfca5bab71ddb28a7883ce9c15ac9dc8884a094a84eed8eb0a6",
+      "config_sha256": "9be7d41b91a98cfef259222d49dbe7e143e81a3f051e72492767bcbcc1a1dcc0",
+      "goal_manifest_sha256": "bbb378b4d81a22b295e618da4415a4b4a0db65598f3766c59d99632747d58355"
     },
     {
       "run_id": "20002-native_jepa-projection-off",
@@ -607,7 +623,9 @@
         },
         "termination_reason": "stopped"
       },
-      "episode_sha256": null
+      "episode_sha256": "c49abaf38eff43febee8ec5550fa58c3a291c2c658c897ed16ae9d2c10d8dac2",
+      "config_sha256": "9a092dbfe74c689c7dfda1394717556574fd6fa411e2e1106b7348eacf6ef7f9",
+      "goal_manifest_sha256": "905cff2b3276e4d8c6cc3f778326effa5210d71db4dfe816225c420bab746384"
     },
     {
       "run_id": "20002-native_jepa-projection-on",
@@ -672,7 +690,9 @@
         },
         "termination_reason": "step_limit"
       },
-      "episode_sha256": null
+      "episode_sha256": "d3eb7264a401edfe464543743d443be6dac133629f79f830a4e14ed25fc907a1",
+      "config_sha256": "191b73d866f4b7771e699a7bc17e198b20ef688edbf548898cdef827b17f8aca",
+      "goal_manifest_sha256": "905cff2b3276e4d8c6cc3f778326effa5210d71db4dfe816225c420bab746384"
     },
     {
       "run_id": "20002-leworldmodel-projection-off",
@@ -737,7 +757,9 @@
         },
         "termination_reason": "stopped"
       },
-      "episode_sha256": null
+      "episode_sha256": "cfae81a583ed0aaddb3ebd804f59f2e7de8d9d22bbc9dd814ac4679d11ba82a4",
+      "config_sha256": "de06b602d29d584ee2bbb266ae5442e52387646c071f84d793776783d4b20a4c",
+      "goal_manifest_sha256": "905cff2b3276e4d8c6cc3f778326effa5210d71db4dfe816225c420bab746384"
     },
     {
       "run_id": "20002-leworldmodel-projection-on",
@@ -802,7 +824,9 @@
         },
         "termination_reason": "step_limit"
       },
-      "episode_sha256": null
+      "episode_sha256": "e8d687b6d713a54e53c26e9d3edd69ef1097a669efe3afdb4751eeff48f3faee",
+      "config_sha256": "ba2805442be2ddf9cd412d2b69061c1cd5927831abc7c5b8fc21b630c909375a",
+      "goal_manifest_sha256": "905cff2b3276e4d8c6cc3f778326effa5210d71db4dfe816225c420bab746384"
     },
     {
       "run_id": "20003-native_jepa-projection-off",
@@ -867,7 +891,9 @@
         },
         "termination_reason": "stopped"
       },
-      "episode_sha256": null
+      "episode_sha256": "ddb0056b6e0f9d463a6f8687b0dfd986b46c458e3b8ad58774850e2ee9218c14",
+      "config_sha256": "51feb777d416c5f873ae70bfc31d4e42fee9275dde49ab5283ca5d0af690e542",
+      "goal_manifest_sha256": "3d03ec063dee526e9f14e98c992b2793f4a5a789bfa171a426a1ded977d2dad4"
     },
     {
       "run_id": "20003-native_jepa-projection-on",
@@ -932,7 +958,9 @@
         },
         "termination_reason": "step_limit"
       },
-      "episode_sha256": null
+      "episode_sha256": "a9b51a4f56b4477d7ce6bb723024a05096d103f42c27781952c90fd6292fbac6",
+      "config_sha256": "a23cccc30ac06dc9747adf550d10a1f11c13db1614e39c41275c89112bdb7d2d",
+      "goal_manifest_sha256": "3d03ec063dee526e9f14e98c992b2793f4a5a789bfa171a426a1ded977d2dad4"
     },
     {
       "run_id": "20003-leworldmodel-projection-off",
@@ -997,7 +1025,9 @@
         },
         "termination_reason": "stopped"
       },
-      "episode_sha256": null
+      "episode_sha256": "250818166b5e4bce433e70afbb6cd8d4b1d94cbcb01f3094ef40c61ca7037ee1",
+      "config_sha256": "a19e984e824eccb63c771737f835b68ffb8fce6f70ef3a7494a555d8d0a5c0f6",
+      "goal_manifest_sha256": "3d03ec063dee526e9f14e98c992b2793f4a5a789bfa171a426a1ded977d2dad4"
     },
     {
       "run_id": "20003-leworldmodel-projection-on",
@@ -1062,7 +1092,9 @@
         },
         "termination_reason": "step_limit"
       },
-      "episode_sha256": null
+      "episode_sha256": "45f992919604b00a05f7d27a57091fa0bd09a3acbe9e066b8f1396511a314c9d",
+      "config_sha256": "b35621635606a37134e473517a3584527a2fae70807ff2ad9b73dd157471a863",
+      "goal_manifest_sha256": "3d03ec063dee526e9f14e98c992b2793f4a5a789bfa171a426a1ded977d2dad4"
     },
     {
       "run_id": "20004-native_jepa-projection-off",
@@ -1127,7 +1159,9 @@
         },
         "termination_reason": "stopped"
       },
-      "episode_sha256": null
+      "episode_sha256": "f9bf04c6c69f87a9abdd36ac25acac4c2b80317be61cc75c0c592f0fb7bcb561",
+      "config_sha256": "fa2f058245e193f2089f0f7f371190c70ea9cbd958835c207839953d523bb952",
+      "goal_manifest_sha256": "68039c3c896b190cfacfddfc593aef4fd26983289ff153550f127ef24674b95d"
     },
     {
       "run_id": "20004-native_jepa-projection-on",
@@ -1192,7 +1226,9 @@
         },
         "termination_reason": "step_limit"
       },
-      "episode_sha256": null
+      "episode_sha256": "7dfcecdb9a34bc6f15ca85e1d5d6390e96f292205a25f70b1e9fe9ccee51399f",
+      "config_sha256": "3f48c67f53ecbe25a099dd0975ec7679609f1f1ca2a63c391e1e372ac12a7961",
+      "goal_manifest_sha256": "68039c3c896b190cfacfddfc593aef4fd26983289ff153550f127ef24674b95d"
     },
     {
       "run_id": "20004-leworldmodel-projection-off",
@@ -1257,7 +1293,9 @@
         },
         "termination_reason": "stopped"
       },
-      "episode_sha256": null
+      "episode_sha256": "e7a91d7a2c0cbb487d72507836c002c2b598a5274fb44170566d0cbf87f81cfa",
+      "config_sha256": "76f44b84449f7d1c00b995d7194ed511b04600db2410870181dba872de8336fb",
+      "goal_manifest_sha256": "68039c3c896b190cfacfddfc593aef4fd26983289ff153550f127ef24674b95d"
     },
     {
       "run_id": "20004-leworldmodel-projection-on",
@@ -1322,7 +1360,9 @@
         },
         "termination_reason": "step_limit"
       },
-      "episode_sha256": null
+      "episode_sha256": "c64f16df3bb126a0f745e2a5558a0a27ecbdbe02ea9da3a83653df4032246138",
+      "config_sha256": "8a7d031e70372018c06b4b5e111d0660cd3f6a666a0ea64cfe2c53e6e00dd92d",
+      "goal_manifest_sha256": "68039c3c896b190cfacfddfc593aef4fd26983289ff153550f127ef24674b95d"
     }
   ]
 }
