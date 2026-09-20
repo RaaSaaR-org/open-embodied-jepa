@@ -50,3 +50,39 @@ verification, calibrated thresholds, deadline handling, safe stopping and final
 task scoring remain integration responsibilities. Completing image waypoints
 must not be reported as physical task success. Real contact dynamics, meaningful
 model dependence and the fresh task cohort remain unverified by these unit tests.
+
+## Evaluation-runner follow-up review
+
+Independently reviewed `scripts/evaluate_apple.py` and its tests. The initial
+review requested three corrections before execution: an explicit per-control
+deadline, retention of failed/terminated worker outcomes even when a report had
+already been written, and post-attempt frozen-input verification. The revised
+runner checks its registered five-second deadline before execution, records
+supervisor return codes and overrides failed child completion, and checks the
+snapshot sources/checkpoint/dataset/action/asset/generated-waypoint hashes both
+before and after attempts. Integrity failure invalidates the comparison rather
+than letting the last completed report silently certify changed inputs.
+
+The initial single-demo calibration could make an immutable plate/reset mismatch
+look like a controllable goal error. Before evaluation, the coordinator declared
+a training-only tolerance extension: include 1.1 times the 90th percentile of
+same-frame distances from successful nominal training episodes. Review verified
+that reference IDs/frame indices/distances/counts are stored, missing frames are
+skipped rather than clamped to a future endpoint, and non-training IDs are
+rejected. Adjacent-waypoint distances and threshold overlaps are also reported.
+Broad thresholds can make multiple successive goals visually indistinguishable;
+that remains an empirical limitation, and the dynamics ablations are essential.
+This task-specific temporal scaffold is not an independent image-goal or
+zero-shot-generalization result.
+
+After these changes, `PYTHONPATH=src .venv/bin/python -m pytest -q
+tests/test_apple_evaluation.py tests/test_waypoint_planning.py` passed **27 tests
+in 0.08 seconds** (16 runner, 11 controller). No physics evaluation was run by
+this reviewer. The additional minor trace correction is verified: acknowledged
+result rows now retain `control_seconds`, which replacing the temporary trace
+with the acknowledgement had discarded. A focused regression also confirms
+that a six-second plan cannot actuate under the five-second deadline.
+
+No remaining blocking review finding in the revised controller/runner scope.
+The validation and success limitations above remain; software review is not an
+apple-manipulation result.

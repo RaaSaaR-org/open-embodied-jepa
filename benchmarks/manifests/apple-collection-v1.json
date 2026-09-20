@@ -1,0 +1,156 @@
+{
+  "all_splits_read_only_audited": true,
+  "attempt_statuses": {
+    "command_rejected": 1,
+    "success": 31
+  },
+  "attempts_by_variant": {
+    "closure_burst": 8,
+    "nominal": 16,
+    "position_burst": 8
+  },
+  "checks": {
+    "actual_applied_actions": true,
+    "all_payload_hashes": true,
+    "complete_T_plus_one": true,
+    "finite_signals_20hz": true,
+    "normalization_recomputed_train_only": true,
+    "raw_action_conversion": true,
+    "snapshot_hashes": true,
+    "train_only_pixel_exact_waypoints": true,
+    "whole_session_disjoint_splits": true
+  },
+  "collection_timing": {
+    "process_cpu_seconds": 196.78086,
+    "true_wall_seconds": 213.50886416714638
+  },
+  "dataset_sha256": "d70edd9daaeec58e80a4e6a743980c049335a03f2b32b7d42bbac5ec5bc579df",
+  "kind": "task_specific_apple_collection_integrity_audit",
+  "normalized_action_max": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.4386441707611084,
+    0.4373360276222229,
+    0.4399227499961853,
+    0.11947902292013168,
+    0.3681713044643402,
+    0.5,
+    -1.0,
+    1.0
+  ],
+  "normalized_action_min": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    -0.2321801334619522,
+    -0.43110010027885437,
+    -0.4396851360797882,
+    -0.5197816491127014,
+    -0.5182697176933289,
+    -0.303596556186676,
+    -1.0,
+    -1.0
+  ],
+  "notes": "TRAIN/VAL images decoded for integrity and waypoint checks. TEST images never decoded: only Parquet sensor/action columns and encoded image presence checked, plus whole payload hashes. Normalization recomputed on TRAIN only. No learned-model evaluation or fit performed.",
+  "oracle_data_not_learned_control": true,
+  "phase_transitions_by_split": {
+    "test": {
+      "close": 135,
+      "descend": 240,
+      "lift": 450,
+      "orient": 390,
+      "release_high": 110,
+      "transfer": 180
+    },
+    "train": {
+      "close": 1170,
+      "descend": 2080,
+      "lift": 3900,
+      "lower_open": 30,
+      "orient": 3380,
+      "release_high": 1005,
+      "transfer": 1560
+    },
+    "val": {
+      "close": 135,
+      "descend": 240,
+      "lift": 450,
+      "orient": 390,
+      "release_high": 107,
+      "transfer": 180
+    }
+  },
+  "planned_attempts": 32,
+  "requested_applied_disagreement": {
+    "maximum_absolute_difference": 1.8181817531585693,
+    "mean_absolute_difference": 0.0014140821046160527,
+    "steps_changed": 320
+  },
+  "schema_version": 1,
+  "snapshot_manifest_sha256": "d8a8445763420db8b47796fdedc5125a753e38cc60225f461ac5d00a595a9787",
+  "source_revision": "813d4bc722e60c4790ca596ba7f8a1dfd5609b3a",
+  "split_counts": {
+    "holdout": 0,
+    "test": 3,
+    "train": 26,
+    "val": 3
+  },
+  "stage_successes_by_split": {
+    "test": {
+      "grasp": 3,
+      "place": 3,
+      "reach": 3,
+      "release": 3,
+      "success": 3,
+      "transport": 3
+    },
+    "train": {
+      "grasp": 26,
+      "place": 25,
+      "reach": 26,
+      "release": 25,
+      "success": 25,
+      "transport": 26
+    },
+    "val": {
+      "grasp": 3,
+      "place": 3,
+      "reach": 3,
+      "release": 3,
+      "success": 3,
+      "transport": 3
+    }
+  },
+  "stored_episodes": 32,
+  "successes_by_split": {
+    "holdout": 0,
+    "test": 3,
+    "train": 25,
+    "val": 3
+  },
+  "successes_by_variant": {
+    "closure_burst": 7,
+    "nominal": 16,
+    "position_burst": 8
+  },
+  "successful_train_goal_episodes": 25,
+  "supervisor": {
+    "max_true_wall_seconds": 600,
+    "returncode": 0,
+    "runtime_snapshot": "/Users/sebastian/develop/emai/experiments/JEPA/open-embodied-jepa/data/apple-task-v1-runtime",
+    "snapshot_manifest_sha256": "d8a8445763420db8b47796fdedc5125a753e38cc60225f461ac5d00a595a9787",
+    "status": "completed",
+    "training_ready": true,
+    "true_wall_seconds": 213.75716249994002
+  },
+  "test_images_decoded": false,
+  "train_goal_images": 1300,
+  "transitions": 16132
+}
