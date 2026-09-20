@@ -40,3 +40,7 @@ Matched branch data improved VAL H16 action assignment to73.87%, but raw endpoin
 
 Collector corpus: `data/apple-branches-v1`, manifest SHA256 `6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331`. Implementation agent owns generic sampling and bounded supervisor profile/protocol; coordinator owns MC/Git and experiment authorization. Architecture and model implementation remain unchanged for strict checkpoint compatibility. This jointly changes horizon and sampling support; attribute any difference to that declared training configuration, not horizon alone.
 %% mc-links: [[TASK-035]] %%
+
+## Implementation review
+
+Explicit group sampling and the supervised profile were independently reviewed with no remaining blockers. Full optional/graphics suite:462 passed in10.15s before parent merge;58 affected sampler/supervisor/diagnostic checks passed after merge. Default window-sampling RNG behavior remains covered. Parent PR #5 is verified merged; this branch preserves its civil-wall diagnostic fix and delivered evidence. Full H16 training has not yet run.
