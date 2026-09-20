@@ -236,3 +236,31 @@ def test_cli_has_no_unregistered_steps_or_budget_override(monkeypatch):
     with pytest.raises(SystemExit) as error:
         runner.main()
     assert error.value.code == 2
+
+
+@pytest.mark.parametrize("ready", [False, True])
+def test_branch_profile_requires_completed_matched_contrast_evidence(fixture, monkeypatch, ready):
+    monkeypatch.setattr(runner, "EXPERIMENT", "apple_branch_training_v1")
+    (fixture["dataset"] / "branch_report.json").write_text(
+        json.dumps(
+            {
+                "status": "completed",
+                "training_ready": True,
+                "action_contrast_gate_passed": ready,
+                "dataset_sha256": fixture["expected_dataset_sha256"],
+            }
+        )
+    )
+    if ready:
+        monkeypatch.setattr(runner, "supervise", complete_supervisor(fixture))
+    else:
+        monkeypatch.setattr(runner, "supervise", lambda *a, **k: pytest.fail("must not launch"))
+    report = runner.run(**fixture)
+    assert report["status"] == ("completed" if ready else "failed_integrity_or_orchestration")
+    if ready:
+        assert (
+            json.loads((fixture["output"] / "registration.json").read_text())["experiment"]
+            == runner.EXPERIMENT
+        )
+    else:
+        assert report["started_runs"] == 0

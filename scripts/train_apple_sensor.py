@@ -16,6 +16,7 @@ import sys  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
+EXPERIMENT = "apple_sensor_training_v1"
 PROTOCOL = "docs/experiments/apple_sensor_training_v1.md"
 MAX_SECONDS = 1800.0
 FIXED = {
@@ -110,6 +111,15 @@ def source_identity(root):
 
 def verify(root, dataset, expected):
     source = source_identity(root)
+    if EXPERIMENT == "apple_branch_training_v1":
+        collection = json.loads((dataset / "branch_report.json").read_text())
+        if (
+            collection.get("status") != "completed"
+            or collection.get("training_ready") is not True
+            or collection.get("action_contrast_gate_passed") is not True
+            or collection.get("dataset_sha256") != expected["dataset_sha256"]
+        ):
+            raise ValueError("branch corpus has not passed the frozen collection/contrast gate")
     actual = {
         "source_sha256": source["python_source_sha256"],
         "dataset_sha256": digest(dataset / "meta/jepa_manifest.json"),
@@ -238,7 +248,7 @@ def run(
             command.extend(("--max-seconds", str(clock.remaining())))
             registration = {
                 "schema_version": 1,
-                "experiment": "apple_sensor_training_v1",
+                "experiment": EXPERIMENT,
                 "source": before,
                 "expected": expected,
                 "model": resolved,
@@ -354,14 +364,20 @@ def run(
 
 
 def main():
+    global EXPERIMENT, PROTOCOL, MAX_SECONDS
     clock = Clock(include_entry=True)
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--profile", choices=("sensor_v1", "branches_v1"), default="sensor_v1")
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--source-sha256", required=True)
     parser.add_argument("--dataset-sha256", required=True)
     parser.add_argument("--protocol-sha256", required=True)
     args = parser.parse_args()
+    if args.profile == "branches_v1":
+        EXPERIMENT = "apple_branch_training_v1"
+        PROTOCOL = "docs/experiments/apple_branch_training_v1.md"
+        MAX_SECONDS = 600.0
     report = run(
         args.dataset,
         args.output,
