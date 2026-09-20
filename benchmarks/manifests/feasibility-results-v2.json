@@ -1,0 +1,1328 @@
+{
+  "format_version": 1,
+  "development_only": true,
+  "execution_revision": "3ddb09243648ad0be06248a45de7442fb1783419",
+  "source_sha256": "84220c56d89db7b609b117a827216ea5cc5794eb7d4a5e76e1cc0eb060d9014e",
+  "comparison_sha256": "fe94959def219e59657e8d69c3e0d1e2db4621ef0eee2d12d027313969e5d56b",
+  "protocol": "docs/experiments/feasibility_v2.md",
+  "protocol_sha256": "ede8b291d0c4d39c7823f520df121691bb3c0a14f2699d1c6a1d30018791b306",
+  "status": "completed",
+  "timing": {
+    "elapsed_seconds": 363.4095419999212,
+    "monotonic_elapsed_seconds": 363.4095419999212,
+    "process_cpu_seconds": 0.9755809999999999,
+    "wall_clock_elapsed_seconds": 363.4061059951782
+  },
+  "pinned_inputs": {
+    "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+    "checkpoints/mvp-v0/seed-1/leworldmodel.pt": "ab00894e48c1fac0c862fa5b37cb648f0d673704d6afb839980c2f45611b2dd5",
+    "checkpoints/mvp-v0/seed-1/native_jepa.pt": "62125697464d56bcb79ece37008d6afd81b62505f0fab369b5aaa13510b1c33a",
+    "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+    "configs/mvp_common.yaml": "292c7484e522f7cc076a8e122950a5dfe9f097e7bb49dff947a004a563ac1bd2",
+    "configs/mvp_seed1.yaml": "19e52c1cf96c04bde0ec53fc4f1dd6625365dc347de80d2da520e9b74e34bbb6",
+    "data/goals/mvp-v0/manifest.json": "eef30af440d40064efecc98a84a68d4388f9f60d1151104b4859a8f9934ee38e",
+    "data/mvp-v0/meta/jepa_manifest.json": "200246b34bd18cb30c8c711879c42a5ed2f31a62c99b96c1b347e37aa57512b7"
+  },
+  "runs": [
+    {
+      "run_id": "20000-native_jepa-projection-off",
+      "seed": 20000,
+      "backend": "native_jepa",
+      "project_candidates": false,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.6581276059150696,
+            "mean_absolute_error": 0.024755389106516937,
+            "missing_reason": null,
+            "paired_steps": 7
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.6581276059150696,
+            "mean_absolute_error": 0.024755389106516937,
+            "missing_reason": null,
+            "paired_steps": 7
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 7,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 8,
+            "max": 0.02571729221381247,
+            "mean": 0.01371558866230771,
+            "p50": 0.01200845802668482,
+            "p95": 0.021390592190437013
+          },
+          "planning_seconds": {
+            "count": 8,
+            "max": 0.0016195420175790787,
+            "mean": 0.001216843636939302,
+            "p50": 0.0011646249331533909,
+            "p95": 0.0014854045351967214
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20000-native_jepa-projection-on",
+      "seed": 20000,
+      "backend": "native_jepa",
+      "project_candidates": true,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.5983969569206238,
+            "mean_absolute_error": 0.025486453634803185,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.5983969569206238,
+            "mean_absolute_error": 0.025486453634803185,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 0.13870604103431106,
+            "mean": 0.1138194737304002,
+            "p50": 0.11255033349152654,
+            "p95": 0.12044049345422536
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 0.11547779105603695,
+            "mean": 0.1027717733127065,
+            "p50": 0.10173556243535131,
+            "p95": 0.10875896634534
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 0.11323762498795986,
+            "mean": 0.10121720336377621,
+            "p50": 0.10020912520121783,
+            "p95": 0.10723265075357631
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20000-leworldmodel-projection-off",
+      "seed": 20000,
+      "backend": "leworldmodel",
+      "project_candidates": false,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.03277862710612161,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.03277862710612161,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 11,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 12,
+            "max": 0.02933720895089209,
+            "mean": 0.01922877775117134,
+            "p50": 0.018409457989037037,
+            "p95": 0.02369010658003389
+          },
+          "planning_seconds": {
+            "count": 12,
+            "max": 0.008166000014171004,
+            "mean": 0.0073590000392869115,
+            "p50": 0.007294854032807052,
+            "p95": 0.00794748943299055
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20000-leworldmodel-projection-on",
+      "seed": 20000,
+      "backend": "leworldmodel",
+      "project_candidates": true,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.04704207054127307,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.04704207054127307,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 1.3839060419704765,
+            "mean": 0.6468817483144812,
+            "p50": 0.599817979382351,
+            "p95": 1.1644171605934388
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 1.3592300829477608,
+            "mean": 0.6337471832963638,
+            "p50": 0.5885016873944551,
+            "p95": 1.139525833108928
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 1.34995362511836,
+            "mean": 0.6245135516044684,
+            "p50": 0.5795654789544642,
+            "p95": 1.1303816264378836
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20001-native_jepa-projection-off",
+      "seed": 20001,
+      "backend": "native_jepa",
+      "project_candidates": false,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.236466109752655,
+            "mean_absolute_error": 0.028796498046873453,
+            "missing_reason": null,
+            "paired_steps": 22
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.236466109752655,
+            "mean_absolute_error": 0.028796498046873453,
+            "missing_reason": null,
+            "paired_steps": 22
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 22,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 23,
+            "max": 0.022876666858792305,
+            "mean": 0.012415139419634057,
+            "p50": 0.011822625063359737,
+            "p95": 0.012778024980798363
+          },
+          "planning_seconds": {
+            "count": 23,
+            "max": 0.0013659580145031214,
+            "mean": 0.0010906866265703802,
+            "p50": 0.001059624832123518,
+            "p95": 0.0012920292327180504
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20001-native_jepa-projection-on",
+      "seed": 20001,
+      "backend": "native_jepa",
+      "project_candidates": true,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.515720009803772,
+            "mean_absolute_error": 0.027152177135992262,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.515720009803772,
+            "mean_absolute_error": 0.027152177135992262,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 0.1380920831579715,
+            "mean": 0.11757885492639616,
+            "p50": 0.11721491650678217,
+            "p95": 0.12443975075148046
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 0.12725562485866249,
+            "mean": 0.10624620619462803,
+            "p50": 0.1059060205006972,
+            "p95": 0.11057053812546655
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 0.12504245806485415,
+            "mean": 0.10453233583830297,
+            "p50": 0.10417302104178816,
+            "p95": 0.10861449647927657
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20001-leworldmodel-projection-off",
+      "seed": 20001,
+      "backend": "leworldmodel",
+      "project_candidates": false,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.2764506936073303,
+            "mean_absolute_error": 0.03320939226874283,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.2764506936073303,
+            "mean_absolute_error": 0.03320939226874283,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 11,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 12,
+            "max": 0.02976704202592373,
+            "mean": 0.020400135292826842,
+            "p50": 0.01857347902841866,
+            "p95": 0.027692121325526384
+          },
+          "planning_seconds": {
+            "count": 12,
+            "max": 0.008179791970178485,
+            "mean": 0.00739683659048751,
+            "p50": 0.0072881251107901335,
+            "p95": 0.007970035099424422
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20001-leworldmodel-projection-on",
+      "seed": 20001,
+      "backend": "leworldmodel",
+      "project_candidates": true,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.38291397690773,
+            "mean_absolute_error": 0.03043503450296287,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.38291397690773,
+            "mean_absolute_error": 0.03043503450296287,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 0.13837866694666445,
+            "mean": 0.12366494124289602,
+            "p50": 0.12376262503676116,
+            "p95": 0.12761377532733603
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 0.11943283397704363,
+            "mean": 0.11246175670996308,
+            "p50": 0.11262302100658417,
+            "p95": 0.1161044108797796
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 0.11084862612187862,
+            "mean": 0.10434266163501889,
+            "p50": 0.10448374901898205,
+            "p95": 0.10749922574032097
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20002-native_jepa-projection-off",
+      "seed": 20002,
+      "backend": "native_jepa",
+      "project_candidates": false,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.1849621534347534,
+            "mean_absolute_error": 0.039437490188843245,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.1849621534347534,
+            "mean_absolute_error": 0.039437490188843245,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 11,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 12,
+            "max": 0.022408584132790565,
+            "mean": 0.012599371645289162,
+            "p50": 0.011674395995214581,
+            "p95": 0.016891900368500495
+          },
+          "planning_seconds": {
+            "count": 12,
+            "max": 0.0014388340059667826,
+            "mean": 0.0010854930345279474,
+            "p50": 0.0010728745255619287,
+            "p95": 0.001263429154641926
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20002-native_jepa-projection-on",
+      "seed": 20002,
+      "backend": "native_jepa",
+      "project_candidates": true,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.423687219619751,
+            "mean_absolute_error": 0.029463492347193615,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.423687219619751,
+            "mean_absolute_error": 0.029463492347193615,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 0.1366273749154061,
+            "mean": 0.11506836994318291,
+            "p50": 0.11427045846357942,
+            "p95": 0.12212707940489054
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 0.12546400004066527,
+            "mean": 0.10389419878367334,
+            "p50": 0.10311452089808881,
+            "p95": 0.10837882284540683
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 0.12333749979734421,
+            "mean": 0.10231709881918505,
+            "p50": 0.101525395992212,
+            "p95": 0.10658220485784113
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20002-leworldmodel-projection-off",
+      "seed": 20002,
+      "backend": "leworldmodel",
+      "project_candidates": false,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 0,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 1,
+            "max": 0.030638457974418998,
+            "mean": 0.030638457974418998,
+            "p50": 0.030638457974418998,
+            "p95": 0.030638457974418998
+          },
+          "planning_seconds": {
+            "count": 1,
+            "max": 0.008510124869644642,
+            "mean": 0.008510124869644642,
+            "p50": 0.008510124869644642,
+            "p95": 0.008510124869644642
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20002-leworldmodel-projection-on",
+      "seed": 20002,
+      "backend": "leworldmodel",
+      "project_candidates": true,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.2974187731742859,
+            "mean_absolute_error": 0.04522110087510165,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.2974187731742859,
+            "mean_absolute_error": 0.04522110087510165,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 1.428353417199105,
+            "mean": 0.7489537491323426,
+            "p50": 0.9214616665849462,
+            "p95": 1.2191374796209855
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 1.4175258751492947,
+            "mean": 0.7355249203671701,
+            "p50": 0.9069917495362461,
+            "p95": 1.207103403599467
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 1.4079625827725977,
+            "mean": 0.7264248645631597,
+            "p50": 0.8975200414424762,
+            "p95": 1.1978180911857632
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20003-native_jepa-projection-off",
+      "seed": 20003,
+      "backend": "native_jepa",
+      "project_candidates": false,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.9242962002754211,
+            "mean_absolute_error": 0.02725143354310065,
+            "missing_reason": null,
+            "paired_steps": 7
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 0.9242962002754211,
+            "mean_absolute_error": 0.02725143354310065,
+            "missing_reason": null,
+            "paired_steps": 7
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 7,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 8,
+            "max": 0.022080166032537818,
+            "mean": 0.013005004962906241,
+            "p50": 0.011761603876948357,
+            "p95": 0.018585066392552103
+          },
+          "planning_seconds": {
+            "count": 8,
+            "max": 0.0013668749015778303,
+            "mean": 0.0010883748473133892,
+            "p50": 0.0010633328929543495,
+            "p95": 0.0012854271219111977
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20003-native_jepa-projection-on",
+      "seed": 20003,
+      "backend": "native_jepa",
+      "project_candidates": true,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.1712202727794647,
+            "mean_absolute_error": 0.0322747822531632,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.1712202727794647,
+            "mean_absolute_error": 0.0322747822531632,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 0.3372191658709198,
+            "mean": 0.12220622997032478,
+            "p50": 0.11294150003232062,
+            "p95": 0.1636830167844891
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 0.32665425003506243,
+            "mean": 0.11135957869235426,
+            "p50": 0.1021207079757005,
+            "p95": 0.15330890389159318
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 0.32506100088357925,
+            "mean": 0.10991634792881086,
+            "p50": 0.1006878949701786,
+            "p95": 0.15176863333908835
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": true,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20003-leworldmodel-projection-off",
+      "seed": 20003,
+      "backend": "leworldmodel",
+      "project_candidates": false,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.03472244745541003,
+            "missing_reason": null,
+            "paired_steps": 31
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.03472244745541003,
+            "missing_reason": null,
+            "paired_steps": 31
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 31,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 32,
+            "max": 0.02982366713695228,
+            "mean": 0.01857507428212557,
+            "p50": 0.018159292172640562,
+            "p95": 0.018982360523659737
+          },
+          "planning_seconds": {
+            "count": 32,
+            "max": 0.008230708073824644,
+            "mean": 0.007198903607786633,
+            "p50": 0.007181270979344845,
+            "p95": 0.007533526537008583
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20003-leworldmodel-projection-on",
+      "seed": 20003,
+      "backend": "leworldmodel",
+      "project_candidates": true,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.5017364621162415,
+            "mean_absolute_error": 0.041098008300260905,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.5017364621162415,
+            "mean_absolute_error": 0.041098008300260905,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 1.2222900420892984,
+            "mean": 0.4303286688169464,
+            "p50": 0.19954662502277642,
+            "p95": 0.9673537712311371
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 1.2104911669157445,
+            "mean": 0.41902277010725814,
+            "p50": 0.1883524169679731,
+            "p95": 0.9561507705016992
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 1.2010778749827296,
+            "mean": 0.4104798513674177,
+            "p50": 0.17998162494041026,
+            "p95": 0.9471812826930545
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20004-native_jepa-projection-off",
+      "seed": 20004,
+      "backend": "native_jepa",
+      "project_candidates": false,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.9113891124725342,
+            "mean_absolute_error": 0.05580688001854079,
+            "missing_reason": null,
+            "paired_steps": 2
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 0.9113891124725342,
+            "mean_absolute_error": 0.05580688001854079,
+            "missing_reason": null,
+            "paired_steps": 2
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 2,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 3,
+            "max": 0.022930125007405877,
+            "mean": 0.01590104168280959,
+            "p50": 0.012554041109979153,
+            "p95": 0.021892516617663203
+          },
+          "planning_seconds": {
+            "count": 3,
+            "max": 0.0013982499949634075,
+            "mean": 0.0012309583059201639,
+            "p50": 0.0011923748534172773,
+            "p95": 0.0013776624808087945
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20004-native_jepa-projection-on",
+      "seed": 20004,
+      "backend": "native_jepa",
+      "project_candidates": true,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.2622024714946747,
+            "mean_absolute_error": 0.026569591791235976,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.2622024714946747,
+            "mean_absolute_error": 0.026569591791235976,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 0.1331211249344051,
+            "mean": 0.11584703709930182,
+            "p50": 0.11544952099211514,
+            "p95": 0.11930352706694976
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 0.11063100001774728,
+            "mean": 0.10485365086933598,
+            "p50": 0.1047736459877342,
+            "p95": 0.10802745457040146
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 0.10850083408877254,
+            "mean": 0.10331500080646946,
+            "p50": 0.10323256312403828,
+            "p95": 0.10641076175961643
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20004-leworldmodel-projection-off",
+      "seed": 20004,
+      "backend": "leworldmodel",
+      "project_candidates": false,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.8521653674542904,
+            "mean_absolute_error": 0.03094845526404195,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 0.8521653674542904,
+            "mean_absolute_error": 0.03094845526404195,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 11,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 12,
+            "max": 0.03011883283033967,
+            "mean": 0.019499010309421767,
+            "p50": 0.01848916697781533,
+            "p95": 0.024089572310913347
+          },
+          "planning_seconds": {
+            "count": 12,
+            "max": 0.008270416175946593,
+            "mean": 0.00742310758990546,
+            "p50": 0.007350645959377289,
+            "p95": 0.007963562244549393
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "episode_sha256": null
+    },
+    {
+      "run_id": "20004-leworldmodel-projection-on",
+      "seed": 20004,
+      "backend": "leworldmodel",
+      "project_candidates": true,
+      "status": "completed",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.2827590107917786,
+            "mean_absolute_error": 0.03499609407020866,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.2827590107917786,
+            "mean_absolute_error": 0.03499609407020866,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 1.3828223338350654,
+            "mean": 0.6490848771319725,
+            "p50": 0.7883563750656322,
+            "p95": 1.1485361665836535
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 1.3710605828091502,
+            "mean": 0.6366482282499782,
+            "p50": 0.7769372294424102,
+            "p95": 1.1374228270724416
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 1.3620156680699438,
+            "mean": 0.6277734238258563,
+            "p50": 0.7673925625858828,
+            "p95": 1.1281401990214364
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "episode_sha256": null
+    }
+  ]
+}
