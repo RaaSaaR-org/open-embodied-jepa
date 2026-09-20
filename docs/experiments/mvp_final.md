@@ -18,6 +18,23 @@ are excluded. Assemble to `data/mvp-v0`; the coordinator must confirm its exact
 manifest hash before training. No final corpus hash is asserted until that freeze
 occurs. Model implementation is frozen at commit `75ca290`.
 
+The assembled corpus is now frozen at manifest SHA-256
+`200246b34bd18cb30c8c711879c42a5ed2f31a62c99b96c1b347e37aa57512b7`:
+184 episodes, 42,127 transitions, 146 training / 19 validation / 19 test / zero
+holdout episodes. Canonical normalization lists exactly the 146 training episodes.
+Its split-and-policy hash is
+`5a4bb221b021adea9d3ba5e56a634fbe5e4dae8f77372f8ed6fe5eca2e5cf4f6`.
+Source manifests, in assembly order, are:
+
+- Reach pilot: `9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f`.
+- Manipulation pilot: `8152aa39ce50de0bc37d639051836310e7c2056be932c4d33b00ca58c62d19ec`.
+- Release v1: `f156c1b9816eefffbca929f0fe20413efce4334c9fd25760d57b764e1b991980`.
+
+Release v1 recorded 18 episodes from 24 fixed attempts, preserving all recorded
+failed prefixes. Its nine successful episodes inherit eight train / zero validation /
+one test assignments. This limitation is preserved, not repaired by reshuffling
+after observing success; no test performance influences training or selection.
+
 `scripts/assemble_mvp_data.py` creates a new output directory through the public
 DatasetStore APIs. It preserves every original train/validation/test/holdout
 assignment and original session ID, prefixes episode IDs with the source manifest
@@ -77,7 +94,8 @@ the SHA with the actual frozen hash):
   --source data/reach-pilot-v0 --source data/manipulation-pilot-v0 \
   --source data/manipulation-release-v1 --output data/mvp-v0
 .venv/bin/python scripts/train_mvp.py --dataset data/mvp-v0 \
-  --dataset-sha256 CONFIRMED_MANIFEST_SHA256 --output checkpoints/mvp-v0
+  --dataset-sha256 200246b34bd18cb30c8c711879c42a5ed2f31a62c99b96c1b347e37aa57512b7 \
+  --output checkpoints/mvp-v0
 ```
 
 No training or final evaluation has been run under this protocol at registration.
