@@ -149,6 +149,203 @@ def run_suite(args):
     (args.output / "suite_report.json").write_text(json.dumps(report, indent=2) + "\n")
 
 
+def run_controller_v1(args):
+    """Six frozen current-reset trials, preserving every observed transition."""
+    from embodied_jepa.manipulation_collection import _json, elapsed_seconds
+    from embodied_jepa.scripted import (
+        EarlyReleaseOracleManipulationPolicy,
+        OracleManipulationPolicy,
+        SlowOracleManipulationPolicy,
+    )
+    from embodied_jepa.task import AppleToPlateTask
+
+    start_wall, start_active = time.time(), time.monotonic()
+
+    def elapsed():
+        return elapsed_seconds(start_wall, start_active)
+
+    configurations = [
+        ("original", None),
+        ("slow_full", {"closure": 1.0, "grasp_ramp": 0.04}),
+        ("slow_gentle", {"closure": 0.5, "grasp_ramp": 0.03}),
+    ]
+    if args.controller_v2:
+        configurations = [
+            ("early_open_08", {"opening_ramp": 0.08}),
+            ("early_open_04", {"opening_ramp": 0.04}),
+        ]
+    max_seconds = 300 if args.controller_v2 else 600
+    policy_class = (
+        EarlyReleaseOracleManipulationPolicy if args.controller_v2 else SlowOracleManipulationPolicy
+    )
+    trials = [
+        {
+            "seed": (3000 if args.controller_v2 else 2000) + i * len(configurations) + j,
+            "object_kind": "cube",
+            "container_kind": container,
+            "object_xy": [0.34, -0.18],
+            "plate_xy": [0.45, -0.10],
+            "candidate": name,
+            "policy_options": options,
+        }
+        for i, container in enumerate(("plate", "target"))
+        for j, (name, options) in enumerate(configurations)
+    ]
+    args.output.mkdir(parents=True)
+    source_paths = [
+        Path(__file__),
+        Path("configs/g1_sim_action.json"),
+        Path("assets/manifest.json"),
+    ]
+    source_paths += [
+        Path("src/embodied_jepa") / name
+        for name in ("simulation.py", "embodiment.py", "scripted.py", "task.py", "contracts.py")
+    ]
+    sources = {}
+    for path in source_paths:
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        sources[str(path)] = digest
+        destination = args.output / "sources" / path.name
+        destination.parent.mkdir(exist_ok=True)
+        destination.write_bytes(path.read_bytes())
+    plan = {
+        "trials": trials,
+        "max_true_wall_seconds": max_seconds,
+        "execution_reserve_seconds": 30,
+        "policy": "privileged oracle; not learned control",
+        "heldout_apple_plate": "excluded",
+        "scorer": "ordered AppleToPlateTask with default frozen thresholds",
+        "source_sha256": sources,
+        "revision": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+    }
+    (args.output / "plan.json").write_text(json.dumps(plan, indent=2) + "\n")
+    reports = []
+    for trial in trials:
+        if elapsed() >= max_seconds - 30:
+            break
+        folder = args.output / f"trial_{trial['seed']}"
+        folder.mkdir()
+        robot, sim, policy = None, None, None
+        rows, frames, states, timestamps, actions, requested, raw_actions = (
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+        )
+        failure = ""
+        score = {"success": False}
+        initial_truth = None
+        try:
+            sim = MuJoCoSimulation(
+                object_kind=trial["object_kind"],
+                container_kind=trial["container_kind"],
+                width=96,
+                height=96,
+            )
+            robot = G1Embodiment(sim)
+            initial_truth = robot.reset(
+                trial["seed"], object_xy=trial["object_xy"], plate_xy=trial["plate_xy"]
+            )
+            policy = (
+                OracleManipulationPolicy(initial_truth)
+                if trial["policy_options"] is None
+                else policy_class(initial_truth, **trial["policy_options"])
+            )
+            scorer = AppleToPlateTask(robot)
+            observation = robot.observe()
+            frames.append(observation.images["onboard_rgb"][0].copy())
+            states.append(observation.robot_state[0].copy())
+            timestamps.append(float(observation.timestamps[0]))
+            while not policy.done:
+                if elapsed() >= max_seconds - 30:
+                    failure = "true_wall_budget"
+                    break
+                phase = policy.phase
+                action = policy.action(robot)
+                result = robot.execute(action)
+                policy.advance(result)
+                truth = sim.task_truth()
+                score = scorer.evaluate()
+                velocity = sim.data.qvel[sim.vadr]
+                max_joint = int(np.argmax(np.abs(velocity)))
+                rows.append(
+                    _json(
+                        {
+                            "phase": phase,
+                            "status": result.status,
+                            "reason": result.reason,
+                            "requested_action": action,
+                            "applied_action": result.applied_action,
+                            "truth": truth,
+                            "score": score,
+                            "max_velocity_joint": sim.joint_names[max_joint],
+                            "max_joint_velocity": velocity[max_joint],
+                            "joint_velocity": velocity.copy(),
+                        }
+                    )
+                )
+                if result.applied_action is None:
+                    failure = result.reason
+                    break
+                observation = robot.observe()
+                frames.append(observation.images["onboard_rgb"][0].copy())
+                states.append(observation.robot_state[0].copy())
+                timestamps.append(float(observation.timestamps[0]))
+                actions.append(result.applied_action.copy())
+                requested.append(action.copy())
+                raw_actions.append(robot.denormalize_action(result.applied_action))
+                if policy.phase != phase:
+                    Image.fromarray(frames[-1]).save(folder / f"{phase}.png")
+        except (Exception, KeyboardInterrupt) as error:
+            failure = f"{type(error).__name__}: {error}"
+        finally:
+            if robot is not None:
+                robot.stop(failure or "probe complete")
+                robot.close()
+        if actions:
+            np.savez_compressed(
+                folder / "transitions.npz",
+                rgb=np.array(frames),
+                state=np.array(states),
+                timestamps=np.array(timestamps),
+                actions=np.array(actions),
+                requested_actions=np.array(requested),
+                raw_actions=np.array(raw_actions),
+            )
+        report = trial | {
+            "failure": failure,
+            "complete_transitions": len(actions),
+            "policy_complete": bool(policy and policy.done and not policy.failure),
+            "success": bool(score["success"]),
+            "final_score": score,
+            "initial_truth": _json(initial_truth),
+            "final_record": rows[-1] if rows else None,
+        }
+        (folder / "trace.json").write_text(json.dumps(rows, indent=2) + "\n")
+        (folder / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+        reports.append(report)
+        summary = {
+            "trials": reports,
+            "planned": len(trials),
+            "attempted": len(reports),
+            "successes": sum(r["success"] for r in reports),
+            "true_wall_seconds": elapsed(),
+            "plan_sha256": hashlib.sha256((args.output / "plan.json").read_bytes()).hexdigest(),
+        }
+        (args.output / "report.json").write_text(json.dumps(summary, indent=2) + "\n")
+        print(
+            json.dumps(
+                {k: v for k, v in report.items() if k not in ("initial_truth", "final_record")}
+            ),
+            flush=True,
+        )
+        if failure.startswith("KeyboardInterrupt"):
+            break
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path("outputs/grasp_probe"))
@@ -156,11 +353,24 @@ def main():
     parser.add_argument(
         "--suite", action="store_true", help="run the frozen five-trial transfer/release suite"
     )
+    parser.add_argument(
+        "--controller-v1",
+        action="store_true",
+        help="run frozen six-trial slow-controller comparison",
+    )
+    parser.add_argument(
+        "--controller-v2",
+        action="store_true",
+        help="run frozen four-trial early-release comparison",
+    )
     args = parser.parse_args()
     if not np.isfinite(args.max_seconds) or args.max_seconds <= 0:
         parser.error("max-seconds must be finite and positive")
     if args.output.exists() and any(args.output.iterdir()):
         raise FileExistsError(f"refusing to overwrite experiment artifacts in {args.output}")
+    if args.controller_v1 or args.controller_v2:
+        run_controller_v1(args)
+        return
     if args.suite:
         run_suite(args)
         return

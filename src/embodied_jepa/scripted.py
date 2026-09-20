@@ -100,3 +100,90 @@ class OracleManipulationPolicy:
         if self.phase_step == self.phases[self.phase_index].commands:
             self.phase_step = 0
             self.phase_index += 1
+
+
+class SlowOracleManipulationPolicy(OracleManipulationPolicy):
+    """Exploratory contact controller with bounded motion and gradual closure.
+
+    This changes only requested actions and phase duration. Runtime PD gains,
+    actuator limits, collision physics, and velocity-stop thresholds stay fixed.
+    Closure is a normalized synergy target, not measured contact force.
+    """
+
+    def __init__(
+        self,
+        initial_truth,
+        *,
+        closure=0.5,
+        translation_limit=0.2,
+        rotation_limit=0.25,
+        grasp_ramp=0.03,
+        duration_scale=2,
+    ):
+        super().__init__(initial_truth)
+        if not np.isfinite(closure) or not -1 <= closure <= 1:
+            raise ContractError("closure must be finite and normalized")
+        for value in (translation_limit, rotation_limit, grasp_ramp):
+            if not np.isfinite(value) or not 0 < value <= 1:
+                raise ContractError("motion limits and grasp ramp must lie in (0,1]")
+        if type(duration_scale) is not int or not 1 <= duration_scale <= 4:
+            raise ContractError("duration_scale must be an integer from 1 to 4")
+        self.closure = closure
+        self.translation_limit = translation_limit
+        self.rotation_limit = rotation_limit
+        self.grasp_ramp = grasp_ramp
+        self.accepted_grasp = -1.0
+        self.phases = tuple(
+            OraclePhase(p.name, p.target_base.copy(), p.grasp, p.commands * duration_scale)
+            for p in self.phases
+        )
+
+    def action(self, robot):
+        action = super().action(robot)
+        action[6:9] = np.clip(action[6:9], -self.translation_limit, self.translation_limit)
+        action[9:12] = np.clip(action[9:12], -self.rotation_limit, self.rotation_limit)
+        target = self.closure if self.phases[self.phase_index].grasp > 0 else -1.0
+        action[13] = np.clip(
+            target, self.accepted_grasp - self.grasp_ramp, self.accepted_grasp + self.grasp_ramp
+        )
+        return action
+
+    def advance(self, result):
+        super().advance(result)
+        if result.applied_action is not None:
+            self.accepted_grasp = float(result.applied_action[13])
+
+
+class EarlyReleaseOracleManipulationPolicy(OracleManipulationPolicy):
+    """Release over the container before sustained full-closure contact slips.
+
+    The original reach, close and lift requests remain unchanged. The transfer
+    dwell is shorter, followed by gradual opening at the high transfer pose.
+    This remains a privileged initial-truth controller, not learned planning.
+    """
+
+    def __init__(self, initial_truth, *, opening_ramp=0.08):
+        super().__init__(initial_truth)
+        if not np.isfinite(opening_ramp) or not 0 < opening_ramp <= 1:
+            raise ContractError("opening_ramp must lie in (0,1]")
+        self.opening_ramp = opening_ramp
+        self.accepted_grasp = -1.0
+        transfer, lower, retreat = self.phases[4], self.phases[5], self.phases[7]
+        self.phases = (
+            *self.phases[:4],
+            OraclePhase("transfer", transfer.target_base.copy(), 1.0, 60),
+            OraclePhase("release_high", transfer.target_base.copy(), -1.0, 100),
+            OraclePhase("lower_open", lower.target_base.copy(), -1.0, 100),
+            OraclePhase("retreat", retreat.target_base.copy(), -1.0, 80),
+        )
+
+    def action(self, robot):
+        action = super().action(robot)
+        if self.phase_index >= 5:
+            action[13] = max(-1.0, self.accepted_grasp - self.opening_ramp)
+        return action
+
+    def advance(self, result):
+        super().advance(result)
+        if result.applied_action is not None:
+            self.accepted_grasp = float(result.applied_action[13])
