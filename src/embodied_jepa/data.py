@@ -581,6 +581,62 @@ class DatasetStore:
         self._persist()
         return splits
 
+    def freeze_split_assignments(
+        self,
+        splits: Mapping[str, list[str]],
+        *,
+        provenance: Mapping[str, Any],
+        heldout_combinations: tuple[tuple[str, str], ...] = (("apple", "plate"),),
+    ) -> Mapping[str, list[str]]:
+        """Seal inherited partitions without moving prior test sessions into training."""
+        if self.manifest["splits"] is not None:
+            raise ContractError("splits already frozen")
+        names = {"train", "val", "test", "holdout"}
+        if set(splits) != names or not provenance:
+            raise ContractError("explicit splits require four partitions and provenance")
+        if any(
+            not isinstance(ids, list) or any(not isinstance(i, str) for i in ids)
+            for ids in splits.values()
+        ):
+            raise ContractError("split assignments must be lists of episode IDs")
+        flat = [episode_id for ids in splits.values() for episode_id in ids]
+        if len(flat) != len(set(flat)) or set(flat) != set(self.episode_ids):
+            raise ContractError("split assignments must cover every episode exactly once")
+        if any(not splits[name] for name in ("train", "val", "test")):
+            raise ContractError("train/val/test partitions must be nonempty")
+        self.verify()
+        assignment = {episode_id: name for name, ids in splits.items() for episode_id in ids}
+        sessions = {}
+        reserved = set(heldout_combinations)
+        for row in self.manifest["episodes"]:
+            name = assignment[row["episode_id"]]
+            previous = sessions.setdefault(row["session_id"], name)
+            if previous != name:
+                raise ContractError("session cannot span split partitions")
+            if (row["object_id"], row["container_id"]) in reserved and name != "holdout":
+                raise ContractError("held-out pairing must remain in holdout")
+        # Validate serialization before mutating the manifest or writing files.
+        policy = json.loads(
+            json.dumps(
+                {
+                    "group_by": "session_id",
+                    "method": "preserved_explicit_assignments",
+                    "provenance": dict(provenance),
+                    "heldout_combinations": list(heldout_combinations),
+                    "sessions": {
+                        name: sorted(s for s, p in sessions.items() if p == name) for name in names
+                    },
+                },
+                allow_nan=False,
+            )
+        )
+        selected = {name: sorted(splits[name]) for name in sorted(names)}
+        self.manifest["splits"], self.manifest["split_policy"] = selected, policy
+        _write_json(self.root / "meta/jepa_splits.json", policy | {"episodes": selected})
+        self._record_hash("meta/jepa_splits.json")
+        self._persist()
+        return selected
+
     def _selected(self, split: str | None) -> list[str]:
         if split is None:
             return list(self.episode_ids)

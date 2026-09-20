@@ -142,6 +142,51 @@ def test_normalization_uses_only_training_and_masks(store, episode):
     DatasetStore(store.root).verify()
 
 
+def test_explicit_splits_preserve_prior_assignments_and_seal(store, episode, tmp_path):
+    populate(store, episode)
+    inherited = store.freeze_splits(seed=19)
+    combined = create_store(tmp_path / "combined", episode)
+    populate(combined, episode)
+    assert (
+        combined.freeze_split_assignments(
+            inherited, provenance={"source_manifest": store.manifest_hash}
+        )
+        == inherited
+    )
+    inherited["train"].clear()
+    assert combined.manifest["splits"]["train"]  # no mutable alias to caller
+    combined.fit_normalization()
+    DatasetStore(combined.root).verify()
+    with pytest.raises(ContractError, match="already frozen"):
+        combined.freeze_split_assignments(inherited, provenance={"source": "test"})
+
+
+@pytest.mark.parametrize("defect", ["duplicate", "missing", "session", "holdout"])
+def test_explicit_splits_reject_leakage_before_mutation(store, episode, defect):
+    populate(store, episode)
+    splits = {
+        "train": [f"episode-{s}-{i}" for s in range(4) for i in range(2)],
+        "val": ["episode-4-0", "episode-4-1"],
+        "test": ["episode-5-0", "episode-5-1"],
+        "holdout": ["holdout-apple", "holdout-cube"],
+    }
+    if defect == "duplicate":
+        splits["train"].append(splits["test"][0])
+    elif defect == "missing":
+        splits["test"].pop()
+    elif defect == "session":
+        splits["train"].append(splits["test"].pop())
+    else:
+        splits["train"].extend(splits["holdout"])
+        splits["holdout"] = []
+    before = store.manifest_hash
+    with pytest.raises(ContractError):
+        store.freeze_split_assignments(splits, provenance={"source": "test"})
+    assert store.manifest_hash == before
+    assert store.manifest["splits"] is None
+    assert not (store.root / "meta/jepa_splits.json").exists()
+
+
 def test_fixtures_and_manifest_hashes_reproduce(store, episode, tmp_path):
     store.write_episode(episode)
     other = create_store(tmp_path / "copy", episode)
