@@ -15,6 +15,12 @@ The repository currently contains the PRD, planning documents, configuration exa
 
 Read `README.md`, `docs/MVP_PLAN.md`, `docs/ARCHITECTURE.md`, and the relevant module notes before making changes. Consult `docs/PLATFORMS.md` for platform decisions and `docs/EVALUATION.md` for experiment requirements. Preserve `PRD.md` as the original snapshot; record refinements in the plan and decision log.
 
+## Project skills
+
+Codex workflows live in `.agents/skills/`: `$jepa-grill` clarifies research/design choices, `$jepa-plan` decomposes work, `$jepa-implement` delivers a scoped task, `$jepa-review` checks correctness and research evidence, and `$jepa-ship` lands an authorized PR. Read the selected `SKILL.md` when using it. See [docs/SKILLS.md](docs/SKILLS.md) for examples and discovery setup.
+
+Use the workflow that fits the request; do not force five separate user turns or turn a review-only request into edits or a merge. These skills refine this file's workflow and do not expand task authorization. Work directly by default; delegation is optional only when authorized and useful.
+
 ## Plan and track work with MissionControl
 
 Run from the repository root:
