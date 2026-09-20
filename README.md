@@ -6,11 +6,19 @@ A Mac-first research framework for action-conditioned visual world models on a s
 
 **Implemented:** real MuJoCo collection/control, both trainable model adapters, strict checkpoints, CPU/MPS checks, a frozen benchmark runner, and mock-only SDK2 preparation. All six training runs and 400 frozen benchmark attempts are complete. **Learned Apple→Plate remains unsuccessful: 0/150 for each model.** The [acceptance audit](docs/ACCEPTANCE.md) separates implemented software from demonstrated research outcomes. Isaac and physical robot execution are future work.
 
-A [follow-up feasibility diagnostic](docs/experiments/feasibility_results_v1.md)
-removed joint-rate stops in seven completed matched pairs, with exact accepted
-commands and one native reach event. Pick-and-place remains unsuccessful; slow IK
-caused two LeWM deadline stops, and only 15/20 episodes finished within the fixed
-budget. This is partial development evidence using unchanged checkpoints.
+The [completed feasibility follow-up](docs/experiments/feasibility_results_v2.md)
+finished 20/20 matched attempts after a roughly 2.1× projection speedup, with
+1,000/1,000 projected actions accepted. It still produced no learned pick-and-place.
+
+Task-specific apple work now adds a learned RGB/proprioceptive `sensor_wm`,
+TRAIN-image waypoint planning, 31/32 successful scripted collection episodes, and
+528 audited matched action branches. The first learned-control diagnostic was
+**0/6 placements**. Additional branch data improved causal prediction, but the
+[primary H16 prediction gate remains unmet](docs/experiments/apple_branch_diagnostics_results_v1.md).
+The fresh 20-reset final cohort remains unexecuted. This is a separate task-specific
+mode; the historical unseen-pair benchmark above is unchanged. The optional
+[JEPA-WMs adapter](docs/experiments/jepa_wms_spike.md) has CPU software compatibility
+coverage and no manipulation-performance claim.
 
 Development reaching models passed the declared per-dimension collapse and action-sensitivity checks, with each achieving 1/5 successes versus hold/random 0/5. An earlier-release scripted controller achieved 4/4 full pick-and-place successes on seen pairings. Scripted successes are not learned-policy results. Failures and diagnostic corrections remain in the [research reports](docs/experiments/reach_results.md).
 

@@ -157,3 +157,27 @@ def test_incomplete_run_never_retains_passing_gate():
     assert not report["summaries"][0]["gate_passed"]
     assert not report["summaries"][0]["phases"]["lift"]["gate_passed"]
     assert report["results"] == [{"partial": True}]
+
+
+def test_supervisor_rechecks_civil_wall_after_host_suspension(monkeypatch):
+    class Process:
+        killed = False
+        waited = False
+
+        def poll(self):
+            return None
+
+        def kill(self):
+            self.killed = True
+
+        def wait(self):
+            self.waited = True
+
+    process = Process()
+    clocks = iter((114.0, 180.0))
+    sleeps = []
+    monkeypatch.setattr(diag, "elapsed", lambda: next(clocks))
+    monkeypatch.setattr(diag.time, "sleep", sleeps.append)
+    assert diag.wait_for_worker(process)
+    assert process.killed and process.waited
+    assert sleeps == [0.1]
