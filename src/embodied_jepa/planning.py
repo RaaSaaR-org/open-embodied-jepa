@@ -143,6 +143,7 @@ class MPC:
         reason = "step_limit"
         score = {}
         stage, step = "encode_goal", 0
+        row = {}
         try:
             goal_latent = self.model.encode_goal(goal)
             for step in range(max_steps):
@@ -184,6 +185,7 @@ class MPC:
                     traces.append(row)
                     reason = "deadline_miss"
                     break
+                row["requested_action"] = plan.actions[0, 0].tolist()
                 stage = "execute"
                 result = embodiment.execute(plan.actions[0, 0])
                 row.update(
@@ -208,7 +210,8 @@ class MPC:
         except Exception as error:
             reason = "runtime_error"
             traces.append(
-                {
+                (row if stage == "execute" else {})
+                | {
                     "step": step,
                     "stage": stage,
                     "error": f"{type(error).__name__}: {error}",

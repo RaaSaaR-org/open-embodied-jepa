@@ -9,7 +9,6 @@ import json
 import math
 import platform
 import resource
-import subprocess
 import time
 from collections import Counter
 from dataclasses import asdict, replace
@@ -21,9 +20,12 @@ import numpy as np
 from embodied_jepa.collection import reach_goal, scripted_action
 from embodied_jepa.config import ExperimentConfig
 from embodied_jepa.data import DatasetStore
+from embodied_jepa.goals import goal_pixels, load_goals
 from embodied_jepa.planning import MPC, CEMPlanner
 from embodied_jepa.registry import EMBODIMENTS, MODELS, TASKS
+from embodied_jepa.result_schema import validate_results
 from embodied_jepa.simulation import MuJoCoSimulation
+from embodied_jepa.training import source_identity
 
 
 def json_hash(value):
@@ -78,44 +80,6 @@ def summarize(episodes):
     }
 
 
-def validate_results(run_manifest, episodes):
-    required = {
-        "schema_version",
-        "run_id",
-        "timestamp",
-        "source_revision",
-        "backend",
-        "checkpoint_hash",
-        "mode",
-        "dataset_hash",
-        "split_hash",
-        "action_hash",
-        "environment",
-        "planner",
-        "train_seed",
-        "evaluation_seeds",
-        "task_version",
-    }
-    missing = required - run_manifest.keys()
-    if missing:
-        raise ValueError(f"missing run fields: {sorted(missing)}")
-    if run_manifest["schema_version"] != 1 or run_manifest["mode"] != "common":
-        raise ValueError("unsupported result schema/mode")
-    if [e["seed"] for e in episodes] != run_manifest["evaluation_seeds"]:
-        raise ValueError("all frozen evaluation seeds must be recorded exactly once in order")
-    for episode in episodes:
-        if (
-            not isinstance(episode.get("score"), dict)
-            or type(episode["score"].get("success")) is not bool
-        ):
-            raise ValueError("episode requires an explicit success outcome")
-        if episode["termination_reason"] == "success" and not episode["score"]["success"]:
-            raise ValueError("success termination conflicts with scoring evidence")
-        if episode["executed_steps"] != sum(t.get("executed") is True for t in episode["trace"]):
-            raise ValueError("executed step count conflicts with trace")
-    json.dumps({"run": run_manifest, "episodes": episodes}, allow_nan=False)
-
-
 def _write(path, value):
     Path(path).write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
 
@@ -150,6 +114,7 @@ def _control(robot, task, cfg, policy, rng, max_steps):
                     "status": result.status,
                     "reason": result.reason,
                     "executed": result.applied_action is not None,
+                    "requested_action": command.tolist(),
                     "action": None
                     if result.applied_action is None
                     else result.applied_action.tolist(),
@@ -172,6 +137,7 @@ def _control(robot, task, cfg, policy, rng, max_steps):
                 "error": f"{type(error).__name__}: {error}",
                 "executed": None if stage == "execute" else False,
                 "execution_uncertain": stage == "execute",
+                **({"requested_action": command.tolist()} if stage == "execute" else {}),
             }
         )
     finally:
@@ -191,6 +157,16 @@ def run(config_path, *, policy="model", run_id=None):
     cfg = ExperimentConfig.load(config_path, require_checkpoint=policy == "model")
     if cfg.task != "reach" and policy == "oracle":
         raise ValueError("full-task oracle is a separate labeled scripted probe")
+    frozen_goals = (
+        load_goals(
+            cfg.goal_manifest,
+            task=cfg.task,
+            seeds=cfg.evaluation_seeds,
+            action_manifest=cfg.action_manifest,
+        )
+        if cfg.goal_manifest is not None
+        else None
+    )
     store = DatasetStore(cfg.dataset_root)
     action_manifest = json.loads(cfg.action_manifest.read_text())
     if action_manifest != store.manifest["action_manifest"]:
@@ -221,12 +197,18 @@ def run(config_path, *, policy="model", run_id=None):
             },
         )
         model.load(cfg.checkpoint)
+    source = source_identity()
     run_manifest = {
         "schema_version": 1,
         "run_id": run_id,
         "timestamp": datetime.now(UTC).isoformat(),
-        "source_revision": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
-        "implementation_hashes": {p.name: file_hash(p) for p in Path(__file__).parent.glob("*.py")},
+        "source_revision": source["revision"],
+        "source_dirty": source["dirty"],
+        "source_tree_hash": source["python_source_sha256"],
+        "implementation_hashes": {
+            str(p.relative_to(Path(__file__).parent)): file_hash(p)
+            for p in Path(__file__).parent.rglob("*.py")
+        },
         "mode": "common",
         "backend": cfg.backend if policy == "model" else f"control:{policy}",
         "checkpoint_hash": file_hash(cfg.checkpoint) if model else None,
@@ -241,8 +223,15 @@ def run(config_path, *, policy="model", run_id=None):
         "evaluation_seeds": list(cfg.evaluation_seeds),
         "planner": asdict(cfg.planner),
         "timeout_seconds": cfg.timeout_seconds,
+        "max_steps": cfg.max_steps,
         "task": cfg.task,
         "task_version": "tabletop_proxy_v0",
+        "goal_manifest_hash": file_hash(cfg.goal_manifest)
+        if cfg.goal_manifest is not None
+        else None,
+        "goal_manifest_missing_reason": None
+        if cfg.goal_manifest is not None
+        else "development goals generated by seeded oracle",
         "environment": {
             "platform": platform.platform(),
             "python": platform.python_version(),
@@ -255,6 +244,22 @@ def run(config_path, *, policy="model", run_id=None):
         "model_diagnostics": None,
         "model_diagnostics_reason": "see training report for within-backend metrics",
     }
+    report_path = cfg.checkpoint.with_suffix(".run.json")
+    if model is not None and report_path.is_file():
+        report_bytes = report_path.read_bytes()
+        (output / "training_report.json").write_bytes(report_bytes)
+        run_manifest["training_report"] = {
+            "path": "training_report.json",
+            "sha256": file_hash(report_path),
+        }
+        run_manifest["model_diagnostics_reason"] = (
+            "selected and latest within-backend metrics are in the archived training report"
+        )
+    else:
+        run_manifest["training_report"] = None
+        run_manifest["training_report_missing_reason"] = (
+            "control policy" if model is None else "training report unavailable beside checkpoint"
+        )
     asset_path = Path(__file__).resolve().parents[2] / "assets/manifest.json"
     run_manifest["asset_manifest_hash"] = file_hash(asset_path)
     run_manifest["asset_revision"] = json.loads(asset_path.read_text())["revision"]
@@ -292,7 +297,18 @@ def run(config_path, *, policy="model", run_id=None):
             )
             robot.reset(seed)
             target = None
-            if cfg.task == "reach":
+            if frozen_goals is not None:
+                entry = next(e for e in frozen_goals["episodes"] if e["seed"] == seed)
+                reset = entry["reset"]
+                robot.reset(seed, object_xy=reset["object_xy"], plate_xy=reset["plate_xy"])
+                goal = goal_pixels(cfg.goal_manifest, entry)
+                target = (
+                    None
+                    if entry["target_base"] is None
+                    else np.asarray(entry["target_base"], dtype=float)
+                )
+                _write(episode_dir / "goal_manifest.json", entry)
+            elif cfg.task == "reach":
                 rng = np.random.default_rng(seed)
                 target = robot.ee_pose("right")[0] + rng.uniform(
                     [-0.015, -0.045, -0.03], [0.025, -0.025, 0.025]
@@ -322,7 +338,10 @@ def run(config_path, *, policy="model", run_id=None):
                 goal = robot.observe().images
             _png(episode_dir / "goal.png", goal["onboard_rgb"][0])
             record["goal_image_sha256"] = file_hash(episode_dir / "goal.png")
-            robot.reset(seed)
+            if frozen_goals is not None:
+                robot.reset(seed, object_xy=reset["object_xy"], plate_xy=reset["plate_xy"])
+            else:
+                robot.reset(seed)
             initial = robot.observe()
             _png(episode_dir / "initial.png", initial.images["onboard_rgb"][0])
             record["initial_image_sha256"] = file_hash(episode_dir / "initial.png")

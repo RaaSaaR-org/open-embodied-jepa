@@ -176,6 +176,11 @@ def test_mpc_stops_on_every_runtime_failure(stage):
     assert robot.stopped
     assert result["trace"][-1]["stage"] == stage
     assert result["trace"][-1]["execution_uncertain"] is (stage == "execute")
+    if stage == "execute":
+        attempted = result["trace"][-1]
+        assert len(attempted["requested_action"]) == 14
+        assert attempted["candidate_evaluations"] > 0
+        assert "action" not in attempted or attempted["action"] is None
 
 
 def test_mpc_stops_after_rejected_acknowledgement():
@@ -201,3 +206,29 @@ def test_shared_action_bounds_can_hold_inactive_components():
     assert np.all(plan.actions[..., 2:12] == 0)
     assert np.all(plan.actions[..., 12:] == -1)
     assert np.all(np.abs(plan.actions[..., :2]) <= 0.5)
+
+
+def test_mpc_trace_distinguishes_requested_and_clipped_applied_action():
+    from embodied_jepa.contracts import ExecutionResult
+    from embodied_jepa.planning import MPC
+
+    robot = MockEmbodiment()
+    requested = []
+
+    def clip_command(action):
+        requested.append(action.copy())
+        applied = np.clip(action, -0.05, 0.05).astype(np.float32)
+        robot.xy += applied[:2]
+        robot.t += 0.1
+        return ExecutionResult(action, applied, "clipped", robot.t, "mock joint limit")
+
+    robot.execute = clip_command
+    result = MPC(ControlIntegrator(robot), CEMPlanner(CEMConfig(horizon=1))).run(
+        robot, np.array([[0.7, -0.4]], np.float32), max_steps=1
+    )
+    trace = result["trace"][0]
+    assert trace["executed"] is True and trace["status"] == "clipped"
+    np.testing.assert_array_equal(trace["requested_action"], requested[0])
+    np.testing.assert_array_equal(trace["action"], np.clip(requested[0], -0.05, 0.05))
+    assert trace["requested_action"] != trace["action"]
+    np.testing.assert_array_equal(robot.xy, np.asarray(trace["action"], np.float32)[:2])

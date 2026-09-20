@@ -1,44 +1,84 @@
 import copy
+from dataclasses import asdict
 
 import pytest
 
 from embodied_jepa.benchmark import summarize, validate_results, wilson
+from embodied_jepa.planning import CEMConfig
 
 
 def records():
     episodes = [
         {
             "seed": 1,
-            "score": {"success": True, "reach": True},
+            "score": {
+                "success": True,
+                "reach": True,
+                "grasp": None,
+                "transport": None,
+                "place": None,
+                "release": None,
+                "missing_stage_reason": "reach-only task",
+            },
             "termination_reason": "success",
             "trace": [],
             "executed_steps": 0,
+            "replans": 0,
+            "wall_seconds": 0.1,
+            "collision_violations": None,
+            "collision_missing_reason": "classifier unavailable",
         },
         {
             "seed": 2,
-            "score": {"success": False},
+            "score": {
+                "success": False,
+                "reach": False,
+                "grasp": None,
+                "transport": None,
+                "place": None,
+                "release": None,
+                "missing_stage_reason": "reach-only task",
+            },
             "termination_reason": "runtime_error",
             "trace": [],
             "executed_steps": 0,
+            "replans": 0,
+            "wall_seconds": 0.1,
+            "collision_violations": None,
+            "collision_missing_reason": "classifier unavailable",
         },
     ]
-    manifest = {
-        key: "fixture"
-        for key in (
-            "run_id",
-            "timestamp",
-            "source_revision",
-            "backend",
-            "checkpoint_hash",
-            "dataset_hash",
-            "split_hash",
-            "action_hash",
-            "environment",
-            "planner",
-            "task_version",
-        )
-    }
-    manifest.update(schema_version=1, mode="common", train_seed=0, evaluation_seeds=[1, 2])
+    manifest = dict(
+        schema_version=1,
+        mode="common",
+        run_id="fixture",
+        timestamp="2026-09-20T00:00:00Z",
+        source_revision="a" * 40,
+        backend="native_jepa",
+        checkpoint_hash="b" * 64,
+        dataset_hash="c" * 64,
+        split_hash="d" * 64,
+        action_hash="e" * 64,
+        environment=dict(
+            platform="test-host",
+            python="3.12.13",
+            device="cpu",
+            engine="mujoco",
+            mujoco="3.13.0",
+            torch="2.14.0",
+            numpy="2.5.3",
+        ),
+        planner=asdict(CEMConfig()),
+        task_version="tabletop_proxy_v0",
+        train_seed=0,
+        evaluation_seeds=[1, 2],
+        timeout_seconds=5.0,
+        model_diagnostics=None,
+        model_diagnostics_reason="stored in fixture training report",
+    )
+    # JSON manifests contain lists, even when the originating dataclass uses tuples.
+    for key in ("lower_bounds", "upper_bounds"):
+        manifest["planner"][key] = list(manifest["planner"][key])
     return manifest, episodes
 
 

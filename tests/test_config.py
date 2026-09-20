@@ -120,3 +120,33 @@ def test_empty_paths_not_resolved_to_existing_directory(config_path, value):
     config_path.write_text(yaml.safe_dump(raw))
     with pytest.raises(ValueError, match="path"):
         ExperimentConfig.load(config_path)
+
+
+def test_goal_manifest_inheritance_override_and_resolved_roundtrip(config_path):
+    goal = config_path.with_name("goals.json")
+    goal.write_text("{}")
+    raw = yaml.safe_load(config_path.read_text())
+    raw["task"]["goal_manifest"] = goal.name
+    config_path.write_text(yaml.safe_dump(raw))
+    nested = config_path.parent / "nested"
+    nested.mkdir()
+    child = nested / "run.yaml"
+    child.write_text("extends: ../base.yaml\nworld_model:\n  backend: leworldmodel\n")
+    inherited = ExperimentConfig.load(child)
+    assert inherited.goal_manifest == goal
+    saved = nested / "resolved.json"
+    inherited.save(saved)
+    assert ExperimentConfig.load(saved) == inherited
+    replacement = nested / "different.json"
+    replacement.write_text("{}")
+    child.write_text("extends: ../base.yaml\ntask:\n  goal_manifest: different.json\n")
+    assert ExperimentConfig.load(child).goal_manifest == replacement
+
+
+@pytest.mark.parametrize("value", [None, "", " ", "missing.json", "data"])
+def test_goal_manifest_path_fails_preflight(config_path, value):
+    raw = yaml.safe_load(config_path.read_text())
+    raw["task"]["goal_manifest"] = value
+    config_path.write_text(yaml.safe_dump(raw))
+    with pytest.raises(ValueError, match="goal manifest"):
+        ExperimentConfig.load(config_path)

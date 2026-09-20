@@ -53,6 +53,7 @@ def _read(path: Path, seen: set[Path]) -> dict:
         ("dataset", "root"),
         ("embodiment", "action_manifest"),
         ("evaluation", "output_root"),
+        ("task", "goal_manifest"),
     ):
         group = config.get(section)
         if isinstance(group, dict) and isinstance(group.get(key), str) and group[key].strip():
@@ -79,7 +80,11 @@ def _path(value, base: Path, label: str, *, must_exist=True) -> Path:
     path = (base / value).resolve()
     if must_exist and not path.exists():
         raise ValueError(f"{label} does not exist: {path}")
-    if must_exist and label in ("checkpoint", "action manifest") and not path.is_file():
+    if (
+        must_exist
+        and label in ("checkpoint", "action manifest", "goal manifest")
+        and not path.is_file()
+    ):
         raise ValueError(f"{label} must be a file")
     if must_exist and label == "dataset root" and not path.is_dir():
         raise ValueError("dataset root must be a directory")
@@ -102,6 +107,7 @@ class ExperimentConfig:
     evaluation_seeds: tuple[int, ...]
     output_root: Path
     resolved: dict[str, Any]
+    goal_manifest: Path | None = None
 
     @classmethod
     def load(cls, path: str | Path, *, require_checkpoint=True):
@@ -221,8 +227,13 @@ class ExperimentConfig:
         ):
             raise ValueError("timeout_seconds must be finite and positive")
         budget = CEMConfig(**planner, seed=seed)
-        task = _mapping(raw.get("task", {}), ("name", "max_steps"), "task")
+        task = _mapping(raw.get("task", {}), ("name", "max_steps", "goal_manifest"), "task")
         TASKS.require(task.get("name"))
+        goal_manifest = (
+            _path(task["goal_manifest"], path.parent, "goal manifest")
+            if "goal_manifest" in task
+            else None
+        )
         steps = task.get("max_steps", 50)
         if type(steps) is not int or steps < 1:
             raise ValueError("max_steps must be positive")
@@ -262,7 +273,11 @@ class ExperimentConfig:
             },
             "dataset": {"root": str(dataset_root)},
             "planner": {"backend": "cem", **planner_config, "timeout_seconds": timeout},
-            "task": {"name": task["name"], "max_steps": steps},
+            "task": {
+                "name": task["name"],
+                "max_steps": steps,
+                **({"goal_manifest": str(goal_manifest)} if goal_manifest is not None else {}),
+            },
             "evaluation": {"seeds": seeds, "output_root": str(output)},
         }
         return cls(
@@ -280,6 +295,7 @@ class ExperimentConfig:
             tuple(seeds),
             output,
             resolved,
+            goal_manifest=goal_manifest,
         )
 
     def save(self, path: str | Path):
