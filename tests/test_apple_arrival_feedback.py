@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-SCRIPT = Path(__file__).with_name("audit_apple_arrival_feedback.py")
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts/audit_apple_arrival_feedback.py"
 spec = importlib.util.spec_from_file_location("arrival_audit", SCRIPT)
 audit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(audit)
