@@ -9,6 +9,7 @@ from typing import Any
 
 import numpy as np
 
+from embodied_jepa.constraints import CandidateProjector
 from embodied_jepa.contracts import ACTION_DIM, ContractError, Observation, validate_costs
 
 
@@ -23,8 +24,11 @@ class CEMConfig:
     minimum_std: float = 0.05
     lower_bounds: tuple[float, ...] = (-1.0,) * ACTION_DIM
     upper_bounds: tuple[float, ...] = (1.0,) * ACTION_DIM
+    project_candidates: bool = False
 
     def __post_init__(self):
+        if type(self.project_candidates) is not bool:
+            raise ValueError("project_candidates must be boolean")
         for name in ("horizon", "samples", "iterations", "elites"):
             value = getattr(self, name)
             if type(value) is not int or value < 1:
@@ -59,6 +63,9 @@ class Plan:
     elapsed_seconds: float
     evaluations: int
     config: dict[str, Any]
+    requested_actions: np.ndarray
+    projection_seconds: float
+    feasible_candidates: int
 
 
 class CEMPlanner:
@@ -68,11 +75,22 @@ class CEMPlanner:
         self.config = config or CEMConfig()
         self.rng = np.random.default_rng(self.config.seed)
 
-    def plan(self, model, latent, goal_latent, *, batch_size: int = 1) -> Plan:
+    def plan(
+        self,
+        model,
+        latent,
+        goal_latent,
+        *,
+        batch_size: int = 1,
+        projector: CandidateProjector | None = None,
+    ) -> Plan:
         cfg = self.config
         if type(batch_size) is not int or batch_size < 1:
             raise ValueError("batch_size must be positive")
+        if cfg.project_candidates and projector is None:
+            raise ContractError("candidate projection requires an embodiment projector")
         start = time.perf_counter()
+        projection_seconds, feasible_count = 0.0, 0
         shape = (batch_size, cfg.horizon, ACTION_DIM)
         lower = np.asarray(cfg.lower_bounds, dtype=np.float32)
         upper = np.asarray(cfg.upper_bounds, dtype=np.float32)
@@ -83,6 +101,7 @@ class CEMPlanner:
         )
         std = np.ones(shape, dtype=np.float32)
         best_actions = mean.copy()
+        best_requested = mean.copy()
         best_cost = np.full(batch_size, np.inf)
         for _ in range(cfg.iterations):
             candidates = np.clip(
@@ -93,26 +112,47 @@ class CEMPlanner:
             # Preserve the current mean and best candidate, rather than losing a good solution.
             candidates[:, 0] = mean
             if cfg.samples > 1:
-                candidates[:, 1] = best_actions
+                candidates[:, 1] = best_requested
+            requested = candidates.copy()
+            feasible = np.ones((batch_size, cfg.samples), dtype=bool)
+            if cfg.project_candidates:
+                projection_start = time.perf_counter()
+                projection = projector(requested)
+                projection_seconds += time.perf_counter() - projection_start
+                if projection.actions.shape != candidates.shape:
+                    raise ContractError("projected candidate shape changed")
+                candidates, feasible = projection.actions, projection.feasible
+            feasible_count += int(feasible.sum())
+            if np.any(~feasible.any(axis=1)):
+                raise ContractError("no feasible candidate sequence")
             predictions = model.predict(latent, candidates)
             distances = model.distance(predictions, goal_latent)
             validate_costs(distances, (batch_size, cfg.samples, cfg.horizon))
             costs = distances[:, :, -1].astype(np.float64)
             costs += cfg.action_penalty * np.square(candidates).mean(axis=(2, 3))
-            indices = np.argsort(costs, axis=1, kind="stable")[:, : cfg.elites]
-            elite = candidates[np.arange(batch_size)[:, None], indices]
-            current_cost = costs[np.arange(batch_size), indices[:, 0]]
-            improved = current_cost < best_cost
-            best_cost[improved] = current_cost[improved]
-            best_actions[improved] = elite[improved, 0]
-            mean = elite.mean(axis=1)
-            std = np.maximum(elite.std(axis=1), cfg.minimum_std)
+            costs[~feasible] = np.inf
+            for batch in range(batch_size):
+                indices = np.argsort(costs[batch], kind="stable")[
+                    : min(cfg.elites, int(feasible[batch].sum()))
+                ]
+                winner = indices[0]
+                if costs[batch, winner] < best_cost[batch]:
+                    best_cost[batch] = costs[batch, winner]
+                    best_actions[batch] = candidates[batch, winner]
+                    best_requested[batch] = requested[batch, winner]
+                # Fit requests, since clipping absolute grasps is not invertible.
+                elite = requested[batch, indices]
+                mean[batch] = elite.mean(axis=0)
+                std[batch] = np.maximum(elite.std(axis=0), cfg.minimum_std)
         return Plan(
             best_actions,
             best_cost.astype(np.float32),
             time.perf_counter() - start,
             batch_size * cfg.samples * cfg.iterations,
             asdict(cfg),
+            best_requested,
+            projection_seconds,
+            feasible_count,
         )
 
 
@@ -170,7 +210,10 @@ class MPC:
                 )
                 stage = "plan"
                 latent = self.model.encode(observation.images, observation.state)
-                plan = self.planner.plan(self.model, latent, goal_latent)
+                projection_options = {}
+                if self.planner.config.project_candidates:
+                    projection_options["projector"] = embodiment.project_candidates
+                plan = self.planner.plan(self.model, latent, goal_latent, **projection_options)
                 elapsed = time.perf_counter() - start
                 row = {
                     "step": step,
@@ -180,11 +223,17 @@ class MPC:
                     "candidate_evaluations": plan.evaluations,
                     "planned_cost": float(plan.costs[0]),
                 }
+                if self.planner.config.project_candidates:
+                    row["projection_seconds"] = plan.projection_seconds
+                    row["feasible_candidates"] = plan.feasible_candidates
                 if elapsed > self.timeout_seconds:
                     row.update(executed=False, reason="deadline_miss")
                     traces.append(row)
                     reason = "deadline_miss"
                     break
+                row["sampled_action"] = plan.requested_actions[0, 0].tolist()
+                if self.planner.config.project_candidates:
+                    row["projected_action"] = plan.actions[0, 0].tolist()
                 row["requested_action"] = plan.actions[0, 0].tolist()
                 stage = "execute"
                 result = embodiment.execute(plan.actions[0, 0])

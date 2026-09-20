@@ -6,6 +6,12 @@ A Mac-first research framework for action-conditioned visual world models on a s
 
 **Implemented:** real MuJoCo collection/control, both trainable model adapters, strict checkpoints, CPU/MPS checks, a frozen benchmark runner, and mock-only SDK2 preparation. All six training runs and 400 frozen benchmark attempts are complete. **Learned Apple→Plate remains unsuccessful: 0/150 for each model.** The [acceptance audit](docs/ACCEPTANCE.md) separates implemented software from demonstrated research outcomes. Isaac and physical robot execution are future work.
 
+A [follow-up feasibility diagnostic](docs/experiments/feasibility_results_v1.md)
+removed joint-rate stops in seven completed matched pairs, with exact accepted
+commands and one native reach event. Pick-and-place remains unsuccessful; slow IK
+caused two LeWM deadline stops, and only 15/20 episodes finished within the fixed
+budget. This is partial development evidence using unchanged checkpoints.
+
 Development reaching models passed the declared per-dimension collapse and action-sensitivity checks, with each achieving 1/5 successes versus hold/random 0/5. An earlier-release scripted controller achieved 4/4 full pick-and-place successes on seen pairings. Scripted successes are not learned-policy results. Failures and diagnostic corrections remain in the [research reports](docs/experiments/reach_results.md).
 
 ## Run a small end-to-end example

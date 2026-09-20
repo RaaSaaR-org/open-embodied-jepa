@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
+from embodied_jepa.constraints import CandidateProjection
 from embodied_jepa.contracts import (
     ACTION_SCHEMA,
     EE_DELTA_GRASP_V0,
@@ -142,6 +143,9 @@ class G1Embodiment:
             self.state_schema,
         )
         self._observation_wall = time.monotonic()
+        # Preserve sensor precision and command history for repeatable planning.
+        self._projection_q = raw["qpos"].copy()
+        self._projection_targets = self.sim.targets.copy()
         return self._observation
 
     def state(self):
@@ -164,16 +168,16 @@ class G1Embodiment:
         validate_actions(normalized, ndim=1)
         return normalized.astype(np.float32)
 
-    def ee_pose(self, side):
+    def ee_pose(self, side, *, data=None):
         if side not in self.arm_ids:
             raise ContractError("side must be left or right")
-        data = self.sim.data
+        data = self.sim.data if data is None else data
         base = data.body("pelvis")
         rotation = base.xmat.reshape(3, 3)
         site = data.site(f"{side}_ee")
         return rotation.T @ (site.xpos - base.xpos), rotation.T @ site.xmat.reshape(3, 3)
 
-    def solve_ik(self, side, position, rotation):
+    def solve_ik(self, side, position, rotation, *, data=None):
         """Solve using a scratch state; never teleport the executing simulator."""
         position, rotation = np.asarray(position), np.asarray(rotation)
         if (
@@ -192,14 +196,15 @@ class G1Embodiment:
         bounds = np.asarray(self.manifest["workspace_base_m"][side])
         if np.any(position < bounds[0]) or np.any(position > bounds[1]):
             return None
+        data = self.sim.data if data is None else data
         scratch = self._scratch
-        scratch.qpos[:] = self.sim.data.qpos
+        scratch.qpos[:] = data.qpos
         scratch.qvel[:] = 0
         ids = self.arm_ids[side]
         qadr, vadr = self.model.jnt_qposadr[ids], self.model.jnt_dofadr[ids]
         limits = self.model.jnt_range[ids]
         site_id = self.model.site(f"{side}_ee").id
-        base = self.sim.data.body("pelvis")
+        base = data.body("pelvis")
         base_rotation = base.xmat.reshape(3, 3)
         target_position = base.xpos + base_rotation @ position
         target_rotation = base_rotation @ rotation
@@ -233,6 +238,126 @@ class G1Embodiment:
             )
         return None
 
+    def _prepare_side(self, applied, targets, side_index, side, *, data=None):
+        """Shared acceptance calculation on caller-owned action/target working copies."""
+        previous_targets = targets.copy()
+        max_delta = self.manifest["joint_speed_limit_rad_s"] * self.sim.control_dt
+        reasons = []
+        offset = side_index * 6
+        position, rotation = self.ee_pose(side, data=data)
+        target_position = position + applied[offset : offset + 3] * self.scales[offset : offset + 3]
+        bounds = np.asarray(self.manifest["workspace_base_m"][side])
+        clipped = np.clip(target_position, bounds[0], bounds[1])
+        if not np.array_equal(target_position, clipped):
+            applied[offset : offset + 3] = (
+                (clipped - position) / self.scales[offset : offset + 3]
+            ).astype(np.float32)
+            if np.any(np.abs(applied[offset : offset + 3]) > 1):
+                raise ContractError("current pose outside workspace")
+            reasons.append(f"{side} workspace")
+        target_rotation = (
+            rotation_delta(applied[offset + 3 : offset + 6] * self.scales[offset + 3 : offset + 6])
+            @ rotation
+        )
+        solution = self.solve_ik(
+            side, clipped, target_rotation, **({} if data is None else {"data": data})
+        )
+        if solution is None:
+            raise ContractError(f"{side} IK failed")
+        indices = np.array([self.actuator_for_joint[int(i)] for i in self.arm_ids[side]])
+        if np.any(np.abs(solution - previous_targets[indices]) > max_delta + 1e-6):
+            raise ContractError(f"{side} joint rate limit")
+        targets[indices] = solution
+        opened = np.asarray(self.manifest[f"{side}_open_rad"])
+        closed = np.asarray(self.manifest[f"{side}_closed_rad"])
+        hand_indices = [self.actuator_for_joint[int(i)] for i in self.hand_ids[side]]
+        previous = previous_targets[hand_indices]
+        midpoint, slope = (opened + closed) / 2, (closed - opened) / 2
+        lower, upper = -1.0, 1.0
+        for center, derivative, prior in zip(midpoint, slope, previous, strict=True):
+            if abs(derivative) < 1e-12:
+                if abs(center - prior) > max_delta + 1e-6:
+                    raise ContractError(f"{side} grasp has no rate-feasible synergy")
+                continue
+            ends = (
+                (prior - max_delta - center) / derivative,
+                (prior + max_delta - center) / derivative,
+            )
+            lower, upper = max(lower, min(ends)), min(upper, max(ends))
+        if lower > upper:
+            raise ContractError(f"{side} grasp has no rate-feasible synergy")
+        grasp = float(np.clip(applied[12 + side_index], lower, upper))
+        if grasp != float(applied[12 + side_index]):
+            reasons.append(f"{side} grasp rate")
+            applied[12 + side_index] = grasp
+        hand_targets = opened + (grasp + 1) * 0.5 * (closed - opened)
+        targets[hand_indices] = hand_targets
+        return reasons
+
+    def _snapshot_kinematics(self):
+        """Robot-only kinematics consistent with the latest measured joint snapshot."""
+        data = self.mj.MjData(self.model)
+        data.qpos[self.sim.qadr] = self._projection_q
+        self.mj.mj_forward(self.model, data)
+        return data
+
+    def project_candidates(self, requested):
+        """Preview pose/hand targets using proprioception and commanded targets only.
+
+        Backtrack each arm delta through 1, 1/2, ..., 1/64, 0. If none is
+        feasible, exclude the sequence (zero delta is not a guaranteed hold).
+        After step zero, assume measured joints reach accepted joint targets.
+        This kinematic surrogate is replanned after every real observation;
+        it is not a contact/velocity prediction or a safety guarantee.
+        """
+        validate_actions(requested, ndim=4)
+        if requested.shape[0] != 1:
+            raise ContractError("one embodiment projects batch size one")
+        state = self.state()
+        if not np.isclose(state.timestamps[0], self.sim.data.time, rtol=0, atol=1e-9):
+            raise ContractError("projection requires a current unconsumed observation")
+        count = len(self.sim.joint_names)
+        if np.any(
+            np.abs(state.values[0, count:]) > self.manifest["measured_joint_velocity_stop_rad_s"]
+        ):
+            raise ContractError("measured joint velocity limit exceeded")
+        # Reset scratch non-robot coordinates to model defaults. No object pose,
+        # contact, image, task evaluator, or future simulation step enters preview.
+        data = self._snapshot_kinematics()
+        initial_q = self._projection_q
+        initial_targets = self._projection_targets
+        actions = requested.copy()
+        feasible = np.ones(requested.shape[:2], dtype=bool)
+        for candidate in range(requested.shape[1]):
+            self.mj.mj_resetData(self.model, data)
+            data.qpos[self.sim.qadr] = initial_q
+            targets = initial_targets.copy()
+            self.mj.mj_forward(self.model, data)
+            for step in range(requested.shape[2]):
+                applied = actions[0, candidate, step].copy()
+                for side_index, side in enumerate(("left", "right")):
+                    offset = side_index * 6
+                    original = applied[offset : offset + 6].copy()
+                    for factor in (1.0, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.0):
+                        trial = applied.copy()
+                        trial[offset : offset + 6] = original * factor
+                        trial_targets = targets.copy()
+                        try:
+                            self._prepare_side(trial, trial_targets, side_index, side, data=data)
+                        except ContractError:
+                            continue
+                        applied, targets = trial, trial_targets
+                        break
+                    else:
+                        feasible[0, candidate] = False
+                        break
+                if not feasible[0, candidate]:
+                    break
+                actions[0, candidate, step] = applied
+                data.qpos[self.sim.qadr] = targets
+                self.mj.mj_forward(self.model, data)
+        return CandidateProjection(actions, feasible)
+
     def execute(self, normalized_action):
         validate_actions(normalized_action, ndim=1)
         requested = normalized_action.copy()
@@ -260,60 +385,15 @@ class G1Embodiment:
             return reject("measured joint velocity limit exceeded")
         applied = requested.copy()
         targets = self.sim.targets.copy()
-        max_delta = self.manifest["joint_speed_limit_rad_s"] * self.sim.control_dt
         reasons = []
-        for side_index, side in enumerate(("left", "right")):
-            offset = side_index * 6
-            position, rotation = self.ee_pose(side)
-            target_position = (
-                position + applied[offset : offset + 3] * self.scales[offset : offset + 3]
-            )
-            bounds = np.asarray(self.manifest["workspace_base_m"][side])
-            clipped = np.clip(target_position, bounds[0], bounds[1])
-            if not np.array_equal(target_position, clipped):
-                applied[offset : offset + 3] = (
-                    (clipped - position) / self.scales[offset : offset + 3]
-                ).astype(np.float32)
-                if np.any(np.abs(applied[offset : offset + 3]) > 1):
-                    return reject("current pose outside workspace")
-                reasons.append(f"{side} workspace")
-            target_rotation = (
-                rotation_delta(
-                    applied[offset + 3 : offset + 6] * self.scales[offset + 3 : offset + 6]
-                )
-                @ rotation
-            )
-            solution = self.solve_ik(side, clipped, target_rotation)
-            if solution is None:
-                return reject(f"{side} IK failed")
-            indices = np.array([self.actuator_for_joint[int(i)] for i in self.arm_ids[side]])
-            if np.any(np.abs(solution - self.sim.targets[indices]) > max_delta + 1e-6):
-                return reject(f"{side} joint rate limit")
-            targets[indices] = solution
-            opened = np.asarray(self.manifest[f"{side}_open_rad"])
-            closed = np.asarray(self.manifest[f"{side}_closed_rad"])
-            hand_indices = [self.actuator_for_joint[int(i)] for i in self.hand_ids[side]]
-            previous = self.sim.targets[hand_indices]
-            midpoint, slope = (opened + closed) / 2, (closed - opened) / 2
-            lower, upper = -1.0, 1.0
-            for center, derivative, prior in zip(midpoint, slope, previous, strict=True):
-                if abs(derivative) < 1e-12:
-                    if abs(center - prior) > max_delta + 1e-6:
-                        return reject(f"{side} grasp has no rate-feasible synergy")
-                    continue
-                ends = (
-                    (prior - max_delta - center) / derivative,
-                    (prior + max_delta - center) / derivative,
-                )
-                lower, upper = max(lower, min(ends)), min(upper, max(ends))
-            if lower > upper:
-                return reject(f"{side} grasp has no rate-feasible synergy")
-            grasp = float(np.clip(applied[12 + side_index], lower, upper))
-            if grasp != float(applied[12 + side_index]):
-                reasons.append(f"{side} grasp rate")
-                applied[12 + side_index] = grasp
-            hand_targets = opened + (grasp + 1) * 0.5 * (closed - opened)
-            targets[hand_indices] = hand_targets
+        # mj_step can leave live site transforms behind the integrated qpos.
+        # Preview and execution both derive targets from the observed robot q.
+        data = self._snapshot_kinematics()
+        try:
+            for side_index, side in enumerate(("left", "right")):
+                reasons.extend(self._prepare_side(applied, targets, side_index, side, data=data))
+        except ContractError as error:
+            return reject(str(error))
         ack = self.sim.send_joint_targets(
             targets.astype(np.float32),
             joint_names=self.sim.joint_names,

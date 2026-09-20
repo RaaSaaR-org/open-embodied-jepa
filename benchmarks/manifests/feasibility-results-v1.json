@@ -1,0 +1,1378 @@
+{
+  "artifact_directory": "outputs/feasibility-v1",
+  "comparison_sha256": "9d46b62c88d6b00e38d2696ac879fc25a766badb2ca95bc549e8fcb0f0463508",
+  "development_only": true,
+  "expected_source_sha256": "d8d20a50279c7ee112c206a67f69ab42f9c28df88f376e7a9daf233afed32941",
+  "max_seconds": 600.0,
+  "max_steps": 100,
+  "paired_summary": {
+    "leworldmodel": {
+      "completed_pairs": 3,
+      "incomplete_pairs": 2,
+      "paired_differences": [
+        {
+          "on_minus_off": {
+            "any_stops": 0,
+            "executed_steps": 83,
+            "joint_rate_stops": -1,
+            "stages": {
+              "grasp": 0,
+              "place": 0,
+              "reach": 0,
+              "release": 0,
+              "success": 0,
+              "transport": 0
+            }
+          },
+          "seed": 20000
+        },
+        {
+          "on_minus_off": {
+            "any_stops": -1,
+            "executed_steps": 89,
+            "joint_rate_stops": -1,
+            "stages": {
+              "grasp": 0,
+              "place": 0,
+              "reach": 0,
+              "release": 0,
+              "success": 0,
+              "transport": 0
+            }
+          },
+          "seed": 20001
+        },
+        {
+          "on_minus_off": {
+            "any_stops": 0,
+            "executed_steps": 72,
+            "joint_rate_stops": -1,
+            "stages": {
+              "grasp": 0,
+              "place": 0,
+              "reach": 0,
+              "release": 0,
+              "success": 0,
+              "transport": 0
+            }
+          },
+          "seed": 20002
+        }
+      ],
+      "planned_pairs": 5
+    },
+    "native_jepa": {
+      "completed_pairs": 4,
+      "incomplete_pairs": 1,
+      "paired_differences": [
+        {
+          "on_minus_off": {
+            "any_stops": -1,
+            "executed_steps": 93,
+            "joint_rate_stops": -1,
+            "stages": {
+              "grasp": 0,
+              "place": 0,
+              "reach": 0,
+              "release": 0,
+              "success": 0,
+              "transport": 0
+            }
+          },
+          "seed": 20000
+        },
+        {
+          "on_minus_off": {
+            "any_stops": -1,
+            "executed_steps": 78,
+            "joint_rate_stops": -1,
+            "stages": {
+              "grasp": 0,
+              "place": 0,
+              "reach": 0,
+              "release": 0,
+              "success": 0,
+              "transport": 0
+            }
+          },
+          "seed": 20001
+        },
+        {
+          "on_minus_off": {
+            "any_stops": -1,
+            "executed_steps": 89,
+            "joint_rate_stops": -1,
+            "stages": {
+              "grasp": 0,
+              "place": 0,
+              "reach": 0,
+              "release": 0,
+              "success": 0,
+              "transport": 0
+            }
+          },
+          "seed": 20002
+        },
+        {
+          "on_minus_off": {
+            "any_stops": -1,
+            "executed_steps": 93,
+            "joint_rate_stops": -1,
+            "stages": {
+              "grasp": 0,
+              "place": 0,
+              "reach": 1,
+              "release": 0,
+              "success": 0,
+              "transport": 0
+            }
+          },
+          "seed": 20003
+        }
+      ],
+      "planned_pairs": 5
+    }
+  },
+  "pinned_inputs": {
+    "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+    "checkpoints/mvp-v0/seed-1/leworldmodel.pt": "ab00894e48c1fac0c862fa5b37cb648f0d673704d6afb839980c2f45611b2dd5",
+    "checkpoints/mvp-v0/seed-1/native_jepa.pt": "62125697464d56bcb79ece37008d6afd81b62505f0fab369b5aaa13510b1c33a",
+    "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+    "configs/mvp_common.yaml": "292c7484e522f7cc076a8e122950a5dfe9f097e7bb49dff947a004a563ac1bd2",
+    "configs/mvp_seed1.yaml": "19e52c1cf96c04bde0ec53fc4f1dd6625365dc347de80d2da520e9b74e34bbb6",
+    "data/goals/mvp-v0/manifest.json": "eef30af440d40064efecc98a84a68d4388f9f60d1151104b4859a8f9934ee38e",
+    "data/mvp-v0/meta/jepa_manifest.json": "200246b34bd18cb30c8c711879c42a5ed2f31a62c99b96c1b347e37aa57512b7"
+  },
+  "protocol_sha256": "8f7eac798ce7a8f86e3dca4ee5e0125eddad7aae443357549bc4c0ef5609ffe0",
+  "runner_sha256": "a5da06fb221ce2172f80508e544e836cecdab837aef58b2cb60d3c7ac2b52988",
+  "runs": [
+    {
+      "backend": "native_jepa",
+      "config_sha256": "6ee04b6bd59ffff5823081d615b4da58d409fe402aeef99dda57499bf4ef2bbc",
+      "episode_sha256": "02e398bdeab6bdd09c42d2d13ed2920e3ac5b914e9a3fa2d192ef9c2c707ffbc",
+      "goal_manifest_sha256": "ac1e2c08b7f92a705824372b0c2a347ab8a64128686ee75a5f9b576f1019a5d8",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.6581276059150696,
+            "mean_absolute_error": 0.024755389106516937,
+            "missing_reason": null,
+            "paired_steps": 7
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.6581276059150696,
+            "mean_absolute_error": 0.024755389106516937,
+            "missing_reason": null,
+            "paired_steps": 7
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 7,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 8,
+            "max": 0.021777667105197906,
+            "mean": 0.012808229483198375,
+            "p50": 0.01150306302588433,
+            "p95": 0.018414648366160684
+          },
+          "planning_seconds": {
+            "count": 8,
+            "max": 0.0013716251123696566,
+            "mean": 0.0011082552664447576,
+            "p50": 0.001092229038476944,
+            "p95": 0.0012871585087850688
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "project_candidates": false,
+      "remaining_budget_seconds": 599.8566408329643,
+      "returncode": 0,
+      "run_id": "20000-native_jepa-projection-off",
+      "run_manifest_sha256": "edfb943f3a2509def6e67dc7a86ede362ae16e6f3b44e02d6c1049413f704e78",
+      "seed": 20000,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 1.76947066700086,
+        "monotonic_elapsed_seconds": 1.76947066700086,
+        "process_cpu_seconds": 0.0014019999999999866,
+        "wall_clock_elapsed_seconds": 1.7694511413574219
+      }
+    },
+    {
+      "backend": "native_jepa",
+      "config_sha256": "da274cf2ad5de86daae6af500efff2a80e1577ebd0049f91ef1d61bc18cd61ba",
+      "episode_sha256": "82d567a44845e548568ae72025e40908768a738fe66b29ea91d80b20175d8b3b",
+      "goal_manifest_sha256": "ac1e2c08b7f92a705824372b0c2a347ab8a64128686ee75a5f9b576f1019a5d8",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.5983969569206238,
+            "mean_absolute_error": 0.025486453634803185,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.5983969569206238,
+            "mean_absolute_error": 0.025486453634803185,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 0.36125991586595774,
+            "mean": 0.2509529950330034,
+            "p50": 0.2418572085443884,
+            "p95": 0.31310225154738874
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 0.3503200418781489,
+            "mean": 0.24011723465053364,
+            "p50": 0.23076129192486405,
+            "p95": 0.30243357908912
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 0.348581125959754,
+            "mean": 0.23846430040663108,
+            "p50": 0.22911589592695236,
+            "p95": 0.3007465435191989
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "project_candidates": true,
+      "remaining_budget_seconds": 598.0037890418898,
+      "returncode": 0,
+      "run_id": "20000-native_jepa-projection-on",
+      "run_manifest_sha256": "d2f7e5b159fe81ed5c92a3fa0aefe4283a2371a1c40227379dcc99c9a3dd90a7",
+      "seed": 20000,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 26.864271166967228,
+        "monotonic_elapsed_seconds": 26.864271166967228,
+        "process_cpu_seconds": 0.0063750000000000195,
+        "wall_clock_elapsed_seconds": 26.86397886276245
+      }
+    },
+    {
+      "backend": "leworldmodel",
+      "config_sha256": "49b6d3423ad30ec861f0651079053c964aaf118ae3c502dd6357e40c03288298",
+      "episode_sha256": "a6d5df2dd759482bbb282ab69d2dd391fb7ad2450c7479278c9a05204499a40b",
+      "goal_manifest_sha256": "ac1e2c08b7f92a705824372b0c2a347ab8a64128686ee75a5f9b576f1019a5d8",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.03277862710612161,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.03277862710612161,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 11,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 12,
+            "max": 0.029867707984521985,
+            "mean": 0.019243864497790735,
+            "p50": 0.018294000066816807,
+            "p95": 0.02415925792884081
+          },
+          "planning_seconds": {
+            "count": 12,
+            "max": 0.00847587501630187,
+            "mean": 0.007525041718812038,
+            "p50": 0.007404458476230502,
+            "p95": 0.008247212471906096
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "project_candidates": false,
+      "remaining_budget_seconds": 571.0514193749987,
+      "returncode": 0,
+      "run_id": "20000-leworldmodel-projection-off",
+      "run_manifest_sha256": "b8ed34b2845afebd04aa6743fc6bb1d65190ae97aa7acbd99e42135ab2db6168",
+      "seed": 20000,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 2.6052470207214355,
+        "monotonic_elapsed_seconds": 2.6051654159091413,
+        "process_cpu_seconds": 0.001688999999999996,
+        "wall_clock_elapsed_seconds": 2.6052470207214355
+      }
+    },
+    {
+      "backend": "leworldmodel",
+      "config_sha256": "a53c912c8d5845e8bd33a927306df0cb97c19dccb67fa27a72f1ec74b4bdb608",
+      "episode_sha256": "ae5cc4565ae5ba47e0e2c45b6598966845b68243c8613f83b5e1280c4765b532",
+      "goal_manifest_sha256": "ac1e2c08b7f92a705824372b0c2a347ab8a64128686ee75a5f9b576f1019a5d8",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 94
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.045685966226688406,
+            "missing_reason": null,
+            "paired_steps": 94
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.045685966226688406,
+            "missing_reason": null,
+            "paired_steps": 94
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 94,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 95,
+            "max": 5.037493374897167,
+            "mean": 2.2329916521857838,
+            "p50": 2.1130786249414086,
+            "p95": 4.566759974625893
+          },
+          "planning_seconds": {
+            "count": 95,
+            "max": 5.014530416112393,
+            "mean": 2.2151637188428523,
+            "p50": 2.0931087089702487,
+            "p95": 4.546697616041638
+          },
+          "projection_seconds": {
+            "count": 95,
+            "max": 5.005044249817729,
+            "mean": 2.2060177279954876,
+            "p50": 2.0839843752328306,
+            "p95": 4.537440353841521
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "deadline_miss"
+      },
+      "project_candidates": true,
+      "remaining_budget_seconds": 568.3519069999456,
+      "returncode": 0,
+      "run_id": "20000-leworldmodel-projection-on",
+      "run_manifest_sha256": "316f4ed710356a93e1c72119f96e2b302c680d22f585370522627a621527cb6a",
+      "seed": 20000,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 214.6051778793335,
+        "monotonic_elapsed_seconds": 214.6044975419063,
+        "process_cpu_seconds": 0.044779999999999986,
+        "wall_clock_elapsed_seconds": 214.6051778793335
+      }
+    },
+    {
+      "backend": "native_jepa",
+      "config_sha256": "ffb5b63a2de0f444db4aaa1ce37d7c213e430da35e2a7596bd8bbe5093543106",
+      "episode_sha256": "7d853acaeb950b5ee02b73e8aea086e6598f3a0839962e6e1ec3a4c4a5919f52",
+      "goal_manifest_sha256": "6a3d9c24154d91c4ffb654d3b0a0b2d98a750f6ecfa55492c6a164b3466f94e7",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.236466109752655,
+            "mean_absolute_error": 0.028796498046873453,
+            "missing_reason": null,
+            "paired_steps": 22
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.236466109752655,
+            "mean_absolute_error": 0.028796498046873453,
+            "missing_reason": null,
+            "paired_steps": 22
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 22,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 23,
+            "max": 0.022387167206034064,
+            "mean": 0.011827675747158735,
+            "p50": 0.011294665979221463,
+            "p95": 0.012031275196932256
+          },
+          "planning_seconds": {
+            "count": 23,
+            "max": 0.0013831248506903648,
+            "mean": 0.0010317173867445924,
+            "p50": 0.0009994159918278456,
+            "p95": 0.0011306084925308824
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "project_candidates": false,
+      "remaining_budget_seconds": 353.6714999675751,
+      "returncode": 0,
+      "run_id": "20001-native_jepa-projection-off",
+      "run_manifest_sha256": "1db24b2de6f402310051ace62d92712d88c098c2ac6e7ad5ab0bbe5212b53825",
+      "seed": 20001,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 1.8689775839447975,
+        "monotonic_elapsed_seconds": 1.8689775839447975,
+        "process_cpu_seconds": 0.0013140000000000374,
+        "wall_clock_elapsed_seconds": 1.8689582347869873
+      }
+    },
+    {
+      "backend": "native_jepa",
+      "config_sha256": "aaf761a4cd228c5f36e9f28de7bd04a914d2edbdb79aa7ab2d93b7380a89db57",
+      "episode_sha256": "f04571c17ab62d687af274ab871fa3e4f0d1a8d79e0cf9ec4ae9764e784ad9ec",
+      "goal_manifest_sha256": "6a3d9c24154d91c4ffb654d3b0a0b2d98a750f6ecfa55492c6a164b3466f94e7",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.515720009803772,
+            "mean_absolute_error": 0.027152177135992262,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.515720009803772,
+            "mean_absolute_error": 0.027152177135992262,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 0.34290687507018447,
+            "mean": 0.2654985275422223,
+            "p50": 0.25209427101071924,
+            "p95": 0.3307913798489608
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 0.33190791704691947,
+            "mean": 0.25464810002129523,
+            "p50": 0.2409756869310513,
+            "p95": 0.32035839940654115
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 0.3302213321439922,
+            "mean": 0.2530094620329328,
+            "p50": 0.23932189610786736,
+            "p95": 0.31876626232406124
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "project_candidates": true,
+      "remaining_budget_seconds": 351.7230861186981,
+      "returncode": 0,
+      "run_id": "20001-native_jepa-projection-on",
+      "run_manifest_sha256": "eab76b5613f0e464ec604789d9bb7d2ffa53afa0b5d45ea1f032e1e862f3c964",
+      "seed": 20001,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 28.288674749899656,
+        "monotonic_elapsed_seconds": 28.288674749899656,
+        "process_cpu_seconds": 0.0066809999999999925,
+        "wall_clock_elapsed_seconds": 28.288387060165405
+      }
+    },
+    {
+      "backend": "leworldmodel",
+      "config_sha256": "a16e29499afb7368e31a697d80c40538da6fbd536e23e57dd94ff09ce3ffdb19",
+      "episode_sha256": "7e83a1bf5ccf6f1b7bc8d73d234cb79560085531cac72f0160a95bf466491701",
+      "goal_manifest_sha256": "6a3d9c24154d91c4ffb654d3b0a0b2d98a750f6ecfa55492c6a164b3466f94e7",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.2764506936073303,
+            "mean_absolute_error": 0.03320939226874283,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.2764506936073303,
+            "mean_absolute_error": 0.03320939226874283,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 11,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 12,
+            "max": 0.029418667079880834,
+            "mean": 0.019052909745369107,
+            "p50": 0.017984687467105687,
+            "p95": 0.02355445263674482
+          },
+          "planning_seconds": {
+            "count": 12,
+            "max": 0.008140125079080462,
+            "mean": 0.007298003474716097,
+            "p50": 0.007294291979633272,
+            "p95": 0.007735600136220455
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "project_candidates": false,
+      "remaining_budget_seconds": 323.3501172065735,
+      "returncode": 0,
+      "run_id": "20001-leworldmodel-projection-off",
+      "run_manifest_sha256": "0fbce980a6dd1ea8f90c9787987682800e3bd89789b4af1d34a080463bab67c3",
+      "seed": 20001,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 2.490696417167783,
+        "monotonic_elapsed_seconds": 2.490696417167783,
+        "process_cpu_seconds": 0.001578999999999997,
+        "wall_clock_elapsed_seconds": 2.4906697273254395
+      }
+    },
+    {
+      "backend": "leworldmodel",
+      "config_sha256": "c9c65c4b2bce71f932551b08114d74f33005058c58f12f8c97fc4264cb3aa499",
+      "episode_sha256": "6f640f6577d60304314f670148f12b0a4ec958ff73e2935eda35460e6a315808",
+      "goal_manifest_sha256": "6a3d9c24154d91c4ffb654d3b0a0b2d98a750f6ecfa55492c6a164b3466f94e7",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.38291397690773,
+            "mean_absolute_error": 0.03043503450296287,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.38291397690773,
+            "mean_absolute_error": 0.03043503450296287,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 0.29078641696833074,
+            "mean": 0.2711060957959853,
+            "p50": 0.27196422894485295,
+            "p95": 0.28229572128038855
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 0.27987375017255545,
+            "mean": 0.25985023578861727,
+            "p50": 0.2608615419594571,
+            "p95": 0.2710787825519219
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 0.27107741800136864,
+            "mean": 0.25103264303179457,
+            "p50": 0.2519984586397186,
+            "p95": 0.2617940336233005
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "project_candidates": true,
+      "remaining_budget_seconds": 320.7764689922333,
+      "returncode": 0,
+      "run_id": "20001-leworldmodel-projection-on",
+      "run_manifest_sha256": "bf7ad4364dec0e4a2649b9125b8f2c6c1bf4c254ca04e01c75e6a7abe0695746",
+      "seed": 20001,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 29.513846749905497,
+        "monotonic_elapsed_seconds": 29.513846749905497,
+        "process_cpu_seconds": 0.007260999999999962,
+        "wall_clock_elapsed_seconds": 29.51354694366455
+      }
+    },
+    {
+      "backend": "native_jepa",
+      "config_sha256": "6c264d4a75163870ecf108bb1e59f27c3cb956b93a55ce0cddd9ece61f4bba03",
+      "episode_sha256": "6e14f50c9d37511f8992eb97d775562a6e4f20185bd9a3c3abb489f35b65d653",
+      "goal_manifest_sha256": "d55a41ae9384766a4efa1448517aea4ef43a77086d1e802f27632e409e656c31",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.1849621534347534,
+            "mean_absolute_error": 0.039437490188843245,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.1849621534347534,
+            "mean_absolute_error": 0.039437490188843245,
+            "missing_reason": null,
+            "paired_steps": 11
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 11,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 12,
+            "max": 0.022750417003408074,
+            "mean": 0.012682399343854437,
+            "p50": 0.011695957975462079,
+            "p95": 0.017060781444888554
+          },
+          "planning_seconds": {
+            "count": 12,
+            "max": 0.0014845419209450483,
+            "mean": 0.0010858508370195825,
+            "p50": 0.0010754794348031282,
+            "p95": 0.0012887419667094943
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "project_candidates": false,
+      "remaining_budget_seconds": 291.1856750419829,
+      "returncode": 0,
+      "run_id": "20002-native_jepa-projection-off",
+      "run_manifest_sha256": "fa68c1a63402bf5ef31c957ea319379479abcd0fc44f17c942aaa26de24cfb71",
+      "seed": 20002,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 1.767821209039539,
+        "monotonic_elapsed_seconds": 1.767821209039539,
+        "process_cpu_seconds": 0.0013929999999999776,
+        "wall_clock_elapsed_seconds": 1.7678029537200928
+      }
+    },
+    {
+      "backend": "native_jepa",
+      "config_sha256": "2baca48df4cd71301e2d1cb9ae5da98a4fe8b7c58b654cd01c1fb837aaf6fa81",
+      "episode_sha256": "ea9130f5ac5a414fd4909b31994d7ec42a3e6ca8b3ed2202894b91d876d64e40",
+      "goal_manifest_sha256": "d55a41ae9384766a4efa1448517aea4ef43a77086d1e802f27632e409e656c31",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.423687219619751,
+            "mean_absolute_error": 0.029463492347193615,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.423687219619751,
+            "mean_absolute_error": 0.029463492347193615,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 0.34154050005599856,
+            "mean": 0.2603172845952213,
+            "p50": 0.24827679200097919,
+            "p95": 0.30734382892260326
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 0.3299562910106033,
+            "mean": 0.24925482620252296,
+            "p50": 0.2370517080416903,
+            "p95": 0.2959175290074199
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 0.32827462488785386,
+            "mean": 0.24756165084894746,
+            "p50": 0.23538558289874345,
+            "p95": 0.2942040955531411
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "project_candidates": true,
+      "remaining_budget_seconds": 289.33386558294296,
+      "returncode": 0,
+      "run_id": "20002-native_jepa-projection-on",
+      "run_manifest_sha256": "b3f1ffbe3f405a1e364ead0806eec16a014f2532719ab9e0f134598e3ee1a5bd",
+      "seed": 20002,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 27.776059833122417,
+        "monotonic_elapsed_seconds": 27.776059833122417,
+        "process_cpu_seconds": 0.0069430000000000325,
+        "wall_clock_elapsed_seconds": 27.775777101516724
+      }
+    },
+    {
+      "backend": "leworldmodel",
+      "config_sha256": "bf83bbf447c14038874005f03a003f9e9e04a89df5f71e7b5c0f7f2e440a82cd",
+      "episode_sha256": "8447bb081f00779625c79c487fe9279b9b1307d36e9c81c7bcb6c1bead95a631",
+      "goal_manifest_sha256": "d55a41ae9384766a4efa1448517aea4ef43a77086d1e802f27632e409e656c31",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 0,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 1,
+            "max": 0.030015250202268362,
+            "mean": 0.030015250202268362,
+            "p50": 0.030015250202268362,
+            "p95": 0.030015250202268362
+          },
+          "planning_seconds": {
+            "count": 1,
+            "max": 0.008347832830622792,
+            "mean": 0.008347832830622792,
+            "p50": 0.008347832830622792,
+            "p95": 0.008347832830622792
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "project_candidates": false,
+      "remaining_budget_seconds": 261.4760241669137,
+      "returncode": 0,
+      "run_id": "20002-leworldmodel-projection-off",
+      "run_manifest_sha256": "89fdc266c4406aaefb609e3aeb2360a765664a9c4cbd78278ce9ba178e4dee26",
+      "seed": 20002,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 2.2840402089059353,
+        "monotonic_elapsed_seconds": 2.2840402089059353,
+        "process_cpu_seconds": 0.0015500000000000513,
+        "wall_clock_elapsed_seconds": 2.2840170860290527
+      }
+    },
+    {
+      "backend": "leworldmodel",
+      "config_sha256": "f7a5db00b96e975d384ea8e464b67e99ab26f26c283cb91815a5e7435e8ebe58",
+      "episode_sha256": "2d4eca2358343a13fef7891f771fc6d093f9b7c542e8fbcdbe337cebd3d08fd3",
+      "goal_manifest_sha256": "d55a41ae9384766a4efa1448517aea4ef43a77086d1e802f27632e409e656c31",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 72
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.2974187731742859,
+            "mean_absolute_error": 0.04226593747420887,
+            "missing_reason": null,
+            "paired_steps": 72
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.2974187731742859,
+            "mean_absolute_error": 0.04226593747420887,
+            "missing_reason": null,
+            "paired_steps": 72
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 72,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 73,
+            "max": 5.2049247501417994,
+            "mean": 2.153774544000243,
+            "p50": 2.3210566667839885,
+            "p95": 4.316799025004729
+          },
+          "planning_seconds": {
+            "count": 73,
+            "max": 5.179749707924202,
+            "mean": 2.1343436460297758,
+            "p50": 2.294499959098175,
+            "p95": 4.294149916339665
+          },
+          "projection_seconds": {
+            "count": 73,
+            "max": 5.17025141697377,
+            "mean": 2.1250260537171304,
+            "p50": 2.284603792242706,
+            "p95": 4.28480128343217
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "deadline_miss"
+      },
+      "project_candidates": true,
+      "remaining_budget_seconds": 259.10919929202646,
+      "returncode": 0,
+      "run_id": "20002-leworldmodel-projection-on",
+      "run_manifest_sha256": "0f4ebc24c06c7cb41302894016f338f978da1f9b1d0e80d09a3e25a9d57e96ba",
+      "seed": 20002,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 159.6646596658975,
+        "monotonic_elapsed_seconds": 159.6646596658975,
+        "process_cpu_seconds": 0.033571999999999935,
+        "wall_clock_elapsed_seconds": 159.66304302215576
+      }
+    },
+    {
+      "backend": "native_jepa",
+      "config_sha256": "71d79ae6ece6113b1a8035089cc53b0094e28430224ccd3f13dd3d9f2819ec53",
+      "episode_sha256": "2233962cb02b78914cf82d79823ac729b8e3b7414961bba83fc3b9db1a2145eb",
+      "goal_manifest_sha256": "17329fd2cb14673ca2c726ea3d78ce7488668207e313c6e50d3e4b672fc14b7c",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.9242962002754211,
+            "mean_absolute_error": 0.02725143354310065,
+            "missing_reason": null,
+            "paired_steps": 7
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 0.9242962002754211,
+            "mean_absolute_error": 0.02725143354310065,
+            "missing_reason": null,
+            "paired_steps": 7
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 7,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 8,
+            "max": 0.02291491604410112,
+            "mean": 0.0131388540903572,
+            "p50": 0.011718416470102966,
+            "p95": 0.01915610606083646
+          },
+          "planning_seconds": {
+            "count": 8,
+            "max": 0.0013891251292079687,
+            "mean": 0.0010992344468832016,
+            "p50": 0.0010953955352306366,
+            "p95": 0.0013053001021035013
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "project_candidates": false,
+      "remaining_budget_seconds": 99.36042712489143,
+      "returncode": 0,
+      "run_id": "20003-native_jepa-projection-off",
+      "run_manifest_sha256": "f379bdebbb3cffefbf63654c8d38c9e31bbcd9a2b538e505a24e523d9d21fd4a",
+      "seed": 20003,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 1.6627004160545766,
+        "monotonic_elapsed_seconds": 1.6627004160545766,
+        "process_cpu_seconds": 0.0012590000000000101,
+        "wall_clock_elapsed_seconds": 1.6626830101013184
+      }
+    },
+    {
+      "backend": "native_jepa",
+      "config_sha256": "7bde000da02b399a0165317a01e68246f9ca4dc1e19cf37f001481d07c51a8ce",
+      "episode_sha256": "89b66cec0ab57e74d7d97f4a69a0b5fcdbe90bb54cc3aee25476c5689f0b1ed8",
+      "goal_manifest_sha256": "17329fd2cb14673ca2c726ea3d78ce7488668207e313c6e50d3e4b672fc14b7c",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.1712202727794647,
+            "mean_absolute_error": 0.0322747822531632,
+            "missing_reason": null,
+            "paired_steps": 100
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": 1.1712202727794647,
+            "mean_absolute_error": 0.0322747822531632,
+            "missing_reason": null,
+            "paired_steps": 100
+          }
+        },
+        "any_guard_or_runtime_stop": false,
+        "executed_steps": 100,
+        "joint_rate_stop": false,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 100,
+            "max": 1.11972341616638,
+            "mean": 0.3140149366646074,
+            "p50": 0.28400350001174957,
+            "p95": 0.47398474826477455
+          },
+          "planning_seconds": {
+            "count": 100,
+            "max": 1.1089847921393812,
+            "mean": 0.30314134248299524,
+            "p50": 0.27348339604213834,
+            "p95": 0.46327051803236813
+          },
+          "projection_seconds": {
+            "count": 100,
+            "max": 1.107270458014682,
+            "mean": 0.3014902675128542,
+            "p50": 0.27186656242702156,
+            "p95": 0.4615993144572711
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": true,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "step_limit"
+      },
+      "project_candidates": true,
+      "remaining_budget_seconds": 97.61849112482741,
+      "returncode": 0,
+      "run_id": "20003-native_jepa-projection-on",
+      "run_manifest_sha256": "2411810b1a55ba4390297c894522aaf87625412f8fd9d174b599ee1b37a18efa",
+      "seed": 20003,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 33.14274962502532,
+        "monotonic_elapsed_seconds": 33.14274962502532,
+        "process_cpu_seconds": 0.007547999999999999,
+        "wall_clock_elapsed_seconds": 33.14241409301758
+      }
+    },
+    {
+      "backend": "leworldmodel",
+      "config_sha256": "6aa03af912e797422f3d43944120c410ce8d83771adfc7e667b03dc20535d5bd",
+      "episode_sha256": "8d354978ad1f40a0be147b51cb5297f8f1cfd060428d424ad17c379b9e51aa5a",
+      "goal_manifest_sha256": "17329fd2cb14673ca2c726ea3d78ce7488668207e313c6e50d3e4b672fc14b7c",
+      "metrics": {
+        "action_disagreement": {
+          "execute_requested_vs_applied": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.03472244745541003,
+            "missing_reason": null,
+            "paired_steps": 31
+          },
+          "sampled_vs_applied": {
+            "max_absolute_error": 1.8181818127632141,
+            "mean_absolute_error": 0.03472244745541003,
+            "missing_reason": null,
+            "paired_steps": 31
+          },
+          "sampled_vs_projected": {
+            "max_absolute_error": null,
+            "mean_absolute_error": null,
+            "missing_reason": "no paired trace actions; not assumed zero",
+            "paired_steps": 0
+          }
+        },
+        "any_guard_or_runtime_stop": true,
+        "executed_steps": 31,
+        "joint_rate_stop": true,
+        "latency_seconds": {
+          "control_seconds": {
+            "count": 32,
+            "max": 0.02972245798446238,
+            "mean": 0.01873688267369289,
+            "p50": 0.018250374938361347,
+            "p95": 0.01930982043268159
+          },
+          "planning_seconds": {
+            "count": 32,
+            "max": 0.008199833100661635,
+            "mean": 0.007257066376041621,
+            "p50": 0.0071748330956324935,
+            "p95": 0.007768516545183957
+          },
+          "projection_seconds": {
+            "count": 0,
+            "max": null,
+            "mean": null,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "stages": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "termination_reason": "stopped"
+      },
+      "project_candidates": false,
+      "remaining_budget_seconds": 64.39313174993731,
+      "returncode": 0,
+      "run_id": "20003-leworldmodel-projection-off",
+      "run_manifest_sha256": "895fa2792d0c2e9e0142a036cc9fd735483f43c4527a225574dfd2f26e0c6b4c",
+      "seed": 20003,
+      "status": "completed",
+      "timeout": false,
+      "timing": {
+        "elapsed_seconds": 2.9181300420314074,
+        "monotonic_elapsed_seconds": 2.9181300420314074,
+        "process_cpu_seconds": 0.0015899999999999803,
+        "wall_clock_elapsed_seconds": 2.918100118637085
+      }
+    },
+    {
+      "backend": "leworldmodel",
+      "config_sha256": "fc246e0d4d1e50948e5f72b3c2201e2d9dc043baeb86c70083651a6538286dd6",
+      "goal_manifest_sha256": "17329fd2cb14673ca2c726ea3d78ce7488668207e313c6e50d3e4b672fc14b7c",
+      "metrics": null,
+      "project_candidates": true,
+      "remaining_budget_seconds": 61.389779957942665,
+      "returncode": -9,
+      "run_id": "20003-leworldmodel-projection-on",
+      "seed": 20003,
+      "status": "incomplete_total_budget",
+      "timeout": true,
+      "timing": {
+        "elapsed_seconds": 61.412823082879186,
+        "monotonic_elapsed_seconds": 61.412823082879186,
+        "process_cpu_seconds": 0.013077000000000005,
+        "wall_clock_elapsed_seconds": 61.412200927734375
+      }
+    },
+    {
+      "backend": "native_jepa",
+      "config_sha256": "4dfd4a92fd9ff4d48de3a933d04853db0ac2efc74c89203e3fdd60f496d1fade",
+      "goal_manifest_sha256": "d36dbb0d75ccaec29c3d870e638e01eb27bc7e89548293e725cec5ef93b63368",
+      "metrics": null,
+      "project_candidates": false,
+      "run_id": "20004-native_jepa-projection-off",
+      "seed": 20004,
+      "status": "not_started_total_budget"
+    },
+    {
+      "backend": "native_jepa",
+      "config_sha256": "f9d6c1934819a3b6c1448f5743b6d907984262ae414d5b4aa848b3c4111b0a2d",
+      "goal_manifest_sha256": "d36dbb0d75ccaec29c3d870e638e01eb27bc7e89548293e725cec5ef93b63368",
+      "metrics": null,
+      "project_candidates": true,
+      "run_id": "20004-native_jepa-projection-on",
+      "seed": 20004,
+      "status": "not_started_total_budget"
+    },
+    {
+      "backend": "leworldmodel",
+      "config_sha256": "849cc03a838273912993433c9676bb1e52bf0d89de94c93a8b0805c20216e397",
+      "goal_manifest_sha256": "d36dbb0d75ccaec29c3d870e638e01eb27bc7e89548293e725cec5ef93b63368",
+      "metrics": null,
+      "project_candidates": false,
+      "run_id": "20004-leworldmodel-projection-off",
+      "seed": 20004,
+      "status": "not_started_total_budget"
+    },
+    {
+      "backend": "leworldmodel",
+      "config_sha256": "3426471014dff19b010a1d6e3f22fd60d2b40685d9ac4f200f6418a12b77518c",
+      "goal_manifest_sha256": "d36dbb0d75ccaec29c3d870e638e01eb27bc7e89548293e725cec5ef93b63368",
+      "metrics": null,
+      "project_candidates": true,
+      "run_id": "20004-leworldmodel-projection-on",
+      "seed": 20004,
+      "status": "not_started_total_budget"
+    }
+  ],
+  "schema_version": 1,
+  "source": {
+    "dirty": false,
+    "python_source_sha256": "d8d20a50279c7ee112c206a67f69ab42f9c28df88f376e7a9daf233afed32941",
+    "revision": "680be1b8d3a422d3d90a566e2f40ebf93f405859"
+  },
+  "status": "incomplete",
+  "timing": {
+    "elapsed_seconds": 600.0653150421567,
+    "monotonic_elapsed_seconds": 600.0653150421567,
+    "process_cpu_seconds": 0.856016,
+    "wall_clock_elapsed_seconds": 600.0622000694275
+  },
+  "training_seed": 1
+}

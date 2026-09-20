@@ -102,7 +102,7 @@ def test_mirrored_named_grasp_rate_and_snapshot_consumption(robot):
 def test_ik_failure_and_stale_deadline_hold_without_teleport(robot, monkeypatch):
     robot.observe()
     before = robot.sim.data.qpos.copy()
-    monkeypatch.setattr(robot, "solve_ik", lambda *args: None)
+    monkeypatch.setattr(robot, "solve_ik", lambda *args, **kwargs: None)
     result = robot.execute(opened_action())
     assert result.status == "stopped" and "IK" in result.reason
     np.testing.assert_array_equal(before, robot.sim.data.qpos)
@@ -130,7 +130,7 @@ def test_measured_velocity_and_joint_target_rate_limits_stop(robot, monkeypatch)
     robot.observe()
     solution = robot.sim.data.qpos[robot.model.jnt_qposadr[robot.arm_ids["left"]]].copy()
     solution[0] += 0.2
-    monkeypatch.setattr(robot, "solve_ik", lambda *args: solution)
+    monkeypatch.setattr(robot, "solve_ik", lambda *args, **kwargs: solution)
     assert "joint rate limit" in robot.execute(opened_action()).reason
 
 
