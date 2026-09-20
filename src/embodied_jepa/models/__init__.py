@@ -10,7 +10,11 @@ def __getattr__(name):
         from .lewm import LeWM
 
         return LeWM
+    if name == "JEPAWMs":
+        from .jepa_wms import JEPAWMs
+
+        return JEPAWMs
     raise AttributeError(name)
 
 
-__all__ = ["NativeJEPA", "LeWM"]
+__all__ = ["NativeJEPA", "LeWM", "JEPAWMs"]

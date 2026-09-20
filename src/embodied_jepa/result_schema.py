@@ -14,7 +14,14 @@ from datetime import datetime
 from embodied_jepa.planning import CEMConfig
 
 STAGES = ("reach", "grasp", "transport", "place", "release")
-BACKENDS = {"native_jepa", "leworldmodel", "control:hold", "control:random", "control:oracle"}
+BACKENDS = {
+    "native_jepa",
+    "leworldmodel",
+    "jepa_wms",
+    "control:hold",
+    "control:random",
+    "control:oracle",
+}
 TERMINATIONS = {
     "success",
     "step_limit",

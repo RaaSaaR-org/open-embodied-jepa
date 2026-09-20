@@ -519,7 +519,9 @@ def train(
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, required=True)
-    parser.add_argument("--backend", choices=("native_jepa", "leworldmodel"), required=True)
+    parser.add_argument(
+        "--backend", choices=("native_jepa", "leworldmodel", "jepa_wms"), required=True
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--steps", type=int, default=500)
     parser.add_argument("--batch-size", type=int, default=16)

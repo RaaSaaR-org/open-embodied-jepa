@@ -150,3 +150,19 @@ def test_goal_manifest_path_fails_preflight(config_path, value):
     config_path.write_text(yaml.safe_dump(raw))
     with pytest.raises(ValueError, match="goal manifest"):
         ExperimentConfig.load(config_path)
+
+
+def test_optional_jepa_wms_configuration_preserves_common_path(config_path):
+    raw = yaml.safe_load(config_path.read_text())
+    raw["world_model"]["backend"] = "jepa_wms"
+    raw["world_model"]["checkpoints"]["jepa_wms"] = "native.pt"
+    raw["world_model"]["settings"] = {
+        "jepa_wms": {"accept_noncommercial_source": True, "source_path": "third_party/jepa-wms"}
+    }
+    original = ExperimentConfig.load(config_path)
+    config_path.write_text(yaml.safe_dump(raw))
+    optional = ExperimentConfig.load(config_path)
+    assert optional.backend == "jepa_wms"
+    assert original.planner == optional.planner
+    assert original.dataset_root == optional.dataset_root
+    assert original.action_manifest == optional.action_manifest
