@@ -56,7 +56,7 @@ seed, and resource limits are fixed before training. CPU Torch threads are cappe
 at four during the run and restored afterward. MPS is explicit, must be available,
 and is synchronized around measured model operations. Reported host RSS is the
 process-lifetime high-water mark; final MPS allocator/driver bytes are separate
-snapshots, not GPU peak-memory estimates.
+snapshots, not GPU peak-memory estimates. Budget elapsed time is the maximum of wall-clock and monotonic deltas, so Mac host suspension consumes the budget. Reports separate these clocks from aggregate process CPU time. The six-run supervisor additionally bounds imports and finalization.
 
 ## Selection and artifacts
 
@@ -71,8 +71,7 @@ collapse/action/persistence controls where complete validation windows exist;
 missing horizons are explicitly marked unavailable.
 
 An explicit `--selection noncollapsed_relative` alternative uses horizon-4
-validation diagnostics. Eligibility requires `collapsed_fraction <= 0.05` and
-`latent_std_mean >= 0.1`. Among eligible states it minimizes
+validation diagnostics (metric definition version 2). Eligibility requires both online and target `collapsed_fraction <= 0.05` and mean latent standard deviation `>= 0.1`. Persistence compares current and future embeddings entirely in the target encoder space; mixing online and EMA target spaces gives a misleading baseline. Among eligible states it minimizes
 `prediction_mse / max(persistence_mse, 1e-12)`, retaining the earlier state on an
 exact tie. Every validation event records eligibility, rejection reasons, score,
 and whether it became the best checkpoint. Unavailable horizon-4 diagnostics are
@@ -80,7 +79,7 @@ ineligible. If no checkpoint qualifies, a completed optimization budget produces
 `selection_failed` with no best checkpoint; the latest state and diagnostics
 remain available. This explicit selector corrects the collapsed low-MSE state
 observed in the development pilot; see the preregistered
-[v1 protocol](experiments/reach_pilot_v1.md). The default remains `raw_mse` so
+[v2 protocol](experiments/reach_pilot_v2.md), which also documents why v1 was invalid. The default remains `raw_mse` so
 historical commands and v0 results keep their original meaning.
 
 For output `checkpoints/pilot/native.pt`, the runner writes:

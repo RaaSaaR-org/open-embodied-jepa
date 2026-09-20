@@ -1,0 +1,377 @@
+[
+  {
+    "run_id": "reach-v0-oracle",
+    "summary": {
+      "episodes": 5,
+      "successes": 5,
+      "success_rate": 1.0,
+      "wilson95": [
+        0.5655175352168251,
+        1
+      ],
+      "termination_reasons": {
+        "success": 5
+      },
+      "stages": {
+        "reach": 5,
+        "grasp": 0,
+        "transport": 0,
+        "place": 0,
+        "release": 0
+      },
+      "plan_latency_seconds": {
+        "p50": null,
+        "p95": null,
+        "missing_reason": "control policy does not plan"
+      },
+      "candidates_per_second": null,
+      "candidates_missing_reason": "control policy does not plan",
+      "deadline_misses": 0,
+      "peak_process_rss_bytes": 1487192064
+    },
+    "checkpoint_hash": null,
+    "dataset_hash": "9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f",
+    "seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004
+    ],
+    "source_revision": "fac05924893255832cdee2648cf15b795b0242f0"
+  },
+  {
+    "run_id": "reach-v0-hold",
+    "summary": {
+      "episodes": 5,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson95": [
+        0,
+        0.43448246478317476
+      ],
+      "termination_reasons": {
+        "step_limit": 5
+      },
+      "stages": {
+        "reach": 0,
+        "grasp": 0,
+        "transport": 0,
+        "place": 0,
+        "release": 0
+      },
+      "plan_latency_seconds": {
+        "p50": null,
+        "p95": null,
+        "missing_reason": "control policy does not plan"
+      },
+      "candidates_per_second": null,
+      "candidates_missing_reason": "control policy does not plan",
+      "deadline_misses": 0,
+      "peak_process_rss_bytes": 1483456512
+    },
+    "checkpoint_hash": null,
+    "dataset_hash": "9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f",
+    "seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004
+    ],
+    "source_revision": "fac05924893255832cdee2648cf15b795b0242f0"
+  },
+  {
+    "run_id": "reach-v0-random",
+    "summary": {
+      "episodes": 5,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson95": [
+        0,
+        0.43448246478317476
+      ],
+      "termination_reasons": {
+        "stopped": 5
+      },
+      "stages": {
+        "reach": 0,
+        "grasp": 0,
+        "transport": 0,
+        "place": 0,
+        "release": 0
+      },
+      "plan_latency_seconds": {
+        "p50": null,
+        "p95": null,
+        "missing_reason": "control policy does not plan"
+      },
+      "candidates_per_second": null,
+      "candidates_missing_reason": "control policy does not plan",
+      "deadline_misses": 0,
+      "peak_process_rss_bytes": 1482784768
+    },
+    "checkpoint_hash": null,
+    "dataset_hash": "9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f",
+    "seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004
+    ],
+    "source_revision": "fac05924893255832cdee2648cf15b795b0242f0"
+  },
+  {
+    "run_id": "reach-v0-native",
+    "summary": {
+      "episodes": 5,
+      "successes": 3,
+      "success_rate": 0.6,
+      "wilson95": [
+        0.2307242812760128,
+        0.882379225767352
+      ],
+      "termination_reasons": {
+        "success": 3,
+        "step_limit": 1,
+        "stopped": 1
+      },
+      "stages": {
+        "reach": 3,
+        "grasp": 0,
+        "transport": 0,
+        "place": 0,
+        "release": 0
+      },
+      "plan_latency_seconds": {
+        "p50": 0.0010887079406529665,
+        "p95": 0.0016004663426429028,
+        "missing_reason": null
+      },
+      "candidates_per_second": 166416.35890410715,
+      "candidates_missing_reason": null,
+      "deadline_misses": 0,
+      "peak_process_rss_bytes": 1707180032
+    },
+    "checkpoint_hash": "9346abe2d06df5c3acd525857eaa48edd67dcf58eecbeb74d1577ac924384426",
+    "dataset_hash": "9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f",
+    "seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004
+    ],
+    "source_revision": "fac05924893255832cdee2648cf15b795b0242f0"
+  },
+  {
+    "run_id": "reach-v0-lewm",
+    "summary": {
+      "episodes": 5,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson95": [
+        0,
+        0.43448246478317476
+      ],
+      "termination_reasons": {
+        "stopped": 5
+      },
+      "stages": {
+        "reach": 0,
+        "grasp": 0,
+        "transport": 0,
+        "place": 0,
+        "release": 0
+      },
+      "plan_latency_seconds": {
+        "p50": 0.00767662504222244,
+        "p95": 0.008307177643291652,
+        "missing_reason": null
+      },
+      "candidates_per_second": 25107.75661363954,
+      "candidates_missing_reason": null,
+      "deadline_misses": 0,
+      "peak_process_rss_bytes": 1717911552
+    },
+    "checkpoint_hash": "b80c5c1bd2ffb440b40d53757611f6712bdd7263723e62fb7ea76ec6f949aa5f",
+    "dataset_hash": "9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f",
+    "seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004
+    ],
+    "source_revision": "fac05924893255832cdee2648cf15b795b0242f0"
+  },
+  {
+    "run_id": "reach-v1-native",
+    "summary": {
+      "episodes": 5,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson95": [
+        0,
+        0.43448246478317476
+      ],
+      "termination_reasons": {
+        "stopped": 5
+      },
+      "stages": {
+        "reach": 0,
+        "grasp": 0,
+        "transport": 0,
+        "place": 0,
+        "release": 0
+      },
+      "plan_latency_seconds": {
+        "p50": 0.000999540789052844,
+        "p95": 0.0011060005985200406,
+        "missing_reason": null
+      },
+      "candidates_per_second": 188976.89880134846,
+      "candidates_missing_reason": null,
+      "deadline_misses": 0,
+      "peak_process_rss_bytes": 1566064640
+    },
+    "checkpoint_hash": "61095a5fc908d583a723212c00040fa9035806dce02eafd368a1f013ffc9bae2",
+    "dataset_hash": "9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f",
+    "seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004
+    ],
+    "source_revision": "fac05924893255832cdee2648cf15b795b0242f0"
+  },
+  {
+    "run_id": "reach-v1-lewm",
+    "summary": {
+      "episodes": 5,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson95": [
+        0,
+        0.43448246478317476
+      ],
+      "termination_reasons": {
+        "stopped": 5
+      },
+      "stages": {
+        "reach": 0,
+        "grasp": 0,
+        "transport": 0,
+        "place": 0,
+        "release": 0
+      },
+      "plan_latency_seconds": {
+        "p50": 0.007476353901438415,
+        "p95": 0.008377062540967017,
+        "missing_reason": null
+      },
+      "candidates_per_second": 25424.494822062457,
+      "candidates_missing_reason": null,
+      "deadline_misses": 0,
+      "peak_process_rss_bytes": 1692745728
+    },
+    "checkpoint_hash": "d37e64b058108929c46fddefec2ba83934461a1ae6a64d87f7b482dea7af3554",
+    "dataset_hash": "9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f",
+    "seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004
+    ],
+    "source_revision": "fac05924893255832cdee2648cf15b795b0242f0"
+  },
+  {
+    "run_id": "reach-v2-native",
+    "summary": {
+      "episodes": 5,
+      "successes": 1,
+      "success_rate": 0.2,
+      "wilson95": [
+        0.03622410863243014,
+        0.6244653702374747
+      ],
+      "termination_reasons": {
+        "stopped": 4,
+        "success": 1
+      },
+      "stages": {
+        "reach": 1,
+        "grasp": 0,
+        "transport": 0,
+        "place": 0,
+        "release": 0
+      },
+      "plan_latency_seconds": {
+        "p50": 0.0010877079330384731,
+        "p95": 0.00120040001347661,
+        "missing_reason": null
+      },
+      "candidates_per_second": 173904.10084192926,
+      "candidates_missing_reason": null,
+      "deadline_misses": 0,
+      "report_recovery": "All episode records completed; summary regenerated after tuple/list validator fix, no episode rerun."
+    },
+    "checkpoint_hash": "07beea840026810018484de11d9ed8bad60afb8e382870601a2b700883feb823",
+    "dataset_hash": "9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f",
+    "seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004
+    ],
+    "source_revision": "9afff34922100e4de3ba77178fe4bd74240ad0a6",
+    "interpretation": "Target-space corrected noncollapsed selection; development only"
+  },
+  {
+    "run_id": "reach-v2-lewm",
+    "summary": {
+      "episodes": 5,
+      "successes": 1,
+      "success_rate": 0.2,
+      "wilson95": [
+        0.03622410863243014,
+        0.6244653702374747
+      ],
+      "termination_reasons": {
+        "stopped": 4,
+        "success": 1
+      },
+      "stages": {
+        "reach": 1,
+        "grasp": 0,
+        "transport": 0,
+        "place": 0,
+        "release": 0
+      },
+      "plan_latency_seconds": {
+        "p50": 0.007204000139608979,
+        "p95": 0.007672699959948659,
+        "missing_reason": null
+      },
+      "candidates_per_second": 26237.70459846607,
+      "candidates_missing_reason": null,
+      "deadline_misses": 0,
+      "peak_process_rss_bytes": 1607860224
+    },
+    "checkpoint_hash": "01556bca4107ca6379785ef1f04690329eca57801ecbb810a25459bd1e9c0fd6",
+    "dataset_hash": "9a5256cc2070d2bc8c44f44b741830e428a33682c5baf0719c7973c62231804f",
+    "seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004
+    ],
+    "source_revision": "9afff34922100e4de3ba77178fe4bd74240ad0a6",
+    "interpretation": "Target-space corrected noncollapsed selection; development only"
+  }
+]

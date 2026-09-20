@@ -56,3 +56,13 @@ The installed macOS transitive closure of torch/einops/transformers was inspecte
 ## Unitree simulation assets (TASK-003)
 
 The adopted dual-Dex3 asset revision, SHA-256 hashes, and BSD-3-Clause license provenance are recorded in [assets/manifest.json](../assets/manifest.json) and [MUJOCO_SPIKE.md](MUJOCO_SPIKE.md). Native MuJoCo 3.13.0 stepping, deterministic reset, RGB rendering, and the macOS passive viewer passed. EDU4 serial-specific calibration and physical contact fidelity remain unverified. Current upstream rubber-hand assets are not substituted for the pinned articulated model.
+
+## Adopted dataset and hardware compatibility sources
+
+LeRobot's actual v3 reader is tested from revision `8fff0fde7c79f23a93d845d1a50e985de01f8b8a` (v0.4.4, Apache-2.0), fetched by `scripts/fetch_lerobot.py`. The project writes a documented PNG-in-Parquet profile; see [DATA_FORMAT.md](DATA_FORMAT.md). This source checkout is optional and ignored by Git. No external dataset is downloaded.
+
+The data extra uses PyArrow 23.0.1 (Apache-2.0), pandas 3.0.6 (BSD-3-Clause), datasets 4.8.5 (Apache-2.0), and Pillow 12.3.0 (MIT-CMU). Reader compatibility additionally installs torchvision 0.29.0 (BSD), av 15.1.0 (BSD-3-Clause), jsonlines 4.0.0 (BSD), deepdiff 8.6.2 (MIT, verified bundled LICENSE), accelerate 1.15.0 (Apache), and draccus 0.10.0 (MIT). These labels reflect installed package metadata and bundled licenses. Deepdiff lacks a populated metadata license field; its installed `deepdiff-8.6.2.dist-info/licenses/LICENSE` explicitly grants MIT terms and credits Sep Dehpour and contributors. Preserve bundled notices when redistributing environments. The generated full inventory and lockfile include transitive packages and hashes. PyAV's Python package license does not replace the terms of bundled FFmpeg components.
+
+SDK2 Python revision `9c519023d188bfe4643d326868474878ab515ed8`, SDK2 C++ `c753829882fba461ed07ba25aaabee0a25d83663`, and Unitree XR `817fb00c63cde15e5f24a0f8fa08e1e33ed89d3b` inform the mock mapping only. Exact source links, licenses and channel limitations are in [HARDWARE.md](HARDWARE.md). Their source, middleware and networking are not installed or required by the mock.
+
+All pilot images, trajectories and newly trained checkpoints are generated locally from this implementation and the pinned robot assets. Artifact manifests retain producer, source/data/action hashes and simulator provenance. No pretrained weights are used. Large payloads remain local and are not published by pushing this source repository; mesh/source license obligations remain applicable to any future dataset or checkpoint distribution.

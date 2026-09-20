@@ -81,7 +81,7 @@ The default ratio is 80/10/10 with at least one session each for validation and 
 
 ## Validation
 
-Install the `data` extra plus development dependencies for the local suite. The optional official-reader check additionally needs the `data-compat` and `learning` extras and a clean checkout of the pinned LeRobot source:
+Install the `data` extra plus development dependencies for the local suite. The optional official-reader check additionally needs the `compatibility` and `learning` extras and a clean checkout of the pinned LeRobot source:
 
 ```sh
 .venv/bin/pytest -q tests/test_data.py

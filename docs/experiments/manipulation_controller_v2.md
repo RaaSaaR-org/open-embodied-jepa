@@ -29,3 +29,15 @@ Before new collection, freeze24attempts with seeds3000–3023, round-robin cube�
 ```
 
 Collector validation: six tests pass, covering policy dispatch, invalid-reset accounting, observed-prefix preservation after RGB failure, budget and interruption accounting, clock suspension, and registered source snapshots.
+
+## Release corpus result
+
+The frozen collection completed all 24 attempts in **119.18 true-wall seconds**. It stored **18 episodes / 9,483 transitions**, including **9 task successes**. The denominator remains all 24 attempts: 6 invalid initial overlaps, 8 measured-velocity stops, and 1 completed policy without task success are failures. No reset was resampled. Successful episodes comprise 3 cube→target and 6 cube→plate; this does not establish apple or banana manipulation success.
+
+Stage counts over all attempts are reach 18, grasp 9, transport 9, place 9, release 9. Stored phase coverage includes 1,000 `release_high`, 1,000 `lower_open`, and 800 `retreat` transitions. The ten completed policies include one unsuccessful apple→bowl attempt, so phase labels alone must not be interpreted as task success.
+
+The frozen session split contains **14 train / 2 validation / 2 test / 0 held-out episodes**. Successful episodes distribute as 8 / 0 / 1 respectively. Do not reshuffle to improve validation success. Training normalization uses only the frozen training episodes. All four training pairs were attempted six times; Apple→Plate remains absent.
+
+Corpus: `data/manipulation-release-v1/`. Manifest SHA-256: `f156c1b9816eefffbca929f0fe20413efce4334c9fd25760d57b764e1b991980`. The report, plan and complete attempt ledger are at `collection_report.json`, `collection_plan.json` and `attempts.jsonl`. Exact source snapshots are registered under `meta/collection_source/`. Storage at sealing was 86,945,329 bytes, before writing the final report.
+
+Validation checked every registered file hash and source snapshot, all 18 canonical episode reads, disjoint split membership, T+1 RGB/state observations, 50 ms timestamps, raw/applied action alignment, matching phase labels, and exclusion of Apple→Plate. Seven collector/controller tests pass, including accepted-command ramp tracking and stop rejection. Ruff formatting and lint pass. Historical diagnostic outputs and both earlier corpora were left unchanged.

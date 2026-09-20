@@ -2,44 +2,72 @@
 
 One robot stack. One benchmark. Many world models.
 
-A research framework in development for interchangeable action-conditioned latent world models on Unitree G1 EDU4 with dual Dex3 hands. Start in MuJoCo on macOS and compare `native_jepa` with `leworldmodel` through the same dataset, CEM planner, task, and evaluation.
+A Mac-first research framework for action-conditioned visual world models on a simulated Unitree G1 with dual Dex3 hands. Native JEPA and the pinned upstream LeWM implementation share canonical LeRobot data, an image-goal CEM/MPC planner, robot actions and evaluation.
 
-**Status:** Mac CPU/MPS and real G1/dual-Dex3 MuJoCo feasibility verified; core contracts, packaging and CI implemented. LeWM upstream forward/backward and recursive action-conditioned prediction run on CPU and MPS. Dataset collection, trained manipulation and the comparative MVP benchmark remain in progress. Files ending `.example.yaml` remain design templates.
+**Implemented:** real MuJoCo collection/control, both trainable model adapters, strict checkpoints, CPU/MPS checks, a frozen benchmark runner, and mock-only SDK2 preparation. All six training runs and 400 frozen benchmark attempts are complete. **Learned Apple→Plate remains unsuccessful: 0/150 for each model.** The [acceptance audit](docs/ACCEPTANCE.md) separates implemented software from demonstrated research outcomes. Isaac and physical robot execution are future work.
 
-See [setup](docs/SETUP.md), [resource measurements](docs/RESOURCES.md), [MuJoCo evidence](docs/MUJOCO_SPIKE.md), and [LeWM evidence](docs/LEWM_SPIKE.md) for reproducible commands and limitations.
+Development reaching models passed the declared per-dimension collapse and action-sensitivity checks, with each achieving 1/5 successes versus hold/random 0/5. An earlier-release scripted controller achieved 4/4 full pick-and-place successes on seen pairings. Scripted successes are not learned-policy results. Failures and diagnostic corrections remain in the [research reports](docs/experiments/reach_results.md).
 
-## Start here
+## Run a small end-to-end example
 
-- [PRD](PRD.md): unchanged snapshot of the original requirements.
-- [MVP plan](docs/MVP_PLAN.md): scope, milestones, exit gates, and PRD traceability.
-- [Architecture and contracts](docs/ARCHITECTURE.md): module boundaries, tensor conventions, and action semantics.
-- [Data plan](docs/DATA_PLAN.md): acquisition, synchronization, splits, and held-out combinations.
-- [Evaluation plan](docs/EVALUATION.md): common-mode comparison and evidence required for completion.
-- [Mac and MuJoCo platform plan](docs/PLATFORMS.md): local runtime and future Isaac/SDK2 ports.
-- [Setup and first steps](docs/SETUP.md): development workflow and environment readiness.
-- [Decisions and risks](docs/DECISIONS.md): assumptions, defaults, and unresolved choices.
-- [Dependency inventory](docs/DEPENDENCIES.md): upstream sources and license tracking.
-- [Contributing](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md): commit, PR, review, merge, and reproducible research standards.
-- [Codex project skills](docs/SKILLS.md): research-aware clarify, plan, implement, review, and ship workflows.
-
-## Task planning
-
-MissionControl is embedded in `.mc/`. Its task files are the source of truth for status, dependencies, and acceptance criteria. From this directory:
+On a Mac with Python 3.12 and `uv`, from this repository:
 
 ```sh
-mc status
+uv sync --locked --extra learning --extra sim --extra lewm --extra data --extra compatibility
+uv run --no-sync python scripts/fetch_assets.py
+uv run --no-sync python scripts/fetch_lewm.py
+uv run --no-sync python scripts/fetch_lerobot.py
+uv run --no-sync python scripts/reproduce_smoke.py
+```
+
+This collects 12 short real-simulation episodes, trains both models for 100 updates, reloads their checkpoints, and runs a two-reset image-goal smoke benchmark with a backend-only YAML override. It validates the integration; the tiny training budget does not establish useful manipulation. Outputs stay under ignored `data/`, `checkpoints/`, and `outputs/clean-smoke/`. Existing outputs are protected; use `--name another-smoke` for a separate run.
+
+For checks and optional graphics:
+
+```sh
+uv run --no-sync ruff check src tests scripts
+uv run --no-sync ruff format --check src tests scripts
+JEPA_TEST_RENDER=1 LEROBOT_SOURCE=third_party/lerobot uv run --no-sync pytest
+```
+
+Core CI runs on Linux and macOS. A separate macOS integration job executes actual model, data-reader and physics checks; hosted graphics/MPS availability skips are explicit. No CUDA, Isaac or robot connection is required.
+
+## How the pieces fit
+
+```mermaid
+flowchart LR
+    Data[Shared LeRobot episodes] --> Model[Native JEPA or LeWM]
+    Goal[Goal image] --> Model
+    Robot[MuJoCo G1 / dual Dex3] -->|RGB observation| Model
+    Model -->|opaque latent predictions and costs| Planner[Common CEM / MPC]
+    Planner -->|14D action| Robot
+    Robot -->|privileged truth for scoring only| Scores[Shared task evaluator]
+```
+
+Models own visual features, latent dynamics and goal distance. The embodiment owns frames, IK, hand synergies and limits. Planner code has no model-specific branches. Both models train on the same sealed dataset, and frozen image goals/reset manifests keep evaluation consistent.
+
+The final local corpus has **184 episodes and 42,127 transitions**, with preserved **146/19/19** train/validation/test assignments. Apple→Plate is reserved as an unseen pairing; its component appearances are seen separately. Large datasets and checkpoints remain local; versioned manifests, protocols and summaries provide their hashes and reproduction commands.
+
+## Documentation
+
+- [Setup](docs/SETUP.md), [models](docs/MODELS.md), [training](docs/TRAINING.md), [data format](docs/DATA_FORMAT.md), [simulation](docs/SIMULATION.md).
+- [Measured MVP results](docs/experiments/mvp_results.md), [final training protocol](docs/experiments/mvp_final.md), [frozen evaluation protocol](docs/experiments/mvp_evaluation.md), [evaluation semantics](docs/EVALUATION.md).
+- [Original PRD](PRD.md), [MVP plan](docs/MVP_PLAN.md), [architecture](docs/ARCHITECTURE.md), [decisions](docs/DECISIONS.md).
+- [SDK2 hardware preparation](docs/HARDWARE.md), [Isaac port](docs/ISAAC_PORT.md), [Mac resources](docs/RESOURCES.md), [dependency provenance](docs/DEPENDENCIES.md).
+- [Contributing](CONTRIBUTING.md), [AGENTS.md](AGENTS.md), and [Codex project skills](docs/SKILLS.md) define the commit → PR → review → merge workflow.
+
+The executable package is in `src/embodied_jepa/`, tests in `tests/`, and reproducible commands in `scripts/`. Top-level model, robot, planner, data and deployment directories document their architecture responsibilities.
+
+## Task tracking
+
+MissionControl task Markdown in `.mc/` is the source of truth for acceptance and follow-up work:
+
+```sh
 mc task board
 mc task next
-mc show TASK-001
-mc task move TASK-001 in-progress
+mc show TASK-023
 mc validate
 mc index
 ```
 
-Milestone tags `m0` through `m5` connect tasks to the plan. The workspace itself is the project; embedded mode does not require a separate project entity. No owners or delivery dates have been invented.
-
-## Repository layout
-
-The module directories follow the PRD: `models/`, `embodiments/`, `planners/`, `datasets/`, `simulation/`, `tasks/`, `benchmarks/`, `configs/`, `training/`, `evaluation/`, and `deployment/`. Each directory records its implementation responsibilities and task references. Product tasks live in `tasks/`; project-management tasks live in `.mc/tasks/`.
-
-Original project code and documentation are licensed under [Apache-2.0](LICENSE). Optional upstream code, assets, data, and checkpoints retain their own terms; see the [dependency inventory](docs/DEPENDENCIES.md).
+Original contributions use [Apache-2.0](LICENSE). Fetched upstream source, robot assets and dependencies retain their own terms; see the [inventory](docs/DEPENDENCIES.md). No upstream pretrained weights are required.

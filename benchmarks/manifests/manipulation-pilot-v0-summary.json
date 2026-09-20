@@ -1,0 +1,189 @@
+{
+  "kind": "manipulation_pilot_v0",
+  "provenance": {
+    "asset_manifest_sha256": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+    "asset_revision": "ffa21a1e811a4ffd5d31d0318674c950f73eb62c",
+    "collection_seed": 1000,
+    "dependencies": {
+      "mujoco": "3.13.0",
+      "numpy": "2.5.3",
+      "pillow": "12.3.0",
+      "pyarrow": "23.0.1"
+    },
+    "held_out_pair": [
+      "apple",
+      "plate"
+    ],
+    "implementation_sha256": {
+      "collection.py": "55cf6373120933fdbb43aa274e2164753f21848d819e6f786c0b862514b19745",
+      "data.py": "a05f4dd0411818b34a992832ac13ca325d93e6bf9e7d6c9dfa35fcf7dbf46cdf",
+      "embodiment.py": "7e2f7a36b06955275ddd7be33f25be56959f291861f45c88b9216192cab9d9de",
+      "manipulation_collection.py": "18321490448ecb50ffdd244e6bdf020476b4b8f5d74ef60f009f51243ff6c3ef",
+      "scripted.py": "65f975b123ab009ce73b522476e78b4f0091e4ac440969fecb601bedb198bf2f",
+      "simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+      "task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c"
+    },
+    "license": "project-generated data; upstream robot assets retain BSD-3-Clause",
+    "physical_hardware": false,
+    "plan_sha256": "ec74f09938377bca446edf52ee4fa400a6e90a1bba0ba327a4d1ccdb4658f46f",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "policy": "fixed OracleManipulationPolicy; no tuning during collection",
+    "producer": "privileged scripted MuJoCo manipulation collector",
+    "python": "3.12.13",
+    "simulated": true,
+    "source_revision": "9afff34922100e4de3ba77178fe4bd74240ad0a6"
+  },
+  "attempted_episodes": 67,
+  "stored_episodes": 66,
+  "interrupted_unstored_episode": {
+    "index": 66,
+    "seed": 1066,
+    "object": "apple",
+    "container": "bowl",
+    "object_xy": [
+      0.3389903389493684,
+      -0.17804547017323738
+    ],
+    "container_xy": [
+      0.48432224344978714,
+      -0.09164042132057468
+    ],
+    "episode_id": "manip-001066",
+    "stored": false,
+    "success": false,
+    "outcome": "collector_interrupt_during_episode_serialization",
+    "complete_transitions": null,
+    "lost_complete_prefix": "at least8 transitions existed in memory; exact count unavailable after interrupt",
+    "reason": "macOS mach_absolute_time excluded host suspension, exceeding actual600s wall budget; explicitly stopped on detection"
+  },
+  "unattempted_budget_episodes": 33,
+  "transitions": 27808,
+  "successes": 0,
+  "success_denominator": 67,
+  "verified_completed_attempts": 66,
+  "stage_counts": {
+    "reach": 66,
+    "grasp": 33,
+    "transport": 33,
+    "place": 0,
+    "release": 0
+  },
+  "pair_attempts": {
+    "cube->target": 17,
+    "banana->bowl": 17,
+    "apple->bowl": 17,
+    "cube->plate": 16
+  },
+  "phase_transition_counts": {
+    "orient": 8580,
+    "descend": 5280,
+    "close": 2932,
+    "lift": 5601,
+    "transfer": 5353,
+    "lower": 62
+  },
+  "splits": {
+    "val": [
+      "manip-001003",
+      "manip-001007",
+      "manip-001033",
+      "manip-001035",
+      "manip-001043",
+      "manip-001046",
+      "manip-001056"
+    ],
+    "test": [
+      "manip-001000",
+      "manip-001009",
+      "manip-001023",
+      "manip-001025",
+      "manip-001045",
+      "manip-001060",
+      "manip-001064"
+    ],
+    "train": [
+      "manip-001001",
+      "manip-001002",
+      "manip-001004",
+      "manip-001005",
+      "manip-001006",
+      "manip-001008",
+      "manip-001010",
+      "manip-001011",
+      "manip-001012",
+      "manip-001013",
+      "manip-001014",
+      "manip-001015",
+      "manip-001016",
+      "manip-001017",
+      "manip-001018",
+      "manip-001019",
+      "manip-001020",
+      "manip-001021",
+      "manip-001022",
+      "manip-001024",
+      "manip-001026",
+      "manip-001027",
+      "manip-001028",
+      "manip-001029",
+      "manip-001030",
+      "manip-001031",
+      "manip-001032",
+      "manip-001034",
+      "manip-001036",
+      "manip-001037",
+      "manip-001038",
+      "manip-001039",
+      "manip-001040",
+      "manip-001041",
+      "manip-001042",
+      "manip-001044",
+      "manip-001047",
+      "manip-001048",
+      "manip-001049",
+      "manip-001050",
+      "manip-001051",
+      "manip-001052",
+      "manip-001053",
+      "manip-001054",
+      "manip-001055",
+      "manip-001057",
+      "manip-001058",
+      "manip-001059",
+      "manip-001061",
+      "manip-001062",
+      "manip-001063",
+      "manip-001065"
+    ],
+    "holdout": []
+  },
+  "dataset_hash": "8152aa39ce50de0bc37d639051836310e7c2056be932c4d33b00ca58c62d19ec",
+  "clock_limitation": "Original process used time.monotonic/mach_absolute_time, which excludes macOS sleep. True wall budget was exceeded during host suspension; manual stop and sealing are recorded rather than claiming compliance.",
+  "wall_seconds_at_sealing": 1855.9880344867706,
+  "sum_recorded_active_trial_seconds": 336.756473795278,
+  "storage_bytes": 256733171,
+  "source_snapshots": "meta/collection_source: byte-identical hash-verified executed implementation, captured before clock fix",
+  "recovery": "SIGINT exited code130 during Episode metadata serialization; stored corpus and attempt ledger matched66 episodes; valid sessions subsequently sealed80/10/10 and training-only normalization fit.",
+  "plan": {
+    "kind": "manipulation_pilot_v0",
+    "requested_episodes": 100,
+    "max_commands": 805,
+    "max_wall_seconds": 600.0,
+    "finalization_reserve_seconds": 30.0,
+    "seed": 1000,
+    "width": 96,
+    "fps": 20,
+    "minimum_stored_transitions": 8,
+    "split_ratios": [
+      0.8,
+      0.1,
+      0.1
+    ],
+    "held_out_pair": [
+      "apple",
+      "plate"
+    ],
+    "policy": "fixed OracleManipulationPolicy; no tuning during collection",
+    "success": "ordered AppleToPlateTask scorer, applied equally to all training pairs"
+  }
+}

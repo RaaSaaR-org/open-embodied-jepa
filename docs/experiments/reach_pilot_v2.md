@@ -94,3 +94,10 @@ host suspension cannot silently extend a run whose monotonic clock pauses.
 Reports separate wall-clock, monotonic, and aggregate process CPU time. Historical
 V2 timings retain their original perf-counter definition; they are not retrofitted
 with measurements that were not captured.
+
+For historical evaluation, use the run's archived `resolved_config.json` alongside
+its recorded source revision and original local data/checkpoint paths. Some
+convenience `reach_pilot_v2*.yaml` files were committed later than the model source
+snapshot. Use a separate checkout/environment for old code; checking out an old
+revision does not make an existing editable environment point at that checkout.
+The final MVP checkpoints instead use the current model implementation.
