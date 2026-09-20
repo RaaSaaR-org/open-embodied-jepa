@@ -1,0 +1,88 @@
+{
+  "version": "g1_sim_action_v0",
+  "action_schema": "ee_delta_grasp_v0",
+  "calibration": "simulation_only_not_for_hardware",
+  "translation_per_step_m": 0.015,
+  "rotation_per_step_rad": 0.06,
+  "control_dt_s": 0.05,
+  "joint_speed_limit_rad_s": 2.0,
+  "max_snapshot_age_s": 0.051,
+  "max_wall_snapshot_age_s": 30.0,
+  "ik_iterations": 80,
+  "ik_damping": 0.02,
+  "ik_position_tolerance_m": 0.0015,
+  "ik_rotation_tolerance_rad": 0.02,
+  "workspace_base_m": {
+    "left": [
+      [
+        0.12,
+        0.03,
+        -0.12
+      ],
+      [
+        0.55,
+        0.4,
+        0.35
+      ]
+    ],
+    "right": [
+      [
+        0.12,
+        -0.4,
+        -0.12
+      ],
+      [
+        0.55,
+        -0.03,
+        0.35
+      ]
+    ]
+  },
+  "grasp_fingers": [
+    "thumb_0",
+    "thumb_1",
+    "thumb_2",
+    "index_0",
+    "index_1",
+    "middle_0",
+    "middle_1"
+  ],
+  "left_open_rad": [
+    0.0,
+    -0.2,
+    0.1,
+    0.0,
+    -0.1,
+    0.0,
+    -0.1
+  ],
+  "left_closed_rad": [
+    0.0,
+    0.6,
+    1.1,
+    -0.9,
+    -1.2,
+    -0.9,
+    -1.2
+  ],
+  "right_open_rad": [
+    0.0,
+    0.2,
+    -0.1,
+    0.0,
+    0.1,
+    0.0,
+    0.1
+  ],
+  "right_closed_rad": [
+    0.0,
+    -0.6,
+    -1.1,
+    0.9,
+    1.2,
+    0.9,
+    1.2
+  ],
+  "rotation_convention": "R_target = Rz(dyaw) @ Ry(dpitch) @ Rx(droll) @ R_current, pelvis frame",
+  "measured_joint_velocity_stop_rad_s": 5.0
+}
