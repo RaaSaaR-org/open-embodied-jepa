@@ -18,6 +18,7 @@ An MVP planning workspace for interchangeable action-conditioned latent world mo
 - [Decisions and risks](docs/DECISIONS.md): assumptions, defaults, and unresolved choices.
 - [Dependency inventory](docs/DEPENDENCIES.md): upstream sources and license tracking.
 - [Contributing](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md): commit, PR, review, merge, and reproducible research standards.
+- [Codex project skills](docs/SKILLS.md): research-aware clarify, plan, implement, review, and ship workflows.
 
 ## Task planning
 
