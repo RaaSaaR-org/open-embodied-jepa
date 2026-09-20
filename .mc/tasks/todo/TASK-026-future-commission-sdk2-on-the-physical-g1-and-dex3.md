@@ -40,3 +40,7 @@ Execute the prepared commissioning runbook with actual hardware access and calib
 - Execution status and dependencies live in MissionControl frontmatter.
 - Record commands, artifacts, and validation evidence here before marking done.
 - See `docs/MVP_PLAN.md`, `docs/ARCHITECTURE.md`, and `docs/PLATFORMS.md`.
+
+## 2026-09-20 full-task request audit
+
+No physical G1/Dex3 is available. Commissioning requires actual hardware, calibration and supervised physical access. Prepared contracts/runbooks remain available; acceptance is not complete. Continue all locally executable apple-MVP work independently.

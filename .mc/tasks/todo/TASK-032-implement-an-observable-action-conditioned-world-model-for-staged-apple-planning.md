@@ -1,0 +1,35 @@
+---
+id: TASK-032
+aliases:
+- TASK-032
+title: Implement an observable action-conditioned world model for staged apple planning
+slug: implement-an-observable-action-conditioned-world-model-for-staged-apple-planning
+status: backlog
+priority: 1
+owner: ''
+projects: []
+customers: []
+tags:
+- apple-pnp
+- world-model
+sprint: ''
+depends_on:
+- "[[TASK-031]]"
+due_date: ''
+created: 2026-09-20
+updated: 2026-09-20
+---
+
+# Implement a world model whose predictions support apple control
+
+## Acceptance criteria
+
+- Record diagnosis and design before implementation: visual observability, proprioception, action conditioning, temporal horizon and goal cost.
+- Preserve model/planner/embodiment boundaries. No simulator object truth, task scores, future measured state or oracle controller targets enter deployed model/planner inputs.
+- A learned action-conditioned transition model must predict candidate outcomes and materially determine action selection. Script replay, imitation alone, or an analytic controller is not accepted as a working learned WM.
+- If staged goals, engineered perception or demonstrations are required, document them explicitly as a new mode; retain the historical native/LeWM common benchmark.
+- Test transition rollout, action perturbation, checkpoint reproducibility and inference input isolation.
+
+## Authorization and workflow
+
+User requested completion toward a working world-model apple pick-and-place MVP on 2026-09-20, with subagents and end-to-end delivery. Coordinator owns Git and task state. Experiments are bounded and recorded before execution.

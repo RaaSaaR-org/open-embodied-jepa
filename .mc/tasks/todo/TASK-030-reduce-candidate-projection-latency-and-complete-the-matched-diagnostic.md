@@ -4,7 +4,7 @@ aliases:
 - TASK-030
 title: Reduce candidate projection latency and complete the matched diagnostic
 slug: reduce-candidate-projection-latency-and-complete-the-matched-diagnostic
-status: backlog
+status: in-progress
 priority: 2
 owner: ''
 projects: []
@@ -21,6 +21,7 @@ updated: 2026-09-20
 ---
 
 
+
 # Reduce candidate projection latency and complete the matched diagnostic
 
 ## Description
@@ -30,8 +31,6 @@ updated: 2026-09-20
 - [ ] Criterion 1
 
 ## Notes
-%% mc-links: [[TASK-029]] %%
-
 ## Scope and evidence
 
 TASK-029 completed its bounded diagnostic with 15/20 completed episodes, one
@@ -58,3 +57,4 @@ runs exceeded the five-second control deadline; projection-on p95 planning was
 Stable runtime still does not imply useful learned manipulation. Isolate image-goal
 reaching against scripted/hold/random controls before authorizing another larger
 training or full-task experiment; preregister that separate work.
+%% mc-links: [[TASK-029]] %%

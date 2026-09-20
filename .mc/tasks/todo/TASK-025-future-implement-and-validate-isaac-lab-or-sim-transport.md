@@ -38,3 +38,7 @@ Execute this task only when suitable Isaac compute and assets are available. It 
 - Execution status and dependencies live in MissionControl frontmatter.
 - Record commands, artifacts, and validation evidence here before marking done.
 - See `docs/MVP_PLAN.md`, `docs/ARCHITECTURE.md`, and `docs/PLATFORMS.md`.
+
+## 2026-09-20 full-task request audit
+
+No supported Isaac compute/runtime is available on the current Mac; runtime parity and cross-simulator results require that external resource. Prepared contracts/runbooks remain available; acceptance is not complete. Continue all locally executable apple-MVP work independently.
