@@ -1,0 +1,3 @@
+extends: mvp_common.yaml
+world_model:
+  backend: leworldmodel

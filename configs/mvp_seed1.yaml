@@ -1,0 +1,6 @@
+extends: mvp_common.yaml
+seed: 1
+world_model:
+  checkpoints:
+    native_jepa: ../checkpoints/mvp-v0/seed-1/native_jepa.pt
+    leworldmodel: ../checkpoints/mvp-v0/seed-1/leworldmodel.pt
