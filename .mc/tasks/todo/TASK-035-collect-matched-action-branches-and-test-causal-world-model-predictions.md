@@ -58,3 +58,7 @@ Collector/phase-diagnostic agent owns the prospective branch-data design and new
 collector files. Coordinator owns MC/Git and resource scheduling. No full branch
 collection starts before protocol review/commit or while the initial control
 diagnostic is using the same CPU. Current task-specific physics is MuJoCo only.
+
+## Collection evidence
+
+At frozen source `662a1ab`, all528 planned H16 branches completed with8448 new transitions, zero rejections/replay failures,386.535 supervisor wall seconds within600. The sealed corpus includes560 episodes/24580 transitions, TRAIN410/VAL147/TEST3, retaining every original partition. Contrast screen passes48/48TRAIN and18/18VAL roots. Dataset manifest SHA256 `6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331`. No TEST images decoded. Independent artifact audit and preregistered training/causal comparison remain pending. Source/protocol bytes stayed frozen; unrelated new audit/diagnostic files briefly affected Git's dirty flag and were moved outside the tree before final identity verification, which passed.
