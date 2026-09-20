@@ -1,37 +1,43 @@
-# Setup and execution handoff
+# Development and execution
 
-## Available now
+## Reproducible Mac environment
 
-The PRD snapshot, plan, task dependency graph, architecture/data/evaluation proposals, module directories, and example configuration files are prepared. `mc 0.1.14` was available during preparation. The shell's `python3` reported 3.9.6; this is an observation, not the selected runtime for the MVP. Observed local hardware: arm64 Mac, macOS 26.5.1, 48 GiB physical memory; `uv` is available. MuJoCo rendering, MPS execution, hardware connection, package environment, and dataset are not yet validated. The MVP uses this Mac; no remote GPU is assumed.
-
-From the project directory:
+Use Python 3.12 (tested 3.12.13), `uv` (tested 0.12.3), and the committed `uv.lock`. The required core imports NumPy/YAML only; learning and simulation are optional extras. Run from the repository root:
 
 ```sh
-mc validate
-mc index
+uv sync --locked --extra learning --extra sim --extra lewm
+uv run --no-sync python scripts/resource_probe.py
+uv run --no-sync ruff check src tests scripts
+uv run --no-sync ruff format --check src tests scripts
+uv run --no-sync pytest
+```
+
+Use `--no-sync` on subsequent commands to preserve installed optional extras. `uv sync --locked` alone intentionally installs only core/development dependencies. No CUDA, Isaac, DDS, or physical robot connection is required for core tests. The `lewm` extra installs minimal adapter dependencies; the pinned source fetch/probe instructions are in [LEWM_SPIKE.md](LEWM_SPIKE.md).
+
+Measured CPU/MPS readiness, resource limits, and local artifact locations are in [RESOURCES.md](RESOURCES.md). Tested simulator assets, rendering, and viewer commands are in [MUJOCO_SPIKE.md](MUJOCO_SPIKE.md). Feasibility checks do not establish trained closed-loop manipulation performance.
+
+To audit installed dependency metadata:
+
+```sh
+uv run --no-sync python scripts/dependency_inventory.py > outputs/feasibility/dependencies.json
+```
+
+Create the output directory first if the resource probe has not run. GitHub Actions runs core import isolation, lint, formatting, tests, and dependency inventory on Linux and macOS. Optional model/graphics probes are local checks until a suitable separate CI job exists. A green core job does not validate physics, MPS, or learning quality.
+
+## MissionControl
+
+```sh
 mc task board
 mc task next
 mc show TASK-001
+mc validate
+mc index
 ```
 
-The same commands can run from the parent using `mc --root open-embodied-jepa ...`. Keep task bodies and frontmatter together. After editing task files directly, run `mc validate` and `mc index`.
+Use `.mc/` for planning; `tasks/` holds benchmark documentation. Mark criteria complete only with evidence. Commit task Markdown, not generated `.mc/data/` indexes.
 
-## First execution session
+## Validation tiers
 
-1. TASK-001: record Mac chip, MPS availability, free memory/storage, intended robot variant, camera feed, demonstration locations, and access constraints in task notes. Do not copy credentials into the repository.
-2. TASK-002: pin LeWM and test canonical batch/action feasibility; inventory source, transitive packages, and weight licenses independently.
-3. TASK-003: validate native MuJoCo stepping, camera rendering, and G1/Dex3 assets on this Mac. Save exact installation commands and environment export after the smoke test passes.
-4. TASK-004: freeze schema v0 with coordinate frames, timing, masks, action dimensions, history, and rollout shapes.
-5. TASK-005/006: add packaging, a supported Python version, reproducible dependency locks, typed config validation, registry, formatter, tests, and CI. Core installation must not import simulator or SDK2 packages.
+Core checks cover contracts, validation failures, registry/import isolation, and (as implemented) loader splits and known-dynamics planning. Model checks cover actual forward/backward, checkpoint reload, recursive prediction and collapse/action sensitivity. Simulator checks cover G1/Dex3 reset/render/action execution, scoring and closed-loop planning. Physical checks require separate calibrated hardware and are never inferred from simulation.
 
-Select mutually compatible macOS arm64 Python/MuJoCo/PyTorch versions through a smoke test. Do not require CUDA or Isaac locally. Record a verified compatibility matrix in TASK-003, then build the environment from those exact pins. Keep future Isaac, hardware, and optional research environments separate if dependencies conflict. See [platform plan](PLATFORMS.md).
-
-## Implementation validation tiers
-
-CPU checks cover shapes, action round trips, episode splits, configuration errors, backend conformance using small fixtures, and CEM on known dynamics. CPU/MPS checks cover real model training/reload and candidate throughput, with synchronization for timing and explicit fallback logging. Simulator checks cover G1/Dex3 execution, task scoring, and closed-loop manipulation. Physical checks require calibrated hardware and are logged separately.
-
-Commands for training and evaluation are deliberately not advertised as working until their implementing tasks land. Each task must add reproducible commands alongside its artifact.
-
-## Working conventions
-
-Use `.mc/` for planning and notes; keep `tasks/` for benchmark task implementations. Record evidence before moving an MC task to `done`. Use environment variables or local untracked configuration for dataset/output paths. Keep recordings, checkpoints, simulator caches, and generated runs outside versioned source; `.gitignore` covers standard local artifact paths. Preserve dataset/split manifests and small fixtures in source control.
+Record code revision, configuration, data/action/checkpoint hashes, seeds, device and environment with experiment results. Keep recordings, checkpoints, model downloads and generated runs under ignored `data/`, `checkpoints/`, `third_party/` and `outputs/`. Future Isaac and hardware runtimes must use separate optional environments and commissioning procedures.

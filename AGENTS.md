@@ -6,7 +6,7 @@ This file guides coding agents and contributors throughout this repository. More
 
 Build a reproducible research framework for interchangeable, action-conditioned latent world models on G1 EDU4 + dual Dex3. Changing a world model must not require changing the robot, dataset, task, planner, or evaluation code.
 
-The repository currently contains the PRD, planning documents, configuration examples, and module handoffs. Training, simulation, and robot execution are not implemented. Do not present placeholders as working features.
+The repository is being implemented incrementally. Read README.md and the MC task evidence for current capabilities; distinguish feasibility probes from trained closed-loop benchmarks. Do not present placeholders or synthetic fixtures as working robot manipulation.
 
 - **Primary platform:** native MuJoCo on macOS; CPU execution and validated PyTorch MPS support.
 - **Initial models:** `native_jepa` and a LeWM adapter, subject to compatibility verification.
@@ -72,7 +72,7 @@ Rewrite only your own unshared commits freely. Coordinate before rewriting a pub
 
 Run checks appropriate to the change and record their exact outcome. Start with the smallest relevant checks; add integration or experiment runs where the change requires them. Check the final diff, including task files and generated artifacts.
 
-Current baseline checks are `git diff --check`, `mc validate`, and `mc index` when plans change. Application lint/test/CI commands will be introduced by TASK-005 and documented in `docs/SETUP.md`; do not invent passing commands before they exist. A green documentation check is not evidence that training or robotics code works.
+Baseline checks are `git diff --check`, `mc validate`, and `mc index` when plans change. Run the lint, formatting, and pytest commands in `docs/SETUP.md`; core CI runs on macOS and Linux. Execute relevant optional model/simulator probes separately. Green core CI is not evidence that training or robot manipulation works.
 
 Push the topic branch and open a PR against `main`. Use `.github/pull_request_template.md`. Explain the problem and resulting behavior, link MC tasks, and include validation, limitations, and reproducibility evidence. Open a draft for incomplete work. Keep the title and description aligned with the final diff. For CLI-created multiline descriptions, use `gh pr create --body-file <file>`.
 

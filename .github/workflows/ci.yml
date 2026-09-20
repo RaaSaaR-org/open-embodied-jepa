@@ -1,0 +1,30 @@
+name: core
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.3"
+      - run: uv sync --locked
+      - name: Core imports without optional runtimes
+        run: uv run --no-sync python -c "import sys, embodied_jepa; assert 'torch' not in sys.modules; assert 'mujoco' not in sys.modules"
+      - run: uv run --no-sync ruff check src tests scripts
+      - run: uv run --no-sync ruff format --check src tests scripts
+      - run: uv run --no-sync pytest
+      - name: Dependency license inventory
+        run: uv run --no-sync python scripts/dependency_inventory.py > dependency-inventory.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dependency-inventory-${{ matrix.os }}
+          path: dependency-inventory.json
