@@ -422,6 +422,17 @@ def worker(args):
     return 0 if report["status"] == "completed" else 2
 
 
+def wait_for_worker(process):
+    """Recheck civil and monotonic clocks after wakeups, including host suspension."""
+    while process.poll() is None:
+        if elapsed() >= 115:
+            process.kill()
+            process.wait()
+            return True
+        time.sleep(0.1)
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, required=True)
@@ -505,12 +516,7 @@ def main():
             stdout=log,
             stderr=subprocess.STDOUT,
         )
-        try:
-            process.wait(timeout=max(0.001, 115 - elapsed()))
-        except subprocess.TimeoutExpired:
-            timeout = True
-            process.kill()
-            process.wait()
+        timeout = wait_for_worker(process)
     path = args.output / "report.json"
     report = json.loads(path.read_text()) if path.exists() else {"roots": roots, "results": []}
     try:
