@@ -4,7 +4,7 @@ aliases:
 - TASK-030
 title: Reduce candidate projection latency and complete the matched diagnostic
 slug: reduce-candidate-projection-latency-and-complete-the-matched-diagnostic
-status: review
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -17,8 +17,9 @@ depends_on:
 - "[[TASK-029]]"
 due_date: ''
 created: 2026-09-20
-updated: 2026-09-20
+updated: 2026-09-21
 ---
+
 
 
 
@@ -61,4 +62,5 @@ training or full-task experiment; preregister that separate work.
 ## Completed evidence
 
 23 focused tests passed; fixed profiling shows 2.13–2.14× improvement with bit-identical outputs. The committed bounded comparison completed 20/20 in 363.41 seconds, 1,000 exact accepted projected commands, no projected guard/deadline stops, one native reach and zero grasps/full successes. See docs/experiments/feasibility_results_v2.md and benchmarks/manifests/feasibility-results-v2.json. PR: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/5 (merge pending). Deliverable criteria met; independent final review still pending.
+Coordinator acceptance: deliverable criteria met with the recorded tests and complete bounded artifact evidence. PR5 merge remains pending; no learned pick-and-place success is inferred.
 %% mc-links: [[TASK-029]] %%

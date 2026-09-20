@@ -1,0 +1,667 @@
+{
+  "action_manifest_sha256": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+  "artifact_root": "outputs/apple-control-development-v1",
+  "artifacts_sha256": {
+    "43000-dynamics_shuffle.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "43000-learned.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "43000-persistence.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "43001-dynamics_shuffle.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "43001-learned.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "43001-persistence.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "attempts/43000-dynamics_shuffle/report.json": "ffbd1f5f17ad46f441ef2170d21f08b4251265cbcef86e80efbfe2f83fe1886d",
+    "attempts/43000-dynamics_shuffle/started.json": "e031f465698ddb9333d38a5a750ba39f8d4e22dc86fdb0f7e4f82a98b1f471e3",
+    "attempts/43000-dynamics_shuffle/trace.jsonl": "fe7432a52f902c3bb6fd325a358c14a2341d09471743f028348082d05d24887a",
+    "attempts/43000-learned/report.json": "0b981587c50142b895f0c09dd4fd1b52e395d68ba35a7d5b67470cf976b78718",
+    "attempts/43000-learned/started.json": "c7d24dcfeff405f89e5b2f96830bc33bd8d202f41b4ea348114b550bdf5a5721",
+    "attempts/43000-learned/trace.jsonl": "7ad891cbdb0236c6e39389dad389b8864ccc35887d561e4230b2473ca1bdd70f",
+    "attempts/43000-persistence/report.json": "c0b67d8bacb72e06436aab4523b939d26acd2be29949e007b61554d7ce61675b",
+    "attempts/43000-persistence/started.json": "e928435869e76b9a9299f9d8848055a0394cfa95637eb92e8e25911a9a1c6a5c",
+    "attempts/43000-persistence/trace.jsonl": "5a04dc77c6dfcac3da7df2a39cce7a33e93c8bf3dee24e68937b17f9ae8ff23f",
+    "attempts/43001-dynamics_shuffle/report.json": "43382d2a88b7ace0fa477e3280f6fe58e5a60a6c9fb5e79be00a89b26fb5ffba",
+    "attempts/43001-dynamics_shuffle/started.json": "665d375d69b8385bdbe03ff58b7b28b49b21eee61c48d05eacebb48a5312b4ad",
+    "attempts/43001-dynamics_shuffle/trace.jsonl": "c82c76487a65550214aafdcffc045d18bc2e0dc8a6a64762bba527b6204e6af6",
+    "attempts/43001-learned/report.json": "9268458e379ca0b5c648a24070d771177492f5fa6eed78fb249fc5ecd310cfa1",
+    "attempts/43001-learned/started.json": "fbca985adc3315f571b683e7cae7418ab3199f7ce6cb3a8764967259c8dd2838",
+    "attempts/43001-learned/trace.jsonl": "d45ddfe6501345ee5380ef6726bb660f1831ac88b3947b2776cfc9e109e626ef",
+    "attempts/43001-persistence/report.json": "f852e5291f28b6eb4a5c8c1ee96ace1daaef940bace72aa90a29b967d39846b5",
+    "attempts/43001-persistence/started.json": "3f8d96681a5a3e1ce55ca24e8c345fdaf7a8b90ad7adc8a0c798f0fe10f84c04",
+    "attempts/43001-persistence/trace.jsonl": "13910de230c1ca849480f409bd9b4d507b32ad4f84e276dab7f0f4d9143b912a",
+    "audit.json": "2c1396dccc5752d1c42b751d37d4eb866411513fcde00f364697e6f9f691f255",
+    "audit_results.py": "4ffa501294325a8713ad03ca3275cad134e04bc119e3a0b1310e07b70b185aab",
+    "calibration.json": "a86e58b1019cad73c2ee1abbb9cd289789364ef024003b346235ce15d180743e",
+    "plan.json": "7408b97eddb41592049dbf396191a66b610d996171ba802d26bb275e68f58fa7",
+    "prepare.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "report.json": "a0d496baa1d4019e0a96831e7e3ca20374f0317dc83036c852bd90ac9b8b127a",
+    "resolved_plan.json": "9584d98f2cb0c32d9309f4801ec64d40c09fc9c02543a64446bc11bd7dc838a6",
+    "waypoints.npz": "692596653403ae6a6a3eb29e300edb1bc95f4ea3e306614fec8b6304e4052c37"
+  },
+  "asset_manifest_sha256": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+  "audit": {
+    "acknowledged_actions_total": 4203,
+    "attempts": [
+      {
+        "acknowledged_actions": 1000,
+        "attempt_id": "43000-learned",
+        "commands_per_goal": {
+          "0": 2,
+          "1": 26,
+          "2": 972
+        },
+        "control_seconds_max": 0.1415532911196351,
+        "control_seconds_median": 0.029895713087171316,
+        "control_seconds_sum": 35.657392057357356,
+        "cost_spread_max": 0.03454636037349701,
+        "cost_spread_median": 0.0037304162979125977,
+        "error": "",
+        "final_goal_threshold": 0.10077571198344232,
+        "final_observed_distance": 2.2104403972625732,
+        "first_goal_at_steps": {
+          "0": 0,
+          "1": 2,
+          "2": 28
+        },
+        "initial_observed_distance": 0.014173687435686588,
+        "maximum_goal_index": 2,
+        "mode": "learned",
+        "nonidentity_score_permutations": 0,
+        "pending_actions": 1000,
+        "physical_stages_any": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "projection_applied_exact_matches": 1000,
+        "sampled_projection_changes": 319,
+        "search_rounds": 2000,
+        "selected_origin_counts": {
+          "demonstration_proposal": 7,
+          "hold": 2,
+          "perturbation": 874,
+          "warm_or_search_best": 117
+        },
+        "termination_reason": "step_limit",
+        "uncertain_execution_errors": 0
+      },
+      {
+        "acknowledged_actions": 1000,
+        "attempt_id": "43000-persistence",
+        "commands_per_goal": {
+          "0": 2,
+          "1": 998
+        },
+        "control_seconds_max": 0.37602900015190244,
+        "control_seconds_median": 0.2524589370004833,
+        "control_seconds_sum": 250.70103391935118,
+        "cost_spread_max": 0.0,
+        "cost_spread_median": 0.0,
+        "error": "",
+        "final_goal_threshold": 0.11478703320026398,
+        "final_observed_distance": 1.1305683851242065,
+        "first_goal_at_steps": {
+          "0": 0,
+          "1": 2
+        },
+        "initial_observed_distance": 0.014173687435686588,
+        "maximum_goal_index": 1,
+        "mode": "persistence",
+        "nonidentity_score_permutations": 0,
+        "pending_actions": 1000,
+        "physical_stages_any": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "projection_applied_exact_matches": 1000,
+        "sampled_projection_changes": 733,
+        "search_rounds": 2000,
+        "selected_origin_counts": {
+          "demonstration_proposal": 459,
+          "hold": 69,
+          "perturbation": 415,
+          "warm_or_search_best": 57
+        },
+        "termination_reason": "step_limit",
+        "uncertain_execution_errors": 0
+      },
+      {
+        "acknowledged_actions": 266,
+        "attempt_id": "43000-dynamics_shuffle",
+        "commands_per_goal": {
+          "0": 2,
+          "1": 15,
+          "2": 7,
+          "3": 242
+        },
+        "control_seconds_max": 0.14568908396176994,
+        "control_seconds_median": 0.028883687453344464,
+        "control_seconds_sum": 7.940632269252092,
+        "cost_spread_max": 0.01502305269241333,
+        "cost_spread_median": 0.0017828531563282013,
+        "error": "ContractError: joint targets exceed MJCF limits",
+        "final_goal_threshold": 0.08321583904325963,
+        "final_observed_distance": 0.4542076289653778,
+        "first_goal_at_steps": {
+          "0": 0,
+          "1": 2,
+          "2": 17,
+          "3": 24
+        },
+        "initial_observed_distance": 0.014173687435686588,
+        "maximum_goal_index": 3,
+        "mode": "dynamics_shuffle",
+        "nonidentity_score_permutations": 532,
+        "pending_actions": 267,
+        "physical_stages_any": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "projection_applied_exact_matches": 266,
+        "sampled_projection_changes": 10,
+        "search_rounds": 532,
+        "selected_origin_counts": {
+          "demonstration_proposal": 128,
+          "hold": 17,
+          "perturbation": 102,
+          "warm_or_search_best": 19
+        },
+        "termination_reason": "runtime_error",
+        "uncertain_execution_errors": 1
+      },
+      {
+        "acknowledged_actions": 1000,
+        "attempt_id": "43001-learned",
+        "commands_per_goal": {
+          "0": 2,
+          "1": 15,
+          "2": 12,
+          "3": 3,
+          "4": 12,
+          "5": 956
+        },
+        "control_seconds_max": 0.1443948750384152,
+        "control_seconds_median": 0.029240230098366737,
+        "control_seconds_sum": 30.531997768906876,
+        "cost_spread_max": 0.0301046222448349,
+        "cost_spread_median": 0.0016164034605026245,
+        "error": "",
+        "final_goal_threshold": 0.06500273887068034,
+        "final_observed_distance": 1.0128889083862305,
+        "first_goal_at_steps": {
+          "0": 0,
+          "1": 2,
+          "2": 17,
+          "3": 29,
+          "4": 32,
+          "5": 44
+        },
+        "initial_observed_distance": 0.009785697795450687,
+        "maximum_goal_index": 5,
+        "mode": "learned",
+        "nonidentity_score_permutations": 0,
+        "pending_actions": 1000,
+        "physical_stages_any": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "projection_applied_exact_matches": 1000,
+        "sampled_projection_changes": 238,
+        "search_rounds": 2000,
+        "selected_origin_counts": {
+          "demonstration_proposal": 6,
+          "hold": 2,
+          "perturbation": 968,
+          "warm_or_search_best": 24
+        },
+        "termination_reason": "step_limit",
+        "uncertain_execution_errors": 0
+      },
+      {
+        "acknowledged_actions": 302,
+        "attempt_id": "43001-persistence",
+        "commands_per_goal": {
+          "0": 2,
+          "1": 11,
+          "2": 5,
+          "3": 284
+        },
+        "control_seconds_max": 0.14252209663391113,
+        "control_seconds_median": 0.02718435402493924,
+        "control_seconds_sum": 8.72813091892749,
+        "cost_spread_max": 0.0,
+        "cost_spread_median": 0.0,
+        "error": "ContractError: joint targets exceed MJCF limits",
+        "final_goal_threshold": 0.08321583904325963,
+        "final_observed_distance": 0.33018437027931213,
+        "first_goal_at_steps": {
+          "0": 0,
+          "1": 2,
+          "2": 13,
+          "3": 18
+        },
+        "initial_observed_distance": 0.009785697795450687,
+        "maximum_goal_index": 3,
+        "mode": "persistence",
+        "nonidentity_score_permutations": 0,
+        "pending_actions": 303,
+        "physical_stages_any": {
+          "grasp": false,
+          "place": false,
+          "reach": true,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "projection_applied_exact_matches": 302,
+        "sampled_projection_changes": 22,
+        "search_rounds": 604,
+        "selected_origin_counts": {
+          "demonstration_proposal": 135,
+          "hold": 22,
+          "perturbation": 119,
+          "warm_or_search_best": 26
+        },
+        "termination_reason": "runtime_error",
+        "uncertain_execution_errors": 1
+      },
+      {
+        "acknowledged_actions": 635,
+        "attempt_id": "43001-dynamics_shuffle",
+        "commands_per_goal": {
+          "0": 2,
+          "1": 11,
+          "2": 4,
+          "3": 618
+        },
+        "control_seconds_max": 0.14313066704198718,
+        "control_seconds_median": 0.03502362500876188,
+        "control_seconds_sum": 26.566290682414547,
+        "cost_spread_max": 0.02828890085220337,
+        "cost_spread_median": 0.0029777511954307556,
+        "error": "ContractError: joint targets exceed MJCF limits",
+        "final_goal_threshold": 0.08321583904325963,
+        "final_observed_distance": 0.9683883190155029,
+        "first_goal_at_steps": {
+          "0": 0,
+          "1": 2,
+          "2": 13,
+          "3": 17
+        },
+        "initial_observed_distance": 0.009785697795450687,
+        "maximum_goal_index": 3,
+        "mode": "dynamics_shuffle",
+        "nonidentity_score_permutations": 1270,
+        "pending_actions": 636,
+        "physical_stages_any": {
+          "grasp": false,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "transport": false
+        },
+        "projection_applied_exact_matches": 635,
+        "sampled_projection_changes": 74,
+        "search_rounds": 1270,
+        "selected_origin_counts": {
+          "demonstration_proposal": 303,
+          "hold": 45,
+          "perturbation": 249,
+          "warm_or_search_best": 38
+        },
+        "termination_reason": "runtime_error",
+        "uncertain_execution_errors": 1
+      }
+    ],
+    "calibration": {
+      "all_references_nominal_successful_train": true,
+      "directed_neighbor_comparisons": 102,
+      "directed_neighbor_overlap": 65,
+      "first_waypoint_adjacent_overlaps": 0,
+      "first_waypoint_threshold": 0.3591566860675812,
+      "reference_count_range": [
+        16,
+        16
+      ],
+      "selected_episode": "apple-42000",
+      "threshold_min_median_max": [
+        0.035528468526899816,
+        0.0671243254095316,
+        0.3591566860675812
+      ],
+      "training_references": [
+        "apple-42000",
+        "apple-42001",
+        "apple-42004",
+        "apple-42005",
+        "apple-42008",
+        "apple-42009",
+        "apple-42012",
+        "apple-42013",
+        "apple-42016",
+        "apple-42017",
+        "apple-42020",
+        "apple-42021",
+        "apple-42024",
+        "apple-42025",
+        "apple-42028",
+        "apple-42029"
+      ],
+      "waypoints": 52,
+      "waypoints_with_adjacent_overlap": 39
+    },
+    "checkpoint_sha256": "3a5c5e7ba77556b6ce4251f05af72dc86df0121807d913ca8b444db60026e3ee",
+    "dataset_manifest_sha256": "d70edd9daaeec58e80a4e6a743980c049335a03f2b32b7d42bbac5ec5bc579df",
+    "pending_uncertain_total": 3,
+    "projected_applied_exact_matches_total": 4203
+  },
+  "checkpoint_sha256": "3a5c5e7ba77556b6ce4251f05af72dc86df0121807d913ca8b444db60026e3ee",
+  "command": "PYTHONPATH=src .venv/bin/python scripts/evaluate_apple.py --dataset data/apple-task-v1 --checkpoint checkpoints/apple-sensor-v1/sensor.pt --output outputs/apple-control-development-v1 --stage development --seeds 43000 43001 --modes learned persistence dynamics_shuffle --max-seconds 600 --max-steps 1000 --stride 10 --dwell 3 --horizon 4 --candidates 16 --iterations 2 --control-timeout 5",
+  "dataset_manifest_sha256": "d70edd9daaeec58e80a4e6a743980c049335a03f2b32b7d42bbac5ec5bc579df",
+  "exit_code": 2,
+  "experiment": "apple-control-development-v1",
+  "final_cohort_executed": false,
+  "format_version": 1,
+  "interpretation": "0/6 success; learned episodes stall without reach; three control execute errors make comparison incomplete. No learned-control or MVP success claim.",
+  "kind": "negative_development_control_diagnostic",
+  "report": {
+    "denominator": 6,
+    "plan_sha256": "7408b97eddb41592049dbf396191a66b610d996171ba802d26bb275e68f58fa7",
+    "planned": 6,
+    "preparation": {
+      "returncode": 0,
+      "status": "exited"
+    },
+    "provenance_error": "",
+    "provenance_valid": true,
+    "records": [
+      {
+        "attempt_id": "43000-learned",
+        "error": "",
+        "executed_steps": 1000,
+        "mode": "learned",
+        "reset": {
+          "object_xy": [
+            0.33609782248446995,
+            -0.1745237836137705
+          ],
+          "plate_xy": [
+            0.49570860713247383,
+            -0.08681057995105047
+          ],
+          "seed": 43000
+        },
+        "score": {
+          "dropped": false,
+          "grasp": false,
+          "hand_contact": false,
+          "object_height_m": 0.7666328181575404,
+          "object_plate_distance_m": 0.18212415384449532,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "support_dwell_s": 0.0,
+          "transport": false
+        },
+        "seed": 43000,
+        "status": "completed",
+        "success": false,
+        "supervisor": {
+          "returncode": 0,
+          "status": "exited"
+        },
+        "termination_reason": "step_limit",
+        "wall_seconds": 38.55829215049744
+      },
+      {
+        "attempt_id": "43000-persistence",
+        "error": "",
+        "executed_steps": 1000,
+        "mode": "persistence",
+        "reset": {
+          "object_xy": [
+            0.33609782248446995,
+            -0.1745237836137705
+          ],
+          "plate_xy": [
+            0.49570860713247383,
+            -0.08681057995105047
+          ],
+          "seed": 43000
+        },
+        "score": {
+          "dropped": false,
+          "grasp": false,
+          "hand_contact": false,
+          "object_height_m": 0.7666328181575404,
+          "object_plate_distance_m": 0.18212415384458747,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "support_dwell_s": 0.0,
+          "transport": false
+        },
+        "seed": 43000,
+        "status": "completed",
+        "success": false,
+        "supervisor": {
+          "returncode": 0,
+          "status": "exited"
+        },
+        "termination_reason": "step_limit",
+        "wall_seconds": 253.67775917053223
+      },
+      {
+        "attempt_id": "43000-dynamics_shuffle",
+        "error": "ContractError: joint targets exceed MJCF limits",
+        "executed_steps": 266,
+        "mode": "dynamics_shuffle",
+        "reset": {
+          "object_xy": [
+            0.33609782248446995,
+            -0.1745237836137705
+          ],
+          "plate_xy": [
+            0.49570860713247383,
+            -0.08681057995105047
+          ],
+          "seed": 43000
+        },
+        "score": {
+          "dropped": false,
+          "grasp": false,
+          "hand_contact": false,
+          "object_height_m": 0.7666328181575404,
+          "object_plate_distance_m": 0.18212415640831495,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "support_dwell_s": 0.0,
+          "transport": false
+        },
+        "seed": 43000,
+        "status": "completed",
+        "success": false,
+        "supervisor": {
+          "returncode": 0,
+          "status": "exited"
+        },
+        "termination_reason": "runtime_error",
+        "wall_seconds": 9.505683898925781
+      },
+      {
+        "attempt_id": "43001-learned",
+        "error": "",
+        "executed_steps": 1000,
+        "mode": "learned",
+        "reset": {
+          "object_xy": [
+            0.33619467744453907,
+            -0.18043987131822
+          ],
+          "plate_xy": [
+            0.49527959648492503,
+            -0.09336901461840785
+          ],
+          "seed": 43001
+        },
+        "score": {
+          "dropped": false,
+          "grasp": false,
+          "hand_contact": false,
+          "object_height_m": 0.7666328181575404,
+          "object_plate_distance_m": 0.18135419570420266,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "support_dwell_s": 0.0,
+          "transport": false
+        },
+        "seed": 43001,
+        "status": "completed",
+        "success": false,
+        "supervisor": {
+          "returncode": 0,
+          "status": "exited"
+        },
+        "termination_reason": "step_limit",
+        "wall_seconds": 33.4504759311676
+      },
+      {
+        "attempt_id": "43001-persistence",
+        "error": "ContractError: joint targets exceed MJCF limits",
+        "executed_steps": 302,
+        "mode": "persistence",
+        "reset": {
+          "object_xy": [
+            0.33619467744453907,
+            -0.18043987131822
+          ],
+          "plate_xy": [
+            0.49527959648492503,
+            -0.09336901461840785
+          ],
+          "seed": 43001
+        },
+        "score": {
+          "dropped": false,
+          "grasp": false,
+          "hand_contact": true,
+          "object_height_m": 0.7664201314249397,
+          "object_plate_distance_m": 0.1835309822524741,
+          "place": false,
+          "reach": true,
+          "release": false,
+          "success": false,
+          "support_dwell_s": 0.0,
+          "transport": false
+        },
+        "seed": 43001,
+        "status": "completed",
+        "success": false,
+        "supervisor": {
+          "returncode": 0,
+          "status": "exited"
+        },
+        "termination_reason": "runtime_error",
+        "wall_seconds": 10.367488145828247
+      },
+      {
+        "attempt_id": "43001-dynamics_shuffle",
+        "error": "ContractError: joint targets exceed MJCF limits",
+        "executed_steps": 635,
+        "mode": "dynamics_shuffle",
+        "reset": {
+          "object_xy": [
+            0.33619467744453907,
+            -0.18043987131822
+          ],
+          "plate_xy": [
+            0.49527959648492503,
+            -0.09336901461840785
+          ],
+          "seed": 43001
+        },
+        "score": {
+          "dropped": false,
+          "grasp": false,
+          "hand_contact": false,
+          "object_height_m": 0.7666328181575404,
+          "object_plate_distance_m": 0.18135419697834737,
+          "place": false,
+          "reach": false,
+          "release": false,
+          "success": false,
+          "support_dwell_s": 0.0,
+          "transport": false
+        },
+        "seed": 43001,
+        "status": "completed",
+        "success": false,
+        "supervisor": {
+          "returncode": 0,
+          "status": "exited"
+        },
+        "termination_reason": "runtime_error",
+        "wall_seconds": 28.95534920692444
+      }
+    ],
+    "resolved_plan_sha256": "9584d98f2cb0c32d9309f4801ec64d40c09fc9c02543a64446bc11bd7dc838a6",
+    "status": "incomplete",
+    "successes": 0,
+    "wall_seconds": 381.6695807920769
+  },
+  "source_hashes": {
+    "scripts/evaluate_apple.py": "c1703a88825c4531bf4a6317e0cbf90af36be7f5433eb1cfe7796e86059ed22b",
+    "src/embodied_jepa/__init__.py": "a0043e95cb31add021475ec8877d7a7b28189696ddf5ab2486d73537c84aec41",
+    "src/embodied_jepa/audit.py": "59998de9b29226547cb290195f949225895a2e6ffd174186bc91514e022fbc68",
+    "src/embodied_jepa/benchmark.py": "512462740021c8e601cdbe29ca2d185978e66cba0558f94865962636fb48f4a5",
+    "src/embodied_jepa/collection.py": "55cf6373120933fdbb43aa274e2164753f21848d819e6f786c0b862514b19745",
+    "src/embodied_jepa/config.py": "739387de9b0a48c9ef8cf241de8e00601941c1f8c69a1d204b13bcd3cfb649ea",
+    "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+    "src/embodied_jepa/contracts.py": "d9ceedad9198bca60891c0292108822455e1761505c43522f5013363ff0fcb7b",
+    "src/embodied_jepa/data.py": "8785c697132d09e1a29a389756d869dbe7691cd462e841714d6959b6085348c8",
+    "src/embodied_jepa/embodiment.py": "34c47f7a11e8f2ba1a82c3f981a0a092a7d651a1ade0730b975b320ce8181083",
+    "src/embodied_jepa/goals.py": "82b8ea44d25e7c861abf2bb463c9543f4a75c85923ced7fb7be14ffd59d6a489",
+    "src/embodied_jepa/hardware.py": "1ce0c301733af7b15a094b0962fcf566089355a33f49742e27e3a4dfbd03760e",
+    "src/embodied_jepa/manipulation_collection.py": "d1052b4a5075a9fbfb7e9e7f602bf7ce93e5c6796f02cad05a379a5e30ec999c",
+    "src/embodied_jepa/models/__init__.py": "52df101fd2fa75d59771cce70253009519697a711dc84a6246813049c6e4e0a9",
+    "src/embodied_jepa/models/base.py": "42dc2764eed055c51e431358f1841f23960832b4805f11623e62b37ca94a775e",
+    "src/embodied_jepa/models/lewm.py": "43c30609fbb6c7885a7685f2051570d5f6bc44767cf69130e21a8a3b8d4121cf",
+    "src/embodied_jepa/models/native.py": "1647c218db9d70daa09183e25aee3dd18888fc83db5c974f0118f53d6ddb6c20",
+    "src/embodied_jepa/models/sensor.py": "6609dfbec19169d8c33d261750f90fbd8bb4e35a9bdb33daf893bbf845602699",
+    "src/embodied_jepa/planning.py": "e9aea01c81f07e775a4d83116dadaebf7f723090ca4139c6289a4846d5891297",
+    "src/embodied_jepa/registry.py": "a3e69563f5c858855ccd63aa4b51556f783036a52f5b3ba64ee56d9bea19e7a9",
+    "src/embodied_jepa/result_schema.py": "116c48a75f907b7d6ecab5d3e6fe9bc6c968ff3ffe2c88ba683481ee01cba2c2",
+    "src/embodied_jepa/scripted.py": "c28ab20aa0c09742f2e31c0f3bc618fbceb421e963cc7f077514d23e39d5fa93",
+    "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+    "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+    "src/embodied_jepa/training.py": "9a205d410002f9e8002b62275d3a1eae36641c614abe9954de144564d6d733f1",
+    "src/embodied_jepa/waypoint_planning.py": "2b3a29d090031f44cb24888163ec34d7e64c36edbcef2c47b559cbbb6d9ba042"
+  },
+  "source_revision": "b94090ee4662cb3021e85d83427a2371d0452b86",
+  "system": {
+    "device": "cpu",
+    "machine": "arm64",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.12.13",
+    "torch_threads": 4
+  }
+}

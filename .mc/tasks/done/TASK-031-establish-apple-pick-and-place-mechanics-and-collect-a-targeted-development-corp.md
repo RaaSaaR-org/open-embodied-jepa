@@ -4,7 +4,7 @@ aliases:
 - TASK-031
 title: Establish apple pick-and-place mechanics and collect a targeted development corpus
 slug: establish-apple-pick-and-place-mechanics-and-collect-a-targeted-development-corp
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -17,8 +17,9 @@ sprint: ''
 depends_on: []
 due_date: ''
 created: 2026-09-20
-updated: 2026-09-20
+updated: 2026-09-21
 ---
+
 
 
 # Establish reproducible apple mechanics and a targeted corpus
@@ -38,3 +39,5 @@ User requested completion toward a working world-model apple pick-and-place MVP 
 ## Execution evidence
 
 Collected and audited32/32episodes,31oracle successes,16132transitions. Task-specific splits26/3/3,successes25/3/3. No test image decoding during audit; source/payload hashes and train-only normalization verified. DatasetSHA d70edd9daaeec58e80a4e6a743980c049335a03f2b32b7d42bbac5ec5bc579df. See benchmarks/manifests/apple-collection-v1.json. Merge pending PR5.
+
+Coordinator acceptance: deliverable criteria met with the recorded tests and complete bounded artifact evidence. PR5 merge remains pending; no learned pick-and-place success is inferred.
