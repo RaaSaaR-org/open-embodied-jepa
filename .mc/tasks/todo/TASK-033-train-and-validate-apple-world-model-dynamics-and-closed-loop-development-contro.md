@@ -41,3 +41,5 @@ User requested completion toward a working world-model apple pick-and-place MVP 
 ## Execution evidence
 
 Initial training protocol and supervised runner committed before execution. Planned3000updates,B16,H8,seed0,CPU4,1800s totalwall. Data/source/protocol hashes mandatory. Physical learned ApplePlate remains unproven; all negative results retained.
+
+First sensor model completed3000 updates and failed both learned development runs (0/6 comparison placements, including three errored controls). Matched-branch retraining improved causal assignment but missed the frozen primary H16 error-reduction gate. Preserve all artifacts and keep this task in progress. A separately planned H16 balanced-intervention training experiment follows; no new physical or final-cohort evaluation has run.
