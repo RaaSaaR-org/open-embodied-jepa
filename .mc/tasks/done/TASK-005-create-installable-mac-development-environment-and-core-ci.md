@@ -4,7 +4,7 @@ aliases:
 - TASK-005
 title: Create installable Mac development environment and core CI
 slug: create-installable-mac-development-environment-and-core-ci
-status: review
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -21,6 +21,7 @@ due_date: ''
 created: 2026-09-20
 updated: 2026-09-20
 ---
+
 
 
 
@@ -45,4 +46,5 @@ Create packaging, supported Python selection, reproducible locks, dependency not
 ## Implementation evidence — 2026-09-20
 
 Installable Python3.12 package and hashed `uv.lock`; optional learning/sim/lewm extras, lazy named registry, core import isolation. Clean `/tmp/open-embodied-jepa-core-check` environment installed via `UV_PROJECT_ENVIRONMENT=... uv sync --locked`, imports without torch/mujoco and full core tests passed. GitHub Actions added for macOS/Linux lint, format, tests and dependency metadata inventory; remote run pending PR. See `docs/SETUP.md`. MuJoCo agent independently reviewed coordinator foundation changes and reported no blockers; optional registry validation hardening applied/tested.
+PR: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/2. Local final foundation suite: 76 passed. GitHub macOS and Linux core jobs passed on `f733be5`. Independent agent cross-review plus author integration review found no unresolved blocker. Deliverable acceptance is satisfied; merge pending at this task-note revision.
 %% mc-links: [[TASK-002]] [[TASK-003]] [[TASK-004]] %%

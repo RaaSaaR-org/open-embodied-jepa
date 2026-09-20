@@ -4,7 +4,7 @@ aliases:
 - TASK-002
 title: Spike LeWM compatibility, action conditioning, and licenses on Mac
 slug: spike-lewm-compatibility-action-conditioning-and-licenses-on-mac
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -18,6 +18,7 @@ due_date: ''
 created: 2026-09-20
 updated: 2026-09-20
 ---
+
 
 
 
@@ -43,3 +44,5 @@ Audit the official lucas-maes/le-wm source and the minimum dependencies needed f
 ## Implementation evidence — 2026-09-20
 
 Pinned upstream `8edfeb336732b5f3ce7b8b210d0ba370a09e2cac`. Full 18M-parameter architecture and small smoke profile run CPU/MPS forward/backward, 14D actions, recursive four-step rollout, image-goal costs and action-sensitivity checks. Both H1 and H3 tested; H1 supports shared current-observation contract. See `docs/LEWM_SPIKE.md`, source/license audit `docs/DEPENDENCIES.md`, and `scripts/spikes/lewm/probe.py`. These are synthetic compatibility results, not learned robot behavior.
+
+PR: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/2. Local final foundation suite: 76 passed. GitHub macOS and Linux core jobs passed on `f733be5`. Independent agent cross-review plus author integration review found no unresolved blocker. Deliverable acceptance is satisfied; merge pending at this task-note revision.

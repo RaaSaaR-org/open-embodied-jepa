@@ -4,7 +4,7 @@ aliases:
 - TASK-001
 title: Confirm compute, G1 configuration, and dataset access
 slug: confirm-compute-g1-configuration-and-dataset-access
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -18,6 +18,7 @@ due_date: ''
 created: 2026-09-20
 updated: 2026-09-20
 ---
+
 
 
 
@@ -43,3 +44,5 @@ Record the confirmed Mac-only / MuJoCo-first constraint and inventory remaining 
 ## Implementation evidence — 2026-09-20
 
 See `docs/RESOURCES.md` and `scripts/resource_probe.py`. Python 3.12.13 / Torch 2.14.0 CPU and MPS forward/backward checks passed on Apple M5 Pro, 48 GiB, 536.6 GiB free. No recordings or hardware access supplied; simulation collection is selected. Local artifact paths and bounded resource budgets documented. Report: `outputs/feasibility/resources.json` (local, ignored).
+
+PR: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/2. Local final foundation suite: 76 passed. GitHub macOS and Linux core jobs passed on `f733be5`. Independent agent cross-review plus author integration review found no unresolved blocker. Deliverable acceptance is satisfied; merge pending at this task-note revision.

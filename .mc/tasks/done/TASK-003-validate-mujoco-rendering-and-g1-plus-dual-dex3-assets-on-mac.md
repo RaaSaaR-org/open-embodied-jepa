@@ -4,7 +4,7 @@ aliases:
 - TASK-003
 title: Validate MuJoCo rendering and G1 plus dual Dex3 assets on Mac
 slug: validate-mujoco-rendering-and-g1-plus-dual-dex3-assets-on-mac
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -19,6 +19,7 @@ due_date: ''
 created: 2026-09-20
 updated: 2026-09-20
 ---
+
 
 
 
@@ -43,4 +44,5 @@ Use native MuJoCo Python bindings locally. Audit candidate Unitree MJCF/meshes; 
 ## Implementation evidence — 2026-09-20
 
 Pinned official dual-Dex3 Unitree asset `ffa21a1e811a4ffd5d31d0318674c950f73eb62c`, verified SHA-256 and BSD-3-Clause source terms. Native MuJoCo 3.13.0 exact reset/step traces, RGB and bounded mjpython viewer passed. Both hands: seven articulated/limited/actuated joints with mass/inertia/collision geometry. See `assets/manifest.json`, `docs/MUJOCO_SPIKE.md`, `scripts/fetch_assets.py`, `scripts/spikes/mujoco_probe.py`. EDU4 serial-specific calibration and grasp fidelity remain explicit future validation.
+PR: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/2. Local final foundation suite: 76 passed. GitHub macOS and Linux core jobs passed on `f733be5`. Independent agent cross-review plus author integration review found no unresolved blocker. Deliverable acceptance is satisfied; merge pending at this task-note revision.
 %% mc-links: [[TASK-001]] %%
