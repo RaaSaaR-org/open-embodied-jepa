@@ -224,3 +224,30 @@ def test_training_invalidates_latents(model, batch):
     model.train_step(batch)
     with pytest.raises(ContractError, match="another model"):
         model.predict(latent, actions)
+
+
+def test_persistence_uses_same_target_encoder_and_reports_target_rank(batch, monkeypatch):
+    model = NativeJEPA(batch.state_schema)
+    dim = model.config["latent_dim"]
+
+    def target_embed(pixels):
+        return torch.arange(pixels.shape[0], dtype=torch.float32)[:, None].expand(-1, dim)
+
+    # A large online/EMA offset must not inflate the persistence baseline.
+    monkeypatch.setattr(model, "embed", lambda x: target_embed(x) + 1000)
+    monkeypatch.setattr(model, "goal_embed", target_embed)
+
+    def forecast(initial, actions):
+        future = torch.arange(1, actions.shape[1] + 1, dtype=torch.float32)
+        return initial[:, None] - 1000 + future[None, :, None] + 2
+
+    monkeypatch.setattr(model, "rollout", forecast)
+    result = model.diagnostics(batch)
+    assert result["metric_definition_version"] == 2
+    assert result["persistence_mse"] == pytest.approx(2.5)
+    assert result["prediction_mse"] == pytest.approx(4.0)
+    assert result["prediction_mse"] > result["persistence_mse"]
+    assert result["online_latent_std_mean"] == pytest.approx(result["target_latent_std_mean"])
+    assert result["target_effective_rank_available"] == 1
+    assert result["target_effective_rank"] == pytest.approx(1, abs=1e-6)
+    assert result["target_collapsed_fraction"] == 0

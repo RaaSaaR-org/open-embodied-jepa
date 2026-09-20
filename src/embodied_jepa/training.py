@@ -153,6 +153,7 @@ def selection_decision(diagnostics, selection, training_horizon):
     horizon = 4 if selection == "noncollapsed_relative" else training_horizon
     result = {
         "method": selection,
+        "metric_definition_version": 2,
         "horizon": horizon,
         "eligible": False,
         "score": None,
@@ -164,10 +165,14 @@ def selection_decision(diagnostics, selection, training_horizon):
         return result
     metrics = measured["metrics"]
     if selection == "noncollapsed_relative":
-        if metrics["collapsed_fraction"] > 0.05:
-            result["rejection_reasons"].append("collapsed_fraction_above_0.05")
-        if metrics["latent_std_mean"] < 0.1:
-            result["rejection_reasons"].append("latent_std_mean_below_0.1")
+        if metrics.get("metric_definition_version") != 2:
+            result["rejection_reasons"].append("unsupported_metric_definition_version")
+            return result
+        for space in ("online", "target"):
+            if metrics[f"{space}_collapsed_fraction"] > 0.05:
+                result["rejection_reasons"].append(f"{space}_collapsed_fraction_above_0.05")
+            if metrics[f"{space}_latent_std_mean"] < 0.1:
+                result["rejection_reasons"].append(f"{space}_latent_std_mean_below_0.1")
         score = metrics["prediction_mse"] / max(metrics["persistence_mse"], 1e-12)
     else:
         score = metrics["prediction_mse"]
@@ -247,8 +252,13 @@ def train(
         "seed": seed,
         "selection": {
             "method": selection,
+            "metric_definition_version": 2,
             "horizon": 4 if selection == "noncollapsed_relative" else horizon,
-            "eligibility": {"maximum_collapsed_fraction": 0.05, "minimum_latent_std_mean": 0.1}
+            "eligibility": {
+                "spaces": ["online", "target"],
+                "maximum_collapsed_fraction": 0.05,
+                "minimum_latent_std_mean": 0.1,
+            }
             if selection == "noncollapsed_relative"
             else None,
         },
@@ -345,6 +355,7 @@ def train(
         )
         event = {
             "kind": "validation",
+            "metric_definition_version": 2,
             "step": completed,
             "elapsed_seconds": time.perf_counter() - start,
             "selection_horizon": decision["horizon"],

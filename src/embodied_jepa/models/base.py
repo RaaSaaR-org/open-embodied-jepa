@@ -249,7 +249,8 @@ class VisualModel(nn.Module):
         self.eval()
         pixels, prefix, actions = self.sequence_tensors(batch)
         embeddings = self.embed(pixels).reshape(*prefix, -1)
-        targets = self.goal_embed(pixels).reshape(*prefix, -1)[:, 1:]
+        target_embeddings = self.goal_embed(pixels).reshape(*prefix, -1)
+        targets = target_embeddings[:, 1:]
         prediction = self.rollout(embeddings[:, 0], actions)
         zero_prediction = self.rollout(embeddings[:, 0], torch.zeros_like(actions))
         # Fixed permutation over B*T actions; report when it cannot change anything.
@@ -258,11 +259,24 @@ class VisualModel(nn.Module):
         shuffled_prediction = self.rollout(embeddings[:, 0], shuffled)
         samples = embeddings.reshape(-1, embeddings.shape[-1])
         std = samples.std(0, unbiased=False)
+        target_samples = target_embeddings.reshape(-1, target_embeddings.shape[-1])
+        target_std = target_samples.std(0, unbiased=False)
+        rank_available = target_samples.numel() <= 1_000_000 and min(target_samples.shape) <= 512
+        effective_rank = 0.0
+        if rank_available:
+            centered = target_samples.to(device="cpu", dtype=torch.float64)
+            centered = centered - centered.mean(0)
+            energy = torch.linalg.svdvals(centered).square()
+            total_energy = energy.sum().item()
+            if total_energy > 0:
+                probabilities = energy[energy > 0] / total_energy
+                effective_rank = (-(probabilities * probabilities.log()).sum()).exp().item()
         mse = (prediction - targets).square().mean()
         zero_mse = (zero_prediction - targets).square().mean()
         shuffled_mse = (shuffled_prediction - targets).square().mean()
-        persistence_mse = (embeddings[:, :1] - targets).square().mean()
+        persistence_mse = (target_embeddings[:, :1] - targets).square().mean()
         metrics = {
+            "metric_definition_version": 2.0,
             "prediction_mse": mse.item(),
             "zero_action_mse": zero_mse.item(),
             "shuffled_action_mse": shuffled_mse.item(),
@@ -272,6 +286,14 @@ class VisualModel(nn.Module):
             "latent_std_mean": std.mean().item(),
             "latent_std_min": std.min().item(),
             "collapsed_fraction": (std < 0.01).float().mean().item(),
+            "online_latent_std_mean": std.mean().item(),
+            "online_latent_std_min": std.min().item(),
+            "online_collapsed_fraction": (std < 0.01).float().mean().item(),
+            "target_latent_std_mean": target_std.mean().item(),
+            "target_latent_std_min": target_std.min().item(),
+            "target_collapsed_fraction": (target_std < 0.01).float().mean().item(),
+            "target_effective_rank": effective_rank,
+            "target_effective_rank_available": float(rank_available),
         }
         if not all(np.isfinite(value) for value in metrics.values()):
             raise ContractError("non-finite model diagnostics")

@@ -174,8 +174,11 @@ def test_noncollapsed_selector_rejects_tiny_loss_and_ranks_relative_error(
         return {
             "prediction_mse": mse,
             "persistence_mse": persistence,
-            "collapsed_fraction": collapsed,
-            "latent_std_mean": std,
+            "metric_definition_version": 2.0,
+            "online_collapsed_fraction": collapsed,
+            "online_latent_std_mean": std,
+            "target_collapsed_fraction": collapsed,
+            "target_latent_std_mean": std,
         }
 
     monkeypatch.setattr(NativeJEPA, "diagnostics", diagnostics)
@@ -197,8 +200,10 @@ def test_noncollapsed_selector_rejects_tiny_loss_and_ranks_relative_error(
     baseline, first, last = [event["selection"] for event in report["validation"]]
     assert not baseline["eligible"] and not baseline["selected"]
     assert baseline["rejection_reasons"] == [
-        "collapsed_fraction_above_0.05",
-        "latent_std_mean_below_0.1",
+        "online_collapsed_fraction_above_0.05",
+        "online_latent_std_mean_below_0.1",
+        "target_collapsed_fraction_above_0.05",
+        "target_latent_std_mean_below_0.1",
     ]
     assert first["selected"]
     assert last["eligible"] and not last["selected"]
@@ -216,8 +221,11 @@ def test_no_eligible_checkpoint_reports_selection_failure_and_preserves_latest(
         lambda *args: {
             "prediction_mse": 1e-12,
             "persistence_mse": 0.0,
-            "collapsed_fraction": 0.5,
-            "latent_std_mean": 0.09,
+            "metric_definition_version": 2.0,
+            "online_collapsed_fraction": 0.5,
+            "online_latent_std_mean": 0.09,
+            "target_collapsed_fraction": 0.5,
+            "target_latent_std_mean": 0.09,
         },
     )
     report = train(
@@ -236,3 +244,31 @@ def test_no_eligible_checkpoint_reports_selection_failure_and_preserves_latest(
     assert not report["best_checkpoint_exists"]
     assert report["latest_checkpoint_exists"] and report["completed_steps"] == 1
     assert all(not event["selection"]["eligible"] for event in report["validation"])
+
+
+def test_selector_requires_target_diversity_even_when_online_is_healthy():
+    from embodied_jepa.training import selection_decision
+
+    metrics = {
+        "metric_definition_version": 2.0,
+        "prediction_mse": 1e-9,
+        "persistence_mse": 0.1,
+        "online_collapsed_fraction": 0.0,
+        "online_latent_std_mean": 1.0,
+        "target_collapsed_fraction": 1.0,
+        "target_latent_std_mean": 0.001,
+    }
+    decision = selection_decision(
+        {"4": {"status": "measured", "metrics": metrics}}, "noncollapsed_relative", 4
+    )
+    assert not decision["eligible"]
+    assert decision["rejection_reasons"] == [
+        "target_collapsed_fraction_above_0.05",
+        "target_latent_std_mean_below_0.1",
+    ]
+    legacy = metrics | {"metric_definition_version": 1.0}
+    rejected = selection_decision(
+        {"4": {"status": "measured", "metrics": legacy}}, "noncollapsed_relative", 4
+    )
+    assert not rejected["eligible"]
+    assert rejected["rejection_reasons"] == ["unsupported_metric_definition_version"]
