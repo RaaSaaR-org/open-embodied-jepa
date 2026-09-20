@@ -108,6 +108,45 @@ def test_sampler_is_deterministic_and_memory_preflight_is_bounded(corpus):
         EpisodeCache(corpus, memory_limit_bytes=1)
 
 
+def test_optional_model_normalization_uses_every_training_transition_only(
+    corpus, tmp_path, monkeypatch
+):
+    from embodied_jepa.models import NativeJEPA
+
+    observed = []
+    declared = []
+
+    def fit(self, batches, *, training_episode_ids):
+        declared.extend(training_episode_ids)
+        for batch in batches:
+            assert set(batch.episode_ids) <= set(training_episode_ids)
+            observed.extend(
+                (name, float(timestamp))
+                for name, times in zip(batch.episode_ids, batch.timestamps, strict=True)
+                for timestamp in times[:-1]
+            )
+
+    monkeypatch.setattr(NativeJEPA, "fit_normalization", fit, raising=False)
+    report = train(
+        corpus.root,
+        "native_jepa",
+        tmp_path / "normalized.pt",
+        steps=1,
+        batch_size=2,
+        horizon=2,
+        validation_batches=1,
+        model_config={"hidden_dim": 32},
+    )
+    expected = [
+        (name, float(timestamp))
+        for name in corpus.manifest["splits"]["train"]
+        for timestamp in corpus.read_episode(name).timestamps[:-1]
+    ]
+    assert observed == expected
+    assert declared == corpus.manifest["splits"]["train"]
+    assert report["normalization"]["transitions"] == len(expected)
+
+
 def test_time_budget_preserves_partial_report_without_claiming_completion(corpus, tmp_path):
     report = train(corpus.root, "native_jepa", tmp_path / "timeout.pt", max_seconds=1e-12)
     assert report["status"] == "time_budget"

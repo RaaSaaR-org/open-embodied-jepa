@@ -457,6 +457,29 @@ def train(
         report["model_config"] = model.config
         report["model_implementation_sha256"] = model.implementation_sha256
         report["model_source_revision"] = model.source_revision
+        fit_normalization = getattr(model, "fit_normalization", None)
+        if callable(fit_normalization):
+            # Optional model-owned preprocessing sees only sealed training episodes.
+            # Stream bounded chunks, including every transition exactly once.
+            def normalization_batches():
+                for name in cache.split_ids["train"]:
+                    episode = cache.episodes[name]
+                    chunk = min(64, model.capabilities.max_horizon)
+                    for start in range(0, episode.transitions, chunk):
+                        check_budget()
+                        yield episode.sequence(start, min(chunk, episode.transitions - start))
+
+            fit_normalization(
+                normalization_batches(), training_episode_ids=cache.split_ids["train"]
+            )
+            report["normalization"] = {
+                "episode_ids": list(cache.split_ids["train"]),
+                "source": "sealed training split only",
+                "transitions": sum(
+                    cache.episodes[name].transitions for name in cache.split_ids["train"]
+                ),
+            }
+            check_budget()
         validate()  # Untrained baseline can legitimately remain best after a negative run.
         for step in range(1, steps + 1):
             check_budget()
@@ -519,7 +542,9 @@ def train(
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, required=True)
-    parser.add_argument("--backend", choices=("native_jepa", "leworldmodel"), required=True)
+    parser.add_argument(
+        "--backend", choices=("native_jepa", "leworldmodel", "sensor_wm"), required=True
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--steps", type=int, default=500)
     parser.add_argument("--batch-size", type=int, default=16)
