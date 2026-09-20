@@ -70,3 +70,13 @@ unexecuted until a development configuration is selected and frozen.
 Planned output: `outputs/apple-control-development-v1/`. The working-MVP target
 remains 16/20 complete successes on the later frozen cohort, with all failures in
 the denominator and evidence that learned dynamics improve control.
+
+## Recorded before the first control rollout
+
+The phase diagnostic completed all 24 groups. Validation prediction improved over
+persistence in every measured phase, but the small shuffled-action advantage was
+inconsistent and negative in several close/lift cohorts. The model has **not**
+passed a robust phase-specific action-conditioning gate. This six-attempt run
+therefore remains a limited failure/control diagnostic, not progression to the
+fresh final cohort or a claim of learned task readiness. Its previously declared
+parameters and controls remain fixed; no phase result changes the controller.
