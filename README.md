@@ -25,8 +25,10 @@ started all six attempts but reached no physical stage (two completed learned
 failures and four timed-out controls). An [arrival-feedback audit](docs/experiments/apple_arrival_feedback_results_v1.md)
 also failed to complete waypoint dwell. The next [image-goal alignment screen](docs/experiments/apple_goal_alignment_results_v1.md)
 passed offline: a TRAIN-fitted image encoder improved held-out predicted arm-goal
-ranking from 73.38% to 89.82%. This supports testing a combined visual-and-pose
-cost; it has not yet been used for physical control.
+ranking from 73.38% to 89.82%. The subsequent fixed
+[combined visual-and-pose cost](docs/experiments/apple_aligned_control_results_v1.md)
+reached 77.68%, a 4.30-point gain that missed the preregistered five-point gate.
+That version stopped before physical control without tuning or retries.
 Prediction accuracy and short-branch progress do not establish manipulation success.
 The fresh 20-reset final cohort remains unexecuted. This is a separate task-specific
 mode; the historical unseen-pair benchmark above is unchanged. The optional
