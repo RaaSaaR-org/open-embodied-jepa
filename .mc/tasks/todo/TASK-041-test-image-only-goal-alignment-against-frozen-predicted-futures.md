@@ -28,8 +28,8 @@ Can an image-only encoder estimate seven measured right-arm position fields on u
 
 ## Acceptance Criteria
 - [x] Freeze a reviewed protocol, exact position names, TRAIN-only fitting, parent-balanced evaluation, candidate/baseline interpretation, promotion gates and budgets before fitting.
-- [ ] Implement one deterministic CPU4/seed0 experiment comparing TRAIN mean, TRAIN-only nearest-image retrieval and a small neural mean/uncertainty head. No TEST decoding, physical rollout or goal-state input at inference.
-- [ ] Validate split isolation, grouping, predicted-future rather than measured-only ranking, ambiguity reporting, artifact provenance and bounded failure behavior.
+- [x] Implement one deterministic CPU4/seed0 experiment comparing TRAIN mean, TRAIN-only nearest-image retrieval and a small neural mean/uncertainty head. No TEST decoding, physical rollout or goal-state input at inference.
+- [x] Validate split isolation, grouping, predicted-future rather than measured-only ranking, ambiguity reporting, artifact provenance and bounded failure behavior.
 - [ ] Run at most one preregistered attempt; record all candidates, failures, timing, parent-level metrics, uncertainty and limitations.
 - [ ] Independently review saved evidence and deliver through a reviewed PR.
 
@@ -41,3 +41,6 @@ Coordinator owns Git/MC and protocol approval. Independent agents inspect implem
 
 ## Frozen prospective design
 Protocol: `docs/experiments/apple_goal_alignment_v1.md`; planning-time data inspection: `docs/experiments/apple_goal_alignment_data_audit.md`. Exactly 1,392 TRAIN and 360 VAL selected frames; CPU4/seed0, 2,000 updates, B128, final checkpoint only. Independent NN/neural gates require at least 20% encoder-error reduction versus TRAIN mean and at least five percentage points better predicted H16 goal ranking versus pixel, with positive gain in each VAL parent. Three stages have hard 120/300/60-wall-second caps; TRAIN bank freezes before VAL decoding and neural fit loads TRAIN only. No fitting or learned inference has run. Implementation reviews precede execution.
+
+## Implementation and pre-run review
+`scripts/apple_goal_alignment.py` preserves the frozen sensor/planner implementation and exposes only offline prepare/fit/evaluate stages. Independent scientific and runtime reviews found no remaining blockers. Twenty-four focused tests passed; full optional/model/rendering suite **542 passed in 11.09 seconds**. Ruff checks/format for 85 files, diff and MC checks passed. Review resolved timestamp validation, actual NN spread, neural-failure isolation, producer seals, encoded-payload integrity and deadline finalization. Gradient max-norm 10 is recorded prospectively. Exact metadata sample hash `37aaa45ef11995240be8ee84c7779ad006d35c03b4519ac0c1c6f77c0d35f6f5`. Run remains pending until this source and protocol commit.

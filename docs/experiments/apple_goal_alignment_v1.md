@@ -23,7 +23,7 @@ Weights: give each original parent equal mass; within a parent give available so
 Features x are the frozen normalized 24×24 RGB grid (1,728 values); no proprio input.
 
 - **NN:** exact 1-nearest TRAIN-bank x in squared Euclidean feature distance; return that record's y. Resolve exact ties lexicographically by sample key. No VAL neighbor, interpolation tuning or per-phase retrieval restriction. The index uses all 1,392 declared TRAIN records, and is frozen before VAL decoding.
-- **Neural:** MLP 1728→128→64→14, SiLU hidden activations; outputs seven means and seven log variances clipped to [-6,3]. Gaussian diagonal NLL averaged over seven fields: `0.5 * mean(exp(-logvar)*(mean-y)^2 + logvar)`. AdamW lr 1e-3, weight_decay 1e-4, seed 0, batch 128 sampled with replacement using the declared weights, exactly 2,000 updates. Use final checkpoint only; no VAL selection or architecture sweep.
+- **Neural:** MLP 1728→128→64→14, SiLU hidden activations; outputs seven means and seven log variances clipped to [-6,3]. Gaussian diagonal NLL averaged over seven fields: `0.5 * mean(exp(-logvar)*(mean-y)^2 + logvar)`. AdamW lr 1e-3, weight_decay 1e-4, seed 0, batch 128 sampled with replacement using the declared weights, exactly 2,000 updates. Clip gradient norm at 10 and abort on nonfinite loss or gradients; record this numerical safeguard in the checkpoint config. Use final checkpoint only; no VAL selection or architecture sweep.
 - **Constant:** the weighted TRAIN mean of y. This baseline is used for encoder error, not presented as a viable world-model controller.
 
 Only encoder means enter candidate costs. Uncertainty must not downweight costs or exclude difficult cases in this screen. Keep NN available even if the neural attempt is incomplete or fails; failure to replace NN is not failure of the representation route.
@@ -71,3 +71,15 @@ NN passing is a viable retrieval-based goal representation even if neural fails.
 One registered run with three separately supervised stages, CPU4, no dependency changes. Preparation ≤120 true-wall seconds includes imports, input verification, selected-frame decoding, feature/bank construction and serialization. Freeze and hash the TRAIN bank before decoding any VAL payload; store TRAIN and VAL caches separately. Neural fitting ≤300 true-wall seconds includes imports, TRAIN-cache loading, exactly 2,000 updates, hashes and serialization. Fitting reads only the TRAIN cache. Offline evaluation ≤60 true-wall seconds includes imports, frozen prediction, NN queries, metrics and reporting. Reserve the final 5 seconds of each stage. Retain partial logs and bank on timeout; only a completed 2,000-update head is eligible, while a complete NN bank remains independently assessable. The total authorized stage allocation is 480 wall seconds; report each stage and overall supervisor time explicitly. No retries/extensions, TEST decoding or simulator execution. The parent supervises elapsed `max(wall,monotonic)` and preserves all planned candidates/roots and missing outcomes. Coordinator may tighten CPU/memory limits before freeze; do not alter these wall limits after results.
 
 Artifacts: registration/config/source/package/device/thread hashes; exact TRAIN/VAL sample ledger and weights; NN bank/features/labels digest; final neural checkpoint plus completion status; unchanged world-model checkpoint identity; per-record errors/uncertainties; per-root/per-goal/pair costs, eligibility and rankings; parent summaries/bootstrap seed; all missing/tied/ambiguous counts; resource usage and post-run input verification. No hidden goal-joint array may cross the encoder input boundary. This protocol requires explicit reviewed implementation and coordinator authorization before execution.
+
+## Reproduction
+
+From the registered source revision, run each stage once in order, checking its report before continuing:
+
+```sh
+.venv/bin/python scripts/apple_goal_alignment.py --stage prepare --output outputs/apple-goal-alignment-v1
+.venv/bin/python scripts/apple_goal_alignment.py --stage fit --output outputs/apple-goal-alignment-v1
+.venv/bin/python scripts/apple_goal_alignment.py --stage evaluate --output outputs/apple-goal-alignment-v1
+```
+
+Existing stage directories are rejected. A failed preparation prevents fitting/evaluation; a failed neural fit may still allow the separately valid NN bank to be evaluated. No retry or output renaming to repeat this registered attempt is authorized. Preserve the launch ledger and all incomplete reports.
