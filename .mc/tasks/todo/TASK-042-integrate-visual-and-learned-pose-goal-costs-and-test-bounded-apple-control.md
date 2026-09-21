@@ -27,7 +27,7 @@ updated: 2026-09-21
 TASK-041 establishes useful image-only arm-goal estimates on three held-out parents. Can a fixed combination with visual evidence improve the existing world-model controller, with action-conditioned model controls retained?
 
 ## Acceptance Criteria
-- [ ] Implement an isolated frozen composition backend with image-only goals/progress, unchanged sensor predictions, fixed visual/pose weighting, strict portable artifacts, and meaningful conformance/failure tests.
+- [x] Implement an isolated frozen composition backend with image-only goals/progress, unchanged sensor predictions, fixed visual/pose weighting, strict portable artifacts, and meaningful conformance/failure tests.
 - [ ] Calibrate two cost scales using all 26 original TRAIN parents under the prospective stride28 median-of-medians rule, preserving zero pairs; no VAL/test/scorer input.
 - [ ] Freeze and review source/protocol; run one 120-second bundle preparation and one 60-second saved-forecast hybrid gate, preserving failures.
 - [ ] Independently verify combined H16 gain of at least five percentage points versus pixel and positive gain on each VAL parent with complete coverage before physics.
@@ -39,3 +39,9 @@ Protocol `docs/experiments/apple_aligned_control_v1.md`. Coordinator owns Git, M
 
 ## Resources and uncertainty
 Mac CPU4 only. Offline stages total 180 seconds allocation, conditional physical comparison 1,000 seconds. This n=1 development comparison is not final acceptance. Image-derived current pose can affect progress even when forecast pose is useful; visual term is retained but does not guarantee object-state recognition. PR #11 evidence is independently audited and awaiting CI/merge.
+
+## Pre-run implementation review
+New frozen `aligned_sensor_wm_v1`, strict portable bundle, TRAIN-only builder and saved-array gate are implemented. Sensor/base/planner/evaluator source remains unchanged. Independent scientific and coordinator runtime reviews found no remaining blockers. Full optional/model/rendering suite passed 576 tests in 11.61 seconds; two final test-only regressions strengthened nonzero head parity and reordered field mapping, after which 57 focused model/builder/config tests passed independently in 1.30 seconds. Ruff check/format for 89 files, diff and MC validation passed. No actual calibration, saved-array gate or physical run has occurred yet.
+
+## Requested stopping point
+User requested a pause after this current task. Complete only its registered offline stages, conditional three-mode physical comparison, evidence review and PR delivery, then pause the overall goal. Do not start a follow-up experiment or task.

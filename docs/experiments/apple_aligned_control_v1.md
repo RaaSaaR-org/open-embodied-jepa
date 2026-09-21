@@ -227,3 +227,28 @@ No model/planner/physics changes are needed for this design.
 4. Only after a passing reviewed offline result, register the exact bundle SHA and evaluator configuration and run the single three-mode development comparison within 1,000 wall seconds. No TEST or final cohort access. Preserve all three intended attempts and their censoring.
 
 No training, threshold tuning, retries, or budget extension occurs in this task. Stage caps include imports and artifact finalization; reserve five seconds in each offline stage and classify a late completion as incomplete. Physical execution retains the existing evaluator's independently reviewed timeout rules. Code or dependency changes between dependent stages invalidate the run. A negative completed research task never closes TASK-033's physical success requirement.
+
+## Reproduction commands
+
+Execute each offline stage once, checking its report before the next dependent action:
+
+```sh
+.venv/bin/python scripts/build_apple_aligned_sensor.py --stage prepare --output outputs/apple-aligned-cost-v1
+.venv/bin/python scripts/build_apple_aligned_sensor.py --stage audit --output outputs/apple-aligned-cost-v1
+```
+
+Only after the complete fixed offline gate passes and its evidence is reviewed, freeze the bundle hash and launch:
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/evaluate_apple.py \
+  --dataset data/apple-branches-v1 \
+  --checkpoint outputs/apple-aligned-cost-v1/prepare/bundle/aligned.pt \
+  --output outputs/apple-control-aligned-v1 \
+  --stage development --seeds 43000 \
+  --modes learned persistence dynamics_shuffle \
+  --horizon 16 --stride 28 --dwell 3 --candidates 16 --iterations 2 \
+  --commitment-steps 1 --attempt-max-seconds 300 --max-seconds 1000 \
+  --max-steps 1000 --control-timeout 5
+```
+
+The physical launch ledger records every immutable bundle member, source revision, action/assets, goal-calibration recipe and actual command. Bundle loading rejects missing or changed members. Do not repeat failed stages under a new output name within this task.
