@@ -4,7 +4,7 @@ aliases:
 - TASK-041
 title: Test image-only goal alignment against frozen predicted futures
 slug: test-image-only-goal-alignment-against-frozen-predicted-futures
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -22,6 +22,7 @@ updated: 2026-09-21
 ---
 
 
+
 # Test image-only goal alignment against frozen predicted futures
 
 ## Question and scope
@@ -33,7 +34,7 @@ Can an image-only encoder estimate seven measured right-arm position fields on u
 - [x] Validate split isolation, grouping, predicted-future rather than measured-only ranking, ambiguity reporting, artifact provenance and bounded failure behavior.
 - [x] Run at most one preregistered attempt; record all candidates, failures, timing, parent-level metrics, uncertainty and limitations.
 - [x] Independently review saved evidence.
-- [ ] Deliver implementation and evidence through a reviewed PR.
+- [x] Deliver implementation and evidence through a reviewed PR.
 
 ## Boundaries
 No sensor checkpoint implementation changes or dynamics retraining. Image-to-position estimation is learned from paired TRAIN sensor measurements; VAL positions are evaluation labels only. Seven arm positions are an identifiability screen, not a complete apple/plate cost. Preserve visual object evidence in any future design. Distinguish failure of a neural head to beat nearest-image retrieval from failure of all goal-alignment candidates. No final acceptance cohort or deployment in this task. Exact protocol and budgets are under review; fitting has not started.
@@ -51,4 +52,6 @@ Protocol: `docs/experiments/apple_goal_alignment_v1.md`; planning-time data insp
 Source `f4f99fa1bf5fdcec7f1647927e74d0b0de8228b0`, outputs `outputs/apple-goal-alignment-v1`. Prepare/fit/evaluate completed once in 6.514556 / 2.682128 / 2.011637 wall seconds, each within its cap. Neural fit finished exactly 2,000 updates. Both candidates passed the prospective screen: H16 predicted ranking neural 89.81618%, NN 89.70628%, frozen pixel 73.37780%, with positive gains in all three VAL parents. Independent audit recomputed 3,456 cost vectors and 16,128 pair records, parent/bootstrap summaries, encoder errors and ambiguity diagnostics from saved arrays without inference. Neural replacement edge over NN is only 0.10990 percentage points. Arm alignment alone does not identify grasp/placement.
 
 Coordinator supplemental launch ledger was written after preparation began because a system-Python datetime.UTC preamble failed; each stage correctly registered immutable inputs before its work. No stage was repeated. The final result and manifest disclose this bookkeeping issue. Final acceptance stays untouched and TASK-033 remains open. Delivery pending.
+## Verified delivery
+PR #11 https://github.com/RaaSaaR-org/open-embodied-jepa/pull/11 merged as `44f4884e8641c3d90a53cf9f30997dc66022c62c` after all three current-head CI checks passed. The offline research task is complete. TASK-042 tests a combined metric; TASK-033 physical acceptance remains open.
 %% mc-links: [[TASK-040]] %%
