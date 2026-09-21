@@ -1,0 +1,55 @@
+---
+id: TASK-042
+aliases:
+- TASK-042
+title: Integrate visual and learned pose goal costs and test bounded apple control
+slug: integrate-visual-and-learned-pose-goal-costs-and-test-bounded-apple-control
+status: done
+priority: 1
+owner: ''
+projects: []
+customers: []
+tags:
+- apple-pnp
+- model
+- control
+sprint: ''
+depends_on:
+- "[[TASK-041]]"
+due_date: ''
+created: 2026-09-21
+updated: 2026-09-21
+---
+
+
+
+# Integrate visual and learned pose goal costs and test bounded apple control
+
+## Question
+TASK-041 establishes useful image-only arm-goal estimates on three held-out parents. Can a fixed combination with visual evidence improve the existing world-model controller, with action-conditioned model controls retained?
+
+## Acceptance Criteria
+- [x] Implement an isolated frozen composition backend with image-only goals/progress, unchanged sensor predictions, fixed visual/pose weighting, strict portable artifacts, and meaningful conformance/failure tests.
+- [x] Calibrate two cost scales using all 26 original TRAIN parents under the prospective stride28 median-of-medians rule, preserving zero pairs; no VAL/test/scorer input.
+- [x] Freeze and review source/protocol; run one 120-second bundle preparation and one 60-second saved-forecast hybrid gate, preserving failures.
+- [ ] Independently verify combined H16 gain of at least five percentage points versus pixel and positive gain on each VAL parent with complete coverage before physics.
+- [x] If gate passes, run exactly reset 43000 with learned/persistence/shuffle, commitment 1, maximum 1,000 commands, 300 seconds/attempt within 1,000 global seconds; report every planned outcome without threshold or resource changes. If gate fails, preserve an explicit physical stop.
+- [x] Independently review evidence and deliver through PR; retain physical acceptance open unless separately demonstrated.
+
+## Scope and ownership
+Protocol `docs/experiments/apple_aligned_control_v1.md`. Coordinator owns Git, MC, protocol and architecture docs. Model agent owns new backend/config registration/tests. Simulation agent owns bundle/calibration/offline audit/tests. Contracts agent reviews semantics and scientific evidence. No changes to sensor.py, base.py, generic planner, task scoring or physical guards. No training, TEST decoding or final 20-reset cohort.
+
+## Resources and uncertainty
+Mac CPU4 only. Offline stages total 180 seconds allocation, conditional physical comparison 1,000 seconds. This n=1 development comparison is not final acceptance. Image-derived current pose can affect progress even when forecast pose is useful; visual term is retained but does not guarantee object-state recognition. PR #11 merged as 44f4884e8641c3d90a53cf9f30997dc66022c62c; both main workflows passed.
+
+## Pre-run implementation review
+New frozen `aligned_sensor_wm_v1`, strict portable bundle, TRAIN-only builder and saved-array gate are implemented. Sensor/base/planner/evaluator source remains unchanged. Independent scientific and coordinator runtime reviews found no remaining blockers. Full optional/model/rendering suite passed 576 tests in 11.61 seconds; two final test-only regressions strengthened nonzero head parity and reordered field mapping, after which 57 focused model/builder/config tests passed independently in 1.30 seconds. Ruff check/format for 89 files, diff and MC validation passed. This describes the pre-run review; completed execution is recorded below.
+
+## Requested stopping point
+User requested a pause after this current task. Complete only its registered offline stages, conditional three-mode physical comparison, evidence review and PR delivery, then pause the overall goal. Do not start a follow-up experiment or task.
+## Completed bounded execution
+
+Source `9942e1e34bf76bb6b15911149bf32d6dd66cc7aa` produced the sole preparation and audit attempts. Preparation completed all 26 original TRAIN parents / 447 stride28 pairs in 4.744393 seconds; saved-array audit completed all 18 roots / 144 H16 root-goal cases in 2.261272 seconds. Both stages exited zero with intact inputs. Primary ranking improved from 73.377801% to 77.679604% (+4.301803 percentage points), below the fixed five-point requirement. Each parent improved, but the overall gate failed. The unchecked numerical gain criterion is explicitly **unmet**; the protocol requires preserving this negative result and stopping before physics. Conditional physical comparison was not attempted, no weights/scales were changed, and no TEST/final cohort was decoded.
+
+This research task can close on the protocol-defined negative outcome; it does not close TASK-033 or TASK-034. Evidence: `docs/experiments/apple_aligned_control_results_v1.md`, `benchmarks/manifests/apple-aligned-cost-v1.json`, and the two aligned-sensor reviews. Independent saved-evidence review reproduced all 447 calibration pairs, 1,728 cost vectors, 8,064 pair records and the failed gate. All 64 sealed artifacts / 68 raw manifest entries and portable provenance verified. Final full optional/model/rendering suite: 578 passed in 11.06 seconds; Ruff/format, MC and diff checks passed. Delivered in PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/12. Research deliverables and the prescribed negative stopping rule are complete; the numerical gain criterion remains unmet. Merge is pending at this tracker commit and will be verified before the coordinator pauses. No follow-up experiment or task will start.
+%% mc-links: [[TASK-041]] %%
