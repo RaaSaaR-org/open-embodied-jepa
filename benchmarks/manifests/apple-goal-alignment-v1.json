@@ -1,0 +1,614 @@
+{
+  "ambiguity_examples": 0,
+  "artifact_sha256": {
+    "outputs/apple-goal-alignment-v1/evaluate/ambiguities.json": "9a1eb0d2c66c4ff033d53eede6ae69da4c9a3d131499537182d794169894fb7b",
+    "outputs/apple-goal-alignment-v1/evaluate/encoder_errors.json": "cdbfc9c6bfa4969270452d8bbce9466e8ac564a2a243cecd98e6580ffea91cd2",
+    "outputs/apple-goal-alignment-v1/evaluate/goal_estimates.json": "603e80a89eb658dcc0610b6a3f0fa25f7c29c53543021b6babd0a40454d2cea3",
+    "outputs/apple-goal-alignment-v1/evaluate/matched_secondary.json": "f0a5fd82e9080d5f79c8c60fffb1f494b62e7d9a563f5e1e7db625d9d4927d9a",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-00.npz": "c758fb2876999a19a183b363faa6c6f536d67d3ef4f798372274264d26c7fd19",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-01.npz": "81027aed1ff66c3678ce613148bfb1195ec48d35ed0242ec9b9ceb28300f18c3",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-02.npz": "e40219c6b658c0ef16153f8fa37c8e66aaffbb84ef56e668b3a0d7c9f4f420ce",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-03.npz": "034c63c6a6e2f4a60f136a7ab5e0dd8efdecff2448d386e259d8deb88acd9cd3",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-04.npz": "0df96061dd1cb7d23954da143c3ea8cb298b5d95eae16bea01da21adccb4b463",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-05.npz": "08848abdf967291e411187135a9076413dfda51d31b587059e909e7ee0a58092",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-06.npz": "e5d6813bbc16855afdbbc5fe16208bdcaa21049645bdda16d35ab624ebed8f4e",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-07.npz": "57a460e126c86e647241b9e228be22e372508ea0ede54fd1529f825bfe8cd14f",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-08.npz": "64d0f2395c228b06c6f4a4ff5420fa50529b67b147e4017029054139aee00c90",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-09.npz": "7024fffbeb82fba35c8c613b537c4583b597db98e2eab08cd1e841ab63533433",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-10.npz": "3c4bef2430d278ed63137dbb29fe783950c8868311e368c726a7fa857ce5874f",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-11.npz": "907eaeb02d49b1ab27f48fe840b13ca7a55b73add0e43950127be2123bebdd5e",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-12.npz": "0049e4a2365f2ce561df8b67ab49f2ba72ec64e0f8ad25cf4d5b4fd1e90230b3",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-13.npz": "af321a7c76f986a517424d943828e8ff1c7ab4e9bb0cef3a386495cfe99fe103",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-14.npz": "6c8925522bbf366318c50776d94a235cd0f40fcc345cf1196ac60b8c8da55314",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-15.npz": "2286d5322ad65e21ae8f70787a881e3ce78471f9986d69c26c5582b5cbf4303d",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-16.npz": "1c25c77effdeae86c712e95f8df1c3b8043cffc938cb6e5f008c9206bb8fd4d3",
+    "outputs/apple-goal-alignment-v1/evaluate/prediction-17.npz": "64e4cb53f6ee937ee605a05472cf90d7dea598c1a0db35e924ebcf2cedbd4947",
+    "outputs/apple-goal-alignment-v1/evaluate/primary_cases.json": "a8c79103c965afd2b40bbe99c673a91e1fbe84a5af614e9c78262b22ccf79c3b",
+    "outputs/apple-goal-alignment-v1/evaluate/registration.json": "9399782fb5af69d5d02ac9e66dab706f0f9c7ac2225f7c4480f8800798235f1f",
+    "outputs/apple-goal-alignment-v1/evaluate/report.json": "975935c49c2a4ff4b196f0950d8d5d0d46fbfd98ca1345e9b238dd1d4daf54d7",
+    "outputs/apple-goal-alignment-v1/evaluate/seal.json": "cb315ea63da8f1bac8d6dd745ba3e99eaac96b17c4ce2f0c83be710d4022f92c",
+    "outputs/apple-goal-alignment-v1/evaluate/worker.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputs/apple-goal-alignment-v1/fit/curves.jsonl": "a8c9cde292f912e43e276ab0b0a0ab29854ada242facc31bf2bcc2228677cecd",
+    "outputs/apple-goal-alignment-v1/fit/head.pt": "61e1897f80a688fea170a20b73870bac6762d3f6aa0b6c33bbcf449c4819b7d0",
+    "outputs/apple-goal-alignment-v1/fit/registration.json": "c858a4ac4f28702eda2f8eaaa0e7d3cc6055d50b9f3a4c52764c4b6f50eecbdc",
+    "outputs/apple-goal-alignment-v1/fit/report.json": "af7d0b31eb506b783537149bf4dcb20377cd09f7647767308c755e475d8cbc99",
+    "outputs/apple-goal-alignment-v1/fit/seal.json": "301c6cdf1d71b2948cae3692446d3b99cfa7ebe9e95a2b5061188034dce28528",
+    "outputs/apple-goal-alignment-v1/fit/worker.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputs/apple-goal-alignment-v1/prepare/nn_bank.npz": "56d74691e7729e215d7269d089324842afcd45753e2e478e32059788d0d5def1",
+    "outputs/apple-goal-alignment-v1/prepare/registration.json": "31f093bbf8527c38dfbc394cf00b9d512acd1f7a6f990cb38d8f20e9833cce69",
+    "outputs/apple-goal-alignment-v1/prepare/report.json": "c4b4c59edcf662ccc59011ed912895ec2aea3883b3ca4f89b166cd8cf81bce90",
+    "outputs/apple-goal-alignment-v1/prepare/roots.json": "a547d70f14459df9017d8600411bba92bbc100ea12f36325838ae39c2e5cdaf0",
+    "outputs/apple-goal-alignment-v1/prepare/samples.json": "e7f5b7a1b583ce545b34905ccb0f5196138a52228413a67a587eb85cdb9009c6",
+    "outputs/apple-goal-alignment-v1/prepare/seal.json": "d280390626cb9bfd686f073f88bd5e60eab0d067e6c78ff37e32ffdc0a2e3074",
+    "outputs/apple-goal-alignment-v1/prepare/train_features.npz": "7e6a62dcfbbebfdc35a792e6e0bf34b21f1b5e207529bd4b014e8d2e22d42d7a",
+    "outputs/apple-goal-alignment-v1/prepare/train_samples.json": "0e248a748f3cb2316308d56756f273848a8ad4d6d0e093ed30b984288ccb5de2",
+    "outputs/apple-goal-alignment-v1/prepare/val_features.npz": "e4ff1ae56e49c52b0ee2efa966e191a6177ff574559e5fe5b15fd9d21ca59c08",
+    "outputs/apple-goal-alignment-v1/prepare/val_samples.json": "812f594c08dead73f71d36fece02d623a4e275b27587ae46a9b87877fdc09b4a",
+    "outputs/apple-goal-alignment-v1/prepare/worker.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "attempts": 1,
+  "audit": {
+    "all_stage_seals_match": true,
+    "allowed_decoded_ids_exact": true,
+    "current_registered_input_hashes_match": true,
+    "encoded_dataset_payloads_verified": 566,
+    "final_cohort_access": false,
+    "learned_inference_by_evidence_audit": false,
+    "physics_executed": false,
+    "stage_identity_chain_matches": true,
+    "test_decoded": false,
+    "train_bank_pre_val_hash_matches": true
+  },
+  "counts": {
+    "candidate_futures": 144,
+    "decoded_episodes": 557,
+    "decoded_test_episodes": 0,
+    "fit_updates": 2000,
+    "missing_samples": 0,
+    "roots_completed": 18,
+    "roots_planned": 18,
+    "train_parents": 26,
+    "train_samples": 1392,
+    "val_parents": 3,
+    "val_samples": 360
+  },
+  "coverage": {
+    "16": {
+      "eligible_by_phase": {
+        "close": 528,
+        "descend": 432,
+        "lift": 576,
+        "orient": 576,
+        "release_high": 176,
+        "transfer": 600
+      },
+      "exclusions": {
+        "low_arm_separation": 1144
+      },
+      "pairs_eligible": 2888,
+      "pairs_total": 4032,
+      "root_goals": 144
+    },
+    "8": {
+      "eligible_by_phase": {
+        "close": 432,
+        "descend": 432,
+        "lift": 408,
+        "orient": 576,
+        "release_high": 160,
+        "transfer": 598
+      },
+      "exclusions": {
+        "label_tie": 2,
+        "low_arm_separation": 1424
+      },
+      "pairs_eligible": 2606,
+      "pairs_total": 4032,
+      "root_goals": 144
+    }
+  },
+  "decisions": {
+    "neural": {
+      "delta_ci95": [
+        0.1589087301587302,
+        0.17404596560846552
+      ],
+      "error_reduction": 0.9988800311777338,
+      "error_reduction_bootstrap_invalid_draws": 0,
+      "error_reduction_ci95": [
+        0.9986487868718769,
+        0.9991148056218934
+      ],
+      "parent_deltas": {
+        "apple-42007": 0.17404596560846552,
+        "apple-42019": 0.1589087301587302,
+        "apple-42031": 0.16019675925925903
+      },
+      "ranking_ci95": [
+        0.8844444444444445,
+        0.9064646464646464
+      ],
+      "ranking_delta": 0.16438381834215157,
+      "status": "passed"
+    },
+    "neural_preferred_replacement": true,
+    "nn": {
+      "delta_ci95": [
+        0.15681712962962946,
+        0.1756909872534873
+      ],
+      "error_reduction": 0.9961280420796819,
+      "error_reduction_bootstrap_invalid_draws": 0,
+      "error_reduction_ci95": [
+        0.9917472063518324,
+        0.9983742091062956
+      ],
+      "parent_deltas": {
+        "apple-42007": 0.1756909872534873,
+        "apple-42019": 0.15734623015873006,
+        "apple-42031": 0.15681712962962946
+      },
+      "ranking_ci95": [
+        0.8828819444444443,
+        0.9081096681096682
+      ],
+      "ranking_delta": 0.16328478234728228,
+      "status": "passed"
+    }
+  },
+  "encoder_errors": {
+    "mean": {
+      "joint_rmse_rad": [
+        0.2889498870258588,
+        0.1328793722213397,
+        0.09945913858998819,
+        0.2787718903372368,
+        0.2675261743657947,
+        0.13974078603009382,
+        0.24071845856923815
+      ],
+      "mse": 0.9992496191608385,
+      "parents": {
+        "apple-42007": 1.017950327562093,
+        "apple-42019": 0.9665364792087427,
+        "apple-42031": 1.0132620507116796
+      }
+    },
+    "neural": {
+      "coverage_by_parent": {
+        "apple-42007": [
+          0.9999999999999983,
+          0.9999999999999983,
+          0.8854166666666651,
+          0.9895833333333317,
+          0.9999999999999983,
+          0.9791666666666651,
+          0.8854166666666653
+        ],
+        "apple-42019": [
+          0.9947916666666651,
+          0.9895833333333317,
+          0.9947916666666651,
+          0.9895833333333317,
+          0.9999999999999983,
+          0.9427083333333319,
+          0.9010416666666652
+        ],
+        "apple-42031": [
+          0.9999999999999983,
+          0.9999999999999983,
+          0.9895833333333317,
+          0.9947916666666651,
+          0.9947916666666651,
+          0.9791666666666651,
+          0.9270833333333318
+        ]
+      },
+      "joint_rmse_rad": [
+        0.00388896165005964,
+        0.0034285960902541704,
+        0.003876889929682139,
+        0.00820322311522743,
+        0.006704212086516094,
+        0.005151014527427368,
+        0.012203048733651958
+      ],
+      "marginal_90_coverage": [
+        0.9982638888888966,
+        0.9965277777777855,
+        0.9565972222222286,
+        0.991319444444452,
+        0.9982638888888966,
+        0.9670138888888957,
+        0.9045138888888941
+      ],
+      "marginal_90_width_normalized": [
+        0.16385173970936834,
+        0.16381280315625935,
+        0.16391192187762027,
+        0.1639907548669719,
+        0.16389678837731414,
+        0.16378492116928034,
+        0.16789261174077738
+      ],
+      "mse": 0.0011191284191214535,
+      "parents": {
+        "apple-42007": 0.0011544546070088773,
+        "apple-42019": 0.0013059967795167415,
+        "apple-42031": 0.0008969338708387413
+      },
+      "risk_coverage": {
+        "0.5": {
+          "mse": 0.0009048120097050143,
+          "nominal_count_fraction": 0.5,
+          "parents": {
+            "apple-42007": 0.0009158412255573874,
+            "apple-42019": 0.0011470827855875484,
+            "apple-42031": 0.0006515120179701074
+          },
+          "retained_by_parent": {
+            "apple-42007": {
+              "count": 60,
+              "total_count": 120,
+              "weighted_mass": 0.6874999999999999
+            },
+            "apple-42019": {
+              "count": 60,
+              "total_count": 120,
+              "weighted_mass": 0.6718749999999999
+            },
+            "apple-42031": {
+              "count": 60,
+              "total_count": 120,
+              "weighted_mass": 0.6874999999999999
+            }
+          }
+        },
+        "0.75": {
+          "mse": 0.000962947884146152,
+          "nominal_count_fraction": 0.75,
+          "parents": {
+            "apple-42007": 0.0009641427038814857,
+            "apple-42019": 0.0012013549441815814,
+            "apple-42031": 0.0007233460043753888
+          },
+          "retained_by_parent": {
+            "apple-42007": {
+              "count": 90,
+              "total_count": 120,
+              "weighted_mass": 0.8437499999999999
+            },
+            "apple-42019": {
+              "count": 90,
+              "total_count": 120,
+              "weighted_mass": 0.828125
+            },
+            "apple-42031": {
+              "count": 90,
+              "total_count": 120,
+              "weighted_mass": 0.8437499999999999
+            }
+          }
+        },
+        "1.0": {
+          "mse": 0.0011191284191214535,
+          "nominal_count_fraction": 1.0,
+          "parents": {
+            "apple-42007": 0.0011544546070088773,
+            "apple-42019": 0.0013059967795167418,
+            "apple-42031": 0.0008969338708387415
+          },
+          "retained_by_parent": {
+            "apple-42007": {
+              "count": 120,
+              "total_count": 120,
+              "weighted_mass": 1.0
+            },
+            "apple-42019": {
+              "count": 120,
+              "total_count": 120,
+              "weighted_mass": 1.0
+            },
+            "apple-42031": {
+              "count": 120,
+              "total_count": 120,
+              "weighted_mass": 1.0
+            }
+          }
+        }
+      }
+    },
+    "nn": {
+      "joint_rmse_rad": [
+        0.00963756672973623,
+        0.00402029836452745,
+        0.007262960214059633,
+        0.021043700733043808,
+        0.0133638294301674,
+        0.01025918663112332,
+        0.019223916240780927
+      ],
+      "mse": 0.00386905247728464,
+      "parents": {
+        "apple-42007": 0.001983179100534471,
+        "apple-42019": 0.007976626116336167,
+        "apple-42031": 0.001647352214983281
+      },
+      "risk_coverage": {
+        "0.5": {
+          "mse": 0.002486739444019843,
+          "nominal_count_fraction": 0.5,
+          "parents": {
+            "apple-42007": 0.00237161961096775,
+            "apple-42019": 0.004110834590143436,
+            "apple-42031": 0.0009777641309483443
+          },
+          "retained_by_parent": {
+            "apple-42007": {
+              "count": 60,
+              "total_count": 120,
+              "weighted_mass": 0.6562499999999999
+            },
+            "apple-42019": {
+              "count": 60,
+              "total_count": 120,
+              "weighted_mass": 0.6093749999999999
+            },
+            "apple-42031": {
+              "count": 60,
+              "total_count": 120,
+              "weighted_mass": 0.625
+            }
+          }
+        },
+        "0.75": {
+          "mse": 0.0030638789468968052,
+          "nominal_count_fraction": 0.75,
+          "parents": {
+            "apple-42007": 0.002102924168729311,
+            "apple-42019": 0.005170493645386564,
+            "apple-42031": 0.0019182190265745424
+          },
+          "retained_by_parent": {
+            "apple-42007": {
+              "count": 90,
+              "total_count": 120,
+              "weighted_mass": 0.828125
+            },
+            "apple-42019": {
+              "count": 90,
+              "total_count": 120,
+              "weighted_mass": 0.8437499999999999
+            },
+            "apple-42031": {
+              "count": 90,
+              "total_count": 120,
+              "weighted_mass": 0.7968749999999999
+            }
+          }
+        },
+        "1.0": {
+          "mse": 0.0038690524772846398,
+          "nominal_count_fraction": 1.0,
+          "parents": {
+            "apple-42007": 0.001983179100534471,
+            "apple-42019": 0.007976626116336167,
+            "apple-42031": 0.001647352214983281
+          },
+          "retained_by_parent": {
+            "apple-42007": {
+              "count": 120,
+              "total_count": 120,
+              "weighted_mass": 1.0
+            },
+            "apple-42019": {
+              "count": 120,
+              "total_count": 120,
+              "weighted_mass": 1.0
+            },
+            "apple-42031": {
+              "count": 120,
+              "total_count": 120,
+              "weighted_mass": 1.0
+            }
+          }
+        }
+      }
+    }
+  },
+  "environment": {
+    "packages": {
+      "Pillow": "12.3.0",
+      "numpy": "2.5.3",
+      "pyarrow": "23.0.1",
+      "torch": "2.14.0"
+    },
+    "python": "3.12.13 (main, Aug  7 2026, 02:15:23) [Clang 22.1.3 ]",
+    "threads": 4
+  },
+  "input_identities": {
+    "checkpoint": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+    "checkpoint_loader": "096d1ea04d3cf4258bdf7813f0857b6ab2e3a10d48d68ed7317ce0a78d0dd925",
+    "dataset": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+    "protocol": "4b132f4641541a47951a151a9d1d675ce04676a7595aa43e9098ad36c9f0d658",
+    "revision": "f4f99fa1bf5fdcec7f1647927e74d0b0de8228b0",
+    "script": "005123e9fc450c7e1485abdcf63d68a10a22f9ed5f45dcd7d21004a22e17ab7d",
+    "src/embodied_jepa/__init__.py": "a0043e95cb31add021475ec8877d7a7b28189696ddf5ab2486d73537c84aec41",
+    "src/embodied_jepa/audit.py": "59998de9b29226547cb290195f949225895a2e6ffd174186bc91514e022fbc68",
+    "src/embodied_jepa/benchmark.py": "512462740021c8e601cdbe29ca2d185978e66cba0558f94865962636fb48f4a5",
+    "src/embodied_jepa/collection.py": "55cf6373120933fdbb43aa274e2164753f21848d819e6f786c0b862514b19745",
+    "src/embodied_jepa/config.py": "87823523ae9cefdb72a14e7b159361cc942f267327621918f3eb5cb0739ef945",
+    "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+    "src/embodied_jepa/contracts.py": "d9ceedad9198bca60891c0292108822455e1761505c43522f5013363ff0fcb7b",
+    "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
+    "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+    "src/embodied_jepa/goals.py": "82b8ea44d25e7c861abf2bb463c9543f4a75c85923ced7fb7be14ffd59d6a489",
+    "src/embodied_jepa/hardware.py": "1ce0c301733af7b15a094b0962fcf566089355a33f49742e27e3a4dfbd03760e",
+    "src/embodied_jepa/manipulation_collection.py": "d1052b4a5075a9fbfb7e9e7f602bf7ce93e5c6796f02cad05a379a5e30ec999c",
+    "src/embodied_jepa/models/__init__.py": "694622858ffd8a892d6746c65f162c2cea19e9ead1aa5c566ab4edc6fb962f94",
+    "src/embodied_jepa/models/base.py": "42dc2764eed055c51e431358f1841f23960832b4805f11623e62b37ca94a775e",
+    "src/embodied_jepa/models/jepa_wms.py": "431e6f3b47d6e6aba3ba16ab2461a22be5ec30d60449cf09b4970cb3062fb4b5",
+    "src/embodied_jepa/models/lewm.py": "43c30609fbb6c7885a7685f2051570d5f6bc44767cf69130e21a8a3b8d4121cf",
+    "src/embodied_jepa/models/native.py": "1647c218db9d70daa09183e25aee3dd18888fc83db5c974f0118f53d6ddb6c20",
+    "src/embodied_jepa/models/sensor.py": "6609dfbec19169d8c33d261750f90fbd8bb4e35a9bdb33daf893bbf845602699",
+    "src/embodied_jepa/planning.py": "e9aea01c81f07e775a4d83116dadaebf7f723090ca4139c6289a4846d5891297",
+    "src/embodied_jepa/registry.py": "a3e69563f5c858855ccd63aa4b51556f783036a52f5b3ba64ee56d9bea19e7a9",
+    "src/embodied_jepa/result_schema.py": "be23d44eb2207397eab9c65acc176d87d7009a494c2facb72b2b65cb504cc04d",
+    "src/embodied_jepa/scripted.py": "c28ab20aa0c09742f2e31c0f3bc618fbceb421e963cc7f077514d23e39d5fa93",
+    "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+    "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+    "src/embodied_jepa/training.py": "b6a6aa45208efc7eb189dccdd42374ecf1b7740464384e38a4e1ff27c9cb9f59",
+    "src/embodied_jepa/waypoint_planning.py": "8d4312d6d6df48379aac9f052fc9fba63013908a38e9f9a9a39765cbfd7af324"
+  },
+  "launch_ledger": {
+    "disclosure": "Initial coordinator ledger preamble failed on system Python datetime.UTC; prepare supervisor still launched once and registered its own immutable identities before data work. This supplemental ledger is not represented as a prelaunch artifact. No stage retry.",
+    "path": "outputs/apple-goal-alignment-v1-launch.json",
+    "sha256": "fdc63df08c545135347a0f10284df8f8383afca4c8a9ebd4e509bb20b045f92b",
+    "written_after_prepare_started": true
+  },
+  "limitations": [
+    "Arm-only goal inference does not identify object or hand outcome.",
+    "Only three VAL parent sessions; bootstrap intervals are descriptive.",
+    "Neural exceeds NN H16 ranking by only 0.10990359948695 percentage points.",
+    "No closed-loop or final-cohort run is part of this screen."
+  ],
+  "rankings": {
+    "16": {
+      "informative_roots": {
+        "apple-42007": 6,
+        "apple-42019": 6,
+        "apple-42031": 6
+      },
+      "parents": {
+        "neural_measured": {
+          "apple-42007": 0.991082702020202,
+          "apple-42019": 0.9965277777777777,
+          "apple-42031": 0.9796875000000002
+        },
+        "neural_pred": {
+          "apple-42007": 0.9064646464646464,
+          "apple-42019": 0.8844444444444445,
+          "apple-42031": 0.9035763888888888
+        },
+        "nn_measured": {
+          "apple-42007": 0.9880050505050505,
+          "apple-42019": 0.9956597222222223,
+          "apple-42031": 0.9812500000000001
+        },
+        "nn_pred": {
+          "apple-42007": 0.9081096681096682,
+          "apple-42019": 0.8828819444444443,
+          "apple-42031": 0.9001967592592592
+        },
+        "pixel_measured": {
+          "apple-42007": 0.8228714225589225,
+          "apple-42019": 0.8404629629629631,
+          "apple-42031": 0.8041435185185185
+        },
+        "pixel_pred": {
+          "apple-42007": 0.7324186808561809,
+          "apple-42019": 0.7255357142857143,
+          "apple-42031": 0.7433796296296298
+        }
+      },
+      "scores": {
+        "neural_measured": 0.9890993265993266,
+        "neural_pred": 0.8981618265993266,
+        "nn_measured": 0.9883049242424243,
+        "nn_pred": 0.8970627906044571,
+        "pixel_measured": 0.8224926346801347,
+        "pixel_pred": 0.733778008257175
+      },
+      "sufficient_coverage": true
+    },
+    "8": {
+      "informative_roots": {
+        "apple-42007": 6,
+        "apple-42019": 6,
+        "apple-42031": 6
+      },
+      "parents": {
+        "neural_measured": {
+          "apple-42007": 0.9988425925925926,
+          "apple-42019": 0.9750136165577342,
+          "apple-42031": 0.9988425925925926
+        },
+        "neural_pred": {
+          "apple-42007": 0.9291225101151571,
+          "apple-42019": 0.8794928720280382,
+          "apple-42031": 0.9296720354808589
+        },
+        "nn_measured": {
+          "apple-42007": 0.9936689814814815,
+          "apple-42019": 0.9930555555555555,
+          "apple-42031": 0.9915261243386245
+        },
+        "nn_pred": {
+          "apple-42007": 0.9306172191098661,
+          "apple-42019": 0.8946753339016765,
+          "apple-42031": 0.9303212535014005
+        },
+        "pixel_measured": {
+          "apple-42007": 0.7714659197012138,
+          "apple-42019": 0.8128452685421995,
+          "apple-42031": 0.7578736772486772
+        },
+        "pixel_pred": {
+          "apple-42007": 0.7494193510737629,
+          "apple-42019": 0.7764509330302168,
+          "apple-42031": 0.765657096171802
+        }
+      },
+      "scores": {
+        "neural_measured": 0.9908996005809731,
+        "neural_pred": 0.9127624725413513,
+        "nn_measured": 0.9927502204585538,
+        "nn_pred": 0.9185379355043143,
+        "pixel_measured": 0.7807282884973635,
+        "pixel_pred": 0.7638424600919272
+      },
+      "sufficient_coverage": true
+    }
+  },
+  "schema": "apple-goal-alignment-results-v1",
+  "scope": "offline arm-goal alignment screen; no physical success claim",
+  "source_revision": "f4f99fa1bf5fdcec7f1647927e74d0b0de8228b0",
+  "stages": {
+    "evaluate": {
+      "budget_seconds": 60.0,
+      "integrity_verified_after": true,
+      "peak_rss_bytes": 518373376,
+      "seal_artifact_count": 25,
+      "status": "completed",
+      "supervisor_returncode": 0,
+      "supervisor_timeout": false,
+      "supervisor_wall_seconds": 2.011636972427368,
+      "worker_cpu_seconds": 1.347775
+    },
+    "fit": {
+      "budget_seconds": 300.0,
+      "integrity_verified_after": true,
+      "peak_rss_bytes": 360267776,
+      "seal_artifact_count": 4,
+      "status": "completed",
+      "supervisor_returncode": 0,
+      "supervisor_timeout": false,
+      "supervisor_wall_seconds": 2.6821279525756836,
+      "worker_cpu_seconds": 2.363342
+    },
+    "prepare": {
+      "budget_seconds": 120.0,
+      "integrity_verified_after": true,
+      "peak_rss_bytes": 632307712,
+      "seal_artifact_count": 9,
+      "status": "completed",
+      "supervisor_returncode": 0,
+      "supervisor_timeout": false,
+      "supervisor_wall_seconds": 6.514556169509888,
+      "worker_cpu_seconds": 5.723556
+    }
+  },
+  "sum_stage_supervisor_wall_seconds": 11.20832109451294,
+  "sum_worker_cpu_seconds": 9.434673,
+  "timing_scope": "Sum of separately measured stage elapsed times, not a continuously timed whole coordinator process; worker CPU excludes supervisor."
+}

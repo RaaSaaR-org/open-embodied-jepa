@@ -32,3 +32,27 @@ Independent checks completed:
 These checks establish implementation agreement with the prospective screen, not its empirical outcome. There are only three VAL parent clusters. Seven arm positions cannot distinguish all hand/object configurations; the documented same-arm/different-object example remains an explicit limitation. Passing this screen would support an image-only arm-alignment representation, not apple manipulation success, an arm-only deployment policy or permission to change physical scoring.
 
 The reviewer did not author this script or its training head implementation, but previously authored the sensor backend and parts of earlier diagnostic tooling and helped specify this protocol. This is an independent implementation review within the project team, not independent replication of the research result. No fitting, world-model inference, physics, source edits, Git operations or MissionControl changes were performed for this review; the only authored repository artifact is this review document.
+
+## Completed saved-evidence audit
+
+Completed 2026-09-21, after all three stages ended. This audit uses saved NumPy arrays and JSON only; no fitting, encoder inference, world-model inference, image decoding or physics was repeated.
+
+Source revision: `f4f99fa1bf5fdcec7f1647927e74d0b0de8228b0`. Script SHA256: `005123e9fc450c7e1485abdcf63d68a10a22f9ed5f45dcd7d21004a22e17ab7d`. Protocol SHA256: `4b132f4641541a47951a151a9d1d675ce04676a7595aa43e9098ad36c9f0d658`. Frozen world-model checkpoint SHA256: `0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5`. Corpus SHA256: `6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331`.
+
+All 31 registered source/input file hashes match current bytes. All 38 sealed artifact hashes match: prepare 9, fit 4, evaluate 25. Common source identities agree across stages. Every stage completed with integrity verified, no timeout and supervisor return code 0. Supervisor elapsed seconds: prepare 6.514556, fit 2.682128, evaluate 2.011637; worker CPU seconds 5.723556, 2.363342, 1.347775 respectively. Fit records all 2,000 prescribed updates.
+
+Preparation records exactly 557 unique decoded episode IDs, equal to the TRAIN/VAL union and disjoint from TEST; all TRAIN IDs precede VAL IDs. The bank digest matches its recorded pre-VAL digest. TRAIN and VAL cache dimensions are 1392×1728 and 360×1728 with seven labels per record; 18 roots contain 8×16×14 applied-action sequences. The saved bank weights and weighted TRAIN mean were independently recomputed. NN saved estimates equal the referenced TRAIN-bank labels.
+
+An independent NumPy audit reconstructed 3,456 cost vectors and 16,128 unordered-pair records across H8/H16 primary and matched-secondary cohorts from saved estimates, measured features/labels and frozen forecasts. It verified eligibility, labels, ties, scores, hierarchical aggregation, parent summaries and 2,000-draw parent bootstrap intervals. Encoder errors, radians RMSE, uncertainty coverage/widths, retained-risk weighted coverage and 504 ambiguity records were also recomputed. The audit script is `/tmp/audit_goal_alignment_saved.py`; its compact console result is `/tmp/apple_goal_alignment_saved_audit.json`. No original evaluation implementation was imported for these calculations.
+
+Primary H16 has 144 cross-parent root-goal cases and 2,888 eligible comparisons of 4,032; 1,144 have low arm separation. All 18 roots are informative, six per parent. No measured image/arm ambiguity passes the protocol's narrow threshold among 504 pairs; this does not establish general visual identifiability or resolve arm/object ambiguity.
+
+| Candidate | Encoder error reduction | Predicted H16 ranking | Gain vs pixel | Decision |
+|---|---:|---:|---:|---|
+| Pixel comparator | n/a |73.37780083%|n/a|comparator|
+| NN |99.61280421%|89.70627906%|16.32847823 percentage points|passed|
+| Neural |99.88800312%|89.81618266%|16.43838183 percentage points|passed|
+
+Both candidates improve on pixel ranking on each parent. The neural replacement rule passes, but its aggregate ranking advantage over NN is only 0.10990360 percentage points; this is a prospective rule outcome, not proof of a meaningful or statistically established difference between encoders. Neural measured-state ranking 98.90993266% exceeds its predicted-state ranking 89.81618266%; the remaining gap is relevant before control but does not uniquely identify dynamics error. H8 remains secondary and favors NN slightly. All confidence intervals use only three parent clusters and must retain that limitation. Neither arm-only result establishes hand/object state, successful manipulation or physical deployment readiness.
+
+Provenance exception: the supplemental coordinator launch ledger was written after preparation began because its system-Python preamble referenced unavailable `datetime.UTC`. The stage supervisor had correctly written its own immutable registration before data work. The supplemental ledger explicitly discloses its late creation; it must not be presented as a prelaunch artifact. There was one preparation attempt and no experimental retry according to the coordinator record and saved stage accounting. Saved files alone cannot independently prove the absence of every unrecorded external attempt.
