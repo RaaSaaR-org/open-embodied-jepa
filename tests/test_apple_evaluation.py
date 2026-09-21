@@ -359,14 +359,18 @@ def test_parent_verifies_after_attempt_and_retains_worker_failure(tmp_path, monk
         assert records[0]["success"] is False
 
 
-@pytest.mark.parametrize("planning_seconds", [0.0, 6.0])
+@pytest.mark.parametrize(
+    "planning_seconds,initial_elapsed,attempt_seconds",
+    [(0.0, 0.0, None), (6.0, 0.0, None), (0.0, 89.0, 90), (2.0, 84.0, 90), (0.0, 0.0, 90)],
+)
 def test_worker_deadline_prevents_actuation_and_control_time_survives_ack(
-    tmp_path, monkeypatch, planning_seconds
+    tmp_path, monkeypatch, planning_seconds, initial_elapsed, attempt_seconds
 ):
     from embodied_jepa import embodiment, simulation, task
     from embodied_jepa.contracts import ExecutionResult
 
-    clock, calls = [0.0], []
+    clock, calls = [initial_elapsed], []
+    monkeypatch.setattr(module, "ENTRY_CLOCK", (0.0, 0.0))
     monkeypatch.setattr(module.time, "time", lambda: clock[0])
     monkeypatch.setattr(module.time, "monotonic", lambda: clock[0])
     schema = StateSchema(("q",), ("rad",), "deadline_fixture_v0")
@@ -425,10 +429,19 @@ def test_worker_deadline_prevents_actuation_and_control_time_survives_ack(
     plan = module.make_plan(seeds=[43000], modes=["learned"], control_timeout=5.0)
     plan.update(dataset="unused", checkpoint="unused")
     module.write(tmp_path / "resolved_plan.json", plan)
-    module.attempt_worker(tmp_path, "43000-learned")
+    module.attempt_worker(tmp_path, "43000-learned", attempt_seconds=attempt_seconds)
     folder = tmp_path / "attempts/43000-learned"
     report = json.loads((folder / "report.json").read_text())
     rows = [json.loads(line) for line in (folder / "trace.jsonl").read_text().splitlines()]
+    if attempt_seconds is not None and initial_elapsed + planning_seconds >= 85:
+        assert "execute" not in calls
+        assert report["status"] == "attempt_timeout"
+        assert report["executed_steps"] == 0
+        assert report["wall_seconds"] >= 85
+        assert rows[-1]["stage"] == (
+            "before_observe" if initial_elapsed >= 85 else "before_execute"
+        )
+        return
     assert rows[-1]["control_seconds"] == planning_seconds
     if planning_seconds > 5:
         assert "execute" not in calls
@@ -437,3 +450,167 @@ def test_worker_deadline_prevents_actuation_and_control_time_survives_ack(
     else:
         assert calls == ["execute", "success"]
         assert report["success"] is True
+
+
+@pytest.mark.parametrize("cap", [0, -1, float("nan"), float("inf"), 1801, True])
+def test_attempt_cap_validation_before_worker_io(cap):
+    with pytest.raises(ValueError, match="attempt wall budget"):
+        module.make_plan(attempt_max_seconds=cap)
+    with pytest.raises(ValueError, match="attempt wall budget"):
+        module.attempt_worker("nonexistent", "unused", attempt_seconds=cap)
+
+
+def test_supervisor_rejects_late_zero_exit_after_civil_clock_jump(tmp_path, monkeypatch):
+    wall = [0.0]
+    monkeypatch.setattr(module.time, "time", lambda: wall[0])
+    monkeypatch.setattr(module.time, "monotonic", lambda: 0.0)
+    process = SimpleNamespace(returncode=0)
+
+    def poll():
+        wall[0] = 91.0
+        return 0
+
+    process.poll = poll
+    result = module.supervise(
+        ["fake"],
+        cwd=tmp_path,
+        log=tmp_path / "log",
+        remaining=90,
+        popen=lambda *a, **kw: process,
+    )
+    assert result == {"status": "hard_wall_timeout", "returncode": 0}
+
+
+@pytest.mark.parametrize(
+    "cap,total,worker_status,prepare_status,expected",
+    [
+        (90, 600, "attempt_timeout", "exited", "attempt_timeout"),
+        (90, 100, "attempt_timeout", "exited", "hard_wall_timeout"),
+        (90, 100, "hard_wall_timeout", "exited", "hard_wall_timeout"),
+        (90, 600, "hard_wall_timeout", "exited", "attempt_timeout"),
+        (None, 600, "completed", "exited", "completed"),
+        (90, 600, "completed", "hard_wall_timeout", "preparation_failed"),
+    ],
+)
+def test_parent_attempt_allocations_status_and_preparation(
+    tmp_path, monkeypatch, cap, total, worker_status, prepare_status, expected
+):
+    root = tmp_path / "repo"
+    for directory in ("src", "configs", "assets", "third_party", "dataset/meta"):
+        (root / directory).mkdir(parents=True)
+    for name in (
+        "configs/g1_sim_action.json",
+        "assets/manifest.json",
+        "dataset/meta/jepa_manifest.json",
+    ):
+        (root / name).write_text('{"sha256": {}}')
+    (root / "src/fake.py").write_text("# fixture")
+    (root / "model.pt").write_text("checkpoint")
+    clock, allocations, commands = [0.0], [], []
+    monkeypatch.setattr(module, "ROOT", root)
+    monkeypatch.setattr(module.time, "time", lambda: clock[0])
+    monkeypatch.setattr(module.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(module.subprocess, "check_output", lambda *a, **kw: "fixture")
+    output = tmp_path / "output"
+
+    def supervise(command, **kwargs):
+        if command[-1] == "prepare":
+            clock[0] += 10
+            plan = json.loads((output / "plan.json").read_text())
+            (output / "calibration.json").write_text("{}")
+            (output / "waypoints.npz").write_bytes(b"fixture")
+            module.write(
+                output / "resolved_plan.json",
+                plan
+                | {
+                    "calibration_sha256": module.digest(output / "calibration.json"),
+                    "waypoints_sha256": module.digest(output / "waypoints.npz"),
+                },
+            )
+            return {"status": prepare_status, "returncode": 0}
+        commands.append(command)
+        allocations.append(kwargs["remaining"])
+        clock[0] += kwargs["remaining"] if cap is not None else 1
+        folder = output / "attempts" / command[-1]
+        folder.mkdir(parents=True)
+        module.write(
+            folder / "report.json",
+            {
+                "status": "attempt_timeout" if worker_status == "attempt_timeout" else "completed",
+                "termination_reason": "attempt_timeout"
+                if worker_status == "attempt_timeout"
+                else "step_limit",
+                "success": False,
+                "executed_steps": 3,
+                "score": {"reach": True},
+            },
+        )
+        return {
+            "status": "hard_wall_timeout" if worker_status == "hard_wall_timeout" else "exited",
+            "returncode": 0,
+        }
+
+    monkeypatch.setattr(module, "supervise", supervise)
+    args = SimpleNamespace(
+        output=output,
+        dataset=root / "dataset",
+        checkpoint=root / "model.pt",
+        stage="development",
+        seeds=[43000, 43001],
+        modes=list(module.MODES[:3]),
+        max_seconds=total,
+        max_steps=1000,
+        stride=28,
+        dwell=3,
+        horizon=16,
+        candidates=16,
+        iterations=2,
+        no_proposals=False,
+        selection=None,
+        control_timeout=5.0,
+        commitment_steps=4 if cap else 1,
+        attempt_max_seconds=cap,
+    )
+    records = module.run(args, start_clock=(0.0, 0.0))
+    assert len(records) == 6 and records[0]["status"] == expected
+    if prepare_status != "exited":
+        assert not commands and all(r["status"] == "preparation_failed" for r in records)
+        return
+    assert records[0]["executed_steps"] == 3 and records[0]["score"]["reach"]
+    if cap is None:
+        assert len(commands) == 6 and all("--worker-attempt-seconds" not in c for c in commands)
+        assert records[0]["attempt_allocation"]["requested_seconds"] is None
+        assert module.clean_completion(records)
+    else:
+        assert allocations[0] == (85 if total == 100 else 90)
+        assert (
+            float(commands[0][commands[0].index("--worker-attempt-seconds") + 1]) == allocations[0]
+        )
+        assert records[0]["timeout_scope"] == ("global" if total == 100 else "attempt")
+        assert records[0]["attempt_allocation"]["global_shortened"] == (total == 100)
+        assert not module.clean_completion(records)
+        assert len(commands) == (1 if total == 100 else 6)
+        if total == 100:
+            assert all(r["status"] == "not_started_budget" for r in records[1:])
+
+
+@pytest.mark.parametrize(
+    "options,commitment,cap",
+    [([], 1, None), (["--commitment-steps", "4", "--attempt-max-seconds", "90"], 4, 90.0)],
+)
+def test_cli_preserves_default_or_explicit_attempt_policy(monkeypatch, options, commitment, cap):
+    seen = []
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["evaluate", "--dataset", "data", "--checkpoint", "model", "--output", "new", *options],
+    )
+    monkeypatch.setattr(
+        module,
+        "run",
+        lambda args, **kw: (
+            seen.append(args) or [{"status": "completed", "termination_reason": "step_limit"}]
+        ),
+    )
+    assert module.main() == 0
+    assert seen[0].commitment_steps == commitment and seen[0].attempt_max_seconds == cap

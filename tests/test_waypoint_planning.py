@@ -296,3 +296,165 @@ def test_observation_must_not_precede_last_acknowledged_execution():
     with pytest.raises(ContractError, match="fresh"):
         controller.step(observation(timestamp=0.025), projection)
     assert controller.step(observation(timestamp=0.05), projection).action is not None
+
+
+def chunk_controller(*, waypoints=None, mode="learned"):
+    return WaypointController(
+        ToyModel(),
+        waypoints or [waypoint(3)],
+        progress_distance=progress,
+        config=WaypointConfig(
+            horizon=16, candidates=6, iterations=2, seed=17, commitment_steps=4, ablation=mode
+        ),
+    )
+
+
+@pytest.mark.parametrize("mode", ["learned", "persistence", "dynamics_shuffle"])
+def test_commit_four_preserves_full_warm_and_draws_no_cached_rng(mode):
+    import copy
+
+    controller = chunk_controller(mode=mode)
+    root = controller.step(observation(), projection)
+    original = controller.pending[1].copy()
+    rng = copy.deepcopy(controller.rng.bit_generator.state)
+    calls = len(controller.model.calls)
+    acknowledge(controller, root)
+    for offset in range(1, 4):
+        shapes = []
+
+        def fresh(actions, shapes=shapes):
+            shapes.append(actions.shape)
+            return projection(actions)
+
+        decision = controller.step(observation(timestamp=offset * 0.05), fresh)
+        assert shapes == [(1, 1, 1, 14)]
+        assert controller.rng.bit_generator.state == rng
+        assert len(controller.model.calls) == calls
+        np.testing.assert_array_equal(decision.action, original[offset])
+        assert controller.pending[1].shape == (16, 14)
+        assert decision.trace["decision_kind"] == "commitment"
+        assert decision.trace["plan_step"] == 0
+        assert decision.trace["commitment_offset"] == offset
+        assert decision.trace["selected_cost"] == root.trace["selected_cost"]
+        assert decision.trace["candidate_evaluations"] == 0
+        assert decision.trace["selected_round"] is None
+        trace = acknowledge(controller, decision, (offset + 1) * 0.05)
+        assert trace["commitment_remaining_after_ack"] == 3 - offset
+        if offset == 3:
+            assert trace["commitment_clear_reason"] == "commitment_completed"
+        assert controller.warm.shape == (16, 14)
+    assert controller._commitment is None
+    next_decision = controller.step(observation(timestamp=0.2), projection)
+    assert next_decision.trace["decision_kind"] == "search"
+    assert next_decision.trace["plan_step"] == 4
+    assert controller.pending[1].shape == (16, 14)
+
+
+@pytest.mark.parametrize("change", ["altered", "infeasible"])
+def test_cached_projection_fallback_has_one_search_and_one_dwell(change):
+    controller = chunk_controller(waypoints=[waypoint(0, dwell=20)])
+    root = controller.step(observation(), projection)
+    acknowledge(controller, root)
+    shapes = []
+
+    def fresh(actions):
+        shapes.append(actions.shape)
+        if actions.shape[1:3] == (1, 1):
+            result = actions.copy()
+            if change == "altered":
+                result[..., 0] = 0.9 if result[..., 0] != 0.9 else 0.8
+            return CandidateProjection(result, np.array([[change != "infeasible"]]))
+        return projection(actions)
+
+    decision = controller.step(observation(timestamp=0.05), fresh)
+    assert controller.dwell == 2
+    assert shapes == [(1, 1, 1, 14), (1, 6, 16, 14), (1, 6, 16, 14)]
+    assert decision.trace["decision_kind"] == "search"
+    assert decision.trace["plan_step"] == 1
+    assert decision.trace["cache_validation"]["abort_reason"] == (
+        "changed_cached_command" if change == "altered" else "infeasible_cached_command"
+    )
+
+
+def test_goal_advance_discards_cache_before_projection():
+    controller = chunk_controller(waypoints=[waypoint(0, dwell=2), waypoint(3)])
+    root = controller.step(observation(), projection)
+    acknowledge(controller, root)
+    shapes = []
+
+    def fresh(actions):
+        shapes.append(actions.shape)
+        return projection(actions)
+
+    decision = controller.step(observation(timestamp=0.05), fresh)
+    assert decision.trace["waypoint_advanced"]
+    assert decision.trace["goal_index"] == 1
+    assert decision.trace["cache_validation"]["abort_reason"] == "waypoint_advanced"
+    assert decision.trace["cache_validation"]["plan_step"] == 0
+    assert decision.trace["decision_kind"] == "search"
+    assert all(shape == (1, 6, 16, 14) for shape in shapes)
+
+
+def test_changed_applied_action_aborts_commitment_and_rejection_is_terminal():
+    controller = chunk_controller()
+    decision = controller.step(observation(), projection)
+    applied = decision.action.copy()
+    applied[12:] = 0.5
+    trace = controller.acknowledge(
+        ExecutionResult(decision.action, applied, "clipped", 0.05, "transport_clip")
+    )
+    assert trace["commitment_abort_reason"] == "applied_action_changed"
+    assert controller._commitment is None
+    np.testing.assert_array_equal(controller.last_grasps, [0.5, 0.5])
+    decision = controller.step(observation(timestamp=0.05), projection)
+    controller.acknowledge(ExecutionResult(decision.action, None, "rejected", 0.05, "guard"))
+    assert controller._commitment is None
+    assert (
+        controller.step(observation(timestamp=0.1), projection).termination_reason
+        == "execution_rejected"
+    )
+
+
+@pytest.mark.parametrize("value", [0, -1, True, 1.5, 17])
+def test_invalid_commitment(value):
+    with pytest.raises(ContractError):
+        WaypointConfig(horizon=16, commitment_steps=value)
+
+
+def test_default_one_matches_historical_actions_rng_and_warm():
+    import hashlib
+
+    controller = WaypointController(
+        ToyModel(),
+        [waypoint(3)],
+        progress_distance=progress,
+        config=WaypointConfig(horizon=4, candidates=6, iterations=2, seed=17),
+    )
+    first_coordinates, costs = [], []
+    for step in range(5):
+        decision = controller.step(observation(timestamp=step * 0.05), projection)
+        first_coordinates.append(float(decision.action[0]))
+        costs.append(decision.trace["selected_cost"])
+        acknowledge(controller, decision, (step + 1) * 0.05)
+    assert first_coordinates == [
+        0.2443234622478485,
+        0.40660780668258667,
+        0.11599817872047424,
+        0.7389726042747498,
+        0.39713600277900696,
+    ]
+    assert costs == [
+        7.186814308166504,
+        4.13236141204834,
+        3.4269065856933594,
+        1.613690972328186,
+        1.8827123641967773,
+    ]
+    assert (
+        controller.rng.bit_generator.state["state"]["state"]
+        == 275847063342611265020023383026917730119
+    )
+    assert (
+        hashlib.sha256(controller.warm.tobytes()).hexdigest()
+        == "fd3f3493847b669c701e82b999047d113975b3322f3519a337bb2bd3aecb4cd3"
+    )

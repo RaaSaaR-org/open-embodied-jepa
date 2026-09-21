@@ -4,7 +4,7 @@ aliases:
 - TASK-038
 title: Audit saved-state forecasts behind the apple control stall
 slug: audit-saved-state-forecasts-behind-the-apple-control-stall
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -22,6 +22,7 @@ updated: 2026-09-21
 ---
 
 
+
 # Audit saved-state forecasts behind the apple control stall
 
 ## Description
@@ -34,7 +35,7 @@ The balanced H16 model passes the matched intervention prediction gate but stall
 - [x] Independently review complete physics/controller/scorer state restoration, actual-applied action attribution, leakage boundaries and durable partial-result accounting; pass meaningful focused tests.
 - [x] Run the single bounded attempt and preserve all nine planned branches, replay failures/timeouts, actual sensor/action prefixes, provenance and H1/H16 forecast errors where available. No automatic retries or budget extensions.
 - [x] Interpret observed evidence and limits without inferring physical success or uniquely attributing model error; specify the next bounded hypothesis if supported.
-- [ ] Deliver reviewed code, protocol, compact result manifest and MC evidence through a PR.
+- [x] Deliver reviewed code, protocol, compact result manifest and MC evidence through a PR.
 
 ## Scope and execution
 
@@ -42,9 +43,8 @@ Original interrupted control-v2 artifacts are immutable. Neither final cohort no
 
 ## Execution evidence
 
-Single registered attempt at c86a076 completed in55.45 wall/54.80 CPU seconds. All550 original commands replayed; eight branches completed16 commands and root550 winner was rejected on command10 after9 accepted due to joint-rate limit. All137 accepted branch commands exactly match scored actions. Original inputs remained valid. Root119/300 complete winning plans made more actual progress than demonstration or hold despite closed-loop stalling; this supports testing bounded commitment as a new hypothesis, not a universal model-accuracy claim. Results/report manifest and independent evidence review follow before delivery.
-%% mc-links: [[TASK-037]] %%
-
+Single registered attempt at c86a076 completed in55.45 wall/54.80 CPU seconds. All550 original commands replayed; eight branches completed16 commands and root550 winner was rejected on command10 after9 accepted due to joint-rate limit. All137 accepted branch commands exactly match scored actions. Original inputs remained valid. Root119/300 complete winning plans made more actual progress than demonstration or hold despite closed-loop stalling; this supports testing bounded commitment as a new hypothesis, not a universal model-accuracy claim. Result report, compact manifest and independent evidence review are delivered.
 ## Review and validation
 
-Independent saved-evidence audit recomputed all17 measured endpoint metric sets from stored predictions and sensors, verified37 input identities,322 artifacts and137 exact applied commands; no findings. Full optional/graphics suite:475 passed in13.38s. Ruff check/format and MC validate/index passed. See `docs/reviews/apple_control_forecast_review.md`. The next separately scoped experiment tests four-command commitment with fresh feasibility checks. PR delivery remains pending.
+Independent saved-evidence audit recomputed all17 measured endpoint metric sets from stored predictions and sensors, verified37 input identities,322 artifacts and137 exact applied commands; no findings. Full optional/graphics suite:475 passed in13.38s. Ruff check/format and MC validate/index passed. See `docs/reviews/apple_control_forecast_review.md`. The next separately scoped experiment tests four-command commitment with fresh feasibility checks. PR #8 (https://github.com/RaaSaaR-org/open-embodied-jepa/pull/8) merged at `00239ae613e51dc290ea6e4d07267c7435c3bc69` after all Linux/macOS core and optional integration checks passed on head `02bb0db`.
+%% mc-links: [[TASK-037]] %%
