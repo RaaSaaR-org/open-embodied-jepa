@@ -1,0 +1,599 @@
+{
+  "artifact_sha256": {
+    "outputs/apple-aligned-cost-v1/audit/cases.json": "74949369e17d3c01bcaeae2b757338e0cccb449c3e857bf6e8e8cdf77d011cff",
+    "outputs/apple-aligned-cost-v1/audit/costs-00.json": "6ab4778d2da2992f42cda88c01f39c40d6432616d3c2874f30db6c5674d98c98",
+    "outputs/apple-aligned-cost-v1/audit/costs-01.json": "480081eb4fc1ab645d2775f7fa4dd811e2e8f7758dd480cf3ccf1c77138df551",
+    "outputs/apple-aligned-cost-v1/audit/costs-02.json": "3249ede4a0a0e84bd047e0572d9e678784924927caf15011d1fab16e3d2fb94f",
+    "outputs/apple-aligned-cost-v1/audit/costs-03.json": "6fb7e65cf3269e1b15d71f4a5bf6b4ae09e9d6512bb22a4b9610d656359a984b",
+    "outputs/apple-aligned-cost-v1/audit/costs-04.json": "22cb733640e02ce2f26b524c5ae6b07ff5a1706ec78e68c5e7ba1bbd797e1a0a",
+    "outputs/apple-aligned-cost-v1/audit/costs-05.json": "e149ada1a959a346a122e7887c27dfec934740e6fe635da3e77eec5eb411d17a",
+    "outputs/apple-aligned-cost-v1/audit/costs-06.json": "0cf5d6da246ffee79d03acbbfcd101cea956ca3cdc7c19aa9a94f1c4eb97a0ee",
+    "outputs/apple-aligned-cost-v1/audit/costs-07.json": "6599f026b6eba0209afa2c57721708889af617983c97573c0326f865aafc87fc",
+    "outputs/apple-aligned-cost-v1/audit/costs-08.json": "9ec0c555473be649d9c7f6444d22ee9955a85b8bd9872657318fff4960baa9e1",
+    "outputs/apple-aligned-cost-v1/audit/costs-09.json": "dd215eed0e1cf67880c3999cf3de7f4cd78e78b0ec23991f296c2e7383f71ba9",
+    "outputs/apple-aligned-cost-v1/audit/costs-10.json": "fb31b9073eb9e2f6e54e043848fbc40884686d1266c78ef16613585a9f40da62",
+    "outputs/apple-aligned-cost-v1/audit/costs-11.json": "b8206fe60a5aa3372fac94626e0841401cb23fecec831494dbc79ae584fbbef6",
+    "outputs/apple-aligned-cost-v1/audit/costs-12.json": "8b8b697979a9637d08429a732137f2e914363f595d4e2add6b5958ed4d253813",
+    "outputs/apple-aligned-cost-v1/audit/costs-13.json": "1ca66492a1c7dada6ab0e613065edb883724c2222e7fd9eb81025b84aeb4d3d2",
+    "outputs/apple-aligned-cost-v1/audit/costs-14.json": "e8fbddbac980ce180fef0a1365f11583b446982a236bdcf72ef6f84db3fb518f",
+    "outputs/apple-aligned-cost-v1/audit/costs-15.json": "ee8fdcc4908bfbcd95166174a909b35d8d62b328e006e4be6e15bc022d1160cd",
+    "outputs/apple-aligned-cost-v1/audit/costs-16.json": "6712045022db8beaff972a33cfe03341dc78f076ff7a69ba92c8c8f92111af10",
+    "outputs/apple-aligned-cost-v1/audit/costs-17.json": "20f0901b2090cd04a85cfd54037813818ad22e13ce201b946f447775ebb41083",
+    "outputs/apple-aligned-cost-v1/audit/registration.json": "27698aef8a0b4ce174d69d8608792f888333578a1907d00dde5578f1bc38e7db",
+    "outputs/apple-aligned-cost-v1/audit/report.json": "1e0a13ad68909b21b5ea0be35441dd159f75c48789f715434e951572d7a32fae",
+    "outputs/apple-aligned-cost-v1/audit/seal.json": "82d5dc57ce7ddbacc493cc42e5594bd23cc56b9320898b96bf24400ce2d1ded6",
+    "outputs/apple-aligned-cost-v1/audit/worker.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/aligned.pt": "e32b47f7e498ab07b8b0dd1e3b759ec626aa2ff8035b075a53f68caab6233246",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/bundle_calibration.json": "b57383aac8cdde383962a291d1429eb2987a7ee23f06d86a28714f15ab8a63d4",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/bundle_calibration_ledger.json": "9d87fdcddf4dfd9d34631da87bd3077fb16dd3676162691dbbcb148aac8b9fac",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/bundle_dataset_manifest.json": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/bundle_goal_fit_report.json": "af7d0b31eb506b783537149bf4dcb20377cd09f7647767308c755e475d8cbc99",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/bundle_goal_fit_seal.json": "301c6cdf1d71b2948cae3692446d3b99cfa7ebe9e95a2b5061188034dce28528",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/bundle_goal_head.pt": "61e1897f80a688fea170a20b73870bac6762d3f6aa0b6c33bbcf449c4819b7d0",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/bundle_goal_registration.json": "c858a4ac4f28702eda2f8eaaa0e7d3cc6055d50b9f3a4c52764c4b6f50eecbdc",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/bundle_goal_source.py": "005123e9fc450c7e1485abdcf63d68a10a22f9ed5f45dcd7d21004a22e17ab7d",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/bundle_goal_train_samples.json": "0e248a748f3cb2316308d56756f273848a8ad4d6d0e093ed30b984288ccb5de2",
+    "outputs/apple-aligned-cost-v1/prepare/bundle/bundle_sensor.pt": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+    "outputs/apple-aligned-cost-v1/prepare/calibration.json": "b57383aac8cdde383962a291d1429eb2987a7ee23f06d86a28714f15ab8a63d4",
+    "outputs/apple-aligned-cost-v1/prepare/calibration_ledger.json": "9d87fdcddf4dfd9d34631da87bd3077fb16dd3676162691dbbcb148aac8b9fac",
+    "outputs/apple-aligned-cost-v1/prepare/distances.json": "8b1e54a1818ac6012c790cd4ca3b5ce3db980194d8c9f034d3a49647f46f7459",
+    "outputs/apple-aligned-cost-v1/prepare/pairs.json": "d0b2445d0b09718e4915ba0ee7549ccd223fae11e69c0a43db436b40f38aba0b",
+    "outputs/apple-aligned-cost-v1/prepare/registration.json": "fc256d14e3ae35e1bc546ed93df6541f891f67f205776c87701f150015e64933",
+    "outputs/apple-aligned-cost-v1/prepare/report.json": "6f4d4d18abc45ee1a6e857af247371a8a3e3d61fbcec4cabe55a3760c6ef8d99",
+    "outputs/apple-aligned-cost-v1/prepare/seal.json": "c6973e9eb129ce5a5504d841c946e6b3020fd55934e48799d4f2a4ef1906db94",
+    "outputs/apple-aligned-cost-v1/prepare/signals-00.npz": "d726d35fbb4af75b25931041cc1ce520755f323946eab41d5db63fadf60e77dc",
+    "outputs/apple-aligned-cost-v1/prepare/signals-01.npz": "40f1c9a6c6606d29b994f6371637bd3a1b04be5d4a02ff5ca9248013bbf987c8",
+    "outputs/apple-aligned-cost-v1/prepare/signals-02.npz": "77f528f89018b3472647d1df4fad3213ed534bcfcb7a14792725e6e11882c377",
+    "outputs/apple-aligned-cost-v1/prepare/signals-03.npz": "9aaed202c35e913e70253e5c2cd2d0845b14d02d94aac7dc84ed1bc70c564e39",
+    "outputs/apple-aligned-cost-v1/prepare/signals-04.npz": "ed00ca916600c29b7b1f4caa18b73ab8623ce51c60347904fb052319f045c7b5",
+    "outputs/apple-aligned-cost-v1/prepare/signals-05.npz": "4a088a320d9e29563281b8ed5a3e23de960696d2de7323566e3fd5be11679a21",
+    "outputs/apple-aligned-cost-v1/prepare/signals-06.npz": "4a62f0330adb7e141c0ba7120c449504bb3d15c0e776d9026750ba763fab8c38",
+    "outputs/apple-aligned-cost-v1/prepare/signals-07.npz": "8c88168f7cc0d1a41f839dc02ea012b9001fc56a59a4217276a14fef07d78342",
+    "outputs/apple-aligned-cost-v1/prepare/signals-08.npz": "58849b632918572184effcfa431532a3bcd15c0ebe8110f541b00c3d45395723",
+    "outputs/apple-aligned-cost-v1/prepare/signals-09.npz": "cc274335de619d431df8b82b70935836496fec62a454ecf924ea80090c66ddcb",
+    "outputs/apple-aligned-cost-v1/prepare/signals-10.npz": "03a0a78e1ff4789914cf592f109abfd079a54ca60f65105d7728f3ec70f75e0c",
+    "outputs/apple-aligned-cost-v1/prepare/signals-11.npz": "9e235f2d3bd9a305e03a334faeecd1ce48e526f9ac7a1d1dac288d6e7a387251",
+    "outputs/apple-aligned-cost-v1/prepare/signals-12.npz": "045e0341986388af4badafbdc9fb10ae51a29406de8d9451c5992855f49f762c",
+    "outputs/apple-aligned-cost-v1/prepare/signals-13.npz": "112e34504d3958b09d49e5fdea2d9db9e2b507d1b6144bf25bdd56cee43fe6cb",
+    "outputs/apple-aligned-cost-v1/prepare/signals-14.npz": "e5c90d429a43de6ddda318500f84f1454f8d8ef695db1a015c8cf8c13c0d5bd7",
+    "outputs/apple-aligned-cost-v1/prepare/signals-15.npz": "8d24e32de3be19e389e973e382f48b362bc707022325f2b55989066e2b798fce",
+    "outputs/apple-aligned-cost-v1/prepare/signals-16.npz": "683adc558610aa6db2507266fc564b4d451a7a2e81505d600f4aeaabfb521c69",
+    "outputs/apple-aligned-cost-v1/prepare/signals-17.npz": "dbd0f4219bc28fa839d63bf4b1c40499706228bb63b0d6c734228f4f1f1b2b6f",
+    "outputs/apple-aligned-cost-v1/prepare/signals-18.npz": "785767276aaacb4bd8e8d05aa027598725ab4d37270c693fc130710cfeb43889",
+    "outputs/apple-aligned-cost-v1/prepare/signals-19.npz": "9401b5e27111c37e1b75294087cec60bf7b40af50631178f2537a34164651062",
+    "outputs/apple-aligned-cost-v1/prepare/signals-20.npz": "01a75100dd750c04df97afdc867a6ea59cc53f4b88cc42f059ea94f5d58ad6f6",
+    "outputs/apple-aligned-cost-v1/prepare/signals-21.npz": "8f7618629591ccb01917a8ed6ba1b07f066754d63356ea10e668e6bfc6ab57fc",
+    "outputs/apple-aligned-cost-v1/prepare/signals-22.npz": "50f9f8cd83d24b8572166584afd58269e20c94bad585b2cde69c8e73b51d5959",
+    "outputs/apple-aligned-cost-v1/prepare/signals-23.npz": "c94681fc75b83249a5c106c18f4511f4c0f5f1e6e70eef0cdcb238bce95a79c4",
+    "outputs/apple-aligned-cost-v1/prepare/signals-24.npz": "61adf76346e90d4fab686a9cd118e60ce5f15868cf7386602fa812a38a7f613b",
+    "outputs/apple-aligned-cost-v1/prepare/signals-25.npz": "70beeaa617f39f71df4007a9fe551d6599d935a4bd53c3cf8ac94a23bbf89b31",
+    "outputs/apple-aligned-cost-v1/prepare/worker.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "audit": {
+    "all_current_registered_input_hashes_match": true,
+    "all_seals_match": true,
+    "bundle_members_match": true,
+    "cached_signal_parent_count": 26,
+    "encoded_payloads_checked": 566,
+    "final_cohort_access": false,
+    "max_pair_distance_recomputation_error": 0.0,
+    "pair_distances_recomputed_exactly": 447,
+    "pair_ledger_predecode_hash_matches": true,
+    "parent_and_global_medians_match_exactly": true,
+    "physics_executed": false,
+    "stage_chain_matches": true,
+    "test_decoded": false,
+    "zero_pose_pairs": 0,
+    "zero_visual_pairs": 0
+  },
+  "bundle": {
+    "backend": "aligned_sensor_wm_v1",
+    "checkpoint_sha256": "e32b47f7e498ab07b8b0dd1e3b759ec626aa2ff8035b075a53f68caab6233246",
+    "composition_provenance": {
+      "calibration_sha256": "b57383aac8cdde383962a291d1429eb2987a7ee23f06d86a28714f15ab8a63d4",
+      "goal_head_sha256": "61e1897f80a688fea170a20b73870bac6762d3f6aa0b6c33bbcf449c4819b7d0",
+      "goal_source_sha256": "005123e9fc450c7e1485abdcf63d68a10a22f9ed5f45dcd7d21004a22e17ab7d",
+      "packaging": {
+        "protocol_sha256": "c1ff6a637b46ebaf97f7da28ca70ea3c0a2f757b0e9aba57ebc97d921bf92678",
+        "source_revision": "9942e1e34bf76bb6b15911149bf32d6dd66cc7aa",
+        "source_sha256": "7bc1017119f52fa9a213aa53930860e33c1690d0f825ae05408998b597ad4460"
+      },
+      "sensor_checkpoint_sha256": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5"
+    },
+    "members": {
+      "calibration": {
+        "path": "bundle_calibration.json",
+        "sha256": "b57383aac8cdde383962a291d1429eb2987a7ee23f06d86a28714f15ab8a63d4"
+      },
+      "calibration_ledger": {
+        "path": "bundle_calibration_ledger.json",
+        "sha256": "9d87fdcddf4dfd9d34631da87bd3077fb16dd3676162691dbbcb148aac8b9fac"
+      },
+      "dataset_manifest": {
+        "path": "bundle_dataset_manifest.json",
+        "sha256": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331"
+      },
+      "goal_fit_report": {
+        "path": "bundle_goal_fit_report.json",
+        "sha256": "af7d0b31eb506b783537149bf4dcb20377cd09f7647767308c755e475d8cbc99"
+      },
+      "goal_fit_seal": {
+        "path": "bundle_goal_fit_seal.json",
+        "sha256": "301c6cdf1d71b2948cae3692446d3b99cfa7ebe9e95a2b5061188034dce28528"
+      },
+      "goal_head": {
+        "path": "bundle_goal_head.pt",
+        "sha256": "61e1897f80a688fea170a20b73870bac6762d3f6aa0b6c33bbcf449c4819b7d0"
+      },
+      "goal_registration": {
+        "path": "bundle_goal_registration.json",
+        "sha256": "c858a4ac4f28702eda2f8eaaa0e7d3cc6055d50b9f3a4c52764c4b6f50eecbdc"
+      },
+      "goal_source": {
+        "path": "bundle_goal_source.py",
+        "sha256": "005123e9fc450c7e1485abdcf63d68a10a22f9ed5f45dcd7d21004a22e17ab7d"
+      },
+      "goal_train_samples": {
+        "path": "bundle_goal_train_samples.json",
+        "sha256": "0e248a748f3cb2316308d56756f273848a8ad4d6d0e093ed30b984288ccb5de2"
+      },
+      "sensor": {
+        "path": "bundle_sensor.pt",
+        "sha256": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5"
+      }
+    }
+  },
+  "calibration": {
+    "dataset_hash": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+    "field_indices": [
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28
+    ],
+    "fields": [
+      "right_shoulder_pitch_joint.position",
+      "right_shoulder_roll_joint.position",
+      "right_shoulder_yaw_joint.position",
+      "right_elbow_joint.position",
+      "right_wrist_roll_joint.position",
+      "right_wrist_pitch_joint.position",
+      "right_wrist_yaw_joint.position"
+    ],
+    "format_version": 1,
+    "goal_head_sha256": "61e1897f80a688fea170a20b73870bac6762d3f6aa0b6c33bbcf449c4819b7d0",
+    "ledger_sha256": "9d87fdcddf4dfd9d34631da87bd3077fb16dd3676162691dbbcb148aac8b9fac",
+    "packaging": {
+      "protocol_sha256": "c1ff6a637b46ebaf97f7da28ca70ea3c0a2f757b0e9aba57ebc97d921bf92678",
+      "source_revision": "9942e1e34bf76bb6b15911149bf32d6dd66cc7aa",
+      "source_sha256": "7bc1017119f52fa9a213aa53930860e33c1690d0f825ae05408998b597ad4460"
+    },
+    "parent_ids": [
+      "apple-42000",
+      "apple-42001",
+      "apple-42002",
+      "apple-42003",
+      "apple-42004",
+      "apple-42005",
+      "apple-42006",
+      "apple-42008",
+      "apple-42009",
+      "apple-42010",
+      "apple-42011",
+      "apple-42012",
+      "apple-42013",
+      "apple-42014",
+      "apple-42015",
+      "apple-42016",
+      "apple-42017",
+      "apple-42020",
+      "apple-42021",
+      "apple-42022",
+      "apple-42023",
+      "apple-42024",
+      "apple-42025",
+      "apple-42028",
+      "apple-42029",
+      "apple-42030"
+    ],
+    "parent_medians": [
+      [
+        0.07941346405529348,
+        0.1576643606945461
+      ],
+      [
+        0.07722841215369566,
+        0.15631055472848635
+      ],
+      [
+        0.08410160585881635,
+        0.1670102554933312
+      ],
+      [
+        0.12150053761531966,
+        0.09367676076977328
+      ],
+      [
+        0.07962356270474731,
+        0.16537521890561166
+      ],
+      [
+        0.08052015833260183,
+        0.15863505269722245
+      ],
+      [
+        0.07818504311073803,
+        0.18340534970743455
+      ],
+      [
+        0.087231543798731,
+        0.15494158391335372
+      ],
+      [
+        0.08102502123580503,
+        0.15525608467928523
+      ],
+      [
+        0.07151021066089894,
+        0.15111750055089845
+      ],
+      [
+        0.094048371207929,
+        0.18578285019146862
+      ],
+      [
+        0.08199399672205428,
+        0.16287487663137648
+      ],
+      [
+        0.08936064927946549,
+        0.15601703466124564
+      ],
+      [
+        0.09372423785246531,
+        0.16551728465721066
+      ],
+      [
+        0.1039525630884272,
+        0.12480901622846316
+      ],
+      [
+        0.085883984324424,
+        0.16358396920508708
+      ],
+      [
+        0.08317150076785583,
+        0.1510397539944163
+      ],
+      [
+        0.10031503420423758,
+        0.1597390655426024
+      ],
+      [
+        0.08684058555592443,
+        0.16414179011026953
+      ],
+      [
+        0.10484802096243599,
+        0.13312115203062674
+      ],
+      [
+        0.077382302701116,
+        0.16342264890680935
+      ],
+      [
+        0.08910377872783597,
+        0.16134359290164624
+      ],
+      [
+        0.12002106300754699,
+        0.15719660504498487
+      ],
+      [
+        0.08529945597191203,
+        0.1577922846313085
+      ],
+      [
+        0.15557722985432895,
+        0.16494090382879373
+      ],
+      [
+        0.10493705840028955,
+        0.1645554657623198
+      ]
+    ],
+    "recipe": "train_parent_median_stride28_v1",
+    "scales": {
+      "pose": 0.15918705911991243,
+      "visual": 0.08636228494017421
+    },
+    "sensor_checkpoint_sha256": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+    "stride": 28,
+    "weights": {
+      "pose": 0.5,
+      "visual": 0.5
+    }
+  },
+  "counts": {
+    "audit_roots_completed": 18,
+    "audit_roots_planned": 18,
+    "calibration_pairs": 447,
+    "decoded_test_episodes": 0,
+    "decoded_val_episodes": 0,
+    "physical_attempts": 0,
+    "train_original_parents": 26
+  },
+  "coverage": {
+    "16": {
+      "exclusions": {
+        "low_arm_separation": 1144
+      },
+      "pairs_eligible": 2888,
+      "pairs_total": 4032,
+      "root_goals": 144
+    },
+    "8": {
+      "exclusions": {
+        "label_tie": 2,
+        "low_arm_separation": 1424
+      },
+      "pairs_eligible": 2606,
+      "pairs_total": 4032,
+      "root_goals": 144
+    }
+  },
+  "decision": "failed_offline_primary_gate",
+  "formula_parity": {
+    "atol": 1e-07,
+    "comparison": "float32 saved-array formula versus runtime hybrid_cost helper",
+    "max_absolute_error": 1.9073486328125e-06,
+    "rtol": 1e-05,
+    "runtime_source_sha256": "6a882c374cfec5cb7d9464e3422da9ebde50311e2abcd553eaa8fd606fddaef5"
+  },
+  "gate": {
+    "delta_ci95": [
+      0.04077546296296308,
+      0.04686342592592585
+    ],
+    "parent_deltas": {
+      "apple-42007": 0.041415193602693634,
+      "apple-42019": 0.04077546296296308,
+      "apple-42031": 0.04686342592592585
+    },
+    "ranking_ci95": [
+      0.7663111772486774,
+      0.7902430555555556
+    ],
+    "ranking_delta": 0.04301802749719419,
+    "status": "failed"
+  },
+  "hybrid_minus_neural_h16": -0.12136579084495747,
+  "input_identities": {
+    "alignment/evaluate/ambiguities.json": "9a1eb0d2c66c4ff033d53eede6ae69da4c9a3d131499537182d794169894fb7b",
+    "alignment/evaluate/encoder_errors.json": "cdbfc9c6bfa4969270452d8bbce9466e8ac564a2a243cecd98e6580ffea91cd2",
+    "alignment/evaluate/goal_estimates.json": "603e80a89eb658dcc0610b6a3f0fa25f7c29c53543021b6babd0a40454d2cea3",
+    "alignment/evaluate/matched_secondary.json": "f0a5fd82e9080d5f79c8c60fffb1f494b62e7d9a563f5e1e7db625d9d4927d9a",
+    "alignment/evaluate/prediction-00.npz": "c758fb2876999a19a183b363faa6c6f536d67d3ef4f798372274264d26c7fd19",
+    "alignment/evaluate/prediction-01.npz": "81027aed1ff66c3678ce613148bfb1195ec48d35ed0242ec9b9ceb28300f18c3",
+    "alignment/evaluate/prediction-02.npz": "e40219c6b658c0ef16153f8fa37c8e66aaffbb84ef56e668b3a0d7c9f4f420ce",
+    "alignment/evaluate/prediction-03.npz": "034c63c6a6e2f4a60f136a7ab5e0dd8efdecff2448d386e259d8deb88acd9cd3",
+    "alignment/evaluate/prediction-04.npz": "0df96061dd1cb7d23954da143c3ea8cb298b5d95eae16bea01da21adccb4b463",
+    "alignment/evaluate/prediction-05.npz": "08848abdf967291e411187135a9076413dfda51d31b587059e909e7ee0a58092",
+    "alignment/evaluate/prediction-06.npz": "e5d6813bbc16855afdbbc5fe16208bdcaa21049645bdda16d35ab624ebed8f4e",
+    "alignment/evaluate/prediction-07.npz": "57a460e126c86e647241b9e228be22e372508ea0ede54fd1529f825bfe8cd14f",
+    "alignment/evaluate/prediction-08.npz": "64d0f2395c228b06c6f4a4ff5420fa50529b67b147e4017029054139aee00c90",
+    "alignment/evaluate/prediction-09.npz": "7024fffbeb82fba35c8c613b537c4583b597db98e2eab08cd1e841ab63533433",
+    "alignment/evaluate/prediction-10.npz": "3c4bef2430d278ed63137dbb29fe783950c8868311e368c726a7fa857ce5874f",
+    "alignment/evaluate/prediction-11.npz": "907eaeb02d49b1ab27f48fe840b13ca7a55b73add0e43950127be2123bebdd5e",
+    "alignment/evaluate/prediction-12.npz": "0049e4a2365f2ce561df8b67ab49f2ba72ec64e0f8ad25cf4d5b4fd1e90230b3",
+    "alignment/evaluate/prediction-13.npz": "af321a7c76f986a517424d943828e8ff1c7ab4e9bb0cef3a386495cfe99fe103",
+    "alignment/evaluate/prediction-14.npz": "6c8925522bbf366318c50776d94a235cd0f40fcc345cf1196ac60b8c8da55314",
+    "alignment/evaluate/prediction-15.npz": "2286d5322ad65e21ae8f70787a881e3ce78471f9986d69c26c5582b5cbf4303d",
+    "alignment/evaluate/prediction-16.npz": "1c25c77effdeae86c712e95f8df1c3b8043cffc938cb6e5f008c9206bb8fd4d3",
+    "alignment/evaluate/prediction-17.npz": "64e4cb53f6ee937ee605a05472cf90d7dea598c1a0db35e924ebcf2cedbd4947",
+    "alignment/evaluate/primary_cases.json": "a8c79103c965afd2b40bbe99c673a91e1fbe84a5af614e9c78262b22ccf79c3b",
+    "alignment/evaluate/registration.json": "9399782fb5af69d5d02ac9e66dab706f0f9c7ac2225f7c4480f8800798235f1f",
+    "alignment/evaluate/report.json": "975935c49c2a4ff4b196f0950d8d5d0d46fbfd98ca1345e9b238dd1d4daf54d7",
+    "alignment/evaluate/seal.json": "cb315ea63da8f1bac8d6dd745ba3e99eaac96b17c4ce2f0c83be710d4022f92c",
+    "alignment/fit/curves.jsonl": "a8c9cde292f912e43e276ab0b0a0ab29854ada242facc31bf2bcc2228677cecd",
+    "alignment/fit/head.pt": "61e1897f80a688fea170a20b73870bac6762d3f6aa0b6c33bbcf449c4819b7d0",
+    "alignment/fit/registration.json": "c858a4ac4f28702eda2f8eaaa0e7d3cc6055d50b9f3a4c52764c4b6f50eecbdc",
+    "alignment/fit/report.json": "af7d0b31eb506b783537149bf4dcb20377cd09f7647767308c755e475d8cbc99",
+    "alignment/fit/seal.json": "301c6cdf1d71b2948cae3692446d3b99cfa7ebe9e95a2b5061188034dce28528",
+    "alignment/prepare/nn_bank.npz": "56d74691e7729e215d7269d089324842afcd45753e2e478e32059788d0d5def1",
+    "alignment/prepare/registration.json": "31f093bbf8527c38dfbc394cf00b9d512acd1f7a6f990cb38d8f20e9833cce69",
+    "alignment/prepare/report.json": "c4b4c59edcf662ccc59011ed912895ec2aea3883b3ca4f89b166cd8cf81bce90",
+    "alignment/prepare/roots.json": "a547d70f14459df9017d8600411bba92bbc100ea12f36325838ae39c2e5cdaf0",
+    "alignment/prepare/samples.json": "e7f5b7a1b583ce545b34905ccb0f5196138a52228413a67a587eb85cdb9009c6",
+    "alignment/prepare/seal.json": "d280390626cb9bfd686f073f88bd5e60eab0d067e6c78ff37e32ffdc0a2e3074",
+    "alignment/prepare/train_features.npz": "7e6a62dcfbbebfdc35a792e6e0bf34b21f1b5e207529bd4b014e8d2e22d42d7a",
+    "alignment/prepare/train_samples.json": "0e248a748f3cb2316308d56756f273848a8ad4d6d0e093ed30b984288ccb5de2",
+    "alignment/prepare/val_features.npz": "e4ff1ae56e49c52b0ee2efa966e191a6177ff574559e5fe5b15fd9d21ca59c08",
+    "alignment/prepare/val_samples.json": "812f594c08dead73f71d36fece02d623a4e275b27587ae46a9b87877fdc09b4a",
+    "checkpoint": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+    "checkpoint_loader": "096d1ea04d3cf4258bdf7813f0857b6ab2e3a10d48d68ed7317ce0a78d0dd925",
+    "dataset": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+    "protocol": "c1ff6a637b46ebaf97f7da28ca70ea3c0a2f757b0e9aba57ebc97d921bf92678",
+    "ranking_helper": "005123e9fc450c7e1485abdcf63d68a10a22f9ed5f45dcd7d21004a22e17ab7d",
+    "revision": "9942e1e34bf76bb6b15911149bf32d6dd66cc7aa",
+    "script": "7bc1017119f52fa9a213aa53930860e33c1690d0f825ae05408998b597ad4460",
+    "src/embodied_jepa/__init__.py": "a0043e95cb31add021475ec8877d7a7b28189696ddf5ab2486d73537c84aec41",
+    "src/embodied_jepa/audit.py": "59998de9b29226547cb290195f949225895a2e6ffd174186bc91514e022fbc68",
+    "src/embodied_jepa/benchmark.py": "512462740021c8e601cdbe29ca2d185978e66cba0558f94865962636fb48f4a5",
+    "src/embodied_jepa/collection.py": "55cf6373120933fdbb43aa274e2164753f21848d819e6f786c0b862514b19745",
+    "src/embodied_jepa/config.py": "cdd36a6dd9ba2a1f783004cf634878865a155afcebada741f7fc9ab66b37b21c",
+    "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+    "src/embodied_jepa/contracts.py": "d9ceedad9198bca60891c0292108822455e1761505c43522f5013363ff0fcb7b",
+    "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
+    "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+    "src/embodied_jepa/goals.py": "82b8ea44d25e7c861abf2bb463c9543f4a75c85923ced7fb7be14ffd59d6a489",
+    "src/embodied_jepa/hardware.py": "1ce0c301733af7b15a094b0962fcf566089355a33f49742e27e3a4dfbd03760e",
+    "src/embodied_jepa/manipulation_collection.py": "d1052b4a5075a9fbfb7e9e7f602bf7ce93e5c6796f02cad05a379a5e30ec999c",
+    "src/embodied_jepa/models/__init__.py": "694622858ffd8a892d6746c65f162c2cea19e9ead1aa5c566ab4edc6fb962f94",
+    "src/embodied_jepa/models/aligned_sensor.py": "6a882c374cfec5cb7d9464e3422da9ebde50311e2abcd553eaa8fd606fddaef5",
+    "src/embodied_jepa/models/base.py": "42dc2764eed055c51e431358f1841f23960832b4805f11623e62b37ca94a775e",
+    "src/embodied_jepa/models/jepa_wms.py": "431e6f3b47d6e6aba3ba16ab2461a22be5ec30d60449cf09b4970cb3062fb4b5",
+    "src/embodied_jepa/models/lewm.py": "43c30609fbb6c7885a7685f2051570d5f6bc44767cf69130e21a8a3b8d4121cf",
+    "src/embodied_jepa/models/native.py": "1647c218db9d70daa09183e25aee3dd18888fc83db5c974f0118f53d6ddb6c20",
+    "src/embodied_jepa/models/sensor.py": "6609dfbec19169d8c33d261750f90fbd8bb4e35a9bdb33daf893bbf845602699",
+    "src/embodied_jepa/planning.py": "e9aea01c81f07e775a4d83116dadaebf7f723090ca4139c6289a4846d5891297",
+    "src/embodied_jepa/registry.py": "a3e69563f5c858855ccd63aa4b51556f783036a52f5b3ba64ee56d9bea19e7a9",
+    "src/embodied_jepa/result_schema.py": "be23d44eb2207397eab9c65acc176d87d7009a494c2facb72b2b65cb504cc04d",
+    "src/embodied_jepa/scripted.py": "c28ab20aa0c09742f2e31c0f3bc618fbceb421e963cc7f077514d23e39d5fa93",
+    "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+    "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+    "src/embodied_jepa/training.py": "b6a6aa45208efc7eb189dccdd42374ecf1b7740464384e38a4e1ff27c9cb9f59",
+    "src/embodied_jepa/waypoint_planning.py": "8d4312d6d6df48379aac9f052fc9fba63013908a38e9f9a9a39765cbfd7af324"
+  },
+  "launch": {
+    "path": "outputs/apple-aligned-cost-v1-launch.json",
+    "registration_note": "Initial ledger construction failed on incorrect manifest path before any output was written or experiment launched; corrected to meta/jepa_manifest.json.",
+    "sha256": "c3e612980d30935001e7917d3ba98b277836b8f6e2672f07b7b63ccb21147b8b"
+  },
+  "limitations": [
+    "This reused TASK041 VAL cohort is development selection, not independent confirmation.",
+    "Arm ranking alone does not establish object placement or grasp/release.",
+    "Failed gate means physical comparison not attempted, not zero successes out of three attempts.",
+    "No threshold, scale or weight tuning and no retry followed the result."
+  ],
+  "rankings": {
+    "16": {
+      "informative_roots": {
+        "apple-42007": 6,
+        "apple-42019": 6,
+        "apple-42031": 6
+      },
+      "parents": {
+        "hybrid_measured": {
+          "apple-42007": 0.9168344155844158,
+          "apple-42019": 0.9096990740740741,
+          "apple-42031": 0.8982986111111112
+        },
+        "hybrid_pred": {
+          "apple-42007": 0.7738338744588745,
+          "apple-42019": 0.7663111772486774,
+          "apple-42031": 0.7902430555555556
+        },
+        "neural_measured": {
+          "apple-42007": 0.991082702020202,
+          "apple-42019": 0.9965277777777777,
+          "apple-42031": 0.9796875000000002
+        },
+        "neural_pred": {
+          "apple-42007": 0.9064646464646464,
+          "apple-42019": 0.8844444444444445,
+          "apple-42031": 0.9035763888888888
+        },
+        "pixel_measured": {
+          "apple-42007": 0.8228714225589225,
+          "apple-42019": 0.8404629629629631,
+          "apple-42031": 0.8041435185185185
+        },
+        "pixel_pred": {
+          "apple-42007": 0.7324186808561809,
+          "apple-42019": 0.7255357142857143,
+          "apple-42031": 0.7433796296296298
+        }
+      },
+      "scores": {
+        "hybrid_measured": 0.9082773669232004,
+        "hybrid_pred": 0.7767960357543692,
+        "neural_measured": 0.9890993265993266,
+        "neural_pred": 0.8981618265993266,
+        "pixel_measured": 0.8224926346801347,
+        "pixel_pred": 0.733778008257175
+      },
+      "sufficient_coverage": true
+    },
+    "8": {
+      "informative_roots": {
+        "apple-42007": 6,
+        "apple-42019": 6,
+        "apple-42031": 6
+      },
+      "parents": {
+        "hybrid_measured": {
+          "apple-42007": 0.8505536103330221,
+          "apple-42019": 0.900155998389694,
+          "apple-42031": 0.8563357843137256
+        },
+        "hybrid_pred": {
+          "apple-42007": 0.7910054855275445,
+          "apple-42019": 0.8060499254049446,
+          "apple-42031": 0.8048773537192654
+        },
+        "neural_measured": {
+          "apple-42007": 0.9988425925925926,
+          "apple-42019": 0.9750136165577342,
+          "apple-42031": 0.9988425925925926
+        },
+        "neural_pred": {
+          "apple-42007": 0.9291225101151571,
+          "apple-42019": 0.8794928720280382,
+          "apple-42031": 0.9296720354808589
+        },
+        "pixel_measured": {
+          "apple-42007": 0.7714659197012138,
+          "apple-42019": 0.8128452685421995,
+          "apple-42031": 0.7578736772486772
+        },
+        "pixel_pred": {
+          "apple-42007": 0.7494193510737629,
+          "apple-42019": 0.7764509330302168,
+          "apple-42031": 0.765657096171802
+        }
+      },
+      "scores": {
+        "hybrid_measured": 0.8690151310121473,
+        "hybrid_pred": 0.8006442548839181,
+        "neural_measured": 0.9908996005809731,
+        "neural_pred": 0.9127624725413513,
+        "pixel_measured": 0.7807282884973635,
+        "pixel_pred": 0.7638424600919272
+      },
+      "sufficient_coverage": true
+    }
+  },
+  "schema": "apple-aligned-cost-results-v1",
+  "scope": "development saved-forecast arm-ranking screen; no physical comparison attempted",
+  "software_validation": {
+    "builder_focused_tests": 19,
+    "coordinator_reported_full_optional_tests": 578,
+    "coordinator_reported_mc_and_diff_passed": true,
+    "coordinator_reported_ruff_files": 89,
+    "coordinator_reported_test_seconds": 11.06
+  },
+  "source_revision": "9942e1e34bf76bb6b15911149bf32d6dd66cc7aa",
+  "stage_budgets_seconds": {
+    "audit": 60,
+    "prepare": 120
+  },
+  "stages": {
+    "audit": {
+      "integrity_verified_after": true,
+      "peak_rss_bytes": 351846400,
+      "sealed_artifacts": 21,
+      "status": "completed",
+      "supervisor_returncode": 0,
+      "supervisor_timeout": false,
+      "supervisor_wall_seconds": 2.261272208066657,
+      "worker_cpu_seconds": 1.398091
+    },
+    "prepare": {
+      "integrity_verified_after": true,
+      "peak_rss_bytes": 692486144,
+      "sealed_artifacts": 43,
+      "status": "completed",
+      "supervisor_returncode": 0,
+      "supervisor_timeout": false,
+      "supervisor_wall_seconds": 4.74439337500371,
+      "worker_cpu_seconds": 3.772367
+    }
+  },
+  "sum_stage_supervisor_wall_seconds": 7.005665583070368,
+  "sum_worker_cpu_seconds": 5.170458,
+  "timing_scope": "Sums of independently supervised stage times; worker CPU excludes supervisor."
+}

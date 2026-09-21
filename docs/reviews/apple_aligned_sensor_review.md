@@ -52,3 +52,32 @@ A separate reviewer-run synthetic check subsequently used deterministic nonzero 
 The author added persistent regressions for both requested cases. The nonzero-head test packages a deterministic TASK041 head, evaluates five varied synthetic RGB images, verifies all 35 means are nonzero and every output channel varies, then checks exact equality through the loaded wrapper. The named-field test uses reversed right-arm positions plus unrelated velocity fields with large nuisance values and distinct per-joint errors; the full wrapper cost matches the independently calculated seven-field result. Both tests were independently read and run.
 
 The final adapter/builder/config suite passed **57 tests in 1.30 seconds**. All review findings and verification gaps above are resolved. The scientific/code review has **no remaining blocker to the registered TASK042 attempt**, subject to the separate completed runtime review. Calibration, offline-gate success and physical manipulation are not claimed by these synthetic checks. No work beyond TASK042 is authorized by this review, and the user's requested pause after TASK042 delivery remains in force.
+
+## Completed TASK042 saved-evidence audit
+
+The registered attempt at source `9942e1e34bf76bb6b15911149bf32d6dd66cc7aa` completed preparation and offline audit. **The fixed hybrid gate failed.** Primary H16 ranking was 77.67960358%, compared with 73.37780083% for pixel cost: a gain of 4.30180275 percentage points, below the required 5 points. Every parent improved, but that does not waive the aggregate threshold. The conditional physical comparison must not run. This completes the registered negative experiment, not the positive numerical acceptance criterion or the user's working-manipulation objective.
+
+Independent verification used saved JSON, NumPy signal/forecast arrays and safe checkpoint metadata only. No encoder or world-model inference, image decoding, fitting or physics was repeated. The independent recomputation script is `/tmp/audit_aligned_saved.py`; its result is `/tmp/apple_aligned_saved_audit.json`.
+
+All **64 sealed artifact hashes** match (43 preparation, 21 audit), as do every registered source/input identity and all 10 portable bundle member digests. The child sensor checkpoint remains byte-identical to SHA256 `0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5`; the completed 2,000-update head is `61e1897f80a688fea170a20b73870bac6762d3f6aa0b6c33bbcf449c4819b7d0`. Wrapper normalization metadata exactly matches the child and its complete frozen TRAIN membership. Both stages report completed status and post-run integrity verification without timeout.
+
+The calibration audit independently reconstructs all **447 stride-28 pairs across 26 original TRAIN parents**, including the failed demonstration, directly from the saved normalized operands. Parent/session membership and every frame pair match the metadata-only rule; the pre-decode pair-ledger hash matches final bytes. All pair distances and both levels of medians match exactly. No pair was exactly zero in this attempt; the implementation still retains zeros as specified. Scales are:
+
+- Visual: `0.08636228494017421`.
+- Pose: `0.15918705911991243`.
+
+The ranking audit independently reconstructs **1,728 cost vectors and 8,064 pair records** over both horizons, including measured and predicted components. It confirms the frozen cross-parent goal roster, unchanged TASK041 eligibility, tie handling, aggregation and 2,000-resample parent bootstrap. All 18 roots completed, with six informative roots per parent. H16 retains 2,888 of 4,032 pair comparisons; H8 retains 2,606. All runtime-helper costs satisfy the declared float32 formula tolerance. The recorded maximum absolute discrepancy, `1.9073486328125e-06`, is permitted by the combined relative and absolute tolerance; it is not evidence of exceeding an absolute-only bound.
+
+| H16 method | Predicted ranking | Measured-state ranking |
+|---|---:|---:|
+| Pixel | 73.37780083% | 82.24926347% |
+| Frozen neural pose-only comparator | 89.81618266% | 98.90993266% |
+| Fixed visual/pose hybrid | 77.67960358% | 90.82773669% |
+
+Hybrid gains by parent are +4.14151936, +4.07754630 and +4.68634259 percentage points. The parent-cluster 95% intervals are 76.63111772–79.02430556% for ranking and +4.07754630–4.68634259 points for gain. These intervals use only three parent clusters and reused development VAL data; they do not establish broad generalization. H8 hybrid ranking is 80.06442549%, a secondary result that cannot rescue the failed H16 gate.
+
+The fixed mixture improves arm-ranking over pixels but loses substantial ranking accuracy relative to the already frozen pose-only comparator on this cohort. That describes this recipe's result; it does not establish that all visual/pose mixtures fail, that object information is unnecessary, or that a different controller would succeed. No new mixture, scale statistic, threshold or experiment is proposed or run as part of this audit. Physical success is **unassessed for this version**, not zero successes out of three attempted runs: the three modes were conditional and were not launched.
+
+Preparation used 4.744393 seconds of supervisor wall time and 3.772367 worker CPU seconds; audit used 2.261272 wall and 1.398091 CPU seconds. Both remain within their separate 120/60-second allocations. The sum is a sum of separately supervised stages, not a continuous coordinator duration. The user's requested pause after TASK042 delivery remains in force; this review authorizes no follow-on work.
+
+Final delivery cross-check: `docs/experiments/apple_aligned_control_results_v1.md` and `benchmarks/manifests/apple-aligned-cost-v1.json` agree with this independent audit. All 68 manifest-listed artifact hashes match, including stage seals and logs beyond the 64 sealed members. The corrected composition provenance exactly matches the checkpoint envelope's metadata. The report correctly preserves the failed numerical criterion and distinguishes the unattempted conditional physical stage from a zero-success trial. No remaining reporting finding was identified; no further experiment or follow-on task was performed.
