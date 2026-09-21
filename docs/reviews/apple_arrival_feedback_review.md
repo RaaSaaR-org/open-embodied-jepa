@@ -1,0 +1,23 @@
+# TASK040 independent pre-run review
+
+Reviewer: contracts agent, 2026-09-21. Scope: the prospective script, protocol and synthetic tests in `/tmp/jepa-arrival-feedback-work`; no physics or model inference was performed. The reviewer did not author this implementation but authored the sensor backend and earlier matched diagnostic. This is not external maintainer approval.
+
+No blocking findings remain in the reviewed draft. The experiment replays the frozen controller once through commands 0–59, checks root60 without execution, and restores full robot/scorer/controller state for both siblings. Its original sibling additionally checks continuation against recorded commands60–75. Existing reviewed helpers preserve MuJoCo warm-start data and controller RNG/warm/cache ownership; exact restored RGB/state/masks/timestamps are required.
+
+The intervention is the declared recurring rule: before each ordinary controller step, clear an existing commitment only when the measured image distance to the current goal is within the unchanged tolerance. It does not set dwell, force an action, provide goal robot state, use task-scoring truth or add another controller step. Subsequent RNG divergence from extra searches is part of this intervention. Both branches use unchanged physical guards and the same control deadline. Goal2 dwell completion is the primary endpoint, separate from scoring stages or successful manipulation.
+
+Review corrections are present: commitment provenance and acknowledgement counts are checked during replay; goal2 completion records the required dwell despite the controller resetting dwell on advance; late observed zero exits are classified against the supervisor deadline; a process-group kill race is handled; invalid durable journals retain an incomplete result rather than escaping finalization. Both siblings and all32 intended command slots remain in the final report, with interrupted non-advancement unavailable rather than a completed negative.
+
+Independent synthetic command: `.venv/bin/python -m pytest -q /tmp/jepa-arrival-feedback-work/test_apple_arrival_feedback.py` — **12 passed in 0.01 seconds**. Tests cover inclusive/repeated/current-goal arrival, untouched dwell, pending acknowledgement, interruption accounting, replay commitment mismatch, completing dwell, late exits and malformed journals.
+
+The fixed development root was selected from an observed failure. A favorable paired result would show only that this rule changes progression at that root; it would not establish a generally better goal metric, population success or robust pick-and-place. Actual replay determinism and completion within the single60-wall/40-CPU-second budget remain unverified until authorized execution. Preserve a negative or incomplete attempt without retry or threshold adjustment.
+
+Repository integration check: the external fixture initially resolved the script as a sibling of the test. The coordinator corrected it to the repository `scripts/` path; all 12 integrated tests then passed in 0.02 seconds, with Ruff check/format passing. This test-loader-only correction does not change the experimental script or protocol. No experiment was run before the correction.
+
+## Completed saved-evidence audit
+
+The independent reviewer checked the sealed run without additional physics or learned inference. All 39 registered input-file hashes match; the report/plan/inventory hashes and every indexed artifact match the compact manifest. Both siblings contain 16 accepted results with no pending execution, all 32 slots accounted for, zero physical stages, goal index 2 throughout and maximum dwell 1. The original continuation matches saved TASK039 commands 60–75 using the declared replay checks. The arrival intervention fires only at the first branch observation, clearing plan 58 offset 2; subsequent normal planning does not preserve arrival. Both primary outcomes are completed negatives, not unavailable values.
+
+The result document correctly labels 0.120463/0.124098 as the last **pre-command decision observations**, not post-16-command endpoint measurements. At 5.493 wall/5.165 CPU seconds, the audit remained within its single 60/40 budget, with post-run integrity true. This result does not support an immediate dwell benefit at this root or establish a general explanation of the manipulation failure. The final cohort remains unused.
+
+Coordinator final integration validation: full optional/model/rendering suite **518 passed in 12.25 seconds**; focused Ruff check/format, diff check and MC validation passed. The final evidence and limitations were reviewed against the saved independent audit. No physical acceptance claim is made.
