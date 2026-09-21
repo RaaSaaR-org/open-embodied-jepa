@@ -22,7 +22,11 @@ unstarted under its fixed budget. A [saved-state forecast audit](docs/experiment
 reproduced the stalled trace and found useful progress from complete chosen plans
 at two states. The subsequent [four-command comparison](docs/experiments/apple_control_commitment_results_v1.md)
 started all six attempts but reached no physical stage (two completed learned
-failures and four timed-out controls).
+failures and four timed-out controls). An [arrival-feedback audit](docs/experiments/apple_arrival_feedback_results_v1.md)
+also failed to complete waypoint dwell. The next [image-goal alignment screen](docs/experiments/apple_goal_alignment_results_v1.md)
+passed offline: a TRAIN-fitted image encoder improved held-out predicted arm-goal
+ranking from 73.38% to 89.82%. This supports testing a combined visual-and-pose
+cost; it has not yet been used for physical control.
 Prediction accuracy and short-branch progress do not establish manipulation success.
 The fresh 20-reset final cohort remains unexecuted. This is a separate task-specific
 mode; the historical unseen-pair benchmark above is unchanged. The optional
