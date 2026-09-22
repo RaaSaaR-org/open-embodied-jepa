@@ -4,7 +4,7 @@ aliases:
 - TASK-053
 title: Remove the import-order dependence in the privileged rollout twin
 slug: remove-the-import-order-dependence-in-the-privileged-rollout-twin
-status: review
+status: done
 priority: 3
 owner: ''
 projects: []
@@ -19,6 +19,7 @@ due_date: ''
 created: 2026-09-23
 updated: 2026-09-23
 ---
+
 
 # Remove the import-order dependence in the privileged rollout twin
 
@@ -57,4 +58,8 @@ nothing replaces that attribute, so the twin is the same class built from the sa
   before `tests/test_apple_evaluation.py` left orphan duplicates and failed 4 tests there. The probe
   now runs in a subprocess, and CI also runs the suite with the modules collected in reverse order,
   which is what catches leakage between modules.
+- Delivery: PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/25 (squash-merged as
+  `35852c0`). The blocking review finding was fixed before merge and CI was green. Hygiene only;
+  no experimental result, manifest or frozen value changed, and learned Apple->Plate remains at
+  zero successes.
 %% mc-links: [[TASK-051]] %%
