@@ -48,7 +48,8 @@ passed. The criteria below are the deliverables; the gate outcome is recorded ho
 - [x] Three frozen runs executed once each from a clean committed revision (LeWM/onboard,
       LeWM/hand-crop, native/onboard) and evaluated against the frozen gates.
 - [x] Fresh post-run verification; results doc reporting every gate honestly, including failures;
-      ruff, pytest, `mc validate`; PR merged.
+      ruff, pytest, `mc validate`; PR opened with green CI and an independent APPROVE-TO-MERGE.
+- [ ] PR merged and this task closed (recorded after the merge, per AGENTS.md).
 
 ## Scope and resources
 MPS (M5 Pro, 48 GB), about one hour per run plus evaluation. Checkpoints and reports under the

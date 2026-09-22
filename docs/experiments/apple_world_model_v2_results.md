@@ -85,12 +85,13 @@ better on several other metrics, listed below.)
   control by a wide margin (G2b) and tracks sibling divergence (G7b). But the
   model barely beats *its own* persistence readout (G2a fails on all three).
 - **Most of the error is in the encoding, not in the rollout.** On the same
-  1,462 moving windows (LeWM / onboard), the readout of the *directly encoded*
-  observation is already 3.13 cm from the truth at the start frame and 3.26 cm
-  at the target frame, against 3.65 cm for the 8-step rollout. About 89 % of
-  the moving-window error is therefore present without any prediction at all.
-  (Recomputed independently during post-run verification; the numbers agree to
-  the reported digits.)
+  1,462 moving windows (LeWM / onboard), the readout of a *directly encoded*
+  observation is 3.13 cm from the truth when that observation is the window's
+  start frame and 3.26 cm when it is the target frame, against 3.65 cm for the
+  8-step rollout from the start frame. The target-frame figure is what a
+  perfect predictor could reach with this encoder and head, so about 89 % of
+  the rollout's error is already in the encoding. (Recomputed independently
+  during post-run verification; the numbers agree to the reported digits.)
 - **Sibling discrimination is real but short of the bar.** G7b's ρ is over 103
   unordered pairs. Among the 106 qualifying ordered sibling pairs at h = 16, the own-action prediction is
   closer to the truth than the swapped-sibling prediction in 67.9 % (LeWM),

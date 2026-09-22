@@ -325,15 +325,12 @@ uv run --no-sync python -m embodied_jepa.world_model_v2 evaluate \
 
 ## Pilots before freezing (disclosed)
 
-All pilots are under `outputs/task050-scratch/` and were run from uncommitted or
-draft code:
+All pilots are under `outputs/task050-scratch/`. They are listed in the order they
+were run. `smoke-a`, `smoke-full`, `pilot-a` and `pilot-b` ran from uncommitted
+or draft code; `smoke-b` and `smoke-c` ran last, from the reviewed revisions:
 
 - **`smoke-a`.** 8 train and 8 val episodes, 60 steps, plus a smoke of
   `evaluate` on those 8 val episodes. It checked the pipeline only.
-- **`smoke-b` and `smoke-c`.** 12 train and 12 val episodes, 40 steps, one per
-  backend, run from the reviewed revision with `--require-clean` plus the
-  matching `evaluate`. They checked the frozen command path only; `smoke-c`
-  also caught the NumPy-float learning rate described below.
 - **`smoke-full`.** Full decode (11.5 s for 757 episodes, peak host RSS
   9.0 GB) and 200 steps per backend. It measured about 0.23 s per LeWM step
   and about 0.3 s per native step.
@@ -363,10 +360,6 @@ draft code:
   - clearer wording on label-derived masks.
   All were added. The cosine learning-rate decay was added at the same time,
   before any frozen run.
-- **After the review cleared the code**, one more fix was needed: the
-  scheduled learning rate was a NumPy float, which `torch.load(weights_only=True)`
-  refuses. It is cast to a Python float (`293b331`), with a test. The secondary
-  hand-crop arm was preregistered at the same time, before any frozen run.
 - **`pilot-b`.** LeWM, 2,000 steps with the mask and constant lr, run after
   these changes.
   - The h = 8 moving-window median was 7.4–8.3 cm from step 500 on, against
@@ -378,3 +371,10 @@ draft code:
     Two *definitions* did change after a pilot, both disclosed above: the
     dropped-window exclusion and the regression mask (after `pilot-a`), and
     G5's cohort (close+lift → lift, from the review, not from a result).
+- **`smoke-b` and `smoke-c`** (last, from the reviewed revisions). 12 train and
+  12 val episodes, 40 steps, one per backend, with `--require-clean` plus the
+  matching `evaluate`. They checked the frozen command path only.
+- **One more fix before the freeze**: the scheduled learning rate was a NumPy
+  float, which `torch.load(weights_only=True)` refuses. `smoke-c` caught it; it
+  is cast to a Python float (`293b331`), with a test. The secondary hand-crop
+  arm was preregistered at the same time, before any frozen run.
