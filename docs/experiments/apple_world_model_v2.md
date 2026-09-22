@@ -21,6 +21,10 @@ The quantities are the palm–apple offset, the apple height above its rest, the
 apple–plate offset and whether the apple is held. At run time no simulator truth
 is available to the model or the planner.
 
+The runs are the LeWM product backend on the onboard camera (primary), the
+same backend on the hand crop (secondary), and the native backend on the
+onboard camera (comparison). Every arm is judged by the same gates.
+
 The product backend is **LeWM** (`models/lewm.py` over the pinned upstream
 revision `8edfeb33`). The native JEPA is the comparison. LeWM must pass for T4
 (TASK-051) to start.
@@ -42,7 +46,8 @@ revision `8edfeb33`). The native JEPA is the comparison. LeWM must pass for T4
   - Proprioception is normalized with the corpus's train-only moments
     (`meta/jepa_normalization.json`, fit on the 677 train episodes; std floored
     at 0.01).
-  - `hand_crop_rgb` is **not** used in this task (see *Not done*).
+  - `hand_crop_rgb` (the 112 px robot-kinematics crop) is the **secondary
+    preregistered arm**: one more LeWM run that differs only in the camera.
 - **Privileged labels.** The gated sidecars are read with
   `acknowledge_privileged_training_labels=True`. They serve only two roles:
   - **readout-head training targets;**
@@ -131,7 +136,9 @@ arm receives exactly the same additions.
 ### Backends (`configs/apple_wm_v2.yaml`, `configs/apple_wm_v2_lewm.yaml`)
 
 The LeWM config is `extends: apple_wm_v2.yaml` plus `world_model.backend:
-leworldmodel`. That is the one-line swap. The shared keys are identical for both
+leworldmodel`. That is the one-line swap. The secondary arm
+`apple_wm_v2_lewm_hand_crop.yaml` extends the LeWM config and changes only the
+camera (and the checkpoint path). The shared keys are identical for both
 backends: `camera onboard_rgb`, `latent_dim 128`, `hidden_dim 256`,
 `max_horizon 64`, `state_fusion`, `readout_heads`, `readout_weight 1.0` and
 `readout_hidden_dim 256`.
@@ -156,8 +163,8 @@ The difference is backend-owned preprocessing.
 | Batch | 32 windows of 16 transitions (uniform over all train windows, with replacement) |
 | Optimizer | the model's AdamW, lr 3e-4 with cosine decay to 3e-5 over the 15,000 steps (runner-owned, identical for both backends), weight decay 1e-4, grad clip 1.0 |
 | Seed | 0 (model init and window sampler) |
-| Device | MPS (Apple M5 Pro, 48 GB), one backend at a time: LeWM first, then native |
-| Wall-clock cap | 6,000 s per backend, including decoding; hitting it stops with status `time_budget` |
+| Device | MPS (Apple M5 Pro, 48 GB), one run at a time, in this order: LeWM/onboard, LeWM/hand-crop, native/onboard |
+| Wall-clock cap | 6,000 s per run, including decoding; hitting it stops with status `time_budget` |
 | Validation | every 1,000 steps and at the last step, on the fixed selection cohort |
 
 **Selection rule (val only).**
@@ -190,7 +197,8 @@ uv run --no-sync python -m embodied_jepa.world_model_v2 train \
   --config configs/apple_wm_v2_lewm.yaml \
   --protocol-manifest benchmarks/manifests/apple-world-model-v2.json \
   --device mps --workers 10 --require-clean --acknowledge-privileged-training-labels
-# native: the same command with --config configs/apple_wm_v2.yaml
+# secondary arm: --config configs/apple_wm_v2_lewm_hand_crop.yaml
+# comparison:   --config configs/apple_wm_v2.yaml
 uv run --no-sync python -m embodied_jepa.world_model_v2 evaluate \
   --config configs/apple_wm_v2_lewm.yaml \
   --protocol-manifest benchmarks/manifests/apple-world-model-v2.json --device mps \
@@ -282,9 +290,13 @@ uv run --no-sync python -m embodied_jepa.world_model_v2 evaluate \
   `model.readout` of predicted latents, against shuffle and replay controls.
   Passing is necessary evidence, not success.
 - **LeWM fails only precision gates (G1, G3, G4, G6) but passes G2, G7 and
-  G8 →** the dynamics use the actions but readouts are too coarse. Next: the
-  `hand_crop_rgb` arm (a two-camera or crop-only model), longer training or a
-  larger encoder, preregistered anew.
+  G8 →** the dynamics use the actions but readouts are too coarse. Next: a
+  two-camera model, longer training or a larger encoder, preregistered anew.
+- **The hand-crop arm passes gates the onboard arm fails →** TASK-051 uses the
+  hand-crop model, and the onboard result is still reported. The same rule
+  holds in reverse: a hand-crop failure does not weaken an onboard pass.
+- **No arm passes →** T4 does not start. The failed gates and the pre-declared
+  reading for the earliest failed group decide the next protocol.
 - **LeWM fails G2 or G7 →** the prediction does not depend on the actions
   enough to plan with. **Do not** start closed-loop. Next: redesign the action
   conditioning (for example action-chunk tokens, or stronger multistep
@@ -299,8 +311,8 @@ uv run --no-sync python -m embodied_jepa.world_model_v2 evaluate \
 
 ## Not done in this task (declared)
 
-- **`hand_crop_rgb`.** No second camera arm. It remains the first follow-up if
-  the precision gates fail.
+- **Two cameras at once.** Each run uses one camera. No two-camera model is
+  built here.
 - **Ensembles and extra seeds.** Not run.
 - **Test split and closed-loop control.** Neither is touched.
 
@@ -340,6 +352,10 @@ draft code:
   - clearer wording on label-derived masks.
   All were added. The cosine learning-rate decay was added at the same time,
   before any frozen run.
+- **After the review cleared the code**, one more fix was needed: the
+  scheduled learning rate was a NumPy float, which `torch.load(weights_only=True)`
+  refuses. It is cast to a Python float (`293b331`), with a test. The secondary
+  hand-crop arm was preregistered at the same time, before any frozen run.
 - **`pilot-b`.** LeWM, 2,000 steps with the mask and constant lr, run after
   these changes.
   - The h = 8 moving-window median was 7.4–8.3 cm from step 500 on, against

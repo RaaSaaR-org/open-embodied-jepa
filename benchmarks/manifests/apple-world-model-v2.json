@@ -1,23 +1,23 @@
 {
-  "protocol": "apple_world_model_v2",
-  "task": "TASK-050",
-  "status": "draft",
+  "arms": [
+    {
+      "config": "configs/apple_wm_v2_lewm.yaml",
+      "name": "lewm_onboard",
+      "role": "primary product"
+    },
+    {
+      "config": "configs/apple_wm_v2_lewm_hand_crop.yaml",
+      "name": "lewm_hand_crop",
+      "role": "secondary preregistered camera arm"
+    },
+    {
+      "config": "configs/apple_wm_v2.yaml",
+      "name": "native_onboard",
+      "role": "comparison"
+    }
+  ],
+  "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
   "frozen": {
-    "training": {
-      "steps": 15000,
-      "batch_size": 32,
-      "horizon": 16,
-      "seed": 0,
-      "max_seconds": 6000,
-      "validation_every": 1000,
-      "selection_windows": 1024,
-      "final_lr_fraction": 0.1
-    },
-    "selection_eligibility": {
-      "max_collapsed_fraction": 0.05,
-      "min_effective_rank": 2.0,
-      "min_latent_std_mean": 0.1
-    },
     "gates": {
       "G1_palm_apple_moving_h8_median_m": 0.015,
       "G2_max_ratio_to_control": 0.8,
@@ -32,6 +32,25 @@
       "G8_max_collapsed_fraction": 0.05,
       "G8_min_effective_rank": 4.0,
       "G8_min_latent_std_mean": 0.1
+    },
+    "selection_eligibility": {
+      "max_collapsed_fraction": 0.05,
+      "min_effective_rank": 2.0,
+      "min_latent_std_mean": 0.1
+    },
+    "training": {
+      "batch_size": 32,
+      "final_lr_fraction": 0.1,
+      "horizon": 16,
+      "max_seconds": 6000,
+      "seed": 0,
+      "selection_windows": 1024,
+      "steps": 15000,
+      "validation_every": 1000
     }
-  }
+  },
+  "protocol": "apple_world_model_v2",
+  "protocol_doc": "docs/experiments/apple_world_model_v2.md",
+  "status": "frozen_pre_run",
+  "task": "TASK-050"
 }
