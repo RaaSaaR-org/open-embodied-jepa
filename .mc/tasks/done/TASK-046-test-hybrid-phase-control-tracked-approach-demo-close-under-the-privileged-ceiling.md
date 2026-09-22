@@ -4,7 +4,7 @@ aliases:
 - TASK-046
 title: Test hybrid phase control (tracked approach + demo close) under the privileged ceiling
 slug: test-hybrid-phase-control-tracked-approach-demo-close-under-the-privileged-ceiling
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -29,12 +29,12 @@ updated: 2026-09-22
 TASK-045's privileged exact-rollout trajectory tracker reached the scorer's reach stage on 4/4 development resets 43000-43003 but grasp on 0/4 (apple fell without lift on 4/4); tracking error rose after the close row. Open-loop `demo_replay` (TASK-043) grasped 4/4 on the same resets. Does privileged trajectory tracking up to the retrieved TRAIN demonstration's close row, followed by open-loop execution of that demonstration's own remaining actions from the matched frame, reach the scorer's grasp stage on >=2/4 resets? NON-LEARNED diagnostic only.
 
 ## Acceptance Criteria
-- [ ] Preregister `docs/experiments/apple_hybrid_phase_v1.md` (design, TRAIN-only handoff justification, primary gate, secondary early-handoff arm and demo_replay same-code reference with their own readings, budgets <=840 s/attempt and <=3600 s global, interpretations, frozen command) before any development attempt.
-- [ ] Implement in isolation (`src/embodied_jepa/hybrid_phase.py`, `evaluate_apple.py --goal-kind hybrid`); no change to sensor.py, base.py, trajectory_tracking.py, privileged_rollout.py, waypoint_planning.py, scorer or guards; image/state/trajectory plans and gates unchanged.
-- [ ] Tests for handoff, replay, termination, gate and worker wiring; ruff and full pytest pass.
-- [ ] Recorded software smoke on TRAIN reset 42000 only; independent pre-run review; fix blockers before running.
-- [ ] Run the frozen command exactly once from a clean checkout into a new output directory; record every outcome (results doc, manifest, this task, TASK-033 line).
-- [ ] Independent post-run verification of numbers against raw outputs; deliver through PR. TASK-033/034 stay open; final cohort 44000-44019 and TEST untouched.
+- [x] Preregister `docs/experiments/apple_hybrid_phase_v1.md` (design, TRAIN-only handoff justification, primary gate, secondary early-handoff arm and demo_replay same-code reference with their own readings, budgets <=840 s/attempt and <=3600 s global, interpretations, frozen command) before any development attempt.
+- [x] Implement in isolation (`src/embodied_jepa/hybrid_phase.py`, `evaluate_apple.py --goal-kind hybrid`); no change to sensor.py, base.py, trajectory_tracking.py, privileged_rollout.py, waypoint_planning.py, scorer or guards; image/state/trajectory plans and gates unchanged.
+- [x] Tests for handoff, replay, termination, gate and worker wiring; ruff and full pytest pass.
+- [x] Recorded software smoke on TRAIN reset 42000 only; independent pre-run review; fix blockers before running.
+- [x] Run the frozen command exactly once from a clean checkout into a new output directory; record every outcome (results doc, manifest, this task, TASK-033 line).
+- [x] Independent post-run verification of numbers against raw outputs; deliver through PR. TASK-033/034 stay open; final cohort 44000-44019 and TEST untouched.
 
 ## Scope and resources
 CPU. One command, 12 attempts (4 primary `privileged_hybrid`, 4 `demo_replay`, 4 secondary `privileged_hybrid_early`), mode-major, 840 s/attempt, 3600 s global.
@@ -54,3 +54,5 @@ Executed once from clean tracked checkout `f8dac630bc689d305ca5a8cc561e8ddb8ec9b
 - Evidence: `docs/experiments/apple_hybrid_phase_results_v1.md`, `benchmarks/manifests/apple-hybrid-phase-v1.json`. NON-LEARNED; TASK-033/034 stay open; final cohort and TEST untouched.
 - Recommended next (not started): per the preregistered reading, do not pair this scaffold with learned dynamics; next is an object-aware approach/close cost under the privileged ceiling (TASK-045 candidate 2). A learned approach to the close-16 handoff is a post-hoc proposal needing its own preregistration.
 - Post-run verification (fresh subagent) independently reproduced all numbers, hashes, source snapshot, TASK-045 pre-handoff parity and TASK-043 demo_replay match; corrected primary wall total (943.1 s), primary handoff distance range (0.023-0.031) and aligned the next-step wording with the preregistered reading.
+
+- Delivery: PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/16. Acceptance met with the primary gate explicitly failed; TASK-033/034 stay open.
