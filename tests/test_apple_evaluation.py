@@ -1479,6 +1479,8 @@ def test_hybrid_ceiling_gate_counts_only_the_primary_arm():
     assert set(summary) == {"hybrid_ceiling_gate"}
     assert gate["primary_gate_passed"] and gate["privileged_hybrid_grasp_resets"] == 2
     assert gate["summed_ordered_stages"] == 6 and not gate["readings"]["conclusive"]
+    row = gate["arms"]["privileged_hybrid"]["per_reset"]["43000"]
+    assert row["handoff_reference_index"] == 143 and "stalled_before_close_reference" not in row
     assert "inconclusive" in gate["readings"]["interpretation"]
     # Secondary and reference arms never pass the primary gate.
     others = [

@@ -132,7 +132,9 @@ Secondary (close row − 16), a first-principles alternative declared now:
    the handoff was planned at an index `< close − 16`, so all of its targets were
    `< close`. No executed tracked command was chosen to follow closing motion.
 2. **The replay restores the demonstration's descent timing.** Replay starts
-   at frame 136–137, so it includes the whole blocked descent (≈ frames
+   at frame ≥ 136–137 (the measured index can overshoot the handoff row by up
+   to the 16-row window; the actual `handoff_frame` is reported per reset), so
+   when the handoff lands near the row it includes the blocked descent (≈ frames
    144–210) that keyframing removed from the tracker, and all closing actions.
 
 The value 16 is the existing horizon/window; it was not tuned, and no other
@@ -298,7 +300,12 @@ guard refusal during replay was an uncounted `runtime_error`. Scoring a
 physical guard stop that way would have discarded latched stages and made the
 readings inconclusive for a safety outcome, not a software failure. R0 makes it
 the clean termination `replay_projection_rejected`, like the existing clean
-`execution_rejected`, and records the refusing frame and reason. It changes no
+`execution_rejected`, and records the refusing frame and reason. R0 also makes an
+infeasible replay projection clean. Only the embodiment's
+`measured joint velocity limit exceeded` guard refusal counts; any other
+projector `ContractError` remains a runtime error (review R1). A guard refusal
+during the tracked phase, or in `demo_replay`, is still an uncounted
+`runtime_error`, because those paths are unchanged. It changes no
 handoff row, gate, reading threshold, budget, seed or command. `demo_replay`
 keeps its TASK-043 code path unchanged. After R0 the primary-arm smoke reran
 identically from `323aa6d`: the same handoff (row 143, command 208), the same
@@ -309,6 +316,22 @@ identically from `323aa6d`: the same handoff (row 143, command 208), the same
 whose retrieved demonstration is its own recording, neither arm grasped. The
 result is recorded and does not change any parameter. It is a single TRAIN
 reset and is not part of any gate.
+
+## Pre-run review revision R1
+
+A fresh reviewer ([review](../reviews/apple_hybrid_phase_review.md)) found no
+blocking findings. Before any development attempt, two recommended fixes were
+applied without changing any handoff, gate, budget, seed or command:
+
+1. The replay guard catch is narrowed to the joint-velocity guard refusal (see R0).
+2. The hybrid per-reset rows drop the two tracking-only reading fields
+   (`stalled_before_close_reference`, `passed_demo_grasp_reference_without_grasp`),
+   which used the last *tracked* index and would mislabel handed-off resets.
+   The results use `handoff_reference_index` and `handoff_frame`.
+
+The results will split `demo_exhausted` from `replay_projection_rejected` (with
+the refused frame) per reset. Provenance is run-wide: an input-hash failure in a
+later arm also invalidates earlier records.
 
 ## Frozen run command
 

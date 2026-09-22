@@ -26,6 +26,9 @@ from embodied_jepa.contracts import ContractError, ExecutionResult, Observation
 from embodied_jepa.trajectory_tracking import TrackingController
 from embodied_jepa.waypoint_planning import WaypointDecision
 
+# Embodiment guard refusals from ``project_candidates`` that are physical stops, not
+# software failures. Any other projector ContractError stays a runtime error.
+GUARD_REFUSALS = ("measured joint velocity limit exceeded",)
 HYBRID_LABEL = "NON-LEARNED hybrid phase control: tracked approach + open-loop demonstration close"
 
 
@@ -134,9 +137,11 @@ class HybridPhaseController:
         try:
             projection = projector(requested[None, None, None])
         except ContractError as error:
-            # The unchanged embodiment guards refused to project from the measured
-            # state (for example the joint-velocity guard). Like an execution
-            # rejection, this is a clean, recorded stop, not a software failure.
+            # The unchanged joint-velocity guard refused to project from the measured
+            # state. Like an execution rejection, this is a clean, recorded stop; any
+            # other contract error is a software failure and propagates.
+            if str(error) not in GUARD_REFUSALS:
+                raise
             return self._reject(f"{type(error).__name__}: {error}")
         if not isinstance(projection, CandidateProjection) or projection.actions.shape != (
             1,

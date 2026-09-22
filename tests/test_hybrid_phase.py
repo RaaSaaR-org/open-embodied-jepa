@@ -178,6 +178,12 @@ def test_replay_enforces_acknowledgement_freshness_and_feasibility():
         "reason": "ContractError: measured joint velocity limit exceeded",
     }
     assert guarded.summary()["replayed_commands"] == 0
+
+    def stale(requested):
+        raise ContractError("projection requires a current unconsumed observation")
+
+    with pytest.raises(ContractError):  # not a guard refusal: a software failure
+        hybrid(row=0).step(observation(0.0, 0.0), stale)
     with pytest.raises(ContractError):  # a malformed projection is still a software failure
         hybrid(row=0).step(observation(0.0, 0.0), lambda r: "not a projection")
     rejected = hybrid(row=0)

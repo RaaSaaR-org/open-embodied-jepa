@@ -1170,6 +1170,10 @@ def _hybrid_arm(records, seeds, mode):
         record = by.get((seed, mode))
         counted = counted_attempt(record)
         row = _tracking_row(record, counted)
+        # last_reference_index stops at the last tracked search, before the handoff;
+        # its tracking-only readings would mislabel handed-off resets, so drop them.
+        del row["stalled_before_close_reference"]
+        del row["passed_demo_grasp_reference_without_grasp"]
         record = record or {}
         handed = bool(record.get("handed_off"))
         row.update(
