@@ -61,6 +61,7 @@ commands, all by `guard_refused`: `wide-48078-b2-shift_close` (7), `wide-48187-b
 
 - **Terminations:** 115 success, 457 branch_complete, 160 guard_refused and
   65 policy_complete (a root that ran its full budget without success).
+  The guard stops split into 20 roots and 140 branches.
 - **First missing stage:** none 115; reach 11; grasp 457; transport 206; place 8.
   Branches stop after lift, so a successful branch grasp shows up as
   "transport".
@@ -128,9 +129,17 @@ Each level includes 10 aim-offset roots.
   successful demonstrations and a dense set of grasp-phase outcomes on both
   sides of the success boundary: 329 grasps and 468 failures, from 200
   distinct pre-grasp states.
-- **What it gives a world model.** Images in which the hand region is 4.7×
-  better resolved than the 24-px model's, and action variation around the
+- **What it gives a world model.** Images in which the hand is better
+  resolved than in the 24-px model's input, and action variation around the
   grasp.
+  - `onboard_rgb` is 4.7× the 24-px resolution in each direction.
+  - `hand_crop_rgb` is cut from a 320-px render, about 13× the 24-px
+    resolution.
+
+Post-run verification by a fresh subagent recomputed every number in this
+document and in the manifest from the corpus, the sidecars and the worker
+reports. It found no discrepancy. This clarification and the guard-stop split
+above were its only (cosmetic) notes.
 - **What it does not show.** It shows nothing about learned dynamics or
   learned control. The actions come from a privileged oracle and its
   perturbations.
