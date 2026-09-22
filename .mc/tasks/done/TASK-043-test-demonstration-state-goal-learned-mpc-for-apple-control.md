@@ -4,7 +4,7 @@ aliases:
 - TASK-043
 title: Test demonstration-state-goal learned MPC for apple control
 slug: test-demonstration-state-goal-learned-mpc-for-apple-control
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -32,7 +32,7 @@ No learned run has passed orient/descend. `SensorWorldModel.distance` scores onl
 - [x] Implement frozen `state_goal_sensor_wm_v1` (TRAIN-normalized predicted right-arm+hand qpos MSE; visual diagnostic weight 0), optional `StateWaypoint`/proprio progress/goal-stall bound in `waypoint_planning.py` with default image-path parity, and `evaluate_apple.py --goal-kind state` with initial-RGB TRAIN retrieval, stride16 goals, TRAIN-only tolerances, dwell 1, 64-command stall failure and non-learned `demo_replay`. No change to sensor.py, base.py, planner core, scoring or guards; no retraining.
 - [x] Tests: conformance, TRAIN-only goal provenance, stall accounting, default-path parity, failure cases; ruff and full pytest pass.
 - [x] Run the single frozen 16-attempt development comparison (resets 43000-43003 x learned/dynamics_shuffle/persistence/demo_replay) once, without retries, and report every outcome and the preregistered gate.
-- [ ] Review evidence and deliver through PR; TASK-033/034 physical acceptance stays open unless separately demonstrated.
+- [x] Review evidence and deliver through PR; TASK-033/034 physical acceptance stays open unless separately demonstrated.
 
 ## Scope and resources
 CPU4, H16, K16, 2 CEM rounds, commitment 1, max 1000 commands, 200 s/attempt, 3600 s global. Final cohort 44000-44019 and TEST stay untouched.
@@ -51,4 +51,5 @@ Executed once, no retries, from clean checkout `a90bf5b48cb3326935d2222d4074607d
 - Falsification (`report.json["state_gate"]["falsification"]`): model/planner failure under state goals **true** (4/4 learned stalled before close goal 13); grasp-precision bottleneck false (0 learned reach); scaffold-explains false (learned scored 0 stages). Diagnostic: learned selected costs (median 0.044-0.069) were far below the measured distances produced (median 0.126-0.228), matching the R1 forecast-bias warning.
 - Evidence: `docs/experiments/apple_state_goal_control_results_v1.md`, `benchmarks/manifests/apple-state-goal-control-v1.json` (per-attempt records, 70 artifact hashes). Final cohort 44000-44019 and TEST untouched. TASK-033/034 physical acceptance stays open.
 - Recommended next step (not started): a privileged MuJoCo-rollout planning ceiling on the same scaffold/resets; only if it passes, grasp-phase data plus retraining with object-relative palm offsets under a new preregistration.
+- Delivery: independent reviewer subagent recomputed all table values, gate/falsification readings, diagnostics and hashes from raw outputs; one factual error (close-goal frame 208 -> 224) and wording nits fixed in the results doc. Post-run checks: ruff check/format clean; full suite (render + LeRobot source) 590 passed, 7 skipped (timm); mc validate/index and diff check passed. Delivered in PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/13. Execute/report/deliver acceptance is met; the primary gate is explicitly failed, and TASK-033/034 physical acceptance stays open.
 %% mc-links: [[TASK-042]] %%
