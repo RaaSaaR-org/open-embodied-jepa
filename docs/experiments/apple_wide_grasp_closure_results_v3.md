@@ -272,8 +272,8 @@ concerned *v2*, not this run; both understated how badly v2 failed). Nothing els
    `configs/g1_sim_action.json` hash to the plan's `asset_manifest_sha256` and
    `action_manifest_sha256` respectively; the third, `models/jepa_wms_source.json`, is a
    tracked file outside `source_hashes` and is byte-identical to `b673f3d`, as are the
-   other two.) Against HEAD
-   `93aff53` exactly one file differs — `src/embodied_jepa/object_ceiling_v3.py` — and the
+   other two.) Against HEAD `93aff53` exactly one file differs —
+   `src/embodied_jepa/object_ceiling_v3.py` — and the
    difference is confined to the module docstring: the parsed AST is identical once
    docstrings are blanked, and every line after the module docstring (line 53 at
    `b673f3d`, 58 at HEAD) is byte-identical. HEAD's copy equals `b2dc4d4`'s.
@@ -359,7 +359,13 @@ concerned *v2*, not this run; both understated how badly v2 failed). Nothing els
    0.18–9.28 cm). The 2/72 guard-refusal risk is the true `cage` rate.
 9. `pytest -q`: **676 passed, 13 skipped** (3 `LEROBOT_SOURCE`, 3 graphics opt-in, 7 no
    `timm`), exit 0. `ruff check` clean; `ruff format --check` clean (107 files);
-   `mc validate` passes.
+   `mc validate` passes. The declared order-dependent failure reproduces exactly as
+   described: `pytest tests/test_apple_evaluation.py` alone gives 1 failed / 71 passed on
+   `test_demo_replay_is_open_loop_non_learned_and_exhausts`
+   (`'runtime_error' != 'demo_exhausted'`), and the test passes in the full suite. That
+   test file is purely additive against `main` (0 lines removed), so the test itself is
+   unchanged; the verifier did not independently re-run it on `main`, and relies on the
+   pre-run review for the inheritance claim.
 
 ### Corrected by this verification
 
