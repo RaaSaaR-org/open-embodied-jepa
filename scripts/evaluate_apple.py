@@ -30,12 +30,25 @@ from embodied_jepa.waypoint_planning import (  # noqa: E402
     WaypointController,
 )
 
-MODES = ("learned", "persistence", "dynamics_shuffle", "hold", "random", "demo_replay")
+MODES = (
+    "learned",
+    "persistence",
+    "dynamics_shuffle",
+    "hold",
+    "random",
+    "demo_replay",
+    "privileged_rollout",
+)
 # TASK-043 demonstration-state-goal MPC. demo_replay is a NON-LEARNED open-loop
 # replay of the retrieved TRAIN demonstration; it never calls the world model.
 STATE_MODES = ("learned", "dynamics_shuffle", "persistence", "demo_replay")
 IMAGE_MODES = MODES[:5]
 STATE_BACKEND = "state_goal_sensor_wm_v1"
+# TASK-044 NON-LEARNED privileged ceiling: the same state-goal CEM scaffold with exact
+# MuJoCo rollouts as its forward model. It runs alone, in development only, and is
+# never a learned result (see embodied_jepa.privileged_rollout).
+PRIVILEGED_MODE = "privileged_rollout"
+CONTROLLER_MODES = ("learned", "persistence", "dynamics_shuffle", PRIVILEGED_MODE)
 STAGES = ("reach", "grasp", "transport", "place", "release")
 
 
@@ -93,6 +106,14 @@ def make_plan(
     modes = list((STATE_MODES if goal_kind == "state" else IMAGE_MODES) if modes is None else modes)
     if not modes or len(set(modes)) != len(modes) or any(m not in MODES for m in modes):
         raise ValueError("unknown or repeated control mode")
+    privileged = PRIVILEGED_MODE in modes
+    if privileged and (modes != [PRIVILEGED_MODE] or stage != "development"):
+        raise ValueError(
+            "the privileged simulator-rollout ceiling runs alone at the development stage; "
+            "it is never mixed with learned modes or used for final evaluation"
+        )
+    if privileged and goal_kind != "state":
+        raise ValueError("the privileged ceiling uses the state-goal scaffold only")
     if goal_kind == "image":
         if "demo_replay" in modes:
             raise ValueError("demo_replay requires --goal-kind state demonstration retrieval")
@@ -100,7 +121,7 @@ def make_plan(
             raise ValueError("goal stall limit is part of the state-goal protocol only")
         wall_limit = 1800
     else:
-        if any(m not in STATE_MODES for m in modes):
+        if any(m not in STATE_MODES + (PRIVILEGED_MODE,) for m in modes):
             raise ValueError("state goals support learned/dynamics_shuffle/persistence/demo_replay")
         if proposals:
             raise ValueError("state-goal protocol forbids demonstration action proposals")
@@ -203,6 +224,25 @@ def make_plan(
             demo_replay_rule=(
                 "NON-LEARNED control: replay the retrieved demo's recorded actions open-loop "
                 "through the same bounds check and mandatory projection; no world model"
+            ),
+        )
+    if privileged:
+        from embodied_jepa.privileged_rollout import (
+            PLANNING_DYNAMICS,
+            PRIVILEGED_LABEL,
+            REJECTED_ROLLOUT_COST,
+        )
+
+        plan.update(
+            privileged_ceiling=True,
+            result_label=PRIVILEGED_LABEL,
+            planning_dynamics=PLANNING_DYNAMICS,
+            rejected_rollout_cost=REJECTED_ROLLOUT_COST,
+            privileged_rule=(
+                "NON-LEARNED diagnostic ceiling: each CEM candidate is scored by restoring a "
+                "copy of the live MuJoCo state into a non-rendering twin, executing its "
+                "projected actions through the unchanged embodiment, and applying the same "
+                "state-goal observed_distance at the horizon endpoint; never a learned result"
             ),
         )
     return plan
@@ -683,6 +723,97 @@ def state_gate(records, seeds):
     }
 
 
+def ceiling_gate(records, seeds):
+    """Preregistered TASK-044 ceiling gate; missing/failed attempts count as zero stages."""
+    by = {(r["seed"], r["mode"]): r for r in records if r.get("mode") == PRIVILEGED_MODE}
+    per_reset = {}
+    for seed in seeds:
+        record = by.get((seed, PRIVILEGED_MODE))
+        counted = counted_attempt(record)
+        score = (record.get("score") or {}) if counted else {}
+        record = record or {}
+        close, reached = record.get("first_close_goal_index"), record.get("last_goal_index")
+        per_reset[str(seed)] = {
+            "counted": counted,
+            "status": record.get("status"),
+            "termination_reason": record.get("termination_reason"),
+            "executed_steps": record.get("executed_steps"),
+            "demonstration_episode_id": record.get("demonstration_episode_id"),
+            "goal_count": record.get("goal_count"),
+            "last_goal_index": reached,
+            "first_close_goal_index": close,
+            "ordered_stages": ordered_stage_count(score),
+            "grasp": bool(score.get("grasp")),
+            "success": bool(score.get("success")),
+            "reported_ordered_stages_uncounted": ordered_stage_count(record.get("score")),
+            "rollout_parity_checks": record.get("rollout_parity_checks"),
+            "rollout_parity_mismatches": record.get("rollout_parity_mismatches"),
+            # Readings use counted attempts only; last_goal_index is the goal being pursued.
+            "stalled_before_close_goal": counted
+            and not score.get("grasp")
+            and (close is None or reached is None or reached < close),
+            "advanced_past_close_goal_without_grasp": counted
+            and not score.get("grasp")
+            and close is not None
+            and reached is not None
+            and reached > close,
+        }
+    rows = list(per_reset.values())
+    grasps = sum(r["grasp"] for r in rows)
+    counted_attempts = sum(r["counted"] for r in rows)
+    provenance_valid = all(r.get("provenance_valid", True) for r in records)
+    mismatches = sum(r["rollout_parity_mismatches"] or 0 for r in rows if r["counted"])
+    exact = mismatches == 0 and all(
+        r["rollout_parity_mismatches"] is not None for r in rows if r["counted"]
+    )
+    passed = provenance_valid and exact and grasps >= 2
+    conclusive = provenance_valid and exact and counted_attempts == len(seeds)
+    stalled = sum(r["stalled_before_close_goal"] for r in rows)
+    past_close = sum(r["advanced_past_close_goal_without_grasp"] for r in rows)
+    return {
+        "label": "NON-LEARNED privileged MuJoCo-rollout planning ceiling; not a learned result",
+        "privileged_grasp_resets": grasps,
+        "summed_ordered_stages": sum(r["ordered_stages"] for r in rows),
+        "full_successes": sum(r["success"] for r in rows),
+        "counted_attempts": counted_attempts,
+        "provenance_valid": provenance_valid,
+        "rollout_parity_mismatches": mismatches,
+        "rollouts_exact": bool(exact),
+        "primary_gate_passed": bool(passed),
+        "readings": {
+            "conclusive": bool(passed or conclusive),
+            "stalled_before_close_goal_resets": stalled,
+            "state_goal_tracking_inadequate": conclusive and not passed and stalled >= 3,
+            "advanced_past_close_goal_without_grasp_resets": past_close,
+            "arm_pose_goals_insufficient_for_grasp": conclusive and not passed and past_close >= 3,
+            "interpretation": (
+                "goal/planner design adequate under perfect dynamics; learned dynamics are "
+                "the bottleneck"
+                if passed
+                else "planner/goal design must change before further model training"
+                if conclusive
+                else "inconclusive: missing/failed attempts, invalid provenance or inexact rollouts"
+            ),
+        },
+        "per_reset": per_reset,
+        "rule": (
+            "privileged_rollout reaches the unchanged scorer's grasp stage on >=2 resets with "
+            "zero rollout parity mismatches; only cleanly completed provenance-valid attempts "
+            "are scored; readings are conclusive only with all attempts counted; non-learned "
+            "ceiling only"
+        ),
+    }
+
+
+def gate_summary(plan, records):
+    """A privileged ceiling report never carries the learned state gate, and vice versa."""
+    if plan.get("privileged_ceiling"):
+        return {"ceiling_gate": ceiling_gate(records, plan["seeds"])}
+    if plan.get("goal_kind") == "state":
+        return {"state_gate": state_gate(records, plan["seeds"])}
+    return {}
+
+
 def verify_plan_inputs(plan, *, source_root=None):
     source_root = ROOT if source_root is None else Path(source_root)
     if digest(plan["checkpoint"]) != plan["checkpoint_sha256"]:
@@ -811,6 +942,7 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stream.flush()
 
     state_kind = plan.get("goal_kind") == "state"
+    privileged = None
     progress = {}
     try:
         verify_plan_inputs(plan)
@@ -819,7 +951,9 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                 plan["controller"]
                 | {
                     "seed": trial["seed"],
-                    "ablation": trial["mode"] if trial["mode"] in MODES[:3] else "persistence",
+                    "ablation": trial["mode"]
+                    if trial["mode"] in MODES[:3]
+                    else ("learned" if trial["mode"] == PRIVILEGED_MODE else "persistence"),
                 }
             )
         )
@@ -860,6 +994,22 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             write(folder / "retrieval.json", retrieval | {"goal_frames": demo["goal_frames"]})
             if trial["mode"] == "demo_replay":
                 replay = library["arrays"][f"actions_{demo['index']}"]
+            elif trial["mode"] == PRIVILEGED_MODE:
+                if plan.get("privileged_ceiling") is not True:
+                    raise ContractError("privileged rollouts require a declared ceiling plan")
+                from embodied_jepa.privileged_rollout import PrivilegedRolloutModel
+
+                # NON-LEARNED ceiling: exact simulator rollouts replace the forward model.
+                privileged = PrivilegedRolloutModel(
+                    model, robot, acknowledge_privileged_ceiling=True
+                )
+                progress.update(rollout_parity_checks=0, rollout_parity_mismatches=0)
+                controller = WaypointController(
+                    privileged,
+                    state_waypoints(library, demo),
+                    progress_distance=model.observed_distance,
+                    config=config,
+                )
             else:
                 controller = WaypointController(
                     model,
@@ -878,7 +1028,7 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stage = "observe"
             observation = robot.observe()
             stage = "plan"
-            if trial["mode"] in MODES[:3]:
+            if trial["mode"] in CONTROLLER_MODES:
                 decision = controller.step(observation, robot.project_candidates)
                 if state_kind:
                     progress["last_goal_index"] = decision.trace.get(
@@ -890,7 +1040,18 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                         record(decision.trace | {"event": "controller_termination"})
                     break
                 command, current = decision.action, decision.trace.copy()
-                if state_kind:
+                if privileged is not None:
+                    current["privileged_rollout_diagnostic"] = privileged.pop_diagnostics()
+                    for row in current["privileged_rollout_diagnostic"]:
+                        match = row.get("previous_search_first_step_exact_match")
+                        if match is not None:
+                            progress["rollout_parity_checks"] = (
+                                progress.get("rollout_parity_checks", 0) + 1
+                            )
+                            progress["rollout_parity_mismatches"] = progress.get(
+                                "rollout_parity_mismatches", 0
+                            ) + int(not match)
+                elif state_kind:
                     current["visual_diagnostic"] = model.pop_diagnostics()
             elif trial["mode"] == "demo_replay":
                 # NON-LEARNED reference: recorded TRAIN actions, open loop, no model call.
@@ -951,10 +1112,13 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             record(current | {"event": "command_pending", "executed": None})
             stage = "execute"
             result = robot.execute(command)
-            if trial["mode"] in MODES[:3]:
+            if trial["mode"] in CONTROLLER_MODES:
                 diagnostic = current.get("visual_diagnostic")
+                rollout = current.get("privileged_rollout_diagnostic")
                 current = controller.acknowledge(result)
-                if state_kind:
+                if privileged is not None:
+                    current["privileged_rollout_diagnostic"] = rollout
+                elif state_kind:
                     current["visual_diagnostic"] = diagnostic  # weight 0, logged only
             else:
                 current.update(
@@ -993,6 +1157,8 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             }
         )
     finally:
+        if privileged is not None:
+            privileged.close()
         if robot is not None:
             robot.stop(reason)
             robot.close()
@@ -1284,11 +1450,7 @@ def run(args, *, start_clock=None):
                 "denominator": len(plan["attempts"]),
                 "wall_seconds": max(time.time() - start_wall, time.monotonic() - start_mono),
             }
-            | (
-                {"state_gate": state_gate(records, plan["seeds"])}
-                if plan.get("goal_kind") == "state"
-                else {}
-            ),
+            | gate_summary(plan, records),
         )
     return records
 
