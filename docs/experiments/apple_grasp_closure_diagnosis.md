@@ -37,7 +37,11 @@ twin, controller and scorer (scratch code under the main checkout's ignored
    closure from everything that precedes it.
 
 `max apple xy` below is the largest horizontal displacement of the apple from its
-position at the first close command, over the 45-command close.
+position at the first close command, over the 45-command close, and **"ejected" means
+that displacement reached 1.5 cm** (a threshold chosen for this write-up, not a scorer
+rule; one ejecting close, 49103 at 2.45 cm, still latched the scorer's grasp stage). The
+per-command action figures are the *applied* commands — the harness records the
+post-projection action, so the CEM's pre-projection request is not available.
 
 ## Finding 1: the ejection is caused inside the close, not by where the hand arrived
 
@@ -68,39 +72,58 @@ The separation is complete on this sample. A contact before command 10 is a stri
 hand that is still substantially **open and still moving**; a contact at 10–11 is made
 by a hand that has already closed around the apple.
 
-The per-command force traces show the mechanism directly. On a held close, all three
-digits load together at command 10–11 (thumb/index/middle 21.0/9.7/11.8 N on 49100,
-7.5/6.8/6.8 N on the collector) and the apple moves under a centimetre. On an ejecting
-close the **thumb alone** loads first — 1.4 N at command 6 on 49112, 0.1 N at command 5
-on 49114, 1.5 N at command 4 on 49115 — and the apple is pushed away from the palm in
-+x by 0.71, 1.62, 2.83 cm on consecutive commands, leaving the hand before it shuts.
+The per-command force traces show the mechanism directly. On a held ceiling close all
+three digits load together as the hand shuts — thumb/index/middle 21.0/9.7/11.8 N at
+command 10 on 49100 — and the apple moves under a centimetre. The collector's contact is
+a clean opposed closure: index and middle touch first at command 11 (2.6–3.2 N), the
+thumb arrives at command 13 (12.0 N) and by command 14 all three are balanced
+(7.5/6.8/6.8 N). On an ejecting close the **thumb alone** loads first — 1.4 N at command
+6 on 49112, 0.1 N at command 5 on 49114, 1.5 N at command 4 on 49115 — and the apple is
+pushed away from the palm in +x by 0.71, 1.62, 2.83 cm on consecutive commands, leaving
+the hand before it shuts.
 
 ## Finding 3: why the ceiling's palm keeps moving while the hand closes
 
 The close cost is `‖palm − grasp point‖` (the grasp point fixed at the close start) plus
 a palm-drift guard with a 1 cm dead band plus an apple-disturbance term, and the CEM
-plans all six right-arm degrees of freedom throughout. Inside the eleven ramp commands
-that cost is nearly flat:
+plans all six right-arm degrees of freedom throughout. **Laterally** that cost is nearly
+flat inside the eleven ramp commands:
 
 - the palm is ~6.4 cm above the (blocked) grasp point, so a 1 cm lateral change alters
   the 3-D distance term by 0.078 cm, and the drift guard exempts the first centimetre
   outright;
-- the descent is blocked, so a candidate that commands −0.5 in z and one that commands 0
-  reach almost the same palm position over the six-step horizon;
 - the apple has not yet moved, so the disturbance term is zero for every candidate.
 
-With the cost flat, the CEM's proposal noise (σ 0.3, bound 0.5) decides. Measured over
-the eleven ramp commands of the sixteen v2 closes, the mean absolute lateral command was
-**0.219–0.313** (0.33–0.47 cm per command) and the vertical command ranged over the full
-[−0.5, +0.5], including commands that lift the palm while the fingers are on the apple
-(49112 commanded +0.500 and +0.457 at ramp commands 9 and 10). The collector's close, by
-contrast, commands a mean absolute lateral **0.029–0.047** (≈0.05 cm per command) and a
-constant saturated −0.400 in z on every reset.
+The measured commands say exactly that, and say the opposite about the vertical
+command. Over the eleven ramp commands of the sixteen v2 closes:
 
-The consequence is the palm travel during the ramp: the collector sinks 0.97–0.99 cm and
-drifts 0.20–0.22 cm laterally on all sixteen resets, while v2 sinks 0.40–1.85 cm and
-drifts 0.05–1.22 cm. The runs at the fast end of that spread drive the open hand into
-the apple early, and the runs at the slow end let the hand shut first.
+| applied command | v2 ceiling, across the 16 closes | pure clipped proposal noise (σ 0.3, ±0.5) | collector |
+|---|---|---|---|
+| mean absolute lateral | **0.219 – 0.313** | 0.228 | 0.029 – 0.047 |
+| mean vertical | **−0.409 – −0.223** | 0.000 | −0.400 (saturated) |
+
+So the **lateral** command is statistically indistinguishable from undirected proposal
+noise — the CEM is not steering it, the noise is — while the **vertical** command is
+clearly *selected*: every one of the sixteen closes has a net downward mean, which
+undirected noise would not produce. The height term is not flat once the fingers begin
+to curl off the table and the palm can actually sink. (It is still not a *guarantee* of
+descent: the vertical command does range over the full [−0.5, +0.5] command by command,
+and 49112 commanded +0.500 and +0.457 at ramp commands 9 and 10, lifting the palm while
+the fingers were on the apple.)
+
+This is why the redesign pins the lateral and rotational command and leaves the vertical
+one to the planner: the lateral degree of freedom is where the noise is doing the work.
+
+The consequence shows up in the palm travel **up to the first hand–apple contact** — a
+window that is 11 commands for the collector on every reset but only 4–11 for v2,
+because the contact command is itself the thing being explained. Over that window the
+collector sinks 0.97–0.99 cm and drifts 0.20–0.22 cm laterally on all sixteen resets,
+while v2 sinks 0.40–1.85 cm and drifts 0.05–1.22 cm; those totals are not like-for-like,
+and the two *smallest* v2 totals belong to ejections, precisely because contact came
+early. The rate is like-for-like, and the lateral rate separates the two outcomes
+completely: **lateral drift per command up to first contact is 0.078–0.204 cm on the
+four ejections and 0.004–0.074 cm on the twelve holds, with no overlap** (the collector
+is at 0.018–0.020 cm). The vertical rate does not separate them.
 
 ## Finding 4: which closure designs fix it (paired experiment)
 
@@ -131,15 +154,17 @@ Four things follow.
 
 - **Freezing the lateral and rotational palm command during the close is what helps.**
   `cage` grasped on 70 of 72 paired runs over 24 tuning resets and kept the apple within
-  1.45 cm whenever it grasped, against v2's 49/53 over 19 resets and 0.18–2.94 cm. The two
-  designs were not run on the same seed set (see Limits), so this is a screen, not a
-  matched comparison. `cage`'s two failures were one guard refusal (below) and one run
+  1.45 cm whenever it grasped, against v2's 49/53 over 19 resets and 0.18–2.94 cm. Those
+  two totals are over different seed sets; **restricted to the sixteen seeds on which
+  both ran, with three CEM realisations each, it is `cage` 47/48 against `v2` 44/48** —
+  the same separation. `cage`'s two failures were one guard refusal (below) and one run
   that reached the 200-command budget.
 - **Downward pressure is necessary, and it has to be free to be large.** `hold` and
   `narrow`, which let the palm barely sink, ejected the apple by 16.85 cm — one replay
   each, on a single seed, so that figure is anecdotal even though the general claim below
-  is not: the fingers curl around the apple above its equator and squeeze it out
-  sideways. Tightening
+  is not. The mechanism we infer — the fingers curl around the apple above its equator
+  and squeeze it out sideways — is a **conjecture**: the paired harness records only
+  outcome scalars, not poses or contacts, so no trace backs it. Tightening
   the descent bound reproduces that failure — `cage_g0` and `cage_gentle` (bound 0.12)
   grasped 0/28 and `cage_g25` (bound 0.25) 5/24, against `cage`'s 70/72 with the full
   bound. What matters is removing the *lateral* freedom, not the vertical one.
@@ -169,7 +194,11 @@ Nothing about the simulator's contact parameters is implicated: the apple
 (friction 1/0.01/0.001, `solref` 0.02/1, default `solimp`, 0.08 kg, 2.7 cm sphere) and
 the Dex3 fingertip geoms (friction 1/0.005/0.0001, same solver parameters) are the
 pinned upstream Unitree values plus the declared procedural apple, and **they were not
-changed**. The collector reaches 16/16 on the same resets under the same physics.
+changed**. On these tuning resets the collector reached the scorer's grasp stage with no
+ejection on 16/16 — full task success was *not* measured there, because the forensics
+harness stops the episode shortly after the close. Full task success under the same
+physics is established elsewhere, by TASK-049's own gated run: `scripted_oracle`
+succeeded 8/8 on 45100–45107 and 8/8 on 45000–45007.
 
 ## What this implies for the redesign (ceiling v3)
 
@@ -180,9 +209,11 @@ Close the hand with the palm caged and still:
    shear the object;
 2. keep the vertical degree of freedom under the existing CEM but allow only descent
    (bounded, never rising), so the palm keeps sinking around the apple as the fingers
-   curl off the table without a fixed press that trips the velocity guard. Only the
-   *bound* is supported by a large sample; the "never rising" half rests on the
-   two-replay `zonly` row and is a conservative addition, not separately attributable;
+   curl off the table without a fixed press that trips the velocity guard. The planner
+   already selects descent under v2's symmetric bounds, so this half of the change is a
+   guard-rail rather than the fix: the *size* of the bound is supported by a large sample
+   (0/24 and 5/24 at 0.12 and 0.25 against 70/72 at 0.5), while forbidding a rise rests
+   on the two-replay `zonly` row and is not separately attributable;
 3. keep the eleven-command rate-limited closure; do **not** slow the synergy ramp.
 
 This is `object_ceiling_v3.ObjectCeilingV3Controller`. Every other v2 behaviour — the
@@ -193,7 +224,8 @@ the twin and both parity checks — is inherited unchanged.
 
 - Exploratory, on 16 tuning resets for the forensics (49100–49115) and 24 for the paired
   closure experiment, with at most 72 replays per design. The declared tuning range is
-  49100–49131; the seeds actually stepped are 49100–49117, 49120 and 49124–49131. The counts are design
+  49100–49131; the 27 seeds actually stepped are 49100–49117, 49120 and 49124–49131
+  (49118, 49119 and 49121–49123 were never run). The counts are design
   evidence, not a gate, and they were all produced before the v3 preregistration was
   frozen. Designs were not run on identical seed sets: `v2` and `cage` were replayed on
   every seed a process reached, while the clearly-failing designs were stopped early, so

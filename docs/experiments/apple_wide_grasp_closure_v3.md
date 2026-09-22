@@ -4,6 +4,16 @@
 NON-LEARNED diagnostic. Nothing in this protocol is a learned result; learned
 Apple→Plate remains at zero successes, and TASK-033/TASK-034 stay open.
 
+> **Revision record.** R1 (`b673f3d`) applied the pre-run review's non-blocking items
+> against an interim draft of that review. The reviewer's **final** verdict was BLOCK on
+> three factual corrections to this record (B2, B3, B4 in
+> [the review](../reviews/apple_wide_grasp_closure_v3_review.md)), all of them statements
+> in prose, none of them a seed, threshold, cohort, budget, parameter, config or command.
+> R2 applies them. The author had already launched the frozen run from `b673f3d` when the
+> final verdict arrived; R2 was written and committed **before any gated outcome was
+> inspected**, and is derived entirely from TRAIN-side data. The results document records
+> this sequencing failure and states which revision the run executed.
+
 ## Question
 
 TASK-049's object-aware exact-rollout ceiling v2 failed its primary gate on the fresh
@@ -14,10 +24,14 @@ fingers ejected the apple during the `close` phase.
 
 TASK-051's TRAIN-side diagnosis
 ([apple_grasp_closure_diagnosis.md](apple_grasp_closure_diagnosis.md)) isolated the
-mechanism: the v2 close cost is nearly flat in the palm command while the Dex3 synergy
-is shutting, so the CEM's proposal noise sets the palm's motion over those eleven
-commands; when the noise drives the palm down and sideways quickly, the still-open thumb
-strikes the apple first and sweeps it out of the hand.
+mechanism: the v2 close cost is nearly flat in the *lateral* palm command while the Dex3
+synergy is shutting, so over those eleven commands the lateral command is statistically
+indistinguishable from the CEM's undirected proposal noise (mean |dxy| 0.219–0.313
+against 0.228 for the noise alone; the vertical command, by contrast, is clearly
+selected, mean −0.409 to −0.223 against 0.000). When that lateral noise walks the palm
+off the apple, the still-open thumb strikes it first and sweeps it out of the hand: every
+ejection had a lateral drift of 0.078–0.204 cm per command up to first contact, every
+hold 0.004–0.074 cm, with no overlap over sixteen closes.
 
 **Does a ceiling whose close phase cages the apple — lateral and rotational palm command
 frozen, descent-only vertical command, unchanged synergy rate — reach full success ≥ 6/8
@@ -44,8 +58,11 @@ the parity checks stay non-vacuous. **v1 and v2 behaviour, plans, gates and evid
 untouched; tests pin this.**
 
 Simulator physics and contact parameters are **unchanged**. The diagnosis found nothing
-unphysical in them and the scripted collector reaches 16/16 on the same resets under the
-same physics.
+unphysical in them, and the scripted collector succeeds under the same physics on the
+same distribution: TASK-049's gated run recorded `scripted_oracle` full task success 8/8
+on 45100–45107 and 8/8 on 45000–45007. (On the TRAIN tuning resets the diagnosis measured
+the collector's grasp stage, 16/16 with no ejection; that harness stops shortly after the
+close, so it did not measure full success.)
 
 **Credit cannot be split between the two halves of the change.** The paired experiment
 supports the lateral/rotational pin: it is what separates `cage` (70/72 grasps, apple held
@@ -269,11 +286,12 @@ stalls and timeouts, goes into `apple_wide_grasp_closure_results_v3.md` and
 - **The close is 45 commands while the synergy finishes in eleven.** For the remaining ~34
   the planner may keep commanding descent into the closed hand; that is v2's behaviour,
   deliberately unchanged, and it is the mechanism behind the guard refusal above.
-- **v3 forbids rising but does not require sinking.** The close cost is nearly flat in z
-  while the palm is blocked, candidate 0 is always the all-zero hold and ties break to the
-  lowest index, so nothing forces a descent command early in the close. The paired
-  experiment's 70/72 is the empirical evidence that the planner does choose enough
-  descent under this bound; there is no analytic guarantee.
+- **v3 forbids rising but does not require sinking.** Candidate 0 is always the all-zero
+  hold and ties break to the lowest index, so nothing in the design *forces* a descent
+  command. The evidence that the planner chooses one anyway is direct: under v2's
+  symmetric bounds every one of the sixteen recorded closes had a net downward mean
+  command (−0.409 to −0.223, against 0.000 for undirected noise), and the paired
+  experiment grasped 70/72 under v3's bound. There is no analytic guarantee.
 - **Seed-integer disjointness does less work than it looks.** The tuning range is drawn
   from the same distribution and is four times larger, so some gate draws sit close to
   tuned draws: the nearest neighbour in apple xy is 45206 ↔ 49129 at 1.8 mm (their plates
@@ -282,8 +300,9 @@ stalls and timeouts, goes into `apple_wide_grasp_closure_results_v3.md` and
   the gate cohort's own internal separation (1.09 cm). The resets are distinct and a pass
   is framed as adequacy on new draws from the distribution the tuning resets spanned, not
   as independence from them.
-- **Tuning.** 32 tuning resets from the same distribution shaped v3; the gate uses fresh
-  draws but the same distribution.
+- **Tuning.** 27 tuning resets from the same distribution (49100–49117, 49120,
+  49124–49131, out of the declared range 49100–49131) shaped v3; the gate uses fresh draws
+  but the same distribution.
 - **Secondary cohorts are not independent.** 45100–45107 produced the failures this
   redesign targets, and 45000–45007 shaped v2. Neither gates.
 - **Shared machine.** A parallel job may slow commands; the 10 s deadline and the

@@ -10,16 +10,19 @@ isolated the mechanism. The Dex3 synergy needs eleven commands to travel from op
 closed under the embodiment's joint-rate limit (2.0 rad/s x 0.05 s = 0.1 rad per command
 against a 1.1 rad largest per-joint travel), and v2 leaves all six right-arm degrees of
 freedom under CEM control throughout those eleven commands. The v2 close cost is nearly
-flat there: the palm-to-grasp-point term is dominated by a ~6.4 cm *blocked* height
-error, so a 1 cm lateral change alters it by under 0.8 mm; the drift guard exempts the
-first centimetre outright; a blocked palm reaches almost the same position over the
-horizon whether the vertical command is 0 or -0.5; and the apple has not moved yet, so
-the disturbance term is zero for every candidate. Inside that flat region the CEM's
-proposal noise decides, and the palm moves 0.05-1.22 cm laterally and 0.40-1.85 cm
-vertically while the fingers are still opening (the scripted collector, which never
-ejects the apple, moves 0.20-0.22 cm and 0.97-0.99 cm). On the runs that eject, first
-hand-apple contact therefore lands at close command 4-8 instead of 10-11: a still-open,
-still-moving thumb strikes the apple first and sweeps it 2.5-9.1 cm out of the hand.
+flat there *laterally*: the palm-to-grasp-point term is dominated by a ~6.4 cm *blocked*
+height error, so a 1 cm lateral change alters it by under 0.8 mm; the drift guard exempts
+the first centimetre outright; and the apple has not moved yet, so the disturbance term
+is zero for every candidate. The recorded commands bear this out and distinguish the two
+axes: over the sixteen v2 closes the mean absolute lateral command is 0.219-0.313 against
+0.228 for the CEM's undirected clipped proposal noise alone -- indistinguishable, i.e.
+the noise is steering -- while the mean vertical command is -0.409 to -0.223 against
+0.000 for that noise, i.e. descent is genuinely selected. The lateral random walk is what
+ejects the apple: lateral drift per command up to first hand-apple contact is
+0.078-0.204 cm on the four ejecting closes and 0.004-0.074 cm on the twelve holding ones,
+with no overlap, and first contact therefore lands at close command 4-8 instead of 10-11
+-- a still-open, still-moving thumb strikes the apple first and sweeps it 2.5-9.1 cm out
+of the hand.
 
 Version 3 changes the ``close`` phase, and only the ``close`` phase:
 
@@ -34,11 +37,13 @@ Version 3 changes the ``close`` phase, and only the ``close`` phase:
             apple by 17 cm -- but may never rise while the hand is shutting, and the
             planner can still choose a smaller command when contact makes a larger one
             infeasible (a fixed press trips the embodiment's measured joint-velocity
-            guard). Only the bound is supported by a large sample; forbidding a rise is a
-            conservative addition (the two-replay ``zonly`` design, which allowed it,
-            behaved the same). The grasp command and the phase length are
-            v2's: the eleven-command rate-limited closure is kept deliberately, since
-            slowing the synergy ramp makes the ejection worse, not better.
+            guard). The lateral/rotational pin is the change the evidence supports; the
+            size of the descent bound is supported too, but forbidding a rise is a
+            guard-rail, since the planner already selected descent under v2's symmetric
+            bounds and the two-replay ``zonly`` design that allowed a rise behaved the
+            same. The grasp command and the phase length are v2's: the eleven-command
+            rate-limited closure is kept deliberately, since slowing the synergy ramp
+            makes the ejection worse, not better.
 
 Everything else -- the v2 xy-weighted descent and its blocked-descent rule, the close
 cost, the lift/transport carry costs, the release predictor, the exactly-probed release,
