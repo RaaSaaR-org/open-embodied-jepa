@@ -38,6 +38,8 @@ MODES = (
     "random",
     "demo_replay",
     "privileged_rollout",
+    "privileged_hybrid",
+    "privileged_hybrid_early",
 )
 # TASK-043 demonstration-state-goal MPC. demo_replay is a NON-LEARNED open-loop
 # replay of the retrieved TRAIN demonstration; it never calls the world model.
@@ -55,6 +57,13 @@ TRACKING_MODES = ("learned", "dynamics_shuffle", "persistence")
 # positive adjacent-frame distance from the last kept frame are dead time.
 KEYFRAME_FRACTION = 0.1
 STAGES = ("reach", "grasp", "transport", "place", "release")
+# TASK-046 NON-LEARNED hybrid phase control under the privileged ceiling: exact-rollout
+# trajectory tracking until the measured reference index reaches the handoff row, then
+# open-loop replay of the retrieved TRAIN demonstration's own actions from the matched
+# frame. The primary arm hands off at the first close row, the secondary arm one
+# planning horizon earlier; demo_replay is the same-code open-loop reference.
+HYBRID_PRIVILEGED_MODES = ("privileged_hybrid", "privileged_hybrid_early")
+HYBRID_MODES = ("privileged_hybrid", "demo_replay", "privileged_hybrid_early")
 
 
 def validate_attempt_budget(seconds):
@@ -94,8 +103,8 @@ def make_plan(
     goal_kind="image",
     goal_stall_limit=None,
 ):
-    if goal_kind not in ("image", "state", "trajectory"):
-        raise ValueError("goal kind must be image, state or trajectory")
+    if goal_kind not in ("image", "state", "trajectory", "hybrid"):
+        raise ValueError("goal kind must be image, state, trajectory or hybrid")
     if stage not in ("development", "final"):
         raise ValueError("stage must be development or final")
     cohort = tuple(range(43000, 43005)) if stage == "development" else tuple(range(44000, 44020))
@@ -108,10 +117,22 @@ def make_plan(
         raise ValueError("seeds must be unique members of the declared stage cohort")
     if stage == "final" and seeds != list(cohort):
         raise ValueError("final evaluation requires the complete frozen20-reset cohort")
-    default_modes = {"state": STATE_MODES, "trajectory": TRACKING_MODES}.get(goal_kind, IMAGE_MODES)
+    default_modes = {
+        "state": STATE_MODES,
+        "trajectory": TRACKING_MODES,
+        "hybrid": HYBRID_MODES,
+    }.get(goal_kind, IMAGE_MODES)
     modes = list(default_modes if modes is None else modes)
     if not modes or len(set(modes)) != len(modes) or any(m not in MODES for m in modes):
         raise ValueError("unknown or repeated control mode")
+    if goal_kind == "hybrid":
+        if any(m not in HYBRID_MODES for m in modes) or stage != "development":
+            raise ValueError(
+                "hybrid phase control is a non-learned development ceiling: "
+                "privileged_hybrid/demo_replay/privileged_hybrid_early only"
+            )
+    elif any(m in HYBRID_PRIVILEGED_MODES for m in modes):
+        raise ValueError("hybrid phase modes require --goal-kind hybrid")
     privileged = PRIVILEGED_MODE in modes
     if privileged and (modes != [PRIVILEGED_MODE] or stage != "development"):
         raise ValueError(
@@ -127,7 +148,7 @@ def make_plan(
             raise ValueError("goal stall limit is part of the state-goal protocol only")
         wall_limit = 1800
     else:
-        allowed = STATE_MODES if goal_kind == "state" else TRACKING_MODES
+        allowed = {"state": STATE_MODES, "trajectory": TRACKING_MODES}.get(goal_kind, HYBRID_MODES)
         if any(m not in allowed + (PRIVILEGED_MODE,) for m in modes):
             if goal_kind == "trajectory":
                 raise ValueError("trajectory modes: learned/dynamics_shuffle/persistence")
@@ -138,7 +159,7 @@ def make_plan(
             raise ValueError("state goals must be spaced exactly one planning horizon apart")
         if type(goal_stall_limit) is not int or goal_stall_limit < 1:
             raise ValueError("state goals require a positive per-goal stall limit")
-        if goal_kind == "trajectory" and commitment_steps != 1:
+        if goal_kind in ("trajectory", "hybrid") and commitment_steps != 1:
             raise ValueError("trajectory tracking replans after every command")
         wall_limit = 3600
     if not np.isfinite(max_seconds) or not 0 < max_seconds <= wall_limit:
@@ -237,11 +258,11 @@ def make_plan(
                 "through the same bounds check and mandatory projection; no world model"
             ),
         )
-    if goal_kind == "trajectory":
+    if goal_kind in ("trajectory", "hybrid"):
         from embodied_jepa.models.state_goal_sensor import FIELDS, VISUAL_WEIGHT
 
         plan.update(
-            goal_kind="trajectory",
+            goal_kind=goal_kind,
             backend=STATE_BACKEND,
             state_goal_fields=list(FIELDS),
             visual_diagnostic_weight=VISUAL_WEIGHT,
@@ -277,6 +298,50 @@ def make_plan(
             ),
             proposal_rule="none: no demonstration action proposals or action seeding",
             threshold_rule="none: no goal tolerances; progress is the nearest reference row",
+        )
+    if goal_kind == "hybrid":
+        from embodied_jepa.hybrid_phase import HYBRID_LABEL
+        from embodied_jepa.privileged_rollout import (
+            PLANNING_DYNAMICS,
+            PRIVILEGED_LABEL,
+            REJECTED_ROLLOUT_COST,
+        )
+
+        # Mode-major order: all primary-arm attempts run first, so the secondary arm can
+        # never consume the primary arm's budget.
+        plan["attempts"] = sorted(attempts, key=lambda a: modes.index(a["mode"]))
+        plan.update(
+            privileged_ceiling=any(m in HYBRID_PRIVILEGED_MODES for m in modes),
+            result_label=f"{HYBRID_LABEL}; {PRIVILEGED_LABEL}",
+            planning_dynamics=PLANNING_DYNAMICS,
+            rejected_rollout_cost=REJECTED_ROLLOUT_COST,
+            attempt_order="mode-major in the declared mode order",
+            hybrid_handoff_rows_before_close={
+                "privileged_hybrid": 0,
+                "privileged_hybrid_early": horizon,
+            },
+            handoff_rule=(
+                "handoff_row = max(0, first_close_reference_index - rows_before_close); at "
+                "the first observation whose measured reference index (the tracker's own "
+                "progress rule) is >= handoff_row, planning stops for the rest of the attempt"
+            ),
+            replay_rule=(
+                "after the handoff, replay the retrieved TRAIN demonstration's recorded "
+                "actions open loop from action frames[matched row] to its last action, "
+                "through the same bounds check and mandatory projection as demo_replay; "
+                "ends with demo_exhausted; never a model result"
+            ),
+            privileged_rule=(
+                "NON-LEARNED diagnostic ceiling: before the handoff each CEM candidate is "
+                "scored by exact MuJoCo twin rollouts under the TASK-045 trajectory-tracking "
+                "cost_rule; after it, recorded demonstration actions run open loop; never a "
+                "learned result"
+            ),
+            demo_replay_rule=(
+                "NON-LEARNED control: replay the retrieved demo's recorded actions open-loop "
+                "from reset through the same bounds check and mandatory projection; no world "
+                "model"
+            ),
         )
     if privileged:
         from embodied_jepa.privileged_rollout import (
@@ -1097,8 +1162,141 @@ def tracking_gate(records, seeds):
     }
 
 
+def _hybrid_arm(records, seeds, mode):
+    """Per-reset rows for one hybrid-plan mode; counted attempts only drive readings."""
+    by = {(r["seed"], r["mode"]): r for r in records if r.get("mode") == mode}
+    per_reset = {}
+    for seed in seeds:
+        record = by.get((seed, mode))
+        counted = counted_attempt(record)
+        row = _tracking_row(record, counted)
+        # last_reference_index stops at the last tracked search, before the handoff;
+        # its tracking-only readings would mislabel handed-off resets, so drop them.
+        del row["stalled_before_close_reference"]
+        del row["passed_demo_grasp_reference_without_grasp"]
+        record = record or {}
+        handed = bool(record.get("handed_off"))
+        row.update(
+            handoff_row=record.get("handoff_row"),
+            handed_off=handed,
+            handoff_reference_index=record.get("handoff_reference_index"),
+            handoff_frame=record.get("handoff_frame"),
+            handoff_command=record.get("handoff_command"),
+            tracked_commands=record.get("tracked_commands"),
+            replayed_commands=record.get("replayed_commands"),
+            rollout_parity_checks=record.get("rollout_parity_checks"),
+            rollout_parity_mismatches=record.get("rollout_parity_mismatches"),
+            ended_before_handoff_without_grasp=counted and not row["grasp"] and not handed,
+            handed_off_without_grasp=counted and not row["grasp"] and handed,
+        )
+        per_reset[str(seed)] = row
+    rows = list(per_reset.values())
+    counted_attempts = sum(r["counted"] for r in rows)
+    result = {
+        "grasp_resets": sum(r["grasp"] for r in rows),
+        "summed_ordered_stages": sum(r["ordered_stages"] for r in rows),
+        "full_successes": sum(r["success"] for r in rows),
+        "counted_attempts": counted_attempts,
+        "complete": counted_attempts == len(seeds),
+        "per_reset": per_reset,
+    }
+    if mode in HYBRID_PRIVILEGED_MODES:
+        mismatches = sum(r["rollout_parity_mismatches"] or 0 for r in rows if r["counted"])
+        result.update(
+            rollout_parity_mismatches=mismatches,
+            rollouts_exact=bool(
+                mismatches == 0
+                and all(r["rollout_parity_mismatches"] is not None for r in rows if r["counted"])
+            ),
+            handed_off_resets=sum(r["handed_off"] for r in rows if r["counted"]),
+            ended_before_handoff_without_grasp_resets=sum(
+                r["ended_before_handoff_without_grasp"] for r in rows
+            ),
+            handed_off_without_grasp_resets=sum(r["handed_off_without_grasp"] for r in rows),
+        )
+    return result
+
+
+def hybrid_ceiling_gate(records, seeds):
+    """Preregistered TASK-046 gate; missing/failed attempts count as zero stages."""
+    provenance_valid = all(r.get("provenance_valid", True) for r in records)
+    primary = _hybrid_arm(records, seeds, "privileged_hybrid")
+    early = _hybrid_arm(records, seeds, "privileged_hybrid_early")
+    replay = _hybrid_arm(records, seeds, "demo_replay")
+    passed = provenance_valid and primary["rollouts_exact"] and primary["grasp_resets"] >= 2
+    conclusive = provenance_valid and primary["rollouts_exact"] and primary["complete"]
+    early_conclusive = provenance_valid and early["rollouts_exact"] and early["complete"]
+    early_grasp = early["grasp_resets"] >= 2
+    primary_grasp = primary["grasp_resets"] >= 2
+    comparison = (
+        "inconclusive: an arm is incomplete, provenance is invalid or rollouts are inexact"
+        if not (conclusive and early_conclusive)
+        else "both handoffs reach grasp on >=2/4: handoff timing within the last pre-close "
+        "horizon is not critical"
+        if primary_grasp and early_grasp
+        else "only the earlier handoff reaches grasp on >=2/4: tracking over the last pre-close "
+        "horizon (or skipping the dead-time descent) is associated with losing the grasp"
+        if early_grasp
+        else "only the close-row handoff reaches grasp on >=2/4: the longer open-loop segment "
+        "from the earlier tracked state is associated with losing the grasp"
+        if primary_grasp
+        else "neither handoff reaches grasp on >=2/4: open-loop demonstration actions from a "
+        "tracked approach state do not reproduce the grasp at either handoff"
+    )
+    return {
+        "label": "NON-LEARNED hybrid phase control under the privileged MuJoCo-rollout ceiling; "
+        "any grasp after the handoff is produced by replayed demonstration actions; not a "
+        "learned result",
+        "privileged_hybrid_grasp_resets": primary["grasp_resets"],
+        "summed_ordered_stages": primary["summed_ordered_stages"],
+        "full_successes": primary["full_successes"],
+        "counted_attempts": primary["counted_attempts"],
+        "provenance_valid": provenance_valid,
+        "rollout_parity_mismatches": primary["rollout_parity_mismatches"],
+        "rollouts_exact": primary["rollouts_exact"],
+        "primary_gate_passed": bool(passed),
+        "readings": {
+            "conclusive": bool(conclusive),
+            "tracking_failed_before_handoff": conclusive
+            and not passed
+            and primary["ended_before_handoff_without_grasp_resets"] >= 3,
+            "replay_from_tracked_state_insufficient_for_grasp": conclusive
+            and not passed
+            and primary["handed_off_without_grasp_resets"] >= 3,
+            "interpretation": (
+                "tracked approach + open-loop demonstration close reaches grasp under exact "
+                "dynamics; the grasp is attributable to the replayed demonstration actions, "
+                "not a model"
+                if passed and conclusive
+                else "tracked approach + open-loop demonstration close does not reach grasp "
+                "under exact dynamics"
+                if conclusive
+                else "inconclusive: missing/failed attempts, invalid provenance or inexact rollouts"
+            ),
+            "secondary_early_handoff_conclusive": bool(early_conclusive),
+            "secondary_early_handoff_grasp_on_two": bool(early_conclusive and early_grasp),
+            "handoff_comparison": comparison,
+            "demo_replay_conclusive": bool(provenance_valid and replay["complete"]),
+        },
+        "arms": {
+            "privileged_hybrid": primary,
+            "privileged_hybrid_early": early,
+            "demo_replay": replay,
+        },
+        "rule": (
+            "privileged_hybrid (handoff at the first close row) reaches the unchanged scorer's "
+            "grasp stage on >=2 resets with zero rollout parity mismatches in its counted "
+            "attempts; only cleanly completed provenance-valid attempts are scored; readings "
+            "are conclusive only with all attempts of the arm counted; privileged_hybrid_early "
+            "and demo_replay never affect the primary gate; non-learned ceiling only"
+        ),
+    }
+
+
 def gate_summary(plan, records):
     """A privileged ceiling report never carries the learned state gate, and vice versa."""
+    if plan.get("goal_kind") == "hybrid":
+        return {"hybrid_ceiling_gate": hybrid_ceiling_gate(records, plan["seeds"])}
     if plan.get("goal_kind") == "trajectory":
         if plan.get("privileged_ceiling"):
             return {"tracking_ceiling_gate": tracking_ceiling_gate(records, plan["seeds"])}
@@ -1139,7 +1337,7 @@ def prepare_worker(output):
     output = Path(output)
     plan = json.loads((output / "plan.json").read_text())
     verify_plan_inputs(plan)
-    if plan.get("goal_kind") in ("state", "trajectory"):
+    if plan.get("goal_kind") in ("state", "trajectory", "hybrid"):
         store, model = checkpoint_model(plan["dataset"], plan["checkpoint"], backend=STATE_BACKEND)
         demonstrations = nominal_calibration_episodes(store)
         arrays, calibration = build_state_goal_library(
@@ -1156,7 +1354,7 @@ def prepare_worker(output):
             "state_calibration_sha256": digest(output / "state_calibration.json"),
             "candidate_demonstration_ids": calibration["calibration_training_episode_ids"],
         }
-        if plan.get("goal_kind") == "trajectory":
+        if plan.get("goal_kind") in ("trajectory", "hybrid"):
             references, tracking = build_tracking_references(
                 model,
                 demonstrations,
@@ -1249,9 +1447,11 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stream.write(json.dumps(row, allow_nan=False) + "\n")
             stream.flush()
 
-    tracking_kind = plan.get("goal_kind") == "trajectory"
-    state_kind = plan.get("goal_kind") in ("state", "trajectory")
+    hybrid_kind = plan.get("goal_kind") == "hybrid"
+    tracking_kind = plan.get("goal_kind") in ("trajectory", "hybrid")
+    state_kind = plan.get("goal_kind") in ("state", "trajectory", "hybrid")
     privileged = None
+    hybrid = None
     progress = {}
     try:
         verify_plan_inputs(plan)
@@ -1262,7 +1462,11 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                     "seed": trial["seed"],
                     "ablation": trial["mode"]
                     if trial["mode"] in MODES[:3]
-                    else ("learned" if trial["mode"] == PRIVILEGED_MODE else "persistence"),
+                    else (
+                        "learned"
+                        if trial["mode"] in (PRIVILEGED_MODE,) + HYBRID_PRIVILEGED_MODES
+                        else "persistence"
+                    ),
                 }
             )
         )
@@ -1345,6 +1549,29 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                 )
                 progress.update(rollout_parity_checks=0, rollout_parity_mismatches=0)
                 controller = state_controller(privileged)
+            elif trial["mode"] in HYBRID_PRIVILEGED_MODES:
+                if not hybrid_kind or plan.get("privileged_ceiling") is not True:
+                    raise ContractError("hybrid phase control requires a declared hybrid ceiling")
+                from embodied_jepa.hybrid_phase import HybridPhaseController, handoff_row
+                from embodied_jepa.privileged_rollout import PrivilegedRolloutModel
+
+                # NON-LEARNED: exact rollouts before the handoff, demo actions after it.
+                privileged = PrivilegedRolloutModel(
+                    model, robot, acknowledge_privileged_ceiling=True
+                )
+                progress.update(rollout_parity_checks=0, rollout_parity_mismatches=0)
+                tracker = state_controller(privileged)
+                hybrid = HybridPhaseController(
+                    tracker,
+                    library["arrays"][f"actions_{demo['index']}"],
+                    handoff_row=handoff_row(
+                        progress["first_close_reference_index"],
+                        plan["hybrid_handoff_rows_before_close"][trial["mode"]],
+                    ),
+                    lower_bounds=config.lower_bounds,
+                    upper_bounds=config.upper_bounds,
+                )
+                controller = hybrid
             else:
                 controller = state_controller(model)
         rng = np.random.default_rng(trial["seed"])
@@ -1358,7 +1585,7 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stage = "observe"
             observation = robot.observe()
             stage = "plan"
-            if trial["mode"] in CONTROLLER_MODES:
+            if trial["mode"] in CONTROLLER_MODES + HYBRID_PRIVILEGED_MODES:
                 decision = controller.step(observation, robot.project_candidates)
                 if tracking_kind:
                     progress["last_reference_index"] = decision.trace.get(
@@ -1446,7 +1673,7 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             record(current | {"event": "command_pending", "executed": None})
             stage = "execute"
             result = robot.execute(command)
-            if trial["mode"] in CONTROLLER_MODES:
+            if trial["mode"] in CONTROLLER_MODES + HYBRID_PRIVILEGED_MODES:
                 diagnostic = current.get("visual_diagnostic")
                 rollout = current.get("privileged_rollout_diagnostic")
                 current = controller.acknowledge(result)
@@ -1498,6 +1725,8 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             robot.close()
     if state_kind:
         progress["ordered_stage_count"] = ordered_stage_count(score)
+    if hybrid is not None:
+        progress.update(hybrid.summary())
     report = (
         trial
         | progress
@@ -1583,10 +1812,10 @@ def verify_generated(output, resolved, expected_digest):
             ("state_goals.npz", "state_goals_sha256"),
             ("state_calibration.json", "state_calibration_sha256"),
         )
-        if resolved.get("goal_kind") in ("state", "trajectory")
+        if resolved.get("goal_kind") in ("state", "trajectory", "hybrid")
         else (("waypoints.npz", "waypoints_sha256"), ("calibration.json", "calibration_sha256"))
     )
-    if resolved.get("goal_kind") == "trajectory":
+    if resolved.get("goal_kind") in ("trajectory", "hybrid"):
         names += (
             ("tracking_references.npz", "tracking_references_sha256"),
             ("tracking_calibration.json", "tracking_calibration_sha256"),
@@ -1814,7 +2043,9 @@ def main():
     parser.add_argument("--candidates", type=int, default=16)
     parser.add_argument("--iterations", type=int, default=2)
     parser.add_argument("--no-proposals", action="store_true")
-    parser.add_argument("--goal-kind", choices=("image", "state", "trajectory"), default="image")
+    parser.add_argument(
+        "--goal-kind", choices=("image", "state", "trajectory", "hybrid"), default="image"
+    )
     parser.add_argument("--goal-stall-limit", type=int)
     parser.add_argument("--worker", choices=("prepare", "attempt"), help=argparse.SUPPRESS)
     parser.add_argument("--worker-output", help=argparse.SUPPRESS)
