@@ -40,5 +40,5 @@ CPU MuJoCo, 12 worker processes, ~30-40 min, ~7 GB under the main checkout's ign
 ## Notes
 - Branch `feat/task-048-wide-train-data` from main `61f8ec1`.
 - Pilot design probes (seeds 48900-48931, scratch `outputs/task048-scratch/{smoke-a,pilot-a,pilot-b,pilot-c}`), disclosed in the protocol: pilot-a -> per-branch noise streams (identical sibling prefixes); pilot-b -> lower noise, wider weak_close/early_lift ranges (failures too one-sided); pilot-c final design: roots 20/32 success, grasp-phase failure fraction 0.52, 78/78 sibling pairs distinct, ~95 s/root with 12 workers.
-- Frozen plan SHA-256 `0046e14c52f83c44380bd239d9821887c422f21ebdd383f7571de8349653ba24`.
+- Frozen plan SHA-256 `15ed1a99e45114a5cec6013d345804ec561fad859dc3f0dd89dd93ec1e33062c`.
 %% mc-links: [[TASK-047]] %%

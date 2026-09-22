@@ -11,7 +11,7 @@
  "distribution": "apple_plate_wide_jitter (TASK-047 wide_reset: apple +-3 cm, plate +-2 cm)",
  "seed_range": [48000, 48199],
  "pilot_seed_range_not_in_corpus": [48900, 48931],
- "frozen_plan_sha256": "0046e14c52f83c44380bd239d9821887c422f21ebdd383f7571de8349653ba24",
+ "frozen_plan_sha256": "15ed1a99e45114a5cec6013d345804ec561fad859dc3f0dd89dd93ec1e33062c",
  "splits_by_session": {
   "train": 170,
   "val": 20,

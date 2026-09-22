@@ -217,3 +217,19 @@ def test_model_planner_and_evaluation_code_never_import_training_labels():
         assert not re.search(r"training_labels", path.read_text()), path
     for script in ("evaluate_apple.py", "train_apple_sensor.py", "evaluate_mvp.py"):
         assert "training_labels" not in (ROOT / "scripts" / script).read_text()
+
+
+def test_branch_kinds_are_not_confounded_with_aim_offset_and_plan_hash_is_pinned():
+    import hashlib
+    import json
+
+    plan = collector.make_plan(collector.FROZEN_SEEDS)
+    aimed = Counter(
+        b["kind"] for r in plan["roots"] if r["aim_offset_xy_m"] is not None for b in r["branches"]
+    )
+    assert aimed == {kind: 24 for kind in collector.BRANCH_KINDS}
+    text = json.dumps(plan, indent=2, allow_nan=False) + "\n"
+    assert (
+        hashlib.sha256(text.encode()).hexdigest()
+        == "15ed1a99e45114a5cec6013d345804ec561fad859dc3f0dd89dd93ec1e33062c"
+    )

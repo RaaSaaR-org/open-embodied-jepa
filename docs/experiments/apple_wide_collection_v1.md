@@ -60,16 +60,30 @@ Apple→Plate stays at zero successes.
   patches. The native backend interpolates to its own `image_size`. 112 px is
   4.7× the previous 24 px in each direction, and the storage cost is within
   budget (pilot: 530 MB per 128 episodes).
-- **Hand crop (`src/embodied_jepa/hand_crop.py`).** The window centre is the
-  pinhole projection of the `right_ee` palm site through the torso camera
-  (fovy 75°). Both are rigidly attached to robot links, so the window depends
+- **Hand crop (`src/embodied_jepa/hand_crop.py`).** The window is placed around
+  the pinhole projection of the `right_ee` palm site through the torso camera
+  (fovy 75°), then shifted to stay inside the 320-px image. It is therefore not
+  always centred: in pilot-c the window was clamped at the right image edge in
+  37% of frames (about 64% during lift), although the projected palm always
+  stayed inside the crop (columns 192–316). Both are rigidly attached to robot links, so the window depends
   only on the robot's own kinematics: no object, contact or task quantity is
   read. It is an allowed model input.
   - In the 320-px render the window spans about 35% of the image width
     (about 27 cm at the table), and the apple is roughly 20 px across.
-  - At evaluation time, the crop must be computed by the same function
-    (TASK-050's responsibility), and `onboard_rgb` must be rendered at 112 px,
-    not the evaluator's current 96 px.
+  - The window reads the simulator's link-pose buffers (`site_xpos`,
+    `cam_xpos`), the same buffers the renderer draws. After `mj_step` these lag
+    `qpos` by one substep, so the window is consistent with the pixels but is
+    not an exact function of the stored `observation.state`. The per-frame
+    window is stored as the `robot__hand_crop_window` label.
+  - At evaluation time, the crop must be computed by the same
+    `HandCrop.window`/`capture` (TASK-050's responsibility), and `onboard_rgb`
+    must be rendered at 112 px, not the evaluator's current 96 px.
+  - **Model compatibility.** Both backends read a single `config["camera"]`
+    and bilinearly resize it to `config["image_size"]` (`models/base.py`). The
+    defaults are 56 (LeWM) and 64 (base), so TASK-050 must set
+    `image_size: 112`, or the resolution gain is lost; 112 % 14 == 0 is valid
+    for LeWM. Using `hand_crop_rgb` together with `onboard_rgb` needs a
+    second-camera path that `VisualModel` does not yet have.
 
 ## Collector and perturbations (`scripts/collect_apple_wide.py`)
 
@@ -102,7 +116,9 @@ then `execute`.
   phase, the pre-grasp state (command 210).
 - Each branch restores that snapshot and runs `close` + `lift`, then stops.
 - Every branch draws its own perturbation stream at level max(1, root level),
-  and adds one modification. The kinds cycle, 120 each:
+  and adds one modification. The kinds cycle, 120 each. Slot
+  `(3·index + b + index // 5) mod 5` assigns them, so the 40 aim-offset roots
+  receive every kind equally (24 each; review R1, B2):
 
 | Kind | Modification |
 |---|---|
@@ -132,6 +148,13 @@ then `execute`.
 
 These go into the episode metadata under `privileged_outcome_labels`: they are
 scorer outputs derived from simulator truth.
+
+The same holds for `termination`, and for the LeRobot `next.terminated` flag,
+which is true only for successful roots. These fields are **not** covered by
+the sidecar gate. They are privileged: they must not be used as model inputs,
+as loss weights, or to filter episodes for model selection. The canonical
+`SequenceBatch.terminated` marks only episode boundaries, so current training
+code does not see them.
 
 **Label sidecars (`src/embodied_jepa/training_labels.py`).** Per-step labels
 live in `<dataset>/labels/<episode_id>.npz`. They are not part of
@@ -173,11 +196,22 @@ cost.
   48154, 48155.
 - **Frozen plan.** `collect_apple_wide.py plan --seeds frozen` writes a
   byte-identical plan with SHA-256
-  `0046e14c52f83c44380bd239d9821887c422f21ebdd383f7571de8349653ba24`.
+  `15ed1a99e45114a5cec6013d345804ec561fad859dc3f0dd89dd93ec1e33062c`.
 
 ## Acceptance checks (decided now; `collection_report.json["verdict"]`)
 
 The thresholds were set from pilot rates (below) with margin; they are frozen.
+
+**Threshold history (review R1, B3).** pilot-c was scored with provisional
+values: A3 ≥ 60, A5 ≥ 200, A7 ≥ 0.40, and A4 ≥ 0.20 with no upper bound. After
+pilot-c they were tightened to the frozen values below.
+
+- The tightening follows the pilot rates scaled to 200 roots and about 800
+  grasp-phase episodes.
+- The expected values are A3 ≈ 125 (62.5% of 200) and A5 ≈ 390 (62/128 × 800).
+- The frozen thresholds therefore keep roughly a 35% margin.
+- A4 gained an upper bound, so that a corpus of nearly all failures also fails
+  the check.
 "Grasp-phase attempts" are the stored episodes with `grasp_phase_attempted`.
 
 | Check | Condition | Pilot-c value |
@@ -203,6 +237,16 @@ The thresholds were set from pilot rates (below) with margin; they are frozen.
 - **Fail.** A failed check is recorded as a failure in the results. The corpus
   is kept as evidence and is not silently repaired; any re-collection uses a
   new seed range and a new version.
+- **What A7 and A8 show.** Both are close to true by construction. A7 is
+  essentially the fraction of transitions at noise level ≥ 1: in pilot-c,
+  0.02 at level 0 and 0.99–1.0 at levels 1–3. A8 compares siblings with
+  independent noise seeds. They verify that the perturbations were injected
+  and are visible. They are **not** evidence of a model's action sensitivity:
+  the collapse and action-sensitivity diagnostics belong to TASK-050.
+- **Strictness of A13.** A single runtime error, for example a MuJoCo
+  instability in any of the 800 episodes, fails A13 and hence the corpus
+  verdict (pilot-c had 0 of 128). Episodes that such a root had already saved
+  are still assembled and reported.
 - **Descriptive only.** The per-kind and per-noise-level outcome tables, and
   the action coverage of the left arm (by design, never excited, because the
   planner fixes it), are reported but never gate.
@@ -269,8 +313,16 @@ directories that do not yet exist, under the main checkout's ignored `data/`:
   --work /Users/sebastian/develop/emai/experiments/JEPA/open-embodied-jepa/data/apple-wide-v1-work
 ```
 
-- **Refusals.** The script refuses a dirty tracked tree, an existing output
-  and a source change during collection. It records the git revision, every
+- **Refusals.** The script refuses a dirty tracked tree and an existing
+  output. A change to the source or the tracked inputs during collection fails
+  A13.
+- **Recovery.** If assembly or scoring raises after collection,
+  `collect_apple_wide.py finalize --work <work> --output <new dataset dir>`
+  reruns assembly, sealing, audit and acceptance from the existing shards. It
+  never simulates, so it does not count as a second run of the frozen seeds.
+  A partial `collection_report.json` is always written.
+- **Runtime versions.** Provenance also records the Python, platform, NumPy
+  and MuJoCo versions and the `uv.lock` SHA-256. It records the git revision, every
   `src/**/*.py` hash, the collector, protocol, action-manifest and
   asset-manifest hashes, and the plan hash.
 - **Recording.** Every outcome goes into `apple_wide_collection_results_v1.md`
@@ -291,3 +343,31 @@ directories that do not yet exist, under the main checkout's ignored `data/`:
   contact lift of at least 5 cm, not a force-closure measurement.
 - **Branch length.** Branches stop after `lift`, so they carry grasp-phase
   outcomes only; transport and place come from root episodes.
+
+## Pre-run review revision R1
+
+The fresh pre-run review found three blocking items. All were fixed before
+any 48000-range seed was simulated.
+
+- **B1: the final run path had never executed.** Added the `finalize`
+  subcommand and an always-written report. A smoke on pilot seeds (below) then
+  ran the exact code to be frozen.
+- **B2: branch kinds were confounded with aim-offset roots.** All 40 roots
+  received only `weak_close`, `early_lift` and `open_during_lift`. The kind
+  slot is now decoupled; a test pins 24 of each kind on aim-offset roots. As a
+  result, the frozen plan hash changed from `0046e14c…ba24` to the value
+  above; the seeds and splits are unchanged.
+- **B3: the pilot-c provisional thresholds were not disclosed.** They are now
+  disclosed, with the rationale.
+
+The non-blocking recommendations were also applied:
+
+- runtime versions in provenance;
+- tracked-input re-verification;
+- accurate hand-crop wording (clamping, substep lag);
+- the privileged status of outcome and termination fields;
+- the interpretation of A7 and A8;
+- the model image-size note;
+- a test that pins the plan hash;
+- the A13 strictness note;
+- `--worker-seconds` default 4500.

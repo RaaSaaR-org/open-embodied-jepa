@@ -135,7 +135,9 @@ def make_plan(seeds):
             aim = [radius * np.cos(angle), radius * np.sin(angle)]
         branches = []
         for b in range(BRANCHES_PER_ROOT):
-            kind = BRANCH_KINDS[(BRANCHES_PER_ROOT * index + b) % len(BRANCH_KINDS)]
+            # The index // AIM_OFFSET_EVERY term decouples kinds from aim-offset roots.
+            slot = BRANCHES_PER_ROOT * index + b + index // AIM_OFFSET_EVERY
+            kind = BRANCH_KINDS[slot % len(BRANCH_KINDS)]
             branches.append(
                 {
                     "episode_id": f"wide-{seed}-b{b}-{kind}",
@@ -899,6 +901,20 @@ def checks(result):
     return {"checks": items, "all_passed": all(items.values())}
 
 
+def runtime_versions():
+    import platform
+
+    import mujoco
+
+    return {
+        "python": sys.version,
+        "platform": platform.platform(),
+        "numpy": np.__version__,
+        "mujoco": mujoco.__version__,
+        "uv_lock_sha256": digest(ROOT / "uv.lock"),
+    }
+
+
 def git(*args):
     return subprocess.check_output(["git", "-C", str(ROOT), *args], text=True).strip()
 
@@ -929,11 +945,9 @@ def run(args):
         "plan_sha256": digest(work / "plan.json"),
         "source_revision": git("rev-parse", "HEAD"),
         "tracked_tree_dirty": bool(dirty),
-        "collector_sha256": digest(Path(__file__)),
-        "protocol_sha256": digest(ROOT / "docs/experiments/apple_wide_collection_v1.md"),
-        "action_manifest_sha256": digest(ROOT / "configs/g1_sim_action.json"),
-        "asset_manifest_sha256": digest(ROOT / "assets/manifest.json"),
+        **tracked_inputs(),
         "runtime_source_hashes": source_hashes,
+        "runtime": runtime_versions(),
         "workers": args.workers,
         "max_seconds": args.max_seconds,
         "training_label_schema": training_labels.SCHEMA_VERSION,
@@ -976,52 +990,97 @@ def run(args):
     for p in processes:
         p.wait()
     collection_seconds = elapsed()
-    if [digest(ROOT / k) for k in source_hashes] != list(source_hashes.values()):
-        raise RuntimeError("source changed during collection")
-    workers = [json.loads(p.read_text()) for p in sorted(work.glob("worker-*.json"))]
-    store = assemble(plan, work, dataset, provenance)
-    assembled_seconds = elapsed()
-    result = acceptance(dataset, plan)
-    statuses = [r for w in workers for r in w["roots"]]
-    branched = [
-        e for w in workers for e in w["episodes"] if e["kind"] == "root" and e.get("branch_frame")
-    ]
-    integrity = {
-        "roots_planned": len(plan["roots"]),
-        "roots_reported": len(statuses),
-        "roots_completed": sum(r["status"] == "completed" for r in statuses),
-        "runtime_errors": [r for r in statuses if r["status"].startswith("runtime_error")],
-        "not_started": sum(r["status"].startswith("not_started") for r in statuses),
-        "branched_roots": len(branched),
-        "restore_exact": sum(e.get("restore_exact") is True for e in branched),
-        "supervisor_timeout": timed_out,
-        "worker_returncodes": [p.returncode for p in processes],
-    }
-    integrity["ok"] = bool(
-        integrity["roots_completed"] == integrity["roots_planned"]
-        and integrity["restore_exact"] == integrity["branched_roots"]
-        and not timed_out
-        and not any(integrity["worker_returncodes"])
+    write(
+        work / "supervisor.json",
+        {
+            "timed_out": timed_out,
+            "worker_returncodes": [p.returncode for p in processes],
+            "collection_seconds": collection_seconds,
+        },
     )
-    result["integrity"] = integrity
-    verdict = checks(result)
-    report = {
-        "status": "completed" if not timed_out else "supervisor_timeout",
-        "timed_out": timed_out,
-        "worker_returncodes": [p.returncode for p in processes],
-        "root_statuses": sorted((r for w in workers for r in w["roots"]), key=lambda r: r["seed"]),
-        "collection_seconds": collection_seconds,
-        "assembly_seconds": assembled_seconds - collection_seconds,
-        "total_seconds": elapsed(),
-        "dataset": str(dataset),
-        "dataset_manifest_sha256": store.manifest_hash,
-        "plan_sha256": provenance["plan_sha256"],
-        "acceptance": result,
-        "verdict": verdict,
+    return finalize(work, dataset)
+
+
+def tracked_inputs():
+    return {
+        "collector_sha256": digest(Path(__file__)),
+        "protocol_sha256": digest(ROOT / "docs/experiments/apple_wide_collection_v1.md"),
+        "action_manifest_sha256": digest(ROOT / "configs/g1_sim_action.json"),
+        "asset_manifest_sha256": digest(ROOT / "assets/manifest.json"),
     }
-    write(work / "collection_report.json", report)
+
+
+def finalize(work, dataset):
+    """Assemble shards, seal, audit and score. Re-runnable from an existing work directory
+    (``finalize`` subcommand) into a new dataset directory; never re-simulates."""
+    work, dataset = Path(work).resolve(), Path(dataset).resolve()
+    if dataset.exists():
+        raise FileExistsError(f"refusing to overwrite {dataset}")
+    plan = json.loads((work / "plan.json").read_text())
+    provenance = json.loads((work / "provenance.json").read_text())
+    supervisor = json.loads((work / "supervisor.json").read_text())
+    timed_out, returncodes = supervisor["timed_out"], supervisor["worker_returncodes"]
+    report = {"status": "finalizing", "dataset": str(dataset), "supervisor": supervisor}
+    report_path = work / "collection_report.json"
+    verdict = None
+    try:
+        source_changed = [
+            k for k, v in provenance["runtime_source_hashes"].items() if digest(ROOT / k) != v
+        ]
+        inputs_changed = [k for k, v in tracked_inputs().items() if provenance[k] != v]
+        report["source_changed"] = source_changed
+        report["inputs_changed"] = inputs_changed
+        if digest(work / "plan.json") != provenance["plan_sha256"]:
+            raise RuntimeError("plan changed after collection started")
+        workers = [json.loads(p.read_text()) for p in sorted(work.glob("worker-*.json"))]
+        started = elapsed()
+        store = assemble(plan, work, dataset, provenance)
+        report["assembly_seconds"] = elapsed() - started
+        report["dataset_manifest_sha256"] = store.manifest_hash
+        result = acceptance(dataset, plan)
+        statuses = [r for w in workers for r in w["roots"]]
+        branched = [
+            e
+            for w in workers
+            for e in w["episodes"]
+            if e["kind"] == "root" and e.get("branch_frame")
+        ]
+        integrity = {
+            "roots_planned": len(plan["roots"]),
+            "roots_reported": len(statuses),
+            "roots_completed": sum(r["status"] == "completed" for r in statuses),
+            "runtime_errors": [r for r in statuses if r["status"].startswith("runtime_error")],
+            "not_started": sum(r["status"].startswith("not_started") for r in statuses),
+            "branched_roots": len(branched),
+            "restore_exact": sum(e.get("restore_exact") is True for e in branched),
+            "supervisor_timeout": timed_out,
+            "worker_returncodes": returncodes,
+            "source_or_inputs_changed": bool(source_changed or inputs_changed),
+        }
+        integrity["ok"] = bool(
+            integrity["roots_completed"] == integrity["roots_planned"]
+            and integrity["restore_exact"] == integrity["branched_roots"]
+            and not timed_out
+            and not any(returncodes)
+            and not integrity["source_or_inputs_changed"]
+        )
+        result["integrity"] = integrity
+        verdict = checks(result)
+        report.update(
+            status="completed" if not timed_out else "supervisor_timeout",
+            root_statuses=sorted(statuses, key=lambda r: r["seed"]),
+            plan_sha256=provenance["plan_sha256"],
+            acceptance=result,
+            verdict=verdict,
+        )
+    except BaseException as error:
+        report.update(status="finalize_error", error=f"{type(error).__name__}: {error}")
+        raise
+    finally:
+        report["total_seconds"] = elapsed()
+        write(report_path, report)
     print(json.dumps(verdict, indent=2))
-    return 0 if verdict["all_passed"] and not timed_out else 2
+    return 0 if verdict["all_passed"] else 2
 
 
 def main():
@@ -1037,8 +1096,11 @@ def main():
     r.add_argument("--limit", type=int, default=0, help="smoke only: first N seeds")
     r.add_argument("--workers", type=int, default=8)
     r.add_argument("--max-seconds", type=float, default=5400)
-    r.add_argument("--worker-seconds", type=float, default=4800)
+    r.add_argument("--worker-seconds", type=float, default=4500)
     r.add_argument("--allow-dirty", action="store_true", help="pilot/smoke only")
+    f = sub.add_parser("finalize", help="assemble/score existing shards; never simulates")
+    f.add_argument("--work", type=Path, required=True)
+    f.add_argument("--output", type=Path, required=True, help="new dataset directory")
     w = sub.add_parser("worker")
     w.add_argument("--plan", type=Path, required=True)
     w.add_argument("--work", type=Path, required=True)
@@ -1053,6 +1115,8 @@ def main():
     if args.command == "worker":
         worker(args.plan, args.work, args.index, args.count, args.max_seconds)
         return 0
+    if args.command == "finalize":
+        return finalize(args.work, args.output)
     return run(args)
 
 
