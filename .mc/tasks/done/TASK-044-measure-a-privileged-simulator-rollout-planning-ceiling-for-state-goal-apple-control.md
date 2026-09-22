@@ -4,7 +4,7 @@ aliases:
 - TASK-044
 title: Measure a privileged simulator-rollout planning ceiling for state-goal apple control
 slug: measure-a-privileged-simulator-rollout-planning-ceiling-for-state-goal-apple-control
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -35,7 +35,7 @@ TASK-043's learned state-goal MPC stalled on goal 0 on 4/4 development resets, a
 - [x] Tests: rollout/live parity, live simulator untouched, cost equals the metric, rejection ranking, acknowledgement and registry isolation, plan/report isolation from learned gates and the final stage; ruff and full pytest pass.
 - [x] Independent pre-run review; fix blockers and record revisions before running.
 - [x] Run the frozen command exactly once from a clean checkout into a new output directory; record every outcome, the ceiling gate and readings in a results doc and manifest.
-- [ ] Deliver through PR; TASK-033/034 physical acceptance stays open (this is not a learned result).
+- [x] Deliver through PR; TASK-033/034 physical acceptance stays open (this is not a learned result).
 
 ## Scope and resources
 CPU, H16/K16/2 rounds/commitment 1, max 1000 commands, 5 s per-command deadline, 840 s per attempt, 3600 s global, 4 attempts. Final cohort 44000-44019 and TEST untouched.
@@ -51,5 +51,7 @@ Executed once from clean checkout `733bfdca972e001a83835a8f4b193807f980e4c6`, ex
 - Post-run verification (fresh subagent) recomputed all numbers from raw outputs and re-hashed the inputs/artifacts. Corrections applied: closest distances now include the termination observation (43000 0.0183, 43001 0.0243); "within 0.0005"; oscillation wording; planning-only medians; softened endpoint-chasing claim.
 - Evidence: `docs/experiments/apple_privileged_ceiling_results_v1.md`, `benchmarks/manifests/apple-privileged-ceiling-v1.json`. Not a learned result; TASK-033/034 stay open; final cohort and TEST untouched.
 - Recommended next (not started): redesign the scaffold (time-indexed running cost over the horizon, or commitment/shrinking horizon) and gate it with the same privileged ceiling before pairing with learned dynamics.
+
+- Delivery: PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/14. Execute/report/deliver acceptance is met; the ceiling gate is explicitly failed, and TASK-033/034 physical acceptance stays open.
 
 %% mc-links: [[TASK-043]] %%
