@@ -2,9 +2,13 @@
 
 The heads are shared code: every backend that enables ``readout_heads`` gets the
 same module, loss and physical decoding. They are trained on privileged simulator
-labels *as targets only* (``embodied_jepa.readout_labels``); at run time they read
+labels *as targets only* (built outside the model package); at run time they read
 nothing but a latent the model itself produced, so a planner can use an
 object-aware cost without simulator truth and without inspecting a latent.
+
+Regression targets are undefined once the apple has fallen off the table (it is
+then outside the workspace and the camera view): their loss is masked by the
+``apple_dropped`` target, which is itself a declared probability readout.
 """
 
 from __future__ import annotations
@@ -16,7 +20,6 @@ from torch import nn
 from torch.nn import functional as F
 
 from embodied_jepa.contracts import ContractError
-from embodied_jepa.readout_labels import READOUT_LABELS_VERSION
 
 
 @dataclass(frozen=True)
@@ -34,9 +37,11 @@ READOUTS = (
     ReadoutSpec("apple_minus_plate", 3, "regression", "m", 0.05),
     ReadoutSpec("hand_contact", 1, "probability", "1"),
     ReadoutSpec("apple_held", 1, "probability", "1"),
+    ReadoutSpec("apple_dropped", 1, "probability", "1"),
 )
 READOUT_NAMES = tuple(spec.name for spec in READOUTS)
-READOUT_VERSION = f"object_readout_v1+{READOUT_LABELS_VERSION}"
+READOUT_VERSION = "object_readout_v2"
+VALIDITY = "apple_dropped"  # regression targets count only where this target is 0
 
 
 class ReadoutHeads(nn.Module):
@@ -81,13 +86,16 @@ class ReadoutHeads(nn.Module):
         if missing:
             raise ContractError(f"missing readout targets: {sorted(missing)}")
         raw = self(latent)
+        valid = 1.0 - targets[VALIDITY].contiguous()
         terms = {}
         for spec in READOUTS:
             target = targets[spec.name].contiguous()
             if target.shape != raw[spec.name].shape:
                 raise ContractError(f"readout target {spec.name} has the wrong shape")
             if spec.kind == "regression":
-                terms[spec.name] = F.smooth_l1_loss(raw[spec.name], target / spec.scale)
+                error = F.smooth_l1_loss(raw[spec.name], target / spec.scale, reduction="none")
+                weight = valid.expand_as(error)
+                terms[spec.name] = (error * weight).sum() / weight.sum().clamp_min(1.0)
             else:
                 terms[spec.name] = F.binary_cross_entropy_with_logits(raw[spec.name], target)
         return sum(terms.values()) / len(terms), terms

@@ -44,10 +44,14 @@ class ExactFakeModel:
             "apple_minus_plate": np.zeros((*shape, 3), np.float32),
             "hand_contact": np.full((*shape, 1), 0.5, np.float32),
             "apple_held": np.full((*shape, 1), 0.5, np.float32),
+            "apple_dropped": np.zeros((*shape, 1), np.float32),
         }
 
     def latent_statistics(self, latents):
         return {"collapsed_fraction": 0.0, "effective_rank": 5.0, "latent_std_mean": 1.0}
+
+    def image_embedding_statistics(self, images):
+        return self.latent_statistics(None)
 
 
 def _episode(rng, start, length):
@@ -101,6 +105,7 @@ def fixture_arrays(seed=0, roots=3, root_length=70, branch_length=50, branch_fra
         "apple_minus_plate": np.zeros((total, 3), np.float32),
         "hand_contact": np.zeros((total, 1), np.float32),
         "apple_held": np.zeros((total, 1), np.float32),
+        "apple_dropped": np.zeros((total, 1), np.float32),
     }
     return wm.EpisodeArrays(
         tuple(name for name, _, _ in episodes),
@@ -123,6 +128,7 @@ def test_readout_targets_from_privileged_labels():
         "privileged__apple_position_world": np.array([[0.3, 0.1, 0.77], [0.3, 0.1, 0.80]]),
         "privileged__plate_position_world": np.array([[0.5, 0.0, 0.75]] * 2),
         "privileged__hand_contact": np.array([True, True]),
+        "privileged__apple_dropped": np.array([False, False]),
     }
     result = readout_labels.targets(labels, 0.77)
     np.testing.assert_allclose(result["apple_height"][:, 0], [0.0, 0.03], atol=1e-6)
@@ -215,5 +221,49 @@ def test_action_blind_model_fails_sibling_and_shuffled_controls():
     assert not result["G2a_vs_persistence_h8"]["passed"]
     assert not result["G2b_vs_shuffled_actions_h8"]["passed"]
     assert not result["G7a_sibling_own_beats_swapped_h16"]["passed"]
-    assert not result["G5_held_auroc_grasp_h8"]["passed"]  # one class only: not evaluable
+    assert not result["G5_held_auroc_lift_h8"]["passed"]  # one class only: not evaluable
     assert result["G8a_collapsed_fraction"]["passed"]
+
+
+def test_dropped_apple_windows_leave_the_scoring_cohorts():
+    arrays = fixture_arrays()
+    windows = wm.window_starts(arrays, 16, stride=4)
+    clean = wm.window_metrics(ExactFakeModel(), arrays, windows, CAMERA, SCHEMA)
+    arrays.targets["apple_dropped"][arrays.offsets[1] :] = 1.0  # all but the first root
+    dropped = wm.window_metrics(ExactFakeModel(), arrays, windows, CAMERA, SCHEMA)
+    assert dropped["8"]["valid_windows"] < clean["8"]["valid_windows"]
+    assert dropped["8"]["palm_apple_moving_windows"] < clean["8"]["palm_apple_moving_windows"]
+
+
+def test_untrained_step_is_never_selected():
+    decision = {"eligible": True, "score": 0.01}
+    assert not wm.selectable(0, decision, None)
+    assert wm.selectable(1000, decision, None)
+    assert not wm.selectable(2000, decision, (1000, 0.005))
+    assert not wm.selectable(2000, decision | {"eligible": False}, None)
+
+
+def test_model_code_never_loads_label_modules():
+    import subprocess
+    import sys
+
+    code = (
+        "import sys, importlib\n"
+        "for name in ('embodied_jepa.planning', 'embodied_jepa.benchmark',"
+        " 'embodied_jepa.config', 'embodied_jepa.models'):\n"
+        "    importlib.import_module(name)\n"
+        "try:\n"
+        "    import torch  # noqa: F401\n"
+        "    import embodied_jepa.models.native, embodied_jepa.models.readout\n"
+        "except ImportError:\n"
+        "    pass\n"
+        "bad = {'embodied_jepa.training_labels', 'embodied_jepa.readout_labels'}\n"
+        "assert not bad & set(sys.modules), bad & set(sys.modules)\n"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True)
+
+
+def test_cosine_schedule_endpoints():
+    assert wm.cosine_lr(1.0, 1, 100, 0.1) == pytest.approx(1.0)
+    assert wm.cosine_lr(1.0, 100, 100, 0.1) == pytest.approx(0.1)
+    assert 0.1 < wm.cosine_lr(1.0, 50, 100, 0.1) < 1.0

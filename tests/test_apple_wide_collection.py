@@ -210,7 +210,9 @@ def test_guard_refusal_text_matches_the_ceiling_convention():
 
 def test_model_planner_and_evaluation_code_never_import_training_labels():
     package = ROOT / "src/embodied_jepa"
-    allowed = {"training_labels.py"}
+    # readout_labels/world_model_v2 build training TARGETS and val scoring references;
+    # tests/test_world_model_v2.py checks that model and planner code never loads them.
+    allowed = {"training_labels.py", "readout_labels.py", "world_model_v2.py"}
     for path in package.rglob("*.py"):
         if path.name in allowed:
             continue

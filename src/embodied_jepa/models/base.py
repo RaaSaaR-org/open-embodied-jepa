@@ -36,6 +36,27 @@ class VisualLatent:
     owner: object
 
 
+def _statistics(values):
+    values = values.double()
+    if values.shape[0] < 2:
+        raise ContractError("latent statistics need at least two samples")
+    std = values.std(0, unbiased=False)
+    energy = torch.linalg.svdvals(values - values.mean(0)).square()
+    total = energy.sum().item()
+    rank = 0.0
+    if total > 0:
+        probabilities = energy[energy > 0] / total
+        rank = (-(probabilities * probabilities.log()).sum()).exp().item()
+    return {
+        "samples": int(values.shape[0]),
+        "dimension": int(values.shape[1]),
+        "latent_std_mean": std.mean().item(),
+        "latent_std_min": std.min().item(),
+        "collapsed_fraction": (std < 0.01).double().mean().item(),
+        "effective_rank": rank,
+    }
+
+
 class VisualModel(nn.Module):
     backend = "abstract"
     defaults: dict[str, Any] = {
@@ -308,24 +329,20 @@ class VisualModel(nn.Module):
         if not latents:
             raise ContractError("latent statistics need at least one encoded latent")
         # Transfer before casting (see diagnostics): MPS->CPU float64 fusion is unsafe.
-        values = torch.cat([self.check_latent(z, 2).cpu() for z in latents]).double()
-        if values.shape[0] < 2:
-            raise ContractError("latent statistics need at least two samples")
-        std = values.std(0, unbiased=False)
-        energy = torch.linalg.svdvals(values - values.mean(0)).square()
-        total = energy.sum().item()
-        rank = 0.0
-        if total > 0:
-            probabilities = energy[energy > 0] / total
-            rank = (-(probabilities * probabilities.log()).sum()).exp().item()
-        return {
-            "samples": int(values.shape[0]),
-            "dimension": int(values.shape[1]),
-            "latent_std_mean": std.mean().item(),
-            "latent_std_min": std.min().item(),
-            "collapsed_fraction": (std < 0.01).double().mean().item(),
-            "effective_rank": rank,
-        }
+        return _statistics(torch.cat([self.check_latent(z, 2).cpu() for z in latents]))
+
+    @torch.no_grad()
+    def image_embedding_statistics(self, images):
+        """The same diagnostics for the image pathway alone (before any state fusion),
+        over a list of camera mappings."""
+        self.eval()
+        values = []
+        for observation in images:
+            pixels, _ = self.pixels(observation)
+            values.append(self.embed(pixels).cpu())
+        if not values:
+            raise ContractError("image statistics need at least one observation")
+        return _statistics(torch.cat(values))
 
     @torch.no_grad()
     def readout(self, z):

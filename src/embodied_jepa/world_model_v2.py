@@ -337,24 +337,30 @@ def window_metrics(model, arrays, windows, camera, state_schema, horizons=HORIZO
     shuffled = predicted_readouts(model, arrays, starts, actions[partner], camera, state_schema)
     zero = predicted_readouts(model, arrays, starts, np.zeros_like(actions), camera, state_schema)
     encoded_start = readout_rows(model, arrays, starts, camera, state_schema)
+    dropped_true = true["apple_dropped"][:, 0] > 0.5
     result = {"windows": int(len(windows))}
     for h in horizons:
         target = starts + h
+        # Scoring cohorts exclude windows whose apple is off the table at the start or
+        # at the target (regression targets are undefined there; see models/readout).
+        valid = ~dropped_true[starts] & ~dropped_true[target]
         pma_true = true["palm_minus_apple"][target]
-        moving = (
-            np.linalg.norm(pma_true - true["palm_minus_apple"][starts], axis=1)
-            >= MOVING_THRESHOLD_M
-        )
+        displacement = np.linalg.norm(pma_true - true["palm_minus_apple"][starts], axis=1)
+        moving = valid & (displacement >= MOVING_THRESHOLD_M)
 
         def error(readouts, name, h=h, target=target):
             return np.linalg.norm(readouts[name][:, h - 1] - true[name][target], axis=1)
 
+        def probability(readouts, name, h=h):
+            return readouts[name][:, h - 1, 0]
+
         palm = error(predicted, "palm_minus_apple")
         persistence = np.linalg.norm(encoded_start["palm_minus_apple"] - pma_true, axis=1)
         phase = arrays.phase[target]
-        grasp = np.isin(phase, (PHASE_CLOSE, PHASE_LIFT))
-        approach = np.isin(phase, (PHASE_ORIENT, PHASE_DESCEND))
-        transfer = phase == PHASE_TRANSFER
+        grasp = valid & np.isin(phase, (PHASE_CLOSE, PHASE_LIFT))
+        lift = valid & (phase == PHASE_LIFT)
+        approach = valid & np.isin(phase, (PHASE_ORIENT, PHASE_DESCEND))
+        transfer = valid & (phase == PHASE_TRANSFER)
         cost_true = np.linalg.norm(pma_true - APPROACH_OFFSET_M, axis=1)
         cost_pred = np.linalg.norm(
             predicted["palm_minus_apple"][:, h - 1] - APPROACH_OFFSET_M, axis=1
@@ -364,10 +370,14 @@ def window_metrics(model, arrays, windows, camera, state_schema, horizons=HORIZO
         plate_true = np.linalg.norm(true["apple_minus_plate"][target][:, :2], axis=1)
         plate_pred = np.linalg.norm(predicted["apple_minus_plate"][:, h - 1, :2], axis=1)
         plate_rows = transfer & (plate_true >= COST_FLOOR_M)
+        plate_log_ratio = np.abs(
+            np.log(np.maximum(plate_pred, 1e-4) / np.maximum(plate_true, 1e-4))
+        )
         held_true = true["apple_held"][target][:, 0] > 0.5
         contact_true = true["hand_contact"][target][:, 0] > 0.5
         result[str(h)] = {
-            "palm_apple_median_m": _median(palm),
+            "valid_windows": int(valid.sum()),
+            "palm_apple_median_m": _median(palm[valid]),
             "palm_apple_moving_windows": int(moving.sum()),
             "palm_apple_moving_median_m": _median(palm[moving]),
             "palm_apple_moving_persistence_median_m": _median(persistence[moving]),
@@ -377,23 +387,25 @@ def window_metrics(model, arrays, windows, camera, state_schema, horizons=HORIZO
             "palm_apple_moving_zero_action_median_m": _median(
                 error(zero, "palm_minus_apple")[moving]
             ),
-            "palm_apple_moving_true_displacement_median_m": _median(
-                np.linalg.norm(pma_true - true["palm_minus_apple"][starts], axis=1)[moving]
-            ),
+            "palm_apple_moving_true_displacement_median_m": _median(displacement[moving]),
             "palm_apple_grasp_cohort_median_m": _median(palm[grasp]),
-            "apple_plate_median_m": _median(error(predicted, "apple_minus_plate")),
+            "apple_plate_median_m": _median(error(predicted, "apple_minus_plate")[valid]),
             "apple_height_grasp_windows": int(grasp.sum()),
             "apple_height_grasp_median_abs_m": _median(error(predicted, "apple_height")[grasp]),
-            "held_grasp_positives": int(held_true[grasp].sum()),
-            "held_grasp_negatives": int((~held_true[grasp]).sum()),
-            "held_grasp_auroc": auroc(
-                predicted["apple_held"][:, h - 1, 0][grasp], held_true[grasp]
+            "held_lift_positives": int(held_true[lift].sum()),
+            "held_lift_negatives": int((~held_true[lift]).sum()),
+            "held_lift_auroc": auroc(probability(predicted, "apple_held")[lift], held_true[lift]),
+            "held_lift_shuffled_auroc": auroc(
+                probability(shuffled, "apple_held")[lift], held_true[lift]
             ),
-            "held_grasp_shuffled_auroc": auroc(
-                shuffled["apple_held"][:, h - 1, 0][grasp], held_true[grasp]
+            "held_grasp_auroc": auroc(
+                probability(predicted, "apple_held")[grasp], held_true[grasp]
             ),
             "contact_grasp_auroc": auroc(
-                predicted["hand_contact"][:, h - 1, 0][grasp], contact_true[grasp]
+                probability(predicted, "hand_contact")[grasp], contact_true[grasp]
+            ),
+            "dropped_all_windows_auroc": auroc(
+                probability(predicted, "apple_dropped"), dropped_true[target]
             ),
             "approach_cost_windows": int(cost_rows.sum()),
             "approach_cost_median_abs_log_ratio": _median(log_ratio[cost_rows]),
@@ -404,11 +416,7 @@ def window_metrics(model, arrays, windows, camera, state_schema, horizons=HORIZO
             ),
             "approach_cost_spearman": spearman(cost_pred[cost_rows], cost_true[cost_rows]),
             "transport_cost_windows": int(plate_rows.sum()),
-            "transport_cost_median_abs_log_ratio": _median(
-                np.abs(np.log(np.maximum(plate_pred, 1e-4) / np.maximum(plate_true, 1e-4)))[
-                    plate_rows
-                ]
-            ),
+            "transport_cost_median_abs_log_ratio": _median(plate_log_ratio[plate_rows]),
         }
     return result
 
@@ -430,6 +438,7 @@ def sibling_metrics(model, arrays, camera, state_schema):
     outcome_scores, outcome_labels = [], []
     start_mismatch = 0.0
     true = arrays.targets["palm_minus_apple"]
+    dropped = arrays.targets["apple_dropped"][:, 0] > 0.5
     for root in sorted(groups):
         members = groups[root]
         if len(members) < 2:
@@ -462,6 +471,8 @@ def sibling_metrics(model, arrays, camera, state_schema):
                     sb, nb, rb = predictions[b]
                     if na < h or nb < h:
                         continue
+                    if dropped[sa + h] or dropped[sb + h]:
+                        continue
                     ta, tb = true[sa + h], true[sb + h]
                     pa, pb = ra["palm_minus_apple"][0, h - 1], rb["palm_minus_apple"][0, h - 1]
                     if np.linalg.norm(ta - tb) >= SIBLING_DIVERGENCE_M:
@@ -492,9 +503,14 @@ def sibling_metrics(model, arrays, camera, state_schema):
     return result
 
 
-def collapse_metrics(model, arrays, camera, state_schema, stride=4):
+def collapse_metrics(model, arrays, camera, state_schema, stride=4, chunk=256):
     rows = np.arange(0, len(arrays.frames), stride)
-    return model.latent_statistics(encode_rows(model, arrays, rows, camera, state_schema))
+    result = model.latent_statistics(encode_rows(model, arrays, rows, camera, state_schema))
+    # Descriptive: the image pathway alone, so state fusion cannot mask a collapse.
+    result["image_only"] = model.image_embedding_statistics(
+        [{camera: arrays.frames[rows[i : i + chunk]]} for i in range(0, len(rows), chunk)]
+    )
+    return result
 
 
 # ----- gates ---------------------------------------------------------------------------
@@ -529,9 +545,9 @@ def evaluate_gates(metrics, gates):
             "<=",
             gates["G4_apple_height_grasp_h8_median_abs_m"],
         ),
-        "G5_held_auroc_grasp_h8": (
-            w["held_grasp_auroc"]
-            if min(w["held_grasp_positives"], w["held_grasp_negatives"])
+        "G5_held_auroc_lift_h8": (
+            w["held_lift_auroc"]
+            if min(w["held_lift_positives"], w["held_lift_negatives"])
             >= gates["G5_minimum_per_class"]
             else None,
             ">=",
@@ -601,6 +617,18 @@ def selection_score(model, arrays, windows, camera, state_schema, eligibility):
     }
 
 
+def cosine_lr(base, step, steps, final_fraction):
+    """Cosine decay from ``base`` at step 1 to ``final_fraction * base`` at ``steps``."""
+    progress = 0.0 if steps <= 1 else (step - 1) / (steps - 1)
+    return base * (final_fraction + (1 - final_fraction) * 0.5 * (1 + np.cos(np.pi * progress)))
+
+
+def selectable(step, decision, best):
+    """An eligible val score that improves on the best; the untrained step-0 state is
+    logged but never selectable."""
+    return step > 0 and decision["eligible"] and (best is None or decision["score"] < best[1])
+
+
 def _write_json(path, value):
     temporary = Path(str(path) + ".tmp")
     temporary.write_text(json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n")
@@ -653,9 +681,11 @@ def train(
     max_seconds,
     validation_every,
     selection_count,
+    final_lr_fraction=1.0,
     eligibility,
     workers=8,
     limit_episodes=None,
+    require_clean=False,
     acknowledge_privileged_training_labels=False,
 ):
     """Fixed-budget training; ``output`` is best-by-val, ``.latest.pt`` the last state."""
@@ -679,6 +709,8 @@ def train(
     output.parent.mkdir(parents=True, exist_ok=True)
     clock = RunClock()
     source = source_identity()
+    if require_clean and (source["dirty"] is not False or source["revision"] == "unavailable"):
+        raise ContractError("the frozen run requires a clean committed checkout")
     report = {
         "format_version": 1,
         "protocol": PROTOCOL,
@@ -696,6 +728,7 @@ def train(
             "max_seconds": max_seconds,
             "validation_every": validation_every,
             "selection_windows": selection_count,
+            "lr_schedule": {"kind": "cosine", "final_fraction": final_lr_fraction},
         },
         "selection": {
             "split": "val",
@@ -785,7 +818,7 @@ def train(
             decision = selection_score(
                 model, val_arrays, chosen, camera, store.state_schema, eligibility
             )
-            improved = decision["eligible"] and (best is None or decision["score"] < best[1])
+            improved = selectable(completed, decision, best)
             event = {
                 "kind": "validation",
                 "step": completed,
@@ -803,8 +836,11 @@ def train(
             _write_json(paths["report"], report)
 
         validate()
+        base_lr = model.config["learning_rate"]
         for step in range(1, steps + 1):
             check_budget()
+            for group in model.optimizer.param_groups:
+                group["lr"] = cosine_lr(base_lr, step, steps, final_lr_fraction)
             picked = train_windows[sampler.integers(len(train_windows), size=batch_size)]
             sequence, targets = batch(train_arrays, picked, horizon, camera, store.state_schema)
             synchronize()
@@ -849,8 +885,11 @@ def train(
         failed = error
     finally:
         if model is not None:
-            model.metadata["runner_state"] = {"step": completed, "latest": True}
-            model.save(paths["latest"])
+            try:
+                model.metadata["runner_state"] = {"step": completed, "latest": True}
+                model.save(paths["latest"])
+            except Exception as error:  # keep the report even if the last save fails
+                report["latest_checkpoint_error"] = f"{type(error).__name__}: {error}"
         report.update(
             completed_steps=completed,
             best_step=None if best is None else best[0],
@@ -903,6 +942,10 @@ def evaluate(
         metadata=envelope["metadata"],
     )
     model.load(checkpoint)
+    expected = _provenance(store, {"revision": None, "python_source_sha256": None})
+    for key in ("dataset_hash", "split_hash", "action_hash", "protocol"):
+        if envelope["metadata"].get(key) != expected[key]:
+            raise ContractError(f"checkpoint {key} does not match the evaluated corpus")
     arrays = load_split(
         store,
         "val",
@@ -956,6 +999,9 @@ def main():
         command.add_argument("--acknowledge-privileged-training-labels", action="store_true")
     train_parser = commands.choices["train"]
     train_parser.add_argument("--output", type=Path)
+    train_parser.add_argument(
+        "--require-clean", action="store_true", help="refuse a dirty or unversioned checkout"
+    )
     train_parser.add_argument("--smoke-steps", type=int, help="smoke only: override steps")
     train_parser.add_argument(
         "--smoke-max-seconds", type=float, help="smoke only: override max_seconds"
@@ -991,7 +1037,9 @@ def main():
             max_seconds=budget["max_seconds"],
             validation_every=budget["validation_every"],
             selection_count=budget["selection_windows"],
+            final_lr_fraction=budget["final_lr_fraction"],
             eligibility=frozen["selection_eligibility"],
+            require_clean=args.require_clean,
             **common,
         )
         summary = {k: report.get(k) for k in ("status", "completed_steps", "best_step")}

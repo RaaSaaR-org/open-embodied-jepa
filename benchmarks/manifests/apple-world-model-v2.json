@@ -10,7 +10,8 @@
       "seed": 0,
       "max_seconds": 6000,
       "validation_every": 1000,
-      "selection_windows": 1024
+      "selection_windows": 1024,
+      "final_lr_fraction": 0.1
     },
     "selection_eligibility": {
       "max_collapsed_fraction": 0.05,

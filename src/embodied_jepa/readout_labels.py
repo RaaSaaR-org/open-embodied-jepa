@@ -13,7 +13,7 @@ import numpy as np
 from embodied_jepa import training_labels
 from embodied_jepa.contracts import ContractError
 
-READOUT_LABELS_VERSION = "apple_readout_targets_v1"
+READOUT_LABELS_VERSION = "apple_readout_targets_v2"
 # Apple counts as held when the hand touches it and it has risen this far above its
 # resting height at the reset (the scorer's grasp stage uses 5 cm; 2 cm marks lift-off).
 HELD_RISE_M = 0.02
@@ -23,6 +23,7 @@ TARGET_NAMES = (
     "apple_minus_plate",
     "hand_contact",
     "apple_held",
+    "apple_dropped",
 )
 
 
@@ -50,8 +51,10 @@ def targets(labels, rest_apple_z):
     apple = np.asarray(labels["privileged__apple_position_world"], np.float32)
     plate = np.asarray(labels["privileged__plate_position_world"], np.float32)
     contact = np.asarray(labels["privileged__hand_contact"], bool)
+    # The simulator's own drop rule (apple centre below 0.70 m: off the table).
+    dropped = np.asarray(labels["privileged__apple_dropped"], bool)
     count = len(apple)
-    if any(len(x) != count for x in (palm_minus_apple, plate, contact)) or count < 2:
+    if any(len(x) != count for x in (palm_minus_apple, plate, contact, dropped)) or count < 2:
         raise ContractError("label arrays disagree in length")
     height = apple[:, 2:3] - np.float32(rest_apple_z)
     held = contact & (height[:, 0] >= HELD_RISE_M)
@@ -61,6 +64,7 @@ def targets(labels, rest_apple_z):
         "apple_minus_plate": (apple - plate).astype(np.float32),
         "hand_contact": contact[:, None].astype(np.float32),
         "apple_held": held[:, None].astype(np.float32),
+        "apple_dropped": dropped[:, None].astype(np.float32),
     }
     for name, value in result.items():
         if not np.isfinite(value).all():

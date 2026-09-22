@@ -47,8 +47,16 @@ revision `8edfeb33`). The native JEPA is the comparison. LeWM must pass for T4
   `acknowledge_privileged_training_labels=True`. They serve only two roles:
   - **readout-head training targets;**
   - **val scoring references.**
-  They are never a model input, a loss weight or a sampling/selection filter.
-  The collector phase index is used only to define val *scoring* cohorts.
+  They are never a model input, a training-sample weight or a training-sampling
+  filter. Two label-derived masks are part of the target and scoring
+  definitions, and are declared here:
+  - the **regression target validity mask**: regression readouts carry no loss
+    on frames whose apple has fallen off the table (see below);
+  - the **val scoring cohorts**: moving/grasp/lift/approach windows, the
+    exclusion of dropped-apple windows and the collector phase index. The
+    selection score uses the same moving-window definition, so val truth
+    shapes the *selection* score as it shapes the gates. This is val scoring,
+    never a train input.
 
 ### Readout targets (`readout_labels.targets`)
 
@@ -59,6 +67,25 @@ revision `8edfeb33`). The native JEPA is the comparison. LeWM must pass for T4
 | `apple_minus_plate` | 3 | apple centre minus plate centre, world metres |
 | `hand_contact` | 1 | hand/wrist–apple contact (probability head) |
 | `apple_held` | 1 | contact **and** `apple_height ≥ 2 cm` (probability head) |
+| `apple_dropped` | 1 | the simulator's own drop rule, apple centre below 0.70 m (probability head) |
+
+- **Dropped apples.** A failed grasp often knocks the apple off the table. In
+  the train split 32,961 of 175,451 frames (19 %, in 242 episodes) have
+  `apple_dropped`. There the palm–apple offset is up to ~2.6 m and the apple is
+  outside the workspace and the camera view.
+  - The pilot `pilot-a` (below) showed these frames dominating both the
+    regression loss and the moving-window metric.
+  - The regression readouts (`palm_minus_apple`, `apple_height`,
+    `apple_minus_plate`) are therefore **masked out of the loss** where
+    `apple_dropped` is 1.
+  - `apple_dropped` itself is a declared readout trained on every frame, so a
+    planner can detect a lost apple.
+- **Rest height.** The rest height is the root's first-frame apple z, the spawn
+  height. The apple settles about 3.4 mm lower within 5 frames. A resting apple
+  therefore has `apple_height ≈ −3.4 mm`, and `apple_held` effectively needs a
+  rise of about 2.34 cm above the settled apple.
+- **Phase index.** The collector phase at an observation is the phase of the
+  command issued there. The final observation row repeats the last phase.
 
 ## Models
 
@@ -73,8 +100,8 @@ Both are off by default, so every earlier model keeps its image-only latent.
   - Image-only goal encoding is refused for fused models; planning uses the
     declared readouts.
 - **Readout heads (`readout_heads: true`).** A shared LayerNorm + MLP maps a
-  latent to the five readouts.
-  - Loss: smooth-L1 on 5 cm-scaled regressions and BCE on the probabilities.
+  latent to the six readouts.
+  - Loss: smooth-L1 on 5 cm-scaled regressions (masked where the apple is dropped) and BCE on the probabilities.
   - It is applied to the encoded latents of every frame of a window **and** to
     the recursively predicted latents (steps 1…16), with weight 1 each.
   - The gradient trains the encoder, the predictor and the heads.
@@ -85,6 +112,16 @@ Both are off by default, so every earlier model keeps its image-only latent.
   - `model.latent_statistics(z…)` gives collapse diagnostics.
   - These are the only ways an evaluator or planner derives anything from a
     latent. The `ReadoutWorldModel` protocol in `contracts.py` documents this.
+
+**Other notes.**
+
+- **Native target path.** Native's EMA target path adds the *online* state
+  embedding under `no_grad`; there is no EMA copy of the state encoder.
+- **Checkpoint compatibility.** `implementation_sha256` now also covers
+  `models/readout.py` and `readout_labels.py`. With the edit to `base.py`,
+  every historical checkpoint is incompatible with this code. That is the
+  repository's policy, and the historical results stay tied to their
+  revisions.
 
 **Honest label.** The LeWM arm is the pinned upstream encoder, predictor,
 projector and SIGReg objective, **plus** the shared state fusion and the
@@ -117,7 +154,7 @@ The difference is backend-owned preprocessing.
 |---|---|
 | Steps | 15,000 per backend |
 | Batch | 32 windows of 16 transitions (uniform over all train windows, with replacement) |
-| Optimizer | the model's AdamW, lr 3e-4, weight decay 1e-4, grad clip 1.0 (constant) |
+| Optimizer | the model's AdamW, lr 3e-4 with cosine decay to 3e-5 over the 15,000 steps (runner-owned, identical for both backends), weight decay 1e-4, grad clip 1.0 |
 | Seed | 0 (model init and window sampler) |
 | Device | MPS (Apple M5 Pro, 48 GB), one backend at a time: LeWM first, then native |
 | Wall-clock cap | 6,000 s per backend, including decoding; hitting it stops with status `time_budget` |
@@ -134,6 +171,8 @@ The difference is backend-owned preprocessing.
   per-dim std ≥ 0.1 and effective rank ≥ 2.
 - **Choice.** The best eligible checkpoint is `<backend>.pt`. The last state is
   always saved as `<backend>.latest.pt`.
+- **Step 0.** The untrained step-0 state is validated and logged but is never
+  selectable.
 - **If no checkpoint is eligible.** The run reports `selection_failed`, and the
   gates are evaluated on `.latest.pt` (declared now).
 
@@ -142,6 +181,23 @@ selection is optimistic for G1. Test stays untouched for a later unbiased check.
 
 **Ensemble.** No ensemble and no second seed in this task. The budget is one
 seed per backend.
+
+**Frozen commands.** Both run from a clean committed worktree;
+`--require-clean` refuses a dirty tree.
+
+```sh
+uv run --no-sync python -m embodied_jepa.world_model_v2 train \
+  --config configs/apple_wm_v2_lewm.yaml \
+  --protocol-manifest benchmarks/manifests/apple-world-model-v2.json \
+  --device mps --workers 10 --require-clean --acknowledge-privileged-training-labels
+# native: the same command with --config configs/apple_wm_v2.yaml
+uv run --no-sync python -m embodied_jepa.world_model_v2 evaluate \
+  --config configs/apple_wm_v2_lewm.yaml \
+  --protocol-manifest benchmarks/manifests/apple-world-model-v2.json --device mps \
+  --acknowledge-privileged-training-labels \
+  --output outputs/task050-wm-v2/leworldmodel-val-gates.json
+# native: --config configs/apple_wm_v2.yaml --output .../native_jepa-val-gates.json
+```
 
 **Artifacts** (git-ignored, under the main checkout):
 
@@ -160,7 +216,11 @@ seed per backend.
   start and h. Most frames are holds, so on all windows true persistence
   already has a median h = 8 error of 0.9 cm (train labels). An absolute gate
   on all windows would be vacuous.
+- **Valid windows.** Every cohort excludes windows whose apple is dropped at the
+  start or at the target. Sibling pairs are excluded when either sibling's
+  apple is dropped at h.
 - **Grasp cohort.** The target frame's collector phase is `close` or `lift`.
+- **Lift cohort.** The target frame's collector phase is `lift`.
 - **Approach cohort.** The target frame's phase is `orient` or `descend`.
 
 **Controls.** All controls use the same model and readout head.
@@ -181,9 +241,9 @@ seed per backend.
 | **G1** | median palm–apple error, moving windows | ≤ 1.5 cm |
 | **G2a** | G1 median ÷ persistence-control median (moving) | ≤ 0.8 |
 | **G2b** | G1 median ÷ shuffled-action-control median (moving) | ≤ 0.8 |
-| **G3** | median apple–plate error, all windows | ≤ 2.0 cm |
+| **G3** | median apple–plate error, all valid windows | ≤ 2.0 cm |
 | **G4** | median \|apple height error\|, grasp cohort | ≤ 1.0 cm |
-| **G5** | AUROC of `apple_held`, grasp cohort (needs ≥ 20 of each class, else fail) | ≥ 0.85 |
+| **G5** | AUROC of `apple_held`, lift cohort (needs ≥ 20 of each class, else fail) | ≥ 0.85 |
 | **G6** | cost calibration: median \|ln(predicted ÷ true approach cost)\| on approach-cohort windows with true cost ≥ 2 cm | ≤ ln 1.5 |
 | **G7a** | siblings at h = 16: fraction of ordered pairs (true divergence ≥ 1 cm) where own-action error < swapped-action error (needs ≥ 20 pairs, else fail) | ≥ 0.70 |
 | **G7b** | siblings at h = 16: Spearman ρ between predicted and true palm–apple divergence over unordered pairs | ≥ 0.5 |
@@ -201,8 +261,12 @@ seed per backend.
 - all metrics at h = 1, 4 and 16;
 - all-window medians;
 - the zero-action control;
-- the shuffled `apple_held` AUROC;
+- the shuffled-action `apple_held` AUROC (lift cohort);
+- the grasp-cohort (`close` + `lift`) `apple_held` AUROC;
 - contact AUROC;
+- `apple_dropped` AUROC over all windows;
+- collapse statistics of the **image pathway alone** (before state fusion),
+  so the proprio embedding cannot mask an image collapse;
 - approach-cost ratio and Spearman;
 - transport-cost calibration (`apple_minus_plate` xy, transfer phase);
 - sibling metrics at h = 8 and 32;
@@ -257,6 +321,32 @@ draft code:
     early in training.
   - G8b itself was not changed.
 - **`pilot-a`.** LeWM, 2,000 steps, run after the gate thresholds were
-  committed in `17bf5dd`. Its only purpose was checking latent-rank behaviour
-  and wall-clock over a longer run. Its val selection metric was visible to the
-  author. No threshold was changed after it.
+  committed in `17bf5dd`. It checked latent-rank behaviour and wall-clock over
+  a longer run. Its val selection metric was visible to the author.
+  - Rank recovered to about 4.4–4.7 by steps 1,500–2,000.
+  - The moving-window h = 8 error stayed at about 25 cm, and so did its own
+    persistence control.
+  - The cause was the dropped-apple frames described above. This led to the
+    regression validity mask, the `apple_dropped` readout and the exclusion of
+    dropped windows from the scoring cohorts.
+- **Pre-run review.** A fresh-context review then found one blocker: the step-0
+  state was selectable. It is fixed. On the review's advice G5 moved from the
+  close+lift cohort to the **lift** cohort, because every close-phase frame is
+  a trivial negative. The grasp-cohort AUROC remains descriptive. The review
+  also asked for:
+  - image-only collapse statistics;
+  - a clean-tree refusal;
+  - checkpoint-versus-corpus provenance checks in `evaluate`;
+  - clearer wording on label-derived masks.
+  All were added. The cosine learning-rate decay was added at the same time,
+  before any frozen run.
+- **`pilot-b`.** LeWM, 2,000 steps with the mask and constant lr, run after
+  these changes.
+  - The h = 8 moving-window median was 7.4–8.3 cm from step 500 on, against
+    persistence at 7.8–9.2 cm and shuffled actions at 9.1–11.1 cm.
+  - The lift-cohort held AUROC was 0.95–1.00.
+  - Effective rank was 4.2–5.6.
+  - These val numbers were visible. **No gate threshold was changed after
+    either pilot.** Every threshold is the value committed in `17bf5dd`,
+    except G5's cohort (close+lift → lift), which followed the review, not a
+    result.

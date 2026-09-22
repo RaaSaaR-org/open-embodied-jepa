@@ -100,6 +100,8 @@ def test_declared_readouts_on_encoded_and_predicted_latents(model):
         assert ((predicted[name] >= 0) & (predicted[name] <= 1)).all()
     stats = model.latent_statistics([z, z])
     assert stats["samples"] == 6 and stats["dimension"] == 24
+    image = model.image_embedding_statistics([current.images])
+    assert image["samples"] == 3 and image["dimension"] == 24
 
 
 def test_state_fusion_uses_current_proprioception_and_has_no_image_goal(model):
@@ -158,3 +160,21 @@ def test_disabled_extensions_keep_the_image_only_contract():
     with pytest.raises(ContractError, match="require readout_heads"):
         model.train_step(sequence, readout_targets=targets)
     assert "readout_head" not in dict(model.named_modules())
+
+
+def test_regression_loss_ignores_frames_with_a_dropped_apple():
+    from embodied_jepa.models.readout import ReadoutHeads
+
+    heads = ReadoutHeads(4, 8)
+    latent = torch.randn(2, 5, 4)
+    targets = {s.name: torch.zeros(2, 5, s.width) for s in READOUTS}
+    base, _ = heads.loss(latent, targets)
+    far = dict(targets)
+    far["palm_minus_apple"] = targets["palm_minus_apple"].clone()
+    far["palm_minus_apple"][:, 2] = 3.0  # an apple lying on the floor, metres away
+    far["apple_dropped"] = targets["apple_dropped"].clone()
+    far["apple_dropped"][:, 2] = 1.0
+    masked, terms = heads.loss(latent, far)
+    unmasked, _ = heads.loss(latent, far | {"apple_dropped": targets["apple_dropped"]})
+    assert unmasked > masked
+    assert torch.isfinite(masked) and terms["apple_dropped"] > 0
