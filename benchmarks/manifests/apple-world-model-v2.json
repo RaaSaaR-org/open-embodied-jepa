@@ -78,8 +78,16 @@
         "samples": 5102
       },
       "completed_steps": 15000,
+      "device": "mps",
       "elapsed_seconds": 3929.640370130539,
+      "environment": {
+        "numpy": "2.5.3",
+        "platform": "macOS-26.5.1-arm64-arm-64bit",
+        "python": "3.12.13",
+        "torch": "2.14.0"
+      },
       "gate_report": "outputs/task050-wm-v2/leworldmodel-hand-crop-val-gates.json",
+      "gate_report_sha256": "1773971f4233ce0ba992ed9008ace08c27233203a51122137bdaa2b703b27f27",
       "gates": {
         "G1_palm_apple_moving_h8": {
           "passed": false,
@@ -204,8 +212,16 @@
         "samples": 5102
       },
       "completed_steps": 15000,
+      "device": "mps",
       "elapsed_seconds": 3556.8012928962708,
+      "environment": {
+        "numpy": "2.5.3",
+        "platform": "macOS-26.5.1-arm64-arm-64bit",
+        "python": "3.12.13",
+        "torch": "2.14.0"
+      },
       "gate_report": "outputs/task050-wm-v2/leworldmodel-onboard-val-gates.json",
+      "gate_report_sha256": "eab131bb9bec9cd5e2bb1b6f6b64621f2558cc0139f0885cd6638ae3b63a7716",
       "gates": {
         "G1_palm_apple_moving_h8": {
           "passed": false,
@@ -330,8 +346,16 @@
         "samples": 5102
       },
       "completed_steps": 15000,
+      "device": "mps",
       "elapsed_seconds": 4502.13194004097,
+      "environment": {
+        "numpy": "2.5.3",
+        "platform": "macOS-26.5.1-arm64-arm-64bit",
+        "python": "3.12.13",
+        "torch": "2.14.0"
+      },
       "gate_report": "outputs/task050-wm-v2/native_jepa-onboard-val-gates.json",
+      "gate_report_sha256": "b1ec2d009f952b829b8e0e7e7479e0c1eb0617fc615358467611b2329bcc95de",
       "gates": {
         "G1_palm_apple_moving_h8": {
           "passed": false,
@@ -438,5 +462,10 @@
   },
   "results_doc": "docs/experiments/apple_world_model_v2_results.md",
   "status": "executed_once",
-  "task": "TASK-050"
+  "task": "TASK-050",
+  "verification": {
+    "final_review": "fresh subagent review of the pull request",
+    "post_run_verification": "fresh subagent recomputed checkpoint/dataset/source hashes, parameter counts, every gate value and pass/fail against the frozen thresholds, the selection replay and every number in the results doc; it re-derived G1/G2a independently from the public model API. Two prose errors found and corrected (hand-crop cost calibration; G3 scope).",
+    "pre_run_review": "fresh subagent; one blocker (step-0 selectable) fixed in 1a4c484; re-review CLEAR"
+  }
 }

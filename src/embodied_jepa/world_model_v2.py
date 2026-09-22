@@ -182,6 +182,8 @@ def load_split(
                 targets[key] = np.empty((total, value.shape[1]), np.float32)
             targets[key][start : start + count] = value
         phases = np.asarray(labels["collector__phase_index"], np.int16)
+        if not 0 < len(phases) <= count:
+            raise ContractError(f"collector phases of {name} disagree with its observations")
         # Collector phases are recorded per command (T rows); the end row repeats.
         phase[start : start + len(phases)] = phases
         phase[start + len(phases) : start + count] = phases[-1]
@@ -289,7 +291,10 @@ def encode_rows(model, arrays, rows, camera, state_schema, chunk=256):
 
 def readout_rows(model, arrays, rows, camera, state_schema, chunk=256):
     """Readouts of encoded observation rows: ``{name: [N,width]}``."""
-    parts = [model.readout(z) for z in encode_rows(model, arrays, rows, camera, state_schema)]
+    parts = [
+        model.readout(z)
+        for z in encode_rows(model, arrays, rows, camera, state_schema, chunk=chunk)
+    ]
     return {name: np.concatenate([part[name] for part in parts]) for name in parts[0]}
 
 

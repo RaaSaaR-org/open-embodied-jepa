@@ -152,7 +152,11 @@ backends: `camera onboard_rgb`, `latent_dim 128`, `hidden_dim 256`,
 | Encoder | ViT, depth 4, 4 heads, dim 128 | conv stride-8 → 4×4 pool → MLP |
 | Predictor | upstream AR predictor, depth 4, 4 heads × 32 | residual MLP |
 | Anti-collapse | SIGReg (weight 0.09) | variance + covariance, EMA target |
-| Parameters | 2,163,103 | 931,145 |
+| Parameters | 2,163,360 | 931,402 |
+
+The parameter counts include the `apple_dropped` head added with the
+dropped-apple mask before the freeze (257 parameters more than the counts first
+written down when the configs were sized).
 
 The native encoder's stride-8 grid must divide its 4×4 adaptive pool on MPS.
 It therefore upsamples the 112 px camera to 128 px. No resolution is discarded.
@@ -326,6 +330,10 @@ draft code:
 
 - **`smoke-a`.** 8 train and 8 val episodes, 60 steps, plus a smoke of
   `evaluate` on those 8 val episodes. It checked the pipeline only.
+- **`smoke-b` and `smoke-c`.** 12 train and 12 val episodes, 40 steps, one per
+  backend, run from the reviewed revision with `--require-clean` plus the
+  matching `evaluate`. They checked the frozen command path only; `smoke-c`
+  also caught the NumPy-float learning rate described below.
 - **`smoke-full`.** Full decode (11.5 s for 757 episodes, peak host RSS
   9.0 GB) and 200 steps per backend. It measured about 0.23 s per LeWM step
   and about 0.3 s per native step.
@@ -366,6 +374,7 @@ draft code:
   - The lift-cohort held AUROC was 0.95–1.00.
   - Effective rank was 4.2–5.6.
   - These val numbers were visible. **No gate threshold was changed after
-    either pilot.** Every threshold is the value committed in `17bf5dd`,
-    except G5's cohort (close+lift → lift), which followed the review, not a
-    result.
+    either pilot.** Every threshold is the value committed in `17bf5dd`.
+    Two *definitions* did change after a pilot, both disclosed above: the
+    dropped-window exclusion and the regression mask (after `pilot-a`), and
+    G5's cohort (close+lift → lift, from the review, not from a result).

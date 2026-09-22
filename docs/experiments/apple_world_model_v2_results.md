@@ -71,25 +71,39 @@ against a true displacement of 2.49 cm.
 | 8 | 3,961 | 1,462 | 3.65 cm | 4.37 | 5.22 | 5.31 | 2.49 cm |
 | 16 | 3,901 | 1,943 | 3.32 cm | 4.27 | 5.37 | 6.10 | 3.14 cm |
 
-(LeWM / onboard. The other two arms behave the same way; native is uniformly
-worse, hand crop is between.)
+(LeWM / onboard. The other two arms behave the same way; on these palm–apple
+quantities native is uniformly worse and the hand crop is between. Native is
+better on several other metrics, listed below.)
 
+- **An oracle "nothing moves" predictor would be better.** On the moving
+  windows the true palm–apple offset changes by 2.49 cm at h = 8, while the
+  best arm's predicted offset is 3.65 cm away from the truth. A predictor that
+  saw the offset exactly and then assumed it froze would beat every arm here.
+  The gates compare against the model's *own* persistence readout (G2a), which
+  is the fairer control, but the absolute comparison is worth stating.
 - **The actions matter, but not enough.** Every arm beats its shuffled-action
   control by a wide margin (G2b) and tracks sibling divergence (G7b). But the
-  model barely beats *its own* persistence readout (G2a fails on all three),
-  because most of the error is already in the encoded readout of a moving
-  state, not in the rollout.
-- **Sibling discrimination is real but short of the bar.** Among the 106
-  qualifying ordered sibling pairs at h = 16, the own-action prediction is
+  model barely beats *its own* persistence readout (G2a fails on all three).
+- **Most of the error is in the encoding, not in the rollout.** On the same
+  1,462 moving windows (LeWM / onboard), the readout of the *directly encoded*
+  observation is already 3.13 cm from the truth at the start frame and 3.26 cm
+  at the target frame, against 3.65 cm for the 8-step rollout. About 89 % of
+  the moving-window error is therefore present without any prediction at all.
+  (Recomputed independently during post-run verification; the numbers agree to
+  the reported digits.)
+- **Sibling discrimination is real but short of the bar.** G7b's ρ is over 103
+  unordered pairs. Among the 106 qualifying ordered sibling pairs at h = 16, the own-action prediction is
   closer to the truth than the swapped-sibling prediction in 67.9 % (LeWM),
   68.9 % (hand crop) and 74.5 % (native) of cases, against a 70 % threshold and
   a 50 % chance level. Median own error 1.76 / 1.41 / 1.38 cm versus swapped
   2.15 / 1.85 / 2.14 cm.
-- **The object-aware cost would be badly ranked.** G6 fails on every arm, and
-  the descriptive Spearman ρ between the predicted and true approach cost is
-  only 0.16 / 0.16 / 0.06 at h = 8. A CEM cost built on these readouts would
-  order candidates nearly arbitrarily near the grasp point. This is the most
-  direct evidence against starting the closed loop now.
+- **The object-aware cost is poorly calibrated and poorly ordered.** G6 fails
+  on every arm on the 190 approach-cohort windows at h = 8, and the descriptive
+  Spearman ρ between the predicted and the true approach cost across those
+  windows is only 0.16 / 0.16 / 0.06. That is a cross-window correlation, not
+  the within-state ranking a CEM performs, which this protocol did not measure
+  (see the recommendation). It is still the most direct evidence against
+  starting the closed loop now.
 - **Held/lift detection is near-perfect, and that is partly trivial.** The lift
   cohort AUROC is ≈ 1.0 for every arm. With proprioception fused into the
   latent, a closed hand at height is almost sufficient to call `apple_held`;
@@ -103,10 +117,11 @@ worse, hand crop is between.)
 - **Grasp outcome from the pre-grasp state** (descriptive, h = 64, 63 siblings,
   29 positive): AUROC 0.846 (LeWM), 0.819 (hand crop), 0.911 (native).
 - **`apple_dropped`** AUROC over all windows: 0.976 / 0.947 / 0.931.
-- **The hand crop did not help.** It is slightly better on apple height and on
-  sibling own-error, and worse on palm–apple, apple–plate and cost
-  calibration. The crop follows the hand, so the apple leaves it exactly when
-  the offset is large.
+- **The hand crop did not help.** It is slightly better on apple height, on
+  sibling own-error and on the gated cost calibration (1.075 versus 1.132),
+  and worse on palm–apple, on apple–plate (where it fails G3) and on the
+  descriptive cost Spearman (0.157 versus 0.165). The crop follows the hand,
+  so the apple leaves it exactly when the offset is large.
 
 ## Reading, as pre-declared
 
@@ -116,8 +131,16 @@ fact:
 - **LeWM fails G2 → do not start the closed loop.** TASK-051 is therefore not
   the T4 closed-loop task. No arm passed, so the hand-crop and native
   fallbacks do not apply either.
-- G1, G3 and G6 (the precision gates) also fail, and G7a fails for both LeWM
-  arms.
+- G1 and G6 fail on every arm. G3 fails on the hand-crop and native arms; the
+  primary LeWM/onboard arm passes it at 1.93 cm. G7a fails for both LeWM arms
+  and passes for native (0.745).
+- **This differs from the pre-declared next step, and the difference is
+  deliberate.** The protocol's reading for a G2 failure names an
+  action-conditioning redesign as the follow-up. The *decision* (no closed
+  loop) is applied as written; the *follow-up* below targets readout precision
+  instead, because the measured decomposition shows the error is in the
+  encoding rather than the rollout. The pre-declared redesign remains the
+  fallback if a precision fix does not move G2a.
 
 **What the failure is, precisely.** The failing quantity in G2a is the ratio to
 the model's *own* persistence readout, and G2b passes; so the evidence is that
@@ -145,6 +168,23 @@ measured failure, in this order:
 4. Carried over from the pre-run review: the 0.01 std floor on the 43
    near-constant proprioception dimensions amplifies closed-loop deviations up
    to 100×; fix it before any closed-loop run.
+
+## Verification
+
+A fresh-context post-run verifier recomputed, from the raw artifacts alone:
+the three checkpoint SHA-256 values, the dataset/split/action hashes, the
+Python source hash (identical for all three runs) and the parameter counts; it
+re-derived the headline gate independently from the public
+`encode`/`predict`/`readout` API (G1 0.0364531 m against the reported
+0.0364531 m; G2a 0.835111 against 0.835111); it checked every gate threshold
+against the frozen manifest, every pass/fail decision, the selection replay
+(best eligible step 13,000 / 11,000 / 12,000) and every table cell in this
+document. It found **two prose errors**, both corrected above: the hand crop
+is *better*, not worse, on the gated cost calibration, and G3 fails only on the
+hand-crop and native arms. It also asked for, and this document now includes,
+the encoded-versus-rollout decomposition, the missing cohort sizes (190
+approach windows, 103 unordered sibling pairs), the cross-window scope of the
+cost Spearman and a note that the follow-up differs from the pre-declared one.
 
 ## Honest labelling and limits
 

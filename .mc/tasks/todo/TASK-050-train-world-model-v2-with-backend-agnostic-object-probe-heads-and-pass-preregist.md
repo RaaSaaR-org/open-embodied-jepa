@@ -4,7 +4,7 @@ aliases:
 - TASK-050
 title: Train world model v2 with backend-agnostic object probe heads and pass preregistered offline gates
 slug: train-world-model-v2-with-backend-agnostic-object-probe-heads-and-pass-preregist
-status: in-progress
+status: review
 priority: 1
 owner: ''
 projects: []
@@ -22,6 +22,7 @@ updated: 2026-09-22
 
 
 
+
 # Train world model v2 with backend-agnostic object probe heads and pass preregistered offline gates
 
 ## Description
@@ -35,15 +36,18 @@ heads (`models/readout.py`, `Capabilities.readouts`, `model.readout`). Privilege
 are training targets and val scoring references only. No closed loop; learned Apple->Plate stays 0.
 
 ## Acceptance Criteria
-- [ ] Preregistration committed before the frozen runs: `docs/experiments/apple_world_model_v2.md`
+The title's "and pass preregistered offline gates" was an outcome, not a deliverable: no arm
+passed. The criteria below are the deliverables; the gate outcome is recorded honestly instead.
+
+- [x] Preregistration committed before the frozen runs: `docs/experiments/apple_world_model_v2.md`
       and `benchmarks/manifests/apple-world-model-v2.json` (budgets, seed, selection rule, gates
       G1-G8, pre-declared readings, disclosed pilots).
-- [ ] Shared readout/state-fusion code with tests; backend swap stays a one-line config change;
+- [x] Shared readout/state-fusion code with tests; backend swap stays a one-line config change;
       planner/evaluator touch latents only through declared readouts; test split never decoded.
-- [ ] Fresh pre-run review; blockers fixed; smoke on a tiny subset from the committed revision.
-- [ ] Three frozen runs executed once each from a clean committed revision (LeWM/onboard,
+- [x] Fresh pre-run review; blockers fixed; smoke on a tiny subset from the committed revision.
+- [x] Three frozen runs executed once each from a clean committed revision (LeWM/onboard,
       LeWM/hand-crop, native/onboard) and evaluated against the frozen gates.
-- [ ] Fresh post-run verification; results doc reporting every gate honestly, including failures;
+- [x] Fresh post-run verification; results doc reporting every gate honestly, including failures;
       ruff, pytest, `mc validate`; PR merged.
 
 ## Scope and resources
@@ -69,6 +73,16 @@ main checkout's ignored `checkpoints/task050-wm-v2/` and `outputs/task050-wm-v2/
   against 0.8; G6 cost calibration and G7a sibling discrimination also fail (G7a passes for
   native). G2b (shuffled actions), G4, G5, G7b and G8 pass on every arm. By the pre-declared
   reading the closed loop does NOT start; learned Apple->Plate stays 0.
+- Post-run verification (fresh subagent): recomputed the three checkpoint hashes, the
+  dataset/split/action and Python source hashes, the parameter counts, every gate value and
+  pass/fail against the frozen thresholds, the selection replay and every table cell, and
+  re-derived G1/G2a independently from the public model API (agreement to 1e-9 m). It found two
+  prose errors (the hand crop is better, not worse, on the gated cost calibration; G3 fails only
+  on the hand-crop and native arms) and asked for the encoded-versus-rollout decomposition and
+  three missing cohort/scope statements. All were applied.
+- Final PR review (fresh subagent): three blocking findings (the label-import guard did not cover
+  `readout_labels`; the PR body listed two undisclosed smokes; the post-run verification was not
+  recorded). All fixed.
 - Evidence: `docs/experiments/apple_world_model_v2_results.md`,
   `benchmarks/manifests/apple-world-model-v2.json`, reports under the ignored
   `checkpoints/task050-wm-v2/` and `outputs/task050-wm-v2/`.

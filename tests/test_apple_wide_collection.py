@@ -3,6 +3,7 @@
 Synthetic/unit checks only; they are never evidence of manipulation.
 """
 
+import ast
 import importlib.util
 import re
 from collections import Counter
@@ -211,14 +212,28 @@ def test_guard_refusal_text_matches_the_ceiling_convention():
 def test_model_planner_and_evaluation_code_never_import_training_labels():
     package = ROOT / "src/embodied_jepa"
     # readout_labels/world_model_v2 build training TARGETS and val scoring references;
-    # tests/test_world_model_v2.py checks that model and planner code never loads them.
+    # every other package module must not even be able to import a label module. The
+    # text guard cannot cover readout_labels (models/base.py names the file when it
+    # hashes it), so imports are checked by parsing instead.
     allowed = {"training_labels.py", "readout_labels.py", "world_model_v2.py"}
+    labels = {"training_labels", "readout_labels"}
     for path in package.rglob("*.py"):
         if path.name in allowed:
             continue
-        assert not re.search(r"training_labels", path.read_text()), path
+        source = path.read_text()
+        assert not re.search(r"training_labels", source), path
+        for node in ast.walk(ast.parse(source)):
+            imported = []
+            if isinstance(node, ast.Import):
+                imported = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                module = node.module or ""
+                imported = [module] + [f"{module}.{alias.name}" for alias in node.names]
+            for name in imported:
+                assert not labels & set(name.split(".")), (path, name)
     for script in ("evaluate_apple.py", "train_apple_sensor.py", "evaluate_mvp.py"):
-        assert "training_labels" not in (ROOT / "scripts" / script).read_text()
+        source = (ROOT / "scripts" / script).read_text()
+        assert not re.search(r"(training|readout)_labels", source), script
 
 
 def test_branch_kinds_are_not_confounded_with_aim_offset_and_plan_hash_is_pinned():
