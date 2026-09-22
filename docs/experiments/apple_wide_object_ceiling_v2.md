@@ -71,8 +71,11 @@ records no parity candidate and no planning diagnostic. Because the release phas
 then executes exactly that sequence, an accepted prediction is what the live
 release does under exact dynamics. Each probe is recorded in the trace
 (`predicted_landing`, with `placed_at`). The carried-over-the-plate condition
-exists because the scorer's `transport` stage needs the lifted apple in contact
-over the plate before a placement counts.
+is a proxy for the scorer's `transport` stage, which needs the apple lifted ≥ 5 cm,
+in contact, over the plate before a placement counts; it is not a guarantee (a
+hand-over from `lower`, where the apple sits lower, could in principle place an
+apple whose transport stage never latched). A blocked transport hands over to
+`lower` wherever the apple is (v1 required it within 4 cm of the plate).
 
 ## Development-tuning disclosure (TRAIN-side tuning resets only)
 
@@ -82,7 +85,7 @@ smoke. The range 49000–49015 is used nowhere else in the repository (checked
 against docs, manifests, scripts, src, tests and `.mc`); it is disjoint from the
 TRAIN/VAL/TEST collection 42000–42031, the narrow development 43000–43004, the
 final cohort 44000–44019, the TASK-047 resets 45000–45007 and the fresh resets
-45100–45107. No 45000–45007 or 45100–45107 reset was simulated during design. The
+45100–45107. No control step was simulated on any 45000–45007 or 45100–45107 reset during design; 45100–45107 were only reset (no command) to run the envelope check and compute the offset table below. The
 v1 traces of 45000–45007 were read only for the post-hoc diagnosis already
 published with TASK-047 (and, like v1, the design fixes target those diagnosed
 mechanisms), so 45000–45007 are reported only as a secondary, non-gating
@@ -181,7 +184,9 @@ are exactly TASK-047's.
 - provenance is valid.
 
 Counted attempts, clean terminations and zero-stage handling are TASK-047's.
-`demo_replay`, `scripted_oracle` and the secondary resets never change the gate.
+`demo_replay`, `scripted_oracle` and the secondary resets never change the gate
+through their outcomes. Provenance is a whole-run property: invalid provenance on
+any attempt (primary or secondary) invalidates the run and fails the gate.
 
 ## Readings and next steps (fixed now; `readings.outcome`)
 
@@ -217,6 +222,7 @@ tests.
 | Palm–apple offset change (slip) | lift, transport, lower | predicted relative offset change |
 | Hand–apple contact | lift/transport/lower, lift→transport | predicted contact / grasp-state head |
 | Apple–plate xy offset | transport, lower | predicted apple–plate relative position |
+| Current apple, plate and contact state | every phase transition (read live here) | state estimation from the observation (apple/plate localisation, contact), not only forward prediction |
 | Placement after the scripted gradual release | transport/lower → release gate | predicted "apple comes to rest on the plate within 3 cm" after the release sequence (a release-outcome head) |
 
 ## Recorded TRAIN smoke (reset 42000 only)
@@ -273,3 +279,18 @@ and `benchmarks/manifests/apple-wide-object-ceiling-v2.json`.
   1,200 s cap are sized for that, but a deadline miss or timeout would make the
   reading inconclusive.
 - **Short run.** n = 8 primary resets; every count has wide uncertainty.
+
+## Pre-run review revision R1
+
+The fresh pre-run review (`docs/reviews/apple_wide_object_ceiling_v2_review.md`)
+found no blocking defect and cleared the run. Applied non-blocking items, with no
+change to any reset, seed, threshold, budget, parameter or command:
+
+- a physics test that the live release reproduces the probed release's apple path
+  bit-exactly (`test_live_release_reproduces_the_probed_release_exactly`);
+- wording: the reset-only use of 45100–45107 for the envelope check, the transport
+  proxy and the blocked-transport difference from v1, provenance as a whole-run
+  property, and state estimation as a learned-model requirement;
+- recorded for the results: `planning_dynamics` stays
+  `privileged_mujoco_rollout_object_v1` (the unchanged twin); the v2 identity is
+  `object_ceiling_version`, `result_label` and per-attempt `ceiling_version`.

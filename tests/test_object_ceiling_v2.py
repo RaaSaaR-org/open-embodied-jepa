@@ -293,3 +293,25 @@ def test_v2_first_step_matches_live_full_state(physics):
         if "previous_search_first_step_full_state_exact_match" in row
     ]
     assert checks == [True, True]
+
+
+def test_live_release_reproduces_the_probed_release_exactly(physics):
+    from embodied_jepa.object_ceiling import features
+
+    live_robot, model = physics
+    config = ObjectCeilingV2Config(horizon=2, candidates=3, iterations=1, release_commands=10)
+    ctl = ObjectCeilingV2Controller(model, live_robot, config, acknowledge_privileged_ceiling=True)
+    close = np.zeros(14, np.float32)
+    close[8], close[12:] = -0.3, (-1.0, 1.0)  # move the arm and close the hand first
+    for _ in range(8):
+        live_robot.observe()
+        live_robot.execute(live_robot.project_candidates(close[None, None, None]).actions[0, 0, 0])
+    probe = model.release_probe(live_robot.observe().state, ctl.release_schedule())
+    ctl._enter("release", features(live_robot))
+    path = []
+    for _ in range(config.release_commands):
+        decision = ctl.step(live_robot.observe(), live_robot.project_candidates)
+        ctl.acknowledge(live_robot.execute(decision.action))
+        path.append(live_robot.sim.task_truth()["object_position"])
+    assert probe["complete"]
+    np.testing.assert_array_equal(np.array(path), probe["apple_path"])  # bit-exact
