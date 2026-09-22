@@ -5,6 +5,9 @@ frozen training runs. **Everything here is OFFLINE evaluation of learned models 
 recorded validation data.** No closed-loop control is run, and no number here is a
 learned Apple→Plate result: learned Apple→Plate stays at 0 successes.
 
+**Results: `apple_world_model_v2_results.md`. All three arms failed the gate
+set, and the closed loop was not started.**
+
 The frozen values live in `benchmarks/manifests/apple-world-model-v2.json`
 (`frozen`). The code is `src/embodied_jepa/world_model_v2.py`,
 `src/embodied_jepa/models/readout.py`, `src/embodied_jepa/readout_labels.py` and

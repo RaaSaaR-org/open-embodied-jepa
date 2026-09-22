@@ -61,4 +61,15 @@ main checkout's ignored `checkpoints/task050-wm-v2/` and `outputs/task050-wm-v2/
   fixed in `1a4c484` together with G5 moving to the lift cohort, image-only collapse statistics,
   `--require-clean`, provenance checks in `evaluate` and doc wording. Re-review CLEAR.
 - Frozen protocol revision `3b6af0b`.
+- Frozen runs (each once, sequential, MPS): LeWM/onboard from `3b6af0b` (3,557 s, selected step
+  13,000), LeWM/hand-crop and native/onboard from `9fa3d9f` (3,930 s and 4,502 s; the two
+  revisions differ only in `.mc` notes and share the Python source hash `6b1b1f1e...`).
+- **Outcome: all three arms FAIL the gate set.** G1 (palm-apple on moving windows) 3.65 / 4.08 /
+  5.84 cm against 1.5 cm; G2a (against the model's own persistence readout) 0.84 / 0.86 / 0.84
+  against 0.8; G6 cost calibration and G7a sibling discrimination also fail (G7a passes for
+  native). G2b (shuffled actions), G4, G5, G7b and G8 pass on every arm. By the pre-declared
+  reading the closed loop does NOT start; learned Apple->Plate stays 0.
+- Evidence: `docs/experiments/apple_world_model_v2_results.md`,
+  `benchmarks/manifests/apple-world-model-v2.json`, reports under the ignored
+  `checkpoints/task050-wm-v2/` and `outputs/task050-wm-v2/`.
 %% mc-links: [[TASK-048]] %%
