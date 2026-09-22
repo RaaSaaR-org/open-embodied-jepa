@@ -49,6 +49,11 @@ STATE_BACKEND = "state_goal_sensor_wm_v1"
 # never a learned result (see embodied_jepa.privileged_rollout).
 PRIVILEGED_MODE = "privileged_rollout"
 CONTROLLER_MODES = ("learned", "persistence", "dynamics_shuffle", PRIVILEGED_MODE)
+# TASK-045 time-indexed trajectory tracking over the same retrieved TRAIN demonstration.
+TRACKING_MODES = ("learned", "dynamics_shuffle", "persistence")
+# Reference frames that move less than this fraction of the demonstration's median
+# positive adjacent-frame distance from the last kept frame are dead time.
+KEYFRAME_FRACTION = 0.1
 STAGES = ("reach", "grasp", "transport", "place", "release")
 
 
@@ -89,8 +94,8 @@ def make_plan(
     goal_kind="image",
     goal_stall_limit=None,
 ):
-    if goal_kind not in ("image", "state"):
-        raise ValueError("goal kind must be image or state")
+    if goal_kind not in ("image", "state", "trajectory"):
+        raise ValueError("goal kind must be image, state or trajectory")
     if stage not in ("development", "final"):
         raise ValueError("stage must be development or final")
     cohort = tuple(range(43000, 43005)) if stage == "development" else tuple(range(44000, 44020))
@@ -103,7 +108,8 @@ def make_plan(
         raise ValueError("seeds must be unique members of the declared stage cohort")
     if stage == "final" and seeds != list(cohort):
         raise ValueError("final evaluation requires the complete frozen20-reset cohort")
-    modes = list((STATE_MODES if goal_kind == "state" else IMAGE_MODES) if modes is None else modes)
+    default_modes = {"state": STATE_MODES, "trajectory": TRACKING_MODES}.get(goal_kind, IMAGE_MODES)
+    modes = list(default_modes if modes is None else modes)
     if not modes or len(set(modes)) != len(modes) or any(m not in MODES for m in modes):
         raise ValueError("unknown or repeated control mode")
     privileged = PRIVILEGED_MODE in modes
@@ -112,7 +118,7 @@ def make_plan(
             "the privileged simulator-rollout ceiling runs alone at the development stage; "
             "it is never mixed with learned modes or used for final evaluation"
         )
-    if privileged and goal_kind != "state":
+    if privileged and goal_kind not in ("state", "trajectory"):
         raise ValueError("the privileged ceiling uses the state-goal scaffold only")
     if goal_kind == "image":
         if "demo_replay" in modes:
@@ -121,7 +127,10 @@ def make_plan(
             raise ValueError("goal stall limit is part of the state-goal protocol only")
         wall_limit = 1800
     else:
-        if any(m not in STATE_MODES + (PRIVILEGED_MODE,) for m in modes):
+        allowed = STATE_MODES if goal_kind == "state" else TRACKING_MODES
+        if any(m not in allowed + (PRIVILEGED_MODE,) for m in modes):
+            if goal_kind == "trajectory":
+                raise ValueError("trajectory modes: learned/dynamics_shuffle/persistence")
             raise ValueError("state goals support learned/dynamics_shuffle/persistence/demo_replay")
         if proposals:
             raise ValueError("state-goal protocol forbids demonstration action proposals")
@@ -129,6 +138,8 @@ def make_plan(
             raise ValueError("state goals must be spaced exactly one planning horizon apart")
         if type(goal_stall_limit) is not int or goal_stall_limit < 1:
             raise ValueError("state goals require a positive per-goal stall limit")
+        if goal_kind == "trajectory" and commitment_steps != 1:
+            raise ValueError("trajectory tracking replans after every command")
         wall_limit = 3600
     if not np.isfinite(max_seconds) or not 0 < max_seconds <= wall_limit:
         raise ValueError(f"hard wall budget must lie in (0,{wall_limit}]seconds")
@@ -226,6 +237,47 @@ def make_plan(
                 "through the same bounds check and mandatory projection; no world model"
             ),
         )
+    if goal_kind == "trajectory":
+        from embodied_jepa.models.state_goal_sensor import FIELDS, VISUAL_WEIGHT
+
+        plan.update(
+            goal_kind="trajectory",
+            backend=STATE_BACKEND,
+            state_goal_fields=list(FIELDS),
+            visual_diagnostic_weight=VISUAL_WEIGHT,
+            goal_stall_limit=goal_stall_limit,
+            tracking_window=horizon,
+            tracking_stall_commands=goal_stall_limit,
+            tracking_stall_min_advance=stride,
+            keyframe_threshold_fraction=KEYFRAME_FRACTION,
+            demo_selection=(
+                "per reset: successful NOMINAL apple/plate TRAIN episode whose frame-0 RGB has "
+                "the smallest frozen sensor image distance to the live initial RGB; ties by "
+                "lexicographic episode id; no state, object pose or score used for retrieval"
+            ),
+            reference_rule=(
+                "measured right-arm+right-hand joint positions of the retrieved demo at every "
+                "frame, keeping frame 0, the final frame and each frame whose state distance to "
+                "the last kept frame exceeds keyframe_threshold_fraction * the demo's median "
+                "positive adjacent-frame state distance (dead time removed)"
+            ),
+            cost_rule=(
+                "mean over h=0..H-1 of the model state-goal distance between the state after "
+                "step h and reference row min(t+1+h, L-1), t the measured reference index"
+            ),
+            progress_rule=(
+                "t <- the latest index in [t, t+tracking_window] minimizing the measured "
+                "state distance to the reference row (monotone, never decreases); "
+                "reference_complete when t reaches the final row"
+            ),
+            stall_rule=(
+                "terminate with reference_stall when the measured reference index gained fewer "
+                "than tracking_stall_min_advance rows over the last tracking_stall_commands "
+                "acknowledged commands; recorded failure"
+            ),
+            proposal_rule="none: no demonstration action proposals or action seeding",
+            threshold_rule="none: no goal tolerances; progress is the nearest reference row",
+        )
     if privileged:
         from embodied_jepa.privileged_rollout import (
             PLANNING_DYNAMICS,
@@ -243,6 +295,13 @@ def make_plan(
                 "copy of the live MuJoCo state into a non-rendering twin, executing its "
                 "projected actions through the unchanged embodiment, and applying the same "
                 "state-goal observed_distance at the horizon endpoint; never a learned result"
+            )
+            if goal_kind == "state"
+            else (
+                "NON-LEARNED diagnostic ceiling: each CEM candidate is scored by restoring a "
+                "copy of the live MuJoCo state into a non-rendering twin, executing its "
+                "projected actions through the unchanged embodiment, and applying the "
+                "trajectory-tracking cost_rule to every reached state; never a learned result"
             ),
         )
     return plan
@@ -581,6 +640,98 @@ def build_state_goal_library(model, demonstrations, *, stride, dwell, training_e
     }
 
 
+def build_tracking_references(model, demonstrations, library, *, fraction, training_episode_ids):
+    """TRAIN-only per-frame references for every library demonstration (TASK-045).
+
+    Rows are the measured right-arm+hand positions at the kept frames of
+    ``keyframe_indices`` with threshold ``fraction * adjacent_distance_floor``.
+    The recorded TRAIN scorer labels give ``demo_grasp_reference_index`` for a
+    post-hoc report reading only; they never enter planning or progress.
+    """
+    from embodied_jepa.trajectory_tracking import keyframe_indices
+
+    by_id = {e.episode_id: e for e in demonstrations}
+    allowed = set(training_episode_ids)
+    if not np.isfinite(fraction) or fraction < 0:
+        raise ContractError("keyframe fraction must be finite and nonnegative")
+    arrays, records = {}, []
+    right_grasp = EE_DELTA_GRASP_V0.names.index("right_grasp")
+    for record in library["demonstrations"]:
+        episode = by_id.get(record["episode_id"])
+        if episode is None or episode.episode_id not in allowed:
+            raise ContractError("tracking reference received a non-training episode")
+        values = model.select(np.asarray(episode.robot_states), episode.state_schema)
+        threshold = fraction * record["adjacent_distance_floor"]
+        frames = keyframe_indices(
+            len(values),
+            lambda i, j, e=episode, v=values: _state_distance(model, e, [i], v[j : j + 1])[0],
+            threshold,
+        )
+        actions = np.asarray(episode.actions, dtype=np.float32)
+        closing = np.flatnonzero(actions[:, right_grasp] > -1.0)
+        # Action i produces frame i + 1; rows at or after the first closing frame.
+        close_frame = int(closing[0]) + 1 if len(closing) else None
+        scores = episode.metadata.get("stage_scores") or []
+        grasps = [i for i, row in enumerate(scores) if isinstance(row, dict) and row.get("grasp")]
+        grasp_frame = grasps[0] + 1 if grasps else None
+
+        def first_row(frame, frames=frames):
+            return None if frame is None else next(n for n, f in enumerate(frames) if f >= frame)
+
+        arrays[f"reference_{record['index']}"] = values[frames]
+        arrays[f"frames_{record['index']}"] = np.asarray(frames, np.int64)
+        records.append(
+            {
+                "index": record["index"],
+                "episode_id": episode.episode_id,
+                "length": len(values),
+                "keyframe_threshold": threshold,
+                "reference_length": len(frames),
+                "dropped_frames": len(values) - len(frames),
+                "first_close_frame": close_frame,
+                "first_close_reference_index": first_row(close_frame),
+                "demo_grasp_frame": grasp_frame,
+                "demo_grasp_reference_index": first_row(grasp_frame),
+                "reference_sha256": hashlib.sha256(
+                    values[frames].astype("<f4").tobytes()
+                ).hexdigest(),
+            }
+        )
+    return arrays, {
+        "format_version": 1,
+        "keyframe_threshold_fraction": fraction,
+        "training_episode_ids_sha256": json_hash(sorted(allowed)),
+        "references": records,
+    }
+
+
+def load_tracking_references(output, plan):
+    for name, field in (
+        ("tracking_references.npz", "tracking_references_sha256"),
+        ("tracking_calibration.json", "tracking_calibration_sha256"),
+    ):
+        if digest(Path(output) / name) != plan[field]:
+            raise ContractError("frozen tracking reference changed")
+    calibration = json.loads((Path(output) / "tracking_calibration.json").read_text())
+    with np.load(Path(output) / "tracking_references.npz", allow_pickle=False) as arrays:
+        calibration["arrays"] = {key: arrays[key] for key in arrays.files}
+    return calibration
+
+
+def tracking_reference(references, record):
+    from embodied_jepa.trajectory_tracking import TrackingReference
+
+    row = next(r for r in references["references"] if r["index"] == record["index"])
+    if row["episode_id"] != record["episode_id"]:
+        raise ContractError("tracking reference and retrieved demonstration differ")
+    arrays = references["arrays"]
+    return TrackingReference(
+        arrays[f"reference_{row['index']}"],
+        tuple(int(f) for f in arrays[f"frames_{row['index']}"]),
+        f"{row['episode_id']}/keyframes",
+    ), row
+
+
 def retrieve_demonstration(model, images, library):
     """Nearest candidate by initial RGB only; ties resolve to the lexical first id."""
     distances = []
@@ -805,8 +956,150 @@ def ceiling_gate(records, seeds):
     }
 
 
+def _tracking_row(record, counted):
+    score = (record.get("score") or {}) if counted else {}
+    record = record or {}
+    close = record.get("first_close_reference_index")
+    grasp_row = record.get("demo_grasp_reference_index")
+    reached = record.get("last_reference_index")
+    return {
+        "counted": counted,
+        "status": record.get("status"),
+        "termination_reason": record.get("termination_reason"),
+        "executed_steps": record.get("executed_steps"),
+        "demonstration_episode_id": record.get("demonstration_episode_id"),
+        "reference_length": record.get("reference_length"),
+        "last_reference_index": reached,
+        "first_close_reference_index": close,
+        "demo_grasp_reference_index": grasp_row,
+        "ordered_stages": ordered_stage_count(score),
+        "grasp": bool(score.get("grasp")),
+        "success": bool(score.get("success")),
+        "reported_ordered_stages_uncounted": ordered_stage_count(record.get("score")),
+        # Readings use counted attempts only; the index is the measured reference row.
+        "stalled_before_close_reference": counted
+        and not score.get("grasp")
+        and (close is None or reached is None or reached < close),
+        "passed_demo_grasp_reference_without_grasp": counted
+        and not score.get("grasp")
+        and grasp_row is not None
+        and reached is not None
+        and reached >= grasp_row,
+    }
+
+
+def tracking_ceiling_gate(records, seeds):
+    """Preregistered TASK-045 ceiling gate; missing/failed attempts count as zero stages."""
+    by = {(r["seed"], r["mode"]): r for r in records if r.get("mode") == PRIVILEGED_MODE}
+    per_reset = {}
+    for seed in seeds:
+        record = by.get((seed, PRIVILEGED_MODE))
+        row = _tracking_row(record, counted_attempt(record))
+        row.update(
+            rollout_parity_checks=(record or {}).get("rollout_parity_checks"),
+            rollout_parity_mismatches=(record or {}).get("rollout_parity_mismatches"),
+        )
+        per_reset[str(seed)] = row
+    rows = list(per_reset.values())
+    grasps = sum(r["grasp"] for r in rows)
+    counted_attempts = sum(r["counted"] for r in rows)
+    provenance_valid = all(r.get("provenance_valid", True) for r in records)
+    mismatches = sum(r["rollout_parity_mismatches"] or 0 for r in rows if r["counted"])
+    exact = mismatches == 0 and all(
+        r["rollout_parity_mismatches"] is not None for r in rows if r["counted"]
+    )
+    passed = provenance_valid and exact and grasps >= 2
+    conclusive = provenance_valid and exact and counted_attempts == len(seeds)
+    stalled = sum(r["stalled_before_close_reference"] for r in rows)
+    past = sum(r["passed_demo_grasp_reference_without_grasp"] for r in rows)
+    return {
+        "label": "NON-LEARNED privileged MuJoCo-rollout trajectory-tracking ceiling; "
+        "not a learned result",
+        "privileged_grasp_resets": grasps,
+        "summed_ordered_stages": sum(r["ordered_stages"] for r in rows),
+        "full_successes": sum(r["success"] for r in rows),
+        "counted_attempts": counted_attempts,
+        "provenance_valid": provenance_valid,
+        "rollout_parity_mismatches": mismatches,
+        "rollouts_exact": bool(exact),
+        "primary_gate_passed": bool(passed),
+        "learned_stage_authorized": bool(passed),
+        "readings": {
+            "conclusive": bool(passed or conclusive),
+            "stalled_before_close_reference_resets": stalled,
+            "trajectory_tracking_inadequate": conclusive and not passed and stalled >= 3,
+            "passed_demo_grasp_reference_without_grasp_resets": past,
+            "arm_pose_tracking_insufficient_for_grasp": conclusive and not passed and past >= 3,
+            "interpretation": (
+                "trajectory-tracking scaffold adequate under perfect dynamics; run the "
+                "preregistered learned stage"
+                if passed
+                else "trajectory-tracking scaffold fails under perfect dynamics; do not pair it "
+                "with learned dynamics"
+                if conclusive
+                else "inconclusive: missing/failed attempts, invalid provenance or inexact rollouts"
+            ),
+        },
+        "per_reset": per_reset,
+        "rule": (
+            "privileged_rollout trajectory tracking reaches the unchanged scorer's grasp stage "
+            "on >=2 resets with zero rollout parity mismatches; only cleanly completed "
+            "provenance-valid attempts are scored; readings are conclusive only with all "
+            "attempts counted; non-learned ceiling only"
+        ),
+    }
+
+
+def tracking_gate(records, seeds):
+    """Preregistered TASK-045 secondary learned stage; runs only after a ceiling pass."""
+    by = {(r["seed"], r["mode"]): r for r in records}
+    per_mode = {
+        mode: {
+            str(seed): _tracking_row(by.get((seed, mode)), counted_attempt(by.get((seed, mode))))
+            for seed in seeds
+        }
+        for mode in TRACKING_MODES
+    }
+    sums = {m: sum(r["ordered_stages"] for r in rows.values()) for m, rows in per_mode.items()}
+    grasps = sum(r["grasp"] for r in per_mode["learned"].values())
+    provenance_valid = all(r.get("provenance_valid", True) for r in records)
+    counted = sum(r["counted"] for rows in per_mode.values() for r in rows.values())
+    passed = (
+        provenance_valid
+        and grasps >= 2
+        and sums["learned"] > sums["dynamics_shuffle"]
+        and sums["learned"] > sums["persistence"]
+    )
+    conclusive = provenance_valid and counted == len(seeds) * len(TRACKING_MODES)
+    stalled = sum(r["stalled_before_close_reference"] for r in per_mode["learned"].values())
+    return {
+        "learned_grasp_resets": grasps,
+        "summed_ordered_stages": sums,
+        "counted_attempts": counted,
+        "provenance_valid": provenance_valid,
+        "primary_gate_passed": bool(passed),
+        "learned_full_successes": sum(r["success"] for r in per_mode["learned"].values()),
+        "readings": {
+            "conclusive": bool(passed or conclusive),
+            "learned_stalled_before_close_reference_resets": stalled,
+            "learned_dynamics_failure_under_tracking": conclusive and not passed and stalled >= 3,
+            "no_model_contribution": sums["learned"] > 0
+            and sums["learned"] <= max(sums["dynamics_shuffle"], sums["persistence"]),
+        },
+        "per_mode": per_mode,
+        "rule": (
+            "learned grasp on >=2 resets AND learned summed ordered stages > dynamics_shuffle "
+            "and > persistence; only cleanly completed provenance-valid attempts are scored"
+        ),
+    }
+
+
 def gate_summary(plan, records):
     """A privileged ceiling report never carries the learned state gate, and vice versa."""
+    if plan.get("goal_kind") == "trajectory":
+        if plan.get("privileged_ceiling"):
+            return {"tracking_ceiling_gate": tracking_ceiling_gate(records, plan["seeds"])}
+        return {"tracking_gate": tracking_gate(records, plan["seeds"])}
     if plan.get("privileged_ceiling"):
         return {"ceiling_gate": ceiling_gate(records, plan["seeds"])}
     if plan.get("goal_kind") == "state":
@@ -843,26 +1136,38 @@ def prepare_worker(output):
     output = Path(output)
     plan = json.loads((output / "plan.json").read_text())
     verify_plan_inputs(plan)
-    if plan.get("goal_kind") == "state":
+    if plan.get("goal_kind") in ("state", "trajectory"):
         store, model = checkpoint_model(plan["dataset"], plan["checkpoint"], backend=STATE_BACKEND)
+        demonstrations = nominal_calibration_episodes(store)
         arrays, calibration = build_state_goal_library(
             model,
-            nominal_calibration_episodes(store),
+            demonstrations,
             stride=plan["waypoint_stride"],
             dwell=plan["waypoint_dwell"],
             training_episode_ids=store.manifest["splits"]["train"],
         )
         np.savez_compressed(output / "state_goals.npz", **arrays)
         write(output / "state_calibration.json", calibration)
-        write(
-            output / "resolved_plan.json",
-            plan
-            | {
-                "state_goals_sha256": digest(output / "state_goals.npz"),
-                "state_calibration_sha256": digest(output / "state_calibration.json"),
-                "candidate_demonstration_ids": calibration["calibration_training_episode_ids"],
-            },
-        )
+        resolved = plan | {
+            "state_goals_sha256": digest(output / "state_goals.npz"),
+            "state_calibration_sha256": digest(output / "state_calibration.json"),
+            "candidate_demonstration_ids": calibration["calibration_training_episode_ids"],
+        }
+        if plan.get("goal_kind") == "trajectory":
+            references, tracking = build_tracking_references(
+                model,
+                demonstrations,
+                calibration,
+                fraction=plan["keyframe_threshold_fraction"],
+                training_episode_ids=store.manifest["splits"]["train"],
+            )
+            np.savez_compressed(output / "tracking_references.npz", **references)
+            write(output / "tracking_calibration.json", tracking)
+            resolved |= {
+                "tracking_references_sha256": digest(output / "tracking_references.npz"),
+                "tracking_calibration_sha256": digest(output / "tracking_calibration.json"),
+            }
+        write(output / "resolved_plan.json", resolved)
         return
     store, model = checkpoint_model(plan["dataset"], plan["checkpoint"])
     demo = select_demonstration(store)
@@ -941,7 +1246,8 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stream.write(json.dumps(row, allow_nan=False) + "\n")
             stream.flush()
 
-    state_kind = plan.get("goal_kind") == "state"
+    tracking_kind = plan.get("goal_kind") == "trajectory"
+    state_kind = plan.get("goal_kind") in ("state", "trajectory")
     privileged = None
     progress = {}
     try:
@@ -962,6 +1268,7 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                 plan["dataset"], plan["checkpoint"], backend=STATE_BACKEND
             )
             library = load_state_library(output, plan)
+            references = load_tracking_references(output, plan) if tracking_kind else None
             controller = None  # Built after initial-RGB retrieval at reset.
         else:
             store, model = checkpoint_model(plan["dataset"], plan["checkpoint"])
@@ -992,6 +1299,36 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                 first_close_goal_index=demo["first_close_goal_index"],
             )
             write(folder / "retrieval.json", retrieval | {"goal_frames": demo["goal_frames"]})
+
+            def state_controller(planning_model):
+                if not tracking_kind:
+                    return WaypointController(
+                        planning_model,
+                        state_waypoints(library, demo),
+                        progress_distance=model.observed_distance,
+                        config=config,
+                    )
+                from embodied_jepa.trajectory_tracking import TrackingController, TrackingRule
+
+                reference, row = tracking_reference(references, demo)
+                progress.update(
+                    reference_length=row["reference_length"],
+                    first_close_reference_index=row["first_close_reference_index"],
+                    demo_grasp_reference_index=row["demo_grasp_reference_index"],
+                    last_reference_index=0,
+                )
+                return TrackingController(
+                    planning_model,
+                    reference,
+                    progress_distance=model.observed_distance,
+                    config=config,
+                    rule=TrackingRule(
+                        window=plan["tracking_window"],
+                        stall_commands=plan["tracking_stall_commands"],
+                        stall_min_advance=plan["tracking_stall_min_advance"],
+                    ),
+                )
+
             if trial["mode"] == "demo_replay":
                 replay = library["arrays"][f"actions_{demo['index']}"]
             elif trial["mode"] == PRIVILEGED_MODE:
@@ -1004,19 +1341,9 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                     model, robot, acknowledge_privileged_ceiling=True
                 )
                 progress.update(rollout_parity_checks=0, rollout_parity_mismatches=0)
-                controller = WaypointController(
-                    privileged,
-                    state_waypoints(library, demo),
-                    progress_distance=model.observed_distance,
-                    config=config,
-                )
+                controller = state_controller(privileged)
             else:
-                controller = WaypointController(
-                    model,
-                    state_waypoints(library, demo),
-                    progress_distance=model.observed_distance,
-                    config=config,
-                )
+                controller = state_controller(model)
         rng = np.random.default_rng(trial["seed"])
         last_grasps = np.array(config.initial_grasps, np.float32)
         for step in range(config.max_steps):
@@ -1030,7 +1357,11 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stage = "plan"
             if trial["mode"] in CONTROLLER_MODES:
                 decision = controller.step(observation, robot.project_candidates)
-                if state_kind:
+                if tracking_kind:
+                    progress["last_reference_index"] = decision.trace.get(
+                        "reference_index", progress.get("last_reference_index")
+                    )
+                elif state_kind:
                     progress["last_goal_index"] = decision.trace.get(
                         "goal_index", progress.get("last_goal_index")
                     )
@@ -1249,9 +1580,14 @@ def verify_generated(output, resolved, expected_digest):
             ("state_goals.npz", "state_goals_sha256"),
             ("state_calibration.json", "state_calibration_sha256"),
         )
-        if resolved.get("goal_kind") == "state"
+        if resolved.get("goal_kind") in ("state", "trajectory")
         else (("waypoints.npz", "waypoints_sha256"), ("calibration.json", "calibration_sha256"))
     )
+    if resolved.get("goal_kind") == "trajectory":
+        names += (
+            ("tracking_references.npz", "tracking_references_sha256"),
+            ("tracking_calibration.json", "tracking_calibration_sha256"),
+        )
     for name, key in names:
         if digest(output / name) != resolved[key]:
             raise ContractError("frozen waypoint calibration changed")
@@ -1475,7 +1811,7 @@ def main():
     parser.add_argument("--candidates", type=int, default=16)
     parser.add_argument("--iterations", type=int, default=2)
     parser.add_argument("--no-proposals", action="store_true")
-    parser.add_argument("--goal-kind", choices=("image", "state"), default="image")
+    parser.add_argument("--goal-kind", choices=("image", "state", "trajectory"), default="image")
     parser.add_argument("--goal-stall-limit", type=int)
     parser.add_argument("--worker", choices=("prepare", "attempt"), help=argparse.SUPPRESS)
     parser.add_argument("--worker-output", help=argparse.SUPPRESS)
