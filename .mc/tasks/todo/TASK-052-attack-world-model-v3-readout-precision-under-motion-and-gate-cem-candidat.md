@@ -20,6 +20,7 @@ created: 2026-09-23
 updated: 2026-09-23
 ---
 
+
 # Attack world model v3 readout precision under motion and gate CEM candidate ranking
 
 ## Description
@@ -64,3 +65,4 @@ machine with a CPU-bound TASK-051. Checkpoints and reports under the main checko
 
 ## Notes
 - Branch `feat/task-052-world-model-v3` from main `34ebce9` (TASK-050 closure).
+%% mc-links: [[TASK-050]] %%
