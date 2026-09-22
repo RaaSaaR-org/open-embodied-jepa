@@ -272,8 +272,20 @@ def test_two_camera_fusion_reads_both_cameras():
         model.encode({"onboard_rgb": current.images["onboard_rgb"]}, current.state)
     metrics = model.train_step(both, readout_targets=targets)
     assert np.isfinite(metrics["readout_predicted_loss"])
+
+    # The camera ablation must differ by the second camera alone: the fusion is drawn
+    # last, so every other weight of a same-seed one-camera model is bit-identical.
     single = NativeJEPA(SCHEMA, seed=1, config=SHARED)
     assert "camera_fusion" not in dict(single.named_modules())
+    fresh = NativeJEPA(SCHEMA, seed=1, config=config).state_dict()
+    one = single.state_dict()
+    assert sorted(set(fresh) - set(one)) == [
+        "camera_fusion.hand_crop_rgb.weight",
+        "camera_fusion.onboard_rgb.bias",
+        "camera_fusion.onboard_rgb.weight",
+    ]
+    for name, value in one.items():
+        assert torch.equal(value.cpu(), fresh[name].cpu()), name
 
 
 def test_regression_loss_ignores_frames_with_a_dropped_apple():

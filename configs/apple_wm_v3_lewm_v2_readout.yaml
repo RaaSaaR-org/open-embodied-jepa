@@ -1,4 +1,4 @@
-# Arm C (readout ablation): arm A with TASK-050's uniform readout loss and no auxiliary
+# Arm C (readout ablation): arm A with TASK-050-style UNIFORM readout loss and no auxiliary
 # position targets. Isolates what the motion weighting and the auxiliary targets
 # contribute; everything else is identical to apple_wm_v3_lewm.yaml.
 extends: apple_wm_v3_lewm.yaml

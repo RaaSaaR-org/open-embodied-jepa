@@ -76,9 +76,13 @@ Each is off by default, so every earlier model keeps its exact loss and latent.
   `Linear(latent_dim, latent_dim)` (only the first carries a bias) and summed. That is a
   concatenate-then-project fusion written once in shared code. **No backend file has a
   two-camera branch**, so `world_model.backend` stays a one-line swap. With one camera no
-  fusion module is built and the latent is bit-identical to v2's.
+  fusion module is built and the image pathway is exactly v2's `embed(pixels)`.
   - Native's EMA target path embeds each camera with the target encoder and applies the
     *online* fusion projections under `no_grad`, exactly as v2 treated state fusion.
+  - The fusion weights are drawn **last** in the initialization stream, so a one-camera
+    and a two-camera model with the same seed share every other weight bit for bit
+    (verified by a test). The camera ablation therefore differs by the second camera
+    alone, not by a shifted random stream.
 - **Motion-weighted readout loss (`readout_moving_weight: 3.0`,
   `readout_moving_threshold_m: 0.01`).** A frame whose true palm–apple offset has moved
   ≥ 1 cm from its window's first frame gets regression weight 4; a still frame keeps 1.
@@ -119,8 +123,12 @@ All four are the **LeWM** product backend, one seed, run once each, sequentially
 |---|---|---|---|---|---|
 | **A** | `apple_wm_v3_lewm.yaml` | onboard + hand crop | v3 | 14 | **primary** |
 | **B** | `apple_wm_v3_lewm_onboard.yaml` | onboard | v3 | 14 | camera ablation |
-| **C** | `apple_wm_v3_lewm_v2_readout.yaml` | onboard + hand crop | v2 (uniform, no auxiliary) | 14 | readout ablation |
+| **C** | `apple_wm_v3_lewm_v2_readout.yaml` | onboard + hand crop | uniform, no auxiliary | 14 | readout ablation |
 | **D** | `apple_wm_v3_lewm_fine.yaml` | onboard | v3 | **8** | encoder-resolution ablation |
+
+Arm C keeps v3's *wider* readout head and the proprioception fix and drops only the
+motion weighting and the auxiliary targets, so its name refers to v2's loss shaping,
+not to a v2 model.
 
 Each ablation is **one factor** from its neighbour: A↔B is the second camera, A↔C is the
 readout shaping, B↔D is the encoder's spatial resolution (patch 8 gives 14×14 = 196

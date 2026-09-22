@@ -212,16 +212,6 @@ class VisualModel(nn.Module):
         # Shared modules are built after the backend's own, so a disabled extension
         # leaves the backend's initialization stream unchanged.
         with self.rng_scope():
-            if len(self.camera_names) > 1:
-                dimension = self.config["latent_dim"]
-                # Concatenate-then-project, written as one projection per camera: only
-                # the first carries the bias, so the fusion has no redundant offset.
-                self.camera_fusion = nn.ModuleDict(
-                    {
-                        name: nn.Linear(dimension, dimension, bias=index == 0)
-                        for index, name in enumerate(self.camera_names)
-                    }
-                )
             if self.config["state_fusion"]:
                 hidden = self.config["hidden_dim"]
                 self.state_encoder = nn.Sequential(
@@ -232,6 +222,20 @@ class VisualModel(nn.Module):
             if self.config["readout_heads"]:
                 self.readout_head = readout_module.ReadoutHeads(
                     self.config["latent_dim"], self.config["readout_hidden_dim"]
+                )
+            # The camera fusion is drawn last, so adding a camera does not shift the
+            # initialization of any earlier module: a one-camera and a two-camera model
+            # with the same seed share their state-encoder and readout-head weights, and
+            # a camera ablation differs only by the fusion itself.
+            if len(self.camera_names) > 1:
+                dimension = self.config["latent_dim"]
+                # Concatenate-then-project, written as one projection per camera: only
+                # the first carries the bias, so the fusion has no redundant offset.
+                self.camera_fusion = nn.ModuleDict(
+                    {
+                        name: nn.Linear(dimension, dimension, bias=index == 0)
+                        for index, name in enumerate(self.camera_names)
+                    }
                 )
         self.to(self.device_name)
         self.optimizer = torch.optim.AdamW(
@@ -277,7 +281,10 @@ class VisualModel(nn.Module):
         names = self.camera_names
         fused, prefix = None, None
         for name in names:
-            pixels, prefix = self.pixels(images, sequence=sequence, camera=name)
+            pixels, shape = self.pixels(images, sequence=sequence, camera=name)
+            if prefix is not None and shape != prefix:
+                raise ContractError("configured cameras disagree on the batch shape")
+            prefix = shape
             features = embed(pixels)
             if len(names) > 1:
                 features = self.camera_fusion[name](features)
