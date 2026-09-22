@@ -267,3 +267,4 @@ def test_cosine_schedule_endpoints():
     assert wm.cosine_lr(1.0, 1, 100, 0.1) == pytest.approx(1.0)
     assert wm.cosine_lr(1.0, 100, 100, 0.1) == pytest.approx(0.1)
     assert 0.1 < wm.cosine_lr(1.0, 50, 100, 0.1) < 1.0
+    assert type(wm.cosine_lr(1.0, 50, 100, 0.1)) is float  # checkpoint-safe (weights_only)

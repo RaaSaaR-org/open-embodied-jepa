@@ -620,7 +620,9 @@ def selection_score(model, arrays, windows, camera, state_schema, eligibility):
 def cosine_lr(base, step, steps, final_fraction):
     """Cosine decay from ``base`` at step 1 to ``final_fraction * base`` at ``steps``."""
     progress = 0.0 if steps <= 1 else (step - 1) / (steps - 1)
-    return base * (final_fraction + (1 - final_fraction) * 0.5 * (1 + np.cos(np.pi * progress)))
+    return float(
+        base * (final_fraction + (1 - final_fraction) * 0.5 * (1 + np.cos(np.pi * progress)))
+    )
 
 
 def selectable(step, decision, best):
