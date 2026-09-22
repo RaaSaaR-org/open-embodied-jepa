@@ -164,3 +164,16 @@ above were its only (cosmetic) notes.
   example matched sibling branches from the same pre-grasp state. Compare
   backends by physical success on the frozen wide development cohort
   45000–45007.
+
+## Plan bytes across platforms (found by core CI after the run)
+
+- **macOS arm64.** The exact plan SHA-256 `15ed1a99…062c` reproduces there.
+  The plan was generated and executed on that platform.
+- **Linux x86-64.** NumPy's sin/cos of the offset draws differ in the last
+  ulp, so the exact hash differs (`c6734de1…a8c7e`).
+- **Authoritative plan.** It is the recorded
+  `data/apple-wide-v1-work/plan.json`, whose hash is bound into the corpus
+  provenance.
+- **What the test pins.** On every platform, a platform-robust hash of the
+  plan rounded to 1e-9 (`b88579ad…ec98`); on macOS arm64 only, the exact hash.
+- No seed, split or parameter changed.

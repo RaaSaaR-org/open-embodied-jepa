@@ -228,8 +228,24 @@ def test_branch_kinds_are_not_confounded_with_aim_offset_and_plan_hash_is_pinned
         b["kind"] for r in plan["roots"] if r["aim_offset_xy_m"] is not None for b in r["branches"]
     )
     assert aimed == {kind: 24 for kind in collector.BRANCH_KINDS}
-    text = json.dumps(plan, indent=2, allow_nan=False) + "\n"
-    assert (
-        hashlib.sha256(text.encode()).hexdigest()
-        == "15ed1a99e45114a5cec6013d345804ec561fad859dc3f0dd89dd93ec1e33062c"
-    )
+    import platform
+    import sys
+
+    def rounded(value):
+        if isinstance(value, float):
+            return round(value, 9)
+        if isinstance(value, list):
+            return [rounded(item) for item in value]
+        if isinstance(value, dict):
+            return {key: rounded(item) for key, item in value.items()}
+        return value
+
+    def sha(value):
+        return hashlib.sha256((json.dumps(value, indent=2) + "\n").encode()).hexdigest()
+
+    # Platform-robust pin: sin/cos of the offset draws can differ in the last ulp across
+    # CPU architectures, so every platform checks the plan rounded to 1e-9.
+    assert sha(rounded(plan)) == "b88579ad69ebeb4f9d6cc7d1b7087eb2c0833cc7dc3e75a44bf392efa1f8ec98"
+    if sys.platform == "darwin" and platform.machine() == "arm64":
+        # Exact bytes of the frozen plan, generated and executed on macOS arm64.
+        assert sha(plan) == "15ed1a99e45114a5cec6013d345804ec561fad859dc3f0dd89dd93ec1e33062c"
