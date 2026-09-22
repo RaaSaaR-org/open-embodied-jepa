@@ -1,0 +1,2084 @@
+{
+ "format_version": 1,
+ "experiment": "apple-wide-object-ceiling-v2",
+ "task": "TASK-049",
+ "status": "run_complete_primary_gate_failed",
+ "kind": "non_learned_object_aware_privileged_ceiling_v2_on_fresh_wide_jitter_development",
+ "label": "NON-LEARNED object-aware privileged MuJoCo-rollout ceiling v2 (simulator object state in cost, phase transitions and release predictor); not a learned result",
+ "protocol": "docs/experiments/apple_wide_object_ceiling_v2.md",
+ "frozen_command": "PYTHONPATH=src .venv/bin/python scripts/evaluate_apple.py --dataset data/apple-branches-v1 --checkpoint checkpoints/apple-branches-h16-sensor-v1/sensor.pt --output <main checkout>/outputs/apple-wide-object-ceiling-v2 --stage development --goal-kind object --object-ceiling-version 2 --no-proposals --horizon 6 --stride 16 --dwell 1 --candidates 24 --iterations 2 --commitment-steps 1 --max-steps 1000 --attempt-max-seconds 1200 --max-seconds 20400 --control-timeout 10",
+ "frozen_inputs": {
+  "dataset_manifest_sha256": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+  "checkpoint_sha256": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+  "expected_state_goals_sha256": "839190fcf652c6849eba592d9cac5c63bb15a97166e201d71bff7fb4f654f88d",
+  "expected_state_calibration_sha256": "d8dae05105a4031d4c00d676faeb4b45e86ca8e6bdbacd0af650b2b42ce38d75"
+ },
+ "distribution": "apple_plate_wide_jitter_dev_v1",
+ "primary_seeds": [
+  45100,
+  45101,
+  45102,
+  45103,
+  45104,
+  45105,
+  45106,
+  45107
+ ],
+ "secondary_seeds": [
+  45000,
+  45001,
+  45002,
+  45003,
+  45004,
+  45005,
+  45006,
+  45007
+ ],
+ "tuning_seeds_not_evaluated": [
+  49000,
+  49001,
+  49002,
+  49003,
+  49004,
+  49005,
+  49006,
+  49007,
+  49008,
+  49009,
+  49010,
+  49011,
+  49012,
+  49013,
+  49014,
+  49015
+ ],
+ "reset_centers_xy": {
+  "object_xy": [
+   0.34,
+   -0.18
+  ],
+  "plate_xy": [
+   0.49,
+   -0.09
+  ]
+ },
+ "reset_jitter_m": {
+  "object_xy": 0.03,
+  "plate_xy": 0.02
+ },
+ "reset_rule": "rng=numpy.random.default_rng(seed); object_xy=centre+rng.uniform(-0.03,0.03,2); plate_xy=centre+rng.uniform(-0.02,0.02,2)",
+ "resets": {
+  "45100": {
+   "seed": 45100,
+   "object_xy": [
+    0.31002117609648316,
+    -0.19124012095300436
+   ],
+   "plate_xy": [
+    0.5064247644768436,
+    -0.07081901021059969
+   ]
+  },
+  "45101": {
+   "seed": 45101,
+   "object_xy": [
+    0.337190004404955,
+    -0.16442140316832451
+   ],
+   "plate_xy": [
+    0.49752559044708033,
+    -0.0920304496746716
+   ]
+  },
+  "45102": {
+   "seed": 45102,
+   "object_xy": [
+    0.3273281939625345,
+    -0.1556644075996539
+   ],
+   "plate_xy": [
+    0.4819383046203263,
+    -0.09267285939448718
+   ]
+  },
+  "45103": {
+   "seed": 45103,
+   "object_xy": [
+    0.36517143010386455,
+    -0.15097800870729308
+   ],
+   "plate_xy": [
+    0.4897811755844235,
+    -0.10640060625217525
+   ]
+  },
+  "45104": {
+   "seed": 45104,
+   "object_xy": [
+    0.33247524209030294,
+    -0.1636630562462984
+   ],
+   "plate_xy": [
+    0.5072143040785846,
+    -0.10106517311948801
+   ]
+  },
+  "45105": {
+   "seed": 45105,
+   "object_xy": [
+    0.33535717165367257,
+    -0.16736957365266444
+   ],
+   "plate_xy": [
+    0.4858349158644598,
+    -0.09101309476771165
+   ]
+  },
+  "45106": {
+   "seed": 45106,
+   "object_xy": [
+    0.35320011019934816,
+    -0.1701453748411775
+   ],
+   "plate_xy": [
+    0.47748881604574034,
+    -0.10664525672044023
+   ]
+  },
+  "45107": {
+   "seed": 45107,
+   "object_xy": [
+    0.3253884930840304,
+    -0.15233302800178228
+   ],
+   "plate_xy": [
+    0.47569558600480943,
+    -0.07339692742129508
+   ]
+  },
+  "45000": {
+   "seed": 45000,
+   "object_xy": [
+    0.33964957067039525,
+    -0.17349531741060148
+   ],
+   "plate_xy": [
+    0.5095476432213811,
+    -0.09875205968642384
+   ]
+  },
+  "45001": {
+   "seed": 45001,
+   "object_xy": [
+    0.3640542376776222,
+    -0.2034030583535737
+   ],
+   "plate_xy": [
+    0.47755133222597423,
+    -0.07014092353785453
+   ]
+  },
+  "45002": {
+   "seed": 45002,
+   "object_xy": [
+    0.32686955434056825,
+    -0.20506151955054064
+   ],
+   "plate_xy": [
+    0.48361462325389765,
+    -0.07393560957368306
+   ]
+  },
+  "45003": {
+   "seed": 45003,
+   "object_xy": [
+    0.31240507160567377,
+    -0.15329275724767755
+   ],
+   "plate_xy": [
+    0.4973190320885954,
+    -0.07146699458219609
+   ]
+  },
+  "45004": {
+   "seed": 45004,
+   "object_xy": [
+    0.33059242406326106,
+    -0.15040562504043156
+   ],
+   "plate_xy": [
+    0.4732366650163055,
+    -0.09793906489355508
+   ]
+  },
+  "45005": {
+   "seed": 45005,
+   "object_xy": [
+    0.3522474902693055,
+    -0.19756278385116816
+   ],
+   "plate_xy": [
+    0.48545590978329256,
+    -0.09351108457753866
+   ]
+  },
+  "45006": {
+   "seed": 45006,
+   "object_xy": [
+    0.32763844553728483,
+    -0.17697440068439335
+   ],
+   "plate_xy": [
+    0.4965800396139126,
+    -0.08410911994562947
+   ]
+  },
+  "45007": {
+   "seed": 45007,
+   "object_xy": [
+    0.35286698575742187,
+    -0.18770409666826868
+   ],
+   "plate_xy": [
+    0.4977923833676463,
+    -0.09260926620354028
+   ]
+  }
+ },
+ "modes": [
+  "demo_replay",
+  "scripted_oracle",
+  "privileged_object"
+ ],
+ "attempt_order": "mode-major in the declared mode order",
+ "attempts": 48,
+ "object_ceiling_version": 2,
+ "object_ceiling": {
+  "horizon": 6,
+  "candidates": 24,
+  "iterations": 2,
+  "proposal_std": 0.3,
+  "minimum_std": 0.05,
+  "max_steps": 1000,
+  "arm_bound": 0.5,
+  "palm_offset": [
+   -0.015,
+   0.0
+  ],
+  "approach_height_m": 0.13,
+  "grasp_height_m": 0.052,
+  "approach_tolerance_m": 0.01,
+  "grasp_tolerance_m": 0.008,
+  "block_commands": 10,
+  "block_progress_m": 0.002,
+  "block_xy_m": 0.012,
+  "plate_radius_m": 0.04,
+  "rotation_tolerance_rad": 0.1,
+  "close_commands": 45,
+  "lift_target_m": 0.15,
+  "lift_done_m": 0.1,
+  "carry_height_m": 0.12,
+  "transport_tolerance_m": 0.015,
+  "lower_clearance_m": 0.015,
+  "lower_tolerance_m": 0.01,
+  "release_commands": 60,
+  "retreat_height_m": 0.08,
+  "phase_stall_commands": 200,
+  "rotation_weight": 0.2,
+  "disturbance_weight": 1.0,
+  "slip_weight": 0.25,
+  "contact_penalty": 0.05,
+  "descend_xy_weight": 3.0,
+  "descend_xy_tolerance_m": 0.005,
+  "xy_block_progress_m": 0.001,
+  "close_xy_weight": 1.0,
+  "close_xy_margin_m": 0.01,
+  "place_xy_weight": 4.0,
+  "release_ramp": 0.08,
+  "place_tolerance_m": 0.03,
+  "landing_support_tolerance_m": 0.006,
+  "landing_rest_speed_m_s": 0.1,
+  "landing_dwell_commands": 4
+ },
+ "budget": {
+  "max_steps": 1000,
+  "attempt_max_seconds": 1200,
+  "max_seconds": 20400,
+  "control_timeout_seconds": 10.0,
+  "torch_threads": 4
+ },
+ "gate_rule": "on the fresh primary resets 45100-45107: privileged_object (v2) full successes >= 6 of 8 AND grasp resets >= 7 of 8, with zero robot and full-state rollout parity mismatches over non-vacuous checks (>= executed commands - 1 per attempt), all primary ceiling attempts counted and valid provenance; demo_replay, scripted_oracle and the secondary resets 45000-45007 never gate",
+ "privileged_rule": "NON-LEARNED diagnostic ceiling v2: per command, CEM candidates are projected, executed in an exact non-rendering MuJoCo twin, and scored by the mean over the horizon of the v2 object-aware phase cost (xy-weighted descent, close pressure with a palm-drift dead band, xy-weighted carry to the plate centre); in transport/lower an exact probe of the gradual arms-held release from the live state gates the hand-over to release on a predicted resting placement on the plate, with the carried apple over the plate; the release then executes exactly the probed sequence; phase transitions read live simulator truth; never a learned result",
+ "outcomes": [
+  "ceiling_adequate",
+  "grasp_adequate_place_inadequate",
+  "ceiling_inadequate_task_feasible",
+  "ceiling_inadequate_scripted_also_fails",
+  "ceiling_inadequate_feasibility_reference_inconclusive",
+  "inconclusive"
+ ],
+ "result": {
+  "primary_gate_passed": false,
+  "outcome": "ceiling_inadequate_task_feasible",
+  "conclusive": true,
+  "interpretation": "the scripted collector succeeds where the v2 exact-dynamics ceiling does not grasp: the cost/phase design is still inadequate",
+  "preregistered_next_step": "diagnose the failure phases and redesign under a new preregistration; do not pair the ceiling with a learned model",
+  "replay_separated_diagnostic": false,
+  "primary": {
+   "privileged_object_full_successes": 5,
+   "privileged_object_grasp_resets": 5,
+   "required_full_successes": 6,
+   "required_grasp_resets": 7,
+   "demo_replay_grasp_resets": 4,
+   "scripted_oracle_full_successes": 8,
+   "rollouts_exact": true,
+   "failed_reset_furthest_phase": {
+    "lift": 3
+   }
+  },
+  "secondary": {
+   "demo_replay": {
+    "grasp_resets": 2,
+    "full_successes": 2,
+    "counted_attempts": 8
+   },
+   "privileged_object": {
+    "grasp_resets": 7,
+    "full_successes": 7,
+    "counted_attempts": 8
+   },
+   "scripted_oracle": {
+    "grasp_resets": 8,
+    "full_successes": 8,
+    "counted_attempts": 8
+   }
+  },
+  "task_047_v1_secondary_reference": {
+   "privileged_object_grasp_resets": 5,
+   "privileged_object_full_successes": 3
+  }
+ },
+ "results_doc": "docs/experiments/apple_wide_object_ceiling_results_v2.md",
+ "review": "docs/reviews/apple_wide_object_ceiling_v2_review.md",
+ "run": {
+  "source_revision": "7b94f06410f8453d4cf2e88d67bccc9682a9820c",
+  "output_directory": "outputs/apple-wide-object-ceiling-v2",
+  "started_utc": "2026-09-22T16:49:44Z",
+  "ended_utc": "2026-09-22T17:43:21Z",
+  "exit_code": 0,
+  "report_status": "completed",
+  "provenance_valid": true,
+  "wall_seconds": 3216.788316011429,
+  "attempts_counted": 48,
+  "attempts_planned": 48,
+  "arm_seconds": {
+   "demo_replay": 98.5,
+   "scripted_oracle": 124.4,
+   "privileged_object": 2954.8
+  },
+  "action_manifest_sha256": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+  "asset_manifest_sha256": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+  "state_goals_sha256": "839190fcf652c6849eba592d9cac5c63bb15a97166e201d71bff7fb4f654f88d",
+  "state_calibration_sha256": "d8dae05105a4031d4c00d676faeb4b45e86ca8e6bdbacd0af650b2b42ce38d75",
+  "report_sha256": "298fb8d19f9ec1b19fcd1d55975492ba4633fbce26480b0e1809e3538afe2b2e",
+  "plan_sha256": "9ed0990e0e816e87e6f56f89dc3077f74e77001e582dadad261cd409f32a0fb5",
+  "primary_parity_checks": {
+   "robot_state": 2169,
+   "full_state": 2169
+  }
+ },
+ "attempts_detail": [
+  {
+   "attempt_id": "45100-demo_replay",
+   "seed": 45100,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "demo_exhausted",
+   "executed_steps": 501,
+   "success": false,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180901001,
+    "object_plate_distance_m": 0.03809490882125207,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.04999999999997229,
+    "transport": true
+   },
+   "wall_seconds": 7.605818271636963,
+   "demonstration_episode_id": "apple-42020"
+  },
+  {
+   "attempt_id": "45101-demo_replay",
+   "seed": 45101,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 500,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328179586761,
+    "object_plate_distance_m": 0.027863100517904586,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.6425621509552,
+   "demonstration_episode_id": "apple-42025"
+  },
+  {
+   "attempt_id": "45102-demo_replay",
+   "seed": 45102,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "demo_exhausted",
+   "executed_steps": 501,
+   "success": false,
+   "score": {
+    "dropped": true,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.026632818157539855,
+    "object_plate_distance_m": 2.7376024820518405,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 7.562225103378296,
+   "demonstration_episode_id": "apple-42017"
+  },
+  {
+   "attempt_id": "45103-demo_replay",
+   "seed": 45103,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 225,
+   "success": false,
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.7659423213239919,
+    "object_plate_distance_m": 0.14023150136428467,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.165776252746582,
+   "demonstration_episode_id": "apple-42024"
+  },
+  {
+   "attempt_id": "45104-demo_replay",
+   "seed": 45104,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328178600311,
+    "object_plate_distance_m": 0.03240254531372124,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.665459394454956,
+   "demonstration_episode_id": "apple-42025"
+  },
+  {
+   "attempt_id": "45105-demo_replay",
+   "seed": 45105,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 500,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328181294506,
+    "object_plate_distance_m": 0.03519198047772464,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.615403890609741,
+   "demonstration_episode_id": "apple-42001"
+  },
+  {
+   "attempt_id": "45106-demo_replay",
+   "seed": 45106,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 240,
+   "success": false,
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.7666191499741821,
+    "object_plate_distance_m": 0.11087799034847796,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.317259073257446,
+   "demonstration_episode_id": "apple-42017"
+  },
+  {
+   "attempt_id": "45107-demo_replay",
+   "seed": 45107,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "demo_exhausted",
+   "executed_steps": 501,
+   "success": false,
+   "score": {
+    "dropped": true,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.026632818157539824,
+    "object_plate_distance_m": 0.749617247024341,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 7.6539318561553955,
+   "demonstration_episode_id": "apple-42012"
+  },
+  {
+   "attempt_id": "45000-demo_replay",
+   "seed": 45000,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328178729911,
+    "object_plate_distance_m": 0.02620045212307838,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.695739984512329,
+   "demonstration_episode_id": "apple-42025"
+  },
+  {
+   "attempt_id": "45001-demo_replay",
+   "seed": 45001,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 221,
+   "success": false,
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.765871560540379,
+    "object_plate_distance_m": 0.1814148310491281,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.136620044708252,
+   "demonstration_episode_id": "apple-42012"
+  },
+  {
+   "attempt_id": "45002-demo_replay",
+   "seed": 45002,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 226,
+   "success": false,
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.7664011624380869,
+    "object_plate_distance_m": 0.2050637675813907,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.183629035949707,
+   "demonstration_episode_id": "apple-42012"
+  },
+  {
+   "attempt_id": "45003-demo_replay",
+   "seed": 45003,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 261,
+   "success": false,
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.7665216231968541,
+    "object_plate_distance_m": 0.18710255932260092,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.607375144958496,
+   "demonstration_episode_id": "apple-42020"
+  },
+  {
+   "attempt_id": "45004-demo_replay",
+   "seed": 45004,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 223,
+   "success": false,
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.766265022351743,
+    "object_plate_distance_m": 0.1615292762002239,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.131415128707886,
+   "demonstration_episode_id": "apple-42017"
+  },
+  {
+   "attempt_id": "45005-demo_replay",
+   "seed": 45005,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "demo_exhausted",
+   "executed_steps": 501,
+   "success": false,
+   "score": {
+    "dropped": true,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.026632818157539827,
+    "object_plate_distance_m": 3.760186243505122,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 7.670643091201782,
+   "demonstration_episode_id": "apple-42017"
+  },
+  {
+   "attempt_id": "45006-demo_replay",
+   "seed": 45006,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328178687936,
+    "object_plate_distance_m": 0.028775917952969934,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.712374210357666,
+   "demonstration_episode_id": "apple-42020"
+  },
+  {
+   "attempt_id": "45007-demo_replay",
+   "seed": 45007,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 222,
+   "success": false,
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.7660295289786628,
+    "object_plate_distance_m": 0.18144149981736965,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.120284795761108,
+   "demonstration_episode_id": "apple-42025"
+  },
+  {
+   "attempt_id": "45100-scripted_oracle",
+   "seed": 45100,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 502,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180442481,
+    "object_plate_distance_m": 0.026351028750433193,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.843826055526733,
+   "demonstration_episode_id": "apple-42020",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45101-scripted_oracle",
+   "seed": 45101,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328179673822,
+    "object_plate_distance_m": 0.02726546205084434,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.728470087051392,
+   "demonstration_episode_id": "apple-42025",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45102-scripted_oracle",
+   "seed": 45102,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180960354,
+    "object_plate_distance_m": 0.027541262626249126,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.718018054962158,
+   "demonstration_episode_id": "apple-42017",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45103-scripted_oracle",
+   "seed": 45103,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328177163083,
+    "object_plate_distance_m": 0.02541035508443301,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.761149168014526,
+   "demonstration_episode_id": "apple-42024",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45104-scripted_oracle",
+   "seed": 45104,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328181915925,
+    "object_plate_distance_m": 0.027482684333584813,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.761230707168579,
+   "demonstration_episode_id": "apple-42025",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45105-scripted_oracle",
+   "seed": 45105,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.778632818028026,
+    "object_plate_distance_m": 0.02743661233751558,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.752487897872925,
+   "demonstration_episode_id": "apple-42001",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45106-scripted_oracle",
+   "seed": 45106,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328178143384,
+    "object_plate_distance_m": 0.0267645173623015,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.717794895172119,
+   "demonstration_episode_id": "apple-42017",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45107-scripted_oracle",
+   "seed": 45107,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328182620846,
+    "object_plate_distance_m": 0.028819097641792895,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.703863143920898,
+   "demonstration_episode_id": "apple-42012",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45000-scripted_oracle",
+   "seed": 45000,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 502,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180639606,
+    "object_plate_distance_m": 0.02873003910442804,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.766006708145142,
+   "demonstration_episode_id": "apple-42025",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45001-scripted_oracle",
+   "seed": 45001,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328176176657,
+    "object_plate_distance_m": 0.02186874726904364,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.9717559814453125,
+   "demonstration_episode_id": "apple-42012",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45002-scripted_oracle",
+   "seed": 45002,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.778632818076962,
+    "object_plate_distance_m": 0.02871766388032122,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.911242961883545,
+   "demonstration_episode_id": "apple-42012",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45003-scripted_oracle",
+   "seed": 45003,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328182872361,
+    "object_plate_distance_m": 0.028409391993135455,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.699455976486206,
+   "demonstration_episode_id": "apple-42020",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45004-scripted_oracle",
+   "seed": 45004,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328182030886,
+    "object_plate_distance_m": 0.027759088972728392,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.8182148933410645,
+   "demonstration_episode_id": "apple-42017",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45005-scripted_oracle",
+   "seed": 45005,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328175320887,
+    "object_plate_distance_m": 0.02399473065161499,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.698095083236694,
+   "demonstration_episode_id": "apple-42017",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45006-scripted_oracle",
+   "seed": 45006,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180716624,
+    "object_plate_distance_m": 0.027310489625124088,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.728602170944214,
+   "demonstration_episode_id": "apple-42020",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45007-scripted_oracle",
+   "seed": 45007,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 502,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.778632818052497,
+    "object_plate_distance_m": 0.02871467748078458,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.799439191818237,
+   "demonstration_episode_id": "apple-42025",
+   "oracle_phase": "release_high"
+  },
+  {
+   "attempt_id": "45100-privileged_object",
+   "seed": 45100,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "object_dropped",
+   "executed_steps": 217,
+   "success": false,
+   "score": {
+    "dropped": true,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.6420636226047373,
+    "object_plate_distance_m": 0.37564646460858514,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 129.91342687606812,
+   "phase": "lift",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 112,
+     "phase": "descend"
+    },
+    {
+     "command": 129,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 174,
+     "phase": "lift"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 0,
+   "rollout_parity_checks": 216,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 216,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42020"
+  },
+  {
+   "attempt_id": "45101-privileged_object",
+   "seed": 45101,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 277,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180667487,
+    "object_plate_distance_m": 0.029248766092336904,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.1500000000000501,
+    "transport": true
+   },
+   "wall_seconds": 175.22048592567444,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 112,
+     "phase": "descend"
+    },
+    {
+     "command": 129,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 174,
+     "phase": "lift"
+    },
+    {
+     "command": 199,
+     "phase": "transport"
+    },
+    {
+     "command": 242,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 43,
+   "rollout_parity_checks": 276,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 276,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42025"
+  },
+  {
+   "attempt_id": "45102-privileged_object",
+   "seed": 45102,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 280,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328181002365,
+    "object_plate_distance_m": 0.031153010945381997,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.1500000000000501,
+    "transport": true
+   },
+   "wall_seconds": 177.27310800552368,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 110,
+     "phase": "descend"
+    },
+    {
+     "command": 126,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 171,
+     "phase": "lift"
+    },
+    {
+     "command": 204,
+     "phase": "transport"
+    },
+    {
+     "command": 245,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 41,
+   "rollout_parity_checks": 279,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 279,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42017"
+  },
+  {
+   "attempt_id": "45103-privileged_object",
+   "seed": 45103,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "object_dropped",
+   "executed_steps": 227,
+   "success": false,
+   "score": {
+    "dropped": true,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.6426769600349795,
+    "object_plate_distance_m": 0.4018127982949158,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 135.73755166702904,
+   "phase": "lift",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 112,
+     "phase": "descend"
+    },
+    {
+     "command": 131,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 176,
+     "phase": "lift"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 0,
+   "rollout_parity_checks": 226,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 226,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42024"
+  },
+  {
+   "attempt_id": "45104-privileged_object",
+   "seed": 45104,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 317,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180467605,
+    "object_plate_distance_m": 0.02750836147355207,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.1500000000000501,
+    "transport": true
+   },
+   "wall_seconds": 202.2009081840515,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 115,
+     "phase": "descend"
+    },
+    {
+     "command": 132,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 177,
+     "phase": "lift"
+    },
+    {
+     "command": 232,
+     "phase": "transport"
+    },
+    {
+     "command": 281,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 49,
+   "rollout_parity_checks": 316,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 316,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42025"
+  },
+  {
+   "attempt_id": "45105-privileged_object",
+   "seed": 45105,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "object_dropped",
+   "executed_steps": 231,
+   "success": false,
+   "score": {
+    "dropped": true,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.6828992459427878,
+    "object_plate_distance_m": 0.3913386210978171,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 141.22833704948425,
+   "phase": "lift",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 109,
+     "phase": "descend"
+    },
+    {
+     "command": 126,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 171,
+     "phase": "lift"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 0,
+   "rollout_parity_checks": 230,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 230,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42001"
+  },
+  {
+   "attempt_id": "45106-privileged_object",
+   "seed": 45106,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 327,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328198170179,
+    "object_plate_distance_m": 0.026897156129781722,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 210.31593084335327,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 109,
+     "phase": "descend"
+    },
+    {
+     "command": 124,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 169,
+     "phase": "lift"
+    },
+    {
+     "command": 262,
+     "phase": "transport"
+    },
+    {
+     "command": 293,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 31,
+   "rollout_parity_checks": 326,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 326,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42017"
+  },
+  {
+   "attempt_id": "45107-privileged_object",
+   "seed": 45107,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 301,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328179390037,
+    "object_plate_distance_m": 0.02800335182956654,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.1500000000000501,
+    "transport": true
+   },
+   "wall_seconds": 202.8147840499878,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 112,
+     "phase": "descend"
+    },
+    {
+     "command": 135,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 180,
+     "phase": "lift"
+    },
+    {
+     "command": 226,
+     "phase": "transport"
+    },
+    {
+     "command": 266,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 40,
+   "rollout_parity_checks": 300,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 300,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42012"
+  },
+  {
+   "attempt_id": "45000-privileged_object",
+   "seed": 45000,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "object_dropped",
+   "executed_steps": 258,
+   "success": false,
+   "score": {
+    "dropped": true,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.6756527275249056,
+    "object_plate_distance_m": 0.39854027516096024,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 167.91219902038574,
+   "phase": "lift",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 109,
+     "phase": "descend"
+    },
+    {
+     "command": 126,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 171,
+     "phase": "lift"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 0,
+   "rollout_parity_checks": 257,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 257,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42025"
+  },
+  {
+   "attempt_id": "45001-privileged_object",
+   "seed": 45001,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 290,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328185738178,
+    "object_plate_distance_m": 0.031525752849561356,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.1500000000000501,
+    "transport": true
+   },
+   "wall_seconds": 199.0328071117401,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 111,
+     "phase": "descend"
+    },
+    {
+     "command": 128,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 173,
+     "phase": "lift"
+    },
+    {
+     "command": 228,
+     "phase": "transport"
+    },
+    {
+     "command": 271,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 43,
+   "rollout_parity_checks": 289,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 289,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42012"
+  },
+  {
+   "attempt_id": "45002-privileged_object",
+   "seed": 45002,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 269,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328179990761,
+    "object_plate_distance_m": 0.029183506457752365,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.1500000000000501,
+    "transport": true
+   },
+   "wall_seconds": 178.03202390670776,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 111,
+     "phase": "descend"
+    },
+    {
+     "command": 127,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 172,
+     "phase": "lift"
+    },
+    {
+     "command": 201,
+     "phase": "transport"
+    },
+    {
+     "command": 247,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 46,
+   "rollout_parity_checks": 268,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 268,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42012"
+  },
+  {
+   "attempt_id": "45003-privileged_object",
+   "seed": 45003,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 283,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180204587,
+    "object_plate_distance_m": 0.03038284845943011,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.1500000000000501,
+    "transport": true
+   },
+   "wall_seconds": 192.04140901565552,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 108,
+     "phase": "descend"
+    },
+    {
+     "command": 125,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 170,
+     "phase": "lift"
+    },
+    {
+     "command": 208,
+     "phase": "transport"
+    },
+    {
+     "command": 261,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 53,
+   "rollout_parity_checks": 282,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 282,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42020"
+  },
+  {
+   "attempt_id": "45004-privileged_object",
+   "seed": 45004,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 301,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328181199486,
+    "object_plate_distance_m": 0.02814404814381711,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.1500000000000501,
+    "transport": true
+   },
+   "wall_seconds": 205.0409038066864,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 114,
+     "phase": "descend"
+    },
+    {
+     "command": 134,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 179,
+     "phase": "lift"
+    },
+    {
+     "command": 225,
+     "phase": "transport"
+    },
+    {
+     "command": 264,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 39,
+   "rollout_parity_checks": 300,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 300,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42017"
+  },
+  {
+   "attempt_id": "45005-privileged_object",
+   "seed": 45005,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 278,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328178302527,
+    "object_plate_distance_m": 0.024637955977961336,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.1500000000000501,
+    "transport": true
+   },
+   "wall_seconds": 185.25401377677917,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 110,
+     "phase": "descend"
+    },
+    {
+     "command": 128,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 173,
+     "phase": "lift"
+    },
+    {
+     "command": 207,
+     "phase": "transport"
+    },
+    {
+     "command": 243,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 36,
+   "rollout_parity_checks": 277,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 277,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42017"
+  },
+  {
+   "attempt_id": "45006-privileged_object",
+   "seed": 45006,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 297,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328200899553,
+    "object_plate_distance_m": 0.02705298899759964,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.1500000000000501,
+    "transport": true
+   },
+   "wall_seconds": 192.60040712356567,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 110,
+     "phase": "descend"
+    },
+    {
+     "command": 131,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 176,
+     "phase": "lift"
+    },
+    {
+     "command": 216,
+     "phase": "transport"
+    },
+    {
+     "command": 263,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 47,
+   "rollout_parity_checks": 296,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 296,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42020"
+  },
+  {
+   "attempt_id": "45007-privileged_object",
+   "seed": 45007,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 375,
+   "success": true,
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180339369,
+    "object_plate_distance_m": 0.026802572928559282,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 260.1785080432892,
+   "phase": "release",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 114,
+     "phase": "descend"
+    },
+    {
+     "command": 132,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 177,
+     "phase": "lift"
+    },
+    {
+     "command": 298,
+     "phase": "transport"
+    },
+    {
+     "command": 339,
+     "phase": "release",
+     "previous_ended": "release_predicted"
+    }
+   ],
+   "ceiling_version": 2,
+   "release_probes": 41,
+   "rollout_parity_checks": 374,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 374,
+   "rollout_full_state_parity_mismatches": 0,
+   "demonstration_episode_id": "apple-42025"
+  }
+ ]
+}

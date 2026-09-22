@@ -384,6 +384,11 @@ class ObjectCeilingController:
                 return
             self._enter(PHASES[PHASES.index(name) + 1], live)
 
+    def _record_progress(self, live):
+        """Append this command's progress measure of a blockable phase."""
+        if self.phase.name in BLOCKABLE_PHASES:
+            self.phase.anchor["progress"].append(self._progress_measure(live))
+
     def _progress_measure(self, live):
         """Decreasing progress measure of a blockable phase (meters)."""
         if self.phase.name == "descend":
@@ -484,8 +489,7 @@ class ObjectCeilingController:
         live = features(self.robot)
         if live["dropped"]:
             return self._stop("object_dropped")
-        if self.phase.name in BLOCKABLE_PHASES:
-            self.phase.anchor["progress"].append(self._progress_measure(live))
+        self._record_progress(live)
         self._advance(live)
         if self.phase.commands >= cfg.phase_stall_commands:
             return self._stop("phase_stall")

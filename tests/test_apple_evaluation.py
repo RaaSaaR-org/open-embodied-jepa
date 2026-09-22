@@ -1869,3 +1869,131 @@ def test_open_loop_guard_refusal_is_clean_only_for_object_plans():
     with pytest.raises(ContractError, match="unconsumed"):
         module.project_open_loop(Robot("unconsumed"), command, guarded=True)
     assert module.project_open_loop(Robot(), command, guarded=True).actions.shape == (1, 1, 1, 14)
+
+
+# TASK-049 object-aware ceiling v2 on fresh wide-jitter resets (no physics here).
+
+
+def test_object_v2_plan_adds_fresh_primary_resets_and_leaves_the_v1_plan_unchanged():
+    v1 = object_plan()
+    assert v1 == object_plan(object_ceiling_version=1)
+    assert "object_ceiling_version" not in v1 and "primary_seeds" not in v1
+    plan = object_plan(object_ceiling_version=2, max_seconds=16800)
+    primary, secondary = list(range(45100, 45108)), list(range(45000, 45008))
+    assert plan["seeds"] == primary + secondary
+    assert plan["primary_seeds"] == primary and plan["secondary_seeds"] == secondary
+    assert plan["object_ceiling_version"] == 2
+    assert plan["attempts"][0]["attempt_id"] == "45100-demo_replay"
+    assert plan["attempts"][-1]["attempt_id"] == "45007-privileged_object"
+    assert len(plan["attempts"]) == 48
+    for attempt in plan["attempts"]:
+        assert attempt["reset"] == module.wide_reset(attempt["seed"])
+    assert plan["object_ceiling"]["release_ramp"] == 0.08
+    assert "seed" not in plan["object_ceiling"]
+    # Fresh draws differ from every TASK-047 draw.
+    old = {tuple(module.wide_reset(s)["object_xy"]) for s in secondary}
+    assert not old & {tuple(module.wide_reset(s)["object_xy"]) for s in primary}
+    for bad in (
+        dict(object_ceiling_version=3),
+        dict(object_ceiling_version=2, max_seconds=21601),
+        dict(object_ceiling_version=2, seeds=[44000]),
+        dict(seeds=[45100]),  # fresh resets are not v1 resets
+    ):
+        with pytest.raises(ValueError):
+            object_plan(**bad)
+    with pytest.raises(ValueError, match="goal-kind object"):
+        module.make_plan(seeds=[43000], modes=["learned"], object_ceiling_version=2)
+
+
+def v2_records(successes, grasps, scripted=8, replay=2):
+    primary = tuple(range(45100, 45108))
+    records = arms(grasps, replay, scripted=scripted, seeds=primary)
+    full = {k: True for k in ("reach", "grasp", "transport", "place", "release", "success")}
+    for n, record in enumerate(r for r in records if r["mode"] == "privileged_object"):
+        if n < successes:
+            record["score"] = full
+    for n, record in enumerate(r for r in records if r["mode"] == "scripted_oracle"):
+        if n < scripted:
+            record["score"] = full
+    return records + arms(0, 0, scripted=0, seeds=tuple(range(45000, 45008)))
+
+
+def test_object_v2_gate_outcomes_use_the_primary_resets_only():
+    primary, secondary = list(range(45100, 45108)), list(range(45000, 45008))
+    plan = {
+        "goal_kind": "object",
+        "object_ceiling_version": 2,
+        "seeds": primary + secondary,
+        "primary_seeds": primary,
+        "secondary_seeds": secondary,
+    }
+
+    def gate(records):
+        summary = module.gate_summary(plan, records)
+        assert set(summary) == {"object_ceiling_v2_gate"}
+        return summary["object_ceiling_v2_gate"]
+
+    passed = gate(v2_records(6, 7))
+    assert passed["primary_gate_passed"] and passed["readings"]["outcome"] == "ceiling_adequate"
+    assert passed["readings"]["preregistered_next_step"].startswith("T4")
+    assert passed["readings"]["replay_separated_diagnostic"]
+    assert passed["secondary_arms"]["privileged_object"]["grasp_resets"] == 0
+    assert not gate(v2_records(5, 8))["primary_gate_passed"]
+    assert gate(v2_records(5, 8))["readings"]["outcome"] == "grasp_adequate_place_inadequate"
+    assert not gate(v2_records(6, 6))["primary_gate_passed"]
+    assert gate(v2_records(6, 6))["readings"]["outcome"] == "ceiling_inadequate_task_feasible"
+    failed = gate(v2_records(2, 3, scripted=4))
+    assert failed["readings"]["outcome"] == "ceiling_inadequate_scripted_also_fails"
+    assert not gate(v2_records(8, 8, replay=6))["readings"]["replay_separated_diagnostic"]
+    assert gate(v2_records(8, 8, replay=6))["primary_gate_passed"]  # replay never gates
+    records = v2_records(8, 8)
+    records[0]["termination_reason"] = "runtime_error"  # a primary ceiling attempt
+    assert gate(records)["readings"]["outcome"] == "inconclusive"
+    records = v2_records(8, 8)
+    records[0]["rollout_full_state_parity_mismatches"] = 1
+    assert not gate(records)["primary_gate_passed"]
+    records = v2_records(8, 8)
+    records[-1]["termination_reason"] = "runtime_error"  # a secondary attempt never gates
+    assert gate(records)["primary_gate_passed"]
+    records = v2_records(8, 8)
+    records[-1]["provenance_valid"] = False
+    assert not gate(records)["primary_gate_passed"]
+
+
+def test_object_v2_worker_builds_the_v2_ceiling(tmp_path, monkeypatch):
+    pytest.importorskip("torch")
+    from embodied_jepa import object_ceiling_v2
+
+    built = []
+
+    class Rollouts:
+        def __init__(self, model, robot, *, acknowledge_privileged_ceiling=False):
+            assert acknowledge_privileged_ceiling is True
+
+        def pop_diagnostics(self):
+            return []
+
+        def close(self):
+            built.append("closed")
+
+    class Ceiling:
+        def __init__(self, rollouts, robot, config, *, acknowledge_privileged_ceiling=False):
+            built.append((type(rollouts).__name__, type(config).__name__, config.seed))
+
+        def step(self, observation, projector):
+            return SimpleNamespace(action=None, trace={}, termination_reason="phase_stall")
+
+        def summary(self):
+            return {"phase": "approach", "furthest_phase_index": 0, "ceiling_version": 2}
+
+    monkeypatch.setattr(object_ceiling_v2, "ObjectRolloutV2Model", Rollouts)
+    monkeypatch.setattr(object_ceiling_v2, "ObjectCeilingV2Controller", Ceiling)
+    state_worker_fixture(tmp_path, monkeypatch, [])
+    plan = object_plan(
+        object_ceiling_version=2, seeds=[45104], modes=["privileged_object"], max_seconds=16800
+    )
+    module.write(tmp_path / "resolved_plan.json", plan | {"dataset": "u", "checkpoint": "u"})
+    module.attempt_worker(tmp_path, "45104-privileged_object", attempt_seconds=960)
+    report = json.loads((tmp_path / "attempts/45104-privileged_object/report.json").read_text())
+    assert built == [("Rollouts", "ObjectCeilingV2Config", 45104), "closed"]
+    assert report["termination_reason"] == "phase_stall" and report["ceiling_version"] == 2
