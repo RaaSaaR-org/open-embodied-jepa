@@ -221,3 +221,23 @@ def test_main_child_failure_returns_nonzero_and_preserves_prephysics_plan(tmp_pa
     report = json.loads((output / "collection_report.json").read_text())
     assert len(report["attempts"]) == 32 and not report["training_ready"]
     assert report["returncode"] == 7
+
+
+def test_scripted_apple_collector_policy_matches_the_collection_policy():
+    from embodied_jepa.scripted import apple_collector_policy
+
+    truth = {
+        "position_frame": "world",
+        "base_position_world": np.array([0.0, 0.0, 0.793]),
+        "base_rotation_world": np.eye(3),
+        "object_position": np.array([0.37, -0.21, 0.77]),
+        "plate_position": np.array([0.47, -0.07, 0.746]),
+        "container_surface_z": 0.75,
+        "object_support_height": 0.027,
+    }
+    expected = collector.make_policy(truth, -0.035).phases
+    actual = apple_collector_policy(truth).phases
+    assert [p.name for p in actual] == [p.name for p in expected]
+    for mine, theirs in zip(actual, expected, strict=True):
+        np.testing.assert_array_equal(mine.target_base, theirs.target_base)
+        assert (mine.grasp, mine.commands) == (theirs.grasp, theirs.commands)

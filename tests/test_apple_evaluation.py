@@ -1623,3 +1623,249 @@ def test_hybrid_worker_refuses_an_undeclared_plan(tmp_path, monkeypatch):
     report = json.loads((tmp_path / "attempts/43000-privileged_hybrid/report.json").read_text())
     assert report["termination_reason"] == "runtime_error"
     assert "declared hybrid ceiling" in report["error"] and report["executed_steps"] == 0
+
+
+# TASK-047 wide-jitter distribution and object-aware privileged ceiling (no physics here).
+
+
+def object_plan(**overrides):
+    options = dict(
+        goal_kind="object",
+        stride=16,
+        dwell=1,
+        horizon=6,
+        candidates=24,
+        iterations=2,
+        proposals=False,
+        max_seconds=8400,
+        attempt_max_seconds=1500,
+    )
+    return module.make_plan(**(options | overrides))
+
+
+def test_object_plan_uses_new_wide_resets_and_leaves_other_plans_unchanged():
+    plan = object_plan()
+    assert plan["seeds"] == list(range(45000, 45008))
+    assert plan["modes"] == ["demo_replay", "scripted_oracle", "privileged_object"]
+    assert [a["attempt_id"] for a in plan["attempts"][:2]] == [
+        "45000-demo_replay",
+        "45001-demo_replay",
+    ]
+    assert plan["attempts"][-1]["attempt_id"] == "45007-privileged_object"
+    assert plan == object_plan()
+    offsets = []
+    for attempt in plan["attempts"]:
+        reset = attempt["reset"]
+        assert reset == module.wide_reset(attempt["seed"])
+        obj = np.array(reset["object_xy"]) - [0.34, -0.18]
+        plate = np.array(reset["plate_xy"]) - [0.49, -0.09]
+        assert np.abs(obj).max() <= 0.03 and np.abs(plate).max() <= 0.02
+        offsets.append(np.abs(obj).max())
+    assert max(offsets) > 0.006  # genuinely wider than the narrow distribution
+    assert plan["object_ceiling"]["horizon"] == 6 and "seed" not in plan["object_ceiling"]
+    # Existing narrow plans neither gain object fields nor accept object modes.
+    narrow = module.make_plan(seeds=[43000], modes=["learned"])
+    assert narrow["reset_jitter_m"] == 0.006 and "object_ceiling" not in narrow
+    for bad in (
+        dict(stage="final"),
+        dict(seeds=[43000]),
+        dict(seeds=[45000, 45000]),
+        dict(modes=["learned"]),
+        dict(proposals=True),
+        dict(max_seconds=9001),
+        dict(goal_stall_limit=64),
+        dict(commitment_steps=2),
+    ):
+        with pytest.raises(ValueError):
+            object_plan(**bad)
+    with pytest.raises(ValueError, match="goal-kind object"):
+        module.make_plan(seeds=[43000], modes=["scripted_oracle"])
+
+
+def object_record(seed, score, mode="privileged_object", **extra):
+    record = {
+        "seed": seed,
+        "mode": mode,
+        "status": "completed",
+        "termination_reason": "success",
+        "score": score,
+    }
+    if mode == "privileged_object":
+        record.update(
+            rollout_parity_checks=10,
+            rollout_parity_mismatches=0,
+            rollout_full_state_parity_checks=10,
+            rollout_full_state_parity_mismatches=0,
+            phase="retreat",
+        )
+    return record | extra
+
+
+def arms(ceiling, replay, scripted=8, seeds=tuple(range(45000, 45008))):
+    grasp = {"reach": True, "grasp": True}
+    reach = {"reach": True}
+    records = []
+    for mode, count in (
+        ("privileged_object", ceiling),
+        ("demo_replay", replay),
+        ("scripted_oracle", scripted),
+    ):
+        for n, seed in enumerate(seeds):
+            records.append(
+                object_record(seed, grasp if n < count else reach, mode=mode, phase="lift")
+            )
+    return records
+
+
+def test_object_ceiling_gate_outcomes_and_next_steps():
+    seeds = list(range(45000, 45008))
+
+    def gate(records):
+        summary = module.gate_summary({"goal_kind": "object", "seeds": seeds}, records)
+        assert set(summary) == {"object_ceiling_gate"}
+        return summary["object_ceiling_gate"]
+
+    passed = gate(arms(6, 3))
+    assert passed["primary_gate_passed"] and passed["readings"]["outcome"] == "separated"
+    assert passed["readings"]["preregistered_next_step"].startswith("T2")
+    assert gate(arms(8, 5))["primary_gate_passed"]
+    assert gate(arms(6, 4))["readings"]["outcome"] == "ceiling_adequate_replay_not_separated"
+    assert gate(arms(5, 0))["readings"]["outcome"] == "ceiling_inadequate_task_feasible"
+    failed = gate(arms(5, 0, scripted=2))
+    assert failed["readings"]["outcome"] == "ceiling_inadequate_scripted_also_fails"
+    assert failed["arms"]["privileged_object"]["failed_reset_furthest_phase"] == {"lift": 3}
+    # The scripted reference never changes the gate itself.
+    assert gate(arms(6, 3, scripted=0))["primary_gate_passed"]
+    # Inexact rollouts, a failed ceiling attempt, an incomplete replay arm or invalid
+    # provenance can never pass and make the reading inconclusive.
+    records = arms(8, 0)
+    records[0]["rollout_full_state_parity_mismatches"] = 1
+    assert gate(records)["readings"]["outcome"] == "inconclusive"
+    assert not gate(records)["primary_gate_passed"]
+    records = arms(8, 0)
+    records[8]["termination_reason"] = "runtime_error"  # a demo_replay attempt
+    assert not gate(records)["primary_gate_passed"]
+    assert gate(records)["readings"]["outcome"] == "inconclusive"
+    records = arms(8, 0)
+    records[0]["termination_reason"] = "attempt_timeout"
+    assert gate(records)["privileged_object_grasp_resets"] == 7
+    assert gate(records)["readings"]["outcome"] == "inconclusive"
+    records = arms(8, 0)
+    records[3]["provenance_valid"] = False
+    assert not gate(records)["primary_gate_passed"]
+    # Clean ceiling stops (drop, phase stall, guard refusal) are counted failures.
+    records = arms(8, 0)
+    records[0]["termination_reason"] = "object_dropped"
+    records[0]["score"] = {"reach": True}
+    assert gate(records)["readings"]["conclusive"]
+
+
+def test_object_worker_builds_the_ceiling_and_records_parity(tmp_path, monkeypatch):
+    pytest.importorskip("torch")  # the fixture reuses the state-worker plumbing
+    from embodied_jepa import object_ceiling
+
+    built = []
+
+    class Rollouts:
+        def __init__(self, model, robot, *, acknowledge_privileged_ceiling=False):
+            assert acknowledge_privileged_ceiling is True
+            self.rows = [
+                [],
+                [
+                    {
+                        "previous_search_first_step_exact_match": True,
+                        "previous_search_first_step_full_state_exact_match": False,
+                    }
+                ],
+            ]
+
+        def pop_diagnostics(self):
+            return self.rows.pop(0) if self.rows else []
+
+        def close(self):
+            built.append("closed")
+
+    class Ceiling:
+        def __init__(self, rollouts, robot, config, *, acknowledge_privileged_ceiling=False):
+            assert acknowledge_privileged_ceiling is True
+            built.append((type(rollouts).__name__, config.seed, config.horizon))
+            self.decisions = [
+                SimpleNamespace(action=np.zeros(14, np.float32), trace={"phase": "approach"}),
+                SimpleNamespace(action=np.zeros(14, np.float32), trace={"phase": "approach"}),
+                SimpleNamespace(action=None, trace={}, termination_reason="phase_stall"),
+            ]
+
+        def step(self, observation, projector):
+            return self.decisions.pop(0)
+
+        def acknowledge(self, result):
+            return {"phase": "approach"}
+
+        def summary(self):
+            return {"phase": "approach", "furthest_phase_index": 0, "phase_log": []}
+
+    monkeypatch.setattr(object_ceiling, "ObjectRolloutModel", Rollouts)
+    monkeypatch.setattr(object_ceiling, "ObjectCeilingController", Ceiling)
+    state_worker_fixture(tmp_path, monkeypatch, [])
+    plan = object_plan(seeds=[45003], modes=["privileged_object"])
+    module.write(tmp_path / "resolved_plan.json", plan | {"dataset": "u", "checkpoint": "u"})
+    module.attempt_worker(tmp_path, "45003-privileged_object", attempt_seconds=1500)
+    report = json.loads((tmp_path / "attempts/45003-privileged_object/report.json").read_text())
+    assert built[0] == ("Rollouts", 45003, 6) and built[-1] == "closed"
+    assert report["termination_reason"] == "phase_stall" and report["executed_steps"] == 2
+    assert report["rollout_parity_checks"] == 1 and report["rollout_parity_mismatches"] == 0
+    assert report["rollout_full_state_parity_checks"] == 1
+    assert report["rollout_full_state_parity_mismatches"] == 1
+    assert report["furthest_phase_index"] == 0 and "last_goal_index" not in report
+
+
+def test_object_modes_refuse_an_undeclared_plan(tmp_path, monkeypatch):
+    pytest.importorskip("torch")
+    state_worker_fixture(tmp_path, monkeypatch, [])
+    plan = state_plan(seeds=[43000], modes=["demo_replay"])
+    plan["attempts"] = [
+        plan["attempts"][0] | {"attempt_id": "43000-scripted_oracle", "mode": "scripted_oracle"}
+    ]
+    module.write(tmp_path / "resolved_plan.json", plan | {"dataset": "u", "checkpoint": "u"})
+    module.attempt_worker(tmp_path, "43000-scripted_oracle", attempt_seconds=200)
+    report = json.loads((tmp_path / "attempts/43000-scripted_oracle/report.json").read_text())
+    assert report["termination_reason"] == "runtime_error"
+    assert "declared object plan" in report["error"]
+
+
+def test_object_gate_requires_every_ceiling_attempt_and_non_vacuous_parity():
+    seeds = list(range(45000, 45008))
+    records = arms(7, 0)
+    records[0]["termination_reason"] = "runtime_error"  # 45000 ceiling: 6 counted grasps
+    gate = module.object_ceiling_gate(records, seeds)
+    assert gate["privileged_object_grasp_resets"] == 6
+    assert not gate["primary_gate_passed"] and gate["readings"]["outcome"] == "inconclusive"
+    vacuous = arms(8, 0)
+    vacuous[0].update(executed_steps=10, rollout_parity_checks=0)
+    gate = module.object_ceiling_gate(vacuous, seeds)
+    assert not gate["rollouts_exact"] and not gate["primary_gate_passed"]
+    enough = arms(8, 0)
+    enough[0].update(executed_steps=11)  # 10 checks >= 11 - 1
+    assert module.object_ceiling_gate(enough, seeds)["primary_gate_passed"]
+
+
+def test_open_loop_guard_refusal_is_clean_only_for_object_plans():
+    from embodied_jepa.constraints import CandidateProjection
+
+    class Robot:
+        def __init__(self, message=None):
+            self.message = message
+
+        def project_candidates(self, requested):
+            if self.message:
+                raise ContractError(self.message)
+            return CandidateProjection(requested, np.ones(requested.shape[:2], bool))
+
+    command = np.zeros(14, np.float32)
+    guard = "measured joint velocity limit exceeded"
+    assert module.project_open_loop(Robot(guard), command, guarded=True) is None
+    with pytest.raises(ContractError, match="velocity"):
+        module.project_open_loop(Robot(guard), command, guarded=False)
+    with pytest.raises(ContractError, match="unconsumed"):
+        module.project_open_loop(Robot("unconsumed"), command, guarded=True)
+    assert module.project_open_loop(Robot(), command, guarded=True).actions.shape == (1, 1, 1, 14)

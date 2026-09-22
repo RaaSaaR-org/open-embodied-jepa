@@ -40,6 +40,8 @@ MODES = (
     "privileged_rollout",
     "privileged_hybrid",
     "privileged_hybrid_early",
+    "privileged_object",
+    "scripted_oracle",
 )
 # TASK-043 demonstration-state-goal MPC. demo_replay is a NON-LEARNED open-loop
 # replay of the retrieved TRAIN demonstration; it never calls the world model.
@@ -64,6 +66,17 @@ STAGES = ("reach", "grasp", "transport", "place", "release")
 # planning horizon earlier; demo_replay is the same-code open-loop reference.
 HYBRID_PRIVILEGED_MODES = ("privileged_hybrid", "privileged_hybrid_early")
 HYBRID_MODES = ("privileged_hybrid", "demo_replay", "privileged_hybrid_early")
+# TASK-047 wide-jitter development distribution (new resets 45000-45007; the narrow
+# 43000-43004 development and 44000-44019 final cohorts are unchanged) with three
+# NON-LEARNED arms: the retrieved TRAIN demo_replay, the privileged scripted collector
+# policy (feasibility reference) and the object-aware privileged MuJoCo-rollout ceiling.
+OBJECT_MODE = "privileged_object"
+OBJECT_MODES = ("demo_replay", "scripted_oracle", OBJECT_MODE)
+OBJECT_ONLY_MODES = ("scripted_oracle", OBJECT_MODE)
+WIDE_COHORT = tuple(range(45000, 45008))
+WIDE_JITTER_M = {"object_xy": 0.03, "plate_xy": 0.02}
+RESET_CENTERS = {"object_xy": (0.34, -0.18), "plate_xy": (0.49, -0.09)}
+OBJECT_WALL_LIMIT = 9000
 
 
 def validate_attempt_budget(seconds):
@@ -103,8 +116,26 @@ def make_plan(
     goal_kind="image",
     goal_stall_limit=None,
 ):
+    if goal_kind == "object":
+        return make_object_plan(
+            stage=stage,
+            seeds=seeds,
+            modes=modes,
+            max_seconds=max_seconds,
+            max_steps=max_steps,
+            stride=stride,
+            dwell=dwell,
+            horizon=horizon,
+            candidates=candidates,
+            iterations=iterations,
+            proposals=proposals,
+            control_timeout=control_timeout,
+            commitment_steps=commitment_steps,
+            attempt_max_seconds=attempt_max_seconds,
+            goal_stall_limit=goal_stall_limit,
+        )
     if goal_kind not in ("image", "state", "trajectory", "hybrid"):
-        raise ValueError("goal kind must be image, state, trajectory or hybrid")
+        raise ValueError("goal kind must be image, state, trajectory, hybrid or object")
     if stage not in ("development", "final"):
         raise ValueError("stage must be development or final")
     cohort = tuple(range(43000, 43005)) if stage == "development" else tuple(range(44000, 44020))
@@ -125,6 +156,8 @@ def make_plan(
     modes = list(default_modes if modes is None else modes)
     if not modes or len(set(modes)) != len(modes) or any(m not in MODES for m in modes):
         raise ValueError("unknown or repeated control mode")
+    if any(m in OBJECT_ONLY_MODES for m in modes):
+        raise ValueError("object-aware ceiling modes require --goal-kind object")
     if goal_kind == "hybrid":
         if any(m not in HYBRID_MODES for m in modes) or stage != "development":
             raise ValueError(
@@ -370,6 +403,159 @@ def make_plan(
             ),
         )
     return plan
+
+
+def wide_reset(seed):
+    """TASK-047 wide-jitter reset: apple +-3 cm, plate +-2 cm around the unchanged centres."""
+    rng = np.random.default_rng(seed)
+    return {
+        "seed": seed,
+        "object_xy": (
+            np.array(RESET_CENTERS["object_xy"])
+            + rng.uniform(-WIDE_JITTER_M["object_xy"], WIDE_JITTER_M["object_xy"], 2)
+        ).tolist(),
+        "plate_xy": (
+            np.array(RESET_CENTERS["plate_xy"])
+            + rng.uniform(-WIDE_JITTER_M["plate_xy"], WIDE_JITTER_M["plate_xy"], 2)
+        ).tolist(),
+    }
+
+
+def make_object_plan(
+    *,
+    stage,
+    seeds,
+    modes,
+    max_seconds,
+    max_steps,
+    stride,
+    dwell,
+    horizon,
+    candidates,
+    iterations,
+    proposals,
+    control_timeout,
+    commitment_steps,
+    attempt_max_seconds,
+    goal_stall_limit,
+):
+    """TASK-047 plan: NON-LEARNED arms on the wide-jitter development resets only."""
+    from embodied_jepa.object_ceiling import (
+        OBJECT_CEILING_LABEL,
+        PHASES,
+        PLANNING_DYNAMICS,
+        ObjectCeilingConfig,
+    )
+    from embodied_jepa.privileged_rollout import REJECTED_ROLLOUT_COST
+
+    if stage != "development":
+        raise ValueError("the wide-jitter distribution is a development distribution only")
+    seeds = list(WIDE_COHORT if seeds is None else seeds)
+    if (
+        not seeds
+        or len(set(seeds)) != len(seeds)
+        or any(type(s) is not int or s not in WIDE_COHORT for s in seeds)
+    ):
+        raise ValueError("seeds must be unique members of the wide-jitter development cohort")
+    modes = list(OBJECT_MODES if modes is None else modes)
+    if not modes or len(set(modes)) != len(modes) or any(m not in OBJECT_MODES for m in modes):
+        raise ValueError("object plans run demo_replay/scripted_oracle/privileged_object only")
+    if proposals:
+        raise ValueError("the object-aware protocol forbids demonstration action proposals")
+    if commitment_steps != 1:
+        raise ValueError("the object-aware ceiling replans after every command")
+    if goal_stall_limit is not None:
+        raise ValueError("goal stall limits belong to the state-goal protocols")
+    if not np.isfinite(max_seconds) or not 0 < max_seconds <= OBJECT_WALL_LIMIT:
+        raise ValueError(f"hard wall budget must lie in (0,{OBJECT_WALL_LIMIT}]seconds")
+    validate_attempt_budget(attempt_max_seconds)
+    if not np.isfinite(control_timeout) or control_timeout <= 0:
+        raise ValueError("control timeout must be positive and finite")
+    if type(stride) is not int or stride < 1 or type(dwell) is not int or dwell < 1:
+        raise ValueError("library stride and dwell must be positive integers")
+    lower = (0.0,) * 6 + (-0.5,) * 6 + (-1.0, -1.0)
+    upper = (0.0,) * 6 + (0.5,) * 6 + (-1.0, 1.0)
+    controller = asdict(
+        WaypointConfig(
+            horizon=horizon,
+            candidates=candidates,
+            iterations=iterations,
+            max_steps=max_steps,
+            commitment_steps=1,
+            lower_bounds=lower,
+            upper_bounds=upper,
+        )
+    )
+    ceiling = asdict(
+        ObjectCeilingConfig(
+            horizon=horizon, candidates=candidates, iterations=iterations, max_steps=max_steps
+        )
+    )
+    del ceiling["seed"]  # Each attempt seeds its ceiling with its own reset seed.
+    attempts = [
+        {"attempt_id": f"{seed}-{mode}", "seed": seed, "mode": mode, "reset": wide_reset(seed)}
+        for mode in modes
+        for seed in seeds
+    ]
+    return {
+        "format_version": 1,
+        "stage": stage,
+        "distribution": "apple_plate_wide_jitter_dev_v1",
+        "goal_kind": "object",
+        "seeds": seeds,
+        "modes": modes,
+        "max_seconds": max_seconds,
+        "attempt_max_seconds": attempt_max_seconds,
+        "finalization_reserve_seconds": min(5.0, max_seconds / 10),
+        "control_timeout_seconds": float(control_timeout),
+        "controller": controller,
+        "object_ceiling": ceiling,
+        "object_ceiling_phases": list(PHASES),
+        "waypoint_stride": stride,
+        "waypoint_dwell": dwell,
+        "demonstration_proposals": False,
+        "backend": STATE_BACKEND,
+        "reset_centers_xy": {k: list(v) for k, v in RESET_CENTERS.items()},
+        "reset_jitter_m": dict(WIDE_JITTER_M),
+        "reset_rule": (
+            "rng=numpy.random.default_rng(seed); object_xy=centre+rng.uniform(-0.03,0.03,2); "
+            "plate_xy=centre+rng.uniform(-0.02,0.02,2)"
+        ),
+        "attempts": attempts,
+        "attempt_order": "mode-major in the declared mode order",
+        "privileged_ceiling": OBJECT_MODE in modes,
+        "result_label": OBJECT_CEILING_LABEL,
+        "planning_dynamics": PLANNING_DYNAMICS,
+        "rejected_rollout_cost": REJECTED_ROLLOUT_COST,
+        "success_rule": "unchanged ordered AppleToPlateTask; grasp stage = reach, >=5 cm lift "
+        "and hand contact",
+        "demo_selection": (
+            "per reset: successful NOMINAL apple/plate TRAIN episode whose frame-0 RGB has "
+            "the smallest frozen sensor image distance to the live initial RGB; ties by "
+            "lexicographic episode id; no state, object pose or score used for retrieval"
+        ),
+        "demo_replay_rule": (
+            "NON-LEARNED control: replay the retrieved demo's recorded actions open-loop "
+            "from reset through the same bounds check and mandatory projection; no world model"
+        ),
+        "scripted_rule": (
+            "NON-LEARNED privileged reference: the TRAIN collector's scripted policy "
+            "(scripted.apple_collector_policy, initial simulator truth) through the same bounds "
+            "check and mandatory projection; ends with policy_complete; feasibility reference"
+        ),
+        "privileged_rule": (
+            "NON-LEARNED diagnostic ceiling: per command, CEM candidates are projected, "
+            "executed in an exact non-rendering MuJoCo twin, and scored by the mean over the "
+            "horizon of an object-aware phase cost on simulator apple/palm/plate state; phase "
+            "transitions read live simulator truth; never a learned result"
+        ),
+        "gate_rule": (
+            "privileged_object grasp resets >= 6 of 8 AND demo_replay grasp resets <= "
+            "privileged_object grasp resets - 3, with zero robot and full-state rollout parity "
+            "mismatches over non-vacuous checks (>= executed commands - 1 per attempt), all "
+            "ceiling and replay attempts counted and valid provenance"
+        ),
+    }
 
 
 def checkpoint_model(dataset, checkpoint, *, device="cpu", backend=None):
@@ -1293,8 +1479,188 @@ def hybrid_ceiling_gate(records, seeds):
     }
 
 
+def _object_arm(records, seeds, mode):
+    """Per-reset rows for one TASK-047 arm; only counted attempts carry stages."""
+    by = {(r["seed"], r["mode"]): r for r in records if r.get("mode") == mode}
+    per_reset = {}
+    for seed in seeds:
+        record = by.get((seed, mode))
+        counted = counted_attempt(record)
+        score = (record.get("score") or {}) if counted else {}
+        record = record or {}
+        row = {
+            "counted": counted,
+            "status": record.get("status"),
+            "termination_reason": record.get("termination_reason"),
+            "executed_steps": record.get("executed_steps"),
+            "demonstration_episode_id": record.get("demonstration_episode_id"),
+            "ordered_stages": ordered_stage_count(score),
+            "reach": bool(score.get("reach")),
+            "grasp": bool(score.get("grasp")),
+            "success": bool(score.get("success")),
+            "reported_ordered_stages_uncounted": ordered_stage_count(record.get("score")),
+        }
+        if mode == OBJECT_MODE:
+            row.update(
+                phase=record.get("phase"),
+                furthest_phase_index=record.get("furthest_phase_index"),
+                phase_log=record.get("phase_log"),
+                rollout_parity_checks=record.get("rollout_parity_checks"),
+                rollout_parity_mismatches=record.get("rollout_parity_mismatches"),
+                rollout_full_state_parity_checks=record.get("rollout_full_state_parity_checks"),
+                rollout_full_state_parity_mismatches=record.get(
+                    "rollout_full_state_parity_mismatches"
+                ),
+            )
+        if mode == "scripted_oracle":
+            row["oracle_phase"] = record.get("oracle_phase")
+        per_reset[str(seed)] = row
+    rows = list(per_reset.values())
+    counted_attempts = sum(r["counted"] for r in rows)
+    result = {
+        "grasp_resets": sum(r["grasp"] for r in rows),
+        "reach_resets": sum(r["reach"] for r in rows),
+        "summed_ordered_stages": sum(r["ordered_stages"] for r in rows),
+        "full_successes": sum(r["success"] for r in rows),
+        "counted_attempts": counted_attempts,
+        "complete": counted_attempts == len(seeds),
+        "per_reset": per_reset,
+    }
+    if mode == OBJECT_MODE:
+        counted_rows = [r for r in rows if r["counted"]]
+        robot = sum(r["rollout_parity_mismatches"] or 0 for r in counted_rows)
+        full = sum(r["rollout_full_state_parity_mismatches"] or 0 for r in counted_rows)
+        result.update(
+            rollout_parity_mismatches=robot,
+            rollout_full_state_parity_mismatches=full,
+            # Non-vacuous: every executed command but possibly the last was checked.
+            rollouts_exact=bool(
+                robot == 0
+                and full == 0
+                and all(
+                    r["rollout_parity_mismatches"] is not None
+                    and r["rollout_full_state_parity_mismatches"] is not None
+                    and min(
+                        r["rollout_parity_checks"] or 0, r["rollout_full_state_parity_checks"] or 0
+                    )
+                    >= max(0, (r["executed_steps"] or 0) - 1)
+                    for r in counted_rows
+                )
+            ),
+            failed_reset_furthest_phase={
+                phase: sum(1 for r in counted_rows if not r["grasp"] and r.get("phase") == phase)
+                for phase in dict.fromkeys(r.get("phase") for r in counted_rows if not r["grasp"])
+            },
+        )
+    return result
+
+
+def object_ceiling_gate(records, seeds):
+    """Preregistered TASK-047 gate; missing/failed attempts count as zero stages."""
+    provenance_valid = all(r.get("provenance_valid", True) for r in records)
+    ceiling = _object_arm(records, seeds, OBJECT_MODE)
+    replay = _object_arm(records, seeds, "demo_replay")
+    scripted = _object_arm(records, seeds, "scripted_oracle")
+    c, d, o = ceiling["grasp_resets"], replay["grasp_resets"], scripted["grasp_resets"]
+    required = 6 if len(seeds) == 8 else int(np.ceil(0.75 * len(seeds)))
+    margin = 3
+    exact = ceiling["rollouts_exact"]
+    passed = (
+        provenance_valid
+        and exact
+        and ceiling["complete"]
+        and replay["complete"]
+        and c >= required
+        and d <= c - margin
+    )
+    conclusive = provenance_valid and exact and ceiling["complete"] and replay["complete"]
+    scripted_conclusive = provenance_valid and scripted["complete"]
+    if not conclusive:
+        outcome = "inconclusive"
+    elif passed:
+        outcome = "separated"
+    elif c >= required:
+        outcome = "ceiling_adequate_replay_not_separated"
+    elif not scripted_conclusive:
+        outcome = "ceiling_inadequate_feasibility_reference_inconclusive"
+    elif o >= required:
+        outcome = "ceiling_inadequate_task_feasible"
+    else:
+        outcome = "ceiling_inadequate_scripted_also_fails"
+    readings = {
+        "separated": (
+            "the object-aware ceiling grasps and lifts on the wide-jitter resets while open-loop "
+            "replay does not: the distribution distinguishes object-aware control from replay "
+            "and the phase cost is adequate under exact dynamics",
+            "T2: collect the wide-jitter TRAIN data (~200 episodes, >=96 px, dense grasp-phase "
+            "branches) under its own preregistration",
+        ),
+        "ceiling_adequate_replay_not_separated": (
+            "the object-aware ceiling is adequate but open-loop replay also grasps: this "
+            "jitter does not separate a world model from replay",
+            "preregister a wider distribution (larger apple jitter and/or plate jitter) and "
+            "repeat this two-arm test before T2",
+        ),
+        "ceiling_inadequate_task_feasible": (
+            "the scripted collector grasps where the object-aware exact-dynamics ceiling does "
+            "not: the phase cost/planner design, not the distribution, is inadequate",
+            "diagnose the ceiling's failure phases and redesign its cost/transitions under a "
+            "new preregistration; do not pair it with a learned model; T2 may proceed only "
+            "with the wide distribution validated by the scripted reference",
+        ),
+        "ceiling_inadequate_scripted_also_fails": (
+            "neither the object-aware ceiling nor the scripted collector grasps on >= "
+            f"{required} resets: the distribution exceeds the current grasp mechanics",
+            "preregister a narrower wide-jitter distribution (e.g. apple +-2 cm) and repeat",
+        ),
+        "ceiling_inadequate_feasibility_reference_inconclusive": (
+            "the object-aware ceiling is inadequate; the scripted feasibility reference is "
+            "incomplete, so the cause is not attributed",
+            "repair the reference arm and repeat under a new output directory",
+        ),
+        "inconclusive": (
+            "inconclusive: missing/failed ceiling or replay attempts, invalid provenance or "
+            "inexact rollouts",
+            "fix the software defect and rerun under a new versioned output directory; keep "
+            "this run as a recorded failure",
+        ),
+    }
+    interpretation, next_step = readings[outcome]
+    return {
+        "label": "NON-LEARNED: object-aware privileged MuJoCo-rollout ceiling vs open-loop "
+        "retrieved TRAIN demo_replay vs scripted collector reference on the wide-jitter "
+        "development resets; not a learned result",
+        "privileged_object_grasp_resets": c,
+        "demo_replay_grasp_resets": d,
+        "scripted_oracle_grasp_resets": o,
+        "required_ceiling_grasp_resets": required,
+        "required_replay_margin": margin,
+        "provenance_valid": provenance_valid,
+        "rollouts_exact": bool(exact),
+        "primary_gate_passed": bool(passed),
+        "readings": {
+            "conclusive": bool(conclusive),
+            "outcome": outcome,
+            "interpretation": interpretation,
+            "preregistered_next_step": next_step,
+            "scripted_reference_conclusive": bool(scripted_conclusive),
+        },
+        "arms": {OBJECT_MODE: ceiling, "demo_replay": replay, "scripted_oracle": scripted},
+        "rule": (
+            "privileged_object reaches the unchanged scorer's grasp stage (reach, >=5 cm lift, "
+            "hand contact) on >=6 of 8 resets AND demo_replay grasp resets <= privileged_object "
+            "grasp resets - 3; every ceiling and demo_replay attempt counted; zero robot and "
+            "full-state rollout parity mismatches over >= executed commands - 1 checks per "
+            "counted ceiling attempt; only cleanly completed provenance-valid attempts are "
+            "scored; scripted_oracle never affects the gate; non-learned only"
+        ),
+    }
+
+
 def gate_summary(plan, records):
     """A privileged ceiling report never carries the learned state gate, and vice versa."""
+    if plan.get("goal_kind") == "object":
+        return {"object_ceiling_gate": object_ceiling_gate(records, plan["seeds"])}
     if plan.get("goal_kind") == "hybrid":
         return {"hybrid_ceiling_gate": hybrid_ceiling_gate(records, plan["seeds"])}
     if plan.get("goal_kind") == "trajectory":
@@ -1337,7 +1703,7 @@ def prepare_worker(output):
     output = Path(output)
     plan = json.loads((output / "plan.json").read_text())
     verify_plan_inputs(plan)
-    if plan.get("goal_kind") in ("state", "trajectory", "hybrid"):
+    if plan.get("goal_kind") in ("state", "trajectory", "hybrid", "object"):
         store, model = checkpoint_model(plan["dataset"], plan["checkpoint"], backend=STATE_BACKEND)
         demonstrations = nominal_calibration_episodes(store)
         arrays, calibration = build_state_goal_library(
@@ -1418,6 +1784,21 @@ def load_waypoints(output, plan):
         ]
 
 
+def project_open_loop(robot, requested, *, guarded):
+    """Project one open-loop command. In TASK-047 object plans (``guarded``) the unchanged
+    joint-velocity guard's refusal is a clean, counted stop (returns None), exactly as
+    the object-aware ceiling treats it; every other error, and every refusal in the
+    earlier plans, still propagates as a runtime error."""
+    from embodied_jepa.object_ceiling import GUARD_REFUSALS
+
+    try:
+        return robot.project_candidates(requested[None, None, None])
+    except ContractError as error:
+        if guarded and str(error) in GUARD_REFUSALS:
+            return None
+        raise
+
+
 def attempt_worker(output, attempt_id, *, attempt_seconds=None):
     validate_attempt_budget(attempt_seconds)
     from embodied_jepa.embodiment import G1Embodiment
@@ -1448,10 +1829,13 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stream.flush()
 
     hybrid_kind = plan.get("goal_kind") == "hybrid"
+    object_kind = plan.get("goal_kind") == "object"
     tracking_kind = plan.get("goal_kind") in ("trajectory", "hybrid")
-    state_kind = plan.get("goal_kind") in ("state", "trajectory", "hybrid")
+    state_kind = plan.get("goal_kind") in ("state", "trajectory", "hybrid", "object")
     privileged = None
     hybrid = None
+    object_controller = None
+    oracle = None
     progress = {}
     try:
         verify_plan_inputs(plan)
@@ -1538,6 +1922,37 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
 
             if trial["mode"] == "demo_replay":
                 replay = library["arrays"][f"actions_{demo['index']}"]
+            elif trial["mode"] in OBJECT_ONLY_MODES and not object_kind:
+                raise ContractError("object-aware modes require a declared object plan")
+            elif trial["mode"] == "scripted_oracle":
+                from embodied_jepa.scripted import apple_collector_policy
+
+                # NON-LEARNED privileged reference: the collector's initial-truth script.
+                oracle = apple_collector_policy(robot.sim.task_truth())
+            elif trial["mode"] == OBJECT_MODE:
+                if plan.get("privileged_ceiling") is not True:
+                    raise ContractError("the object-aware ceiling requires a declared ceiling plan")
+                from embodied_jepa.object_ceiling import (
+                    ObjectCeilingConfig,
+                    ObjectCeilingController,
+                    ObjectRolloutModel,
+                )
+
+                # NON-LEARNED ceiling: exact rollouts scored by simulator object state.
+                privileged = ObjectRolloutModel(model, robot, acknowledge_privileged_ceiling=True)
+                progress.update(
+                    rollout_parity_checks=0,
+                    rollout_parity_mismatches=0,
+                    rollout_full_state_parity_checks=0,
+                    rollout_full_state_parity_mismatches=0,
+                )
+                object_controller = ObjectCeilingController(
+                    privileged,
+                    robot,
+                    ObjectCeilingConfig(**plan["object_ceiling"], seed=trial["seed"]),
+                    acknowledge_privileged_ceiling=True,
+                )
+                controller = object_controller
             elif trial["mode"] == PRIVILEGED_MODE:
                 if plan.get("privileged_ceiling") is not True:
                     raise ContractError("privileged rollouts require a declared ceiling plan")
@@ -1585,13 +2000,13 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stage = "observe"
             observation = robot.observe()
             stage = "plan"
-            if trial["mode"] in CONTROLLER_MODES + HYBRID_PRIVILEGED_MODES:
+            if trial["mode"] in CONTROLLER_MODES + HYBRID_PRIVILEGED_MODES + (OBJECT_MODE,):
                 decision = controller.step(observation, robot.project_candidates)
                 if tracking_kind:
                     progress["last_reference_index"] = decision.trace.get(
                         "reference_index", progress.get("last_reference_index")
                     )
-                elif state_kind:
+                elif state_kind and not object_kind:
                     progress["last_goal_index"] = decision.trace.get(
                         "goal_index", progress.get("last_goal_index")
                     )
@@ -1612,6 +2027,10 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                             progress["rollout_parity_mismatches"] = progress.get(
                                 "rollout_parity_mismatches", 0
                             ) + int(not match)
+                        full = row.get("previous_search_first_step_full_state_exact_match")
+                        if full is not None:
+                            progress["rollout_full_state_parity_checks"] += 1
+                            progress["rollout_full_state_parity_mismatches"] += int(not full)
                 elif state_kind:
                     current["visual_diagnostic"] = model.pop_diagnostics()
             elif trial["mode"] == "demo_replay":
@@ -1622,7 +2041,11 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                 requested = np.clip(replay[step], config.lower_bounds, config.upper_bounds).astype(
                     np.float32
                 )
-                projected = robot.project_candidates(requested[None, None, None])
+                projected = project_open_loop(robot, requested, guarded=object_kind)
+                if projected is None:
+                    reason = "guard_refused"
+                    record({"event": "guard_refused", "step": step, "executed": False})
+                    break
                 if not projected.feasible[0, 0]:
                     raise ContractError("demo replay command has no feasible projection")
                 command = projected.actions[0, 0, 0]
@@ -1631,6 +2054,34 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                     "control": "demo_replay_non_learned",
                     "replay_frame": step,
                     "recorded_action": replay[step].tolist(),
+                    "sampled_action": requested.tolist(),
+                    "projected_action": command.tolist(),
+                    "observation_timestamp": float(observation.timestamps[0]),
+                    "goal_index": None,
+                }
+            elif trial["mode"] == "scripted_oracle":
+                # NON-LEARNED privileged reference: collector script, same bounds/projection.
+                if oracle.done:
+                    reason = "policy_complete"
+                    break
+                phase = oracle.phase
+                proposed = oracle.action(robot)
+                requested = np.clip(proposed, config.lower_bounds, config.upper_bounds).astype(
+                    np.float32
+                )
+                projected = project_open_loop(robot, requested, guarded=True)
+                if projected is None:
+                    reason = "guard_refused"
+                    record({"event": "guard_refused", "step": step, "executed": False})
+                    break
+                if not projected.feasible[0, 0]:
+                    raise ContractError("scripted command has no feasible projection")
+                command = projected.actions[0, 0, 0]
+                current = {
+                    "step": step,
+                    "control": "scripted_oracle_non_learned",
+                    "oracle_phase": phase,
+                    "proposed_action": proposed.tolist(),
                     "sampled_action": requested.tolist(),
                     "projected_action": command.tolist(),
                     "observation_timestamp": float(observation.timestamps[0]),
@@ -1673,7 +2124,9 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             record(current | {"event": "command_pending", "executed": None})
             stage = "execute"
             result = robot.execute(command)
-            if trial["mode"] in CONTROLLER_MODES + HYBRID_PRIVILEGED_MODES:
+            if oracle is not None:
+                oracle.advance(result)
+            if trial["mode"] in CONTROLLER_MODES + HYBRID_PRIVILEGED_MODES + (OBJECT_MODE,):
                 diagnostic = current.get("visual_diagnostic")
                 rollout = current.get("privileged_rollout_diagnostic")
                 current = controller.acknowledge(result)
@@ -1727,6 +2180,10 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
         progress["ordered_stage_count"] = ordered_stage_count(score)
     if hybrid is not None:
         progress.update(hybrid.summary())
+    if object_controller is not None:
+        progress.update(object_controller.summary())
+    if oracle is not None:
+        progress.update(oracle_phase=oracle.phase, oracle_commands=oracle.step_count)
     report = (
         trial
         | progress
@@ -1812,7 +2269,7 @@ def verify_generated(output, resolved, expected_digest):
             ("state_goals.npz", "state_goals_sha256"),
             ("state_calibration.json", "state_calibration_sha256"),
         )
-        if resolved.get("goal_kind") in ("state", "trajectory", "hybrid")
+        if resolved.get("goal_kind") in ("state", "trajectory", "hybrid", "object")
         else (("waypoints.npz", "waypoints_sha256"), ("calibration.json", "calibration_sha256"))
     )
     if resolved.get("goal_kind") in ("trajectory", "hybrid"):
@@ -2044,7 +2501,9 @@ def main():
     parser.add_argument("--iterations", type=int, default=2)
     parser.add_argument("--no-proposals", action="store_true")
     parser.add_argument(
-        "--goal-kind", choices=("image", "state", "trajectory", "hybrid"), default="image"
+        "--goal-kind",
+        choices=("image", "state", "trajectory", "hybrid", "object"),
+        default="image",
     )
     parser.add_argument("--goal-stall-limit", type=int)
     parser.add_argument("--worker", choices=("prepare", "attempt"), help=argparse.SUPPRESS)

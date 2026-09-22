@@ -55,3 +55,5 @@ TASK-044 privileged MuJoCo-rollout ceiling (non-learned, source 733bfdc, resets 
 TASK-045 privileged trajectory-tracking ceiling (non-learned, source bae0838, resets 43000-43003): tracking the demo's arm+hand trajectory reached reach/contact on 4/4 but grasp on 0/4 (apple dropped off the table 4/4); gate failed, learned stage not run. Evidence: docs/experiments/apple_trajectory_tracking_results_v1.md.
 
 TASK-046 privileged hybrid phase ceiling (non-learned, source f8dac63, resets 43000-43003): tracked approach + open-loop demo close grasped 0/4 with handoff at the close row (primary gate failed) and 2/4 (full success) with handoff one horizon earlier; demo_replay reproduced 4/4 grasp. Evidence: docs/experiments/apple_hybrid_phase_results_v1.md.
+
+TASK-047 wide-jitter object-aware privileged ceiling (non-learned, source 613ecf8, NEW wide development resets 45000-45007, apple +-3 cm, plate +-2 cm): object-aware exact-rollout ceiling grasped 5/8 (gate needed >=6/8; failed, conclusive), demo_replay 2/8, scripted collector 8/8 -> outcome ceiling_inadequate_task_feasible. Evidence: docs/experiments/apple_wide_object_ceiling_results_v1.md.
