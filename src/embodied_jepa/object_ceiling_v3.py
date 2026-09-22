@@ -28,11 +28,15 @@ Version 3 changes the ``close`` phase, and only the ``close`` phase:
             zero, so no proposal noise can shear the object -- and the CEM plans the one
             remaining degree of freedom, the vertical delta, restricted to a descent:
             ``[-close_descent_bound, 0]``. The palm may therefore keep sinking around the
-            apple as the fingers curl off the table (which the diagnosis shows is
-            necessary: a frozen palm ejects the apple by 17 cm) but may never rise while
-            the hand is shutting, and the planner can still choose a smaller command when
-            contact makes a larger one infeasible (a fixed press trips the embodiment's
-            measured joint-velocity guard). The grasp command and the phase length are
+            apple as the fingers curl off the table -- which the diagnosis shows is
+            necessary, since tightening the bound to 0.12 or 0.25 grasps 0/24 and 5/24
+            against 70/72 at the full bound, and a single frozen-palm replay ejected the
+            apple by 17 cm -- but may never rise while the hand is shutting, and the
+            planner can still choose a smaller command when contact makes a larger one
+            infeasible (a fixed press trips the embodiment's measured joint-velocity
+            guard). Only the bound is supported by a large sample; forbidding a rise is a
+            conservative addition (the two-replay ``zonly`` design, which allowed it,
+            behaved the same). The grasp command and the phase length are
             v2's: the eleven-command rate-limited closure is kept deliberately, since
             slowing the synergy ramp makes the ejection worse, not better.
 

@@ -47,6 +47,14 @@ Simulator physics and contact parameters are **unchanged**. The diagnosis found 
 unphysical in them and the scripted collector reaches 16/16 on the same resets under the
 same physics.
 
+**Credit cannot be split between the two halves of the change.** The paired experiment
+supports the lateral/rotational pin: it is what separates `cage` (70/72 grasps, apple held
+within 1.45 cm) from `v2`. The descent-only restriction is a conservative addition whose
+direct evidence is the two-replay `zonly` row (frozen lateral, symmetric ±0.5 in z: 2/2,
+0.56–0.60 cm), which is indistinguishable from `cage` at that n. It is kept because it is
+what was tuned and it cannot hurt, but if the gate passes, the pass is not attributable to
+it separately.
+
 ## Development-tuning disclosure (TRAIN-side tuning resets only)
 
 v3 was designed and tuned on **tuning resets 49100–49131**, drawn with the same
@@ -65,7 +73,9 @@ embodiment, twin, controller and unchanged scorer, no rendering of results into 
 repository) into the main checkout's ignored `outputs/task051-scratch/`. They are
 disclosed in full in the diagnosis document: the forensics on 49100–49115 and the paired
 closure experiment (sixteen closure designs replayed from identical close-entry states,
-289 replays in all) on 49100–49131. These are design runs, not evidence. Because of them, a pass shows adequacy
+289 replays in all). 49100–49131 is the *declared* tuning range; the seeds actually
+stepped are 49100–49117, 49120 and 49124–49131 (27 of the 32), the rest having been
+reached by no probe. These are design runs, not evidence. Because of them, a pass shows adequacy
 on new draws from the distribution the tuning resets spanned.
 
 ## Fresh development resets (new; nothing else changes)
@@ -119,8 +129,13 @@ exactly TASK-047's and TASK-049's.
 - **Per-command observe+plan deadline 10 s**, as TASK-049. The machine is shared with a
   parallel job; this is not a real-time claim, and a deadline miss would make the
   attempt uncounted.
-- Worst case: 48 × ~20 s + 24 × 1,200 s ≈ 29,760 s < 32,400 s, so no ceiling attempt can
-  be shortened by the global cap unless preparation exceeds ~2,600 s.
+- Planning case (not a worst case): 48 × ~20 s + 24 × 1,200 s ≈ 29,760 s < 32,400 s. The
+  1,200 s cap applies to every attempt, so the arithmetic worst case is 86,400 s; the
+  margin that matters is that the 48 non-gating attempts would have to average > 475 s
+  each (~38× the smoke's 12.4–12.6 s) before the global cap could reach the eight primary
+  ceiling attempts. The order is mode-major, so all 48 non-gating attempts run before any
+  ceiling attempt; within `privileged_object` the primary seeds run first (attempts 49–56
+  of 72), so budget pressure reaches the secondary cohorts before the gate.
 - Expected: 0.6–1.0 s per ceiling command (the TRAIN smoke measured 0.91 s on a loaded
   machine), 250–350 commands per attempt, about 2–3 h in total.
 
@@ -204,6 +219,21 @@ uncommitted working tree of this protocol's code). It is a runtime check, not ev
   non-vacuous through the caged close.
 - The one-reset gate object computed `ceiling_adequate` (gate code exercised only).
 
+## Recorded for the results (pre-run review obligations)
+
+- `planning_dynamics` in the plan stays `privileged_mujoco_rollout_object_v1`: the twin is
+  v2's and v3 does not override it. `object_ceiling_phases` is likewise the unchanged
+  phase list. The v3 identity is carried by `object_ceiling_version`, `result_label` and
+  each attempt's `ceiling_version`.
+- The "v1 and v2 plans unchanged" assertions inside `tests/test_apple_evaluation.py` are
+  self-referential; the independent comparison against `origin/main` in the pre-run review
+  is what establishes that claim.
+- `tests/test_apple_evaluation.py::test_demo_replay_is_open_loop_non_learned_and_exhausts`
+  fails when that module is run in isolation and passes in the full suite. The review
+  traced it to a lazy import interacting with a monkeypatched `MuJoCoSimulation`; the code
+  path and the test are identical to `origin/main`, so it is inherited, not introduced
+  here. Recorded as a follow-up, not fixed in this task.
+
 ## Frozen run command
 
 Execute **once**, from a clean checkout of the reviewed commit, into a new directory
@@ -230,9 +260,28 @@ stalls and timeouts, goes into `apple_wide_grasp_closure_results_v3.md` and
 - **Privileged and non-learned.** A pass says the design suffices *given exact dynamics
   and perfect object state*; nothing about whether a learned model can supply the terms.
 - **The one observed v3 failure mode in tuning was a guard refusal.** In the paired
-  closure experiment one of twelve `cage` replays stopped on the embodiment's measured
-  joint-velocity guard (5 rad/s) during the close, with the apple ejected. That is a
-  physical stop, counted as a failed attempt; it is a declared risk, not an excuse.
+  closure experiment one of 72 `cage` replays stopped on the embodiment's measured
+  joint-velocity guard (5 rad/s) during the close with the apple ejected, and one more
+  reached the replay budget: 2/72 ≈ 2.8% per attempt. Such an attempt is *counted* with
+  zero stages. **The gate tolerates exactly one grasp failure in eight**, so at that rate
+  the ≥ 7/8 grasp threshold clears with probability ≈ 0.98; a 7/8 or 6/8 outcome would not
+  be a surprise, and would not be an excuse.
+- **The close is 45 commands while the synergy finishes in eleven.** For the remaining ~34
+  the planner may keep commanding descent into the closed hand; that is v2's behaviour,
+  deliberately unchanged, and it is the mechanism behind the guard refusal above.
+- **v3 forbids rising but does not require sinking.** The close cost is nearly flat in z
+  while the palm is blocked, candidate 0 is always the all-zero hold and ties break to the
+  lowest index, so nothing forces a descent command early in the close. The paired
+  experiment's 70/72 is the empirical evidence that the planner does choose enough
+  descent under this bound; there is no analytic guarantee.
+- **Seed-integer disjointness does less work than it looks.** The tuning range is drawn
+  from the same distribution and is four times larger, so some gate draws sit close to
+  tuned draws: the nearest neighbour in apple xy is 45206 ↔ 49129 at 1.8 mm (their plates
+  are 3.3 cm apart), and the minimum L∞ over the 4-D reset vector is 0.80 cm
+  (45204 ↔ 49115) — tighter than gate-vs-45000 or gate-vs-45100 (1.09 cm each) and than
+  the gate cohort's own internal separation (1.09 cm). The resets are distinct and a pass
+  is framed as adequacy on new draws from the distribution the tuning resets spanned, not
+  as independence from them.
 - **Tuning.** 32 tuning resets from the same distribution shaped v3; the gate uses fresh
   draws but the same distribution.
 - **Secondary cohorts are not independent.** 45100–45107 produced the failures this

@@ -131,12 +131,15 @@ Four things follow.
 
 - **Freezing the lateral and rotational palm command during the close is what helps.**
   `cage` grasped on 70 of 72 paired runs over 24 tuning resets and kept the apple within
-  1.45 cm whenever it grasped, against v2's 49/53 and 0.18–2.94 cm on the same entry
-  states. Its two failures were one guard refusal (below) and one run that reached the
-  200-command budget.
+  1.45 cm whenever it grasped, against v2's 49/53 over 19 resets and 0.18–2.94 cm. The two
+  designs were not run on the same seed set (see Limits), so this is a screen, not a
+  matched comparison. `cage`'s two failures were one guard refusal (below) and one run
+  that reached the 200-command budget.
 - **Downward pressure is necessary, and it has to be free to be large.** `hold` and
-  `narrow`, which let the palm barely sink, ejected the apple by 16.85 cm: the fingers
-  then curl around the apple above its equator and squeeze it out sideways. Tightening
+  `narrow`, which let the palm barely sink, ejected the apple by 16.85 cm — one replay
+  each, on a single seed, so that figure is anecdotal even though the general claim below
+  is not: the fingers curl around the apple above its equator and squeeze it out
+  sideways. Tightening
   the descent bound reproduces that failure — `cage_g0` and `cage_gentle` (bound 0.12)
   grasped 0/28 and `cage_g25` (bound 0.25) 5/24, against `cage`'s 70/72 with the full
   bound. What matters is removing the *lateral* freedom, not the vertical one.
@@ -177,7 +180,9 @@ Close the hand with the palm caged and still:
    shear the object;
 2. keep the vertical degree of freedom under the existing CEM but allow only descent
    (bounded, never rising), so the palm keeps sinking around the apple as the fingers
-   curl off the table without a fixed press that trips the velocity guard;
+   curl off the table without a fixed press that trips the velocity guard. Only the
+   *bound* is supported by a large sample; the "never rising" half rests on the
+   two-replay `zonly` row and is a conservative addition, not separately attributable;
 3. keep the eleven-command rate-limited closure; do **not** slow the synergy ramp.
 
 This is `object_ceiling_v3.ObjectCeilingV3Controller`. Every other v2 behaviour — the
@@ -186,8 +191,9 @@ the twin and both parity checks — is inherited unchanged.
 
 ## Limits
 
-- Exploratory, on 16 tuning resets for the forensics and 24 for the paired closure
-  experiment (49100–49131), with at most 72 replays per design. The counts are design
+- Exploratory, on 16 tuning resets for the forensics (49100–49115) and 24 for the paired
+  closure experiment, with at most 72 replays per design. The declared tuning range is
+  49100–49131; the seeds actually stepped are 49100–49117, 49120 and 49124–49131. The counts are design
   evidence, not a gate, and they were all produced before the v3 preregistration was
   frozen. Designs were not run on identical seed sets: `v2` and `cage` were replayed on
   every seed a process reached, while the clearly-failing designs were stopped early, so
