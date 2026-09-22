@@ -967,3 +967,166 @@ def test_demo_replay_is_open_loop_non_learned_and_exhausts(tmp_path, monkeypatch
     np.testing.assert_allclose(calls[0][:6], 0.0)
     np.testing.assert_allclose(calls[0][6:12], 0.01, rtol=1e-6)
     assert calls[0][12] == -1.0
+
+
+# TASK-044 NON-LEARNED privileged simulator-rollout ceiling (no physics here).
+
+
+def ceiling_plan(**overrides):
+    return state_plan(
+        modes=["privileged_rollout"], attempt_max_seconds=840, max_seconds=3600, **overrides
+    )
+
+
+def test_privileged_ceiling_runs_alone_in_development_and_is_labelled():
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
+    plan = ceiling_plan()
+    assert plan["privileged_ceiling"] is True and plan["modes"] == ["privileged_rollout"]
+    assert plan["result_label"].startswith("NON-LEARNED privileged")
+    assert plan["planning_dynamics"] == "privileged_mujoco_rollout_v1"
+    assert [a["attempt_id"] for a in plan["attempts"]] == [
+        f"{s}-privileged_rollout" for s in (43000, 43001, 43002, 43003)
+    ]
+    # The controller configuration is the TASK-043 state-goal scaffold, unchanged.
+    assert plan["controller"] == state_plan()["controller"]
+    assert "privileged_ceiling" not in state_plan() and "result_label" not in state_plan()
+    for bad in (
+        dict(modes=["privileged_rollout", "learned"]),
+        dict(modes=["learned", "privileged_rollout"]),
+        dict(modes=["privileged_rollout", "demo_replay"]),
+    ):
+        with pytest.raises(ValueError, match="runs alone"):
+            state_plan(**bad)
+    with pytest.raises(ValueError, match="runs alone"):
+        module.make_plan(
+            stage="final",
+            modes=["privileged_rollout"],
+            goal_kind="state",
+            stride=16,
+            horizon=16,
+            dwell=1,
+            proposals=False,
+            goal_stall_limit=64,
+            max_seconds=3600,
+        )
+    with pytest.raises(ValueError, match="state-goal scaffold"):
+        module.make_plan(seeds=[43000], modes=["privileged_rollout"])
+
+
+def test_privileged_records_never_enter_learned_state_gate_or_reports():
+    seeds = [43000, 43001, 43002, 43003]
+    full = dict.fromkeys(module.STAGES, True) | {"success": True}
+    privileged = [
+        dict(seed=s, mode="privileged_rollout", score=full, success=True, status="completed")
+        for s in seeds
+    ]
+    learned = [dict(seed=s, mode="learned", score={}, status="completed") for s in seeds]
+    gate = module.state_gate(learned + privileged, seeds)
+    assert gate["learned_grasp_resets"] == 0 and not gate["primary_gate_passed"]
+    assert gate["learned_full_successes"] == 0
+    assert "privileged_rollout" not in gate["summed_ordered_stages"]
+    ceiling = module.gate_summary(
+        {"privileged_ceiling": True, "goal_kind": "state", "seeds": seeds}, privileged
+    )
+    assert set(ceiling) == {"ceiling_gate"}
+    assert ceiling["ceiling_gate"]["label"].startswith("NON-LEARNED")
+    learned_report = module.gate_summary({"goal_kind": "state", "seeds": seeds}, learned)
+    assert set(learned_report) == {"state_gate"}
+    assert module.gate_summary({"seeds": seeds}, learned) == {}
+    # A ceiling gate ignores any learned record, even a successful one.
+    ignored = module.ceiling_gate([r | {"score": full} for r in learned], seeds)
+    assert ignored["privileged_grasp_resets"] == 0 and ignored["counted_attempts"] == 0
+
+
+def test_ceiling_gate_counts_only_clean_attempts_and_computes_readings():
+    seeds = [43000, 43001, 43002, 43003]
+    grasp = dict(reach=True, grasp=True, transport=False, place=False, release=False)
+
+    def ceiling(seed, score, **extra):
+        return dict(seed=seed, mode="privileged_rollout", score=score, status="completed", **extra)
+
+    records = [ceiling(43000, grasp), ceiling(43001, grasp, termination_reason="goal_stall")]
+    gate = module.ceiling_gate(records, seeds)
+    assert gate["primary_gate_passed"] and gate["privileged_grasp_resets"] == 2
+    assert gate["summed_ordered_stages"] == 4 and gate["counted_attempts"] == 2
+    assert gate["per_reset"]["43002"]["counted"] is False  # missing counts as zero
+    assert "learned" in gate["readings"]["interpretation"]
+    for failure in (
+        dict(status="child_failed"),
+        dict(status="hard_wall_timeout"),
+        dict(termination_reason="runtime_error"),
+        dict(termination_reason="deadline_miss"),
+        dict(termination_reason="attempt_timeout"),
+    ):
+        failed = module.ceiling_gate([records[0], records[1] | failure], seeds)
+        assert failed["privileged_grasp_resets"] == 1 and not failed["primary_gate_passed"]
+        assert failed["per_reset"]["43001"]["reported_ordered_stages_uncounted"] == 2
+    invalid = module.ceiling_gate([records[0], records[1] | {"provenance_valid": False}], seeds)
+    assert not invalid["provenance_valid"] and not invalid["primary_gate_passed"]
+    early = [
+        ceiling(
+            s, {}, termination_reason="goal_stall", last_goal_index=2, first_close_goal_index=13
+        )
+        for s in seeds
+    ]
+    readings = module.ceiling_gate(early, seeds)["readings"]
+    assert readings["stalled_before_close_goal_resets"] == 4
+    assert readings["state_goal_tracking_inadequate"]
+    assert not readings["arm_pose_goals_insufficient_for_grasp"]
+    assert "planner/goal design must change" in readings["interpretation"]
+    late = [r | {"last_goal_index": 15} for r in early]
+    readings = module.ceiling_gate(late, seeds)["readings"]
+    assert readings["passed_close_goal_without_grasp_resets"] == 4
+    assert readings["arm_pose_goals_insufficient_for_grasp"]
+    assert not readings["state_goal_tracking_inadequate"]
+
+
+def test_privileged_worker_uses_acknowledged_ceiling_and_logs_rollout_diagnostics(
+    tmp_path, monkeypatch
+):
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
+    from embodied_jepa import privileged_rollout
+
+    built = []
+
+    class Ceiling:
+        def __init__(self, model, robot, *, acknowledge_privileged_ceiling=False):
+            assert acknowledge_privileged_ceiling is True
+            built.append((model, robot))
+            self.closed = False
+
+        def pop_diagnostics(self):
+            return [{"planning_dynamics": "privileged_mujoco_rollout_v1", "candidates": 16}]
+
+        def close(self):
+            built.append("closed")
+
+    monkeypatch.setattr(privileged_rollout, "PrivilegedRolloutModel", Ceiling)
+    go = SimpleNamespace(action=np.zeros(14, np.float32), trace={"goal_index": 2})
+    stall = SimpleNamespace(
+        action=None, trace={"goal_index": 2, "goal_commands": 64}, termination_reason="goal_stall"
+    )
+    calls, predictions = state_worker_fixture(tmp_path, monkeypatch, [go, stall])
+    plan = ceiling_plan(seeds=[43000]) | {"dataset": "unused", "checkpoint": "unused"}
+    module.write(tmp_path / "resolved_plan.json", plan)
+    module.attempt_worker(tmp_path, "43000-privileged_rollout", attempt_seconds=840)
+    folder = tmp_path / "attempts/43000-privileged_rollout"
+    report = json.loads((folder / "report.json").read_text())
+    rows = [json.loads(line) for line in (folder / "trace.jsonl").read_text().splitlines()]
+    assert report["termination_reason"] == "goal_stall" and report["last_goal_index"] == 2
+    assert report["executed_steps"] == 1 and built[-1] == "closed" and len(built) == 2
+    result = next(r for r in rows if r["event"] == "result")
+    assert result["privileged_rollout_diagnostic"][0]["candidates"] == 16
+    assert all("visual_diagnostic" not in r for r in rows)
+
+
+def test_privileged_worker_refuses_an_undeclared_plan(tmp_path, monkeypatch):
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
+    state_worker_fixture(tmp_path, monkeypatch, [])
+    plan = ceiling_plan(seeds=[43000]) | {"dataset": "unused", "checkpoint": "unused"}
+    del plan["privileged_ceiling"]
+    module.write(tmp_path / "resolved_plan.json", plan)
+    module.attempt_worker(tmp_path, "43000-privileged_rollout", attempt_seconds=840)
+    report = json.loads((tmp_path / "attempts/43000-privileged_rollout/report.json").read_text())
+    assert report["termination_reason"] == "runtime_error"
+    assert "declared ceiling plan" in report["error"] and report["executed_steps"] == 0
