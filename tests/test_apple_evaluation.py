@@ -637,6 +637,7 @@ def state_plan(**overrides):
 
 
 def test_state_plan_is_reset_major_with_four_modes_and_frozen_rules():
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
     plan = state_plan()
     assert plan["modes"] == ["learned", "dynamics_shuffle", "persistence", "demo_replay"]
     assert [a["attempt_id"] for a in plan["attempts"][:5]] == [
@@ -925,6 +926,7 @@ def state_worker_fixture(tmp_path, monkeypatch, controller_decisions):
 
 
 def test_state_worker_records_goal_stall_as_failure(tmp_path, monkeypatch):
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
     stall = SimpleNamespace(
         action=None,
         trace={"goal_index": 3, "goal_commands": 64, "goal_stall_limit": 64},
@@ -951,6 +953,7 @@ def test_state_worker_records_goal_stall_as_failure(tmp_path, monkeypatch):
 
 
 def test_demo_replay_is_open_loop_non_learned_and_exhausts(tmp_path, monkeypatch):
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
     calls, predictions = state_worker_fixture(tmp_path, monkeypatch, [])
     module.attempt_worker(tmp_path, "43000-demo_replay", attempt_seconds=200)
     folder = tmp_path / "attempts/43000-demo_replay"
