@@ -1,0 +1,9 @@
+# Preregistered secondary arm: the LeWM product backend on the FK-placed hand crop
+# instead of the onboard camera. Everything else is identical to apple_wm_v2_lewm.yaml.
+extends: apple_wm_v2_lewm.yaml
+world_model:
+  checkpoints:
+    leworldmodel: ../checkpoints/task050-wm-v2/leworldmodel_hand_crop.pt
+  settings:
+    leworldmodel:
+      camera: hand_crop_rgb

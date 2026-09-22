@@ -1,0 +1,65 @@
+# World model v2 (TASK-050): 112 px onboard RGB + proprioception + shared readout
+# heads on the wide Apple corpus. The native comparison backend; the LeWM product
+# run differs by one line (apple_wm_v2_lewm.yaml). Shared keys are identical for
+# both backends; backend keys size each backend's own encoder/predictor.
+schema_version: 0
+mode: common
+seed: 0
+runtime:
+  device: mps
+world_model:
+  backend: native_jepa
+  checkpoints:
+    native_jepa: ../checkpoints/task050-wm-v2/native_jepa.pt
+    leworldmodel: ../checkpoints/task050-wm-v2/leworldmodel.pt
+  settings:
+    native_jepa:
+      camera: onboard_rgb
+      # The native encoder's stride-8 grid must divide its 4x4 pool on MPS, so it
+      # upsamples the 112 px camera to 128 (no resolution is discarded).
+      image_size: 128
+      latent_dim: 128
+      hidden_dim: 256
+      max_horizon: 64
+      state_fusion: true
+      readout_heads: true
+      readout_weight: 1.0
+      readout_hidden_dim: 256
+    leworldmodel:
+      camera: onboard_rgb
+      image_size: 112
+      latent_dim: 128
+      hidden_dim: 256
+      max_horizon: 64
+      state_fusion: true
+      readout_heads: true
+      readout_weight: 1.0
+      readout_hidden_dim: 256
+      patch_size: 14
+      encoder_depth: 4
+      encoder_heads: 4
+      predictor_depth: 4
+      predictor_heads: 4
+      predictor_head_dim: 32
+embodiment:
+  backend: unitree_g1_dex3
+  transport: mujoco
+  action_manifest: g1_sim_action.json
+dataset:
+  root: ../data/apple-wide-v1
+planner:
+  backend: cem
+  horizon: 8
+  samples: 64
+  iterations: 3
+  elites: 8
+  timeout_seconds: 5.0
+  lower_bounds: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -1.0, -1.0]
+  upper_bounds: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -1.0, 1.0]
+task:
+  name: apple_to_plate
+  max_steps: 1000
+evaluation:
+  # TASK-047 wide development cohort, reserved for the TASK-051 closed loop.
+  seeds: [45000, 45001, 45002, 45003, 45004, 45005, 45006, 45007]
+  output_root: ../outputs

@@ -313,6 +313,9 @@ class Capabilities:
     max_horizon: int
     min_history: int = 1
     supported_devices: tuple[str, ...] = ("cpu",)
+    # Declared physical readouts (``ReadoutWorldModel.readout``). A planner may use a
+    # latent only through these names; an empty tuple means the model declares none.
+    readouts: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _positive_integer(self.max_horizon, "max_horizon")
@@ -321,6 +324,12 @@ class Capabilities:
         if not devices or any(device not in ("cpu", "mps", "cuda") for device in devices):
             raise ContractError("capabilities must name supported cpu/mps/cuda devices")
         object.__setattr__(self, "supported_devices", devices)
+        readouts = tuple(self.readouts)
+        if any(not isinstance(name, str) or not name for name in readouts) or len(
+            set(readouts)
+        ) != len(readouts):
+            raise ContractError("readout names must be distinct nonempty strings")
+        object.__setattr__(self, "readouts", readouts)
 
     def require(
         self,
@@ -406,6 +415,19 @@ class WorldModel(Protocol):
     def save(self, path: str | Path) -> None: ...
 
     def load(self, path: str | Path) -> None: ...
+
+
+@runtime_checkable
+class ReadoutWorldModel(WorldModel, Protocol):
+    """A world model that also declares named physical readouts of its latents.
+
+    ``readout`` maps an encoded ``[B,D]`` or predicted ``[B,K,T,D]`` latent to finite
+    float32 arrays keyed by ``capabilities.readouts`` (trailing quantity dimension).
+    It is the only sanctioned way for a planner or evaluator to derive a quantity
+    from a latent; the latent payload itself stays opaque.
+    """
+
+    def readout(self, z: LatentState) -> Mapping[str, FloatArray]: ...
 
 
 @runtime_checkable

@@ -1,0 +1,3 @@
+extends: apple_wm_v2.yaml
+world_model:
+  backend: leworldmodel

@@ -1,0 +1,471 @@
+{
+  "arms": [
+    {
+      "config": "configs/apple_wm_v2_lewm.yaml",
+      "name": "lewm_onboard",
+      "role": "primary product"
+    },
+    {
+      "config": "configs/apple_wm_v2_lewm_hand_crop.yaml",
+      "name": "lewm_hand_crop",
+      "role": "secondary preregistered camera arm"
+    },
+    {
+      "config": "configs/apple_wm_v2.yaml",
+      "name": "native_onboard",
+      "role": "comparison"
+    }
+  ],
+  "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+  "frozen": {
+    "gates": {
+      "G1_palm_apple_moving_h8_median_m": 0.015,
+      "G2_max_ratio_to_control": 0.8,
+      "G3_apple_plate_h8_median_m": 0.02,
+      "G4_apple_height_grasp_h8_median_abs_m": 0.01,
+      "G5_held_auroc_min": 0.85,
+      "G5_minimum_per_class": 20,
+      "G6_max_cost_ratio": 1.5,
+      "G7_minimum_pairs": 20,
+      "G7a_own_beats_swapped_min": 0.7,
+      "G7b_divergence_spearman_min": 0.5,
+      "G8_max_collapsed_fraction": 0.05,
+      "G8_min_effective_rank": 4.0,
+      "G8_min_latent_std_mean": 0.1
+    },
+    "selection_eligibility": {
+      "max_collapsed_fraction": 0.05,
+      "min_effective_rank": 2.0,
+      "min_latent_std_mean": 0.1
+    },
+    "training": {
+      "batch_size": 32,
+      "final_lr_fraction": 0.1,
+      "horizon": 16,
+      "max_seconds": 6000,
+      "seed": 0,
+      "selection_windows": 1024,
+      "steps": 15000,
+      "validation_every": 1000
+    }
+  },
+  "overall": {
+    "any_arm_passed": false,
+    "closed_loop_started": false,
+    "learned_apple_to_plate_successes": 0
+  },
+  "protocol": "apple_world_model_v2",
+  "protocol_doc": "docs/experiments/apple_world_model_v2.md",
+  "results": {
+    "lewm_hand_crop": {
+      "backend": "leworldmodel",
+      "camera": "hand_crop_rgb",
+      "checkpoint_sha256": "0100aa75029390bcdbbe76fc2d066e9bd48afd0d34f2a2a19954380310a23ef8",
+      "collapse": {
+        "collapsed_fraction": 0.0,
+        "dimension": 128,
+        "effective_rank": 7.99587021739745,
+        "image_only": {
+          "collapsed_fraction": 0.0,
+          "dimension": 128,
+          "effective_rank": 7.191894592577212,
+          "latent_std_mean": 0.8710355516233705,
+          "latent_std_min": 0.3838574303546186,
+          "samples": 5102
+        },
+        "latent_std_mean": 0.9346622487930349,
+        "latent_std_min": 0.4805202199288003,
+        "samples": 5102
+      },
+      "completed_steps": 15000,
+      "device": "mps",
+      "elapsed_seconds": 3929.640370130539,
+      "environment": {
+        "numpy": "2.5.3",
+        "platform": "macOS-26.5.1-arm64-arm-64bit",
+        "python": "3.12.13",
+        "torch": "2.14.0"
+      },
+      "gate_report": "outputs/task050-wm-v2/leworldmodel-hand-crop-val-gates.json",
+      "gate_report_sha256": "1773971f4233ce0ba992ed9008ace08c27233203a51122137bdaa2b703b27f27",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.04083101823925972
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 0.8580917485075962
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.6835590244754264
+        },
+        "G3_apple_plate_h8": {
+          "passed": false,
+          "value": 0.022366758435964584
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.0016478311736136675
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.9996991647552462
+        },
+        "G6_approach_cost_calibration_h8": {
+          "passed": false,
+          "value": 1.075183629989624
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": false,
+          "value": 0.6886792452830188
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.5020427887361069
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 7.99587021739745
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 0.9346622487930349
+        },
+        "all_passed": false
+      },
+      "grasp_outcome_h64": {
+        "auroc": 0.8194726166328601,
+        "horizon": 64,
+        "positives": 29,
+        "siblings": 63
+      },
+      "key_metrics_h8": {
+        "apple_height_grasp_median_abs_m": 0.0016478311736136675,
+        "apple_plate_median_m": 0.022366758435964584,
+        "approach_cost_median_abs_log_ratio": 1.075183629989624,
+        "approach_cost_spearman": 0.15666653544856907,
+        "dropped_all_windows_auroc": 0.9466640763997438,
+        "held_lift_auroc": 0.9996991647552462,
+        "palm_apple_median_m": 0.008626687340438366,
+        "palm_apple_moving_median_m": 0.04083101823925972,
+        "palm_apple_moving_persistence_median_m": 0.04758351109921932,
+        "palm_apple_moving_shuffled_median_m": 0.05973298102617264,
+        "palm_apple_moving_true_displacement_median_m": 0.02488404791802168,
+        "palm_apple_moving_windows": 1462,
+        "palm_apple_moving_zero_action_median_m": 0.05686279945075512,
+        "valid_windows": 3961
+      },
+      "model_implementation_sha256": "885cf114885d60990fd1421484044982be3a41a20f3c39b981cea9ad7762d220",
+      "model_parameters": 2163360,
+      "peak_host_rss_bytes": 9115566080,
+      "process_cpu_seconds": 1982.789875,
+      "provenance": {
+        "action_hash": "da987bb0798cf8a7174488e9da547b4128b05bfb10a042ca3b64b7ae1359b4d2",
+        "dataset_hash": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+        "protocol": "apple_world_model_v2",
+        "source_revision": "9fa3d9fba29ba69a43112f1b408385e10d9ea65e",
+        "source_tree_hash": "6b1b1f1ecc3a98e805e6d53bfc1d07adc65f2202aab7d71352ca752a81149364",
+        "split_hash": "51f8e09df1c0b1f384f9cd0a6ca1407f4540cc78214d955d1198a2702e99233e"
+      },
+      "python_source_sha256": "6b1b1f1ecc3a98e805e6d53bfc1d07adc65f2202aab7d71352ca752a81149364",
+      "selected_step": 11000,
+      "selection_score_m": 0.03888937830924988,
+      "siblings_h16": {
+        "divergence_spearman": 0.5020427887361069,
+        "own_beats_swapped_fraction": 0.6886792452830188,
+        "own_error_median_m": 0.01406103651970625,
+        "predicted_divergence_median_m": 0.006585454568266869,
+        "qualifying_ordered_pairs": 106,
+        "swapped_error_median_m": 0.018450990319252014,
+        "true_divergence_median_m": 0.010404480621218681,
+        "unordered_pairs": 103
+      },
+      "source_revision": "9fa3d9fba29ba69a43112f1b408385e10d9ea65e",
+      "status": "completed",
+      "test_episodes_decoded": 0,
+      "tracked_tree_dirty": false
+    },
+    "lewm_onboard": {
+      "backend": "leworldmodel",
+      "camera": "onboard_rgb",
+      "checkpoint_sha256": "68031e15d7baa78b589f1ebeb75fd6a033a71538ff0557efa7cfd60df4620696",
+      "collapse": {
+        "collapsed_fraction": 0.0,
+        "dimension": 128,
+        "effective_rank": 8.133885866813635,
+        "image_only": {
+          "collapsed_fraction": 0.0,
+          "dimension": 128,
+          "effective_rank": 7.5974401033565435,
+          "latent_std_mean": 0.8541884968091265,
+          "latent_std_min": 0.3897418486387952,
+          "samples": 5102
+        },
+        "latent_std_mean": 0.9067061943535202,
+        "latent_std_min": 0.458549408114809,
+        "samples": 5102
+      },
+      "completed_steps": 15000,
+      "device": "mps",
+      "elapsed_seconds": 3556.8012928962708,
+      "environment": {
+        "numpy": "2.5.3",
+        "platform": "macOS-26.5.1-arm64-arm-64bit",
+        "python": "3.12.13",
+        "torch": "2.14.0"
+      },
+      "gate_report": "outputs/task050-wm-v2/leworldmodel-onboard-val-gates.json",
+      "gate_report_sha256": "eab131bb9bec9cd5e2bb1b6f6b64621f2558cc0139f0885cd6638ae3b63a7716",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.036453066393733025
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 0.8351108666874734
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.6985371923593404
+        },
+        "G3_apple_plate_h8": {
+          "passed": true,
+          "value": 0.019310202449560165
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.0024240994825959206
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.999612461147588
+        },
+        "G6_approach_cost_calibration_h8": {
+          "passed": false,
+          "value": 1.1321402788162231
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": false,
+          "value": 0.6792452830188679
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.5887404999341036
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 8.133885866813635
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 0.9067061943535202
+        },
+        "all_passed": false
+      },
+      "grasp_outcome_h64": {
+        "auroc": 0.845841784989858,
+        "horizon": 64,
+        "positives": 29,
+        "siblings": 63
+      },
+      "key_metrics_h8": {
+        "apple_height_grasp_median_abs_m": 0.0024240994825959206,
+        "apple_plate_median_m": 0.019310202449560165,
+        "approach_cost_median_abs_log_ratio": 1.1321402788162231,
+        "approach_cost_spearman": 0.16471457876803705,
+        "dropped_all_windows_auroc": 0.9759831823637439,
+        "held_lift_auroc": 0.999612461147588,
+        "palm_apple_median_m": 0.007681567221879959,
+        "palm_apple_moving_median_m": 0.036453066393733025,
+        "palm_apple_moving_persistence_median_m": 0.04365057125687599,
+        "palm_apple_moving_shuffled_median_m": 0.05218486115336418,
+        "palm_apple_moving_true_displacement_median_m": 0.02488404791802168,
+        "palm_apple_moving_windows": 1462,
+        "palm_apple_moving_zero_action_median_m": 0.05308353714644909,
+        "valid_windows": 3961
+      },
+      "model_implementation_sha256": "885cf114885d60990fd1421484044982be3a41a20f3c39b981cea9ad7762d220",
+      "model_parameters": 2163360,
+      "peak_host_rss_bytes": 9095364608,
+      "process_cpu_seconds": 1581.6472199999998,
+      "provenance": {
+        "action_hash": "da987bb0798cf8a7174488e9da547b4128b05bfb10a042ca3b64b7ae1359b4d2",
+        "dataset_hash": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+        "protocol": "apple_world_model_v2",
+        "source_revision": "3b6af0ba13a77d9afae58504ab776b7c97501e2e",
+        "source_tree_hash": "6b1b1f1ecc3a98e805e6d53bfc1d07adc65f2202aab7d71352ca752a81149364",
+        "split_hash": "51f8e09df1c0b1f384f9cd0a6ca1407f4540cc78214d955d1198a2702e99233e"
+      },
+      "python_source_sha256": "6b1b1f1ecc3a98e805e6d53bfc1d07adc65f2202aab7d71352ca752a81149364",
+      "selected_step": 13000,
+      "selection_score_m": 0.03631785698235035,
+      "siblings_h16": {
+        "divergence_spearman": 0.5887404999341036,
+        "own_beats_swapped_fraction": 0.6792452830188679,
+        "own_error_median_m": 0.01756936125457287,
+        "predicted_divergence_median_m": 0.00792810507118702,
+        "qualifying_ordered_pairs": 106,
+        "swapped_error_median_m": 0.02151383925229311,
+        "true_divergence_median_m": 0.010404480621218681,
+        "unordered_pairs": 103
+      },
+      "source_revision": "3b6af0ba13a77d9afae58504ab776b7c97501e2e",
+      "status": "completed",
+      "test_episodes_decoded": 0,
+      "tracked_tree_dirty": false
+    },
+    "native_onboard": {
+      "backend": "native_jepa",
+      "camera": "onboard_rgb",
+      "checkpoint_sha256": "f3179b9f016ab465af2f8f016d316208d17c2c14a8534af19c2f6f1af29c3b49",
+      "collapse": {
+        "collapsed_fraction": 0.0,
+        "dimension": 128,
+        "effective_rank": 14.743474804065105,
+        "image_only": {
+          "collapsed_fraction": 0.0,
+          "dimension": 128,
+          "effective_rank": 2.190464495056271,
+          "latent_std_mean": 0.31605242281596113,
+          "latent_std_min": 0.06371571819417002,
+          "samples": 5102
+        },
+        "latent_std_mean": 1.0548133767551617,
+        "latent_std_min": 0.9556297678991101,
+        "samples": 5102
+      },
+      "completed_steps": 15000,
+      "device": "mps",
+      "elapsed_seconds": 4502.13194004097,
+      "environment": {
+        "numpy": "2.5.3",
+        "platform": "macOS-26.5.1-arm64-arm-64bit",
+        "python": "3.12.13",
+        "torch": "2.14.0"
+      },
+      "gate_report": "outputs/task050-wm-v2/native_jepa-onboard-val-gates.json",
+      "gate_report_sha256": "b1ec2d009f952b829b8e0e7e7479e0c1eb0617fc615358467611b2329bcc95de",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.058415163308382034
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 0.8437119341107655
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.6139654529879712
+        },
+        "G3_apple_plate_h8": {
+          "passed": false,
+          "value": 0.02160315215587616
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.0016149378498084843
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.9994692688258492
+        },
+        "G6_approach_cost_calibration_h8": {
+          "passed": false,
+          "value": 0.8018091320991516
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": true,
+          "value": 0.7452830188679245
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.7370733207397971
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 14.743474804065105
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 1.0548133767551617
+        },
+        "all_passed": false
+      },
+      "grasp_outcome_h64": {
+        "auroc": 0.9107505070993914,
+        "horizon": 64,
+        "positives": 29,
+        "siblings": 63
+      },
+      "key_metrics_h8": {
+        "apple_height_grasp_median_abs_m": 0.0016149378498084843,
+        "apple_plate_median_m": 0.02160315215587616,
+        "approach_cost_median_abs_log_ratio": 0.8018091320991516,
+        "approach_cost_spearman": 0.05944442257476152,
+        "dropped_all_windows_auroc": 0.9308337555945886,
+        "held_lift_auroc": 0.9994692688258492,
+        "palm_apple_median_m": 0.008502333424985409,
+        "palm_apple_moving_median_m": 0.058415163308382034,
+        "palm_apple_moving_persistence_median_m": 0.069235909730196,
+        "palm_apple_moving_shuffled_median_m": 0.09514405578374863,
+        "palm_apple_moving_true_displacement_median_m": 0.02488404791802168,
+        "palm_apple_moving_windows": 1462,
+        "palm_apple_moving_zero_action_median_m": 0.08103877678513527,
+        "valid_windows": 3961
+      },
+      "model_implementation_sha256": "624f05e83fea6a3dc04a9aff33f6878e24a276a2464068e2a02851b141594cb1",
+      "model_parameters": 931402,
+      "peak_host_rss_bytes": 9000517632,
+      "process_cpu_seconds": 266.397127,
+      "provenance": {
+        "action_hash": "da987bb0798cf8a7174488e9da547b4128b05bfb10a042ca3b64b7ae1359b4d2",
+        "dataset_hash": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+        "protocol": "apple_world_model_v2",
+        "source_revision": "9fa3d9fba29ba69a43112f1b408385e10d9ea65e",
+        "source_tree_hash": "6b1b1f1ecc3a98e805e6d53bfc1d07adc65f2202aab7d71352ca752a81149364",
+        "split_hash": "51f8e09df1c0b1f384f9cd0a6ca1407f4540cc78214d955d1198a2702e99233e"
+      },
+      "python_source_sha256": "6b1b1f1ecc3a98e805e6d53bfc1d07adc65f2202aab7d71352ca752a81149364",
+      "selected_step": 12000,
+      "selection_score_m": 0.05236265808343887,
+      "siblings_h16": {
+        "divergence_spearman": 0.7370733207397971,
+        "own_beats_swapped_fraction": 0.7452830188679245,
+        "own_error_median_m": 0.013822248205542564,
+        "predicted_divergence_median_m": 0.011416351422667503,
+        "qualifying_ordered_pairs": 106,
+        "swapped_error_median_m": 0.02142173331230879,
+        "true_divergence_median_m": 0.010404480621218681,
+        "unordered_pairs": 103
+      },
+      "source_revision": "9fa3d9fba29ba69a43112f1b408385e10d9ea65e",
+      "status": "completed",
+      "test_episodes_decoded": 0,
+      "tracked_tree_dirty": false
+    }
+  },
+  "results_doc": "docs/experiments/apple_world_model_v2_results.md",
+  "status": "executed_once",
+  "task": "TASK-050",
+  "verification": {
+    "final_review": "fresh subagent review of the pull request",
+    "post_run_verification": "fresh subagent recomputed checkpoint/dataset/source hashes, parameter counts, every gate value and pass/fail against the frozen thresholds, the selection replay and every number in the results doc; it re-derived G1/G2a independently from the public model API. Two prose errors found and corrected (hand-crop cost calibration; G3 scope).",
+    "pre_run_review": "fresh subagent; one blocker (step-0 selectable) fixed in 1a4c484; re-review CLEAR"
+  }
+}
