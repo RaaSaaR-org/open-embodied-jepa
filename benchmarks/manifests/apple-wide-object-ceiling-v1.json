@@ -1,0 +1,206 @@
+{
+ "format_version": 1,
+ "experiment": "apple-wide-object-ceiling-v1",
+ "task": "TASK-047",
+ "status": "preregistered_not_run",
+ "kind": "non_learned_object_aware_privileged_ceiling_on_wide_jitter_development",
+ "label": "NON-LEARNED object-aware privileged MuJoCo-rollout ceiling (simulator object state in cost and phase transitions); not a learned result",
+ "protocol": "docs/experiments/apple_wide_object_ceiling_v1.md",
+ "frozen_command": "PYTHONPATH=src .venv/bin/python scripts/evaluate_apple.py --dataset data/apple-branches-v1 --checkpoint checkpoints/apple-branches-h16-sensor-v1/sensor.pt --output outputs/apple-wide-object-ceiling-v1 --stage development --goal-kind object --no-proposals --horizon 6 --stride 16 --dwell 1 --candidates 24 --iterations 2 --commitment-steps 1 --max-steps 1000 --attempt-max-seconds 960 --max-seconds 8400 --control-timeout 5",
+ "frozen_inputs": {
+  "dataset_manifest_sha256": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+  "checkpoint_sha256": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+  "expected_state_goals_sha256": "839190fcf652c6849eba592d9cac5c63bb15a97166e201d71bff7fb4f654f88d",
+  "expected_state_calibration_sha256": "d8dae05105a4031d4c00d676faeb4b45e86ca8e6bdbacd0af650b2b42ce38d75"
+ },
+ "distribution": "apple_plate_wide_jitter_dev_v1",
+ "seeds": [
+  45000,
+  45001,
+  45002,
+  45003,
+  45004,
+  45005,
+  45006,
+  45007
+ ],
+ "reset_centers_xy": {
+  "object_xy": [
+   0.34,
+   -0.18
+  ],
+  "plate_xy": [
+   0.49,
+   -0.09
+  ]
+ },
+ "reset_jitter_m": {
+  "object_xy": 0.03,
+  "plate_xy": 0.02
+ },
+ "reset_rule": "rng=numpy.random.default_rng(seed); object_xy=centre+rng.uniform(-0.03,0.03,2); plate_xy=centre+rng.uniform(-0.02,0.02,2)",
+ "resets": {
+  "45000": {
+   "seed": 45000,
+   "object_xy": [
+    0.33964957067039525,
+    -0.17349531741060148
+   ],
+   "plate_xy": [
+    0.5095476432213811,
+    -0.09875205968642384
+   ]
+  },
+  "45001": {
+   "seed": 45001,
+   "object_xy": [
+    0.3640542376776222,
+    -0.2034030583535737
+   ],
+   "plate_xy": [
+    0.47755133222597423,
+    -0.07014092353785453
+   ]
+  },
+  "45002": {
+   "seed": 45002,
+   "object_xy": [
+    0.32686955434056825,
+    -0.20506151955054064
+   ],
+   "plate_xy": [
+    0.48361462325389765,
+    -0.07393560957368306
+   ]
+  },
+  "45003": {
+   "seed": 45003,
+   "object_xy": [
+    0.31240507160567377,
+    -0.15329275724767755
+   ],
+   "plate_xy": [
+    0.4973190320885954,
+    -0.07146699458219609
+   ]
+  },
+  "45004": {
+   "seed": 45004,
+   "object_xy": [
+    0.33059242406326106,
+    -0.15040562504043156
+   ],
+   "plate_xy": [
+    0.4732366650163055,
+    -0.09793906489355508
+   ]
+  },
+  "45005": {
+   "seed": 45005,
+   "object_xy": [
+    0.3522474902693055,
+    -0.19756278385116816
+   ],
+   "plate_xy": [
+    0.48545590978329256,
+    -0.09351108457753866
+   ]
+  },
+  "45006": {
+   "seed": 45006,
+   "object_xy": [
+    0.32763844553728483,
+    -0.17697440068439335
+   ],
+   "plate_xy": [
+    0.4965800396139126,
+    -0.08410911994562947
+   ]
+  },
+  "45007": {
+   "seed": 45007,
+   "object_xy": [
+    0.35286698575742187,
+    -0.18770409666826868
+   ],
+   "plate_xy": [
+    0.4977923833676463,
+    -0.09260926620354028
+   ]
+  }
+ },
+ "modes": [
+  "demo_replay",
+  "scripted_oracle",
+  "privileged_object"
+ ],
+ "attempt_order": "mode-major in the declared mode order",
+ "planned_attempts": 24,
+ "budget": {
+  "attempt_max_seconds": 960,
+  "max_seconds": 8400,
+  "control_timeout_seconds": 5.0,
+  "max_steps": 1000
+ },
+ "object_ceiling": {
+  "horizon": 6,
+  "candidates": 24,
+  "iterations": 2,
+  "proposal_std": 0.3,
+  "minimum_std": 0.05,
+  "max_steps": 1000,
+  "arm_bound": 0.5,
+  "palm_offset": [
+   -0.015,
+   0.0
+  ],
+  "approach_height_m": 0.13,
+  "grasp_height_m": 0.052,
+  "approach_tolerance_m": 0.01,
+  "grasp_tolerance_m": 0.008,
+  "block_commands": 10,
+  "block_progress_m": 0.002,
+  "block_xy_m": 0.01,
+  "plate_radius_m": 0.04,
+  "rotation_tolerance_rad": 0.1,
+  "close_commands": 45,
+  "lift_target_m": 0.15,
+  "lift_done_m": 0.1,
+  "carry_height_m": 0.12,
+  "transport_tolerance_m": 0.015,
+  "lower_clearance_m": 0.015,
+  "lower_tolerance_m": 0.01,
+  "release_commands": 40,
+  "retreat_height_m": 0.08,
+  "phase_stall_commands": 200,
+  "rotation_weight": 0.2,
+  "disturbance_weight": 1.0,
+  "slip_weight": 0.25,
+  "contact_penalty": 0.05
+ },
+ "object_ceiling_phases": [
+  "approach",
+  "descend",
+  "close",
+  "lift",
+  "transport",
+  "lower",
+  "release",
+  "retreat"
+ ],
+ "gate_rule": "privileged_object grasp resets >= 6 of 8 AND demo_replay grasp resets <= privileged_object grasp resets - 3, with zero robot and full-state rollout parity mismatches, all ceiling and replay attempts counted and valid provenance",
+ "readings": [
+  "separated",
+  "ceiling_adequate_replay_not_separated",
+  "ceiling_inadequate_task_feasible",
+  "ceiling_inadequate_scripted_also_fails",
+  "ceiling_inadequate_feasibility_reference_inconclusive",
+  "inconclusive"
+ ],
+ "untouched": [
+  "development 43000-43004",
+  "final 44000-44019",
+  "TEST",
+  "TASK-034 acceptance criteria"
+ ]
+}
