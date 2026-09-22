@@ -53,3 +53,5 @@ TASK-043 ran its single preregistered demonstration-state-goal comparison (sourc
 TASK-044 privileged MuJoCo-rollout ceiling (non-learned, source 733bfdc, resets 43000-43003): with exact dynamics the same state-goal scaffold also stalled (goal 0/1, 0/4 grasp, 0 stages), so the scaffold, not only the learned dynamics, blocks progress. Evidence: docs/experiments/apple_privileged_ceiling_results_v1.md.
 
 TASK-045 privileged trajectory-tracking ceiling (non-learned, source bae0838, resets 43000-43003): tracking the demo's arm+hand trajectory reached reach/contact on 4/4 but grasp on 0/4 (apple dropped off the table 4/4); gate failed, learned stage not run. Evidence: docs/experiments/apple_trajectory_tracking_results_v1.md.
+
+TASK-046 privileged hybrid phase ceiling (non-learned, source f8dac63, resets 43000-43003): tracked approach + open-loop demo close grasped 0/4 with handoff at the close row (primary gate failed) and 2/4 (full success) with handoff one horizon earlier; demo_replay reproduced 4/4 grasp. Evidence: docs/experiments/apple_hybrid_phase_results_v1.md.

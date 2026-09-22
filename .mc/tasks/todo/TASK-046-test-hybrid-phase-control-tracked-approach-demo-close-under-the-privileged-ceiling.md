@@ -43,3 +43,13 @@ CPU. One command, 12 attempts (4 primary `privileged_hybrid`, 4 `demo_replay`, 4
 Branch `feat/task-046-hybrid-phase` from main `d83d8e3`. Implementation `eadb99c`, protocol `0c419e4`, smoke-informed revision R0 `323aa6d` (guard refusal during replay -> clean `replay_projection_rejected`; no gate/handoff/budget change).
 - TRAIN-only handoff numbers (16 references): first closing frame 211 in all demos; close row 141/142 at frame 211; row close-16 at frame 136-137, before the blocked descent (~frames 144-210).
 - TRAIN reset 42000 smoke (scratch, hashes stubbed): TRAIN artifacts byte-identical to TASK-045; primary handed off at row 143/cmd 208, guard refusal on replay action 233 (runtime_error before R0, replay_projection_rejected after R0, identical rerun); early arm handed off at row 126/cmd 205, replayed 364 actions, apple dropped; no grasp on either (runtime check, not evidence). Parity 207/207 and 204/204 exact.
+
+## Phase 2 record (single frozen run)
+Pre-run review (fresh subagent, `docs/reviews/apple_hybrid_phase_review.md`): no blocking findings; recommended fixes applied as R1 (`f8dac63`: narrowed replay guard catch, dropped tracking-only per-reset fields, protocol wording). No handoff/gate/budget/seed/command change.
+Executed once from clean tracked checkout `f8dac630bc689d305ca5a8cc561e8ddb8ec9bd79` (only untracked CLAUDE.md), exact frozen command, new output `outputs/apple-hybrid-phase-ceiling-v1/`. Exit 0, report `completed`, provenance valid, 12/12 counted, 1899.1 s global, no attempt shortened or timed out.
+- **Primary gate failed (conclusive):** `privileged_hybrid` (handoff at close row) grasp 0/4, 4 stages (reach only); replay_from_tracked_state_insufficient_for_grasp = true (3 demo_exhausted, 43003 replay_projection_rejected at action 270). Rollouts exact (0/931).
+- **Secondary `privileged_hybrid_early` (close row - 16):** grasp and full success 2/4 (43001, 43003), apple dropped on 43000/43002; exact (0/894). Stages latched during replay -> attributed to demonstration actions, not a model.
+- **demo_replay:** 4/4 grasp, 3/4 success, identical per reset to TASK-043.
+- Pre-handoff commands bit-identical to TASK-045 on all 8 hybrid attempts.
+- Evidence: `docs/experiments/apple_hybrid_phase_results_v1.md`, `benchmarks/manifests/apple-hybrid-phase-v1.json`. NON-LEARNED; TASK-033/034 stay open; final cohort and TEST untouched.
+- Recommended next (not started): learned `state_goal_sensor_wm_v1` approach dynamics tracking to the close-16 handoff with the same demo replay and dynamics_shuffle/persistence controls, judged against this privileged 2/4 ceiling.
