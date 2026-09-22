@@ -388,3 +388,11 @@ The non-blocking recommendations were also applied:
   manifest (`9cd5bc25…49d9`) and an identical verdict.
 - **Runtime recorded.** Python 3.12.13, macOS 26.5.1 arm64, NumPy 2.5.3,
   MuJoCo 3.13.0.
+
+**Re-review.** The fresh re-review cleared the run (no blockers) and added two
+notes, recorded here:
+
+- `finalize` rewrites `<work>/collection_report.json`. Any recovery must first
+  copy the existing report aside, unchanged, as evidence.
+- `finalize` re-checks source and input hashes, so it recovers only from
+  transient or environment failures. After a code fix, A13 fails by design.
