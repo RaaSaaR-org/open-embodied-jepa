@@ -1,0 +1,59 @@
+{
+ "format_version": 1,
+ "experiment": "apple-wide-collection-v1",
+ "task": "TASK-048",
+ "status": "preregistered",
+ "kind": "privileged_scripted_collector_training_corpus",
+ "label": "PRIVILEGED scripted-collector TRAIN corpus with injected perturbations and grasp-phase branches; not a learned result",
+ "protocol": "docs/experiments/apple_wide_collection_v1.md",
+ "collector": "scripts/collect_apple_wide.py",
+ "frozen_command": ".venv/bin/python scripts/collect_apple_wide.py run --seeds frozen --workers 12 --max-seconds 5400 --worker-seconds 4500 --output /Users/sebastian/develop/emai/experiments/JEPA/open-embodied-jepa/data/apple-wide-v1 --work /Users/sebastian/develop/emai/experiments/JEPA/open-embodied-jepa/data/apple-wide-v1-work",
+ "distribution": "apple_plate_wide_jitter (TASK-047 wide_reset: apple +-3 cm, plate +-2 cm)",
+ "seed_range": [48000, 48199],
+ "pilot_seed_range_not_in_corpus": [48900, 48931],
+ "frozen_plan_sha256": "0046e14c52f83c44380bd239d9821887c422f21ebdd383f7571de8349653ba24",
+ "splits_by_session": {
+  "train": 170,
+  "val": 20,
+  "test": 10,
+  "split_seed": 48,
+  "group_by": "session_id (one reset seed; branches share their root's session)"
+ },
+ "val_sessions": [48005, 48030, 48039, 48040, 48052, 48054, 48071, 48072, 48074, 48086, 48096, 48103, 48113, 48117, 48119, 48137, 48168, 48169, 48180, 48193],
+ "test_sessions": [48007, 48041, 48066, 48067, 48073, 48082, 48104, 48127, 48154, 48155],
+ "planned_episodes": {"root": 200, "branch": 600},
+ "model_inputs": {
+  "onboard_rgb": [112, 112, 3],
+  "hand_crop_rgb": [112, 112, 3],
+  "observation.state": 86,
+  "action": "ee_delta_grasp_v0 (14)"
+ },
+ "label_sidecars": {
+  "schema": "apple_training_labels_v1",
+  "path": "labels/<episode_id>.npz",
+  "groups": ["robot", "collector", "privileged"],
+  "privileged_requires_acknowledgement": true
+ },
+ "acceptance_checks": {
+  "A1": "stored root episodes >= 190",
+  "A2": "stored branch episodes >= 450",
+  "A3": "root full-task successes >= 80",
+  "A4": "grasp-phase failure fraction in [0.20, 0.80]",
+  "A5": "grasp-phase successes >= 250",
+  "A6": "each right-arm action dim 6-11: >=3% of transitions > +0.1 and >=3% < -0.1",
+  "A7": "off-script fraction (max |applied - base| > 0.02) >= 0.50",
+  "A8": ">= 90% of sibling branch pairs RGB-distinct (RMS >= 1/255) at step 16",
+  "A9": "no split leakage; normalization fitted on train only",
+  "A10": "embodied_jepa.audit succeeds; all frame intervals 0.05 s",
+  "A11": "all label sidecars hash-verified; privileged access gated",
+  "A12": "both cameras 112x112x3",
+  "A13": "all 200 roots completed, every branched root restored exactly, no timeout, workers exit 0"
+ },
+ "budget": {
+  "workers": 12,
+  "worker_no_new_root_after_s": 4500,
+  "supervisor_kill_s": 5400,
+  "device": "CPU MuJoCo, one thread per worker"
+ },
+ "results": null
+}
