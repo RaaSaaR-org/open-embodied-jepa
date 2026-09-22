@@ -26,6 +26,42 @@ def test_ceiling_requires_explicit_acknowledgement_and_is_not_a_registered_model
     assert all("privileged" not in name for name in config.BACKEND_KEYS)
 
 
+def test_rollout_twin_modules_import_under_a_patched_simulation_attribute():
+    """Import order must not decide the rollout twin's base class.
+
+    Regression for an order-dependent failure of
+    ``tests/test_apple_evaluation.py``: that module replaces
+    ``simulation.MuJoCoSimulation`` with a fixture factory, and the evaluator
+    then lazily imports this family of modules. While the twin subclass was
+    created by a module-level ``class`` statement, whichever import ran first
+    under the replacement raised ``TypeError`` instead of subclassing the real
+    simulation. Building the twin at construction time, from the module
+    attribute, makes the import order irrelevant.
+    """
+    import subprocess
+    import sys
+
+    # A fresh interpreter, so the probe leaves no partly imported duplicate of these
+    # modules behind for the rest of the suite.
+    probe = (
+        "from embodied_jepa import simulation\n"
+        "simulation.MuJoCoSimulation = lambda **kwargs: None  # not a class, as the fixture does\n"
+        "import embodied_jepa.privileged_rollout\n"
+        "import embodied_jepa.object_ceiling\n"
+        "import embodied_jepa.object_ceiling_v2\n"
+        "import embodied_jepa.object_ceiling_v3\n"
+    )
+    done = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True)
+    assert done.returncode == 0, done.stderr
+
+    # The twin is still the non-rendering subclass of the real simulation.
+    from embodied_jepa.privileged_rollout import _blind_simulation_class
+    from embodied_jepa.simulation import MuJoCoSimulation
+
+    twin = _blind_simulation_class(MuJoCoSimulation)
+    assert issubclass(twin, MuJoCoSimulation) and twin.render is not MuJoCoSimulation.render
+
+
 class FirstFieldsMetric:
     """Fixture metric over the first two right-arm positions; not a trained model."""
 

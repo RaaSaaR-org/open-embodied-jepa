@@ -41,6 +41,26 @@ jobs:
         run: |
           uv run --no-sync python -c "import torch, transformers, einops, mujoco, pyarrow, pandas, PIL, av; torch.set_num_threads(4); print('MPS available:', torch.backends.mps.is_available())"
           uv run --no-sync pytest tests --junitxml=integration-results.xml
+      - name: Tests do not depend on module order (each alone, then reversed)
+        env:
+          UV_OFFLINE: "1"
+          HF_HUB_OFFLINE: "1"
+          HF_DATASETS_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          LEROBOT_SOURCE: third_party/lerobot
+          JEPA_WMS_SOURCE: third_party/jepa-wms
+        run: |
+          failed=""
+          for module in tests/test_*.py; do
+            uv run --no-sync pytest -q -p no:cacheprovider "$module" || failed="$failed $module"
+          done
+          # Reverse collection order catches state one module leaks into another,
+          # which running each module on its own cannot see.
+          uv run --no-sync pytest -q -p no:cacheprovider $(ls -r tests/test_*.py) || failed="$failed reversed-suite"
+          if [ -n "$failed" ]; then
+            echo "Order-dependent failures:$failed"
+            exit 1
+          fi
       - name: Reject skipped optional integrations
         if: always()
         run: |
