@@ -4,7 +4,7 @@ aliases:
 - TASK-048
 title: Collect the wide-jitter Apple training corpus for world model v2
 slug: collect-the-wide-jitter-apple-training-corpus-for-world-model-v2
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -19,6 +19,7 @@ due_date: ''
 created: 2026-09-22
 updated: 2026-09-22
 ---
+
 
 
 
@@ -45,5 +46,6 @@ CPU MuJoCo, 12 worker processes, ~30-40 min, ~7 GB under the main checkout's ign
 - Pre-run review (fresh subagent): blockers B1 (final run path never executed -> `finalize` subcommand, always-written report, smoke), B2 (branch kinds confounded with aim-offset roots -> decoupled slot, plan re-frozen `15ed1a99...062c`), B3 (pilot thresholds undisclosed) fixed in `d023a6b`; post-R1 smoke on pilot seeds 48900-48903 from clean `d023a6b` (integrity ok; finalize reproduced identical manifest). Re-review CLEARED (`32865f5`, docs-only).
 - Frozen run executed once from clean `32865f5` into `data/apple-wide-v1` (+ `data/apple-wide-v1-work`): exit 0, 3345 s, 12 workers. **All acceptance checks A1-A13 passed.** Dataset manifest SHA-256 `028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184`, 3.40 GB, 797 episodes (200 root + 597 branch; 3 branches guard-stopped <8 commands), 205,519 transitions, 112 px onboard + hand crop. Root success 115/200, grasp-phase 329 successes / 468 failures (0.587). Splits 170/20/10 sessions (677/80/40 episodes), normalization train-only.
 - Post-run verification (fresh subagent) recomputed all numbers: VERIFIED, two cosmetic notes applied.
+- Delivery: PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/18 (CI green; final fresh review APPROVE-TO-MERGE; squash-merged). Core CI found last-ulp sin/cos plan-byte differences on Linux x86: the test now pins a 1e-9-rounded plan hash everywhere and the exact hash on macOS arm64 (disclosed in the results doc).
 - Evidence: `docs/experiments/apple_wide_collection_results_v1.md`, `benchmarks/manifests/apple-wide-collection-v1.json`. PRIVILEGED scripted-collector corpus; not a learned result; learned Apple->Plate stays 0.
 %% mc-links: [[TASK-047]] %%

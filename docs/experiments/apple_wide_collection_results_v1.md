@@ -135,11 +135,6 @@ Each level includes 10 aim-offset roots.
   - `onboard_rgb` is 4.7× the 24-px resolution in each direction.
   - `hand_crop_rgb` is cut from a 320-px render, about 13× the 24-px
     resolution.
-
-Post-run verification by a fresh subagent recomputed every number in this
-document and in the manifest from the corpus, the sidecars and the worker
-reports. It found no discrepancy. This clarification and the guard-stop split
-above were its only (cosmetic) notes.
 - **What it does not show.** It shows nothing about learned dynamics or
   learned control. The actions come from a privileged oracle and its
   perturbations.
@@ -149,6 +144,12 @@ above were its only (cosmetic) notes.
 - **Privileged metadata.** `privileged_outcome_labels`, `termination` and
   LeRobot `next.terminated` are privileged. They must not become model
   inputs, loss weights or selection filters.
+
+**Verification.** Post-run verification by a fresh subagent recomputed every
+number in this document and in the manifest from the corpus, the sidecars and
+the worker reports. It found no discrepancy. Its only notes were cosmetic: the
+two-camera resolution wording above and the split of guard stops between
+roots and branches.
 
 ## For TASK-050 (model v2)
 
