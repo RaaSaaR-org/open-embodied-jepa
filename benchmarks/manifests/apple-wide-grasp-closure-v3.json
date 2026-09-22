@@ -1,0 +1,446 @@
+{
+  "attempt_order": "mode-major in the declared mode order",
+  "attempts": 72,
+  "budget": {
+    "attempt_max_seconds": 1200,
+    "control_timeout_seconds": 10.0,
+    "max_seconds": 32400,
+    "max_steps": 1000,
+    "torch_threads": 4
+  },
+  "changed_from_v2": "close phase only: the lateral (action[6:8]) and rotational (action[9:12]) right-arm deltas are pinned to zero and the vertical delta is planned in [-close_descent_bound, 0]; the grasp schedule, the close cost, the close length and every other phase are v2's unchanged. Simulator physics and contact parameters are unchanged.",
+  "diagnosis": "docs/experiments/apple_grasp_closure_diagnosis.md",
+  "distribution": "apple_plate_wide_jitter_dev_v1",
+  "experiment": "apple-wide-grasp-closure-v3",
+  "format_version": 1,
+  "frozen_command": "PYTHONPATH=src .venv/bin/python scripts/evaluate_apple.py --dataset data/apple-branches-v1 --checkpoint checkpoints/apple-branches-h16-sensor-v1/sensor.pt --output <main checkout>/outputs/apple-wide-grasp-closure-v3 --stage development --goal-kind object --object-ceiling-version 3 --no-proposals --horizon 6 --stride 16 --dwell 1 --candidates 24 --iterations 2 --commitment-steps 1 --max-steps 1000 --attempt-max-seconds 1200 --max-seconds 32400 --control-timeout 10",
+  "frozen_inputs": {
+    "checkpoint_sha256": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+    "dataset_manifest_sha256": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+    "expected_state_calibration_sha256": "d8dae05105a4031d4c00d676faeb4b45e86ca8e6bdbacd0af650b2b42ce38d75",
+    "expected_state_goals_sha256": "839190fcf652c6849eba592d9cac5c63bb15a97166e201d71bff7fb4f654f88d"
+  },
+  "gate_rule": "on the fresh primary resets 45200-45207: privileged_object (v3) full successes >= 6 of 8 AND grasp resets >= 7 of 8, with zero robot and full-state rollout parity mismatches over non-vacuous checks (>= executed commands - 1 per attempt), all primary ceiling attempts counted and valid provenance; demo_replay, scripted_oracle and the secondary resets 45100-45107 and 45000-45007 never gate",
+  "kind": "non_learned_object_aware_privileged_ceiling_v3_on_fresh_wide_jitter_development",
+  "label": "NON-LEARNED object-aware privileged MuJoCo-rollout ceiling v3 (simulator object state in cost, phase transitions and release predictor; caged grasp closure); not a learned result",
+  "modes": [
+    "demo_replay",
+    "scripted_oracle",
+    "privileged_object"
+  ],
+  "object_ceiling": {
+    "approach_height_m": 0.13,
+    "approach_tolerance_m": 0.01,
+    "arm_bound": 0.5,
+    "block_commands": 10,
+    "block_progress_m": 0.002,
+    "block_xy_m": 0.012,
+    "candidates": 24,
+    "carry_height_m": 0.12,
+    "close_commands": 45,
+    "close_descent_bound": 0.5,
+    "close_xy_margin_m": 0.01,
+    "close_xy_weight": 1.0,
+    "contact_penalty": 0.05,
+    "descend_xy_tolerance_m": 0.005,
+    "descend_xy_weight": 3.0,
+    "disturbance_weight": 1.0,
+    "grasp_height_m": 0.052,
+    "grasp_tolerance_m": 0.008,
+    "horizon": 6,
+    "iterations": 2,
+    "landing_dwell_commands": 4,
+    "landing_rest_speed_m_s": 0.1,
+    "landing_support_tolerance_m": 0.006,
+    "lift_done_m": 0.1,
+    "lift_target_m": 0.15,
+    "lower_clearance_m": 0.015,
+    "lower_tolerance_m": 0.01,
+    "max_steps": 1000,
+    "minimum_std": 0.05,
+    "palm_offset": [
+      -0.015,
+      0.0
+    ],
+    "phase_stall_commands": 200,
+    "place_tolerance_m": 0.03,
+    "place_xy_weight": 4.0,
+    "plate_radius_m": 0.04,
+    "proposal_std": 0.3,
+    "release_commands": 60,
+    "release_ramp": 0.08,
+    "retreat_height_m": 0.08,
+    "rotation_tolerance_rad": 0.1,
+    "rotation_weight": 0.2,
+    "slip_weight": 0.25,
+    "transport_tolerance_m": 0.015,
+    "xy_block_progress_m": 0.001
+  },
+  "object_ceiling_version": 3,
+  "outcomes": [
+    "ceiling_adequate",
+    "grasp_adequate_place_inadequate",
+    "ceiling_inadequate_task_feasible",
+    "ceiling_inadequate_scripted_also_fails",
+    "ceiling_inadequate_feasibility_reference_inconclusive",
+    "inconclusive"
+  ],
+  "primary_seeds": [
+    45200,
+    45201,
+    45202,
+    45203,
+    45204,
+    45205,
+    45206,
+    45207
+  ],
+  "privileged_rule": "NON-LEARNED diagnostic ceiling v3: the v2 ceiling with one change, a caged grasp closure. Per command, CEM candidates are projected, executed in an exact non-rendering MuJoCo twin and scored by the mean over the horizon of the v2 object-aware phase cost; in transport/lower an exact probe of the gradual arms-held release gates the hand-over to a release that then executes exactly the probed sequence. During the close phase the right arm's lateral and rotational deltas are pinned to zero and only the vertical delta is planned, in [-close_descent_bound, 0], so the palm may sink around the apple but never rise or shear it while the hand shuts; the grasp command and the phase length are v2's. Phase transitions read live simulator truth; never a learned result",
+  "protocol": "docs/experiments/apple_wide_grasp_closure_v3.md",
+  "reference_v2_on_secondary": {
+    "45000-45007": {
+      "full_successes": 7,
+      "grasp_resets": 7
+    },
+    "45100-45107": {
+      "full_successes": 5,
+      "grasp_resets": 5
+    }
+  },
+  "reset_centers_xy": {
+    "object_xy": [
+      0.34,
+      -0.18
+    ],
+    "plate_xy": [
+      0.49,
+      -0.09
+    ]
+  },
+  "reset_jitter_m": {
+    "object_xy": 0.03,
+    "plate_xy": 0.02
+  },
+  "reset_rule": "rng=numpy.random.default_rng(seed); object_xy=centre+rng.uniform(-0.03,0.03,2); plate_xy=centre+rng.uniform(-0.02,0.02,2)",
+  "resets": {
+    "45000": {
+      "object_xy": [
+        0.33964957067039525,
+        -0.17349531741060148
+      ],
+      "plate_xy": [
+        0.5095476432213811,
+        -0.09875205968642384
+      ],
+      "seed": 45000
+    },
+    "45001": {
+      "object_xy": [
+        0.3640542376776222,
+        -0.2034030583535737
+      ],
+      "plate_xy": [
+        0.47755133222597423,
+        -0.07014092353785453
+      ],
+      "seed": 45001
+    },
+    "45002": {
+      "object_xy": [
+        0.32686955434056825,
+        -0.20506151955054064
+      ],
+      "plate_xy": [
+        0.48361462325389765,
+        -0.07393560957368306
+      ],
+      "seed": 45002
+    },
+    "45003": {
+      "object_xy": [
+        0.31240507160567377,
+        -0.15329275724767755
+      ],
+      "plate_xy": [
+        0.4973190320885954,
+        -0.07146699458219609
+      ],
+      "seed": 45003
+    },
+    "45004": {
+      "object_xy": [
+        0.33059242406326106,
+        -0.15040562504043156
+      ],
+      "plate_xy": [
+        0.4732366650163055,
+        -0.09793906489355508
+      ],
+      "seed": 45004
+    },
+    "45005": {
+      "object_xy": [
+        0.3522474902693055,
+        -0.19756278385116816
+      ],
+      "plate_xy": [
+        0.48545590978329256,
+        -0.09351108457753866
+      ],
+      "seed": 45005
+    },
+    "45006": {
+      "object_xy": [
+        0.32763844553728483,
+        -0.17697440068439335
+      ],
+      "plate_xy": [
+        0.4965800396139126,
+        -0.08410911994562947
+      ],
+      "seed": 45006
+    },
+    "45007": {
+      "object_xy": [
+        0.35286698575742187,
+        -0.18770409666826868
+      ],
+      "plate_xy": [
+        0.4977923833676463,
+        -0.09260926620354028
+      ],
+      "seed": 45007
+    },
+    "45100": {
+      "object_xy": [
+        0.31002117609648316,
+        -0.19124012095300436
+      ],
+      "plate_xy": [
+        0.5064247644768436,
+        -0.07081901021059969
+      ],
+      "seed": 45100
+    },
+    "45101": {
+      "object_xy": [
+        0.337190004404955,
+        -0.16442140316832451
+      ],
+      "plate_xy": [
+        0.49752559044708033,
+        -0.0920304496746716
+      ],
+      "seed": 45101
+    },
+    "45102": {
+      "object_xy": [
+        0.3273281939625345,
+        -0.1556644075996539
+      ],
+      "plate_xy": [
+        0.4819383046203263,
+        -0.09267285939448718
+      ],
+      "seed": 45102
+    },
+    "45103": {
+      "object_xy": [
+        0.36517143010386455,
+        -0.15097800870729308
+      ],
+      "plate_xy": [
+        0.4897811755844235,
+        -0.10640060625217525
+      ],
+      "seed": 45103
+    },
+    "45104": {
+      "object_xy": [
+        0.33247524209030294,
+        -0.1636630562462984
+      ],
+      "plate_xy": [
+        0.5072143040785846,
+        -0.10106517311948801
+      ],
+      "seed": 45104
+    },
+    "45105": {
+      "object_xy": [
+        0.33535717165367257,
+        -0.16736957365266444
+      ],
+      "plate_xy": [
+        0.4858349158644598,
+        -0.09101309476771165
+      ],
+      "seed": 45105
+    },
+    "45106": {
+      "object_xy": [
+        0.35320011019934816,
+        -0.1701453748411775
+      ],
+      "plate_xy": [
+        0.47748881604574034,
+        -0.10664525672044023
+      ],
+      "seed": 45106
+    },
+    "45107": {
+      "object_xy": [
+        0.3253884930840304,
+        -0.15233302800178228
+      ],
+      "plate_xy": [
+        0.47569558600480943,
+        -0.07339692742129508
+      ],
+      "seed": 45107
+    },
+    "45200": {
+      "object_xy": [
+        0.3229653854661023,
+        -0.15092924454200007
+      ],
+      "plate_xy": [
+        0.5010270523751088,
+        -0.1025915174158386
+      ],
+      "seed": 45200
+    },
+    "45201": {
+      "object_xy": [
+        0.3244576591801331,
+        -0.16604328274882998
+      ],
+      "plate_xy": [
+        0.49572186455681977,
+        -0.08121824391725528
+      ],
+      "seed": 45201
+    },
+    "45202": {
+      "object_xy": [
+        0.35546787242940314,
+        -0.17834712808607733
+      ],
+      "plate_xy": [
+        0.48431690857505344,
+        -0.08026576293400084
+      ],
+      "seed": 45202
+    },
+    "45203": {
+      "object_xy": [
+        0.3406760472278012,
+        -0.18877589139155188
+      ],
+      "plate_xy": [
+        0.49212903171347144,
+        -0.10536824184819911
+      ],
+      "seed": 45203
+    },
+    "45204": {
+      "object_xy": [
+        0.3540036377627633,
+        -0.18983984413322738
+      ],
+      "plate_xy": [
+        0.4943035263442212,
+        -0.07563155345306209
+      ],
+      "seed": 45204
+    },
+    "45205": {
+      "object_xy": [
+        0.361089701511431,
+        -0.17197970042797583
+      ],
+      "plate_xy": [
+        0.49001771794717475,
+        -0.09115690964999333
+      ],
+      "seed": 45205
+    },
+    "45206": {
+      "object_xy": [
+        0.3631055477875488,
+        -0.15747978628225726
+      ],
+      "plate_xy": [
+        0.4853183995763012,
+        -0.07072694584262888
+      ],
+      "seed": 45206
+    },
+    "45207": {
+      "object_xy": [
+        0.35643701060161276,
+        -0.2080146280865936
+      ],
+      "plate_xy": [
+        0.47067053893763006,
+        -0.1004282283928529
+      ],
+      "seed": 45207
+    }
+  },
+  "results_doc": "docs/experiments/apple_wide_grasp_closure_results_v3.md",
+  "secondary_seeds": [
+    45100,
+    45101,
+    45102,
+    45103,
+    45104,
+    45105,
+    45106,
+    45107,
+    45000,
+    45001,
+    45002,
+    45003,
+    45004,
+    45005,
+    45006,
+    45007
+  ],
+  "status": "preregistered",
+  "task": "TASK-051",
+  "tuning_seeds_not_evaluated": [
+    49100,
+    49101,
+    49102,
+    49103,
+    49104,
+    49105,
+    49106,
+    49107,
+    49108,
+    49109,
+    49110,
+    49111,
+    49112,
+    49113,
+    49114,
+    49115,
+    49116,
+    49117,
+    49118,
+    49119,
+    49120,
+    49121,
+    49122,
+    49123,
+    49124,
+    49125,
+    49126,
+    49127,
+    49128,
+    49129,
+    49130,
+    49131
+  ]
+}
