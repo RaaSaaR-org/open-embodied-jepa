@@ -46,7 +46,7 @@ Run outcome:
   provenance, and all 12/12 attempts were counted.
 - Global wall time was **1,899.1 s** of 3,600 s.
 - Every attempt was allocated its full 840 s; none was shortened or timed out.
-- Arm totals: primary 943.2 s, `demo_replay` 30.4 s, secondary 911.8 s.
+- Arm totals: primary 943.1 s, `demo_replay` 30.4 s, secondary 911.8 s.
 
 Frozen inputs are the same as TASK-043/044/045:
 
@@ -137,7 +137,7 @@ From `report.json["hybrid_ceiling_gate"]`:
   - The wrapper therefore did not perturb the tracker.
   - Both arms share the exact same tracked prefix up to the early arm's handoff.
 - **Tracking at the handoff.**
-  - The measured tracking distance was 0.024–0.031 at the primary handoff and
+  - The measured tracking distance was 0.023–0.031 at the primary handoff and
     0.023–0.028 at the early handoff.
   - No rollout candidate was rejected before either handoff.
   - Median planning time was 0.97–0.98 s, and the maximum observe + plan time
@@ -164,8 +164,9 @@ From `report.json["hybrid_ceiling_gate"]`:
     demonstrated mechanism.
 - **The early arm is not reliable either.** On 43000 and 43002, replaying the
   whole descent and close from the tracked state still dropped the apple.
-  `demo_replay` from reset grasped on all four. The tracked approach state
-  therefore still matters, and arm-pose tracking carries no apple information.
+  `demo_replay` from reset grasped on all four. *Interpretation, not
+  isolated:* the tracked approach state therefore still matters, and arm-pose
+  tracking carries no apple information.
 
 ## Interpretation and limits
 
@@ -190,18 +191,20 @@ a learned result.
     gate.
   - The early arm's 2/4 exactly meets the threshold used for primary gates.
     The ceiling for this configuration is therefore marginal, not comfortable.
-- **What a learned component would replace next.** The only configuration
-  where a non-learned scaffold reached grasp from a tracked state is:
-  1. tracked approach to row close−16;
-  2. open-loop demonstration actions from that frame.
-
-  The next learned replacement is the **forward model of the approach phase
-  only**. That means learned `state_goal_sensor_wm_v1` dynamics tracking to the
-  same close−16 handoff, with the demonstration replay unchanged and
-  `dynamics_shuffle`/`persistence` controls. Its gate must be judged against
-  this privileged 2/4 ceiling. The replayed close segment remains
-  demonstration memory, not a model; replacing it with an object-aware learned
-  component is a later step.
+- **Next step.** The preregistered interpretation for this outcome
+  (`replay_from_tracked_state_insufficient_for_grasp`) is: do not pair this
+  scaffold with learned dynamics; next, an object-aware approach/close cost
+  under the ceiling (TASK-045 candidate 2).
+  - *Post-hoc, not preregistered:* the only configuration where a non-learned
+    scaffold reached grasp from a tracked state is a tracked approach to row
+    close−16 followed by open-loop demonstration actions from that frame (the
+    secondary arm, 2/4, which is not a gate). Replacing only the approach-phase
+    forward model with learned `state_goal_sensor_wm_v1` dynamics at that
+    handoff (demonstration replay unchanged, `dynamics_shuffle`/`persistence`
+    controls, judged against this privileged 2/4 ceiling) is a candidate that
+    would need its own preregistration and an explicit justification for
+    departing from the preregistered fail-branch step. The replayed close
+    segment remains demonstration memory, not a model.
 - TASK-033/TASK-034 stay open. The final cohort and TEST stay untouched.
 
 ## Obligations from the pre-run review

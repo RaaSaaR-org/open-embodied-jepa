@@ -4,7 +4,7 @@ aliases:
 - TASK-046
 title: Test hybrid phase control (tracked approach + demo close) under the privileged ceiling
 slug: test-hybrid-phase-control-tracked-approach-demo-close-under-the-privileged-ceiling
-status: in-progress
+status: review
 priority: 1
 owner: ''
 projects: []
@@ -52,4 +52,5 @@ Executed once from clean tracked checkout `f8dac630bc689d305ca5a8cc561e8ddb8ec9b
 - **demo_replay:** 4/4 grasp, 3/4 success, identical per reset to TASK-043.
 - Pre-handoff commands bit-identical to TASK-045 on all 8 hybrid attempts.
 - Evidence: `docs/experiments/apple_hybrid_phase_results_v1.md`, `benchmarks/manifests/apple-hybrid-phase-v1.json`. NON-LEARNED; TASK-033/034 stay open; final cohort and TEST untouched.
-- Recommended next (not started): learned `state_goal_sensor_wm_v1` approach dynamics tracking to the close-16 handoff with the same demo replay and dynamics_shuffle/persistence controls, judged against this privileged 2/4 ceiling.
+- Recommended next (not started): per the preregistered reading, do not pair this scaffold with learned dynamics; next is an object-aware approach/close cost under the privileged ceiling (TASK-045 candidate 2). A learned approach to the close-16 handoff is a post-hoc proposal needing its own preregistration.
+- Post-run verification (fresh subagent) independently reproduced all numbers, hashes, source snapshot, TASK-045 pre-handoff parity and TASK-043 demo_replay match; corrected primary wall total (943.1 s), primary handoff distance range (0.023-0.031) and aligned the next-step wording with the preregistered reading.
