@@ -96,9 +96,15 @@ kinds keep their plans, controllers, traces and gates; tests check this.
   demonstration frame, the wrapper replays recorded actions `f, f+1, …, T−1`
   (action `i` turns demonstration frame `i` into `i+1`), one per command.
 - Each command goes through the same bounds clip and mandatory candidate
-  projection as `demo_replay`; an infeasible projection is a runtime error.
+  projection as `demo_replay`. If the unchanged embodiment guards refuse to
+  project a replayed command from the measured state (for example the
+  joint-velocity guard), or the projection is infeasible, the attempt ends with
+  the clean termination `replay_projection_rejected` and the reason is recorded
+  (revision R0, below). A malformed projection remains a runtime error. Before
+  the handoff, the unchanged tracker keeps TASK-045 behaviour.
 - No model, rollout or cost is evaluated after the handoff.
-- The attempt ends with `demo_exhausted` after the last action, with `success`
+- The attempt ends with `demo_exhausted` after the last action,
+  `replay_projection_rejected` on a guard refusal, with `success`
   if the scorer's success latches earlier, or with `step_limit` at 1,000 total
   commands (tracked + replayed).
 
@@ -182,7 +188,8 @@ offset is run.
 Only attempts with status `completed`, a termination other than
 `runtime_error`/`deadline_miss`/`attempt_timeout`, and valid provenance are
 scored. `demo_exhausted`, `success`, `reference_stall` and `step_limit` are clean
-terminations whose scored stages count. Missing or failed attempts count as 0.
+terminations whose scored stages count, as do `replay_projection_rejected` and
+`execution_rejected` (guard stops). Missing or failed attempts count as 0.
 
 Readings are computed from counted attempts only, and asserted only when all 4
 primary attempts count with valid provenance and exact rollouts; otherwise the
@@ -261,10 +268,47 @@ with that caveat.
 
 ## Allowed pre-physics steps and recorded smoke
 
-Software checks only, plus one software smoke on **TRAIN reset 42000** (not a
-development reset), recorded below after it runs. No parameter may change
-after the smoke; the handoff rows, budgets, gates and readings above are fixed
-before it runs.
+Software checks only, plus a software smoke on **TRAIN reset 42000** (not a
+development reset). The handoff rows, budgets, gates and readings above were
+fixed before it ran and were not changed after it.
+
+**Smoke setup.** A scratch output, input-hash verification stubbed, both hybrid
+arms, the frozen controller and budgets (840 s cap), one worker process per
+attempt, from committed source `0c419e4`.
+
+- Preparation took about 5 s. All four regenerated TRAIN artifacts were
+  byte-identical to TASK-045 (`839190fc…`, `d8dae051…`, `48418ea3…`, `68b408d0…`).
+- Retrieval selected `apple-42000` (close row 142, recorded-grasp row 198).
+- `privileged_hybrid`: it handed off after 208 tracked commands, at measured row
+  143 (frame 212). Rollout parity was 207/207 exact with no rejected candidates,
+  and median planning took 0.96 s. Reach latched at command 218, 10 commands
+  into the replay. On replay command 21 (action 233) the unchanged
+  joint-velocity guard in `project_candidates` refused the command
+  (`measured joint velocity limit exceeded`). That raised a `ContractError`, so
+  the attempt ended as `runtime_error` after 229 commands and 204 s. There was
+  no grasp and the apple rose at most 1.3 mm.
+- `privileged_hybrid_early`: it handed off after 205 tracked commands, at
+  measured row 126 (frame 137). Parity was 204/204 exact and median planning
+  took 0.97 s. It replayed all 364 remaining actions (`demo_exhausted`, 569
+  commands, 207 s). Reach latched at command 288; `dropped` at 353. There was no
+  grasp and the apple rose at most 1.6 mm.
+
+**Revision R0 (from the smoke, before any development attempt).** Before R0, a
+guard refusal during replay was an uncounted `runtime_error`. Scoring a
+physical guard stop that way would have discarded latched stages and made the
+readings inconclusive for a safety outcome, not a software failure. R0 makes it
+the clean termination `replay_projection_rejected`, like the existing clean
+`execution_rejected`, and records the refusing frame and reason. It changes no
+handoff row, gate, reading threshold, budget, seed or command. `demo_replay`
+keeps its TASK-043 code path unchanged. After R0 the primary-arm smoke reran
+identically from `323aa6d`: the same handoff (row 143, command 208), the same
+21 replayed commands, and now `replay_projection_rejected` at action 233, with
+207 s wall time.
+
+**Reading of the smoke (runtime only, not evidence).** On this TRAIN reset,
+whose retrieved demonstration is its own recording, neither arm grasped. The
+result is recorded and does not change any parameter. It is a single TRAIN
+reset and is not part of any gate.
 
 ## Frozen run command
 

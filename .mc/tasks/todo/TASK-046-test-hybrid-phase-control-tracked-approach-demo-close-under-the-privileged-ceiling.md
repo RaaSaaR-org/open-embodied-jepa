@@ -38,3 +38,8 @@ TASK-045's privileged exact-rollout trajectory tracker reached the scorer's reac
 
 ## Scope and resources
 CPU. One command, 12 attempts (4 primary `privileged_hybrid`, 4 `demo_replay`, 4 secondary `privileged_hybrid_early`), mode-major, 840 s/attempt, 3600 s global.
+
+## Phase 1 record (implementation, no development attempt)
+Branch `feat/task-046-hybrid-phase` from main `d83d8e3`. Implementation `eadb99c`, protocol `0c419e4`, smoke-informed revision R0 `323aa6d` (guard refusal during replay -> clean `replay_projection_rejected`; no gate/handoff/budget change).
+- TRAIN-only handoff numbers (16 references): first closing frame 211 in all demos; close row 141/142 at frame 211; row close-16 at frame 136-137, before the blocked descent (~frames 144-210).
+- TRAIN reset 42000 smoke (scratch, hashes stubbed): TRAIN artifacts byte-identical to TASK-045; primary handed off at row 143/cmd 208, guard refusal on replay action 233 (runtime_error before R0, replay_projection_rejected after R0, identical rerun); early arm handed off at row 126/cmd 205, replayed 364 actions, apple dropped; no grasp on either (runtime check, not evidence). Parity 207/207 and 204/204 exact.
