@@ -1,0 +1,3053 @@
+{
+  "attempt_order": "mode-major in the declared mode order",
+  "attempts": 72,
+  "attempts_detail": [
+    {
+      "attempt_id": "45200-demo_replay",
+      "demonstration_episode_id": "apple-42024",
+      "executed_steps": 261,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": true,
+        "object_height_m": 0.7665108690349334,
+        "object_plate_distance_m": 0.17753526147878196,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45200,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.76367712020874
+    },
+    {
+      "attempt_id": "45201-demo_replay",
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328185717879,
+        "object_plate_distance_m": 0.025456444443583536,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45201,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.7722179889678955
+    },
+    {
+      "attempt_id": "45202-demo_replay",
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 245,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": false,
+        "object_height_m": 0.7666021637937652,
+        "object_plate_distance_m": 0.13571355675468846,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45202,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.437776327133179
+    },
+    {
+      "attempt_id": "45203-demo_replay",
+      "demonstration_episode_id": "apple-42024",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328181208638,
+        "object_plate_distance_m": 0.04145304369692014,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": true
+      },
+      "seed": 45203,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "demo_exhausted",
+      "wall_seconds": 7.69153618812561
+    },
+    {
+      "attempt_id": "45204-demo_replay",
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 222,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": true,
+        "object_height_m": 0.7660919651513799,
+        "object_plate_distance_m": 0.1874485315822316,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45204,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.202550172805786
+    },
+    {
+      "attempt_id": "45205-demo_replay",
+      "demonstration_episode_id": "apple-42001",
+      "executed_steps": 242,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": false,
+        "object_height_m": 0.7666165375911373,
+        "object_plate_distance_m": 0.12378971041718091,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45205,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.418341875076294
+    },
+    {
+      "attempt_id": "45206-demo_replay",
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": true,
+        "grasp": false,
+        "hand_contact": false,
+        "object_height_m": 0.026632818157539827,
+        "object_plate_distance_m": 2.643665188544308,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45206,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "demo_exhausted",
+      "wall_seconds": 7.65057110786438
+    },
+    {
+      "attempt_id": "45207-demo_replay",
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": true,
+        "grasp": false,
+        "hand_contact": false,
+        "object_height_m": 0.02663281815753982,
+        "object_plate_distance_m": 1.3454996103619903,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45207,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "demo_exhausted",
+      "wall_seconds": 7.652717113494873
+    },
+    {
+      "attempt_id": "45100-demo_replay",
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180901001,
+        "object_plate_distance_m": 0.03809490882125207,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.04999999999997229,
+        "transport": true
+      },
+      "seed": 45100,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "demo_exhausted",
+      "wall_seconds": 7.702577829360962
+    },
+    {
+      "attempt_id": "45101-demo_replay",
+      "demonstration_episode_id": "apple-42025",
+      "executed_steps": 500,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328179586761,
+        "object_plate_distance_m": 0.027863100517904586,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45101,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.783574104309082
+    },
+    {
+      "attempt_id": "45102-demo_replay",
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": true,
+        "grasp": false,
+        "hand_contact": false,
+        "object_height_m": 0.026632818157539855,
+        "object_plate_distance_m": 2.7376024820518405,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45102,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "demo_exhausted",
+      "wall_seconds": 7.636824131011963
+    },
+    {
+      "attempt_id": "45103-demo_replay",
+      "demonstration_episode_id": "apple-42024",
+      "executed_steps": 225,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": true,
+        "object_height_m": 0.7659423213239919,
+        "object_plate_distance_m": 0.14023150136428467,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45103,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.22420597076416
+    },
+    {
+      "attempt_id": "45104-demo_replay",
+      "demonstration_episode_id": "apple-42025",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328178600311,
+        "object_plate_distance_m": 0.03240254531372124,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45104,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.666384935379028
+    },
+    {
+      "attempt_id": "45105-demo_replay",
+      "demonstration_episode_id": "apple-42001",
+      "executed_steps": 500,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328181294506,
+        "object_plate_distance_m": 0.03519198047772464,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45105,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.739482164382935
+    },
+    {
+      "attempt_id": "45106-demo_replay",
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 240,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": false,
+        "object_height_m": 0.7666191499741821,
+        "object_plate_distance_m": 0.11087799034847796,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45106,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.4039998054504395
+    },
+    {
+      "attempt_id": "45107-demo_replay",
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": true,
+        "grasp": false,
+        "hand_contact": false,
+        "object_height_m": 0.026632818157539824,
+        "object_plate_distance_m": 0.749617247024341,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45107,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "demo_exhausted",
+      "wall_seconds": 7.630964994430542
+    },
+    {
+      "attempt_id": "45000-demo_replay",
+      "demonstration_episode_id": "apple-42025",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328178729911,
+        "object_plate_distance_m": 0.02620045212307838,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45000,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.662737131118774
+    },
+    {
+      "attempt_id": "45001-demo_replay",
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 221,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": true,
+        "object_height_m": 0.765871560540379,
+        "object_plate_distance_m": 0.1814148310491281,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45001,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.1999921798706055
+    },
+    {
+      "attempt_id": "45002-demo_replay",
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 226,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": true,
+        "object_height_m": 0.7664011624380869,
+        "object_plate_distance_m": 0.2050637675813907,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45002,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.243312835693359
+    },
+    {
+      "attempt_id": "45003-demo_replay",
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 261,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": true,
+        "object_height_m": 0.7665216231968541,
+        "object_plate_distance_m": 0.18710255932260092,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45003,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.645369052886963
+    },
+    {
+      "attempt_id": "45004-demo_replay",
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 223,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": true,
+        "object_height_m": 0.766265022351743,
+        "object_plate_distance_m": 0.1615292762002239,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45004,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.165522813796997
+    },
+    {
+      "attempt_id": "45005-demo_replay",
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": true,
+        "grasp": false,
+        "hand_contact": false,
+        "object_height_m": 0.026632818157539827,
+        "object_plate_distance_m": 3.760186243505122,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45005,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "demo_exhausted",
+      "wall_seconds": 7.646128177642822
+    },
+    {
+      "attempt_id": "45006-demo_replay",
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 501,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328178687936,
+        "object_plate_distance_m": 0.028775917952969934,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45006,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.737651109695435
+    },
+    {
+      "attempt_id": "45007-demo_replay",
+      "demonstration_episode_id": "apple-42025",
+      "executed_steps": 222,
+      "mode": "demo_replay",
+      "score": {
+        "dropped": false,
+        "grasp": false,
+        "hand_contact": true,
+        "object_height_m": 0.7660295289786628,
+        "object_plate_distance_m": 0.18144149981736965,
+        "place": false,
+        "reach": true,
+        "release": false,
+        "success": false,
+        "support_dwell_s": 0.0,
+        "transport": false
+      },
+      "seed": 45007,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused",
+      "wall_seconds": 4.179549217224121
+    },
+    {
+      "attempt_id": "45200-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328182070367,
+        "object_plate_distance_m": 0.028818854563529707,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45200,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.711910963058472
+    },
+    {
+      "attempt_id": "45201-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328181783511,
+        "object_plate_distance_m": 0.028698135416815096,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45201,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.729680299758911
+    },
+    {
+      "attempt_id": "45202-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328178047629,
+        "object_plate_distance_m": 0.023576689286748175,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45202,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.724981784820557
+    },
+    {
+      "attempt_id": "45203-scripted_oracle",
+      "executed_steps": 502,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180395264,
+        "object_plate_distance_m": 0.028746773418567368,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45203,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.765434741973877
+    },
+    {
+      "attempt_id": "45204-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180583509,
+        "object_plate_distance_m": 0.027423988901183034,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45204,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.702913045883179
+    },
+    {
+      "attempt_id": "45205-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328181922407,
+        "object_plate_distance_m": 0.028865633401735476,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45205,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.706804990768433
+    },
+    {
+      "attempt_id": "45206-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328177018472,
+        "object_plate_distance_m": 0.022598547805473705,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45206,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.7355029582977295
+    },
+    {
+      "attempt_id": "45207-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328177606096,
+        "object_plate_distance_m": 0.025550924017239594,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45207,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.699478626251221
+    },
+    {
+      "attempt_id": "45100-scripted_oracle",
+      "executed_steps": 502,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180442481,
+        "object_plate_distance_m": 0.026351028750433193,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45100,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.684711933135986
+    },
+    {
+      "attempt_id": "45101-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328179673822,
+        "object_plate_distance_m": 0.02726546205084434,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45101,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.692829370498657
+    },
+    {
+      "attempt_id": "45102-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180960354,
+        "object_plate_distance_m": 0.027541262626249126,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45102,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.721514940261841
+    },
+    {
+      "attempt_id": "45103-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328177163083,
+        "object_plate_distance_m": 0.02541035508443301,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45103,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.758467197418213
+    },
+    {
+      "attempt_id": "45104-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328181915925,
+        "object_plate_distance_m": 0.027482684333584813,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45104,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.719682931900024
+    },
+    {
+      "attempt_id": "45105-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.778632818028026,
+        "object_plate_distance_m": 0.02743661233751558,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45105,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.995622873306274
+    },
+    {
+      "attempt_id": "45106-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328178143384,
+        "object_plate_distance_m": 0.0267645173623015,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45106,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 8.020063877105713
+    },
+    {
+      "attempt_id": "45107-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328182620846,
+        "object_plate_distance_m": 0.028819097641792895,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45107,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.744096994400024
+    },
+    {
+      "attempt_id": "45000-scripted_oracle",
+      "executed_steps": 502,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180639606,
+        "object_plate_distance_m": 0.02873003910442804,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45000,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.711149215698242
+    },
+    {
+      "attempt_id": "45001-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328176176657,
+        "object_plate_distance_m": 0.02186874726904364,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45001,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.741114854812622
+    },
+    {
+      "attempt_id": "45002-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.778632818076962,
+        "object_plate_distance_m": 0.02871766388032122,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45002,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.688270092010498
+    },
+    {
+      "attempt_id": "45003-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328182872361,
+        "object_plate_distance_m": 0.028409391993135455,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45003,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.705362319946289
+    },
+    {
+      "attempt_id": "45004-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328182030886,
+        "object_plate_distance_m": 0.027759088972728392,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45004,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.724291086196899
+    },
+    {
+      "attempt_id": "45005-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328175320887,
+        "object_plate_distance_m": 0.02399473065161499,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45005,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.732579231262207
+    },
+    {
+      "attempt_id": "45006-scripted_oracle",
+      "executed_steps": 501,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180716624,
+        "object_plate_distance_m": 0.027310489625124088,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45006,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.6966469287872314
+    },
+    {
+      "attempt_id": "45007-scripted_oracle",
+      "executed_steps": 502,
+      "mode": "scripted_oracle",
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.778632818052497,
+        "object_plate_distance_m": 0.02871467748078458,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45007,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 7.716041088104248
+    },
+    {
+      "attempt_id": "45200-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 301,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 111,
+          "phase": "descend"
+        },
+        {
+          "command": 129,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 174,
+          "phase": "lift"
+        },
+        {
+          "command": 217,
+          "phase": "transport"
+        },
+        {
+          "command": 266,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 49,
+      "rollout_full_state_parity_checks": 300,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 300,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.778632818037281,
+        "object_plate_distance_m": 0.027810958482532646,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45200,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 193.36639213562012
+    },
+    {
+      "attempt_id": "45201-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 304,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 114,
+          "phase": "descend"
+        },
+        {
+          "command": 131,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 176,
+          "phase": "lift"
+        },
+        {
+          "command": 220,
+          "phase": "transport"
+        },
+        {
+          "command": 269,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 49,
+      "rollout_full_state_parity_checks": 303,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 303,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180937613,
+        "object_plate_distance_m": 0.027812870114461596,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45201,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 195.75658178329468
+    },
+    {
+      "attempt_id": "45202-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 342,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 113,
+          "phase": "descend"
+        },
+        {
+          "command": 130,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 175,
+          "phase": "lift"
+        },
+        {
+          "command": 270,
+          "phase": "transport"
+        },
+        {
+          "command": 307,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 37,
+      "rollout_full_state_parity_checks": 341,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 341,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328179940732,
+        "object_plate_distance_m": 0.029069076994833586,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45202,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 221.95050597190857
+    },
+    {
+      "attempt_id": "45203-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 289,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 117,
+          "phase": "descend"
+        },
+        {
+          "command": 136,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 181,
+          "phase": "lift"
+        },
+        {
+          "command": 212,
+          "phase": "transport"
+        },
+        {
+          "command": 254,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 42,
+      "rollout_full_state_parity_checks": 288,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 288,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328183226662,
+        "object_plate_distance_m": 0.0271280904321361,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45203,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 184.54100513458252
+    },
+    {
+      "attempt_id": "45204-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 283,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 111,
+          "phase": "descend"
+        },
+        {
+          "command": 129,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 174,
+          "phase": "lift"
+        },
+        {
+          "command": 205,
+          "phase": "transport"
+        },
+        {
+          "command": 247,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 42,
+      "rollout_full_state_parity_checks": 282,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 282,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180471002,
+        "object_plate_distance_m": 0.02741858569858881,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45204,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 181.41325092315674
+    },
+    {
+      "attempt_id": "45205-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 296,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 111,
+          "phase": "descend"
+        },
+        {
+          "command": 128,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 173,
+          "phase": "lift"
+        },
+        {
+          "command": 234,
+          "phase": "transport"
+        },
+        {
+          "command": 276,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 42,
+      "rollout_full_state_parity_checks": 295,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 295,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.778632816055841,
+        "object_plate_distance_m": 0.03267973948810045,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45205,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 190.5817957080435
+    },
+    {
+      "attempt_id": "45206-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 276,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 110,
+          "phase": "descend"
+        },
+        {
+          "command": 127,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 172,
+          "phase": "lift"
+        },
+        {
+          "command": 204,
+          "phase": "transport"
+        },
+        {
+          "command": 240,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 36,
+      "rollout_full_state_parity_checks": 275,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 275,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180380458,
+        "object_plate_distance_m": 0.026804721172581786,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45206,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 175.88902308302931
+    },
+    {
+      "attempt_id": "45207-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 295,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 114,
+          "phase": "descend"
+        },
+        {
+          "command": 134,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 179,
+          "phase": "lift"
+        },
+        {
+          "command": 226,
+          "phase": "transport"
+        },
+        {
+          "command": 258,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 32,
+      "rollout_full_state_parity_checks": 294,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 294,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.778632818148524,
+        "object_plate_distance_m": 0.03327481557878031,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45207,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 187.8719699382782
+    },
+    {
+      "attempt_id": "45100-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 301,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 112,
+          "phase": "descend"
+        },
+        {
+          "command": 129,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 174,
+          "phase": "lift"
+        },
+        {
+          "command": 208,
+          "phase": "transport"
+        },
+        {
+          "command": 265,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 57,
+      "rollout_full_state_parity_checks": 300,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 300,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180636013,
+        "object_plate_distance_m": 0.03149979097982684,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45100,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 194.48811507225037
+    },
+    {
+      "attempt_id": "45101-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 284,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 112,
+          "phase": "descend"
+        },
+        {
+          "command": 129,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 174,
+          "phase": "lift"
+        },
+        {
+          "command": 205,
+          "phase": "transport"
+        },
+        {
+          "command": 250,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 45,
+      "rollout_full_state_parity_checks": 283,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 283,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328182005188,
+        "object_plate_distance_m": 0.026159321790627996,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45101,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 182.40321588516235
+    },
+    {
+      "attempt_id": "45102-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 280,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 110,
+          "phase": "descend"
+        },
+        {
+          "command": 126,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 171,
+          "phase": "lift"
+        },
+        {
+          "command": 201,
+          "phase": "transport"
+        },
+        {
+          "command": 245,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 44,
+      "rollout_full_state_parity_checks": 279,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 279,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328179056069,
+        "object_plate_distance_m": 0.026432613754692802,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45102,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 179.8584430217743
+    },
+    {
+      "attempt_id": "45103-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 279,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 112,
+          "phase": "descend"
+        },
+        {
+          "command": 131,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 176,
+          "phase": "lift"
+        },
+        {
+          "command": 207,
+          "phase": "transport"
+        },
+        {
+          "command": 242,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 35,
+      "rollout_full_state_parity_checks": 278,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 278,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.778632818145575,
+        "object_plate_distance_m": 0.03351504469381326,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45103,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 177.76100993156433
+    },
+    {
+      "attempt_id": "45104-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 295,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 115,
+          "phase": "descend"
+        },
+        {
+          "command": 132,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 177,
+          "phase": "lift"
+        },
+        {
+          "command": 208,
+          "phase": "transport"
+        },
+        {
+          "command": 260,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 52,
+      "rollout_full_state_parity_checks": 294,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 294,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328181078152,
+        "object_plate_distance_m": 0.0307425538019557,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45104,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 189.92635703086853
+    },
+    {
+      "attempt_id": "45105-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 279,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 109,
+          "phase": "descend"
+        },
+        {
+          "command": 126,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 171,
+          "phase": "lift"
+        },
+        {
+          "command": 201,
+          "phase": "transport"
+        },
+        {
+          "command": 244,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 43,
+      "rollout_full_state_parity_checks": 278,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 278,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328178534229,
+        "object_plate_distance_m": 0.02731552851977685,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45105,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 178.4264109134674
+    },
+    {
+      "attempt_id": "45106-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 266,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 109,
+          "phase": "descend"
+        },
+        {
+          "command": 124,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 169,
+          "phase": "lift"
+        },
+        {
+          "command": 199,
+          "phase": "transport"
+        },
+        {
+          "command": 231,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 32,
+      "rollout_full_state_parity_checks": 265,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 265,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.77863281785638,
+        "object_plate_distance_m": 0.023906813205988572,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45106,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 168.89260911941528
+    },
+    {
+      "attempt_id": "45107-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 290,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 112,
+          "phase": "descend"
+        },
+        {
+          "command": 135,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 180,
+          "phase": "lift"
+        },
+        {
+          "command": 212,
+          "phase": "transport"
+        },
+        {
+          "command": 255,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 43,
+      "rollout_full_state_parity_checks": 289,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 289,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180694481,
+        "object_plate_distance_m": 0.03049067347691856,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45107,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 185.81454586982727
+    },
+    {
+      "attempt_id": "45000-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 273,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 109,
+          "phase": "descend"
+        },
+        {
+          "command": 126,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 171,
+          "phase": "lift"
+        },
+        {
+          "command": 199,
+          "phase": "transport"
+        },
+        {
+          "command": 252,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 53,
+      "rollout_full_state_parity_checks": 272,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 272,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328198503011,
+        "object_plate_distance_m": 0.02662713844204258,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45000,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 175.67266488075256
+    },
+    {
+      "attempt_id": "45001-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 328,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 111,
+          "phase": "descend"
+        },
+        {
+          "command": 128,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 173,
+          "phase": "lift"
+        },
+        {
+          "command": 266,
+          "phase": "transport"
+        },
+        {
+          "command": 309,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 43,
+      "rollout_full_state_parity_checks": 327,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 327,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328127017572,
+        "object_plate_distance_m": 0.030650380116308728,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.14999999999991687,
+        "transport": true
+      },
+      "seed": 45001,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 208.82653903961182
+    },
+    {
+      "attempt_id": "45002-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 282,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 111,
+          "phase": "descend"
+        },
+        {
+          "command": 127,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 172,
+          "phase": "lift"
+        },
+        {
+          "command": 202,
+          "phase": "transport"
+        },
+        {
+          "command": 248,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 46,
+      "rollout_full_state_parity_checks": 281,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 281,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328179840528,
+        "object_plate_distance_m": 0.026874456169785503,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45002,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 176.52016186714172
+    },
+    {
+      "attempt_id": "45003-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 286,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 108,
+          "phase": "descend"
+        },
+        {
+          "command": 125,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 170,
+          "phase": "lift"
+        },
+        {
+          "command": 198,
+          "phase": "transport"
+        },
+        {
+          "command": 251,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 53,
+      "rollout_full_state_parity_checks": 285,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 285,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328179481745,
+        "object_plate_distance_m": 0.027493881125165737,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45003,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 178.64396810531616
+    },
+    {
+      "attempt_id": "45004-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 285,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 114,
+          "phase": "descend"
+        },
+        {
+          "command": 134,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 179,
+          "phase": "lift"
+        },
+        {
+          "command": 210,
+          "phase": "transport"
+        },
+        {
+          "command": 249,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 39,
+      "rollout_full_state_parity_checks": 284,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 284,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328180891018,
+        "object_plate_distance_m": 0.026940590148702204,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45004,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 177.11554622650146
+    },
+    {
+      "attempt_id": "45005-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 265,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 110,
+          "phase": "descend"
+        },
+        {
+          "command": 128,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 173,
+          "phase": "lift"
+        },
+        {
+          "command": 203,
+          "phase": "transport"
+        },
+        {
+          "command": 244,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 41,
+      "rollout_full_state_parity_checks": 264,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 264,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328217174607,
+        "object_plate_distance_m": 0.02718523091147602,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45005,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 166.8401107788086
+    },
+    {
+      "attempt_id": "45006-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 288,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 110,
+          "phase": "descend"
+        },
+        {
+          "command": 131,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 176,
+          "phase": "lift"
+        },
+        {
+          "command": 206,
+          "phase": "transport"
+        },
+        {
+          "command": 253,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 47,
+      "rollout_full_state_parity_checks": 287,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 287,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328178039091,
+        "object_plate_distance_m": 0.02649527810220655,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45006,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 184.06266808509827
+    },
+    {
+      "attempt_id": "45007-privileged_object",
+      "ceiling_version": 3,
+      "executed_steps": 292,
+      "mode": "privileged_object",
+      "phase_log": [
+        {
+          "command": 0,
+          "phase": "approach"
+        },
+        {
+          "command": 114,
+          "phase": "descend"
+        },
+        {
+          "command": 132,
+          "phase": "close",
+          "previous_ended": "blocked"
+        },
+        {
+          "command": 177,
+          "phase": "lift"
+        },
+        {
+          "command": 214,
+          "phase": "transport"
+        },
+        {
+          "command": 257,
+          "phase": "release",
+          "previous_ended": "release_predicted"
+        }
+      ],
+      "release_probes": 43,
+      "rollout_full_state_parity_checks": 291,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 291,
+      "rollout_parity_mismatches": 0,
+      "score": {
+        "dropped": false,
+        "grasp": true,
+        "hand_contact": false,
+        "object_height_m": 0.7786328178898487,
+        "object_plate_distance_m": 0.0239139028980688,
+        "place": true,
+        "reach": true,
+        "release": true,
+        "success": true,
+        "support_dwell_s": 0.1500000000000501,
+        "transport": true
+      },
+      "seed": 45007,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success",
+      "wall_seconds": 186.87064814567566
+    }
+  ],
+  "budget": {
+    "attempt_max_seconds": 1200,
+    "control_timeout_seconds": 10.0,
+    "max_seconds": 32400,
+    "max_steps": 1000,
+    "torch_threads": 4
+  },
+  "changed_from_v2": "close phase only: the lateral (action[6:8]) and rotational (action[9:12]) right-arm deltas are pinned to zero and the vertical delta is planned in [-close_descent_bound, 0]; the grasp schedule, the close cost, the close length and every other phase are v2's unchanged. Simulator physics and contact parameters are unchanged.",
+  "diagnosis": "docs/experiments/apple_grasp_closure_diagnosis.md",
+  "distribution": "apple_plate_wide_jitter_dev_v1",
+  "experiment": "apple-wide-grasp-closure-v3",
+  "format_version": 1,
+  "frozen_command": "PYTHONPATH=src .venv/bin/python scripts/evaluate_apple.py --dataset data/apple-branches-v1 --checkpoint checkpoints/apple-branches-h16-sensor-v1/sensor.pt --output <main checkout>/outputs/apple-wide-grasp-closure-v3 --stage development --goal-kind object --object-ceiling-version 3 --no-proposals --horizon 6 --stride 16 --dwell 1 --candidates 24 --iterations 2 --commitment-steps 1 --max-steps 1000 --attempt-max-seconds 1200 --max-seconds 32400 --control-timeout 10",
+  "frozen_inputs": {
+    "checkpoint_sha256": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+    "dataset_manifest_sha256": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+    "expected_state_calibration_sha256": "d8dae05105a4031d4c00d676faeb4b45e86ca8e6bdbacd0af650b2b42ce38d75",
+    "expected_state_goals_sha256": "839190fcf652c6849eba592d9cac5c63bb15a97166e201d71bff7fb4f654f88d"
+  },
+  "gate_rule": "on the fresh primary resets 45200-45207: privileged_object (v3) full successes >= 6 of 8 AND grasp resets >= 7 of 8, with zero robot and full-state rollout parity mismatches over non-vacuous checks (>= executed commands - 1 per attempt), all primary ceiling attempts counted and valid provenance; demo_replay, scripted_oracle and the secondary resets 45100-45107 and 45000-45007 never gate",
+  "kind": "non_learned_object_aware_privileged_ceiling_v3_on_fresh_wide_jitter_development",
+  "label": "NON-LEARNED object-aware privileged MuJoCo-rollout ceiling v3 (simulator object state in cost, phase transitions and release predictor; caged grasp closure); not a learned result",
+  "modes": [
+    "demo_replay",
+    "scripted_oracle",
+    "privileged_object"
+  ],
+  "object_ceiling": {
+    "approach_height_m": 0.13,
+    "approach_tolerance_m": 0.01,
+    "arm_bound": 0.5,
+    "block_commands": 10,
+    "block_progress_m": 0.002,
+    "block_xy_m": 0.012,
+    "candidates": 24,
+    "carry_height_m": 0.12,
+    "close_commands": 45,
+    "close_descent_bound": 0.5,
+    "close_xy_margin_m": 0.01,
+    "close_xy_weight": 1.0,
+    "contact_penalty": 0.05,
+    "descend_xy_tolerance_m": 0.005,
+    "descend_xy_weight": 3.0,
+    "disturbance_weight": 1.0,
+    "grasp_height_m": 0.052,
+    "grasp_tolerance_m": 0.008,
+    "horizon": 6,
+    "iterations": 2,
+    "landing_dwell_commands": 4,
+    "landing_rest_speed_m_s": 0.1,
+    "landing_support_tolerance_m": 0.006,
+    "lift_done_m": 0.1,
+    "lift_target_m": 0.15,
+    "lower_clearance_m": 0.015,
+    "lower_tolerance_m": 0.01,
+    "max_steps": 1000,
+    "minimum_std": 0.05,
+    "palm_offset": [
+      -0.015,
+      0.0
+    ],
+    "phase_stall_commands": 200,
+    "place_tolerance_m": 0.03,
+    "place_xy_weight": 4.0,
+    "plate_radius_m": 0.04,
+    "proposal_std": 0.3,
+    "release_commands": 60,
+    "release_ramp": 0.08,
+    "retreat_height_m": 0.08,
+    "rotation_tolerance_rad": 0.1,
+    "rotation_weight": 0.2,
+    "slip_weight": 0.25,
+    "transport_tolerance_m": 0.015,
+    "xy_block_progress_m": 0.001
+  },
+  "object_ceiling_version": 3,
+  "outcomes": [
+    "ceiling_adequate",
+    "grasp_adequate_place_inadequate",
+    "ceiling_inadequate_task_feasible",
+    "ceiling_inadequate_scripted_also_fails",
+    "ceiling_inadequate_feasibility_reference_inconclusive",
+    "inconclusive"
+  ],
+  "planning_dynamics": "privileged_mujoco_rollout_object_v1",
+  "pre_run_review": "docs/reviews/apple_wide_grasp_closure_v3_review.md",
+  "primary_seeds": [
+    45200,
+    45201,
+    45202,
+    45203,
+    45204,
+    45205,
+    45206,
+    45207
+  ],
+  "privileged_rule": "NON-LEARNED diagnostic ceiling v3: the v2 ceiling with one change, a caged grasp closure. Per command, CEM candidates are projected, executed in an exact non-rendering MuJoCo twin and scored by the mean over the horizon of the v2 object-aware phase cost; in transport/lower an exact probe of the gradual arms-held release gates the hand-over to a release that then executes exactly the probed sequence. During the close phase the right arm's lateral and rotational deltas are pinned to zero and only the vertical delta is planned, in [-close_descent_bound, 0], so the palm may sink around the apple but never rise or shear it while the hand shuts; the grasp command and the phase length are v2's. Phase transitions read live simulator truth; never a learned result",
+  "protocol": "docs/experiments/apple_wide_grasp_closure_v3.md",
+  "reference_v2_on_secondary": {
+    "45000-45007": {
+      "full_successes": 7,
+      "grasp_resets": 7
+    },
+    "45100-45107": {
+      "full_successes": 5,
+      "grasp_resets": 5
+    }
+  },
+  "reset_centers_xy": {
+    "object_xy": [
+      0.34,
+      -0.18
+    ],
+    "plate_xy": [
+      0.49,
+      -0.09
+    ]
+  },
+  "reset_jitter_m": {
+    "object_xy": 0.03,
+    "plate_xy": 0.02
+  },
+  "reset_rule": "rng=numpy.random.default_rng(seed); object_xy=centre+rng.uniform(-0.03,0.03,2); plate_xy=centre+rng.uniform(-0.02,0.02,2)",
+  "resets": {
+    "45000": {
+      "object_xy": [
+        0.33964957067039525,
+        -0.17349531741060148
+      ],
+      "plate_xy": [
+        0.5095476432213811,
+        -0.09875205968642384
+      ],
+      "seed": 45000
+    },
+    "45001": {
+      "object_xy": [
+        0.3640542376776222,
+        -0.2034030583535737
+      ],
+      "plate_xy": [
+        0.47755133222597423,
+        -0.07014092353785453
+      ],
+      "seed": 45001
+    },
+    "45002": {
+      "object_xy": [
+        0.32686955434056825,
+        -0.20506151955054064
+      ],
+      "plate_xy": [
+        0.48361462325389765,
+        -0.07393560957368306
+      ],
+      "seed": 45002
+    },
+    "45003": {
+      "object_xy": [
+        0.31240507160567377,
+        -0.15329275724767755
+      ],
+      "plate_xy": [
+        0.4973190320885954,
+        -0.07146699458219609
+      ],
+      "seed": 45003
+    },
+    "45004": {
+      "object_xy": [
+        0.33059242406326106,
+        -0.15040562504043156
+      ],
+      "plate_xy": [
+        0.4732366650163055,
+        -0.09793906489355508
+      ],
+      "seed": 45004
+    },
+    "45005": {
+      "object_xy": [
+        0.3522474902693055,
+        -0.19756278385116816
+      ],
+      "plate_xy": [
+        0.48545590978329256,
+        -0.09351108457753866
+      ],
+      "seed": 45005
+    },
+    "45006": {
+      "object_xy": [
+        0.32763844553728483,
+        -0.17697440068439335
+      ],
+      "plate_xy": [
+        0.4965800396139126,
+        -0.08410911994562947
+      ],
+      "seed": 45006
+    },
+    "45007": {
+      "object_xy": [
+        0.35286698575742187,
+        -0.18770409666826868
+      ],
+      "plate_xy": [
+        0.4977923833676463,
+        -0.09260926620354028
+      ],
+      "seed": 45007
+    },
+    "45100": {
+      "object_xy": [
+        0.31002117609648316,
+        -0.19124012095300436
+      ],
+      "plate_xy": [
+        0.5064247644768436,
+        -0.07081901021059969
+      ],
+      "seed": 45100
+    },
+    "45101": {
+      "object_xy": [
+        0.337190004404955,
+        -0.16442140316832451
+      ],
+      "plate_xy": [
+        0.49752559044708033,
+        -0.0920304496746716
+      ],
+      "seed": 45101
+    },
+    "45102": {
+      "object_xy": [
+        0.3273281939625345,
+        -0.1556644075996539
+      ],
+      "plate_xy": [
+        0.4819383046203263,
+        -0.09267285939448718
+      ],
+      "seed": 45102
+    },
+    "45103": {
+      "object_xy": [
+        0.36517143010386455,
+        -0.15097800870729308
+      ],
+      "plate_xy": [
+        0.4897811755844235,
+        -0.10640060625217525
+      ],
+      "seed": 45103
+    },
+    "45104": {
+      "object_xy": [
+        0.33247524209030294,
+        -0.1636630562462984
+      ],
+      "plate_xy": [
+        0.5072143040785846,
+        -0.10106517311948801
+      ],
+      "seed": 45104
+    },
+    "45105": {
+      "object_xy": [
+        0.33535717165367257,
+        -0.16736957365266444
+      ],
+      "plate_xy": [
+        0.4858349158644598,
+        -0.09101309476771165
+      ],
+      "seed": 45105
+    },
+    "45106": {
+      "object_xy": [
+        0.35320011019934816,
+        -0.1701453748411775
+      ],
+      "plate_xy": [
+        0.47748881604574034,
+        -0.10664525672044023
+      ],
+      "seed": 45106
+    },
+    "45107": {
+      "object_xy": [
+        0.3253884930840304,
+        -0.15233302800178228
+      ],
+      "plate_xy": [
+        0.47569558600480943,
+        -0.07339692742129508
+      ],
+      "seed": 45107
+    },
+    "45200": {
+      "object_xy": [
+        0.3229653854661023,
+        -0.15092924454200007
+      ],
+      "plate_xy": [
+        0.5010270523751088,
+        -0.1025915174158386
+      ],
+      "seed": 45200
+    },
+    "45201": {
+      "object_xy": [
+        0.3244576591801331,
+        -0.16604328274882998
+      ],
+      "plate_xy": [
+        0.49572186455681977,
+        -0.08121824391725528
+      ],
+      "seed": 45201
+    },
+    "45202": {
+      "object_xy": [
+        0.35546787242940314,
+        -0.17834712808607733
+      ],
+      "plate_xy": [
+        0.48431690857505344,
+        -0.08026576293400084
+      ],
+      "seed": 45202
+    },
+    "45203": {
+      "object_xy": [
+        0.3406760472278012,
+        -0.18877589139155188
+      ],
+      "plate_xy": [
+        0.49212903171347144,
+        -0.10536824184819911
+      ],
+      "seed": 45203
+    },
+    "45204": {
+      "object_xy": [
+        0.3540036377627633,
+        -0.18983984413322738
+      ],
+      "plate_xy": [
+        0.4943035263442212,
+        -0.07563155345306209
+      ],
+      "seed": 45204
+    },
+    "45205": {
+      "object_xy": [
+        0.361089701511431,
+        -0.17197970042797583
+      ],
+      "plate_xy": [
+        0.49001771794717475,
+        -0.09115690964999333
+      ],
+      "seed": 45205
+    },
+    "45206": {
+      "object_xy": [
+        0.3631055477875488,
+        -0.15747978628225726
+      ],
+      "plate_xy": [
+        0.4853183995763012,
+        -0.07072694584262888
+      ],
+      "seed": 45206
+    },
+    "45207": {
+      "object_xy": [
+        0.35643701060161276,
+        -0.2080146280865936
+      ],
+      "plate_xy": [
+        0.47067053893763006,
+        -0.1004282283928529
+      ],
+      "seed": 45207
+    }
+  },
+  "result": {
+    "close_phase_apple_xy_cm": {
+      "ejections_at_1_5cm": 0,
+      "max": 1.35,
+      "min": 0.49
+    },
+    "conclusive": true,
+    "interpretation": "under exact dynamics and perfect object state the v3 object-aware cost and phase design grasps, lifts, transports and places on fresh wide-jitter resets: the cost design is adequate as the target for a learned controller",
+    "outcome": "ceiling_adequate",
+    "preregistered_next_step": "T4: pair this cost/phase design with a learned world model whose heads predict its terms (palm-apple offset, apple rise, apple-plate offset, hand contact, release landing) under its own preregistration, trained on the wide-jitter TRAIN data; keep this ceiling as the exact-dynamics upper reference",
+    "primary": {
+      "demo_replay_grasp_resets": 2,
+      "failed_reset_furthest_phase": {},
+      "privileged_object_full_successes": 8,
+      "privileged_object_grasp_resets": 8,
+      "required_full_successes": 6,
+      "required_grasp_resets": 7,
+      "rollouts_exact": true,
+      "scripted_oracle_full_successes": 8
+    },
+    "primary_gate_passed": true,
+    "replay_separated_diagnostic": true,
+    "secondary": {
+      "demo_replay": {
+        "counted_attempts": 16,
+        "full_successes": 5,
+        "grasp_resets": 6
+      },
+      "privileged_object": {
+        "counted_attempts": 16,
+        "full_successes": 16,
+        "grasp_resets": 16
+      },
+      "scripted_oracle": {
+        "counted_attempts": 16,
+        "full_successes": 16,
+        "grasp_resets": 16
+      }
+    }
+  },
+  "results_doc": "docs/experiments/apple_wide_grasp_closure_results_v3.md",
+  "review": "docs/reviews/apple_wide_grasp_closure_v3_review.md",
+  "run": {
+    "action_manifest_sha256": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+    "all_ceiling_parity_checks": {
+      "full_state": 6935,
+      "robot_state": 6935
+    },
+    "arm_seconds": {
+      "demo_replay": 147.9,
+      "privileged_object": 4443.5,
+      "scripted_oracle": 185.8
+    },
+    "asset_manifest_sha256": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+    "attempts_counted": 72,
+    "attempts_planned": 72,
+    "ceiling_seconds_per_command": {
+      "max": 0.649,
+      "min": 0.621
+    },
+    "ended_utc": "2026-09-22T21:26:49Z",
+    "exit_code": 0,
+    "max_control_seconds": 1.074,
+    "note": "The run executed from b673f3d while the pre-run reviewer's final verdict was still pending; that verdict was BLOCK on three prose corrections, applied as R2 (b2dc4d4) before any gated outcome was inspected and confirmed cleared by the reviewer. R2's only change under src/ is the v3 module docstring, so the output snapshot is byte-identical to b673f3d and differs from HEAD in exactly that one file. See the results document.",
+    "output_directory": "outputs/apple-wide-grasp-closure-v3",
+    "plan_sha256": "5c75426123db312fffa57b55c74aab157a510785b313bba5a78d6495f9a97427",
+    "primary_parity_checks": {
+      "full_state": 2378,
+      "robot_state": 2378
+    },
+    "provenance_valid": true,
+    "report_sha256": "b18ad13597d4fa4e25bd105e3322d420a7e3e24e7ed1dc2e9c6703229063fa1d",
+    "report_status": "completed",
+    "source_revision": "b673f3de50f04aa50281cf555112da05ac90d0c8",
+    "started_utc": "2026-09-22T20:06:07Z",
+    "state_calibration_sha256": "d8dae05105a4031d4c00d676faeb4b45e86ca8e6bdbacd0af650b2b42ce38d75",
+    "state_goals_sha256": "839190fcf652c6849eba592d9cac5c63bb15a97166e201d71bff7fb4f654f88d",
+    "wall_seconds": 4836.617012023926
+  },
+  "secondary_seeds": [
+    45100,
+    45101,
+    45102,
+    45103,
+    45104,
+    45105,
+    45106,
+    45107,
+    45000,
+    45001,
+    45002,
+    45003,
+    45004,
+    45005,
+    45006,
+    45007
+  ],
+  "status": "run_complete_primary_gate_passed",
+  "task": "TASK-051",
+  "tuning_seeds_not_evaluated": [
+    49100,
+    49101,
+    49102,
+    49103,
+    49104,
+    49105,
+    49106,
+    49107,
+    49108,
+    49109,
+    49110,
+    49111,
+    49112,
+    49113,
+    49114,
+    49115,
+    49116,
+    49117,
+    49118,
+    49119,
+    49120,
+    49121,
+    49122,
+    49123,
+    49124,
+    49125,
+    49126,
+    49127,
+    49128,
+    49129,
+    49130,
+    49131
+  ],
+  "tuning_seeds_stepped": [
+    49100,
+    49101,
+    49102,
+    49103,
+    49104,
+    49105,
+    49106,
+    49107,
+    49108,
+    49109,
+    49110,
+    49111,
+    49112,
+    49113,
+    49114,
+    49115,
+    49116,
+    49117,
+    49120,
+    49124,
+    49125,
+    49126,
+    49127,
+    49128,
+    49129,
+    49130,
+    49131
+  ]
+}
