@@ -38,33 +38,28 @@ def test_rollout_twin_modules_import_under_a_patched_simulation_attribute():
     simulation. Building the twin at construction time, from the module
     attribute, makes the import order irrelevant.
     """
-    import importlib
+    import subprocess
     import sys
 
-    from embodied_jepa import simulation
+    # A fresh interpreter, so the probe leaves no partly imported duplicate of these
+    # modules behind for the rest of the suite.
+    probe = (
+        "from embodied_jepa import simulation\n"
+        "simulation.MuJoCoSimulation = lambda **kwargs: None  # not a class, as the fixture does\n"
+        "import embodied_jepa.privileged_rollout\n"
+        "import embodied_jepa.object_ceiling\n"
+        "import embodied_jepa.object_ceiling_v2\n"
+        "import embodied_jepa.object_ceiling_v3\n"
+    )
+    done = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True)
+    assert done.returncode == 0, done.stderr
 
-    names = [
-        "embodied_jepa.privileged_rollout",
-        "embodied_jepa.object_ceiling",
-        "embodied_jepa.object_ceiling_v2",
-        "embodied_jepa.object_ceiling_v3",
-    ]
-    saved = {name: sys.modules.pop(name, None) for name in names}
-    real = simulation.MuJoCoSimulation
-    try:
-        simulation.MuJoCoSimulation = lambda **kwargs: None  # not a class, as in the fixture
-        for name in names:
-            assert importlib.import_module(name) is sys.modules[name]
-    finally:
-        simulation.MuJoCoSimulation = real
-        for name, module in saved.items():
-            if module is None:
-                sys.modules.pop(name, None)
-            else:
-                sys.modules[name] = module
+    # The twin is still the non-rendering subclass of the real simulation.
     from embodied_jepa.privileged_rollout import _blind_simulation_class
+    from embodied_jepa.simulation import MuJoCoSimulation
 
-    assert issubclass(_blind_simulation_class(real), real)
+    twin = _blind_simulation_class(MuJoCoSimulation)
+    assert issubclass(twin, MuJoCoSimulation) and twin.render is not MuJoCoSimulation.render
 
 
 class FirstFieldsMetric:

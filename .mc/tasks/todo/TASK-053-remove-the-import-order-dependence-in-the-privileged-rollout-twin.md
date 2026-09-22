@@ -46,9 +46,15 @@ nothing replaces that attribute, so the twin is the same class built from the sa
 - [x] `uv run --no-sync pytest tests/test_apple_evaluation.py` passes on its own and the full
       suite still passes.
 - [x] A regression test fails on the pre-fix source and passes after it.
-- [x] Every other test module passes on its own, checked in CI.
+- [x] Every other test module passes on its own, and the suite passes with the modules collected in
+      reverse order, both checked in CI.
 - [x] ruff check, ruff format --check, full pytest, `mc validate`.
 
 ## Notes
 - Branch `fix/task-053-rollout-twin-import-order` from main `51c87ee` (TASK-051 closure).
+- Independent review of PR #25 blocked the first regression test: it re-imported the modules in
+  process and restored `sys.modules` but not the `embodied_jepa` package attributes, so running it
+  before `tests/test_apple_evaluation.py` left orphan duplicates and failed 4 tests there. The probe
+  now runs in a subprocess, and CI also runs the suite with the modules collected in reverse order,
+  which is what catches leakage between modules.
 %% mc-links: [[TASK-051]] %%
