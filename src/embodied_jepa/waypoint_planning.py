@@ -1,8 +1,11 @@
-"""Dense RGB-waypoint MPC with opaque dynamics and explicit proposal/ablation controls.
+"""Dense waypoint MPC with opaque dynamics and explicit proposal/ablation controls.
 
 Waypoint sources and optional action proposals must come from training data.
-Progress receives images only. No task evaluator or goal proprioception enters
-this controller, and a demonstration proposal is never executed without scoring.
+The default ``ImageWaypoint`` path receives images only for progress. The
+optional ``StateWaypoint`` path (TASK-043) instead carries a TRAIN demonstration
+proprioceptive goal and measures progress from the current observed robot state.
+No task evaluator enters this controller, and a demonstration proposal is never
+executed without scoring.
 """
 
 from __future__ import annotations
@@ -83,6 +86,65 @@ class ImageWaypoint:
 
 
 @dataclass(frozen=True)
+class StateWaypoint:
+    """TRAIN demonstration proprioceptive goal; ``images`` are diagnostic only."""
+
+    state: np.ndarray
+    threshold: float
+    dwell_observations: int
+    source_id: str
+    source_split: str = "train"
+    action_proposals: np.ndarray | None = None
+    images: Mapping[str, np.ndarray] | None = None
+
+    def __post_init__(self):
+        if (
+            self.source_split != "train"
+            or not isinstance(self.source_id, str)
+            or not self.source_id
+        ):
+            raise ContractError("waypoints require declared training-source provenance")
+        if not np.isfinite(self.threshold) or self.threshold < 0:
+            raise ContractError("waypoint threshold must be finite and nonnegative")
+        if type(self.dwell_observations) is not int or self.dwell_observations < 1:
+            raise ContractError("waypoint dwell must be a positive observation count")
+        if (
+            not isinstance(self.state, np.ndarray)
+            or self.state.dtype.kind != "f"
+            or self.state.ndim != 2
+            or self.state.shape[0] != 1
+            or self.state.shape[1] < 1
+            or not np.isfinite(self.state).all()
+        ):
+            raise ContractError("state waypoint must be finite float[1,D]")
+        state = self.state.astype(np.float32, copy=True)
+        state.setflags(write=False)
+        object.__setattr__(self, "state", state)
+        if self.images is not None:
+            object.__setattr__(
+                self, "images", ImageWaypoint(self.images, 0.0, 1, self.source_id).images
+            )
+        if self.action_proposals is not None:
+            validate_actions(self.action_proposals, ndim=3)
+            proposals = self.action_proposals.copy()
+            proposals.setflags(write=False)
+            object.__setattr__(self, "action_proposals", proposals)
+
+    @property
+    def state_hash(self):
+        return hashlib.sha256(
+            str(self.state.shape).encode() + self.state.astype("<f4").tobytes()
+        ).hexdigest()
+
+    @property
+    def goal_input(self):
+        goal = {"state": self.state}
+        if self.images is not None:
+            goal["images"] = dict(self.images)
+        return goal
+
+
+@dataclass(frozen=True)
 class WaypointConfig:
     horizon: int = 4
     candidates: int = 16
@@ -97,6 +159,7 @@ class WaypointConfig:
     upper_bounds: tuple[float, ...] = (1.0,) * 14
     ablation: str = "learned"
     device: str = "cpu"
+    goal_stall_limit: int | None = None
 
     def __post_init__(self):
         for name in ("horizon", "candidates", "iterations", "max_steps", "commitment_steps"):
@@ -128,6 +191,10 @@ class WaypointConfig:
             raise ContractError("unsupported dynamics ablation")
         if self.device not in ("cpu", "mps"):
             raise ContractError("unsupported model device")
+        if self.goal_stall_limit is not None and (
+            type(self.goal_stall_limit) is not int or self.goal_stall_limit < 1
+        ):
+            raise ContractError("goal_stall_limit must be None or a positive integer")
 
 
 @dataclass(frozen=True)
@@ -144,6 +211,12 @@ class WaypointController:
     It is an explicit model-owned image metric; calibrate waypoint thresholds on
     training demonstrations before development trials. The callback never gets
     robot state, actions, task scores or phase labels from this controller.
+
+    With ``StateWaypoint`` goals the callback instead receives
+    ``(current RobotState, goal state[1,D])`` and the model receives
+    ``waypoint.goal_input``. All waypoints must share one kind. An optional
+    ``goal_stall_limit`` terminates with ``goal_stall`` once that many commands
+    were acknowledged on one goal without advancing; goals are never skipped.
     """
 
     def __init__(
@@ -157,8 +230,14 @@ class WaypointController:
         self.model = model
         self.waypoints = tuple(waypoints)
         self.config = config or WaypointConfig()
-        if not self.waypoints or any(not isinstance(w, ImageWaypoint) for w in self.waypoints):
+        if not self.waypoints:
             raise ContractError("at least one validated image waypoint is required")
+        if all(isinstance(w, ImageWaypoint) for w in self.waypoints):
+            self.goal_kind = "image"
+        elif all(isinstance(w, StateWaypoint) for w in self.waypoints):
+            self.goal_kind = "state"
+        else:
+            raise ContractError("waypoints must all be validated image or all state waypoints")
         if not callable(progress_distance):
             raise ContractError("explicit observed-image progress distance is required")
         for waypoint in self.waypoints:
@@ -181,12 +260,19 @@ class WaypointController:
         self.termination_reason = None
         self._goal_latents = {}
         self._commitment = None
+        self.goal_commands = 0
 
-    def _distance(self, images, waypoint):
-        values = np.asarray(self.progress_distance(images, waypoint.images))
+    def _distance(self, observation, waypoint):
+        if self.goal_kind == "image":
+            values = np.asarray(self.progress_distance(observation.images, waypoint.images))
+        else:
+            values = np.asarray(self.progress_distance(observation.state, waypoint.state))
         if values.shape != (1,) or not np.isfinite(values).all() or values[0] < 0:
             raise ContractError("observed-image distance must be finite nonnegative[1]")
         return float(values[0])
+
+    def _goal_hash(self, waypoint):
+        return waypoint.image_hash if self.goal_kind == "image" else waypoint.state_hash
 
     def step(self, observation: Observation, projector: CandidateProjector) -> WaypointDecision:
         if self.pending is not None:
@@ -212,7 +298,7 @@ class WaypointController:
         )
         start = time.perf_counter()
         waypoint = self.waypoints[self.goal_index]
-        observed_distance = self._distance(observation.images, waypoint)
+        observed_distance = self._distance(observation, waypoint)
         self.dwell = self.dwell + 1 if observed_distance <= waypoint.threshold else 0
         advanced = self.dwell >= waypoint.dwell_observations
         advance_abort = None
@@ -241,8 +327,27 @@ class WaypointController:
                     self.termination_reason,
                 )
             waypoint = self.waypoints[self.goal_index]
-            observed_distance = self._distance(observation.images, waypoint)
+            observed_distance = self._distance(observation, waypoint)
+            self.goal_commands = 0
         cfg = self.config
+        if cfg.goal_stall_limit is not None and self.goal_commands >= cfg.goal_stall_limit:
+            # Recorded failure: the controller never skips an unreached goal.
+            self._commitment = None
+            self.termination_reason = "goal_stall"
+            return WaypointDecision(
+                None,
+                {
+                    "goal_index": self.goal_index,
+                    "goal_source_id": waypoint.source_id,
+                    "goal_threshold": waypoint.threshold,
+                    "goal_commands": self.goal_commands,
+                    "goal_stall_limit": cfg.goal_stall_limit,
+                    "observed_distance": observed_distance,
+                    "observation_timestamp": timestamp,
+                    "steps": self.steps,
+                },
+                self.termination_reason,
+            )
         cache_validation = advance_abort
         if self._commitment is not None:
             cache = self._commitment
@@ -312,7 +417,9 @@ class WaypointController:
         mean = hold.copy() if self.warm is None else np.clip(self.warm, lower, upper)
         latent = self.model.encode(observation.images, observation.state)
         if self.goal_index not in self._goal_latents:
-            self._goal_latents[self.goal_index] = self.model.encode_goal(waypoint.images)
+            self._goal_latents[self.goal_index] = self.model.encode_goal(
+                waypoint.images if self.goal_kind == "image" else waypoint.goal_input
+            )
         goal_latent = self._goal_latents[self.goal_index]
         best = None
         rounds = []
@@ -396,7 +503,7 @@ class WaypointController:
             "plan_step": self.steps,
             "plan_observation_timestamp": timestamp,
             "plan_goal_index": self.goal_index,
-            "plan_goal_image_sha256": waypoint.image_hash,
+            f"plan_goal_{self.goal_kind}_sha256": self._goal_hash(waypoint),
             "plan_horizon": cfg.horizon,
             "commitment_offset": 0,
             "commitment_remaining": cfg.commitment_steps,
@@ -404,7 +511,7 @@ class WaypointController:
             "cache_validation": cache_validation,
             "goal_index": self.goal_index,
             "goal_source_id": waypoint.source_id,
-            "goal_image_sha256": waypoint.image_hash,
+            f"goal_{self.goal_kind}_sha256": self._goal_hash(waypoint),
             "goal_threshold": waypoint.threshold,
             "goal_dwell_required": waypoint.dwell_observations,
             "goal_dwell_observed": self.dwell,
@@ -421,6 +528,8 @@ class WaypointController:
             "candidate_evaluations": cfg.candidates * cfg.iterations,
             "planning_seconds": time.perf_counter() - start,
         }
+        if self.goal_kind == "state":
+            trace["goal_commands"] = self.goal_commands
         if cfg.commitment_steps > 1:
             trace["selected_requested_sequence"] = best["requested"].tolist()
             trace["selected_projected_sequence"] = best["projected"].tolist()
@@ -457,6 +566,7 @@ class WaypointController:
             execution_timestamp=result.timestamp,
         )
         self.steps += 1
+        self.goal_commands += 1
         self.last_execution_timestamp = result.timestamp
         self.pending = None
         if result.applied_action is None:

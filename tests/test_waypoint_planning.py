@@ -14,7 +14,12 @@ from embodied_jepa.contracts import (
     Observation,
     StateSchema,
 )
-from embodied_jepa.waypoint_planning import ImageWaypoint, WaypointConfig, WaypointController
+from embodied_jepa.waypoint_planning import (
+    ImageWaypoint,
+    StateWaypoint,
+    WaypointConfig,
+    WaypointController,
+)
 
 SCHEMA = StateSchema(("q",), ("rad",), "waypoint_test_v0")
 
@@ -458,3 +463,123 @@ def test_default_one_matches_historical_actions_rng_and_warm():
         hashlib.sha256(controller.warm.tobytes()).hexdigest()
         == "fd3f3493847b669c701e82b999047d113975b3322f3519a337bb2bd3aecb4cd3"
     )
+
+
+# TASK-043 optional demonstration-state goals; the default image path stays unchanged.
+
+
+def state_observation(q=0.0, timestamp=0):
+    return Observation(
+        images(0),
+        np.array([[q]], np.float32),
+        np.ones((1, 1), bool),
+        np.array([timestamp], np.float64),
+        SCHEMA,
+    )
+
+
+def state_progress(current, goal):
+    assert current.schema == SCHEMA and goal.shape == (1, 1)
+    return np.square(current.values - goal).mean(-1).astype(np.float32)
+
+
+class StateToyModel(ToyModel):
+    def encode(self, camera_images, robot_state):
+        return Opaque(robot_state.values[:, 0].astype(np.float32))
+
+    def encode_goal(self, goal):
+        assert set(goal) <= {"state", "images"} and goal["state"].shape == (1, 1)
+        return Opaque(goal["state"][:, 0])
+
+
+def state_waypoint(goal=1.0, threshold=0.0, **kwargs):
+    return StateWaypoint(
+        np.array([[goal]], np.float32), threshold, 1, f"train-demo/frame-{goal}", **kwargs
+    )
+
+
+def test_state_waypoints_use_measured_state_progress_and_state_goal_input():
+    model = StateToyModel()
+    controller = WaypointController(
+        model,
+        [state_waypoint(0.0), state_waypoint(2.0, images=images(9))],
+        progress_distance=state_progress,
+        config=WaypointConfig(horizon=2, candidates=6, iterations=1, seed=3),
+    )
+    decision = controller.step(state_observation(0.0), projection)
+    assert controller.goal_index == 1 and decision.trace["waypoint_advanced"]
+    assert decision.trace["observed_distance"] == 4.0
+    assert "goal_state_sha256" in decision.trace and "goal_image_sha256" not in decision.trace
+    assert decision.trace["goal_commands"] == 0
+    acknowledge(controller, decision)
+    assert controller.goal_commands == 1
+    assert np.asarray(controller._goal_latents[1].value).tolist() == [2.0]
+
+
+def test_goal_stall_terminates_as_failure_without_skipping_and_resets_on_advance():
+    controller = WaypointController(
+        StateToyModel(),
+        [state_waypoint(0.5, threshold=0.01), state_waypoint(9.0)],
+        progress_distance=state_progress,
+        config=WaypointConfig(horizon=1, candidates=4, iterations=1, goal_stall_limit=2),
+    )
+    decision = controller.step(state_observation(0.0, 0.0), projection)
+    acknowledge(controller, decision, 0.05)
+    decision = controller.step(state_observation(0.5, 0.1), projection)  # reaches goal 0
+    assert controller.goal_index == 1 and controller.goal_commands == 0
+    for step in range(2):
+        acknowledge(controller, decision, 0.15 + step * 0.1)
+        decision = controller.step(state_observation(0.5, 0.2 + step * 0.1), projection)
+    assert decision.action is None and decision.termination_reason == "goal_stall"
+    assert decision.trace["goal_index"] == 1 and decision.trace["goal_commands"] == 2
+    assert controller.goal_index == 1  # never skipped
+    later = controller.step(state_observation(9.0, 1.0), projection)
+    assert later.termination_reason == "goal_stall" and controller.goal_index == 1
+
+
+def test_state_waypoint_and_stall_validation():
+    with pytest.raises(ContractError):
+        WaypointController(
+            StateToyModel(), [waypoint(), state_waypoint()], progress_distance=progress
+        )
+    for bad in (0, -2, True, 1.5):
+        with pytest.raises(ContractError):
+            WaypointConfig(goal_stall_limit=bad)
+    with pytest.raises(ContractError):
+        state_waypoint(source_split="val")
+    with pytest.raises(ContractError):
+        StateWaypoint(np.array([[np.nan]], np.float32), 0.0, 1, "train/frame-1")
+    with pytest.raises(ContractError):
+        StateWaypoint(np.array([[1]], np.int64), 0.0, 1, "train/frame-1")
+    with pytest.raises(ContractError):
+        StateWaypoint(np.zeros((2, 1), np.float32), 0.0, 1, "train/frame-1")
+    goal = state_waypoint(images=images(3))
+    assert not goal.state.flags.writeable and set(goal.goal_input) == {"state", "images"}
+
+
+@pytest.mark.parametrize("limit", [None, 1000])
+def test_default_image_path_parity_with_or_without_unused_stall_limit(limit):
+    baseline = WaypointController(
+        ToyModel(),
+        [waypoint(3)],
+        progress_distance=progress,
+        config=WaypointConfig(horizon=4, candidates=6, iterations=2, seed=17),
+    )
+    variant = WaypointController(
+        ToyModel(),
+        [waypoint(3)],
+        progress_distance=progress,
+        config=WaypointConfig(
+            horizon=4, candidates=6, iterations=2, seed=17, goal_stall_limit=limit
+        ),
+    )
+    for step in range(5):
+        first = baseline.step(observation(timestamp=step * 0.05), projection)
+        second = variant.step(observation(timestamp=step * 0.05), projection)
+        np.testing.assert_array_equal(first.action, second.action)
+        assert first.trace.keys() == second.trace.keys()
+        assert "goal_commands" not in first.trace and "goal_image_sha256" in first.trace
+        acknowledge(baseline, first, (step + 1) * 0.05)
+        acknowledge(variant, second, (step + 1) * 0.05)
+    assert baseline.rng.bit_generator.state == variant.rng.bit_generator.state
+    np.testing.assert_array_equal(baseline.warm, variant.warm)
