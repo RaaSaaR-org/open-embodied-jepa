@@ -1162,3 +1162,243 @@ def test_privileged_worker_refuses_an_undeclared_plan(tmp_path, monkeypatch):
     report = json.loads((tmp_path / "attempts/43000-privileged_rollout/report.json").read_text())
     assert report["termination_reason"] == "runtime_error"
     assert "declared ceiling plan" in report["error"] and report["executed_steps"] == 0
+
+
+# TASK-045 time-indexed trajectory tracking (no physics here).
+
+
+def tracking_plan(**overrides):
+    return state_plan(goal_kind="trajectory", attempt_max_seconds=600, **overrides)
+
+
+def test_trajectory_plan_freezes_tracking_rules_and_keeps_other_plans_unchanged():
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
+    plan = tracking_plan()
+    assert plan["modes"] == ["learned", "dynamics_shuffle", "persistence"]
+    assert plan["goal_kind"] == "trajectory" and plan["backend"] == module.STATE_BACKEND
+    assert plan["tracking_window"] == 16 and plan["tracking_stall_commands"] == 64
+    assert plan["tracking_stall_min_advance"] == 16
+    assert plan["keyframe_threshold_fraction"] == 0.1
+    assert plan["controller"] == state_plan()["controller"]
+    ceiling = tracking_plan(modes=["privileged_rollout"])
+    assert (
+        ceiling["privileged_ceiling"] is True
+        and "trajectory-tracking" in ceiling["privileged_rule"]
+    )
+    # The TASK-044 endpoint ceiling plan and the TASK-043 state plan carry no tracking keys.
+    endpoint = state_plan(modes=["privileged_rollout"], attempt_max_seconds=840)
+    assert "horizon endpoint" in endpoint["privileged_rule"]
+    for other in (endpoint, state_plan(), module.make_plan(seeds=[43000])):
+        assert not any(key.startswith("tracking") for key in other)
+    for bad in (
+        dict(modes=["demo_replay"]),
+        dict(modes=["privileged_rollout", "learned"]),
+        dict(commitment_steps=4),
+        dict(proposals=True),
+        dict(goal_stall_limit=None),
+        dict(stride=28),
+    ):
+        with pytest.raises(ValueError):
+            tracking_plan(**bad)
+
+
+def test_tracking_references_are_train_keyframes_with_close_and_grasp_rows():
+    model = StateMetricModel()
+    demo = state_episode("train-a", length=12)
+    demo.robot_states[4:8] = demo.robot_states[4]  # dead time: frames 5-7 do not move
+    demo.actions[:] = 0.0
+    demo.actions[:, 12:] = -1.0
+    demo.actions[8:, 13] = 1.0  # first closing command at action 8 -> frame 9
+    demo.metadata["stage_scores"] = [{"grasp": i >= 9} for i in range(11)]  # frame 10
+    arrays, library = module.build_state_goal_library(
+        model, [demo], stride=4, dwell=1, training_episode_ids=["train-a"]
+    )
+    references, tracking = module.build_tracking_references(
+        model, [demo], library, fraction=0.1, training_episode_ids=["train-a"]
+    )
+    row = tracking["references"][0]
+    frames = references["frames_0"].tolist()
+    assert frames == [0, 1, 2, 3, 4, 8, 9, 10, 11] and row["dropped_frames"] == 3
+    np.testing.assert_array_equal(references["reference_0"], demo.robot_states[frames, :2])
+    assert row["first_close_frame"] == 9 and row["first_close_reference_index"] == 6
+    assert row["demo_grasp_frame"] == 10 and row["demo_grasp_reference_index"] == 7
+    assert row["keyframe_threshold"] == pytest.approx(
+        0.1 * library["demonstrations"][0]["adjacent_distance_floor"]
+    )
+    with pytest.raises(ContractError):
+        module.build_tracking_references(
+            model, [demo], library, fraction=0.1, training_episode_ids=["other"]
+        )
+    reference, _ = module.tracking_reference(
+        tracking | {"arrays": references}, library["demonstrations"][0]
+    )
+    assert reference.frames == tuple(frames) and reference.source_split == "train"
+
+
+def tracking_record(seed, score, mode="privileged_rollout", **extra):
+    return (
+        dict(
+            seed=seed,
+            mode=mode,
+            score=score,
+            status="completed",
+            termination_reason="reference_stall",
+            rollout_parity_checks=10,
+            rollout_parity_mismatches=0,
+            last_reference_index=20,
+            first_close_reference_index=142,
+            demo_grasp_reference_index=198,
+        )
+        | extra
+    )
+
+
+def test_tracking_ceiling_gate_counts_clean_attempts_and_readings():
+    seeds = [43000, 43001, 43002, 43003]
+    grasp = dict(reach=True, grasp=True, transport=False, place=False, release=False)
+    records = [tracking_record(43000, grasp), tracking_record(43001, grasp)]
+    summary = module.gate_summary(
+        {"goal_kind": "trajectory", "privileged_ceiling": True, "seeds": seeds}, records
+    )
+    gate = summary["tracking_ceiling_gate"]
+    assert set(summary) == {"tracking_ceiling_gate"}
+    assert gate["primary_gate_passed"] and gate["learned_stage_authorized"]
+    assert gate["per_reset"]["43002"]["counted"] is False
+    failed = module.tracking_ceiling_gate(
+        [records[0], records[1] | {"termination_reason": "attempt_timeout"}], seeds
+    )
+    assert not failed["primary_gate_passed"] and failed["privileged_grasp_resets"] == 1
+    inexact = module.tracking_ceiling_gate(
+        [records[0], records[1] | {"rollout_parity_mismatches": 1}], seeds
+    )
+    assert not inexact["primary_gate_passed"] and not inexact["rollouts_exact"]
+    stalled = [tracking_record(s, {}) for s in seeds]
+    readings = module.tracking_ceiling_gate(stalled, seeds)["readings"]
+    assert readings["conclusive"] and readings["trajectory_tracking_inadequate"]
+    assert readings["stalled_before_close_reference_resets"] == 4
+    assert not readings["arm_pose_tracking_insufficient_for_grasp"]
+    late = [r | {"last_reference_index": 198} for r in stalled]
+    readings = module.tracking_ceiling_gate(late, seeds)["readings"]
+    assert readings["arm_pose_tracking_insufficient_for_grasp"]
+    assert not readings["trajectory_tracking_inadequate"]
+    # Learned or endpoint-ceiling records never enter the tracking ceiling gate.
+    learned = [tracking_record(s, grasp, mode="learned") for s in seeds]
+    assert module.tracking_ceiling_gate(learned, seeds)["counted_attempts"] == 0
+
+
+def test_tracking_learned_gate_requires_grasps_and_beating_both_controls():
+    seeds = [43000, 43001, 43002, 43003]
+    grasp = dict(reach=True, grasp=True, transport=False, place=False, release=False)
+    reach = dict(reach=True, grasp=False)
+    records = [
+        tracking_record(43000, grasp, mode="learned"),
+        tracking_record(43001, grasp, mode="learned"),
+        tracking_record(43000, reach, mode="dynamics_shuffle"),
+    ]
+    summary = module.gate_summary({"goal_kind": "trajectory", "seeds": seeds}, records)
+    gate = summary["tracking_gate"]
+    assert set(summary) == {"tracking_gate"} and gate["primary_gate_passed"]
+    assert gate["summed_ordered_stages"] == dict(learned=4, dynamics_shuffle=1, persistence=0)
+    tied = records + [tracking_record(s, grasp, mode="persistence") for s in seeds[:2]]
+    assert not module.tracking_gate(tied, seeds)["primary_gate_passed"]
+    assert not module.tracking_gate(tied, seeds)["readings"]["no_model_contribution"]  # partial
+    complete = [
+        tracking_record(s, grasp if s == 43000 else {}, mode=m)
+        for s in seeds
+        for m in module.TRACKING_MODES
+    ]
+    readings = module.tracking_gate(complete, seeds)["readings"]
+    assert readings["conclusive"] and readings["no_model_contribution"]
+    privileged = [tracking_record(s, grasp) for s in seeds]
+    assert module.tracking_gate(privileged, seeds)["learned_grasp_resets"] == 0
+
+
+@pytest.mark.parametrize("gate_name", ["tracking_ceiling_gate", "tracking_gate"])
+def test_tracking_pass_with_missing_attempts_does_not_make_readings_conclusive(gate_name):
+    seeds = [43000, 43001, 43002, 43003]
+    mode = "privileged_rollout" if gate_name == "tracking_ceiling_gate" else "learned"
+    grasp = dict(reach=True, grasp=True)
+    records = [tracking_record(seed, grasp, mode=mode) for seed in seeds[:2]]
+    gate = getattr(module, gate_name)(records, seeds)
+    # Keep the preregistered numeric gate and authorization unchanged. The
+    # broader reading needs the complete planned denominator, including controls.
+    assert gate["primary_gate_passed"]
+    assert gate["counted_attempts"] == 2
+    assert not gate["readings"]["conclusive"]
+    if gate_name == "tracking_ceiling_gate":
+        assert gate["learned_stage_authorized"]
+        assert "inconclusive" in gate["readings"]["interpretation"]
+        complete = records + [tracking_record(seed, {}, mode=mode) for seed in seeds[2:]]
+    else:
+        complete = records + [
+            tracking_record(seed, {}, mode=current_mode)
+            for current_mode in module.TRACKING_MODES
+            for seed in seeds
+            if current_mode != "learned" or seed not in seeds[:2]
+        ]
+    completed_gate = getattr(module, gate_name)(complete, seeds)
+    assert completed_gate["primary_gate_passed"]
+    assert completed_gate["readings"]["conclusive"]
+
+
+def test_trajectory_worker_builds_tracking_controller_and_records_reference_progress(
+    tmp_path, monkeypatch
+):
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
+    from embodied_jepa import privileged_rollout, trajectory_tracking
+
+    built = []
+
+    class Ceiling:
+        def __init__(self, model, robot, *, acknowledge_privileged_ceiling=False):
+            assert acknowledge_privileged_ceiling is True
+
+        def pop_diagnostics(self):
+            return [{"previous_search_first_step_exact_match": True}]
+
+        def close(self):
+            built.append("closed")
+
+    class Tracker:
+        def __init__(self, model, reference, *, progress_distance, config, rule):
+            built.append((type(model).__name__, reference.source_id, rule))
+            self.decisions = [
+                SimpleNamespace(action=np.zeros(14, np.float32), trace={"reference_index": 5}),
+                SimpleNamespace(
+                    action=None,
+                    trace={"reference_index": 7},
+                    termination_reason="reference_stall",
+                ),
+            ]
+
+        def step(self, observation, projector):
+            return self.decisions.pop(0)
+
+        def acknowledge(self, result):
+            return {"reference_index": 5}
+
+    monkeypatch.setattr(privileged_rollout, "PrivilegedRolloutModel", Ceiling)
+    monkeypatch.setattr(trajectory_tracking, "TrackingController", Tracker)
+    state_worker_fixture(tmp_path, monkeypatch, [])
+    model = StateMetricModel()
+    demo = state_episode("train-a")
+    arrays, library = module.build_state_goal_library(
+        model, [demo], stride=16, dwell=1, training_episode_ids=["train-a"]
+    )
+    references, tracking = module.build_tracking_references(
+        model, [demo], library, fraction=0.1, training_episode_ids=["train-a"]
+    )
+    monkeypatch.setattr(
+        module, "load_tracking_references", lambda *a: tracking | {"arrays": references}
+    )
+    plan = tracking_plan(seeds=[43000], modes=["privileged_rollout"])
+    module.write(tmp_path / "resolved_plan.json", plan | {"dataset": "u", "checkpoint": "u"})
+    module.attempt_worker(tmp_path, "43000-privileged_rollout", attempt_seconds=600)
+    report = json.loads((tmp_path / "attempts/43000-privileged_rollout/report.json").read_text())
+    assert report["termination_reason"] == "reference_stall" and report["executed_steps"] == 1
+    assert report["last_reference_index"] == 7 and report["reference_length"] == 40
+    assert report["rollout_parity_checks"] == 1 and report["rollout_parity_mismatches"] == 0
+    name, source, rule = built[0]
+    assert name == "Ceiling" and source == "train-a/keyframes"
+    assert (rule.window, rule.stall_commands, rule.stall_min_advance) == (16, 64, 16)
+    assert built[-1] == "closed"
