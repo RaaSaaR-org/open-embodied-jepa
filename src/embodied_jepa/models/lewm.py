@@ -135,14 +135,14 @@ class LeWM(VisualModel):
         conditioning = self.model.action_encoder(actions)
         return self.model.predict(state, conditioning)[:, 0].reshape(shape)
 
-    def train_step(self, batch):
+    def train_step(self, batch, readout_targets=None):
         self.check_batch(batch)
         if batch.batch_size < 2:
             raise ContractError("LeWM BatchNorm requires at least two sequences during training")
         self.train()
         with self.rng_scope():
             pixels, prefix, actions = self.sequence_tensors(batch)
-            embeddings = self.embed(pixels).reshape(*prefix, -1)
+            embeddings = self.observe_sequence(batch, pixels, prefix)
             one_step = self.next_embedding(embeddings[:, :-1], actions)
             prediction_loss = (one_step - embeddings[:, 1:]).square().mean()
             recursive = self.rollout(embeddings[:, 0], actions)
@@ -153,6 +153,10 @@ class LeWM(VisualModel):
                 + self.config["multistep_weight"] * multistep
                 + self.config["sigreg_weight"] * sigreg
             )
+            readout_loss, readout_metrics = self.readout_loss(
+                embeddings, recursive, readout_targets
+            )
+            loss = loss + readout_loss
             grad_norm = self.optimize(loss, embeddings)
         self.eval()
         return {
@@ -162,4 +166,4 @@ class LeWM(VisualModel):
             "sigreg_loss": sigreg.item(),
             "gradient_norm": grad_norm,
             "updates": float(self.updates),
-        }
+        } | readout_metrics

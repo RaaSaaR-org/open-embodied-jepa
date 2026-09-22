@@ -1,0 +1,36 @@
+{
+  "protocol": "apple_world_model_v2",
+  "task": "TASK-050",
+  "status": "draft",
+  "frozen": {
+    "training": {
+      "steps": 15000,
+      "batch_size": 32,
+      "horizon": 16,
+      "seed": 0,
+      "max_seconds": 6000,
+      "validation_every": 1000,
+      "selection_windows": 1024
+    },
+    "selection_eligibility": {
+      "max_collapsed_fraction": 0.05,
+      "min_effective_rank": 2.0,
+      "min_latent_std_mean": 0.1
+    },
+    "gates": {
+      "G1_palm_apple_moving_h8_median_m": 0.015,
+      "G2_max_ratio_to_control": 0.8,
+      "G3_apple_plate_h8_median_m": 0.02,
+      "G4_apple_height_grasp_h8_median_abs_m": 0.01,
+      "G5_held_auroc_min": 0.85,
+      "G5_minimum_per_class": 20,
+      "G6_max_cost_ratio": 1.5,
+      "G7_minimum_pairs": 20,
+      "G7a_own_beats_swapped_min": 0.7,
+      "G7b_divergence_spearman_min": 0.5,
+      "G8_max_collapsed_fraction": 0.05,
+      "G8_min_effective_rank": 4.0,
+      "G8_min_latent_std_mean": 0.1
+    }
+  }
+}

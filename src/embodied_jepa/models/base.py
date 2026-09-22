@@ -25,6 +25,7 @@ from embodied_jepa.contracts import (
     StateSchema,
     validate_actions,
 )
+from embodied_jepa.models import readout as readout_module
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,14 @@ class VisualModel(nn.Module):
         "max_horizon": 64,
         "candidate_chunk_size": 128,
         "gradient_clip": 1.0,
+        # Shared (backend-agnostic) extensions, off by default so earlier models keep
+        # their image-only latents. state_fusion adds a learned embedding of the
+        # train-normalized proprioception to every latent; readout_heads adds the
+        # declared physical readouts of embodied_jepa.models.readout.
+        "state_fusion": False,
+        "readout_heads": False,
+        "readout_weight": 1.0,
+        "readout_hidden_dim": 256,
     }
 
     def __init__(self, state_schema: StateSchema, device="cpu", seed=0, config=None, metadata=None):
@@ -71,9 +80,15 @@ class VisualModel(nn.Module):
             "hidden_dim",
             "max_horizon",
             "candidate_chunk_size",
+            "readout_hidden_dim",
         ):
             if type(self.config[name]) is not int or self.config[name] < 1:
                 raise ContractError(f"{name} must be a positive integer")
+        for name in ("state_fusion", "readout_heads"):
+            if type(self.config[name]) is not bool:
+                raise ContractError(f"{name} must be a boolean")
+        if not np.isfinite(self.config["readout_weight"]) or self.config["readout_weight"] < 0:
+            raise ContractError("readout_weight must be nonnegative and finite")
         for name in ("learning_rate", "gradient_clip"):
             if not np.isfinite(self.config[name]) or self.config[name] <= 0:
                 raise ContractError(f"{name} must be positive and finite")
@@ -89,6 +104,11 @@ class VisualModel(nn.Module):
         self._rng = torch.Generator().manual_seed(seed).get_state()
         self._mps_rng = None
         self.register_buffer("latent_variance", torch.ones(self.config["latent_dim"]))
+        if self.config["state_fusion"]:
+            dimension = state_schema.dimension
+            self.register_buffer("state_mean", torch.zeros(dimension))
+            self.register_buffer("state_scale", torch.ones(dimension))
+            self.register_buffer("state_normalization_fitted", torch.tensor(False))
 
     @property
     def capabilities(self):
@@ -97,6 +117,7 @@ class VisualModel(nn.Module):
             self.state_schema,
             self.config["max_horizon"],
             supported_devices=("cpu", "mps"),
+            readouts=readout_module.READOUT_NAMES if self.config["readout_heads"] else (),
         )
 
     @contextmanager
@@ -120,6 +141,20 @@ class VisualModel(nn.Module):
                 torch.mps.set_rng_state(mps_before)
 
     def finish_init(self):
+        # Shared modules are built after the backend's own, so a disabled extension
+        # leaves the backend's initialization stream unchanged.
+        with self.rng_scope():
+            if self.config["state_fusion"]:
+                hidden = self.config["hidden_dim"]
+                self.state_encoder = nn.Sequential(
+                    nn.Linear(self.state_schema.dimension, hidden),
+                    nn.SiLU(),
+                    nn.Linear(hidden, self.config["latent_dim"]),
+                )
+            if self.config["readout_heads"]:
+                self.readout_head = readout_module.ReadoutHeads(
+                    self.config["latent_dim"], self.config["readout_hidden_dim"]
+                )
         self.to(self.device_name)
         self.optimizer = torch.optim.AdamW(
             (parameter for parameter in self.parameters() if parameter.requires_grad),
@@ -178,13 +213,137 @@ class VisualModel(nn.Module):
         pixels, prefix = self.pixels(observation)
         if prefix[0] != robot_state.values.shape[0]:
             raise ContractError("image/state batch dimensions disagree")
-        return VisualLatent(self.embed(pixels), self._owner)
+        latent = self.embed(pixels)
+        if self.config["state_fusion"]:
+            latent = latent + self.state_features(robot_state.values, robot_state.mask)
+        return VisualLatent(latent, self._owner)
 
     @torch.no_grad()
     def encode_goal(self, goal):
         self.eval()
+        if self.config["state_fusion"]:
+            raise ContractError(
+                "state-fused latents have no image-only goal encoding; plan with declared readouts"
+            )
         pixels, _ = self.pixels(goal)
         return VisualLatent(self.goal_embed(pixels), self._owner)
+
+    # ----- shared state fusion and readouts ------------------------------------------
+    @torch.no_grad()
+    def fit_state_normalization(self, mean, std, *, training_episode_ids, floor=1e-2):
+        """Freeze train-split proprioception moments once, before any update."""
+        if not self.config["state_fusion"]:
+            raise ContractError("state normalization requires state_fusion")
+        if bool(self.state_normalization_fitted) or self.updates:
+            raise ContractError("state normalization is frozen; create a new model to refit")
+        ids = tuple(training_episode_ids)
+        if not ids or len(set(ids)) != len(ids) or any(not isinstance(x, str) for x in ids):
+            raise ContractError("training_episode_ids must be unique episode names")
+        mean = np.asarray(mean, np.float64)
+        std = np.asarray(std, np.float64)
+        shape = (self.state_schema.dimension,)
+        if mean.shape != shape or std.shape != shape:
+            raise ContractError("state moments must match the state schema")
+        if not (np.isfinite(mean).all() and np.isfinite(std).all()) or (std < 0).any():
+            raise ContractError("state moments must be finite with nonnegative std")
+        self.state_mean.copy_(torch.as_tensor(mean, dtype=torch.float32))
+        self.state_scale.copy_(torch.as_tensor(np.maximum(std, floor), dtype=torch.float32))
+        self.state_normalization_fitted.fill_(True)
+        self.metadata["state_normalization_episodes_sha256"] = hashlib.sha256(
+            json.dumps(sorted(ids)).encode()
+        ).hexdigest()
+
+    def state_features(self, values, mask):
+        """Learned embedding of train-normalized, mask-zeroed robot state ``[...,S]``."""
+        if not bool(self.state_normalization_fitted):
+            raise ContractError("fit training-only state normalization before state fusion")
+        values = torch.from_numpy(np.array(values, dtype=np.float32, copy=True))
+        mask = torch.from_numpy(np.array(mask, dtype=np.bool_, copy=True))
+        values, mask = values.to(self.device_name), mask.to(self.device_name)
+        normalized = (values - self.state_mean) / self.state_scale * mask
+        return self.state_encoder(normalized)
+
+    def observe_sequence(self, batch, pixels, prefix, *, target=False):
+        """Online (or target) latents ``[B,T+1,D]`` of a canonical sequence batch."""
+        embed = self.goal_embed if target else self.embed
+        latents = embed(pixels).reshape(*prefix, -1)
+        if self.config["state_fusion"]:
+            latents = latents + self.state_features(batch.robot_states, batch.state_mask)
+        return latents
+
+    def readout_loss(self, encoded, predicted, readout_targets):
+        """Shared readout loss on encoded ``[B,T+1,D]`` and predicted ``[B,T,D]`` latents.
+
+        Targets are training-time labels only: ``{name: float32 [B,T+1,width]}``.
+        """
+        if not self.config["readout_heads"]:
+            if readout_targets is not None:
+                raise ContractError("readout targets require readout_heads")
+            return encoded.new_zeros(()), {}
+        if readout_targets is None:
+            raise ContractError("a readout-head model trains only with readout targets")
+        targets = {}
+        for name in readout_module.READOUT_NAMES:
+            value = readout_targets.get(name)
+            if not isinstance(value, np.ndarray) or value.shape[:2] != encoded.shape[:2]:
+                raise ContractError(f"readout target {name} must be an array [B,T+1,width]")
+            targets[name] = torch.from_numpy(np.array(value, np.float32, copy=True)).to(
+                self.device_name
+            )
+        encoded_loss, _ = self.readout_head.loss(encoded, targets)
+        predicted_loss, predicted_terms = self.readout_head.loss(
+            predicted, {name: value[:, 1:] for name, value in targets.items()}
+        )
+        metrics = {
+            "readout_encoded_loss": encoded_loss.item(),
+            "readout_predicted_loss": predicted_loss.item(),
+        } | {f"readout_predicted_{name}": term.item() for name, term in predicted_terms.items()}
+        return self.config["readout_weight"] * (encoded_loss + predicted_loss), metrics
+
+    @torch.no_grad()
+    def latent_statistics(self, latents):
+        """Model-owned collapse diagnostics over encoded [B,D] latents (evaluators never
+        read latent values themselves)."""
+        latents = [latents] if isinstance(latents, VisualLatent) else list(latents)
+        if not latents:
+            raise ContractError("latent statistics need at least one encoded latent")
+        # Transfer before casting (see diagnostics): MPS->CPU float64 fusion is unsafe.
+        values = torch.cat([self.check_latent(z, 2).cpu() for z in latents]).double()
+        if values.shape[0] < 2:
+            raise ContractError("latent statistics need at least two samples")
+        std = values.std(0, unbiased=False)
+        energy = torch.linalg.svdvals(values - values.mean(0)).square()
+        total = energy.sum().item()
+        rank = 0.0
+        if total > 0:
+            probabilities = energy[energy > 0] / total
+            rank = (-(probabilities * probabilities.log()).sum()).exp().item()
+        return {
+            "samples": int(values.shape[0]),
+            "dimension": int(values.shape[1]),
+            "latent_std_mean": std.mean().item(),
+            "latent_std_min": std.min().item(),
+            "collapsed_fraction": (std < 0.01).double().mean().item(),
+            "effective_rank": rank,
+        }
+
+    @torch.no_grad()
+    def readout(self, z):
+        """Declared physical readouts of an encoded [B,D] or predicted [B,K,T,D] latent."""
+        if not self.config["readout_heads"]:
+            raise ContractError("this model declares no readouts")
+        if not isinstance(z, VisualLatent) or z.values.ndim not in (2, 4):
+            raise ContractError("readout requires an encoded or predicted latent")
+        values = self.check_latent(z, z.values.ndim)
+        self.eval()
+        result = {}
+        for name, value in self.readout_head.physical(values).items():
+            array = value.float().cpu().numpy().astype(np.float32, copy=True)
+            if not np.isfinite(array).all():
+                raise ContractError(f"model produced a non-finite readout {name}")
+            array.setflags(write=False)
+            result[name] = array
+        return result
 
     @torch.no_grad()
     def predict(self, z, actions):
@@ -248,8 +407,8 @@ class VisualModel(nn.Module):
     def diagnostics(self, batch):
         self.eval()
         pixels, prefix, actions = self.sequence_tensors(batch)
-        embeddings = self.embed(pixels).reshape(*prefix, -1)
-        target_embeddings = self.goal_embed(pixels).reshape(*prefix, -1)
+        embeddings = self.observe_sequence(batch, pixels, prefix)
+        target_embeddings = self.observe_sequence(batch, pixels, prefix, target=True)
         targets = target_embeddings[:, 1:]
         prediction = self.rollout(embeddings[:, 0], actions)
         zero_prediction = self.rollout(embeddings[:, 0], torch.zeros_like(actions))
@@ -341,7 +500,12 @@ class VisualModel(nn.Module):
             "preprocessing": {
                 "pixels": "uint8_rgb",
                 "actions": "normalized_-1_1",
-                "robot_state": "ignored_visual_baseline",
+                "robot_state": "train_normalized_learned_state_fusion"
+                if self.config["state_fusion"]
+                else "ignored_visual_baseline",
+                "readouts": readout_module.READOUT_VERSION
+                if self.config["readout_heads"]
+                else None,
             },
         }
         temporary = path.with_name(path.name + ".tmp")
@@ -378,7 +542,12 @@ class VisualModel(nn.Module):
     @property
     def implementation_sha256(self):
         digest = hashlib.sha256()
-        for path in (Path(__file__), Path(inspect.getfile(type(self)))):
+        for path in (
+            Path(__file__),
+            Path(inspect.getfile(type(self))),
+            Path(readout_module.__file__),
+            Path(readout_module.__file__).parents[1] / "readout_labels.py",
+        ):
             digest.update(path.name.encode())
             digest.update(path.read_bytes())
         return digest.hexdigest()

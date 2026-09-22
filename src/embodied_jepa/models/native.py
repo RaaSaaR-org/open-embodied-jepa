@@ -65,14 +65,14 @@ class NativeJEPA(VisualModel):
     def next_embedding(self, state, actions):
         return state + self.predictor(torch.cat((state, actions), dim=-1))
 
-    def train_step(self, batch):
+    def train_step(self, batch, readout_targets=None):
         self.train()
         self.target_encoder.eval()
         with self.rng_scope():
             pixels, prefix, actions = self.sequence_tensors(batch)
-            embeddings = self.embed(pixels).reshape(*prefix, -1)
+            embeddings = self.observe_sequence(batch, pixels, prefix)
             with torch.no_grad():
-                targets = self.goal_embed(pixels).reshape(*prefix, -1)
+                targets = self.observe_sequence(batch, pixels, prefix, target=True)
             one_step = self.next_embedding(embeddings[:, :-1], actions)
             prediction_loss = F.mse_loss(one_step, targets[:, 1:])
             recursive = self.rollout(embeddings[:, 0], actions)
@@ -90,6 +90,10 @@ class NativeJEPA(VisualModel):
                 + self.config["variance_weight"] * variance
                 + self.config["covariance_weight"] * covariance_loss
             )
+            readout_loss, readout_metrics = self.readout_loss(
+                embeddings, recursive, readout_targets
+            )
+            loss = loss + readout_loss
             grad_norm = self.optimize(loss, targets)
             decay = self.config["ema_decay"]
             with torch.no_grad():
@@ -106,4 +110,4 @@ class NativeJEPA(VisualModel):
             "covariance_loss": covariance_loss.item(),
             "gradient_norm": grad_norm,
             "updates": float(self.updates),
-        }
+        } | readout_metrics
