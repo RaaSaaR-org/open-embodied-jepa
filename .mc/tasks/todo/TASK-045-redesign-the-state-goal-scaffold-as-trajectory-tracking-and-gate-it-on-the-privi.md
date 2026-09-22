@@ -44,6 +44,14 @@ Branch `feat/task-045-trajectory-tracking` from main `b2e0789`.
 - TRAIN-reset 42000 smoke (scratch, hashes stubbed, max_steps 64): retrieval apple-42000; state library byte-identical to TASK-044; 0.985 s/command median planning, parity 63/63 exact, 0 rejections; reference index 40 after 64 commands. No parameter changed.
 - Pre-run review (fresh subagent, d85e52b): 1 blocker (600 s cap + timeout rule could erase a latched grasp) fixed by raising to 840 s; recommended fixes applied as revision R1 (final-row hold for trailing dead time, conclusive-only no_model_contribution, endpoint diagnostic label, unified reference hash, doc wording). No gate threshold, reset, mode or planner parameter changed.
 
+## Phase 2 record (single frozen stage-1 run)
+Executed once from clean tracked checkout `bae083815d61d0d9b38a2aaf02f834ab1925fca4` (only untracked CLAUDE.md), exact frozen stage-1 command, new output `outputs/apple-trajectory-tracking-ceiling-v1/`. Exit 0, report `completed`, provenance valid, 4/4 counted, 1730.7 s global, 303.5-497.9 s per attempt of 840 s.
+- Outcome: **stage-1 ceiling gate failed** (0/4 grasp; 4 summed stages = reach on 4/4). Terminations: reference_stall 43000 (row 337/340), 43001 (row 145/339), 43003 (row 339/342); reference_complete 43002. Apple dropped off the table on 4/4 during closing. Rollouts exact (0 mismatches / 1694 checks).
+- Conclusive readings: arm_pose_tracking_insufficient_for_grasp = true (3/4 passed the demo-grasp row without grasp); trajectory_tracking_inadequate = false. Stage 2 (learned) NOT run per protocol.
+- Diagnostics: pre-close tracking distance median 0.012-0.015; close-phase median 0.066-0.157; joint-velocity-guard rollout rejections on 3 resets from command 238-259; final-row hold was 4-5 commands (R1 text estimated ~9).
+- Evidence: `docs/experiments/apple_trajectory_tracking_results_v1.md`, `benchmarks/manifests/apple-trajectory-tracking-v1.json`. Not a learned result; TASK-033/034 stay open; final cohort and TEST untouched.
+- Recommended next (not started): privileged ceiling of hybrid phase control (tracking to the close row, then the demo's recorded closing actions open loop) or an object-aware close-phase cost.
+
 %% mc-links: [[TASK-044]] %%
 
 ## Resumed review on 2026-09-22
