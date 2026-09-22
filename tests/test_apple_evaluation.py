@@ -1402,3 +1402,222 @@ def test_trajectory_worker_builds_tracking_controller_and_records_reference_prog
     assert name == "Ceiling" and source == "train-a/keyframes"
     assert (rule.window, rule.stall_commands, rule.stall_min_advance) == (16, 64, 16)
     assert built[-1] == "closed"
+
+
+# TASK-046 hybrid phase control under the privileged ceiling (no physics here).
+
+
+def hybrid_plan(**overrides):
+    return state_plan(goal_kind="hybrid", attempt_max_seconds=840, **overrides)
+
+
+def test_hybrid_plan_is_mode_major_non_learned_and_leaves_other_plans_unchanged():
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
+    plan = hybrid_plan()
+    assert plan["modes"] == ["privileged_hybrid", "demo_replay", "privileged_hybrid_early"]
+    assert [a["attempt_id"] for a in plan["attempts"][:5]] == [
+        "43000-privileged_hybrid",
+        "43001-privileged_hybrid",
+        "43002-privileged_hybrid",
+        "43003-privileged_hybrid",
+        "43000-demo_replay",
+    ]
+    assert plan["attempts"][-1]["attempt_id"] == "43003-privileged_hybrid_early"
+    assert plan["hybrid_handoff_rows_before_close"] == {
+        "privileged_hybrid": 0,
+        "privileged_hybrid_early": 16,
+    }
+    assert plan["privileged_ceiling"] is True and "NON-LEARNED" in plan["result_label"]
+    trajectory = tracking_plan()
+    for key in ("tracking_window", "tracking_stall_commands", "keyframe_threshold_fraction"):
+        assert plan[key] == trajectory[key]
+    assert plan["controller"] == trajectory["controller"]
+    # Resets are identical to every other development plan.
+    resets = {a["seed"]: a["reset"] for a in plan["attempts"]}
+    assert resets == {a["seed"]: a["reset"] for a in trajectory["attempts"]}
+    for other in (trajectory, state_plan(), module.make_plan(seeds=[43000])):
+        assert not any(key.startswith(("hybrid", "handoff", "replay_rule")) for key in other)
+        assert "attempt_order" not in other
+    for bad in (
+        dict(modes=["learned"]),
+        dict(modes=["privileged_hybrid", "persistence"]),
+        dict(modes=["privileged_rollout"]),
+        dict(commitment_steps=4),
+        dict(proposals=True),
+        dict(goal_stall_limit=None),
+    ):
+        with pytest.raises(ValueError):
+            hybrid_plan(**bad)
+    with pytest.raises(ValueError):
+        hybrid_plan(stage="final", seeds=None)
+    with pytest.raises(ValueError):
+        tracking_plan(modes=["privileged_hybrid"])
+    with pytest.raises(ValueError):
+        module.make_plan(seeds=[43000], modes=["privileged_hybrid_early"])
+
+
+def hybrid_record(seed, score, mode="privileged_hybrid", **extra):
+    fields = dict(
+        termination_reason="demo_exhausted",
+        handed_off=True,
+        handoff_row=142,
+        handoff_reference_index=143,
+        handoff_frame=213,
+        handoff_command=240,
+        tracked_commands=240,
+        replayed_commands=289,
+    )
+    return tracking_record(seed, score, mode=mode, **(fields | extra))
+
+
+def test_hybrid_ceiling_gate_counts_only_the_primary_arm():
+    seeds = [43000, 43001, 43002, 43003]
+    grasp = dict(reach=True, grasp=True, transport=True, place=False, release=False)
+    records = [hybrid_record(43000, grasp), hybrid_record(43001, grasp)]
+    summary = module.gate_summary({"goal_kind": "hybrid", "seeds": seeds}, records)
+    gate = summary["hybrid_ceiling_gate"]
+    assert set(summary) == {"hybrid_ceiling_gate"}
+    assert gate["primary_gate_passed"] and gate["privileged_hybrid_grasp_resets"] == 2
+    assert gate["summed_ordered_stages"] == 6 and not gate["readings"]["conclusive"]
+    assert "inconclusive" in gate["readings"]["interpretation"]
+    # Secondary and reference arms never pass the primary gate.
+    others = [
+        hybrid_record(s, grasp, mode=m)
+        for s in seeds
+        for m in ("privileged_hybrid_early", "demo_replay")
+    ]
+    assert not module.hybrid_ceiling_gate(others, seeds)["primary_gate_passed"]
+    timeout = module.hybrid_ceiling_gate(
+        [records[0], records[1] | {"termination_reason": "attempt_timeout"}], seeds
+    )
+    assert not timeout["primary_gate_passed"]
+    inexact = module.hybrid_ceiling_gate(
+        [records[0], records[1] | {"rollout_parity_mismatches": 1}], seeds
+    )
+    assert not inexact["primary_gate_passed"] and not inexact["rollouts_exact"]
+    invalid = module.hybrid_ceiling_gate(
+        records + [records[0] | {"provenance_valid": False}], seeds
+    )
+    assert not invalid["primary_gate_passed"]
+
+
+def test_hybrid_ceiling_readings_and_handoff_comparison():
+    seeds = [43000, 43001, 43002, 43003]
+    grasp = dict(reach=True, grasp=True)
+    reach = dict(reach=True, grasp=False)
+    replayed = [hybrid_record(s, reach) for s in seeds]
+    early_grasp = [hybrid_record(s, grasp, mode="privileged_hybrid_early") for s in seeds]
+    replay = [hybrid_record(s, grasp, mode="demo_replay") for s in seeds]
+    gate = module.hybrid_ceiling_gate(replayed + early_grasp + replay, seeds)
+    readings = gate["readings"]
+    assert readings["conclusive"] and not gate["primary_gate_passed"]
+    assert readings["replay_from_tracked_state_insufficient_for_grasp"]
+    assert not readings["tracking_failed_before_handoff"]
+    assert readings["secondary_early_handoff_grasp_on_two"]
+    assert readings["handoff_comparison"].startswith("only the earlier handoff")
+    assert readings["demo_replay_conclusive"] and gate["arms"]["demo_replay"]["grasp_resets"] == 4
+    stalled = [
+        hybrid_record(s, {}, handed_off=False, termination_reason="reference_stall") for s in seeds
+    ]
+    early_none = [hybrid_record(s, reach, mode="privileged_hybrid_early") for s in seeds]
+    readings = module.hybrid_ceiling_gate(stalled + early_none, seeds)["readings"]
+    assert readings["tracking_failed_before_handoff"]
+    assert not readings["replay_from_tracked_state_insufficient_for_grasp"]
+    assert readings["handoff_comparison"].startswith("neither handoff")
+    assert not readings["demo_replay_conclusive"]
+    passed = [hybrid_record(s, grasp) for s in seeds]
+    gate = module.hybrid_ceiling_gate(passed + early_none, seeds)
+    assert gate["primary_gate_passed"] and gate["readings"]["conclusive"]
+    assert "attributable to the replayed demonstration" in gate["readings"]["interpretation"]
+    assert gate["readings"]["handoff_comparison"].startswith("only the close-row handoff")
+    # An incomplete secondary arm never makes the comparison conclusive.
+    partial = module.hybrid_ceiling_gate(passed + early_grasp[:3], seeds)["readings"]
+    assert partial["handoff_comparison"].startswith("inconclusive")
+
+
+@pytest.mark.parametrize("mode,offset", [("privileged_hybrid", 0), ("privileged_hybrid_early", 16)])
+def test_hybrid_worker_wraps_the_tracker_and_records_the_handoff(
+    tmp_path, monkeypatch, mode, offset
+):
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
+    from embodied_jepa import hybrid_phase, privileged_rollout, trajectory_tracking
+
+    built = []
+
+    class Ceiling:
+        def __init__(self, model, robot, *, acknowledge_privileged_ceiling=False):
+            assert acknowledge_privileged_ceiling is True
+
+        def pop_diagnostics(self):
+            return []
+
+        def close(self):
+            built.append("closed")
+
+    class Tracker:
+        def __init__(self, model, reference, *, progress_distance, config, rule):
+            built.append((type(model).__name__, reference.source_id, config.ablation))
+
+    class Hybrid:
+        def __init__(self, tracker, actions, *, handoff_row, lower_bounds, upper_bounds):
+            built.append(("hybrid", type(tracker).__name__, actions.shape, handoff_row))
+            self.decisions = [
+                SimpleNamespace(action=np.zeros(14, np.float32), trace={"reference_index": 5}),
+                SimpleNamespace(action=np.zeros(14, np.float32), trace={"phase": "replay"}),
+                SimpleNamespace(action=None, trace={}, termination_reason="demo_exhausted"),
+            ]
+
+        def step(self, observation, projector):
+            return self.decisions.pop(0)
+
+        def acknowledge(self, result):
+            return {"phase": "x"}
+
+        def summary(self):
+            return {"handed_off": True, "handoff_reference_index": 6, "replayed_commands": 1}
+
+    monkeypatch.setattr(privileged_rollout, "PrivilegedRolloutModel", Ceiling)
+    monkeypatch.setattr(trajectory_tracking, "TrackingController", Tracker)
+    monkeypatch.setattr(hybrid_phase, "HybridPhaseController", Hybrid)
+    state_worker_fixture(tmp_path, monkeypatch, [])
+    model = StateMetricModel()
+    demo = state_episode("train-a")
+    demo.actions[:, 13] = -1.0
+    demo.actions[20:, 13] = 1.0  # first closing command at action 20 -> frame 21
+    arrays, library = module.build_state_goal_library(
+        model, [demo], stride=16, dwell=1, training_episode_ids=["train-a"]
+    )
+    references, tracking = module.build_tracking_references(
+        model, [demo], library, fraction=0.1, training_episode_ids=["train-a"]
+    )
+    monkeypatch.setattr(module, "load_state_library", lambda *a: library | {"arrays": arrays})
+    monkeypatch.setattr(
+        module, "load_tracking_references", lambda *a: tracking | {"arrays": references}
+    )
+    plan = hybrid_plan(seeds=[43000], modes=[mode])
+    module.write(tmp_path / "resolved_plan.json", plan | {"dataset": "u", "checkpoint": "u"})
+    module.attempt_worker(tmp_path, f"43000-{mode}", attempt_seconds=840)
+    report = json.loads((tmp_path / f"attempts/43000-{mode}/report.json").read_text())
+    close = tracking["references"][0]["first_close_reference_index"]
+    assert close == 21
+    assert built[0] == ("Ceiling", "train-a/keyframes", "learned")
+    assert built[1] == ("hybrid", "Tracker", (39, 14), max(0, close - offset))
+    assert report["termination_reason"] == "demo_exhausted" and report["executed_steps"] == 2
+    assert report["handed_off"] and report["handoff_reference_index"] == 6
+    assert report["last_reference_index"] == 5 and report["first_close_reference_index"] == 21
+    assert report["rollout_parity_checks"] == 0 and built[-1] == "closed"
+
+
+def test_hybrid_worker_refuses_an_undeclared_plan(tmp_path, monkeypatch):
+    pytest.importorskip("torch")  # state plans resolve fields via the torch model
+    state_worker_fixture(tmp_path, monkeypatch, [])
+    monkeypatch.setattr(module, "load_tracking_references", lambda *a: {})
+    plan = tracking_plan(seeds=[43000], modes=["privileged_rollout"])
+    plan["attempts"] = [
+        plan["attempts"][0] | {"attempt_id": "43000-privileged_hybrid", "mode": "privileged_hybrid"}
+    ]
+    module.write(tmp_path / "resolved_plan.json", plan | {"dataset": "u", "checkpoint": "u"})
+    module.attempt_worker(tmp_path, "43000-privileged_hybrid", attempt_seconds=840)
+    report = json.loads((tmp_path / "attempts/43000-privileged_hybrid/report.json").read_text())
+    assert report["termination_reason"] == "runtime_error"
+    assert "declared hybrid ceiling" in report["error"] and report["executed_steps"] == 0
