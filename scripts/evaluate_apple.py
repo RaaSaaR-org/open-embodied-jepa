@@ -25,11 +25,18 @@ from embodied_jepa.contracts import ContractError  # noqa: E402
 from embodied_jepa.training import json_hash  # noqa: E402
 from embodied_jepa.waypoint_planning import (  # noqa: E402
     ImageWaypoint,
+    StateWaypoint,
     WaypointConfig,
     WaypointController,
 )
 
-MODES = ("learned", "persistence", "dynamics_shuffle", "hold", "random")
+MODES = ("learned", "persistence", "dynamics_shuffle", "hold", "random", "demo_replay")
+# TASK-043 demonstration-state-goal MPC. demo_replay is a NON-LEARNED open-loop
+# replay of the retrieved TRAIN demonstration; it never calls the world model.
+STATE_MODES = ("learned", "dynamics_shuffle", "persistence", "demo_replay")
+IMAGE_MODES = MODES[:5]
+STATE_BACKEND = "state_goal_sensor_wm_v1"
+STAGES = ("reach", "grasp", "transport", "place", "release")
 
 
 def validate_attempt_budget(seconds):
@@ -54,7 +61,7 @@ def make_plan(
     *,
     stage="development",
     seeds=None,
-    modes=MODES,
+    modes=None,
     max_seconds=600,
     max_steps=1000,
     stride=10,
@@ -66,7 +73,11 @@ def make_plan(
     control_timeout=5.0,
     commitment_steps=1,
     attempt_max_seconds=None,
+    goal_kind="image",
+    goal_stall_limit=None,
 ):
+    if goal_kind not in ("image", "state"):
+        raise ValueError("goal kind must be image or state")
     if stage not in ("development", "final"):
         raise ValueError("stage must be development or final")
     cohort = tuple(range(43000, 43005)) if stage == "development" else tuple(range(44000, 44020))
@@ -79,11 +90,27 @@ def make_plan(
         raise ValueError("seeds must be unique members of the declared stage cohort")
     if stage == "final" and seeds != list(cohort):
         raise ValueError("final evaluation requires the complete frozen20-reset cohort")
-    modes = list(modes)
+    modes = list((STATE_MODES if goal_kind == "state" else IMAGE_MODES) if modes is None else modes)
     if not modes or len(set(modes)) != len(modes) or any(m not in MODES for m in modes):
         raise ValueError("unknown or repeated control mode")
-    if not np.isfinite(max_seconds) or not 0 < max_seconds <= 1800:
-        raise ValueError("hard wall budget must lie in (0,1800]seconds")
+    if goal_kind == "image":
+        if "demo_replay" in modes:
+            raise ValueError("demo_replay requires --goal-kind state demonstration retrieval")
+        if goal_stall_limit is not None:
+            raise ValueError("goal stall limit is part of the state-goal protocol only")
+        wall_limit = 1800
+    else:
+        if any(m not in STATE_MODES for m in modes):
+            raise ValueError("state goals support learned/dynamics_shuffle/persistence/demo_replay")
+        if proposals:
+            raise ValueError("state-goal protocol forbids demonstration action proposals")
+        if stride != horizon:
+            raise ValueError("state goals must be spaced exactly one planning horizon apart")
+        if type(goal_stall_limit) is not int or goal_stall_limit < 1:
+            raise ValueError("state goals require a positive per-goal stall limit")
+        wall_limit = 3600
+    if not np.isfinite(max_seconds) or not 0 < max_seconds <= wall_limit:
+        raise ValueError(f"hard wall budget must lie in (0,{wall_limit}]seconds")
     validate_attempt_budget(attempt_max_seconds)
     if not np.isfinite(control_timeout) or control_timeout <= 0:
         raise ValueError("control timeout must be positive and finite")
@@ -99,7 +126,11 @@ def make_plan(
         commitment_steps=commitment_steps,
         lower_bounds=lower,
         upper_bounds=upper,
+        goal_stall_limit=goal_stall_limit,
     )
+    controller = asdict(config)
+    if controller["goal_stall_limit"] is None:
+        del controller["goal_stall_limit"]  # Keeps historical image plans byte-identical.
     attempts = []
     for seed in seeds:
         rng = np.random.default_rng(seed)
@@ -112,7 +143,7 @@ def make_plan(
             attempts.append(
                 {"attempt_id": f"{seed}-{mode}", "seed": seed, "mode": mode, "reset": reset}
             )
-    return {
+    plan = {
         "format_version": 1,
         "stage": stage,
         "seeds": seeds,
@@ -121,7 +152,7 @@ def make_plan(
         "attempt_max_seconds": attempt_max_seconds,
         "finalization_reserve_seconds": min(5.0, max_seconds / 10),
         "control_timeout_seconds": float(control_timeout),
-        "controller": asdict(config),
+        "controller": controller,
         "waypoint_stride": stride,
         "waypoint_dwell": dwell,
         "demonstration_proposals": bool(proposals),
@@ -141,9 +172,43 @@ def make_plan(
             "unchanged ordered AppleToPlateTask; scorer never drives waypoint advancement"
         ),
     }
+    if goal_kind == "state":
+        from embodied_jepa.models.state_goal_sensor import FIELDS, VISUAL_WEIGHT
+
+        plan.update(
+            goal_kind="state",
+            backend=STATE_BACKEND,
+            state_goal_fields=list(FIELDS),
+            visual_diagnostic_weight=VISUAL_WEIGHT,
+            goal_stall_limit=goal_stall_limit,
+            demo_selection=(
+                "per reset: successful NOMINAL apple/plate TRAIN episode whose frame-0 RGB has "
+                "the smallest frozen sensor image distance to the live initial RGB; ties by "
+                "lexicographic episode id; no state, object pose or score used for retrieval"
+            ),
+            goal_rule=(
+                "measured right-arm+right-hand joint positions of the retrieved demo at frames "
+                "stride, 2*stride, ... plus the final frame; frame 0 excluded"
+            ),
+            threshold_rule=(
+                "state metric: max(1.1*max(distance(state[t+-2],state[t])),"
+                "median positive adjacent TRAIN-demo state distance,1e-12,"
+                "1.1*q90(successful NOMINAL TRAIN same-frame state distances))"
+            ),
+            proposal_rule="none: demonstration action proposals are disabled",
+            stall_rule=(
+                "terminate with goal_stall after goal_stall_limit acknowledged commands on one "
+                "goal without advancing; recorded failure, no goal skipping"
+            ),
+            demo_replay_rule=(
+                "NON-LEARNED control: replay the retrieved demo's recorded actions open-loop "
+                "through the same bounds check and mandatory projection; no world model"
+            ),
+        )
+    return plan
 
 
-def checkpoint_model(dataset, checkpoint, *, device="cpu"):
+def checkpoint_model(dataset, checkpoint, *, device="cpu", backend=None):
     import torch
 
     from embodied_jepa.config import MODELS
@@ -168,14 +233,27 @@ def checkpoint_model(dataset, checkpoint, *, device="cpu"):
     normalized = set(envelope.get("metadata", {}).get("normalization", {}).get("episode_ids", []))
     if not training or normalized != training:
         raise ContractError("checkpoint normalization must cover exactly the frozen training split")
-    model = MODELS.create(
-        envelope["backend"],
-        state_schema=store.state_schema,
-        device=device,
-        seed=envelope["seed"],
-        config=envelope["config"],
-        metadata=expected,
-    )
+    if backend is None:
+        model = MODELS.create(
+            envelope["backend"],
+            state_schema=store.state_schema,
+            device=device,
+            seed=envelope["seed"],
+            config=envelope["config"],
+            metadata=expected,
+        )
+    elif backend == STATE_BACKEND:
+        # Frozen composition over the unchanged sensor checkpoint: no new weights.
+        model = MODELS.create(
+            backend,
+            state_schema=store.state_schema,
+            device=device,
+            seed=envelope["seed"],
+            config={"sensor_config": envelope["config"]},
+            metadata=expected,
+        )
+    else:
+        raise ContractError("unsupported evaluation backend override")
     model.load(checkpoint)
     if not callable(getattr(model, "observed_distance", None)):
         raise ContractError("waypoint model requires an observed-image distance metric")
@@ -320,6 +398,229 @@ def calibrate_waypoints(
     }
 
 
+def _state_rows(episode, rows):
+    from embodied_jepa.contracts import RobotState
+
+    rows = np.asarray(rows, dtype=int)
+    return RobotState(
+        np.asarray(episode.robot_states)[rows],
+        np.asarray(episode.state_mask)[rows],
+        np.asarray(episode.timestamps, dtype=np.float64)[rows],
+        episode.state_schema,
+    )
+
+
+def _state_distance(model, current_episode, current_rows, goal_values):
+    cost = np.asarray(
+        model.observed_distance(_state_rows(current_episode, current_rows), goal_values)
+    )
+    if cost.shape != (len(current_rows),) or not np.isfinite(cost).all() or (cost < 0).any():
+        raise ContractError("invalid training state calibration distance")
+    return [float(v) for v in cost]
+
+
+def state_goal_frames(length, stride):
+    frames = list(range(stride, length, stride))
+    if not frames or frames[-1] != length - 1:
+        frames.append(length - 1)
+    return frames
+
+
+def build_state_goal_library(model, demonstrations, *, stride, dwell, training_episode_ids):
+    """TRAIN-only state goals and tolerances for every candidate demonstration.
+
+    Each candidate is a successful nominal TRAIN demonstration; the same set is the
+    cross-demonstration reference population of the existing threshold recipe.
+    """
+    demonstrations = sorted(demonstrations, key=lambda e: e.episode_id)
+    allowed = set(training_episode_ids)
+    if not demonstrations or any(e.episode_id not in allowed for e in demonstrations):
+        raise ContractError("state-goal library received a non-training episode")
+    if len({e.episode_id for e in demonstrations}) != len(demonstrations):
+        raise ContractError("duplicate state-goal demonstration")
+    if type(stride) is not int or stride < 1 or type(dwell) is not int or dwell < 1:
+        raise ContractError("state-goal stride and dwell must be positive integers")
+    arrays, records = {}, []
+    for number, episode in enumerate(demonstrations):
+        states = np.asarray(episode.robot_states)
+        length = len(states)
+        frames = episode.observations["onboard_rgb"]
+        if len(frames) != length or len(episode.actions) != length - 1 or length < 2:
+            raise ContractError("demonstration needs T actions and T+1 synchronized frames")
+        values = model.select(states, episode.state_schema)
+        adjacent = _state_distance(model, episode, range(1, length), values[:-1])
+        positive = [v for v in adjacent if v > 0]
+        floor = max(float(np.median(positive)) if positive else 0.0, 1e-12)
+        goal_frames = state_goal_frames(length, stride)
+        goals = []
+        for goal_number, index in enumerate(goal_frames):
+            neighborhood = list(range(max(0, index - 2), min(length, index + 3)))
+            target = values[index : index + 1]
+            distances = _state_distance(
+                model, episode, neighborhood, np.repeat(target, len(neighborhood), 0)
+            )
+            cross = []
+            for reference in demonstrations:
+                if index >= len(reference.robot_states):
+                    continue  # No end clamping: only observed corresponding frames.
+                cross.append(
+                    {
+                        "episode_id": reference.episode_id,
+                        "frame": index,
+                        "distance": _state_distance(model, reference, [index], target)[0],
+                    }
+                )
+            cross_quantile = float(np.quantile([v["distance"] for v in cross], 0.9))
+            threshold = max(1.1 * max(distances), floor, 1.1 * cross_quantile)
+            previous = goal_frames[goal_number - 1] if goal_number else 0
+            neighbors = [previous] + (
+                [goal_frames[goal_number + 1]] if goal_number + 1 < len(goal_frames) else []
+            )
+            separability = [
+                {
+                    "frame": frame,
+                    "distance": (d := _state_distance(model, episode, [frame], target)[0]),
+                    "inside_threshold": d <= threshold,
+                }
+                for frame in neighbors
+            ]
+            goals.append(
+                {
+                    "frame": index,
+                    "threshold": threshold,
+                    "dwell": dwell,
+                    "source_id": f"{episode.episode_id}/frame-{index}",
+                    "neighborhood_frames": neighborhood,
+                    "neighborhood_distances": distances,
+                    "cross_training_distances": cross,
+                    "cross_training_q90": cross_quantile,
+                    "adjacent_goal_separability": separability,
+                    "overlapping_adjacent_goal_count": sum(
+                        e["inside_threshold"] for e in separability
+                    ),
+                    "state_sha256": hashlib.sha256(target.astype("<f4").tobytes()).hexdigest(),
+                }
+            )
+        arrays[f"initial_{number}"] = frames[0:1]
+        arrays[f"goals_{number}"] = values[goal_frames]
+        arrays[f"goal_images_{number}"] = frames[goal_frames]
+        arrays[f"actions_{number}"] = np.asarray(episode.actions, dtype=np.float32)
+        records.append(
+            {
+                "index": number,
+                "episode_id": episode.episode_id,
+                "split": "train",
+                "variant": episode.metadata.get("variant"),
+                "collection_success": episode.metadata.get("collection_success"),
+                "length": length,
+                "goal_frames": goal_frames,
+                "adjacent_distance_floor": floor,
+                "goals_with_adjacent_overlap": sum(
+                    g["overlapping_adjacent_goal_count"] > 0 for g in goals
+                ),
+                "goals": goals,
+            }
+        )
+    return arrays, {
+        "format_version": 1,
+        "stride": stride,
+        "dwell": dwell,
+        "training_episode_ids_sha256": json_hash(sorted(allowed)),
+        "calibration_training_episode_ids": [e.episode_id for e in demonstrations],
+        "demonstrations": records,
+    }
+
+
+def retrieve_demonstration(model, images, library):
+    """Nearest candidate by initial RGB only; ties resolve to the lexical first id."""
+    distances = []
+    for record in library["demonstrations"]:
+        initial = library["arrays"][f"initial_{record['index']}"]
+        value = np.asarray(
+            model.image_distance({"onboard_rgb": images["onboard_rgb"]}, {"onboard_rgb": initial})
+        )
+        if value.shape != (1,) or not np.isfinite(value).all() or value[0] < 0:
+            raise ContractError("invalid retrieval image distance")
+        distances.append(float(value[0]))
+    chosen = int(np.argmin(distances))
+    record = library["demonstrations"][chosen]
+    return record, {
+        "rule": "min frozen sensor image distance to demonstration frame 0; lexical tie-break",
+        "demonstration_episode_id": record["episode_id"],
+        "distances": {
+            r["episode_id"]: d for r, d in zip(library["demonstrations"], distances, strict=True)
+        },
+        "input_image_sha256": hashlib.sha256(images["onboard_rgb"].tobytes()).hexdigest(),
+    }
+
+
+def state_waypoints(library, record):
+    arrays = library["arrays"]
+    goals, images = arrays[f"goals_{record['index']}"], arrays[f"goal_images_{record['index']}"]
+    if len(goals) != len(record["goals"]):
+        raise ContractError("state-goal array/calibration count differs")
+    return [
+        StateWaypoint(
+            goals[i : i + 1],
+            row["threshold"],
+            row["dwell"],
+            row["source_id"],
+            images={"onboard_rgb": images[i : i + 1]},
+        )
+        for i, row in enumerate(record["goals"])
+    ]
+
+
+def load_state_library(output, plan):
+    for name, field in (
+        ("state_goals.npz", "state_goals_sha256"),
+        ("state_calibration.json", "state_calibration_sha256"),
+    ):
+        if digest(Path(output) / name) != plan[field]:
+            raise ContractError("frozen state-goal artifact changed")
+    calibration = json.loads((Path(output) / "state_calibration.json").read_text())
+    with np.load(Path(output) / "state_goals.npz", allow_pickle=False) as arrays:
+        calibration["arrays"] = {key: arrays[key] for key in arrays.files}
+    return calibration
+
+
+def ordered_stage_count(score):
+    count = 0
+    for stage in STAGES:
+        if not (score or {}).get(stage):
+            break
+        count += 1
+    return count
+
+
+def state_gate(records, seeds):
+    """Preregistered TASK-043 gate; missing/failed attempts count as zero stages."""
+    by = {(r["seed"], r["mode"]): r for r in records}
+
+    def stages(mode):
+        return sum(ordered_stage_count(by.get((s, mode), {}).get("score")) for s in seeds)
+
+    grasps = sum(bool((by.get((s, "learned"), {}).get("score") or {}).get("grasp")) for s in seeds)
+    sums = {mode: stages(mode) for mode in STATE_MODES}
+    primary = (
+        grasps >= 2
+        and sums["learned"] > sums["dynamics_shuffle"]
+        and sums["learned"] > sums["persistence"]
+    )
+    return {
+        "learned_grasp_resets": grasps,
+        "summed_ordered_stages": sums,
+        "primary_gate_passed": bool(primary),
+        "learned_full_successes": sum(
+            bool(by.get((s, "learned"), {}).get("success")) for s in seeds
+        ),
+        "rule": (
+            "learned grasp on >=2 resets AND learned summed ordered stages > dynamics_shuffle "
+            "and > persistence; demo_replay is a non-learned reference only"
+        ),
+    }
+
+
 def verify_plan_inputs(plan, *, source_root=None):
     source_root = ROOT if source_root is None else Path(source_root)
     if digest(plan["checkpoint"]) != plan["checkpoint_sha256"]:
@@ -349,6 +650,27 @@ def prepare_worker(output):
     output = Path(output)
     plan = json.loads((output / "plan.json").read_text())
     verify_plan_inputs(plan)
+    if plan.get("goal_kind") == "state":
+        store, model = checkpoint_model(plan["dataset"], plan["checkpoint"], backend=STATE_BACKEND)
+        arrays, calibration = build_state_goal_library(
+            model,
+            nominal_calibration_episodes(store),
+            stride=plan["waypoint_stride"],
+            dwell=plan["waypoint_dwell"],
+            training_episode_ids=store.manifest["splits"]["train"],
+        )
+        np.savez_compressed(output / "state_goals.npz", **arrays)
+        write(output / "state_calibration.json", calibration)
+        write(
+            output / "resolved_plan.json",
+            plan
+            | {
+                "state_goals_sha256": digest(output / "state_goals.npz"),
+                "state_calibration_sha256": digest(output / "state_calibration.json"),
+                "candidate_demonstration_ids": calibration["calibration_training_episode_ids"],
+            },
+        )
+        return
     store, model = checkpoint_model(plan["dataset"], plan["checkpoint"])
     demo = select_demonstration(store)
     waypoints, calibration = calibrate_waypoints(
@@ -426,10 +748,10 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stream.write(json.dumps(row, allow_nan=False) + "\n")
             stream.flush()
 
+    state_kind = plan.get("goal_kind") == "state"
+    progress = {}
     try:
         verify_plan_inputs(plan)
-        store, model = checkpoint_model(plan["dataset"], plan["checkpoint"])
-        waypoints = load_waypoints(output, plan)
         config = WaypointConfig(
             **(
                 plan["controller"]
@@ -439,9 +761,18 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                 }
             )
         )
-        controller = WaypointController(
-            model, waypoints, progress_distance=model.observed_distance, config=config
-        )
+        if state_kind:
+            store, model = checkpoint_model(
+                plan["dataset"], plan["checkpoint"], backend=STATE_BACKEND
+            )
+            library = load_state_library(output, plan)
+            controller = None  # Built after initial-RGB retrieval at reset.
+        else:
+            store, model = checkpoint_model(plan["dataset"], plan["checkpoint"])
+            waypoints = load_waypoints(output, plan)
+            controller = WaypointController(
+                model, waypoints, progress_distance=model.observed_distance, config=config
+            )
         stage = "construct"
         robot = G1Embodiment(
             MuJoCoSimulation(object_kind="apple", container_kind="plate", width=96, height=96)
@@ -455,6 +786,23 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
         stage = "reset"
         robot.reset(**trial["reset"])
         scorer = AppleToPlateTask(robot)
+        replay = None
+        if state_kind:
+            stage = "retrieve"
+            demo, retrieval = retrieve_demonstration(model, robot.observe().images, library)
+            progress.update(
+                demonstration_episode_id=demo["episode_id"], goal_count=len(demo["goals"])
+            )
+            write(folder / "retrieval.json", retrieval | {"goal_frames": demo["goal_frames"]})
+            if trial["mode"] == "demo_replay":
+                replay = library["arrays"][f"actions_{demo['index']}"]
+            else:
+                controller = WaypointController(
+                    model,
+                    state_waypoints(library, demo),
+                    progress_distance=model.observed_distance,
+                    config=config,
+                )
         rng = np.random.default_rng(trial["seed"])
         last_grasps = np.array(config.initial_grasps, np.float32)
         for step in range(config.max_steps):
@@ -468,10 +816,40 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stage = "plan"
             if trial["mode"] in MODES[:3]:
                 decision = controller.step(observation, robot.project_candidates)
+                if state_kind:
+                    progress["last_goal_index"] = decision.trace.get(
+                        "goal_index", progress.get("last_goal_index")
+                    )
                 if decision.action is None:
                     reason = decision.termination_reason
+                    if state_kind:
+                        record(decision.trace | {"event": "controller_termination"})
                     break
                 command, current = decision.action, decision.trace.copy()
+                if state_kind:
+                    current["visual_diagnostic"] = model.pop_diagnostics()
+            elif trial["mode"] == "demo_replay":
+                # NON-LEARNED reference: recorded TRAIN actions, open loop, no model call.
+                if step >= len(replay):
+                    reason = "demo_exhausted"
+                    break
+                requested = np.clip(replay[step], config.lower_bounds, config.upper_bounds).astype(
+                    np.float32
+                )
+                projected = robot.project_candidates(requested[None, None, None])
+                if not projected.feasible[0, 0]:
+                    raise ContractError("demo replay command has no feasible projection")
+                command = projected.actions[0, 0, 0]
+                current = {
+                    "step": step,
+                    "control": "demo_replay_non_learned",
+                    "replay_frame": step,
+                    "recorded_action": replay[step].tolist(),
+                    "sampled_action": requested.tolist(),
+                    "projected_action": command.tolist(),
+                    "observation_timestamp": float(observation.timestamps[0]),
+                    "goal_index": None,
+                }
             else:
                 requested = np.zeros(14, np.float32)
                 requested[12:] = last_grasps
@@ -510,7 +888,10 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stage = "execute"
             result = robot.execute(command)
             if trial["mode"] in MODES[:3]:
+                diagnostic = current.get("visual_diagnostic")
                 current = controller.acknowledge(result)
+                if state_kind:
+                    current["visual_diagnostic"] = diagnostic  # weight 0, logged only
             else:
                 current.update(
                     status=result.status,
@@ -551,18 +932,24 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
         if robot is not None:
             robot.stop(reason)
             robot.close()
-    report = trial | {
-        "status": "attempt_timeout" if reason == "attempt_timeout" else "completed",
-        "attempt_allocated_seconds": attempt_seconds,
-        "termination_reason": reason,
-        "error": failure,
-        "executed_steps": steps,
-        "score": score,
-        "success": bool(score["success"]),
-        "wall_seconds": max(0.0, time.time() - start, time.monotonic() - start_mono)
-        if attempt_seconds is None
-        else max(0.0, time.time() - ENTRY_CLOCK[0], time.monotonic() - ENTRY_CLOCK[1]),
-    }
+    if state_kind:
+        progress["ordered_stage_count"] = ordered_stage_count(score)
+    report = (
+        trial
+        | progress
+        | {
+            "status": "attempt_timeout" if reason == "attempt_timeout" else "completed",
+            "attempt_allocated_seconds": attempt_seconds,
+            "termination_reason": reason,
+            "error": failure,
+            "executed_steps": steps,
+            "score": score,
+            "success": bool(score["success"]),
+            "wall_seconds": max(0.0, time.time() - start, time.monotonic() - start_mono)
+            if attempt_seconds is None
+            else max(0.0, time.time() - ENTRY_CLOCK[0], time.monotonic() - ENTRY_CLOCK[1]),
+        }
+    )
     write(folder / "report.json", report)
 
 
@@ -627,10 +1014,15 @@ def clean_completion(records):
 def verify_generated(output, resolved, expected_digest):
     if digest(output / "resolved_plan.json") != expected_digest:
         raise ContractError("resolved evaluation plan changed")
-    for name, key in (
-        ("waypoints.npz", "waypoints_sha256"),
-        ("calibration.json", "calibration_sha256"),
-    ):
+    names = (
+        (
+            ("state_goals.npz", "state_goals_sha256"),
+            ("state_calibration.json", "state_calibration_sha256"),
+        )
+        if resolved.get("goal_kind") == "state"
+        else (("waypoints.npz", "waypoints_sha256"), ("calibration.json", "calibration_sha256"))
+    )
+    for name, key in names:
         if digest(output / name) != resolved[key]:
             raise ContractError("frozen waypoint calibration changed")
 
@@ -655,6 +1047,8 @@ def run(args, *, start_clock=None):
         control_timeout=args.control_timeout,
         commitment_steps=getattr(args, "commitment_steps", 1),
         attempt_max_seconds=getattr(args, "attempt_max_seconds", None),
+        goal_kind=getattr(args, "goal_kind", "image"),
+        goal_stall_limit=getattr(args, "goal_stall_limit", None),
     )
     if args.stage == "final" and args.selection is None:
         raise ValueError("final cohort requires an explicit frozen development-selection JSON")
@@ -825,7 +1219,12 @@ def run(args, *, start_clock=None):
                 "successes": 0 if invalid else sum(r["success"] for r in records),
                 "denominator": len(plan["attempts"]),
                 "wall_seconds": max(time.time() - start_wall, time.monotonic() - start_mono),
-            },
+            }
+            | (
+                {"state_gate": state_gate(records, plan["seeds"])}
+                if plan.get("goal_kind") == "state"
+                else {}
+            ),
         )
     return records
 
@@ -838,7 +1237,7 @@ def main():
     parser.add_argument("--stage", choices=("development", "final"), default="development")
     parser.add_argument("--selection", type=Path)
     parser.add_argument("--seeds", type=int, nargs="+")
-    parser.add_argument("--modes", choices=MODES, nargs="+", default=list(MODES))
+    parser.add_argument("--modes", choices=MODES, nargs="+")
     parser.add_argument("--max-seconds", type=float, default=600)
     parser.add_argument("--max-steps", type=int, default=1000)
     parser.add_argument("--attempt-max-seconds", type=float)
@@ -850,6 +1249,8 @@ def main():
     parser.add_argument("--candidates", type=int, default=16)
     parser.add_argument("--iterations", type=int, default=2)
     parser.add_argument("--no-proposals", action="store_true")
+    parser.add_argument("--goal-kind", choices=("image", "state"), default="image")
+    parser.add_argument("--goal-stall-limit", type=int)
     parser.add_argument("--worker", choices=("prepare", "attempt"), help=argparse.SUPPRESS)
     parser.add_argument("--worker-output", help=argparse.SUPPRESS)
     parser.add_argument("--attempt-id", help=argparse.SUPPRESS)

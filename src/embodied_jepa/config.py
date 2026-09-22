@@ -20,7 +20,19 @@ MODELS.register("sensor_wm", "embodied_jepa.models.sensor:SensorWorldModel")
 MODELS.register(
     "aligned_sensor_wm_v1", "embodied_jepa.models.aligned_sensor:AlignedSensorWorldModel"
 )
+MODELS.register(
+    "state_goal_sensor_wm_v1",
+    "embodied_jepa.models.state_goal_sensor:StateGoalSensorWorldModel",
+)
 MODELS.register("jepa_wms", "embodied_jepa.models:JEPAWMs")
+BACKEND_KEYS = (
+    "native_jepa",
+    "leworldmodel",
+    "jepa_wms",
+    "sensor_wm",
+    "aligned_sensor_wm_v1",
+    "state_goal_sensor_wm_v1",
+)
 EMBODIMENTS.register("unitree_g1_dex3", "embodied_jepa.embodiment:G1Embodiment")
 PLANNERS.register("cem", "embodied_jepa.planning:CEMPlanner")
 TASKS.register("reach", "embodied_jepa.task:ReachTask")
@@ -163,7 +175,7 @@ class ExperimentConfig:
             raise ValueError("current observation interface requires history=1")
         checkpoints = _mapping(
             model.get("checkpoints", {}),
-            ("native_jepa", "leworldmodel", "jepa_wms", "sensor_wm", "aligned_sensor_wm_v1"),
+            BACKEND_KEYS,
             "checkpoints",
         )
         checkpoint = _path(
@@ -171,7 +183,7 @@ class ExperimentConfig:
         )
         settings = _mapping(
             model.get("settings", {}),
-            ("native_jepa", "leworldmodel", "jepa_wms", "sensor_wm", "aligned_sensor_wm_v1"),
+            BACKEND_KEYS,
             "model settings",
         )
         selected_settings = settings.get(backend, {})

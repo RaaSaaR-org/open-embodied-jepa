@@ -614,3 +614,293 @@ def test_cli_preserves_default_or_explicit_attempt_policy(monkeypatch, options, 
     )
     assert module.main() == 0
     assert seen[0].commitment_steps == commitment and seen[0].attempt_max_seconds == cap
+
+
+# TASK-043 demonstration-state-goal protocol fixtures (no physics, no trained model).
+
+STATE_SCHEMA = StateSchema(("a", "b", "v"), ("rad", "rad", "rad/s"), "state_goal_fixture_v0")
+
+
+def state_plan(**overrides):
+    options = dict(
+        seeds=[43000, 43001, 43002, 43003],
+        goal_kind="state",
+        stride=16,
+        horizon=16,
+        dwell=1,
+        proposals=False,
+        goal_stall_limit=64,
+        max_seconds=3600,
+        attempt_max_seconds=200,
+    )
+    return module.make_plan(**(options | overrides))
+
+
+def test_state_plan_is_reset_major_with_four_modes_and_frozen_rules():
+    plan = state_plan()
+    assert plan["modes"] == ["learned", "dynamics_shuffle", "persistence", "demo_replay"]
+    assert [a["attempt_id"] for a in plan["attempts"][:5]] == [
+        "43000-learned",
+        "43000-dynamics_shuffle",
+        "43000-persistence",
+        "43000-demo_replay",
+        "43001-learned",
+    ]
+    assert len(plan["attempts"]) == 16 and plan["goal_kind"] == "state"
+    assert plan["controller"]["goal_stall_limit"] == 64
+    assert plan["visual_diagnostic_weight"] == 0.0 and len(plan["state_goal_fields"]) == 14
+    assert plan["demonstration_proposals"] is False
+    for bad in (
+        dict(proposals=True),
+        dict(stride=28),
+        dict(goal_stall_limit=None),
+        dict(max_seconds=3601),
+        dict(modes=["learned", "hold"]),
+    ):
+        with pytest.raises(ValueError):
+            state_plan(**bad)
+    # The default image plan is unchanged: no stall key, no demo replay, 1800-second cap.
+    image = module.make_plan(seeds=[43000])
+    assert "goal_stall_limit" not in image["controller"] and "goal_kind" not in image
+    assert "demo_replay" not in image["modes"]
+    for bad in (dict(modes=["demo_replay"]), dict(goal_stall_limit=64), dict(max_seconds=3600)):
+        with pytest.raises(ValueError):
+            module.make_plan(seeds=[43000], **bad)
+
+
+class StateMetricModel:
+    """Fixture metric over the first two state fields; never a trained model."""
+
+    def select(self, states, schema):
+        return np.asarray(states, np.float32)[:, :2].copy()
+
+    def observed_distance(self, robot_state, goal):
+        return np.square(self.select(robot_state.values, None) - goal).mean(-1)
+
+    def image_distance(self, current, goal):
+        return np.square(current["onboard_rgb"].astype(np.float32) - goal["onboard_rgb"]).mean(
+            (1, 2, 3)
+        )
+
+
+def state_episode(name, *, offset=0.0, length=40, first_pixel=0):
+    t = np.arange(length, dtype=np.float32)
+    states = np.stack([t / 10 + offset, -t / 20, np.zeros_like(t)], 1)
+    frames = np.zeros((length, 2, 2, 3), np.uint8)
+    frames[0] = first_pixel
+    return SimpleNamespace(
+        episode_id=name,
+        robot_states=states,
+        state_mask=np.ones_like(states, bool),
+        timestamps=t.astype(np.float64) / 20,
+        state_schema=STATE_SCHEMA,
+        observations={"onboard_rgb": frames},
+        actions=np.full((length - 1, 14), 0.01, np.float32),
+        metadata={"variant": "nominal", "collection_success": True},
+    )
+
+
+def test_state_goal_library_is_train_only_with_existing_threshold_recipe():
+    model = StateMetricModel()
+    demos = [state_episode("train-b", offset=0.1), state_episode("train-a")]
+    arrays, calibration = module.build_state_goal_library(
+        model, demos, stride=16, dwell=1, training_episode_ids=["train-a", "train-b", "x"]
+    )
+    assert calibration["calibration_training_episode_ids"] == ["train-a", "train-b"]
+    record = calibration["demonstrations"][0]
+    assert record["episode_id"] == "train-a" and record["goal_frames"] == [16, 32, 39]
+    assert arrays["goals_0"].shape == (3, 2) and arrays["goal_images_0"].shape == (3, 2, 2, 3)
+    np.testing.assert_array_equal(arrays["goals_0"][0], demos[1].robot_states[16, :2])
+    goal = record["goals"][0]
+    adjacent = (0.1**2 + 0.05**2) / 2
+    neighborhood = 4 * adjacent  # frames t+-2 on a linear trajectory
+    cross = [0.0, 0.1**2 / 2]
+    expected = max(1.1 * neighborhood, adjacent, 1.1 * float(np.quantile(cross, 0.9)))
+    assert goal["threshold"] == pytest.approx(expected, rel=1e-5)
+    assert [c["episode_id"] for c in goal["cross_training_distances"]] == ["train-a", "train-b"]
+    assert goal["adjacent_goal_separability"][0]["frame"] == 0
+    assert goal["source_id"] == "train-a/frame-16" and goal["dwell"] == 1
+    with pytest.raises(ContractError, match="non-training"):
+        module.build_state_goal_library(
+            model,
+            demos + [state_episode("val-a")],
+            stride=16,
+            dwell=1,
+            training_episode_ids=["train-a", "train-b"],
+        )
+    with pytest.raises(ContractError):
+        module.build_state_goal_library(
+            model, [demos[0], demos[0]], stride=16, dwell=1, training_episode_ids=["train-b"]
+        )
+    broken = state_episode("train-a")
+    broken.actions = broken.actions[:-1]
+    with pytest.raises(ContractError, match="T actions"):
+        module.build_state_goal_library(
+            model, [broken], stride=16, dwell=1, training_episode_ids=["train-a"]
+        )
+
+
+def test_retrieval_uses_initial_rgb_only_with_lexical_ties_and_train_waypoints():
+    model = StateMetricModel()
+    demos = [
+        state_episode("train-c", first_pixel=50, offset=5.0),
+        state_episode("train-b", first_pixel=10),
+        state_episode("train-a", first_pixel=10, offset=1.0),
+    ]
+    arrays, calibration = module.build_state_goal_library(
+        model, demos, stride=16, dwell=1, training_episode_ids=[d.episode_id for d in demos]
+    )
+    library = calibration | {"arrays": arrays}
+    image = {"onboard_rgb": np.full((1, 2, 2, 3), 12, np.uint8)}
+    record, retrieval = module.retrieve_demonstration(model, image, library)
+    assert record["episode_id"] == "train-a"  # tie with train-b resolves lexically
+    assert retrieval["distances"]["train-a"] == retrieval["distances"]["train-b"] == 4.0
+    far = {"onboard_rgb": np.full((1, 2, 2, 3), 49, np.uint8)}
+    assert module.retrieve_demonstration(model, far, library)[0]["episode_id"] == "train-c"
+    waypoints = module.state_waypoints(library, record)
+    assert [w.source_id for w in waypoints] == [
+        "train-a/frame-16",
+        "train-a/frame-32",
+        "train-a/frame-39",
+    ]
+    assert all(w.source_split == "train" and w.images is not None for w in waypoints)
+
+
+def test_state_gate_counts_missing_and_failed_attempts_as_zero():
+    seeds = [43000, 43001, 43002, 43003]
+    full = dict.fromkeys(module.STAGES, True) | {"success": True}
+    grasp = dict(reach=True, grasp=True, transport=False, place=False, release=False)
+    records = [
+        dict(seed=43000, mode="learned", score=grasp, success=False),
+        dict(seed=43001, mode="learned", score=full, success=True),
+        dict(seed=43000, mode="dynamics_shuffle", score=dict(reach=True), success=False),
+        dict(seed=43000, mode="persistence", score={}, success=False),
+        dict(seed=43000, mode="demo_replay", score=full, success=True),
+    ]
+    gate = module.state_gate(records, seeds)
+    assert gate["learned_grasp_resets"] == 2 and gate["primary_gate_passed"]
+    assert gate["summed_ordered_stages"] == dict(
+        learned=7, dynamics_shuffle=1, persistence=0, demo_replay=5
+    )
+    assert gate["learned_full_successes"] == 1
+    records[1]["score"] = dict(reach=True, grasp=False, transport=True)
+    gate = module.state_gate(records, seeds)
+    assert not gate["primary_gate_passed"] and gate["learned_grasp_resets"] == 1
+    assert module.ordered_stage_count(dict(reach=True, grasp=False, transport=True)) == 1
+    tied = [dict(seed=s, mode=m, score=grasp) for s in seeds[:2] for m in module.STATE_MODES]
+    assert not module.state_gate(tied, seeds)["primary_gate_passed"]
+
+
+def state_worker_fixture(tmp_path, monkeypatch, controller_decisions):
+    from embodied_jepa import embodiment, simulation, task
+    from embodied_jepa.constraints import CandidateProjection
+    from embodied_jepa.contracts import ExecutionResult
+
+    calls, predictions = [], []
+    store = SimpleNamespace(state_schema=STATE_SCHEMA, manifest={"action_manifest": {"f": 1}})
+    model = StateMetricModel()
+    model.predict = lambda *a: predictions.append(a)
+    model.pop_diagnostics = lambda: [{"visual_weight": 0.0, "visual_endpoint_costs": [1.0]}]
+    demos = [state_episode("train-a")]
+    arrays, calibration = module.build_state_goal_library(
+        model, demos, stride=16, dwell=1, training_episode_ids=["train-a"]
+    )
+    monkeypatch.setattr(module, "verify_plan_inputs", lambda *_: None)
+    monkeypatch.setattr(module, "checkpoint_model", lambda *a, **kw: (store, model))
+    monkeypatch.setattr(module, "load_state_library", lambda *a: calibration | {"arrays": arrays})
+
+    class Controller:
+        def __init__(self, model, waypoints, **kwargs):
+            assert all(w.source_split == "train" for w in waypoints)
+            self.decisions = list(controller_decisions)
+
+        def step(self, observation, projector):
+            return self.decisions.pop(0)
+
+        def acknowledge(self, result):
+            return {"goal_index": 0}
+
+    class Robot:
+        state_schema = STATE_SCHEMA
+        manifest = {"f": 1}
+        clock = 0.0
+
+        def __init__(self, *_):
+            pass
+
+        def reset(self, **kwargs):
+            pass
+
+        def observe(self):
+            Robot.clock += 0.05
+            return SimpleNamespace(
+                images={"onboard_rgb": np.zeros((1, 2, 2, 3), np.uint8)},
+                timestamps=np.array([Robot.clock]),
+            )
+
+        def project_candidates(self, requested):
+            return CandidateProjection(requested, np.ones(requested.shape[:2], bool))
+
+        def execute(self, command):
+            calls.append(np.asarray(command).copy())
+            return ExecutionResult(command, command, "applied", Robot.clock + 0.01)
+
+        def stop(self, reason):
+            calls.append(reason)
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(module, "WaypointController", Controller)
+    monkeypatch.setattr(simulation, "MuJoCoSimulation", lambda **kw: None)
+    monkeypatch.setattr(embodiment, "G1Embodiment", Robot)
+    monkeypatch.setattr(
+        task,
+        "AppleToPlateTask",
+        lambda robot: SimpleNamespace(evaluate=lambda: dict(reach=True, success=False)),
+    )
+    plan = state_plan(seeds=[43000], max_steps=1000)
+    plan.update(dataset="unused", checkpoint="unused")
+    module.write(tmp_path / "resolved_plan.json", plan)
+    return calls, predictions
+
+
+def test_state_worker_records_goal_stall_as_failure(tmp_path, monkeypatch):
+    stall = SimpleNamespace(
+        action=None,
+        trace={"goal_index": 3, "goal_commands": 64, "goal_stall_limit": 64},
+        termination_reason="goal_stall",
+    )
+    go = SimpleNamespace(action=np.zeros(14, np.float32), trace={"goal_index": 3})
+    calls, _ = state_worker_fixture(tmp_path, monkeypatch, [go, stall])
+    module.attempt_worker(tmp_path, "43000-learned", attempt_seconds=200)
+    folder = tmp_path / "attempts/43000-learned"
+    report = json.loads((folder / "report.json").read_text())
+    rows = [json.loads(line) for line in (folder / "trace.jsonl").read_text().splitlines()]
+    assert report["termination_reason"] == "goal_stall" and report["success"] is False
+    assert report["last_goal_index"] == 3 and report["goal_count"] == 3
+    assert report["demonstration_episode_id"] == "train-a"
+    assert report["ordered_stage_count"] == 1 and report["executed_steps"] == 1
+    assert rows[0]["visual_diagnostic"][0]["visual_weight"] == 0.0
+    result = next(r for r in rows if r["event"] == "result")
+    assert result["visual_diagnostic"] == rows[0]["visual_diagnostic"]
+    assert rows[-1]["event"] == "controller_termination" and rows[-1]["goal_commands"] == 64
+    assert calls[-1] == "goal_stall"
+    retrieval = json.loads((folder / "retrieval.json").read_text())
+    assert retrieval["demonstration_episode_id"] == "train-a"
+
+
+def test_demo_replay_is_open_loop_non_learned_and_exhausts(tmp_path, monkeypatch):
+    calls, predictions = state_worker_fixture(tmp_path, monkeypatch, [])
+    module.attempt_worker(tmp_path, "43000-demo_replay", attempt_seconds=200)
+    folder = tmp_path / "attempts/43000-demo_replay"
+    report = json.loads((folder / "report.json").read_text())
+    rows = [json.loads(line) for line in (folder / "trace.jsonl").read_text().splitlines()]
+    assert report["termination_reason"] == "demo_exhausted"
+    assert report["executed_steps"] == 39 and not predictions
+    assert all(r["control"] == "demo_replay_non_learned" for r in rows if "control" in r)
+    assert rows[-1]["replay_frame"] == 38
+    # Recorded actions are clipped to the same bounds as MPC candidates (left pose fixed 0).
+    np.testing.assert_allclose(calls[0][:6], 0.0)
+    np.testing.assert_allclose(calls[0][6:12], 0.01, rtol=1e-6)
+    assert calls[0][12] == -1.0
