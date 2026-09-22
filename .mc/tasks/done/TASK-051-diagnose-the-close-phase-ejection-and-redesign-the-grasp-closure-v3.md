@@ -4,7 +4,7 @@ aliases:
 - TASK-051
 title: Diagnose the close-phase ejection and redesign the grasp closure (ceiling v3)
 slug: diagnose-the-close-phase-ejection-and-redesign-the-grasp-closure-v3
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -18,7 +18,7 @@ depends_on:
 - "[[TASK-049]]"
 due_date: ''
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-23
 ---
 
 # Diagnose the close-phase ejection and redesign the grasp closure (ceiling v3)
@@ -45,6 +45,7 @@ Executed once from the clean tracked checkout `b673f3de50f04aa50281cf555112da05a
 - **Process failure recorded, not excused:** the run was launched from `b673f3d` while the pre-run reviewer was still verifying, because the author took the review file on disk for the verdict. The reviewer's final verdict was BLOCK on three prose corrections (B2/B3/B4); they were applied as R2 (`b2dc4d4`) before any gated outcome was inspected, derived entirely from TRAIN-side data, and confirmed cleared. R2's only `src/` change is the v3 module docstring (AST identical once docstrings are blanked), so the snapshot is byte-identical to `b673f3d` and differs from HEAD in exactly that file. The protocol now records that a gated run starts on the reviewer's reported verdict.
 - Post-run verification (fresh subagent) recomputed the gate from the 72 attempt reports with its own code, confirmed provenance, the frozen command, every cell of both tables, the leakage sweep and that nothing frozen changed after the run. It corrected two v2-related numbers (the gated-failure range to 2.70-19.10 cm and the tuning range to 2.45-9.12 cm, and noted six rather than four of v2's gated closes crossed the 1.5 cm threshold); both corrections strengthen the contrast.
 - Evidence: `docs/experiments/apple_wide_grasp_closure_results_v3.md`, `docs/experiments/apple_grasp_closure_diagnosis.md`, `benchmarks/manifests/apple-wide-grasp-closure-v3.json`, `docs/reviews/apple_wide_grasp_closure_v3_review.md`. NON-LEARNED; learned Apple->Plate remains at zero successes; TASK-033/034 stay open; narrow dev, final cohort 44000-44019 and TEST untouched.
+- Delivery: PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/23 (squash-merged as ba11756). Final independent review of the merged diff: MERGE, no blocking defect, 12 of 12 mutations caught by the new tests. Acceptance met with the primary gate passed; TASK-033/034 stay open.
 - Preregistered next step: **T4** - pair this cost/phase design with a learned world model whose heads predict its terms, trained on the wide-jitter TRAIN corpus (TASK-048), under its own preregistration; keep this ceiling as the exact-dynamics upper reference. The close phase needs no prediction at all.
 
 ## Phase 1 record (implementation and preregistration; no 45200/45100/45000-range attempt)
