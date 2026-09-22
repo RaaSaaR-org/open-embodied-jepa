@@ -517,9 +517,10 @@ class ObjectCeilingController:
             indices = np.flatnonzero(feasible)
             if not len(indices):
                 raise ContractError("no feasible object-ceiling candidate sequence")
-            rollout = self.rollouts.rollout(snapshot, projection.actions)
-            costs = self.candidate_costs(rollout, live)
-            costs[~feasible] = np.inf
+            # Only feasible candidates are rolled out (and can become parity matches).
+            rollout = self.rollouts.rollout(snapshot, projection.actions[:, indices])
+            costs = np.full(cfg.candidates, np.inf)
+            costs[indices] = self.candidate_costs(rollout, live)
             winner = int(indices[np.argmin(costs[indices])])  # ties: lowest index
             if best is None or costs[winner] < best["cost"]:
                 best = {

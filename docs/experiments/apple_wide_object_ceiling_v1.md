@@ -140,8 +140,9 @@ MuJoCo `qpos`/`qvel`, which includes the apple.
 
 ### Planner
 
-CEM over the 14-D normalised action. There are no demonstration proposals and
-no action seeding.
+A CEM-style search over the 14-D normalised action. It keeps a single elite:
+each round re-centres on the best sequence so far, as in the TASK-045 tracker.
+There are no demonstration proposals and no action seeding.
 
 - Horizon 6, 24 candidates, 2 rounds, proposal std 0.3 halving to a 0.05
   floor, commitment 1.
@@ -155,8 +156,9 @@ no action seeding.
 - **Candidate cost.** Each candidate is scored by the mean over the horizon of
   the per-step phase cost below. A rejected step costs 1,000 plus the cost of
   the last state that candidate reached (the TASK-044 convention).
-- **Selection.** Among feasible candidates, the lowest cost wins; ties go to the
-  lowest index. The RNG is seeded with the reset seed.
+- **Selection.** Only feasible candidates (after the live projection) are
+  rolled out. The lowest cost wins; ties go to the lowest index. The RNG is
+  seeded with the reset seed.
 
 ### Phase costs
 
@@ -211,9 +213,14 @@ outside the cohort; no 45000–45007 reset was simulated.
 - **Last probe versions:** 42000 and corner (+3, −3 | −2, +2) cm both reached
   full success in 387 and 338 commands (about 270 s and 230 s), with 0/387 and
   0/338 full-state parity mismatches.
-- **Earlier version:** all four corners plus 42000 reached grasp and transport,
-  then stalled in transport or lower.
-- **The scripted collector** succeeded on 42000 and on all four corners.
+- **Earlier version** (before the blocked transport/lower rule): 42000 and
+  three corners reached grasp and transport, then stalled in transport or
+  lower. The corners were (+3, +3 | −2, −2), (−3, −3 | +2, +2) and
+  (+3, −3 | −2, +2).
+- **Earliest versions:** these stalled in approach (the 90° plateau) or failed
+  with a cost-code bug before grasping.
+- **The scripted collector** succeeded on 42000 and on all four corners (the
+  three above plus (−3, +3 | +2, −2)).
 
 These are design runs, not evidence, and are not reported as results. Because
 of them, a ceiling pass shows adequacy on new draws from the distribution the
@@ -245,13 +252,14 @@ probes spanned, not on an independent held-out distribution.
   - **8,400 s global**, including preparation and finalization;
   - the existing `min(attempt cap, global remaining)` allocation;
   - CPU, with Torch capped at 4 threads.
-- **Worst case fits.** The worst case is 16 × about 15 s + 8 × 960 s ≈
-  7,920 s < 8,400 s, so no ceiling attempt can be shortened by the global cap
-  unless preparation exceeds about 480 s (TRAIN smoke: about 10 s).
-- **Expected time.** About 0.7 s per ceiling command, 350–450 commands per
-  attempt, so about 250–350 s per attempt and about 45 minutes in total.
-- **Declared risk.** A 1,000-command ceiling attempt takes about 750 s, below
-  the 960 s cap.
+- **Worst case fits.** With every ceiling attempt at its cap, the total is
+  16 × about 15 s + 8 × 960 s ≈ 7,920 s < 8,400 s. So no ceiling attempt can be
+  shortened by the global cap unless preparation exceeds about 480 s (TRAIN
+  smoke: about 10 s).
+- **Expected time.** About 0.7–0.8 s per ceiling command and 350–450 commands
+  per attempt: about 250–350 s per attempt and about 45 minutes in total.
+- **Declared risk.** A 1,000-command ceiling attempt takes about 700–800 s
+  (0.7–0.8 s per command), below the effective 955 s cap.
   - An attempt that times out, is not started or raises counts as 0 stages;
     stages it latched are reported as uncounted.
   - Any such attempt in the ceiling or `demo_replay` arm makes the reading
@@ -265,7 +273,10 @@ probes spanned, not on an independent held-out distribution.
 - AND `demo_replay` grasp resets ≤ `privileged_object` grasp resets − 3;
 - AND zero robot-state and zero full-state rollout parity mismatches occur in
   counted ceiling attempts;
-- AND all 8 `demo_replay` attempts are counted;
+- AND those checks are non-vacuous: each counted ceiling attempt made at least
+  (executed commands − 1) checks of each kind;
+- AND all 8 `privileged_object` and all 8 `demo_replay` attempts are counted
+  (R1);
 - AND provenance is valid.
 
 Which attempts count:
@@ -276,6 +287,11 @@ Which attempts count:
   `phase_stall`, `object_dropped`, `guard_refused`, `execution_rejected`,
   `demo_exhausted` and `policy_complete`.
 - **Missing or failed attempts** count as 0.
+- **Guard stops (R1).** In this object plan, `guard_refused` is a clean,
+  counted stop in every arm. It is recorded when the unchanged joint-velocity
+  guard refuses to project a command: a `demo_replay` or `scripted_oracle`
+  command, or ceiling candidates. Any other projection error stays an uncounted
+  `runtime_error`. Earlier plans are unchanged.
 
 `scripted_oracle` never changes the gate.
 
@@ -356,6 +372,46 @@ PYTHONPATH=src .venv/bin/python scripts/evaluate_apple.py \
 - Every outcome will be recorded in `apple_wide_object_ceiling_results_v1.md`
   and `benchmarks/manifests/apple-wide-object-ceiling-v1.json`. That includes
   failures, stalls and timeouts.
+
+## Pre-run review revision R1
+
+The fresh pre-run review is in `docs/reviews/apple_wide_object_ceiling_review.md`.
+It found two blocking issues, both fixed before any 45000-range attempt:
+
+1. **Unequal guard handling.** A velocity-guard refusal in `demo_replay` or
+   `scripted_oracle` was an uncounted `runtime_error`, so it made the whole run
+   inconclusive, while the same event in the ceiling was a counted stop. For
+   object plans the guard refusal is now a counted `guard_refused` in those
+   arms too, via `evaluate_apple.project_open_loop`. Other errors propagate,
+   and earlier plans still raise.
+2. **Gate and readings could disagree.** `primary_gate_passed` did not require
+   every ceiling attempt to be counted, while `conclusive` did. It now
+   requires it.
+
+The non-blocking recommendations were also applied:
+
+- Parity must be non-vacuous (see the gate).
+- Infeasible candidates are no longer rolled out.
+- Tests were added for guard handling, grasp bounds, the warm-start reset and
+  acknowledgement refusals.
+- The CEM wording, the time estimates and the design-disclosure corner list
+  were corrected.
+
+No reset, seed, threshold, budget, phase parameter or command changed.
+
+**Post-R1 TRAIN smoke.** The smoke was repeated into
+`outputs/task047-scratch/smoke-42000-b`:
+
+- The report was `completed`, in 285.3 s, with identical TRAIN artifact hashes.
+- All three arms succeeded. `privileged_object` took 388 commands, with
+  387/387 exact robot and full-state checks and `rollouts_exact` true.
+- Every executed ceiling command was identical to the pre-R1 smoke.
+
+**Statistical note (fixed now).** With n = 8 per arm, the 3-reset margin is a
+preregistered *decision rule*, not a significance test. For example, 8 vs 5
+grasps gives Fisher p ≈ 0.2. A `separated` outcome will be reported as "the
+decision rule was met", with the counts. It will not be reported as a measured
+significant separation.
 
 ## Known risks declared before outcomes
 

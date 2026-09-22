@@ -263,3 +263,103 @@ def test_object_rollout_first_step_matches_live_full_state_and_live_is_untouched
     assert checks == [True, True] and robot_checks == [True, True]
     with pytest.raises(ContractError, match="rollout"):
         model.predict(None, None)
+
+
+def test_grasp_is_scheduled_by_phase_bounds_and_phase_changes_reset_the_warm_start():
+    ctl, _ = controller()
+    for name in PHASES:
+        ctl._enter(name, live(ctl))
+        assert ctl.warm is None
+        lower, upper = ctl._bounds()
+        grasp = 1.0 if name in ("close", "lift", "transport", "lower") else -1.0
+        assert lower[13] == upper[13] == grasp and lower[12] == upper[12] == -1.0
+        assert (lower[:6] == 0).all() and (upper[:6] == 0).all()
+        assert (lower[6:12] == -0.5).all() and (upper[6:12] == 0.5).all()
+        ctl.warm = np.zeros((6, 14), np.float32)
+
+
+class StubRollouts:
+    """Returns the live features for every candidate step (no physics)."""
+
+    def __init__(self, robot):
+        self.robot = robot
+        self.calls = []
+
+    def encode(self, images, state):
+        return "snapshot"
+
+    def rollout(self, snapshot, actions):
+        from embodied_jepa.object_ceiling import features
+
+        self.calls.append(actions.shape)
+        row = features(self.robot)
+        _, k, h, _ = actions.shape
+        return ObjectRollout(
+            np.broadcast_to(row["palm"], (k, h, 3)).copy(),
+            np.zeros((k, h)),
+            np.broadcast_to(row["apple"], (k, h, 3)).copy(),
+            np.zeros((k, h), bool),
+            np.zeros((k, h), bool),
+            np.ones((k, h), bool),
+            None,
+        )
+
+
+class FakeObservation(Observation):
+    """Timestamp-only observation; the stub rollouts ignore images and state."""
+
+    state = None
+
+    def __init__(self, timestamp):
+        object.__setattr__(self, "timestamps", np.array([timestamp]))
+        object.__setattr__(self, "images", {})
+
+
+def fresh_observation(timestamp):
+    return FakeObservation(timestamp)
+
+
+def test_step_plans_only_feasible_candidates_and_acknowledges_exactly():
+    from embodied_jepa.constraints import CandidateProjection
+
+    ctl, robot = controller(horizon=2, candidates=4, iterations=1)
+    ctl.rollouts = StubRollouts(robot)
+
+    def projector(requested):
+        feasible = np.array([[True, False, True, True]])
+        return CandidateProjection(requested.copy(), feasible)
+
+    decision = ctl.step(fresh_observation(0.05), projector)
+    assert ctl.rollouts.calls == [(1, 3, 2, 14)]
+    assert decision.action is not None and decision.trace["selected_index"] != 1
+    with pytest.raises(ContractError, match="acknowledge the previous"):
+        ctl.step(fresh_observation(0.1), projector)
+    wrong = ExecutionResult(np.ones(14, np.float32), np.ones(14, np.float32), "applied", 0.1)
+    with pytest.raises(ContractError, match="does not match"):
+        ctl.acknowledge(wrong)
+    ok = ExecutionResult(decision.action, decision.action, "applied", 0.1)
+    trace = ctl.acknowledge(ok)
+    assert trace["status"] == "applied" and ctl.steps == 1 and ctl.phase.commands == 1
+    assert ctl.warm is not None and ctl.warm.shape == (2, 14)
+    with pytest.raises(ContractError, match="fresh increasing"):
+        ctl.step(fresh_observation(0.05), projector)
+
+
+def test_guard_refusal_is_a_clean_stop_and_other_projector_errors_propagate():
+    ctl, robot = controller()
+    ctl.rollouts = StubRollouts(robot)
+
+    def guard(requested):
+        raise ContractError("measured joint velocity limit exceeded")
+
+    decision = ctl.step(fresh_observation(0.05), guard)
+    assert decision.action is None and decision.termination_reason == "guard_refused"
+    assert decision.trace["guard_reason"] == "measured joint velocity limit exceeded"
+    ctl2, robot2 = controller()
+    ctl2.rollouts = StubRollouts(robot2)
+
+    def broken(requested):
+        raise ContractError("projection requires a current unconsumed observation")
+
+    with pytest.raises(ContractError, match="unconsumed"):
+        ctl2.step(fresh_observation(0.05), broken)

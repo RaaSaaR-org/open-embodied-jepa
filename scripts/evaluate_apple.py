@@ -552,7 +552,8 @@ def make_object_plan(
         "gate_rule": (
             "privileged_object grasp resets >= 6 of 8 AND demo_replay grasp resets <= "
             "privileged_object grasp resets - 3, with zero robot and full-state rollout parity "
-            "mismatches, all ceiling and replay attempts counted and valid provenance"
+            "mismatches over non-vacuous checks (>= executed commands - 1 per attempt), all "
+            "ceiling and replay attempts counted and valid provenance"
         ),
     }
 
@@ -1532,12 +1533,17 @@ def _object_arm(records, seeds, mode):
         result.update(
             rollout_parity_mismatches=robot,
             rollout_full_state_parity_mismatches=full,
+            # Non-vacuous: every executed command but possibly the last was checked.
             rollouts_exact=bool(
                 robot == 0
                 and full == 0
                 and all(
                     r["rollout_parity_mismatches"] is not None
                     and r["rollout_full_state_parity_mismatches"] is not None
+                    and min(
+                        r["rollout_parity_checks"] or 0, r["rollout_full_state_parity_checks"] or 0
+                    )
+                    >= max(0, (r["executed_steps"] or 0) - 1)
                     for r in counted_rows
                 )
             ),
@@ -1559,7 +1565,14 @@ def object_ceiling_gate(records, seeds):
     required = 6 if len(seeds) == 8 else int(np.ceil(0.75 * len(seeds)))
     margin = 3
     exact = ceiling["rollouts_exact"]
-    passed = provenance_valid and exact and replay["complete"] and c >= required and d <= c - margin
+    passed = (
+        provenance_valid
+        and exact
+        and ceiling["complete"]
+        and replay["complete"]
+        and c >= required
+        and d <= c - margin
+    )
     conclusive = provenance_valid and exact and ceiling["complete"] and replay["complete"]
     scripted_conclusive = provenance_valid and scripted["complete"]
     if not conclusive:
@@ -1636,10 +1649,10 @@ def object_ceiling_gate(records, seeds):
         "rule": (
             "privileged_object reaches the unchanged scorer's grasp stage (reach, >=5 cm lift, "
             "hand contact) on >=6 of 8 resets AND demo_replay grasp resets <= privileged_object "
-            "grasp resets - 3; zero robot and full-state rollout parity mismatches in counted "
-            "ceiling attempts; only cleanly completed provenance-valid attempts are scored; "
-            "conclusive only with every ceiling and demo_replay attempt counted; scripted_oracle "
-            "never affects the gate; non-learned only"
+            "grasp resets - 3; every ceiling and demo_replay attempt counted; zero robot and "
+            "full-state rollout parity mismatches over >= executed commands - 1 checks per "
+            "counted ceiling attempt; only cleanly completed provenance-valid attempts are "
+            "scored; scripted_oracle never affects the gate; non-learned only"
         ),
     }
 
@@ -1769,6 +1782,21 @@ def load_waypoints(output, plan):
             )
             for i, row in enumerate(calibration["waypoints"])
         ]
+
+
+def project_open_loop(robot, requested, *, guarded):
+    """Project one open-loop command. In TASK-047 object plans (``guarded``) the unchanged
+    joint-velocity guard's refusal is a clean, counted stop (returns None), exactly as
+    the object-aware ceiling treats it; every other error, and every refusal in the
+    earlier plans, still propagates as a runtime error."""
+    from embodied_jepa.object_ceiling import GUARD_REFUSALS
+
+    try:
+        return robot.project_candidates(requested[None, None, None])
+    except ContractError as error:
+        if guarded and str(error) in GUARD_REFUSALS:
+            return None
+        raise
 
 
 def attempt_worker(output, attempt_id, *, attempt_seconds=None):
@@ -2013,7 +2041,11 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                 requested = np.clip(replay[step], config.lower_bounds, config.upper_bounds).astype(
                     np.float32
                 )
-                projected = robot.project_candidates(requested[None, None, None])
+                projected = project_open_loop(robot, requested, guarded=object_kind)
+                if projected is None:
+                    reason = "guard_refused"
+                    record({"event": "guard_refused", "step": step, "executed": False})
+                    break
                 if not projected.feasible[0, 0]:
                     raise ContractError("demo replay command has no feasible projection")
                 command = projected.actions[0, 0, 0]
@@ -2037,7 +2069,11 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                 requested = np.clip(proposed, config.lower_bounds, config.upper_bounds).astype(
                     np.float32
                 )
-                projected = robot.project_candidates(requested[None, None, None])
+                projected = project_open_loop(robot, requested, guarded=True)
+                if projected is None:
+                    reason = "guard_refused"
+                    record({"event": "guard_refused", "step": step, "executed": False})
+                    break
                 if not projected.feasible[0, 0]:
                     raise ContractError("scripted command has no feasible projection")
                 command = projected.actions[0, 0, 0]

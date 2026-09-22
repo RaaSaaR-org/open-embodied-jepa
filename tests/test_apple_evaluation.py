@@ -1831,3 +1831,41 @@ def test_object_modes_refuse_an_undeclared_plan(tmp_path, monkeypatch):
     report = json.loads((tmp_path / "attempts/43000-scripted_oracle/report.json").read_text())
     assert report["termination_reason"] == "runtime_error"
     assert "declared object plan" in report["error"]
+
+
+def test_object_gate_requires_every_ceiling_attempt_and_non_vacuous_parity():
+    seeds = list(range(45000, 45008))
+    records = arms(7, 0)
+    records[0]["termination_reason"] = "runtime_error"  # 45000 ceiling: 6 counted grasps
+    gate = module.object_ceiling_gate(records, seeds)
+    assert gate["privileged_object_grasp_resets"] == 6
+    assert not gate["primary_gate_passed"] and gate["readings"]["outcome"] == "inconclusive"
+    vacuous = arms(8, 0)
+    vacuous[0].update(executed_steps=10, rollout_parity_checks=0)
+    gate = module.object_ceiling_gate(vacuous, seeds)
+    assert not gate["rollouts_exact"] and not gate["primary_gate_passed"]
+    enough = arms(8, 0)
+    enough[0].update(executed_steps=11)  # 10 checks >= 11 - 1
+    assert module.object_ceiling_gate(enough, seeds)["primary_gate_passed"]
+
+
+def test_open_loop_guard_refusal_is_clean_only_for_object_plans():
+    from embodied_jepa.constraints import CandidateProjection
+
+    class Robot:
+        def __init__(self, message=None):
+            self.message = message
+
+        def project_candidates(self, requested):
+            if self.message:
+                raise ContractError(self.message)
+            return CandidateProjection(requested, np.ones(requested.shape[:2], bool))
+
+    command = np.zeros(14, np.float32)
+    guard = "measured joint velocity limit exceeded"
+    assert module.project_open_loop(Robot(guard), command, guarded=True) is None
+    with pytest.raises(ContractError, match="velocity"):
+        module.project_open_loop(Robot(guard), command, guarded=False)
+    with pytest.raises(ContractError, match="unconsumed"):
+        module.project_open_loop(Robot("unconsumed"), command, guarded=True)
+    assert module.project_open_loop(Robot(), command, guarded=True).actions.shape == (1, 1, 1, 14)

@@ -188,7 +188,7 @@
   "release",
   "retreat"
  ],
- "gate_rule": "privileged_object grasp resets >= 6 of 8 AND demo_replay grasp resets <= privileged_object grasp resets - 3, with zero robot and full-state rollout parity mismatches, all ceiling and replay attempts counted and valid provenance",
+ "gate_rule": "privileged_object grasp resets >= 6 of 8 AND demo_replay grasp resets <= privileged_object grasp resets - 3, with zero robot and full-state rollout parity mismatches over non-vacuous checks (>= executed commands - 1 per attempt), all ceiling and replay attempts counted and valid provenance",
  "readings": [
   "separated",
   "ceiling_adequate_replay_not_separated",
@@ -202,5 +202,7 @@
   "final 44000-44019",
   "TEST",
   "TASK-034 acceptance criteria"
- ]
+ ],
+ "review": "docs/reviews/apple_wide_object_ceiling_review.md",
+ "pre_run_revision": "R1: guard refusals counted in all object-plan arms; gate requires every ceiling attempt counted; non-vacuous parity; feasible-only rollouts"
 }
