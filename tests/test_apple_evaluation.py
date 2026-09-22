@@ -1043,7 +1043,17 @@ def test_ceiling_gate_counts_only_clean_attempts_and_computes_readings():
     grasp = dict(reach=True, grasp=True, transport=False, place=False, release=False)
 
     def ceiling(seed, score, **extra):
-        return dict(seed=seed, mode="privileged_rollout", score=score, status="completed", **extra)
+        return (
+            dict(
+                seed=seed,
+                mode="privileged_rollout",
+                score=score,
+                status="completed",
+                rollout_parity_checks=10,
+                rollout_parity_mismatches=0,
+            )
+            | extra
+        )
 
     records = [ceiling(43000, grasp), ceiling(43001, grasp, termination_reason="goal_stall")]
     gate = module.ceiling_gate(records, seeds)
@@ -1063,6 +1073,17 @@ def test_ceiling_gate_counts_only_clean_attempts_and_computes_readings():
         assert failed["per_reset"]["43001"]["reported_ordered_stages_uncounted"] == 2
     invalid = module.ceiling_gate([records[0], records[1] | {"provenance_valid": False}], seeds)
     assert not invalid["provenance_valid"] and not invalid["primary_gate_passed"]
+    inexact = module.ceiling_gate(
+        [records[0], records[1] | {"rollout_parity_mismatches": 1}], seeds
+    )
+    assert not inexact["rollouts_exact"] and not inexact["primary_gate_passed"]
+    assert "inconclusive" in inexact["readings"]["interpretation"]
+    # Missing or failed attempts never trigger a design reading.
+    failures = [ceiling(s, {}, termination_reason="runtime_error") for s in seeds]
+    readings = module.ceiling_gate(failures, seeds)["readings"]
+    assert readings["stalled_before_close_goal_resets"] == 0 and not readings["conclusive"]
+    assert not readings["state_goal_tracking_inadequate"]
+    assert "inconclusive" in readings["interpretation"]
     early = [
         ceiling(
             s, {}, termination_reason="goal_stall", last_goal_index=2, first_close_goal_index=13
@@ -1074,9 +1095,13 @@ def test_ceiling_gate_counts_only_clean_attempts_and_computes_readings():
     assert readings["state_goal_tracking_inadequate"]
     assert not readings["arm_pose_goals_insufficient_for_grasp"]
     assert "planner/goal design must change" in readings["interpretation"]
+    on_close = [r | {"last_goal_index": 13} for r in early]
+    readings = module.ceiling_gate(on_close, seeds)["readings"]
+    assert readings["advanced_past_close_goal_without_grasp_resets"] == 0
+    assert readings["stalled_before_close_goal_resets"] == 0
     late = [r | {"last_goal_index": 15} for r in early]
     readings = module.ceiling_gate(late, seeds)["readings"]
-    assert readings["passed_close_goal_without_grasp_resets"] == 4
+    assert readings["advanced_past_close_goal_without_grasp_resets"] == 4
     assert readings["arm_pose_goals_insufficient_for_grasp"]
     assert not readings["state_goal_tracking_inadequate"]
 
@@ -1096,7 +1121,13 @@ def test_privileged_worker_uses_acknowledged_ceiling_and_logs_rollout_diagnostic
             self.closed = False
 
         def pop_diagnostics(self):
-            return [{"planning_dynamics": "privileged_mujoco_rollout_v1", "candidates": 16}]
+            return [
+                {
+                    "planning_dynamics": "privileged_mujoco_rollout_v1",
+                    "candidates": 16,
+                    "previous_search_first_step_exact_match": True,
+                }
+            ]
 
         def close(self):
             built.append("closed")
@@ -1115,6 +1146,7 @@ def test_privileged_worker_uses_acknowledged_ceiling_and_logs_rollout_diagnostic
     rows = [json.loads(line) for line in (folder / "trace.jsonl").read_text().splitlines()]
     assert report["termination_reason"] == "goal_stall" and report["last_goal_index"] == 2
     assert report["executed_steps"] == 1 and built[-1] == "closed" and len(built) == 2
+    assert report["rollout_parity_checks"] == 1 and report["rollout_parity_mismatches"] == 0
     result = next(r for r in rows if r["event"] == "result")
     assert result["privileged_rollout_diagnostic"][0]["candidates"] == 16
     assert all("visual_diagnostic" not in r for r in rows)

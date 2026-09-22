@@ -746,43 +746,61 @@ def ceiling_gate(records, seeds):
             "grasp": bool(score.get("grasp")),
             "success": bool(score.get("success")),
             "reported_ordered_stages_uncounted": ordered_stage_count(record.get("score")),
-            "stalled_before_close_goal": not score.get("grasp")
+            "rollout_parity_checks": record.get("rollout_parity_checks"),
+            "rollout_parity_mismatches": record.get("rollout_parity_mismatches"),
+            # Readings use counted attempts only; last_goal_index is the goal being pursued.
+            "stalled_before_close_goal": counted
+            and not score.get("grasp")
             and (close is None or reached is None or reached < close),
-            "passed_close_goal_without_grasp": not score.get("grasp")
+            "advanced_past_close_goal_without_grasp": counted
+            and not score.get("grasp")
             and close is not None
             and reached is not None
-            and reached >= close,
+            and reached > close,
         }
     rows = list(per_reset.values())
     grasps = sum(r["grasp"] for r in rows)
+    counted_attempts = sum(r["counted"] for r in rows)
     provenance_valid = all(r.get("provenance_valid", True) for r in records)
-    passed = provenance_valid and grasps >= 2
+    mismatches = sum(r["rollout_parity_mismatches"] or 0 for r in rows if r["counted"])
+    exact = mismatches == 0 and all(
+        r["rollout_parity_mismatches"] is not None for r in rows if r["counted"]
+    )
+    passed = provenance_valid and exact and grasps >= 2
+    conclusive = provenance_valid and exact and counted_attempts == len(seeds)
     stalled = sum(r["stalled_before_close_goal"] for r in rows)
-    past_close = sum(r["passed_close_goal_without_grasp"] for r in rows)
+    past_close = sum(r["advanced_past_close_goal_without_grasp"] for r in rows)
     return {
         "label": "NON-LEARNED privileged MuJoCo-rollout planning ceiling; not a learned result",
         "privileged_grasp_resets": grasps,
         "summed_ordered_stages": sum(r["ordered_stages"] for r in rows),
         "full_successes": sum(r["success"] for r in rows),
-        "counted_attempts": sum(r["counted"] for r in rows),
+        "counted_attempts": counted_attempts,
         "provenance_valid": provenance_valid,
+        "rollout_parity_mismatches": mismatches,
+        "rollouts_exact": bool(exact),
         "primary_gate_passed": bool(passed),
         "readings": {
+            "conclusive": bool(passed or conclusive),
             "stalled_before_close_goal_resets": stalled,
-            "state_goal_tracking_inadequate": not passed and stalled >= 3,
-            "passed_close_goal_without_grasp_resets": past_close,
-            "arm_pose_goals_insufficient_for_grasp": not passed and past_close >= 3,
+            "state_goal_tracking_inadequate": conclusive and not passed and stalled >= 3,
+            "advanced_past_close_goal_without_grasp_resets": past_close,
+            "arm_pose_goals_insufficient_for_grasp": conclusive and not passed and past_close >= 3,
             "interpretation": (
                 "goal/planner design adequate under perfect dynamics; learned dynamics are "
                 "the bottleneck"
                 if passed
                 else "planner/goal design must change before further model training"
+                if conclusive
+                else "inconclusive: missing/failed attempts, invalid provenance or inexact rollouts"
             ),
         },
         "per_reset": per_reset,
         "rule": (
-            "privileged_rollout reaches the unchanged scorer's grasp stage on >=2 resets; only "
-            "cleanly completed provenance-valid attempts are scored; non-learned ceiling only"
+            "privileged_rollout reaches the unchanged scorer's grasp stage on >=2 resets with "
+            "zero rollout parity mismatches; only cleanly completed provenance-valid attempts "
+            "are scored; readings are conclusive only with all attempts counted; non-learned "
+            "ceiling only"
         ),
     }
 
@@ -985,6 +1003,7 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                 privileged = PrivilegedRolloutModel(
                     model, robot, acknowledge_privileged_ceiling=True
                 )
+                progress.update(rollout_parity_checks=0, rollout_parity_mismatches=0)
                 controller = WaypointController(
                     privileged,
                     state_waypoints(library, demo),
@@ -1023,6 +1042,15 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
                 command, current = decision.action, decision.trace.copy()
                 if privileged is not None:
                     current["privileged_rollout_diagnostic"] = privileged.pop_diagnostics()
+                    for row in current["privileged_rollout_diagnostic"]:
+                        match = row.get("previous_search_first_step_exact_match")
+                        if match is not None:
+                            progress["rollout_parity_checks"] = (
+                                progress.get("rollout_parity_checks", 0) + 1
+                            )
+                            progress["rollout_parity_mismatches"] = progress.get(
+                                "rollout_parity_mismatches", 0
+                            ) + int(not match)
                 elif state_kind:
                     current["visual_diagnostic"] = model.pop_diagnostics()
             elif trial["mode"] == "demo_replay":

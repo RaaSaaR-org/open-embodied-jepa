@@ -63,8 +63,11 @@ model.
      substeps, action manifest and state schema.
   3. The candidate's 16 projected actions are executed step by step through the
      twin's own mandatory `project_candidates` and the unchanged
-     `G1Embodiment.execute`, with no rendering. This is exactly what the live
-     loop does with each command.
+     `G1Embodiment.execute`, with no rendering. Each rollout step is
+     re-projected against the twin's current state, as the live loop projects
+     each command against the measured state. The live loop, however, replans
+     with a fresh search after every command, so a rollout is an exact forward
+     model of the sequence, not of the closed loop.
   4. The cost is the frozen state-goal model's own `observed_distance` from the
      reached state to the goal, at the H16 endpoint. This is the same
      TRAIN-normalized 14-field metric that measures waypoint progress.
@@ -77,7 +80,8 @@ model.
 - **Runtime conformance.** At every search, the evaluator checks that the
   measured state equals one of the previous search's simulated first steps
   exactly (`previous_search_first_step_exact_match`). This is logged per
-  command.
+  command and counted per attempt (`rollout_parity_checks`,
+  `rollout_parity_mismatches`).
 - **Diagnostics** logged per command: rejected candidates and their reasons,
   steps changed by per-step re-projection, and rollout seconds.
 
@@ -145,9 +149,16 @@ Missing, failed or killed attempts count as 0 stages. Any provenance failure
 fails the gate.
 
 - **Primary gate:** the ceiling reaches the scorer's **grasp** stage on
-  **≥ 2/4 resets**.
-- **Reported per reset:** retrieved demo, termination, commands, last goal
-  index, first close-goal index, ordered stages, grasp and success.
+  **≥ 2/4 resets**, AND zero rollout parity mismatches occur in the counted
+  attempts (`rollouts_exact`). A mismatch means the rollouts were not perfect
+  dynamics, so the run cannot pass as a ceiling.
+- **Reported per reset:** retrieved demo, termination, commands
+  (`executed_steps`), last goal index (the goal being pursued at termination),
+  first close-goal index, ordered stages, grasp, success and parity counts.
+- **Conclusiveness:** the fail readings below are computed only from counted
+  attempts. They are asserted only when all 4 attempts count, provenance is
+  valid and the rollouts are exact. Otherwise a failed gate is reported as
+  *inconclusive*, not as a design verdict.
 - **Interpretation:**
   - *Pass.* The goal/planner design is adequate under perfect dynamics, so the
     learned dynamics are the bottleneck. Recommended next step: retrain the
@@ -156,11 +167,14 @@ fails the gate.
     check.
   - *Fail.* The planner/goal design must change before more model training.
     Two sub-readings are computed:
-    - `state_goal_tracking_inadequate`: the gate failed and the ceiling stalled
-      before the close goal on ≥ 3/4 resets. Tolerances, the stall bound or the
+    - `state_goal_tracking_inadequate`: the gate failed (conclusively) and the
+      ceiling was still pursuing a goal before the close goal
+      (`last_goal_index < first_close_goal_index`) on ≥ 3/4 resets. Tolerances, the stall bound or the
       CEM budget cannot track the state goals even with exact dynamics.
-    - `arm_pose_goals_insufficient_for_grasp`: the gate failed, the ceiling
-      reached or passed the close goal, and it did not grasp on ≥ 3/4 resets.
+    - `arm_pose_goals_insufficient_for_grasp`: the gate failed (conclusively),
+      and the ceiling advanced past the close goal
+      (`last_goal_index > first_close_goal_index`) without a grasp on ≥ 3/4
+      resets.
       Arm+hand pose goals lack the object information needed to grasp.
 - The ceiling is **never** compared to learned results as if it were one. A pass
   is not evidence of learned manipulation.
@@ -188,6 +202,27 @@ rejected.
 This is a fidelity fix to the forward model, disclosed here. It is not a change
 to goals, tolerances, the planner or its budget. No scaffold parameter was
 changed because of either smoke. The smokes are runtime checks, not evidence.
+
+## Pre-run revision R1 (independent review, before any development attempt)
+
+A fresh reviewer read the implementation at `7a5ceb5` before any attempt on
+43000–43003 and found no blockers. It confirmed the following:
+
+- Learned modes, plan JSON and trace keys are unchanged.
+- Save and restore are bit-exact.
+- The cost is taken at the endpoint.
+- The 840 s × 4 allocation fits the global budget without shortening.
+
+Three recommended fixes were applied. None changes the controller, physics,
+budget, resets or the ≥ 2/4 grasp threshold:
+
+1. The sub-readings previously counted missing and failed attempts as
+   "stalled". They now use counted attempts only, and a failed gate with
+   uncounted attempts is reported as inconclusive.
+2. The close-goal reading was off by one. It now requires advancing *past* the
+   close goal (`>`), and the text above defines `last_goal_index`.
+3. Runtime parity was previously only logged. It is now counted per attempt,
+   and the primary gate requires zero mismatches.
 
 ## Frozen run command
 
