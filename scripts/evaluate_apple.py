@@ -83,6 +83,19 @@ OBJECT_WALL_LIMIT = 9000
 WIDE_V2_COHORT = tuple(range(45100, 45108))
 WIDE_V2_SECONDARY = WIDE_COHORT
 OBJECT_V2_WALL_LIMIT = 21600
+# TASK-051 object-aware ceiling v3 (grasp-closure redesign): FRESH wide-jitter development
+# resets 45200-45207 (same distribution and rule as TASK-047/049) are primary; the TASK-049
+# resets 45100-45107 and the TASK-047 resets 45000-45007 are re-run as secondary, non-gating
+# cohorts.
+WIDE_V3_COHORT = tuple(range(45200, 45208))
+WIDE_V3_SECONDARY = WIDE_V2_COHORT + WIDE_COHORT
+OBJECT_V3_WALL_LIMIT = 32400
+OBJECT_COHORTS = {
+    1: WIDE_COHORT,
+    2: WIDE_V2_COHORT + WIDE_V2_SECONDARY,
+    3: WIDE_V3_COHORT + WIDE_V3_SECONDARY,
+}
+OBJECT_WALL_LIMITS = {1: OBJECT_WALL_LIMIT, 2: OBJECT_V2_WALL_LIMIT, 3: OBJECT_V3_WALL_LIMIT}
 
 
 def validate_attempt_budget(seconds):
@@ -450,8 +463,9 @@ def make_object_plan(
     goal_stall_limit,
     ceiling_version=1,
 ):
-    """TASK-047 plan (v1) or TASK-049 plan (v2): NON-LEARNED arms on the wide-jitter
-    development resets only. The v1 plan is unchanged by the v2 option."""
+    """TASK-047 plan (v1), TASK-049 plan (v2) or TASK-051 plan (v3): NON-LEARNED arms on
+    the wide-jitter development resets only. Earlier plans are unchanged by a later
+    version option."""
     from embodied_jepa.object_ceiling import (
         OBJECT_CEILING_LABEL,
         PHASES,
@@ -460,11 +474,11 @@ def make_object_plan(
     )
     from embodied_jepa.privileged_rollout import REJECTED_ROLLOUT_COST
 
-    if ceiling_version not in (1, 2) or type(ceiling_version) is not int:
-        raise ValueError("object ceiling version must be 1 or 2")
+    if ceiling_version not in OBJECT_COHORTS or type(ceiling_version) is not int:
+        raise ValueError("object ceiling version must be 1, 2 or 3")
     if stage != "development":
         raise ValueError("the wide-jitter distribution is a development distribution only")
-    cohort = WIDE_COHORT if ceiling_version == 1 else WIDE_V2_COHORT + WIDE_V2_SECONDARY
+    cohort = OBJECT_COHORTS[ceiling_version]
     seeds = list(cohort if seeds is None else seeds)
     if (
         not seeds
@@ -481,7 +495,7 @@ def make_object_plan(
         raise ValueError("the object-aware ceiling replans after every command")
     if goal_stall_limit is not None:
         raise ValueError("goal stall limits belong to the state-goal protocols")
-    wall_limit = OBJECT_WALL_LIMIT if ceiling_version == 1 else OBJECT_V2_WALL_LIMIT
+    wall_limit = OBJECT_WALL_LIMITS[ceiling_version]
     if not np.isfinite(max_seconds) or not 0 < max_seconds <= wall_limit:
         raise ValueError(f"hard wall budget must lie in (0,{wall_limit}]seconds")
     validate_attempt_budget(attempt_max_seconds)
@@ -574,6 +588,8 @@ def make_object_plan(
     }
     if ceiling_version == 2:
         plan.update(object_ceiling_v2_fields(seeds, horizon, candidates, iterations, max_steps))
+    elif ceiling_version == 3:
+        plan.update(object_ceiling_v3_fields(seeds, horizon, candidates, iterations, max_steps))
     return plan
 
 
@@ -610,6 +626,45 @@ def object_ceiling_v2_fields(seeds, horizon, candidates, iterations, max_steps):
             "parity mismatches over non-vacuous checks (>= executed commands - 1 per "
             "attempt), all primary ceiling attempts counted and valid provenance; "
             "demo_replay, scripted_oracle and the secondary resets 45000-45007 never gate"
+        ),
+    }
+
+
+def object_ceiling_v3_fields(seeds, horizon, candidates, iterations, max_steps):
+    """TASK-051 plan fields: the v3 ceiling config, cohorts, labels and gate rule."""
+    from embodied_jepa.object_ceiling_v3 import OBJECT_CEILING_V3_LABEL, ObjectCeilingV3Config
+
+    ceiling = asdict(
+        ObjectCeilingV3Config(
+            horizon=horizon, candidates=candidates, iterations=iterations, max_steps=max_steps
+        )
+    )
+    del ceiling["seed"]  # Each attempt seeds its ceiling with its own reset seed.
+    return {
+        "object_ceiling_version": 3,
+        "object_ceiling": ceiling,
+        "primary_seeds": [s for s in seeds if s in WIDE_V3_COHORT],
+        "secondary_seeds": [s for s in seeds if s in WIDE_V3_SECONDARY],
+        "result_label": OBJECT_CEILING_V3_LABEL,
+        "privileged_rule": (
+            "NON-LEARNED diagnostic ceiling v3: the v2 ceiling with one change, a caged "
+            "grasp closure. Per command, CEM candidates are projected, executed in an exact "
+            "non-rendering MuJoCo twin and scored by the mean over the horizon of the v2 "
+            "object-aware phase cost; in transport/lower an exact probe of the gradual "
+            "arms-held release gates the hand-over to a release that then executes exactly "
+            "the probed sequence. During the close phase the right arm's lateral and "
+            "rotational deltas are pinned to zero and only the vertical delta is planned, in "
+            "[-close_descent_bound, 0], so the palm may sink around the apple but never rise "
+            "or shear it while the hand shuts; the grasp command and the phase length are "
+            "v2's. Phase transitions read live simulator truth; never a learned result"
+        ),
+        "gate_rule": (
+            "on the fresh primary resets 45200-45207: privileged_object (v3) full successes "
+            ">= 6 of 8 AND grasp resets >= 7 of 8, with zero robot and full-state rollout "
+            "parity mismatches over non-vacuous checks (>= executed commands - 1 per "
+            "attempt), all primary ceiling attempts counted and valid provenance; "
+            "demo_replay, scripted_oracle and the secondary resets 45100-45107 and "
+            "45000-45007 never gate"
         ),
     }
 
@@ -1568,7 +1623,7 @@ def _object_arm(records, seeds, mode):
                     "rollout_full_state_parity_mismatches"
                 ),
             )
-            if "ceiling_version" in record:  # TASK-049 v2 records only
+            if "ceiling_version" in record:  # TASK-049 (v2) and TASK-051 (v3) records only
                 row.update(
                     ceiling_version=record["ceiling_version"],
                     release_probes=record.get("release_probes"),
@@ -1718,10 +1773,16 @@ def object_ceiling_gate(records, seeds):
     }
 
 
-def object_ceiling_v2_gate(records, primary, secondary):
-    """Preregistered TASK-049 gate on the fresh primary resets; missing/failed attempts
-    count as zero stages. demo_replay, scripted_oracle and the secondary TASK-047
-    resets are reported but never change the gate."""
+def object_ceiling_v2_gate(records, primary, secondary, *, version=2):
+    """Preregistered TASK-049 (v2) or TASK-051 (v3) gate on the fresh primary resets;
+    missing/failed attempts count as zero stages. demo_replay, scripted_oracle and the
+    secondary resets are reported but never change the gate. The thresholds, decision
+    rules and outcome names are identical across the two versions; only the version
+    number in the reported label, readings and rule text differs, so version 2 output is
+    unchanged."""
+    if version not in (2, 3):
+        raise ValueError("only object-ceiling versions 2 and 3 use this gate")
+    v = f"v{version}"
     provenance_valid = all(r.get("provenance_valid", True) for r in records)
     ceiling = _object_arm(records, primary, OBJECT_MODE)
     replay = _object_arm(records, primary, "demo_replay")
@@ -1748,8 +1809,8 @@ def object_ceiling_v2_gate(records, primary, secondary):
         outcome = "ceiling_inadequate_scripted_also_fails"
     readings = {
         "ceiling_adequate": (
-            "under exact dynamics and perfect object state the v2 object-aware cost and "
-            "phase design grasps, lifts, transports and places on fresh wide-jitter resets: "
+            f"under exact dynamics and perfect object state the {v} object-aware cost "
+            "and phase design grasps, lifts, transports and places on fresh wide-jitter resets: "
             "the cost design is adequate as the target for a learned controller",
             "T4: pair this cost/phase design with a learned world model whose heads predict "
             "its terms (palm-apple offset, apple rise, apple-plate offset, hand contact, "
@@ -1757,24 +1818,24 @@ def object_ceiling_v2_gate(records, primary, secondary):
             "TRAIN data; keep this ceiling as the exact-dynamics upper reference",
         ),
         "grasp_adequate_place_inadequate": (
-            "the v2 grasp design suffices under exact dynamics but the transport/release "
-            "design does not reach full success often enough",
+            f"the {v} grasp design suffices under exact dynamics but the "
+            "transport/release design does not reach full success often enough",
             "redesign only the transport/release under a new preregistration; a learned "
             "controller may target the grasp+lift sub-goal meanwhile",
         ),
         "ceiling_inadequate_task_feasible": (
-            "the scripted collector succeeds where the v2 exact-dynamics ceiling does not "
-            "grasp: the cost/phase design is still inadequate",
+            f"the scripted collector succeeds where the {v} exact-dynamics ceiling does "
+            "not grasp: the cost/phase design is still inadequate",
             "diagnose the failure phases and redesign under a new preregistration; do not "
             "pair the ceiling with a learned model",
         ),
         "ceiling_inadequate_scripted_also_fails": (
-            "neither the v2 ceiling nor the scripted collector succeeds on enough fresh "
+            f"neither the {v} ceiling nor the scripted collector succeeds on enough fresh "
             "resets: these draws may exceed the current grasp mechanics",
             "audit the fresh resets and the distribution before any further cost redesign",
         ),
         "ceiling_inadequate_feasibility_reference_inconclusive": (
-            "the v2 ceiling is inadequate; the scripted feasibility reference is "
+            f"the {v} ceiling is inadequate; the scripted feasibility reference is "
             "incomplete, so the cause is not attributed",
             "repair the reference arm and repeat under a new output directory",
         ),
@@ -1791,9 +1852,11 @@ def object_ceiling_v2_gate(records, primary, secondary):
         for mode in (OBJECT_MODE, "demo_replay", "scripted_oracle")
     }
     return {
-        "label": "NON-LEARNED: object-aware privileged MuJoCo-rollout ceiling v2 vs open-loop "
-        "retrieved TRAIN demo_replay vs scripted collector reference on fresh wide-jitter "
-        "development resets; not a learned result",
+        "label": (
+            f"NON-LEARNED: object-aware privileged MuJoCo-rollout ceiling {v} vs open-loop "
+            "retrieved TRAIN demo_replay vs scripted collector reference on fresh wide-jitter "
+            "development resets; not a learned result"
+        ),
         "primary_seeds": list(primary),
         "secondary_seeds": list(secondary),
         "privileged_object_full_successes": successes,
@@ -1820,7 +1883,7 @@ def object_ceiling_v2_gate(records, primary, secondary):
         "arms": {OBJECT_MODE: ceiling, "demo_replay": replay, "scripted_oracle": scripted},
         "secondary_arms": secondary_arms,
         "rule": (
-            "primary resets only: privileged_object (v2) full successes >= "
+            f"primary resets only: privileged_object ({v}) full successes >= "
             f"{required_success} AND grasp resets (reach, >=5 cm lift, hand contact) >= "
             f"{required_grasp} of {n}; every primary ceiling attempt counted; zero robot and "
             "full-state rollout parity mismatches over >= executed commands - 1 checks per "
@@ -1832,10 +1895,11 @@ def object_ceiling_v2_gate(records, primary, secondary):
 
 def gate_summary(plan, records):
     """A privileged ceiling report never carries the learned state gate, and vice versa."""
-    if plan.get("goal_kind") == "object" and plan.get("object_ceiling_version") == 2:
+    version = plan.get("object_ceiling_version")
+    if plan.get("goal_kind") == "object" and version in (2, 3):
         return {
-            "object_ceiling_v2_gate": object_ceiling_v2_gate(
-                records, plan["primary_seeds"], plan["secondary_seeds"]
+            f"object_ceiling_v{version}_gate": object_ceiling_v2_gate(
+                records, plan["primary_seeds"], plan["secondary_seeds"], version=version
             )
         }
     if plan.get("goal_kind") == "object":
@@ -2111,7 +2175,17 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             elif trial["mode"] == OBJECT_MODE:
                 if plan.get("privileged_ceiling") is not True:
                     raise ContractError("the object-aware ceiling requires a declared ceiling plan")
-                if plan.get("object_ceiling_version", 1) == 2:
+                if plan.get("object_ceiling_version", 1) == 3:
+                    from embodied_jepa.object_ceiling_v2 import (
+                        ObjectRolloutV2Model as ObjectRolloutModel,
+                    )
+                    from embodied_jepa.object_ceiling_v3 import (
+                        ObjectCeilingV3Config as ObjectCeilingConfig,
+                    )
+                    from embodied_jepa.object_ceiling_v3 import (
+                        ObjectCeilingV3Controller as ObjectCeilingController,
+                    )
+                elif plan.get("object_ceiling_version", 1) == 2:
                     from embodied_jepa.object_ceiling_v2 import (
                         ObjectCeilingV2Config as ObjectCeilingConfig,
                     )
@@ -2697,7 +2771,7 @@ def main():
         default="image",
     )
     parser.add_argument("--goal-stall-limit", type=int)
-    parser.add_argument("--object-ceiling-version", type=int, choices=(1, 2), default=1)
+    parser.add_argument("--object-ceiling-version", type=int, choices=(1, 2, 3), default=1)
     parser.add_argument("--worker", choices=("prepare", "attempt"), help=argparse.SUPPRESS)
     parser.add_argument("--worker-output", help=argparse.SUPPRESS)
     parser.add_argument("--attempt-id", help=argparse.SUPPRESS)

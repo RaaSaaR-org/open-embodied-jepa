@@ -1894,7 +1894,7 @@ def test_object_v2_plan_adds_fresh_primary_resets_and_leaves_the_v1_plan_unchang
     old = {tuple(module.wide_reset(s)["object_xy"]) for s in secondary}
     assert not old & {tuple(module.wide_reset(s)["object_xy"]) for s in primary}
     for bad in (
-        dict(object_ceiling_version=3),
+        dict(object_ceiling_version=4),
         dict(object_ceiling_version=2, max_seconds=21601),
         dict(object_ceiling_version=2, seeds=[44000]),
         dict(seeds=[45100]),  # fresh resets are not v1 resets
@@ -1997,3 +1997,128 @@ def test_object_v2_worker_builds_the_v2_ceiling(tmp_path, monkeypatch):
     report = json.loads((tmp_path / "attempts/45104-privileged_object/report.json").read_text())
     assert built == [("Rollouts", "ObjectCeilingV2Config", 45104), "closed"]
     assert report["termination_reason"] == "phase_stall" and report["ceiling_version"] == 2
+
+
+# TASK-051 object-aware ceiling v3 (scheduled grasp closure) on fresh wide-jitter resets.
+
+
+def test_object_v3_plan_adds_fresh_primary_resets_and_leaves_v1_and_v2_unchanged():
+    v1, v2 = object_plan(), object_plan(object_ceiling_version=2, max_seconds=16800)
+    plan = object_plan(object_ceiling_version=3, max_seconds=30000)
+    primary = list(range(45200, 45208))
+    secondary = list(range(45100, 45108)) + list(range(45000, 45008))
+    assert plan["seeds"] == primary + secondary
+    assert plan["primary_seeds"] == primary and plan["secondary_seeds"] == secondary
+    assert plan["object_ceiling_version"] == 3
+    assert len(plan["attempts"]) == 72
+    assert plan["attempts"][0]["attempt_id"] == "45200-demo_replay"
+    assert plan["attempts"][-1]["attempt_id"] == "45007-privileged_object"
+    for attempt in plan["attempts"]:
+        assert attempt["reset"] == module.wide_reset(attempt["seed"])
+    ceiling = plan["object_ceiling"]
+    assert ceiling["release_ramp"] == 0.08  # the v2 release predictor carries over
+    assert 0 < ceiling["close_descent_bound"] <= ceiling["arm_bound"]
+    assert "seed" not in ceiling
+    assert "v3" in plan["result_label"] and "NON-LEARNED" in plan["result_label"]
+    # Earlier plans are untouched by the new option.
+    assert v1 == object_plan()
+    assert v2 == object_plan(object_ceiling_version=2, max_seconds=16800)
+    assert "close_descent_bound" not in v2["object_ceiling"]
+    # Fresh draws differ from every earlier wide-jitter draw.
+    old = {tuple(module.wide_reset(s)["object_xy"]) for s in secondary}
+    assert not old & {tuple(module.wide_reset(s)["object_xy"]) for s in primary}
+    for bad in (
+        dict(object_ceiling_version=3, max_seconds=32401),
+        dict(object_ceiling_version=3, seeds=[44000]),
+        dict(object_ceiling_version=2, seeds=[45200]),  # v3 resets are not v2 resets
+    ):
+        with pytest.raises(ValueError):
+            object_plan(**bad)
+
+
+def v3_records(successes, grasps, scripted=8, replay=2):
+    primary = tuple(range(45200, 45208))
+    records = arms(grasps, replay, scripted=scripted, seeds=primary)
+    full = {k: True for k in ("reach", "grasp", "transport", "place", "release", "success")}
+    for n, record in enumerate(r for r in records if r["mode"] == "privileged_object"):
+        if n < successes:
+            record["score"] = full
+    for n, record in enumerate(r for r in records if r["mode"] == "scripted_oracle"):
+        if n < scripted:
+            record["score"] = full
+    secondary = tuple(range(45100, 45108)) + tuple(range(45000, 45008))
+    return records + arms(0, 0, scripted=0, seeds=secondary)
+
+
+def test_object_v3_gate_uses_the_same_rules_on_its_own_primary_resets():
+    primary = list(range(45200, 45208))
+    secondary = list(range(45100, 45108)) + list(range(45000, 45008))
+    plan = {
+        "goal_kind": "object",
+        "object_ceiling_version": 3,
+        "seeds": primary + secondary,
+        "primary_seeds": primary,
+        "secondary_seeds": secondary,
+    }
+
+    def gate(records):
+        summary = module.gate_summary(plan, records)
+        assert set(summary) == {"object_ceiling_v3_gate"}
+        return summary["object_ceiling_v3_gate"]
+
+    passed = gate(v3_records(6, 7))
+    assert passed["primary_gate_passed"] and passed["readings"]["outcome"] == "ceiling_adequate"
+    assert "v3" in passed["label"] and "v2" not in passed["label"]
+    assert "v3" in passed["readings"]["interpretation"]
+    assert passed["rule"].startswith("primary resets only: privileged_object (v3)")
+    assert passed["secondary_seeds"] == secondary
+    assert not gate(v3_records(6, 6))["primary_gate_passed"]
+    assert gate(v3_records(6, 6))["readings"]["outcome"] == "ceiling_inadequate_task_feasible"
+    assert gate(v3_records(5, 8))["readings"]["outcome"] == "grasp_adequate_place_inadequate"
+    records = v3_records(8, 8)
+    records[-1]["termination_reason"] = "runtime_error"  # a secondary attempt never gates
+    assert gate(records)["primary_gate_passed"]
+    records = v3_records(8, 8)
+    records[0]["rollout_full_state_parity_mismatches"] = 1
+    assert not gate(records)["primary_gate_passed"]
+    with pytest.raises(ValueError, match="versions 2 and 3"):
+        module.object_ceiling_v2_gate([], primary, secondary, version=1)
+
+
+def test_object_v3_worker_builds_the_v3_ceiling(tmp_path, monkeypatch):
+    pytest.importorskip("torch")
+    from embodied_jepa import object_ceiling_v2, object_ceiling_v3
+
+    built = []
+
+    class Rollouts:
+        def __init__(self, model, robot, *, acknowledge_privileged_ceiling=False):
+            assert acknowledge_privileged_ceiling is True
+
+        def pop_diagnostics(self):
+            return []
+
+        def close(self):
+            built.append("closed")
+
+    class Ceiling:
+        def __init__(self, rollouts, robot, config, *, acknowledge_privileged_ceiling=False):
+            built.append((type(rollouts).__name__, type(config).__name__, config.seed))
+
+        def step(self, observation, projector):
+            return SimpleNamespace(action=None, trace={}, termination_reason="phase_stall")
+
+        def summary(self):
+            return {"phase": "approach", "furthest_phase_index": 0, "ceiling_version": 3}
+
+    monkeypatch.setattr(object_ceiling_v2, "ObjectRolloutV2Model", Rollouts)
+    monkeypatch.setattr(object_ceiling_v3, "ObjectCeilingV3Controller", Ceiling)
+    state_worker_fixture(tmp_path, monkeypatch, [])
+    plan = object_plan(
+        object_ceiling_version=3, seeds=[45204], modes=["privileged_object"], max_seconds=30000
+    )
+    module.write(tmp_path / "resolved_plan.json", plan | {"dataset": "u", "checkpoint": "u"})
+    module.attempt_worker(tmp_path, "45204-privileged_object", attempt_seconds=960)
+    report = json.loads((tmp_path / "attempts/45204-privileged_object/report.json").read_text())
+    assert built == [("Rollouts", "ObjectCeilingV3Config", 45204), "closed"]
+    assert report["termination_reason"] == "phase_stall" and report["ceiling_version"] == 3
