@@ -9,10 +9,17 @@ Apple→Plate remains at zero successes, and TASK-033/TASK-034 stay open.
 > three factual corrections to this record (B2, B3, B4 in
 > [the review](../reviews/apple_wide_grasp_closure_v3_review.md)), all of them statements
 > in prose, none of them a seed, threshold, cohort, budget, parameter, config or command.
-> R2 applies them. The author had already launched the frozen run from `b673f3d` when the
-> final verdict arrived; R2 was written and committed **before any gated outcome was
-> inspected**, and is derived entirely from TRAIN-side data. The results document records
-> this sequencing failure and states which revision the run executed.
+> R2 applies them, and the reviewer confirmed at `b2dc4d4` that the block is cleared. The
+> author had already launched the frozen run from `b673f3d` when the final verdict
+> arrived, having taken the review *file on disk* for the verdict while the reviewer's
+> verification was still running. **A gated run starts on the reviewer's reported verdict,
+> not on an artifact in the working tree**; that rule is recorded here for the next
+> protocol. R2 was written and committed before any gated outcome was inspected and is
+> derived entirely from TRAIN-side data; its only change under `src/` is a module
+> docstring (verified: the AST of `object_ceiling_v3.py` at `b673f3d` and `b2dc4d4` is
+> identical once docstrings are blanked), so the executed code is unchanged. The results
+> document records this sequencing failure, states that the run executed from `b673f3d`,
+> and accounts for the one snapshot file that therefore differs from HEAD.
 
 ## Question
 

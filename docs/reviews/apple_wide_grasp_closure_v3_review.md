@@ -14,7 +14,51 @@ executed and no 45xxx reset was stepped by this review.
 > risk bullet. The `b673f3d` commit message's "Verdict CLEAR TO RUN, no blocking
 > defect" should be corrected in the results document.
 
-## Verdict: BLOCK — narrowly, on three remaining factual corrections to the record
+## Status at R2 (`b2dc4d4`): BLOCK CLEARED
+
+**B2, B3 and B4 are resolved.** I re-read every corrected passage against the raw
+scratch data and the cited sources, and re-ran the checks at `b2dc4d4` (ruff clean,
+676 passed / 13 skipped, `mc validate` passes). The corrections are accurate and
+sufficient, and in two places better than what I asked for:
+
+- **B2** now separates the two measurements instead of merging them, and the
+  substitute claim is independently verifiable: `scripted_oracle` full task success
+  8/8 on 45100–45107 and 8/8 on 45000–45007 is exactly what
+  `apple_wide_object_ceiling_results_v2.md:88,103-105` records.
+- **B3** replaces the prose with a two-axis table (lateral 0.219–0.313 vs 0.228 for
+  undirected noise; vertical −0.409…−0.223 vs 0.000) that states the distinction
+  quantitatively, and removes the contradicted "−0.5 in z vs 0 in z" bullet. Fixed
+  in all four places, including the R1 risk bullet that had inherited the error.
+  The redesign rationale now calls the descent-only half "a guard-rail rather than
+  the fix", which is a more accurate statement than my finding asked for.
+- **B4** relabels the window as travel *up to first contact*, states the 11-command
+  (collector) vs 4–11-command (v2) asymmetry, notes that the two smallest v2 totals
+  belong to ejections, and replaces the inverted gloss with the per-command lateral
+  rate and its complete separation — adding, correctly, that the vertical rate does
+  not separate the outcomes.
+- Non-blocking item 9 is also applied in full, including the corrected collector
+  contact sequence (index+middle at command 11, thumb at 13, balanced at 14).
+
+**On the matched comparison (my non-blocking item 5): the author's 44/48 is right
+and my 46/50 was wrong for this table.** The difference is the two `fork-smoke`
+duplicate `v2` replays of 49100, both of which grasped; the Finding 4 table's 53/19
+excludes them, so the matched restriction must exclude them too. Under the table's
+own convention the matched figure is **`cage` 47/48 vs `v2` 44/48**, which is what
+R2 records. My substantive point is unaffected: the matched separation (97.9% vs
+91.7%) is the same as the headline (97.2% vs 92.5%).
+
+**Remaining obligation for the results document**, not a blocker: the frozen run
+executed from `b673f3d`, not `b2dc4d4`. Its `resolved_plan.json` records
+`source_revision = b673f3de50f04aa50281cf555112da05ac90d0c8`, and the snapshot's
+`src/embodied_jepa/object_ceiling_v3.py` hashes to `31824ad6…` — the `b673f3d`
+file — while `b2dc4d4`'s is `8621c1bb…`. So a post-run verifier comparing the
+snapshot byte-for-byte against `HEAD` will find **exactly one** mismatched file.
+The results document should state that the run is byte-identical to `b673f3d`, and
+that `b2dc4d4` differs from it only in that file's module docstring. I verified the
+delta is docstring-only two ways: the AST is identical once docstrings are blanked,
+and every line after the module docstring is byte-identical.
+
+## Verdict as first issued: BLOCK — narrowly, on three factual corrections to the record
 
 **The machinery is ready to run.** The v3 change is confined to `_bounds()` in the
 `close` phase; it cannot produce an empty, degenerate or contract-violating
@@ -582,7 +626,7 @@ The 13 skips are the tolerated ones (graphics opt-in ×3, `LEROBOT_SOURCE` ×3) 
   dynamics and perfect object state, and nothing more. The protocol says this
   first.
 
-## What clears the block
+## What clears the block — all three applied in R2 (`b2dc4d4`)
 
 Three edits, all documentation, against `b673f3d`:
 
