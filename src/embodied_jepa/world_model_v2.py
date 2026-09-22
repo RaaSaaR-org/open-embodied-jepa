@@ -952,6 +952,7 @@ def evaluate(
     protocol=PROTOCOL,
     gate_function=None,
     extra_metrics=None,
+    require_clean=False,
     acknowledge_privileged_training_labels=False,
 ):
     """Offline val evaluation of a trained checkpoint against the frozen gates.
@@ -961,9 +962,16 @@ def evaluate(
     """
     gate_function = evaluate_gates if gate_function is None else gate_function
     from embodied_jepa.config import MODELS
+    from embodied_jepa.training import source_identity
 
     if acknowledge_privileged_training_labels is not True:
         raise ContractError("evaluation scores against privileged labels; acknowledge it")
+    # The checkpoint's implementation hash covers the model files, not this runner, where
+    # every metric and gate lives; record the evaluator's own revision separately.
+    evaluator = source_identity()
+    unversioned = evaluator["dirty"] is not False or evaluator["revision"] == "unavailable"
+    if require_clean and unversioned:
+        raise ContractError("the frozen evaluation requires a clean committed checkout")
     output = Path(output)
     if output.exists():
         raise FileExistsError("refusing to overwrite an evaluation report")
@@ -1014,6 +1022,7 @@ def evaluate(
         "checkpoint_sha256": _sha256(checkpoint),
         "checkpoint_step": envelope["metadata"].get("runner_state", {}).get("step"),
         "model_implementation_sha256": model.implementation_sha256,
+        "evaluator_source": evaluator,
         "provenance": envelope["metadata"],
         "val_episodes": len(arrays.episode_ids),
         "val_observations": int(len(arrays.states)),
@@ -1039,11 +1048,12 @@ def main():
         command.add_argument("--workers", type=int, default=8)
         command.add_argument("--limit-episodes", type=int, help="smoke subsets only")
         command.add_argument("--acknowledge-privileged-training-labels", action="store_true")
+    for command in commands.choices.values():
+        command.add_argument(
+            "--require-clean", action="store_true", help="refuse a dirty or unversioned checkout"
+        )
     train_parser = commands.choices["train"]
     train_parser.add_argument("--output", type=Path)
-    train_parser.add_argument(
-        "--require-clean", action="store_true", help="refuse a dirty or unversioned checkout"
-    )
     train_parser.add_argument("--smoke-steps", type=int, help="smoke only: override steps")
     train_parser.add_argument(
         "--smoke-max-seconds", type=float, help="smoke only: override max_seconds"
@@ -1091,6 +1101,7 @@ def main():
             checkpoint=args.checkpoint,
             output=args.output,
             gates=frozen["gates"],
+            require_clean=args.require_clean,
             **common,
         )
         summary = {"all_passed": report["gates"]["all_passed"]} | {

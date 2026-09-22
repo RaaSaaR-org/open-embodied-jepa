@@ -26,6 +26,9 @@ GATES = {
     "G5_held_auroc_min": 0.85,
     "G5_minimum_per_class": 20,
     "G6_minimum_ranked_groups": 1,
+    "G6_ranking_horizon": 16,
+    "G6_minimum_true_cost_spread_m": 0.005,
+    "G6_minimum_candidates": 3,
     "G6a_within_state_spearman_min": 0.5,
     "G6b_top1_regret_max_m": 0.004,
     "G7_minimum_pairs": 1,
@@ -116,3 +119,24 @@ def test_too_few_ranked_groups_fail_the_ranking_gates():
     result = v3.evaluate_gates(metrics, GATES | {"G6_minimum_ranked_groups": 1})
     assert not result["G6a_within_state_ranking_spearman_h16"]["passed"]
     assert not result["G6b_top1_regret_h16"]["passed"]
+
+
+def test_a_ranking_cohort_that_drifts_from_the_frozen_manifest_is_refused():
+    """The cohort rule lives in the manifest as well as in source; a later source edit
+    must not silently redefine which candidate sets the gate is computed over."""
+    from embodied_jepa.contracts import ContractError
+
+    arrays = fixture_arrays()
+    model = ExactFakeModel()
+    windows = wm.window_starts(arrays, 16, stride=4)
+    metrics = {
+        "windows": wm.window_metrics(model, arrays, windows, SCHEMA),
+        "siblings": wm.sibling_metrics(model, arrays, SCHEMA),
+        "collapse": model.latent_statistics(None),
+        **v3.ranking_metrics(model, arrays, SCHEMA),
+    }
+    v3.evaluate_gates(metrics, GATES)  # agrees: no error
+    with pytest.raises(ContractError, match="G6_minimum_true_cost_spread_m"):
+        v3.evaluate_gates(metrics, GATES | {"G6_minimum_true_cost_spread_m": 0.02})
+    with pytest.raises(ContractError, match="G6_ranking_horizon"):
+        v3.evaluate_gates(metrics, GATES | {"G6_ranking_horizon": 8})

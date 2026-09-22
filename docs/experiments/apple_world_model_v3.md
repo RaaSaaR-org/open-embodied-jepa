@@ -71,18 +71,28 @@ Identical to TASK-050. Nothing about the corpus or the splits changes.
 
 Each is off by default, so every earlier model keeps its exact loss and latent.
 
-- **Two cameras (`cameras: [onboard_rgb, hand_crop_rgb]`).** Each camera is embedded by
-  the backend's *own* encoder, then passed through its own learned
-  `Linear(latent_dim, latent_dim)` (only the first carries a bias) and summed. That is a
-  concatenate-then-project fusion written once in shared code. **No backend file has a
-  two-camera branch**, so `world_model.backend` stays a one-line swap. With one camera no
-  fusion module is built and the image pathway is exactly v2's `embed(pixels)`.
-  - Native's EMA target path embeds each camera with the target encoder and applies the
-    *online* fusion projections under `no_grad`, exactly as v2 treated state fusion.
-  - The fusion weights are drawn **last** in the initialization stream, so a one-camera
-    and a two-camera model with the same seed share every other weight bit for bit
-    (verified by a test). The camera ablation therefore differs by the second camera
-    alone, not by a shifted random stream.
+- **Camera fusion (`cameras: [...]`).** Each camera is embedded by the backend's *own*
+  encoder, then passed through its own learned `Linear(latent_dim, latent_dim)` (only the
+  first carries a bias) and summed. That is a concatenate-then-project fusion written
+  once in shared code. **No backend file has a two-camera branch**, so
+  `world_model.backend` stays a one-line swap. Omitting the `cameras` key entirely keeps
+  the pre-TASK-052 image pathway, the backend's own `embed(pixels)`.
+  - The fusion follows the **presence** of the `cameras` key, not its length: a
+    one-camera *configured* arm keeps its own projection. Together with drawing the
+    fusion **last** in the initialization stream, that makes the camera ablation exactly
+    one factor — a same-seed one-camera and two-camera model differ by the single tensor
+    `camera_fusion.hand_crop_rgb.weight` and by nothing else, which a test asserts. An
+    earlier draft built the fusion only for two cameras, which would have confounded the
+    second camera with two extra 128x128 layers; that is fixed.
+  - Native's EMA target path embeds each camera with the target encoder and then applies
+    the *online*, gradient-updated fusion projections under `no_grad`. This is weaker
+    than v2's treatment of state fusion, which was a purely additive term: a
+    multiplicative projection on the target is a scale the online path can shrink, which
+    is the shortcut an EMA target exists to prevent. Native's variance and covariance
+    penalties act on the online embeddings and G8 gates collapse directly, and **native
+    is not a frozen arm of this protocol**, so this is a declared risk rather than a
+    defect. LeWM is unaffected: its `goal_embed` is `embed` and its training never takes
+    a target path.
 - **Motion-weighted readout loss (`readout_moving_weight: 3.0`,
   `readout_moving_threshold_m: 0.01`).** A frame whose true palm–apple offset has moved
   ≥ 1 cm from its window's first frame gets regression weight 4; a still frame keeps 1.
@@ -95,21 +105,36 @@ Each is off by default, so every earlier model keeps its exact loss and latent.
   latent to localize the object rather than only the palm-relative offset that the
   proprioception branch can partly explain. At weight 0 they contribute no loss term and
   no gradient, are not declared in `Capabilities.readouts`, and are not returned by
-  `model.readout` — an untrained head is never exposed.
+  `model.readout` — an untrained head is never exposed. The readout loss divides by the
+  number of **core** readouts, never by the weighted total, so switching the auxiliary
+  heads on *adds* supervision instead of diluting the core objective: each core term
+  keeps the same weight in arms A/B/D as in arm C. (A first draft divided by the
+  weighted total, which would have given A/B/D about 14 % less core gradient than C and
+  made the readout ablation two factors instead of one.)
 - **Wider readout head (`readout_hidden_dim: 512`, v2 used 256).** The head runs on
   latents, not pixels; the measured cost is negligible. It applies to every v3 arm
   equally.
-- **Proprioception scaling fix.** v2 floored every dimension's train standard deviation
-  at 0.01. 43 of the 86 dimensions have a train std below that (the smallest is
-  1.7e-6), so a later deviation in those dimensions entered the model up to 100× larger
-  than in a normally varying dimension. The TASK-050 review flagged this before any
-  closed-loop run. v3 scales a dimension with train std < 0.01 by **1.0 (its physical
-  unit)** instead, and clips every normalized value to ±10. On the train split both are
-  inert; in a later closed loop an unseen deviation enters at physical scale instead of
-  amplified. The policy and the number of such dimensions are recorded in the checkpoint
-  metadata. **This applies to all four arms**, so it does not confound the comparisons
-  *within* v3; it is one of the reasons a v3 arm is not a perfectly controlled successor
-  of a v2 arm.
+- **Proprioception scaling fix.** v2 divided every dimension by `max(std, 0.01)`. 43 of
+  the 86 dimensions have a train std below 0.01, so a later deviation in those entered
+  the model up to 100× larger than in a normally varying dimension. The TASK-050 review
+  flagged this before any closed-loop run. The measured distribution over the 86
+  dimensions is:
+
+  | train std | dims | v3 scale |
+  |---|---|---|
+  | < 1e-4 (1.7e-6 … 9.4e-5) | 30 | **1.0**, the physical unit: the dimension never moved |
+  | 1e-4 … 1e-2 (1.3e-4 … 6.1e-3) | 13 | `max(std, 0.01)`, as in v2 |
+  | ≥ 1e-2 | 43 | its own std |
+
+  and every normalized value is then clipped to ±10. The two-tier rule is deliberate: a
+  single "mute everything below 0.01" rule would have attenuated those 13 dimensions
+  about a hundredfold — they reach 0.01–0.61 in v2's normalized units, so muting them
+  would have **deleted real proprioceptive signal** in the name of a robustness fix. The
+  clip is what bounds the remaining amplification, and it is inert on the train split.
+  The policy and both dimension counts are recorded in the checkpoint metadata.
+  **This applies to all four arms**, so it does not confound the comparisons *within*
+  v3; it is one of the reasons a v3 arm is not a perfectly controlled successor of a v2
+  arm.
 
 **Honest label.** Every arm is the pinned upstream LeWM encoder, predictor, projector and
 SIGReg objective (revision `8edfeb33`) **plus** the shared state fusion, the shared
@@ -150,7 +175,10 @@ as a second trained comparison. TASK-050's native comparison stands.
 | Encoder | ViT, depth 4, 4 heads, dim 128 | the same |
 | Predictor | upstream AR predictor, depth 4, 4 heads × 32 | the same |
 | Anti-collapse | SIGReg (weight 0.09) | the same |
-| Parameters | 2,431,782 (A, C) / 2,398,886 (B) | 2,365,094 |
+| Parameters | 2,431,782 (A, C) / 2,415,398 (B) | 2,381,606 |
+
+A ↔ B is 16,384 parameters, which is exactly the one extra `128×128` camera projection;
+B ↔ D is −33,792, which is exactly the patch-embedding and position-embedding change.
 
 ## Training (frozen; `frozen.training`)
 
@@ -245,15 +273,34 @@ absolute calibration of the predicted cost across unrelated windows. v3 gates th
     true cost, in metres. Median and mean; also normalized by the group's true spread.
 - **Controls.**
   - **Shuffled actions**: candidate *i* ranked by the prediction made with candidate
-    *i*+1's actions. Same rollouts, no extra compute. Expected ρ ≈ 0.
+    *i*−1's actions (a fixed cyclic shift). Same rollouts, no extra compute. Note that a
+    derangement is a **floor, not a null**: against a perfectly ordered prediction its
+    Spearman is about −1/(n−1) ≈ −0.33 for four candidates, so it is expected to be
+    negative, not zero, whenever the model ranks well. It is descriptive; no gate reads
+    it.
   - **Persistence cannot be reported here at all**, because the persistence readout is
     identical for every candidate of a state. That is precisely why an absolute
     calibration gate could not test this, and it is reported as such.
   - **Random choice**: the expected regret of picking uniformly at random, computed from
     val **labels only**. Measured before any v3 model existed: median 8.44 mm absolute,
     0.531 normalized, over the 18 ranked groups at h = 16.
-- **Power.** 18 groups of about 3.8 candidates, about 68 pooled points. This is thin, and
-  a pass is **necessary, not sufficient** evidence. It is recorded here in advance.
+- **Power.** 18 ranked groups of 3–4 candidates, 68 pooled points. Thin — so the gates
+  were checked against their own null before freezing, by Monte-Carlo over the real val
+  cohort with a uniformly random ranker (20,000 draws, labels only, no model):
+
+  | | null pass rate | null mean |
+  |---|---|---|
+  | G6a (pooled ρ ≥ 0.5) | 1.0e-4 | ρ = +0.0004 |
+  | G6b (median top-1 regret ≤ 4 mm) | 5.9 % | 7.37 mm |
+  | both together | 1.0e-4 | |
+
+  So the gate *pair* is not passable by chance, though G6b alone is weak and must not be
+  read on its own. A pass is still **necessary, not sufficient** evidence: 18 groups from
+  20 val resets cannot establish that a planner will work. This is recorded in advance.
+
+  Note also that G6b compares a *realized* regret (one draw of the model's choice) with
+  a per-group *expected* regret for the random baseline; the Monte-Carlo above is the
+  like-for-like comparison and is the number to trust.
 
 ## Offline gates (frozen; `frozen.gates`; val only)
 
@@ -367,3 +414,25 @@ the order they were run, all from the committed revision `63f9cd2`:
 - **One bug found by the smokes and fixed before freezing:** the run report counted
   cameras instead of observations (`train_observations: 2`) after the runner became
   multi-camera.
+- **A fresh-context pre-run review**, before any frozen run, found three blockers, all
+  fixed and all described above:
+  1. a machine-specific `outputs` symlink had been committed (`.gitignore` matched only
+     the directory form); it is untracked again and both forms are now ignored;
+  2. the camera fusion was built only for two cameras, so arm A differed from arm B by
+     the second camera *and* by two new layers — the fusion now follows the presence of
+     the `cameras` key, making the ablation one factor;
+  3. this document claimed the proprioception change was "inert on the train split",
+     which the corpus contradicts: 13 dimensions with std between 1.3e-4 and 6.1e-3
+     would have been attenuated about a hundredfold. The policy is now two-tier and the
+     measured distribution is stated.
+
+  The review also led to: the auxiliary readouts adding rather than diluting the core
+  loss; `evaluate` recording its own source revision and accepting `--require-clean`
+  (the checkpoint's implementation hash does not cover the runner, where the metrics and
+  gates live); the ranking cohort rule being frozen in the manifest and checked at gate
+  time; `sensor_wm` refusing a multi-camera config it cannot honour; the honest
+  description of the derangement control; and the null pass rates above. It cleared the
+  label-derived thresholds (reproduced exactly from the sidecars), the verbatim copy of
+  G1–G5/G7–G8, the absence of test leakage (0 cross-split root/branch pairs across all
+  797 episodes), the camera-dict refactor, the horizon indexing in the ranking metric,
+  and the `auxiliary_weight == 0` loss equivalence.

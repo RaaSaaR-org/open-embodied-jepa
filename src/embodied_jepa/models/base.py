@@ -92,9 +92,10 @@ class VisualModel(nn.Module):
         "readout_auxiliary_weight": 0.0,
     }
     # Proprioception scaling policy (TASK-052; see fit_state_normalization).
-    STATE_INFORMATIVE_STD = 1e-2
-    STATE_INACTIVE_SCALE = 1.0
-    STATE_CLIP = 10.0
+    STATE_NOISE_STD = 1e-4  # below this a dimension never moved: treat it as constant
+    STATE_FLOOR_STD = 1e-2  # TASK-050's floor, kept for every dimension above the noise
+    STATE_CONSTANT_SCALE = 1.0  # constant dimensions enter at their physical unit
+    STATE_CLIP = 10.0  # hard backstop on every normalized value
 
     def __init__(self, state_schema: StateSchema, device="cpu", seed=0, config=None, metadata=None):
         super().__init__()
@@ -170,6 +171,17 @@ class VisualModel(nn.Module):
         return tuple(self.config["cameras"] or (self.config["camera"],))
 
     @property
+    def fuses_cameras(self):
+        """Whether the learned per-camera projection is used.
+
+        It follows the *presence* of an explicit ``cameras`` list, not its length, so a
+        one-camera and a two-camera configured model differ by exactly the extra camera's
+        projection and summand. Without the key the image pathway is the backend's own
+        ``embed(pixels)``, unchanged from every earlier model.
+        """
+        return self.config["cameras"] is not None
+
+    @property
     def declared_readouts(self):
         """Readouts this model actually trains; untrained heads are never declared."""
         if not self.config["readout_heads"]:
@@ -226,8 +238,8 @@ class VisualModel(nn.Module):
             # The camera fusion is drawn last, so adding a camera does not shift the
             # initialization of any earlier module: a one-camera and a two-camera model
             # with the same seed share their state-encoder and readout-head weights, and
-            # a camera ablation differs only by the fusion itself.
-            if len(self.camera_names) > 1:
+            # a camera ablation differs only by the extra camera's own projection.
+            if self.fuses_cameras:
                 dimension = self.config["latent_dim"]
                 # Concatenate-then-project, written as one projection per camera: only
                 # the first carries the bias, so the fusion has no redundant offset.
@@ -273,9 +285,11 @@ class VisualModel(nn.Module):
     def image_features(self, images, *, sequence=False, target=False):
         """Fused image embedding over every configured camera, plus the batch prefix.
 
-        With one camera this is exactly the backend's own embedding. With several, each
-        camera is embedded by the same backend encoder and passed through its own learned
-        projection before the sum; no backend code changes.
+        Without a configured ``cameras`` list this is exactly the backend's own
+        embedding. With one, each camera is embedded by the same backend encoder and
+        passed through its own learned projection before the sum; no backend code
+        changes, and a one-camera list keeps its projection so that adding a camera is a
+        single controlled factor.
         """
         embed = self.goal_embed if target else self.embed
         names = self.camera_names
@@ -286,7 +300,7 @@ class VisualModel(nn.Module):
                 raise ContractError("configured cameras disagree on the batch shape")
             prefix = shape
             features = embed(pixels)
-            if len(names) > 1:
+            if self.fuses_cameras:
                 features = self.camera_fusion[name](features)
             fused = features if fused is None else fused + features
         return fused, prefix
@@ -335,16 +349,23 @@ class VisualModel(nn.Module):
     def fit_state_normalization(self, mean, std, *, training_episode_ids):
         """Freeze train-split proprioception moments once, before any update.
 
-        A dimension whose train standard deviation is below ``STATE_INFORMATIVE_STD``
-        carries no information the model could have learned from. Dividing it by a small
-        floor (the TASK-050 behaviour, floor 0.01) would amplify any later deviation by
-        up to a hundredfold relative to a normally varying dimension, which the TASK-050
-        review flagged before any closed-loop run. Such dimensions are instead scaled by
-        ``STATE_INACTIVE_SCALE`` (their physical unit), so an unseen deviation enters at
-        physical scale rather than amplified, and every normalized value is clipped to
-        ``STATE_CLIP`` as a hard backstop. On the train split both are inert: the floored
-        dimensions vary by microns and the active ones stay within a few standard
-        deviations.
+        TASK-050 divided every dimension by ``max(std, 0.01)``. Its review pointed out
+        that a dimension which never moves in training is then amplified up to a
+        hundredfold relative to a normally varying one, so a later closed-loop deviation
+        enters far outside the training distribution. Two changes address that without
+        throwing away dimensions that do carry signal:
+
+        - a dimension whose train std is below ``STATE_NOISE_STD`` is treated as
+          constant and scaled by ``STATE_CONSTANT_SCALE`` (its physical unit), so an
+          unseen deviation enters at physical scale instead of amplified;
+        - everything else keeps TASK-050's ``max(std, STATE_FLOOR_STD)``, and every
+          normalized value is clipped to ``STATE_CLIP``, which bounds the remaining
+          amplification instead of removing information.
+
+        On this corpus that is 30 constant dimensions (std 1.7e-6 to 9.4e-5), 13 floored
+        dimensions (1.3e-4 to 6.1e-3, which reach only 0.01-0.61 in normalized units and
+        are kept precisely because muting them would delete real signal) and 43 dimensions
+        scaled by their own std. The clip is inert on the train split.
         """
         if not self.config["state_fusion"]:
             raise ContractError("state normalization requires state_fusion")
@@ -360,8 +381,8 @@ class VisualModel(nn.Module):
             raise ContractError("state moments must match the state schema")
         if not (np.isfinite(mean).all() and np.isfinite(std).all()) or (std < 0).any():
             raise ContractError("state moments must be finite with nonnegative std")
-        inactive = std < self.STATE_INFORMATIVE_STD
-        scale = np.where(inactive, self.STATE_INACTIVE_SCALE, std)
+        constant = std < self.STATE_NOISE_STD
+        scale = np.where(constant, self.STATE_CONSTANT_SCALE, np.maximum(std, self.STATE_FLOOR_STD))
         self.state_mean.copy_(torch.as_tensor(mean, dtype=torch.float32))
         self.state_scale.copy_(torch.as_tensor(scale, dtype=torch.float32))
         self.state_normalization_fitted.fill_(True)
@@ -369,10 +390,12 @@ class VisualModel(nn.Module):
             json.dumps(sorted(ids)).encode()
         ).hexdigest()
         self.metadata["state_normalization_policy"] = {
-            "informative_std": self.STATE_INFORMATIVE_STD,
-            "inactive_scale": self.STATE_INACTIVE_SCALE,
+            "noise_std": self.STATE_NOISE_STD,
+            "floor_std": self.STATE_FLOOR_STD,
+            "constant_scale": self.STATE_CONSTANT_SCALE,
             "clip": self.STATE_CLIP,
-            "inactive_dimensions": int(inactive.sum()),
+            "constant_dimensions": int(constant.sum()),
+            "floored_dimensions": int((~constant & (std < self.STATE_FLOOR_STD)).sum()),
         }
 
     def state_features(self, values, mask):

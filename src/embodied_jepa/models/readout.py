@@ -101,6 +101,11 @@ class ReadoutHeads(nn.Module):
         ``latent`` is ``[..., D]``; each target is ``[..., width]`` on the same prefix.
         ``frame_weight`` is an optional ``[..., 1]`` nonnegative per-frame weight applied
         to the regression terms only. A readout group weighted 0 contributes no term.
+
+        The divisor is the number of **core** readouts, never the weighted total, so the
+        auxiliary heads *add* supervision instead of diluting the core objective: at
+        ``auxiliary_weight = 0`` the result is exactly the v2 mean over the six core
+        terms, and above 0 each core term keeps the same weight it had.
         """
         if auxiliary_weight < 0:
             raise ContractError("auxiliary readout weight must be nonnegative")
@@ -113,7 +118,7 @@ class ReadoutHeads(nn.Module):
             if frame_weight.shape[:-1] != valid.shape[:-1] or frame_weight.shape[-1] != 1:
                 raise ContractError("frame weight must broadcast over the readout prefix")
             valid = valid * frame_weight
-        terms, total = {}, 0.0
+        terms = {}
         for spec in READOUTS:
             group_weight = 1.0 if spec.group == "core" else auxiliary_weight
             if group_weight == 0.0:
@@ -127,10 +132,9 @@ class ReadoutHeads(nn.Module):
                 terms[spec.name] = (error * weight).sum() / weight.sum().clamp_min(1.0)
             else:
                 terms[spec.name] = F.binary_cross_entropy_with_logits(raw[spec.name], target)
-            total += group_weight
         weighted = sum(
             (1.0 if spec.group == "core" else auxiliary_weight) * terms[spec.name]
             for spec in READOUTS
             if spec.name in terms
         )
-        return weighted / total, terms
+        return weighted / len(CORE_READOUT_NAMES), terms

@@ -29,6 +29,7 @@ from pathlib import Path
 
 import numpy as np
 
+from embodied_jepa.contracts import ContractError
 from embodied_jepa.world_model_v2 import (
     APPROACH_OFFSET_M,
     GATE_HORIZON,
@@ -58,6 +59,8 @@ def _approach_cost(offsets):
 def _normalized_ranks(values):
     """Within-group ranks mapped to [0,1]; ties share the average rank."""
     values = np.asarray(values, np.float64)
+    if len(values) < 2:
+        raise ContractError("normalized ranks need at least two candidates")
     order = np.argsort(values, kind="mergesort")
     ranks = np.empty(len(values), np.float64)
     start = 0
@@ -82,7 +85,10 @@ def candidate_ranking_metrics(model, arrays, state_schema):
     ranking at all, which is why an absolute calibration gate could not test this.
 
     The shuffled control ranks candidate ``i`` by the prediction made with candidate
-    ``i+1``'s actions, which reuses the same rollouts and costs nothing extra.
+    ``i-1``'s actions (a fixed cyclic shift), which reuses the same rollouts and costs
+    nothing extra. Note that a derangement is not a zero baseline: against a perfectly
+    ordered prediction its Spearman is about ``-1/(n-1)``, so it is a floor to beat, not
+    a null. It is descriptive only; no gate reads it.
     """
     groups = sibling_groups(arrays)
     longest = max(RANKING_HORIZONS)
@@ -116,7 +122,7 @@ def candidate_ranking_metrics(model, arrays, state_schema):
             predicted_cost = _approach_cost(
                 [predictions[n][2]["palm_minus_apple"][0, h - 1] for n in usable]
             )
-            # Same rollouts, shifted by one candidate: sibling i judged by sibling i+1.
+            # Same rollouts, shifted by one candidate: sibling i judged by sibling i-1.
             shuffled_cost = np.roll(predicted_cost, 1)
             records[str(h)].append(
                 {
@@ -190,9 +196,20 @@ def evaluate_gates(metrics, gates):
     within-state ranking gates G6a/G6b. v2's calibration number is still reported under
     ``metrics.windows``, so the two protocols stay comparable.
     """
+    ranking = metrics["ranking"]
+    # The ranking cohort rule is frozen in the manifest too, so a later source edit
+    # cannot silently redefine which candidate sets the gate is computed over.
+    declared = {
+        "G6_ranking_horizon": RANKING_GATE_HORIZON,
+        "G6_minimum_true_cost_spread_m": ranking["minimum_true_cost_spread_m"],
+        "G6_minimum_candidates": ranking["minimum_candidates"],
+    }
+    for key, value in declared.items():
+        if key in gates and gates[key] != value:
+            raise ContractError(f"{key} is {value}, but the frozen manifest says {gates[key]}")
     w = metrics["windows"][str(GATE_HORIZON)]
     s = metrics["siblings"][str(SIBLING_GATE_HORIZON)]
-    r = metrics["ranking"][str(RANKING_GATE_HORIZON)]
+    r = ranking[str(RANKING_GATE_HORIZON)]
     c = metrics["collapse"]
     enough = r["groups_ranked"] >= gates["G6_minimum_ranked_groups"]
 
@@ -278,11 +295,12 @@ def main():
         command.add_argument("--workers", type=int, default=8)
         command.add_argument("--limit-episodes", type=int, help="smoke subsets only")
         command.add_argument("--acknowledge-privileged-training-labels", action="store_true")
+    for command in commands.choices.values():
+        command.add_argument(
+            "--require-clean", action="store_true", help="refuse a dirty or unversioned checkout"
+        )
     train_parser = commands.choices["train"]
     train_parser.add_argument("--output", type=Path)
-    train_parser.add_argument(
-        "--require-clean", action="store_true", help="refuse a dirty or unversioned checkout"
-    )
     train_parser.add_argument("--smoke-steps", type=int, help="smoke only: override steps")
     train_parser.add_argument(
         "--smoke-max-seconds", type=float, help="smoke only: override max_seconds"
@@ -331,6 +349,7 @@ def main():
             checkpoint=args.checkpoint,
             output=args.output,
             gates=frozen["gates"],
+            require_clean=args.require_clean,
             gate_function=evaluate_gates,
             extra_metrics=ranking_metrics,
             **common,

@@ -193,6 +193,11 @@ def test_untrained_auxiliary_readouts_are_neither_declared_nor_exposed():
     with_auxiliary, all_terms = heads.loss(latent, zeros, auxiliary_weight=0.5)
     assert set(all_terms) == set(READOUT_NAMES)
     assert not torch.allclose(core_only, with_auxiliary)
+    # The auxiliary heads must ADD supervision, never dilute the core objective: each
+    # core term keeps weight 1/6 whatever the auxiliary weight is. Otherwise the readout
+    # ablation would silently also change how hard the core readouts are trained.
+    auxiliary = sum(all_terms[name] for name in set(READOUT_NAMES) - set(CORE_READOUT_NAMES))
+    assert torch.allclose(with_auxiliary, core_only + 0.5 * auxiliary / len(CORE_READOUT_NAMES))
 
 
 def test_moving_frame_weighting_moves_loss_mass_onto_moving_frames():
@@ -220,26 +225,32 @@ def test_moving_frame_weighting_moves_loss_mass_onto_moving_frames():
     assert torch.isfinite(weighted) and weighted > 0
 
 
-def test_near_constant_proprioception_is_not_amplified_and_is_clipped():
-    """TASK-050's review finding: a dimension with no train variation must not be
-    divided by the 0.01 floor, which amplified later deviations up to a hundredfold."""
-    model = NativeJEPA(SCHEMA, seed=1, config=SHARED)
-    model.fit_state_normalization([0.0, 0.0], [1.0, 1e-6], training_episode_ids=["a"])
-    scale = model.state_scale.cpu().numpy()
-    np.testing.assert_allclose(scale, [1.0, NativeJEPA.STATE_INACTIVE_SCALE])
-    assert model.metadata["state_normalization_policy"]["inactive_dimensions"] == 1
-    values = np.array([[0.5, 0.5]], np.float32)
-    mask = np.ones((1, 2), bool)
+def test_proprioception_scaling_mutes_constant_dims_but_keeps_small_ones():
+    """TASK-050's review finding: a dimension with no train variation must not be divided
+    by the 0.01 floor, which amplified later deviations up to a hundredfold. The fix must
+    not go so far as to delete dimensions that do vary, just below the floor."""
+    schema = StateSchema(("a", "b", "c"), ("rad",) * 3, "fixture3_v0")
+    config = SHARED | {"hidden_dim": 32}
+    model = NativeJEPA(schema, seed=1, config=config)
+    #                       varying    just below the floor   solver noise
+    model.fit_state_normalization([0.0] * 3, [1.0, 5e-3, 1e-6], training_episode_ids=["a"])
+    np.testing.assert_allclose(model.state_scale.cpu().numpy(), [1.0, 1e-2, 1.0])
+    policy = model.metadata["state_normalization_policy"]
+    assert policy["constant_dimensions"] == 1 and policy["floored_dimensions"] == 1
+    values = np.array([[0.5, 0.5, 0.5]], np.float32)
+    mask = np.ones((1, 3), bool)
     normalized = (
         (torch.from_numpy(values).to(model.device_name) - model.state_mean) / model.state_scale
     ).cpu()
-    # The near-constant dimension enters at physical scale (0.5), not 0.5/0.01 = 50.
-    np.testing.assert_allclose(normalized.numpy(), [[0.5, 0.5]], rtol=1e-6)
+    # The constant dimension enters at physical scale (0.5), not 0.5/0.01 = 50; the
+    # small-but-real dimension keeps TASK-050's floor and so keeps its signal.
+    np.testing.assert_allclose(normalized.numpy(), [[0.5, 50.0, 0.5]], rtol=1e-6)
     features = model.state_features(values, mask)
     huge = model.state_features(values * 1e6, mask)
     assert torch.isfinite(features).all() and torch.isfinite(huge).all()
     clipped = model.state_features(values * 1e6 + 1.0, mask)
-    # Beyond the clip the embedding no longer moves: the backstop holds.
+    # Beyond the clip the embedding no longer moves: the backstop bounds what the floored
+    # dimension can do to the model, without muting it on the training distribution.
     torch.testing.assert_close(huge, clipped)
 
 
@@ -273,19 +284,40 @@ def test_two_camera_fusion_reads_both_cameras():
     metrics = model.train_step(both, readout_targets=targets)
     assert np.isfinite(metrics["readout_predicted_loss"])
 
-    # The camera ablation must differ by the second camera alone: the fusion is drawn
-    # last, so every other weight of a same-seed one-camera model is bit-identical.
-    single = NativeJEPA(SCHEMA, seed=1, config=SHARED)
-    assert "camera_fusion" not in dict(single.named_modules())
-    fresh = NativeJEPA(SCHEMA, seed=1, config=config).state_dict()
-    one = single.state_dict()
-    assert sorted(set(fresh) - set(one)) == [
-        "camera_fusion.hand_crop_rgb.weight",
+
+def test_camera_ablation_differs_by_exactly_the_extra_camera():
+    """The whole point of the ablation. A configured one-camera model keeps its own
+    projection, and the fusion is drawn last, so a same-seed two-camera model adds
+    exactly one tensor and changes nothing else."""
+    legacy = NativeJEPA(SCHEMA, seed=1, config=SHARED)
+    one = NativeJEPA(SCHEMA, seed=1, config=SHARED | {"cameras": ["onboard_rgb"]})
+    two = NativeJEPA(SCHEMA, seed=1, config=SHARED | {"cameras": ["onboard_rgb", "hand_crop_rgb"]})
+    # No `cameras` key at all keeps the pre-TASK-052 image pathway untouched.
+    assert not legacy.fuses_cameras and "camera_fusion" not in dict(legacy.named_modules())
+    assert one.fuses_cameras and two.fuses_cameras
+    a, b, c = legacy.state_dict(), one.state_dict(), two.state_dict()
+    assert sorted(set(b) - set(a)) == [
         "camera_fusion.onboard_rgb.bias",
         "camera_fusion.onboard_rgb.weight",
     ]
-    for name, value in one.items():
-        assert torch.equal(value.cpu(), fresh[name].cpu()), name
+    assert sorted(set(c) - set(b)) == ["camera_fusion.hand_crop_rgb.weight"]
+    for name, value in a.items():
+        assert torch.equal(value.cpu(), b[name].cpu()), name
+    for name, value in b.items():
+        assert torch.equal(value.cpu(), c[name].cpu()), name
+
+
+def test_sensor_backend_refuses_a_multi_camera_config():
+    """sensor_wm flattens one camera straight into its latent and has no fusion, so a
+    shared `cameras` key must be refused rather than silently honoured for camera 0."""
+    from embodied_jepa.models.sensor import SensorWorldModel
+
+    schema = StateSchema(("q0", "q1"), ("rad", "rad"), "fixture_v0")
+    SensorWorldModel(schema, seed=0, config={"image_size": 4})
+    with pytest.raises(ContractError, match="single 'camera'"):
+        SensorWorldModel(
+            schema, seed=0, config={"image_size": 4, "cameras": ["onboard_rgb", "hand_crop_rgb"]}
+        )
 
 
 def test_regression_loss_ignores_frames_with_a_dropped_apple():

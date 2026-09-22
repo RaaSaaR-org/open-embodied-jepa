@@ -199,6 +199,12 @@ seed per backend.
 **Frozen commands.** Both run from a clean committed worktree;
 `--require-clean` refuses a dirty tree.
 
+> **These commands no longer reproduce the results below at `main`.** TASK-052 changed
+> shared code they depend on (the readout head gained two auxiliary outputs and a wider
+> hidden layer, and the proprioception scaling changed), so the checkpoint implementation
+> hash differs and the numbers would not match. Check out revision `3b6af0b` to reproduce
+> the frozen TASK-050 runs.
+
 ```sh
 uv run --no-sync python -m embodied_jepa.world_model_v2 train \
   --config configs/apple_wm_v2_lewm.yaml \

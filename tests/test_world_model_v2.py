@@ -161,8 +161,14 @@ def test_privileged_labels_require_acknowledgement(tmp_path):
         wm.load_split(store, "val", CAMERA)
 
 
-def _write_labelled_episode(store, episode_id, root_id, *, transitions, apple_z, rng):
-    """One tiny two-camera episode plus its privileged label sidecar."""
+def _write_labelled_episode(
+    store, episode_id, root_id, *, transitions, apple_z, rng, label_rows=None
+):
+    """One tiny two-camera episode plus its privileged label sidecar.
+
+    ``label_rows`` writes a sidecar of a different length than the episode, to exercise
+    the mismatch refusal.
+    """
     from dataclasses import replace
 
     from embodied_jepa import training_labels
@@ -170,21 +176,22 @@ def _write_labelled_episode(store, episode_id, root_id, *, transitions, apple_z,
 
     base = deterministic_fixture()
     count = transitions + 1
+    rows = count if label_rows is None else label_rows
     shape = base.observations["head"].shape[1:]
     labels = {
         "privileged__apple_position_world": np.column_stack(
             [
-                np.full(count, 0.3, np.float32),
-                np.full(count, 0.1, np.float32),
-                np.asarray(apple_z, np.float32),
+                np.full(rows, 0.3, np.float32),
+                np.full(rows, 0.1, np.float32),
+                np.full(rows, apple_z, np.float32),
             ]
         ),
-        "privileged__palm_minus_apple_world": rng.normal(size=(count, 3)).astype(np.float32),
+        "privileged__palm_minus_apple_world": rng.normal(size=(rows, 3)).astype(np.float32),
         "privileged__plate_position_world": np.tile(
-            np.array([0.5, 0.0, 0.75], np.float32), (count, 1)
+            np.array([0.5, 0.0, 0.75], np.float32), (rows, 1)
         ),
-        "privileged__hand_contact": np.zeros(count, bool),
-        "privileged__apple_dropped": np.zeros(count, bool),
+        "privileged__hand_contact": np.zeros(rows, bool),
+        "privileged__apple_dropped": np.zeros(rows, bool),
         # One row per issued command: load_split must repeat the last one.
         "collector__phase_index": np.arange(transitions, dtype=np.int8) % 5,
     }
@@ -237,10 +244,10 @@ def test_load_split_assembles_cameras_targets_and_phases(tmp_path):
     )
     rng = np.random.default_rng(3)
     plan = {
-        "root-0": ("root-0", 6, np.full(7, 0.80, np.float32)),
-        "root-0-b0": ("root-0", 4, np.full(5, 0.90, np.float32)),  # rest height is the ROOT's
-        "root-1": ("root-1", 5, np.full(6, 0.78, np.float32)),
-        "unused": ("unused", 4, np.full(5, 0.77, np.float32)),
+        "root-0": ("root-0", 6, 0.80),
+        "root-0-b0": ("root-0", 4, 0.90),  # rest height is still the ROOT's 0.80
+        "root-1": ("root-1", 5, 0.78),
+        "unused": ("unused", 4, 0.77),
     }
     written = {
         name: _write_labelled_episode(
@@ -297,6 +304,40 @@ def test_load_split_assembles_cameras_targets_and_phases(tmp_path):
         )
     with pytest.raises(ContractError, match="distinct names"):
         wm.load_split(store, "val", (), workers=2, acknowledge_privileged_training_labels=True)
+
+
+def test_load_split_refuses_label_rows_that_disagree_with_the_observations(tmp_path):
+    """A sidecar whose privileged rows do not match the episode's observations would
+    silently misalign every readout target; it must be refused instead."""
+    pytest.importorskip("pyarrow")
+    pytest.importorskip("pandas")
+    pytest.importorskip("PIL")
+    from embodied_jepa.data import DatasetStore, deterministic_fixture
+
+    base = deterministic_fixture()
+    store = DatasetStore.create(
+        tmp_path / "corpus",
+        fps=20,
+        state_schema=base.state_schema,
+        action_manifest={"synthetic": True},
+        provenance={"synthetic": True},
+    )
+    rng = np.random.default_rng(11)
+    # "short" has 7 observation rows but a sidecar carrying only 6.
+    _write_labelled_episode(
+        store, "short", "short", transitions=6, apple_z=0.8, rng=rng, label_rows=6
+    )
+    _write_labelled_episode(store, "ok", "ok", transitions=5, apple_z=0.8, rng=rng)
+    _write_labelled_episode(store, "spare", "spare", transitions=4, apple_z=0.8, rng=rng)
+    store.freeze_split_assignments(
+        {"train": ["short"], "val": ["ok"], "test": ["spare"], "holdout": []},
+        provenance={"synthetic": True},
+        heldout_combinations=(),
+    )
+    with pytest.raises(ContractError, match="label rows"):
+        wm.load_split(
+            store, "train", "onboard_rgb", workers=2, acknowledge_privileged_training_labels=True
+        )
 
 
 def test_rank_statistics():
