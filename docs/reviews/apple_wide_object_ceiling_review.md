@@ -55,3 +55,38 @@ After finding 1, I know of no path by which the gate can pass for a software rea
 **Two blocking findings. Not cleared to run yet.** Fix finding 1 (count guard stops in the reference arms, object plans only) and finding 2 (require every ceiling attempt to be counted for a pass, or declare precedence). Each fix needs its focused test and a matching protocol and manifest edit. No reset, threshold, cost, budget, seed or command may change. Then re-run ruff, the full suite and the TRAIN-42000 smoke into a new scratch directory. Record the fix as a protocol revision, as TASK-046 R1 did. I recommend fixing finding 3 at the same time. Findings 4–10 are wording, test or results-document obligations. After those fixes, a short re-review of the diff is enough to clear the frozen command for a single run into a new `outputs/apple-wide-object-ceiling-v1`.
 
 The only repository file I wrote is this document. I made no Git operations and no MissionControl changes. I made no `outputs/` writes and ran no attempt on 45000–45007. The only physics I ran is the test suite's own non-cohort parity test. I read the TASK-046 and TASK-047 scratch artifacts only to verify the cited numbers.
+
+## Re-review of R1 (`git diff 73a8b0c..9ec5938`)
+
+Re-reviewed on 2026-09-22 by the same reviewer. The scope is the R1 commit `9ec5938`: `evaluate_apple.py`, `object_ceiling.py`, the two test files, the protocol and the manifest. As before, no `outputs/apple-wide-object-ceiling-v1` was created and no 45000-range reset was simulated.
+
+**Checks.**
+- `ruff check` and `ruff format --check` are clean.
+- The full suite (`JEPA_TEST_RENDER=1 LEROBOT_SOURCE=third_party/lerobot`) gives 647 passed and 7 skipped. The skips are the pre-existing `timm` ones.
+- `mc validate` passes.
+- I compared the post-R1 smoke `outputs/task047-scratch/smoke-42000-b` with the pre-R1 smoke `smoke-42000-a`:
+  - its source snapshot of `object_ceiling.py`, `evaluate_apple.py`, `scripted.py` and `privileged_rollout.py` is byte-identical to `9ec5938`;
+  - its report is `completed` with valid provenance, and 3/3 attempts succeeded;
+  - the ceiling ran 388 commands with 387/387 robot-state and 387/387 full-state checks, and `rollouts_exact` is true;
+  - its 388 applied ceiling actions equal `smoke-42000-a` exactly (compared from `trace.jsonl`).
+
+**Finding 1 (resolved).** `project_open_loop` catches only a `ContractError` whose message is in `GUARD_REFUSALS`.
+- It catches the error only when `guarded` is set, and returns None. The worker then ends the attempt with a counted `guard_refused` and records a trace event with its step. Every other error re-raises (tested).
+- `demo_replay` passes `guarded=object_kind`, so the state and hybrid replay paths still raise as before.
+- `scripted_oracle` passes `guarded=True`. That is correct because the mode is refused outside object plans.
+- The protocol now states that `guard_refused` applies in every arm.
+
+**Finding 2 (resolved).** `passed` now includes `ceiling["complete"]`. The protocol gate list, the plan `gate_rule`, the manifest and the gate `rule` string now agree. The test covers the "7/8 counted, 6 grasps" case: not passed, and `inconclusive`. The readings now partition the outcomes.
+
+**Findings 3–8 (resolved).**
+- **3, non-vacuous parity.** Each counted ceiling row needs at least `executed_steps − 1` checks of each kind. This is correct, because the last executed command is never checked: every termination happens before the next `encode`. A twin that rejects the chosen first step now makes the rollouts inexact, and so the run is `inconclusive` rather than silently passing.
+- **5, feasible-only rollouts.** Only feasible candidates are rolled out, via `projection.actions[:, indices]`, and costs are scattered back by index. RNG use and selection are unchanged, which the identical smoke commands confirm.
+- **6, test gaps.** The missing tests were added.
+- **4, 7 and 8, wording.** The timing, single-elite and corner-list wording is fixed, and the Fisher note is in the protocol.
+
+**Remaining minor (non-blocking, results-document only).**
+- The `guard_refused` trace event in the reference arms does not repeat the refusal string. It is implied by the single allowed message.
+- `project_open_loop` is unit-tested but not exercised through a full worker run. The worker-level wiring is three lines and I read it.
+- The smoke-b `plan.json` records `source_revision` `73a8b0c`, because it ran from the uncommitted R1 tree. The results must cite the run's own revision, not the smoke's.
+
+**Decision: cleared to run.** There are no remaining blocking findings. Run the frozen command once, exactly as preregistered, from a clean checkout of the commit that contains this re-review, into a new `outputs/apple-wide-object-ceiling-v1`. Record that commit's SHA and note that it differs from `9ec5938` only in `docs/reviews/`. No retries, replacement resets or parameter changes are allowed. Post-run evidence review is required before any conclusion.
