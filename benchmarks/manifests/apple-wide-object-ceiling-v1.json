@@ -2,7 +2,7 @@
  "format_version": 1,
  "experiment": "apple-wide-object-ceiling-v1",
  "task": "TASK-047",
- "status": "preregistered_not_run",
+ "status": "executed_once",
  "kind": "non_learned_object_aware_privileged_ceiling_on_wide_jitter_development",
  "label": "NON-LEARNED object-aware privileged MuJoCo-rollout ceiling (simulator object state in cost and phase transitions); not a learned result",
  "protocol": "docs/experiments/apple_wide_object_ceiling_v1.md",
@@ -204,5 +204,2170 @@
   "TASK-034 acceptance criteria"
  ],
  "review": "docs/reviews/apple_wide_object_ceiling_review.md",
- "pre_run_revision": "R1: guard refusals counted in all object-plan arms; gate requires every ceiling attempt counted; non-vacuous parity; feasible-only rollouts"
+ "pre_run_revision": "R1: guard refusals counted in all object-plan arms; gate requires every ceiling attempt counted; non-vacuous parity; feasible-only rollouts",
+ "results": "docs/experiments/apple_wide_object_ceiling_results_v1.md",
+ "source_revision": "613ecf81f800e3ecf3d16653b19fd7e9d051a751",
+ "started": "2026-09-22T14:05:44Z single frozen execution; no retries",
+ "ended": "2026-09-22T14:43:46Z",
+ "retries": 0,
+ "exit_code": 0,
+ "device": "cpu",
+ "output_directory": "outputs/apple-wide-object-ceiling-v1",
+ "checkpoint_sha256": "0192b99a60abf1d426d127505680570f238401b5a80f6270dd4859d6e64aa5a5",
+ "dataset_manifest_sha256": "6e9a5bcb38a42a27ce1118e102865db985e8e490f37d10de0075c437676f0331",
+ "action_manifest_sha256": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+ "asset_manifest_sha256": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+ "plan_sha256": "ec25cb0bc0274c89a722dcc00d4e8dcbf64534b4d864132dbfa710b59bfd0180",
+ "resolved_plan_sha256": "0c5ca4a8a32a9deeebc5600b02015658c64e42b8699e412a965a587e52195f0e",
+ "report_sha256": "1a5ecdc4a5344609ad258e4f5c7746823f5bbd8028ee96311b5a4b6b46a9f004",
+ "state_goals_sha256": "839190fcf652c6849eba592d9cac5c63bb15a97166e201d71bff7fb4f654f88d",
+ "state_calibration_sha256": "d8dae05105a4031d4c00d676faeb4b45e86ca8e6bdbacd0af650b2b42ce38d75",
+ "source_hashes": {
+  "scripts/evaluate_apple.py": "d7fc8d8b5328f71715cb674b3168cb4412d5536491593ea2f2984c2c24094fc9",
+  "src/embodied_jepa/__init__.py": "a0043e95cb31add021475ec8877d7a7b28189696ddf5ab2486d73537c84aec41",
+  "src/embodied_jepa/audit.py": "59998de9b29226547cb290195f949225895a2e6ffd174186bc91514e022fbc68",
+  "src/embodied_jepa/benchmark.py": "512462740021c8e601cdbe29ca2d185978e66cba0558f94865962636fb48f4a5",
+  "src/embodied_jepa/collection.py": "55cf6373120933fdbb43aa274e2164753f21848d819e6f786c0b862514b19745",
+  "src/embodied_jepa/config.py": "ae46c00748aa12acf53d22eba89cc395f431f4983e30ff1246d62c447dcd66bf",
+  "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+  "src/embodied_jepa/contracts.py": "d9ceedad9198bca60891c0292108822455e1761505c43522f5013363ff0fcb7b",
+  "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
+  "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+  "src/embodied_jepa/goals.py": "82b8ea44d25e7c861abf2bb463c9543f4a75c85923ced7fb7be14ffd59d6a489",
+  "src/embodied_jepa/hardware.py": "1ce0c301733af7b15a094b0962fcf566089355a33f49742e27e3a4dfbd03760e",
+  "src/embodied_jepa/hybrid_phase.py": "09da82a44cb7bf77be2888d501bfdbf1bc4e7af62c6b60aa813089d90d17d10c",
+  "src/embodied_jepa/manipulation_collection.py": "d1052b4a5075a9fbfb7e9e7f602bf7ce93e5c6796f02cad05a379a5e30ec999c",
+  "src/embodied_jepa/models/__init__.py": "694622858ffd8a892d6746c65f162c2cea19e9ead1aa5c566ab4edc6fb962f94",
+  "src/embodied_jepa/models/aligned_sensor.py": "6a882c374cfec5cb7d9464e3422da9ebde50311e2abcd553eaa8fd606fddaef5",
+  "src/embodied_jepa/models/base.py": "42dc2764eed055c51e431358f1841f23960832b4805f11623e62b37ca94a775e",
+  "src/embodied_jepa/models/jepa_wms.py": "431e6f3b47d6e6aba3ba16ab2461a22be5ec30d60449cf09b4970cb3062fb4b5",
+  "src/embodied_jepa/models/lewm.py": "43c30609fbb6c7885a7685f2051570d5f6bc44767cf69130e21a8a3b8d4121cf",
+  "src/embodied_jepa/models/native.py": "1647c218db9d70daa09183e25aee3dd18888fc83db5c974f0118f53d6ddb6c20",
+  "src/embodied_jepa/models/sensor.py": "6609dfbec19169d8c33d261750f90fbd8bb4e35a9bdb33daf893bbf845602699",
+  "src/embodied_jepa/models/state_goal_sensor.py": "c162f978878b69de1b8986badd2be78e9c558bf93f1f3b69b0a8badd7ce1a6e4",
+  "src/embodied_jepa/object_ceiling.py": "63519e4e91fb5c06885912b3cdef6fd3584005aac4618a64dbb8530a532c7f99",
+  "src/embodied_jepa/planning.py": "e9aea01c81f07e775a4d83116dadaebf7f723090ca4139c6289a4846d5891297",
+  "src/embodied_jepa/privileged_rollout.py": "853c371ac6e200ccd8e2cec6af7b6c9c799d7cc7092ccfc6e8d98defdb697f31",
+  "src/embodied_jepa/registry.py": "a3e69563f5c858855ccd63aa4b51556f783036a52f5b3ba64ee56d9bea19e7a9",
+  "src/embodied_jepa/result_schema.py": "be23d44eb2207397eab9c65acc176d87d7009a494c2facb72b2b65cb504cc04d",
+  "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+  "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+  "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+  "src/embodied_jepa/training.py": "b6a6aa45208efc7eb189dccdd42374ecf1b7740464384e38a4e1ff27c9cb9f59",
+  "src/embodied_jepa/trajectory_tracking.py": "77df3acb1145fa3bdbd685eff9f2592e78740e611d5292bfd17da41fcafe9433",
+  "src/embodied_jepa/waypoint_planning.py": "cf67c0557be39e38ce560f24ad4266fb19f2a873a8e5313875a0d46220c48a1a"
+ },
+ "report_status": "completed",
+ "provenance_valid": true,
+ "planned": 24,
+ "wall_seconds": 2282.047362375073,
+ "final_cohort_executed": false,
+ "object_ceiling_gate": {
+  "arms": {
+   "demo_replay": {
+    "complete": true,
+    "counted_attempts": 8,
+    "full_successes": 2,
+    "grasp_resets": 2,
+    "per_reset": {
+     "45000": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42025",
+      "executed_steps": 501,
+      "grasp": true,
+      "ordered_stages": 5,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45001": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 221,
+      "grasp": false,
+      "ordered_stages": 1,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 1,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused"
+     },
+     "45002": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 226,
+      "grasp": false,
+      "ordered_stages": 1,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 1,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused"
+     },
+     "45003": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 261,
+      "grasp": false,
+      "ordered_stages": 1,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 1,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused"
+     },
+     "45004": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 223,
+      "grasp": false,
+      "ordered_stages": 1,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 1,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused"
+     },
+     "45005": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 501,
+      "grasp": false,
+      "ordered_stages": 1,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 1,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "demo_exhausted"
+     },
+     "45006": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 501,
+      "grasp": true,
+      "ordered_stages": 5,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45007": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42025",
+      "executed_steps": 222,
+      "grasp": false,
+      "ordered_stages": 1,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 1,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "guard_refused"
+     }
+    },
+    "reach_resets": 8,
+    "summed_ordered_stages": 16
+   },
+   "privileged_object": {
+    "complete": true,
+    "counted_attempts": 8,
+    "failed_reset_furthest_phase": {
+     "descend": 2,
+     "lift": 1
+    },
+    "full_successes": 3,
+    "grasp_resets": 5,
+    "per_reset": {
+     "45000": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42025",
+      "executed_steps": 592,
+      "furthest_phase_index": 7,
+      "grasp": true,
+      "ordered_stages": 3,
+      "phase": "retreat",
+      "phase_log": [
+       {
+        "command": 0,
+        "phase": "approach"
+       },
+       {
+        "command": 109,
+        "phase": "descend"
+       },
+       {
+        "command": 124,
+        "phase": "close",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 169,
+        "phase": "lift"
+       },
+       {
+        "command": 209,
+        "phase": "transport"
+       },
+       {
+        "command": 280,
+        "phase": "lower",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 352,
+        "phase": "release",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 392,
+        "phase": "retreat"
+       }
+      ],
+      "reach": true,
+      "reported_ordered_stages_uncounted": 3,
+      "rollout_full_state_parity_checks": 591,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 591,
+      "rollout_parity_mismatches": 0,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "phase_stall"
+     },
+     "45001": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 364,
+      "furthest_phase_index": 7,
+      "grasp": true,
+      "ordered_stages": 5,
+      "phase": "retreat",
+      "phase_log": [
+       {
+        "command": 0,
+        "phase": "approach"
+       },
+       {
+        "command": 111,
+        "phase": "descend"
+       },
+       {
+        "command": 127,
+        "phase": "close",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 172,
+        "phase": "lift"
+       },
+       {
+        "command": 207,
+        "phase": "transport"
+       },
+       {
+        "command": 255,
+        "phase": "lower",
+        "previous_ended": "reached"
+       },
+       {
+        "command": 315,
+        "phase": "release",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 355,
+        "phase": "retreat"
+       }
+      ],
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "rollout_full_state_parity_checks": 363,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 363,
+      "rollout_parity_mismatches": 0,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45002": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 426,
+      "furthest_phase_index": 7,
+      "grasp": true,
+      "ordered_stages": 5,
+      "phase": "retreat",
+      "phase_log": [
+       {
+        "command": 0,
+        "phase": "approach"
+       },
+       {
+        "command": 111,
+        "phase": "descend"
+       },
+       {
+        "command": 138,
+        "phase": "close",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 183,
+        "phase": "lift"
+       },
+       {
+        "command": 217,
+        "phase": "transport"
+       },
+       {
+        "command": 273,
+        "phase": "lower",
+        "previous_ended": "reached"
+       },
+       {
+        "command": 377,
+        "phase": "release",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 417,
+        "phase": "retreat"
+       }
+      ],
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "rollout_full_state_parity_checks": 425,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 425,
+      "rollout_parity_mismatches": 0,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45003": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 308,
+      "furthest_phase_index": 1,
+      "grasp": false,
+      "ordered_stages": 0,
+      "phase": "descend",
+      "phase_log": [
+       {
+        "command": 0,
+        "phase": "approach"
+       },
+       {
+        "command": 108,
+        "phase": "descend"
+       }
+      ],
+      "reach": false,
+      "reported_ordered_stages_uncounted": 0,
+      "rollout_full_state_parity_checks": 307,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 307,
+      "rollout_parity_mismatches": 0,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "phase_stall"
+     },
+     "45004": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 314,
+      "furthest_phase_index": 1,
+      "grasp": false,
+      "ordered_stages": 0,
+      "phase": "descend",
+      "phase_log": [
+       {
+        "command": 0,
+        "phase": "approach"
+       },
+       {
+        "command": 114,
+        "phase": "descend"
+       }
+      ],
+      "reach": false,
+      "reported_ordered_stages_uncounted": 0,
+      "rollout_full_state_parity_checks": 313,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 313,
+      "rollout_parity_mismatches": 0,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "phase_stall"
+     },
+     "45005": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 363,
+      "furthest_phase_index": 7,
+      "grasp": true,
+      "ordered_stages": 5,
+      "phase": "retreat",
+      "phase_log": [
+       {
+        "command": 0,
+        "phase": "approach"
+       },
+       {
+        "command": 110,
+        "phase": "descend"
+       },
+       {
+        "command": 150,
+        "phase": "close",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 195,
+        "phase": "lift"
+       },
+       {
+        "command": 225,
+        "phase": "transport"
+       },
+       {
+        "command": 270,
+        "phase": "lower",
+        "previous_ended": "reached"
+       },
+       {
+        "command": 307,
+        "phase": "release",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 347,
+        "phase": "retreat"
+       }
+      ],
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "rollout_full_state_parity_checks": 362,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 362,
+      "rollout_parity_mismatches": 0,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45006": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 371,
+      "furthest_phase_index": 3,
+      "grasp": false,
+      "ordered_stages": 1,
+      "phase": "lift",
+      "phase_log": [
+       {
+        "command": 0,
+        "phase": "approach"
+       },
+       {
+        "command": 110,
+        "phase": "descend"
+       },
+       {
+        "command": 126,
+        "phase": "close",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 171,
+        "phase": "lift"
+       }
+      ],
+      "reach": true,
+      "reported_ordered_stages_uncounted": 1,
+      "rollout_full_state_parity_checks": 370,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 370,
+      "rollout_parity_mismatches": 0,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "phase_stall"
+     },
+     "45007": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42025",
+      "executed_steps": 584,
+      "furthest_phase_index": 7,
+      "grasp": true,
+      "ordered_stages": 3,
+      "phase": "retreat",
+      "phase_log": [
+       {
+        "command": 0,
+        "phase": "approach"
+       },
+       {
+        "command": 114,
+        "phase": "descend"
+       },
+       {
+        "command": 130,
+        "phase": "close",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 175,
+        "phase": "lift"
+       },
+       {
+        "command": 214,
+        "phase": "transport"
+       },
+       {
+        "command": 272,
+        "phase": "lower",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 344,
+        "phase": "release",
+        "previous_ended": "blocked"
+       },
+       {
+        "command": 384,
+        "phase": "retreat"
+       }
+      ],
+      "reach": true,
+      "reported_ordered_stages_uncounted": 3,
+      "rollout_full_state_parity_checks": 583,
+      "rollout_full_state_parity_mismatches": 0,
+      "rollout_parity_checks": 583,
+      "rollout_parity_mismatches": 0,
+      "status": "completed",
+      "success": false,
+      "termination_reason": "phase_stall"
+     }
+    },
+    "reach_resets": 6,
+    "rollout_full_state_parity_mismatches": 0,
+    "rollout_parity_mismatches": 0,
+    "rollouts_exact": true,
+    "summed_ordered_stages": 22
+   },
+   "scripted_oracle": {
+    "complete": true,
+    "counted_attempts": 8,
+    "full_successes": 8,
+    "grasp_resets": 8,
+    "per_reset": {
+     "45000": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42025",
+      "executed_steps": 502,
+      "grasp": true,
+      "oracle_phase": "release_high",
+      "ordered_stages": 5,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45001": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 501,
+      "grasp": true,
+      "oracle_phase": "release_high",
+      "ordered_stages": 5,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45002": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42012",
+      "executed_steps": 501,
+      "grasp": true,
+      "oracle_phase": "release_high",
+      "ordered_stages": 5,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45003": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 501,
+      "grasp": true,
+      "oracle_phase": "release_high",
+      "ordered_stages": 5,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45004": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 501,
+      "grasp": true,
+      "oracle_phase": "release_high",
+      "ordered_stages": 5,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45005": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42017",
+      "executed_steps": 501,
+      "grasp": true,
+      "oracle_phase": "release_high",
+      "ordered_stages": 5,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45006": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42020",
+      "executed_steps": 501,
+      "grasp": true,
+      "oracle_phase": "release_high",
+      "ordered_stages": 5,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     },
+     "45007": {
+      "counted": true,
+      "demonstration_episode_id": "apple-42025",
+      "executed_steps": 502,
+      "grasp": true,
+      "oracle_phase": "release_high",
+      "ordered_stages": 5,
+      "reach": true,
+      "reported_ordered_stages_uncounted": 5,
+      "status": "completed",
+      "success": true,
+      "termination_reason": "success"
+     }
+    },
+    "reach_resets": 8,
+    "summed_ordered_stages": 40
+   }
+  },
+  "demo_replay_grasp_resets": 2,
+  "label": "NON-LEARNED: object-aware privileged MuJoCo-rollout ceiling vs open-loop retrieved TRAIN demo_replay vs scripted collector reference on the wide-jitter development resets; not a learned result",
+  "primary_gate_passed": false,
+  "privileged_object_grasp_resets": 5,
+  "provenance_valid": true,
+  "readings": {
+   "conclusive": true,
+   "interpretation": "the scripted collector grasps where the object-aware exact-dynamics ceiling does not: the phase cost/planner design, not the distribution, is inadequate",
+   "outcome": "ceiling_inadequate_task_feasible",
+   "preregistered_next_step": "diagnose the ceiling's failure phases and redesign its cost/transitions under a new preregistration; do not pair it with a learned model; T2 may proceed only with the wide distribution validated by the scripted reference",
+   "scripted_reference_conclusive": true
+  },
+  "required_ceiling_grasp_resets": 6,
+  "required_replay_margin": 3,
+  "rollouts_exact": true,
+  "rule": "privileged_object reaches the unchanged scorer's grasp stage (reach, >=5 cm lift, hand contact) on >=6 of 8 resets AND demo_replay grasp resets <= privileged_object grasp resets - 3; every ceiling and demo_replay attempt counted; zero robot and full-state rollout parity mismatches over >= executed commands - 1 checks per counted ceiling attempt; only cleanly completed provenance-valid attempts are scored; scripted_oracle never affects the gate; non-learned only",
+  "scripted_oracle_grasp_resets": 8
+ },
+ "records": [
+  {
+   "attempt_id": "45000-demo_replay",
+   "seed": 45000,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "demonstration_episode_id": "apple-42025",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328178729911,
+    "object_plate_distance_m": 0.02620045212307838,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.610475063323975,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8389.402590990067,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.33964957067039525,
+     -0.17349531741060148
+    ],
+    "plate_xy": [
+     0.5095476432213811,
+     -0.09875205968642384
+    ],
+    "seed": 45000
+   }
+  },
+  {
+   "attempt_id": "45001-demo_replay",
+   "seed": 45001,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 221,
+   "demonstration_episode_id": "apple-42012",
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.765871560540379,
+    "object_plate_distance_m": 0.1814148310491281,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.045776128768921,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8381.15655708313,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.3640542376776222,
+     -0.2034030583535737
+    ],
+    "plate_xy": [
+     0.47755133222597423,
+     -0.07014092353785453
+    ],
+    "seed": 45001
+   }
+  },
+  {
+   "attempt_id": "45002-demo_replay",
+   "seed": 45002,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 226,
+   "demonstration_episode_id": "apple-42012",
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.7664011624380869,
+    "object_plate_distance_m": 0.2050637675813907,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.172460079193115,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8376.433178186417,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.32686955434056825,
+     -0.20506151955054064
+    ],
+    "plate_xy": [
+     0.48361462325389765,
+     -0.07393560957368306
+    ],
+    "seed": 45002
+   }
+  },
+  {
+   "attempt_id": "45003-demo_replay",
+   "seed": 45003,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 261,
+   "demonstration_episode_id": "apple-42020",
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.7665216231968541,
+    "object_plate_distance_m": 0.18710255932260092,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.553998947143555,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8371.669028043747,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.31240507160567377,
+     -0.15329275724767755
+    ],
+    "plate_xy": [
+     0.4973190320885954,
+     -0.07146699458219609
+    ],
+    "seed": 45003
+   }
+  },
+  {
+   "attempt_id": "45004-demo_replay",
+   "seed": 45004,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 223,
+   "demonstration_episode_id": "apple-42017",
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.766265022351743,
+    "object_plate_distance_m": 0.1615292762002239,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.08112907409668,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8366.458319187164,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.33059242406326106,
+     -0.15040562504043156
+    ],
+    "plate_xy": [
+     0.4732366650163055,
+     -0.09793906489355508
+    ],
+    "seed": 45004
+   }
+  },
+  {
+   "attempt_id": "45005-demo_replay",
+   "seed": 45005,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "demo_exhausted",
+   "executed_steps": 501,
+   "demonstration_episode_id": "apple-42017",
+   "score": {
+    "dropped": true,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.026632818157539827,
+    "object_plate_distance_m": 3.760186243505122,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 7.5676610469818115,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8361.74554014206,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.3522474902693055,
+     -0.19756278385116816
+    ],
+    "plate_xy": [
+     0.48545590978329256,
+     -0.09351108457753866
+    ],
+    "seed": 45005
+   }
+  },
+  {
+   "attempt_id": "45006-demo_replay",
+   "seed": 45006,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "demonstration_episode_id": "apple-42020",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328178687936,
+    "object_plate_distance_m": 0.028775917952969934,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.584019899368286,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8353.493999004364,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.32763844553728483,
+     -0.17697440068439335
+    ],
+    "plate_xy": [
+     0.4965800396139126,
+     -0.08410911994562947
+    ],
+    "seed": 45006
+   }
+  },
+  {
+   "attempt_id": "45007-demo_replay",
+   "seed": 45007,
+   "mode": "demo_replay",
+   "status": "completed",
+   "termination_reason": "guard_refused",
+   "executed_steps": 222,
+   "demonstration_episode_id": "apple-42025",
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.7660295289786628,
+    "object_plate_distance_m": 0.18144149981736965,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 4.146929979324341,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8345.251075983047,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.35286698575742187,
+     -0.18770409666826868
+    ],
+    "plate_xy": [
+     0.4977923833676463,
+     -0.09260926620354028
+    ],
+    "seed": 45007
+   }
+  },
+  {
+   "attempt_id": "45000-scripted_oracle",
+   "seed": 45000,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 502,
+   "demonstration_episode_id": "apple-42025",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180639606,
+    "object_plate_distance_m": 0.02873003910442804,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.661529064178467,
+   "oracle_phase": "release_high",
+   "oracle_commands": 502,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8340.45557808876,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.33964957067039525,
+     -0.17349531741060148
+    ],
+    "plate_xy": [
+     0.5095476432213811,
+     -0.09875205968642384
+    ],
+    "seed": 45000
+   }
+  },
+  {
+   "attempt_id": "45001-scripted_oracle",
+   "seed": 45001,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "demonstration_episode_id": "apple-42012",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328176176657,
+    "object_plate_distance_m": 0.02186874726904364,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.69684910774231,
+   "oracle_phase": "release_high",
+   "oracle_commands": 501,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8332.147518873215,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.3640542376776222,
+     -0.2034030583535737
+    ],
+    "plate_xy": [
+     0.47755133222597423,
+     -0.07014092353785453
+    ],
+    "seed": 45001
+   }
+  },
+  {
+   "attempt_id": "45002-scripted_oracle",
+   "seed": 45002,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "demonstration_episode_id": "apple-42012",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.778632818076962,
+    "object_plate_distance_m": 0.02871766388032122,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.614943027496338,
+   "oracle_phase": "release_high",
+   "oracle_commands": 501,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8323.840903997421,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.32686955434056825,
+     -0.20506151955054064
+    ],
+    "plate_xy": [
+     0.48361462325389765,
+     -0.07393560957368306
+    ],
+    "seed": 45002
+   }
+  },
+  {
+   "attempt_id": "45003-scripted_oracle",
+   "seed": 45003,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "demonstration_episode_id": "apple-42020",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328182872361,
+    "object_plate_distance_m": 0.028409391993135455,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.68804407119751,
+   "oracle_phase": "release_high",
+   "oracle_commands": 501,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8315.619083881378,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.31240507160567377,
+     -0.15329275724767755
+    ],
+    "plate_xy": [
+     0.4973190320885954,
+     -0.07146699458219609
+    ],
+    "seed": 45003
+   }
+  },
+  {
+   "attempt_id": "45004-scripted_oracle",
+   "seed": 45004,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "demonstration_episode_id": "apple-42017",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328182030886,
+    "object_plate_distance_m": 0.027759088972728392,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.66084098815918,
+   "oracle_phase": "release_high",
+   "oracle_commands": 501,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8307.294749975204,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.33059242406326106,
+     -0.15040562504043156
+    ],
+    "plate_xy": [
+     0.4732366650163055,
+     -0.09793906489355508
+    ],
+    "seed": 45004
+   }
+  },
+  {
+   "attempt_id": "45005-scripted_oracle",
+   "seed": 45005,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "demonstration_episode_id": "apple-42017",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328175320887,
+    "object_plate_distance_m": 0.02399473065161499,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.6728081703186035,
+   "oracle_phase": "release_high",
+   "oracle_commands": 501,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8298.979681015015,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.3522474902693055,
+     -0.19756278385116816
+    ],
+    "plate_xy": [
+     0.48545590978329256,
+     -0.09351108457753866
+    ],
+    "seed": 45005
+   }
+  },
+  {
+   "attempt_id": "45006-scripted_oracle",
+   "seed": 45006,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 501,
+   "demonstration_episode_id": "apple-42020",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328180716624,
+    "object_plate_distance_m": 0.027310489625124088,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.709092855453491,
+   "oracle_phase": "release_high",
+   "oracle_commands": 501,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8290.654722929,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.32763844553728483,
+     -0.17697440068439335
+    ],
+    "plate_xy": [
+     0.4965800396139126,
+     -0.08410911994562947
+    ],
+    "seed": 45006
+   }
+  },
+  {
+   "attempt_id": "45007-scripted_oracle",
+   "seed": 45007,
+   "mode": "scripted_oracle",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 502,
+   "demonstration_episode_id": "apple-42025",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.778632818052497,
+    "object_plate_distance_m": 0.02871467748078458,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 7.698061943054199,
+   "oracle_phase": "release_high",
+   "oracle_commands": 502,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8282.259671926498,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.35286698575742187,
+     -0.18770409666826868
+    ],
+    "plate_xy": [
+     0.4977923833676463,
+     -0.09260926620354028
+    ],
+    "seed": 45007
+   }
+  },
+  {
+   "attempt_id": "45000-privileged_object",
+   "seed": 45000,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "phase_stall",
+   "executed_steps": 592,
+   "demonstration_episode_id": "apple-42025",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328111689276,
+    "object_plate_distance_m": 0.04562120390396222,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": true
+   },
+   "wall_seconds": 382.69326186180115,
+   "phase": "retreat",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 109,
+     "phase": "descend"
+    },
+    {
+     "command": 124,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 169,
+     "phase": "lift"
+    },
+    {
+     "command": 209,
+     "phase": "transport"
+    },
+    {
+     "command": 280,
+     "phase": "lower",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 352,
+     "phase": "release",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 392,
+     "phase": "retreat"
+    }
+   ],
+   "furthest_phase_index": 7,
+   "ceiling_commands": 592,
+   "rollout_parity_checks": 591,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 591,
+   "rollout_full_state_parity_mismatches": 0,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 8273.885306119919,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.33964957067039525,
+     -0.17349531741060148
+    ],
+    "plate_xy": [
+     0.5095476432213811,
+     -0.09875205968642384
+    ],
+    "seed": 45000
+   }
+  },
+  {
+   "attempt_id": "45001-privileged_object",
+   "seed": 45001,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 364,
+   "demonstration_episode_id": "apple-42012",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328181573738,
+    "object_plate_distance_m": 0.036869389820190564,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 241.7477250099182,
+   "phase": "retreat",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 111,
+     "phase": "descend"
+    },
+    {
+     "command": 127,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 172,
+     "phase": "lift"
+    },
+    {
+     "command": 207,
+     "phase": "transport"
+    },
+    {
+     "command": 255,
+     "phase": "lower",
+     "previous_ended": "reached"
+    },
+    {
+     "command": 315,
+     "phase": "release",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 355,
+     "phase": "retreat"
+    }
+   ],
+   "furthest_phase_index": 7,
+   "ceiling_commands": 364,
+   "rollout_parity_checks": 363,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 363,
+   "rollout_full_state_parity_mismatches": 0,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 7890.484092950821,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.3640542376776222,
+     -0.2034030583535737
+    ],
+    "plate_xy": [
+     0.47755133222597423,
+     -0.07014092353785453
+    ],
+    "seed": 45001
+   }
+  },
+  {
+   "attempt_id": "45002-privileged_object",
+   "seed": 45002,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 426,
+   "demonstration_episode_id": "apple-42012",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.778632818157332,
+    "object_plate_distance_m": 0.035987906735411745,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 290.87459993362427,
+   "phase": "retreat",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 111,
+     "phase": "descend"
+    },
+    {
+     "command": 138,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 183,
+     "phase": "lift"
+    },
+    {
+     "command": 217,
+     "phase": "transport"
+    },
+    {
+     "command": 273,
+     "phase": "lower",
+     "previous_ended": "reached"
+    },
+    {
+     "command": 377,
+     "phase": "release",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 417,
+     "phase": "retreat"
+    }
+   ],
+   "furthest_phase_index": 7,
+   "ceiling_commands": 426,
+   "rollout_parity_checks": 425,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 425,
+   "rollout_full_state_parity_mismatches": 0,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 7648.092880010605,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.32686955434056825,
+     -0.20506151955054064
+    ],
+    "plate_xy": [
+     0.48361462325389765,
+     -0.07393560957368306
+    ],
+    "seed": 45002
+   }
+  },
+  {
+   "attempt_id": "45003-privileged_object",
+   "seed": 45003,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "phase_stall",
+   "executed_steps": 308,
+   "demonstration_episode_id": "apple-42020",
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.7666328181575404,
+    "object_plate_distance_m": 0.2022093662821326,
+    "place": false,
+    "reach": false,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 176.98213028907776,
+   "phase": "descend",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 108,
+     "phase": "descend"
+    }
+   ],
+   "furthest_phase_index": 1,
+   "ceiling_commands": 308,
+   "rollout_parity_checks": 307,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 307,
+   "rollout_full_state_parity_mismatches": 0,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 7356.524461984634,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.31240507160567377,
+     -0.15329275724767755
+    ],
+    "plate_xy": [
+     0.4973190320885954,
+     -0.07146699458219609
+    ],
+    "seed": 45003
+   }
+  },
+  {
+   "attempt_id": "45004-privileged_object",
+   "seed": 45004,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "phase_stall",
+   "executed_steps": 314,
+   "demonstration_episode_id": "apple-42017",
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": false,
+    "object_height_m": 0.7666328181575404,
+    "object_plate_distance_m": 0.151987233379868,
+    "place": false,
+    "reach": false,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 183.82415633415803,
+   "phase": "descend",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 114,
+     "phase": "descend"
+    }
+   ],
+   "furthest_phase_index": 1,
+   "ceiling_commands": 314,
+   "rollout_parity_checks": 313,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 313,
+   "rollout_full_state_parity_mismatches": 0,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 7178.896446943283,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.33059242406326106,
+     -0.15040562504043156
+    ],
+    "plate_xy": [
+     0.4732366650163055,
+     -0.09793906489355508
+    ],
+    "seed": 45004
+   }
+  },
+  {
+   "attempt_id": "45005-privileged_object",
+   "seed": 45005,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "success",
+   "executed_steps": 363,
+   "demonstration_episode_id": "apple-42017",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328181575406,
+    "object_plate_distance_m": 0.03939166790848207,
+    "place": true,
+    "reach": true,
+    "release": true,
+    "success": true,
+    "support_dwell_s": 0.14999999999991687,
+    "transport": true
+   },
+   "wall_seconds": 240.9936615419574,
+   "phase": "retreat",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 110,
+     "phase": "descend"
+    },
+    {
+     "command": 150,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 195,
+     "phase": "lift"
+    },
+    {
+     "command": 225,
+     "phase": "transport"
+    },
+    {
+     "command": 270,
+     "phase": "lower",
+     "previous_ended": "reached"
+    },
+    {
+     "command": 307,
+     "phase": "release",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 347,
+     "phase": "retreat"
+    }
+   ],
+   "furthest_phase_index": 7,
+   "ceiling_commands": 363,
+   "rollout_parity_checks": 362,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 362,
+   "rollout_full_state_parity_mismatches": 0,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 6994.364307749784,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.3522474902693055,
+     -0.19756278385116816
+    ],
+    "plate_xy": [
+     0.48545590978329256,
+     -0.09351108457753866
+    ],
+    "seed": 45005
+   }
+  },
+  {
+   "attempt_id": "45006-privileged_object",
+   "seed": 45006,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "phase_stall",
+   "executed_steps": 371,
+   "demonstration_episode_id": "apple-42020",
+   "score": {
+    "dropped": false,
+    "grasp": false,
+    "hand_contact": true,
+    "object_height_m": 0.7666312918570676,
+    "object_plate_distance_m": 0.19155092369803925,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": false
+   },
+   "wall_seconds": 241.89409589767456,
+   "phase": "lift",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 110,
+     "phase": "descend"
+    },
+    {
+     "command": 126,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 171,
+     "phase": "lift"
+    }
+   ],
+   "furthest_phase_index": 3,
+   "ceiling_commands": 371,
+   "rollout_parity_checks": 370,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 370,
+   "rollout_full_state_parity_mismatches": 0,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 6752.491513624787,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.32763844553728483,
+     -0.17697440068439335
+    ],
+    "plate_xy": [
+     0.4965800396139126,
+     -0.08410911994562947
+    ],
+    "seed": 45006
+   }
+  },
+  {
+   "attempt_id": "45007-privileged_object",
+   "seed": 45007,
+   "mode": "privileged_object",
+   "status": "completed",
+   "termination_reason": "phase_stall",
+   "executed_steps": 584,
+   "demonstration_episode_id": "apple-42025",
+   "score": {
+    "dropped": false,
+    "grasp": true,
+    "hand_contact": false,
+    "object_height_m": 0.7786328179187051,
+    "object_plate_distance_m": 0.04547112731139903,
+    "place": false,
+    "reach": true,
+    "release": false,
+    "success": false,
+    "support_dwell_s": 0.0,
+    "transport": true
+   },
+   "wall_seconds": 396.0673198699951,
+   "phase": "retreat",
+   "phase_log": [
+    {
+     "command": 0,
+     "phase": "approach"
+    },
+    {
+     "command": 114,
+     "phase": "descend"
+    },
+    {
+     "command": 130,
+     "phase": "close",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 175,
+     "phase": "lift"
+    },
+    {
+     "command": 214,
+     "phase": "transport"
+    },
+    {
+     "command": 272,
+     "phase": "lower",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 344,
+     "phase": "release",
+     "previous_ended": "blocked"
+    },
+    {
+     "command": 384,
+     "phase": "retreat"
+    }
+   ],
+   "furthest_phase_index": 7,
+   "ceiling_commands": 584,
+   "rollout_parity_checks": 583,
+   "rollout_parity_mismatches": 0,
+   "rollout_full_state_parity_checks": 583,
+   "rollout_full_state_parity_mismatches": 0,
+   "attempt_allocation": {
+    "allocated_seconds": 960.0,
+    "global_remaining_seconds": 6509.63971237489,
+    "global_shortened": false,
+    "requested_seconds": 960.0
+   },
+   "supervisor": {
+    "returncode": 0,
+    "status": "exited"
+   },
+   "reset": {
+    "object_xy": [
+     0.35286698575742187,
+     -0.18770409666826868
+    ],
+    "plate_xy": [
+     0.4977923833676463,
+     -0.09260926620354028
+    ],
+    "seed": 45007
+   }
+  }
+ ],
+ "artifact_sha256": {
+  "45000-demo_replay.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45000-privileged_object.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45000-scripted_oracle.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45001-demo_replay.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45001-privileged_object.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45001-scripted_oracle.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45002-demo_replay.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45002-privileged_object.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45002-scripted_oracle.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45003-demo_replay.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45003-privileged_object.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45003-scripted_oracle.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45004-demo_replay.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45004-privileged_object.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45004-scripted_oracle.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45005-demo_replay.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45005-privileged_object.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45005-scripted_oracle.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45006-demo_replay.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45006-privileged_object.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45006-scripted_oracle.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45007-demo_replay.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45007-privileged_object.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "45007-scripted_oracle.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "attempts/45000-demo_replay/report.json": "da44c8c695f982f74faf285af75ef5af4f2b27fbc7bb9a8d002477410285a4d1",
+  "attempts/45000-demo_replay/retrieval.json": "f68922772eeed93a5de49e41e6a6cd053693ea64a3f6b5495c46005c515d2e7c",
+  "attempts/45000-demo_replay/started.json": "c78926381b95b346b51e28f32724aced69f85121b6070efd583f2077a35d1811",
+  "attempts/45000-demo_replay/trace.jsonl": "a318e75e80da1c9f85c6c687a93f27f2abf5932834bb1b3d7caaecc98eff48c1",
+  "attempts/45000-privileged_object/report.json": "f9b8b3df34d805b42b4fd5c2c5a4fabfacc2951e9223f191ff2ec4ba1cb00d37",
+  "attempts/45000-privileged_object/retrieval.json": "f68922772eeed93a5de49e41e6a6cd053693ea64a3f6b5495c46005c515d2e7c",
+  "attempts/45000-privileged_object/started.json": "984fe6aed15fb70a56dff315dc9fd91061e09ed7f00a96cda3d4ddaebe6422cb",
+  "attempts/45000-privileged_object/trace.jsonl": "69b02c13c57d9a6c72ff1d3b4e9d0d1613126732f3475f8ca5c1bb55d4d9ceb2",
+  "attempts/45000-scripted_oracle/report.json": "28b945600c78df7567417237c7b583a13230813bf8d8d68193b26100dd9efedd",
+  "attempts/45000-scripted_oracle/retrieval.json": "f68922772eeed93a5de49e41e6a6cd053693ea64a3f6b5495c46005c515d2e7c",
+  "attempts/45000-scripted_oracle/started.json": "8b949932e1ee9bbb15380fc90c909c9a7d61ab0803a6d94004679710cd572352",
+  "attempts/45000-scripted_oracle/trace.jsonl": "f467bb179ce90ec532c9e66cb61c711c9b4b11f7ac1575be1ffb5a9211968eaf",
+  "attempts/45001-demo_replay/report.json": "bab3493dd6e5d651fe4d16db6070a6f1a4d984ea2535d3a215b06d6691058476",
+  "attempts/45001-demo_replay/retrieval.json": "ea0e3568e2f9aa6323317e47c9576710287d80b2ee7b99609c808338f462401e",
+  "attempts/45001-demo_replay/started.json": "bd97b85dd468a9ec8a4e2a3c0e28ff42376e64ff8911c3811aa8ba926772c556",
+  "attempts/45001-demo_replay/trace.jsonl": "d9b67129da86a3c31e6dfce9876bd485c73077b86daf31b359772095c13de15b",
+  "attempts/45001-privileged_object/report.json": "b8d62971ac477b8be4b567c293edf3995627cd40f0e7a78839e0512c95c8946e",
+  "attempts/45001-privileged_object/retrieval.json": "ea0e3568e2f9aa6323317e47c9576710287d80b2ee7b99609c808338f462401e",
+  "attempts/45001-privileged_object/started.json": "2fc3bb3292e1eea3d737cd108c808ea07f7ae15fff96b1723e9d945ae748cff4",
+  "attempts/45001-privileged_object/trace.jsonl": "7191bd596cdf027ddafad055eb3a025c6829a601fde653180edaf1f601601209",
+  "attempts/45001-scripted_oracle/report.json": "dba09f78bbf8fcf3098b8b68bda9c95d55b65b38cebcd125cbc6881401d8cee4",
+  "attempts/45001-scripted_oracle/retrieval.json": "ea0e3568e2f9aa6323317e47c9576710287d80b2ee7b99609c808338f462401e",
+  "attempts/45001-scripted_oracle/started.json": "3af9e5f731888909aeeedd46e2f84686171e5c0277f9c56d16037938f73e0a9b",
+  "attempts/45001-scripted_oracle/trace.jsonl": "4b26708c955b17e82f69ac9272a39b1bf8ab5ed2ae282cac2eb79c95867466dc",
+  "attempts/45002-demo_replay/report.json": "042bfea521dfef3fb27dcf02272e20ac139995b2e02cf2185695b7c41fbb24ee",
+  "attempts/45002-demo_replay/retrieval.json": "4dbbf3779429c0b011414a02a86c81ff37888b52be150ec1e24d369fe62d6a30",
+  "attempts/45002-demo_replay/started.json": "5f1f76a146c0c988c85415473c068c3f6a469608e9b1532187a36a24985e61aa",
+  "attempts/45002-demo_replay/trace.jsonl": "c27c923524acc74e4c1b67037a351a5d9798577ebe3474b7f08756e9b5023e84",
+  "attempts/45002-privileged_object/report.json": "2af73213cc6fc7f1b8ae67d94de6a2085a90468e7171871826613699e0ed86ec",
+  "attempts/45002-privileged_object/retrieval.json": "4dbbf3779429c0b011414a02a86c81ff37888b52be150ec1e24d369fe62d6a30",
+  "attempts/45002-privileged_object/started.json": "909f346dc0115b8a6c657f41fbb8d70ba8127404694f8162b495b5b979a4faf6",
+  "attempts/45002-privileged_object/trace.jsonl": "704036ff8a01fe714734f6861b3eed97482f6e3aeba13f190c4bbd5b74b9f024",
+  "attempts/45002-scripted_oracle/report.json": "96576a79e0d6fa7510c47a13960ff604c367932aab49a649ea632fbfea037575",
+  "attempts/45002-scripted_oracle/retrieval.json": "4dbbf3779429c0b011414a02a86c81ff37888b52be150ec1e24d369fe62d6a30",
+  "attempts/45002-scripted_oracle/started.json": "c39f0e115a85e63c894972253b30c70f7a100a905d7731b177765d0433cce993",
+  "attempts/45002-scripted_oracle/trace.jsonl": "10d5f420ff9a509158a89983fc864a59d78cdbf4b08c62b3eec5bbdbd48850fe",
+  "attempts/45003-demo_replay/report.json": "ec25b48964eccde7185e76cb80865ac40ef6de71a51097cb8b2a09569a147432",
+  "attempts/45003-demo_replay/retrieval.json": "aa30102eb3d7b28248159b28d7fae7091a93e0c90cc59b014646718cdf70cd4f",
+  "attempts/45003-demo_replay/started.json": "ef7d7df4846c942f0e06d88753930256a953595595ba123bda84d9f39d854564",
+  "attempts/45003-demo_replay/trace.jsonl": "bac86974a82c7aee37983ecdc02189f8f404bb05de1b6dd87c432400cff34283",
+  "attempts/45003-privileged_object/report.json": "83caa695e80f7936bee2ac748c8fb1e5a0a6aadc5a6bf28d873de9c93e50b888",
+  "attempts/45003-privileged_object/retrieval.json": "aa30102eb3d7b28248159b28d7fae7091a93e0c90cc59b014646718cdf70cd4f",
+  "attempts/45003-privileged_object/started.json": "f494a3277a73f3f8c5198bd1d60f23fded323c773275569d67db785fa7297a3e",
+  "attempts/45003-privileged_object/trace.jsonl": "a261541b71a035439aab773ade3cd16e08e2b176705eb399422f3c3b92a362ef",
+  "attempts/45003-scripted_oracle/report.json": "e9719253315a1fcf76abebd2a846a06b299609d5b167ca947496e0101f9ee6a4",
+  "attempts/45003-scripted_oracle/retrieval.json": "aa30102eb3d7b28248159b28d7fae7091a93e0c90cc59b014646718cdf70cd4f",
+  "attempts/45003-scripted_oracle/started.json": "084ce9b1cdcbf23318f8512636d30db1165176b9bf4fa114f538a1dde0e69cfe",
+  "attempts/45003-scripted_oracle/trace.jsonl": "75ae6dcc54cce8fca509e2e3ff383cd659684ddaf87a36325b7b4d21f6aeeef2",
+  "attempts/45004-demo_replay/report.json": "a5aa928e7dc98c6e9e0ac47fc7de157a4e244fd0cf451d5be873fa44aa63d21f",
+  "attempts/45004-demo_replay/retrieval.json": "f9b3a6f7a741725e5b1f87cfda9310e07f11a64bfc5574a6297714b37f25ce19",
+  "attempts/45004-demo_replay/started.json": "de7ded8544d938f60fe248a8d11e53b58acd693c401784461d3343d6f93b0d5c",
+  "attempts/45004-demo_replay/trace.jsonl": "50a100b981e4a2b11fb0576b9192d1b9cb9d4fbc1f447ddef69b038070fecc73",
+  "attempts/45004-privileged_object/report.json": "8ae2bf36e3b171d88804ee621537de1c04c68b0c4707ee85b600d8190f5f105c",
+  "attempts/45004-privileged_object/retrieval.json": "f9b3a6f7a741725e5b1f87cfda9310e07f11a64bfc5574a6297714b37f25ce19",
+  "attempts/45004-privileged_object/started.json": "44ad3e13372b6fe4bc2e3905667ca4b3c20578c971ad10c252db39bef9f7218b",
+  "attempts/45004-privileged_object/trace.jsonl": "1d57e86ecfdb8a423f399d8b7031c1cc0fb97c2c4b78cc458753af3b9f644970",
+  "attempts/45004-scripted_oracle/report.json": "c0527323a5ff543c74d63de411cf2f2e85e7d3c04def5dede8ce44806ba00e15",
+  "attempts/45004-scripted_oracle/retrieval.json": "f9b3a6f7a741725e5b1f87cfda9310e07f11a64bfc5574a6297714b37f25ce19",
+  "attempts/45004-scripted_oracle/started.json": "cf522fe64050071c46ed52769eb18637b2abe823756f63c93b500ad8c6d51dcf",
+  "attempts/45004-scripted_oracle/trace.jsonl": "895005b8c1dfdbb984c3b3444fa63808d760b8dbfad0447ed82358f996dff4aa",
+  "attempts/45005-demo_replay/report.json": "e5e72b6830e96c69af73899fb8e542ff29838c46499e7f16e7280b042783e1b0",
+  "attempts/45005-demo_replay/retrieval.json": "5f7d295ba0d44ada32ea6aa1b560f40b87ff7ef63769803ac33a3c82b0356029",
+  "attempts/45005-demo_replay/started.json": "0ea32206f989d8a34f21f5cb10e1e4623fe126a973c34a9521761e87b86a1a29",
+  "attempts/45005-demo_replay/trace.jsonl": "d3e894a80396266ab9b14645f206b184f5540a8b9d3479dff38b715d8fd39e32",
+  "attempts/45005-privileged_object/report.json": "4778643ff0cbfaff6271d6011e4600b94e14c65bf7019c6c8f8c38808f7c5138",
+  "attempts/45005-privileged_object/retrieval.json": "5f7d295ba0d44ada32ea6aa1b560f40b87ff7ef63769803ac33a3c82b0356029",
+  "attempts/45005-privileged_object/started.json": "cb3fc9c4e250498c62eb8e82faec8a66e5a9f665654e34c9e9d253b30800a397",
+  "attempts/45005-privileged_object/trace.jsonl": "120aba3dc50330eb3158fdae256f1641836b4c80e7a5af5fa26160bd214645b5",
+  "attempts/45005-scripted_oracle/report.json": "8a0ee40e0a44002c01716341004df2b01695148b27f1841887a2b73e76e1fea5",
+  "attempts/45005-scripted_oracle/retrieval.json": "5f7d295ba0d44ada32ea6aa1b560f40b87ff7ef63769803ac33a3c82b0356029",
+  "attempts/45005-scripted_oracle/started.json": "361066ed9c7280ed7808341151537e4965796519c4a8f3fc53136434577876f3",
+  "attempts/45005-scripted_oracle/trace.jsonl": "68be17fdb1dd653701dbe0a4a7d7ee0222752ab61857aa65784d8288d6b00e5f",
+  "attempts/45006-demo_replay/report.json": "086d868d4d300b6ca0a1f87a261e897e27015e9c17d8ec9c8115ff1585946e6e",
+  "attempts/45006-demo_replay/retrieval.json": "081ac7c87895b167bf760b9176dfe3e2472b246bb499e05e4c06c25df8751685",
+  "attempts/45006-demo_replay/started.json": "3a2d57d16839689114202e369e8585be77fce4b1d149a86566ad8e7cbcb8ce36",
+  "attempts/45006-demo_replay/trace.jsonl": "7b9db419deee3112123a537229c41f1abdc58564e67db57cb125a1702f3d0cb6",
+  "attempts/45006-privileged_object/report.json": "0f902d328dce88927f940450b728b4b28a91b0be6a8045e22d5be76badc1edd8",
+  "attempts/45006-privileged_object/retrieval.json": "081ac7c87895b167bf760b9176dfe3e2472b246bb499e05e4c06c25df8751685",
+  "attempts/45006-privileged_object/started.json": "705b6846560fff42d355eaeb8c5ccc38740b7d9deb4006ae041c97da99322e2e",
+  "attempts/45006-privileged_object/trace.jsonl": "c98835f6c6a65e1b1aca3331f976b182b62878e7d3ce6c251fb5f8bab7922ae5",
+  "attempts/45006-scripted_oracle/report.json": "9f520ecf0d439c83a425429644933ae1ab69ec101c41e25c6ea6eaec6e4946f2",
+  "attempts/45006-scripted_oracle/retrieval.json": "081ac7c87895b167bf760b9176dfe3e2472b246bb499e05e4c06c25df8751685",
+  "attempts/45006-scripted_oracle/started.json": "708b8cc2dbfbbdc4d8249c394e146759423c6682cc1fc83eb48ba12bff477a5c",
+  "attempts/45006-scripted_oracle/trace.jsonl": "0c1a9f2516b27b612946684228704dddfcbf7817dd0e87c5503e05b16f1693c9",
+  "attempts/45007-demo_replay/report.json": "0f2f58d3cfa32688c1bcfefbfd845917e8c41e0b0afdebf8bd2243f52a5c0b05",
+  "attempts/45007-demo_replay/retrieval.json": "6687331447557f6c6de7ea01641492ea9f19b50aa1856b50ec435a4cbbd2ef88",
+  "attempts/45007-demo_replay/started.json": "464461813adfd988d45050cc817c0a412f1cf28338ca2b38ef4fd34b8182553e",
+  "attempts/45007-demo_replay/trace.jsonl": "f32516e2e00c6c465750f61f1061603b2203f101ad07e118ddca659b0acc95c2",
+  "attempts/45007-privileged_object/report.json": "4b01610f09443e7b9302b19f3cefb6d3c2408f54aa7382a7bbcd113c5fd9683a",
+  "attempts/45007-privileged_object/retrieval.json": "6687331447557f6c6de7ea01641492ea9f19b50aa1856b50ec435a4cbbd2ef88",
+  "attempts/45007-privileged_object/started.json": "3b55fda90fb4be8c8b9417bf20f052d03f6dc9a883c292a67ecbb659062849d6",
+  "attempts/45007-privileged_object/trace.jsonl": "5ec13379159bf426da3df69ea0d9a70aad2c4a5d7f3b816d8abfbba5382d4f29",
+  "attempts/45007-scripted_oracle/report.json": "5d05562ea480654bba8d4867b5fe726614369db4001a014b9736ee1fd054db39",
+  "attempts/45007-scripted_oracle/retrieval.json": "6687331447557f6c6de7ea01641492ea9f19b50aa1856b50ec435a4cbbd2ef88",
+  "attempts/45007-scripted_oracle/started.json": "7c4b9854936b08c6865b5ee07778f0e7f272db60524c1a9e3cd8d458b30f2bf8",
+  "attempts/45007-scripted_oracle/trace.jsonl": "08e9ff09be79cc7c508736e34bdd922f43c19a56c7af769c5ba593fce76a7834",
+  "plan.json": "ec25cb0bc0274c89a722dcc00d4e8dcbf64534b4d864132dbfa710b59bfd0180",
+  "prepare.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "report.json": "1a5ecdc4a5344609ad258e4f5c7746823f5bbd8028ee96311b5a4b6b46a9f004",
+  "resolved_plan.json": "0c5ca4a8a32a9deeebc5600b02015658c64e42b8699e412a965a587e52195f0e",
+  "state_calibration.json": "d8dae05105a4031d4c00d676faeb4b45e86ca8e6bdbacd0af650b2b42ce38d75",
+  "state_goals.npz": "839190fcf652c6849eba592d9cac5c63bb15a97166e201d71bff7fb4f654f88d"
+ }
 }
