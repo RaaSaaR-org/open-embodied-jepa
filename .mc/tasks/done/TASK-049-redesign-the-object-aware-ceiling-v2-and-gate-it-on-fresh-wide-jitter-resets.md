@@ -4,7 +4,7 @@ aliases:
 - TASK-049
 title: Redesign the object-aware ceiling (v2) and gate it on fresh wide-jitter development resets
 slug: redesign-the-object-aware-ceiling-v2-and-gate-it-on-fresh-wide-jitter-resets
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -56,6 +56,8 @@ Executed once from the clean tracked checkout `7b94f06410f8453d4cf2e88d67bccc968
 - Evidence: `docs/experiments/apple_wide_object_ceiling_results_v2.md`, `benchmarks/manifests/apple-wide-object-ceiling-v2.json`. NON-LEARNED; TASK-033/034 stay open; narrow dev, final cohort and TEST untouched.
 - Post-run verification (fresh subagent) confirmed the gate, provenance, snapshot byte-equality and manifest; it corrected six diagnostic numbers and three wording items, all applied.
 - Preregistered next step: diagnose the close-phase ejection and redesign the grasp closure under a new preregistration; do not pair the ceiling with a learned model; the placement predictor and descent/carry costs may carry over.
+
+- Delivery: PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/19 (squash-merged as 6bb7e0c). Acceptance met with the primary gate explicitly failed (conclusive); TASK-033/034 stay open.
 
 ## Notes
 %% mc-links: [[TASK-047]] %%
