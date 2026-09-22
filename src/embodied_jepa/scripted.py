@@ -187,3 +187,21 @@ class EarlyReleaseOracleManipulationPolicy(OracleManipulationPolicy):
         super().advance(result)
         if result.applied_action is not None:
             self.accepted_grasp = float(result.applied_action[13])
+
+
+def apple_collector_policy(initial_truth, *, transfer_x_shift=-0.035, palm_x_offset=0.015):
+    """The privileged Apple->Plate collector policy exactly as ``scripts/collect_apple.py``
+    configured it for ``data/apple-task-v1`` (early release, palm and transfer shifts).
+
+    A scripted initial-truth controller: a feasibility reference, never a learned result.
+    """
+    from dataclasses import replace
+
+    policy = EarlyReleaseOracleManipulationPolicy(initial_truth, opening_ramp=0.08)
+    phases = []
+    for index, phase in enumerate(policy.phases):
+        target = phase.target_base.copy()
+        target[0] += palm_x_offset + (transfer_x_shift if index >= 4 else 0)
+        phases.append(replace(phase, target_base=target))
+    policy.phases = tuple(phases)
+    return policy
