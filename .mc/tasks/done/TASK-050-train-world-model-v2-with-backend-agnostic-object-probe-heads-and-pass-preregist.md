@@ -4,7 +4,7 @@ aliases:
 - TASK-050
 title: Train world model v2 with backend-agnostic object probe heads and pass preregistered offline gates
 slug: train-world-model-v2-with-backend-agnostic-object-probe-heads-and-pass-preregist
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -17,8 +17,9 @@ depends_on:
 - "[[TASK-048]]"
 due_date: ''
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-23
 ---
+
 
 
 
@@ -49,7 +50,7 @@ passed. The criteria below are the deliverables; the gate outcome is recorded ho
       LeWM/hand-crop, native/onboard) and evaluated against the frozen gates.
 - [x] Fresh post-run verification; results doc reporting every gate honestly, including failures;
       ruff, pytest, `mc validate`; PR opened with green CI and an independent APPROVE-TO-MERGE.
-- [ ] PR merged and this task closed (recorded after the merge, per AGENTS.md).
+- [x] PR merged and this task closed.
 
 ## Scope and resources
 MPS (M5 Pro, 48 GB), about one hour per run plus evaluation. Checkpoints and reports under the
@@ -84,6 +85,13 @@ main checkout's ignored `checkpoints/task050-wm-v2/` and `outputs/task050-wm-v2/
 - Final PR review (fresh subagent): three blocking findings (the label-import guard did not cover
   `readout_labels`; the PR body listed two undisclosed smokes; the post-run verification was not
   recorded). All fixed.
+- Delivery: PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/21 (CI green on macOS and Linux
+  plus the macOS optional-integration job; independent fresh-context review APPROVE-TO-MERGE;
+  squash-merged as `acf52a0`).
+- Follow-up for TASK-051: NOT the closed loop. A v3 offline protocol aimed at readout precision
+  under motion (the encoded readout is already 3.13-3.26 cm off on moving windows, against 3.65 cm
+  after an 8-step rollout) and at a within-state candidate-ranking metric, keeping the working
+  controls and the sealed test split.
 - Evidence: `docs/experiments/apple_world_model_v2_results.md`,
   `benchmarks/manifests/apple-world-model-v2.json`, reports under the ignored
   `checkpoints/task050-wm-v2/` and `outputs/task050-wm-v2/`.
