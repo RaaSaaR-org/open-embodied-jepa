@@ -740,6 +740,23 @@ def test_state_goal_library_is_train_only_with_existing_threshold_recipe():
         )
 
 
+def test_close_goal_index_comes_from_recorded_train_right_grasp_only():
+    model = StateMetricModel()
+    demo = state_episode("train-a")
+    demo.actions[:, 12:] = -1.0
+    demo.actions[20, 13] = 0.5  # right grasp: preceding window of the frame-32 goal
+    demo.actions[5, 12] = 1.0  # a left grasp command is not a close command
+    _, calibration = module.build_state_goal_library(
+        model, [demo], stride=16, dwell=1, training_episode_ids=["train-a"]
+    )
+    assert calibration["demonstrations"][0]["first_close_goal_index"] == 1
+    demo.actions[:, 13] = -1.0
+    _, calibration = module.build_state_goal_library(
+        model, [demo], stride=16, dwell=1, training_episode_ids=["train-a"]
+    )
+    assert calibration["demonstrations"][0]["first_close_goal_index"] is None
+
+
 def test_retrieval_uses_initial_rgb_only_with_lexical_ties_and_train_waypoints():
     model = StateMetricModel()
     demos = [
@@ -789,6 +806,48 @@ def test_state_gate_counts_missing_and_failed_attempts_as_zero():
     assert module.ordered_stage_count(dict(reach=True, grasp=False, transport=True)) == 1
     tied = [dict(seed=s, mode=m, score=grasp) for s in seeds[:2] for m in module.STATE_MODES]
     assert not module.state_gate(tied, seeds)["primary_gate_passed"]
+
+
+def test_state_gate_scores_only_clean_provenance_valid_attempts_and_readings():
+    seeds = [43000, 43001, 43002, 43003]
+    grasp = dict(reach=True, grasp=True, transport=False, place=False, release=False)
+    reach = dict(reach=True, grasp=False)
+
+    def learned(seed, score, **extra):
+        return dict(seed=seed, mode="learned", score=score, status="completed", **extra)
+
+    records = [learned(43000, grasp), learned(43001, grasp)]
+    assert module.state_gate(records, seeds)["primary_gate_passed"]
+    for failure in (
+        dict(status="child_failed"),
+        dict(status="hard_wall_timeout"),
+        dict(termination_reason="runtime_error"),
+        dict(termination_reason="deadline_miss"),
+        dict(termination_reason="attempt_timeout"),
+    ):
+        failed = [records[0], records[1] | failure]
+        gate = module.state_gate(failed, seeds)
+        assert gate["learned_grasp_resets"] == 1 and not gate["primary_gate_passed"]
+        assert gate["summed_ordered_stages"]["learned"] == 2
+    stalled = learned(43001, grasp, termination_reason="goal_stall")
+    assert module.state_gate([records[0], stalled], seeds)["primary_gate_passed"]
+    invalid = [records[0], records[1] | {"provenance_valid": False}]
+    gate = module.state_gate(invalid, seeds)
+    assert not gate["provenance_valid"] and not gate["primary_gate_passed"]
+
+    early = [
+        learned(
+            s, {}, termination_reason="goal_stall", last_goal_index=0, first_close_goal_index=13
+        )
+        for s in seeds[:3]
+    ] + [learned(43003, reach, last_goal_index=14, first_close_goal_index=13)]
+    readings = module.state_gate(early, seeds)["falsification"]
+    assert readings["learned_stalled_before_close_goal_resets"] == 3
+    assert readings["model_or_planner_failure"]
+    assert readings["learned_reach_resets"] == 1 and readings["grasp_precision_bottleneck"]
+    assert not readings["scaffold_explains_result"]
+    shuffle = dict(seed=43003, mode="dynamics_shuffle", score=reach)
+    assert module.state_gate(early + [shuffle], seeds)["falsification"]["scaffold_explains_result"]
 
 
 def state_worker_fixture(tmp_path, monkeypatch, controller_decisions):
@@ -880,6 +939,7 @@ def test_state_worker_records_goal_stall_as_failure(tmp_path, monkeypatch):
     assert report["termination_reason"] == "goal_stall" and report["success"] is False
     assert report["last_goal_index"] == 3 and report["goal_count"] == 3
     assert report["demonstration_episode_id"] == "train-a"
+    assert report["first_close_goal_index"] == 0  # fixture actions all command grasp 0.01
     assert report["ordered_stage_count"] == 1 and report["executed_steps"] == 1
     assert rows[0]["visual_diagnostic"][0]["visual_weight"] == 0.0
     result = next(r for r in rows if r["event"] == "result")

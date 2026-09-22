@@ -21,7 +21,7 @@ import numpy as np  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from embodied_jepa.contracts import ContractError  # noqa: E402
+from embodied_jepa.contracts import EE_DELTA_GRASP_V0, ContractError  # noqa: E402
 from embodied_jepa.training import json_hash  # noqa: E402
 from embodied_jepa.waypoint_planning import (  # noqa: E402
     ImageWaypoint,
@@ -501,10 +501,19 @@ def build_state_goal_library(model, demonstrations, *, stride, dwell, training_e
                     "state_sha256": hashlib.sha256(target.astype("<f4").tobytes()).hexdigest(),
                 }
             )
+        actions = np.asarray(episode.actions, dtype=np.float32)
+        right_grasp = EE_DELTA_GRASP_V0.names.index("right_grasp")
+        # A "close goal" is preceded by a recorded right-grasp command above -1 in the
+        # stride window before it; derived from the TRAIN demonstration only.
+        close_goals = [
+            goal_number
+            for goal_number, index in enumerate(goal_frames)
+            if (actions[max(0, index - stride) : index, right_grasp] > -1.0).any()
+        ]
         arrays[f"initial_{number}"] = frames[0:1]
         arrays[f"goals_{number}"] = values[goal_frames]
         arrays[f"goal_images_{number}"] = frames[goal_frames]
-        arrays[f"actions_{number}"] = np.asarray(episode.actions, dtype=np.float32)
+        arrays[f"actions_{number}"] = actions
         records.append(
             {
                 "index": number,
@@ -515,6 +524,7 @@ def build_state_goal_library(model, demonstrations, *, stride, dwell, training_e
                 "length": length,
                 "goal_frames": goal_frames,
                 "adjacent_distance_floor": floor,
+                "first_close_goal_index": close_goals[0] if close_goals else None,
                 "goals_with_adjacent_overlap": sum(
                     g["overlapping_adjacent_goal_count"] > 0 for g in goals
                 ),
@@ -593,30 +603,82 @@ def ordered_stage_count(score):
     return count
 
 
+FAILED_TERMINATIONS = ("runtime_error", "deadline_miss", "attempt_timeout")
+
+
+def counted_attempt(record):
+    """Only cleanly completed, provenance-valid attempts contribute scored stages."""
+    return (
+        record is not None
+        and record.get("status", "completed") == "completed"
+        and record.get("termination_reason") not in FAILED_TERMINATIONS
+        and record.get("provenance_valid", True)
+    )
+
+
 def state_gate(records, seeds):
     """Preregistered TASK-043 gate; missing/failed attempts count as zero stages."""
     by = {(r["seed"], r["mode"]): r for r in records}
 
-    def stages(mode):
-        return sum(ordered_stage_count(by.get((s, mode), {}).get("score")) for s in seeds)
+    def score(seed, mode):
+        record = by.get((seed, mode))
+        return (record.get("score") or {}) if counted_attempt(record) else {}
 
-    grasps = sum(bool((by.get((s, "learned"), {}).get("score") or {}).get("grasp")) for s in seeds)
+    def stages(mode):
+        return sum(ordered_stage_count(score(s, mode)) for s in seeds)
+
+    def resets(mode, stage):
+        return sum(bool(score(s, mode).get(stage)) for s in seeds)
+
+    grasps = resets("learned", "grasp")
     sums = {mode: stages(mode) for mode in STATE_MODES}
+    provenance_valid = all(r.get("provenance_valid", True) for r in records)
     primary = (
-        grasps >= 2
+        provenance_valid
+        and grasps >= 2
         and sums["learned"] > sums["dynamics_shuffle"]
         and sums["learned"] > sums["persistence"]
     )
+
+    def stalled_before_close(seed):
+        record = by.get((seed, "learned")) or {}
+        close = record.get("first_close_goal_index")
+        reached = record.get("last_goal_index")
+        return not score(seed, "learned").get("grasp") and (
+            close is None or reached is None or reached < close
+        )
+
+    stalled = sum(stalled_before_close(s) for s in seeds)
+    learned_reach = resets("learned", "reach")
     return {
         "learned_grasp_resets": grasps,
         "summed_ordered_stages": sums,
+        "counted_attempts": sum(counted_attempt(r) for r in records),
+        "provenance_valid": provenance_valid,
         "primary_gate_passed": bool(primary),
         "learned_full_successes": sum(
-            bool(by.get((s, "learned"), {}).get("success")) for s in seeds
+            bool(by.get((s, "learned"), {}).get("success")) and counted_attempt(by[(s, "learned")])
+            for s in seeds
         ),
+        "falsification": {
+            "learned_stalled_before_close_goal_resets": stalled,
+            "model_or_planner_failure": stalled >= 3,
+            "learned_reach_resets": learned_reach,
+            "grasp_precision_bottleneck": learned_reach > 0 and grasps == 0,
+            # "~=" is read as "not strictly above"; applies only when learned scored stages.
+            "scaffold_explains_result": sums["learned"] > 0
+            and (
+                sums["learned"] <= sums["dynamics_shuffle"]
+                or (
+                    sums["demo_replay"] >= sums["learned"]
+                    and sums["learned"] <= max(sums["dynamics_shuffle"], sums["persistence"])
+                )
+            ),
+        },
         "rule": (
             "learned grasp on >=2 resets AND learned summed ordered stages > dynamics_shuffle "
-            "and > persistence; demo_replay is a non-learned reference only"
+            "and > persistence; only cleanly completed provenance-valid attempts are scored; "
+            "demo_replay is a non-learned reference only"
         ),
     }
 
@@ -791,7 +853,9 @@ def attempt_worker(output, attempt_id, *, attempt_seconds=None):
             stage = "retrieve"
             demo, retrieval = retrieve_demonstration(model, robot.observe().images, library)
             progress.update(
-                demonstration_episode_id=demo["episode_id"], goal_count=len(demo["goals"])
+                demonstration_episode_id=demo["episode_id"],
+                goal_count=len(demo["goals"]),
+                first_close_goal_index=demo["first_close_goal_index"],
             )
             write(folder / "retrieval.json", retrieval | {"goal_frames": demo["goal_frames"]})
             if trial["mode"] == "demo_replay":

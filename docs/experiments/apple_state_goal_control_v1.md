@@ -128,17 +128,30 @@ contact-lift stage.
 - **Primary gate:** `learned` reaches grasp on **≥ 2/4 resets** AND `learned`
   summed ordered stages over the 4 resets are **strictly greater** than both
   `dynamics_shuffle` and `persistence`. The evaluator writes this computation to
-  `report.json["state_gate"]`. Missing or failed attempts count as 0 stages.
+  `report.json["state_gate"]`. Missing or failed attempts count as 0 stages:
+  only attempts with status `completed`, a termination other than
+  `runtime_error`/`deadline_miss`/`attempt_timeout`, and valid provenance are
+  scored (`goal_stall`, `step_limit`, `waypoints_complete` and `demo_exhausted`
+  are clean terminations whose scored stages count). Any provenance failure makes
+  the primary gate false.
 - **Secondary (report only):** ≥ 1 full Apple→Plate success in `learned`.
 - Falsification readings:
   - `learned` stalls before the close goals on ≥ 3/4 resets → model/planner
     failure under state goals. A "close goal" is one whose preceding 16 recorded
     demonstration actions include a right-grasp command above −1. It is computed
-    from the retrieved TRAIN demonstration only.
+    from the retrieved TRAIN demonstration only (`first_close_goal_index` in the
+    calibration and attempt report). "Stalls before" = no scored grasp and
+    `last_goal_index < first_close_goal_index` (missing/failed attempts count).
   - `learned` passes descend but has 0 grasps → grasp-precision bottleneck.
+    "Passes descend" = the unchanged scorer's `reach` stage on ≥ 1 reset (goal
+    advancement is not used: goals 7–12 overlap their neighbours, see R1).
   - `dynamics_shuffle` ≈ `learned`, or `demo_replay` ≥ `learned` with no
     measurable model contribution → the scaffold (goals/tolerances), not the
-    world model, explains the result.
+    world model, explains the result. With integer stage sums, "≈" means
+    `learned` is not strictly above `dynamics_shuffle`; "no measurable model
+    contribution" means `learned` is not strictly above both controls. This
+    reading applies only when `learned` scored ≥ 1 stage.
+  - All three readings are written to `report.json["state_gate"]["falsification"]`.
 - A pass supports only this development hypothesis. It is not final acceptance
   or reliability. `demo_replay` success is never a learned result.
 
@@ -152,6 +165,52 @@ input-hash verification stubbed. `learned` and `demo_replay` each completed 40
 commands without error in about 4.1 s and 0.8 s; retrieval selected `apple-42000`.
 The smoke is a runtime check, not evidence. Its trajectory is not used to
 change any parameter.
+
+## Pre-run revision R1 (independent review, before any development attempt)
+
+An independent software/scientific review of `17a9ac9` ran before any attempt on
+43000–43003. It changed **no** gate threshold, reset, mode, budget, tolerance or
+controller parameter. Changes:
+
+1. `state_gate` now honours "missing or failed attempts count as 0 stages". The
+   original code scored any record carrying a `score`, including child failures,
+   killed attempts reconstructed from a partial trace, runtime errors and
+   provenance-invalid runs.
+2. The falsification readings are computed by the evaluator. Each demonstration
+   records `first_close_goal_index`, each state attempt report copies it, and
+   "passes descend" and "≈" have operational definitions (see above).
+
+Offline review checks, TRAIN nominal demonstrations only (16 episodes; no
+simulator, VAL, TEST or development reset):
+
+- Tolerances: every demonstration has 32 goals, and 16–20 goals per
+  demonstration overlap a neighbour. The cross-demonstration q90 term sets 470
+  of the 512 thresholds, and the ±2-frame term sets the other 42. Goal-0
+  thresholds are 0.0048–0.018, against a frame-0→16 distance of 0.096–0.128
+  (4–15%). Overall, threshold ≥ segment length for 38.7% of goals, concentrated
+  at goals 7/9–12 just before the first close goal. Goal 13 (frame 208) is the
+  first close goal in all 16 demonstrations. `demo_replay` needs no clipping
+  (max clip 0).
+- Forecast bias: this was checked on all 16 goal-0 windows, not one. From frame
+  0, the model predicts **hold** at 0.015–0.024 from goal 0, while the
+  demonstration's own 16 actions are predicted at 0.034–0.044. Measured hold
+  stays at 0.096–0.128. Over all 496 16-frame goal windows, the demonstration's
+  actions are predicted closer than hold in only 64.5%.
+
+Assessment of the declared risks. None is a pre-run blocker, so no tolerance was
+changed:
+(a) The tight goal-0 tolerance comes from the TRAIN demonstrations' own
+same-frame agreement. The demonstrations meet it by construction, and
+`demo_replay` measures whether it is achievable. Loosening it now would be
+informed by the TRAIN smoke trajectory, which this protocol forbids. Per-step
+`observed_distance` traces still show whether a stalled attempt approached its
+goal.
+(b) This is a property of the frozen model, and retraining it is out of scope. It
+makes a goal-0 `goal_stall` under `learned` likely. That outcome would be an
+informative model/planner failure, not an artifact of the scaffold.
+(c) The primary gate and all readings use scorer stages against controls that
+share the scaffold. Goal index is never success evidence.
+(d) Declared. `demo_replay` quantifies it.
 
 ## Frozen run command
 
@@ -184,8 +243,8 @@ stalls, in `apple_state_goal_control_results_v1.md` and a compact manifest under
   initial distance is about 0.11 normalized units. The goal may be unreachable
   with ±0.5 per-step pose deltas, which would end the attempt in `goal_stall`.
 - Pose forecasts ranked siblings well offline, but a closed loop can compound
-  errors. A single-window check showed the demonstration's own first 16 actions
-  predicted *farther* from goal 0 than hold. This is a warning sign, not a gate.
+  errors. In all 16 goal-0 windows (R1), the demonstration's own first 16 actions
+  are predicted *farther* from goal 0 than hold. This is a warning sign, not a gate.
 - Arm/hand configuration does not encode the apple's position. A matched pose can
   still miss the apple, and the scorer, not goal completion, defines success.
 - Neighbour-overlapping tolerances can let goals advance without real
