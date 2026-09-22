@@ -1025,7 +1025,7 @@ def tracking_ceiling_gate(records, seeds):
         "primary_gate_passed": bool(passed),
         "learned_stage_authorized": bool(passed),
         "readings": {
-            "conclusive": bool(passed or conclusive),
+            "conclusive": bool(conclusive),
             "stalled_before_close_reference_resets": stalled,
             "trajectory_tracking_inadequate": conclusive and not passed and stalled >= 3,
             "passed_demo_grasp_reference_without_grasp_resets": past,
@@ -1033,7 +1033,7 @@ def tracking_ceiling_gate(records, seeds):
             "interpretation": (
                 "trajectory-tracking scaffold adequate under perfect dynamics; run the "
                 "preregistered learned stage"
-                if passed
+                if passed and conclusive
                 else "trajectory-tracking scaffold fails under perfect dynamics; do not pair it "
                 "with learned dynamics"
                 if conclusive
@@ -1080,7 +1080,7 @@ def tracking_gate(records, seeds):
         "primary_gate_passed": bool(passed),
         "learned_full_successes": sum(r["success"] for r in per_mode["learned"].values()),
         "readings": {
-            "conclusive": bool(passed or conclusive),
+            "conclusive": bool(conclusive),
             "learned_stalled_before_close_reference_resets": stalled,
             "learned_dynamics_failure_under_tracking": conclusive and not passed and stalled >= 3,
             "no_model_contribution": sums["learned"] > 0

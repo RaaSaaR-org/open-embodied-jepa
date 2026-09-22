@@ -184,13 +184,16 @@ that attains the minimum.
     cannot follow the demonstration to the grasp, even with exact dynamics.
   - `arm_pose_tracking_insufficient_for_grasp`: the gate failed, and on ≥ 3/4
     resets the last reference index reached the demonstration's recorded-grasp
-    row without a scored grasp. Arm+hand pose tracking lacks the object
-    information needed to grasp. The recorded TRAIN scorer labels
+    row without a scored grasp. This does not establish accurate joint tracking
+    or identify missing object information as the cause. The recorded TRAIN
+    scorer labels
     (`stage_scores`) define this row. They are used **only** for this post-hoc
     reading, never in planning, progress or cost.
 - **Interpretation:**
   - *Pass.* The trajectory-tracking scaffold is adequate under perfect
-    dynamics. Endpoint chasing was the dominant TASK-044 defect. Run stage 2.
+    dynamics. This supports the revised scaffold as a whole; cost, progress and
+    keyframing changed together, so it does not isolate endpoint chasing. Run
+    stage 2.
   - *Fail (conclusive).* Do not pair this scaffold with learned dynamics. The
     readings above say which part failed.
   - *Inconclusive.* Report it; there is no design verdict and no stage 2.
@@ -224,9 +227,10 @@ once, after stage 1's results are recorded.
 - **Interpretation:**
   - A pass is n = 4 development evidence for a learned tracking controller, not
     final acceptance.
-  - A fail with the ceiling passing isolates learned-dynamics error as the
-    bottleneck. The recommended next step is dynamics retraining under a new
-    preregistration.
+  - A fail after a ceiling pass motivates inspection of learned forecasts and
+    control traces. It does not uniquely isolate dynamics error: stage budgets,
+    closed-loop state distributions and per-step projection also differ. A
+    retraining experiment requires a separate prospective justification.
 - If stage 1 does not pass, stage 2 is **not run**, and this is recorded.
 
 ## Allowed pre-physics steps and recorded smoke
@@ -307,5 +311,15 @@ timeouts, will be recorded in `apple_trajectory_tracking_results_v1.md` and
   away, but the tracker may progress below the demonstration's pace.
 - **Keyframing removes waiting.** Removing dead time also removes any settling
   the scripted demonstration did while stationary. The robot state does not
-  change there, so this is judged harmless, but it is untested.
+  change there, but object/contact settling may still matter. Its effect is
+  untested.
 - **Short run.** n = 4 development resets per stage.
+
+## Pre-run review revision R1
+
+Before any development attempt, independent review narrowed the causal claims.
+Reference-index advancement does not prove accurate joint tracking, stage-1
+success cannot isolate which scaffold change mattered, and stage-2 failure
+cannot uniquely identify dynamics error. Existing diagnostic reading keys are
+heuristic labels, interpreted only as their explicit index/stage predicates.
+No numeric gate, seed, controller parameter, budget or run command changed.

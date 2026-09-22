@@ -1306,6 +1306,34 @@ def test_tracking_learned_gate_requires_grasps_and_beating_both_controls():
     assert module.tracking_gate(privileged, seeds)["learned_grasp_resets"] == 0
 
 
+@pytest.mark.parametrize("gate_name", ["tracking_ceiling_gate", "tracking_gate"])
+def test_tracking_pass_with_missing_attempts_does_not_make_readings_conclusive(gate_name):
+    seeds = [43000, 43001, 43002, 43003]
+    mode = "privileged_rollout" if gate_name == "tracking_ceiling_gate" else "learned"
+    grasp = dict(reach=True, grasp=True)
+    records = [tracking_record(seed, grasp, mode=mode) for seed in seeds[:2]]
+    gate = getattr(module, gate_name)(records, seeds)
+    # Keep the preregistered numeric gate and authorization unchanged. The
+    # broader reading needs the complete planned denominator, including controls.
+    assert gate["primary_gate_passed"]
+    assert gate["counted_attempts"] == 2
+    assert not gate["readings"]["conclusive"]
+    if gate_name == "tracking_ceiling_gate":
+        assert gate["learned_stage_authorized"]
+        assert "inconclusive" in gate["readings"]["interpretation"]
+        complete = records + [tracking_record(seed, {}, mode=mode) for seed in seeds[2:]]
+    else:
+        complete = records + [
+            tracking_record(seed, {}, mode=current_mode)
+            for current_mode in module.TRACKING_MODES
+            for seed in seeds
+            if current_mode != "learned" or seed not in seeds[:2]
+        ]
+    completed_gate = getattr(module, gate_name)(complete, seeds)
+    assert completed_gate["primary_gate_passed"]
+    assert completed_gate["readings"]["conclusive"]
+
+
 def test_trajectory_worker_builds_tracking_controller_and_records_reference_progress(
     tmp_path, monkeypatch
 ):
