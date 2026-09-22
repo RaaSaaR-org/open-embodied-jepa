@@ -6,7 +6,9 @@ command to an unchanged :class:`~embodied_jepa.trajectory_tracking.TrackingContr
 whose *measured* reference index reaches ``handoff_row`` it stops planning and
 replays the retrieved TRAIN demonstration's own recorded actions open loop,
 starting at the original demonstration frame of the matched reference row, through
-the same bounds check and mandatory candidate projection as ``demo_replay``.
+the same bounds check and mandatory candidate projection as ``demo_replay``. If the
+unchanged embodiment guards refuse to project a replayed command from the
+measured state, the attempt stops cleanly with ``replay_projection_rejected``.
 
 Any grasp achieved after the handoff is produced by replayed demonstration
 actions, not by a model. No task evaluator, object pose or score enters this
@@ -78,6 +80,7 @@ class HybridPhaseController:
         self.last_timestamp = -1.0
         self.last_execution_timestamp = -1.0
         self.termination_reason = None
+        self.replay_rejection = None
 
     def _fresh(self, observation):
         if not isinstance(observation, Observation) or observation.timestamps.shape != (1,):
@@ -128,7 +131,13 @@ class HybridPhaseController:
             raise ContractError("candidate projection is mandatory")
         recorded = self.actions[self.cursor]
         requested = np.clip(recorded, self.lower, self.upper).astype(np.float32)
-        projection = projector(requested[None, None, None])
+        try:
+            projection = projector(requested[None, None, None])
+        except ContractError as error:
+            # The unchanged embodiment guards refused to project from the measured
+            # state (for example the joint-velocity guard). Like an execution
+            # rejection, this is a clean, recorded stop, not a software failure.
+            return self._reject(f"{type(error).__name__}: {error}")
         if not isinstance(projection, CandidateProjection) or projection.actions.shape != (
             1,
             1,
@@ -137,7 +146,7 @@ class HybridPhaseController:
         ):
             raise ContractError("projector changed candidate contract")
         if not projection.feasible[0, 0]:
-            raise ContractError("hybrid replay command has no feasible projection")
+            return self._reject("no feasible projection")
         action = projection.actions[0, 0, 0].copy()
         action.setflags(write=False)
         trace = {
@@ -154,6 +163,11 @@ class HybridPhaseController:
         self.last_timestamp = timestamp
         self.pending = (action, trace)
         return WaypointDecision(action, trace)
+
+    def _reject(self, reason):
+        self.termination_reason = "replay_projection_rejected"
+        self.replay_rejection = {"replay_frame": self.cursor, "reason": reason}
+        return WaypointDecision(None, self.summary(), self.termination_reason)
 
     def acknowledge(self, result: ExecutionResult) -> dict[str, Any]:
         if self.pending is None:
@@ -200,6 +214,7 @@ class HybridPhaseController:
             "replayed_commands": self.replayed,
             "replay_start_frame": self.handoff["handoff_frame"] if handed else None,
             "demonstration_actions": len(self.actions),
+            "replay_rejection": self.replay_rejection,
         } | (
             self.handoff
             or {

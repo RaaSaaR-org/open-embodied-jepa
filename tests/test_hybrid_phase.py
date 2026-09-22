@@ -161,11 +161,25 @@ def test_replay_enforces_acknowledgement_freshness_and_feasibility():
     with pytest.raises(ContractError):
         controller.step(observation(0.0, 0.0), projection)  # stale observation
     infeasible = hybrid(row=0)
-    with pytest.raises(ContractError):
-        infeasible.step(
-            observation(0.0, 0.0),
-            lambda r: CandidateProjection(r, np.zeros(r.shape[:2], bool)),
-        )
+    decision = infeasible.step(
+        observation(0.0, 0.0), lambda r: CandidateProjection(r, np.zeros(r.shape[:2], bool))
+    )
+    assert decision.termination_reason == "replay_projection_rejected"
+    assert infeasible.summary()["replay_rejection"]["reason"] == "no feasible projection"
+
+    def guard(requested):
+        raise ContractError("measured joint velocity limit exceeded")
+
+    guarded = hybrid(row=0)
+    decision = guarded.step(observation(0.0, 0.0), guard)
+    assert decision.action is None and decision.termination_reason == "replay_projection_rejected"
+    assert decision.trace["replay_rejection"] == {
+        "replay_frame": 0,
+        "reason": "ContractError: measured joint velocity limit exceeded",
+    }
+    assert guarded.summary()["replayed_commands"] == 0
+    with pytest.raises(ContractError):  # a malformed projection is still a software failure
+        hybrid(row=0).step(observation(0.0, 0.0), lambda r: "not a projection")
     rejected = hybrid(row=0)
     decision = rejected.step(observation(0.0, 0.0), projection)
     rejected.acknowledge(ExecutionResult(decision.action, None, "rejected", 0.0, reason="guard"))
