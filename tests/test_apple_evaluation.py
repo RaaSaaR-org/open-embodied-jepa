@@ -1301,7 +1301,14 @@ def test_tracking_learned_gate_requires_grasps_and_beating_both_controls():
     assert gate["summed_ordered_stages"] == dict(learned=4, dynamics_shuffle=1, persistence=0)
     tied = records + [tracking_record(s, grasp, mode="persistence") for s in seeds[:2]]
     assert not module.tracking_gate(tied, seeds)["primary_gate_passed"]
-    assert module.tracking_gate(tied, seeds)["readings"]["no_model_contribution"]
+    assert not module.tracking_gate(tied, seeds)["readings"]["no_model_contribution"]  # partial
+    complete = [
+        tracking_record(s, grasp if s == 43000 else {}, mode=m)
+        for s in seeds
+        for m in module.TRACKING_MODES
+    ]
+    readings = module.tracking_gate(complete, seeds)["readings"]
+    assert readings["conclusive"] and readings["no_model_contribution"]
     privileged = [tracking_record(s, grasp) for s in seeds]
     assert module.tracking_gate(privileged, seeds)["learned_grasp_resets"] == 0
 

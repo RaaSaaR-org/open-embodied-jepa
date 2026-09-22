@@ -171,11 +171,25 @@ def test_stall_is_a_recorded_failure_and_completion_terminates():
     assert decision.action is None and decision.termination_reason == "reference_stall"
     assert decision.trace["reference_index"] == 1
     assert controller.step(observation(3.9, clock + 1), projection).action is None
-    done = TrackingController(ToyModel(), ref, progress_distance=progress, config=config())
+    # The final row is held for the demonstration's trailing dead time (frames 36->39).
+    frames = tuple(range(37)) + (39,)
+    done = TrackingController(
+        ToyModel(),
+        reference(np.arange(38) * 0.1, frames),
+        progress_distance=progress,
+        config=config(),
+    )
     done.index = 30
-    finished = done.step(observation(3.9, 0.0), projection)
+    clock = 0.0
+    for held in range(3):
+        decision = done.step(observation(3.7, clock), projection)
+        assert decision.action is not None and decision.trace["final_row_commands"] == held
+        assert decision.trace["target_reference_indices"] == [37] * 4
+        acknowledge(done, decision, clock + 0.01)
+        clock += 0.05
+    finished = done.step(observation(3.7, clock), projection)
     assert finished.termination_reason == "reference_complete"
-    assert finished.trace["reference_index"] == 39
+    assert finished.trace["reference_index"] == 37 and finished.trace["final_row_hold"] == 3
 
 
 @pytest.mark.parametrize("ablation", ["dynamics_shuffle", "persistence"])

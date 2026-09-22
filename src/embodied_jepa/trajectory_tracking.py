@@ -163,6 +163,11 @@ class TrackingController:
         self.pending = None
         self.termination_reason = None
         self._goal_latents = {}
+        # Commands issued against the final row. The demonstration spent
+        # frames[-1] - frames[-2] frames after its last kept motion (settling on the
+        # plate), so the tracker holds the final row for that many commands.
+        self.final_commands = 0
+        self.final_hold = reference.frames[-1] - reference.frames[-2]
 
     def _progress(self, observation):
         """Monotone measured progress over the forward window; ties go to the later frame."""
@@ -255,9 +260,13 @@ class TrackingController:
             "steps": self.steps,
         }
         if self.index == last:
-            self.termination_reason = "reference_complete"
-            return WaypointDecision(None, base, self.termination_reason)
-        if self._stalled():
+            base["final_row_commands"] = self.final_commands
+            base["final_row_hold"] = self.final_hold
+            if self.final_commands >= self.final_hold:
+                self.termination_reason = "reference_complete"
+                return WaypointDecision(None, base, self.termination_reason)
+            self.final_commands += 1
+        elif self._stalled():
             # Recorded failure: fewer than stall_min_advance reference frames were
             # gained over the last stall_commands acknowledged commands.
             self.termination_reason = "reference_stall"
@@ -303,13 +312,13 @@ class TrackingController:
             if not len(indices):
                 raise ContractError("no feasible tracking candidate sequence")
             score_permutation = np.arange(cfg.candidates)
-            endpoint = None
+            unshuffled_endpoint = None
             if cfg.ablation == "persistence":
                 costs = np.full(cfg.candidates, base["tracking_distance"], np.float64)
             else:
                 prediction = self.model.predict(latent, projection.actions)
                 costs, per_step = self.tracking_costs(prediction, targets)
-                endpoint = per_step[:, -1]
+                unshuffled_endpoint = per_step[:, -1]
                 if cfg.ablation == "dynamics_shuffle":
                     score_permutation[indices] = self.rng.permutation(indices)
                     costs[indices] = costs[score_permutation[indices]]
@@ -324,7 +333,9 @@ class TrackingController:
                 "origin": labels[winner],
                 "round": iteration,
                 "index": winner,
-                "endpoint": None if endpoint is None else float(endpoint[winner]),
+                "endpoint": None
+                if unshuffled_endpoint is None
+                else float(unshuffled_endpoint[winner]),
             }
             if (
                 best is None
@@ -360,7 +371,8 @@ class TrackingController:
             "selected_cost_semantics": "mean_over_horizon_of_per_step_reference_distance",
             "ablation": cfg.ablation,
             "selected_cost": best["cost"],
-            "selected_endpoint_step_cost": best["endpoint"],
+            # The winner's own (never permuted) last-step distance; diagnostic only.
+            "winner_unshuffled_endpoint_cost": best["endpoint"],
             "selected_origin": best["origin"],
             "selected_round": best["round"],
             "sampled_action": best["requested"][0].tolist(),

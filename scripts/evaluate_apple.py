@@ -648,7 +648,7 @@ def build_tracking_references(model, demonstrations, library, *, fraction, train
     The recorded TRAIN scorer labels give ``demo_grasp_reference_index`` for a
     post-hoc report reading only; they never enter planning or progress.
     """
-    from embodied_jepa.trajectory_tracking import keyframe_indices
+    from embodied_jepa.trajectory_tracking import TrackingReference, keyframe_indices
 
     by_id = {e.episode_id: e for e in demonstrations}
     allowed = set(training_episode_ids)
@@ -692,9 +692,11 @@ def build_tracking_references(model, demonstrations, library, *, fraction, train
                 "first_close_reference_index": first_row(close_frame),
                 "demo_grasp_frame": grasp_frame,
                 "demo_grasp_reference_index": first_row(grasp_frame),
-                "reference_sha256": hashlib.sha256(
-                    values[frames].astype("<f4").tobytes()
-                ).hexdigest(),
+                # Same definition as TrackingReference.sha256 in the controller trace.
+                "reference_sha256": TrackingReference(
+                    values[frames], tuple(frames), f"{episode.episode_id}/keyframes"
+                ).sha256,
+                "final_row_hold": frames[-1] - frames[-2],
             }
         )
     return arrays, {
@@ -1083,7 +1085,8 @@ def tracking_gate(records, seeds):
             "conclusive": bool(conclusive),
             "learned_stalled_before_close_reference_resets": stalled,
             "learned_dynamics_failure_under_tracking": conclusive and not passed and stalled >= 3,
-            "no_model_contribution": sums["learned"] > 0
+            "no_model_contribution": conclusive
+            and sums["learned"] > 0
             and sums["learned"] <= max(sums["dynamics_shuffle"], sums["persistence"]),
         },
         "per_mode": per_mode,

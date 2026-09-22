@@ -69,8 +69,10 @@ successes, already measures open-loop replay of the whole demonstration.)
   distance`. That median is the existing TRAIN `adjacent_distance_floor`, about
   1.4–1.7e-4.
 - **Justification (TRAIN data and first principles; no development outcome).**
-  All 16 TRAIN demonstrations contain long spans where the full 86-D robot state
-  does not move while scripted commands continue. The main spans are frames
+  All 16 TRAIN demonstrations contain long spans where the 14 tracked position
+  fields do not move, although the scripted arm commands continue at about 0.4
+  magnitude (the arm is blocked or saturated; joint velocities still vary by up
+  to about 0.02 rad/s). The main spans are frames
   144–210 (descend) and 332–405 (lift): about 178 frames per demonstration have
   an adjacent distance below 0.1× the floor, and the longest run is 72–74
   frames. A time-indexed tracker cannot sense progress through a span where the
@@ -114,7 +116,11 @@ that attains the minimum.
 
 ### Termination
 
-- `reference_complete`: `t` reaches the final row.
+- `reference_complete`: `t` reaches the final row and the final row has then
+  been tracked for `frames[-1] − frames[-2]` further commands. That count is the
+  demonstration's trailing dead time: about 9 frames in which the TRAIN
+  demonstration's apple settles and place/release/success latch (revision R1).
+  The stall rule does not apply on the final row.
 - `reference_stall` (a **failure**): after at least 64 acknowledged commands,
   the current index is fewer than 16 rows ahead of the index measured 64 commands
   earlier. This is the TASK-043 rate (16 frames within 64 commands, 4× slack
@@ -150,19 +156,20 @@ that attains the minimum.
 - **Budget:**
   - H16, K16, 2 rounds, commitment 1.
   - At most 1,000 commands and a 5 s per-command observe/plan deadline.
-  - **600 s per attempt** and **3,600 s global**, including preparation and
-    finalization. The existing `min(attempt cap, global remaining)` allocation
+  - **840 s per attempt** (revision R1; the same cap as TASK-044) and
+    **3,600 s global**, including preparation and finalization. The existing `min(attempt cap, global remaining)` allocation
     applies.
   - CPU, single-threaded MuJoCo, Torch capped at 4 threads.
 - **Time risk (declared).** Each command simulates 512 control steps, about 1 s,
-  so the 600 s cap allows roughly 570 commands.
+  so the 840 s cap allows roughly 800 commands.
   - The demonstration's recorded grasp is at reference row 195–199.
   - Tracking at 1 row per command would reach it in about 200 commands.
-  - The cap binds before grasp only if average progress falls below about
-    0.35 rows per command.
+  - The whole reference (about 340 rows plus about 9 final-row commands) fits
+    in the cap at an average of about 0.43 rows per command or faster.
   - The stall rule tolerates progress down to 0.25 rows per command. So a slow
     but non-stalling attempt can end with `attempt_timeout`. That counts as 0
-    stages, with its latched stages reported as uncounted.
+    stages **even if a grasp had already latched**; its latched stages are
+    reported as uncounted.
 - **Primary gate (`report.json["tracking_ceiling_gate"]`):**
   - the ceiling reaches the scorer's **grasp** stage on **≥ 2/4 resets**;
   - AND zero rollout parity mismatches occur in counted attempts.
@@ -174,7 +181,9 @@ that attains the minimum.
 - **Reported per reset:**
   - retrieved demonstration and termination;
   - commands, last reference index, reference length, first-close and
-    demo-grasp reference rows;
+    demo-grasp reference rows. The last reference index is the one measured at
+    the last search; after a `success`, `step_limit` or `attempt_timeout` exit it
+    can be one command behind the final state;
   - ordered stages, grasp, success and parity counts.
 - **Readings.** They are computed from counted attempts only. They are asserted
   only when all 4 attempts count, provenance is valid and rollouts are exact.
@@ -204,7 +213,9 @@ that attains the minimum.
 ## Stage 2 — learned comparison (conditional, declared now)
 
 Run **only if** `tracking_ceiling_gate.primary_gate_passed` is true. It runs
-once, after stage 1's results are recorded.
+once, after stage 1's results are recorded. This condition is procedural: the
+code does not enforce it, so the stage-2 manifest records the stage-1
+`report.json` SHA-256 and its gate value.
 
 - Modes `learned`, `dynamics_shuffle`, `persistence`, with
   `state_goal_sensor_wm_v1` over the frozen checkpoint.
@@ -222,8 +233,8 @@ once, after stage 1's results are recorded.
 - **Readings:**
   - `learned_dynamics_failure_under_tracking`: conclusive, failed, and `learned`
     stalled before the first-close row on ≥ 3/4 resets.
-  - `no_model_contribution`: `learned` scored ≥ 1 stage but not strictly more
-    than the stronger control.
+  - `no_model_contribution`: conclusive, and `learned` scored ≥ 1 stage but not
+    strictly more than the stronger control.
 - **Interpretation:**
   - A pass is n = 4 development evidence for a learned tracking controller, not
     final acceptance.
@@ -252,9 +263,43 @@ development reset:
 - After 64 commands (`step_limit`), the reference index was 40, with measured
   tracking distance around 0.003–0.016.
 
+After revision R1, a 16-command rerun of the same smoke (same stubs, 840 s
+cap) reproduced the first 16 commands exactly (reference index 0 → 5, parity
+15/15, 0.978 s median planning), confirming the revision did not alter search
+behaviour away from the final row.
+
 The smoke is a runtime check, not evidence. No parameter was changed after it.
 The keyframe fraction, window, stall rule, budgets and gates were fixed before it
 ran.
+
+## Pre-run revision R1 (independent review, before any development attempt)
+
+A fresh reviewer read `d85e52b` before any attempt on 43000–43003. It
+reproduced the TRAIN keyframe numbers and confirmed the cost indexing, progress
+and stall semantics, CEM/RNG parity with `WaypointController`, privileged
+compatibility, isolation of the image/state/endpoint paths, and both frozen
+commands. Changes, none informed by any development outcome:
+
+1. **Blocker: the attempt cap was raised from 600 s to 840 s.** Under the timeout
+   rule, an `attempt_timeout` discards a grasp that has already latched. A
+   600 s cap could therefore erase a grasp from a tracker that is slow but
+   progressing. The TRAIN smoke's pace (about 0.6 rows per command) would have
+   finished the reference right at the cap. 840 s matches TASK-044, and 4 × 840 s
+   fits the 3,600 s global budget.
+2. **`reference_complete` now holds the final row** for the demonstration's
+   trailing dead time (`frames[-1] − frames[-2]`, about 9 commands). In TRAIN,
+   place, release and success latch only at the final frame, after dead time
+   that keyframing removes. Stopping at the first final-row observation would
+   have made full success structurally near-impossible and distorted stage-2
+   stage sums. The stage-1 grasp gate is unaffected.
+3. Stage-2 `no_model_contribution` is now conclusive-only.
+4. The trace's `winner_unshuffled_endpoint_cost` (previously
+   `selected_endpoint_step_cost`) is labelled as the winner's own unpermuted
+   endpoint distance. The calibration's `reference_sha256` now uses the same
+   definition as the controller trace.
+5. Documentation: the stage-2 condition is procedural (recorded by hash), the
+   last-reference-index timing is defined, and the dead-time wording is
+   corrected.
 
 ## Frozen run commands
 
@@ -272,7 +317,7 @@ PYTHONPATH=src .venv/bin/python scripts/evaluate_apple.py \
   --modes privileged_rollout \
   --goal-kind trajectory --goal-stall-limit 64 --no-proposals \
   --horizon 16 --stride 16 --dwell 1 --candidates 16 --iterations 2 \
-  --commitment-steps 1 --max-steps 1000 --attempt-max-seconds 600 \
+  --commitment-steps 1 --max-steps 1000 --attempt-max-seconds 840 \
   --max-seconds 3600 --control-timeout 5
 ```
 
@@ -304,7 +349,7 @@ timeouts, will be recorded in `apple_trajectory_tracking_results_v1.md` and
 - **Arm pose is not object pose.** Tracking the demonstration's joints can miss
   the apple, whose reset position differs by up to ±6 mm. The
   `arm_pose_tracking_insufficient_for_grasp` reading exists for this.
-- **Time cap.** A slow but steady tracker can hit the 600 s cap before the grasp
+- **Time cap.** A slow but steady tracker can hit the 840 s cap before or after the grasp
   row (see stage 1).
 - **Receding-horizon lag.** With commitment 1, the reference ahead of `t` moves
   only when measured progress moves. If the robot lags, the target does not run

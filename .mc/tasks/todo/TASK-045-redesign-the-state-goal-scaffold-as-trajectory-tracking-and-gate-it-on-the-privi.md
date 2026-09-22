@@ -36,12 +36,13 @@ TASK-044 showed that the TASK-043 endpoint state-goal scaffold stalls at goals 0
 - [ ] Independent post-run verification of numbers against raw outputs; deliver through PR. TASK-033/034 stay open unless a learned result meets their own acceptance.
 
 ## Scope and resources
-CPU. Stage 1: 4 privileged attempts, 600 s/attempt, 3600 s global. Stage 2 (conditional): 12 attempts, 200 s/attempt, 3600 s global. Final cohort 44000-44019 and TEST untouched.
+CPU. Stage 1: 4 privileged attempts, 840 s/attempt (R1; was 600), 3600 s global. Stage 2 (conditional): 12 attempts, 200 s/attempt, 3600 s global. Final cohort 44000-44019 and TEST untouched.
 
 ## Phase 1 record (implementation, no development attempt)
 Branch `feat/task-045-trajectory-tracking` from main `b2e0789`.
 - TRAIN-only design analysis (16 nominal demonstrations): ~178 of 502 frames per demo are dead time (adjacent 14-field distance < 0.1x the median positive adjacent distance; longest run 72-74 frames, spans 144-210 and 332-405, full 86-D state stationary). Keyframing at 0.1x keeps 338-342 rows; first close row 141-142; recorded-grasp row 195-199. 0.01x/0.5x keep 366-371/309-314 rows.
 - TRAIN-reset 42000 smoke (scratch, hashes stubbed, max_steps 64): retrieval apple-42000; state library byte-identical to TASK-044; 0.985 s/command median planning, parity 63/63 exact, 0 rejections; reference index 40 after 64 commands. No parameter changed.
+- Pre-run review (fresh subagent, d85e52b): 1 blocker (600 s cap + timeout rule could erase a latched grasp) fixed by raising to 840 s; recommended fixes applied as revision R1 (final-row hold for trailing dead time, conclusive-only no_model_contribution, endpoint diagnostic label, unified reference hash, doc wording). No gate threshold, reset, mode or planner parameter changed.
 
 %% mc-links: [[TASK-044]] %%
 
