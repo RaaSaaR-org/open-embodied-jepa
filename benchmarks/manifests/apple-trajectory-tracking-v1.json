@@ -480,7 +480,7 @@
       "success": false
     }
   ],
-  "interpretation": "Primary ceiling gate FAILED (0/4 grasp, >=2 required). NON-LEARNED privileged ceiling with exact MuJoCo rollouts (0 parity mismatches). Trajectory tracking followed the demonstration to the close phase on 4/4 resets and latched reach with hand contact, but never grasped; the apple was knocked off the table on 4/4 (dropped). Conclusive reading arm_pose_tracking_insufficient_for_grasp=true (3/4 passed the demo-grasp row without grasp); trajectory_tracking_inadequate=false. Stage 2 not run. Not a learned result.",
+  "interpretation": "Primary ceiling gate FAILED (0/4 grasp, >=2 required). NON-LEARNED privileged ceiling with exact MuJoCo rollouts (0 parity mismatches in 1694 checks). Reach latched on 4/4 (4 summed stages); no grasp; on 4/4 the apple fell off the table without being lifted (within the close phase on 43001; after the reference passed the demo grasp row on 43000/43002/43003). Conclusive reading arm_pose_tracking_insufficient_for_grasp=true (index/stage heuristic: 3/4 passed the demo-grasp row without grasp); trajectory_tracking_inadequate=false. Mechanism (hand displaced the apple) is interpretation only. Stage 2 not run. Not a learned result.",
   "artifact_root": "outputs/apple-trajectory-tracking-ceiling-v1",
   "artifact_sha256": {
     "attempts/43000-privileged_rollout/report.json": "4b0338b4c783b475f4239b887ca18ef3f3c5aae025deac4d6dd57de55cc6f84d",
@@ -507,5 +507,9 @@
     "tracking_calibration.json": "68b408d05c292eb3791f59b2c0cc7ffcebf54d0839f65f7ccf00eb797b52aabf",
     "tracking_references.npz": "48418ea3f0673975c45595f1daadb5466b08c26532e5d2edf10e53d6ea1d18ca"
   },
-  "artifact_note": "SHA-256 of core artifacts; logs and the source snapshot are excluded."
+  "artifact_note": "SHA-256 of core artifacts; logs and the source snapshot are excluded.",
+  "pre_run_revisions": [
+    "6feea0e (causal-claim narrowing, complete-cohort conclusive flags)",
+    "bae0838 (840 s cap, final-row hold, conclusive-only no_model_contribution, diagnostic label, unified hash)"
+  ]
 }

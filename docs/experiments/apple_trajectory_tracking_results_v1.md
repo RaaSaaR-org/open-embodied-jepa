@@ -8,16 +8,22 @@ because it measures a ceiling.
 the scorer's grasp stage on **0/4** development resets, where ≥ 2/4 was required.
 Per the protocol, **stage 2 (the learned comparison) was not run.**
 
-The redesign did fix the TASK-044 failure mode. Unlike the endpoint scaffold,
-which stalled at goals 0–1 with 0 stages, trajectory tracking followed the
-demonstration through orient and descend on 4/4 resets:
+Compared with TASK-044 by scorer stages only (0 stages there, stalled at goals
+0–1), this scaffold did not stall before contact:
 
-- It latched the scorer's **reach** stage, with hand contact, on 4/4 resets
-  (4 summed ordered stages).
-- On 3/4 resets it tracked to the end of the reference.
+- It latched the scorer's **reach** stage on 4/4 resets (4 summed ordered
+  stages). Instantaneous hand contact was first observed at the same command
+  as reach, and on only 1–6 commands per attempt.
+- On 3/4 resets it advanced past the demonstration's grasp row to within 2 rows
+  of the reference end. Only 43002 completed the reference.
+- Cost, progress and keyframing changed together, so this does not isolate
+  endpoint chasing as the TASK-044 defect.
 
-It never grasped. On 4/4 resets, the apple was pushed off the table
-(`dropped`) during the closing phase. The conclusive reading
+It never grasped. On 4/4 resets the apple fell off the table (`dropped`) without
+ever being lifted: its height never rose more than 2 mm above its initial value.
+That happened within the close phase on 43001 (row 145). On 43000, 43002 and
+43003 it happened after the reference had passed the demonstration's grasp row
+(rows 227, 211 and 287). The conclusive reading
 `arm_pose_tracking_insufficient_for_grasp` is **true**: 3/4 resets passed the
 demonstration's recorded-grasp row without a grasp. `trajectory_tracking_inadequate`
 is false.
@@ -25,7 +31,8 @@ is false.
 ## Frozen execution
 
 The stage-1 command ran once, exactly as frozen in the
-[protocol](apple_trajectory_tracking_v1.md) (including revision R1), from source
+[protocol](apple_trajectory_tracking_v1.md) (including both pre-run revisions, 6feea0e and bae0838; see the note at the
+end), from source
 revision `bae083815d61d0d9b38a2aaf02f834ab1925fca4`:
 
 - The tracked tree was clean. The only untracked file was `CLAUDE.md`, which is
@@ -78,7 +85,8 @@ is the demonstration's recorded-grasp row. Command numbers are 0-based.
 | 43002 | apple-42008 | 340 | 142 / 199 | 455 | 339 | reference_complete | 260, 149 | 294 | 1 | 454 / 0 | 452.0 |
 | 43003 | apple-42021 | 342 | 142 / 198 | 478 | 339 | reference_stall | 280, 154 | 378 | 1 | 477 / 0 | 467.3 |
 
-On each reset, hand contact first latched at the same command as reach.
+On each reset, instantaneous hand contact (not a latched stage) was first
+observed at the same command as reach.
 
 At termination, every apple had fallen to about 0.027 m height (it started at
 0.765 m on the table). It was 0.64–3.26 m from the plate. `grasp`, `transport`,
@@ -103,34 +111,40 @@ From `report.json["tracking_ceiling_gate"]`, with 4/4 attempts counted:
 
 ## Diagnostics (not gate evidence)
 
-**Tracking worked until contact.**
+**Tracking distance was low until the close row, then rose during closing.**
 
 - Before the close row, the measured tracking distance had a median of
-  0.012–0.015. That is about the size of the TASK-043/044 goal tolerances, which
-  the endpoint scaffold never reached.
+  0.012–0.015. That is comparable in size to the TASK-043/044 goal tolerances
+  (0.0058–0.0183), though a moving row is not the same metric as a fixed goal.
 - The tracker needed 222–249 commands to reach the close row (141–142 rows,
-  about 1.6 commands per row).
-- From the close row to the grasp row, the median distance rose to 0.066–0.157,
-  and the maximum over the attempt was 0.20–0.53. Once the fingers touched the
-  apple, the measured joints could no longer follow the demonstration's.
+  about 1.6–1.75 commands per row).
+- The distance began rising right after the close row, before the first
+  observed hand contact. Between the close row and first contact, its median
+  was already 0.039–0.089.
+- From the close row to the grasp row, the median distance was 0.066–0.157, and
+  the maximum over the attempt was 0.20–0.53.
+- The traces do not identify the cause.
 
-**The apple left the table during closing, on every reset.**
+**The apple was displaced and fell without being lifted, on every reset.**
 
-- Reach and contact latched at commands 231–280.
-- `dropped` latched 34–98 commands later.
-- That is consistent with the hand pushing the apple instead of enclosing it.
-  The protocol's declared risk, "arm pose is not object pose", is the likely
-  cause, but the traces do not isolate the mechanism.
-- The reset jitter is ±6 mm, and the demonstration's joint trajectory carries no
-  apple position.
+- Reach latched at commands 231–280.
+- The apple's plate distance first changed by more than 5 mm at commands 268,
+  231, 261 and 282, close to contact.
+- `dropped` latched 34–98 commands after reach.
+- *Interpretation, not isolated by this run:* the hand moved the apple instead
+  of enclosing it. The arm+hand reference carries no apple position, and the
+  reset jitter is ±6 mm. A contribution from the planner, the cost or the timing
+  is not excluded.
 
-**The joint-velocity guard fired in contact-phase rollouts.**
+**The joint-velocity guard fired in close-phase rollouts.**
 
 - On 43000, 43002 and 43003, the twin rejected 541, 213 and 356 candidates. The
-  reason was always `measured joint velocity limit exceeded`, starting at
-  commands 238–259.
+  reason was always `measured joint velocity limit exceeded`.
+- Rejections started at commands 238–259: 8–10 commands after the close row and
+  17–29 before the first observed contact.
 - 43001 had none.
-- Rejected candidates rank last, so this only narrowed the choice.
+- No round rejected all 16 candidates. Rejected candidates rank last, so this
+  only narrowed the choice.
 
 **Timing.**
 
@@ -141,7 +155,7 @@ From `report.json["tracking_ceiling_gate"]`, with 4/4 attempts counted:
 
 **Final-row hold.**
 
-- Revision R1 held the final row for `frames[-1] − frames[-2]` commands. That
+- Revision bae0838 held the final row for `frames[-1] − frames[-2]` commands. That
   value is 4–5 for these references, not "about 9" as the revision text
   estimated.
 - Only 43002 terminated through it (`reference_complete`, 5 final-row
@@ -151,16 +165,16 @@ From `report.json["tracking_ceiling_gate"]`, with 4/4 attempts counted:
 
 This is n = 4 development evidence under one frozen configuration.
 
-- **What was fixed.** Scoring the whole horizon against a progress-indexed
-  demonstration trajectory removed the TASK-044 endpoint-chasing stall. Under
-  exact dynamics, the planner now follows the demonstration's arm/hand
-  trajectory through orient and descend to contact on every reset.
-- **What still blocks grasp.** The object interaction, not the planner. A
-  proprioceptive arm+hand reference contains no apple information. Tracking it
-  after contact pushed the apple off the table on 4/4 resets, even though the
-  forward model was exact.
+- **What changed.** Compared by scorer stages only, the tracking scaffold
+  reached contact and latched reach on 4/4 resets under exact dynamics, where
+  the TASK-044 endpoint scaffold stalled with 0 stages. Cost, progress and
+  keyframing changed together, so this does not show which change mattered.
+- **What still blocks grasp.** *Interpretation, not isolated:* the arm+hand
+  reference carries no apple information, and the apple was displaced and fell
+  without being lifted, even under exact dynamics. A contribution from the
+  planner, the cost or the timing is not excluded.
 - **Open-loop replay did better.** In TASK-043, open-loop `demo_replay`
-  succeeded on 3/4 of the same resets. The measured-progress reference timing,
+  reached grasp on 4/4 of the same resets and succeeded on 3/4. The measured-progress reference timing,
   the dead-time removal, or closed-loop replanning during contact may disturb
   the grasp the demonstration's own timing achieves. This run does not isolate
   which.
@@ -183,3 +197,18 @@ ceiling on the same resets:
    apple-relative term during the close phase. The ceiling can use exact
    rollouts of rendered images. This tests whether object information in the
    cost is sufficient before any learned model is asked to predict it.
+
+## Note on pre-run revisions
+
+Two pre-run revisions were committed before the run, and both are part of the
+executed source `bae0838`:
+
+- **6feea0e** (a separate review session): wording that narrows the causal
+  claims, plus complete-cohort `conclusive` flags. It appears in the protocol
+  as "Pre-run review revision R1".
+- **bae0838**: the 840 s cap, the final-row hold, the conclusive-only
+  `no_model_contribution`, the endpoint-diagnostic label and the unified hash.
+  It was also titled "R1" in the protocol; it is referred to here by its commit.
+
+Neither revision changed a gate threshold, reset, mode or planner parameter.
+Numbers in this document were independently recomputed from the raw outputs.

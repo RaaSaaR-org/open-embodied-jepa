@@ -4,7 +4,7 @@ aliases:
 - TASK-045
 title: Redesign the state-goal scaffold as trajectory tracking and gate it on the privileged ceiling
 slug: redesign-the-state-goal-scaffold-as-trajectory-tracking-and-gate-it-on-the-privi
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -22,6 +22,7 @@ updated: 2026-09-22
 ---
 
 
+
 # Redesign the state-goal scaffold as trajectory tracking and gate it on the privileged ceiling
 
 ## Question
@@ -32,8 +33,8 @@ TASK-044 showed that the TASK-043 endpoint state-goal scaffold stalls at goals 0
 - [x] Implement the tracking controller in isolation (`src/embodied_jepa/trajectory_tracking.py`, `evaluate_apple.py --goal-kind trajectory`) behind the generic model contract; no change to sensor.py, base.py, state_goal_sensor.py, privileged_rollout.py, waypoint_planning.py, scorer or guards; image/state plans and gates unchanged.
 - [x] Tests: cost/progress/stall/termination semantics, CEM sampling parity, TRAIN-only references, plan/gate isolation, worker wiring; ruff and full pytest pass.
 - [x] Independent pre-run review; fix blockers and record revisions before running.
-- [ ] Run the stage-1 frozen command exactly once from a clean checkout; run stage 2 once only if stage 1 passes; record every outcome in a results doc and manifest.
-- [ ] Independent post-run verification of numbers against raw outputs; deliver through PR. TASK-033/034 stay open unless a learned result meets their own acceptance.
+- [x] Run the stage-1 frozen command exactly once from a clean checkout; run stage 2 once only if stage 1 passes; record every outcome in a results doc and manifest.
+- [x] Independent post-run verification of numbers against raw outputs; deliver through PR. TASK-033/034 stay open unless a learned result meets their own acceptance.
 
 ## Scope and resources
 CPU. Stage 1: 4 privileged attempts, 840 s/attempt (R1; was 600), 3600 s global. Stage 2 (conditional): 12 attempts, 200 s/attempt, 3600 s global. Final cohort 44000-44019 and TEST untouched.
@@ -46,13 +47,14 @@ Branch `feat/task-045-trajectory-tracking` from main `b2e0789`.
 
 ## Phase 2 record (single frozen stage-1 run)
 Executed once from clean tracked checkout `bae083815d61d0d9b38a2aaf02f834ab1925fca4` (only untracked CLAUDE.md), exact frozen stage-1 command, new output `outputs/apple-trajectory-tracking-ceiling-v1/`. Exit 0, report `completed`, provenance valid, 4/4 counted, 1730.7 s global, 303.5-497.9 s per attempt of 840 s.
-- Outcome: **stage-1 ceiling gate failed** (0/4 grasp; 4 summed stages = reach on 4/4). Terminations: reference_stall 43000 (row 337/340), 43001 (row 145/339), 43003 (row 339/342); reference_complete 43002. Apple dropped off the table on 4/4 during closing. Rollouts exact (0 mismatches / 1694 checks).
+- Outcome: **stage-1 ceiling gate failed** (0/4 grasp; 4 summed stages = reach on 4/4). Terminations: reference_stall 43000 (row 337/340), 43001 (row 145/339), 43003 (row 339/342); reference_complete 43002. Apple fell off the table without being lifted on 4/4 (within the close phase on 43001; after the demo grasp row on the others). Rollouts exact (0 mismatches / 1694 checks).
 - Conclusive readings: arm_pose_tracking_insufficient_for_grasp = true (3/4 passed the demo-grasp row without grasp); trajectory_tracking_inadequate = false. Stage 2 (learned) NOT run per protocol.
-- Diagnostics: pre-close tracking distance median 0.012-0.015; close-phase median 0.066-0.157; joint-velocity-guard rollout rejections on 3 resets from command 238-259; final-row hold was 4-5 commands (R1 text estimated ~9).
+- Diagnostics: pre-close tracking distance median 0.012-0.015; close-phase median 0.066-0.157; joint-velocity-guard rollout rejections on 3 resets from command 238-259; final-row hold was 4-5 commands (bae0838 text estimated ~9).
 - Evidence: `docs/experiments/apple_trajectory_tracking_results_v1.md`, `benchmarks/manifests/apple-trajectory-tracking-v1.json`. Not a learned result; TASK-033/034 stay open; final cohort and TEST untouched.
+- Post-run verification (fresh subagent) recomputed all numbers and re-hashed inputs/artifacts/source snapshot: no numeric discrepancies. Wording corrected: dropped timing (not all during closing), hand contact is instantaneous not latched, only 43002 completed the reference, distance rise precedes contact, guard rejections precede contact, mechanism claims labelled interpretation, TASK-044 comparison by scorer stages only.
 - Recommended next (not started): privileged ceiling of hybrid phase control (tracking to the close row, then the demo's recorded closing actions open loop) or an object-aware close-phase cost.
 
-%% mc-links: [[TASK-044]] %%
+- Delivery: PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/15. Acceptance met with the stage-1 gate explicitly failed and stage 2 not run; TASK-033/034 stay open.
 
 ## Resumed review on 2026-09-22
 The user authorized continuation with subagents. Existing committed TASK-045 work
@@ -68,3 +70,4 @@ seeds, controller settings, budgets or commands. Final pre-run checks follow the
 reporting fix before one stage-1 launch.
 
 Final pre-run verification after reporting correction: 625 tests passed in 13.61 seconds; ruff check and format (95 files) passed. The two new regressions preserve numeric gate pass with missing attempts while requiring complete cohorts for descriptive conclusiveness. Historical gate functions are unchanged.
+%% mc-links: [[TASK-044]] %%
