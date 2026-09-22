@@ -1,0 +1,150 @@
+{
+  "arms": [
+    {
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb",
+        "hand_crop_rgb"
+      ],
+      "checkpoint": "checkpoints/task052-wm-v3/leworldmodel.pt",
+      "config": "configs/apple_wm_v3_lewm.yaml",
+      "name": "A_lewm_two_camera",
+      "patch_size": 14,
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "report": "outputs/task052-wm-v3/leworldmodel-val-gates.json",
+      "role": "primary"
+    },
+    {
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb"
+      ],
+      "checkpoint": "checkpoints/task052-wm-v3/leworldmodel_onboard.pt",
+      "config": "configs/apple_wm_v3_lewm_onboard.yaml",
+      "name": "B_lewm_onboard_only",
+      "patch_size": 14,
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "report": "outputs/task052-wm-v3/leworldmodel_onboard-val-gates.json",
+      "role": "camera ablation"
+    },
+    {
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb",
+        "hand_crop_rgb"
+      ],
+      "checkpoint": "checkpoints/task052-wm-v3/leworldmodel_v2_readout.pt",
+      "config": "configs/apple_wm_v3_lewm_v2_readout.yaml",
+      "name": "C_lewm_v2_readout",
+      "patch_size": 14,
+      "readout_auxiliary_weight": 0.0,
+      "readout_moving_weight": 0.0,
+      "report": "outputs/task052-wm-v3/leworldmodel_v2_readout-val-gates.json",
+      "role": "readout ablation"
+    },
+    {
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb"
+      ],
+      "checkpoint": "checkpoints/task052-wm-v3/leworldmodel_fine.pt",
+      "config": "configs/apple_wm_v3_lewm_fine.yaml",
+      "name": "D_lewm_fine_patches",
+      "patch_size": 8,
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "report": "outputs/task052-wm-v3/leworldmodel_fine-val-gates.json",
+      "role": "encoder-resolution ablation"
+    }
+  ],
+  "baselines": {
+    "v2_lewm_onboard_G1_m": 0.0365,
+    "v2_lewm_onboard_G2a": 0.835,
+    "v2_lewm_onboard_cross_window_cost_spearman": 0.165,
+    "val_label_random_choice_regret_h16_median_m": 0.00844,
+    "val_label_random_choice_regret_h16_normalized_median": 0.531,
+    "val_label_ranked_groups_h16_at_5mm_spread": 18,
+    "val_label_ranked_groups_h8_at_5mm_spread": 10
+  },
+  "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+  "frozen": {
+    "gates": {
+      "G1_palm_apple_moving_h8_median_m": 0.015,
+      "G2_max_ratio_to_control": 0.8,
+      "G3_apple_plate_h8_median_m": 0.02,
+      "G4_apple_height_grasp_h8_median_abs_m": 0.01,
+      "G5_held_auroc_min": 0.85,
+      "G5_minimum_per_class": 20,
+      "G6_minimum_ranked_groups": 12,
+      "G6a_within_state_spearman_min": 0.5,
+      "G6b_top1_regret_max_m": 0.004,
+      "G7_minimum_pairs": 20,
+      "G7a_own_beats_swapped_min": 0.7,
+      "G7b_divergence_spearman_min": 0.5,
+      "G8_max_collapsed_fraction": 0.05,
+      "G8_min_effective_rank": 4.0,
+      "G8_min_latent_std_mean": 0.1
+    },
+    "selection_eligibility": {
+      "max_collapsed_fraction": 0.05,
+      "min_effective_rank": 2.0,
+      "min_latent_std_mean": 0.1
+    },
+    "training": {
+      "batch_size": 32,
+      "final_lr_fraction": 0.1,
+      "horizon": 16,
+      "max_seconds": 10800,
+      "seed": 0,
+      "selection_windows": 1024,
+      "steps": 15000,
+      "validation_every": 1000
+    }
+  },
+  "gate_definitions": {
+    "G1": "median palm-apple readout error at h=8 on predicted latents, val moving windows",
+    "G2a": "G1 divided by the model's own persistence readout on the same windows",
+    "G2b": "G1 divided by the shuffled-action control on the same windows",
+    "G3": "median apple-plate error at h=8 over all valid val windows",
+    "G4": "median absolute apple-height error at h=8 over the grasp cohort",
+    "G5": "AUROC of apple_held at h=8 over the lift cohort",
+    "G6a": "pooled within-state Spearman between predicted and true approach cost across the sibling candidate actions of one pre-grasp state, at h=16, over groups whose true costs span at least 5 mm",
+    "G6b": "median top-1 regret at h=16: the true approach cost of the candidate the model ranks best, minus the best true cost, over the same groups",
+    "G7a": "fraction of ordered sibling pairs at h=16 where the own-action prediction beats the swapped-action one",
+    "G7b": "Spearman between predicted and true sibling divergence at h=16",
+    "G8a": "collapsed fraction of encoded val latents",
+    "G8b": "effective rank of encoded val latents",
+    "G8c": "mean per-dimension latent standard deviation"
+  },
+  "measured_budget": {
+    "decode_seconds_two_cameras": 16.8,
+    "expected_training_hours_total": 5.88,
+    "peak_host_rss_bytes_two_cameras": 16001875968,
+    "seconds_per_update": {
+      "A": 0.348,
+      "B": 0.229,
+      "C": 0.348,
+      "D": 0.486
+    },
+    "source": "disclosed smokes smoke-b / smoke-onboard / smoke-fine at revision 63f9cd2"
+  },
+  "not_frozen_arms": {
+    "native_jepa": "configs/apple_wm_v3.yaml exists and is the one-line backend swap, but is smoked only; the budget does not fit a fifth run"
+  },
+  "overall": null,
+  "predecessor": {
+    "manifest": "benchmarks/manifests/apple-world-model-v2.json",
+    "overall": "all three arms failed; the closed loop was not started",
+    "protocol": "apple_world_model_v2",
+    "task": "TASK-050"
+  },
+  "protocol": "apple_world_model_v3",
+  "protocol_doc": "docs/experiments/apple_world_model_v3.md",
+  "results": null,
+  "results_doc": "docs/experiments/apple_world_model_v3_results.md",
+  "status": "preregistered",
+  "task": "TASK-052",
+  "verification": null
+}

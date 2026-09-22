@@ -807,9 +807,9 @@ def train(
         )
         report["data"] = {
             "train_episodes": len(train_arrays.episode_ids),
-            "train_observations": int(len(train_arrays.frames)),
+            "train_observations": int(len(train_arrays.states)),
             "val_episodes": len(val_arrays.episode_ids),
-            "val_observations": int(len(val_arrays.frames)),
+            "val_observations": int(len(val_arrays.states)),
             "decode_seconds": clock.elapsed(),
             "peak_host_rss_bytes": peak_rss_bytes(),
         }
@@ -1016,7 +1016,7 @@ def evaluate(
         "model_implementation_sha256": model.implementation_sha256,
         "provenance": envelope["metadata"],
         "val_episodes": len(arrays.episode_ids),
-        "val_observations": int(len(arrays.frames)),
+        "val_observations": int(len(arrays.states)),
         "limit_episodes": limit_episodes,
         "metrics": metrics,
         "gates": gate_function(metrics, gates),
