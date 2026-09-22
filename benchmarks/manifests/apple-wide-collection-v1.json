@@ -2,15 +2,21 @@
  "format_version": 1,
  "experiment": "apple-wide-collection-v1",
  "task": "TASK-048",
- "status": "preregistered",
+ "status": "executed_once_accepted",
  "kind": "privileged_scripted_collector_training_corpus",
  "label": "PRIVILEGED scripted-collector TRAIN corpus with injected perturbations and grasp-phase branches; not a learned result",
  "protocol": "docs/experiments/apple_wide_collection_v1.md",
  "collector": "scripts/collect_apple_wide.py",
  "frozen_command": ".venv/bin/python scripts/collect_apple_wide.py run --seeds frozen --workers 12 --max-seconds 5400 --worker-seconds 4500 --output /Users/sebastian/develop/emai/experiments/JEPA/open-embodied-jepa/data/apple-wide-v1 --work /Users/sebastian/develop/emai/experiments/JEPA/open-embodied-jepa/data/apple-wide-v1-work",
  "distribution": "apple_plate_wide_jitter (TASK-047 wide_reset: apple +-3 cm, plate +-2 cm)",
- "seed_range": [48000, 48199],
- "pilot_seed_range_not_in_corpus": [48900, 48931],
+ "seed_range": [
+  48000,
+  48199
+ ],
+ "pilot_seed_range_not_in_corpus": [
+  48900,
+  48931
+ ],
  "frozen_plan_sha256": "15ed1a99e45114a5cec6013d345804ec561fad859dc3f0dd89dd93ec1e33062c",
  "splits_by_session": {
   "train": 170,
@@ -19,19 +25,66 @@
   "split_seed": 48,
   "group_by": "session_id (one reset seed; branches share their root's session)"
  },
- "val_sessions": [48005, 48030, 48039, 48040, 48052, 48054, 48071, 48072, 48074, 48086, 48096, 48103, 48113, 48117, 48119, 48137, 48168, 48169, 48180, 48193],
- "test_sessions": [48007, 48041, 48066, 48067, 48073, 48082, 48104, 48127, 48154, 48155],
- "planned_episodes": {"root": 200, "branch": 600},
+ "val_sessions": [
+  48005,
+  48030,
+  48039,
+  48040,
+  48052,
+  48054,
+  48071,
+  48072,
+  48074,
+  48086,
+  48096,
+  48103,
+  48113,
+  48117,
+  48119,
+  48137,
+  48168,
+  48169,
+  48180,
+  48193
+ ],
+ "test_sessions": [
+  48007,
+  48041,
+  48066,
+  48067,
+  48073,
+  48082,
+  48104,
+  48127,
+  48154,
+  48155
+ ],
+ "planned_episodes": {
+  "root": 200,
+  "branch": 600
+ },
  "model_inputs": {
-  "onboard_rgb": [112, 112, 3],
-  "hand_crop_rgb": [112, 112, 3],
+  "onboard_rgb": [
+   112,
+   112,
+   3
+  ],
+  "hand_crop_rgb": [
+   112,
+   112,
+   3
+  ],
   "observation.state": 86,
   "action": "ee_delta_grasp_v0 (14)"
  },
  "label_sidecars": {
   "schema": "apple_training_labels_v1",
   "path": "labels/<episode_id>.npz",
-  "groups": ["robot", "collector", "privileged"],
+  "groups": [
+   "robot",
+   "collector",
+   "privileged"
+  ],
   "privileged_requires_acknowledgement": true
  },
  "acceptance_checks": {
@@ -55,5 +108,81 @@
   "supervisor_kill_s": 5400,
   "device": "CPU MuJoCo, one thread per worker"
  },
- "results": null
+ "results": {
+  "source_revision": "32865f57a69655c574de444030204f6be561998c",
+  "tracked_tree_dirty": false,
+  "collector_sha256": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+  "protocol_sha256": "bd27f11fc2f197e1982226487e0d151f3c856dc2a3a250d56af8c6f94d82da52",
+  "plan_sha256": "15ed1a99e45114a5cec6013d345804ec561fad859dc3f0dd89dd93ec1e33062c",
+  "runtime": {
+   "python": "3.12.13",
+   "platform": "macOS-26.5.1-arm64",
+   "numpy": "2.5.3",
+   "mujoco": "3.13.0",
+   "uv_lock_sha256": "23ad3e6e81becbb4584c98f85a6419e42506d1d715548735ee902948408c09b9"
+  },
+  "dataset_path": "data/apple-wide-v1 (main checkout, git-ignored)",
+  "work_path": "data/apple-wide-v1-work (shards, plan, provenance, collection_report.json)",
+  "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+  "storage_bytes": 3403248236,
+  "episodes": {
+   "root": 200,
+   "branch": 597,
+   "total": 797
+  },
+  "unstored_branches_guard_refused_lt_8_commands": [
+   "wide-48078-b2-shift_close",
+   "wide-48187-b2-noise_only",
+   "wide-48167-b1-noise_only"
+  ],
+  "transitions": {
+   "root": 114107,
+   "branch": 91412,
+   "total": 205519
+  },
+  "split_episodes": {
+   "train": 677,
+   "val": 80,
+   "test": 40,
+   "holdout": 0
+  },
+  "outcomes": {
+   "root_full_success": 115,
+   "root_grasp": 126,
+   "grasp_phase_attempts": 797,
+   "grasp_phase_successes": 329,
+   "grasp_phase_failures": 468,
+   "grasp_phase_failure_fraction": 0.5872,
+   "branch_grasp": 203,
+   "branch_dropped_after_grasp": 44,
+   "terminations": {
+    "success": 115,
+    "branch_complete": 457,
+    "guard_refused": 160,
+    "policy_complete": 65
+   }
+  },
+  "acceptance": {
+   "A1": true,
+   "A2": true,
+   "A3": true,
+   "A4": true,
+   "A5": true,
+   "A6": true,
+   "A7": true,
+   "A8": true,
+   "A9": true,
+   "A10": true,
+   "A11": true,
+   "A12": true,
+   "A13": true
+  },
+  "all_passed": true,
+  "timing_seconds": {
+   "collection": 2345.9,
+   "assembly": 883.2,
+   "total": 3345.3
+  }
+ },
+ "results_doc": "docs/experiments/apple_wide_collection_results_v1.md"
 }
