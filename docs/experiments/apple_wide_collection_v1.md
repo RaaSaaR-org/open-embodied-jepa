@@ -371,3 +371,20 @@ The non-blocking recommendations were also applied:
 - a test that pins the plan hash;
 - the A13 strictness note;
 - `--worker-seconds` default 4500.
+
+## Post-R1 smoke (pilot seeds only)
+
+- **Run.** From clean commit `d023a6b`, `run --seeds pilot --limit 4 --workers 2`
+  (seeds 48900–48903) into `outputs/task048-scratch/smoke-r1/`. This is a
+  runtime check, not evidence.
+- **Collection.** 83 s. All 4 roots completed and all 4 restored exactly;
+  worker exit codes were 0 and no source or input changed. `integrity.ok` was
+  true.
+- **Checks.**
+  - A4 and A6–A13 passed.
+  - A1–A3 and A5 failed, as expected: they are count thresholds for 200 roots.
+- **Recovery path.** `finalize --work … --output …/dataset-refinalize`
+  re-assembled the same shards. It produced the byte-identical dataset
+  manifest (`9cd5bc25…49d9`) and an identical verdict.
+- **Runtime recorded.** Python 3.12.13, macOS 26.5.1 arm64, NumPy 2.5.3,
+  MuJoCo 3.13.0.
