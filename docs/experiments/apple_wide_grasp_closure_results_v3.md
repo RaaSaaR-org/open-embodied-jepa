@@ -25,8 +25,10 @@ exact-dynamics upper reference.
 
 **The close-phase ejection that failed TASK-049 did not occur once.** Over all 24 ceiling
 attempts the apple moved **0.49–1.35 cm** horizontally during the close; the threshold
-this project used to call an ejection is 1.5 cm, and v2's four failures were 2.45–9.28 cm.
-Every one of the 24 attempts terminated with `success`.
+this project used to call an ejection is 1.5 cm, and v2's four gated failures were
+**2.70–19.10 cm** on the same measure (corrected by the post-run verifier; the
+2.45–9.28 cm originally printed here were TRAIN-side tuning figures, not TASK-049's
+gated failures). Every one of the 24 attempts terminated with `success`.
 
 ## Secondary cohorts (never gating): v3 succeeds where v2 failed
 
@@ -174,8 +176,15 @@ From `report.json["object_ceiling_v3_gate"]`:
 
 - **The redesign did what the diagnosis said it would.** Across all 24 ceiling attempts
   the close-phase apple displacement was 0.49–1.35 cm, with zero attempts at or above the
-  1.5 cm ejection threshold. On the same measure v2 produced four ejections of 2.45–9.28 cm
-  in 16 tuning closes and four in its 16 gated attempts.
+  1.5 cm ejection threshold. On the same measure v2 produced four ejections of
+  **2.45–9.12 cm** in the 16 forensic tuning closes (49100–49115), and in its own 16 gated
+  attempts **six** closes reached 1.5 cm — 2.70, 10.90, 11.04 and 19.10 cm on the four that
+  dropped the apple (45103, 45105, 45000, 45100), plus 1.61 cm on 45005 and 1.92 cm on
+  45002, both of which still succeeded. (Corrected by the post-run verifier; this bullet
+  previously read "four ejections of 2.45–9.28 cm in 16 tuning closes and four in its 16
+  gated attempts". 9.28 cm is the paired experiment's `v2` maximum over 53 replays, not one
+  of the sixteen forensic closes, whose maximum is 9.12 cm; and six, not four, of v2's
+  gated closes crossed the 1.5 cm threshold.)
 - **Descent, carry and placement carried over unchanged, as predicted.** Every descent
   ended *blocked* 15–23 commands after it began (108–117), every close ran its 45
   commands, every lift reached the transport phase, and **every transport handed over on
@@ -241,4 +250,144 @@ From `report.json["object_ceiling_v3_gate"]`:
 
 ## Post-run verification
 
-*(Filled in below by an independent verifier.)*
+Independent post-run verifier, fresh context, read-only against the raw outputs in the
+main checkout, working from `93aff53`. Every figure below was recomputed with the
+verifier's own code from `outputs/apple-wide-grasp-closure-v3/` (the 72 per-attempt
+`report.json` files and their `trace.jsonl`), **not** read from
+`report.json["object_ceiling_v3_gate"]`. No evaluation was re-run and no 45xxx reset was
+stepped.
+
+**Verdict: the recorded gate result is sound.** The primary gate passes on a fully
+independent recomputation, the provenance chain is intact, and the run matches the frozen
+command exactly. Two numbers in this document were wrong and have been corrected (both
+concerned *v2*, not this run; both understated how badly v2 failed). Nothing else changed.
+
+### Confirmed
+
+1. **Provenance — both halves confirmed.** All 37 files in `plan.json["source_hashes"]`
+   match the snapshot under `outputs/apple-wide-grasp-closure-v3/source/` byte for byte
+   (0 mismatches, 0 missing on either side). Every snapshot file that exists in git at
+   `b673f3d` is byte-identical to it. (The snapshot holds 61 files: the 37 hashed sources
+   plus 21 `__pycache__/*.pyc` and three JSON files. `assets/manifest.json` and
+   `configs/g1_sim_action.json` hash to the plan's `asset_manifest_sha256` and
+   `action_manifest_sha256` respectively; the third, `models/jepa_wms_source.json`, is a
+   tracked file outside `source_hashes` and is byte-identical to `b673f3d`, as are the
+   other two.) Against HEAD
+   `93aff53` exactly one file differs — `src/embodied_jepa/object_ceiling_v3.py` — and the
+   difference is confined to the module docstring: the parsed AST is identical once
+   docstrings are blanked, and every line after the module docstring (line 53 at
+   `b673f3d`, 58 at HEAD) is byte-identical. HEAD's copy equals `b2dc4d4`'s.
+2. **Executed command = frozen command.** `plan.json` reproduces every frozen argument:
+   `stage=development`, `goal_kind=object`, `object_ceiling_version=3`,
+   `demonstration_proposals=false`, horizon 6, stride 16, dwell 1, candidates 24,
+   iterations 2, commitment 1, `max_steps` 1000, `attempt_max_seconds` 1200,
+   `max_seconds` 32400, `control_timeout_seconds` 10 — identical to the manifest's
+   `frozen_command` and `budget`. Seeds, cohorts and order match: mode-major
+   `demo_replay → scripted_oracle → privileged_object`, primary 45200–45207 first inside
+   each mode, so the eight gated ceiling attempts are 49–56 of 72 as the protocol states.
+   `resolved_plan.json` differs from `plan.json` only by adding the two TRAIN-artifact
+   hashes and the retrieval candidate list; the 72 attempt entries are identical.
+   The recorded `object_ceiling` block equals `ObjectCeilingV3Config()` field for field
+   (44 fields; only `seed` is not serialised, and it is recorded as `controller.seed = 0`),
+   including `close_descent_bound = 0.5`. All 24 resets regenerate **bit-for-bit** from
+   `rng = numpy.random.default_rng(seed)` with the declared centres and jitter, and the
+   protocol's eight-row offset table reproduces to the printed 2 dp.
+3. **The gate, recomputed from the 72 attempt reports.** Primary 45200–45207,
+   `privileged_object`: **8/8 full successes** (≥ 6) and **8/8 grasp resets** (≥ 7), all
+   8 attempts counted under TASK-047's rule (`status == completed`, termination not in
+   `runtime_error`/`deadline_miss`/`attempt_timeout`, provenance valid). Parity: **2,378
+   robot-state and 2,378 full-state checks, 0 mismatches**, and every attempt's check count
+   equals exactly `executed_steps − 1`, so the non-vacuity rule holds with no slack. Across
+   all 24 ceiling attempts: 6,935 + 6,935 checks, 0 mismatches. No attempt anywhere in the
+   run has `provenance_valid: false`. `primary_gate_passed = true`, and under the
+   preregistered precedence the outcome is **`ceiling_adequate`**, conclusive.
+   `replay_separated_diagnostic` holds (`demo_replay` grasp 2 ≤ 8 − 3).
+4. **Both per-attempt tables: every cell reproduces, with zero discrepancies.** 24 rows ×
+   8 columns. `demo_replay` terminations and stage counts, `scripted_oracle` 24/24, the
+   ceiling's ordered stages, the phase strings under the declared "mark on the phase that
+   ended" convention (every `b` sits on `descend`, every `R` on `transport`), parity counts,
+   release probes, close-phase apple xy — independently recomputed from each trace as the
+   largest horizontal apple displacement from the apple's position at the first close
+   command — and wall times to the printed precision. Every close ran exactly 45 commands;
+   all 24 traces show the same phase sequence
+   `approach → descend → close → lift → transport → release`, with no `lower` and no
+   `retreat`, ending in `release`.
+5. **The other numbers.** Arm totals 147.9 / 185.8 / 4,443.5 s and the per-attempt ranges
+   4.2–7.8, 7.7–8.0, 166.8–222.0 s; 265–342 ceiling commands; 0.621–0.649 s per command
+   (0.62146–0.64898 exactly); 32–57 release probes; maximum per-command control time
+   **1.074 s** (45007, step 241) with **zero** commands over the 10 s deadline; 4,836.6 s of
+   32,400 s (14.9%); start 20:06:07Z / end 21:26:49Z consistent with that wall time; 54/72
+   attempt successes (24 + 24 + 6). The TRAIN artifacts hash to `839190fc…f88d` and
+   `d8dae051…8d75` on recomputation from the files in the output directory, and the four
+   frozen-input hashes match the protocol. `plan.json`, `resolved_plan.json` and
+   `report.json` hash to the values the manifest records. Descents ended blocked 15–23
+   commands after starting at 108–117; 24/24 transports handed over on `release_predicted`
+   and every such release placed the apple. Zero of the 24 close-phase displacements reach
+   1.5 cm (range 0.49–1.35 cm). The v1/v2 rows of the secondary-cohort table match
+   `apple_wide_object_ceiling_results_v2.md` (v2: 5/8 and 5/8 on 45100–45107, 7/8 and 7/8
+   on 45000–45007; v1: 5/8 and 3/8).
+6. **Leakage — clean.** A structural sweep of every run directory under `outputs/`
+   (extracting real seed fields and attempt-directory names, not digit substrings) finds
+   **no** 45200–45207 attempt anywhere except this run, and **no** 44000–44019 attempt
+   anywhere at all. `outputs/task051-scratch/` contains only 42000 (the smoke) and the
+   tuning seeds 49100–49117, 49120, 49124–49131 — 27 seeds, exactly as declared, with
+   49117 appearing in `scan-b-0.log` although it wrote no result file. The declared tuning
+   range (49100–49131) and the gate range are disjoint. All 16 retrieval candidates are
+   TRAIN-split episodes; no VAL, TEST or holdout episode was decoded.
+7. **No post-run change to anything frozen.** `scripts/evaluate_apple.py` — which carries
+   the cohorts, the gate rule and the thresholds — was last modified at `36025a9`, *before*
+   the preregistration commit `dc44f42`, and is untouched by `b673f3d`, `b2dc4d4`, `f59b8df`
+   and `93aff53`. Comparing the manifest leaf by leaf across `dc44f42 → b673f3d → HEAD`:
+   **zero** leaf values changed except `status` ("preregistered" →
+   "run_complete_primary_gate_passed"); `b673f3d` added only `planning_dynamics`,
+   `pre_run_review` and `tuning_seeds_stepped`, and the post-run commit added only
+   `run`, `result`, `review` and `attempts_detail`. No seed, threshold, budget, config
+   value, gate-rule string or outcome-list entry was edited after the run.
+8. **Statistics and caveats.** The one-sided 95% lower bound for 8/8 is
+   0.05^(1/8) = 0.6877, so "above roughly 0.69" is right. The non-independence caveats on
+   the secondary cohorts, the tuning-distribution caveat and the credit-splitting caveat
+   are accurate and are not walked back anywhere. The nearest-neighbour disclosures
+   reproduce exactly: 45206 ↔ 49129 at 1.8 mm in apple xy with plates 3.3 cm apart, minimum
+   4-D L∞ 0.80 cm (45204 ↔ 49115), against 1.09 cm for gate-vs-45000s, gate-vs-45100s and
+   within the gate cohort. The process-failure section matches the review: the final
+   verdict was BLOCK on B2/B3/B4, all prose, applied at `b2dc4d4` and confirmed cleared.
+   The diagnosis itself was re-derived from the scratch data and holds: the 16 forensic
+   closes give four ejections at 2.45/3.12/7.79/9.12 cm against twelve holds at
+   0.19–0.78 cm and the collector at 0.71–0.74 cm with no ejection, and every row of the
+   paired-experiment table reproduces from the scan logs (`cage` 72 runs / 24 seeds /
+   70 grasped / 0.33–5.61 cm, 0.33–1.45 cm when grasped; `v2` 53 / 19 / 49 /
+   0.18–9.28 cm). The 2/72 guard-refusal risk is the true `cage` rate.
+9. `pytest -q`: **676 passed, 13 skipped** (3 `LEROBOT_SOURCE`, 3 graphics opt-in, 7 no
+   `timm`), exit 0. `ruff check` clean; `ruff format --check` clean (107 files);
+   `mc validate` passes.
+
+### Corrected by this verification
+
+Two numbers about **v2** were wrong. Both understated v2's failures, so correcting them
+does not weaken this run's result — it strengthens the contrast.
+
+- **Line 28 (headline):** "v2's four failures were 2.45–9.28 cm" → **2.70–19.10 cm**.
+  Recomputing the document's own measure on the v2 gated traces
+  (`outputs/apple-wide-object-ceiling-v2/`), the four TASK-049 failures are 45103 at
+  2.70 cm, 45105 at 10.90 cm, 45000 at 11.04 cm and 45100 at 19.10 cm. The 2.45–9.28 cm
+  figures are TRAIN-side tuning numbers imported from the diagnosis and do not describe the
+  gated failures.
+- **Diagnostics bullet 1:** "four ejections of 2.45–9.28 cm in 16 tuning closes and four in
+  its 16 gated attempts" → the 16 forensic tuning closes give four ejections of
+  **2.45–9.12 cm** (9.28 cm is the paired experiment's `v2` maximum over 53 replays, not
+  one of those sixteen), and on the ≥ 1.5 cm measure **six**, not four, of v2's 16 gated
+  closes ejected — 45002 at 1.92 cm and 45005 at 1.61 cm crossed the threshold and still
+  succeeded, as the diagnosis's own caveat about 49103 anticipates.
+
+### Limits of this verification
+
+- Provenance is verified by hash agreement between the plan, the snapshot and git; the
+  verifier did not re-execute the simulator, so the traces are taken as recorded. The
+  runtime parity checks are self-reported by the evaluator, and their *integrity* rests on
+  code the verifier read rather than on an independent rollout.
+- The protocol's claim that 45200–45207 were reset-only during design leaves no artifact
+  and remains unfalsifiable from disk, as the pre-run review also noted. What is
+  verifiable — that no attempt was ever *stepped* on those seeds outside this run — holds.
+- This remains a NON-LEARNED privileged diagnostic. Nothing here bears on whether a learned
+  model can supply the cost terms; learned Apple→Plate is still 0 successes and
+  TASK-033/TASK-034 stay open.
