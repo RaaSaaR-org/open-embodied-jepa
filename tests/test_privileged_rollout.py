@@ -26,6 +26,47 @@ def test_ceiling_requires_explicit_acknowledgement_and_is_not_a_registered_model
     assert all("privileged" not in name for name in config.BACKEND_KEYS)
 
 
+def test_rollout_twin_modules_import_under_a_patched_simulation_attribute():
+    """Import order must not decide the rollout twin's base class.
+
+    Regression for an order-dependent failure of
+    ``tests/test_apple_evaluation.py``: that module replaces
+    ``simulation.MuJoCoSimulation`` with a fixture factory, and the evaluator
+    then lazily imports this family of modules. While the twin subclass was
+    created by a module-level ``class`` statement, whichever import ran first
+    under the replacement raised ``TypeError`` instead of subclassing the real
+    simulation. Building the twin at construction time, from the module
+    attribute, makes the import order irrelevant.
+    """
+    import importlib
+    import sys
+
+    from embodied_jepa import simulation
+
+    names = [
+        "embodied_jepa.privileged_rollout",
+        "embodied_jepa.object_ceiling",
+        "embodied_jepa.object_ceiling_v2",
+        "embodied_jepa.object_ceiling_v3",
+    ]
+    saved = {name: sys.modules.pop(name, None) for name in names}
+    real = simulation.MuJoCoSimulation
+    try:
+        simulation.MuJoCoSimulation = lambda **kwargs: None  # not a class, as in the fixture
+        for name in names:
+            assert importlib.import_module(name) is sys.modules[name]
+    finally:
+        simulation.MuJoCoSimulation = real
+        for name, module in saved.items():
+            if module is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = module
+    from embodied_jepa.privileged_rollout import _blind_simulation_class
+
+    assert issubclass(_blind_simulation_class(real), real)
+
+
 class FirstFieldsMetric:
     """Fixture metric over the first two right-arm positions; not a trained model."""
 

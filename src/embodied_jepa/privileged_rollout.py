@@ -26,17 +26,18 @@ from __future__ import annotations
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import cache
 from typing import Any
 
 import numpy as np
 
+from embodied_jepa import simulation as simulation_module
 from embodied_jepa.contracts import (
     ContractError,
     RobotState,
     validate_actions,
 )
 from embodied_jepa.embodiment import G1Embodiment
-from embodied_jepa.simulation import MuJoCoSimulation
 
 PRIVILEGED_LABEL = "NON-LEARNED privileged MuJoCo-rollout planning ceiling"
 PLANNING_DYNAMICS = "privileged_mujoco_rollout_v1"
@@ -47,12 +48,26 @@ PLANNING_DYNAMICS = "privileged_mujoco_rollout_v1"
 REJECTED_ROLLOUT_COST = 1.0e3
 
 
-class _BlindSimulation(MuJoCoSimulation):
-    """Rollout twin: identical scene and transport, no rendering (images unused)."""
+@cache
+def _blind_simulation_class(base):
+    """Return the rollout-twin subclass of ``base``, built on first use.
 
-    def render(self, camera="onboard_rgb"):
-        self._require_open()
-        return np.zeros((self.height, self.width, 3), np.uint8)
+    The twin is derived at construction time and the base is resolved through the
+    ``embodied_jepa.simulation`` module attribute rather than a name bound at
+    import time. Importing this module therefore never depends on import order:
+    a test that replaces ``simulation.MuJoCoSimulation`` while some other module
+    lazily imports this one no longer makes the class statement run against the
+    replacement (which previously raised at import).
+    """
+
+    class _BlindSimulation(base):
+        """Rollout twin: identical scene and transport, no rendering (images unused)."""
+
+        def render(self, camera="onboard_rgb"):
+            self._require_open()
+            return np.zeros((self.height, self.width, 3), np.uint8)
+
+    return _BlindSimulation
 
 
 @dataclass(frozen=True)
@@ -102,7 +117,7 @@ class PrivilegedRolloutModel:
         live_sim = live_robot.sim
         self.mj = live_sim.mj
         self.twin = G1Embodiment(
-            _BlindSimulation(
+            _blind_simulation_class(simulation_module.MuJoCoSimulation)(
                 object_kind=live_sim.object_kind,
                 container_kind=live_sim.container_kind,
                 width=live_sim.width,
