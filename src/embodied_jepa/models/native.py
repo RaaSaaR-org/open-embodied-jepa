@@ -69,10 +69,10 @@ class NativeJEPA(VisualModel):
         self.train()
         self.target_encoder.eval()
         with self.rng_scope():
-            pixels, prefix, actions = self.sequence_tensors(batch)
-            embeddings = self.observe_sequence(batch, pixels, prefix)
+            actions = self.sequence_tensors(batch)
+            embeddings = self.observe_sequence(batch)
             with torch.no_grad():
-                targets = self.observe_sequence(batch, pixels, prefix, target=True)
+                targets = self.observe_sequence(batch, target=True)
             one_step = self.next_embedding(embeddings[:, :-1], actions)
             prediction_loss = F.mse_loss(one_step, targets[:, 1:])
             recursive = self.rollout(embeddings[:, 0], actions)

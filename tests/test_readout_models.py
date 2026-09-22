@@ -16,7 +16,11 @@ from embodied_jepa.contracts import (  # noqa: E402
     StateSchema,
 )
 from embodied_jepa.models import NativeJEPA  # noqa: E402
-from embodied_jepa.models.readout import READOUT_NAMES, READOUTS  # noqa: E402
+from embodied_jepa.models.readout import (  # noqa: E402
+    CORE_READOUT_NAMES,
+    READOUT_NAMES,
+    READOUTS,
+)
 
 SCHEMA = StateSchema(("q0", "q1"), ("rad", "rad"), "fixture_v0")
 
@@ -48,6 +52,9 @@ SHARED = {
     "state_fusion": True,
     "readout_heads": True,
     "candidate_chunk_size": 2,
+    # v3 (TASK-052) readout shaping, so the parametrized model exercises it.
+    "readout_moving_weight": 3.0,
+    "readout_auxiliary_weight": 0.5,
 }
 
 
@@ -144,7 +151,7 @@ def test_readout_checkpoint_roundtrip_and_foreign_latents(model, tmp_path):
     current = sequence.observation(0)
     expected = model.readout(model.encode(current.images, current.state))
     actual = restored.readout(restored.encode(current.images, current.state))
-    for name in READOUT_NAMES:
+    for name in model.declared_readouts:
         np.testing.assert_allclose(expected[name], actual[name], rtol=1e-5, atol=1e-6)
     with pytest.raises(ContractError, match="another model"):
         restored.readout(model.encode(current.images, current.state))
@@ -160,6 +167,113 @@ def test_disabled_extensions_keep_the_image_only_contract():
     with pytest.raises(ContractError, match="require readout_heads"):
         model.train_step(sequence, readout_targets=targets)
     assert "readout_head" not in dict(model.named_modules())
+
+
+def test_untrained_auxiliary_readouts_are_neither_declared_nor_exposed():
+    """With auxiliary weight 0 the loss is exactly the v2 mean over the six core heads,
+    and the unsupervised heads are not declared or returned."""
+    from embodied_jepa.models.readout import ReadoutHeads
+
+    model = NativeJEPA(SCHEMA, seed=1, config=SHARED | {"readout_auxiliary_weight": 0.0})
+    model.fit_state_normalization([0.0, 1.0], [1.0, 0.0], training_episode_ids=["a"])
+    assert model.capabilities.readouts == CORE_READOUT_NAMES
+    assert set(READOUT_NAMES) - set(CORE_READOUT_NAMES) == {"apple_position", "palm_position"}
+    sequence, targets = fixture()
+    current = sequence.observation(0)
+    values = model.readout(model.encode(current.images, current.state))
+    assert set(values) == set(CORE_READOUT_NAMES)
+
+    heads = ReadoutHeads(4, 8)
+    latent = torch.randn(2, 5, 4)
+    zeros = {s.name: torch.zeros(2, 5, s.width) for s in READOUTS}
+    core_only, terms = heads.loss(latent, zeros, auxiliary_weight=0.0)
+    assert set(terms) == set(CORE_READOUT_NAMES)
+    expected = sum(terms.values()) / len(terms)
+    assert torch.allclose(core_only, expected)
+    with_auxiliary, all_terms = heads.loss(latent, zeros, auxiliary_weight=0.5)
+    assert set(all_terms) == set(READOUT_NAMES)
+    assert not torch.allclose(core_only, with_auxiliary)
+
+
+def test_moving_frame_weighting_moves_loss_mass_onto_moving_frames():
+    """A frame whose palm-apple offset has moved away from the window start carries
+    (1 + readout_moving_weight) times the regression weight of a still frame."""
+    from embodied_jepa.models.readout import ReadoutHeads
+
+    still = NativeJEPA(SCHEMA, seed=1, config=SHARED | {"readout_moving_weight": 0.0})
+    moving = NativeJEPA(SCHEMA, seed=1, config=SHARED | {"readout_moving_weight": 3.0})
+    offsets = torch.zeros(2, 5, 3)
+    offsets[:, 3:] = 0.05  # the last two frames have moved 5 cm from the window start
+    weight = moving.readout_frame_weight({"palm_minus_apple": offsets})
+    assert still.readout_frame_weight({"palm_minus_apple": offsets}) is None
+    assert weight.shape == (2, 5, 1)
+    torch.testing.assert_close(weight[0, :, 0], torch.tensor([1.0, 1.0, 1.0, 4.0, 4.0]))
+
+    heads = ReadoutHeads(4, 8)
+    latent = torch.randn(2, 5, 4)
+    targets = {s.name: torch.zeros(2, 5, s.width) for s in READOUTS}
+    targets["palm_minus_apple"] = offsets
+    uniform, _ = heads.loss(latent, targets)
+    weighted, _ = heads.loss(latent, targets, frame_weight=weight)
+    assert not torch.allclose(uniform, weighted)
+    # Weighting is a reweighted mean, not a rescaling: it stays a finite average.
+    assert torch.isfinite(weighted) and weighted > 0
+
+
+def test_near_constant_proprioception_is_not_amplified_and_is_clipped():
+    """TASK-050's review finding: a dimension with no train variation must not be
+    divided by the 0.01 floor, which amplified later deviations up to a hundredfold."""
+    model = NativeJEPA(SCHEMA, seed=1, config=SHARED)
+    model.fit_state_normalization([0.0, 0.0], [1.0, 1e-6], training_episode_ids=["a"])
+    scale = model.state_scale.cpu().numpy()
+    np.testing.assert_allclose(scale, [1.0, NativeJEPA.STATE_INACTIVE_SCALE])
+    assert model.metadata["state_normalization_policy"]["inactive_dimensions"] == 1
+    values = np.array([[0.5, 0.5]], np.float32)
+    mask = np.ones((1, 2), bool)
+    normalized = (
+        (torch.from_numpy(values).to(model.device_name) - model.state_mean) / model.state_scale
+    ).cpu()
+    # The near-constant dimension enters at physical scale (0.5), not 0.5/0.01 = 50.
+    np.testing.assert_allclose(normalized.numpy(), [[0.5, 0.5]], rtol=1e-6)
+    features = model.state_features(values, mask)
+    huge = model.state_features(values * 1e6, mask)
+    assert torch.isfinite(features).all() and torch.isfinite(huge).all()
+    clipped = model.state_features(values * 1e6 + 1.0, mask)
+    # Beyond the clip the embedding no longer moves: the backstop holds.
+    torch.testing.assert_close(huge, clipped)
+
+
+def test_two_camera_fusion_reads_both_cameras():
+    """The second camera is shared, backend-agnostic code: no backend branches on it."""
+    config = SHARED | {"cameras": ["onboard_rgb", "hand_crop_rgb"]}
+    model = NativeJEPA(SCHEMA, seed=1, config=config)
+    model.fit_state_normalization([0.0, 1.0], [1.0, 0.0], training_episode_ids=["a"])
+    assert model.camera_names == ("onboard_rgb", "hand_crop_rgb")
+    sequence, targets = fixture()
+    rng = np.random.default_rng(7)
+    crop = rng.integers(0, 256, sequence.observations["onboard_rgb"].shape, dtype=np.uint8)
+    both = SequenceBatch(
+        observations=dict(sequence.observations) | {"hand_crop_rgb": crop},
+        robot_states=sequence.robot_states,
+        state_mask=sequence.state_mask,
+        actions=sequence.actions,
+        timestamps=sequence.timestamps,
+        terminated=sequence.terminated,
+        episode_ids=sequence.episode_ids,
+        state_schema=SCHEMA,
+    )
+    current = both.observation(0)
+    latent = model.encode(current.images, current.state).values.cpu().numpy()
+    altered = dict(current.images)
+    altered["hand_crop_rgb"] = 255 - altered["hand_crop_rgb"]
+    other = model.encode(altered, current.state).values.cpu().numpy()
+    assert not np.allclose(latent, other), "the hand crop must reach the latent"
+    with pytest.raises(ContractError, match="missing configured camera"):
+        model.encode({"onboard_rgb": current.images["onboard_rgb"]}, current.state)
+    metrics = model.train_step(both, readout_targets=targets)
+    assert np.isfinite(metrics["readout_predicted_loss"])
+    single = NativeJEPA(SCHEMA, seed=1, config=SHARED)
+    assert "camera_fusion" not in dict(single.named_modules())
 
 
 def test_regression_loss_ignores_frames_with_a_dropped_apple():

@@ -45,6 +45,8 @@ class ExactFakeModel:
             "hand_contact": np.full((*shape, 1), 0.5, np.float32),
             "apple_held": np.full((*shape, 1), 0.5, np.float32),
             "apple_dropped": np.zeros((*shape, 1), np.float32),
+            "apple_position": values,
+            "palm_position": values,
         }
 
     def latent_statistics(self, latents):
@@ -52,6 +54,13 @@ class ExactFakeModel:
 
     def image_embedding_statistics(self, images):
         return self.latent_statistics(None)
+
+
+class ActionBlindFakeModel(ExactFakeModel):
+    """Identical, except that its rollout ignores the actions entirely."""
+
+    def predict(self, z, actions):
+        return Latent(np.repeat(z.values[:, None, None], actions.shape[2], axis=2))
 
 
 def _episode(rng, start, length):
@@ -106,12 +115,14 @@ def fixture_arrays(seed=0, roots=3, root_length=70, branch_length=50, branch_fra
         "hand_contact": np.zeros((total, 1), np.float32),
         "apple_held": np.zeros((total, 1), np.float32),
         "apple_dropped": np.zeros((total, 1), np.float32),
+        "apple_position": pma_all.copy(),
+        "palm_position": pma_all.copy(),
     }
     return wm.EpisodeArrays(
         tuple(name for name, _, _ in episodes),
         offsets,
         lengths,
-        np.zeros((total, 2, 2, 3), np.uint8),
+        {CAMERA: np.zeros((total, 2, 2, 3), np.uint8)},
         pma_all.copy(),
         np.ones((total, 3), bool),
         actions_all,
@@ -150,6 +161,144 @@ def test_privileged_labels_require_acknowledgement(tmp_path):
         wm.load_split(store, "val", CAMERA)
 
 
+def _write_labelled_episode(store, episode_id, root_id, *, transitions, apple_z, rng):
+    """One tiny two-camera episode plus its privileged label sidecar."""
+    from dataclasses import replace
+
+    from embodied_jepa import training_labels
+    from embodied_jepa.data import deterministic_fixture
+
+    base = deterministic_fixture()
+    count = transitions + 1
+    shape = base.observations["head"].shape[1:]
+    labels = {
+        "privileged__apple_position_world": np.column_stack(
+            [
+                np.full(count, 0.3, np.float32),
+                np.full(count, 0.1, np.float32),
+                np.asarray(apple_z, np.float32),
+            ]
+        ),
+        "privileged__palm_minus_apple_world": rng.normal(size=(count, 3)).astype(np.float32),
+        "privileged__plate_position_world": np.tile(
+            np.array([0.5, 0.0, 0.75], np.float32), (count, 1)
+        ),
+        "privileged__hand_contact": np.zeros(count, bool),
+        "privileged__apple_dropped": np.zeros(count, bool),
+        # One row per issued command: load_split must repeat the last one.
+        "collector__phase_index": np.arange(transitions, dtype=np.int8) % 5,
+    }
+    reference = training_labels.write(store.root, episode_id, labels)
+    actions = rng.uniform(-1, 1, (transitions, 14)).astype(np.float32)
+    frames = {
+        camera: rng.integers(0, 256, (count, *shape), dtype=np.uint8)
+        for camera in ("onboard_rgb", "hand_crop_rgb")
+    }
+    store.write_episode(
+        replace(
+            base,
+            episode_id=episode_id,
+            session_id=episode_id,
+            observations=frames,
+            robot_states=rng.normal(size=(count, 2)).astype(np.float32),
+            state_mask=np.ones((count, 2), bool),
+            actions=actions,
+            raw_actions=None,
+            timestamps=np.arange(count, dtype=np.float64) / 20,
+            metadata={
+                "kind": "root" if episode_id == root_id else "branch",
+                "root_episode_id": root_id,
+                "branch_frame_in_root": 2,
+                "privileged_outcome_labels": {"stages": {"grasp": True}},
+                "training_labels": reference,
+            },
+        )
+    )
+    return frames, labels, actions
+
+
+def test_load_split_assembles_cameras_targets_and_phases(tmp_path):
+    """load_split is the only path from the sealed corpus into training, and TASK-050
+    shipped it untested. It must decode every configured camera, take each branch's rest
+    height from its ROOT, leave a zero action placeholder on each episode's last row and
+    repeat the collector's final phase onto the extra observation row."""
+    pytest.importorskip("pyarrow")
+    pytest.importorskip("pandas")
+    pytest.importorskip("PIL")
+    from embodied_jepa.data import DatasetStore, deterministic_fixture
+
+    base = deterministic_fixture()
+    store = DatasetStore.create(
+        tmp_path / "corpus",
+        fps=20,
+        state_schema=base.state_schema,
+        action_manifest={"synthetic": True},
+        provenance={"synthetic": True},
+    )
+    rng = np.random.default_rng(3)
+    plan = {
+        "root-0": ("root-0", 6, np.full(7, 0.80, np.float32)),
+        "root-0-b0": ("root-0", 4, np.full(5, 0.90, np.float32)),  # rest height is the ROOT's
+        "root-1": ("root-1", 5, np.full(6, 0.78, np.float32)),
+        "unused": ("unused", 4, np.full(5, 0.77, np.float32)),
+    }
+    written = {
+        name: _write_labelled_episode(
+            store, name, root, transitions=transitions, apple_z=apple_z, rng=rng
+        )
+        for name, (root, transitions, apple_z) in plan.items()
+    }
+    store.freeze_split_assignments(
+        {"train": ["root-0", "root-0-b0"], "val": ["root-1"], "test": ["unused"], "holdout": []},
+        provenance={"synthetic": True},
+        heldout_combinations=(),
+    )
+    cameras = ("onboard_rgb", "hand_crop_rgb")
+    arrays = wm.load_split(
+        store, "train", cameras, workers=2, acknowledge_privileged_training_labels=True
+    )
+
+    assert arrays.episode_ids == ("root-0", "root-0-b0")
+    assert set(arrays.frames) == set(cameras)
+    np.testing.assert_array_equal(arrays.lengths, [7, 5])
+    np.testing.assert_array_equal(arrays.offsets, [0, 7])
+    for index, name in enumerate(arrays.episode_ids):
+        start, count = int(arrays.offsets[index]), int(arrays.lengths[index])
+        frames, labels, actions = written[name]
+        for camera in cameras:
+            np.testing.assert_array_equal(
+                arrays.frames[camera][start : start + count], frames[camera]
+            )
+        np.testing.assert_array_equal(arrays.actions[start : start + count - 1], actions)
+        # The final observation row carries a zero placeholder, never a real action.
+        np.testing.assert_array_equal(arrays.actions[start + count - 1], np.zeros(14, np.float32))
+        phases = labels["collector__phase_index"]
+        np.testing.assert_array_equal(arrays.phase[start : start + count - 1], phases)
+        assert arrays.phase[start + count - 1] == phases[-1]
+    # The cameras are distinct arrays, not the same frames twice.
+    assert not np.array_equal(arrays.frames["onboard_rgb"], arrays.frames["hand_crop_rgb"])
+    # Both episodes of root-0 measure height against the root's first frame (0.80 m).
+    np.testing.assert_allclose(arrays.targets["apple_height"][:7, 0], 0.0, atol=1e-6)
+    np.testing.assert_allclose(arrays.targets["apple_height"][7:, 0], 0.10, atol=1e-6)
+    np.testing.assert_allclose(
+        arrays.targets["apple_position"][0],
+        np.array([0.3, 0.1, 0.80], np.float32) - readout_labels.WORKSPACE_ORIGIN_M,
+        atol=1e-6,
+    )
+    assert set(arrays.targets) == set(readout_labels.TARGET_NAMES)
+
+    with pytest.raises(ContractError, match="lacks camera"):
+        wm.load_split(
+            store,
+            "val",
+            ("onboard_rgb", "wrist_rgb"),
+            workers=2,
+            acknowledge_privileged_training_labels=True,
+        )
+    with pytest.raises(ContractError, match="distinct names"):
+        wm.load_split(store, "val", (), workers=2, acknowledge_privileged_training_labels=True)
+
+
 def test_rank_statistics():
     assert wm.auroc([0.1, 0.4, 0.35, 0.8], [0, 0, 1, 1]) == pytest.approx(0.75)
     assert wm.auroc([0.5, 0.5], [0, 1]) == pytest.approx(0.5)
@@ -164,7 +313,7 @@ def test_windows_batches_and_shuffled_control_stay_inside_episodes():
     assert (windows[:, 1] + 16 <= arrays.lengths[windows[:, 0]] - 1).all()
     partner = wm.shuffled_pairing(windows)
     assert (windows[partner, 0] != windows[:, 0]).all()
-    sequence, targets = wm.batch(arrays, windows[:5], 16, CAMERA, SCHEMA)
+    sequence, targets = wm.batch(arrays, windows[:5], 16, SCHEMA)
     assert sequence.actions.shape == (5, 16, 14)
     assert targets["palm_minus_apple"].shape == (5, 17, 3)
     first = arrays.offsets[windows[0, 0]] + windows[0, 1]
@@ -174,14 +323,14 @@ def test_windows_batches_and_shuffled_control_stay_inside_episodes():
 def test_exact_dynamics_pass_accuracy_and_action_controls():
     arrays = fixture_arrays()
     windows = wm.window_starts(arrays, 16, stride=4)
-    metrics = wm.window_metrics(ExactFakeModel(), arrays, windows, CAMERA, SCHEMA)
+    metrics = wm.window_metrics(ExactFakeModel(), arrays, windows, SCHEMA)
     h8 = metrics["8"]
     assert h8["palm_apple_moving_windows"] > 10
     assert h8["palm_apple_moving_median_m"] < 1e-5
     assert h8["palm_apple_moving_persistence_median_m"] > 0.01
     assert h8["palm_apple_moving_shuffled_median_m"] > 0.01
     assert h8["approach_cost_median_abs_log_ratio"] < 1e-4
-    siblings = wm.sibling_metrics(ExactFakeModel(), arrays, CAMERA, SCHEMA)
+    siblings = wm.sibling_metrics(ExactFakeModel(), arrays, SCHEMA)
     assert siblings["start_state_max_label_mismatch_m"] == 0.0
     s16 = siblings["16"]
     assert s16["qualifying_ordered_pairs"] > 0
@@ -190,16 +339,12 @@ def test_exact_dynamics_pass_accuracy_and_action_controls():
 
 
 def test_action_blind_model_fails_sibling_and_shuffled_controls():
-    class ActionBlind(ExactFakeModel):
-        def predict(self, z, actions):
-            return Latent(np.repeat(z.values[:, None, None], actions.shape[2], axis=2))
-
     arrays = fixture_arrays()
     windows = wm.window_starts(arrays, 16, stride=4)
     metrics = {
-        "windows": wm.window_metrics(ActionBlind(), arrays, windows, CAMERA, SCHEMA),
-        "siblings": wm.sibling_metrics(ActionBlind(), arrays, CAMERA, SCHEMA),
-        "collapse": ActionBlind().latent_statistics(None),
+        "windows": wm.window_metrics(ActionBlindFakeModel(), arrays, windows, SCHEMA),
+        "siblings": wm.sibling_metrics(ActionBlindFakeModel(), arrays, SCHEMA),
+        "collapse": ActionBlindFakeModel().latent_statistics(None),
     }
     gates = {
         "G1_palm_apple_moving_h8_median_m": 0.015,
@@ -228,9 +373,9 @@ def test_action_blind_model_fails_sibling_and_shuffled_controls():
 def test_dropped_apple_windows_leave_the_scoring_cohorts():
     arrays = fixture_arrays()
     windows = wm.window_starts(arrays, 16, stride=4)
-    clean = wm.window_metrics(ExactFakeModel(), arrays, windows, CAMERA, SCHEMA)
+    clean = wm.window_metrics(ExactFakeModel(), arrays, windows, SCHEMA)
     arrays.targets["apple_dropped"][arrays.offsets[1] :] = 1.0  # all but the first root
-    dropped = wm.window_metrics(ExactFakeModel(), arrays, windows, CAMERA, SCHEMA)
+    dropped = wm.window_metrics(ExactFakeModel(), arrays, windows, SCHEMA)
     assert dropped["8"]["valid_windows"] < clean["8"]["valid_windows"]
     assert dropped["8"]["palm_apple_moving_windows"] < clean["8"]["palm_apple_moving_windows"]
 

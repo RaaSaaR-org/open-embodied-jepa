@@ -9,6 +9,20 @@ object-aware cost without simulator truth and without inspecting a latent.
 Regression targets are undefined once the apple has fallen off the table (it is
 then outside the workspace and the camera view): their loss is masked by the
 ``apple_dropped`` target, which is itself a declared probability readout.
+
+Two v3 (TASK-052) extensions, both off by default so a v2-shaped model keeps its
+exact loss:
+
+- **Auxiliary readouts.** ``apple_position`` and ``palm_position`` (both relative
+  to a fixed declared workspace origin) carry weight ``auxiliary_weight``. At
+  weight 0 they contribute no term and no gradient, and the loss is exactly the
+  mean over the six core readouts. Above 0 they force the latent to localize the
+  apple absolutely instead of only its offset from the palm.
+- **Frame weighting.** A per-frame weight (supplied by the caller, derived from
+  the targets) multiplies the *regression* terms only. TASK-050 measured the
+  failure as concentrated in the frames where the palm-apple offset is moving,
+  which are a minority of frames; the probability heads are already near-perfect
+  and are left unweighted.
 """
 
 from __future__ import annotations
@@ -29,6 +43,7 @@ class ReadoutSpec:
     kind: str  # "regression" (physical units) or "probability"
     unit: str
     scale: float = 1.0  # regression: physical units per network unit
+    group: str = "core"  # "core" (always trained) or "auxiliary" (weighted)
 
 
 READOUTS = (
@@ -38,9 +53,12 @@ READOUTS = (
     ReadoutSpec("hand_contact", 1, "probability", "1"),
     ReadoutSpec("apple_held", 1, "probability", "1"),
     ReadoutSpec("apple_dropped", 1, "probability", "1"),
+    ReadoutSpec("apple_position", 3, "regression", "m", 0.05, "auxiliary"),
+    ReadoutSpec("palm_position", 3, "regression", "m", 0.05, "auxiliary"),
 )
 READOUT_NAMES = tuple(spec.name for spec in READOUTS)
-READOUT_VERSION = "object_readout_v2"
+CORE_READOUT_NAMES = tuple(spec.name for spec in READOUTS if spec.group == "core")
+READOUT_VERSION = "object_readout_v3"
 VALIDITY = "apple_dropped"  # regression targets count only where this target is 0
 
 
@@ -77,18 +95,29 @@ class ReadoutHeads(nn.Module):
             for spec in READOUTS
         }
 
-    def loss(self, latent: torch.Tensor, targets: dict[str, torch.Tensor]):
-        """Mean loss over readouts; regression smooth-L1 in scaled units, BCE otherwise.
+    def loss(self, latent, targets, *, frame_weight=None, auxiliary_weight=0.0):
+        """Weighted mean loss; regression smooth-L1 in scaled units, BCE otherwise.
 
         ``latent`` is ``[..., D]``; each target is ``[..., width]`` on the same prefix.
+        ``frame_weight`` is an optional ``[..., 1]`` nonnegative per-frame weight applied
+        to the regression terms only. A readout group weighted 0 contributes no term.
         """
+        if auxiliary_weight < 0:
+            raise ContractError("auxiliary readout weight must be nonnegative")
         missing = set(READOUT_NAMES) - set(targets)
         if missing:
             raise ContractError(f"missing readout targets: {sorted(missing)}")
         raw = self(latent)
         valid = 1.0 - targets[VALIDITY].contiguous()
-        terms = {}
+        if frame_weight is not None:
+            if frame_weight.shape[:-1] != valid.shape[:-1] or frame_weight.shape[-1] != 1:
+                raise ContractError("frame weight must broadcast over the readout prefix")
+            valid = valid * frame_weight
+        terms, total = {}, 0.0
         for spec in READOUTS:
+            group_weight = 1.0 if spec.group == "core" else auxiliary_weight
+            if group_weight == 0.0:
+                continue
             target = targets[spec.name].contiguous()
             if target.shape != raw[spec.name].shape:
                 raise ContractError(f"readout target {spec.name} has the wrong shape")
@@ -98,4 +127,10 @@ class ReadoutHeads(nn.Module):
                 terms[spec.name] = (error * weight).sum() / weight.sum().clamp_min(1.0)
             else:
                 terms[spec.name] = F.binary_cross_entropy_with_logits(raw[spec.name], target)
-        return sum(terms.values()) / len(terms), terms
+            total += group_weight
+        weighted = sum(
+            (1.0 if spec.group == "core" else auxiliary_weight) * terms[spec.name]
+            for spec in READOUTS
+            if spec.name in terms
+        )
+        return weighted / total, terms

@@ -1,0 +1,4 @@
+# Arm A (primary): the LeWM product backend on the v3 configuration. The one-line swap.
+extends: apple_wm_v3.yaml
+world_model:
+  backend: leworldmodel
