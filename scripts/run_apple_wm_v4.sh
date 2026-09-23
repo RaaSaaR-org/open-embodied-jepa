@@ -70,7 +70,10 @@ for entry in $ARMS; do
     'import json,sys; print("yes" if json.load(open(sys.argv[1])).get("best_checkpoint_exists") else "no")' \
     "$report" 2>>"$LOG")
   log "=== arm $name: run status=$train_status best_checkpoint_exists=$has_best"
-  if [[ "$train_status" == "failed" || "$train_status" == "missing" || "$train_status" == "running" ]]; then
+  # The empty case catches a report that exists but does not parse: it must skip, not
+  # fall through to gating .latest.pt.
+  if [[ "$train_status" == "failed" || "$train_status" == "missing" \
+     || "$train_status" == "running" || "$train_status" == "" ]]; then
     log "=== arm $name: training did not produce a gateable checkpoint; skipping"
     continue
   fi

@@ -179,10 +179,10 @@
     "not_passable_by_identity_predictor": {
       "note": "persistence minus encoded_target, both far above 0.0053",
       "v3_arm_B_identity_excess_m": 0.015725385397672653,
-      "v3_arm_D_identity_excess_m": 0.015077678829097748
+      "v3_arm_D_identity_excess_m": 0.015076778829097748
     },
     "passable_by_an_undertrained_model_measured_in_the_pilots": {
-      "note": "ALL FOUR 120-step pilots passed G9 while failing G2a and every other gate. This is the measured reason G9 is never read on its own and why the reading condition exists: all four sit far outside the 0.0389 m encoder band.",
+      "note": "ALL FOUR 120-step pilots passed G9 while failing G2a (0.8493-0.9276, every one worse than v3 arm B's 0.876). Each passed five of the fourteen gates, listed above: G5 is the saturated AUROC TASK-052 flagged as weak, G8a/G8c are floors a non-collapsed latent clears trivially, and G4/G7b on a 120-step model say nothing. This is the measured reason G9 is never read on its own and why the reading condition exists: all five pilots sit far outside the 0.0389 m encoder band.",
       "smoke_a_40_steps_encoded_target_m": 0.14125241339206696,
       "smoke_a_40_steps_excess_m": -0.016601115465164185,
       "timing_pilots_120_steps_encoded_target_m": {
@@ -198,23 +198,53 @@
         "E3": 0.00122
       },
       "timing_pilots_120_steps_g2a": {
-        "E0": 0.849,
-        "E1": 0.928,
-        "E2": 0.878,
-        "E3": 0.914
+        "E0": 0.8493,
+        "E1": 0.9276,
+        "E2": 0.8779,
+        "E3": 0.9138
       },
       "timing_pilots_120_steps_g9_passed": {
         "E0": true,
         "E1": true,
         "E2": true,
         "E3": true
+      },
+      "timing_pilots_120_steps_gates_passed": {
+        "E0": [
+          "G4",
+          "G5",
+          "G8a",
+          "G8c",
+          "G9"
+        ],
+        "E1": [
+          "G5",
+          "G7b",
+          "G8a",
+          "G8c",
+          "G9"
+        ],
+        "E2": [
+          "G4",
+          "G5",
+          "G8a",
+          "G8c",
+          "G9"
+        ],
+        "E3": [
+          "G4",
+          "G5",
+          "G8a",
+          "G8c",
+          "G9"
+        ]
       }
     },
     "reference_arm": "v3 arm B (onboard, patch 14), which E0 re-runs",
     "reference_rollout_excess_m": 0.010577969253063202,
     "required_reduction_m": 0.005277969253063202,
     "rule": "half of the reference arm's rollout excess. Exact half is 0.005288985 m; the threshold is that rounded to two significant figures, 0.2 % looser.",
-    "size_against_v3_contrasts": "the required reduction (0.53 cm) is 1.04x the C-A rollout contrast (0.51 cm) and 1.56x the D-B one (0.34 cm), the two contrasts TASK-052's conservative reading could NOT separate from sampling noise. It is of the same order as them, not comfortably larger. That is a real weakness of this threshold and it is recorded rather than dressed up.",
+    "size_against_v3_contrasts": "the required reduction (0.52780 cm) is 1.05x the C-A rollout contrast (0.50484 cm) and 1.54x the D-B one (0.34376 cm), the exact point estimates in TASK-052's paired-bootstrap report and the two contrasts its conservative reading could NOT separate from sampling noise. It is of the same order as them, not comfortably larger. That is a real weakness of this threshold and it is recorded rather than dressed up.",
     "threshold_m": 0.0053,
     "why_not_v2": "v2's 0.39 cm was carried over, not recomputed: the v2 checkpoints have an incompatible implementation hash and this code cannot reproduce that figure",
     "why_not_v3_best": "v3 arm D's 0.83 cm comes from the B<->D patch contrast, which TASK-052's conservative reading could not distinguish from its own sampling noise; a threshold at that value would be passable by noise alone"
@@ -265,9 +295,9 @@
   },
   "measured_budget": {
     "decode_seconds_one_camera": 12.4,
-    "expected_seconds_per_arm_including_decode_and_eval": 3530,
-    "expected_training_hours_total": 3.86,
-    "headroom_against_cap": "about 3.1x",
+    "expected_seconds_per_arm_including_decode_and_eval": 3564,
+    "expected_training_hours_total": 3.85,
+    "headroom_against_cap": "about 3.0x on the slowest arm",
     "peak_host_rss_bytes_one_camera": 9120000000,
     "per_arm_wall_clock_cap_seconds": 10800,
     "seconds_per_update": {

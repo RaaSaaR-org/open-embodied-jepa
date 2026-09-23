@@ -192,10 +192,11 @@ Identical to TASK-052's, so the comparison with the v3 numbers is like-for-like.
 
 **Measured budget** (from the disclosed pilots, steady-state seconds per update ×
 15,000): E0 0.2303 s → 0.96 h, E1 0.2312 s → 0.96 h, E2 0.2307 s → 0.96 h, E3 0.2328 s →
-0.97 h — **about 3.85 h of MPS training in total**, plus about 12 s of decoding and about
-1 min of evaluation per arm — about 3,530 s per arm, which v3 arm B's measured 3,513 s
-for the identical budget corroborates. The 10,800 s cap is a runaway guard with about 3.1×
-headroom, not the expected time. Peak host RSS is 9.1 GB per arm (one camera).
+0.97 h — 13,875 s, **about 3.85 h of MPS training in total**, plus about 12 s of decoding
+and about
+1 min of evaluation per arm — about 3,560 s for the slowest arm, which v3 arm B's
+measured 3,513 s for the identical budget corroborates. The 10,800 s cap is a runaway
+guard with about 3.0× headroom, not the expected time. Peak host RSS is 9.1 GB per arm (one camera).
 
 **Longer training is not attempted**, and neither is a second seed; both would take the
 task past its budget. Each arm's 16 validation points are reported, so whether the step
@@ -269,9 +270,10 @@ The threshold is set from the v3 numbers, as follows.
 3. **The threshold is half of arm B's excess: 1.06 / 2 ≈ 0.53 cm.** Precisely: arm B's
    excess is 1.05780 cm, exact half is 0.52890 cm, and the frozen threshold is that
    rounded to two significant figures — 0.53 cm, 0.2 % looser than exact half.
-   **How demanding is that, honestly?** The required reduction is 0.5278 cm, which is
-   **1.04× the C ↔ A rollout contrast (0.51 cm) and 1.56× the D ↔ B one (0.34 cm)** — the
-   two contrasts TASK-052's conservative reading could *not* separate from sampling noise.
+   **How demanding is that, honestly?** The required reduction is 0.52780 cm, which is
+   **1.05× the C ↔ A rollout contrast and 1.54× the D ↔ B one** (0.50484 cm and 0.34376 cm,
+   the exact point estimates in TASK-052's paired-bootstrap report) — the two contrasts
+   TASK-052's conservative reading could *not* separate from sampling noise.
    It is of the same order as them, **not comfortably larger**. That is a genuine weakness
    of this threshold and it is recorded rather than dressed up: an arm landing just under
    0.53 cm would be showing an effect only modestly bigger than ones TASK-052 could not
@@ -380,6 +382,13 @@ Then:
   option.
 - **The closed loop still does not start.** G1 must pass first, and no outcome of this
   protocol starts it.
+- **If E1 is the *only* arm passing G2a, Outcome A's decision to keep CEM is
+  provisional.** E1 is measured with three future actions a horizon-8 CEM cannot supply
+  (see the E1 bullet in *Design*), so a pass carried by E1 alone rests on a number the
+  planner cannot reproduce. In that case the decision to keep CEM — and therefore to
+  defer the control-formulation clause a second time — holds only until the
+  planner-consistent re-measurement, and is reversed to Outcome B if that re-measurement
+  puts E1's G2a back at or above 0.8.
 
 **Outcome B — no arm passes G2a.** Then the clause TASK-052 recorded fires, as written:
 
@@ -502,10 +511,14 @@ from the committed revision that carries the code but not yet this document.
   clock and parameter counts only: 0.2303 / 0.2312 / 0.2307 / 0.2328 s per update, peak
   host RSS 9.1 GB, decode 12.3–12.5 s. These fixed the budget table. Their `evaluate` runs
   on 20 val episodes confirmed the cohort-identity assertion holds for every option,
-  including `action_chunk: 4`. **Their gate values were visible to the author**: all four
-  failed every gate except G9, G8a and G8c, with G2a 0.849 / 0.928 / 0.878 / 0.914. They
-  are quoted above for one purpose only — they are the measured demonstration that G9 is
-  passable by an undertrained model. They are 120-step models on 20 val episodes and carry
+  including `action_chunk: 4`. **Their gate values were visible to the author.** Each
+  passed five of the fourteen gates: E0, E2 and E3 passed **G4, G5, G8a, G8c and G9**, and
+  E1 passed **G5, G7b, G8a, G8c and G9**. G2a was 0.8493 / 0.9276 / 0.8779 / 0.9138 — all
+  failing, all worse than v3 arm B's 0.876. Those five passes are not evidence of anything:
+  G5 is the saturated AUROC TASK-052 already flagged as weak, G8a/G8c are floors a
+  non-collapsed latent clears trivially, and G4 on a 120-step model says nothing. They are
+  quoted for one purpose only — they are the measured demonstration that **G9 is passable
+  by an undertrained model**. They are 120-step models scored on 20 val episodes and carry
   no other information.
 - **No pilot informed any threshold**, and no pilot checkpoint is a frozen arm. Every
   threshold is either copied verbatim from TASK-052's frozen manifest or derived from
