@@ -76,7 +76,7 @@ class NativeJEPA(VisualModel):
             one_step = self.next_embedding(embeddings[:, :-1], actions)
             prediction_loss = F.mse_loss(one_step, targets[:, 1:])
             recursive = self.rollout(embeddings[:, 0], actions)
-            multistep = F.mse_loss(recursive, targets[:, 1:])
+            multistep = self.multistep_loss(recursive, targets[:, 1:])
             samples = embeddings.reshape(-1, embeddings.shape[-1])
             # Population variance is defined for every legal canonical batch.
             variance = F.relu(1 - torch.sqrt(samples.var(0, unbiased=False) + 1e-4)).mean()

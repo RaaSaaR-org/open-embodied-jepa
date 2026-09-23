@@ -1,0 +1,80 @@
+# World model v4 (TASK-054): redesign the action-conditioned prediction step, on the
+# ONBOARD CAMERA ALONE. This file is the native comparison backend; the LeWM baseline
+# arm differs by one line (apple_wm_v4_lewm.yaml), and the three intervention arms
+# differ from that baseline by one shared config key each.
+#
+# The starting point is TASK-052's arm B (`apple_wm_v3_lewm_onboard.yaml`): every key
+# below is arm B's, so the v4 baseline arm is arm B's configuration re-trained at this
+# revision. That is deliberate. TASK-052 measured the second camera as harmful
+# (6.62 cm against 3.65 cm on G1) and its encoder/rollout decomposition put the growing
+# error in the prediction step, not the encoder. So the camera set, the encoder, the
+# readout heads and the budget are held fixed and only the predictor moves.
+schema_version: 0
+mode: common
+seed: 0
+runtime:
+  device: mps
+world_model:
+  backend: native_jepa
+  checkpoints:
+    native_jepa: ../checkpoints/task054-wm-v4/native_jepa.pt
+    leworldmodel: ../checkpoints/task054-wm-v4/leworldmodel_baseline.pt
+  settings:
+    native_jepa:
+      camera: onboard_rgb
+      cameras: [onboard_rgb]
+      # The native encoder's stride-8 grid must divide its 4x4 pool on MPS, so it
+      # upsamples the 112 px camera to 128 (no resolution is discarded).
+      image_size: 128
+      latent_dim: 128
+      hidden_dim: 256
+      max_horizon: 64
+      state_fusion: true
+      readout_heads: true
+      readout_weight: 1.0
+      readout_hidden_dim: 512
+      readout_moving_weight: 3.0
+      readout_moving_threshold_m: 0.01
+      readout_auxiliary_weight: 0.5
+    leworldmodel:
+      camera: onboard_rgb
+      cameras: [onboard_rgb]
+      image_size: 112
+      latent_dim: 128
+      hidden_dim: 256
+      max_horizon: 64
+      state_fusion: true
+      readout_heads: true
+      readout_weight: 1.0
+      readout_hidden_dim: 512
+      readout_moving_weight: 3.0
+      readout_moving_threshold_m: 0.01
+      readout_auxiliary_weight: 0.5
+      patch_size: 14
+      encoder_depth: 4
+      encoder_heads: 4
+      predictor_depth: 4
+      predictor_heads: 4
+      predictor_head_dim: 32
+embodiment:
+  backend: unitree_g1_dex3
+  transport: mujoco
+  action_manifest: g1_sim_action.json
+dataset:
+  root: ../data/apple-wide-v1
+planner:
+  backend: cem
+  horizon: 8
+  samples: 64
+  iterations: 3
+  elites: 8
+  timeout_seconds: 5.0
+  lower_bounds: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -1.0, -1.0]
+  upper_bounds: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -1.0, 1.0]
+task:
+  name: apple_to_plate
+  max_steps: 1000
+evaluation:
+  # TASK-047 wide development cohort, reserved for a later closed-loop task.
+  seeds: [45000, 45001, 45002, 45003, 45004, 45005, 45006, 45007]
+  output_root: ../outputs

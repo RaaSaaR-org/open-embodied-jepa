@@ -1,0 +1,10 @@
+# Arm E2 (stronger multistep weighting): arm E0 with the multistep latent loss ramped
+# linearly towards the late rollout steps at constant total weight (last step 4x the
+# first). One factor from E0: the shared `multistep_tail_weight` key of models/base.py.
+extends: apple_wm_v4_lewm.yaml
+world_model:
+  checkpoints:
+    leworldmodel: ../checkpoints/task054-wm-v4/leworldmodel_tail.pt
+  settings:
+    leworldmodel:
+      multistep_tail_weight: 3.0

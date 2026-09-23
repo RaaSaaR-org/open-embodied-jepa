@@ -1,0 +1,10 @@
+# Arm E1 (action-chunk conditioning): arm E0 with each prediction step additionally
+# conditioned on the joint embedding of the next four actions, not only its own. One
+# factor from E0: the shared `action_chunk` key of models/base.py.
+extends: apple_wm_v4_lewm.yaml
+world_model:
+  checkpoints:
+    leworldmodel: ../checkpoints/task054-wm-v4/leworldmodel_chunk.pt
+  settings:
+    leworldmodel:
+      action_chunk: 4

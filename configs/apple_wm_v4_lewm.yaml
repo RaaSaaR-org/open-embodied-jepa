@@ -1,0 +1,6 @@
+# Arm E0 (baseline / control): the LeWM product backend on the v4 configuration. The
+# one-line swap, and TASK-052 arm B's configuration re-trained at this revision. Every
+# intervention arm differs from this file by exactly one shared config key.
+extends: apple_wm_v4.yaml
+world_model:
+  backend: leworldmodel

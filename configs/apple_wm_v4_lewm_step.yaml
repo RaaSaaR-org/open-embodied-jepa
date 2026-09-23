@@ -1,0 +1,12 @@
+# Arm E3 (horizon-conditioned predictor): arm E0 with a learned per-step vector added to
+# the latent before each rollout step, so the predictor is no longer one shared
+# single-step module applied autoregressively. The embedding is zero-initialized, so the
+# arm starts as an exact copy of E0's rollout. One factor from E0: the shared
+# `predictor_step_embedding` key of models/base.py.
+extends: apple_wm_v4_lewm.yaml
+world_model:
+  checkpoints:
+    leworldmodel: ../checkpoints/task054-wm-v4/leworldmodel_step.pt
+  settings:
+    leworldmodel:
+      predictor_step_embedding: true

@@ -220,6 +220,7 @@ def test_model_planner_and_evaluation_code_never_import_training_labels():
         "readout_labels.py",
         "world_model_v2.py",
         "world_model_v3.py",
+        "world_model_v4.py",
     }
     labels = {"training_labels", "readout_labels"}
     for path in package.rglob("*.py"):
