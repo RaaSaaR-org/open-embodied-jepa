@@ -348,9 +348,9 @@ The table has **seven rows, not eight arms**: v3 B and v4 E0 are the same checkp
 for bit, so counting both would double-count one arm.
 
 Across the seven distinct arms the Spearman correlation between rollout excess and G6a is
-**-0.107**; counting E0 as a separate eighth point and averaging the tied ranks gives
+**−0.107**; counting E0 as a separate eighth point and averaging the tied ranks gives
 **+0.084**. **The estimate changes sign on that bookkeeping choice** — which is what a rank
-correlation on seven points is worth. Within the four v4 arms it is **-0.400**; within the
+correlation on seven points is worth. Within the four v4 arms it is **−0.400**; within the
 four v3 arms it is **+0.800**: two subsets of the same evidence, opposite signs. (Computed
 with the evaluator's own `world_model_v2.spearman`, which averages tied ranks.)
 
@@ -398,9 +398,9 @@ The decision rule is applied as written, not re-interpreted after the fact.
 It **establishes**, on one seed each, that none of the three named branch-2 candidates
 rescues the prediction step at this budget: joint action-chunk conditioning does nothing
 (and it was measured with an advantage the planner cannot give it), a tail-weighted
-multistep loss moves the right term by about a seventh of what is needed and not beyond
-cohort noise, and a horizon-conditioned predictor trades encoder quality for action
-sensitivity.
+multistep loss moves the right term by under a third of what is needed (14.6 % of the
+excess where 49.9 % was required) and not beyond cohort noise, and a horizon-conditioned
+predictor trades encoder quality for action sensitivity.
 
 It does **not** establish that the prediction step cannot be fixed. Three specific designs
 at one seed and one budget is a narrow test of a broad hypothesis. What it does establish
