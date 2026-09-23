@@ -146,7 +146,7 @@ class LeWM(VisualModel):
             one_step = self.next_embedding(embeddings[:, :-1], actions)
             prediction_loss = (one_step - embeddings[:, 1:]).square().mean()
             recursive = self.rollout(embeddings[:, 0], actions)
-            multistep = (recursive - embeddings[:, 1:]).square().mean()
+            multistep = self.multistep_loss(recursive, embeddings[:, 1:])
             sigreg = self.sigreg(embeddings.transpose(0, 1))
             loss = (
                 prediction_loss

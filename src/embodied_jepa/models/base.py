@@ -90,6 +90,21 @@ class VisualModel(nn.Module):
         "readout_moving_weight": 0.0,
         "readout_moving_threshold_m": 0.01,
         "readout_auxiliary_weight": 0.0,
+        # Action-conditioned prediction step (TASK-054). All three are off at their
+        # default, and with them off ``rollout`` is bit-for-bit the earlier loop -- one
+        # shared single-step module applied to (latent, one action) -- and the multistep
+        # loss is the earlier unweighted mean, so every model written before TASK-054
+        # keeps its exact predictor and its exact loss.
+        #
+        # ``action_chunk`` K > 1 adds a learned joint embedding of actions [k, k+K) to
+        # the latent before step k, so the step is conditioned on a chunk of future
+        # actions and not only on its own. ``predictor_step_embedding`` adds a learned
+        # per-step vector, which makes the rollout horizon-conditioned instead of one
+        # shared step function. ``multistep_tail_weight`` ramps the multistep loss
+        # towards the late steps at constant total weight.
+        "action_chunk": 1,
+        "predictor_step_embedding": False,
+        "multistep_tail_weight": 0.0,
     }
     # Proprioception scaling policy (TASK-052; see fit_state_normalization).
     STATE_NOISE_STD = 1e-4  # below this a dimension never moved: treat it as constant
@@ -120,10 +135,13 @@ class VisualModel(nn.Module):
             "max_horizon",
             "candidate_chunk_size",
             "readout_hidden_dim",
+            "action_chunk",
         ):
             if type(self.config[name]) is not int or self.config[name] < 1:
                 raise ContractError(f"{name} must be a positive integer")
-        for name in ("state_fusion", "readout_heads"):
+        if self.config["action_chunk"] > self.config["max_horizon"]:
+            raise ContractError("action_chunk must not exceed max_horizon")
+        for name in ("state_fusion", "readout_heads", "predictor_step_embedding"):
             if type(self.config[name]) is not bool:
                 raise ContractError(f"{name} must be a boolean")
         for name in (
@@ -131,6 +149,7 @@ class VisualModel(nn.Module):
             "readout_moving_weight",
             "readout_moving_threshold_m",
             "readout_auxiliary_weight",
+            "multistep_tail_weight",
         ):
             if not np.isfinite(self.config[name]) or self.config[name] < 0:
                 raise ContractError(f"{name} must be nonnegative and finite")
@@ -249,6 +268,26 @@ class VisualModel(nn.Module):
                         for index, name in enumerate(self.camera_names)
                     }
                 )
+            # The TASK-054 prediction-step modules are drawn last, after every earlier
+            # module, so switching one on leaves the initialization of all of them
+            # unchanged: two arms that differ only by one of these options share every
+            # other weight at step 0.
+            if self.config["action_chunk"] > 1:
+                self.action_chunk_encoder = nn.Sequential(
+                    nn.Linear(
+                        self.config["action_chunk"] * EE_DELTA_GRASP_V0.dimension,
+                        self.config["hidden_dim"],
+                    ),
+                    nn.SiLU(),
+                    nn.Linear(self.config["hidden_dim"], self.config["latent_dim"]),
+                )
+            if self.config["predictor_step_embedding"]:
+                self.predictor_step = nn.Embedding(
+                    self.config["max_horizon"], self.config["latent_dim"]
+                )
+                # Zeroed, so the horizon-conditioned rollout *starts* as the shared
+                # single-step rollout and has to learn any departure from it.
+                nn.init.zeros_(self.predictor_step.weight)
         self.to(self.device_name)
         self.optimizer = torch.optim.AdamW(
             (parameter for parameter in self.parameters() if parameter.requires_grad),
@@ -536,13 +575,76 @@ class VisualModel(nn.Module):
             raise ContractError("model produced non-finite predicted latents")
         return VisualLatent(result, self._owner)
 
+    def action_chunk_context(self, actions):
+        """Joint embedding ``[N,T,D]`` of the action chunk starting at each step.
+
+        Step ``k`` sees actions ``[k, k+K)``, zero-padded past the end of the sequence,
+        as one vector through one shared MLP. The step's own action still reaches the
+        backend through ``next_embedding``; this adds the rest of the chunk, which is
+        what "condition on a chunk of future actions jointly" means here. Returns
+        ``None`` when ``action_chunk`` is 1, so the rollout loop is untouched.
+        """
+        size = self.config["action_chunk"]
+        if size <= 1:
+            return None
+        count, steps, width = actions.shape
+        padded = torch.cat((actions, actions.new_zeros(count, size - 1, width)), dim=1)
+        index = torch.arange(steps, device=actions.device)[:, None] + torch.arange(
+            size, device=actions.device
+        )
+        return self.action_chunk_encoder(padded[:, index].reshape(count, steps, size * width))
+
     def rollout(self, initial, actions):
+        """Latent rollout of ``actions [N,T,A]`` from ``initial [N,D]``.
+
+        With the TASK-054 options off this is exactly the earlier loop: one shared
+        single-step module applied autoregressively. With them on, the *input* of each
+        step is shifted by the action-chunk embedding and/or the per-step embedding
+        while the emitted latents stay the raw predictor outputs, so a readout or a
+        planner reads the same kind of latent either way.
+        """
+        steps = actions.shape[1]
+        if self.config["predictor_step_embedding"] and steps > self.config["max_horizon"]:
+            raise ContractError("rollout exceeds the horizon the step embedding was built for")
+        context = self.action_chunk_context(actions)
         state = initial
         result = []
-        for step in range(actions.shape[1]):
-            state = self.next_embedding(state, actions[:, step])
+        for step in range(steps):
+            conditioned = state
+            if context is not None:
+                conditioned = conditioned + context[:, step]
+            if self.config["predictor_step_embedding"]:
+                conditioned = conditioned + self.predictor_step.weight[step]
+            state = self.next_embedding(conditioned, actions[:, step])
             result.append(state)
         return torch.stack(result, dim=1)
+
+    def multistep_weights(self, steps):
+        """Per-step weights ``[1,T,1]`` of mean 1 for a multistep loss, or ``None``.
+
+        ``None`` (the default, ``multistep_tail_weight`` 0) means an unweighted mean.
+        Above 0 the weight ramps linearly from 1 at the first predicted step to
+        ``1 + multistep_tail_weight`` at the last and is then renormalized to mean 1,
+        so the option moves where the multistep term spends its effort without changing
+        the term's overall scale against the one-step and regularization terms.
+        """
+        tail = self.config["multistep_tail_weight"]
+        if tail <= 0 or steps < 2:
+            return None
+        ramp = torch.linspace(0.0, 1.0, steps, device=self.device_name)
+        weights = 1.0 + tail * ramp
+        return (weights / weights.mean()).reshape(1, steps, 1)
+
+    def multistep_loss(self, predicted, targets):
+        """Mean squared multistep error, tail-weighted when the option is on.
+
+        With the option off this is ``(predicted - targets).square().mean()`` exactly.
+        """
+        error = (predicted - targets).square()
+        weights = self.multistep_weights(error.shape[1])
+        if weights is None:
+            return error.mean()
+        return (error.mean(-1, keepdim=True) * weights).mean()
 
     @torch.no_grad()
     def distance(self, predicted_z, goal_z):
