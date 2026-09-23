@@ -1,0 +1,269 @@
+{
+  "arms": [
+    {
+      "action_chunk": 1,
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb"
+      ],
+      "checkpoint": "checkpoints/task054-wm-v4/leworldmodel_baseline.pt",
+      "config": "configs/apple_wm_v4_lewm.yaml",
+      "error_dump": "outputs/task054-wm-v4/leworldmodel_baseline-errors.npz",
+      "multistep_tail_weight": 0.0,
+      "name": "E0_baseline_arm_b_rerun",
+      "parameters_measured_in_pilot": 2415398,
+      "patch_size": 14,
+      "predictor_step_embedding": false,
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "report": "outputs/task054-wm-v4/leworldmodel_baseline-val-gates.json",
+      "role": "control"
+    },
+    {
+      "action_chunk": 4,
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb"
+      ],
+      "checkpoint": "checkpoints/task054-wm-v4/leworldmodel_chunk.pt",
+      "config": "configs/apple_wm_v4_lewm_chunk.yaml",
+      "error_dump": "outputs/task054-wm-v4/leworldmodel_chunk-errors.npz",
+      "multistep_tail_weight": 0.0,
+      "name": "E1_action_chunk",
+      "parameters_measured_in_pilot": 2462886,
+      "patch_size": 14,
+      "predictor_step_embedding": false,
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "report": "outputs/task054-wm-v4/leworldmodel_chunk-val-gates.json",
+      "role": "action-chunk conditioning"
+    },
+    {
+      "action_chunk": 1,
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb"
+      ],
+      "checkpoint": "checkpoints/task054-wm-v4/leworldmodel_tail.pt",
+      "config": "configs/apple_wm_v4_lewm_tail.yaml",
+      "error_dump": "outputs/task054-wm-v4/leworldmodel_tail-errors.npz",
+      "multistep_tail_weight": 3.0,
+      "name": "E2_multistep_tail_weight",
+      "parameters_measured_in_pilot": 2415398,
+      "patch_size": 14,
+      "predictor_step_embedding": false,
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "report": "outputs/task054-wm-v4/leworldmodel_tail-val-gates.json",
+      "role": "multistep loss weighting"
+    },
+    {
+      "action_chunk": 1,
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb"
+      ],
+      "checkpoint": "checkpoints/task054-wm-v4/leworldmodel_step.pt",
+      "config": "configs/apple_wm_v4_lewm_step.yaml",
+      "error_dump": "outputs/task054-wm-v4/leworldmodel_step-errors.npz",
+      "multistep_tail_weight": 0.0,
+      "name": "E3_predictor_step_embedding",
+      "parameters_measured_in_pilot": 2423590,
+      "patch_size": 14,
+      "predictor_step_embedding": true,
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "report": "outputs/task054-wm-v4/leworldmodel_step-val-gates.json",
+      "role": "horizon-conditioned predictor"
+    }
+  ],
+  "baselines": {
+    "g2a_has_never_passed": [
+      0.835,
+      1.01,
+      0.876,
+      0.94,
+      0.831
+    ],
+    "v2_lewm_onboard_G1_m": 0.0365,
+    "v2_lewm_onboard_G2a": 0.835,
+    "v2_lewm_onboard_rollout_excess_m_carried_over_not_recomputed": 0.0039,
+    "v3_arm_B_G1_m": 0.036480578,
+    "v3_arm_B_G2a": 0.8763,
+    "v3_arm_B_encoded_target_m": 0.025902658700942993,
+    "v3_arm_B_parameters": 2415398,
+    "v3_arm_B_rollout_excess_m": 0.0106,
+    "v3_arm_D_G1_m": 0.033042999,
+    "v3_arm_D_G2a": 0.8308,
+    "v3_arm_D_encoded_target_m": 0.02469455637037754,
+    "v3_arm_D_rollout_excess_m": 0.0083
+  },
+  "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+  "frozen": {
+    "arm_order": [
+      "E0_baseline_arm_b_rerun",
+      "E1_action_chunk",
+      "E2_multistep_tail_weight",
+      "E3_predictor_step_embedding"
+    ],
+    "bootstrap": {
+      "contrasts": [
+        "E1_minus_E0_action_chunk",
+        "E2_minus_E0_multistep_tail_weight",
+        "E3_minus_E0_predictor_step_embedding"
+      ],
+      "designs": [
+        "iid",
+        "cluster"
+      ],
+      "fields": [
+        "rollout",
+        "encoded_target",
+        "rollout_excess"
+      ],
+      "read_design": "cluster",
+      "resamples": 20000,
+      "script": "scripts/bootstrap_wm_v4_contrasts.py",
+      "seed": 20540
+    },
+    "g9_reading_condition": {
+      "max_m": 0.0389,
+      "metric": "decomposition.encoded_target_median_m",
+      "rationale": "1.5x v3 arm B's 2.59 cm encoder term. Inside this band G9 is interpretable; outside it the split is not comparable to v3's and G9 is reported as uninterpretable rather than as a pass. A reading rule only: it never changes G9's threshold or its pass/fail computation."
+    },
+    "gates": {
+      "G1_palm_apple_moving_h8_median_m": 0.015,
+      "G2_max_ratio_to_control": 0.8,
+      "G3_apple_plate_h8_median_m": 0.02,
+      "G4_apple_height_grasp_h8_median_abs_m": 0.01,
+      "G5_held_auroc_min": 0.85,
+      "G5_minimum_per_class": 20,
+      "G6_minimum_candidates": 3,
+      "G6_minimum_ranked_groups": 12,
+      "G6_minimum_true_cost_spread_m": 0.005,
+      "G6_ranking_horizon": 16,
+      "G6a_within_state_spearman_min": 0.5,
+      "G6b_top1_regret_max_m": 0.004,
+      "G7_minimum_pairs": 20,
+      "G7a_own_beats_swapped_min": 0.7,
+      "G7b_divergence_spearman_min": 0.5,
+      "G8_max_collapsed_fraction": 0.05,
+      "G8_min_effective_rank": 4.0,
+      "G8_min_latent_std_mean": 0.1,
+      "G9_rollout_excess_h8_median_m": 0.0053
+    },
+    "primary_gate": "G2a_vs_persistence_h8",
+    "selection_eligibility": {
+      "max_collapsed_fraction": 0.05,
+      "min_effective_rank": 2.0,
+      "min_latent_std_mean": 0.1
+    },
+    "training": {
+      "batch_size": 32,
+      "final_lr_fraction": 0.1,
+      "horizon": 16,
+      "max_seconds": 10800,
+      "seed": 0,
+      "selection_windows": 1024,
+      "steps": 15000,
+      "validation_every": 1000
+    }
+  },
+  "g9_threshold_derivation": {
+    "declared_consequence": "G9 can pass while G1 fails: 0.53 cm on top of arm B's 2.59 cm encoder term is a rollout of about 3.1 cm, still about 2.1x G1's threshold. An arm that passes G9 and fails G1 has not passed the gate set.",
+    "not_passable_by_identity_predictor": {
+      "note": "persistence minus encoded_target, both far above 0.0053",
+      "v3_arm_B_identity_excess_m": 0.0157,
+      "v3_arm_D_identity_excess_m": 0.0151
+    },
+    "passable_by_degenerate_readout": {
+      "measured_excess_m": -0.0166,
+      "note": "why the g9_reading_condition exists; G9 is never read on its own",
+      "pilot": "smoke-a, 40 steps on 8 episodes"
+    },
+    "reference_arm": "v3 arm B (onboard, patch 14), which E0 re-runs",
+    "reference_rollout_excess_m": 0.0106,
+    "rule": "half of the reference arm's rollout excess",
+    "threshold_m": 0.0053,
+    "why_not_v2": "v2's 0.39 cm was carried over, not recomputed: the v2 checkpoints have an incompatible implementation hash and this code cannot reproduce that figure",
+    "why_not_v3_best": "v3 arm D's 0.83 cm comes from the B<->D patch contrast, which TASK-052's conservative reading could not distinguish from its own sampling noise; a threshold inside that band would be passable by noise"
+  },
+  "gate_definitions": {
+    "G1": "median palm-apple readout error at h=8 on predicted latents, val moving windows",
+    "G2a": "G1 divided by the model's own persistence readout on the same windows",
+    "G2b": "G1 divided by the shuffled-action control on the same windows",
+    "G3": "median apple-plate error at h=8 over all valid val windows",
+    "G4": "median absolute apple-height error at h=8 over the grasp cohort",
+    "G5": "AUROC of apple_held at h=8 over the lift cohort",
+    "G6a": "pooled within-state Spearman between predicted and true approach cost across the sibling candidate actions of one pre-grasp state, at h=16, over groups whose true costs span at least 5 mm",
+    "G6b": "median top-1 regret at h=16: the true approach cost of the candidate the model ranks best, minus the best true cost, over the same groups",
+    "G7a": "fraction of ordered sibling pairs at h=16 where the own-action prediction beats the swapped-action one",
+    "G7b": "Spearman between predicted and true sibling divergence at h=16",
+    "G8a": "collapsed fraction of encoded val latents",
+    "G8b": "effective rank of encoded val latents",
+    "G8c": "mean per-dimension latent standard deviation",
+    "G9": "median rollout excess at h=8 on the val moving windows: G1 minus the readout error of a directly encoded target-frame observation on the identical windows"
+  },
+  "gates_carried_verbatim_from_v3": [
+    "G1",
+    "G2a",
+    "G2b",
+    "G3",
+    "G4",
+    "G5",
+    "G6a",
+    "G6b",
+    "G7a",
+    "G7b",
+    "G8a",
+    "G8b",
+    "G8c"
+  ],
+  "leakage_discipline": {
+    "frozen_final_cohort_untouched": "resets 44000-44019 and TEST",
+    "gate_split": "val",
+    "normalization_fit_split": "train",
+    "selection_split": "val",
+    "simulator_resets_opened": 0,
+    "splits_used": [
+      "train",
+      "val"
+    ],
+    "test_episodes_decoded": 0
+  },
+  "measured_budget": {
+    "decode_seconds_one_camera": 12.4,
+    "expected_training_hours_total": 3.85,
+    "peak_host_rss_bytes_one_camera": 9120000000,
+    "per_arm_wall_clock_cap_seconds": 10800,
+    "seconds_per_update": {
+      "E0": 0.2303,
+      "E1": 0.2312,
+      "E2": 0.2307,
+      "E3": 0.2328
+    },
+    "source": "disclosed pilots timing-{baseline,chunk,tail,step}, full corpus, 120 steps"
+  },
+  "not_frozen_arms": {
+    "native_jepa": "configs/apple_wm_v4.yaml exists and is the one-line backend swap, but is smoked only; the budget does not fit a fifth run"
+  },
+  "overall": null,
+  "pre_declared_outcomes": {
+    "A_some_arm_g2a_below_0_8": "CEM over this cost is kept; the winning arm (lowest G2a, ties by lower G9 then lower G1) is carried forward; the next protocol attacks the ENCODER term, with the single-frame 224 px information-ceiling measurement as the primary line. The closed loop still does not start.",
+    "B_no_arm_g2a_below_0_8": "The control-formulation clause recorded by TASK-052 fires as written and is not deferred again: behaviour cloning with the world model as a critic or residual becomes the primary line, CEM over this cost is abandoned, and no further predictor-architecture protocol is preregistered.",
+    "C_baseline_E0_also_below_0_8": "The change is revision or run-to-run variation, not any intervention; no intervention is credited and this becomes the headline. The next protocol is a replication of the baseline at >= 3 seeds before any further architecture work."
+  },
+  "predecessor": {
+    "manifest": "benchmarks/manifests/apple-world-model-v3.json",
+    "overall": "all four arms failed; the closed loop was not started. Its encoder/rollout decomposition put the growing error in the prediction step, and its earliest-failing-group rule selects branch 2, redesign the action conditioning.",
+    "protocol": "apple_world_model_v3",
+    "task": "TASK-052"
+  },
+  "protocol": "apple_world_model_v4",
+  "protocol_doc": "docs/experiments/apple_world_model_v4.md",
+  "results": null,
+  "results_doc": "docs/experiments/apple_world_model_v4_results.md",
+  "status": "preregistered",
+  "task": "TASK-054",
+  "verification": null
+}

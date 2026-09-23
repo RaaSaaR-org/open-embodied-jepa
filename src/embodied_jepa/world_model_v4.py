@@ -170,12 +170,14 @@ def evaluate_gates(metrics, gates):
       makes the rollout error equal the persistence error, so its excess is
       ``persistence - encoded_target``; on the v3 arms that is 1.57 cm (B) and 1.51 cm
       (D), far above the threshold rather than below it.
-    - G9 alone still does **not** establish that the actions are used. A predictor that
-      regressed towards the cohort's centre could in principle add little error while
-      conditioning on nothing. G9 is therefore read only together with G2a, G2b and
-      G7a, which such a predictor fails, and never on its own. The preregistration
-      records that joint reading, and that G9 can pass while G1 fails: G9 bounds the
-      term this task attacks, not the absolute accuracy G1 asks for.
+    - G9 **is** passable by a degenerate model, and this was measured, not reasoned:
+      a 40-step pilot whose readout head is still near-constant scored a *negative*
+      excess (-1.66 cm), because its encoded-target readout is no better than its
+      rollout. So a G9 pass means nothing unless the encoder term is in the range the
+      v3 arms reached. G9 is therefore read only together with G1, G2a, G2b, G7a and
+      G8, never on its own, and the preregistration states both that joint reading and
+      that G9 can legitimately pass while G1 fails: G9 bounds the term this task
+      attacks, not the absolute accuracy G1 asks for.
     """
     result = dict(evaluate_v3_gates(metrics, gates))
     result.pop("all_passed")
