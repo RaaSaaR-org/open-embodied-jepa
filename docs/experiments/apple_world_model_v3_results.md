@@ -43,7 +43,7 @@ committed checkout (no two runs overlapped; see `outputs/task052-runner.log`).
 
 Every arm's `model_config` in its `run.json` is identical except for the cells in bold or
 otherwise marked above; the parameter deltas are exactly the declared ones (A − B =
-16,384 = one 128×128 camera projection; B − D = −33,792 = the patch and position
+16,384 = one 128×128 camera projection; D − B = −33,792 = the patch and position
 embedding change).
 
 - **Code revision** `e2f822765599c920583033b5061f44ff08ba689e` for all four training runs
@@ -73,8 +73,8 @@ embedding change).
 - **Artifacts** (git-ignored, under the main checkout)
   `checkpoints/task052-wm-v3/{leworldmodel,leworldmodel_onboard,leworldmodel_v2_readout,leworldmodel_fine}.{pt,latest.pt,run.json,metrics.jsonl}`
   and `outputs/task052-wm-v3/<name>-val-gates.json`, plus `outputs/task052-runner.log`.
-  Nothing outside `*/task052-wm-v3/` was written; TASK-050's `task050-wm-v2` artifacts are
-  untouched.
+  Nothing outside those paths was written; nothing under `data/` was touched, and
+  TASK-050's `task050-wm-v2` artifacts are intact.
 
 ## Gate table (val only; h = 8 unless stated)
 
@@ -181,8 +181,9 @@ nowhere near the 1.5 cm threshold, and it is not a free win.
 validation selection score swings 7.50 → 12.34 → 15.41 → 4.99 cm between steps 5,000 and
 8,000 — step-to-step jitter an order of magnitude larger than the B ↔ D gap. With one seed
 per arm there is no run-to-run variance estimate, so B ↔ D is not distinguishable from
-noise. The A ↔ B camera gap (2.97 cm) is large enough to survive that objection; B ↔ D is
-not.
+noise. The A ↔ B camera gap (2.97 cm) is an order of magnitude larger and is the only
+contrast here whose size makes a noise explanation implausible — but it is still one seed
+and still not a variance estimate.
 
 **The largest single lever measured on G1 is the camera set (−2.97 cm from removing the
 second camera), not the patch grid (−0.34 cm).**
@@ -200,6 +201,8 @@ for orientation only.
 | G2a ÷ persistence | 0.8351 | 0.8763 | 0.8308 |
 | G2b ÷ shuffled | 0.699 | 0.666 | 0.683 |
 | G3 apple–plate | 1.93 cm | 1.97 cm | 1.80 cm |
+| G8b effective rank | 8.134 | 7.743 | 7.538 |
+| G8c mean latent std | 0.907 | 0.868 | 0.877 |
 | palm–apple, all valid windows | 0.77 cm | 0.78 cm | 0.92 cm |
 | v2's cross-window cost ρ (descriptive) | 0.165 | 0.097 | 0.228 |
 
@@ -216,7 +219,7 @@ four v3 arms are *worse* than v2's 0.165.
 This is the one place where v3 measures something better than v2, and it is the metric a
 CEM actually uses.
 
-| h = 16, 18 ranked groups, 68 pooled points | A | B | C | D |
+| h = 16, 18 ranked groups of 3-4 candidates | A | B | C | D |
 |---|---|---|---|---|
 | G6a pooled within-state ρ | 0.328 | **0.544** | **0.516** | 0.378 |
 | mean per-group ρ | 0.328 | 0.544 | 0.528 | 0.389 |
@@ -238,9 +241,12 @@ CEM actually uses.
   real val cohort) puts G6a's pass rate at 1.0e-4 and G6b's at 5.9 %, so G6b alone is weak
   and must not be read on its own, but **the G6a+G6b pair is not passable by chance — and
   arms B and C pass the pair.**
-- **The cohort is narrow: 18 ranked groups of 3–4 candidates from 20 val resets, 68 pooled
-  points.** This is necessary, not sufficient, evidence, exactly as preregistered. It
-  cannot establish that a planner will work.
+- **The cohort is narrow: 18 ranked groups of 3–4 candidates from 20 val resets** (the
+  preregistration counts 68 pooled points; the evaluator emits `groups_ranked` and
+  `candidates_median` but not the pooled count, so that figure is the protocol's
+  label-derived number rather than one this run reported). This is necessary, not
+  sufficient, evidence, exactly as preregistered. It cannot establish that a planner will
+  work.
 - `start_state_max_label_mismatch_m` is 0.0 for every arm: the siblings' start states
   coincide exactly, so the only thing differing between candidates is the actions.
 - Descriptively at other horizons the ranking is weaker: pooled ρ at h = 8 (10 ranked
@@ -283,11 +289,14 @@ the single most useful thing this protocol learned.
 - **No collapse anywhere** (G8 passes on all four), but the two-camera arms have a
   materially lower effective rank (5.12, 5.36) than the one-camera arms (7.74, 7.54), and
   the image-only pathway shows the same split (4.53, 4.75 versus 7.19, 7.09).
-- **The step budget binds for the one-camera arms.** B's validation curve falls
-  monotonically to its last point and B's selected checkpoint *is* step 15,000 (score
-  3.54 cm, still improving); D's best is step 13,000 with 15,000 within 0.02 cm. A and C
-  plateau near 6.0–6.3 cm from about step 8,000. So "train B or D longer" is a live,
-  untested option; "train A or C longer" is not supported by their curves.
+- **The step budget binds for arm B, and only for arm B.** B's validation curve trends
+  down and reaches its minimum at the *last* step — its selected checkpoint is step 15,000
+  (3.54 cm), still improving — though it is not monotonic: it rises at step 5,000
+  (5.35 → 6.96 cm) and again at step 10,000 (4.53 → 4.85 cm). D's best is step 13,000 and
+  its step 15,000 is **0.19 cm worse** (3.35 → 3.54 cm), so D's tail is rising, not flat,
+  and "train D longer" is *not* supported by its curve. A and C plateau from about step
+  8,000, ranging 5.99–6.73 cm and 6.27–7.07 cm thereafter, so longer training is not
+  supported for them either. "Train B longer" is the one live, untested option.
 - **Descriptive grasp outcome from the pre-grasp state** (h = 64, 63 siblings, 29
   positive): AUROC 0.877 / 0.822 / 0.790 / 0.941. **`apple_dropped`** AUROC over all
   windows: 0.969 / 0.972 / 0.973 / 0.975.
@@ -348,11 +357,15 @@ counts (all confirmed to six significant figures). It also confirmed:
   runner log have mtimes on or after the run date; nothing under `data/` was touched and
   every TASK-050 artifact under `*/task050-wm-v2/` is intact and still readable.
 - **No threshold movement.** Every threshold matches across the preregistration, the
-  frozen manifest and all four gate reports, and
-  `git diff e2f8227 HEAD -- benchmarks/manifests/apple-world-model-v3.json docs/experiments/apple_world_model_v3.md configs/apple_wm_v3*.yaml`
-  is **empty** — the protocol, manifest and all five configs are bit-identical between the
-  commit the runs were made from and this PR. `e2f8227` was committed 65 seconds before
-  the runner's first log line.
+  frozen manifest and all four gate reports.
+  `git diff e2f8227 HEAD -- docs/experiments/apple_world_model_v3.md configs/apple_wm_v3*.yaml`
+  is **empty**: the protocol and all five configs are bit-identical between the commit the
+  runs were made from and this PR. The manifest is *not* bit-identical, because this PR
+  fills it — but its diff over `e2f8227..HEAD` touches **only** the four placeholder keys
+  `results`, `overall`, `verification` and `status`; `frozen` (including every
+  `frozen.gates` threshold), `arms`, `baselines`, `gate_definitions`, `predecessor`,
+  `measured_budget` and `not_frozen_arms` are byte-identical. `e2f8227` was committed 65
+  seconds before the runner's first log line.
 - **The selection rule was applied as preregistered.** Recomputing `argmin(score)` over
   the eligible validation entries with step > 0 reproduces `best_step` for all four arms
   (10,000 / 15,000 / 10,000 / 13,000). The gate evaluation used `<arm>.pt` (the selected

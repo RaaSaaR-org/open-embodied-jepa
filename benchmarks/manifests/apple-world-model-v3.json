@@ -148,7 +148,7 @@
     "caveats": [
       "one seed per arm, one run each; no run-to-run variance estimate",
       "selection and the gates both used val, which flatters G1; test was never decoded",
-      "G6 rests on 18 ranked groups / 68 pooled points from 20 val resets, at h=16 while the planner's horizon is 8",
+      "G6 rests on 18 ranked groups of 3-4 candidates from 20 val resets, at h=16 while the planner's horizon is 8; the evaluator emits groups_ranked but not a pooled point count",
       "G6b is 0.0 m for every arm including arm A (G6a 0.328) and has a 5.9% preregistered null pass rate; it must not be read on its own",
       "offline evaluation only; no closed loop was run and learned Apple->Plate remains 0 successes"
     ],
@@ -165,7 +165,8 @@
       "A_vs_C_v3_readout_shaping": "the v3 readout shaping (motion weighting AND auxiliary position targets, inseparable in this design) HURT: G6a 0.516 -> 0.328, G7a 0.717 -> 0.613, G1 0.0611 -> 0.0662 m",
       "B_vs_D_patch_14_to_8": "patch 8 improved G1 0.0364806 -> 0.0330430 m (0.34 cm) at 2.1x the wall clock and lost G6a (0.544 -> 0.378); within-run validation jitter exceeds this gap and there is one seed per arm, so it is not distinguishable from noise"
     },
-    "pre_declared_branch": "branch 2 (G7a fails) for arms A and B; branch 4 (G1 fails and G2a does not improve over v2's 0.835) for arms C and D, which also triggers the protocol's 'plainly, in advance' clause on outcome 4"
+    "pre_declared_branch": "branch 2 (G7a fails) for arms A and B; branch 4 (G1 fails and G2a does not improve over v2's 0.835) for arms C and D, which also triggers the protocol's 'plainly, in advance' clause on outcome 4",
+    "pull_request": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/27"
   },
   "predecessor": {
     "manifest": "benchmarks/manifests/apple-world-model-v2.json",
@@ -883,7 +884,7 @@
       "every gate value, threshold, comparison direction and pass/fail decision to six significant figures, and the per-arm totals 8/10/10/10",
       "test_episodes_decoded == 0 in all four run.json and all four gate reports; 0 shared roots across train/val/test; normalization fitted on the 677 train episodes only",
       "no prior evidence overwritten: only task052 paths and the runner log were written; data/ untouched; the task050-wm-v2 artifacts are intact",
-      "no threshold moved: git diff e2f8227..HEAD over this manifest, the preregistration and all five configs is empty",
+      "no threshold moved: git diff e2f8227..HEAD over the preregistration and all five configs is empty, and this manifest's diff touches only the placeholder keys results, overall, verification and status -- frozen (every threshold), arms, baselines and gate_definitions are byte-identical to e2f8227",
       "the selection rule replays exactly (best eligible steps 10000/15000/10000/13000) and the gates used <arm>.pt, not <arm>.latest.pt",
       "provenance complete for every arm: revision, source hash, dataset/split/action hashes, checkpoint hashes, seed, device, budget, elapsed and steps",
       "one-factor isolation: only cameras, patch_size, readout_moving_weight and readout_auxiliary_weight differ anywhere in the design; A vs B differs in cameras alone (16,384 parameters = one 128x128 projection)"

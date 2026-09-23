@@ -96,11 +96,18 @@ passed. The criteria below are the deliverables; the gate outcome is recorded ho
 - [x] Fresh pre-run review; blockers fixed; smoke on a tiny subset from the committed revision.
 - [x] The frozen arms ran once each from clean committed revision `e2f8227` (`--require-clean`,
       `dirty: false`) and were evaluated against the frozen gates. No threshold was changed:
-      `git diff e2f8227..HEAD` over the manifest, the protocol and all five configs is empty.
+      `git diff e2f8227..HEAD` over the protocol and all five configs is empty, and the manifest's
+      diff touches only the placeholder keys `results`, `overall`, `verification` and `status`
+      (`frozen`, `arms`, `baselines`, `gate_definitions` byte-identical).
 - [x] Fresh post-run verification; results doc reporting every gate honestly, failures kept; ruff,
-      `ruff format --check`, 701 pytest passing, `mc validate`; PR with green CI and an independent
-      review.
-- [x] PR merged and this task closed.
+      `ruff format --check`, 701 pytest passing, `mc validate`; PR
+      https://github.com/RaaSaaR-org/open-embodied-jepa/pull/27 with green CI (all three checks
+      pass) and an independent fresh-context review, which raised three blockers -- a verification
+      command quoted as returning an empty diff when it does not, two wrong validation-curve
+      numbers, and these acceptance boxes -- all fixed and re-checked.
+- [ ] PR merged and this task closed. **Not self-certifiable in the commit that requests the
+      merge:** PR #27 was open with green CI when this card was written. The merge follows the
+      reviewer's reported approval and is the last step of that PR.
 
 ## Scope and resources
 MPS (M5 Pro, 48 GB). Total training budget about 6 hours across arms, sequential, sharing the
