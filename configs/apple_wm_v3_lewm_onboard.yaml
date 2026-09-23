@@ -1,0 +1,9 @@
+# Arm B (camera ablation): arm A with the onboard camera alone. Isolates what the second
+# camera contributes; everything else is identical to apple_wm_v3_lewm.yaml.
+extends: apple_wm_v3_lewm.yaml
+world_model:
+  checkpoints:
+    leworldmodel: ../checkpoints/task052-wm-v3/leworldmodel_onboard.pt
+  settings:
+    leworldmodel:
+      cameras: [onboard_rgb]

@@ -1,0 +1,12 @@
+# Arm D (encoder-resolution ablation): arm B (onboard camera alone, v3 readout) with the
+# ViT patch size halved from 14 to 8, so the 112 px camera becomes 14x14 = 196 tokens
+# instead of 8x8 = 64. TASK-050 measured ~89 % of the rollout error as already present in
+# a directly encoded observation, and the apple is only a few pixels across at 112 px, so
+# this tests spatial resolution as the binding constraint. One factor from arm B.
+extends: apple_wm_v3_lewm_onboard.yaml
+world_model:
+  checkpoints:
+    leworldmodel: ../checkpoints/task052-wm-v3/leworldmodel_fine.pt
+  settings:
+    leworldmodel:
+      patch_size: 8

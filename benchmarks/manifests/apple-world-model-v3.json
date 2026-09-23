@@ -1,0 +1,900 @@
+{
+  "arms": [
+    {
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb",
+        "hand_crop_rgb"
+      ],
+      "checkpoint": "checkpoints/task052-wm-v3/leworldmodel.pt",
+      "config": "configs/apple_wm_v3_lewm.yaml",
+      "name": "A_lewm_two_camera",
+      "patch_size": 14,
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "report": "outputs/task052-wm-v3/leworldmodel-val-gates.json",
+      "role": "primary"
+    },
+    {
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb"
+      ],
+      "checkpoint": "checkpoints/task052-wm-v3/leworldmodel_onboard.pt",
+      "config": "configs/apple_wm_v3_lewm_onboard.yaml",
+      "name": "B_lewm_onboard_only",
+      "patch_size": 14,
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "report": "outputs/task052-wm-v3/leworldmodel_onboard-val-gates.json",
+      "role": "camera ablation"
+    },
+    {
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb",
+        "hand_crop_rgb"
+      ],
+      "checkpoint": "checkpoints/task052-wm-v3/leworldmodel_v2_readout.pt",
+      "config": "configs/apple_wm_v3_lewm_v2_readout.yaml",
+      "name": "C_lewm_v2_readout",
+      "patch_size": 14,
+      "readout_auxiliary_weight": 0.0,
+      "readout_moving_weight": 0.0,
+      "report": "outputs/task052-wm-v3/leworldmodel_v2_readout-val-gates.json",
+      "role": "readout ablation"
+    },
+    {
+      "backend": "leworldmodel",
+      "cameras": [
+        "onboard_rgb"
+      ],
+      "checkpoint": "checkpoints/task052-wm-v3/leworldmodel_fine.pt",
+      "config": "configs/apple_wm_v3_lewm_fine.yaml",
+      "name": "D_lewm_fine_patches",
+      "patch_size": 8,
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "report": "outputs/task052-wm-v3/leworldmodel_fine-val-gates.json",
+      "role": "encoder-resolution ablation"
+    }
+  ],
+  "baselines": {
+    "v2_lewm_onboard_G1_m": 0.0365,
+    "v2_lewm_onboard_G2a": 0.835,
+    "v2_lewm_onboard_cross_window_cost_spearman": 0.165,
+    "val_label_random_choice_regret_h16_median_m": 0.00844,
+    "val_label_random_choice_regret_h16_normalized_median": 0.531,
+    "val_label_ranked_groups_h16_at_5mm_spread": 18,
+    "val_label_ranked_groups_h8_at_5mm_spread": 10,
+    "val_label_state_std_1e-4_to_1e-2": 13,
+    "val_label_state_std_at_or_above_1e-2": 43,
+    "val_label_state_std_below_1e-4": 30
+  },
+  "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+  "frozen": {
+    "gates": {
+      "G1_palm_apple_moving_h8_median_m": 0.015,
+      "G2_max_ratio_to_control": 0.8,
+      "G3_apple_plate_h8_median_m": 0.02,
+      "G4_apple_height_grasp_h8_median_abs_m": 0.01,
+      "G5_held_auroc_min": 0.85,
+      "G5_minimum_per_class": 20,
+      "G6_minimum_candidates": 3,
+      "G6_minimum_ranked_groups": 12,
+      "G6_minimum_true_cost_spread_m": 0.005,
+      "G6_ranking_horizon": 16,
+      "G6a_within_state_spearman_min": 0.5,
+      "G6b_top1_regret_max_m": 0.004,
+      "G7_minimum_pairs": 20,
+      "G7a_own_beats_swapped_min": 0.7,
+      "G7b_divergence_spearman_min": 0.5,
+      "G8_max_collapsed_fraction": 0.05,
+      "G8_min_effective_rank": 4.0,
+      "G8_min_latent_std_mean": 0.1
+    },
+    "selection_eligibility": {
+      "max_collapsed_fraction": 0.05,
+      "min_effective_rank": 2.0,
+      "min_latent_std_mean": 0.1
+    },
+    "training": {
+      "batch_size": 32,
+      "final_lr_fraction": 0.1,
+      "horizon": 16,
+      "max_seconds": 10800,
+      "seed": 0,
+      "selection_windows": 1024,
+      "steps": 15000,
+      "validation_every": 1000
+    }
+  },
+  "gate_definitions": {
+    "G1": "median palm-apple readout error at h=8 on predicted latents, val moving windows",
+    "G2a": "G1 divided by the model's own persistence readout on the same windows",
+    "G2b": "G1 divided by the shuffled-action control on the same windows",
+    "G3": "median apple-plate error at h=8 over all valid val windows",
+    "G4": "median absolute apple-height error at h=8 over the grasp cohort",
+    "G5": "AUROC of apple_held at h=8 over the lift cohort",
+    "G6a": "pooled within-state Spearman between predicted and true approach cost across the sibling candidate actions of one pre-grasp state, at h=16, over groups whose true costs span at least 5 mm",
+    "G6b": "median top-1 regret at h=16: the true approach cost of the candidate the model ranks best, minus the best true cost, over the same groups",
+    "G7a": "fraction of ordered sibling pairs at h=16 where the own-action prediction beats the swapped-action one",
+    "G7b": "Spearman between predicted and true sibling divergence at h=16",
+    "G8a": "collapsed fraction of encoded val latents",
+    "G8b": "effective rank of encoded val latents",
+    "G8c": "mean per-dimension latent standard deviation"
+  },
+  "measured_budget": {
+    "decode_seconds_two_cameras": 16.8,
+    "expected_training_hours_total": 5.88,
+    "peak_host_rss_bytes_two_cameras": 16001875968,
+    "seconds_per_update": {
+      "A": 0.348,
+      "B": 0.229,
+      "C": 0.348,
+      "D": 0.486
+    },
+    "source": "disclosed smokes smoke-b / smoke-onboard / smoke-fine at revision 63f9cd2"
+  },
+  "not_frozen_arms": {
+    "native_jepa": "configs/apple_wm_v3.yaml exists and is the one-line backend swap, but is smoked only; the budget does not fit a fifth run"
+  },
+  "overall": {
+    "any_arm_passed": false,
+    "arms_passing_G2a": 0,
+    "arms_passing_primary_gate_G1": 0,
+    "best_G1_arm": "D_lewm_fine_patches",
+    "best_G1_m": 0.033043038100004196,
+    "caveats": [
+      "one seed per arm, one run each; no run-to-run variance estimate",
+      "selection and the gates both used val, which flatters G1; test was never decoded",
+      "G6 rests on 18 ranked groups of 3-4 candidates from 20 val resets, at h=16 while the planner's horizon is 8; the evaluator emits groups_ranked but not a pooled point count",
+      "G6b is 0.0 m for every arm including arm A (G6a 0.328) and has a 5.9% preregistered null pass rate; it must not be read on its own",
+      "offline evaluation only; no closed loop was run and learned Apple->Plate remains 0 successes"
+    ],
+    "closed_loop_started": false,
+    "gates_passed_of_13": {
+      "A_lewm_two_camera": 8,
+      "B_lewm_onboard_only": 10,
+      "C_lewm_v2_readout": 10,
+      "D_lewm_fine_patches": 10
+    },
+    "learned_apple_to_plate_successes": 0,
+    "one_factor_readings": {
+      "A_vs_B_second_camera": "adding the hand-crop camera HURT: G1 0.0364806 -> 0.0661759 m, effective rank 7.743 -> 5.121, at 1.7x peak RSS and 1.5x wall clock",
+      "A_vs_C_v3_readout_shaping": "the v3 readout shaping (motion weighting AND auxiliary position targets, inseparable in this design) HURT: G6a 0.516 -> 0.328, G7a 0.717 -> 0.613, G1 0.0611 -> 0.0662 m",
+      "B_vs_D_patch_14_to_8": "patch 8 improved G1 0.0364806 -> 0.0330430 m (0.34 cm) at 2.1x the wall clock and lost G6a (0.544 -> 0.378); within-run validation jitter exceeds this gap and there is one seed per arm, so it is not distinguishable from noise"
+    },
+    "pre_declared_branch": "branch 2 (G7a fails) for arms A and B; branch 4 (G1 fails and G2a does not improve over v2's 0.835) for arms C and D, which also triggers the protocol's 'plainly, in advance' clause on outcome 4",
+    "pull_request": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/27"
+  },
+  "predecessor": {
+    "manifest": "benchmarks/manifests/apple-world-model-v2.json",
+    "overall": "all three arms failed; the closed loop was not started",
+    "protocol": "apple_world_model_v2",
+    "task": "TASK-050"
+  },
+  "protocol": "apple_world_model_v3",
+  "protocol_doc": "docs/experiments/apple_world_model_v3.md",
+  "results": {
+    "A_lewm_two_camera": {
+      "backend": "leworldmodel",
+      "budget_max_seconds": 10800,
+      "cameras": [
+        "onboard_rgb",
+        "hand_crop_rgb"
+      ],
+      "checkpoint_sha256": "1e8fe9f37d9444762dc731b323220100d05a6854fd31ce04eaaa5500fc3249f8",
+      "collapse": {
+        "collapsed_fraction": 0.0,
+        "dimension": 128,
+        "effective_rank": 5.120763345668386,
+        "image_only": {
+          "collapsed_fraction": 0.0,
+          "dimension": 128,
+          "effective_rank": 4.533903052000659,
+          "latent_std_mean": 0.6360157259588481,
+          "latent_std_min": 0.24260786416881186,
+          "samples": 5102
+        },
+        "latent_std_mean": 0.6964019546349791,
+        "latent_std_min": 0.2910396283897294,
+        "samples": 5102
+      },
+      "completed_steps": 15000,
+      "config": "configs/apple_wm_v3_lewm.yaml",
+      "device": "mps",
+      "elapsed_seconds": 5404.9965670108795,
+      "environment": {
+        "numpy": "2.5.3",
+        "platform": "macOS-26.5.1-arm64-arm-64bit",
+        "python": "3.12.13",
+        "torch": "2.14.0"
+      },
+      "gate_report": "outputs/task052-wm-v3/leworldmodel-val-gates.json",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.06617585942149162
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 1.0101780117073862
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.7652223002399404
+        },
+        "G3_apple_plate_h8": {
+          "passed": false,
+          "value": 0.027924133464694023
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.0034591106232255697
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.9996216569847638
+        },
+        "G6a_within_state_ranking_spearman_h16": {
+          "passed": false,
+          "value": 0.3280442506459949
+        },
+        "G6b_top1_regret_h16": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": false,
+          "value": 0.6132075471698113
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.5917058384220008
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 5.120763345668386
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 0.6964019546349791
+        },
+        "all_passed": false
+      },
+      "grasp_outcome_h64": {
+        "auroc": 0.8772819472616633,
+        "horizon": 64,
+        "positives": 29,
+        "siblings": 63
+      },
+      "key_metrics_h8": {
+        "apple_height_grasp_median_abs_m": 0.0034591106232255697,
+        "apple_height_grasp_windows": 2398,
+        "apple_plate_median_m": 0.027924133464694023,
+        "approach_cost_median_abs_log_ratio": 1.0481908917427063,
+        "approach_cost_median_ratio": 0.36171035315112227,
+        "approach_cost_spearman": 0.00518311485520083,
+        "approach_cost_windows": 190,
+        "contact_grasp_auroc": 0.9904013918441157,
+        "dropped_all_windows_auroc": 0.9689454450394897,
+        "held_grasp_auroc": 0.9997168965571476,
+        "held_lift_auroc": 0.9996216569847638,
+        "held_lift_negatives": 866,
+        "held_lift_positives": 879,
+        "held_lift_shuffled_auroc": 0.6188824693187461,
+        "palm_apple_grasp_cohort_median_m": 0.0170339560136199,
+        "palm_apple_median_m": 0.012612096965312958,
+        "palm_apple_moving_median_m": 0.06617585942149162,
+        "palm_apple_moving_persistence_median_m": 0.06550910696387291,
+        "palm_apple_moving_shuffled_median_m": 0.08647926151752472,
+        "palm_apple_moving_true_displacement_median_m": 0.02488404791802168,
+        "palm_apple_moving_windows": 1462,
+        "palm_apple_moving_zero_action_median_m": 0.08594232052564621,
+        "transport_cost_median_abs_log_ratio": 0.2728709429502487,
+        "transport_cost_windows": 240,
+        "valid_windows": 3961
+      },
+      "latest_checkpoint_sha256": "6752cbb7c48b5313445060b005055c84d100e2204e8f2ad15f41a7cc748133fd",
+      "model_implementation_sha256": "649cc14345ee35091514cadaf08fe3b24bd7e9ce186ff831da1737d0b184945d",
+      "model_parameters": 2431782,
+      "patch_size": 14,
+      "peak_host_rss_bytes": 15581822976,
+      "process_cpu_seconds": 1822.47836,
+      "provenance": {
+        "action_hash": "da987bb0798cf8a7174488e9da547b4128b05bfb10a042ca3b64b7ae1359b4d2",
+        "dataset_hash": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+        "protocol": "apple_world_model_v3",
+        "source_revision": "e2f822765599c920583033b5061f44ff08ba689e",
+        "source_tree_hash": "476a527ed6ae85beddff171bd59c5785539d7b49aeda12355112669e4358710f",
+        "split_hash": "51f8e09df1c0b1f384f9cd0a6ca1407f4540cc78214d955d1198a2702e99233e"
+      },
+      "ranking_h16": {
+        "candidates_median": 4.0,
+        "groups_evaluated": 19,
+        "groups_ranked": 18,
+        "random_choice_regret_median_m": 0.008443893078869098,
+        "random_choice_regret_normalized_median": 0.5313637187337551,
+        "shuffled_top1_regret_mean_m": 0.010169224900303829,
+        "shuffled_top1_regret_median_m": 0.008438892024823827,
+        "shuffled_top1_regret_normalized_median": 0.7803463360442844,
+        "shuffled_within_state_spearman_groups": 18,
+        "shuffled_within_state_spearman_mean": -0.10000000000000002,
+        "shuffled_within_state_spearman_pooled": -0.09310400516795868,
+        "top1_regret_mean_m": 0.003466441962997161,
+        "top1_regret_median_m": 0.0,
+        "top1_regret_normalized_median": 0.0,
+        "true_cost_spread_median_m": 0.011440960510939312,
+        "within_state_spearman_groups": 18,
+        "within_state_spearman_mean": 0.3277777777777778,
+        "within_state_spearman_pooled": 0.3280442506459949
+      },
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "seed": 0,
+      "selected_step": 10000,
+      "selection_score_m": 0.059854764491319656,
+      "siblings_h16": {
+        "divergence_spearman": 0.5917058384220008,
+        "own_beats_swapped_fraction": 0.6132075471698113,
+        "own_error_median_m": 0.02094520442187786,
+        "predicted_divergence_median_m": 0.010323425754904747,
+        "qualifying_ordered_pairs": 106,
+        "swapped_error_median_m": 0.024089314974844456,
+        "true_divergence_median_m": 0.010404480621218681,
+        "unordered_pairs": 103
+      },
+      "status": "completed",
+      "test_episodes_decoded": 0
+    },
+    "B_lewm_onboard_only": {
+      "backend": "leworldmodel",
+      "budget_max_seconds": 10800,
+      "cameras": [
+        "onboard_rgb"
+      ],
+      "checkpoint_sha256": "7e2e97352ab686a982cca8fce30c191540d64d3fba42c13e91a3e939dac26077",
+      "collapse": {
+        "collapsed_fraction": 0.0,
+        "dimension": 128,
+        "effective_rank": 7.743311615295621,
+        "image_only": {
+          "collapsed_fraction": 0.0,
+          "dimension": 128,
+          "effective_rank": 7.185774934415699,
+          "latent_std_mean": 0.8057888996196902,
+          "latent_std_min": 0.3655493545971359,
+          "samples": 5102
+        },
+        "latent_std_mean": 0.8676754186570551,
+        "latent_std_min": 0.3809681966888475,
+        "samples": 5102
+      },
+      "completed_steps": 15000,
+      "config": "configs/apple_wm_v3_lewm_onboard.yaml",
+      "device": "mps",
+      "elapsed_seconds": 3512.807870864868,
+      "environment": {
+        "numpy": "2.5.3",
+        "platform": "macOS-26.5.1-arm64-arm-64bit",
+        "python": "3.12.13",
+        "torch": "2.14.0"
+      },
+      "gate_report": "outputs/task052-wm-v3/leworldmodel_onboard-val-gates.json",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.036480627954006195
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 0.8763473937806117
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.665597630770861
+        },
+        "G3_apple_plate_h8": {
+          "passed": true,
+          "value": 0.019729092717170715
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.001485094428062439
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.9994916015732763
+        },
+        "G6a_within_state_ranking_spearman_h16": {
+          "passed": true,
+          "value": 0.5437661498708012
+        },
+        "G6b_top1_regret_h16": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": false,
+          "value": 0.6981132075471698
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.5765935948688663
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 7.743311615295621
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 0.8676754186570551
+        },
+        "all_passed": false
+      },
+      "grasp_outcome_h64": {
+        "auroc": 0.821501014198783,
+        "horizon": 64,
+        "positives": 29,
+        "siblings": 63
+      },
+      "key_metrics_h8": {
+        "apple_height_grasp_median_abs_m": 0.001485094428062439,
+        "apple_height_grasp_windows": 2398,
+        "apple_plate_median_m": 0.019729092717170715,
+        "approach_cost_median_abs_log_ratio": 0.9060371220111847,
+        "approach_cost_median_ratio": 0.3955968335287849,
+        "approach_cost_spearman": 0.0972439825567409,
+        "approach_cost_windows": 190,
+        "contact_grasp_auroc": 0.9922881829636189,
+        "dropped_all_windows_auroc": 0.9718932165445242,
+        "held_grasp_auroc": 0.9996772021590756,
+        "held_lift_auroc": 0.9994916015732763,
+        "held_lift_negatives": 866,
+        "held_lift_positives": 879,
+        "held_lift_shuffled_auroc": 0.7676487820770506,
+        "palm_apple_grasp_cohort_median_m": 0.009834349621087313,
+        "palm_apple_median_m": 0.00781842041760683,
+        "palm_apple_moving_median_m": 0.036480627954006195,
+        "palm_apple_moving_persistence_median_m": 0.041628044098615646,
+        "palm_apple_moving_shuffled_median_m": 0.054808830842375755,
+        "palm_apple_moving_true_displacement_median_m": 0.02488404791802168,
+        "palm_apple_moving_windows": 1462,
+        "palm_apple_moving_zero_action_median_m": 0.05212701857089996,
+        "transport_cost_median_abs_log_ratio": 0.1653744950890541,
+        "transport_cost_windows": 240,
+        "valid_windows": 3961
+      },
+      "latest_checkpoint_sha256": "78fe9125011b28b51c1f569cd33d5c574fda539cdf4de5b259be84b4ceb36b90",
+      "model_implementation_sha256": "649cc14345ee35091514cadaf08fe3b24bd7e9ce186ff831da1737d0b184945d",
+      "model_parameters": 2415398,
+      "patch_size": 14,
+      "peak_host_rss_bytes": 9171173376,
+      "process_cpu_seconds": 1561.720003,
+      "provenance": {
+        "action_hash": "da987bb0798cf8a7174488e9da547b4128b05bfb10a042ca3b64b7ae1359b4d2",
+        "dataset_hash": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+        "protocol": "apple_world_model_v3",
+        "source_revision": "e2f822765599c920583033b5061f44ff08ba689e",
+        "source_tree_hash": "476a527ed6ae85beddff171bd59c5785539d7b49aeda12355112669e4358710f",
+        "split_hash": "51f8e09df1c0b1f384f9cd0a6ca1407f4540cc78214d955d1198a2702e99233e"
+      },
+      "ranking_h16": {
+        "candidates_median": 4.0,
+        "groups_evaluated": 19,
+        "groups_ranked": 18,
+        "random_choice_regret_median_m": 0.008443893078869098,
+        "random_choice_regret_normalized_median": 0.5313637187337551,
+        "shuffled_top1_regret_mean_m": 0.006253088271680809,
+        "shuffled_top1_regret_median_m": 0.006568870949223924,
+        "shuffled_top1_regret_normalized_median": 0.5592190088004518,
+        "shuffled_within_state_spearman_groups": 18,
+        "shuffled_within_state_spearman_mean": 0.061111111111111116,
+        "shuffled_within_state_spearman_pooled": 0.05753391472868218,
+        "top1_regret_mean_m": 0.0032971027157311433,
+        "top1_regret_median_m": 0.0,
+        "top1_regret_normalized_median": 0.0,
+        "true_cost_spread_median_m": 0.011440960510939312,
+        "within_state_spearman_groups": 18,
+        "within_state_spearman_mean": 0.5444444444444445,
+        "within_state_spearman_pooled": 0.5437661498708012
+      },
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "seed": 0,
+      "selected_step": 15000,
+      "selection_score_m": 0.035446153953671455,
+      "siblings_h16": {
+        "divergence_spearman": 0.5765935948688663,
+        "own_beats_swapped_fraction": 0.6981132075471698,
+        "own_error_median_m": 0.016968974843621254,
+        "predicted_divergence_median_m": 0.006669527385383844,
+        "qualifying_ordered_pairs": 106,
+        "swapped_error_median_m": 0.02112595271319151,
+        "true_divergence_median_m": 0.010404480621218681,
+        "unordered_pairs": 103
+      },
+      "status": "completed",
+      "test_episodes_decoded": 0
+    },
+    "C_lewm_v2_readout": {
+      "backend": "leworldmodel",
+      "budget_max_seconds": 10800,
+      "cameras": [
+        "onboard_rgb",
+        "hand_crop_rgb"
+      ],
+      "checkpoint_sha256": "d3989adc3793c0c36a912a4af716b4d9158a5639908e70c08abccfa71802a92a",
+      "collapse": {
+        "collapsed_fraction": 0.0,
+        "dimension": 128,
+        "effective_rank": 5.357073813627758,
+        "image_only": {
+          "collapsed_fraction": 0.0,
+          "dimension": 128,
+          "effective_rank": 4.748062502754058,
+          "latent_std_mean": 0.6899981813055268,
+          "latent_std_min": 0.24322008252690538,
+          "samples": 5102
+        },
+        "latent_std_mean": 0.7324137811173912,
+        "latent_std_min": 0.30307261143570935,
+        "samples": 5102
+      },
+      "completed_steps": 15000,
+      "config": "configs/apple_wm_v3_lewm_v2_readout.yaml",
+      "device": "mps",
+      "elapsed_seconds": 5363.402680158615,
+      "environment": {
+        "numpy": "2.5.3",
+        "platform": "macOS-26.5.1-arm64-arm-64bit",
+        "python": "3.12.13",
+        "torch": "2.14.0"
+      },
+      "gate_report": "outputs/task052-wm-v3/leworldmodel_v2_readout-val-gates.json",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.06112750247120857
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 0.9401093002120015
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.744957759684496
+        },
+        "G3_apple_plate_h8": {
+          "passed": false,
+          "value": 0.029528919607400894
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.002243855269625783
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.9993405271053869
+        },
+        "G6a_within_state_ranking_spearman_h16": {
+          "passed": true,
+          "value": 0.515544250645995
+        },
+        "G6b_top1_regret_h16": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": true,
+          "value": 0.7169811320754716
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.5707178315687739
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 5.357073813627758
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 0.7324137811173912
+        },
+        "all_passed": false
+      },
+      "grasp_outcome_h64": {
+        "auroc": 0.7900608519269777,
+        "horizon": 64,
+        "positives": 29,
+        "siblings": 63
+      },
+      "key_metrics_h8": {
+        "apple_height_grasp_median_abs_m": 0.002243855269625783,
+        "apple_height_grasp_windows": 2398,
+        "apple_plate_median_m": 0.029528919607400894,
+        "approach_cost_median_abs_log_ratio": 1.026680827140808,
+        "approach_cost_median_ratio": 0.34069372929078123,
+        "approach_cost_spearman": 0.06393033193804758,
+        "approach_cost_windows": 190,
+        "contact_grasp_auroc": 0.9920549840612084,
+        "dropped_all_windows_auroc": 0.9730922594588013,
+        "held_grasp_auroc": 0.9994877175796004,
+        "held_lift_auroc": 0.9993405271053869,
+        "held_lift_negatives": 866,
+        "held_lift_positives": 879,
+        "held_lift_shuffled_auroc": 0.7076761593980142,
+        "palm_apple_grasp_cohort_median_m": 0.010596154723316431,
+        "palm_apple_median_m": 0.00873586442321539,
+        "palm_apple_moving_median_m": 0.06112750247120857,
+        "palm_apple_moving_persistence_median_m": 0.06502169743180275,
+        "palm_apple_moving_shuffled_median_m": 0.0820549912750721,
+        "palm_apple_moving_true_displacement_median_m": 0.02488404791802168,
+        "palm_apple_moving_windows": 1462,
+        "palm_apple_moving_zero_action_median_m": 0.08941676467657089,
+        "transport_cost_median_abs_log_ratio": 0.3285178244113922,
+        "transport_cost_windows": 240,
+        "valid_windows": 3961
+      },
+      "latest_checkpoint_sha256": "ad1ed5cb315760924a9d6fee430f04dcbe3151fb87302282df45273179b24d03",
+      "model_implementation_sha256": "649cc14345ee35091514cadaf08fe3b24bd7e9ce186ff831da1737d0b184945d",
+      "model_parameters": 2431782,
+      "patch_size": 14,
+      "peak_host_rss_bytes": 15498166272,
+      "process_cpu_seconds": 1760.023929,
+      "provenance": {
+        "action_hash": "da987bb0798cf8a7174488e9da547b4128b05bfb10a042ca3b64b7ae1359b4d2",
+        "dataset_hash": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+        "protocol": "apple_world_model_v3",
+        "source_revision": "e2f822765599c920583033b5061f44ff08ba689e",
+        "source_tree_hash": "476a527ed6ae85beddff171bd59c5785539d7b49aeda12355112669e4358710f",
+        "split_hash": "51f8e09df1c0b1f384f9cd0a6ca1407f4540cc78214d955d1198a2702e99233e"
+      },
+      "ranking_h16": {
+        "candidates_median": 4.0,
+        "groups_evaluated": 19,
+        "groups_ranked": 18,
+        "random_choice_regret_median_m": 0.008443893078869098,
+        "random_choice_regret_normalized_median": 0.5313637187337551,
+        "shuffled_top1_regret_mean_m": 0.009986685520190114,
+        "shuffled_top1_regret_median_m": 0.009459092249743008,
+        "shuffled_top1_regret_normalized_median": 0.7331604303153283,
+        "shuffled_within_state_spearman_groups": 18,
+        "shuffled_within_state_spearman_mean": -0.09444444444444443,
+        "shuffled_within_state_spearman_pooled": -0.09257913436692508,
+        "top1_regret_mean_m": 0.003243742708769406,
+        "top1_regret_median_m": 0.0,
+        "top1_regret_normalized_median": 0.0,
+        "true_cost_spread_median_m": 0.011440960510939312,
+        "within_state_spearman_groups": 18,
+        "within_state_spearman_mean": 0.5277777777777777,
+        "within_state_spearman_pooled": 0.515544250645995
+      },
+      "readout_auxiliary_weight": 0.0,
+      "readout_moving_weight": 0.0,
+      "seed": 0,
+      "selected_step": 10000,
+      "selection_score_m": 0.06267426535487175,
+      "siblings_h16": {
+        "divergence_spearman": 0.5707178315687739,
+        "own_beats_swapped_fraction": 0.7169811320754716,
+        "own_error_median_m": 0.01730688475072384,
+        "predicted_divergence_median_m": 0.007563039194792509,
+        "qualifying_ordered_pairs": 106,
+        "swapped_error_median_m": 0.023659936152398586,
+        "true_divergence_median_m": 0.010404480621218681,
+        "unordered_pairs": 103
+      },
+      "status": "completed",
+      "test_episodes_decoded": 0
+    },
+    "D_lewm_fine_patches": {
+      "backend": "leworldmodel",
+      "budget_max_seconds": 10800,
+      "cameras": [
+        "onboard_rgb"
+      ],
+      "checkpoint_sha256": "49aecbb114e1ad193b6e7e312a5529cf6c3e91f026c352a32650b2bd489bf43f",
+      "collapse": {
+        "collapsed_fraction": 0.0,
+        "dimension": 128,
+        "effective_rank": 7.538289310268657,
+        "image_only": {
+          "collapsed_fraction": 0.0,
+          "dimension": 128,
+          "effective_rank": 7.089070420758971,
+          "latent_std_mean": 0.8071263106487926,
+          "latent_std_min": 0.2841248482714604,
+          "samples": 5102
+        },
+        "latent_std_mean": 0.876640326544571,
+        "latent_std_min": 0.3437585019781285,
+        "samples": 5102
+      },
+      "completed_steps": 15000,
+      "config": "configs/apple_wm_v3_lewm_fine.yaml",
+      "device": "mps",
+      "elapsed_seconds": 7380.602501869202,
+      "environment": {
+        "numpy": "2.5.3",
+        "platform": "macOS-26.5.1-arm64-arm-64bit",
+        "python": "3.12.13",
+        "torch": "2.14.0"
+      },
+      "gate_report": "outputs/task052-wm-v3/leworldmodel_fine-val-gates.json",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.033043038100004196
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 0.8308254659863705
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.6827267666430045
+        },
+        "G3_apple_plate_h8": {
+          "passed": true,
+          "value": 0.017960529774427414
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.0017464618431404233
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.9996781456988442
+        },
+        "G6a_within_state_ranking_spearman_h16": {
+          "passed": false,
+          "value": 0.37758397932816545
+        },
+        "G6b_top1_regret_h16": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": true,
+          "value": 0.7075471698113207
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.5917937003031235
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 7.538289310268657
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 0.876640326544571
+        },
+        "all_passed": false
+      },
+      "grasp_outcome_h64": {
+        "auroc": 0.9411764705882353,
+        "horizon": 64,
+        "positives": 29,
+        "siblings": 63
+      },
+      "key_metrics_h8": {
+        "apple_height_grasp_median_abs_m": 0.0017464618431404233,
+        "apple_height_grasp_windows": 2398,
+        "apple_plate_median_m": 0.017960529774427414,
+        "approach_cost_median_abs_log_ratio": 0.7715109586715698,
+        "approach_cost_median_ratio": 0.4812518547554902,
+        "approach_cost_spearman": 0.22776749902679913,
+        "approach_cost_windows": 190,
+        "contact_grasp_auroc": 0.9941714407664188,
+        "dropped_all_windows_auroc": 0.9747778726746535,
+        "held_grasp_auroc": 0.9998165070277808,
+        "held_lift_auroc": 0.9996781456988442,
+        "held_lift_negatives": 866,
+        "held_lift_positives": 879,
+        "held_lift_shuffled_auroc": 0.7637405512773018,
+        "palm_apple_grasp_cohort_median_m": 0.009881759528070688,
+        "palm_apple_median_m": 0.0092402258887887,
+        "palm_apple_moving_median_m": 0.033043038100004196,
+        "palm_apple_moving_persistence_median_m": 0.03977133519947529,
+        "palm_apple_moving_shuffled_median_m": 0.04839862696826458,
+        "palm_apple_moving_true_displacement_median_m": 0.02488404791802168,
+        "palm_apple_moving_windows": 1462,
+        "palm_apple_moving_zero_action_median_m": 0.046798644587397575,
+        "transport_cost_median_abs_log_ratio": 0.1297757551074028,
+        "transport_cost_windows": 240,
+        "valid_windows": 3961
+      },
+      "latest_checkpoint_sha256": "e3976e1e2f2c02c534fee7d4a022b0168e0111190dd2c4e9958c283f4ddf5532",
+      "model_implementation_sha256": "649cc14345ee35091514cadaf08fe3b24bd7e9ce186ff831da1737d0b184945d",
+      "model_parameters": 2381606,
+      "patch_size": 8,
+      "peak_host_rss_bytes": 9171173376,
+      "process_cpu_seconds": 1635.492356,
+      "provenance": {
+        "action_hash": "da987bb0798cf8a7174488e9da547b4128b05bfb10a042ca3b64b7ae1359b4d2",
+        "dataset_hash": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+        "protocol": "apple_world_model_v3",
+        "source_revision": "e2f822765599c920583033b5061f44ff08ba689e",
+        "source_tree_hash": "476a527ed6ae85beddff171bd59c5785539d7b49aeda12355112669e4358710f",
+        "split_hash": "51f8e09df1c0b1f384f9cd0a6ca1407f4540cc78214d955d1198a2702e99233e"
+      },
+      "ranking_h16": {
+        "candidates_median": 4.0,
+        "groups_evaluated": 19,
+        "groups_ranked": 18,
+        "random_choice_regret_median_m": 0.008443893078869098,
+        "random_choice_regret_normalized_median": 0.5313637187337551,
+        "shuffled_top1_regret_mean_m": 0.009316396126718245,
+        "shuffled_top1_regret_median_m": 0.008387980423257368,
+        "shuffled_top1_regret_normalized_median": 0.6731109876092487,
+        "shuffled_within_state_spearman_groups": 18,
+        "shuffled_within_state_spearman_mean": -0.022222222222222237,
+        "shuffled_within_state_spearman_pooled": -0.012677648578811372,
+        "top1_regret_mean_m": 0.0030157964488783367,
+        "top1_regret_median_m": 0.0,
+        "top1_regret_normalized_median": 0.0,
+        "true_cost_spread_median_m": 0.011440960510939312,
+        "within_state_spearman_groups": 18,
+        "within_state_spearman_mean": 0.3888888888888889,
+        "within_state_spearman_pooled": 0.37758397932816545
+      },
+      "readout_auxiliary_weight": 0.5,
+      "readout_moving_weight": 3.0,
+      "seed": 0,
+      "selected_step": 13000,
+      "selection_score_m": 0.033519405871629715,
+      "siblings_h16": {
+        "divergence_spearman": 0.5917937003031235,
+        "own_beats_swapped_fraction": 0.7075471698113207,
+        "own_error_median_m": 0.017247604206204414,
+        "predicted_divergence_median_m": 0.006473579443991184,
+        "qualifying_ordered_pairs": 106,
+        "swapped_error_median_m": 0.02257631439715624,
+        "true_divergence_median_m": 0.010404480621218681,
+        "unordered_pairs": 103
+      },
+      "status": "completed",
+      "test_episodes_decoded": 0
+    }
+  },
+  "results_doc": "docs/experiments/apple_world_model_v3_results.md",
+  "status": "executed_once",
+  "task": "TASK-052",
+  "verification": {
+    "confirmed": [
+      "every gate value, threshold, comparison direction and pass/fail decision to six significant figures, and the per-arm totals 8/10/10/10",
+      "test_episodes_decoded == 0 in all four run.json and all four gate reports; 0 shared roots across train/val/test; normalization fitted on the 677 train episodes only",
+      "no prior evidence overwritten: only task052 paths and the runner log were written; data/ untouched; the task050-wm-v2 artifacts are intact",
+      "no threshold moved: git diff e2f8227..HEAD over the preregistration and all five configs is empty, and this manifest's diff touches only the placeholder keys results, overall, verification and status -- frozen (every threshold), arms, baselines and gate_definitions are byte-identical to e2f8227",
+      "the selection rule replays exactly (best eligible steps 10000/15000/10000/13000) and the gates used <arm>.pt, not <arm>.latest.pt",
+      "provenance complete for every arm: revision, source hash, dataset/split/action hashes, checkpoint hashes, seed, device, budget, elapsed and steps",
+      "one-factor isolation: only cameras, patch_size, readout_moving_weight and readout_auxiliary_weight differ anywhere in the design; A vs B differs in cameras alone (16,384 parameters = one 128x128 projection)"
+    ],
+    "corrections_applied": [
+      "the patch size is 14 for arms A/B/C, not 16",
+      "arm D is onboard-only and its config extends arm B, so the controlled resolution contrast is B vs D, not A vs D",
+      "arm C removes the motion weighting AND the auxiliary readouts together, so they cannot be separated",
+      "10800 s is the frozen per-arm budget; 5405 s is arm A's elapsed time"
+    ],
+    "method": "fresh-context post-run verifier, re-derived from the raw artifacts only"
+  }
+}

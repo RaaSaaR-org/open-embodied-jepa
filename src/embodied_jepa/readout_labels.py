@@ -13,10 +13,14 @@ import numpy as np
 from embodied_jepa import training_labels
 from embodied_jepa.contracts import ContractError
 
-READOUT_LABELS_VERSION = "apple_readout_targets_v2"
+READOUT_LABELS_VERSION = "apple_readout_targets_v3"
 # Apple counts as held when the hand touches it and it has risen this far above its
 # resting height at the reset (the scorer's grasp stage uses 5 cm; 2 cm marks lift-off).
 HELD_RISE_M = 0.02
+# Fixed declared origin for the auxiliary absolute-position targets (roughly the
+# tabletop centre in world coordinates). It is a constant of the target definition,
+# not a fitted statistic, so the auxiliary targets stay within a few decimetres.
+WORKSPACE_ORIGIN_M = np.array([0.30, 0.00, 0.75], np.float32)
 TARGET_NAMES = (
     "palm_minus_apple",
     "apple_height",
@@ -24,6 +28,8 @@ TARGET_NAMES = (
     "hand_contact",
     "apple_held",
     "apple_dropped",
+    "apple_position",
+    "palm_position",
 )
 
 
@@ -65,6 +71,11 @@ def targets(labels, rest_apple_z):
         "hand_contact": contact[:, None].astype(np.float32),
         "apple_held": held[:, None].astype(np.float32),
         "apple_dropped": dropped[:, None].astype(np.float32),
+        # Auxiliary (v3): absolute positions about a fixed origin. Supervising the apple
+        # and the palm separately forces the latent to localize the object, not only the
+        # palm-relative offset that the proprioception branch can half-explain.
+        "apple_position": (apple - WORKSPACE_ORIGIN_M).astype(np.float32),
+        "palm_position": (apple + palm_minus_apple - WORKSPACE_ORIGIN_M).astype(np.float32),
     }
     for name, value in result.items():
         if not np.isfinite(value).all():

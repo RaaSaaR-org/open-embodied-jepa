@@ -50,6 +50,11 @@ class SensorWorldModel(VisualModel):
             raise ContractError("latent_dim must equal RGB grid plus robot state dimensions")
         config["latent_dim"] = dimension
         super().__init__(state_schema, device, seed, config, metadata)
+        if self.config["cameras"] is not None:
+            # This backend flattens one camera's pixel grid straight into its latent and
+            # never routes through the shared camera fusion, so it must refuse the key
+            # rather than silently train on the first camera of a multi-camera config.
+            raise ContractError("sensor_wm reads a single 'camera'; it has no camera fusion")
         for name in ("proprio_weight", "feature_std_floor", "state_std_floor", "delta_std_floor"):
             if not np.isfinite(self.config[name]) or self.config[name] <= 0:
                 raise ContractError(f"{name} must be positive and finite")

@@ -211,11 +211,16 @@ def test_guard_refusal_text_matches_the_ceiling_convention():
 
 def test_model_planner_and_evaluation_code_never_import_training_labels():
     package = ROOT / "src/embodied_jepa"
-    # readout_labels/world_model_v2 build training TARGETS and val scoring references;
-    # every other package module must not even be able to import a label module. The
-    # text guard cannot cover readout_labels (models/base.py names the file when it
-    # hashes it), so imports are checked by parsing instead.
-    allowed = {"training_labels.py", "readout_labels.py", "world_model_v2.py"}
+    # readout_labels and the world-model runners build training TARGETS and val scoring
+    # references; every other package module must not even be able to import a label
+    # module. The text guard cannot cover readout_labels (models/base.py names the file
+    # when it hashes it), so imports are checked by parsing instead.
+    allowed = {
+        "training_labels.py",
+        "readout_labels.py",
+        "world_model_v2.py",
+        "world_model_v3.py",
+    }
     labels = {"training_labels", "readout_labels"}
     for path in package.rglob("*.py"):
         if path.name in allowed:

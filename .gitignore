@@ -10,9 +10,15 @@ dist/
 .env
 .env.*
 !.env.example
+# Both forms: the trailing slash matches a real directory, the bare form also
+# matches a convenience symlink, which a worktree needs and must never commit.
+/data
 /data/
+/outputs
 /outputs/
+/checkpoints
 /checkpoints/
 /wandb/
+/third_party
 /third_party/
 /configs/local*.yaml

@@ -1,8 +1,13 @@
-"""World model v2 (TASK-050): one camera + proprioception + shared readout heads.
+"""World model v2 (TASK-050): cameras + proprioception + shared readout heads.
 
 Trains any registered ``VisualModel`` backend on a sealed corpus with privileged
 per-step label sidecars (``embodied_jepa.training_labels``) and evaluates the
 preregistered OFFLINE gates of ``docs/experiments/apple_world_model_v2.md``.
+
+TASK-052 generalized the runner from one camera to the model's configured camera
+list and parameterized the protocol name, the gate function and the extra
+measurements, so ``world_model_v3`` reuses it instead of copying it. The frozen
+TASK-050 numbers belong to revision ``3b6af0b``; this file has moved on.
 
 Rules this module enforces:
 
@@ -10,7 +15,7 @@ Rules this module enforces:
   use ``val``; ``test`` (and ``holdout``) episodes are never decoded.
 - Privileged labels are loaded only with an explicit acknowledgement and are used
   only as readout-head training targets and as scoring references. Model inputs are
-  the configured camera, the proprioception and the executed actions.
+  the configured cameras, the proprioception and the executed actions.
 - The backend comes from an ``ExperimentConfig``: swapping it is the one-line
   ``world_model.backend`` change. No function here branches on the backend.
 - Evaluators obtain physical quantities only through ``model.readout`` and latent
@@ -80,12 +85,15 @@ def _init_worker(root, manifest, schema_fields):
 
 
 def _decode(job):
-    episode_id, camera = job
+    episode_id, cameras = job
     episode = _WORKER["store"].read_episode(episode_id)
-    if camera not in episode.observations:
-        raise ContractError(f"episode {episode_id} lacks camera {camera!r}")
+    for camera in cameras:
+        if camera not in episode.observations:
+            raise ContractError(f"episode {episode_id} lacks camera {camera!r}")
     return episode_id, {
-        "frames": np.ascontiguousarray(episode.observations[camera]),
+        "frames": {
+            camera: np.ascontiguousarray(episode.observations[camera]) for camera in cameras
+        },
         "states": np.asarray(episode.robot_states, np.float32),
         "mask": np.asarray(episode.state_mask, bool),
         "actions": np.asarray(episode.actions, np.float32),
@@ -100,7 +108,7 @@ class EpisodeArrays:
     episode_ids: tuple[str, ...]
     offsets: np.ndarray  # [E] first observation row
     lengths: np.ndarray  # [E] observations (T+1)
-    frames: np.ndarray  # [N,H,W,3] uint8
+    frames: dict  # camera name -> [N,H,W,3] uint8 (one entry per configured camera)
     states: np.ndarray  # [N,S]
     mask: np.ndarray  # [N,S]
     actions: np.ndarray  # [N,14]; the final row of each episode is a zero placeholder
@@ -113,14 +121,21 @@ class EpisodeArrays:
 def load_split(
     store,
     split,
-    camera,
+    cameras,
     *,
     workers=8,
     limit=None,
     check_budget=lambda: None,
     acknowledge_privileged_training_labels=False,
 ):
-    """Decode one camera + proprioception + actions + readout targets of a split."""
+    """Decode the configured cameras + proprioception + actions + readout targets.
+
+    ``cameras`` is one camera name or a sequence of them; every decoded episode must
+    carry each one.
+    """
+    cameras = (cameras,) if isinstance(cameras, str) else tuple(cameras)
+    if not cameras or len(set(cameras)) != len(cameras):
+        raise ContractError("cameras must be a nonempty sequence of distinct names")
     if split not in ("train", "val"):
         raise ContractError("world model v2 decodes only the train and val splits")
     if acknowledge_privileged_training_labels is not True:
@@ -133,7 +148,7 @@ def load_split(
     if excluded & set(ids):
         raise ContractError(f"{split} overlaps test/holdout")
     rows = {row["episode_id"]: row for row in store.manifest["episodes"]}
-    jobs = [(name, camera) for name in ids]
+    jobs = [(name, cameras) for name in ids]
     decoded = {}
     context = multiprocessing.get_context("spawn")
     with context.Pool(
@@ -144,11 +159,14 @@ def load_split(
         for name, arrays in pool.imap_unordered(_decode, jobs, chunksize=4):
             decoded[name] = arrays
             check_budget()
-    lengths = np.array([len(decoded[name]["frames"]) for name in ids], np.int64)
+    lengths = np.array([len(decoded[name]["states"]) for name in ids], np.int64)
     offsets = np.concatenate(([0], np.cumsum(lengths)[:-1])).astype(np.int64)
     total = int(lengths.sum())
     first = decoded[ids[0]]
-    frames = np.empty((total, *first["frames"].shape[1:]), np.uint8)
+    frames = {
+        camera: np.empty((total, *first["frames"][camera].shape[1:]), np.uint8)
+        for camera in cameras
+    }
     states = np.empty((total, first["states"].shape[1]), np.float32)
     mask = np.empty((total, first["mask"].shape[1]), bool)
     actions = np.zeros((total, 14), np.float32)
@@ -159,7 +177,8 @@ def load_split(
     for index, name in enumerate(ids):
         start, count = int(offsets[index]), int(lengths[index])
         arrays = decoded.pop(name)
-        frames[start : start + count] = arrays["frames"]
+        for camera in cameras:
+            frames[camera][start : start + count] = arrays["frames"][camera]
         states[start : start + count] = arrays["states"]
         mask[start : start + count] = arrays["mask"]
         actions[start : start + count - 1] = arrays["actions"]
@@ -212,7 +231,12 @@ def window_starts(arrays, horizon, stride=1):
     return np.asarray(result, np.int64).reshape(-1, 2)
 
 
-def batch(arrays, windows, horizon, camera, state_schema):
+def images(arrays, rows):
+    """Every configured camera's frames at observation ``rows`` (any index shape)."""
+    return {camera: value[rows] for camera, value in arrays.frames.items()}
+
+
+def batch(arrays, windows, horizon, state_schema):
     """Canonical SequenceBatch + readout targets ``[B,H+1,width]`` for window starts."""
     rows = arrays.offsets[windows[:, 0]] + windows[:, 1]
     frame_index = rows[:, None] + np.arange(horizon + 1)[None]
@@ -220,7 +244,7 @@ def batch(arrays, windows, horizon, camera, state_schema):
     terminated = np.zeros((len(windows), horizon), bool)
     terminated[:, -1] = windows[:, 1] + horizon == arrays.lengths[windows[:, 0]] - 1
     sequence = SequenceBatch(
-        observations={camera: arrays.frames[frame_index]},
+        observations=images(arrays, frame_index),
         robot_states=arrays.states[frame_index],
         state_mask=arrays.mask[frame_index],
         actions=arrays.actions[action_index],
@@ -278,32 +302,27 @@ def _robot_state(arrays, rows, state_schema):
     return RobotState(arrays.states[rows], arrays.mask[rows], arrays.timestamps[rows], state_schema)
 
 
-def encode_rows(model, arrays, rows, camera, state_schema, chunk=256):
+def encode_rows(model, arrays, rows, state_schema, chunk=256):
     """Encoded latents (opaque) of observation rows, in chunks."""
     latents = []
     for start in range(0, len(rows), chunk):
         part = rows[start : start + chunk]
-        latents.append(
-            model.encode({camera: arrays.frames[part]}, _robot_state(arrays, part, state_schema))
-        )
+        latents.append(model.encode(images(arrays, part), _robot_state(arrays, part, state_schema)))
     return latents
 
 
-def readout_rows(model, arrays, rows, camera, state_schema, chunk=256):
+def readout_rows(model, arrays, rows, state_schema, chunk=256):
     """Readouts of encoded observation rows: ``{name: [N,width]}``."""
-    parts = [
-        model.readout(z)
-        for z in encode_rows(model, arrays, rows, camera, state_schema, chunk=chunk)
-    ]
+    parts = [model.readout(z) for z in encode_rows(model, arrays, rows, state_schema, chunk=chunk)]
     return {name: np.concatenate([part[name] for part in parts]) for name in parts[0]}
 
 
-def predicted_readouts(model, arrays, starts, actions, camera, state_schema, chunk=256):
+def predicted_readouts(model, arrays, starts, actions, state_schema, chunk=256):
     """Readouts of predicted latents for start rows and ``actions [N,H,14]``."""
     parts = []
     for start in range(0, len(starts), chunk):
         rows = starts[start : start + chunk]
-        z = model.encode({camera: arrays.frames[rows]}, _robot_state(arrays, rows, state_schema))
+        z = model.encode(images(arrays, rows), _robot_state(arrays, rows, state_schema))
         prediction = model.predict(z, np.ascontiguousarray(actions[start : start + chunk, None]))
         parts.append({k: v[:, 0] for k, v in model.readout(prediction).items()})
     return {name: np.concatenate([part[name] for part in parts]) for name in parts[0]}
@@ -331,17 +350,17 @@ def shuffled_pairing(windows):
     return partner
 
 
-def window_metrics(model, arrays, windows, camera, state_schema, horizons=HORIZONS):
+def window_metrics(model, arrays, windows, state_schema, horizons=HORIZONS):
     """Predicted-latent readout accuracy and controls on a fixed window cohort."""
     longest = max(horizons)
     starts = arrays.offsets[windows[:, 0]] + windows[:, 1]
     actions = _window_actions(arrays, windows, longest)
     partner = shuffled_pairing(windows)
     true = arrays.targets
-    predicted = predicted_readouts(model, arrays, starts, actions, camera, state_schema)
-    shuffled = predicted_readouts(model, arrays, starts, actions[partner], camera, state_schema)
-    zero = predicted_readouts(model, arrays, starts, np.zeros_like(actions), camera, state_schema)
-    encoded_start = readout_rows(model, arrays, starts, camera, state_schema)
+    predicted = predicted_readouts(model, arrays, starts, actions, state_schema)
+    shuffled = predicted_readouts(model, arrays, starts, actions[partner], state_schema)
+    zero = predicted_readouts(model, arrays, starts, np.zeros_like(actions), state_schema)
+    encoded_start = readout_rows(model, arrays, starts, state_schema)
     dropped_true = true["apple_dropped"][:, 0] > 0.5
     result = {"windows": int(len(windows))}
     for h in horizons:
@@ -426,9 +445,9 @@ def window_metrics(model, arrays, windows, camera, state_schema, horizons=HORIZO
     return result
 
 
-def sibling_metrics(model, arrays, camera, state_schema):
-    """Matched grasp-phase siblings from one pre-grasp state (root continuation and its
-    branches): does the model's prediction follow the executed actions?"""
+def sibling_groups(arrays):
+    """``root -> [(episode, start row, stop row, grasp label)]`` sharing one pre-grasp
+    state: the root's continuation from its branch frame plus each of its branches."""
     groups = {}
     for index, name in enumerate(arrays.episode_ids):
         metadata = arrays.rows[name]["metadata"]
@@ -438,6 +457,13 @@ def sibling_metrics(model, arrays, camera, state_schema):
         stop = offset + int(arrays.lengths[index])  # exclusive observation row
         grasp = bool(metadata["privileged_outcome_labels"]["stages"]["grasp"])
         groups.setdefault(root, []).append((name, start, stop, grasp))
+    return groups
+
+
+def sibling_metrics(model, arrays, state_schema):
+    """Matched grasp-phase siblings from one pre-grasp state (root continuation and its
+    branches): does the model's prediction follow the executed actions?"""
+    groups = sibling_groups(arrays)
     longest = max(max(SIBLING_HORIZONS), OUTCOME_HORIZON)
     pairs = {str(h): {"own": [], "swap": [], "pred": [], "true": []} for h in SIBLING_HORIZONS}
     outcome_scores, outcome_labels = [], []
@@ -458,7 +484,7 @@ def sibling_metrics(model, arrays, camera, state_schema):
             if steps < min(SIBLING_HORIZONS):
                 continue
             actions = arrays.actions[start : start + steps][None]
-            readouts = predicted_readouts(model, arrays, rows, actions, camera, state_schema)
+            readouts = predicted_readouts(model, arrays, rows, actions, state_schema)
             predictions[name] = (start, steps, readouts)
             if steps >= OUTCOME_HORIZON:
                 outcome_scores.append(
@@ -508,12 +534,12 @@ def sibling_metrics(model, arrays, camera, state_schema):
     return result
 
 
-def collapse_metrics(model, arrays, camera, state_schema, stride=4, chunk=256):
-    rows = np.arange(0, len(arrays.frames), stride)
-    result = model.latent_statistics(encode_rows(model, arrays, rows, camera, state_schema))
+def collapse_metrics(model, arrays, state_schema, stride=4, chunk=256):
+    rows = np.arange(0, len(arrays.states), stride)
+    result = model.latent_statistics(encode_rows(model, arrays, rows, state_schema))
     # Descriptive: the image pathway alone, so state fusion cannot mask a collapse.
     result["image_only"] = model.image_embedding_statistics(
-        [{camera: arrays.frames[rows[i : i + chunk]]} for i in range(0, len(rows), chunk)]
+        [images(arrays, rows[i : i + chunk]) for i in range(0, len(rows), chunk)]
     )
     return result
 
@@ -599,10 +625,10 @@ def selection_windows(arrays, seed, count):
     return windows[chosen]
 
 
-def selection_score(model, arrays, windows, camera, state_schema, eligibility):
-    measured = window_metrics(model, arrays, windows, camera, state_schema, (GATE_HORIZON,))
+def selection_score(model, arrays, windows, state_schema, eligibility):
+    measured = window_metrics(model, arrays, windows, state_schema, (GATE_HORIZON,))
     rows = np.unique(arrays.offsets[windows[:, 0]] + windows[:, 1])
-    stats = model.latent_statistics(encode_rows(model, arrays, rows, camera, state_schema))
+    stats = model.latent_statistics(encode_rows(model, arrays, rows, state_schema))
     reasons = []
     if stats["collapsed_fraction"] > eligibility["max_collapsed_fraction"]:
         reasons.append("collapsed_fraction")
@@ -659,11 +685,11 @@ def _open(config_path):
     config = ExperimentConfig.load(config_path, require_checkpoint=False)
     store = DatasetStore(config.dataset_root)
     settings = dict(config.model_settings)
-    camera = settings.get("camera", "onboard_rgb")
-    return config, store, settings, camera
+    cameras = settings.get("cameras") or [settings.get("camera", "onboard_rgb")]
+    return config, store, settings, tuple(cameras)
 
 
-def _provenance(store, source):
+def _provenance(store, source, protocol=PROTOCOL):
     return {
         "dataset_hash": store.manifest_hash,
         "split_hash": json_hash(
@@ -672,7 +698,7 @@ def _provenance(store, source):
         "action_hash": json_hash(store.manifest["action_manifest"]),
         "source_revision": source["revision"],
         "source_tree_hash": source["python_source_sha256"],
-        "protocol": PROTOCOL,
+        "protocol": protocol,
     }
 
 
@@ -693,6 +719,7 @@ def train(
     workers=8,
     limit_episodes=None,
     require_clean=False,
+    protocol=PROTOCOL,
     acknowledge_privileged_training_labels=False,
 ):
     """Fixed-budget training; ``output`` is best-by-val, ``.latest.pt`` the last state."""
@@ -703,7 +730,7 @@ def train(
 
     if acknowledge_privileged_training_labels is not True:
         raise ContractError("training uses privileged readout targets; acknowledge it")
-    config, store, settings, camera = _open(config_path)
+    config, store, settings, cameras = _open(config_path)
     output = Path(output or config.checkpoint)
     paths = {
         "best": output,
@@ -720,12 +747,12 @@ def train(
         raise ContractError("the frozen run requires a clean committed checkout")
     report = {
         "format_version": 1,
-        "protocol": PROTOCOL,
+        "protocol": protocol,
         "status": "running",
         "config": str(Path(config_path).resolve()),
         "config_resolved": config.resolved,
         "backend": config.backend,
-        "camera": camera,
+        "cameras": list(cameras),
         "device": device,
         "seed": seed,
         "budget": {
@@ -763,7 +790,7 @@ def train(
         train_arrays = load_split(
             store,
             "train",
-            camera,
+            cameras,
             workers=workers,
             limit=limit_episodes,
             check_budget=check_budget,
@@ -772,7 +799,7 @@ def train(
         val_arrays = load_split(
             store,
             "val",
-            camera,
+            cameras,
             workers=workers,
             limit=limit_episodes,
             check_budget=check_budget,
@@ -780,13 +807,13 @@ def train(
         )
         report["data"] = {
             "train_episodes": len(train_arrays.episode_ids),
-            "train_observations": int(len(train_arrays.frames)),
+            "train_observations": int(len(train_arrays.states)),
             "val_episodes": len(val_arrays.episode_ids),
-            "val_observations": int(len(val_arrays.frames)),
+            "val_observations": int(len(val_arrays.states)),
             "decode_seconds": clock.elapsed(),
             "peak_host_rss_bytes": peak_rss_bytes(),
         }
-        metadata = _provenance(store, source)
+        metadata = _provenance(store, source, protocol)
         report["provenance"] = metadata
         model = MODELS.create(
             config.backend,
@@ -822,9 +849,7 @@ def train(
             nonlocal best
             synchronize()
             begin = time.perf_counter()
-            decision = selection_score(
-                model, val_arrays, chosen, camera, store.state_schema, eligibility
-            )
+            decision = selection_score(model, val_arrays, chosen, store.state_schema, eligibility)
             improved = selectable(completed, decision, best)
             event = {
                 "kind": "validation",
@@ -849,7 +874,7 @@ def train(
             for group in model.optimizer.param_groups:
                 group["lr"] = cosine_lr(base_lr, step, steps, final_lr_fraction)
             picked = train_windows[sampler.integers(len(train_windows), size=batch_size)]
-            sequence, targets = batch(train_arrays, picked, horizon, camera, store.state_schema)
+            sequence, targets = batch(train_arrays, picked, horizon, store.state_schema)
             synchronize()
             begin = time.perf_counter()
             metrics = model.train_step(sequence, readout_targets=targets)
@@ -924,17 +949,33 @@ def evaluate(
     gates,
     workers=8,
     limit_episodes=None,
+    protocol=PROTOCOL,
+    gate_function=None,
+    extra_metrics=None,
+    require_clean=False,
     acknowledge_privileged_training_labels=False,
 ):
-    """Offline val evaluation of a trained checkpoint against the frozen gates."""
+    """Offline val evaluation of a trained checkpoint against the frozen gates.
+
+    ``gate_function`` and ``extra_metrics`` let a later protocol version reuse this
+    runner with its own gate set and its own additional measurements.
+    """
+    gate_function = evaluate_gates if gate_function is None else gate_function
     from embodied_jepa.config import MODELS
+    from embodied_jepa.training import source_identity
 
     if acknowledge_privileged_training_labels is not True:
         raise ContractError("evaluation scores against privileged labels; acknowledge it")
+    # The checkpoint's implementation hash covers the model files, not this runner, where
+    # every metric and gate lives; record the evaluator's own revision separately.
+    evaluator = source_identity()
+    unversioned = evaluator["dirty"] is not False or evaluator["revision"] == "unavailable"
+    if require_clean and unversioned:
+        raise ContractError("the frozen evaluation requires a clean committed checkout")
     output = Path(output)
     if output.exists():
         raise FileExistsError("refusing to overwrite an evaluation report")
-    config, store, settings, camera = _open(config_path)
+    config, store, settings, cameras = _open(config_path)
     checkpoint = Path(checkpoint or config.checkpoint)
     clock = RunClock()
     import torch
@@ -949,42 +990,45 @@ def evaluate(
         metadata=envelope["metadata"],
     )
     model.load(checkpoint)
-    expected = _provenance(store, {"revision": None, "python_source_sha256": None})
+    expected = _provenance(store, {"revision": None, "python_source_sha256": None}, protocol)
     for key in ("dataset_hash", "split_hash", "action_hash", "protocol"):
         if envelope["metadata"].get(key) != expected[key]:
             raise ContractError(f"checkpoint {key} does not match the evaluated corpus")
     arrays = load_split(
         store,
         "val",
-        camera,
+        cameras,
         workers=workers,
         limit=limit_episodes,
         acknowledge_privileged_training_labels=True,
     )
     windows = window_starts(arrays, max(HORIZONS), stride=4)
     metrics = {
-        "windows": window_metrics(model, arrays, windows, camera, store.state_schema),
-        "siblings": sibling_metrics(model, arrays, camera, store.state_schema),
-        "collapse": collapse_metrics(model, arrays, camera, store.state_schema),
+        "windows": window_metrics(model, arrays, windows, store.state_schema),
+        "siblings": sibling_metrics(model, arrays, store.state_schema),
+        "collapse": collapse_metrics(model, arrays, store.state_schema),
     }
+    if extra_metrics is not None:
+        metrics |= extra_metrics(model, arrays, store.state_schema)
     result = {
         "format_version": 1,
-        "protocol": PROTOCOL,
+        "protocol": protocol,
         "split": "val",
         "test_episodes_decoded": 0,
         "backend": config.backend,
-        "camera": camera,
+        "cameras": list(cameras),
         "device": device,
         "checkpoint": str(checkpoint.resolve()),
         "checkpoint_sha256": _sha256(checkpoint),
         "checkpoint_step": envelope["metadata"].get("runner_state", {}).get("step"),
         "model_implementation_sha256": model.implementation_sha256,
+        "evaluator_source": evaluator,
         "provenance": envelope["metadata"],
         "val_episodes": len(arrays.episode_ids),
-        "val_observations": int(len(arrays.frames)),
+        "val_observations": int(len(arrays.states)),
         "limit_episodes": limit_episodes,
         "metrics": metrics,
-        "gates": evaluate_gates(metrics, gates),
+        "gates": gate_function(metrics, gates),
         "environment": _environment(),
         **clock.snapshot(),
     }
@@ -1004,11 +1048,12 @@ def main():
         command.add_argument("--workers", type=int, default=8)
         command.add_argument("--limit-episodes", type=int, help="smoke subsets only")
         command.add_argument("--acknowledge-privileged-training-labels", action="store_true")
+    for command in commands.choices.values():
+        command.add_argument(
+            "--require-clean", action="store_true", help="refuse a dirty or unversioned checkout"
+        )
     train_parser = commands.choices["train"]
     train_parser.add_argument("--output", type=Path)
-    train_parser.add_argument(
-        "--require-clean", action="store_true", help="refuse a dirty or unversioned checkout"
-    )
     train_parser.add_argument("--smoke-steps", type=int, help="smoke only: override steps")
     train_parser.add_argument(
         "--smoke-max-seconds", type=float, help="smoke only: override max_seconds"
@@ -1056,6 +1101,7 @@ def main():
             checkpoint=args.checkpoint,
             output=args.output,
             gates=frozen["gates"],
+            require_clean=args.require_clean,
             **common,
         )
         summary = {"all_passed": report["gates"]["all_passed"]} | {

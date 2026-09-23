@@ -77,7 +77,25 @@ class VisualModel(nn.Module):
         "readout_heads": False,
         "readout_weight": 1.0,
         "readout_hidden_dim": 256,
+        # Multi-camera fusion (TASK-052). ``None`` keeps the single ``camera``; a list of
+        # camera names embeds each one with the backend's own encoder and sums a learned
+        # per-camera projection, which is a concatenate-then-project fusion written once
+        # in shared code, so the backend swap stays a one-line config change.
+        "cameras": None,
+        # Readout loss shaping (TASK-052), both off by default so a v2-shaped model keeps
+        # its exact loss. ``readout_moving_weight`` adds that much extra weight to the
+        # regression terms of frames whose true palm-apple offset has moved at least
+        # ``readout_moving_threshold_m`` from the window start; ``readout_auxiliary_weight``
+        # switches on the auxiliary absolute-position readouts.
+        "readout_moving_weight": 0.0,
+        "readout_moving_threshold_m": 0.01,
+        "readout_auxiliary_weight": 0.0,
     }
+    # Proprioception scaling policy (TASK-052; see fit_state_normalization).
+    STATE_NOISE_STD = 1e-4  # below this a dimension never moved: treat it as constant
+    STATE_FLOOR_STD = 1e-2  # TASK-050's floor, kept for every dimension above the noise
+    STATE_CONSTANT_SCALE = 1.0  # constant dimensions enter at their physical unit
+    STATE_CLIP = 10.0  # hard backstop on every normalized value
 
     def __init__(self, state_schema: StateSchema, device="cpu", seed=0, config=None, metadata=None):
         super().__init__()
@@ -108,8 +126,14 @@ class VisualModel(nn.Module):
         for name in ("state_fusion", "readout_heads"):
             if type(self.config[name]) is not bool:
                 raise ContractError(f"{name} must be a boolean")
-        if not np.isfinite(self.config["readout_weight"]) or self.config["readout_weight"] < 0:
-            raise ContractError("readout_weight must be nonnegative and finite")
+        for name in (
+            "readout_weight",
+            "readout_moving_weight",
+            "readout_moving_threshold_m",
+            "readout_auxiliary_weight",
+        ):
+            if not np.isfinite(self.config[name]) or self.config[name] < 0:
+                raise ContractError(f"{name} must be nonnegative and finite")
         for name in ("learning_rate", "gradient_clip"):
             if not np.isfinite(self.config[name]) or self.config[name] <= 0:
                 raise ContractError(f"{name} must be positive and finite")
@@ -117,6 +141,16 @@ class VisualModel(nn.Module):
             raise ContractError("weight_decay must be nonnegative and finite")
         if not isinstance(self.config["camera"], str) or not self.config["camera"]:
             raise ContractError("camera must be a nonempty name")
+        extra = self.config["cameras"]
+        if extra is not None:
+            names = list(extra)
+            if (
+                not names
+                or len(set(names)) != len(names)
+                or any(not isinstance(name, str) or not name for name in names)
+            ):
+                raise ContractError("cameras must be unique nonempty names")
+            self.config["cameras"] = names  # list, so the checkpoint config round-trips
         self.metadata = copy.deepcopy(dict(metadata or {}))
         # Only JSON-safe provenance is accepted; no executable checkpoint objects.
         json.dumps(self.metadata, allow_nan=False)
@@ -132,13 +166,38 @@ class VisualModel(nn.Module):
             self.register_buffer("state_normalization_fitted", torch.tensor(False))
 
     @property
+    def camera_names(self):
+        """Every camera this model consumes, in fusion order."""
+        return tuple(self.config["cameras"] or (self.config["camera"],))
+
+    @property
+    def fuses_cameras(self):
+        """Whether the learned per-camera projection is used.
+
+        It follows the *presence* of an explicit ``cameras`` list, not its length, so a
+        one-camera and a two-camera configured model differ by exactly the extra camera's
+        projection and summand. Without the key the image pathway is the backend's own
+        ``embed(pixels)``, unchanged from every earlier model.
+        """
+        return self.config["cameras"] is not None
+
+    @property
+    def declared_readouts(self):
+        """Readouts this model actually trains; untrained heads are never declared."""
+        if not self.config["readout_heads"]:
+            return ()
+        if self.config["readout_auxiliary_weight"] > 0:
+            return readout_module.READOUT_NAMES
+        return readout_module.CORE_READOUT_NAMES
+
+    @property
     def capabilities(self):
         return Capabilities(
             EE_DELTA_GRASP_V0,
             self.state_schema,
             self.config["max_horizon"],
             supported_devices=("cpu", "mps"),
-            readouts=readout_module.READOUT_NAMES if self.config["readout_heads"] else (),
+            readouts=self.declared_readouts,
         )
 
     @contextmanager
@@ -176,6 +235,20 @@ class VisualModel(nn.Module):
                 self.readout_head = readout_module.ReadoutHeads(
                     self.config["latent_dim"], self.config["readout_hidden_dim"]
                 )
+            # The camera fusion is drawn last, so adding a camera does not shift the
+            # initialization of any earlier module: a one-camera and a two-camera model
+            # with the same seed share their state-encoder and readout-head weights, and
+            # a camera ablation differs only by the extra camera's own projection.
+            if self.fuses_cameras:
+                dimension = self.config["latent_dim"]
+                # Concatenate-then-project, written as one projection per camera: only
+                # the first carries the bias, so the fusion has no redundant offset.
+                self.camera_fusion = nn.ModuleDict(
+                    {
+                        name: nn.Linear(dimension, dimension, bias=index == 0)
+                        for index, name in enumerate(self.camera_names)
+                    }
+                )
         self.to(self.device_name)
         self.optimizer = torch.optim.AdamW(
             (parameter for parameter in self.parameters() if parameter.requires_grad),
@@ -184,8 +257,8 @@ class VisualModel(nn.Module):
         )
         self.eval()
 
-    def pixels(self, images, *, sequence=False):
-        name = self.config["camera"]
+    def pixels(self, images, *, sequence=False, camera=None):
+        name = camera or self.config["camera"]
         if name not in images:
             raise ContractError(f"missing configured camera {name!r}")
         array = images[name]
@@ -209,6 +282,29 @@ class VisualModel(nn.Module):
             )
         return tensor, prefix
 
+    def image_features(self, images, *, sequence=False, target=False):
+        """Fused image embedding over every configured camera, plus the batch prefix.
+
+        Without a configured ``cameras`` list this is exactly the backend's own
+        embedding. With one, each camera is embedded by the same backend encoder and
+        passed through its own learned projection before the sum; no backend code
+        changes, and a one-camera list keeps its projection so that adding a camera is a
+        single controlled factor.
+        """
+        embed = self.goal_embed if target else self.embed
+        names = self.camera_names
+        fused, prefix = None, None
+        for name in names:
+            pixels, shape = self.pixels(images, sequence=sequence, camera=name)
+            if prefix is not None and shape != prefix:
+                raise ContractError("configured cameras disagree on the batch shape")
+            prefix = shape
+            features = embed(pixels)
+            if self.fuses_cameras:
+                features = self.camera_fusion[name](features)
+            fused = features if fused is None else fused + features
+        return fused, prefix
+
     def check_batch(self, batch):
         if not isinstance(batch, SequenceBatch):
             raise ContractError("train/validation requires a canonical SequenceBatch")
@@ -231,10 +327,9 @@ class VisualModel(nn.Module):
         self.eval()
         if not isinstance(robot_state, RobotState) or robot_state.schema != self.state_schema:
             raise ContractError("incompatible robot-state schema")
-        pixels, prefix = self.pixels(observation)
+        latent, prefix = self.image_features(observation)
         if prefix[0] != robot_state.values.shape[0]:
             raise ContractError("image/state batch dimensions disagree")
-        latent = self.embed(pixels)
         if self.config["state_fusion"]:
             latent = latent + self.state_features(robot_state.values, robot_state.mask)
         return VisualLatent(latent, self._owner)
@@ -246,13 +341,32 @@ class VisualModel(nn.Module):
             raise ContractError(
                 "state-fused latents have no image-only goal encoding; plan with declared readouts"
             )
-        pixels, _ = self.pixels(goal)
-        return VisualLatent(self.goal_embed(pixels), self._owner)
+        latent, _ = self.image_features(goal, target=True)
+        return VisualLatent(latent, self._owner)
 
     # ----- shared state fusion and readouts ------------------------------------------
     @torch.no_grad()
-    def fit_state_normalization(self, mean, std, *, training_episode_ids, floor=1e-2):
-        """Freeze train-split proprioception moments once, before any update."""
+    def fit_state_normalization(self, mean, std, *, training_episode_ids):
+        """Freeze train-split proprioception moments once, before any update.
+
+        TASK-050 divided every dimension by ``max(std, 0.01)``. Its review pointed out
+        that a dimension which never moves in training is then amplified up to a
+        hundredfold relative to a normally varying one, so a later closed-loop deviation
+        enters far outside the training distribution. Two changes address that without
+        throwing away dimensions that do carry signal:
+
+        - a dimension whose train std is below ``STATE_NOISE_STD`` is treated as
+          constant and scaled by ``STATE_CONSTANT_SCALE`` (its physical unit), so an
+          unseen deviation enters at physical scale instead of amplified;
+        - everything else keeps TASK-050's ``max(std, STATE_FLOOR_STD)``, and every
+          normalized value is clipped to ``STATE_CLIP``, which bounds the remaining
+          amplification instead of removing information.
+
+        On this corpus that is 30 constant dimensions (std 1.7e-6 to 9.4e-5), 13 floored
+        dimensions (1.3e-4 to 6.1e-3, which reach only 0.01-0.61 in normalized units and
+        are kept precisely because muting them would delete real signal) and 43 dimensions
+        scaled by their own std. The clip is inert on the train split.
+        """
         if not self.config["state_fusion"]:
             raise ContractError("state normalization requires state_fusion")
         if bool(self.state_normalization_fitted) or self.updates:
@@ -267,12 +381,22 @@ class VisualModel(nn.Module):
             raise ContractError("state moments must match the state schema")
         if not (np.isfinite(mean).all() and np.isfinite(std).all()) or (std < 0).any():
             raise ContractError("state moments must be finite with nonnegative std")
+        constant = std < self.STATE_NOISE_STD
+        scale = np.where(constant, self.STATE_CONSTANT_SCALE, np.maximum(std, self.STATE_FLOOR_STD))
         self.state_mean.copy_(torch.as_tensor(mean, dtype=torch.float32))
-        self.state_scale.copy_(torch.as_tensor(np.maximum(std, floor), dtype=torch.float32))
+        self.state_scale.copy_(torch.as_tensor(scale, dtype=torch.float32))
         self.state_normalization_fitted.fill_(True)
         self.metadata["state_normalization_episodes_sha256"] = hashlib.sha256(
             json.dumps(sorted(ids)).encode()
         ).hexdigest()
+        self.metadata["state_normalization_policy"] = {
+            "noise_std": self.STATE_NOISE_STD,
+            "floor_std": self.STATE_FLOOR_STD,
+            "constant_scale": self.STATE_CONSTANT_SCALE,
+            "clip": self.STATE_CLIP,
+            "constant_dimensions": int(constant.sum()),
+            "floored_dimensions": int((~constant & (std < self.STATE_FLOOR_STD)).sum()),
+        }
 
     def state_features(self, values, mask):
         """Learned embedding of train-normalized, mask-zeroed robot state ``[...,S]``."""
@@ -281,16 +405,33 @@ class VisualModel(nn.Module):
         values = torch.from_numpy(np.array(values, dtype=np.float32, copy=True))
         mask = torch.from_numpy(np.array(mask, dtype=np.bool_, copy=True))
         values, mask = values.to(self.device_name), mask.to(self.device_name)
-        normalized = (values - self.state_mean) / self.state_scale * mask
-        return self.state_encoder(normalized)
+        normalized = (values - self.state_mean) / self.state_scale
+        return self.state_encoder(normalized.clamp(-self.STATE_CLIP, self.STATE_CLIP) * mask)
 
-    def observe_sequence(self, batch, pixels, prefix, *, target=False):
+    def observe_sequence(self, batch, *, target=False):
         """Online (or target) latents ``[B,T+1,D]`` of a canonical sequence batch."""
-        embed = self.goal_embed if target else self.embed
-        latents = embed(pixels).reshape(*prefix, -1)
+        features, prefix = self.image_features(batch.observations, sequence=True, target=target)
+        latents = features.reshape(*prefix, -1)
         if self.config["state_fusion"]:
             latents = latents + self.state_features(batch.robot_states, batch.state_mask)
         return latents
+
+    def readout_frame_weight(self, targets):
+        """Per-frame ``[B,T+1,1]`` regression weight, or None when the shaping is off.
+
+        TASK-050 measured the readout failure as concentrated in the minority of frames
+        where the true palm-apple offset has moved away from the window start. Those
+        frames get ``1 + readout_moving_weight``; still frames keep weight 1. The weight
+        is derived from the privileged targets, so it is disclosed as a label-derived
+        training weight: it shapes the loss, never a model input.
+        """
+        extra = self.config["readout_moving_weight"]
+        if extra <= 0:
+            return None
+        offset = targets["palm_minus_apple"]
+        displacement = (offset - offset[:, :1]).square().sum(-1, keepdim=True).sqrt()
+        moving = (displacement >= self.config["readout_moving_threshold_m"]).float()
+        return 1.0 + extra * moving
 
     def readout_loss(self, encoded, predicted, readout_targets):
         """Shared readout loss on encoded ``[B,T+1,D]`` and predicted ``[B,T,D]`` latents.
@@ -311,9 +452,16 @@ class VisualModel(nn.Module):
             targets[name] = torch.from_numpy(np.array(value, np.float32, copy=True)).to(
                 self.device_name
             )
-        encoded_loss, _ = self.readout_head.loss(encoded, targets)
+        weight = self.readout_frame_weight(targets)
+        auxiliary = self.config["readout_auxiliary_weight"]
+        encoded_loss, _ = self.readout_head.loss(
+            encoded, targets, frame_weight=weight, auxiliary_weight=auxiliary
+        )
         predicted_loss, predicted_terms = self.readout_head.loss(
-            predicted, {name: value[:, 1:] for name, value in targets.items()}
+            predicted,
+            {name: value[:, 1:] for name, value in targets.items()},
+            frame_weight=None if weight is None else weight[:, 1:],
+            auxiliary_weight=auxiliary,
         )
         metrics = {
             "readout_encoded_loss": encoded_loss.item(),
@@ -338,8 +486,8 @@ class VisualModel(nn.Module):
         self.eval()
         values = []
         for observation in images:
-            pixels, _ = self.pixels(observation)
-            values.append(self.embed(pixels).cpu())
+            features, _ = self.image_features(observation)
+            values.append(features.cpu())
         if not values:
             raise ContractError("image statistics need at least one observation")
         return _statistics(torch.cat(values))
@@ -354,7 +502,10 @@ class VisualModel(nn.Module):
         values = self.check_latent(z, z.values.ndim)
         self.eval()
         result = {}
+        declared = self.declared_readouts
         for name, value in self.readout_head.physical(values).items():
+            if name not in declared:
+                continue  # an untrained auxiliary head is never exposed
             array = value.float().cpu().numpy().astype(np.float32, copy=True)
             if not np.isfinite(array).all():
                 raise ContractError(f"model produced a non-finite readout {name}")
@@ -410,10 +561,9 @@ class VisualModel(nn.Module):
         return self.embed(pixels)
 
     def sequence_tensors(self, batch):
+        """Validated batch actions on the model device (images are read per camera)."""
         self.check_batch(batch)
-        pixels, prefix = self.pixels(batch.observations, sequence=True)
-        actions = torch.from_numpy(np.array(batch.actions, copy=True)).to(self.device_name)
-        return pixels, prefix, actions
+        return torch.from_numpy(np.array(batch.actions, copy=True)).to(self.device_name)
 
     @torch.no_grad()
     def validation_error(self, batch):
@@ -423,9 +573,9 @@ class VisualModel(nn.Module):
     @torch.no_grad()
     def diagnostics(self, batch):
         self.eval()
-        pixels, prefix, actions = self.sequence_tensors(batch)
-        embeddings = self.observe_sequence(batch, pixels, prefix)
-        target_embeddings = self.observe_sequence(batch, pixels, prefix, target=True)
+        actions = self.sequence_tensors(batch)
+        embeddings = self.observe_sequence(batch)
+        target_embeddings = self.observe_sequence(batch, target=True)
         targets = target_embeddings[:, 1:]
         prediction = self.rollout(embeddings[:, 0], actions)
         zero_prediction = self.rollout(embeddings[:, 0], torch.zeros_like(actions))

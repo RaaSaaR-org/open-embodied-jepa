@@ -141,8 +141,8 @@ class LeWM(VisualModel):
             raise ContractError("LeWM BatchNorm requires at least two sequences during training")
         self.train()
         with self.rng_scope():
-            pixels, prefix, actions = self.sequence_tensors(batch)
-            embeddings = self.observe_sequence(batch, pixels, prefix)
+            actions = self.sequence_tensors(batch)
+            embeddings = self.observe_sequence(batch)
             one_step = self.next_embedding(embeddings[:, :-1], actions)
             prediction_loss = (one_step - embeddings[:, 1:]).square().mean()
             recursive = self.rollout(embeddings[:, 0], actions)
