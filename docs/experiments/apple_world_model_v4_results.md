@@ -18,9 +18,12 @@ of learned models on recorded validation data. No simulator reset was opened and
 planner was run. The protocol is `apple_world_model_v4.md`, written at `50b5765` and amended
 twice by a fresh-context pre-run review, at `2bf3999` and `46d62eb`, both before any gated
 run. **The runs themselves were made from `46d62eb` (E0's training) and `c9cf9a6` (E1, E2
-and E3's training, and all four evaluations)**; no run was made from `2bf3999`. The protocol
-document and the frozen manifest are byte-identical across `46d62eb`, `c9cf9a6` and this
-commit. See *The runner incident*.
+and E3's training, and all four evaluations)**; no run was made from `2bf3999`. The
+protocol document is byte-identical across `46d62eb`, `c9cf9a6` and this commit. The
+manifest is byte-identical across `46d62eb` and `c9cf9a6`; this commit's copy differs only
+because the results were written into its `null` placeholders — **every pre-declared block
+(`frozen`, including `frozen.gates`, and `pre_declared_outcomes`) is byte-identical from
+`46d62eb` through here.** See *The runner incident*.
 
 ## Runs
 
@@ -115,6 +118,14 @@ four arms. The parameter deltas are exactly the declared ones: +47,488 for E1's 
 Every threshold and comparison direction in the gate reports matches
 `benchmarks/manifests/apple-world-model-v4.json` (`frozen.gates`) and the preregistration
 table verbatim, and is identical across the four arms. No threshold was changed.
+
+**One row of that table must not be read on its own: G9.** E3 has the lowest rollout
+excess (0.796 cm) *and* the worst G1 (4.41 cm), because its encoder degraded — the excess
+is the gate value minus the encoder term, so damaging the encoder shrinks it. E3 did not
+improve the prediction step. The only arm whose G9 moved the right way with an intact
+encoder is E2, and it still fails by a factor of 1.7. This is the failure mode the
+preregistration named in advance when it declared the G9 reading condition necessary but
+not sufficient.
 
 ## The headline: E0 reproduces v3 arm B bit-for-bit
 
@@ -299,9 +310,11 @@ and its last step is 0.78 cm worse (4.22 → 5.00 cm). "Train E3 longer" is not 
   predicted 3.65 / 3.66 / 3.48 / 4.41 cm. The actions carry information; the readout under
   motion is what is imprecise. **But every arm still loses to its own persistence readout
   by the required margin** — that is G2a, and it is the whole story of this task.
-- **Every intervention hurt candidate ranking.** G6a is 0.5438 for the control and 0.2865 /
-  0.3296 / 0.4141 for E1 / E2 / E3 — the control is the *only* v4 arm that passes it. The
-  one metric a CEM directly needs got worse under all three predictor redesigns.
+- **Every intervention hurt candidate ranking, and this is the most consistent pattern in
+  the task.** G6a is 0.5438 for the control and 0.2865 / 0.3296 / 0.4141 for E1 / E2 / E3
+  — the control is the *only* v4 arm that passes it. The one metric a CEM directly needs
+  got worse under **all three** predictor redesigns, by 0.13 to 0.26. See the section
+  below for what that does and does not support.
   G6b passes almost everywhere but discriminates nothing (median 0.0 mm for three arms
   against a label-derived random-choice baseline of 8.44 mm); its preregistered null pass
   rate is 5.9 %, so it must not be quoted alone.
@@ -314,6 +327,41 @@ and its last step is 0.78 cm worse (4.22 → 5.00 cm). "Train E3 longer" is not 
   descending; E1's best is step 14,000 with its last step 0.08 cm worse; E3's turned over
   at 8,000. So "train longer" remains live for E0 and E2 only — and it was live for arm B
   after v3 too, and is still untested.
+
+## Is there a prediction / discrimination trade-off? The numbers say no
+
+It is tempting to read the results as a trade: improve the rollout term and you pay for it
+in candidate ranking. **The data does not support that, and it is worth stating because the
+reading is plausible and wrong.**
+
+| arm | rollout excess | G6a | G1 |
+|---|---|---|---|
+| v3 A (two cameras) | 0.3075 cm | 0.3280 | 6.6176 cm |
+| v3 B / v4 E0 | 1.0578 cm | 0.5438 | 3.6481 cm |
+| v3 C (uniform readout) | 0.6601 cm | 0.5155 | 6.1128 cm |
+| v3 D (patch 8) | 0.8348 cm | 0.3776 | 3.3043 cm |
+| v4 E1 (chunk) | 1.1176 cm | 0.2865 | 3.6579 cm |
+| v4 E2 (tail) | 0.9031 cm | 0.3296 | 3.4754 cm |
+| v4 E3 (step) | 0.7957 cm | 0.4141 | 4.4087 cm |
+
+Across all eight arms the Spearman correlation between rollout excess and G6a is
+**+0.095** — nothing. Within the four v4 arms it is **−0.400**; within the four v3 arms it
+is **+0.800**. Two subsets of the same design give opposite signs, which is what a
+correlation computed on four points does. And the within-v4 gradient runs the *wrong way
+for a trade-off*: the arm that cut the excess most (E3, −0.262 cm) lost the **least** G6a
+(−0.130), while the arm that *raised* the excess (E1, +0.060 cm) lost the **most** (−0.257).
+
+**What is true, and it is the more interesting statement:** all three predictor redesigns
+cost candidate ranking, and they did so **regardless of what they did to the rollout term**.
+E1 made the rollout term worse and still lost 0.257 of G6a. So whatever damages ranking is
+not paid for out of prediction accuracy — it is some other route, and this protocol contains
+no measurement that identifies it.
+
+**What this is not.** One seed per arm; the arms are not independent replications; no
+mechanism has been demonstrated; and these eight arms come from two protocols that differ
+in more than one factor. This is an **observed pattern across arms**, not a capacity
+constraint, not a law, and not something to design the next task around without measuring
+it directly.
 
 ## Reading, as pre-declared
 
@@ -409,6 +457,37 @@ value depends on them.
    asserts `pre_declared_outcomes` is unchanged and aborts otherwise, so the clause could
    not be written through. **Moot in the event** — Outcome A did not fire — but a verifier
    reading only the machine-readable artifact would have got the unqualified version.
+
+## Handoff facts for the next task
+
+The next task is **behaviour cloning with the world model as a critic** rather than as the
+forward model of a sampling planner, on the same LeWM backend. It is not designed or
+started here. These are the facts it inherits, all from this run's artifacts:
+
+- **The encoder is the component that works, and it is still improving.** A directly
+  encoded observation reads the palm–apple offset to **2.3536 cm** (E0 `encoded_start`),
+  against v2's 3.13 cm — and v3's one-camera encoders were already 21–24 % better than
+  v2's. It is **not** good enough on its own: E0's `encoded_target` of 2.5903 cm alone
+  exceeds the 1.5 cm G1 threshold, so the encoder is unfinished, not solved.
+- **Nothing collapses.** G8 passes on all four arms; effective rank 6.74–8.23, mean latent
+  std 0.850–0.873, collapsed fraction 0.000 everywhere.
+- **The held/grasp readouts are near-perfect.** `apple_held` AUROC on the lift cohort is
+  0.9992–0.9997. **But this is weak evidence**: TASK-052 measured the *shuffled-action*
+  AUROC on the same cohort at 0.62–0.77, so most of it comes from the encoded state and the
+  fused proprioception, not from action-conditioned prediction. A critic must not be
+  credited with it.
+- **Top-1 regret is 0.0 mm in three of four arms** (E1 is 2.3 mm), against a label-derived
+  random-choice baseline of 8.44 mm. **But G6b discriminates nothing** — its preregistered
+  null pass rate is 5.9 % and it reads 0.0 mm even for arms whose ranking ρ is 0.29. It must
+  not be quoted on its own as evidence that ranking works.
+- **What actually fails is the prediction step under motion**, and three redesigns of it did
+  not fix it. The persistence baseline is the thing to beat and it has never been beaten:
+  G2a is 0.8635 at best here, 0.831 at best in v3, 0.835 in v2.
+- **Candidate ranking is fragile**: the control passes G6a and all three interventions break
+  it, for reasons this protocol did not identify (see above).
+- The corpus, splits and hashes are unchanged and reusable: dataset `028e130576…`, split
+  `51f8e09df1…`, action `da987bb079…`. **Test has still never been decoded**, so one
+  unbiased check remains available.
 
 ## Honest labelling and limits
 
