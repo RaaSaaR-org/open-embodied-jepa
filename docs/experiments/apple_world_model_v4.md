@@ -2,7 +2,10 @@
 
 **Preregistration. Written before any frozen run and committed before the first one
 starts.** Every threshold, cohort, budget, arm, command and decision rule below is fixed
-at the commit that carries this file. Nothing here is a control or manipulation result:
+at the commit that carries this file. It was **amended once, by a fresh-context pre-run
+review, before any gated run began**; that review returned BLOCK on five items and all
+five are fixed here. The amendments are listed in *Pre-run review*, at the end. **No
+threshold was changed by the amendment.** Nothing here is a control or manipulation result:
 this is offline evaluation of learned models on recorded validation data. Learned
 Apple→Plate is at **0 successes** and nothing in this protocol changes that.
 
@@ -81,7 +84,9 @@ unweighted mean.
 | Δ against E0 | — | +47,488 | 0 | +8,192 |
 
 **E0 is arm B.** Its parameter count, 2,415,398, is exactly the count TASK-052 published
-for arm B, and every other key in `apple_wm_v4.yaml` is arm B's. E0 exists because the
+for arm B, and every other key of `apple_wm_v4.yaml`'s `leworldmodel` block is arm B's
+(its `native_jepa` block differs from v3's only by the camera list, since v4 is one camera
+throughout, and the native backend is not a frozen arm). E0 exists because the
 three interventions must be compared against a number produced by *this* revision: the
 shared changes alter `models/base.py`, so the implementation hash moves and the v3
 checkpoints cannot be loaded. E0 is a same-seed re-run of arm B's configuration, not an
@@ -97,6 +102,24 @@ independent seed, so it is a **revision control, not a variance estimate** (see
   planner's horizon of 8 and a quarter of the training horizon of 16, so every training
   step has real future actions to condition on and the padding is confined to the last
   three steps of a window.
+
+  **E1 sees more actions at the gate horizon than the other arms, and that is declared
+  here, before the run.** The evaluator rolls out `max(HORIZONS) = 16` action steps and
+  reads step 8 — for every arm, unchanged from v2 and v3. Under `action_chunk: 4` the
+  step-8 latent of E1 therefore depends on actions 0…10, while E0, E2 and E3 depend on
+  actions 0…7. A horizon-8 CEM could not supply actions 8…10; at plan time those slots
+  zero-pad, which is a *different computation* from the one gated here. So **the E1 − E0
+  contrast is "joint chunk conditioning **and** three extra future actions at the readout
+  horizon", not chunk conditioning alone**, and E1's G1, G2a, G2b and G9 are measured
+  under an advantage a horizon-8 planner would not have.
+
+  The 16-step rollout is not negotiable: it is what makes the decomposition's rollout term
+  bit-for-bit equal to the evaluator's G1, which is the cohort-identity check G9 depends
+  on. So the confound is **declared rather than removed**, and one consequence is fixed
+  now: **if E1 is the winning arm, the next protocol must re-measure it under
+  planner-consistent zero-padding before any of its numbers are carried forward.** This is
+  not privileged-label leakage — actions are model inputs, not labels — and it does not
+  affect E0, E2 or E3.
 - **E2, `multistep_tail_weight: 3.0`.** The multistep latent loss is weighted by a linear
   ramp from 1 at the first predicted step to 4 at the last (16th), renormalized to mean 1
   so the term's total weight against the one-step and SIGReg terms is unchanged. This is
@@ -113,6 +136,12 @@ independent seed, so it is a **revision control, not a variance estimate** (see
   at step 0 E3's rollout is bit-for-bit E0's and any departure has to be learned. The new
   modules are drawn last in `finish_init`, so E0, E1, E2 and E3 share every other weight
   at initialization.
+
+**E1 and E3 change the rollout path only.** The one-step teacher-forced term of both
+backends (`one_step = next_embedding(embeddings[:, :-1], actions)`) is left untouched: it
+gets no chunk context and no step embedding. So E1 and E3 change how a *recursive* rollout
+is conditioned and nothing else, just as E2's declared narrowness is that it reweights the
+latent multistep term only.
 
 **Architecture invariants held.** All three options live in backend-agnostic shared code;
 the backend swap stays the one-line `world_model.backend` change (`apple_wm_v4.yaml` is
@@ -134,7 +163,9 @@ Unchanged from TASK-050 and TASK-052, and not re-derived here.
   (`split_policy.group_by: session_id`); train, val and test share no root episode.
 - **`test` and `holdout` are never decoded.** `load_split` refuses any split other than
   `train`/`val` and raises if the requested episodes intersect test or holdout. Every gate
-  report must carry `test_episodes_decoded: 0`.
+  report must carry `test_episodes_decoded: 0`. **That field is a literal emitted by the
+  reporter, not a measured counter**; the real guarantee is the structural one above, plus
+  the train-split check below. Both are enforced in code and raise.
 - Normalization is fitted on the **train** split only; the runner raises if the manifest's
   `normalization.episode_ids` is not exactly `splits.train`.
 - Updates use train only. Checkpoint selection and every gate use val only.
@@ -162,8 +193,9 @@ Identical to TASK-052's, so the comparison with the v3 numbers is like-for-like.
 **Measured budget** (from the disclosed pilots, steady-state seconds per update ×
 15,000): E0 0.2303 s → 0.96 h, E1 0.2312 s → 0.96 h, E2 0.2307 s → 0.96 h, E3 0.2328 s →
 0.97 h — **about 3.85 h of MPS training in total**, plus about 12 s of decoding and about
-1 min of evaluation per arm. The 10,800 s cap is a runaway guard with about 2.8× headroom,
-not the expected time. Peak host RSS is 9.1 GB per arm (one camera).
+1 min of evaluation per arm — about 3,530 s per arm, which v3 arm B's measured 3,513 s
+for the identical budget corroborates. The 10,800 s cap is a runaway guard with about 3.1×
+headroom, not the expected time. Peak host RSS is 9.1 GB per arm (one camera).
 
 **Longer training is not attempted**, and neither is a second seed; both would take the
 task past its budget. Each arm's 16 validation points are reported, so whether the step
@@ -234,13 +266,23 @@ The threshold is set from the v3 numbers, as follows.
 2. **"Beat 0.83 cm" would be too weak.** The B ↔ D contrast that produced it moved G1 by
    0.34 cm, and TASK-052's conservative reading is that B ↔ D is *not* distinguishable
    from its own sampling noise. A threshold inside that band would be passable by noise.
-3. **The threshold is half of arm B's excess: 1.06 / 2 = 0.53 cm.** Halving is a
-   substantive reduction, three times the size of the largest contrast TASK-052 could not
-   separate from noise, and it is the amount needed for the excess to stop being the term
-   that grew: 0.53 cm lands between v2's 0.39 cm and v3 D's 0.83 cm.
+3. **The threshold is half of arm B's excess: 1.06 / 2 ≈ 0.53 cm.** Precisely: arm B's
+   excess is 1.05780 cm, exact half is 0.52890 cm, and the frozen threshold is that
+   rounded to two significant figures — 0.53 cm, 0.2 % looser than exact half.
+   **How demanding is that, honestly?** The required reduction is 0.5278 cm, which is
+   **1.04× the C ↔ A rollout contrast (0.51 cm) and 1.56× the D ↔ B one (0.34 cm)** — the
+   two contrasts TASK-052's conservative reading could *not* separate from sampling noise.
+   It is of the same order as them, **not comfortably larger**. That is a genuine weakness
+   of this threshold and it is recorded rather than dressed up: an arm landing just under
+   0.53 cm would be showing an effect only modestly bigger than ones TASK-052 could not
+   establish, and the clustered bootstrap interval is what will say whether it is real.
+   The threshold is nonetheless the most this evidence supports demanding — see point 4.
 4. **It deliberately does not require beating 0.39 cm.** That number comes from a v2
    checkpoint with an incompatible implementation hash that was never recomputed, so
    making it a threshold would freeze a gate against a figure this code cannot reproduce.
+   **A G9 pass therefore does not restore v2's level.** At 0.53 cm the excess is still 36 %
+   above v2's carried-over 0.39 cm: passing G9 halves the v2 → v3 regression, it does not
+   undo it.
 
 **What a G9 pass would and would not mean, declared now.**
 
@@ -251,16 +293,25 @@ The threshold is set from the v3 numbers, as follows.
 - **G9 is not passable by a do-nothing predictor given a v3-quality encoder.** An identity
   rollout makes the rollout error equal the persistence error, so its excess would be
   `persistence − encoded_target`: 1.57 cm for arm B and 1.51 cm for arm D, far above 0.53.
-- **But G9 *is* passable by a degenerate model, and this was measured rather than
-  reasoned.** In pilot `smoke-a` (40 steps, 8 episodes) the excess was **−1.66 cm**,
-  because a near-constant readout head makes the encoded-target readout no better than the
-  rollout. A G9 pass therefore means nothing on its own.
+- **But G9 *is* passable by an undertrained model, and this was measured rather than
+  reasoned — in every pilot that was run.** In `smoke-a` (40 steps, 8 episodes) the excess
+  was **−1.66 cm**, with an encoded-target error of 14.13 cm: a near-constant readout head
+  makes the encoded-target readout no better than the rollout. And **all four 120-step
+  timing pilots PASSED G9** — excesses 0.109 / 0.337 / 0.161 / 0.122 cm for E0 / E1 / E2 /
+  E3, with encoded-target errors of 8.68–9.78 cm and G2a of 0.849–0.928, i.e. failing G2a
+  and every other gate. Five pilots, five G9 passes, zero useful models. **A G9 pass means
+  nothing on its own**, and this is the measured reason the reading condition below
+  exists: all five sit far outside its encoder band.
 - **Pre-declared reading condition.** A G9 pass counts as evidence for the branch-2
   hypothesis only if that arm's `encoded_target_median_m` is **≤ 3.89 cm** (1.5 × arm B's
-  2.59 cm). That band comfortably contains both v3 one-camera arms (2.59, 2.47 cm) and
-  excludes both two-camera arms (5.45, 6.31 cm) and any degenerate readout. Outside the
-  band, G9 is reported as **uninterpretable** rather than as a pass. This is a reading
-  rule fixed in advance; it never changes G9's threshold or its pass/fail computation.
+  2.59 cm). That band contains both v3 one-camera arms (2.59, 2.47 cm) and excludes both
+  two-camera arms (5.45, 6.31 cm) and all five pilots (8.68–14.13 cm). Outside the band,
+  G9 is reported as **uninterpretable** rather than as a pass. This is a reading rule fixed
+  in advance; it never changes G9's threshold or its pass/fail computation.
+  **The condition is necessary, not sufficient.** An encoder degraded to, say, 3.5 cm would
+  sit inside the band, could still post a small excess, and would be worse than E0 on G1.
+  That is one more reason **no pre-declared outcome depends on G9**: the outcomes below
+  hinge on G2a alone.
 - **G9 is read jointly with G1, G2a, G2b, G7a and G8**, never on its own.
 
 ### Cohort-identity self-check (hard failure)
@@ -278,6 +329,12 @@ computations to coincide.
 Three one-factor contrasts carry causal weight, all against E0: **E1 − E0** (action
 chunk), **E2 − E0** (multistep tail weight), **E3 − E0** (step embedding). Each is
 reported for `rollout`, `encoded_target` and the per-window `rollout − encoded_target`.
+
+**That third field is not the gate quantity.** The bootstrap resamples the *median of the
+per-window difference*; G9 is the *difference of the two medians*. The two are not equal.
+The bootstrap bounds the sampling of a closely related quantity, not of the gate value
+itself, and its own report repeats this in a `rollout_excess_is_per_window` field. No gate
+reads a bootstrap output.
 
 `scripts/bootstrap_wm_v4_contrasts.py`, seed 20540, 20,000 resamples, reports **two**
 paired designs for every contrast:
@@ -306,10 +363,12 @@ readout units and compute.
 ## Pre-declared outcomes
 
 Fixed before any number is seen. The primary gate is **G2a**, and it alone selects between
-the two branches.
+the branches. "Passes G2a" below means exactly what the gate computes: the value is
+**≤ 0.8**. Outcome C takes precedence over Outcome A whenever both would apply.
 
-**Outcome A — at least one arm reaches G2a < 0.8.** The prediction step demonstrably beats
-the model's own persistence readout for the first time in this line. Then:
+**Outcome A — at least one arm *other than E0* passes G2a.** The prediction step
+demonstrably beats the model's own persistence readout for the first time in this line.
+Then:
 
 - CEM over this cost is **kept**, and the control-formulation clause below does not fire.
 - The **winning option** is the arm with the lowest G2a; ties are broken by lower G9, then
@@ -322,8 +381,7 @@ the model's own persistence readout for the first time in this line. Then:
 - **The closed loop still does not start.** G1 must pass first, and no outcome of this
   protocol starts it.
 
-**Outcome B — no arm reaches G2a < 0.8.** Then the clause TASK-052 recorded fires, as
-written:
+**Outcome B — no arm passes G2a.** Then the clause TASK-052 recorded fires, as written:
 
 > **If the action-conditioning redesign does not move G2a below 0.8, behaviour cloning
 > with the world model as a critic becomes the primary line and CEM over this cost is
@@ -334,11 +392,11 @@ arms) and deferred by exactly one protocol — this one. Under Outcome B it is n
 again: **no further predictor-architecture protocol is preregistered**, and the next task
 is behaviour cloning with the world model as a critic or residual.
 
-**Outcome C — E0, the baseline, also reaches G2a < 0.8.** This is called out separately
-because it is the most informative failure mode available and TASK-052 had no replication
-at all. E0 is arm B's configuration at the same seed. If E0's G2a lands below 0.8 while
-v3's arm B was 0.876, the difference is revision or run-to-run variation, **not** any
-intervention. Then:
+**Outcome C — E0, the baseline, passes G2a.** This takes precedence over Outcome A and is
+called out separately because it is the most informative failure mode available and
+TASK-052 had no replication at all. E0 is arm B's configuration at the same seed. If E0's
+G2a lands at or below 0.8 while v3's arm B was 0.876, the difference is revision or
+run-to-run variation, **not** any intervention. Then:
 
 - No intervention is credited, whatever E1–E3 do, and this is the **headline** result.
 - The next protocol is a **replication**: the baseline at ≥ 3 seeds, before any further
@@ -361,6 +419,7 @@ uv run --no-sync python -m embodied_jepa.world_model_v4 train \
   --config configs/<cfg>.yaml \
   --protocol-manifest benchmarks/manifests/apple-world-model-v4.json \
   --device mps --workers 8 --require-clean \
+  --output <main>/checkpoints/task054-wm-v4/<name>.pt \
   --acknowledge-privileged-training-labels
 
 # evaluate (per arm, on the selected checkpoint)
@@ -379,6 +438,23 @@ uv run --no-sync python scripts/bootstrap_wm_v4_contrasts.py \
   --output <main>/outputs/task054-wm-v4/paired-bootstrap.json \
   --seed 20540 --resamples 20000
 ```
+
+`--output` is not optional: without it the runner falls back to the config's checkpoint
+path, which resolves **relative to the config file** and would put every artifact inside
+the disposable checkout the runs are launched from. `scripts/run_apple_wm_v4.sh` passes it
+for every arm.
+
+**Where the runs are launched from.** `source_identity()` runs `git status --porcelain`
+with no `--untracked-files=no`, so **untracked files count as dirty** and `--require-clean`
+refuses them. The runs are launched from the clean committed worktree that carries this
+commit, with the artifact root pointing at the main checkout's absolute, git-ignored
+`checkpoints/` and `outputs/`, so the artifacts survive that worktree being removed.
+
+**Checkpoint selection under a non-`completed` status.** If training reports
+`selection_failed`, the arm is evaluated on `.latest.pt`; if it reports `time_budget` but
+selected a checkpoint, it is evaluated on that checkpoint, as any completed arm would be.
+Only a `failed` arm is skipped. The runner reads the arm's `run.json` and applies exactly
+that rule.
 
 The runner writes its progress and every arm's gate summary to
 `<main>/outputs/task054-runner.log`.
@@ -426,8 +502,53 @@ from the committed revision that carries the code but not yet this document.
   clock and parameter counts only: 0.2303 / 0.2312 / 0.2307 / 0.2328 s per update, peak
   host RSS 9.1 GB, decode 12.3–12.5 s. These fixed the budget table. Their `evaluate` runs
   on 20 val episodes confirmed the cohort-identity assertion holds for every option,
-  including `action_chunk: 4`.
-- **No pilot informed any threshold**, and no pilot checkpoint is a frozen arm.
+  including `action_chunk: 4`. **Their gate values were visible to the author**: all four
+  failed every gate except G9, G8a and G8c, with G2a 0.849 / 0.928 / 0.878 / 0.914. They
+  are quoted above for one purpose only — they are the measured demonstration that G9 is
+  passable by an undertrained model. They are 120-step models on 20 val episodes and carry
+  no other information.
+- **No pilot informed any threshold**, and no pilot checkpoint is a frozen arm. Every
+  threshold is either copied verbatim from TASK-052's frozen manifest or derived from
+  TASK-052's published arm B figures, both of which predate every pilot.
+
+## Pre-run review (before any gated run)
+
+A fresh-context reviewer read this protocol, the manifest, the code, the configs, the
+tests and the pilot artifacts before any frozen run started, and returned **BLOCK** on
+five items. All five are fixed above; **no threshold, arm, cohort, budget or decision rule
+was changed by the fix**, and nothing was relaxed.
+
+1. **E1 is conditioned on more actions at the gate horizon than the other arms** and this
+   was not declared. Now declared in full, with the follow-up requirement that E1 be
+   re-measured under planner-consistent zero-padding if it wins.
+2. **Two v3 G1 values were mistranscribed in the frozen manifest** (`v3_arm_B_G1_m` and
+   `v3_arm_D_G1_m`, 5.0e-8 m and 3.9e-8 m off the published values). TASK-052's own
+   verification established those two numbers bit-for-bit after a float32-median bug, so a
+   different 9-digit value in the successor's manifest re-introduced exactly that problem.
+   Both are now copied verbatim from the v3 manifest.
+3. **The G9 derivation overstated the threshold.** It claimed the required reduction was
+   "three times the size of the largest contrast TASK-052 could not separate from noise";
+   it is 1.04× and 1.56× those two contrasts. It also claimed the threshold made the excess
+   "stop being the term that grew", which contradicted the next point: at 0.53 cm the
+   excess is still 36 % above v2's carried-over 0.39 cm. Both are corrected, and the
+   threshold's real weakness is now stated.
+4. **The runner did not implement the `selection_failed` fallback this document declares**,
+   and it skipped any arm whose training did not report `completed`, including a
+   `time_budget` arm that had selected a valid checkpoint. The runner now reads the arm's
+   `run.json` and applies the declared rule.
+5. **The frozen `train` command omitted `--output`**, which contradicted this document's
+   own artifact paths: without it the artifacts land in the disposable worktree the runs
+   are launched from. Added, with the launch-location note.
+
+The reviewer also confirmed, from the artifacts rather than from this document: every v3
+figure quoted here; that E0's resolved `leworldmodel` settings are an **empty diff**
+against `apple_wm_v3_lewm_onboard.yaml` and that E1/E2/E3 differ from E0 by exactly one
+key each; that all four arms' shared parameter tensors are **bit-identical at
+initialization** and `predictor_step.weight` is all zeros; that all 18 v3 gate keys,
+`frozen.training` and `frozen.selection_eligibility` are byte-identical to v3's; that the
+cohort-identity assertion is exact float equality; and that the per-update times in the
+budget table are exactly the pilots' logged steady-state means. Its non-blocking findings
+are folded into the text above.
 
 ## Limitations, stated before the results
 

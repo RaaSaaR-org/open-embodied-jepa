@@ -88,15 +88,17 @@
     "v2_lewm_onboard_G1_m": 0.0365,
     "v2_lewm_onboard_G2a": 0.835,
     "v2_lewm_onboard_rollout_excess_m_carried_over_not_recomputed": 0.0039,
-    "v3_arm_B_G1_m": 0.036480578,
+    "v3_arm_B_G1_m": 0.036480627954006195,
     "v3_arm_B_G2a": 0.8763,
     "v3_arm_B_encoded_target_m": 0.025902658700942993,
     "v3_arm_B_parameters": 2415398,
-    "v3_arm_B_rollout_excess_m": 0.0106,
-    "v3_arm_D_G1_m": 0.033042999,
+    "v3_arm_B_persistence_m": 0.041628044098615646,
+    "v3_arm_B_rollout_excess_m": 0.010577969253063202,
+    "v3_arm_D_G1_m": 0.033043038100004196,
     "v3_arm_D_G2a": 0.8308,
     "v3_arm_D_encoded_target_m": 0.02469455637037754,
-    "v3_arm_D_rollout_excess_m": 0.0083
+    "v3_arm_D_persistence_m": 0.03977133519947529,
+    "v3_arm_D_rollout_excess_m": 0.008348481729626656
   },
   "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
   "frozen": {
@@ -123,13 +125,15 @@
       ],
       "read_design": "cluster",
       "resamples": 20000,
+      "rollout_excess_field_is_not_the_gate_quantity": "the bootstrap's rollout_excess field is the median of the per-window difference (rollout - encoded_target); gate G9 is the difference of the two medians. The bootstrap bounds the sampling of a related quantity, not of the gate value itself, and its report says so in its own field.",
       "script": "scripts/bootstrap_wm_v4_contrasts.py",
       "seed": 20540
     },
+    "e1_is_conditioned_on_more_actions_at_the_gate_horizon": "DECLARED BEFORE THE RUN. The evaluator rolls out max(HORIZONS)=16 action steps and reads step 8, for every arm. Under action_chunk=4 the step-8 latent of arm E1 therefore depends on actions 0..10, while E0/E2/E3 depend on actions 0..7. A horizon-8 CEM could not supply actions 8..10; at plan time those slots zero-pad, which is a different computation from the one gated here. So the E1 - E0 contrast is 'joint chunk conditioning AND three extra future actions at the readout horizon', not chunk conditioning alone. The 16-step rollout is required for the cohort-identity assertion to hold, so it is kept and the confound is declared instead of removed. If E1 is the winning arm, the next protocol MUST re-measure it under planner-consistent zero-padding before any of its numbers are carried forward.",
     "g9_reading_condition": {
       "max_m": 0.0389,
       "metric": "decomposition.encoded_target_median_m",
-      "rationale": "1.5x v3 arm B's 2.59 cm encoder term. Inside this band G9 is interpretable; outside it the split is not comparable to v3's and G9 is reported as uninterpretable rather than as a pass. A reading rule only: it never changes G9's threshold or its pass/fail computation."
+      "rationale": "1.5x v3 arm B's 2.59 cm encoder term. Inside this band G9 is read; outside it the split is not comparable to v3's and G9 is reported as uninterpretable rather than as a pass. A reading rule only: it never changes G9's threshold or its pass/fail computation. It is necessary, NOT sufficient: an encoder degraded to, say, 3.5 cm would sit inside the band and could still post a small excess, which is why no outcome depends on G9."
     },
     "gates": {
       "G1_palm_apple_moving_h8_median_m": 0.015,
@@ -170,23 +174,50 @@
     }
   },
   "g9_threshold_derivation": {
+    "a_pass_does_not_restore_v2": "at 0.53 cm the excess is still 36 % above v2's carried-over 0.39 cm. Passing G9 halves the v2->v3 regression; it does not undo it.",
     "declared_consequence": "G9 can pass while G1 fails: 0.53 cm on top of arm B's 2.59 cm encoder term is a rollout of about 3.1 cm, still about 2.1x G1's threshold. An arm that passes G9 and fails G1 has not passed the gate set.",
     "not_passable_by_identity_predictor": {
       "note": "persistence minus encoded_target, both far above 0.0053",
-      "v3_arm_B_identity_excess_m": 0.0157,
-      "v3_arm_D_identity_excess_m": 0.0151
+      "v3_arm_B_identity_excess_m": 0.015725385397672653,
+      "v3_arm_D_identity_excess_m": 0.015077678829097748
     },
-    "passable_by_degenerate_readout": {
-      "measured_excess_m": -0.0166,
-      "note": "why the g9_reading_condition exists; G9 is never read on its own",
-      "pilot": "smoke-a, 40 steps on 8 episodes"
+    "passable_by_an_undertrained_model_measured_in_the_pilots": {
+      "note": "ALL FOUR 120-step pilots passed G9 while failing G2a and every other gate. This is the measured reason G9 is never read on its own and why the reading condition exists: all four sit far outside the 0.0389 m encoder band.",
+      "smoke_a_40_steps_encoded_target_m": 0.14125241339206696,
+      "smoke_a_40_steps_excess_m": -0.016601115465164185,
+      "timing_pilots_120_steps_encoded_target_m": {
+        "E0": 0.0868,
+        "E1": 0.0948,
+        "E2": 0.0894,
+        "E3": 0.0978
+      },
+      "timing_pilots_120_steps_excess_m": {
+        "E0": 0.00109,
+        "E1": 0.00337,
+        "E2": 0.00161,
+        "E3": 0.00122
+      },
+      "timing_pilots_120_steps_g2a": {
+        "E0": 0.849,
+        "E1": 0.928,
+        "E2": 0.878,
+        "E3": 0.914
+      },
+      "timing_pilots_120_steps_g9_passed": {
+        "E0": true,
+        "E1": true,
+        "E2": true,
+        "E3": true
+      }
     },
     "reference_arm": "v3 arm B (onboard, patch 14), which E0 re-runs",
-    "reference_rollout_excess_m": 0.0106,
-    "rule": "half of the reference arm's rollout excess",
+    "reference_rollout_excess_m": 0.010577969253063202,
+    "required_reduction_m": 0.005277969253063202,
+    "rule": "half of the reference arm's rollout excess. Exact half is 0.005288985 m; the threshold is that rounded to two significant figures, 0.2 % looser.",
+    "size_against_v3_contrasts": "the required reduction (0.53 cm) is 1.04x the C-A rollout contrast (0.51 cm) and 1.56x the D-B one (0.34 cm), the two contrasts TASK-052's conservative reading could NOT separate from sampling noise. It is of the same order as them, not comfortably larger. That is a real weakness of this threshold and it is recorded rather than dressed up.",
     "threshold_m": 0.0053,
     "why_not_v2": "v2's 0.39 cm was carried over, not recomputed: the v2 checkpoints have an incompatible implementation hash and this code cannot reproduce that figure",
-    "why_not_v3_best": "v3 arm D's 0.83 cm comes from the B<->D patch contrast, which TASK-052's conservative reading could not distinguish from its own sampling noise; a threshold inside that band would be passable by noise"
+    "why_not_v3_best": "v3 arm D's 0.83 cm comes from the B<->D patch contrast, which TASK-052's conservative reading could not distinguish from its own sampling noise; a threshold at that value would be passable by noise alone"
   },
   "gate_definitions": {
     "G1": "median palm-apple readout error at h=8 on predicted latents, val moving windows",
@@ -229,11 +260,14 @@
       "train",
       "val"
     ],
-    "test_episodes_decoded": 0
+    "test_episodes_decoded": 0,
+    "test_episodes_decoded_is_a_literal": "the field is emitted as a constant by the reporter. The real guarantee is structural: load_split refuses any split other than train/val and raises if the requested episodes intersect test or holdout, and train raises unless the manifest's normalization.episode_ids equals splits.train exactly."
   },
   "measured_budget": {
     "decode_seconds_one_camera": 12.4,
-    "expected_training_hours_total": 3.85,
+    "expected_seconds_per_arm_including_decode_and_eval": 3530,
+    "expected_training_hours_total": 3.86,
+    "headroom_against_cap": "about 3.1x",
     "peak_host_rss_bytes_one_camera": 9120000000,
     "per_arm_wall_clock_cap_seconds": 10800,
     "seconds_per_update": {
@@ -245,13 +279,25 @@
     "source": "disclosed pilots timing-{baseline,chunk,tail,step}, full corpus, 120 steps"
   },
   "not_frozen_arms": {
-    "native_jepa": "configs/apple_wm_v4.yaml exists and is the one-line backend swap, but is smoked only; the budget does not fit a fifth run"
+    "native_jepa": "configs/apple_wm_v4.yaml exists and is the one-line backend swap, but is smoked only; the budget does not fit a fifth run. Its leworldmodel block is arm B's verbatim; its native_jepa block differs from v3's by the camera list, since v4 is one camera throughout."
   },
   "overall": null,
   "pre_declared_outcomes": {
-    "A_some_arm_g2a_below_0_8": "CEM over this cost is kept; the winning arm (lowest G2a, ties by lower G9 then lower G1) is carried forward; the next protocol attacks the ENCODER term, with the single-frame 224 px information-ceiling measurement as the primary line. The closed loop still does not start.",
-    "B_no_arm_g2a_below_0_8": "The control-formulation clause recorded by TASK-052 fires as written and is not deferred again: behaviour cloning with the world model as a critic or residual becomes the primary line, CEM over this cost is abandoned, and no further predictor-architecture protocol is preregistered.",
-    "C_baseline_E0_also_below_0_8": "The change is revision or run-to-run variation, not any intervention; no intervention is credited and this becomes the headline. The next protocol is a replication of the baseline at >= 3 seeds before any further architecture work."
+    "A_some_arm_other_than_E0_passes_g2a": "CEM over this cost is kept; the winning arm (lowest G2a, ties by lower G9 then lower G1) is carried forward; the next protocol attacks the ENCODER term, with the single-frame 224 px information-ceiling measurement as the primary line. The closed loop still does not start.",
+    "B_no_arm_passes_g2a": "The control-formulation clause recorded by TASK-052 fires as written and is not deferred again: behaviour cloning with the world model as a critic or residual becomes the primary line, CEM over this cost is abandoned, and no further predictor-architecture protocol is preregistered.",
+    "C_baseline_E0_passes_g2a": "Takes precedence over A. The change is revision or run-to-run variation, not any intervention; no intervention is credited and this becomes the headline. The next protocol is a replication of the baseline at >= 3 seeds before any further architecture work.",
+    "passes_g2a_means": "the G2a gate passes, i.e. the value is <= 0.8, as the gate computes it"
+  },
+  "pre_run_review": {
+    "all_fixed_before_any_gated_run": true,
+    "blockers": [
+      "E1 is conditioned on actions 0..10 at the gate horizon while E0/E2/E3 see 0..7; undeclared",
+      "two v3 G1 values were mistranscribed in this manifest (5.0e-8 and 3.9e-8 m off)",
+      "the G9 derivation overstated the threshold as 3x contrasts it is 1.0-1.6x, and claimed it restores v2's level",
+      "the runner did not implement the declared selection_failed fallback and skipped time_budget arms",
+      "the document's frozen train command omitted --output, so artifacts would land in the disposable worktree"
+    ],
+    "verdict_before_amendment": "BLOCK"
   },
   "predecessor": {
     "manifest": "benchmarks/manifests/apple-world-model-v3.json",
