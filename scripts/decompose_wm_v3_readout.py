@@ -51,6 +51,15 @@ from embodied_jepa.world_model_v2 import (
 
 
 def _median(values):
+    """The evaluator's median, dtype and all.
+
+    The cast is load-bearing, not cosmetic: with an even-sized cohort ``np.median``
+    averages the two middle elements, and in float32 that average rounds differently.
+    Without it this script's ``rollout`` term misses the published gate value by about
+    4 nm on one of the four arms, which would break the cross-check that the cohort is
+    the gate's own. Matches ``world_model_v2._median``.
+    """
+    values = np.asarray(values, np.float64)
     return float(np.median(values)) if len(values) else None
 
 
@@ -173,7 +182,9 @@ def main():
         "checkpoint_sha256": _sha256(checkpoint),
         "checkpoint_step": envelope["metadata"].get("runner_state", {}).get("step"),
         "model_implementation_sha256": model.implementation_sha256,
-        "analysis_source": source_identity(),
+        # source_identity() hashes src/embodied_jepa only, so it does not cover this
+        # script; hash it separately or the report pins none of the code that wrote it.
+        "analysis_source": source_identity() | {"script_sha256": _sha256(Path(__file__))},
         "provenance": envelope["metadata"],
         "val_episodes": len(arrays.episode_ids),
         "val_observations": int(len(arrays.states)),
