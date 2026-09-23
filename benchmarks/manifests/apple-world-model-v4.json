@@ -100,6 +100,29 @@
     "v3_arm_D_persistence_m": 0.03977133519947529,
     "v3_arm_D_rollout_excess_m": 0.008348481729626656
   },
+  "contrasts_difference_of_medians_m": {
+    "E1_action_chunk_minus_E0": {
+      "encoded_start": 1.1498108506202698e-05,
+      "encoded_target": -0.0004992391914129257,
+      "persistence": -0.00012711994349956512,
+      "rollout": 9.866058826446533e-05,
+      "rollout_excess": 0.000597899779677391
+    },
+    "E2_multistep_tail_weight_minus_E0": {
+      "encoded_start": 0.00044168904423713684,
+      "encoded_target": -0.00017929263412952423,
+      "persistence": -0.0013807155191898346,
+      "rollout": -0.001726500689983368,
+      "rollout_excess": -0.0015472080558538437
+    },
+    "E3_predictor_step_embedding_minus_E0": {
+      "encoded_start": 0.009626463055610657,
+      "encoded_target": 0.010227560997009277,
+      "persistence": 0.0071611665189266205,
+      "rollout": 0.007606798782944679,
+      "rollout_excess": -0.002620762214064598
+    }
+  },
   "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
   "frozen": {
     "arm_order": [
@@ -311,7 +334,213 @@
   "not_frozen_arms": {
     "native_jepa": "configs/apple_wm_v4.yaml exists and is the one-line backend swap, but is smoked only; the budget does not fit a fifth run. Its leworldmodel block is arm B's verbatim; its native_jepa block differs from v3's by the camera list, since v4 is one camera throughout."
   },
-  "overall": null,
+  "overall": {
+    "closed_loop_started": false,
+    "consequence": "The control-formulation clause recorded by TASK-052 fires as written and is not deferred again: behaviour cloning with the world model as a critic or residual becomes the primary line, CEM over this cost is ABANDONED, and no further predictor-architecture protocol is preregistered.",
+    "control_passed_more_gates_than_every_intervention": true,
+    "e0_reproduces_v3_arm_b_bit_for_bit": "all 13 carried gates identical as exact floats, all 11 decomposition quantities identical, and all 170 weight tensors bit-identical after 15,000 MPS training steps; best_selection_score identical to full precision. The three new options are inert at their defaults end to end.",
+    "learned_apple_to_plate_successes": 0,
+    "measured_training_seconds_total": 14469.777884688694,
+    "outcome_fired": "B_no_arm_passes_g2a",
+    "primary_gate": "G2a_vs_persistence_h8",
+    "primary_gate_threshold": 0.8,
+    "primary_gate_values": {
+      "E0_baseline_arm_b_rerun": 0.8763473937806117,
+      "E1_action_chunk": 0.8814090116535707,
+      "E2_multistep_tail_weight": 0.8635138900073215,
+      "E3_predictor_step_embedding": 0.9036306629871799
+    },
+    "verdict": "all four arms FAIL"
+  },
+  "paired_bootstrap": {
+    "contrasts": {
+      "E1_minus_E0_action_chunk_encoded_target": {
+        "baseline_arm": "E0",
+        "changed_arm": "E1",
+        "cluster": {
+          "ci95_m": [
+            -0.003338087978772819,
+            0.002263119816780089
+          ],
+          "crosses_zero": true
+        },
+        "field": "encoded_target",
+        "iid": {
+          "ci95_m": [
+            -0.002114554075524211,
+            0.0011980375275015822
+          ],
+          "crosses_zero": true
+        },
+        "point_m": -0.0004992391914129257
+      },
+      "E1_minus_E0_action_chunk_rollout": {
+        "baseline_arm": "E0",
+        "changed_arm": "E1",
+        "cluster": {
+          "ci95_m": [
+            -0.004065530654042959,
+            0.0036677630152553297
+          ],
+          "crosses_zero": true
+        },
+        "field": "rollout",
+        "iid": {
+          "ci95_m": [
+            -0.002057129517197609,
+            0.0020470712333917618
+          ],
+          "crosses_zero": true
+        },
+        "point_m": 9.866058826446533e-05
+      },
+      "E1_minus_E0_action_chunk_rollout_excess": {
+        "baseline_arm": "E0",
+        "changed_arm": "E1",
+        "cluster": {
+          "ci95_m": [
+            -0.0008598900400102139,
+            0.002384338300907983
+          ],
+          "crosses_zero": true
+        },
+        "field": "rollout_excess",
+        "iid": {
+          "ci95_m": [
+            -0.0002836900064721703,
+            0.0016899066045880312
+          ],
+          "crosses_zero": true
+        },
+        "point_m": 0.00048334081657230854
+      },
+      "E2_minus_E0_multistep_tail_weight_encoded_target": {
+        "baseline_arm": "E0",
+        "changed_arm": "E2",
+        "cluster": {
+          "ci95_m": [
+            -0.0036771966144442557,
+            0.002089283405803143
+          ],
+          "crosses_zero": true
+        },
+        "field": "encoded_target",
+        "iid": {
+          "ci95_m": [
+            -0.0021571591962128876,
+            0.0013074999907985306
+          ],
+          "crosses_zero": true
+        },
+        "point_m": -0.00017929263412952423
+      },
+      "E2_minus_E0_multistep_tail_weight_rollout": {
+        "baseline_arm": "E0",
+        "changed_arm": "E2",
+        "cluster": {
+          "ci95_m": [
+            -0.008042011223733426,
+            0.0013243881985545152
+          ],
+          "crosses_zero": true
+        },
+        "field": "rollout",
+        "iid": {
+          "ci95_m": [
+            -0.004162046639248729,
+            -5.8958632871510034e-05
+          ],
+          "crosses_zero": false
+        },
+        "point_m": -0.001726500689983368
+      },
+      "E2_minus_E0_multistep_tail_weight_rollout_excess": {
+        "baseline_arm": "E0",
+        "changed_arm": "E2",
+        "cluster": {
+          "ci95_m": [
+            -0.0013425291748717428,
+            0.0013432338600978234
+          ],
+          "crosses_zero": true
+        },
+        "field": "rollout_excess",
+        "iid": {
+          "ci95_m": [
+            -0.0008741895144339651,
+            0.00097009859746322
+          ],
+          "crosses_zero": true
+        },
+        "point_m": -0.0001028096885420382
+      },
+      "E3_minus_E0_predictor_step_embedding_encoded_target": {
+        "baseline_arm": "E0",
+        "changed_arm": "E3",
+        "cluster": {
+          "ci95_m": [
+            0.004846799094229937,
+            0.014348779339343306
+          ],
+          "crosses_zero": false
+        },
+        "field": "encoded_target",
+        "iid": {
+          "ci95_m": [
+            0.0076362035702914,
+            0.01219575377181172
+          ],
+          "crosses_zero": false
+        },
+        "point_m": 0.010227560997009277
+      },
+      "E3_minus_E0_predictor_step_embedding_rollout": {
+        "baseline_arm": "E0",
+        "changed_arm": "E3",
+        "cluster": {
+          "ci95_m": [
+            0.0015540417283773423,
+            0.011985506629571313
+          ],
+          "crosses_zero": false
+        },
+        "field": "rollout",
+        "iid": {
+          "ci95_m": [
+            0.004701746394857764,
+            0.009953313274309037
+          ],
+          "crosses_zero": false
+        },
+        "point_m": 0.007606798782944679
+      },
+      "E3_minus_E0_predictor_step_embedding_rollout_excess": {
+        "baseline_arm": "E0",
+        "changed_arm": "E3",
+        "cluster": {
+          "ci95_m": [
+            -0.0019592985045164824,
+            0.00278709408594295
+          ],
+          "crosses_zero": true
+        },
+        "field": "rollout_excess",
+        "iid": {
+          "ci95_m": [
+            -0.0005921673495322466,
+            0.0016928747238125648
+          ],
+          "crosses_zero": true
+        },
+        "point_m": 0.0004664398729801178
+      }
+    },
+    "episodes_with_moving_windows": 67,
+    "moving_windows": 1462,
+    "no_interval_for_the_g9_contrast": "the bootstrap's rollout_excess field resamples the median of the per-window difference (rollout - encoded_target); gate G9 is the difference of the two medians. They differ substantially here (E2-E0: -0.010 cm against -0.155 cm), so no interval on the G9 contrast is available from this run. No gate reads a bootstrap output.",
+    "read_design": "cluster",
+    "report": "outputs/task054-wm-v4/paired-bootstrap.json"
+  },
   "pre_declared_outcomes": {
     "A_some_arm_other_than_E0_passes_g2a": "CEM over this cost is kept; the winning arm (lowest G2a, ties by lower G9 then lower G1) is carried forward; the next protocol attacks the ENCODER term, with the single-frame 224 px information-ceiling measurement as the primary line. The closed loop still does not start.",
     "B_no_arm_passes_g2a": "The control-formulation clause recorded by TASK-052 fires as written and is not deferred again: behaviour cloning with the world model as a critic or residual becomes the primary line, CEM over this cost is abandoned, and no further predictor-architecture protocol is preregistered.",
@@ -335,11 +564,393 @@
     "protocol": "apple_world_model_v3",
     "task": "TASK-052"
   },
+  "preregistration_defects_found_after_launch": {
+    "1_pilot_pass_sets_contradiction": "the G9 rationale in docs/experiments/apple_world_model_v4.md says the four 120-step timing pilots were 'failing G2a and every other gate'. Measured, each passed five of fourteen (E0/E2/E3: G4, G5, G8a, G8c, G9; E1: G5, G7b, G8a, G8c, G9). The same document's Pilots section and this manifest state it correctly. The argument the claim supports survives: all four passed G9 while failing G2a.",
+    "2_outcome_a_provisional_clause_missing_here": "the protocol document's Outcome A carries a provisional clause for the case where E1 is the only arm passing G2a; pre_declared_outcomes in this manifest does not, because the generation script's guard forbids changing that block. Moot in the event: Outcome A did not fire.",
+    "not_silently_fixed": "both were found by the pre-run reviewer AFTER the runs started, so the preregistration was left as it was and both are recorded in the results document. Documentation only: no code reads either text and no gate value depends on them."
+  },
   "protocol": "apple_world_model_v4",
   "protocol_doc": "docs/experiments/apple_world_model_v4.md",
-  "results": null,
+  "results": {
+    "E0_baseline_arm_b_rerun": {
+      "all_passed": false,
+      "best_selection_score_m": 0.035446153953671455,
+      "best_step": 15000,
+      "checkpoint_sha256": "01ba8d0500feaabae858ec6457b05fa60e1e87e4dcbf5982e673949f4770d2ea",
+      "checkpoint_step": 15000,
+      "completed_steps": 15000,
+      "decomposition_h8": {
+        "encoded_start_median_m": 0.023536449298262596,
+        "encoded_target_median_m": 0.025902658700942993,
+        "encoder_share_of_rollout": 0.7100387288727699,
+        "horizon": 8,
+        "moving_threshold_m": 0.01,
+        "moving_windows": 1462,
+        "persistence_median_m": 0.041628044098615646,
+        "rollout_excess_median_m": 0.010577969253063202,
+        "rollout_median_m": 0.036480627954006195,
+        "true_displacement_median_m": 0.02488404791802168,
+        "valid_windows": 3961
+      },
+      "elapsed_seconds": 3511.825849500019,
+      "evaluation_revision": "c9cf9a6a063f652b128789630fd8849c7cd5ff82",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.036480627954006195
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 0.8763473937806117
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.665597630770861
+        },
+        "G3_apple_plate_h8": {
+          "passed": true,
+          "value": 0.019729092717170715
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.001485094428062439
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.9994916015732763
+        },
+        "G6a_within_state_ranking_spearman_h16": {
+          "passed": true,
+          "value": 0.5437661498708012
+        },
+        "G6b_top1_regret_h16": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": false,
+          "value": 0.6981132075471698
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.5765935948688663
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 7.743311615295621
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 0.8676754186570551
+        },
+        "G9_rollout_excess_h8": {
+          "passed": false,
+          "value": 0.010577969253063202
+        }
+      },
+      "gates_passed": 10,
+      "gates_total": 14,
+      "model_implementation_sha256": "4ad0a6856d847aaf724daba5e721c078ee599658d4733357ab8703eccbb15a92",
+      "model_parameters": 2415398,
+      "peak_host_rss_bytes": 9114042368,
+      "process_cpu_seconds": 1531.0160480000002,
+      "python_source_sha256": "3cb9c6f1df075733ccd6b25a536eff8e0a0528e638b2d916c8ccbca0cc6c5b6f",
+      "status": "completed",
+      "test_episodes_decoded": 0,
+      "training_dirty": false,
+      "training_revision": "46d62eb6732053c9a8f16dde4e5b98f354b136a2"
+    },
+    "E1_action_chunk": {
+      "all_passed": false,
+      "best_selection_score_m": 0.036158863455057144,
+      "best_step": 14000,
+      "checkpoint_sha256": "ccc8a77e5974e75930f164742b5e877f645d20518fd5078f4ddbd93e0e37b4ea",
+      "checkpoint_step": 14000,
+      "completed_steps": 15000,
+      "decomposition_h8": {
+        "encoded_start_median_m": 0.0235479474067688,
+        "encoded_target_median_m": 0.025403419509530067,
+        "encoder_share_of_rollout": 0.6944754947919266,
+        "horizon": 8,
+        "moving_threshold_m": 0.01,
+        "moving_windows": 1462,
+        "persistence_median_m": 0.04150092415511608,
+        "rollout_excess_median_m": 0.011175869032740593,
+        "rollout_median_m": 0.03657928854227066,
+        "true_displacement_median_m": 0.02488404791802168,
+        "valid_windows": 3961
+      },
+      "elapsed_seconds": 3884.223305940628,
+      "evaluation_revision": "c9cf9a6a063f652b128789630fd8849c7cd5ff82",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.03657928854227066
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 0.8814090116535707
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.6908029892182798
+        },
+        "G3_apple_plate_h8": {
+          "passed": true,
+          "value": 0.01837739162147045
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.0013385787606239319
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.999613774838613
+        },
+        "G6a_within_state_ranking_spearman_h16": {
+          "passed": false,
+          "value": 0.28645833333333337
+        },
+        "G6b_top1_regret_h16": {
+          "passed": true,
+          "value": 0.0022816638359012403
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": false,
+          "value": 0.6320754716981132
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.6263893159952554
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 8.228224613695252
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 0.8691180674098771
+        },
+        "G9_rollout_excess_h8": {
+          "passed": false,
+          "value": 0.011175869032740593
+        }
+      },
+      "gates_passed": 9,
+      "gates_total": 14,
+      "model_implementation_sha256": "4ad0a6856d847aaf724daba5e721c078ee599658d4733357ab8703eccbb15a92",
+      "model_parameters": 2462886,
+      "peak_host_rss_bytes": 9130590208,
+      "process_cpu_seconds": 1582.56454,
+      "python_source_sha256": "3cb9c6f1df075733ccd6b25a536eff8e0a0528e638b2d916c8ccbca0cc6c5b6f",
+      "status": "completed",
+      "test_episodes_decoded": 0,
+      "training_dirty": false,
+      "training_revision": "c9cf9a6a063f652b128789630fd8849c7cd5ff82"
+    },
+    "E2_multistep_tail_weight": {
+      "all_passed": false,
+      "best_selection_score_m": 0.033651748672127724,
+      "best_step": 15000,
+      "checkpoint_sha256": "6f4c02b42746ba5564e58be858248837644dadd470dba7a62fb78caf04493a62",
+      "checkpoint_step": 15000,
+      "completed_steps": 15000,
+      "decomposition_h8": {
+        "encoded_start_median_m": 0.023978138342499733,
+        "encoded_target_median_m": 0.02572336606681347,
+        "encoder_share_of_rollout": 0.7401528420321484,
+        "horizon": 8,
+        "moving_threshold_m": 0.01,
+        "moving_windows": 1462,
+        "persistence_median_m": 0.04024732857942581,
+        "rollout_excess_median_m": 0.009030761197209358,
+        "rollout_median_m": 0.03475412726402283,
+        "true_displacement_median_m": 0.02488404791802168,
+        "valid_windows": 3961
+      },
+      "elapsed_seconds": 3553.03653717041,
+      "evaluation_revision": "c9cf9a6a063f652b128789630fd8849c7cd5ff82",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.03475412726402283
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 0.8635138900073215
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.6879408632370181
+        },
+        "G3_apple_plate_h8": {
+          "passed": true,
+          "value": 0.01845325157046318
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.0016721717547625303
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.9996531855693668
+        },
+        "G6a_within_state_ranking_spearman_h16": {
+          "passed": false,
+          "value": 0.3296188630490957
+        },
+        "G6b_top1_regret_h16": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": false,
+          "value": 0.660377358490566
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.5805803277248166
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 8.011347344938336
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 0.849974935086329
+        },
+        "G9_rollout_excess_h8": {
+          "passed": false,
+          "value": 0.009030761197209358
+        }
+      },
+      "gates_passed": 9,
+      "gates_total": 14,
+      "model_implementation_sha256": "4ad0a6856d847aaf724daba5e721c078ee599658d4733357ab8703eccbb15a92",
+      "model_parameters": 2415398,
+      "peak_host_rss_bytes": 8966569984,
+      "process_cpu_seconds": 1574.7102140000002,
+      "python_source_sha256": "3cb9c6f1df075733ccd6b25a536eff8e0a0528e638b2d916c8ccbca0cc6c5b6f",
+      "status": "completed",
+      "test_episodes_decoded": 0,
+      "training_dirty": false,
+      "training_revision": "c9cf9a6a063f652b128789630fd8849c7cd5ff82"
+    },
+    "E3_predictor_step_embedding": {
+      "all_passed": false,
+      "best_selection_score_m": 0.0422462522983551,
+      "best_step": 8000,
+      "checkpoint_sha256": "e6bf4aaabac84c116997a678ed0ba6433b6407683d1a1dd2f477d870fb6ac8ac",
+      "checkpoint_step": 8000,
+      "completed_steps": 15000,
+      "decomposition_h8": {
+        "encoded_start_median_m": 0.03316291235387325,
+        "encoded_target_median_m": 0.03613021969795227,
+        "encoder_share_of_rollout": 0.8195130079495102,
+        "horizon": 8,
+        "moving_threshold_m": 0.01,
+        "moving_windows": 1462,
+        "persistence_median_m": 0.04878921061754227,
+        "rollout_excess_median_m": 0.007957207038998604,
+        "rollout_median_m": 0.044087426736950874,
+        "true_displacement_median_m": 0.02488404791802168,
+        "valid_windows": 3961
+      },
+      "elapsed_seconds": 3520.6921920776367,
+      "evaluation_revision": "c9cf9a6a063f652b128789630fd8849c7cd5ff82",
+      "gates": {
+        "G1_palm_apple_moving_h8": {
+          "passed": false,
+          "value": 0.044087426736950874
+        },
+        "G2a_vs_persistence_h8": {
+          "passed": false,
+          "value": 0.9036306629871799
+        },
+        "G2b_vs_shuffled_actions_h8": {
+          "passed": true,
+          "value": 0.7571365074886733
+        },
+        "G3_apple_plate_h8": {
+          "passed": false,
+          "value": 0.02394501306116581
+        },
+        "G4_apple_height_grasp_h8": {
+          "passed": true,
+          "value": 0.0025985962711274624
+        },
+        "G5_held_auroc_lift_h8": {
+          "passed": true,
+          "value": 0.999152669288794
+        },
+        "G6a_within_state_ranking_spearman_h16": {
+          "passed": false,
+          "value": 0.41408268733850134
+        },
+        "G6b_top1_regret_h16": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G7a_sibling_own_beats_swapped_h16": {
+          "passed": true,
+          "value": 0.7264150943396226
+        },
+        "G7b_sibling_divergence_spearman_h16": {
+          "passed": true,
+          "value": 0.6358234854808242
+        },
+        "G8a_collapsed_fraction": {
+          "passed": true,
+          "value": 0.0
+        },
+        "G8b_effective_rank": {
+          "passed": true,
+          "value": 6.742048506781978
+        },
+        "G8c_latent_std_mean": {
+          "passed": true,
+          "value": 0.8728386940114421
+        },
+        "G9_rollout_excess_h8": {
+          "passed": false,
+          "value": 0.007957207038998604
+        }
+      },
+      "gates_passed": 9,
+      "gates_total": 14,
+      "model_implementation_sha256": "4ad0a6856d847aaf724daba5e721c078ee599658d4733357ab8703eccbb15a92",
+      "model_parameters": 2423590,
+      "peak_host_rss_bytes": 8776794112,
+      "process_cpu_seconds": 1551.871873,
+      "python_source_sha256": "3cb9c6f1df075733ccd6b25a536eff8e0a0528e638b2d916c8ccbca0cc6c5b6f",
+      "status": "completed",
+      "test_episodes_decoded": 0,
+      "training_dirty": false,
+      "training_revision": "c9cf9a6a063f652b128789630fd8849c7cd5ff82"
+    }
+  },
   "results_doc": "docs/experiments/apple_world_model_v4_results.md",
-  "status": "preregistered",
+  "runner_incident": {
+    "budget_not_changed": true,
+    "cause": "`status` is a read-only special variable in zsh aliased to `?`, so the `status=$?` idiom raised 'read-only variable: status' and killed the script. The error went to the launching shell's stderr, not the runner log.",
+    "fix_commit_message": "fix(scripts): stop the v4 runner dying on zsh's read-only `status`, and make it resumable",
+    "nothing_retrained_or_overwritten": "E0's training artifacts were complete and valid; the fixed runner skipped its training and evaluated the existing checkpoint. train refuses to overwrite training artifacts and evaluate refuses to overwrite a report.",
+    "provenance_consequence": "E0 trained at 46d62eb; E1/E2/E3 and all four evaluations at the fix commit. The python_source_sha256 and model_implementation_sha256 are identical across every run and evaluation, and the protocol doc and this manifest are byte-identical between the two commits.",
+    "what": "the first launch of scripts/run_apple_wm_v4.sh died silently after E0's training and before any evaluation"
+  },
+  "status": "executed_once",
   "task": "TASK-054",
   "verification": null
 }
