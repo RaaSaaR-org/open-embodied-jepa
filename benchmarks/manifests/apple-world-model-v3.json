@@ -73,18 +73,89 @@
   },
   "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
   "decomposition": {
+    "bootstrap_script": "scripts/bootstrap_wm_v3_contrasts.py",
+    "cross_check": "the rollout term equals each arm's published G1 bit-for-bit, and persistence, true displacement, valid_windows and moving_windows all match the frozen gate reports exactly -- 20 checks over the four arms",
     "encoded_target_median_m": {
-      "A_lewm_two_camera": 0.06310060620307922,
+      "A_lewm_two_camera": 0.06310060992836952,
       "B_lewm_onboard_only": 0.025902658700942993,
-      "C_lewm_v2_readout": 0.054526932537555695,
+      "C_lewm_v2_readout": 0.054526930674910545,
       "D_lewm_fine_patches": 0.02469455637037754,
       "v2_lewm_onboard": 0.0326
     },
     "measurement": "palm_apple encoder vs rollout split at h=8 on the gate's moving cohort",
-    "paired_bootstrap": "outputs/task052-decomposition/paired-bootstrap.json",
-    "reports": "outputs/task052-decomposition/",
+    "paired_bootstrap": "outputs/task052-decomposition-final/paired-bootstrap.json",
+    "paired_bootstrap_contrasts": {
+      "A_minus_B_second_camera_encoded_target": {
+        "baseline_arm": "B",
+        "changed_arm": "A",
+        "ci95_m": [
+          0.03294339266140014,
+          0.04135559217538685
+        ],
+        "crosses_zero": false,
+        "field": "encoded_target",
+        "point_m": 0.03719795122742653
+      },
+      "A_minus_B_second_camera_rollout": {
+        "baseline_arm": "B",
+        "changed_arm": "A",
+        "ci95_m": [
+          0.023851260542869568,
+          0.03461635969579219
+        ],
+        "crosses_zero": false,
+        "field": "rollout",
+        "point_m": 0.029695231467485428
+      },
+      "C_minus_A_drop_readout_shaping_encoded_target": {
+        "baseline_arm": "A",
+        "changed_arm": "C",
+        "ci95_m": [
+          -0.012337605701759458,
+          -0.004328849678859118
+        ],
+        "crosses_zero": false,
+        "field": "encoded_target",
+        "point_m": -0.008573679253458977
+      },
+      "C_minus_A_drop_readout_shaping_rollout": {
+        "baseline_arm": "A",
+        "changed_arm": "C",
+        "ci95_m": [
+          -0.009593544201925397,
+          0.001214493066072464
+        ],
+        "crosses_zero": true,
+        "field": "rollout",
+        "point_m": -0.0050483569502830505
+      },
+      "D_minus_B_patch_14_to_8_encoded_target": {
+        "baseline_arm": "B",
+        "changed_arm": "D",
+        "ci95_m": [
+          -0.0033317658584564925,
+          0.0003124437294900403
+        ],
+        "crosses_zero": true,
+        "field": "encoded_target",
+        "point_m": -0.0012081023305654526
+      },
+      "D_minus_B_patch_14_to_8_rollout": {
+        "baseline_arm": "B",
+        "changed_arm": "D",
+        "ci95_m": [
+          -0.006293151667341589,
+          -0.0013489713892340675
+        ],
+        "crosses_zero": false,
+        "field": "rollout",
+        "point_m": -0.003437589854001999
+      }
+    },
+    "reports": "outputs/task052-decomposition-final/",
     "script": "scripts/decompose_wm_v3_readout.py",
-    "v2_reference_source": "docs/experiments/apple_world_model_v2_results.md -- carried over, not recomputed; the v2 checkpoints were written by a different model implementation and this code will not load them"
+    "superseded_runs": "outputs/task052-decomposition/ and outputs/task052-decomposition-v2/ are earlier runs of the same measurement kept as evidence; the first used a float32 median that missed arm A's published G1 by about 4 nm, the second fixed that but was written from a dirty tree. The -final set is the published one.",
+    "v2_reference_source": "docs/experiments/apple_world_model_v2_results.md -- carried over, not recomputed; the v2 checkpoints were written by a different model implementation (885cf114... against v3's 649cc143...) and this code will not load them. The v2 row is on the same corpus, split, action manifest and cohort (3,961 valid / 1,462 moving windows, identical true-displacement median)."
   },
   "frozen": {
     "gates": {
@@ -170,6 +241,7 @@
       "the paired bootstrap over the 1,462 moving windows treats stride-4 windows from 80 val episodes as independent and so understates uncertainty; a second, more conservative independent resampling reproduced the point estimates but left C-A and D-B crossing zero, and that disagreement is unresolved, so only the A-B camera gap is treated as larger than its sampling noise"
     ],
     "closed_loop_started": false,
+    "follow_up_pull_request": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/28",
     "gates_passed_of_13": {
       "A_lewm_two_camera": 8,
       "B_lewm_onboard_only": 10,
@@ -193,7 +265,6 @@
   },
   "protocol": "apple_world_model_v3",
   "protocol_doc": "docs/experiments/apple_world_model_v3.md",
-  "pull_request": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/27",
   "results": {
     "A_lewm_two_camera": {
       "backend": "leworldmodel",
@@ -223,18 +294,18 @@
       "config": "configs/apple_wm_v3_lewm.yaml",
       "decomposition_h8": {
         "encoded_start_median_m": 0.05133862793445587,
-        "encoded_target_median_m": 0.06310060620307922,
-        "encoder_share_of_rollout": 0.9535290240660466,
+        "encoded_target_median_m": 0.06310060992836952,
+        "encoder_share_of_rollout": 0.95352913403761,
         "horizon": 8,
         "moving_threshold_m": 0.01,
         "moving_windows": 1462,
-        "persistence_median_m": 0.06550911068916321,
-        "rollout_excess_median_m": 0.0030752569437026978,
-        "rollout_median_m": 0.06617586314678192,
-        "true_displacement_median_m": 0.024884048849344254,
+        "persistence_median_m": 0.06550910696387291,
+        "rollout_excess_median_m": 0.003075249493122101,
+        "rollout_median_m": 0.06617585942149162,
+        "true_displacement_median_m": 0.02488404791802168,
         "valid_windows": 3961
       },
-      "decomposition_report": "outputs/task052-decomposition/leworldmodel.json",
+      "decomposition_report": "outputs/task052-decomposition-final/leworldmodel.json",
       "device": "mps",
       "elapsed_seconds": 5404.9965670108795,
       "environment": {
@@ -419,10 +490,10 @@
         "persistence_median_m": 0.041628044098615646,
         "rollout_excess_median_m": 0.010577969253063202,
         "rollout_median_m": 0.036480627954006195,
-        "true_displacement_median_m": 0.024884048849344254,
+        "true_displacement_median_m": 0.02488404791802168,
         "valid_windows": 3961
       },
-      "decomposition_report": "outputs/task052-decomposition/leworldmodel_onboard.json",
+      "decomposition_report": "outputs/task052-decomposition-final/leworldmodel_onboard.json",
       "device": "mps",
       "elapsed_seconds": 3512.807870864868,
       "environment": {
@@ -599,19 +670,19 @@
       "completed_steps": 15000,
       "config": "configs/apple_wm_v3_lewm_v2_readout.yaml",
       "decomposition_h8": {
-        "encoded_start_median_m": 0.04582866281270981,
-        "encoded_target_median_m": 0.054526932537555695,
-        "encoder_share_of_rollout": 0.8920196365496564,
+        "encoded_start_median_m": 0.04582866095006466,
+        "encoded_target_median_m": 0.054526930674910545,
+        "encoder_share_of_rollout": 0.8920196060781816,
         "horizon": 8,
         "moving_threshold_m": 0.01,
         "moving_windows": 1462,
-        "persistence_median_m": 0.06502169370651245,
-        "rollout_excess_median_m": 0.006600569933652878,
+        "persistence_median_m": 0.06502169743180275,
+        "rollout_excess_median_m": 0.006600571796298027,
         "rollout_median_m": 0.06112750247120857,
-        "true_displacement_median_m": 0.024884048849344254,
+        "true_displacement_median_m": 0.02488404791802168,
         "valid_windows": 3961
       },
-      "decomposition_report": "outputs/task052-decomposition/leworldmodel_v2_readout.json",
+      "decomposition_report": "outputs/task052-decomposition-final/leworldmodel_v2_readout.json",
       "device": "mps",
       "elapsed_seconds": 5363.402680158615,
       "environment": {
@@ -793,13 +864,13 @@
         "horizon": 8,
         "moving_threshold_m": 0.01,
         "moving_windows": 1462,
-        "persistence_median_m": 0.03977133333683014,
+        "persistence_median_m": 0.03977133519947529,
         "rollout_excess_median_m": 0.008348481729626656,
         "rollout_median_m": 0.033043038100004196,
-        "true_displacement_median_m": 0.024884048849344254,
+        "true_displacement_median_m": 0.02488404791802168,
         "valid_windows": 3961
       },
-      "decomposition_report": "outputs/task052-decomposition/leworldmodel_fine.json",
+      "decomposition_report": "outputs/task052-decomposition-final/leworldmodel_fine.json",
       "device": "mps",
       "elapsed_seconds": 7380.602501869202,
       "environment": {
@@ -962,14 +1033,15 @@
       "the selection rule replays exactly (best eligible steps 10000/15000/10000/13000) and the gates used <arm>.pt, not <arm>.latest.pt",
       "provenance complete for every arm: revision, source hash, dataset/split/action hashes, checkpoint hashes, seed, device, budget, elapsed and steps",
       "one-factor isolation: only cameras, patch_size, readout_moving_weight and readout_auxiliary_weight differ anywhere in the design; A vs B differs in cameras alone (16,384 parameters = one 128x128 projection)",
-      "the encoder/rollout decomposition was re-derived from the four checkpoints with scripts/decompose_wm_v3_readout.py; its rollout column reproduces each published G1 to full float precision on the identical 1,462 moving windows"
+      "the encoder/rollout decomposition was re-derived from the four checkpoints with scripts/decompose_wm_v3_readout.py; its rollout term equals each arm's published G1 bit-for-bit, and persistence, true displacement and both cohort counts match the frozen gate reports exactly (20 checks over four arms)"
     ],
     "corrections_applied": [
       "the patch size is 14 for arms A/B/C, not 16",
       "arm D is onboard-only and its config extends arm B, so the controlled resolution contrast is B vs D, not A vs D",
       "arm C removes the motion weighting AND the auxiliary readouts together, so they cannot be separated",
       "10800 s is the frozen per-arm budget; 5405 s is arm A's elapsed time",
-      "branch 4's inference (data / information ceiling) withdrawn in favour of branch 2 (action conditioning), on the evidence of the encoder/rollout decomposition"
+      "branch 4's inference (data / information ceiling) withdrawn in favour of branch 2 (action conditioning), on the evidence of the encoder/rollout decomposition",
+      "an independent review of the follow-up caught a float32 median that missed arm A's published G1 by about 4 nm, and a bootstrap published without code or provenance; the median now matches the evaluator's dtype, the bootstrap script is committed, and both reports carry a script hash"
     ],
     "method": "fresh-context post-run verifier, re-derived from the raw artifacts only"
   }

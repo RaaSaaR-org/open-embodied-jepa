@@ -80,23 +80,31 @@ perfect predictor could reach -- is 6.31 / 2.59 / 5.45 / 2.47 cm for A/B/C/D aga
 while the rollout's excess over it is 0.31 / 1.06 / 0.66 / 0.83 cm against v2's 0.39 cm. The
 one-camera encoders improved 21-24 % over v2 and the prediction step got two to three times worse:
 the error moved out of the encoder and into the rollout. Re-derived here from the checkpoints with
-`scripts/decompose_wm_v3_readout.py`; the rollout column reproduces each published G1 exactly.
+`scripts/decompose_wm_v3_readout.py`; its rollout term equals each published G1 bit-for-bit, as do
+persistence, the true-displacement median and both cohort counts (20 checks over four arms).
 
 **Pre-declared next steps, applied as written then corrected on the decomposition's evidence:**
 branch 2 (redesign the action conditioning) is triggered for arms A and B, where G7a fails.
 Branch 4's *premise* holds for arms C and D (G2a does not improve over v2's 0.835), but its
 *inference* -- that the evidence points at the data, remedy an information-ceiling measurement --
 is **withdrawn**: no ceiling has been demonstrated, since modest architectural changes improved
-the encoder. Branch 2 is the primary next line, on one camera, preregistered anew. The
+the encoder. Branch 2 is the primary next line, on one camera, preregistered anew -- and it was
+already the rule's answer, since the protocol picks the *earliest* failing group and G7a (branch 2,
+position 2) fails on A and B while branch 4 sits at position 4. The
 single-frame ceiling measurement is demoted to a cheap side-check rather than dropped, because
 arm D's 2.47 cm encoded-target error alone still exceeds the 1.5 cm gate -- a perfect predictor
 would fail G1 too. The protocol's control-formulation clause is **triggered** (G2a >= 0.8 on all
-four arms) and sequenced behind the action-conditioning work; newly pre-declared: if that does not
-move G2a below 0.8, behaviour cloning with the world model as a critic becomes the primary line
-and CEM over this cost is abandoned.
+four arms). Stated plainly: **the preregistered next task (behaviour cloning) is deferred by one
+protocol**, not overridden and not dropped; newly pre-declared: if the action-conditioning work
+does not move G2a below 0.8, behaviour cloning with the world model as a critic becomes the
+primary line and CEM over this cost is abandoned.
 
 An earlier version of the results document endorsed branch 4's inference. That was wrong, and
-independent verification caught it, not the author.
+independent verification caught it, not the author. A second independent review of the correction
+itself then caught two more defects: the decomposition's float32 median missed arm A's published
+G1 by about 4 nm, and the paired bootstrap had been published with no code and no provenance. Both
+are fixed -- the median now matches the evaluator's dtype and the numbers are bit-for-bit, and
+`scripts/bootstrap_wm_v3_contrasts.py` is committed with its design stated in full.
 
 ## Acceptance Criteria
 The title's "and pass preregistered offline gates" was an outcome, not a deliverable: no arm

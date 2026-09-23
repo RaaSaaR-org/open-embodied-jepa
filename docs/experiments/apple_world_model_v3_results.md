@@ -191,7 +191,9 @@ second camera), not the patch grid (−0.34 cm).**
 ### How much of each gap is cohort-sampling noise
 
 A paired bootstrap over the 1,462 moving windows (20,000 resamples, seed 20520, both arms
-resampled on the identical window indices; `outputs/task052-decomposition/paired-bootstrap.json`):
+resampled on the identical window indices; `scripts/bootstrap_wm_v3_contrasts.py`, report
+at `outputs/task052-decomposition-final/paired-bootstrap.json`, which also carries the
+resampling design and its limitation in its own `method` and `limitation` fields):
 
 | contrast | median difference | 95 % interval |
 |---|---|---|
@@ -220,9 +222,14 @@ apple at all, and how much the action-conditioned prediction step adds on top. S
 them on the identical cohort tells you *which* term failed. The measurement runs the
 public `encode`/`predict`/`readout` API over the same 1,462 moving windows
 (`scripts/decompose_wm_v3_readout.py`, reports under
-`outputs/task052-decomposition/`); the `rollout` column below reproduces each arm's
-published G1 to full float precision, which is the cross-check that the cohort is the
-gate's own.
+`outputs/task052-decomposition-final/`). **The cross-check that the cohort is the gate's
+own is that the `rollout` column below equals each arm's published G1 bit-for-bit** — as
+do `persistence`, the true-displacement median and both cohort counts: 20 checks over the
+four arms. Two earlier runs of the same measurement are kept as evidence under
+`outputs/task052-decomposition/` and `-v2/`; the first used a float32 median that missed
+arm A's G1 by about 4 nm, which an independent review caught, and the second fixed the
+dtype but ran from a dirty tree. Only the `-final` set is published, and it records
+`dirty: false` and a hash of the script that wrote it.
 
 | median, moving windows, h = 8 | encoded START | **encoded TARGET** | rollout (G1) | rollout excess | encoder share |
 |---|---|---|---|---|---|
@@ -402,8 +409,17 @@ The protocol's decision rule is applied as written, not re-interpreted after the
     single-frame readout at 224 px. **The decomposition above does not support that
     inference** (see below).
 
-**The branch-4 inference is withdrawn, and branch 2 becomes the primary line.** The
-premise of branch 4 holds — G2a did not improve — but its inference does not: the
+**The branch-4 inference is withdrawn, and branch 2 becomes the primary line.**
+
+Note first that this is *more* faithful to the pre-declared rule than the reading it
+replaces, not less. The protocol says the next protocol is "chosen by the **earliest
+failing group**, in this order", and lists branch 2 (action conditioning) at position 2
+and branch 4 at position 4. G7a fails on arms A and B, so branch 2 fires at the earlier
+position and was already the rule's answer. The merged document reached for branch 4
+instead. Correcting that is applying the pre-declared ordering, not overriding it.
+
+The new evidence then says the same thing independently. The premise of branch 4 holds —
+G2a did not improve — but its inference does not: the
 encoder/rollout decomposition shows v3's one-camera encoders reaching 2.47–2.59 cm against
 v2's 3.26 cm, a 21–24 % improvement under architectural changes alone, while the rollout's
 excess error roughly doubled to tripled. **No information ceiling has been demonstrated**,
@@ -423,12 +439,15 @@ not data. That is also consistent with G7a failing on arms A and B.
   The protocol committed in advance that if after v3 the models still could not beat their
   own persistence readout under motion, then CEM over this cost is probably the wrong
   control formulation and the next task should test behaviour cloning with the world model
-  as a critic or residual. G2a ≥ 0.8 on all four arms, so the clause fires as written. It
-  is **sequenced behind** the action-conditioning experiment rather than overridden,
-  because the decomposition names a failing term that branch 2 already targets, and
-  because arms B and C do pass the candidate-ranking gate pair against a label-derived
-  random-choice baseline — not the profile of a formulation that cannot work at all,
-  though 18 groups cannot settle that either way. **Pre-declared here, now: if the
+  as a critic or residual. G2a ≥ 0.8 on all four arms, so the clause fires as written.
+  **Stated plainly: the preregistered next task is being deferred by one protocol.** It is
+  not overridden and it is not quietly dropped — but behaviour cloning was the
+  preregistered next step and it is not the next step. The reasons are that the
+  decomposition names a failing term that branch 2 already targets, that branch 2 sits
+  earlier in the protocol's own ordering, and that arms B and C do pass the
+  candidate-ranking gate pair against a label-derived random-choice baseline — not the
+  profile of a formulation that cannot work at all, though 18 groups cannot settle that
+  either way. **Pre-declared here, now: if the
   action-conditioning redesign does not move G2a below 0.8, behaviour cloning with the
   world model as a critic becomes the primary line and CEM over this cost is abandoned.**
 - **An earlier version of this document argued the opposite** — it endorsed branch 4 and
@@ -499,11 +518,23 @@ conclusion rather than a number. A second agent working TASK-052 in parallel pro
 encoder/rollout decomposition, which contradicts the branch-4 reading the merged document
 endorsed. Every figure in that decomposition was then re-derived here from the four
 checkpoints with `scripts/decompose_wm_v3_readout.py` before anything was rewritten; all
-five point estimates agreed exactly, and the `rollout` column reproduced each published G1
-to full float precision. The reading was corrected accordingly, above. The two agents'
-bootstrap intervals for the one-factor contrasts did **not** agree — same point estimates,
-different widths — and that disagreement is recorded unresolved rather than papered over,
-with the conservative reading adopted.
+five point estimates agreed exactly. The reading was corrected accordingly, above. The two
+agents' bootstrap intervals for the one-factor contrasts did **not** agree — same point
+estimates, different widths — and that disagreement is recorded unresolved rather than
+papered over, with the conservative reading adopted.
+
+A fifth and sixth correction came from an independent review of that follow-up, and both
+were about whether the new claims could be *checked* rather than about the finding:
+
+5. The decomposition claimed to reproduce each published G1 "to full float precision", and
+   for arm A it did not — it was 3.7 nm out. The cause was a local `_median` that dropped
+   the evaluator's `np.float64` cast, so an even-sized cohort's two middle elements were
+   averaged in float32. The cast is restored and all four arms were re-run; the claim is
+   now bit-for-bit true and is stated that way above.
+6. The paired bootstrap was published with no code and no provenance, which is not
+   acceptable for the one number in this document whose *method* is contested. Its script
+   is now committed with the design in its docstring, and both it and the decomposition
+   record a hash of the script that produced each report.
 
 The verifier's own report contained one unit slip — it wrote the B ↔ D G1 difference as
 0.34 mm. It is 0.0364806 − 0.0330430 = 0.00344 m = **0.34 cm**, as stated throughout this
