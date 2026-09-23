@@ -74,13 +74,29 @@ candidate actions far better than they localise the apple. The cohort is 18 rank
 pooled points from 20 val resets at h = 16 while the planner's horizon is 8, so this is necessary,
 not sufficient, evidence -- and G6b alone discriminates nothing (it is 0.0 even for arm A).
 
-**Pre-declared next steps, applied as written and not re-interpreted:** branch 2 (redesign the
-action conditioning) is triggered for arms A and B, where G7a fails; branch 4 is triggered for
-arms C and D, where G7 passes but G2a does not improve materially over v2's 0.835 -- measure the
-information ceiling directly with a single-frame readout at 224 px and native render resolution,
-no dynamics. Outcome 4 also triggers the protocol's committed clause that CEM over this cost is
-probably the wrong control formulation, and that the next task should test a learned policy
-(behaviour cloning) with the world model as a critic or residual.
+**Encoder/rollout decomposition (added after the first merge; it changed the reading).** On the
+identical 1,462 moving windows at h=8, the readout of a *directly encoded target frame* -- what a
+perfect predictor could reach -- is 6.31 / 2.59 / 5.45 / 2.47 cm for A/B/C/D against v2's 3.26 cm,
+while the rollout's excess over it is 0.31 / 1.06 / 0.66 / 0.83 cm against v2's 0.39 cm. The
+one-camera encoders improved 21-24 % over v2 and the prediction step got two to three times worse:
+the error moved out of the encoder and into the rollout. Re-derived here from the checkpoints with
+`scripts/decompose_wm_v3_readout.py`; the rollout column reproduces each published G1 exactly.
+
+**Pre-declared next steps, applied as written then corrected on the decomposition's evidence:**
+branch 2 (redesign the action conditioning) is triggered for arms A and B, where G7a fails.
+Branch 4's *premise* holds for arms C and D (G2a does not improve over v2's 0.835), but its
+*inference* -- that the evidence points at the data, remedy an information-ceiling measurement --
+is **withdrawn**: no ceiling has been demonstrated, since modest architectural changes improved
+the encoder. Branch 2 is the primary next line, on one camera, preregistered anew. The
+single-frame ceiling measurement is demoted to a cheap side-check rather than dropped, because
+arm D's 2.47 cm encoded-target error alone still exceeds the 1.5 cm gate -- a perfect predictor
+would fail G1 too. The protocol's control-formulation clause is **triggered** (G2a >= 0.8 on all
+four arms) and sequenced behind the action-conditioning work; newly pre-declared: if that does not
+move G2a below 0.8, behaviour cloning with the world model as a critic becomes the primary line
+and CEM over this cost is abandoned.
+
+An earlier version of the results document endorsed branch 4's inference. That was wrong, and
+independent verification caught it, not the author.
 
 ## Acceptance Criteria
 The title's "and pass preregistered offline gates" was an outcome, not a deliverable: no arm
@@ -105,9 +121,9 @@ passed. The criteria below are the deliverables; the gate outcome is recorded ho
       pass) and an independent fresh-context review, which raised three blockers -- a verification
       command quoted as returning an empty diff when it does not, two wrong validation-curve
       numbers, and these acceptance boxes -- all fixed and re-checked.
-- [ ] PR merged and this task closed. **Not self-certifiable in the commit that requests the
-      merge:** PR #27 was open with green CI when this card was written. The merge follows the
-      reviewer's reported approval and is the last step of that PR.
+- [x] PR #27 merged as `bce146e` (squash, green CI on all three checks, independent reviewer
+      APPROVE reported before the merge), and this task closed by the follow-up PR that also
+      records the encoder/rollout decomposition.
 
 ## Scope and resources
 MPS (M5 Pro, 48 GB). Total training budget about 6 hours across arms, sequential, sharing the

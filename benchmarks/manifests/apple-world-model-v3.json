@@ -72,6 +72,20 @@
     "val_label_state_std_below_1e-4": 30
   },
   "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+  "decomposition": {
+    "encoded_target_median_m": {
+      "A_lewm_two_camera": 0.06310060620307922,
+      "B_lewm_onboard_only": 0.025902658700942993,
+      "C_lewm_v2_readout": 0.054526932537555695,
+      "D_lewm_fine_patches": 0.02469455637037754,
+      "v2_lewm_onboard": 0.0326
+    },
+    "measurement": "palm_apple encoder vs rollout split at h=8 on the gate's moving cohort",
+    "paired_bootstrap": "outputs/task052-decomposition/paired-bootstrap.json",
+    "reports": "outputs/task052-decomposition/",
+    "script": "scripts/decompose_wm_v3_readout.py",
+    "v2_reference_source": "docs/experiments/apple_world_model_v2_results.md -- carried over, not recomputed; the v2 checkpoints were written by a different model implementation and this code will not load them"
+  },
   "frozen": {
     "gates": {
       "G1_palm_apple_moving_h8_median_m": 0.015,
@@ -136,6 +150,7 @@
     },
     "source": "disclosed smokes smoke-b / smoke-onboard / smoke-fine at revision 63f9cd2"
   },
+  "merge_commit": "bce146e2b21916e1c57065c0a6eec86a14836332",
   "not_frozen_arms": {
     "native_jepa": "configs/apple_wm_v3.yaml exists and is the one-line backend swap, but is smoked only; the budget does not fit a fifth run"
   },
@@ -150,7 +165,9 @@
       "selection and the gates both used val, which flatters G1; test was never decoded",
       "G6 rests on 18 ranked groups of 3-4 candidates from 20 val resets, at h=16 while the planner's horizon is 8; the evaluator emits groups_ranked but not a pooled point count",
       "G6b is 0.0 m for every arm including arm A (G6a 0.328) and has a 5.9% preregistered null pass rate; it must not be read on its own",
-      "offline evaluation only; no closed loop was run and learned Apple->Plate remains 0 successes"
+      "offline evaluation only; no closed loop was run and learned Apple->Plate remains 0 successes",
+      "the branch reading was corrected after the first merge: an earlier version of the results document endorsed branch 4's information-ceiling inference, which the encoder/rollout decomposition contradicts; independent verification caught it, not the author",
+      "the paired bootstrap over the 1,462 moving windows treats stride-4 windows from 80 val episodes as independent and so understates uncertainty; a second, more conservative independent resampling reproduced the point estimates but left C-A and D-B crossing zero, and that disagreement is unresolved, so only the A-B camera gap is treated as larger than its sampling noise"
     ],
     "closed_loop_started": false,
     "gates_passed_of_13": {
@@ -165,7 +182,7 @@
       "A_vs_C_v3_readout_shaping": "the v3 readout shaping (motion weighting AND auxiliary position targets, inseparable in this design) HURT: G6a 0.516 -> 0.328, G7a 0.717 -> 0.613, G1 0.0611 -> 0.0662 m",
       "B_vs_D_patch_14_to_8": "patch 8 improved G1 0.0364806 -> 0.0330430 m (0.34 cm) at 2.1x the wall clock and lost G6a (0.544 -> 0.378); within-run validation jitter exceeds this gap and there is one seed per arm, so it is not distinguishable from noise"
     },
-    "pre_declared_branch": "branch 2 (G7a fails) for arms A and B; branch 4 (G1 fails and G2a does not improve over v2's 0.835) for arms C and D, which also triggers the protocol's 'plainly, in advance' clause on outcome 4",
+    "pre_declared_branch": "branch 2 (G7a fails) for arms A and B. Branch 4's PREMISE holds for arms C and D (G1 fails, G2a does not improve over v2's 0.835), but its INFERENCE -- that the evidence points at the data and the next step is an information-ceiling measurement -- is WITHDRAWN: the encoder/rollout decomposition shows the one-camera encoders improving 21-24% over v2 while the rollout excess doubled to tripled, so no information ceiling has been demonstrated and the growing term is the action-conditioned prediction step. Branch 2 (redesign the action conditioning, one camera, preregistered anew) is the primary next line; the single-frame ceiling measurement is demoted to a cheap side-check because arm D's encoded-target error (2.47 cm) alone still exceeds the 1.5 cm gate. The pre-declared control-formulation clause is TRIGGERED (G2a >= 0.8 on all four arms) and is sequenced behind the action-conditioning experiment; newly pre-declared: if that work does not move G2a below 0.8, behaviour cloning with the world model as a critic becomes the primary line and CEM over this cost is abandoned.",
     "pull_request": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/27"
   },
   "predecessor": {
@@ -176,6 +193,7 @@
   },
   "protocol": "apple_world_model_v3",
   "protocol_doc": "docs/experiments/apple_world_model_v3.md",
+  "pull_request": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/27",
   "results": {
     "A_lewm_two_camera": {
       "backend": "leworldmodel",
@@ -203,6 +221,20 @@
       },
       "completed_steps": 15000,
       "config": "configs/apple_wm_v3_lewm.yaml",
+      "decomposition_h8": {
+        "encoded_start_median_m": 0.05133862793445587,
+        "encoded_target_median_m": 0.06310060620307922,
+        "encoder_share_of_rollout": 0.9535290240660466,
+        "horizon": 8,
+        "moving_threshold_m": 0.01,
+        "moving_windows": 1462,
+        "persistence_median_m": 0.06550911068916321,
+        "rollout_excess_median_m": 0.0030752569437026978,
+        "rollout_median_m": 0.06617586314678192,
+        "true_displacement_median_m": 0.024884048849344254,
+        "valid_windows": 3961
+      },
+      "decomposition_report": "outputs/task052-decomposition/leworldmodel.json",
       "device": "mps",
       "elapsed_seconds": 5404.9965670108795,
       "environment": {
@@ -377,6 +409,20 @@
       },
       "completed_steps": 15000,
       "config": "configs/apple_wm_v3_lewm_onboard.yaml",
+      "decomposition_h8": {
+        "encoded_start_median_m": 0.023536449298262596,
+        "encoded_target_median_m": 0.025902658700942993,
+        "encoder_share_of_rollout": 0.7100387288727699,
+        "horizon": 8,
+        "moving_threshold_m": 0.01,
+        "moving_windows": 1462,
+        "persistence_median_m": 0.041628044098615646,
+        "rollout_excess_median_m": 0.010577969253063202,
+        "rollout_median_m": 0.036480627954006195,
+        "true_displacement_median_m": 0.024884048849344254,
+        "valid_windows": 3961
+      },
+      "decomposition_report": "outputs/task052-decomposition/leworldmodel_onboard.json",
       "device": "mps",
       "elapsed_seconds": 3512.807870864868,
       "environment": {
@@ -552,6 +598,20 @@
       },
       "completed_steps": 15000,
       "config": "configs/apple_wm_v3_lewm_v2_readout.yaml",
+      "decomposition_h8": {
+        "encoded_start_median_m": 0.04582866281270981,
+        "encoded_target_median_m": 0.054526932537555695,
+        "encoder_share_of_rollout": 0.8920196365496564,
+        "horizon": 8,
+        "moving_threshold_m": 0.01,
+        "moving_windows": 1462,
+        "persistence_median_m": 0.06502169370651245,
+        "rollout_excess_median_m": 0.006600569933652878,
+        "rollout_median_m": 0.06112750247120857,
+        "true_displacement_median_m": 0.024884048849344254,
+        "valid_windows": 3961
+      },
+      "decomposition_report": "outputs/task052-decomposition/leworldmodel_v2_readout.json",
       "device": "mps",
       "elapsed_seconds": 5363.402680158615,
       "environment": {
@@ -726,6 +786,20 @@
       },
       "completed_steps": 15000,
       "config": "configs/apple_wm_v3_lewm_fine.yaml",
+      "decomposition_h8": {
+        "encoded_start_median_m": 0.02277798391878605,
+        "encoded_target_median_m": 0.02469455637037754,
+        "encoder_share_of_rollout": 0.7473452137070412,
+        "horizon": 8,
+        "moving_threshold_m": 0.01,
+        "moving_windows": 1462,
+        "persistence_median_m": 0.03977133333683014,
+        "rollout_excess_median_m": 0.008348481729626656,
+        "rollout_median_m": 0.033043038100004196,
+        "true_displacement_median_m": 0.024884048849344254,
+        "valid_windows": 3961
+      },
+      "decomposition_report": "outputs/task052-decomposition/leworldmodel_fine.json",
       "device": "mps",
       "elapsed_seconds": 7380.602501869202,
       "environment": {
@@ -887,13 +961,15 @@
       "no threshold moved: git diff e2f8227..HEAD over the preregistration and all five configs is empty, and this manifest's diff touches only the placeholder keys results, overall, verification and status -- frozen (every threshold), arms, baselines and gate_definitions are byte-identical to e2f8227",
       "the selection rule replays exactly (best eligible steps 10000/15000/10000/13000) and the gates used <arm>.pt, not <arm>.latest.pt",
       "provenance complete for every arm: revision, source hash, dataset/split/action hashes, checkpoint hashes, seed, device, budget, elapsed and steps",
-      "one-factor isolation: only cameras, patch_size, readout_moving_weight and readout_auxiliary_weight differ anywhere in the design; A vs B differs in cameras alone (16,384 parameters = one 128x128 projection)"
+      "one-factor isolation: only cameras, patch_size, readout_moving_weight and readout_auxiliary_weight differ anywhere in the design; A vs B differs in cameras alone (16,384 parameters = one 128x128 projection)",
+      "the encoder/rollout decomposition was re-derived from the four checkpoints with scripts/decompose_wm_v3_readout.py; its rollout column reproduces each published G1 to full float precision on the identical 1,462 moving windows"
     ],
     "corrections_applied": [
       "the patch size is 14 for arms A/B/C, not 16",
       "arm D is onboard-only and its config extends arm B, so the controlled resolution contrast is B vs D, not A vs D",
       "arm C removes the motion weighting AND the auxiliary readouts together, so they cannot be separated",
-      "10800 s is the frozen per-arm budget; 5405 s is arm A's elapsed time"
+      "10800 s is the frozen per-arm budget; 5405 s is arm A's elapsed time",
+      "branch 4's inference (data / information ceiling) withdrawn in favour of branch 2 (action conditioning), on the evidence of the encoder/rollout decomposition"
     ],
     "method": "fresh-context post-run verifier, re-derived from the raw artifacts only"
   }

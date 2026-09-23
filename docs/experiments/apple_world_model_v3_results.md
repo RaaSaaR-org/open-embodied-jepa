@@ -188,6 +188,80 @@ and still not a variance estimate.
 **The largest single lever measured on G1 is the camera set (−2.97 cm from removing the
 second camera), not the patch grid (−0.34 cm).**
 
+### How much of each gap is cohort-sampling noise
+
+A paired bootstrap over the 1,462 moving windows (20,000 resamples, seed 20520, both arms
+resampled on the identical window indices; `outputs/task052-decomposition/paired-bootstrap.json`):
+
+| contrast | median difference | 95 % interval |
+|---|---|---|
+| A − B (adding the second camera), rollout | **+2.97 cm** | [+2.39, +3.46] |
+| C − A (dropping the v3 readout shaping), rollout | −0.51 cm | [−0.96, **+0.12**] |
+| D − B (patch 14 → 8), rollout | −0.34 cm | [−0.63, −0.14] |
+
+**These intervals are the least conservative design available and should be read as a
+lower bound on the uncertainty.** They treat the 1,462 stride-4 windows as independent
+when they come from only 80 val episodes and are strongly correlated within an episode; an
+episode-clustered bootstrap would be wider, and the attempt to compute one here did not
+complete. A second agent's independent, more conservative resampling of the same three
+contrasts reproduced all three point estimates exactly but produced intervals wide enough
+that **both C − A and D − B cross zero**. That disagreement is unresolved, so **this
+document adopts the conservative reading: only the A ↔ B camera gap is larger than its own
+sampling noise under either design; C ↔ A and D ↔ B are not established.**
+
+Above all, none of these intervals is a run-to-run interval. They quantify cohort sampling
+for two fixed checkpoints. With **one seed per arm** there is no estimate of how much of
+any gap a different seed would reproduce, and no bootstrap over windows can supply one.
+
+## The encoder / rollout decomposition
+
+G1 mixes two independent error sources: how well the encoder and readout head localize the
+apple at all, and how much the action-conditioned prediction step adds on top. Separating
+them on the identical cohort tells you *which* term failed. The measurement runs the
+public `encode`/`predict`/`readout` API over the same 1,462 moving windows
+(`scripts/decompose_wm_v3_readout.py`, reports under
+`outputs/task052-decomposition/`); the `rollout` column below reproduces each arm's
+published G1 to full float precision, which is the cross-check that the cohort is the
+gate's own.
+
+| median, moving windows, h = 8 | encoded START | **encoded TARGET** | rollout (G1) | rollout excess | encoder share |
+|---|---|---|---|---|---|
+| v2 LeWM/onboard *(carried over)* | 3.13 cm | **3.26 cm** | 3.65 cm | 0.39 cm | 89 % |
+| A (two cameras) | 5.13 cm | 6.31 cm | 6.62 cm | 0.31 cm | 95 % |
+| **B (onboard)** | 2.35 cm | **2.59 cm** | 3.65 cm | **1.06 cm** | 71 % |
+| C (two cameras, uniform readout) | 4.58 cm | 5.45 cm | 6.11 cm | 0.66 cm | 89 % |
+| **D (onboard, patch 8)** | 2.28 cm | **2.47 cm** | 3.30 cm | **0.83 cm** | 75 % |
+
+**encoded TARGET** is the readout of a *directly encoded* target-frame observation: what a
+*perfect* predictor could achieve with that encoder and head. **Rollout excess** is the
+gate value minus it — the prediction step's own contribution. The v2 row is quoted from
+`apple_world_model_v2_results.md`, not recomputed here: the v2 checkpoints were written by
+a different model implementation and this code will not load them.
+
+Two things follow, and they point in opposite directions:
+
+- **The encoder improved, so no information ceiling has been demonstrated.** v3's
+  one-camera encoders reach 2.59 cm (B) and 2.47 cm (D) against v2's 3.26 cm — 21 % and
+  24 % better. Modest architectural changes moved the encoder, so the claim that 112 px
+  frames of a ~2 cm apple simply cannot determine the offset is *not* supported by this
+  evidence. (That v2 → v3 encoder comparison is confounded — v3 changed the readout width,
+  the auxiliary heads, the proprioception scaling and the revision at once — so it is
+  suggestive, not controlled.)
+- **The prediction step got worse, and it is now the growing term.** The rollout excess
+  went from 0.39 cm in v2 to 1.06 cm (B) and 0.83 cm (D) — roughly two to three times. The
+  error moved out of the encoder and into the prediction.
+
+**But neither term alone is sufficient, and this is the part that must not be lost:** arm
+D's encoded TARGET is 2.47 cm, still **1.6× the 1.5 cm gate**. A *perfect* predictor on
+v3's best encoder would still fail G1. So the decomposition does not say "the encoder is
+fine, fix the predictor" — it says both terms fail, the predictor term is the one that
+grew, and the encoder term has not been shown to be at its ceiling.
+
+Within v3 the controlled A ↔ B contrast adds one more reading: **the second camera damaged
+the encoder, not the rollout.** A's encoded TARGET is 6.31 cm against B's 2.59 cm, while
+A has the *smallest* rollout excess of any arm (0.31 cm). Summing two camera embeddings
+produced a latent from which the apple is much harder to read out at all.
+
 ## Comparison with v2 (TASK-050)
 
 The nearest v2 analogue is its primary LeWM/onboard arm. It is **not** a controlled
@@ -320,28 +394,54 @@ The protocol's decision rule is applied as written, not re-interpreted after the
     the ranking gate G6a passes for B — so "the prediction does not use the actions", the
     rationale attached to branch 2, is not what the numbers show. The rule is reported as
     written rather than re-interpreted, and the tension is reported with it.
-  - Branch 4 is triggered for **arms C and D**, where G7 passes in full: G1 fails and
-    **G2a does not improve materially over v2's 0.835** — the best v3 G2a is D's 0.831, a
-    0.5 % relative change, with B 0.876, C 0.940 and A 1.010 clearly worse. Its
-    preregistered text reads: the evidence points at the **data**, not the architecture —
-    112 px onboard frames of a ~2 cm apple, recorded by a scripted collector, may simply
-    not determine the palm–apple offset to 1.5 cm. Its next step is to **measure the
-    information ceiling directly**: train a readout on a *single* frame at 224 px and at
-    the native render resolution, with no dynamics at all, before spending more on models.
-- The protocol also committed, in advance, that **if outcome 4 holds — if after v3 the
-  model still cannot beat its own persistence readout under motion — then CEM over this
-  cost is probably the wrong control formulation for this task**, and the next task should
-  test a learned policy instead: behaviour cloning on the scripted corpus, with the world
-  model used as a critic or a residual rather than as the forward model of a sampling
-  planner. Outcome 4 holds. That reading was committed before the runs and is recorded
-  here unchanged.
-- The three readings are complementary, and the ranking result argues for the order among
-  them: the models rank candidate actions far better than they localise the apple, so the
-  world model looks more promising as a *critic* than as a metric forward model. The
-  information-ceiling measurement is the cheapest of the three and settles whether any
-  amount of modelling at 112 px can reach 1.5 cm.
+  - Branch 4's **premise** is triggered for **arms C and D**, where G7 passes in full: G1
+    fails and **G2a does not improve materially over v2's 0.835** — the best v3 G2a is D's
+    0.831, a 0.5 % relative change, with B 0.876, C 0.940 and A 1.010 clearly worse. Its
+    preregistered *inference*, however, is that the evidence then points at the **data**,
+    not the architecture, and its remedy is to measure the information ceiling with a
+    single-frame readout at 224 px. **The decomposition above does not support that
+    inference** (see below).
+
+**The branch-4 inference is withdrawn, and branch 2 becomes the primary line.** The
+premise of branch 4 holds — G2a did not improve — but its inference does not: the
+encoder/rollout decomposition shows v3's one-camera encoders reaching 2.47–2.59 cm against
+v2's 3.26 cm, a 21–24 % improvement under architectural changes alone, while the rollout's
+excess error roughly doubled to tripled. **No information ceiling has been demonstrated**,
+and the term that grew is the action-conditioned prediction step — which is architecture,
+not data. That is also consistent with G7a failing on arms A and B.
+
+- **Next protocol: redesign the action conditioning**, preregistered anew, on one camera.
+  Candidates named in branch 2: action-chunk tokens, stronger multistep weighting, or a
+  predictor that is not one shared step applied autoregressively. The two-camera fusion is
+  dropped.
+- **The single-frame information-ceiling measurement is demoted, not dropped.** Arm D's
+  encoded TARGET is 2.47 cm, still 1.6× the 1.5 cm gate, so a perfect predictor on v3's
+  best encoder would fail G1 anyway. The encoder needs work too, and whether 112 px can
+  reach 1.5 cm at all is genuinely open. It is cheap, so it stays as a side-check rather
+  than the headline.
+- **The pre-declared control-formulation clause is TRIGGERED, and recorded as triggered.**
+  The protocol committed in advance that if after v3 the models still could not beat their
+  own persistence readout under motion, then CEM over this cost is probably the wrong
+  control formulation and the next task should test behaviour cloning with the world model
+  as a critic or residual. G2a ≥ 0.8 on all four arms, so the clause fires as written. It
+  is **sequenced behind** the action-conditioning experiment rather than overridden,
+  because the decomposition names a failing term that branch 2 already targets, and
+  because arms B and C do pass the candidate-ranking gate pair against a label-derived
+  random-choice baseline — not the profile of a formulation that cannot work at all,
+  though 18 groups cannot settle that either way. **Pre-declared here, now: if the
+  action-conditioning redesign does not move G2a below 0.8, behaviour cloning with the
+  world model as a critic becomes the primary line and CEM over this cost is abandoned.**
+- **An earlier version of this document argued the opposite** — it endorsed branch 4 and
+  its information-ceiling remedy as the reading, on the strength of G2a alone and without
+  the decomposition. That was wrong, and **independent verification caught it, not the
+  author.** The decomposition was produced by a second agent working the same task in
+  parallel; every number in it was then re-derived from the checkpoints by this author
+  before the correction was written, and the point estimates agreed exactly. This
+  paragraph stays in the record.
 - **No arm's result is re-tuned against val and re-reported.** Nothing was changed after
-  the gates were read. Any rerun is a new, disclosed protocol version.
+  the gates were read. The decomposition is a descriptive measurement on the same val
+  cohort: it gates nothing, moves no threshold and opened no new split. Any rerun is a
+  new, disclosed protocol version.
 
 ## Verification
 
@@ -393,6 +493,17 @@ this document was written, and are stated here so the correction is on the recor
    **not supported**: the camera set is (A ↔ B, 6.62 → 3.65 cm).
 3. **A ↔ C is not "the motion weighting"** on its own: arm C drops the motion weighting
    *and* the auxiliary position readouts together, so the two cannot be separated here.
+
+A fourth correction was made **after this document was first merged**, and it changed a
+conclusion rather than a number. A second agent working TASK-052 in parallel produced the
+encoder/rollout decomposition, which contradicts the branch-4 reading the merged document
+endorsed. Every figure in that decomposition was then re-derived here from the four
+checkpoints with `scripts/decompose_wm_v3_readout.py` before anything was rewritten; all
+five point estimates agreed exactly, and the `rollout` column reproduced each published G1
+to full float precision. The reading was corrected accordingly, above. The two agents'
+bootstrap intervals for the one-factor contrasts did **not** agree — same point estimates,
+different widths — and that disagreement is recorded unresolved rather than papered over,
+with the conservative reading adopted.
 
 The verifier's own report contained one unit slip — it wrote the B ↔ D G1 difference as
 0.34 mm. It is 0.0364806 − 0.0330430 = 0.00344 m = **0.34 cm**, as stated throughout this
