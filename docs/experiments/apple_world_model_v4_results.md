@@ -365,7 +365,7 @@ not paid for out of prediction accuracy — it is some other route, and this pro
 no measurement that identifies it.
 
 **What this is not.** One seed per arm; the arms are not independent replications; no
-mechanism has been demonstrated; and these eight arms come from two protocols that differ
+mechanism has been demonstrated; and these seven arms come from two protocols that differ
 in more than one factor. This is an **observed pattern across arms**, not a capacity
 constraint, not a law, and not something to design the next task around without measuring
 it directly.
@@ -485,9 +485,9 @@ started here. These are the facts it inherits, all from this run's artifacts:
   action-conditioned prediction. A critic must not be credited with it.
 - **Top-1 regret is 0.0 mm in three of four arms** (E1 is 2.3 mm), against a label-derived
   random-choice baseline of 8.44 mm. **But G6b discriminates nothing** — its preregistered
-  null pass rate is 5.9 % and it reads 0.0 mm even for arms whose ranking ρ is 0.29. It must
-  not be quoted on its own as evidence that ranking works: the lowest ranking ρ that still
-  reads 0.0 mm is **0.33** (v3 A 0.3280, v4 E2 0.3296), both *failing* G6a. The arm with the
+  null pass rate is 5.9 %, and it must not be quoted on its own as evidence that ranking
+  works: the lowest ranking ρ that still reads 0.0 mm is **0.33** (v3 A 0.3280, v4 E2
+  0.3296), both *failing* G6a. The arm with the
   worst ρ in this task, E1 at 0.2865, is the one arm whose regret is **not** 0.0 mm
   (2.3 mm) — so G6b does not even order the arms the way G6a does.
 - **What actually fails is the prediction step under motion**, and three redesigns of it did
