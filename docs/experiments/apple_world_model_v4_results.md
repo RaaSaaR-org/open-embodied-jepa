@@ -337,19 +337,26 @@ reading is plausible and wrong.**
 | arm | rollout excess | G6a | G1 |
 |---|---|---|---|
 | v3 A (two cameras) | 0.3075 cm | 0.3280 | 6.6176 cm |
-| v3 B / v4 E0 | 1.0578 cm | 0.5438 | 3.6481 cm |
+| v3 B / v4 E0 *(one arm, one checkpoint)* | 1.0578 cm | 0.5438 | 3.6481 cm |
 | v3 C (uniform readout) | 0.6601 cm | 0.5155 | 6.1128 cm |
 | v3 D (patch 8) | 0.8348 cm | 0.3776 | 3.3043 cm |
 | v4 E1 (chunk) | 1.1176 cm | 0.2865 | 3.6579 cm |
 | v4 E2 (tail) | 0.9031 cm | 0.3296 | 3.4754 cm |
 | v4 E3 (step) | 0.7957 cm | 0.4141 | 4.4087 cm |
 
-Across all eight arms the Spearman correlation between rollout excess and G6a is
-**+0.095** — nothing. Within the four v4 arms it is **−0.400**; within the four v3 arms it
-is **+0.800**. Two subsets of the same design give opposite signs, which is what a
-correlation computed on four points does. And the within-v4 gradient runs the *wrong way
-for a trade-off*: the arm that cut the excess most (E3, −0.262 cm) lost the **least** G6a
-(−0.130), while the arm that *raised* the excess (E1, +0.060 cm) lost the **most** (−0.257).
+The table has **seven rows, not eight arms**: v3 B and v4 E0 are the same checkpoint, bit
+for bit, so counting both would double-count one arm.
+
+Across the seven distinct arms the Spearman correlation between rollout excess and G6a is
+**-0.107**; counting E0 as a separate eighth point and averaging the tied ranks gives
+**+0.084**. **The estimate changes sign on that bookkeeping choice** — which is what a rank
+correlation on seven points is worth. Within the four v4 arms it is **-0.400**; within the
+four v3 arms it is **+0.800**: two subsets of the same evidence, opposite signs. (Computed
+with the evaluator's own `world_model_v2.spearman`, which averages tied ranks.)
+
+And the within-v4 gradient runs the *wrong way for a trade-off*: the arm that cut the excess
+most (E3, −0.262 cm) lost the **least** G6a (−0.130), while the arm that *raised* the excess
+(E1, +0.060 cm) lost the **most** (−0.257).
 
 **What is true, and it is the more interesting statement:** all three predictor redesigns
 cost candidate ranking, and they did so **regardless of what they did to the rollout term**.
@@ -472,14 +479,17 @@ started here. These are the facts it inherits, all from this run's artifacts:
 - **Nothing collapses.** G8 passes on all four arms; effective rank 6.74–8.23, mean latent
   std 0.850–0.873, collapsed fraction 0.000 everywhere.
 - **The held/grasp readouts are near-perfect.** `apple_held` AUROC on the lift cohort is
-  0.9992–0.9997. **But this is weak evidence**: TASK-052 measured the *shuffled-action*
-  AUROC on the same cohort at 0.62–0.77, so most of it comes from the encoded state and the
-  fused proprioception, not from action-conditioned prediction. A critic must not be
-  credited with it.
+  0.9992–0.9997. **But this is weak evidence**: the *shuffled-action* AUROC on the same
+  cohort is **0.714–0.812 in this run's own four arms** (TASK-052 measured 0.62–0.77),
+  so most of it comes from the encoded state and the fused proprioception, not from
+  action-conditioned prediction. A critic must not be credited with it.
 - **Top-1 regret is 0.0 mm in three of four arms** (E1 is 2.3 mm), against a label-derived
   random-choice baseline of 8.44 mm. **But G6b discriminates nothing** — its preregistered
   null pass rate is 5.9 % and it reads 0.0 mm even for arms whose ranking ρ is 0.29. It must
-  not be quoted on its own as evidence that ranking works.
+  not be quoted on its own as evidence that ranking works: the lowest ranking ρ that still
+  reads 0.0 mm is **0.33** (v3 A 0.3280, v4 E2 0.3296), both *failing* G6a. The arm with the
+  worst ρ in this task, E1 at 0.2865, is the one arm whose regret is **not** 0.0 mm
+  (2.3 mm) — so G6b does not even order the arms the way G6a does.
 - **What actually fails is the prediction step under motion**, and three redesigns of it did
   not fix it. The persistence baseline is the thing to beat and it has never been beaten:
   G2a is 0.8635 at best here, 0.831 at best in v3, 0.835 in v2.
