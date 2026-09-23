@@ -4,7 +4,7 @@ aliases:
 - TASK-054
 title: Redesign the action-conditioned prediction step and beat the persistence baseline
 slug: redesign-the-action-conditioned-prediction-step-and-beat-the-persistence-baselin
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -108,6 +108,24 @@ is 0 in all eight reports; test and the frozen 44000-44019 cohort were never ope
 Protocol: `docs/experiments/apple_world_model_v4.md`.
 Results: `docs/experiments/apple_world_model_v4_results.md`.
 Manifest: `benchmarks/manifests/apple-world-model-v4.json`.
+PR: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/29 (merged as `c5ec88c`).
+
+The post-run verifier raised **eleven findings across five passes**; all were fixed before
+merge. Three changed what the document claims rather than a digit: G7a's granularity (the
+sole positive result rests on 3 sibling pairs of 106, with the control one pair short), the
+trade-off section's rank correlation (recomputed with averaged ties over the seven distinct
+arms it flips sign, -0.107 against +0.084), and a restatement of E2's shortfall that implied
+a 7x requirement against the document's own 3.4x. Two false provenance claims were also
+corrected. Every claim that was *computed* held under independent re-derivation; what failed
+repeatedly was removing text a correction superseded.
+
+Two findings are recorded elsewhere and are NOT the post-run verifier's. The pilot gate pass
+sets and the missing Outcome A clause were found by the **pre-run** reviewer after the runs
+had started, and are disclosed in the results document under *Two preregistration defects*.
+The prediction/discrimination trade-off was **refuted by this author** before the verifier
+saw it, when the proposed reading was checked against the artifacts and did not hold; the
+verifier's finding was the narrower one that the correlation had been computed with
+array-order tie-breaking on a double-counted arm.
 
 ## Acceptance Criteria
 - [x] Preregistration `docs/experiments/apple_world_model_v4.md` and frozen manifest
