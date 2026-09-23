@@ -15,9 +15,12 @@ configuration re-trained at this revision — passes 10 of 14; E1, E2 and E3 eac
 Learned Apple→Plate remains at **0 successes**. Nothing in this document is a control
 result, a closed-loop result or working manipulation. Every number is offline evaluation
 of learned models on recorded validation data. No simulator reset was opened and no
-planner was run. The protocol is `apple_world_model_v4.md`, written at `50b5765`, amended
-by a pre-run review at `2bf3999` and `46d62eb`, which are the revisions the runs were made
-from.
+planner was run. The protocol is `apple_world_model_v4.md`, written at `50b5765` and amended
+twice by a fresh-context pre-run review, at `2bf3999` and `46d62eb`, both before any gated
+run. **The runs themselves were made from `46d62eb` (E0's training) and `c9cf9a6` (E1, E2
+and E3's training, and all four evaluations)**; no run was made from `2bf3999`. The protocol
+document and the frozen manifest are byte-identical across `46d62eb`, `c9cf9a6` and this
+commit. See *The runner incident*.
 
 ## Runs
 
@@ -40,8 +43,15 @@ checkout (`--require-clean`, `dirty: false` in every report; see
 | Wall clock | 3,512 s | 3,884 s | 3,553 s | 3,521 s |
 | Process CPU | 1,531 s | 1,583 s | 1,575 s | 1,552 s |
 | Peak host RSS | 9.11 GB | 9.13 GB | 8.97 GB | 8.78 GB |
-| Evaluation wall clock | 16 s | 17 s | 16 s | 17 s |
+| Evaluation wall clock (runner log) | 16 s | 17 s | 16 s | 17 s |
+| Evaluation wall clock (in report) | 14.0 s | 15.6 s | 14.7 s | 14.7 s |
 | Checkpoint SHA-256 | `01ba8d0500…` | `ccc8a77e59…` | `6f4c02b427…` | `e6bf4aaaba…` |
+
+The two evaluation rows are on different bases and both are given because they are not
+interchangeable: the first is the subprocess wall clock from `outputs/task054-runner.log`,
+the second each gate report's own `elapsed_seconds`. `apple_world_model_v3_results.md` used
+the in-report basis for its identically-labelled row, so the **second** row is the one
+comparable with v3.
 
 **One-factor isolation, checked from the resolved `model_config` blocks in the run
 reports:** against E0, exactly one key differs in each arm — `action_chunk` 1→4 (E1),
@@ -59,8 +69,11 @@ four arms. The parameter deltas are exactly the declared ones: +47,488 for E1's 
 - **Device** MPS, Apple M5 Pro, 48 GB.
 - **Budget** the frozen cap is `max_seconds: 10800` per arm. No arm hit it; the longest
   (E1) used 3,884 s. Training totalled 14,470 s = **4.02 h** against the preregistered
-  estimate of 3.85 h; E1 ran 11 % over its estimate (the action-chunk MLP), the others
-  within 2 %. Batch 32 × horizon 16, AdamW lr 3e-4 cosine-decayed to 3e-5, weight decay
+  estimate of 3.85 h. Against each arm's own preregistered rate × 15,000 steps, training
+  wall clock ran E0 +1.7 %, **E1 +12.0 %**, E2 +2.7 %, E3 +0.8 %. E1's overrun is
+  plausibly the action-chunk MLP, but that is an **attribution, not a measurement** — this
+  protocol ran no timing control that would separate it from machine load.
+  Batch 32 × horizon 16, AdamW lr 3e-4 cosine-decayed to 3e-5, weight decay
   1e-4, grad clip 1.0, validation every 1,000 steps — all as frozen.
 - **Data** `data/apple-wide-v1`, dataset manifest SHA-256 `028e130576…`, split hash
   `51f8e09df1…`, action hash `da987bb079…`, selection-window SHA-256 `16eb332c30…` — all
@@ -167,7 +180,8 @@ draw; `scripts/bootstrap_wm_v4_contrasts.py`, report at
 preregistered: it resamples the 67 validation episodes that contribute a moving window and
 pools all their windows, so correlated windows stay together. The iid design is TASK-052's
 and is reported for comparability only; TASK-052 recorded it as a lower bound on the
-uncertainty and this run agrees — the clustered intervals are 1.5–2× wider throughout.
+uncertainty and this run agrees — the clustered intervals are **1.46×–2.28× wider**
+across the nine contrast/field combinations (1.66×–2.28× over the six shown below).
 
 | contrast | encoded target | rollout (G1) | rollout excess |
 |---|---|---|---|
@@ -214,7 +228,9 @@ It is not enough, and it is not established.
 
 - **Not enough:** the excess fell 1.0578 → 0.9031 cm, a 14.6 % reduction where 49.9 % was
   needed. G2a moved 0.8763 → 0.8635, still 7.9 % above the threshold. Extrapolating this
-  size of effect, the ramp would have to be some six times as effective to reach G9.
+  size of effect linearly, the ramp would have to be about **3.4× as effective to reach
+  G9** and about **5.9× to reach G2a**. (Linear extrapolation of a single arm is a crude
+  guide to magnitude, not a prediction.)
 - **Not established:** the rollout difference's clustered interval is
   [−0.804, +0.132] cm and **crosses zero**. Under the iid design it does not
   ([−0.416, −0.006]), and the protocol pre-declared that the clustered reading wins when
@@ -254,8 +270,24 @@ with G1 and it is plainly the worst.**
 **One genuinely positive result sits inside this failure: E3 is the only arm in v4 that
 passes G7a** (0.7264 ≥ 0.70), the sibling action-sensitivity gate that failed on v3 arms A
 and B and on v4 E0, E1 and E2. Making the predictor horizon-conditioned *did* improve how
-much the prediction follows the executed actions. It bought that at the cost of the
-encoder, and it is one seed. It is the only thread in this task worth pulling on.
+much the prediction follows the executed actions.
+
+**But the margin is three sibling pairs, and that must be read with the number.** G7a is a
+fraction over **106 qualifying ordered pairs**, identical in all four arms, so the gate
+moves in steps of 1/106 = 0.0094 and the 0.70 threshold sits at 74.2 pairs:
+
+| arm | G7a | pairs won |
+|---|---|---|
+| E0 | 0.6981 | 74 / 106 |
+| E1 | 0.6321 | 67 / 106 |
+| E2 | 0.6604 | 70 / 106 |
+| **E3** | **0.7264** | **77 / 106** |
+
+So E3 passes on **3 more pairs out of 106** than the control, and **E0 misses the threshold
+by a single pair** — one more win would put it at 0.7075 and a pass. No uncertainty
+interval was computed for G7a, unlike every rollout and encoder contrast in this document.
+It bought that at the cost of the encoder, and it is one seed. It is the only thread in this
+task worth pulling on, and it is a thin one.
 
 E3 is also the only arm whose validation curve clearly turned over: its best is step 8,000
 and its last step is 0.78 cm worse (4.22 → 5.00 cm). "Train E3 longer" is not supported.
