@@ -4,7 +4,7 @@ aliases:
 - TASK-054
 title: Redesign the action-conditioned prediction step and beat the persistence baseline
 slug: redesign-the-action-conditioned-prediction-step-and-beat-the-persistence-baselin
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -108,6 +108,15 @@ is 0 in all eight reports; test and the frozen 44000-44019 cohort were never ope
 Protocol: `docs/experiments/apple_world_model_v4.md`.
 Results: `docs/experiments/apple_world_model_v4_results.md`.
 Manifest: `benchmarks/manifests/apple-world-model-v4.json`.
+PR: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/29 (merged as `c5ec88c`).
+
+The post-run verifier raised **ten findings across five passes**; all were fixed before merge.
+Three changed what the document claims rather than its digits: G7a's granularity (the sole
+positive result rests on 3 sibling pairs of 106, with the control one pair short), the
+prediction/discrimination trade-off (its rank correlation flips sign on whether one arm is
+double-counted, so the trade-off reading was REFUTED rather than published), and the pilot
+gate pass sets. Every claim that was *computed* held under independent re-derivation; what
+failed repeatedly was removing text a correction superseded.
 
 ## Acceptance Criteria
 - [x] Preregistration `docs/experiments/apple_world_model_v4.md` and frozen manifest
