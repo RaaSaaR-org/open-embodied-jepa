@@ -447,3 +447,419 @@ def test_the_clip_rate_cannot_see_the_out_of_distribution_band():
         "the out-of-distribution rate must exceed what a clip rate could see; if they are "
         "equal the (0.4, 0.5] band has been lost and the second statistic is pointless"
     )
+
+
+def test_the_absolute_statistics_cannot_tell_a_descent_from_an_ascent():
+    """TASK-057's blocking instrument requirement, discharged by exhibiting the failure.
+
+    Two command streams that are exact negations of each other -- one commanding the boundary
+    downward on every step, one commanding it upward -- must produce BYTE-IDENTICAL absolute
+    statistics, because every one of those fields is computed from ``np.abs``. That is the
+    defect: TASK-056 published a directional reading ("the policies under-shoot the descent")
+    off statistics that provably cannot distinguish descending from ascending.
+
+    The same pair must be separated by the signed block. Asserting both halves is the point --
+    a test that only checked the signed fields would not show WHY they are needed.
+    """
+    module = runner()
+
+    def stream(sign):
+        out = []
+        for value in (0.40, 0.40, 0.40, 0.10, 0.40):
+            action = np.zeros(14, np.float32)
+            action[8] = sign * value
+            action[12], action[13] = -1.0, sign * 1.0
+            out.append(action)
+        return out
+
+    stages = ["none"] * 5
+    down = module.command_statistics(stream(-1.0), stages)["per_dimension"]
+    up = module.command_statistics(stream(+1.0), stages)["per_dimension"]
+
+    absolute = ("expert_maximum", "out_of_distribution_rate", "max_abs", "q50", "q90", "q99")
+    for name in ("dz", "grasp"):
+        for field in absolute:
+            assert down[name][field] == up[name][field], (
+                f"{name}.{field} differs between a pure descent and a pure ascent, so this "
+                "test no longer demonstrates the limitation it exists to demonstrate"
+            )
+
+    # ... and the signed block separates exactly the pair the absolute fields cannot.
+    assert down["dz"]["signed"]["mean"] == pytest.approx(-0.34)
+    assert up["dz"]["signed"]["mean"] == pytest.approx(+0.34)
+    assert down["dz"]["signed"]["rate_at_negative_maximum"] == pytest.approx(0.8)
+    assert down["dz"]["signed"]["rate_at_positive_maximum"] == pytest.approx(0.0)
+    assert up["dz"]["signed"]["rate_at_positive_maximum"] == pytest.approx(0.8)
+    assert down["dz"]["signed"]["rate_positive"] == pytest.approx(0.0)
+    assert up["dz"]["signed"]["rate_positive"] == pytest.approx(1.0)
+    # The hand: fully open and fully closed are the case that was misread.
+    assert down["grasp"]["signed"]["q50"] == pytest.approx(-1.0)
+    assert up["grasp"]["signed"]["q50"] == pytest.approx(+1.0)
+
+
+def test_an_oscillating_command_is_distinguishable_from_a_steady_one():
+    """A mean near zero must not be reported the same way as a command that is near zero.
+
+    ``|dz| q50`` is 0.40 for a stream that alternates +-0.40 and 0.40 for one that holds
+    +0.40, so the absolute median cannot see the difference. The signed rates can, and this is
+    the case the closed-loop reading turns on: a policy oscillating about zero goes nowhere
+    while a policy committing to one direction travels.
+    """
+    module = runner()
+
+    def build(values):
+        out = []
+        for value in values:
+            action = np.zeros(14, np.float32)
+            action[8] = value
+            action[12], action[13] = -1.0, 1.0
+            out.append(action)
+        return out
+
+    stages = ["none"] * 4
+    osc = module.command_statistics(build([0.40, -0.40, 0.40, -0.40]), stages)["per_dimension"]
+    steady = module.command_statistics(build([0.40, 0.40, 0.40, 0.40]), stages)["per_dimension"]
+
+    assert osc["dz"]["q50"] == pytest.approx(steady["dz"]["q50"])
+    assert osc["dz"]["max_abs"] == pytest.approx(steady["dz"]["max_abs"])
+    assert osc["dz"]["signed"]["mean"] == pytest.approx(0.0)
+    assert steady["dz"]["signed"]["mean"] == pytest.approx(0.40)
+    assert osc["dz"]["signed"]["rate_at_negative_maximum"] == pytest.approx(0.5)
+    assert steady["dz"]["signed"]["rate_at_negative_maximum"] == pytest.approx(0.0)
+
+
+def test_the_diagnostics_manifest_pins_D1_thresholds_to_its_own_offline_table():
+    """TASK-057's D1 thresholds must be exactly 3x the frozen offline table, in the manifest.
+
+    The threshold and the table it derives from live in the same file, so they can drift apart
+    in a single edit and nothing would notice. apple_policy_v1_results.md section 15's finding
+    was that a frozen artifact's own internal consistency is not self-enforcing.
+
+    Also pins the two facts a later editor is most likely to soften: that cohort C is untouched,
+    and that the arm list is enumerated rather than named by a predicate.
+    """
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    table = manifest["frozen_offline_error_table_A"]["values"]
+    thresholds = manifest["frozen_D1_thresholds_three_times_table_A"]
+    arm_dimensions = manifest["definitions_every_scope_term_used_in_a_gate_or_stop_rule"][
+        "arm_dimension"
+    ]
+
+    assert set(thresholds) == set(table), "every arm needs a threshold row"
+    for arm, row in thresholds.items():
+        # Compared as sets: the manifest is serialized with sort_keys, so its key order is
+        # alphabetical and carries no meaning. What must hold is coverage, not order.
+        assert {d.removeprefix("right_") for d in row} == set(arm_dimensions), (
+            f"{arm}'s thresholds must cover the six arm dimensions and only those; grasp is "
+            "reported separately and has no threshold"
+        )
+        for dimension, value in row.items():
+            assert value == pytest.approx(3 * table[arm][dimension], rel=1e-9), (
+                f"{arm}.{dimension}: threshold {value} is not 3x its table cell "
+                f"{table[arm][dimension]}"
+            )
+
+    # The spread quoted as the derivation of the 3x factor must be the table's own spread.
+    flat = [v for row in table.values() for v in row.values()]
+    assert manifest["frozen_offline_error_table_A"]["spread_ratio"] == pytest.approx(
+        max(flat) / min(flat), rel=1e-3
+    )
+
+    # Cohort C is not referenced by any gate, and the arm list is enumerated.
+    assert manifest["definitions_every_scope_term_used_in_a_gate_or_stop_rule"]["arm"] == [
+        "A0_proprio_only",
+        "A1_random_encoder",
+        "A2_bc_frozen_e0",
+        "A3_bc_finetuned_e0",
+    ]
+    # Enumerating cohort C's seeds HERE is a guard against consuming them, not a consumption:
+    # this is a disjointness assertion and the manifest itself carries no cohort-C seed list.
+    # Do not delete it as a "reference to C", and do not copy it into a runner as precedent for
+    # enumerating C anywhere that could instantiate a reset.
+    frozen_c = set(range(45300, 45340))
+    development = set(manifest["cohort_discipline"]["cohort_D_development_never_gating"])
+    assert not (development & frozen_c), "the development cohort must not intersect cohort C"
+    assert len(development) == 16
+
+
+def test_the_diagnostics_gate_has_a_failing_path_and_quotes_the_right_binomial():
+    """Two defects an independent review found in the first draft, pinned so they cannot return.
+
+    **The gate could not fail.** ``full`` (all seven dimensions) satisfied the old definition of
+    "a configuration", B3 required ``full`` to reach >= 14/16, and G-SUB passed if ANY
+    configuration reached >= 8/16 -- so B3 passing implied G-SUB passing while B3 failing voided
+    the run. The gate wired to the abandonment clause had no failing path. The candidates are
+    now enumerated and the two controls are excluded by name.
+
+    **The binomial was wrong.** The draft quoted 0.189 for P(X >= 8 | n=16, p=1/3); the true
+    value is 0.126501, and 0.189 corresponds to p = 0.3633, which nothing uses. A frozen
+    manifest carrying a wrong number is the failure this project has bled over most, so the
+    figures are recomputed here from the manifest's own stated null and candidate count rather
+    than compared against a transcribed constant.
+    """
+    from math import comb
+
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    gate = manifest["gates"]["G_SUB"]
+    config = manifest["definitions_every_scope_term_used_in_a_gate_or_stop_rule"]["configuration"]
+    candidates = config["g_sub_candidates_the_ONLY_configurations_G_SUB_RANGES_OVER"]
+    controls = config["controls_which_are_configurations_but_NOT_G_SUB_candidates"]
+
+    # The gate must have a failing path: neither control may be a candidate.
+    assert set(controls) == {"none", "full"}
+    for control in controls:
+        assert control not in candidates, (
+            f"{control!r} is a G-SUB candidate again: if 'full' can pass the gate then B3 "
+            "passing implies G-SUB passing and the abandonment clause is unreachable"
+        )
+    assert gate["candidates"] == candidates, "the gate must range over the enumerated list"
+    assert len(candidates) == 8
+    assert config["total_configurations_run"] == len(candidates) + len(controls)
+
+    def at_least(k, n, p):
+        return sum(comb(n, i) * p**i * (1 - p) ** (n - i) for i in range(k, n + 1))
+
+    exact = at_least(8, 16, 1 / 16)
+    assert gate["one_sided_binomial_at_p0_one_sixteenth"] == pytest.approx(exact, rel=1e-6)
+    assert gate["family_wise_over_8_candidates_at_p0_one_sixteenth"] == pytest.approx(
+        1 - (1 - exact) ** len(candidates), rel=1e-6
+    )
+    dropped = gate["corrected_values_for_the_dropped_null"]
+    assert dropped["one_sided_at_p0_one_third"] == pytest.approx(at_least(8, 16, 1 / 3), rel=1e-5)
+    assert dropped["one_sided_at_p0_one_third"] != pytest.approx(0.189, abs=1e-3), (
+        "0.189 is the erroneous figure; it must not reappear as the value of this quantity"
+    )
+    assert at_least(8, 16, dropped["p0_that_the_erroneous_0_189_corresponds_to"]) == pytest.approx(
+        0.189, abs=1e-4
+    ), "the recorded provenance of the wrong number must itself be checkable"
+
+
+def test_the_protocols_printed_table_A_matches_the_manifest_cell_by_cell():
+    """Document-to-manifest drift, which no manifest-internal check can see.
+
+    An earlier revision printed Table A at 5 decimal places while the manifest carried 6, so 22
+    of 28 cells disagreed and the protocol's own sentence -- "D1's thresholds are 3x the cell" --
+    was false of the numbers a reader actually reads: 3 x 0.01896 = 0.05688 against a stored
+    threshold of 0.056874. The manifest was internally perfect the whole time and its
+    self-consistency test passed.
+
+    **A consistency check that compares an artifact with itself certifies nothing about the
+    artifact a reader reads.** This test parses the rendered Markdown table, which is the only
+    thing that can catch it.
+    """
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    values = manifest["frozen_offline_error_table_A"]["values"]
+    protocol = (ROOT / "docs" / "experiments" / "apple_policy_diagnostics_v1.md").read_text()
+
+    marker = "**Table A — median |predicted − expert| per dimension"
+    assert marker in protocol, "Table A's heading changed; this test pins that exact table"
+    block = protocol[protocol.index(marker) :].split("\n\n")[1]
+    rows = [r for r in block.split("\n") if r.startswith("| `")]
+    assert len(rows) == 7, f"expected seven dimension rows, parsed {len(rows)}"
+
+    arms = ["A0_proprio_only", "A1_random_encoder", "A2_bc_frozen_e0", "A3_bc_finetuned_e0"]
+    seen = set()
+    for row in rows:
+        cells = [c.strip() for c in row.strip("|").split("|")]
+        dimension = cells[0].strip("`")
+        seen.add(dimension)
+        assert len(cells) == 5, f"{dimension}: expected one column per arm"
+        for arm, printed in zip(arms, cells[1:], strict=True):
+            # Exact string equality, not a tolerance: the point is that the document prints the
+            # manifest's stored value, and a tolerance would re-admit the rounding that caused
+            # the drift.
+            assert printed == f"{values[arm][dimension]:.6f}", (
+                f"Table A {dimension}/{arm}: protocol prints {printed}, manifest stores "
+                f"{values[arm][dimension]:.6f}"
+            )
+    assert seen == set(values["A0_proprio_only"]), "Table A must cover all seven dimensions"
+
+
+def test_every_joint_D1_G_SUB_outcome_maps_to_exactly_one_pre_declared_outcome():
+    """The gate contradiction, pinned as a decision table rather than as prose.
+
+    An earlier revision fired the abandonment clause unconditionally on a G-SUB failure while
+    the success clause said the line continues when D1 fails for >=3 arms. On the joint outcome
+    "D1 fails for >=3 arms AND G-SUB fails" -- plausible, arguably the modal one -- one clause
+    said stop and the other said continue, and the pre-declared outcomes listed both with no
+    precedence. **A preregistration whose function is to bind the executing agent left the agent
+    free to choose after seeing the numbers.**
+
+    Prose cannot be tested, so what is tested is that the manifest carries a precedence rule, an
+    explicit once-only bound, and an Outcome X conditioned on D1 rather than on G-SUB alone.
+    """
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    rule = manifest["precedence_rule_D1_over_G_SUB"]
+    outcomes = manifest["pre_declared_outcomes"]
+
+    # The rule exists, is bounded, and says which way it resolves. Assertions read the VALUES,
+    # never the key names: an earlier version of this test matched "exactly once" against a
+    # string that only ever held it in its key, so it failed identically on a correct manifest
+    # and on an injected violation -- a test failing, but not for the reason it appeared to.
+    once = rule["the_exemption_is_available_exactly_once"].lower()
+    assert "once" in rule["rule"].lower(), "the precedence rule must state its own bound"
+    assert "recorded as spent" in once, (
+        "the once-only bound is unenforceable unless the spend is recorded in the results document"
+    )
+    # The non-exempt re-run is "clause (a) not holding", NOT "D1 passing": keying it on D1 alone
+    # is the B-2 defect, since a re-run where D1 passes but D1-grasp still fires is not a clean
+    # channel and must not fire the abandonment clause either.
+    assert "clause (a) not holding" in once, (
+        "the rule must say what a second, non-exempt run looks like, in terms of clause (a) "
+        "rather than of D1 alone"
+    )
+    assert "unbounded escape" in rule["why_the_once_is_load_bearing"]
+
+    # Outcome X must NOT be conditioned on G-SUB alone; the joint case has its own entry.
+    # Vocabulary AND polarity. Checking only that "clause (a)" appears passes an Outcome X
+    # rewritten to "G-SUB fails AND clause (a) HOLDS" -- the B-2 defect reintroduced in the
+    # correct vocabulary, sailing straight past the guard built to prevent it. The general
+    # form, which is why this comment is here rather than a bare second assertion:
+    #
+    #   A guard that matches on VOCABULARY rather than on the CONDITION will pass any
+    #   mutation fluent enough to reuse the vocabulary.
+    #
+    # Same insight as the string-equality choice in the Table A drift test, applied to logic
+    # instead of to numbers.
+    outcome_x = outcomes["X"].lower()
+    assert "clause (a)" in outcome_x, (
+        "Outcome X must be conditioned on CLAUSE (a). Conditioning it on G-SUB alone "
+        "reproduces the contradiction with the success clause; conditioning it on D1 alone "
+        "reproduces it on the D1-grasp disjunct, which is the B-2 defect."
+    )
+    assert "not hold" in outcome_x, (
+        "Outcome X names clause (a) but with the wrong POLARITY: it must fire when clause (a) "
+        "does NOT hold. 'G-SUB fails AND clause (a) holds' is the B-2 defect wearing the "
+        "correct vocabulary -- the abandonment clause would fire on exactly the joint outcome "
+        "the precedence rule exempts."
+    )
+    assert "P_over_X_precedence" in outcomes
+    joint = outcomes["P_over_X_precedence"]
+    assert "DOES NOT FIRE" in joint.upper()
+    assert "once" in joint.lower()
+
+    # Both clauses must point at the rule, so neither can be read in isolation.
+    for clause in ("abandonment_clause", "success_clause"):
+        assert "precedence_rule_D1_over_G_SUB" in manifest[clause], (
+            f"{clause} does not reference the precedence rule, so it can be read alone and "
+            "reproduce the contradiction"
+        )
+
+    # Every joint outcome over THREE axes is decidable. Two axes is not enough: clause (a) has
+    # two disjuncts, and an earlier revision stated the precedence over the D1 disjunct only,
+    # leaving (D1 passes, D1-grasp fires, G-SUB fails) contradictory. A test that binarized on
+    # d1_failed alone certified nothing about that case.
+    for d1_failed in (True, False):
+        for grasp_fired in (True, False):
+            for gsub_failed in (True, False):
+                clause_a = d1_failed or grasp_fired
+                if gsub_failed and clause_a:
+                    decided = "P_over_X_precedence"
+                elif gsub_failed:
+                    decided = "X"
+                elif clause_a:
+                    decided = "P"
+                else:
+                    decided = "S"
+                assert decided in outcomes, (
+                    f"(D1 failed={d1_failed}, D1-grasp fired={grasp_fired}, "
+                    f"G-SUB failed={gsub_failed}) maps to no pre-declared outcome"
+                )
+
+    # The precedence must range over CLAUSE (a), not over D1 alone, or the D1-grasp disjunct
+    # carries the contradiction. Checked on the values, never on key names.
+    joint_text = outcomes["P_over_X_precedence"].lower()
+    assert "either disjunct" in joint_text or "clause (a)" in joint_text, (
+        "the joint outcome is keyed on D1 alone again: on (D1 passes, D1-grasp fires, G-SUB "
+        "fails) the success clause says continue and Outcome X says stop"
+    )
+    assert "clause (a)" in rule["rule"].lower() and "either disjunct" in rule["rule"].lower()
+    assert "d1_grasp" in str(rule).lower() or "d1-grasp" in str(rule).lower()
+
+    # R-1: the "once" needs a field to flip, not prose binding a document this protocol cannot
+    # reach. The field is frozen false here and set true by the results document.
+    assert rule["exemption_spent"] is False, "the exemption must be unspent at preregistration"
+    contract = rule["exemption_spent_contract"].lower()
+    assert "successor protocol must cite this field" in contract
+    assert "may not claim the exemption while it reads true" in contract
+
+    # The spent cell must be NAMED, and named with the right polarity. Without this the cell is
+    # prose: deleting it left the suite green, which is the same unnamed-cell shape as B-2 and
+    # was found by injecting its removal rather than by reading.
+    assert "X_when_the_exemption_is_already_spent" in outcomes, (
+        "the outcome for (exemption spent, G-SUB fails, clause (a) holds) is not named. An "
+        "unnamed cell is what the B-2 defect was."
+    )
+    spent = outcomes["X_when_the_exemption_is_already_spent"].lower()
+    assert "abandonment clause fires" in spent, (
+        "with the exemption spent, a G-SUB failure under a holding clause (a) must fire the "
+        "clause; anything else makes the 'once' unbounded after all"
+    )
+
+
+def test_the_none_configuration_is_not_terminated_by_shadow_expert_exhaustion():
+    """B2 must be passable, or the run is void before any gate is read.
+
+    The exhaustion rule was keyed on "D3", and ``none`` IS a D3 configuration, so every ``none``
+    attempt would have terminated at ~805 commands with ``shadow_expert_exhausted``. But B2
+    requires ``none`` to reproduce TASK-056's A2 development report, whose sixteen attempts are
+    **all** ``step_limit`` at exactly 1000 executed steps. B2 could never have passed, Outcome V
+    would have fired, and the run would have been void with no arm numbers reported.
+
+    The rule is now keyed on whether the substitution set is empty. With nothing substituted the
+    shadow expert is a recording rather than a command source, so its exhaustion cannot affect
+    the robot and the attempt runs to its cap.
+    """
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    rule = manifest["shadow_expert_exhaustion_preregistered_behaviour"]
+    config = manifest["definitions_every_scope_term_used_in_a_gate_or_stop_rule"]["configuration"]
+
+    assert rule["keyed_on_the_SUBSTITUTION_SET_never_on_which_probe_is_running"] is True
+    empty = rule["empty_substitution_set"]
+    assert "'none'" in empty or '"none"' in empty, (
+        "the empty-substitution branch must name `none` explicitly: it is a D3 configuration, "
+        "so a rule keyed on the probe rather than on the substitution set captures it"
+    )
+    assert "CONTINUES TO ITS CAP" in empty.upper()
+    assert "TERMINATES" in rule["non_empty_substitution_set"].upper()
+
+    # `none` is a control with an empty substitution set; `full` has a non-empty one and is the
+    # only other control, so exactly one control is exposed to the terminating branch.
+    controls = config["controls_which_are_configurations_but_NOT_G_SUB_candidates"]
+    assert set(controls) == {"none", "full"}
+
+    # B3/`full` must fit inside the expert's own budget, or its own threshold is unreachable.
+    # scripted.py phase commands: orient 130, descend 80, close 45, lift 150 -> grasp by 405.
+    assert 130 + 80 + 45 + 150 <= 805, "the oracle must reach grasp well inside 805 commands"
+
+
+def test_the_committed_script_is_the_provenance_of_the_conditional_tables():
+    """Tables C-E must be re-derivable from committed code, as Table A is.
+
+    Section 9's standing practice is that a quantity existing only in a git-ignored run artifact
+    is not citable. `cloning.evaluate_policy` returns an unconditional median and the
+    predictions' std, and cannot produce these tables, so a generating script is committed.
+    """
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    block = manifest["frozen_offline_conditionals_and_phase_table"]
+    named = block["generating_script"].split()[0]
+    assert (ROOT / named).is_file(), f"{named} is named as provenance but is not committed"
+
+    source = (ROOT / named).read_text()
+    # The spawn-pool guard: without it every worker re-executes the module body and the run
+    # deadlocks at near-zero CPU, which looks like "still decoding" rather than like a failure.
+    assert 'if __name__ == "__main__":' in source
+    # It must not quietly decode a split the protocol forbids.
+    assert '"val"' in source and "test" not in source.split("def measure")[1].split('"val"')[0]
