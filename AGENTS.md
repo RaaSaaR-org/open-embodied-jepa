@@ -6,10 +6,11 @@ This file guides coding agents and contributors throughout this repository. More
 
 Build a reproducible research framework for interchangeable, action-conditioned latent world models on G1 EDU4 + dual Dex3. Changing a world model must not require changing the robot, dataset, task, planner, or evaluation code.
 
-The repository is being implemented incrementally. Read README.md and the MC task evidence for current capabilities; distinguish feasibility probes from trained closed-loop benchmarks. Do not present placeholders or synthetic fixtures as working robot manipulation.
+The repository is being implemented incrementally. Read the [README status section](README.md#status--2026-09-24) and the MC task evidence for current capabilities; distinguish feasibility probes from trained closed-loop benchmarks. Do not present placeholders or synthetic fixtures as working robot manipulation. **Learned Apple→Plate is still 0 successes**, and green CI or a passing smoke run is not evidence otherwise.
 
 - **Primary platform:** native MuJoCo on macOS; CPU execution and validated PyTorch MPS support.
-- **Initial models:** `native_jepa` and a LeWM adapter, subject to compatibility verification.
+- **Models:** `native_jepa` and a LeWM adapter over pinned upstream source; both are integrated and trainable, and the backend swap is a one-line config change.
+- **Control line:** since TASK-054, behaviour cloning with the world model as a critic. CEM/MPC over the world-model cost is abandoned as the primary control line but remains implemented and under test; see [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Future platforms:** Isaac Lab/Sim and Unitree SDK2 behind adapter boundaries. Neither blocks local MVP progress.
 - **Task:** tabletop reach → grasp → transport → place → release, leading to Apple → Plate.
 
