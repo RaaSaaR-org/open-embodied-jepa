@@ -35,15 +35,17 @@ records five things:
 ## Result
 
 145 rows. Six corpus slices were audited independently, then adjudicated here (see
-"Adjudications").
+"Adjudications"). The per-slice counts are recounted from the rows below, after the
+S4-07 reclassification. Slice 5's own summary said 9 confirmed / 7 mislabelled; its rows give
+10 / 6.
 
 | Slice | Corpus | confirmed | mislabelled | wrong | unverifiable | rows |
 |---|---|---:|---:|---:|---:|---:|
 | S1 | TASK-048/049/051/053: wide collection, object ceiling v2, grasp-closure diagnosis and v3 | 9 | 6 | 1 | 4 | 20 |
 | S2 | TASK-050: world model v2 | 15 | 6 | 1 | 3 | 25 |
 | S3 | TASK-052: world model v3 | 13 | 6 | 0 | 5 | 24 |
-| S4 | TASK-054/055, DECISIONS, README, MODELS, EVALUATION, MVP 0/150 | 12 | 11 | 3 | 0 | 26 |
-| S5 | TASK-056 pre-flight, training, preregistration | 9 | 7 | 3 | 0 | 19 |
+| S4 | TASK-054/055, DECISIONS, README, MODELS, EVALUATION, MVP 0/150 | 11 | 12 | 3 | 0 | 26 |
+| S5 | TASK-056 pre-flight, training, preregistration | 10 | 6 | 3 | 0 | 19 |
 | S6 | TASK-056 closed loop, handover, TASK-057 cross-reference | 13 | 9 | 3 | 4 | 29 |
 | L | Lead rows (README / CLAUDE.md top-level wording) | 1 | 1 | 0 | 0 | 2 |
 | **Total** | | **72** | **46** | **11** | **16** | **145** |
@@ -80,8 +82,12 @@ right and its construction did not support the reading.
      step-zero `dx` difference between the two experts of median 0.048 over 16 seeds, and more than
      0.057 on 7/16 seeds, with the sign reversed on three. The dx threshold is 3 × A0's Table-A error
      = 0.057, so the median gap is **84 %** of it.
-   - **So D1 can fire for the wrong reason.** Measured against the Oracle, a policy that imitated its
-     expert perfectly could fail D1 and fire the abandonment clause.
+   - **So D1 can fail for the wrong reason.** A perfect imitator of the collector would still
+     pass D1-dx on every arm: its median gap of 0.048 is below the lowest dx threshold, A0's
+     0.057. But the expert mismatch alone uses up 84 % of A0's dx threshold and 59 % of A2's.
+     That leaves an imperfect imitator little room, and it can fail D1-dx, and so count
+     towards the abandonment clause, because the reference is the wrong policy rather than
+     because it imitates badly. The extent is not quantified.
    - **What is not affected.** `dy`, `dz`, rotation and grasp are identical at step zero, so
      D1-grasp is unaffected.
    - **Caveat.** This is a label-based reconstruction. It assumes cohort D's stored reset `object_xy`
@@ -107,8 +113,8 @@ right and its construction did not support the reading.
      proprioception on these cohorts.
    - **P2 (S5-06, S5-05).** P2's threshold rationale is also wrong. It borrowed the 2.394 cm prior
      for absolute apple position. For P2's palm-minus-apple quantity, a per-phase constant scores
-     0.10–0.35 cm, better than E0's 0.456 cm. So P2's absolute threshold is passable by a pure
-     prior, and "R2 not borne out" is unmeasured rather than refuted.
+     0.10–0.35 cm, better than E0's 0.456 cm. So P2's absolute threshold is passable by a
+     phase-conditioned prior (a phase-free global constant scores 1.569 cm and narrowly fails), and "R2 not borne out" is unmeasured rather than refuted.
 3. **The closed-loop dz "under-shoot" is withdrawn as unmeasured (S6-12).** Every statistic behind it
    passed through `np.abs`. It also compared a per-attempt median of |dz| over mostly pre-reach
    commands with an all-phase expert saturation rate. The expert's own median |dz| in `orient` is
@@ -137,11 +143,14 @@ right and its construction did not support the reading.
    - **G4.** In v2, v3 and v4, G4 (apple height, grasp cohort, ≤ 1.0 cm) is passed by predicting
      a constant height. On v4's identical 2,398 windows, height 0 scores 0.36 cm. On v2, the
      train-median constant scores 0.047 cm, better than every arm.
-   - **G3 and G5.** These are passed by copying the true start state forward.
+   - **G3 and G5.** These are passed by copying the **true** (simulator) start state forward: 0.74 cm
+     and AUROC 0.956. That baseline is privileged, not a blind predictor. G5 is also passed by the
+     model's own no-prediction readout: v2 AUROC 0.996 (S2-07).
    - **v4's "the control passed more gates (10 of 14) than every intervention" (S4-09).** Once these
      gates are set aside, the claim reduces to E0 alone clearing G6a at h = 16.
    - **"Every intervention hurt candidate ranking" (S4-10).** This holds only at h = 16. At the
-     planner's own h = 8 (10 groups), E1 scores highest (0.50 against E0's 0.36).
+     planner's own h = 8, E1 scores highest (0.50 against E0's 0.36). That is on 10 groups, below
+     the 12-group cohort rule, so it is also not established.
 7. **The encoder/rollout decomposition is a difference and a ratio of medians (S2-08, S3-05–S3-07,
    S4-12, S4-13).**
    - **v2.** v2's "3.13 / 3.26 cm, 89 % of the error is in the encoding" was never written to any
@@ -161,7 +170,9 @@ right and its construction did not support the reading.
      proprioception, and uses val, which was also the selection split.
    - **S4-24.** "Motion-weighted readout shaping" was a bundled factor.
    - **S4-25.** "0/150 per model" drops two things: every learned MVP episode ended on a joint-rate
-     guard stop within about 5–22 commands, and the same 50 resets were reused across seeds.
+     guard stop, and the same 50 resets were reused across seeds. Per run, the mean is about
+     5–22 commands per episode, and the per-run median is 3–15 commands. Per episode the range is
+     0 to 170.
    - **L-01.** "Every task-specific apple control attempt since has failed its declared gate" is
      true of learned attempts only. The privileged v3 ceiling passed its gate.
 
@@ -235,10 +246,11 @@ correction below rests on the code reading. The computed numbers size the effect
 
 ## Corrections applied (errata, not silent edits)
 
-Every affected source document keeps its original text. A dated **"Errata — 2026-09-25 (TASK-058)"**
-block was added near its top, listing each divergence with its audit row ID. The exceptions are
-`README.md` and `docs/DECISIONS.md`: they are living summaries, so the affected sentences were
-corrected in place and each carries a dated erratum note. The `.mc` evidence logs of the affected
+Every affected experiment document keeps its original text. A dated **"Errata — 2026-09-25
+(TASK-058)"** block was added near its top, listing each divergence with its audit row ID.
+`docs/DECISIONS.md` and `docs/MODELS.md` keep their text and get an appended or inline dated
+erratum. `README.md` is a living summary, so its affected sentences were corrected in place,
+with a dated note saying so. The earlier wording is in git history. The `.mc` evidence logs of the affected
 done tasks got an appended erratum pointer. Everything is visible in the git history of this PR.
 
 | Source document | Rows |
@@ -261,6 +273,45 @@ done tasks got an appended erratum pointer. Everything is visible in the git his
 | `README.md` | L-01, S4-07, S4-09, S4-15, S4-18, S4-24, S4-25 |
 | `docs/MODELS.md` | S4-09 |
 | `.mc` TASK-049, 050, 051, 052, 054, 055, 056 | pointer to the rows above |
+
+## Not citable: consolidated list
+
+These claims rest only on git-ignored artifacts, scratch code or prose. They are **not citable** as
+recorded, whatever their class. Several reproduce exactly; reproducing a figure does not make it
+citable.
+
+- **Classed unverifiable:**
+  - S1-05, S1-06: collection report tables.
+  - S1-12: v3 `close_phase_apple_xy_cm`. The field is committed, but no committed code computes it.
+  - S1-18: grasp-closure paired experiment.
+  - S2-08: v2 3.13 / 3.26 cm and 89 %. Reproduced by this audit in
+    `benchmarks/audits/task058/s2_decompose_lewm_onboard_mps.json`.
+  - S2-10: v2 h = 1/4/16 rows.
+  - S2-24: v2 pilots.
+  - S3-07: v2 anchor of the v2→v3 comparison.
+  - S3-13: G6 null pass rates.
+  - S3-16: second agent's resampling.
+  - S3-17: v3 validation curves.
+  - S3-18: v3 other horizons.
+  - S6-17: mass-at-max test.
+  - S6-22: retracted ejection figures.
+  - S6-24: the crashed A3 run and its cross-check.
+  - S6-27: train dz mean.
+- **Other classes, but resting on git-ignored or scratch sources:**
+  - S1-09, S1-10 (v2 side), S1-16, S1-17: ceiling traces and TASK-051 forensics.
+  - S1-19: tuning 15/16.
+  - S2-11: other-arm h = 1 figures.
+  - S2-13: the 190 G6 rows.
+  - S3-14: sibling start-label mismatch.
+  - S4-21: the 170-tensor weight identity. It rests on checkpoints; only their hashes are
+    committed.
+  - S4-23: trade-off Spearman. Prose only, but its inputs are committed.
+  - S4-26: runner-log eval times.
+  - S5-17 / S6-10: train |dz| = 0.4 rate.
+  - S6-11, S6-15: §14.1 policy |dz| and `droll` tables.
+  - S6-16: `droll` ~27 % and |grasp| 91.78 %.
+- **Also not citable:** every number computed by this audit's own scripts. They are
+  reproducible from committed code, but their inputs are git-ignored.
 
 ## Not done here, deliberately
 
@@ -732,7 +783,7 @@ Shared construction facts (read from the function bodies):
 | S4-22 | "A predictor that saw the offset exactly and then assumed it froze would still beat every arm on the moving windows" (true displacement 2.49 cm) | R:321-324 | report `palm_apple_moving_true_displacement_median_m` = M `decomposition_h8.true_displacement_median_m` | v2 `window_metrics`:372/402; v4 `decompose`:96 | Median ‖truth(target) − truth(start)‖ over moving windows, which equals the true-state copy-last error | 2.49 < 3.48 (best arm) ✓ (computed). The cohort is selected by displacement ≥ 1 cm, so this baseline's error is ≥ 1 cm by construction. | confirmed | Over **all valid** windows, true copy-last is 0.50 cm against the rollout's 0.78–1.23 cm, so the conclusion also holds there. |
 | S4-23 | Trade-off Spearman "−0.107", "+0.084", "−0.400", "+0.800" | R:350-355; TASK-054:116-118 | Prose only (inputs from M and the v3 manifest) | `world_model_v2.spearman`:286 | Rank correlation across 7 or 8 arms and 4-arm subsets | Recomputed all four ✓ | confirmed | The inputs are committed. The statistic itself is prose-only, but it is reproducible. |
 | S4-24 | "Five attempts … **motion-weighted readout shaping (v3, no help and it hurt candidate ranking)**" | DECISIONS:95-96; README:52-53 (MODELS.md:88 says "the readout shaping", which is correct) | v3 manifest arm A vs C | v3 contrast A ↔ C | Arm C drops **both** the motion weighting **and** the auxiliary position readouts (`apple_world_model_v3_results.md`:142-144, 513: "A ↔ C is not 'the motion weighting' on its own"). "Hurt ranking" is G6a 0.328 (A) vs 0.5155 (C), single seed, no interval. | The named entity does not match the manipulated factor | mislabelled | Correction: "v3 readout shaping (motion weighting plus auxiliary position targets, one bundled factor): no G1 help; lower G6a on one seed". |
-| S4-25 | "**0/150 per model** on the frozen unseen-pair benchmark … 400 attempts including hold and random controls"; "0/50 in every one of the eight runs … no backend beating the hold or random controls" | README:9-11; CLAUDE.md:73; EVALUATION.md:44; origin `mvp_results.md`:3, 11-20 (pre-TASK-048) | `benchmarks/manifests/mvp-results-v0.json` `evaluation[*].summary.{episodes,successes,termination_reasons}`, `total_executed_steps`, `limit_rejections` | `benchmark.summarize`:52-55 (sum of `score.success`) via `scripts/summarize_mvp.py` | 6 CEM runs (2 backends × 3 seeds, 3,000 updates on the 184-episode `mvp-v0` corpus, horizon 4, task `tabletop_proxy_v0`) × the **same** 50 resets | 6 × 50 + 50 + 50 = 400 ✓; successes all 0 ✓. **Every one of the 300 model episodes terminated `stopped`, with 50 `limit_rejections` per run.** Commands executed: 1,117 / 239 / 620 / 706 / 670 / 461 per 50 episodes (≈ 5–22 per episode). Hold ran all 805 steps. Origin (`mvp_results.md`:20-22) says the 0/150 is "not 150 independent environments", gets "no pooled binomial interval", and that all model episodes "stopped on right joint rate limit". | mislabelled | The count is right, but the top-level restatements drop that every learned episode ended on a joint-rate guard stop after a few commands (a command-feasibility failure, not a manipulation attempt that failed), and that the same 50 resets were reused across seeds. Correction for README/CLAUDE.md: "0/50 on each of three seeds per backend on the same 50 resets (every learned episode ended on a joint-rate guard stop within ~5–22 commands; not 150 independent trials)". The headline "0 successes" stands. |
+| S4-25 | "**0/150 per model** on the frozen unseen-pair benchmark … 400 attempts including hold and random controls"; "0/50 in every one of the eight runs … no backend beating the hold or random controls" | README:9-11; CLAUDE.md:73; EVALUATION.md:44; origin `mvp_results.md`:3, 11-20 (pre-TASK-048) | `benchmarks/manifests/mvp-results-v0.json` `evaluation[*].summary.{episodes,successes,termination_reasons}`, `total_executed_steps`, `limit_rejections` | `benchmark.summarize`:52-55 (sum of `score.success`) via `scripts/summarize_mvp.py` | 6 CEM runs (2 backends × 3 seeds, 3,000 updates on the 184-episode `mvp-v0` corpus, horizon 4, task `tabletop_proxy_v0`) × the **same** 50 resets | 6 × 50 + 50 + 50 = 400 ✓; successes all 0 ✓. **Every one of the 300 model episodes terminated `stopped`, with 50 `limit_rejections` per run.** Commands executed: 1,117 / 239 / 620 / 706 / 670 / 461 per 50 episodes (≈ 5–22 per episode). Hold ran all 805 steps. Origin (`mvp_results.md`:20-22) says the 0/150 is "not 150 independent environments", gets "no pooled binomial interval", and that all model episodes "stopped on right joint rate limit". | mislabelled | The count is right, but the top-level restatements drop that every learned episode ended on a joint-rate guard stop after a few commands (a command-feasibility failure, not a manipulation attempt that failed), and that the same 50 resets were reused across seeds. Correction for README/CLAUDE.md: "0/50 on each of three seeds per backend on the same 50 resets (every learned episode ended on a joint-rate guard stop, after a per-run mean of ~5–22 commands (per-episode range 0–170; lead correction after review); not 150 independent trials)". The headline "0 successes" stands. |
 | S4-26 | Budget "14,470 s = 4.02 h"; wall clocks 3,512 / 3,884 / 3,553 / 3,521 s; eval 16/17/16/17 s (log), 14.0–15.6 s (report); "No arm hit the cap" | R:44-50, R:73-78; TASK-054:105 | M `overall.measured_training_seconds_total` = 14,469.78; `results.*.elapsed_seconds`; `outputs/task054-runner.log` | Run clocks (`RunClock`) | — | Checked against M and the runner log timestamps (16/17/16/17 s) ✓ | confirmed | The runner-log basis is git-ignored. The M fields are committed. |
 
 ### Divergences needing correction
@@ -782,7 +833,7 @@ Shared construction facts (read from the function bodies):
     - Both → "v3's bundled readout shaping (motion weighting together with auxiliary position targets; not separable) — no G1 help and a lower G6a on one seed".
 14. **S4-25** (mislabelled).
     - `README.md:9-11` and `CLAUDE.md:73` ("0/150 per model on the frozen unseen-pair benchmark")
-      → add "on the same 50 resets per seed; every learned episode ended on a joint-rate guard stop within a few commands (`mvp_results.md` §Physical outcomes)".
+      → add "on the same 50 resets per seed; every learned episode ended on a joint-rate guard stop, typically within a few commands (per-run medians 3–15, maximum 170) (`mvp_results.md` §Physical outcomes)".
     - `EVALUATION.md:44` is accurate as written.
 
 ### Cross-references

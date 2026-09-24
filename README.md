@@ -9,8 +9,8 @@ A Mac-first research framework for action-conditioned visual world models on a s
 **Learned Apple→Plate has never succeeded: 0 successes.** The frozen unseen-pair
 benchmark recorded 0/50 on each of three training seeds for both backends — **0/150 per
 model**, 400 attempts including hold and random controls. The same 50 resets were reused
-across seeds, and every learned episode ended on a joint-rate guard stop within about
-5–22 commands. Every *learned* task-specific apple control attempt since has failed its own
+across seeds, and every learned episode ended on a joint-rate guard stop, typically within
+a few commands (per-run medians 3–15, maximum 170). Every *learned* task-specific apple control attempt since has failed its own
 declared gate. Scripted-collector and
 privileged-oracle successes are collection and feasibility evidence, not learned-policy
 results. Green CI and a passing integration smoke run are software evidence, not working
@@ -42,11 +42,12 @@ checkpoints on recorded validation data — none of them is a manipulation resul
   - the figure covers only the moving validation windows;
   - that validation split was also used for checkpoint selection;
   - the encoding includes fused proprioception;
-  - the v2 comparison figure, 3.13 cm, was never recomputed or committed.
+  - the v2 comparison figure, 3.13 cm, was carried over at v4 without recomputation, and no
+    artifact recorded it until TASK-058 reproduced it (3.1297 cm).
 
   It is not sufficient: 2.59 cm alone exceeds the 1.5 cm gate.
 - **`apple_held` AUROC 0.9992–0.9997** on the lift cohort. This is weak evidence. Copying the
-  true start state forward already reaches AUROC 0.956, and the shuffled-action control
+  true (simulator) start state forward already reaches AUROC 0.956, and the shuffled-action control
   (0.714–0.812) cannot say how much of the signal comes from the encoded state rather than
   from action-conditioned prediction.
 - **No representation collapse:** effective rank 6.74–8.23, collapsed fraction 0.000,
@@ -67,8 +68,9 @@ checkpoints on recorded validation data — none of them is a manipulation resul
   - a non-shared per-step predictor, which damaged the encoder.
 
   In v4 the untouched control passed 10 of 14 gates and every intervention passed 9. The
-  one-gate difference is G6a at h = 16. It does not hold at the planner's h = 8. G3, G4 and G5
-  are also cleared by a copy-last or constant predictor, so the gate count is not a quality
+  one-gate difference is G6a at h = 16. At the planner's h = 8 it is not reproduced, though h = 8
+  has only 10 ranked groups, below the 12-group cohort rule. G4 is cleared by a constant
+  predictor, and G3 and G5 by copying the true simulator state forward, so the gate count is not a quality
   ranking. None of this establishes that the prediction step cannot be fixed: v4 tested three
   designs at one seed and one budget, and v3 tested two more.
 - **The cost-and-phase design as the explanation for the physical failures.** Under exact

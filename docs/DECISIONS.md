@@ -126,8 +126,8 @@ the supporting statements are read:
 
 - **"The untouched control passed more gates than every intervention" (S4-09).** The count is
   right, 10 against 9. The difference is G6a at h = 16. At least three passes that every arm
-  shares (G3, G4, G5) are also cleared by a copy-last or constant predictor; G4 is cleared by a
-  constant zero-height predictor.
+  shares are also cleared without a learned predictor: G4 by a constant zero-height
+  predictor, and G3 and G5 by copying the true simulator state forward.
 - **"All three v4 interventions also cost candidate ranking" (S4-10).** This holds at the gated
   h = 16 only, on one seed and with no interval. At the planner's h = 8 (10 groups), E1 has the
   highest ρ (0.50 against E0's 0.36).
