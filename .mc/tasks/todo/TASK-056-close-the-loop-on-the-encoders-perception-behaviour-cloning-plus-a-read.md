@@ -4,7 +4,7 @@ aliases:
 - TASK-056
 title: Close the loop on the encoder's perception with behaviour cloning and a readout-driven controller
 slug: close-the-loop-on-the-encoders-perception-behaviour-cloning-plus-a-read
-status: backlog
+status: in-progress
 priority: 1
 owner: ''
 projects: []
@@ -124,6 +124,24 @@ TASK-034's fresh-cohort validation) takes precedence over B (grasps but does not
 place to the v3 phase machine, do not retrain). C (A4 succeeds, A2 does not → the demonstration set
 is the binding constraint; collect ≥ 500 clean roots with close oversampled). D (both fail →
 **the line stops; no third control formulation is preregistered on this corpus and this camera**).
+
+## Progress
+
+- **2026-09-24** — preregistration and frozen manifest merged as `3006b3b` (PR #33), after an
+  independent review that returned BLOCK on the first draft (six findings, all confirmed and
+  fixed) and APPROVE WITH NON-BLOCKING COMMENTS on the second (six further items, all fixed).
+  CI green on macOS and Linux.
+- **2026-09-24** — coordinator authorized the gated run through the **development stage only**:
+  pre-flight P0–P3, then (if P1 passes) feature precompute and training of A0–A3, then the
+  16-reset cohort-D pre-check, then stop and report. **Cohort C (45300–45339) is NOT authorized**
+  and requires a third authorization. Standing constraints: `models/base.py` and `models/lewm.py`
+  off-limits; no threshold may be adjusted in response to anything the pre-flight or development
+  stage reports.
+- **Carried forward as a blocking item for `scripts/evaluate_policy.py`:** it must instantiate
+  each cohort-C reset from the stored manifest values and must not recompute them from
+  `wide_reset`. numpy's `Generator.uniform` can differ by one ULP across platforms, so a
+  recomputing runner would let two machines execute subtly different cohorts while both passing
+  the digest check.
 
 ## Authorization and workflow
 
