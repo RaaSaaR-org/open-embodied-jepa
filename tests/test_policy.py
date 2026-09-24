@@ -709,3 +709,102 @@ def test_the_runner_imports_the_committed_reset_rule_rather_than_reimplementing_
         "and no parser can catch it."
     )
     assert "wide_reset" in source, "the committed generator must be reached by name"
+
+
+def _guard_loop_parts(raises):
+    """A minimal closed loop whose projection raises whatever ``raises`` returns."""
+    import yaml
+
+    frozen = yaml.safe_load((ROOT / "configs" / "apple_wm_v4.yaml").read_text())["planner"]
+    stopped = []
+
+    class Robot:
+        def observe(self):
+            return SimpleNamespace(images={}, state=None)
+
+        def project_candidates(self, candidates):
+            exc = raises()
+            if exc is not None:
+                raise exc
+            return SimpleNamespace(
+                feasible=np.ones((1, 1), bool), actions=np.asarray(candidates, np.float32)
+            )
+
+        def execute(self, action):
+            return SimpleNamespace(applied_action=action, status="ok", reason=None)
+
+        def stop(self, reason):
+            stopped.append(reason)
+
+    class Policy:
+        def act(self, images, state):
+            action = np.zeros(14, np.float32)
+            action[12], action[13] = -1.0, 1.0
+            return action
+
+    class Scorer:
+        def evaluate(self):
+            return {"success": False, "grasp": False}
+
+    return (
+        Robot(),
+        Policy(),
+        Scorer(),
+        np.asarray(frozen["lower_bounds"], np.float32),
+        np.asarray(frozen["upper_bounds"], np.float32),
+        stopped,
+    )
+
+
+def test_the_physical_velocity_stop_ends_one_attempt_rather_than_the_whole_arm():
+    """A3's first development run died here with no report at all.
+
+    ``project_candidates`` RAISES the velocity stop (embodiment.py:363) where ``execute``
+    returns it through ``reject()`` (embodiment.py:425). The runner calls the raising path, so
+    one violation on one seed aborted all sixteen and wrote nothing. Precedent says this
+    refusal is a physical stop, not a software failure: ``object_ceiling.py:59`` and
+    ``hybrid_phase.py:31`` both terminate the attempt on it.
+    """
+    from embodied_jepa.contracts import ContractError
+
+    module = runner()
+    robot, policy, scorer, lower, upper, stopped = _guard_loop_parts(
+        lambda: ContractError("measured joint velocity limit exceeded")
+    )
+    result = module.run_attempt(
+        policy, robot, scorer, lower=lower, upper=upper, max_steps=5, deadline_seconds=5.0
+    )
+    assert result["termination_reason"] == "guard_refusal"
+    assert result["executed_steps"] == 0
+    # The whole point: a non-success, not an excused attempt and not a crash.
+    assert not result["score"].get("success", False)
+    assert stopped == ["guard_refusal"], "the robot must be stopped with the REAL reason"
+
+
+def test_an_unrelated_contract_violation_is_still_loud():
+    """The property that existed before the fix and must still hold after it.
+
+    Catching ``ContractError`` broadly here would convert every software defect in the
+    actuation path -- a malformed command, a stale observation, a pinned-component breach --
+    into a quietly recorded failed attempt, and the arm would produce a full report of numbers
+    that mean nothing. The catch enumerates what is PERMITTED, so it fails closed.
+    """
+    from embodied_jepa.contracts import ContractError
+
+    module = runner()
+    robot, policy, scorer, lower, upper, _ = _guard_loop_parts(
+        lambda: ContractError("projection requires a current unconsumed observation")
+    )
+    with pytest.raises(ContractError, match="unconsumed observation"):
+        module.run_attempt(
+            policy, robot, scorer, lower=lower, upper=upper, max_steps=5, deadline_seconds=5.0
+        )
+
+
+def test_the_guard_refusal_list_matches_the_precedent_it_cites():
+    """If a later generation adds a refusal to one list it must reach all three."""
+    module = runner()
+    from embodied_jepa.hybrid_phase import GUARD_REFUSALS as HYBRID
+    from embodied_jepa.object_ceiling import GUARD_REFUSALS as CEILING
+
+    assert module.GUARD_REFUSALS == CEILING == HYBRID

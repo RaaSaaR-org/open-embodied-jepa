@@ -1167,7 +1167,50 @@
   "results": {
     "A4_deferred_not_abandoned": "A4 is not built yet because the development pre-check does not need it. It becomes MORE important if the learned arms fail on development: A4 is what distinguishes Outcome D (perception inadequate in the loop) from Outcome C (cloning is the failing component). If all four learned arms die on development, A4 is the next thing built. Its absence at this stage is sequencing, not abandonment.",
     "arms_trained": 4,
+    "cohort_C_never_opened": "The user ruled seeds 45300-45339 stay unconsumed, permanently, for this task. Under EITHER reading of the undefined \"learned arm\" scope term, cohort C could not produce a pass: if the controls are subject to the stop rule they are dead and G2/G3 lose their reference terms, which the missing-values rule converts to failed; if they are exempt, A2 would need 17/40 on fresh resets after 0/16 on development with every attempt hitting the step cap. The decision did NOT require resolving the ambiguity, and the ambiguity was deliberately NOT resolved.",
     "cohort_C_simulated": false,
+    "cohort_D_development": {
+      "arms": {
+        "A0_proprio_only": {
+          "cap_hits": "16/16",
+          "dead_on_development": true,
+          "full_successes": 0,
+          "grasp_resets": 0,
+          "guard_refusals": 0
+        },
+        "A1_random_encoder": {
+          "cap_hits": "16/16",
+          "dead_on_development": true,
+          "full_successes": 0,
+          "grasp_resets": 0,
+          "guard_refusals": 0
+        },
+        "A2_bc_frozen_e0": {
+          "cap_hits": "16/16",
+          "dead_on_development": false,
+          "full_successes": 0,
+          "grasp_resets": 1,
+          "guard_refusals": 0
+        },
+        "A3_bc_finetuned_e0": {
+          "cap_hits": "14/16",
+          "dead_on_development": false,
+          "full_successes": 0,
+          "grasp_resets": 1,
+          "guard_refusals": 2,
+          "guard_seeds": [
+            45001,
+            45003
+          ]
+        }
+      },
+      "every_attempt_not_guard_stopped_hit_the_1000_step_cap": true,
+      "never_gates_never_a_result": "per the protocol; recorded here only because the stop rule keys off it",
+      "no_attempt_terminated_on_task_success_or_task_failure": true,
+      "resets": 16,
+      "seeds": "45000-45007, 45100-45107"
+    },
+    "dz_under_shoot": "Predicted in advance (declared expected failure mode, not a discovery) and borne out: arm median dz 0.0125/0.0544/0.0317/0.0857 for A0-A3 against an expert at exactly 0.400 in 44.89% of 68,791 BC target commands. CONSISTENT STORY, NOT A DEMONSTRATED MECHANISM: no experiment here separates dz under-shoot from other causes of every attempt hitting the step cap.",
     "learned_apple_to_plate_successes": 0,
     "observations": {
       "A0_is_now_the_most_informative_arm": "If relative palm-apple accuracy is largely recoverable from proprioception, a proprioception-only policy may be strong, and G2 (best learned arm - A0) becomes the gate that decides whether anything visual is happening at all. A0 is to be built and trained with the same care as A2. If A0 turns out strong, that is a FINDING, not an inconvenience.",
@@ -1263,6 +1306,8 @@
       "rows_scored": 7734,
       "surviving_val_roots": 15
     },
+    "protocol_gap_learned_arm_undefined": "THE MOST DURABLE FINDING. \"learned arm\" appears in four places across the protocol and this manifest and is defined in NONE of them. This manifest tags A0 and A1 role=\"control: ...\" AND trains=true; the stop rule keys off neither. Neither control is named in the stop rule. G2/G3 have no clause for a missing reference arm. No pre-declared outcome covers a dead control. Two internal tensions: best_learned_arm_rule selects on C and would overlap G2's subtrahend; and a rule headed \"not a gate\" determines gate outcomes via the missing-values rule. FUTURE PROTOCOLS: define the domain of every scope term in a stop rule or gate by naming the arms it covers. Specificity, five review rounds and a frozen cohort hash did not close this hole, because reviewers check whether thresholds are justified, not whether the nouns are defined.",
+    "runner_defect_fixed_after_numbers_were_seen": "A3 first crashed with ContractError(\"measured joint velocity limit exceeded\") raised from embodiment.py:363 in project_candidates, aborting all 16 attempts. execute() returns the same condition via reject() at embodiment.py:425. Precedent (object_ceiling.py:59, hybrid_phase.py:31, TASK-046) treats it as a physical stop terminating the attempt. Fix records guard_refusal, counts the attempt as a NON-SUCCESS, moves no threshold/limit/gate, and fails closed (enumerates what may be caught). AUTHORIZED AFTER THE NUMBERS WERE SEEN, stated explicitly; acceptable ONLY because D is the development cohort and is never a result. Would have been refused against cohort C.",
     "stage": "training_complete_development_precheck_pending",
     "stage1_withdrawal_clause": {
       "committed": "2026-09-24, while the alignment review of the runner was still running and its answer was unknown.",
@@ -1330,10 +1375,11 @@
     }
   },
   "results_doc": "docs/experiments/apple_policy_v1_results.md",
-  "status": "preregistration_merged_stage1_complete",
+  "status": "FAILED_on_development_stop_rule",
   "status_history": [
     "preregistered_not_run (at merge of PR #33)",
-    "preregistration_merged_stage1_complete (pre-flight run and passed; no arm trained; cohort C untouched)"
+    "preregistration_merged_stage1_complete (pre-flight run and passed; no arm trained; cohort C untouched)",
+    "FAILED_on_development_stop_rule (four arms trained and run on cohort D; every arm 0 full successes; both controls dead_on_development at 0/16 grasp; cohort C never opened and, by user ruling, will not be opened for this task)"
   ],
   "stop_rule_protecting_cohort_C": {
     "cohort_C_is_not_opened_autonomously": "After the development pre-check and before the first attempt on C, the executing agent reports the pre-flight values, the training reports and the D numbers to the coordinator and waits. Opening the frozen cohort is a SEPARATE authorization, not a continuation of the one that started the pre-flight.",

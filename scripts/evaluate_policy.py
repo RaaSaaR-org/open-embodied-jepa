@@ -77,6 +77,24 @@ FREE_NAMES = ("dx", "dy", "dz", "droll", "dpitch", "dyaw", "grasp")
 FREE_INDICES = (6, 7, 8, 9, 10, 11, 13)
 EXPERT_MAXIMUM = (0.400, 0.400, 0.400, 0.500, 0.500, 0.500, 1.000)
 
+#: Embodiment guard refusals that are PHYSICAL STOPS, not software failures -- the TASK-046
+#: precedent, mirrored from ``object_ceiling.py`` and ``hybrid_phase.py`` which both carry this
+#: exact tuple. ``G1Embodiment`` has two paths for the same condition: ``execute`` RETURNS it
+#: through ``reject()`` (embodiment.py:425) while ``project_candidates`` RAISES it
+#: (embodiment.py:363). This runner calls the raising one, so before this was handled a single
+#: violation aborted the whole arm instead of ending one attempt -- which is how A3's first
+#: development run died with no report at all.
+#:
+#: The attempt ends and counts as a NON-SUCCESS. The robot stopped the arm because the arm
+#: commanded motion the platform refuses; that is a failure of the policy, not of the software,
+#: and it is recorded as such rather than being retried, excused or averaged away.
+#:
+#: This enumerates what MAY be caught rather than catching ``ContractError`` broadly, so it
+#: FAILS CLOSED: an unrelated contract violation -- a malformed command, a stale observation, a
+#: pinned-component breach -- still propagates and still kills the run loudly. A guard that
+#: enumerates what is forbidden fails open; this one enumerates what is permitted.
+GUARD_REFUSALS = ("measured joint velocity limit exceeded",)
+
 
 def load_wide_reset():
     """The committed reset rule, imported rather than reimplemented.
@@ -250,7 +268,13 @@ def run_attempt(policy, robot, scorer, *, lower, upper, max_steps, deadline_seco
             validate_actions(command[None, None, None], ndim=4)
             # The embodiment's UNCHANGED feasibility projection, exactly as the collector's
             # commands were projected. A policy does not get a different actuation path.
-            projection = robot.project_candidates(command[None, None, None])
+            try:
+                projection = robot.project_candidates(command[None, None, None])
+            except ContractError as exc:
+                if str(exc) not in GUARD_REFUSALS:
+                    raise
+                reason = "guard_refusal"
+                break
             if not bool(projection.feasible[0, 0]):
                 reason = "infeasible_command"
                 break
@@ -432,6 +456,12 @@ def evaluate(config_path, checkpoint, *, arm, seeds, output, device, max_steps, 
         },
         "grasp_resets": grasps,
         "full_successes": successes,
+        # Counted and surfaced rather than buried in per-attempt rows: an arm the platform
+        # physically stopped is a different failure from one that ran out of steps, and a
+        # reader comparing arms needs to see it without opening every attempt.
+        "guard_refusals": sum(
+            1 for a in report["attempts"] if a["termination_reason"] == "guard_refusal"
+        ),
         # The protocol's stop rule: an arm reaching grasp on 0/16 does not open cohort C.
         "dead_on_development": grasps == 0,
         "elapsed_seconds": time.perf_counter() - started,

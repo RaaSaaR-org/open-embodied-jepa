@@ -4,7 +4,7 @@ aliases:
 - TASK-056
 title: Close the loop on the encoder's perception with behaviour cloning and a readout-driven controller
 slug: close-the-loop-on-the-encoders-perception-behaviour-cloning-plus-a-read
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -142,6 +142,43 @@ is the binding constraint; collect ≥ 500 clean roots with close oversampled). 
   `wide_reset`. numpy's `Generator.uniform` can differ by one ULP across platforms, so a
   recomputing runner would let two machines execute subtly different cohorts while both passing
   the digest check.
+
+## Outcome: FAILED on the development stop rule
+
+**TASK-056 failed.** Four arms trained and run on the 16 development resets; **every arm 0 full
+successes.** Both controls (A0 no-vision, A1 random-encoder) reached the scorer's `grasp` stage on
+**0/16** and are recorded `dead_on_development`. A2 (primary) and A3 each reached grasp 1/16.
+Every attempt not stopped by the embodiment ran to the 1000-step cap. Learned Apple→Plate remains
+at **0 successes**.
+
+**Cohort C (45300–45339) was never opened and, by user ruling, stays unconsumed permanently for
+this task.** Under *either* reading of the protocol's undefined "learned arm" scope term, C could
+not produce a pass — if the controls are subject to the stop rule they are dead and G2/G3 lose
+their reference terms, which the missing-values rule converts to failed; if they are exempt, A2
+would have needed 17/40 on fresh resets after 0/16 on development with every attempt hitting the
+cap. Spending 40 irreplaceable resets to document a determined outcome buys nothing. **The
+ambiguity was deliberately not resolved**, which is what made the decision takeable.
+
+Gates G1–G7 were **never evaluated**: no cohort-C attempt was ever run. No gate result is claimed.
+
+**Durable findings**, recorded in `docs/experiments/apple_policy_v1_results.md` §§14–17:
+
+- **The protocol gap.** "Learned arm" appears four times across the protocol and manifest and is
+  defined in none of them; the manifest tags A0/A1 as both `role: control` and `trains: true` and
+  the stop rule keys off neither. A preregistration that was gated, frozen and independently
+  reviewed five times still contained one undefined term that decided the fate of a frozen cohort.
+  Future protocols must define the domain of every scope term in a stop rule or gate by naming the
+  arms it covers.
+- **The dz under-shoot**, predicted in advance and borne out — arm median dz 0.0125/0.0544/0.0317/
+  0.0857 against an expert at exactly 0.400 in 44.89 % of commands. A **declared expected failure
+  mode, not a discovery**, and a **consistent story, not a demonstrated mechanism.**
+- **A runner defect** that aborted A3's whole run on a physical guard stop, fixed after the numbers
+  were seen — acceptable only because cohort D is the development cohort and is never a result.
+- **Ten recurring-lesson instances**, including a torch blocker that used an API removed in Python
+  3.12, was inert, and produced two false greens.
+
+A4 is **deferred, not abandoned**: it distinguishes Outcome C from Outcome D and is more important
+after this failure, not less. Handover for the follow-up: `docs/experiments/task056_handover.md`.
 
 ## Authorization and workflow
 
