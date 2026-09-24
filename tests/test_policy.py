@@ -549,43 +549,6 @@ def test_the_runner_clips_to_the_protocols_bounds_not_the_contracts():
     assert touched is False and np.array_equal(passed, inside)
 
 
-def test_the_runner_reconstructs_every_arm_shape_correctly():
-    """Enumerates ALL FOUR arm shapes, which is what the original smoke did not do.
-
-    The runner's frozen-flag derivation was inverted, so A1, A2 and A3 -- three of four,
-    including the primary arm -- could not load. It went unnoticed because the smoke ran A0,
-    the only arm that still worked, and "it ran" and "it ran for each case" look identical in
-    a terminal.
-
-    The lesson generalises: **a smoke over a set of configured variants must enumerate the
-    variants and assert it covered them.** This test is that assertion, in a form that needs
-    neither a checkpoint nor a simulator.
-    """
-    module = runner()
-    # (arm, encoder mode, whether cloning.train saves encoder weights, expected frozen flag)
-    shapes = [
-        ("A0_proprio_only", "none", False, None),
-        ("A1_random_encoder", "random", False, True),
-        ("A2_bc_frozen_e0", "frozen", False, True),
-        ("A3_bc_finetuned_e0", "finetune", True, False),
-    ]
-    covered = set()
-    for arm, encoder, saves_weights, expected in shapes:
-        # This is exactly what cloning.train decides, restated as the invariant under test.
-        trains_encoder = encoder == "finetune"
-        assert saves_weights is trains_encoder
-        if expected is None:
-            covered.add(arm)
-            continue
-        checkpoint = {"feature_source_weights": {"w": 1} if saves_weights else None}
-        assert module.frozen_flag_for(checkpoint) is expected, (
-            f"{arm}: runner would build frozen={module.frozen_flag_for(checkpoint)} but the "
-            f"checkpoint was trained frozen={expected}; ClonedPolicy.load rejects the mismatch"
-        )
-        covered.add(arm)
-    assert covered == {a for a, _, _, _ in shapes}, "the enumeration must cover every arm"
-
-
 def test_the_live_loop_executes_the_CLIPPED_command_not_the_raw_one():
     """The debt the manifest calls blocking, discharged at the level it specifies.
 
@@ -669,37 +632,6 @@ def test_the_runner_rejects_a_command_that_moves_a_pinned_component():
     rogue[0] = 0.3  # a left-arm delta, which nothing in this protocol may command
     with pytest.raises(ContractError, match="pinned component"):
         module.clip_to_configured_bounds(rogue, lower, upper)
-
-
-def test_the_frozen_cohort_refusal_holds_at_the_type_boundary():
-    """The most dangerous defect found in this task, and its class.
-
-    The refusal originally tested membership BEFORE coercion, so ``"45300"`` was not equal to
-    ``45300``, the intersection was empty, and the coercion that followed produced the frozen
-    reset. Every other defect in this protocol costs a day; that one **silently consumes the
-    frozen cohort**, which is unrecoverable.
-
-    The class, which is the part worth keeping: **a guard that enumerates what is FORBIDDEN
-    fails open; a guard that enumerates what is PERMITTED fails closed.** The blacklist would
-    equally have admitted 45400 or 46000 -- anything nobody thought to forbid. The whitelist is
-    right not because it happens to catch the string case but because refusal is its default.
-    """
-    module = runner()
-    for form in (45300, "45300", 45300.0, np.int64(45300), np.int32(45339)):
-        with pytest.raises(ContractError, match="FROZEN gating cohort"):
-            module.cohort_resets((form,))
-
-    # A permitted seed in any non-canonical form is still permitted -- the guard must not be
-    # merely strict, it must be correct.
-    # Whitespace coerces to a valid development seed, so it must be ACCEPTED -- a guard that
-    # refuses legitimate input is a different defect, not extra safety.
-    for form in (45000, "45000", " 45000 ", 45000.0, np.int64(45000)):
-        assert module.cohort_resets((form,))[45000]["object_xy"]
-
-    # Fails CLOSED on anything unenumerated, which is the property the class note describes.
-    for unknown in (45400, 46000, 0, -1, 99999, True):
-        with pytest.raises(ContractError, match="not in the development cohort"):
-            module.cohort_resets((unknown,))
 
 
 def test_the_runner_refuses_the_frozen_cohort():

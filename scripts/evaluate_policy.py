@@ -47,7 +47,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from embodied_jepa.contracts import ContractError, validate_actions  # noqa: E402
-from embodied_jepa.policy import PINNED_ACTION_VALUES, _check_pinned_bounds  # noqa: E402
+
+# embodied_jepa.policy imports torch at module scope. It is imported INSIDE the two functions
+# that need it so this module stays importable without the optional "learning" extra -- which
+# puts the cohort-C guard's tests back in the core CI job, where the most serious defect found
+# in this task would have been caught on every push rather than only on the integration job.
 
 PROTOCOL = "apple_policy_v1"
 TASK = "TASK-056"
@@ -56,8 +60,22 @@ TASK = "TASK-056"
 COHORT_D = tuple(range(45000, 45008)) + tuple(range(45100, 45108))
 #: The frozen gating cohort. This runner refuses it; opening it is a separate authorization.
 COHORT_C = tuple(range(45300, 45340))
-#: Onboard render size of the corpus the policies were trained on (collect_apple_wide.py).
+#: Onboard render size of the corpus the policies were trained on. Asserted against a decoded
+#: frame at run time rather than trusted, so a corpus collected at another size cannot pass.
 IMAGE_SIZE = 112
+#: Free action components, and the expert's own MEASURED maximum for each.
+#:
+#: These are STRUCTURAL CLIP POINTS, not empirical extremes: scripted.py:85 clips translation
+#: at 0.4 and :88 clips rotation at 0.5, and the grasp target is near-binary +-1. Verified on
+#: the 68,791 BC target commands by the mass-at-max test -- 9x to 242x more mass exactly ON the
+#: maximum than in the 5% band below it, with q99 = q999 = max for every dimension.
+#:
+#: VALIDITY CONDITION: thresholding on a measured maximum is safe only because these are clips.
+#: Do NOT reuse this on a corpus whose maxima are empirical extremes -- there the threshold is
+#: tuned to a single unusual episode and a quantile is the right instrument instead.
+FREE_NAMES = ("dx", "dy", "dz", "droll", "dpitch", "dyaw", "grasp")
+FREE_INDICES = (6, 7, 8, 9, 10, 11, 13)
+EXPERT_MAXIMUM = (0.400, 0.400, 0.400, 0.500, 0.500, 0.500, 1.000)
 
 
 def load_wide_reset():
@@ -97,6 +115,12 @@ def cohort_resets(seeds):
         )
     # F5: a whitelist, not a blacklist of C. Any other seed would otherwise be run and then
     # filed under "D_development_never_gating", which the report hard-codes.
+    duplicates = sorted({seed for seed in seeds if seeds.count(seed) > 1})
+    if duplicates:
+        raise ContractError(
+            f"duplicate seeds {duplicates}: the stop rule counts attempts over the 16 "
+            "development resets, and a repeated seed would be counted twice."
+        )
     outside = sorted(set(seeds) - set(COHORT_D))
     if outside:
         raise ContractError(
@@ -121,8 +145,63 @@ def frozen_flag_for(checkpoint):
     return checkpoint.get("feature_source_weights") is None
 
 
+def command_statistics(commands, stages):
+    """Per-dimension departure and intervention rates, and the distribution behind them.
+
+    Two statistics that are deliberately NOT the same number:
+
+    * **out-of-distribution rate** -- the fraction exceeding the expert's own measured maximum
+      for that dimension. This is the quantity that answers "is the policy commanding things
+      the demonstrations never contained".
+    * **clip rate** -- the fraction the configured bounds physically reshaped before the robot
+      saw it.
+
+    They coincide exactly where the expert's maximum equals the bound (rotation at 0.5, grasp
+    at 1.0) and diverge where it does not (translation: expert 0.4, bound 0.5). The gap between
+    them IS the (0.4, 0.5] band -- outside everything demonstrated, yet never clipped, and
+    therefore invisible to a clip rate alone. Reporting both makes that band a number instead
+    of an inference.
+
+    A POOLED figure across dimensions is uninterpretable and is not produced: translation
+    saturation is unprecedented in the demonstrations while rotation saturation is normal at
+    27%, and the grasp dimension is at its maximum 97% of the time by design.
+    """
+    commands = np.asarray(commands, np.float32)
+    if not len(commands):
+        return None
+    free = np.abs(commands[:, list(FREE_INDICES)])
+    result = {"commands": int(len(commands)), "per_dimension": {}}
+    for i, name in enumerate(FREE_NAMES):
+        column = free[:, i]
+        result["per_dimension"][name] = {
+            "expert_maximum": EXPERT_MAXIMUM[i],
+            "out_of_distribution_rate": float((column > EXPERT_MAXIMUM[i] + 1e-6).mean()),
+            "max_abs": float(column.max()),
+            "q50": float(np.quantile(column, 0.50)),
+            "q90": float(np.quantile(column, 0.90)),
+            "q99": float(np.quantile(column, 0.99)),
+        }
+    # Stage concentration: the scorer's own stage flags are the only phase signal available in
+    # closed loop. Scoring-only -- they never reach the policy.
+    by_stage = {}
+    for stage in ("reach", "grasp", "transport", "place", "release", "none"):
+        mask = np.array([s == stage for s in stages], bool)
+        if not mask.any():
+            continue
+        by_stage[stage] = {
+            "commands": int(mask.sum()),
+            "translation_out_of_distribution_rate": float(
+                (free[mask][:, :3] > 0.400 + 1e-6).any(1).mean()
+            ),
+        }
+    result["by_stage"] = by_stage
+    return result
+
+
 def clip_to_configured_bounds(action, lower, upper):
     """Clip a policy command to the protocol's frozen bounds and verify the pinned parts."""
+    from embodied_jepa.policy import PINNED_ACTION_VALUES
+
     action = np.asarray(action, np.float32)
     if action.shape != (14,):
         raise ContractError("a policy command must be a 14-vector")
@@ -140,6 +219,7 @@ def run_attempt(policy, robot, scorer, *, lower, upper, max_steps, deadline_seco
     """One closed-loop episode. Returns the scorer's final reading plus per-step accounting."""
     reason, score, clipped_commands, control_times = "step_limit", {}, 0, []
     executed = 0
+    commands, stages = [], []
     try:
         for _ in range(max_steps):
             began = time.perf_counter()
@@ -147,6 +227,19 @@ def run_attempt(policy, robot, scorer, *, lower, upper, max_steps, deadline_seco
             raw = policy.act(observation.images, observation.state)
             command, was_clipped = clip_to_configured_bounds(raw, lower, upper)
             clipped_commands += int(was_clipped)
+            # The RAW command is recorded, before the bound reshapes it: the question is what
+            # the policy asked for, not what the robot was allowed to do.
+            commands.append(np.asarray(raw, np.float32).copy())
+            stages.append(
+                next(
+                    (
+                        s
+                        for s in ("release", "place", "transport", "grasp", "reach")
+                        if score.get(s)
+                    ),
+                    "none",
+                )
+            )
             validate_actions(command[None, None, None], ndim=4)
             # The embodiment's UNCHANGED feasibility projection, exactly as the collector's
             # commands were projected. A policy does not get a different actuation path.
@@ -169,6 +262,12 @@ def run_attempt(policy, robot, scorer, *, lower, upper, max_steps, deadline_seco
             if control_times[-1] > deadline_seconds:
                 reason = "deadline_miss"
                 break
+    except BaseException:
+        # Without this the robot is stopped with the INITIALISER reason ("step_limit") after a
+        # mid-loop exception, which is a wrong reason recorded in the simulator rather than a
+        # missing stop.
+        reason = "error"
+        raise
     finally:
         # Every exit path stops the robot, including an exception. G1Embodiment raises
         # ContractError("measured joint velocity limit exceeded") from inside project_candidates,
@@ -178,6 +277,7 @@ def run_attempt(policy, robot, scorer, *, lower, upper, max_steps, deadline_seco
         "termination_reason": reason,
         "executed_steps": executed,
         "clipped_commands": clipped_commands,
+        "command_statistics": command_statistics(commands, stages),
         "median_control_seconds": float(np.median(control_times)) if control_times else None,
         "max_control_seconds": float(np.max(control_times)) if control_times else None,
         "score": score,
@@ -193,6 +293,7 @@ def evaluate(config_path, checkpoint, *, arm, seeds, output, device, max_steps, 
         ClonedPolicy,
         FrozenEncoder,
         NoEncoder,
+        _check_pinned_bounds,
     )
     from embodied_jepa.simulation import MuJoCoSimulation
     from embodied_jepa.task import AppleToPlateTask
@@ -289,6 +390,12 @@ def evaluate(config_path, checkpoint, *, arm, seeds, output, device, max_steps, 
         # not -- the test that pins the two equal compares COORDINATES, not the dict). Passing
         # it through is correct; passing seed= separately is a TypeError, which is how this was
         # found.
+        # Assert the render size the encoder was trained on rather than trusting the constant.
+        probe = robot.observe().images["onboard_rgb"]
+        if probe.shape[1:3] != (IMAGE_SIZE, IMAGE_SIZE):
+            raise ContractError(
+                f"onboard render is {probe.shape[1:3]}, not the corpus's {IMAGE_SIZE} px"
+            )
         robot.reset(**resets[int(seed)])
         scorer = AppleToPlateTask(robot)
         attempt = run_attempt(

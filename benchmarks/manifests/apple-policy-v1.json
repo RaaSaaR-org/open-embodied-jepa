@@ -153,6 +153,17 @@
     },
     "why_n40_is_affordable": "A feed-forward policy evaluates far more cheaply per command than the CEM ceiling: the G7 cap of 100 ms is already 6.2x under the ceiling's measured 0.621-0.649 s, and the expected cost (one encoder forward plus a 380k-parameter head) is another order below the cap. That is why n=40 is affordable where prior protocols could afford n=8."
   },
+  "clip_and_out_of_distribution_statistics": {
+    "counters_hand_verified": "Verified against hand-computed values on a case that is NEITHER ZERO NOR ALL -- a counter that always returns zero and a correct counter agree perfectly on a run where nothing is clipped. The verification case also demonstrates the gap: clip rate 0.30 against an out-of-distribution rate of 0.60, with 3 of 10 commands outside the expert's range and never clipped.",
+    "expert_maxima_measured": {
+      "grasp": 1.0,
+      "rotation": 0.5,
+      "translation": 0.4
+    },
+    "no_pooled_figure_is_produced": "A figure pooled across dimensions is uninterpretable and is not reported: translation saturation is UNPRECEDENTED in the demonstrations while rotation saturation is NORMAL at 27%, and the grasp dimension sits at its maximum 97% of the time by design. A pooled rate blends all three.",
+    "validity_condition": "Thresholding on a measured maximum is safe here ONLY because each maximum is a STRUCTURAL CLIP POINT, not an empirical extreme. Verified by the mass-at-max test on 68,791 BC target commands: 9x to 242x more mass exactly ON the maximum than in the 5% band below it, with q99 = q999 = max for every dimension. DO NOT reuse this statistic on a corpus whose maxima are empirical extremes -- there the threshold is tuned to a single unusual episode and a quantile is the right instrument.",
+    "why_two_statistics": "The CLIP RATE measures physical intervention -- what the configured bounds reshaped before the robot saw it. The OUT-OF-DISTRIBUTION RATE measures distributional departure -- the fraction exceeding the expert's own measured maximum for that dimension. They coincide where the expert's maximum equals the bound (rotation 0.5, grasp 1.0) and diverge where it does not (translation: expert 0.400, bound 0.500). The gap between them IS the (0.4, 0.5] band: outside everything demonstrated, never clipped, and therefore INVISIBLE to a clip rate alone."
+  },
   "closed_loop_started": false,
   "cohorts": {
     "C_frozen_gating": {
@@ -990,7 +1001,7 @@
     "found_by": "independent review, before the runner was used for anything",
     "no_cohort_c_seed_has_ever_been_simulated": true,
     "status": "Fixed: seeds are coerced before the membership test, and the guard is a whitelist of cohort D. Tested at the type boundary (int, str, float, np.int64, np.int32, bool, whitespace), including that non-canonical forms of PERMITTED seeds are still accepted. Each guard verified by injecting its own violation and watching the test fail.",
-    "the_class": "A guard that enumerates what is FORBIDDEN fails open. A guard that enumerates what is PERMITTED fails closed. The whitelist is right not because it catches the string case but because refusal is its default.",
+    "the_class": "A guard that enumerates what is FORBIDDEN fails open. A guard that enumerates what is PERMITTED fails closed. The whitelist is right not because it catches the string case but because refusal is its default. It does not merely fail open: the report hard-codes the cohort label, so an unenumerated seed would have been FILED AS DEVELOPMENT DATA. It fails open AND mislabels, which is what makes it silent rather than merely permissive.",
     "what": "scripts/evaluate_policy.py tested cohort-C membership BEFORE coercing seeds to int, so the string '45300' bypassed the refusal and produced exactly the manifest's stored resets['45300']. The guard was also a BLACKLIST of cohort C rather than a whitelist of cohort D, so any unenumerated seed ran and was filed under 'D_development_never_gating'.",
     "why_it_is_worse_than_the_others": "Every other defect in this protocol produces a wrong number or a failed load: visible, recoverable, costing a day. This one SILENTLY CONSUMES THE FROZEN COHORT, which is unrecoverable -- there is no re-running a cohort whose entire value is never having been seen. Cohort C is gated behind three separate authorizations because opening it cannot be undone, and a type coercion could have walked through all three."
   },

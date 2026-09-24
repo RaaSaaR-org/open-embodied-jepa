@@ -262,6 +262,10 @@ undone, and a type coercion could have walked through all three without any of t
 
 > **A guard that enumerates what is FORBIDDEN fails open. A guard that enumerates what is
 > PERMITTED fails closed.**
+>
+> And it does not merely fail open: because the report hard-codes the cohort label, an
+> unenumerated seed would have been **filed as development data**. It fails open *and*
+> mislabels, which is what makes it silent rather than merely permissive.
 
 The original guard was a blacklist of cohort C. It would equally have admitted 45400, 46000, or
 any seed nobody thought to forbid — and the report hard-codes `"cohort": "D_development_never_gating"`,
