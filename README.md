@@ -49,14 +49,13 @@ checkpoints on recorded validation data — none of them is a manipulation resul
 - **Five specific attempts to fix the prediction step under motion.** That step has never
   beaten the model's own persistence readout by the required margin (gate G2a ≤ 0.8; best
   ever recorded **0.831**, at v3, against 0.8635 at best in v4 and 0.835 at v2), and these
-  five did not change it: a second camera (made readout
-  precision worse), motion-weighted readout shaping (no help, and it hurt candidate
-  ranking), action-chunk conditioning (no effect), a tail-weighted multistep loss (about
-  15% of the needed change, and not distinguishable from cohort sampling), and a
-  non-shared per-step predictor (damaged the encoder). In v4 the **untouched control
-  passed more gates (10 of 14) than every intervention (9 of 14)**. This does not
-  establish that the prediction step cannot be fixed — it is three designs at one seed and
-  one budget in v4, and two more in v3.
+  five did not change it: a second camera (made readout precision worse), motion-weighted
+  readout shaping (no help, and it hurt candidate ranking), action-chunk conditioning (no
+  effect), a tail-weighted multistep loss (about 15% of the needed change, and not
+  distinguishable from cohort sampling), and a non-shared per-step predictor (damaged the
+  encoder). In v4 the **untouched control passed more gates (10 of 14) than every
+  intervention (9 of 14)**. This does not establish that the prediction step cannot be
+  fixed — it is three designs at one seed and one budget in v4, and two more in v3.
 - **The cost-and-phase design as the explanation for the physical failures.** Under exact
   MuJoCo dynamics and perfect object state the
   [v3 grasp-closure ceiling](docs/experiments/apple_wide_grasp_closure_results_v3.md)
@@ -66,9 +65,9 @@ checkpoints on recorded validation data — none of them is a manipulation resul
   learned controller, and it moves attention to the learned rollout. It does not prove
   that nothing else in the loop is also wrong.
 
-**The one learned result that ever beat its controls**, kept here so the summary is
-complete in both directions: the corrected v2 development *reaching* models each reached
-**1/5** fixed development goals against 0/5 for hold and random
+**The one learned closed-loop result that ever beat its controls**, kept here so the
+summary is complete in both directions: the corrected v2 development *reaching* models
+each reached **1/5** fixed development goals against 0/5 for hold and random
 ([reach_results.md](docs/experiments/reach_results.md)). The 95% Wilson interval for 1/5,
 [0.036, 0.624], overlaps the controls' [0, 0.434], so this is observed progress on an
 intermediate milestone, not established superiority and not the full task.
