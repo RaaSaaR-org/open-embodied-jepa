@@ -549,6 +549,33 @@ def test_the_runner_clips_to_the_protocols_bounds_not_the_contracts():
     assert touched is False and np.array_equal(passed, inside)
 
 
+def test_the_clip_rate_under_counts_the_out_of_distribution_band():
+    """The clip half of the comparison whose arithmetic half lives in the preflight file.
+
+    It is here, behind ``importorskip("torch")``, because ``clip_to_configured_bounds`` needs
+    ``PINNED_ACTION_VALUES`` from ``policy.py``. Deferring that import moved the dependency
+    from collection time to CALL time; it did not remove it, and the preflight file has to run
+    in the core CI job, which has no torch.
+    """
+    module = runner()
+    dz = [0.10, 0.35, 0.401, 0.45, 0.50, 0.55, 0.70, 0.90, 0.399, 0.20]
+    commands = []
+    for value in dz:
+        action = np.zeros(14, np.float32)
+        action[8], action[12], action[13] = value, -1.0, 1.0
+        commands.append(action)
+    lower = np.array([0.0] * 6 + [-0.5] * 6 + [-1.0, -1.0], np.float32)
+    upper = np.array([0.0] * 6 + [0.5] * 6 + [-1.0, 1.0], np.float32)
+
+    clipped = sum(module.clip_to_configured_bounds(a, lower, upper)[1] for a in commands)
+    ood = module.command_statistics(commands, ["reach"] * 10)["per_dimension"]["dz"]
+    assert clipped == 3  # only the three past 0.500
+    assert ood["out_of_distribution_rate"] == pytest.approx(0.6)  # six past 0.400
+    assert clipped / 10 < ood["out_of_distribution_rate"], (
+        "the clip rate must under-count distributional departure"
+    )
+
+
 def test_the_live_loop_executes_the_CLIPPED_command_not_the_raw_one():
     """The debt the manifest calls blocking, discharged at the level it specifies.
 

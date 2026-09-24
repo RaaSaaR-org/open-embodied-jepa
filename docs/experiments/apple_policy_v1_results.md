@@ -367,6 +367,23 @@ story exists — the head may ignore the image in both cases, and A1's less stru
 may be less misleading — but it is untested, and an unexplained measurement is more useful to
 the next generation than a tidy account of it.
 
+**Declared expected failure mode: the policies will under-shoot the translation boundary.**
+The expert corpus is saturated against its own limits — `right_dz` sits at exactly 0.400 in
+**44.89%** of commands — and the arms are trained with a smooth-L1 objective, which is
+minimized by hedging toward the interior of a bimodal target rather than committing to either
+mode. The prediction, recorded here **before the development numbers exist**, is that the
+learned arms' dz distributions will be *compressed relative to the expert's*: a lower rate at
+or near the maximum, and mass pulled toward zero. If that happens it is a **declared expected
+failure mode, not a discovery**, and it must not be reported as an insight found in the data.
+
+This changes nothing about the gates. It is recorded so that the observation cannot later be
+presented as explanatory. Two things will be reported alongside the cohort-D numbers so the
+prediction is falsifiable rather than decorative: **the policies' own per-dimension dz
+distribution in the same form as the expert's** (rate at maximum, rate in the out-of-distribution
+band, quantiles), and **per-attempt step counts with cap hits**, since a policy that
+under-shoots dz reaches the object later or not at all, and an attempt that ends on the step cap
+is a different failure from one that ends on a bad grasp.
+
 **A4 is deferred, not abandoned.** The readout-driven scripted controller is not built yet
 because the development pre-check does not need it. It becomes *more* important if the learned
 arms fail on development, not less: A4 is what distinguishes **Outcome D** ("perception is
@@ -487,6 +504,25 @@ they are worth listing together because the shape repeats and the surface change
    local, and **names the hole it cannot close** — reimplementing the reset arithmetic inline
    references nothing — so whoever inherits it knows what they are inheriting rather than
    believing the parse is airtight.
+
+9. The fix for instance 7 was a `sys.meta_path` blocker that made the core environment
+   reproducible locally. It **did not work, and it reported success twice.** The blocker class
+   defined `find_module`/`load_module` — the legacy import hook API **removed in Python 3.12** —
+   so the interpreter never consulted it and `import torch` succeeded straight through it. Both
+   "torch-free" verifications it produced (PR #38 and the first push of PR #39) were **false
+   greens**, and the second one shipped a genuinely torch-dependent test into the torch-free
+   file, which an independent review caught rather than CI. A control built specifically to
+   prevent a failure class was itself non-functional, and because its output was
+   indistinguishable from a real pass it *concealed* the class instead of catching it —
+   strictly worse than having no control, which would at least have left the question open.
+   The durable fix is not a better blocker but a **blocker that fails loudly when it is inert**:
+   it now asserts `"torch" not in sys.modules` before installing itself and then attempts the
+   import, exiting non-zero if it succeeds. Verified in both directions against the pre-fix
+   file: **`1 failed, 17 passed`** with exactly the expected `ImportError`, versus **18 passed**
+   after the split. The first negative control written for this was *also* worthless — it ran
+   the pre-fix copy from `/tmp`, where all 18 tests failed on `FileNotFoundError` before
+   reaching any import — which is instance 8's lesson (a test failing is not a test failing
+   *for the reason you think*) recurring inside the fix for instance 9.
 
 The common form: **verifying that something produces a plausible value does not verify that it
 computes the quantity you believe it computes.** Every instance was caught by someone checking

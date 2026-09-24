@@ -433,11 +433,17 @@ def test_the_clip_rate_cannot_see_the_out_of_distribution_band():
     assert measured["max_abs"] == pytest.approx(0.90)
     assert measured["expert_maximum"] == 0.400
 
-    lower = np.array([0.0] * 6 + [-0.5] * 6 + [-1.0, -1.0], np.float32)
-    upper = np.array([0.0] * 6 + [0.5] * 6 + [-1.0, 1.0], np.float32)
-    clipped = sum(module.clip_to_configured_bounds(a, lower, upper)[1] for a in commands)
-    assert clipped == 3  # only past 0.500
-    assert clipped / 10 < measured["out_of_distribution_rate"], (
-        "the clip rate must under-count distributional departure; if these are equal the "
-        "(0.4, 0.5] band has been lost and the second statistic is pointless"
+    # The clip half of this comparison lives in tests/test_policy.py: clip_to_configured_bounds
+    # needs PINNED_ACTION_VALUES from policy.py, which imports torch, and DEFERRING that import
+    # moved the dependency from collection time to CALL time rather than removing it. This file
+    # must stay runnable in the core CI job, which has no torch.
+    #
+    # What is asserted here is the arithmetic that makes the two statistics differ at all:
+    # three of these ten commands sit in (0.400, 0.500] -- outside everything the expert ever
+    # demonstrated, and below the bound, so no clip rate can see them.
+    band = [v for v in dz if 0.400 + 1e-6 < v <= 0.500 + 1e-6]
+    assert len(band) == 3
+    assert measured["out_of_distribution_rate"] > len([v for v in dz if v > 0.500 + 1e-6]) / 10, (
+        "the out-of-distribution rate must exceed what a clip rate could see; if they are "
+        "equal the (0.4, 0.5] band has been lost and the second statistic is pointless"
     )

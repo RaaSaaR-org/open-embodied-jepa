@@ -162,9 +162,16 @@ def command_statistics(commands, stages):
     therefore invisible to a clip rate alone. Reporting both makes that band a number instead
     of an inference.
 
+    Two scoping notes, because a statistic that cannot fire is worth naming rather than
+    leaving as a suspicious column of zeros. "Raw" here means pre-CONFIGURED-BOUND, not
+    pre-any-clip: ``ClonedPolicy.act`` has already clipped to the contract's [-1, 1], so
+    ``max_abs`` can never exceed 1.0 and a head saturating beyond that is invisible. And
+    ``grasp``'s out-of-distribution rate is therefore **structurally always 0**, since the
+    expert maximum, the contract clip and the configured bound are all 1.0.
+
     A POOLED figure across dimensions is uninterpretable and is not produced: translation
     saturation is unprecedented in the demonstrations while rotation saturation is normal at
-    27%, and the grasp dimension is at its maximum 97% of the time by design.
+    27%, and the grasp dimension is at its maximum 91.8% of the time by design.
     """
     commands = np.asarray(commands, np.float32)
     if not len(commands):
@@ -191,7 +198,7 @@ def command_statistics(commands, stages):
         by_stage[stage] = {
             "commands": int(mask.sum()),
             "translation_out_of_distribution_rate": float(
-                (free[mask][:, :3] > 0.400 + 1e-6).any(1).mean()
+                (free[mask][:, :3] > np.array(EXPERT_MAXIMUM[:3]) + 1e-6).any(1).mean()
             ),
         }
     result["by_stage"] = by_stage
