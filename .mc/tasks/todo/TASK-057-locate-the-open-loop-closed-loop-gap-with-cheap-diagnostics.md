@@ -38,9 +38,10 @@ would show a compressed output standard deviation and a large error on the satur
 shows neither. The expert's own `right_dz` is a signed, near-symmetric bang-bang whose **mean is
 −0.0012**, so the published comparison was never between the same quantities.
 
-Two attempts were not failures and this task leads with them: **A2 on seed 45100 and A3 on seed
-45006 each reached the scorer's `grasp` stage, lifted the apple ~17 cm, and were still holding it
-undropped at the step cap.** Neither reached `transport`.
+Two attempts were not **total** failures and this task leads with them: **A2 on seed 45100 and A3
+on seed 45006 each reached the scorer's `grasp` stage, lifted the apple ~17 cm, and were still
+holding it undropped at the step cap.** Neither reached `transport`, and **the task still has zero
+learned successes** — 0/64 on development, as every generation of this line has been.
 
 So this is a **diagnostic** task. It trains nothing, changes no model, and preregisters no use of
 cohort C. It runs three cheap probes on the already-consumed development cohort — a signed

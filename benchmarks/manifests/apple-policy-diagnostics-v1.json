@@ -48,7 +48,7 @@
   },
   "committed_in_advance": "A rescue under expert substitution injects privileged information at 50 Hz, which the policy does not get. It shows WHICH CHANNEL the failure flows through; it does NOT show that a learned version of that channel is attainable. No D3 number may be read as evidence that a fix will work.",
   "corrections_to_the_TASK_056_record_established_by_this_preregistration": {
-    "1_the_dz_hedging_mechanism_is_contradicted": "The expert's right_dz is a signed near-symmetric bang-bang: +0.400 on 18.45%, -0.400 on 26.44%, |dz|=0.400 on 44.89% (reproducing the committed rate exactly), MEAN -0.0012. The committed 44.89% is an ABSOLUTE-value rate. Offline, the trained heads reproduce the saturated command: median |dz| error 0.0133-0.0283 with predicted dz std 0.2656-0.2735 and predicted grasp std 0.971-0.979. A head hedging toward the interior would show a COMPRESSED output std and a LARGE error on saturated rows; it shows neither. Declared risk R5 did not occur. Separately, cloning.py calls smooth_l1_loss with default beta=1.0 and every residual is inside |x|<1, so the objective was pure L2 throughout and its minimizer is the conditional MEAN.",
+    "1_the_dz_hedging_mechanism_is_NOT_SUPPORTED_by_the_statistics_it_was_read_off": "Downgraded from 'contradicted'. The expert's right_dz is a signed near-symmetric bang-bang (+0.400 on 18.45%, -0.400 on 26.44%, |dz|=0.400 on 44.886% TRAIN / 44.503% VAL, mean -0.0012) and the committed 44.89% is an ABSOLUTE-value rate. The unconditional median and the predictions-only std CANNOT test the hedging prediction. The conditionals that CAN were computed and the prediction is NOT BORNE OUT OFFLINE: on saturated rows the heads are MORE accurate, conditional means are +0.354..+0.375 on target +0.400 and -0.374..-0.390 on target -0.400, and predicted std is 95-100% of TARGET std. It does NOT follow that dz under-shoot played no part in the closed-loop failure: closed-loop signs are unrecoverable, so the online half stays UNMEASURED. Declared risk R5 is not borne out OFFLINE and that is the whole claim.",
     "2_the_sign_of_every_TASK_056_command_is_unrecoverable": "scripts/evaluate_policy.py computed every stored command statistic from np.abs(...). Zero negative numbers exist anywhere in command_statistics across all 64 attempts. |dz| q50 = 0.0125 is equally consistent with descending slowly, ascending slowly and oscillating about zero; |grasp| q50 = 1.0 is equally consistent with a hand held fully OPEN - which is what the expert does through orient and descend - and one held fully closed. The under-shoot reading in apple_policy_v1_results.md section 16 and task056_handover.md section 5 is therefore UNMEASURED rather than refuted. This is why D1-grasp is the most informative probe here.",
     "3_both_learned_arms_grasped_and_lifted_the_apple": "A2 on seed 45100 and A3 on seed 45006 each reached the scorer's grasp stage, lifted the apple +0.1678 m and +0.1694 m against a 0.05 m gate, and were STILL HOLDING IT, undropped, when the 1000-step cap ended the attempt. Neither reached transport. The 1/16 counts ARE in apple_policy_v1_results.md sections 14 and 16; the lift height, the sustained contact and the undropped state are nowhere in the record; and task056_handover.md gives neither arm's grasp count at all, stating only the controls' 0/16. The compression into the handover removed the run's single most encouraging measurement.",
     "4_the_near_constant_reading_is_translation_only": "Median across attempts: dx q90/q50 1.00-1.22 and dz 1.01-1.32, versus droll q50 0.179-0.243, q90 0.478-0.498, q99 0.503-0.513 (ratio 2.05-2.67). Stated at that strength and no further: droll's out-of-distribution rate is 5-7% and its q90 sits at the 0.5 configured bound, which is LESS saturation than the expert's measured ~27% at |max|, so this is not roll running away. The observation is that the one dimension with real online variance is rotational, and it is the dimension with the SMALLEST offline error in Table A. Largest online/offline behavioural gap in the run, and not in the dimension the dz hypothesis pointed at.",
@@ -73,7 +73,29 @@
     "arm_dimension_note": "grasp is NEVER included in an arm-dimension aggregate and is always reported separately.",
     "arm_note": "A4 is NOT an arm in this protocol. It is not built and this protocol does not propose building it.",
     "attempt": "one closed-loop episode of one arm on one development seed under one named configuration, capped at 1000 executed commands",
-    "configuration": "the named subset of the seven free dimensions taken from the shadow expert; 'none' is empty, 'full' is all seven",
+    "configuration": {
+      "all_translation_expands_to": [
+        "dx",
+        "dy",
+        "dz"
+      ],
+      "controls_which_are_configurations_but_NOT_G_SUB_candidates": {
+        "full": "all seven dimensions, B3's control",
+        "none": "empty set, B2's control"
+      },
+      "defect_this_enumeration_fixes": "An earlier draft defined a configuration as 'the named subset of the seven free dimensions' and let G-SUB range over ANY configuration. Under that wording 'full' IS a configuration, B3 requires full to reach >=14/16, and G-SUB passed if any configuration reached >=8/16 -- so B3 PASSING IMPLIED G-SUB PASSING while B3 FAILING VOIDED THE RUN, and the gate wired to the abandonment clause had NO FAILING PATH. The candidate list also existed only in the protocol's prose, never in the definitions and never in the gate: an unenumerated scope term deciding an outcome, verbatim the TASK-056 defect this section exists to prevent.",
+      "g_sub_candidates_the_ONLY_configurations_G_SUB_RANGES_OVER": [
+        "all_translation",
+        "dx",
+        "dy",
+        "dz",
+        "droll",
+        "dpitch",
+        "dyaw",
+        "grasp"
+      ],
+      "total_configurations_run": 10
+    },
     "control_arm": [
       "A0_proprio_only",
       "A1_random_encoder"
@@ -101,7 +123,12 @@
     "primary_arm": [
       "A2_bc_frozen_e0"
     ],
-    "shadow_expert_command": "OracleManipulationPolicy(sim.task_truth()).action(robot) at indices (6,7,8,9,10,11,13), advanced by advance(result) on every executed step, computed strictly AFTER policy.act returns",
+    "shadow_expert_command": {
+      "consequence_for_D3_declared_before_any_number": "A D3 configuration can inject a lift-phase ascent into an attempt whose hand has never closed on anything. A confound on the only gate. shadow_expert_phase is logged per step, and a G-SUB pass whose attempts spent most of their commands past the expert's close phase is REPORTED AS SUCH next to the pass. Reporting requirement, not a threshold.",
+      "definition": "OracleManipulationPolicy(sim.task_truth()).action(robot) at indices (6,7,8,9,10,11,13), advanced by advance(result) on every executed step, computed strictly AFTER policy.act returns",
+      "it_is_a_HYBRID_reference_after_roughly_step_130": "advance(result) is called on THE POLICY'S executed result, so the expert's phase counter advances on the policy's clock rather than its own progress. A policy that has gone nowhere still drives the reference into descend and then lift. It is 'expert targets on a policy-driven clock' and is named that way wherever used.",
+      "it_is_exhausted_after_805_commands": "scripted.py's phase table sums to 130+80+45+150+160+100+60+80 = 805 and action() RAISES once done. Every TASK-056 attempt not stopped by the embodiment ran to 1000, so the shadow expert dies around step 805 on nearly every attempt, and run_attempt's bare `except BaseException` would turn that into a dead run with no report."
+    },
     "step_zero_command": "the policy's 7-vector at the first act() call after robot.reset, before any execute()",
     "why": "apple_policy_v1_results.md section 15: one undefined term ('learned arm', used thirteen times across the frozen artifacts, defined in none) decided whether an irreplaceable cohort would be consumed. Every scope term below is enumerated by name."
   },
@@ -150,6 +177,484 @@
     }
   },
   "frozen_D1_thresholds_three_times_table_A_note": "Derived from the ROUNDED Table A cells, which are the authority. Tripling an unrounded intermediate instead put the manifest 1e-6 out of agreement with its own table; a consistency test caught it before merge.",
+  "frozen_offline_conditionals_and_phase_table": {
+    "per_arm": {
+      "A0_proprio_only": {
+        "by_phase_median_error": {
+          "close": {
+            "right_dpitch": 0.01298600435256958,
+            "right_droll": 0.01922852173447609,
+            "right_dx": 0.017518118023872375,
+            "right_dy": 0.01607324182987213,
+            "right_dyaw": 0.010609796270728111,
+            "right_dz": 0.020666033029556274,
+            "right_grasp": 0.0167505145072937,
+            "rows": 675
+          },
+          "descend": {
+            "right_dpitch": 0.010026663541793823,
+            "right_droll": 0.008495887741446495,
+            "right_dx": 0.021268140524625778,
+            "right_dy": 0.015262601897120476,
+            "right_dyaw": 0.007501167245209217,
+            "right_dz": 0.006778165698051453,
+            "right_grasp": 0.026775479316711426,
+            "rows": 1200
+          },
+          "lift": {
+            "right_dpitch": 0.009641267359256744,
+            "right_droll": 0.012099001556634903,
+            "right_dx": 0.01603923738002777,
+            "right_dy": 0.01921989396214485,
+            "right_dyaw": 0.0070654358714818954,
+            "right_dz": 0.013907130807638168,
+            "right_grasp": 0.004216551780700684,
+            "rows": 2181
+          },
+          "lower": {
+            "right_dpitch": 0.013836639001965523,
+            "right_droll": 0.016299089416861534,
+            "right_dx": 0.021815814077854156,
+            "right_dy": 0.01815061829984188,
+            "right_dyaw": 0.02028450183570385,
+            "right_dz": 0.021967098116874695,
+            "right_grasp": 0.0167006254196167,
+            "rows": 699
+          },
+          "orient": {
+            "right_dpitch": 0.012953334487974644,
+            "right_droll": 0.0033746063709259033,
+            "right_dx": 0.022474322468042374,
+            "right_dy": 0.021287962794303894,
+            "right_dyaw": 0.008375713601708412,
+            "right_dz": 0.016102954745292664,
+            "right_grasp": 0.010168313980102539,
+            "rows": 1950
+          },
+          "release": {
+            "right_dpitch": 0.016933005303144455,
+            "right_droll": 0.048798464238643646,
+            "right_dx": 0.03513713553547859,
+            "right_dy": 0.04074038565158844,
+            "right_dyaw": 0.03355738893151283,
+            "right_dz": 0.08894774317741394,
+            "right_grasp": 0.01507568359375,
+            "rows": 178
+          },
+          "transfer": {
+            "right_dpitch": 0.013611726462841034,
+            "right_droll": 0.014882473275065422,
+            "right_dx": 0.012347634881734848,
+            "right_dy": 0.014575973153114319,
+            "right_dyaw": 0.02128417231142521,
+            "right_dz": 0.020969996228814125,
+            "right_grasp": 0.008928835391998291,
+            "rows": 840
+          }
+        },
+        "mean_predicted_dz_on_target_minus_max": -0.3868888318538666,
+        "mean_predicted_dz_on_target_plus_max": 0.37499043345451355,
+        "median_error_on_dz_saturated_rows": {
+          "right_dpitch": 0.011498495936393738,
+          "right_droll": 0.013763200491666794,
+          "right_dx": 0.021670114248991013,
+          "right_dy": 0.020639345049858093,
+          "right_dyaw": 0.008593574166297913,
+          "right_dz": 0.012395143508911133,
+          "right_grasp": 0.01415795087814331
+        },
+        "median_error_on_dz_unsaturated_rows": {
+          "right_dpitch": 0.011933935806155205,
+          "right_droll": 0.008022278547286987,
+          "right_dx": 0.017327770590782166,
+          "right_dy": 0.017428625375032425,
+          "right_dyaw": 0.010998852550983429,
+          "right_dz": 0.01792796142399311,
+          "right_grasp": 0.00835186243057251
+        },
+        "median_predicted_dz_on_target_minus_max": -0.40184715390205383,
+        "median_predicted_dz_on_target_plus_max": 0.3953264355659485,
+        "predicted_std_per_dimension": {
+          "right_dpitch": 0.1901884526014328,
+          "right_droll": 0.2286568135023117,
+          "right_dx": 0.1603444665670395,
+          "right_dy": 0.1539209485054016,
+          "right_dyaw": 0.1054813489317894,
+          "right_dz": 0.2734878361225128,
+          "right_grasp": 0.9794198870658875
+        },
+        "unconditional_median_error": {
+          "right_dpitch": 0.011776218190789223,
+          "right_droll": 0.009851086884737015,
+          "right_dx": 0.018957585096359253,
+          "right_dy": 0.0186195969581604,
+          "right_dyaw": 0.010053738951683044,
+          "right_dz": 0.01569327712059021,
+          "right_grasp": 0.010429620742797852
+        }
+      },
+      "A1_random_encoder": {
+        "by_phase_median_error": {
+          "close": {
+            "right_dpitch": 0.012988165020942688,
+            "right_droll": 0.010767694562673569,
+            "right_dx": 0.02424158714711666,
+            "right_dy": 0.026095334440469742,
+            "right_dyaw": 0.014127546921372414,
+            "right_dz": 0.02190941572189331,
+            "right_grasp": 0.009874045848846436,
+            "rows": 675
+          },
+          "descend": {
+            "right_dpitch": 0.008999839425086975,
+            "right_droll": 0.011375697329640388,
+            "right_dx": 0.019632644951343536,
+            "right_dy": 0.02428879402577877,
+            "right_dyaw": 0.006300784647464752,
+            "right_dz": 0.009059742093086243,
+            "right_grasp": 0.023634999990463257,
+            "rows": 1200
+          },
+          "lift": {
+            "right_dpitch": 0.007574871182441711,
+            "right_droll": 0.009123747237026691,
+            "right_dx": 0.02266222983598709,
+            "right_dy": 0.02712430991232395,
+            "right_dyaw": 0.005442729219794273,
+            "right_dz": 0.011595368385314941,
+            "right_grasp": 0.005144178867340088,
+            "rows": 2181
+          },
+          "lower": {
+            "right_dpitch": 0.00935334712266922,
+            "right_droll": 0.007402387913316488,
+            "right_dx": 0.023167919367551804,
+            "right_dy": 0.0158049538731575,
+            "right_dyaw": 0.007238068617880344,
+            "right_dz": 0.016270192340016365,
+            "right_grasp": 0.02111351490020752,
+            "rows": 699
+          },
+          "orient": {
+            "right_dpitch": 0.011647060513496399,
+            "right_droll": 0.00244903564453125,
+            "right_dx": 0.0215454064309597,
+            "right_dy": 0.024208787828683853,
+            "right_dyaw": 0.005270695313811302,
+            "right_dz": 0.013956310227513313,
+            "right_grasp": 0.0038025975227355957,
+            "rows": 1950
+          },
+          "release": {
+            "right_dpitch": 0.055506542325019836,
+            "right_droll": 0.02951667830348015,
+            "right_dx": 0.05069287121295929,
+            "right_dy": 0.06138446182012558,
+            "right_dyaw": 0.01695290207862854,
+            "right_dz": 0.07372421026229858,
+            "right_grasp": 0.017690688371658325,
+            "rows": 178
+          },
+          "transfer": {
+            "right_dpitch": 0.008183466270565987,
+            "right_droll": 0.0071982573717832565,
+            "right_dx": 0.011227786540985107,
+            "right_dy": 0.0190033670514822,
+            "right_dyaw": 0.010797438211739063,
+            "right_dz": 0.01396205648779869,
+            "right_grasp": 0.008795112371444702,
+            "rows": 840
+          }
+        },
+        "mean_predicted_dz_on_target_minus_max": -0.3903237581253052,
+        "mean_predicted_dz_on_target_plus_max": 0.3718663156032562,
+        "median_error_on_dz_saturated_rows": {
+          "right_dpitch": 0.010504217818379402,
+          "right_droll": 0.011905844323337078,
+          "right_dx": 0.023496583104133606,
+          "right_dy": 0.027956366539001465,
+          "right_dyaw": 0.008756084367632866,
+          "right_dz": 0.012827157974243164,
+          "right_grasp": 0.01102149486541748
+        },
+        "median_error_on_dz_unsaturated_rows": {
+          "right_dpitch": 0.009357757866382599,
+          "right_droll": 0.004378229379653931,
+          "right_dx": 0.018946267664432526,
+          "right_dy": 0.02181578055024147,
+          "right_dyaw": 0.005912477150559425,
+          "right_dz": 0.013618867844343185,
+          "right_grasp": 0.005496025085449219
+        },
+        "median_predicted_dz_on_target_minus_max": -0.404828280210495,
+        "median_predicted_dz_on_target_plus_max": 0.39035290479660034,
+        "predicted_std_per_dimension": {
+          "right_dpitch": 0.18809041380882263,
+          "right_droll": 0.23182693123817444,
+          "right_dx": 0.16447722911834717,
+          "right_dy": 0.15014000236988068,
+          "right_dyaw": 0.1050594225525856,
+          "right_dz": 0.27348387241363525,
+          "right_grasp": 0.9775986075401306
+        },
+        "unconditional_median_error": {
+          "right_dpitch": 0.009703431278467178,
+          "right_droll": 0.007255077362060547,
+          "right_dx": 0.020989758893847466,
+          "right_dy": 0.02504412829875946,
+          "right_dyaw": 0.006734100170433521,
+          "right_dz": 0.013327211141586304,
+          "right_grasp": 0.0073059797286987305
+        }
+      },
+      "A2_bc_frozen_e0": {
+        "by_phase_median_error": {
+          "close": {
+            "right_dpitch": 0.02264326810836792,
+            "right_droll": 0.016146600246429443,
+            "right_dx": 0.024781636893749237,
+            "right_dy": 0.02942304126918316,
+            "right_dyaw": 0.01809472031891346,
+            "right_dz": 0.02645057439804077,
+            "right_grasp": 0.009319305419921875,
+            "rows": 675
+          },
+          "descend": {
+            "right_dpitch": 0.01881369948387146,
+            "right_droll": 0.01852335035800934,
+            "right_dx": 0.02341032586991787,
+            "right_dy": 0.021676985546946526,
+            "right_dyaw": 0.01122233271598816,
+            "right_dz": 0.00843079388141632,
+            "right_grasp": 0.01725098490715027,
+            "rows": 1200
+          },
+          "lift": {
+            "right_dpitch": 0.017493948340415955,
+            "right_droll": 0.016057251021265984,
+            "right_dx": 0.027002278715372086,
+            "right_dy": 0.029977405443787575,
+            "right_dyaw": 0.012013825587928295,
+            "right_dz": 0.0168226957321167,
+            "right_grasp": 0.005688607692718506,
+            "rows": 2181
+          },
+          "lower": {
+            "right_dpitch": 0.019587114453315735,
+            "right_droll": 0.016902443021535873,
+            "right_dx": 0.03520327806472778,
+            "right_dy": 0.03139283508062363,
+            "right_dyaw": 0.021740689873695374,
+            "right_dz": 0.0269874706864357,
+            "right_grasp": 0.02542126178741455,
+            "rows": 699
+          },
+          "orient": {
+            "right_dpitch": 0.026356633752584457,
+            "right_droll": 0.004772990942001343,
+            "right_dx": 0.025806274265050888,
+            "right_dy": 0.0322868674993515,
+            "right_dyaw": 0.016150034964084625,
+            "right_dz": 0.025638198480010033,
+            "right_grasp": 0.00795707106590271,
+            "rows": 1950
+          },
+          "release": {
+            "right_dpitch": 0.042785484343767166,
+            "right_droll": 0.045245714485645294,
+            "right_dx": 0.06125091761350632,
+            "right_dy": 0.04483679682016373,
+            "right_dyaw": 0.03216581046581268,
+            "right_dz": 0.09254419803619385,
+            "right_grasp": 0.04328078031539917,
+            "rows": 178
+          },
+          "transfer": {
+            "right_dpitch": 0.014705788344144821,
+            "right_droll": 0.017636321485042572,
+            "right_dx": 0.02579936385154724,
+            "right_dy": 0.023319382220506668,
+            "right_dyaw": 0.015800194814801216,
+            "right_dz": 0.027133017778396606,
+            "right_grasp": 0.01124468445777893,
+            "rows": 840
+          }
+        },
+        "mean_predicted_dz_on_target_minus_max": -0.3759523928165436,
+        "mean_predicted_dz_on_target_plus_max": 0.3722286522388458,
+        "median_error_on_dz_saturated_rows": {
+          "right_dpitch": 0.0203237384557724,
+          "right_droll": 0.018507245928049088,
+          "right_dx": 0.03014993667602539,
+          "right_dy": 0.028768643736839294,
+          "right_dyaw": 0.014379426836967468,
+          "right_dz": 0.013487398624420166,
+          "right_grasp": 0.010743379592895508
+        },
+        "median_error_on_dz_unsaturated_rows": {
+          "right_dpitch": 0.019962802529335022,
+          "right_droll": 0.008896677754819393,
+          "right_dx": 0.02547142282128334,
+          "right_dy": 0.028887316584587097,
+          "right_dyaw": 0.014940492808818817,
+          "right_dz": 0.025824356824159622,
+          "right_grasp": 0.008450031280517578
+        },
+        "median_predicted_dz_on_target_minus_max": -0.39816340804100037,
+        "median_predicted_dz_on_target_plus_max": 0.3911736011505127,
+        "predicted_std_per_dimension": {
+          "right_dpitch": 0.19505161046981812,
+          "right_droll": 0.2264409214258194,
+          "right_dx": 0.16111387312412262,
+          "right_dy": 0.15428803861141205,
+          "right_dyaw": 0.10276205092668533,
+          "right_dz": 0.27083683013916016,
+          "right_grasp": 0.9736839532852173
+        },
+        "unconditional_median_error": {
+          "right_dpitch": 0.020074456930160522,
+          "right_droll": 0.012483429163694382,
+          "right_dx": 0.02714921534061432,
+          "right_dy": 0.028861574828624725,
+          "right_dyaw": 0.01474270224571228,
+          "right_dz": 0.01992073655128479,
+          "right_grasp": 0.009306490421295166
+        }
+      },
+      "A3_bc_finetuned_e0": {
+        "by_phase_median_error": {
+          "close": {
+            "right_dpitch": 0.025995850563049316,
+            "right_droll": 0.030948717147111893,
+            "right_dx": 0.04356306791305542,
+            "right_dy": 0.029967013746500015,
+            "right_dyaw": 0.021901484578847885,
+            "right_dz": 0.025343716144561768,
+            "right_grasp": 0.011321544647216797,
+            "rows": 675
+          },
+          "descend": {
+            "right_dpitch": 0.021303460001945496,
+            "right_droll": 0.0340195894241333,
+            "right_dx": 0.020293105393648148,
+            "right_dy": 0.0276318546384573,
+            "right_dyaw": 0.012715402990579605,
+            "right_dz": 0.01545436680316925,
+            "right_grasp": 0.04449748992919922,
+            "rows": 1200
+          },
+          "lift": {
+            "right_dpitch": 0.026514984667301178,
+            "right_droll": 0.017054591327905655,
+            "right_dx": 0.028252054005861282,
+            "right_dy": 0.024497322738170624,
+            "right_dyaw": 0.02291947975754738,
+            "right_dz": 0.028943657875061035,
+            "right_grasp": 0.008180975914001465,
+            "rows": 2181
+          },
+          "lower": {
+            "right_dpitch": 0.03546879440546036,
+            "right_droll": 0.03246681019663811,
+            "right_dx": 0.028707578778266907,
+            "right_dy": 0.026030000299215317,
+            "right_dyaw": 0.02137773111462593,
+            "right_dz": 0.038497377187013626,
+            "right_grasp": 0.027628064155578613,
+            "rows": 699
+          },
+          "orient": {
+            "right_dpitch": 0.03354259952902794,
+            "right_droll": 0.008187800645828247,
+            "right_dx": 0.030551502481102943,
+            "right_dy": 0.027316119521856308,
+            "right_dyaw": 0.01953669637441635,
+            "right_dz": 0.032578885555267334,
+            "right_grasp": 0.008353233337402344,
+            "rows": 1950
+          },
+          "release": {
+            "right_dpitch": 0.07648877054452896,
+            "right_droll": 0.06681403517723083,
+            "right_dx": 0.12050022184848785,
+            "right_dy": 0.0660036951303482,
+            "right_dyaw": 0.03077860176563263,
+            "right_dz": 0.17415882647037506,
+            "right_grasp": 0.01957625150680542,
+            "rows": 178
+          },
+          "transfer": {
+            "right_dpitch": 0.015995461493730545,
+            "right_droll": 0.019581153988838196,
+            "right_dx": 0.040324434638023376,
+            "right_dy": 0.0321822315454483,
+            "right_dyaw": 0.030560046434402466,
+            "right_dz": 0.03264524042606354,
+            "right_grasp": 0.0086098313331604,
+            "rows": 840
+          }
+        },
+        "mean_predicted_dz_on_target_minus_max": -0.3736386299133301,
+        "mean_predicted_dz_on_target_plus_max": 0.3537033796310425,
+        "median_error_on_dz_saturated_rows": {
+          "right_dpitch": 0.030342400074005127,
+          "right_droll": 0.028209330514073372,
+          "right_dx": 0.030568372458219528,
+          "right_dy": 0.032839059829711914,
+          "right_dyaw": 0.021101120859384537,
+          "right_dz": 0.025289714336395264,
+          "right_grasp": 0.016208112239837646
+        },
+        "median_error_on_dz_unsaturated_rows": {
+          "right_dpitch": 0.026062488555908203,
+          "right_droll": 0.013500649482011795,
+          "right_dx": 0.030186835676431656,
+          "right_dy": 0.024643549695611,
+          "right_dyaw": 0.021850716322660446,
+          "right_dz": 0.032921381294727325,
+          "right_grasp": 0.009708225727081299
+        },
+        "median_predicted_dz_on_target_minus_max": -0.40355032682418823,
+        "median_predicted_dz_on_target_plus_max": 0.3714386224746704,
+        "predicted_std_per_dimension": {
+          "right_dpitch": 0.17882949113845825,
+          "right_droll": 0.22068902850151062,
+          "right_dx": 0.1501273661851883,
+          "right_dy": 0.1396830826997757,
+          "right_dyaw": 0.0858677327632904,
+          "right_dz": 0.26563650369644165,
+          "right_grasp": 0.9709334373474121
+        },
+        "unconditional_median_error": {
+          "right_dpitch": 0.02776028960943222,
+          "right_droll": 0.018731892108917236,
+          "right_dx": 0.0302889347076416,
+          "right_dy": 0.0280594564974308,
+          "right_dyaw": 0.02150026336312294,
+          "right_dz": 0.02832430601119995,
+          "right_grasp": 0.011050105094909668
+        }
+      }
+    },
+    "reading_rule_for_the_phase_table_fixed_in_advance": "An OFFLINE error on recorded frames. A phase with a low error here is NOT thereby a phase the controller handles -- that is the covariate-shift gap this protocol exists to measure.",
+    "target_std_per_dimension": {
+      "right_dpitch": 0.19232681393623352,
+      "right_droll": 0.23148320615291595,
+      "right_dx": 0.16382481157779694,
+      "right_dy": 0.16008295118808746,
+      "right_dyaw": 0.10637319087982178,
+      "right_dz": 0.2790507376194,
+      "right_grasp": 0.9800861477851868
+    },
+    "val_saturation": {
+      "dz_abs_at_max_rate": 0.44503431309076785,
+      "dz_at_negative_max_rate": 0.2684190081574518,
+      "dz_at_positive_max_rate": 0.17661530493331606,
+      "dz_target_mean": -0.004092623014003038,
+      "note": "VAL rates. The committed 44.886% is the TRAIN cohort (68,791 rows)."
+    },
+    "why": "cloning.action_error computes ONE unconditional per-dimension median over all rows; no saturated-row conditional exists in the file. Val saturation is 44.503%, below half, so that median necessarily sits inside the NON-saturated group and the cell is MATHEMATICALLY INCAPABLE of testing 'large error on the saturated rows'. output_std_per_dimension is PREDICTIONS ONLY -- target std is never computed, so 'compressed' had NO REFERENT. An earlier draft drew a conclusion from both; that conclusion is withdrawn and these conditionals replace it."
+  },
   "frozen_offline_error_table_A": {
     "predicted_output_std": {
       "A0_proprio_only": {
@@ -239,8 +744,11 @@
       "rule": "passes for arm X iff, for EVERY one of the six arm dimensions, the median across the 16 seeds of |step-zero policy - shadow expert| is <= 3x X's own frozen_offline_error_table_A cell"
     },
     "D1_grasp": {
-      "rule": "a reported count 0-16 per arm",
-      "threshold": null
+      "derived_two_sided_count": "seeds where |step-zero right_grasp - (-1.0)| >= 1.0, equivalently where the commanded value is >= 0.0",
+      "primary_report": "the SIGNED step-zero right_grasp value, per arm per seed -- the full 4x16 table of numbers, not a count",
+      "reading": "the policy is not commanding the hand open at the one instant where the correct command is known and unambiguous",
+      "reference": "the expert's step-zero right_grasp is -1.0 EXACTLY on every reset (scripted.py orient phase), so no threshold is needed",
+      "why_a_count_of_grasp_greater_than_zero_was_REPLACED": "ONE-SIDED, and AN INERT POLICY PASSES IT: a head emitting exactly 0.0 scores ZERO sign errors and reads correct while being wrong by a full unit against a reference known exactly. That is the blind-baseline failure apple_policy_v1.md 5.1 was rewritten to remove, and the SECOND threshold in this design with that shape; the first was the original G-SUB."
     },
     "D2": {
       "determines_no_gate_outcome": true,
@@ -253,15 +761,34 @@
       "why_stated_this_way": "apple_policy_v1.md section 5.3 announced a rule was 'not a gate' and then decided gate outcomes through the missing-values rule (apple_policy_v1_results.md section 15). D2 feeds nothing."
     },
     "G_SUB": {
-      "derivation": "8/16 is the midpoint between the pure-policy 1/16 = 6.25% and the 100% ceiling, and sits above the demo_replay null of 33.3%, so a configuration that merely matches open-loop replay does not pass. THIS IS A MAGNITUDE THRESHOLD, NOT A SIGNIFICANCE THRESHOLD, and is not presented as one: against p0 = 1/3 the one-sided binomial probability of >= 8/16 is 0.189. D is a non-gating development cohort and no p-value from it is a result.",
+      "CORRECTION_carried_in_the_open": "An earlier draft defended this gate against a demo_replay null of p0=1/3 and quoted 'the one-sided binomial probability of >= 8/16 is 0.189'. 0.189 IS WRONG: P(X>=8|n=16,p=1/3) = 0.126501. 0.189 corresponds to p0 = 0.363344, which nothing here uses. At the correct value the FAMILY-WISE probability across the eight candidates is 0.661077, so under that null the gate would have been near a coin flip rather than the screen it was presented as. The demo_replay null is DROPPED ENTIRELY: it is an open-loop baseline while G-SUB asks whether substitution moves THIS policy.",
+      "candidates": [
+        "all_translation",
+        "dx",
+        "dy",
+        "dz",
+        "droll",
+        "dpitch",
+        "dyaw",
+        "grasp"
+      ],
+      "corrected_values_for_the_dropped_null": {
+        "family_wise_over_8_candidates_at_p0_one_third": 0.6610774781530305,
+        "one_sided_at_p0_one_third": 0.12650071535065358,
+        "p0_that_the_erroneous_0_189_corresponds_to": 0.363344
+      },
+      "derivation_of_8_of_16": "the midpoint between the pure-policy 1/16 = 6.25% and the 100% ceiling: the effect must be at least half the distance to the ceiling. A MAGNITUDE threshold, not a significance threshold; D is non-gating and no p-value from it is a result.",
+      "family_wise_over_8_candidates_at_p0_one_sixteenth": 1.519332743427082e-05,
       "is_the_only_gate_with_a_threshold_that_can_stop_the_line": true,
       "metric": "grasp resets out of 16, per configuration, A2 only",
+      "null_defended_against": "the PURE POLICY'S OWN RATE, 1/16 (outputs/task056-cohort-d/a2.json). That is the rate substitution must beat for substitution to have done anything, and the only null with a defensible claim to being this experiment's.",
+      "one_sided_binomial_at_p0_one_sixteenth": 1.8991785533264516e-06,
+      "precision_note": "Stored at full double precision rather than rounded. A consistency test recomputes each from the stated null and the enumerated candidate count; rounding made that test fail at 1e-6 and the fix is more digits, not a looser tolerance.",
       "reference_points_fixed_before_the_run": {
-        "demo_replay_pooled_grasp": "8/24 = 33.3%",
-        "pure_policy_A2": "1/16 (outputs/task056-cohort-d/a2.json)",
+        "pure_policy_A2": "1/16",
         "scripted_oracle": "24/24 pooled on three prior wide cohorts"
       },
-      "rule": "passes iff at least one configuration reaches >= 8/16 grasp resets"
+      "rule": "passes iff at least one of the EIGHT G-SUB CANDIDATE configurations reaches >= 8/16 grasp resets. 'none' and 'full' are CONTROLS and NOT candidates, so a passing 'full' cannot pass the gate."
     }
   },
   "missing_values": "A gate that cannot be evaluated counts as failed. D1 and G-SUB are the only gates.",
@@ -320,8 +847,14 @@
     "reported_verdicts_only": "A gated run starts only on the pre-run reviewer's REPORTED verdict, delivered as a message - never on a review file read from disk. The same rule applies to merging."
   },
   "protocol": "apple_policy_diagnostics_v1",
+  "shadow_expert_exhaustion_preregistered_behaviour": {
+    "D1_and_D2": "shadow expert stops being recorded at exhaustion, the attempt continues to its cap, report records shadow_expert_exhausted_at_step. Departure past that step is null, NEVER zero.",
+    "D3": "the attempt TERMINATES at exhaustion with reason shadow_expert_exhausted and counts as a NON-SUCCESS. Not a concession: the oracle's budget is 805 commands and scripted_oracle succeeds inside it (24/24 pooled).",
+    "caught_by_enumerated_message_never_by_a_broad_except": true,
+    "reported_for_every_attempt": "shadow_expert_exhausted_at_step, so a reader can see how many attempts the rule bound."
+  },
   "status": "preregistration",
-  "success_clause": "Continues iff EITHER (a) D1 fails for >= 3 of the 4 arms, or D1-grasp returns a step-zero grasp sign error on >= 8/16 seeds for >= 3 of the 4 arms - follow-up is a pipeline audit and re-measurement, NOT a model change and NOT a retrain; OR (b) G-SUB passes, naming the failing channel. In both cases the follow-up is a NEW preregistration with its own gates and controls, never a build started inside this task.",
+  "success_clause": "Continues iff EITHER (a) D1 fails for >= 3 of the 4 arms, or D1-grasp's TWO-SIDED count (seeds where |step-zero right_grasp - (-1.0)| >= 1.0) is >= 8/16 for >= 3 of the 4 arms - follow-up is a pipeline audit and re-measurement, NOT a model change and NOT a retrain; OR (b) G-SUB passes, naming the failing channel. In both cases the follow-up is a NEW preregistration with its own gates and controls, never a build started inside this task.",
   "supersedes_nothing": true,
   "task": "TASK-057",
   "what_this_task_is": "A DIAGNOSTIC task. It trains nothing, changes no model, and proposes no output-parameterisation change. Its only purpose is to locate the gap between TASK-056's near-perfect open-loop imitation and its closed-loop failure. Its single gate can fire the abandonment clause that apple_policy_v1.md section 7 already preregistered."

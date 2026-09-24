@@ -574,7 +574,65 @@ def test_the_diagnostics_manifest_pins_D1_thresholds_to_its_own_offline_table():
         "A2_bc_frozen_e0",
         "A3_bc_finetuned_e0",
     ]
+    # Enumerating cohort C's seeds HERE is a guard against consuming them, not a consumption:
+    # this is a disjointness assertion and the manifest itself carries no cohort-C seed list.
+    # Do not delete it as a "reference to C", and do not copy it into a runner as precedent for
+    # enumerating C anywhere that could instantiate a reset.
     frozen_c = set(range(45300, 45340))
     development = set(manifest["cohort_discipline"]["cohort_D_development_never_gating"])
     assert not (development & frozen_c), "the development cohort must not intersect cohort C"
     assert len(development) == 16
+
+
+def test_the_diagnostics_gate_has_a_failing_path_and_quotes_the_right_binomial():
+    """Two defects an independent review found in the first draft, pinned so they cannot return.
+
+    **The gate could not fail.** ``full`` (all seven dimensions) satisfied the old definition of
+    "a configuration", B3 required ``full`` to reach >= 14/16, and G-SUB passed if ANY
+    configuration reached >= 8/16 -- so B3 passing implied G-SUB passing while B3 failing voided
+    the run. The gate wired to the abandonment clause had no failing path. The candidates are
+    now enumerated and the two controls are excluded by name.
+
+    **The binomial was wrong.** The draft quoted 0.189 for P(X >= 8 | n=16, p=1/3); the true
+    value is 0.126501, and 0.189 corresponds to p = 0.3633, which nothing uses. A frozen
+    manifest carrying a wrong number is the failure this project has bled over most, so the
+    figures are recomputed here from the manifest's own stated null and candidate count rather
+    than compared against a transcribed constant.
+    """
+    from math import comb
+
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    gate = manifest["gates"]["G_SUB"]
+    config = manifest["definitions_every_scope_term_used_in_a_gate_or_stop_rule"]["configuration"]
+    candidates = config["g_sub_candidates_the_ONLY_configurations_G_SUB_RANGES_OVER"]
+    controls = config["controls_which_are_configurations_but_NOT_G_SUB_candidates"]
+
+    # The gate must have a failing path: neither control may be a candidate.
+    assert set(controls) == {"none", "full"}
+    for control in controls:
+        assert control not in candidates, (
+            f"{control!r} is a G-SUB candidate again: if 'full' can pass the gate then B3 "
+            "passing implies G-SUB passing and the abandonment clause is unreachable"
+        )
+    assert gate["candidates"] == candidates, "the gate must range over the enumerated list"
+    assert len(candidates) == 8
+    assert config["total_configurations_run"] == len(candidates) + len(controls)
+
+    def at_least(k, n, p):
+        return sum(comb(n, i) * p**i * (1 - p) ** (n - i) for i in range(k, n + 1))
+
+    exact = at_least(8, 16, 1 / 16)
+    assert gate["one_sided_binomial_at_p0_one_sixteenth"] == pytest.approx(exact, rel=1e-6)
+    assert gate["family_wise_over_8_candidates_at_p0_one_sixteenth"] == pytest.approx(
+        1 - (1 - exact) ** len(candidates), rel=1e-6
+    )
+    dropped = gate["corrected_values_for_the_dropped_null"]
+    assert dropped["one_sided_at_p0_one_third"] == pytest.approx(at_least(8, 16, 1 / 3), rel=1e-5)
+    assert dropped["one_sided_at_p0_one_third"] != pytest.approx(0.189, abs=1e-3), (
+        "0.189 is the erroneous figure; it must not reappear as the value of this quantity"
+    )
+    assert at_least(8, 16, dropped["p0_that_the_erroneous_0_189_corresponds_to"]) == pytest.approx(
+        0.189, abs=1e-4
+    ), "the recorded provenance of the wrong number must itself be checkable"

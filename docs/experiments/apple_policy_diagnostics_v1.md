@@ -25,7 +25,7 @@ clause that `apple_policy_v1.md` §7 already preregistered.
 
 ## 1. Why this task exists, and why it is not the task that was first proposed
 
-### 1.1 The mechanism TASK-056 recorded is contradicted by its own artifacts
+### 1.1 The mechanism TASK-056 recorded is not supported by the statistics it was read off
 
 `apple_policy_v1_results.md` §12 and §16, and `task056_handover.md` §5, record a candidate
 mechanism: the expert's `right_dz` sits at exactly 0.400 on 44.89 % of commands, a smooth-L1
@@ -33,7 +33,10 @@ regression head hedges toward the interior of that bimodal target, and the resul
 means the policy never reaches the object inside 1000 steps. It is recorded there — correctly —
 as **a consistent story, not a demonstrated mechanism**.
 
-It is now contradicted. Three findings, each traced to the code that computes it:
+**It is not supported by the statistics it was read off.** Three findings, each traced to the code
+that computes it. The verdict language is deliberately weaker than an earlier draft's
+("contradicted", "refuted", "did not occur"): §1.2 sets the standard that a quantity a statistic
+*cannot* compute is **unmeasured** rather than refuted, and §1.1 has to meet its own standard.
 
 **(a) The expert's `right_dz` is a signed, near-symmetric ±0.400 bang-bang whose mean is zero.**
 `src/embodied_jepa/scripted.py` computes
@@ -55,19 +58,42 @@ The committed 44.89 % is an **absolute-value** rate. A conditional-mean regresso
 nothing at all would emit ≈ 0 on this target, so "the expert commands 0.400, the policy commands
 0.03" was never a comparison of the same quantity.
 
-**(b) The trained heads do not hedge. Offline they reproduce the saturated expert command.**
-Re-derived by executing `cloning.evaluate_policy` against the four TASK-056 checkpoints on the val
-split; §9 carries the full table and records agreement with the training-time record to float32
-round-trip. Median absolute `right_dz` error against the expert is **0.01333 / 0.01569 / 0.01992 /
-0.02832** (A1 / A0 / A2 / A3) — against an expert whose median |dz| is **0.1968** and which sits at
-±0.400 on 44.89 % of rows — while predicted `right_dz` standard deviation is **0.2656–0.2735**. On
-the near-binary grasp dimension the median error is **0.0073–0.0111** and the predicted standard
-deviation is **0.971–0.979**.
+**(b) The hedging prediction is tested directly here for the first time, and it is not borne out.**
 
-A head that hedged toward the interior of a bimodal target would show a *compressed* output
-standard deviation and a *large* error on the saturated rows. It shows neither.
-**Declared risk R5 of `apple_policy_v1.md` §8 — "a regression head on a near-binary target emits
-interior values" — did not occur.**
+**The statistic it was originally read off cannot test it, and that is recorded first.**
+`cloning.action_error` (`cloning.py`) computes **one unconditional per-dimension median over all
+rows**. There is no saturated-row conditional anywhere in the file. Saturation on val is
+**44.503 %** — below half — so the unconditional median necessarily sits inside the
+*non-saturated* group, and the cell is **mathematically incapable** of testing "large error on the
+saturated rows". Likewise `output_std_per_dimension` is the **predictions only**: the *target*
+standard deviation is never computed anywhere, so "compressed" had **no referent**. An earlier
+draft of this section drew a conclusion from both. That conclusion is withdrawn.
+
+**The three conditionals that can test it were computed for this protocol** (§9.1), on the same
+7 723 val rows, and they are reported whatever they say:
+
+| quantity | A0 | A1 | A2 | A3 |
+|---|---|---|---|---|
+| median \|err\| `right_dz`, **rows where \|target dz\| ≥ 0.4** | **0.01240** | 0.01283 | 0.01349 | 0.02529 |
+| median \|err\| `right_dz`, rows where it is **not** saturated | 0.01793 | 0.01362 | 0.02582 | 0.03292 |
+| **mean predicted `dz` on target = +0.400 rows** | **+0.3750** | +0.3719 | +0.3722 | +0.3537 |
+| **mean predicted `dz` on target = −0.400 rows** | **−0.3869** | −0.3903 | −0.3760 | −0.3736 |
+| predicted ÷ **target** `right_dz` std (target std **0.27905**) | 0.980 | 0.980 | 0.971 | 0.952 |
+| predicted ÷ **target** `right_grasp` std (target std **0.98009**) | 0.999 | 0.997 | 0.993 | 0.991 |
+
+On the rows where the expert saturates, the heads are **more** accurate, not less; conditioned on
+the target being at +0.400 they predict **+0.35 to +0.38**, conditioned on −0.400 they predict
+**−0.37 to −0.39**; and the predicted standard deviation is **95–100 % of the target's**, not a
+fraction of it.
+
+**What this licenses, stated exactly.** The prediction in `apple_policy_v1.md` §12 was that the
+arms' dz distributions would be *compressed relative to the expert's*, with mass pulled toward
+zero. Measured against the target's own standard deviation and conditioned on the saturated rows,
+**that is not what the heads do offline.** It does **not** follow that dz under-shoot played no
+part in the closed-loop failure: §1.2 establishes that the closed-loop commands' signs are
+unrecoverable, so the online half of that claim is **unmeasured** and stays unmeasured. Declared
+risk R5 of `apple_policy_v1.md` §8 is likewise **not borne out offline**, and that is the whole of
+what is claimed for it.
 
 Incidentally: `cloning.py` calls `torch.nn.functional.smooth_l1_loss` with the default
 `beta = 1.0`, and every residual here is well inside |x| < 1, so the objective was **pure L2
@@ -216,10 +242,49 @@ consumed. Every scope term used in a gate or stop rule below is enumerated here 
   any `execute`.
 - **Shadow expert command** — `OracleManipulationPolicy(sim.task_truth()).action(robot)` at indices
   (6,7,8,9,10,11,13), the instance advanced by `advance(result)` on every executed step exactly as
-  the collector advanced it, and computed strictly **after** `policy.act` returns.
+  the collector advanced it, and computed strictly **after** `policy.act` returns. **Two properties
+  of this object are declared here because both affect a gate:**
+  - **It is exhausted after 805 commands.** The phase table sums to
+    130 + 80 + 45 + 150 + 160 + 100 + 60 + 80 = **805**, and `action()` **raises** once `done`.
+    Every TASK-056 attempt that was not stopped by the embodiment ran to 1000, so on nearly every
+    attempt the shadow expert dies around step 805 — and `run_attempt`'s bare `except BaseException`
+    would turn that into a dead run with no report. §2.1 preregisters the behaviour.
+  - **It is a hybrid reference after roughly step 130, not the expert's own trajectory.**
+    `advance(result)` is called on **the policy's** executed result, so the expert's phase counter
+    advances on the policy's clock rather than on its own progress. A policy that has gone nowhere
+    still drives the reference into `descend`, then `lift`. **The shadow expert is therefore
+    "expert targets on a policy-driven clock", and is named that way wherever it is used.**
 - **Departure at step t** — median over the six arm dimensions of |policy − shadow expert|.
-- **Configuration** — the named subset of the seven free dimensions taken from the shadow expert.
-  `none` is the empty set; `full` is all seven.
+- **Configuration** — one of the ten named below. Nothing else is a configuration.
+  **The eight G-SUB candidates**, which are the only configurations G-SUB ranges over:
+  `all_translation` (= {dx, dy, dz}), `dx`, `dy`, `dz`, `droll`, `dpitch`, `dyaw`, `grasp`.
+  **Two controls, which are configurations but are NOT G-SUB candidates:** `none` (the empty set,
+  B2's control) and `full` (all seven dimensions, B3's control).
+
+  > **Why the controls are excluded by name.** An earlier draft defined a configuration as "the
+  > named subset of the seven free dimensions" and let G-SUB range over *any* configuration. Under
+  > that wording `full` **is** a configuration, B3 requires `full` to reach ≥ 14/16, and G-SUB
+  > passes if any configuration reaches ≥ 8/16 — so **B3 passing implied G-SUB passing, while B3
+  > failing voided the run, and the gate wired to the abandonment clause had no failing path at
+  > all.** The candidate list was also present only in §3's prose, never in this section and never
+  > in the gate: an unenumerated scope term deciding an outcome, which is verbatim the TASK-056
+  > defect this section exists to prevent. It is enumerated here and in the manifest.
+
+### 2.1 Shadow-expert exhaustion — preregistered behaviour
+
+- The runner catches the exhaustion explicitly, by the enumerated message, and **never** by a broad
+  `except`. An unrelated `ContractError` still propagates and still kills the run loudly.
+- **In D1 and D2** (diagnostic, no substitution): the shadow expert stops being recorded at
+  exhaustion, the attempt continues to its cap, and the report records
+  `shadow_expert_exhausted_at_step`. Departure is undefined past that step and is recorded as
+  `null`, never as zero.
+- **In D3** (substitution, and therefore the gate): the attempt **terminates** at exhaustion with
+  termination reason `shadow_expert_exhausted`, and **counts as a non-success.** This is not a
+  concession: the oracle's own budget is 805 commands and `scripted_oracle` succeeds inside it
+  (24/24 pooled), so a configuration that cannot reach `grasp` within the expert's own budget has
+  not been cut short by the rule.
+- `shadow_expert_exhausted_at_step` is reported for every attempt of every configuration, so a
+  reader can see how many attempts the rule bound.
 - **Grasp reset** — a development seed on which the latched `score["grasp"]` is true at any point.
 
 ---
@@ -238,9 +303,25 @@ the step-zero command must be right.
 ### D1-grasp — the one measurement with a ground truth
 
 The expert's step-zero `right_grasp` is **−1.0 exactly, on every reset**, because `orient` carries
-`grasp = -1.0` in `scripted.py`'s phase table. For each arm, report the count out of 16 on which the
-step-zero policy `right_grasp` is **> 0**. No threshold: the reference is known-correct and the
-result is a count from 0 to 16. Reported separately from D1 and never folded into it.
+`grasp = -1.0` in `scripted.py`'s phase table.
+
+**The primary report is the signed step-zero `right_grasp` value, per arm per seed — the full
+4 × 16 table of numbers, not a count.** No threshold: the reference is known-correct.
+
+**Why a count was replaced by the values.** An earlier draft reported "the count of seeds where the
+step-zero grasp is `> 0`". That criterion is **one-sided, and an inert policy passes it**: a head
+emitting exactly `0.0` — commanding neither open nor closed — scores **zero** sign errors and reads
+as correct, while being wrong by a full unit against a reference that is known exactly. That is the
+blind-baseline failure `apple_policy_v1.md` §5.1 was rewritten to remove, recurring in a new place,
+and it is the **second** threshold in this design with that shape (the first was the original
+G-SUB, §2).
+
+The derived summary, defined two-sidedly against the known reference, is reported alongside the
+values: **the count of seeds where |step-zero `right_grasp` − (−1.0)| ≥ 1.0**, equivalently where
+the commanded value is ≥ 0.0. It fires on an inert `0.0` (error exactly 1.0) and on a fully closed
+`+1.0` (error 2.0), and not on `−1.0` (0.0) or `−0.5` (0.5). Its reading: *the policy is not
+commanding the hand open at the one instant in the episode where the correct command is known and
+unambiguous.*
 
 ### D2 — the divergence trace
 
@@ -260,7 +341,10 @@ is in `droll`, not in translation.
 ### D3 — per-dimension expert substitution, primary arm only
 
 At each step, dimensions in the configuration come from the shadow expert; the rest come from the
-policy. Nine configurations on the 16 seeds: `none`, `all_translation`, and one per dimension.
+policy. **Ten configurations run on the 16 seeds**, and §2 enumerates them: the **eight G-SUB
+candidates** (`all_translation` and one per dimension) plus the **two controls** `none` (B2) and
+`full` (B3). **The controls are not candidates**, so neither can pass the gate — see §2's box for
+the failure that wording produced.
 
 Pre-committing to the **sweep** rather than to a single dimension is deliberate: the mechanism
 TASK-056 recorded turned out to be wrong (§1.1), so a probe aimed at it would have confirmed an
@@ -309,28 +393,45 @@ otherwise → **inconclusive, and reported as inconclusive**.
 
 **G-SUB — the only gate. Per-dimension expert substitution, A2 only.**
 Metric: grasp resets out of 16, per configuration.
-Fixed reference points, all before the run: pure-policy A2 = **1/16**
-(`outputs/task056-cohort-d/a2.json`); `scripted_oracle` = **24/24 pooled** on three prior wide
-cohorts (`apple_wide_grasp_closure_results_v3.md`, `apple_wide_object_ceiling_results_v2.md`, as
-cited in `apple_policy_v1.md` §5.2 G5); `demo_replay` pooled grasp = **8/24 = 33.3 %**
-(`apple_policy_v1.md` §5.2).
 
-> **G-SUB passes iff at least one configuration reaches ≥ 8/16 grasp resets.**
+> **G-SUB passes iff at least one of the eight G-SUB CANDIDATE configurations enumerated in §2
+> reaches ≥ 8/16 grasp resets.** `none` and `full` are controls and are **not** candidates; a
+> passing `full` therefore cannot pass the gate.
+
+*The null this gate is defended against is **the pure policy's own rate**, 1/16*
+(`outputs/task056-cohort-d/a2.json`, A2's `result.grasp_resets`). That is the rate the substitution
+has to beat for the substitution to have done anything, and it is the only null with a defensible
+claim to being this experiment's. Against p₀ = 1/16 the one-sided binomial probability of ≥ 8/16 is
+**1.90 × 10⁻⁶**, and the family-wise probability across the eight candidates is
+**1 − (1 − 1.90 × 10⁻⁶)⁸ = 1.5 × 10⁻⁵**. The gate is strong against the null that matters.
 
 *Derivation of 8/16.* It is the midpoint between the pure-policy 1/16 = 6.25 % and the 100 %
-ceiling, and it sits above the `demo_replay` null of 33.3 %, so a configuration that merely matches
-open-loop replay does not pass. **This is a magnitude threshold, not a significance threshold, and
-is not presented as one:** against p₀ = 1/3 the one-sided binomial probability of ≥ 8/16 is 0.189.
-D is a non-gating development cohort and no p-value from it is a result. The requirement is that
-the effect be at least half the distance to the ceiling; a smaller effect would not justify
-building anything.
+ceiling: the effect must be at least half the distance to the ceiling, because a smaller one would
+not justify building anything. **It is a magnitude threshold, not a significance threshold**, and D
+is a non-gating development cohort from which no p-value is a result.
+
+> **Correction carried in the open, because a frozen manifest holding a wrong number is the thing
+> this project has bled over most.** An earlier draft defended this gate against a `demo_replay`
+> null of p₀ = 1/3 and quoted "the one-sided binomial probability of ≥ 8/16 is 0.189". **0.189 is
+> wrong**: `P(X ≥ 8 | n = 16, p = 1/3) = 0.126501`. The figure 0.189 corresponds to p₀ = 0.363344,
+> a value nothing in this protocol uses. Worse, at the correct value the **family-wise** probability
+> across the candidates is **1 − (1 − 0.126501)⁸ = 0.661**, so under that null the gate would have
+> been close to a coin flip rather than the screen it was presented as. **The `demo_replay` null is
+> dropped entirely**; it was the wrong reference anyway, since `demo_replay` is an open-loop
+> baseline and G-SUB asks whether substitution moves *this policy*. Both corrected numbers are in
+> the manifest.
+
+*Fixed reference points, all before the run:* pure-policy A2 = **1/16**; `scripted_oracle` =
+**24/24 pooled** on three prior wide cohorts (`apple_wide_grasp_closure_results_v3.md`,
+`apple_wide_object_ceiling_results_v2.md`, via `apple_policy_v1.md` §5.2 G5).
 
 **Missing values.** A gate that cannot be evaluated counts as failed. D1 and G-SUB are the only
 gates.
 
 ### 5.1 Abandonment clause
 
-> **If G-SUB fails — no configuration, including `all_translation`, reaches 8/16 grasp resets —
+> **If G-SUB fails — none of the eight G-SUB candidate configurations enumerated in §2,
+> including `all_translation`, reaches 8/16 grasp resets —
 > then no single command channel carries the failure, and the preregistered Outcome D abandonment
 > clause of `apple_policy_v1.md` §7 fires as written.** This control line stops on this corpus and
 > this camera. No further loss, head or output-parameterisation variant is preregistered on it. The
@@ -341,8 +442,8 @@ gates.
 
 The line continues iff **either**:
 
-- **(a)** D1 fails for ≥ 3 of the 4 arms, **or** D1-grasp returns a step-zero grasp sign error on
-  ≥ 8/16 seeds for ≥ 3 of the 4 arms. Either is a concrete, locatable discrepancy between the
+- **(a)** D1 fails for ≥ 3 of the 4 arms, **or** D1-grasp's two-sided count — seeds where
+  |step-zero `right_grasp` − (−1.0)| ≥ 1.0 — is ≥ 8/16 for ≥ 3 of the 4 arms. Either is a concrete, locatable discrepancy between the
   loop's observation pipeline and the trainer's. The follow-up is a pipeline audit and a
   re-measurement — **not** a model change and **not** a retrain.
 - **(b)** G-SUB passes, naming the failing channel.
@@ -356,6 +457,20 @@ A rescue under expert substitution injects privileged information at 50 Hz, whic
 not get. **It shows which channel the failure flows through; it does not show that a learned
 version of that channel is attainable.** No D3 number may be read as evidence that a fix will work,
 only as evidence about where to aim one.
+
+**And the substituted channel is not the expert's own trajectory — it is expert targets on a
+policy-driven clock (§2).** `advance(result)` steps the phase counter on the policy's executed
+result, so after roughly step 130 the reference has moved into `descend` and later `lift`
+regardless of where the palm actually is. **A D3 configuration can therefore inject a `lift`-phase
+ascent into an attempt whose hand has never closed on anything.** That is a confound on the only
+gate, it is declared here before any number exists, and two things follow:
+
+- `shadow_expert_phase` is logged per step in D2 and D3, so the hybrid is visible in the trace
+  rather than inferred.
+- **A G-SUB pass whose attempts spent most of their commands past the expert's `close` phase is
+  reported as such**, next to the pass, because a rescue driven by a mistimed reference is a
+  different finding from a rescue driven by a correct one. This is a reporting requirement, not a
+  threshold, and it does not alter the gate.
 
 ---
 
@@ -485,6 +600,88 @@ estimated:** the per-dimension errors range from **0.00673** (A1 `right_dyaw`) t
 
 ---
 
+### 9.1 The conditionals the unconditional median cannot compute (F2), and the phase-restricted error (F7)
+
+Both are published **before the run**, on the same 7 723 val rows, because D1's thresholds are defined against Table A and a reader has to be able to see what Table A does and does not test.
+
+**Val saturation, stated because Table A's 44.886 % is the TRAIN cohort:** on val, |target `right_dz`| ≥ 0.400 on **44.503 %** of rows (+0.400 on 17.662 %, −0.400 on 26.842 %), target mean -0.0041.
+
+**Table C — `right_dz` error split by whether the expert saturates, and the conditional means.**
+
+| quantity | A0 | A1 | A2 | A3 |
+|---|---|---|---|---|
+| median \|err\|, saturated rows (\|target\| ≥ 0.4) | 0.01240 | 0.01283 | 0.01349 | 0.02529 |
+| median \|err\|, unsaturated rows | 0.01793 | 0.01362 | 0.02582 | 0.03292 |
+| median \|err\|, unconditional (Table A) | 0.01569 | 0.01333 | 0.01992 | 0.02832 |
+| **mean predicted dz** \| target = +0.400 | +0.3750 | +0.3719 | +0.3722 | +0.3537 |
+| **mean predicted dz** \| target = −0.400 | -0.3869 | -0.3903 | -0.3760 | -0.3736 |
+| median predicted dz \| target = +0.400 | +0.3953 | +0.3904 | +0.3912 | +0.3714 |
+| median predicted dz \| target = −0.400 | -0.4018 | -0.4048 | -0.3982 | -0.4036 |
+
+**Table D — predicted ÷ TARGET standard deviation.** Table B gave predictions only, which is why "compressed" had no referent.
+
+| dimension | target std | A0 | A1 | A2 | A3 |
+|---|---|---|---|---|---|
+| `right_dx` | 0.16382 | 0.979 | 1.004 | 0.983 | 0.916 |
+| `right_dy` | 0.16008 | 0.962 | 0.938 | 0.964 | 0.873 |
+| `right_dz` | 0.27905 | 0.980 | 0.980 | 0.971 | 0.952 |
+| `right_droll` | 0.23148 | 0.988 | 1.001 | 0.978 | 0.953 |
+| `right_dpitch` | 0.19233 | 0.989 | 0.978 | 1.014 | 0.930 |
+| `right_dyaw` | 0.10637 | 0.992 | 0.988 | 0.966 | 0.807 |
+| `right_grasp` | 0.98009 | 0.999 | 0.997 | 0.993 | 0.991 |
+
+**Table E — median absolute error by collector phase (F7), all seven dimensions.** Reported so a reader can see where in the episode the offline fit is weakest before any closed-loop number exists.
+
+*A0*
+
+| phase | rows | dx | dy | dz | droll | dpitch | dyaw | grasp |
+|---|---|---|---|---|---|---|---|---|
+| `close` | 675 | 0.0175 | 0.0161 | 0.0207 | 0.0192 | 0.0130 | 0.0106 | 0.0168 |
+| `descend` | 1200 | 0.0213 | 0.0153 | 0.0068 | 0.0085 | 0.0100 | 0.0075 | 0.0268 |
+| `lift` | 2181 | 0.0160 | 0.0192 | 0.0139 | 0.0121 | 0.0096 | 0.0071 | 0.0042 |
+| `lower` | 699 | 0.0218 | 0.0182 | 0.0220 | 0.0163 | 0.0138 | 0.0203 | 0.0167 |
+| `orient` | 1950 | 0.0225 | 0.0213 | 0.0161 | 0.0034 | 0.0130 | 0.0084 | 0.0102 |
+| `release` | 178 | 0.0351 | 0.0407 | 0.0889 | 0.0488 | 0.0169 | 0.0336 | 0.0151 |
+| `transfer` | 840 | 0.0123 | 0.0146 | 0.0210 | 0.0149 | 0.0136 | 0.0213 | 0.0089 |
+
+*A1*
+
+| phase | rows | dx | dy | dz | droll | dpitch | dyaw | grasp |
+|---|---|---|---|---|---|---|---|---|
+| `close` | 675 | 0.0242 | 0.0261 | 0.0219 | 0.0108 | 0.0130 | 0.0141 | 0.0099 |
+| `descend` | 1200 | 0.0196 | 0.0243 | 0.0091 | 0.0114 | 0.0090 | 0.0063 | 0.0236 |
+| `lift` | 2181 | 0.0227 | 0.0271 | 0.0116 | 0.0091 | 0.0076 | 0.0054 | 0.0051 |
+| `lower` | 699 | 0.0232 | 0.0158 | 0.0163 | 0.0074 | 0.0094 | 0.0072 | 0.0211 |
+| `orient` | 1950 | 0.0215 | 0.0242 | 0.0140 | 0.0024 | 0.0116 | 0.0053 | 0.0038 |
+| `release` | 178 | 0.0507 | 0.0614 | 0.0737 | 0.0295 | 0.0555 | 0.0170 | 0.0177 |
+| `transfer` | 840 | 0.0112 | 0.0190 | 0.0140 | 0.0072 | 0.0082 | 0.0108 | 0.0088 |
+
+*A2*
+
+| phase | rows | dx | dy | dz | droll | dpitch | dyaw | grasp |
+|---|---|---|---|---|---|---|---|---|
+| `close` | 675 | 0.0248 | 0.0294 | 0.0265 | 0.0161 | 0.0226 | 0.0181 | 0.0093 |
+| `descend` | 1200 | 0.0234 | 0.0217 | 0.0084 | 0.0185 | 0.0188 | 0.0112 | 0.0173 |
+| `lift` | 2181 | 0.0270 | 0.0300 | 0.0168 | 0.0161 | 0.0175 | 0.0120 | 0.0057 |
+| `lower` | 699 | 0.0352 | 0.0314 | 0.0270 | 0.0169 | 0.0196 | 0.0217 | 0.0254 |
+| `orient` | 1950 | 0.0258 | 0.0323 | 0.0256 | 0.0048 | 0.0264 | 0.0162 | 0.0080 |
+| `release` | 178 | 0.0613 | 0.0448 | 0.0925 | 0.0452 | 0.0428 | 0.0322 | 0.0433 |
+| `transfer` | 840 | 0.0258 | 0.0233 | 0.0271 | 0.0176 | 0.0147 | 0.0158 | 0.0112 |
+
+*A3*
+
+| phase | rows | dx | dy | dz | droll | dpitch | dyaw | grasp |
+|---|---|---|---|---|---|---|---|---|
+| `close` | 675 | 0.0436 | 0.0300 | 0.0253 | 0.0309 | 0.0260 | 0.0219 | 0.0113 |
+| `descend` | 1200 | 0.0203 | 0.0276 | 0.0155 | 0.0340 | 0.0213 | 0.0127 | 0.0445 |
+| `lift` | 2181 | 0.0283 | 0.0245 | 0.0289 | 0.0171 | 0.0265 | 0.0229 | 0.0082 |
+| `lower` | 699 | 0.0287 | 0.0260 | 0.0385 | 0.0325 | 0.0355 | 0.0214 | 0.0276 |
+| `orient` | 1950 | 0.0306 | 0.0273 | 0.0326 | 0.0082 | 0.0335 | 0.0195 | 0.0084 |
+| `release` | 178 | 0.1205 | 0.0660 | 0.1742 | 0.0668 | 0.0765 | 0.0308 | 0.0196 |
+| `transfer` | 840 | 0.0403 | 0.0322 | 0.0326 | 0.0196 | 0.0160 | 0.0306 | 0.0086 |
+
+**Reading rule for Table E, fixed in advance:** it is an OFFLINE error on recorded frames. A phase with a low error here is not thereby a phase the controller handles — that is the covariate-shift gap this whole protocol exists to measure, and `apple_policy_v1.md` §2 already records that a readout measured on recorded frames is not one that survives the state distribution its own controller induces.
+
 ## 10. Engineering constraints
 
 - **Ordering constraint, blocking.** `ClonedPolicy.implementation_sha256` is `sha256(policy.py)` and
@@ -517,7 +714,10 @@ estimated:** the per-dimension errors range from **0.00673** (A1 `right_dyaw`) t
      command was computed from. The claim was made by reading the code and retracted by tracing the
      ordering — the same distinction this protocol is about — and it is recorded here rather than
      quietly dropped. (The stages *are* latched by `|=`, so the label means "the furthest stage
-     reached by this step", which is what `apple_policy_v1_results.md` §14 already states.)
+     reached by this step", which is what `apple_policy_v1_results.md` §14 already states. And
+     `stages[0]` is an **absent** label rather than a stale one: at the first command the scorer
+     has not run, so no stage has been evaluated yet, which is a different thing from a label
+     lagging behind one that exists.)
 - **Preserved-property rule, for every fix above.** Name the property that existed before the fix
   and must still hold after it, and say how it was checked. Not "the tests pass" — the named
   property and the check (`apple_policy_v1_results.md` §7).
