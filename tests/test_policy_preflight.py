@@ -709,13 +709,20 @@ def test_every_joint_D1_G_SUB_outcome_maps_to_exactly_one_pre_declared_outcome()
     assert "recorded as spent" in once, (
         "the once-only bound is unenforceable unless the spend is recorded in the results document"
     )
-    assert "d1 passing" in once, "the rule must say what a second, non-exempt run looks like"
+    # The non-exempt re-run is "clause (a) not holding", NOT "D1 passing": keying it on D1 alone
+    # is the B-2 defect, since a re-run where D1 passes but D1-grasp still fires is not a clean
+    # channel and must not fire the abandonment clause either.
+    assert "clause (a) not holding" in once, (
+        "the rule must say what a second, non-exempt run looks like, in terms of clause (a) "
+        "rather than of D1 alone"
+    )
     assert "unbounded escape" in rule["why_the_once_is_load_bearing"]
 
     # Outcome X must NOT be conditioned on G-SUB alone; the joint case has its own entry.
-    assert "D1" in outcomes["X"], (
-        "Outcome X is conditioned on G-SUB alone again: that is the contradiction with the "
-        "success clause, which continues the line when D1 fails for >= 3 arms"
+    assert "clause (a)" in outcomes["X"].lower(), (
+        "Outcome X must be conditioned on CLAUSE (a) not holding. Conditioning it on G-SUB "
+        "alone reproduces the contradiction with the success clause; conditioning it on D1 "
+        "alone reproduces it on the D1-grasp disjunct, which is the B-2 defect."
     )
     assert "P_over_X_precedence" in outcomes
     joint = outcomes["P_over_X_precedence"]
@@ -729,15 +736,100 @@ def test_every_joint_D1_G_SUB_outcome_maps_to_exactly_one_pre_declared_outcome()
             "reproduce the contradiction"
         )
 
-    # Every joint outcome of (D1 fails for >=3 arms, G-SUB fails) is decidable.
+    # Every joint outcome over THREE axes is decidable. Two axes is not enough: clause (a) has
+    # two disjuncts, and an earlier revision stated the precedence over the D1 disjunct only,
+    # leaving (D1 passes, D1-grasp fires, G-SUB fails) contradictory. A test that binarized on
+    # d1_failed alone certified nothing about that case.
     for d1_failed in (True, False):
-        for gsub_failed in (True, False):
-            if gsub_failed and d1_failed:
-                decided = "P_over_X_precedence"
-            elif gsub_failed:
-                decided = "X"
-            elif d1_failed:
-                decided = "P"
-            else:
-                decided = "S"
-            assert decided in outcomes, f"({d1_failed}, {gsub_failed}) maps to nothing"
+        for grasp_fired in (True, False):
+            for gsub_failed in (True, False):
+                clause_a = d1_failed or grasp_fired
+                if gsub_failed and clause_a:
+                    decided = "P_over_X_precedence"
+                elif gsub_failed:
+                    decided = "X"
+                elif clause_a:
+                    decided = "P"
+                else:
+                    decided = "S"
+                assert decided in outcomes, (
+                    f"(D1 failed={d1_failed}, D1-grasp fired={grasp_fired}, "
+                    f"G-SUB failed={gsub_failed}) maps to no pre-declared outcome"
+                )
+
+    # The precedence must range over CLAUSE (a), not over D1 alone, or the D1-grasp disjunct
+    # carries the contradiction. Checked on the values, never on key names.
+    joint_text = outcomes["P_over_X_precedence"].lower()
+    assert "either disjunct" in joint_text or "clause (a)" in joint_text, (
+        "the joint outcome is keyed on D1 alone again: on (D1 passes, D1-grasp fires, G-SUB "
+        "fails) the success clause says continue and Outcome X says stop"
+    )
+    assert "clause (a)" in rule["rule"].lower() and "either disjunct" in rule["rule"].lower()
+    assert "d1_grasp" in str(rule).lower() or "d1-grasp" in str(rule).lower()
+
+    # R-1: the "once" needs a field to flip, not prose binding a document this protocol cannot
+    # reach. The field is frozen false here and set true by the results document.
+    assert rule["exemption_spent"] is False, "the exemption must be unspent at preregistration"
+    contract = rule["exemption_spent_contract"].lower()
+    assert "successor protocol must cite this field" in contract
+    assert "may not claim the exemption while it reads true" in contract
+
+
+def test_the_none_configuration_is_not_terminated_by_shadow_expert_exhaustion():
+    """B2 must be passable, or the run is void before any gate is read.
+
+    The exhaustion rule was keyed on "D3", and ``none`` IS a D3 configuration, so every ``none``
+    attempt would have terminated at ~805 commands with ``shadow_expert_exhausted``. But B2
+    requires ``none`` to reproduce TASK-056's A2 development report, whose sixteen attempts are
+    **all** ``step_limit`` at exactly 1000 executed steps. B2 could never have passed, Outcome V
+    would have fired, and the run would have been void with no arm numbers reported.
+
+    The rule is now keyed on whether the substitution set is empty. With nothing substituted the
+    shadow expert is a recording rather than a command source, so its exhaustion cannot affect
+    the robot and the attempt runs to its cap.
+    """
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    rule = manifest["shadow_expert_exhaustion_preregistered_behaviour"]
+    config = manifest["definitions_every_scope_term_used_in_a_gate_or_stop_rule"]["configuration"]
+
+    assert rule["keyed_on_the_SUBSTITUTION_SET_never_on_which_probe_is_running"] is True
+    empty = rule["empty_substitution_set"]
+    assert "'none'" in empty or '"none"' in empty, (
+        "the empty-substitution branch must name `none` explicitly: it is a D3 configuration, "
+        "so a rule keyed on the probe rather than on the substitution set captures it"
+    )
+    assert "CONTINUES TO ITS CAP" in empty.upper()
+    assert "TERMINATES" in rule["non_empty_substitution_set"].upper()
+
+    # `none` is a control with an empty substitution set; `full` has a non-empty one and is the
+    # only other control, so exactly one control is exposed to the terminating branch.
+    controls = config["controls_which_are_configurations_but_NOT_G_SUB_candidates"]
+    assert set(controls) == {"none", "full"}
+
+    # B3/`full` must fit inside the expert's own budget, or its own threshold is unreachable.
+    # scripted.py phase commands: orient 130, descend 80, close 45, lift 150 -> grasp by 405.
+    assert 130 + 80 + 45 + 150 <= 805, "the oracle must reach grasp well inside 805 commands"
+
+
+def test_the_committed_script_is_the_provenance_of_the_conditional_tables():
+    """Tables C-E must be re-derivable from committed code, as Table A is.
+
+    Section 9's standing practice is that a quantity existing only in a git-ignored run artifact
+    is not citable. `cloning.evaluate_policy` returns an unconditional median and the
+    predictions' std, and cannot produce these tables, so a generating script is committed.
+    """
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    block = manifest["frozen_offline_conditionals_and_phase_table"]
+    named = block["generating_script"].split()[0]
+    assert (ROOT / named).is_file(), f"{named} is named as provenance but is not committed"
+
+    source = (ROOT / named).read_text()
+    # The spawn-pool guard: without it every worker re-executes the module body and the run
+    # deadlocks at near-zero CPU, which looks like "still decoding" rather than like a failure.
+    assert 'if __name__ == "__main__":' in source
+    # It must not quietly decode a split the protocol forbids.
+    assert '"val"' in source and "test" not in source.split("def measure")[1].split('"val"')[0]

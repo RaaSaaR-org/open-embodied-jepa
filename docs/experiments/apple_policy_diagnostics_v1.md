@@ -111,13 +111,21 @@ attempt's own |·| quantiles:
 
 | | q50 | q90 | q99 | q90/q50 |
 |---|---|---|---|---|
-| `dx` | 0.0138–0.0342 | — | — | **1.00–1.22** |
-| `dz` | 0.0125–0.0857 | — | — | **1.01–1.32** |
-| `droll` | **0.179–0.243** | **0.478–0.498** | **0.503–0.513** | **2.05–2.67** |
+| `dx` | 0.0138–0.0342 | 0.0169–0.0342 | 0.0388–0.0990 | **1.00–1.22** |
+| `dy` | 0.0082–0.0187 | 0.0118–0.0255 | **0.1745–0.4512** | 1.02–1.56 |
+| `dz` | 0.0125–0.0857 | 0.0165–0.0890 | **0.3131–0.3743** | **1.01–1.32** |
+| `droll` | **0.179–0.243** | **0.478–0.498** | 0.503–0.513 | **2.05–2.67** |
 
-A head whose validation output standard deviation is 0.27 produced a *translation* command whose
-90th percentile equals its median over a thousand consecutive steps. **Roll varies across its full
-range in the same attempts.**
+**The claim is a ≤ q90 claim and is stated as one.** Up to the 90th percentile, a head whose
+validation output standard deviation is 0.27 produced a translation command whose 90th percentile
+equals its median over a thousand consecutive steps, while roll's q90 is 2.05–2.67× its median.
+
+**At q99 the separation disappears, and the cells are printed rather than left blank.** `dz`
+reaches 0.3131–0.3743 and `dy` reaches 0.1745–0.4512, against `droll`'s 0.5029–0.5129 — the same
+order of magnitude. So in roughly the last percent of commands the translation channels do move.
+An earlier revision printed em-dashes in those four cells, which showed the reader less than the
+author could see; that is the same species as the Table A rounding drift (§9) and is corrected the
+same way.
 
 **Stated at exactly that strength and no further.** This is **not** roll running away: `droll`'s
 out-of-distribution rate is 5–7 % and its q90 sits at the 0.5 configured bound, which is **less**
@@ -279,15 +287,32 @@ consumed. Every scope term used in a gate or stop rule below is enumerated here 
 
 - The runner catches the exhaustion explicitly, by the enumerated message, and **never** by a broad
   `except`. An unrelated `ContractError` still propagates and still kills the run loudly.
-- **In D1 and D2** (diagnostic, no substitution): the shadow expert stops being recorded at
-  exhaustion, the attempt continues to its cap, and the report records
+**The rule is keyed on whether the substitution set is empty, never on which probe is running.**
+That distinction is load-bearing and an earlier revision got it wrong — see the box below.
+
+- **Empty substitution set** — all of D1 and D2, **and the `none` configuration of D3**: the
+  shadow expert is a *recording*, not a command source, so its exhaustion cannot affect the
+  robot. It stops being recorded, **the attempt continues to its cap**, and the report records
   `shadow_expert_exhausted_at_step`. Departure is undefined past that step and is recorded as
   `null`, never as zero.
-- **In D3** (substitution, and therefore the gate): the attempt **terminates** at exhaustion with
-  termination reason `shadow_expert_exhausted`, and **counts as a non-success.** This is not a
-  concession: the oracle's own budget is 805 commands and `scripted_oracle` succeeds inside it
-  (24/24 pooled), so a configuration that cannot reach `grasp` within the expert's own budget has
-  not been cut short by the rule.
+- **Non-empty substitution set** — `full` and the eight G-SUB candidates: the expert *is* part of
+  the commanded action, so at exhaustion the attempt **terminates** with termination reason
+  `shadow_expert_exhausted` and **counts as a non-success.** Not a concession: the oracle's own
+  budget is 805 commands and `scripted_oracle` succeeds inside it (24/24 pooled), so a
+  configuration that cannot reach `grasp` within the expert's own budget has not been cut short.
+
+> **Why this is keyed on the substitution set: the earlier wording made B2 unpassable and voided
+> the run before any gate could be read.** The rule was keyed on "D3", and `none` is a D3
+> configuration — so every `none` attempt would have terminated at ~805 with
+> `shadow_expert_exhausted`. But B2 requires `none` to reproduce `outputs/task056-cohort-d/a2.json`,
+> whose sixteen attempts are **all `step_limit` at exactly 1000 executed steps**. B2 could never
+> have passed, Outcome V would have fired, and **the run would have been void with no arm numbers
+> reported.** `full` was never at risk: orient + descend + close = 255 commands, + lift = 405, well
+> inside 805.
+>
+> The second-order hazard is the worse one. A preregistration that provokes its own violation
+> invites the executing agent to reason its way out of an obviously-unintended void mid-run, which
+> is exactly what §12's "stops and reports rather than repairing as a reflex" exists to prevent.
 - `shadow_expert_exhausted_at_step` is reported for every attempt of every configuration, so a
   reader can see how many attempts the rule bound.
 - **Grasp reset** — a development seed on which the latched `score["grasp"]` is true at any point.
@@ -388,7 +413,20 @@ variation, while 10× or more is unambiguous. It is a judgement call, not a deri
 realized ratios are reported per dimension whatever they are. **No threshold moves in response to
 anything measured.**
 
-**D1-grasp.** A reported count, 0–16 per arm. No threshold (§3).
+**Checked before the run, because a threshold that a sound pipeline fails would make the
+abandonment clause unreachable by the wrong route.** Table A is an all-phase median while D1 is
+scored on reset frames, which are `orient`-phase, so the two populations differ. The worst realized
+`orient`-phase-to-unconditional error ratio across all four arms and all seven dimensions is
+**1.313** (A2 `right_dpitch`, §9.1 Table E), so the 3× threshold retains **2.28× headroom** over
+the population mismatch. **A sound pipeline should pass D1 rather than fail it spuriously**, which
+is the property that had to hold for §5.1's precedence rule not to become an automatic exemption.
+
+**D1-grasp.** The primary report is the **signed 4 × 16 table of step-zero `right_grasp` values**
+(§3), which carries no threshold because its reference is known exactly. The **derived two-sided
+count** — seeds where |step-zero `right_grasp` − (−1.0)| ≥ 1.0 — **is decision-relevant**: §5.2(a)
+makes it one of two disjuncts that decide whether the line continues, against two thresholds
+(≥ 8/16 seeds, for ≥ 3 of 4 arms). It is therefore subject to the missing-values rule below, and
+an earlier revision's "a reported count … no threshold" was stale on both counts.
 
 **D2 — a reading rule, explicitly not a gate, and it determines no gate outcome.** Stated this way
 because `apple_policy_v1.md` §5.3 announced a rule was "not a gate" and then decided gate outcomes
@@ -430,8 +468,10 @@ is a non-gating development cohort from which no p-value is a result.
 **24/24 pooled** on three prior wide cohorts (`apple_wide_grasp_closure_results_v3.md`,
 `apple_wide_object_ceiling_results_v2.md`, via `apple_policy_v1.md` §5.2 G5).
 
-**Missing values.** A gate that cannot be evaluated counts as failed. D1 and G-SUB are the only
-gates.
+**Missing values.** A quantity that cannot be evaluated counts as failed. **This covers D1,
+D1-grasp's derived two-sided count, and G-SUB** — every quantity that decides an outcome. D2 is
+excluded by name because it decides nothing (§5). An earlier revision said "D1 and G-SUB are the
+only gates", which left D1-grasp's count outside the rule while §5.2(a) made it a decision.
 
 ### 5.1 Abandonment clause
 
@@ -443,26 +483,42 @@ gates.
 > next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and
 > reports and does not select the follow-up itself.
 
-> **Precedence over §5.2, and it is the D1 result that takes it.** If D1 fails for ≥ 3 of the 4
-> arms, the observation the controller receives is not the one the trainer used. G-SUB's result is
-> then **uninterpretable rather than negative** — a sweep conducted through a broken channel
-> measures the channel. In that case the abandonment clause does **not** fire; the task reports a
-> pipeline defect, and the line continues for the purpose of fixing it.
+> **Precedence over §5.2, and it is taken by CLAUSE (a) AS A WHOLE — either disjunct.** If
+> **either** D1 fails for ≥ 3 of the 4 arms **or** D1-grasp's two-sided count is ≥ 8/16 for ≥ 3 of
+> the 4 arms, the observation the controller receives is not the one the trainer used. G-SUB's
+> result is then **uninterpretable rather than negative** — a sweep conducted through a broken
+> channel measures the channel. In that case the abandonment clause does **not** fire; the task
+> reports a pipeline defect, and the line continues for the purpose of fixing it.
+>
+> **Keyed on clause (a), not on D1 alone.** An earlier revision stated the precedence over the D1
+> disjunct only, so on (D1 passes all four, D1-grasp ≥ 8/16 for ≥ 3 arms, G-SUB fails) §5.2(a) and
+> Outcome P said continue while this box and Outcome X said stop — **verbatim the contradiction the
+> rule was written to remove, one disjunct over.** The case is live rather than theoretical:
+> `grasp` is a separate normalization path and the one dimension with an exactly-known reference,
+> so it is the disjunct most likely to fire alone.
 >
 > **This exemption is available exactly once.** Once the defect is fixed, a re-run whose G-SUB
-> fails with D1 passing fires the clause as written. **The exemption is recorded as spent in the
-> results document the first time it is claimed**, so a second claim is visibly unavailable.
+> fails with clause (a) not holding fires the clause as written.
+>
+> **The bound has a machine-checkable home rather than living in prose.** The manifest carries
+> `precedence_rule_D1_over_G_SUB.exemption_spent`, frozen at **`false`**. The results document
+> **sets it `true` the first time the exemption is claimed**, and **any successor protocol must
+> cite this field in its own gate section** and may not claim the exemption while it reads `true`.
+> Without a field to flip, "once" is prose binding a document this protocol cannot reach.
 >
 > The "once" is the load-bearing half. Without it this is an unbounded escape from abandonment,
 > which is worse than the contradiction it replaces.
 
 ### 5.2 Success clause
 
-**§5.1's precedence rule governs this section.** If D1 fails for ≥ 3 of the 4 arms *and* G-SUB
-fails, **clause (a) applies and the abandonment clause does not fire** — once. An earlier revision
-left §5.1 saying "stop" and §5.2 saying "continue" on that joint outcome, with §7 listing the two
+**§5.1's precedence rule governs this section, and it ranges over clause (a) AS A WHOLE.** If
+**either disjunct of (a)** holds *and* G-SUB fails, **clause (a) applies and the abandonment clause
+does not fire** — once, tracked by the manifest's `exemption_spent` field. An earlier revision left
+§5.1 saying "stop" and §5.2 saying "continue" on that joint outcome, with §7 listing the two
 outcomes side by side and no precedence, which left the executing agent free to choose **after
-seeing the numbers**. That is the defect a preregistration exists to make impossible.
+seeing the numbers**; a later one fixed it for the D1 disjunct only and left the D1-grasp disjunct
+carrying the identical contradiction. That is the defect a preregistration exists to make
+impossible, and it is now keyed on the clause rather than on one of its terms.
 
 The line continues iff **either**:
 
@@ -537,17 +593,25 @@ did not discharge.
 
 ## 7. Pre-declared outcomes
 
-- **Outcome P — D1 or D1-grasp fails (success clause (a)).** A locatable pipeline discrepancy.
-  Next: an audit of the observation path from `G1Embodiment.observe` to `ClonedPolicy.act` against
-  `cloning.py`'s training path, then a re-measurement. No model change, no retrain.
-- **Outcome S — D1 passes and G-SUB passes (success clause (b)).** The failing channel is named.
-  Next: a new preregistration for a targeted fix, with its own controls. That task may ask for C.
-- **Outcome X — G-SUB fails *and* D1 passes for ≥ 2 of the 4 arms.** §5.1 fires. The line stops.
-- **Outcome P/X precedence — G-SUB fails *and* D1 fails for ≥ 3 of the 4 arms.** **Outcome P takes
-  precedence and Outcome X does not fire**, once: G-SUB conducted through a broken observation
-  channel measures the channel, so its failure is uninterpretable rather than negative. The
-  exemption is **recorded as spent** in the results document, and a re-run after the fix whose
-  G-SUB fails with D1 passing fires §5.1 as written.
+- **Outcome P — clause (a) holds: D1 fails for ≥ 3 of the 4 arms, *or* D1-grasp's two-sided count
+  is ≥ 8/16 for ≥ 3 of the 4 arms.** A locatable pipeline discrepancy. Next: an audit of the
+  observation path from `G1Embodiment.observe` to `ClonedPolicy.act` against `cloning.py`'s
+  training path, then a re-measurement. No model change, no retrain.
+- **Outcome S — clause (a) does NOT hold (D1 passes for ≥ 2 of the 4 arms and D1-grasp's count is
+  < 8/16 for ≥ 2 of the 4 arms) and G-SUB passes.** The failing channel is named. Next: a new
+  preregistration for a targeted fix, with its own controls. That task may ask for cohort C.
+- **Outcome X — G-SUB fails *and* clause (a) does NOT hold.** §5.1 fires. The line stops.
+- **Outcome P/X precedence — G-SUB fails *and* clause (a) holds, by *either* disjunct.**
+  **Outcome P takes precedence and Outcome X does not fire**, once: G-SUB conducted through a
+  broken observation channel measures the channel, so its failure is uninterpretable rather than
+  negative. The exemption is recorded as spent by setting the manifest's
+  `precedence_rule_D1_over_G_SUB.exemption_spent` to `true` in the results document, and a re-run
+  after the fix whose G-SUB fails with clause (a) not holding fires §5.1 as written.
+
+**A `grasp` stage latched before the shadow expert's exhaustion still counts as a grasp reset**,
+under §2's definition ("a development seed on which the latched `score['grasp']` is true at any
+point"). Termination by `shadow_expert_exhausted` ends the attempt; it does not un-latch a stage
+already reached. Stated rather than left inferable.
 - **Outcome V — B1, B2 or B3 fails.** The run is void. No arm numbers are reported as results;
   the defect and the void are recorded.
 
@@ -566,7 +630,7 @@ MPS/CPU only, Apple M5 Pro 48 GB. No training. No corpus decoding beyond §9's r
 | B1 baselines + B3 inert probe | oracle 7.7–8.0 s per attempt (`apple_policy_v1.md` §6) | ≤ 20 min |
 | D1 + D1-grasp | 4 arms × 16 seeds × 1 step; dominated by simulator construction | ≤ 10 min |
 | D2 traces | 4 arms × 16 seeds × ≤ 1000 steps | ≤ 45 min |
-| D3 sweep (A2) | 9 configurations × 16 seeds; passing configurations terminate early | ≤ 60 min |
+| D3 sweep (A2) | 10 configurations × 16 seeds (8 candidates + `none` + `full`, §2); passing configurations terminate early | ≤ 60 min |
 | B2 control + slack for one repeat | | ≤ 60 min |
 | **Total** | | **≈ 3.5 h** |
 
@@ -632,6 +696,17 @@ Total 16.1 s on CPU.
 ### 9.1 The conditionals the unconditional median cannot compute (F2), and the phase-restricted error (F7)
 
 Both are published **before the run**, on the same 7 723 val rows, because D1's thresholds are defined against Table A and a reader has to be able to see what Table A does and does not test.
+
+**Generated by `scripts/measure_policy_offline_conditionals.py`, committed with this protocol.**
+§9's own standing practice is that a quantity existing only in a git-ignored run artifact is not
+citable, and Table A is held to exactly that standard — so these tables must be re-derivable by a
+third party from committed code too. `cloning.evaluate_policy` **cannot** produce them: it returns
+one unconditional per-dimension median and the *predictions'* standard deviation. The script is
+separate from `cloning.py` rather than an edit to it; `cloning.py` participates in no checkpoint
+`implementation_sha256` (`VisualModel`'s digest covers `models/base.py`, the backend module,
+`models/readout.py` and `readout_labels.py`; `ClonedPolicy`'s covers `policy.py` alone), so editing
+it would have been safe, but the trained arms' provenance surface stays untouched while any
+TASK-056 checkpoint must remain loadable.
 
 **Val saturation, stated because Table A's 44.886 % is the TRAIN cohort:** on val, |target `right_dz`| ≥ 0.400 on **44.503 %** of rows (+0.400 on 17.662 %, −0.400 on 26.842 %), target mean -0.0041.
 

@@ -28,14 +28,17 @@ updated: 2026-09-24
 
 TASK-056 failed on its development stop rule: four arms, 64 development attempts, 0 full
 successes. Its recorded candidate mechanism — smooth-L1 hedging against a `right_dz` target
-saturated at 0.400 — is **contradicted** by artifacts that already existed, and this task exists
+saturated at 0.400 — is **not supported by the statistics it was read off**, and this task exists
 because of that.
 
-Offline, on the val split, the trained heads reproduce the saturated expert command: median
-absolute `right_dz` error 0.0133–0.0283 with predicted `right_dz` standard deviation 0.2656–0.2735
-and predicted `right_grasp` standard deviation 0.971–0.979. A head hedging toward the interior
-would show a compressed output standard deviation and a large error on the saturated rows; it
-shows neither. The expert's own `right_dz` is a signed, near-symmetric bang-bang whose **mean is
+**Measured on the validation split, the hedging signature is absent offline**: saturated-row error
+is lower than unsaturated, conditional means reach 88–98 % of the boundary on both signs, and the
+predicted-to-**target** standard-deviation ratio is 0.952–0.980. The statistics the original
+reading was taken from could not have shown this either way — an unconditional median necessarily
+sits inside the non-saturated group at 44.503 % val saturation, and only the predictions' standard
+deviation was ever computed, so "compressed" had no referent. **Whether dz behaviour caused the
+closed-loop failure is unmeasured** and stays so, because the closed-loop command signs are
+unrecoverable. The expert's own `right_dz` is a signed, near-symmetric bang-bang whose **mean is
 −0.0012**, so the published comparison was never between the same quantities.
 
 Two attempts were not **total** failures and this task leads with them: **A2 on seed 45100 and A3

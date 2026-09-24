@@ -1,5 +1,5 @@
 {
-  "abandonment_clause": "If G-SUB fails - none of the EIGHT G-SUB CANDIDATE configurations, including all_translation, reaches 8/16 grasp resets - then no single command channel carries the failure and the preregistered Outcome D abandonment clause of apple_policy_v1.md section 7 fires AS WRITTEN. This control line stops on this corpus and this camera. No further loss, head or output-parameterisation variant is preregistered on it. The next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and reports and does not select the follow-up itself. SUBJECT TO precedence_rule_D1_over_G_SUB: if D1 fails for >= 3 of the 4 arms, this clause does NOT fire, once, and the exemption is recorded as spent.",
+  "abandonment_clause": "If G-SUB fails - none of the EIGHT G-SUB CANDIDATE configurations, including all_translation, reaches 8/16 grasp resets - then no single command channel carries the failure and the preregistered Outcome D abandonment clause of apple_policy_v1.md section 7 fires AS WRITTEN. This control line stops on this corpus and this camera. No further loss, head or output-parameterisation variant is preregistered on it. The next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and reports and does not select the follow-up itself. SUBJECT TO precedence_rule_D1_over_G_SUB: if CLAUSE (a) HOLDS BY EITHER DISJUNCT, this clause does NOT fire, once, and exemption_spent is set to true.",
   "baselines": {
     "B1_harness_soundness": {
       "hold": "0/16",
@@ -176,8 +176,9 @@
       "right_dz": 0.08497199999999999
     }
   },
-  "frozen_D1_thresholds_three_times_table_A_note": "Derived from the ROUNDED Table A cells, which are the authority. Tripling an unrounded intermediate instead put the manifest 1e-6 out of agreement with its own table; a consistency test caught it before merge.",
+  "frozen_D1_thresholds_three_times_table_A_note": "Derived from the ROUNDED Table A cells, which are the authority. Tripling an unrounded intermediate instead put the manifest 1e-6 out of agreement with its own table; a consistency test caught it before merge. HEADROOM CHECKED BEFORE THE RUN: Table A is an all-phase median while D1 is scored on reset (orient-phase) frames, so the populations differ. The worst realized orient-to-unconditional error ratio across all four arms and all seven dimensions is 1.313 (A2 right_dpitch), so the 3x threshold retains 2.28x headroom and a sound pipeline should pass D1 rather than fail it spuriously -- the property that had to hold for the precedence rule not to become an automatic exemption.",
   "frozen_offline_conditionals_and_phase_table": {
+    "generating_script": "scripts/measure_policy_offline_conditionals.py (committed). Reproduces every value in this block exactly. cloning.evaluate_policy CANNOT produce them: it returns one unconditional per-dimension median and the PREDICTIONS' std. A separate script rather than an edit to cloning.py, which participates in no checkpoint implementation_sha256 (VisualModel's digest covers models/base.py, the backend module, models/readout.py and readout_labels.py; ClonedPolicy's covers policy.py alone) but whose provenance surface stays untouched while any TASK-056 checkpoint must remain loadable.",
     "per_arm": {
       "A0_proprio_only": {
         "by_phase_median_error": {
@@ -801,14 +802,18 @@
     "the on-policy-relabeling argument for a follow-up, which is recorded in the results document as a named candidate and deliberately NOT preregistered here"
   ],
   "pre_declared_outcomes": {
-    "P": "D1 or D1-grasp fails (success clause (a)). A locatable pipeline discrepancy. Next: an audit of the observation path from G1Embodiment.observe to ClonedPolicy.act against cloning.py's training path, then a re-measurement. No model change, no retrain.",
-    "P_over_X_precedence": "G-SUB fails AND D1 fails for >= 3 of the 4 arms: OUTCOME P TAKES PRECEDENCE AND OUTCOME X DOES NOT FIRE, once. The exemption is recorded as spent in the results document, and a re-run after the fix whose G-SUB fails with D1 passing fires the abandonment clause as written.",
-    "S": "D1 passes and G-SUB passes (success clause (b)). The failing channel is named. Next: a new preregistration for a targeted fix, with its own controls. That task may ask for cohort C.",
+    "P": "Clause (a) holds: D1 fails for >= 3 of the 4 arms, OR D1-grasp's two-sided count is >= 8/16 for >= 3 of the 4 arms. A locatable pipeline discrepancy. Next: an audit of the observation path from G1Embodiment.observe to ClonedPolicy.act against cloning.py's training path, then a re-measurement. No model change, no retrain.",
+    "P_over_X_precedence": "G-SUB fails AND clause (a) HOLDS BY EITHER DISJUNCT: OUTCOME P TAKES PRECEDENCE AND OUTCOME X DOES NOT FIRE, once. exemption_spent is set to true in the results document, and a re-run after the fix whose G-SUB fails with clause (a) not holding fires the abandonment clause as written.",
+    "S": "Clause (a) does NOT hold (D1 passes for >= 2 of the 4 arms AND D1-grasp's count is < 8/16 for >= 2 of the 4 arms) and G-SUB passes. The failing channel is named. Next: a new preregistration for a targeted fix, with its own controls. That task may ask for cohort C.",
     "V": "B1, B2 or B3 fails. The run is void. No arm numbers are reported as results; the defect and the void are recorded.",
-    "X": "G-SUB fails AND D1 passes for >= 2 of the 4 arms. The abandonment clause fires. The line stops."
+    "X": "G-SUB fails AND clause (a) does NOT hold. The abandonment clause fires. The line stops.",
+    "a_grasp_latched_before_exhaustion_still_counts": "Under the definition of grasp_reset ('a development seed on which the latched score.grasp is true at any point'), termination by shadow_expert_exhausted ends the attempt but does not un-latch a stage already reached."
   },
   "precedence_rule_D1_over_G_SUB": {
-    "rule": "D1 takes precedence, ONCE. If D1 fails for >= 3 of the 4 arms, the observation the controller receives is not the one the trainer used. G-SUB's result is then UNINTERPRETABLE RATHER THAN NEGATIVE -- a sweep conducted through a broken channel measures the channel. In that case the abandonment clause does NOT fire; the task reports a pipeline defect, and the line continues for the purpose of fixing it.",
+    "exemption_spent": false,
+    "exemption_spent_contract": "Frozen at false. The results document sets it true the first time the exemption is claimed. ANY SUCCESSOR PROTOCOL MUST CITE THIS FIELD IN ITS OWN GATE SECTION and may not claim the exemption while it reads true. Without a field to flip, 'once' is prose binding a document this protocol cannot reach.",
+    "keyed_on_clause_a_not_on_D1_alone": "An earlier revision stated the precedence over the D1 disjunct only, so on (D1 passes all four, D1-grasp >= 8/16 for >= 3 arms, G-SUB fails) the success clause and Outcome P said continue while the abandonment clause and Outcome X said stop -- VERBATIM the contradiction the rule was written to remove, one disjunct over. The case is live rather than theoretical: grasp is a separate normalization path and the one dimension with an exactly-known reference, so it is the disjunct most likely to fire alone.",
+    "rule": "CLAUSE (a) AS A WHOLE takes precedence -- EITHER DISJUNCT. If either D1 fails for >= 3 of the 4 arms OR D1-grasp's two-sided count is >= 8/16 for >= 3 of the 4 arms, the observation the controller receives is not the one the trainer used. G-SUB's result is then UNINTERPRETABLE RATHER THAN NEGATIVE -- a sweep conducted through a broken channel measures the channel. In that case the abandonment clause does NOT fire; the task reports a pipeline defect, and the line continues for the purpose of fixing it. THIS EXEMPTION IS AVAILABLE EXACTLY ONCE, tracked by exemption_spent; the D1_grasp disjunct is covered because the precedence is keyed on clause (a), not on D1 alone.",
     "stated_in": [
       "protocol section 5.1",
       "protocol section 5.2",
@@ -816,7 +821,7 @@
       "this manifest"
     ],
     "the_defect_it_fixes": "An earlier revision had the abandonment clause fire unconditionally on a G-SUB failure while the success clause said the line continues if D1 fails for >=3 arms. On the joint outcome 'D1 fails for >=3 arms AND G-SUB fails' -- plausible, arguably the modal one -- one clause said stop and the other said continue, and the pre-declared outcomes listed both side by side with NO PRECEDENCE. A preregistration whose function is to bind the executing agent left the agent free to pick AFTER SEEING THE NUMBERS.",
-    "the_exemption_is_available_exactly_once": "Once the defect is fixed, a re-run whose G-SUB fails with D1 passing fires the clause as written. The exemption is RECORDED AS SPENT in the results document the first time it is claimed, so a second claim is visibly unavailable.",
+    "the_exemption_is_available_exactly_once": "Once the defect is fixed, a re-run whose G-SUB fails with clause (a) not holding fires the clause as written. The exemption is recorded as spent by setting exemption_spent to true in the results document the first time it is claimed, so a second claim is visibly unavailable.",
     "why_the_once_is_load_bearing": "Without it this is an unbounded escape from abandonment, which is worse than the contradiction it replaces."
   },
   "predecessor": {
@@ -852,7 +857,7 @@
         }
       ]
     },
-    "D3": "per-dimension expert substitution, A2 only, 9 configurations x 16 seeds",
+    "D3": "per-dimension expert substitution, A2 only, 10 configurations x 16 seeds: the 8 G-SUB candidates plus the controls 'none' and 'full'",
     "no_dimension_is_privileged": "D2 and D3 report all seven dimensions. The protocol does NOT report dz preferentially: the largest online/offline behavioural gap in TASK-056 is in droll, not translation."
   },
   "process": {
@@ -867,13 +872,15 @@
   },
   "protocol": "apple_policy_diagnostics_v1",
   "shadow_expert_exhaustion_preregistered_behaviour": {
-    "D1_and_D2": "shadow expert stops being recorded at exhaustion, the attempt continues to its cap, report records shadow_expert_exhausted_at_step. Departure past that step is null, NEVER zero.",
-    "D3": "the attempt TERMINATES at exhaustion with reason shadow_expert_exhausted and counts as a NON-SUCCESS. Not a concession: the oracle's budget is 805 commands and scripted_oracle succeeds inside it (24/24 pooled).",
+    "BLOCKING_DEFECT_THIS_FIXES": "An earlier revision keyed the rule on 'D3', and 'none' IS a D3 configuration, so every 'none' attempt would have terminated at ~805 with shadow_expert_exhausted. B2 requires 'none' to reproduce outputs/task056-cohort-d/a2.json, whose sixteen attempts are ALL step_limit at exactly 1000 executed steps. B2 could never have passed, Outcome V would have fired, and THE RUN WOULD HAVE BEEN VOID WITH NO ARM NUMBERS REPORTED. 'full' was never at risk: orient+descend+close = 255 commands, +lift = 405, well inside 805. The second-order hazard is worse: a preregistration that provokes its own violation invites the executing agent to reason its way out of an obviously-unintended void mid-run, which is exactly what the process section's 'stops and reports rather than repairing as a reflex' exists to prevent.",
     "caught_by_enumerated_message_never_by_a_broad_except": true,
+    "empty_substitution_set": "all of D1 and D2, AND the 'none' configuration of D3. The shadow expert is a RECORDING, not a command source, so its exhaustion cannot affect the robot. It stops being recorded, THE ATTEMPT CONTINUES TO ITS CAP, and the report records shadow_expert_exhausted_at_step. Departure past that step is null, NEVER zero.",
+    "keyed_on_the_SUBSTITUTION_SET_never_on_which_probe_is_running": true,
+    "non_empty_substitution_set": "'full' and the eight G-SUB candidates. The expert IS part of the commanded action, so at exhaustion the attempt TERMINATES with reason shadow_expert_exhausted and counts as a NON-SUCCESS. Not a concession: the oracle's budget is 805 commands and scripted_oracle succeeds inside it (24/24 pooled).",
     "reported_for_every_attempt": "shadow_expert_exhausted_at_step, so a reader can see how many attempts the rule bound."
   },
   "status": "preregistration",
-  "success_clause": "GOVERNED BY precedence_rule_D1_over_G_SUB. Continues iff EITHER (a) D1 fails for >= 3 of the 4 arms, or D1-grasp's TWO-SIDED count (seeds where |step-zero right_grasp - (-1.0)| >= 1.0) is >= 8/16 for >= 3 of the 4 arms - follow-up is a pipeline audit and re-measurement, NOT a model change and NOT a retrain; OR (b) G-SUB passes, naming the failing channel. If D1 fails for >= 3 arms AND G-SUB fails, clause (a) applies and the abandonment clause does not fire, ONCE. In both cases the follow-up is a NEW preregistration with its own gates and controls, never a build started inside this task.",
+  "success_clause": "GOVERNED BY precedence_rule_D1_over_G_SUB, which ranges over CLAUSE (a) AS A WHOLE. Continues iff EITHER (a) D1 fails for >= 3 of the 4 arms, OR D1-grasp's TWO-SIDED count (seeds where |step-zero right_grasp - (-1.0)| >= 1.0) is >= 8/16 for >= 3 of the 4 arms - follow-up is a pipeline audit and re-measurement, NOT a model change and NOT a retrain; OR (b) G-SUB passes, naming the failing channel. If EITHER DISJUNCT of (a) holds AND G-SUB fails, clause (a) applies and the abandonment clause does not fire, ONCE. In both cases the follow-up is a NEW preregistration with its own gates and controls.",
   "supersedes_nothing": true,
   "task": "TASK-057",
   "what_this_task_is": "A DIAGNOSTIC task. It trains nothing, changes no model, and proposes no output-parameterisation change. Its only purpose is to locate the gap between TASK-056's near-perfect open-loop imitation and its closed-loop failure. Its single gate can fire the abandonment clause that apple_policy_v1.md section 7 already preregistered."
