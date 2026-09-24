@@ -636,3 +636,108 @@ def test_the_diagnostics_gate_has_a_failing_path_and_quotes_the_right_binomial()
     assert at_least(8, 16, dropped["p0_that_the_erroneous_0_189_corresponds_to"]) == pytest.approx(
         0.189, abs=1e-4
     ), "the recorded provenance of the wrong number must itself be checkable"
+
+
+def test_the_protocols_printed_table_A_matches_the_manifest_cell_by_cell():
+    """Document-to-manifest drift, which no manifest-internal check can see.
+
+    An earlier revision printed Table A at 5 decimal places while the manifest carried 6, so 22
+    of 28 cells disagreed and the protocol's own sentence -- "D1's thresholds are 3x the cell" --
+    was false of the numbers a reader actually reads: 3 x 0.01896 = 0.05688 against a stored
+    threshold of 0.056874. The manifest was internally perfect the whole time and its
+    self-consistency test passed.
+
+    **A consistency check that compares an artifact with itself certifies nothing about the
+    artifact a reader reads.** This test parses the rendered Markdown table, which is the only
+    thing that can catch it.
+    """
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    values = manifest["frozen_offline_error_table_A"]["values"]
+    protocol = (ROOT / "docs" / "experiments" / "apple_policy_diagnostics_v1.md").read_text()
+
+    marker = "**Table A — median |predicted − expert| per dimension"
+    assert marker in protocol, "Table A's heading changed; this test pins that exact table"
+    block = protocol[protocol.index(marker) :].split("\n\n")[1]
+    rows = [r for r in block.split("\n") if r.startswith("| `")]
+    assert len(rows) == 7, f"expected seven dimension rows, parsed {len(rows)}"
+
+    arms = ["A0_proprio_only", "A1_random_encoder", "A2_bc_frozen_e0", "A3_bc_finetuned_e0"]
+    seen = set()
+    for row in rows:
+        cells = [c.strip() for c in row.strip("|").split("|")]
+        dimension = cells[0].strip("`")
+        seen.add(dimension)
+        assert len(cells) == 5, f"{dimension}: expected one column per arm"
+        for arm, printed in zip(arms, cells[1:], strict=True):
+            # Exact string equality, not a tolerance: the point is that the document prints the
+            # manifest's stored value, and a tolerance would re-admit the rounding that caused
+            # the drift.
+            assert printed == f"{values[arm][dimension]:.6f}", (
+                f"Table A {dimension}/{arm}: protocol prints {printed}, manifest stores "
+                f"{values[arm][dimension]:.6f}"
+            )
+    assert seen == set(values["A0_proprio_only"]), "Table A must cover all seven dimensions"
+
+
+def test_every_joint_D1_G_SUB_outcome_maps_to_exactly_one_pre_declared_outcome():
+    """The gate contradiction, pinned as a decision table rather than as prose.
+
+    An earlier revision fired the abandonment clause unconditionally on a G-SUB failure while
+    the success clause said the line continues when D1 fails for >=3 arms. On the joint outcome
+    "D1 fails for >=3 arms AND G-SUB fails" -- plausible, arguably the modal one -- one clause
+    said stop and the other said continue, and the pre-declared outcomes listed both with no
+    precedence. **A preregistration whose function is to bind the executing agent left the agent
+    free to choose after seeing the numbers.**
+
+    Prose cannot be tested, so what is tested is that the manifest carries a precedence rule, an
+    explicit once-only bound, and an Outcome X conditioned on D1 rather than on G-SUB alone.
+    """
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    rule = manifest["precedence_rule_D1_over_G_SUB"]
+    outcomes = manifest["pre_declared_outcomes"]
+
+    # The rule exists, is bounded, and says which way it resolves. Assertions read the VALUES,
+    # never the key names: an earlier version of this test matched "exactly once" against a
+    # string that only ever held it in its key, so it failed identically on a correct manifest
+    # and on an injected violation -- a test failing, but not for the reason it appeared to.
+    once = rule["the_exemption_is_available_exactly_once"].lower()
+    assert "once" in rule["rule"].lower(), "the precedence rule must state its own bound"
+    assert "recorded as spent" in once, (
+        "the once-only bound is unenforceable unless the spend is recorded in the results document"
+    )
+    assert "d1 passing" in once, "the rule must say what a second, non-exempt run looks like"
+    assert "unbounded escape" in rule["why_the_once_is_load_bearing"]
+
+    # Outcome X must NOT be conditioned on G-SUB alone; the joint case has its own entry.
+    assert "D1" in outcomes["X"], (
+        "Outcome X is conditioned on G-SUB alone again: that is the contradiction with the "
+        "success clause, which continues the line when D1 fails for >= 3 arms"
+    )
+    assert "P_over_X_precedence" in outcomes
+    joint = outcomes["P_over_X_precedence"]
+    assert "DOES NOT FIRE" in joint.upper()
+    assert "once" in joint.lower()
+
+    # Both clauses must point at the rule, so neither can be read in isolation.
+    for clause in ("abandonment_clause", "success_clause"):
+        assert "precedence_rule_D1_over_G_SUB" in manifest[clause], (
+            f"{clause} does not reference the precedence rule, so it can be read alone and "
+            "reproduce the contradiction"
+        )
+
+    # Every joint outcome of (D1 fails for >=3 arms, G-SUB fails) is decidable.
+    for d1_failed in (True, False):
+        for gsub_failed in (True, False):
+            if gsub_failed and d1_failed:
+                decided = "P_over_X_precedence"
+            elif gsub_failed:
+                decided = "X"
+            elif d1_failed:
+                decided = "P"
+            else:
+                decided = "S"
+            assert decided in outcomes, f"({d1_failed}, {gsub_failed}) maps to nothing"

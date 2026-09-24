@@ -1,5 +1,5 @@
 {
-  "abandonment_clause": "If G-SUB fails - no configuration, including all_translation, reaches 8/16 grasp resets - then no single command channel carries the failure and the preregistered Outcome D abandonment clause of apple_policy_v1.md section 7 fires AS WRITTEN. This control line stops on this corpus and this camera. No further loss, head or output-parameterisation variant is preregistered on it. The next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and reports and does not select the follow-up itself.",
+  "abandonment_clause": "If G-SUB fails - none of the EIGHT G-SUB CANDIDATE configurations, including all_translation, reaches 8/16 grasp resets - then no single command channel carries the failure and the preregistered Outcome D abandonment clause of apple_policy_v1.md section 7 fires AS WRITTEN. This control line stops on this corpus and this camera. No further loss, head or output-parameterisation variant is preregistered on it. The next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and reports and does not select the follow-up itself. SUBJECT TO precedence_rule_D1_over_G_SUB: if D1 fails for >= 3 of the 4 arms, this clause does NOT fire, once, and the exemption is recorded as spent.",
   "baselines": {
     "B1_harness_soundness": {
       "hold": "0/16",
@@ -48,7 +48,7 @@
   },
   "committed_in_advance": "A rescue under expert substitution injects privileged information at 50 Hz, which the policy does not get. It shows WHICH CHANNEL the failure flows through; it does NOT show that a learned version of that channel is attainable. No D3 number may be read as evidence that a fix will work.",
   "corrections_to_the_TASK_056_record_established_by_this_preregistration": {
-    "1_the_dz_hedging_mechanism_is_NOT_SUPPORTED_by_the_statistics_it_was_read_off": "Downgraded from 'contradicted'. The expert's right_dz is a signed near-symmetric bang-bang (+0.400 on 18.45%, -0.400 on 26.44%, |dz|=0.400 on 44.886% TRAIN / 44.503% VAL, mean -0.0012) and the committed 44.89% is an ABSOLUTE-value rate. The unconditional median and the predictions-only std CANNOT test the hedging prediction. The conditionals that CAN were computed and the prediction is NOT BORNE OUT OFFLINE: on saturated rows the heads are MORE accurate, conditional means are +0.354..+0.375 on target +0.400 and -0.374..-0.390 on target -0.400, and predicted std is 95-100% of TARGET std. It does NOT follow that dz under-shoot played no part in the closed-loop failure: closed-loop signs are unrecoverable, so the online half stays UNMEASURED. Declared risk R5 is not borne out OFFLINE and that is the whole claim.",
+    "1_the_hedging_signature_is_ABSENT_OFFLINE_and_the_online_half_is_UNMEASURED": "TWO HALVES, AND ONLY ONE IS MEASURED. OFFLINE, measured on the validation split: the hedging signature is ABSENT -- saturated-row error is LOWER than unsaturated, conditional means reach 88-98% of the boundary on both signs, and the predicted-to-TARGET standard-deviation ratio is 0.952-0.980. The statistics the original reading was taken from could not have shown this either way: cloning.action_error's unconditional median necessarily sits inside the non-saturated group at 44.503% val saturation, and output_std_per_dimension is predictions only, so 'compressed' had no referent. ONLINE: whether dz behaviour caused the closed-loop failure is UNMEASURED and stays unmeasured, because the signs of every closed-loop command are unrecoverable. The prediction in apple_policy_v1.md section 12 and declared risk R5 range over BOTH halves, so the words 'refuted', 'contradicted' and 'did not occur' are NOT USED UNQUALIFIED anywhere; every statement carries 'offline' or 'on the validation split'. Expert saturation: 44.886% TRAIN, 44.503% VAL, reported separately.",
     "2_the_sign_of_every_TASK_056_command_is_unrecoverable": "scripts/evaluate_policy.py computed every stored command statistic from np.abs(...). Zero negative numbers exist anywhere in command_statistics across all 64 attempts. |dz| q50 = 0.0125 is equally consistent with descending slowly, ascending slowly and oscillating about zero; |grasp| q50 = 1.0 is equally consistent with a hand held fully OPEN - which is what the expert does through orient and descend - and one held fully closed. The under-shoot reading in apple_policy_v1_results.md section 16 and task056_handover.md section 5 is therefore UNMEASURED rather than refuted. This is why D1-grasp is the most informative probe here.",
     "3_both_learned_arms_grasped_and_lifted_the_apple": "A2 on seed 45100 and A3 on seed 45006 each reached the scorer's grasp stage, lifted the apple +0.1678 m and +0.1694 m against a 0.05 m gate, and were STILL HOLDING IT, undropped, when the 1000-step cap ended the attempt. Neither reached transport. The 1/16 counts ARE in apple_policy_v1_results.md sections 14 and 16; the lift height, the sustained contact and the undropped state are nowhere in the record; and task056_handover.md gives neither arm's grasp count at all, stating only the controls' 0/16. The compression into the handover removed the run's single most encouraging measurement.",
     "4_the_near_constant_reading_is_translation_only": "Median across attempts: dx q90/q50 1.00-1.22 and dz 1.01-1.32, versus droll q50 0.179-0.243, q90 0.478-0.498, q99 0.503-0.513 (ratio 2.05-2.67). Stated at that strength and no further: droll's out-of-distribution rate is 5-7% and its q90 sits at the 0.5 configured bound, which is LESS saturation than the expert's measured ~27% at |max|, so this is not roll running away. The observation is that the one dimension with real online variance is rotational, and it is the dimension with the SMALLEST offline error in Table A. Largest online/offline behavioural gap in the run, and not in the dimension the dz hypothesis pointed at.",
@@ -695,7 +695,7 @@
       }
     },
     "provenance": "re-derived by EXECUTING cloning.evaluate_policy against the four TASK-056 checkpoints; agreement with the training-time validation[best_step] record is float32 round-trip (max abs diff 3.6e-7/6.6e-7/6.9e-7/1.3e-7 for A0-A3; <=6e-8 on output std). Selection scores reproduce: A1 0.011059 < A0 0.013129 < A2 0.017935 < A3 0.023404.",
-    "spread_note": "0.00673 (A1 right_dyaw) to 0.03029 (A3 right_dx). This measured 4.50x spread is the justification for D1's 3x factor and was fixed before any probe runs.",
+    "spread_note": "0.006734 (A1_random_encoder right_dyaw) to 0.030289 (A3_bc_finetuned_e0 right_dx), ratio 4.497921. Computed from the 6-dp values in this file, which the protocol's printed Table A now reproduces at the same precision; an earlier revision quoted doc-rounded 0.00673/0.03029 next to a ratio computed from the 6-dp values.",
     "spread_ratio": 4.498,
     "values": {
       "A0_proprio_only": {
@@ -800,6 +800,25 @@
     "the test split (never decoded)",
     "the on-policy-relabeling argument for a follow-up, which is recorded in the results document as a named candidate and deliberately NOT preregistered here"
   ],
+  "pre_declared_outcomes": {
+    "P": "D1 or D1-grasp fails (success clause (a)). A locatable pipeline discrepancy. Next: an audit of the observation path from G1Embodiment.observe to ClonedPolicy.act against cloning.py's training path, then a re-measurement. No model change, no retrain.",
+    "P_over_X_precedence": "G-SUB fails AND D1 fails for >= 3 of the 4 arms: OUTCOME P TAKES PRECEDENCE AND OUTCOME X DOES NOT FIRE, once. The exemption is recorded as spent in the results document, and a re-run after the fix whose G-SUB fails with D1 passing fires the abandonment clause as written.",
+    "S": "D1 passes and G-SUB passes (success clause (b)). The failing channel is named. Next: a new preregistration for a targeted fix, with its own controls. That task may ask for cohort C.",
+    "V": "B1, B2 or B3 fails. The run is void. No arm numbers are reported as results; the defect and the void are recorded.",
+    "X": "G-SUB fails AND D1 passes for >= 2 of the 4 arms. The abandonment clause fires. The line stops."
+  },
+  "precedence_rule_D1_over_G_SUB": {
+    "rule": "D1 takes precedence, ONCE. If D1 fails for >= 3 of the 4 arms, the observation the controller receives is not the one the trainer used. G-SUB's result is then UNINTERPRETABLE RATHER THAN NEGATIVE -- a sweep conducted through a broken channel measures the channel. In that case the abandonment clause does NOT fire; the task reports a pipeline defect, and the line continues for the purpose of fixing it.",
+    "stated_in": [
+      "protocol section 5.1",
+      "protocol section 5.2",
+      "protocol section 7",
+      "this manifest"
+    ],
+    "the_defect_it_fixes": "An earlier revision had the abandonment clause fire unconditionally on a G-SUB failure while the success clause said the line continues if D1 fails for >=3 arms. On the joint outcome 'D1 fails for >=3 arms AND G-SUB fails' -- plausible, arguably the modal one -- one clause said stop and the other said continue, and the pre-declared outcomes listed both side by side with NO PRECEDENCE. A preregistration whose function is to bind the executing agent left the agent free to pick AFTER SEEING THE NUMBERS.",
+    "the_exemption_is_available_exactly_once": "Once the defect is fixed, a re-run whose G-SUB fails with D1 passing fires the clause as written. The exemption is RECORDED AS SPENT in the results document the first time it is claimed, so a second claim is visibly unavailable.",
+    "why_the_once_is_load_bearing": "Without it this is an unbounded escape from abandonment, which is worse than the contradiction it replaces."
+  },
   "predecessor": {
     "outcome": "failed on the development stop rule; 0 full successes over 64 development attempts",
     "protocol": "apple_policy_v1",
@@ -854,7 +873,7 @@
     "reported_for_every_attempt": "shadow_expert_exhausted_at_step, so a reader can see how many attempts the rule bound."
   },
   "status": "preregistration",
-  "success_clause": "Continues iff EITHER (a) D1 fails for >= 3 of the 4 arms, or D1-grasp's TWO-SIDED count (seeds where |step-zero right_grasp - (-1.0)| >= 1.0) is >= 8/16 for >= 3 of the 4 arms - follow-up is a pipeline audit and re-measurement, NOT a model change and NOT a retrain; OR (b) G-SUB passes, naming the failing channel. In both cases the follow-up is a NEW preregistration with its own gates and controls, never a build started inside this task.",
+  "success_clause": "GOVERNED BY precedence_rule_D1_over_G_SUB. Continues iff EITHER (a) D1 fails for >= 3 of the 4 arms, or D1-grasp's TWO-SIDED count (seeds where |step-zero right_grasp - (-1.0)| >= 1.0) is >= 8/16 for >= 3 of the 4 arms - follow-up is a pipeline audit and re-measurement, NOT a model change and NOT a retrain; OR (b) G-SUB passes, naming the failing channel. If D1 fails for >= 3 arms AND G-SUB fails, clause (a) applies and the abandonment clause does not fire, ONCE. In both cases the follow-up is a NEW preregistration with its own gates and controls, never a build started inside this task.",
   "supersedes_nothing": true,
   "task": "TASK-057",
   "what_this_task_is": "A DIAGNOSTIC task. It trains nothing, changes no model, and proposes no output-parameterisation change. Its only purpose is to locate the gap between TASK-056's near-perfect open-loop imitation and its closed-loop failure. Its single gate can fire the abandonment clause that apple_policy_v1.md section 7 already preregistered."

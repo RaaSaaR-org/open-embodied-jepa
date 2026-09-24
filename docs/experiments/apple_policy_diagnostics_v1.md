@@ -58,7 +58,7 @@ The committed 44.89 % is an **absolute-value** rate. A conditional-mean regresso
 nothing at all would emit ≈ 0 on this target, so "the expert commands 0.400, the policy commands
 0.03" was never a comparison of the same quantity.
 
-**(b) The hedging prediction is tested directly here for the first time, and it is not borne out.**
+**(b) The hedging signature is absent offline, measured directly for the first time.**
 
 **The statistic it was originally read off cannot test it, and that is recorded first.**
 `cloning.action_error` (`cloning.py`) computes **one unconditional per-dimension median over all
@@ -86,14 +86,19 @@ the target being at +0.400 they predict **+0.35 to +0.38**, conditioned on −0.
 **−0.37 to −0.39**; and the predicted standard deviation is **95–100 % of the target's**, not a
 fraction of it.
 
-**What this licenses, stated exactly.** The prediction in `apple_policy_v1.md` §12 was that the
-arms' dz distributions would be *compressed relative to the expert's*, with mass pulled toward
-zero. Measured against the target's own standard deviation and conditioned on the saturated rows,
-**that is not what the heads do offline.** It does **not** follow that dz under-shoot played no
-part in the closed-loop failure: §1.2 establishes that the closed-loop commands' signs are
-unrecoverable, so the online half of that claim is **unmeasured** and stays unmeasured. Declared
-risk R5 of `apple_policy_v1.md` §8 is likewise **not borne out offline**, and that is the whole of
-what is claimed for it.
+**What this licenses, stated exactly, and it is deliberately only half the mechanism.**
+
+> **Measured on the validation split, the hedging signature is absent offline: saturated-row error
+> is lower than unsaturated, conditional means reach 88–98 % of the boundary on both signs, and the
+> predicted-to-target standard-deviation ratio is 0.952–0.980.**
+
+**The online half is unmeasured and stays unmeasured.** Whether dz behaviour caused the closed-loop
+failure cannot be read from the TASK-056 record at all, because §1.2 establishes that the signs of
+every closed-loop command are unrecoverable. The prediction in `apple_policy_v1.md` §12 and declared
+risk R5 of its §8 range over **both** halves; only one is measured, so the words "refuted",
+"contradicted" and "did not occur" are **not used unqualified anywhere in this protocol** — they
+would claim the unmeasured half. Every statement here carries "offline" or "on the validation
+split", and that qualifier is load-bearing rather than cautious phrasing.
 
 Incidentally: `cloning.py` calls `torch.nn.functional.smooth_l1_loss` with the default
 `beta = 1.0`, and every residual here is well inside |x| < 1, so the objective was **pure L2
@@ -438,7 +443,26 @@ gates.
 > next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and
 > reports and does not select the follow-up itself.
 
+> **Precedence over §5.2, and it is the D1 result that takes it.** If D1 fails for ≥ 3 of the 4
+> arms, the observation the controller receives is not the one the trainer used. G-SUB's result is
+> then **uninterpretable rather than negative** — a sweep conducted through a broken channel
+> measures the channel. In that case the abandonment clause does **not** fire; the task reports a
+> pipeline defect, and the line continues for the purpose of fixing it.
+>
+> **This exemption is available exactly once.** Once the defect is fixed, a re-run whose G-SUB
+> fails with D1 passing fires the clause as written. **The exemption is recorded as spent in the
+> results document the first time it is claimed**, so a second claim is visibly unavailable.
+>
+> The "once" is the load-bearing half. Without it this is an unbounded escape from abandonment,
+> which is worse than the contradiction it replaces.
+
 ### 5.2 Success clause
+
+**§5.1's precedence rule governs this section.** If D1 fails for ≥ 3 of the 4 arms *and* G-SUB
+fails, **clause (a) applies and the abandonment clause does not fire** — once. An earlier revision
+left §5.1 saying "stop" and §5.2 saying "continue" on that joint outcome, with §7 listing the two
+outcomes side by side and no precedence, which left the executing agent free to choose **after
+seeing the numbers**. That is the defect a preregistration exists to make impossible.
 
 The line continues iff **either**:
 
@@ -518,7 +542,12 @@ did not discharge.
   `cloning.py`'s training path, then a re-measurement. No model change, no retrain.
 - **Outcome S — D1 passes and G-SUB passes (success clause (b)).** The failing channel is named.
   Next: a new preregistration for a targeted fix, with its own controls. That task may ask for C.
-- **Outcome X — G-SUB fails.** §5.1 fires. The line stops.
+- **Outcome X — G-SUB fails *and* D1 passes for ≥ 2 of the 4 arms.** §5.1 fires. The line stops.
+- **Outcome P/X precedence — G-SUB fails *and* D1 fails for ≥ 3 of the 4 arms.** **Outcome P takes
+  precedence and Outcome X does not fire**, once: G-SUB conducted through a broken observation
+  channel measures the channel, so its failure is uninterpretable rather than negative. The
+  exemption is **recorded as spent** in the results document, and a re-run after the fix whose
+  G-SUB fails with D1 passing fires §5.1 as written.
 - **Outcome V — B1, B2 or B3 fails.** The run is void. No arm numbers are reported as results;
   the defect and the void are recorded.
 
@@ -574,31 +603,31 @@ Total 16.1 s on CPU.
 
 | dimension | A0 | A1 | A2 | A3 |
 |---|---|---|---|---|
-| `right_dx` | 0.01896 | 0.02099 | 0.02715 | 0.03029 |
-| `right_dy` | 0.01862 | 0.02504 | 0.02886 | 0.02806 |
-| `right_dz` | 0.01569 | 0.01333 | 0.01992 | 0.02832 |
-| `right_droll` | 0.00985 | 0.00726 | 0.01248 | 0.01873 |
-| `right_dpitch` | 0.01178 | 0.00970 | 0.02007 | 0.02776 |
-| `right_dyaw` | 0.01005 | 0.00673 | 0.01474 | 0.02150 |
-| `right_grasp` | 0.01043 | 0.00731 | 0.00931 | 0.01105 |
+| `right_dx` | 0.018958 | 0.020990 | 0.027149 | 0.030289 |
+| `right_dy` | 0.018620 | 0.025044 | 0.028862 | 0.028059 |
+| `right_dz` | 0.015693 | 0.013327 | 0.019921 | 0.028324 |
+| `right_droll` | 0.009851 | 0.007255 | 0.012483 | 0.018732 |
+| `right_dpitch` | 0.011776 | 0.009703 | 0.020074 | 0.027760 |
+| `right_dyaw` | 0.010054 | 0.006734 | 0.014743 | 0.021500 |
+| `right_grasp` | 0.010430 | 0.007306 | 0.009306 | 0.011050 |
 
-**Table B — predicted output standard deviation per dimension, same rows.**
+**Table B — predicted output standard deviation per dimension, same rows.** (Predicted only; the ratio against the *target* std is Table D, §9.1.)
 
 | dimension | A0 | A1 | A2 | A3 |
 |---|---|---|---|---|
-| `right_dz` | 0.27349 | 0.27348 | 0.27084 | 0.26564 |
-| `right_droll` | 0.22866 | 0.23183 | 0.22644 | 0.22069 |
-| `right_grasp` | 0.97942 | 0.97760 | 0.97368 | 0.97093 |
-| `right_dx` / `dy` / `dpitch` / `dyaw` | 0.160 / 0.154 / 0.190 / 0.105 | 0.164 / 0.150 / 0.188 / 0.105 | 0.161 / 0.154 / 0.195 / 0.103 | 0.150 / 0.140 / 0.179 / 0.086 |
+| `right_dx` | 0.160344 | 0.164477 | 0.161114 | 0.150127 |
+| `right_dy` | 0.153921 | 0.150140 | 0.154288 | 0.139683 |
+| `right_dz` | 0.273488 | 0.273484 | 0.270837 | 0.265636 |
+| `right_droll` | 0.228657 | 0.231827 | 0.226441 | 0.220689 |
+| `right_dpitch` | 0.190188 | 0.188090 | 0.195052 | 0.178829 |
+| `right_dyaw` | 0.105481 | 0.105059 | 0.102762 | 0.085868 |
+| `right_grasp` | 0.979420 | 0.977598 | 0.973685 | 0.970933 |
 
-Table A is the sole source of D1's thresholds (§5), which are **3 × the cell**, and those 24
-numbers are frozen in the manifest before any probe runs.
+**The manifest is authoritative for every cell above.** `benchmarks/manifests/apple-policy-diagnostics-v1.json` `frozen_offline_error_table_A.values` holds these numbers at 6 decimal places, and D1's 24 thresholds are exactly **3 ×** those cells. The tables here print the manifest's own values at the manifest's own precision, so the document and the manifest cannot disagree — and `tests/test_policy_preflight.py` parses this table and asserts cell-by-cell agreement, because a test that compares the manifest against itself cannot see document drift.
 
-**The 4.5× spread quoted in §5's derivation is from Table A and is now verified rather than
-estimated:** the per-dimension errors range from **0.00673** (A1 `right_dyaw`) to **0.03029**
-(A3 `right_dx`), a ratio of **4.50**.
+> **Why this is spelled out.** An earlier revision printed Table A rounded to 5 decimal places while the manifest carried 6, so **22 of 28 cells disagreed** and the sentence "D1's thresholds are 3 × the cell" was false of the document's own printed numbers: 3 × 0.01896 = 0.05688 against a stored threshold of 0.056874. The manifest was internally perfect throughout and its self-consistency test passed, which is exactly why the drift was invisible: **a consistency check that compares an artifact with itself certifies nothing about the artifact a reader actually reads.**
 
----
+**The spread quoted as the derivation of the 3× factor is computed from these cells:** **0.006734** (A1 `right_dyaw`) to **0.030289** (A3 `right_dx`), a ratio of **4.498**. Verified, not estimated.
 
 ### 9.1 The conditionals the unconditional median cannot compute (F2), and the phase-restricted error (F7)
 
