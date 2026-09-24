@@ -549,41 +549,31 @@ def test_the_runner_clips_to_the_protocols_bounds_not_the_contracts():
     assert touched is False and np.array_equal(passed, inside)
 
 
-def test_the_runner_reconstructs_every_arm_shape_correctly():
-    """Enumerates ALL FOUR arm shapes, which is what the original smoke did not do.
+def test_the_clip_rate_under_counts_the_out_of_distribution_band():
+    """The clip half of the comparison whose arithmetic half lives in the preflight file.
 
-    The runner's frozen-flag derivation was inverted, so A1, A2 and A3 -- three of four,
-    including the primary arm -- could not load. It went unnoticed because the smoke ran A0,
-    the only arm that still worked, and "it ran" and "it ran for each case" look identical in
-    a terminal.
-
-    The lesson generalises: **a smoke over a set of configured variants must enumerate the
-    variants and assert it covered them.** This test is that assertion, in a form that needs
-    neither a checkpoint nor a simulator.
+    It is here, behind ``importorskip("torch")``, because ``clip_to_configured_bounds`` needs
+    ``PINNED_ACTION_VALUES`` from ``policy.py``. Deferring that import moved the dependency
+    from collection time to CALL time; it did not remove it, and the preflight file has to run
+    in the core CI job, which has no torch.
     """
     module = runner()
-    # (arm, encoder mode, whether cloning.train saves encoder weights, expected frozen flag)
-    shapes = [
-        ("A0_proprio_only", "none", False, None),
-        ("A1_random_encoder", "random", False, True),
-        ("A2_bc_frozen_e0", "frozen", False, True),
-        ("A3_bc_finetuned_e0", "finetune", True, False),
-    ]
-    covered = set()
-    for arm, encoder, saves_weights, expected in shapes:
-        # This is exactly what cloning.train decides, restated as the invariant under test.
-        trains_encoder = encoder == "finetune"
-        assert saves_weights is trains_encoder
-        if expected is None:
-            covered.add(arm)
-            continue
-        checkpoint = {"feature_source_weights": {"w": 1} if saves_weights else None}
-        assert module.frozen_flag_for(checkpoint) is expected, (
-            f"{arm}: runner would build frozen={module.frozen_flag_for(checkpoint)} but the "
-            f"checkpoint was trained frozen={expected}; ClonedPolicy.load rejects the mismatch"
-        )
-        covered.add(arm)
-    assert covered == {a for a, _, _, _ in shapes}, "the enumeration must cover every arm"
+    dz = [0.10, 0.35, 0.401, 0.45, 0.50, 0.55, 0.70, 0.90, 0.399, 0.20]
+    commands = []
+    for value in dz:
+        action = np.zeros(14, np.float32)
+        action[8], action[12], action[13] = value, -1.0, 1.0
+        commands.append(action)
+    lower = np.array([0.0] * 6 + [-0.5] * 6 + [-1.0, -1.0], np.float32)
+    upper = np.array([0.0] * 6 + [0.5] * 6 + [-1.0, 1.0], np.float32)
+
+    clipped = sum(module.clip_to_configured_bounds(a, lower, upper)[1] for a in commands)
+    ood = module.command_statistics(commands, ["reach"] * 10)["per_dimension"]["dz"]
+    assert clipped == 3  # only the three past 0.500
+    assert ood["out_of_distribution_rate"] == pytest.approx(0.6)  # six past 0.400
+    assert clipped / 10 < ood["out_of_distribution_rate"], (
+        "the clip rate must under-count distributional departure"
+    )
 
 
 def test_the_live_loop_executes_the_CLIPPED_command_not_the_raw_one():
@@ -671,37 +661,6 @@ def test_the_runner_rejects_a_command_that_moves_a_pinned_component():
         module.clip_to_configured_bounds(rogue, lower, upper)
 
 
-def test_the_frozen_cohort_refusal_holds_at_the_type_boundary():
-    """The most dangerous defect found in this task, and its class.
-
-    The refusal originally tested membership BEFORE coercion, so ``"45300"`` was not equal to
-    ``45300``, the intersection was empty, and the coercion that followed produced the frozen
-    reset. Every other defect in this protocol costs a day; that one **silently consumes the
-    frozen cohort**, which is unrecoverable.
-
-    The class, which is the part worth keeping: **a guard that enumerates what is FORBIDDEN
-    fails open; a guard that enumerates what is PERMITTED fails closed.** The blacklist would
-    equally have admitted 45400 or 46000 -- anything nobody thought to forbid. The whitelist is
-    right not because it happens to catch the string case but because refusal is its default.
-    """
-    module = runner()
-    for form in (45300, "45300", 45300.0, np.int64(45300), np.int32(45339)):
-        with pytest.raises(ContractError, match="FROZEN gating cohort"):
-            module.cohort_resets((form,))
-
-    # A permitted seed in any non-canonical form is still permitted -- the guard must not be
-    # merely strict, it must be correct.
-    # Whitespace coerces to a valid development seed, so it must be ACCEPTED -- a guard that
-    # refuses legitimate input is a different defect, not extra safety.
-    for form in (45000, "45000", " 45000 ", 45000.0, np.int64(45000)):
-        assert module.cohort_resets((form,))[45000]["object_xy"]
-
-    # Fails CLOSED on anything unenumerated, which is the property the class note describes.
-    for unknown in (45400, 46000, 0, -1, 99999, True):
-        with pytest.raises(ContractError, match="not in the development cohort"):
-            module.cohort_resets((unknown,))
-
-
 def test_the_runner_refuses_the_frozen_cohort():
     """BEHAVIOURAL, and the strongest guarantee available at this scope.
 
@@ -750,3 +709,102 @@ def test_the_runner_imports_the_committed_reset_rule_rather_than_reimplementing_
         "and no parser can catch it."
     )
     assert "wide_reset" in source, "the committed generator must be reached by name"
+
+
+def _guard_loop_parts(raises):
+    """A minimal closed loop whose projection raises whatever ``raises`` returns."""
+    import yaml
+
+    frozen = yaml.safe_load((ROOT / "configs" / "apple_wm_v4.yaml").read_text())["planner"]
+    stopped = []
+
+    class Robot:
+        def observe(self):
+            return SimpleNamespace(images={}, state=None)
+
+        def project_candidates(self, candidates):
+            exc = raises()
+            if exc is not None:
+                raise exc
+            return SimpleNamespace(
+                feasible=np.ones((1, 1), bool), actions=np.asarray(candidates, np.float32)
+            )
+
+        def execute(self, action):
+            return SimpleNamespace(applied_action=action, status="ok", reason=None)
+
+        def stop(self, reason):
+            stopped.append(reason)
+
+    class Policy:
+        def act(self, images, state):
+            action = np.zeros(14, np.float32)
+            action[12], action[13] = -1.0, 1.0
+            return action
+
+    class Scorer:
+        def evaluate(self):
+            return {"success": False, "grasp": False}
+
+    return (
+        Robot(),
+        Policy(),
+        Scorer(),
+        np.asarray(frozen["lower_bounds"], np.float32),
+        np.asarray(frozen["upper_bounds"], np.float32),
+        stopped,
+    )
+
+
+def test_the_physical_velocity_stop_ends_one_attempt_rather_than_the_whole_arm():
+    """A3's first development run died here with no report at all.
+
+    ``project_candidates`` RAISES the velocity stop (embodiment.py:363) where ``execute``
+    returns it through ``reject()`` (embodiment.py:425). The runner calls the raising path, so
+    one violation on one seed aborted all sixteen and wrote nothing. Precedent says this
+    refusal is a physical stop, not a software failure: ``object_ceiling.py:59`` and
+    ``hybrid_phase.py:31`` both terminate the attempt on it.
+    """
+    from embodied_jepa.contracts import ContractError
+
+    module = runner()
+    robot, policy, scorer, lower, upper, stopped = _guard_loop_parts(
+        lambda: ContractError("measured joint velocity limit exceeded")
+    )
+    result = module.run_attempt(
+        policy, robot, scorer, lower=lower, upper=upper, max_steps=5, deadline_seconds=5.0
+    )
+    assert result["termination_reason"] == "guard_refusal"
+    assert result["executed_steps"] == 0
+    # The whole point: a non-success, not an excused attempt and not a crash.
+    assert not result["score"].get("success", False)
+    assert stopped == ["guard_refusal"], "the robot must be stopped with the REAL reason"
+
+
+def test_an_unrelated_contract_violation_is_still_loud():
+    """The property that existed before the fix and must still hold after it.
+
+    Catching ``ContractError`` broadly here would convert every software defect in the
+    actuation path -- a malformed command, a stale observation, a pinned-component breach --
+    into a quietly recorded failed attempt, and the arm would produce a full report of numbers
+    that mean nothing. The catch enumerates what is PERMITTED, so it fails closed.
+    """
+    from embodied_jepa.contracts import ContractError
+
+    module = runner()
+    robot, policy, scorer, lower, upper, _ = _guard_loop_parts(
+        lambda: ContractError("projection requires a current unconsumed observation")
+    )
+    with pytest.raises(ContractError, match="unconsumed observation"):
+        module.run_attempt(
+            policy, robot, scorer, lower=lower, upper=upper, max_steps=5, deadline_seconds=5.0
+        )
+
+
+def test_the_guard_refusal_list_matches_the_precedent_it_cites():
+    """If a later generation adds a refusal to one list it must reach all three."""
+    module = runner()
+    from embodied_jepa.hybrid_phase import GUARD_REFUSALS as HYBRID
+    from embodied_jepa.object_ceiling import GUARD_REFUSALS as CEILING
+
+    assert module.GUARD_REFUSALS == CEILING == HYBRID

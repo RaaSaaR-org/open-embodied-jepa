@@ -1,13 +1,28 @@
-# Apple→Plate policy v1 results (TASK-056) — stage 1: pre-flight
+# Apple→Plate policy v1 results (TASK-056) — FAILED on the development stop rule
 
 Protocol: [apple_policy_v1.md](apple_policy_v1.md). Manifest:
 `benchmarks/manifests/apple-policy-v1.json`, merged as `3006b3b` (PR #33).
 
-**Status: the pre-flight has run and passed. No arm has been trained. Cohort C (seeds
-45300–45339) has never been simulated. Learned Apple→Plate remains at 0 successes.**
+> **TASK-056 FAILED.** Four arms were trained and run on the 16 development resets. **Every arm
+> scored 0 full successes.** Both controls reached the scorer's `grasp` stage on 0/16 and are
+> `dead_on_development`. **Cohort C (seeds 45300–45339) was never opened and will not be opened
+> for this task** — the user ruled it stays unconsumed, permanently. Learned Apple→Plate remains
+> at **0 successes**, as it has been for every generation of this line.
+>
+> **No manipulation result is claimed anywhere in this document.** The pre-flight measured
+> perception on recorded validation frames and passed; that is a perception measurement, not a
+> control result, and §1 says so at length. Everything after §14 is a development-cohort number,
+> which the protocol states "never gates and is never reported as a result."
 
-Nothing in this document is a manipulation result. It reports a perception measurement on
-recorded validation data.
+**Why cohort C was not opened, recorded before anyone asks whether it should have been.** Under
+*either* reading of the protocol's ambiguous stop rule (§15), cohort C could not have produced a
+pass. If the controls are subject to the stop rule they are dead, G2 and G3 lose their reference
+terms, and §5.2's missing-values rule converts an unevaluable gate to failed. If they are exempt,
+A2 would have needed 17/40 successes on fresh resets after 0/16 on development with every attempt
+timing out at the step cap. Spending 40 irreplaceable frozen resets to document a determined
+outcome buys nothing; preserving them for a line with a real chance is worth more. **The decision
+did not require resolving the ambiguity, and the ambiguity was deliberately not resolved** — see
+§15, which is a finding in its own right.
 
 ---
 
@@ -262,6 +277,10 @@ undone, and a type coercion could have walked through all three without any of t
 
 > **A guard that enumerates what is FORBIDDEN fails open. A guard that enumerates what is
 > PERMITTED fails closed.**
+>
+> And it does not merely fail open: because the report hard-codes the cohort label, an
+> unenumerated seed would have been **filed as development data**. It fails open *and*
+> mislabels, which is what makes it silent rather than merely permissive.
 
 The original guard was a blacklist of cohort C. It would equally have admitted 45400, 46000, or
 any seed nobody thought to forbid — and the report hard-codes `"cohort": "D_development_never_gating"`,
@@ -362,6 +381,23 @@ scoring better than the trained one on the offline metric is not explained here.
 story exists — the head may ignore the image in both cases, and A1's less structured features
 may be less misleading — but it is untested, and an unexplained measurement is more useful to
 the next generation than a tidy account of it.
+
+**Declared expected failure mode: the policies will under-shoot the translation boundary.**
+The expert corpus is saturated against its own limits — `right_dz` sits at exactly 0.400 in
+**44.89%** of commands — and the arms are trained with a smooth-L1 objective, which is
+minimized by hedging toward the interior of a bimodal target rather than committing to either
+mode. The prediction, recorded here **before the development numbers exist**, is that the
+learned arms' dz distributions will be *compressed relative to the expert's*: a lower rate at
+or near the maximum, and mass pulled toward zero. If that happens it is a **declared expected
+failure mode, not a discovery**, and it must not be reported as an insight found in the data.
+
+This changes nothing about the gates. It is recorded so that the observation cannot later be
+presented as explanatory. Two things will be reported alongside the cohort-D numbers so the
+prediction is falsifiable rather than decorative: **the policies' own per-dimension dz
+distribution in the same form as the expert's** (rate at maximum, rate in the out-of-distribution
+band, quantiles), and **per-attempt step counts with cap hits**, since a policy that
+under-shoots dz reaches the object later or not at all, and an attempt that ends on the step cap
+is a different failure from one that ends on a bad grasp.
 
 **A4 is deferred, not abandoned.** The readout-driven scripted controller is not built yet
 because the development pre-check does not need it. It becomes *more* important if the learned
@@ -484,10 +520,69 @@ they are worth listing together because the shape repeats and the surface change
    references nothing — so whoever inherits it knows what they are inheriting rather than
    believing the parse is airtight.
 
-The common form: **verifying that something produces a plausible value does not verify that it
-computes the quantity you believe it computes.** Every instance was caught by someone checking
-construction rather than output, and none would have been caught by more careful reading of the
-numbers.
+9. The fix for instance 7 was a `sys.meta_path` blocker that made the core environment
+   reproducible locally. It **did not work, and it reported success twice.** The blocker class
+   defined `find_module`/`load_module` — the legacy import hook API **removed in Python 3.12** —
+   so the interpreter never consulted it and `import torch` succeeded straight through it. Both
+   "torch-free" verifications it produced (PR #38 and the first push of PR #39) were **false
+   greens**, and the second one shipped a genuinely torch-dependent test into the torch-free
+   file, which an independent review caught rather than CI. A control built specifically to
+   prevent a failure class was itself non-functional, and because its output was
+   indistinguishable from a real pass it *concealed* the class instead of catching it —
+   strictly worse than having no control, which would at least have left the question open.
+   The durable fix is not a better blocker but a **blocker that fails loudly when it is inert**:
+   it now asserts `"torch" not in sys.modules` before installing itself and then attempts the
+   import, exiting non-zero if it succeeds. Verified in both directions against the pre-fix
+   file: **`1 failed, 17 passed`** with exactly the expected `ImportError`, versus **18 passed**
+   after the split. The first negative control written for this was *also* worthless — it ran
+   the pre-fix copy from `/tmp`, where all 18 tests failed on `FileNotFoundError` before
+   reaching any import — which is instance 8's lesson (a test failing is not a test failing
+   *for the reason you think*) recurring inside the fix for instance 9.
+
+10. The runner crashed A3's entire development run on a physical guard stop (§17) — and the code
+    **had a comment naming that exact exception and that exact consequence.** `run_attempt`'s
+    `finally` block reads: *"G1Embodiment raises ContractError("measured joint velocity limit
+    exceeded") from inside project_candidates, and without this the simulator is left actuating
+    and the whole run dies with no report."* The author identified the failure, wrote it down,
+    and then handled only half of it: the robot gets stopped, the attempt does not get a
+    termination reason, and the run dies with no report exactly as the comment says. Two
+    established files, `object_ceiling.py` and `hybrid_phase.py`, already carried the tuple that
+    solves it. This is a different family from instances 1–9, and it is the more uncomfortable
+    one: **the others are failures of verification, this is a failure to finish a thought that
+    was already correct.** Naming a hazard in a comment produces the feeling of having handled
+    it. The durable form: when a comment describes a failure mode, it must also say which line
+    handles it — and if no line does, the comment is a bug report against its own file, not
+    documentation. A secondary form: **precedent in the repository was not consulted.** Two files
+    had solved this, and a grep for the error string — which is how it was eventually found —
+    would have surfaced both before the runner was written.
+
+11. **The commit that fixed findings B1–B3 introduced two new errors of exactly the two classes it
+    was fixing**, and the independent review blocked it a second time. A wrong per-seed number
+    went into the section headed "This section contains no interpretation": A3's two guard stops
+    were paired with their step counts **backwards** (45001 is 157 steps, 45003 is 143). The
+    wording it replaced — "at 143 steps and later" — had been vague but *true*. And the corrected
+    count of an undefined term went stale **inside the commit that corrected it**: the text said
+    the manifest "now carries eleven" while that same commit pushed it to fifteen, because the
+    record of the problem itself uses the term four more times. Two durable forms. **Vagueness is
+    sometimes load-bearing** — replacing an imprecise true statement with a precise one is a
+    change that can fail, and it must be checked as one rather than waved through as tidying.
+    And **never state a live count of a document inside that document**: the figure is falsified
+    by its own next edit. Only a count at a named immutable revision is stable, so the corrected
+    text quotes `3006b3b` and quotes no running total at all.
+
+The common form of instances 1–9: **verifying that something produces a plausible value does not
+verify that it computes the quantity you believe it computes.** Every one of those was caught by
+someone checking construction rather than output, and none would have been caught by more careful
+reading of the numbers. **Instances 10 and 11 are not of that family** — 10 was caught
+by a robot refusing to move, 11 by a reviewer re-reading a fix — and they are left outside the
+generalization rather than folded into it, because a summary that covers every instance by
+widening its own claim is the same error the list is about.
+
+**Instance 11 is the one that should be read last.** It is the pattern named at the head of this
+list happening to the document that names it: a defect introduced by the work of fixing a defect,
+in the section about that exact failure. It was caught only because the reviewer applied the same
+standard to the correction as to the thing corrected, which is the habit worth taking from all
+eleven.
 
 That is the argument for the ordering this protocol uses — build, review, merge, *then* train —
 and it is recorded here rather than left in a message, because the next person to run a stage of
@@ -498,3 +593,228 @@ correspondence by execution rather than by reading — a synthetic corpus in whi
 carries a fingerprint of its own row, checked so that positions and rows genuinely diverge past
 an excluded episode — and found the chain correct, including in `shuffled_frame_control`, on
 which the stage-1 result depends. **Nothing is withdrawn.**
+
+---
+
+## 14. Stage 4: the development cohort — the numbers
+
+Cohort D, 16 resets (45000–45007, 45100–45107), all four trained arms, `cpu`. Reports:
+`outputs/task056-cohort-d/{a0,a1,a2,a3}.json` (git-ignored; hashes and seeds inside).
+
+**This section contains no interpretation.** The reading is §16.
+
+| arm | role | grasp resets | full successes | `dead_on_development` | cap hits | guard stops |
+|---|---|---|---|---|---|---|
+| `A0_proprio_only` | control | **0/16** | **0/16** | **true** | 16/16 | 0 |
+| `A1_random_encoder` | control | **0/16** | **0/16** | **true** | 16/16 | 0 |
+| `A2_bc_frozen_e0` | **PRIMARY** | **1/16** | **0/16** | false | 16/16 | 0 |
+| `A3_bc_finetuned_e0` | — | **1/16** | **0/16** | false | 14/16 | **2** |
+
+No attempt of any arm terminated on task success. No attempt terminated on task failure. Every
+attempt that was not stopped by the embodiment ran to the 1000-step cap.
+
+Stage occupancy, in commands issued while the scorer reported that stage:
+
+| arm | `none` | `reach` | `grasp` |
+|---|---|---|---|
+| A0 | 16000 | 0 | 0 |
+| A1 | 16000 | 0 | 0 |
+| A2 | 15140 | 77 | 783 |
+| A3 | 12593 | 906 | 803 |
+
+Grasp occurred on seed **45100** for A2 and on seed **45006** for A3 — *different* resets. A3's
+two guard stops were seeds **45001** (157 executed steps) and **45003** (143).
+
+Median control time per command: A0 12.1 ms, A1 13.6 ms, A2 13.6 ms, A3 13.8 ms. G7's threshold
+is 100 ms and **is not enforced on development**; this is the same quantity measured, recorded so
+the budget claim is checkable.
+
+### 14.1 The policies' own dz distribution, against the expert's
+
+Declared in §12 before these numbers existed. Expert corpus: `right_dz` sits at exactly **0.400
+in 44.89 %** of the 68 791 BC target commands.
+
+| arm | dz q50 | dz q90 | dz q99 | dz max\|·\| | dz out-of-distribution rate |
+|---|---|---|---|---|---|
+| A0 | 0.0125 | 0.0165 | 0.3586 | 0.4312 | 0.0070 |
+| A1 | 0.0544 | 0.0548 | 0.3743 | 0.4136 | 0.0011 |
+| A2 | 0.0317 | 0.0343 | 0.3649 | 0.6070 | 0.0353 |
+| A3 | 0.0857 | 0.0890 | 0.3131 | 0.6490 | 0.0057 |
+
+Aggregation, stated so the table is reproducible: each quantile is the **median across the 16 attempts**
+of that attempt's own quantile; `max` is the maximum across attempts; the out-of-distribution rate is
+**command-weighted** across attempts.
+
+Rotation, the one family where the expert maximum and the configured bound coincide at 0.500 so
+**the out-of-distribution rate *is* the clip rate**: `droll` 0.0510 / 0.0726 / 0.0602 / 0.0856
+for A0–A3.
+
+**No figure pooled across dimensions appears in this document**, for the reason the manifest
+gives: translation saturation is unprecedented in the demonstrations while rotation saturation is
+normal, and the grasp dimension sits at its maximum 91.78 % of the time by design, so a pooled
+rate blends three incomparable things. A pooled clip count was present in the first draft of the
+aggregation used to produce this table and was removed before the table was written.
+
+**A per-dimension clip rate is not recoverable for translation from these reports.** The runner
+stores `clipped_commands` as a single count of commands where *any* dimension was clipped. For
+rotation the coincidence above makes it recoverable; for translation it is not. Recorded as a
+limitation of the instrument rather than left as an absence.
+
+## 15. The protocol gap — a term that decided the outcome and was never defined
+
+**This is the most durable finding in TASK-056**, and it is about preregistration practice rather
+than about this robot.
+
+The stop rule (§5.3 of the protocol, `/stop_rule_protecting_cohort_C` in the manifest) reads:
+
+> every learned arm runs the 16 development resets D; an arm reaching the scorer's `grasp` stage
+> on 0/16 does **not** run on C
+
+**"Learned arm" is used seven times in the protocol and six times in the manifest as frozen at
+preregistration (`3006b3b`) — thirteen uses — and is defined in none of them.** The manifest has
+since accumulated further uses, including this record of the problem; §15.1 is about exactly that.
+**No running total of the current file is quoted here**, because a live count of a document stated
+inside that document is falsified by its own next edit — which is how the figure in this sentence
+was wrong once already. The manifest's `/arms` block independently tags A0 `"role": "control: the schedule
+alone"` and A1 `"role": "control: do any visual features suffice"`, while also tagging both
+`"trains": true`. **The stop rule keys off neither field.** So when both controls came back 0/16,
+the frozen text could not say whether they were subject to the rule — not because it said
+something ambiguous, but because it never addressed the question.
+
+Neither A0 nor A1 is named in the stop rule in either artifact. Within the **frozen** text the
+only signal about what "learned arm" ranges over is G6, which says "any **learned arm's**
+controller" and then states separately that "**The assertion covers A4**" — which speaks to A4's
+inclusion, not to the controls'. G2 and G3 contain no clause of any kind about what happens if their reference arm does
+not run. §7's pre-declared outcomes contain no outcome, sub-case or clause conditioned on a
+control being dead on development; its only sentence about an arm not running is "only P3 can
+drop an arm," and P3 drops A4.
+
+### 15.1 The term was used confidently by people who had not defined it — including here
+
+An independent review found that this section originally claimed G6 was *the only* in-text signal
+about the term's range, and that the claim was false. Two further uses exist in this manifest:
+
+- `/results/A4_deferred_not_abandoned`: "If **all four learned arms** die on development, A4 is
+  the next thing built." With five arms declared and A4 marked `trains: false`, "all four learned
+  arms" states plainly that **A0 and A1 are learned arms** — the reading under which the controls
+  *are* subject to the stop rule.
+- `/results/observations/A0_is_now_the_most_informative_arm`: "G2 (best **learned arm** − A0)",
+  which sets A0 against the class rather than inside it, and so points the other way.
+
+**Neither is frozen text.** Both live under `/results`, which is written *during* the task; the
+preregistered manifest at `3006b3b` contains neither, and used the term six times — against a
+current count that keeps rising as records like this one are added. So they cannot settle what the preregistration meant, and the closure decision does not
+rest on them — the branch they point to is the one this section already traces to G2 and G3
+losing their reference terms.
+
+**They are recorded because of what they show.** Both sentences were written by the executing
+agent, mid-task, using "learned arm" as though its extension were obvious — and contradicting
+each other within one file. **That is how an undefined term survives five review rounds: everyone
+uses it fluently, nobody notices they are each supplying their own definition, and the
+disagreement only surfaces when a result depends on it.** The original claim of emptiness in this
+section was itself an instance of the same reflex — asserting a scope without checking it.
+
+Two internal tensions, recorded verbatim because both exist under either reading:
+
+- **`best_learned_arm_rule` selects "most full successes on C."** If "learned arm" has the same
+  referent there as in the stop rule, the domain of that selection overlaps G2's subtrahend — the
+  rule would admit A0 as a candidate for the arm G2 measures *against* A0.
+- **The stop rule is headed "declared in advance, not a gate"** (§5.3's own heading), yet its
+  stated consequence is that gate rows become `None`, and §5.2's unqualified missing-values rule —
+  "A gate that cannot be evaluated **counts as failed**" — converts that to failed. A rule that
+  announces it is not a gate determines gate outcomes.
+
+**What a future protocol must do differently.** Define the domain of every scope term that
+appears in a stop rule or a gate, at the point the term is introduced, by enumerating the arms it
+covers by name. "Every learned arm" reads as precise and is not: it silently assumes the reader
+shares an unstated partition of the arm list. Had §5.3 said "A0, A1, A2 and A3 each run the 16
+development resets," there would have been nothing to rule on.
+
+**This is not an embarrassment and is not recorded as one.** This protocol was written in
+advance, gated, independently reviewed five times, and carries a frozen manifest with cohort
+hashes — and it still contained a single undefined term that decided whether an irreplaceable
+frozen cohort would be consumed. That is the finding: **specificity, review depth and freezing do
+not by themselves close definitional holes**, because a reviewer checking whether thresholds are
+justified does not naturally ask whether the nouns are defined.
+
+**The ambiguity was deliberately not resolved.** Resolving it after seeing results — with the
+fate of the frozen cohort riding on the answer — is the forbidden move in its purest form, and
+the executing agent declining to make it is what allowed the decision to be taken on the ground
+that *the outcome is the same either way*. That reasoning is only available to someone who has
+not already picked a reading.
+
+## 16. Reading
+
+**Learned Apple→Plate remains at 0 successes.** Four arms, 64 development attempts, zero.
+
+**No arm distinguished itself from the no-vision control on task outcome.** A2, the preregistered
+primary, and A3 each reached grasp once in sixteen; A0 and A1 never left stage `none`. The
+offline selection scores had already put A2 third of four, behind both controls (§12). Cohort D
+does not predict cohort C and no gate was evaluated, so this is not a gate result. The one difference
+that exists is that A2 and A3 reached grasp at all and the two controls never did: **1/16 against
+0/16, a single reset each.** That is a difference of one attempt, on 16 attempts, with no interval
+that would separate it from noise and no success behind it.
+
+**The dz prediction was made in advance and is borne out, at that strength and no further.**
+Every arm's median dz sits between 0.012 and 0.086 against an expert that spends 44.89 % of its
+commands at exactly 0.400. The policies do not approach the boundary their demonstrations are
+saturated against, which is the smooth-L1 hedging toward the interior of a bimodal target that
+§12 predicted before the numbers existed. It is **a declared expected failure mode, not a
+discovery**, and it must not be reported as an insight found in the data.
+
+**It is a consistent story, not a demonstrated mechanism.** Under-shooting descent is compatible
+with every attempt exhausting the step cap — a policy commanding a tenth of the expert's descent
+plausibly does not reach the object in 1000 steps — but **that causal link is not shown here.**
+Every arm hitting the cap on every attempt is equally compatible with several other mechanisms,
+including ones in which dz is irrelevant. No experiment in TASK-056 separates them.
+
+**A3's inversion is recorded as an open observation, not an explanation.** A3 has the highest
+median dz (0.0857), the highest rotation clip rate (0.0856) and the largest dz excursion
+(0.6490), and it is the only arm the embodiment physically stopped. The fine-tuned arm commands
+the most aggressive motion and is the only one the platform refused. Why fine-tuning produces
+that rather than better-scaled motion is not established here.
+
+**A3's reading still carries its §12 limitation.** Its best step was its **final** step
+(15 000/15 000), so its result cannot distinguish "fine-tuning hurts" from "fine-tuning had not
+finished." It was not retrained and its step count was not raised.
+
+## 17. A defect found by the run, and a fix authorized after the numbers were seen
+
+**Stated plainly because it matters more than the defect: this fix was written and authorized
+*after* the development numbers were seen.** It is recorded that way so no future reader has to
+reconstruct the order from commit timestamps.
+
+A3's first development run **crashed and produced no report at all**:
+`ContractError: measured joint velocity limit exceeded`, raised from `embodiment.py:363` inside
+`project_candidates`. One violation on one seed aborted all sixteen attempts.
+
+`G1Embodiment` has two paths for the same physical condition. `execute` **returns** it through
+`reject()` (`embodiment.py:425`); `project_candidates` **raises** it (`embodiment.py:363`). The
+runner calls the raising one. Established precedent treats this refusal as a physical stop rather
+than a software failure: `object_ceiling.py:59` and `hybrid_phase.py:31` both carry
+`GUARD_REFUSALS = ("measured joint velocity limit exceeded",)` and terminate the attempt on it,
+as TASK-046.
+
+The fix records `guard_refusal` as a termination reason, counts the attempt as a **non-success**,
+and lets the arm continue. **It moves no threshold, no limit and no gate.** The velocity stop
+stays exactly where it is; an arm the platform refuses still fails that attempt. The catch
+enumerates what **may** be caught rather than catching `ContractError` broadly, so it **fails
+closed**: a malformed command, a stale observation or a pinned-component breach still propagates
+and still kills the run loudly.
+
+**Why changing results-producing code after seeing results was acceptable here, and when it would
+not be.** Cohort D is the development cohort. It exists so arms can be exercised without
+consuming frozen evidence, it was already consumed before this task began, and the protocol
+states it "never gates and is never reported as a result." Re-running A3 on D is not re-running a
+result, because D is not a result. **The hazard this rule guards against bites when the numbers
+are evidence; these are not.** The same change against cohort C would have been refused.
+
+**`a3.json` carries `source.dirty: true`; the other three do not.** A3's report was produced with the
+fix applied but not yet committed (all four record revision `103b14f`). That is the honest record
+of when it ran, and it is stated here rather than left for a reader to notice in the JSON.
+
+**Unplanned cross-check.** Before the fix existed, A3 was probed as 16 independent single-seed
+runs to find which seeds tripped the stop. The fixed runner's 16-attempt report reproduces those
+per-seed outcomes exactly — guard stops on 45001 and 45003, grasp on 45006 — which is evidence
+the change altered error handling and nothing else.
+

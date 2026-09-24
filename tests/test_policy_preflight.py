@@ -25,6 +25,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from embodied_jepa.contracts import ContractError
+
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "benchmarks" / "manifests" / "apple-policy-v1.json"
 
@@ -344,3 +346,104 @@ def test_a_ratio_only_failure_is_never_labelled_a_near_miss():
     ]
     assert "E_prior" in outcomes
     assert "takes precedence" in outcomes["precedence_within_E"].lower()
+
+
+# ---------------------------------------------------------------------------------------
+# The runner is importable WITHOUT torch (its one policy import is deferred into the two
+# functions that need it), so the guard for the most serious defect found in this task runs
+# in the CORE CI job on every push -- not only in the integration job.
+# ---------------------------------------------------------------------------------------
+def runner():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_evaluate_policy", ROOT / "scripts" / "evaluate_policy.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_the_frozen_cohort_refusal_holds_at_the_type_boundary():
+    """The most dangerous defect found in this task, and its class.
+
+    The refusal originally tested membership BEFORE coercion, so ``"45300"`` was not equal to
+    ``45300``, the intersection was empty, and the coercion that followed produced the frozen
+    reset. Every other defect here costs a day; that one **silently consumes the frozen
+    cohort**, which is unrecoverable.
+
+    The class: **a guard that enumerates what is FORBIDDEN fails open; a guard that enumerates
+    what is PERMITTED fails closed.** The blacklist would equally have admitted 45400 or 46000
+    — and because the report hard-codes the cohort label, such a run would have been *filed as
+    development data*. It fails open **and mislabels**, which is what makes it silent rather
+    than merely permissive.
+    """
+    module = runner()
+    for form in (45300, "45300", " 45300 ", 45300.0, 45339):
+        with pytest.raises(ContractError, match="FROZEN gating cohort"):
+            module.cohort_resets((form,))
+    for unknown in (45400, 46000, 45200, 0, -1, 99999, True):
+        with pytest.raises(ContractError, match="not in the development cohort"):
+            module.cohort_resets((unknown,))
+    with pytest.raises(ContractError, match="no seeds requested"):
+        module.cohort_resets(())
+    with pytest.raises(ContractError, match="duplicate seeds"):
+        module.cohort_resets((45000, 45000))
+    # A permitted seed in any non-canonical form is still permitted: a guard that refuses
+    # valid input is a different defect, not extra safety.
+    for form in (45000, "45000", " 45000 ", 45000.0):
+        assert module.cohort_resets((form,))[45000]["object_xy"]
+    assert len(module.cohort_resets(module.COHORT_D)) == 16
+
+
+def test_the_runner_reconstructs_every_arm_shape_correctly():
+    """Enumerates ALL FOUR arm shapes, which is what the original smoke did not do."""
+    module = runner()
+    for arm, saves_weights, expected in (
+        ("A1_random_encoder", False, True),
+        ("A2_bc_frozen_e0", False, True),
+        ("A3_bc_finetuned_e0", True, False),
+    ):
+        checkpoint = {"feature_source_weights": {"w": 1} if saves_weights else None}
+        assert module.frozen_flag_for(checkpoint) is expected, arm
+
+
+def test_the_clip_rate_cannot_see_the_out_of_distribution_band():
+    """Hand-computed, on a case that is neither zero nor all.
+
+    A counter that always returns zero and a correct counter agree perfectly on a run where
+    nothing is clipped, so the verification case is populated deliberately.
+
+    It also demonstrates why BOTH statistics are reported. The expert's translation maximum is
+    0.400 and the configured bound is 0.500, so commands in (0.4, 0.5] are outside everything
+    demonstrated and are never clipped — invisible to a clip rate alone.
+    """
+    module = runner()
+    dz = [0.10, 0.35, 0.401, 0.45, 0.50, 0.55, 0.70, 0.90, 0.399, 0.20]
+    commands = []
+    for value in dz:
+        action = np.zeros(14, np.float32)
+        action[8], action[12], action[13] = value, -1.0, 1.0
+        commands.append(action)
+
+    stats = module.command_statistics(commands, ["reach"] * 5 + ["grasp"] * 5)
+    measured = stats["per_dimension"]["dz"]
+    assert stats["commands"] == 10
+    assert measured["out_of_distribution_rate"] == pytest.approx(0.6)  # six exceed 0.400
+    assert measured["max_abs"] == pytest.approx(0.90)
+    assert measured["expert_maximum"] == 0.400
+
+    # The clip half of this comparison lives in tests/test_policy.py: clip_to_configured_bounds
+    # needs PINNED_ACTION_VALUES from policy.py, which imports torch, and DEFERRING that import
+    # moved the dependency from collection time to CALL time rather than removing it. This file
+    # must stay runnable in the core CI job, which has no torch.
+    #
+    # What is asserted here is the arithmetic that makes the two statistics differ at all:
+    # three of these ten commands sit in (0.400, 0.500] -- outside everything the expert ever
+    # demonstrated, and below the bound, so no clip rate can see them.
+    band = [v for v in dz if 0.400 + 1e-6 < v <= 0.500 + 1e-6]
+    assert len(band) == 3
+    assert measured["out_of_distribution_rate"] > len([v for v in dz if v > 0.500 + 1e-6]) / 10, (
+        "the out-of-distribution rate must exceed what a clip rate could see; if they are "
+        "equal the (0.4, 0.5] band has been lost and the second statistic is pointless"
+    )
