@@ -371,6 +371,43 @@ def test_a_checkpoint_refuses_a_different_feature_source(tmp_path):
         other.load(path)
 
 
+def test_a_frozen_arm_refuses_a_checkpoint_from_a_differently_weighted_encoder(tmp_path):
+    """The A1-versus-A2 cross-arm case, which is what the digest check is NAMED for.
+
+    The existing refusal test pairs ``NoEncoder`` against ``MovingEncoder``, so it exits at the
+    ``saved_source != live_source`` comparison and never reaches the digest. That left the
+    frozen branch — two encoders of the same kind with different weights, i.e. exactly A1
+    against A2 — exercised by nothing in the suite. This is the coverage gap an independent
+    probe found; a test whose fixtures cannot reach the case under test is how three defects in
+    this protocol stayed invisible.
+    """
+
+    def frozen_source(fill):
+        source = MovingEncoder()
+        source.trainable = False
+        with torch.no_grad():
+            # BOTH tensors: Linear's bias is randomly initialized per instance, so filling
+            # only the weight leaves two "identical" encoders with different digests -- which
+            # is the digest working correctly, and would look like a test failure.
+            source.model.weight.fill_(fill)
+            source.model.bias.fill_(fill)
+        return source
+
+    trained = frozen_source(0.75)
+    p = ClonedPolicy(schema(), trained, device="cpu", seed=0)
+    p.fit_state_normalization(
+        np.zeros(6, np.float32), np.ones(6, np.float32), training_episode_ids=("a",)
+    )
+    path = tmp_path / "a2.pt"
+    p.save(path)
+    # Nothing is restored for a frozen arm, so the message must NOT claim a failed restore.
+    other = ClonedPolicy(schema(), frozen_source(-0.25), device="cpu", seed=0)
+    with pytest.raises(ContractError, match="different frozen encoder"):
+        other.load(path)
+    # The matching frozen encoder still loads.
+    ClonedPolicy(schema(), frozen_source(0.75), device="cpu", seed=0).load(path)
+
+
 def test_provenance_distinguishes_two_encoders_of_the_same_architecture():
     """The A1-versus-A2 case, which differing ``kind`` does NOT exercise.
 

@@ -258,7 +258,33 @@ A2→A2 loads, A2→A1 refuses, A3→fresh-E0 loads, A3→frozen refuses.
 - **Cohort C (45300–45339) has not been simulated**, not even once, and opening it is a separate
   authorization.
 
-## 9. Next
+## 9. How the stage-3 results will be read — committed before they exist
+
+Same class as the withdrawal clause of §6, and recorded for the same reason: it is cheap to
+commit to now and expensive to argue about once results are in hand.
+
+**Two independent readings.** When the arms have run, this author produces a reading, and a
+**fresh agent that has not seen it** produces its own from the artifacts and the protocol alone.
+The coordinator compares them. The point is not redundancy — it is that the history which makes
+this author a good interpreter (why `image_features` and not `encode`, what the A0 contrast
+actually measures, why P2's 0.682 control ratio matters) is the same history that makes the
+reading hard to un-bias from the inside.
+
+**Therefore the results report separates numbers from reading, and labels both.**
+
+- A **numbers** section that stands alone: gate values, cohort sizes, per-arm counts, control
+  ratios, seeds, provenance. **No interpretive language** — including no "as expected", "only",
+  "already" or "still", which are readings wearing the clothes of description. It must be
+  runnable as the sole input to the second reader.
+- A **reading** section, separate and labelled, which states explicitly what in it is inference
+  rather than measurement — the way §1 now distinguishes the h=1 rollout inference from the
+  measurements around it.
+
+**This is a commitment about presentation, not about conclusions.** It constrains how the result
+is written down, whatever it says, and it applies equally to a result that supports the
+hypothesis and one that refutes it.
+
+## 10. Next
 
 Stage 2 was **not** a training launch. `src/embodied_jepa/policy.py`,
 `src/embodied_jepa/cloning.py`, the `POLICIES` registry and the arm configs did not exist; the
