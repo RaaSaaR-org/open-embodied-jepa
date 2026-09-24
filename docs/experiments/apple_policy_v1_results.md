@@ -270,6 +270,9 @@ announced itself:
 Both would have fed the G-gates numbers that look like results. The only thing that caught them
 was an independent review reading the code before any arm trained.
 
+The sharpened form, which is the one worth carrying: **a green run tells you nothing about the
+code it did not execute, and it does not announce which code that was.**
+
 **This is the third distinct instance of the same lesson in this protocol's short history**, and
 they are worth listing together because the shape repeats and the surface changes:
 
@@ -280,12 +283,32 @@ they are worth listing together because the shape repeats and the surface change
    machine that wrote it and failed on Linux by one ULP. A green local suite is not evidence for
    a cross-platform claim.
 3. The stage-2 smokes **ran to completion with three defects live**. Running is not measuring.
-4. The first version of the tripwires below used **`pytest.skip`**, which reads as "do nothing
+4. A round-1 fix added a **compatibility check that could not do what its own comment said it
+   did**. `FrozenEncoder.provenance()` was entirely weight-independent —
+   `model_implementation_sha256` hashes *source files*, `model_parameters` is a count — so the
+   randomly-initialized encoder (A1) and the loaded E0 checkpoint (A2) produced **byte-identical
+   provenance**, and `ClonedPolicy.load` could not distinguish the two arms whose difference is
+   the entire content of gate G3. A code comment asserted it could, and the test named for that
+   case passed only because two *unrelated* stand-ins differ in `kind`. The location is the
+   point: **this was committed inside the fix for the finding about claims of protection.** The
+   general form: *a comment asserting that a check is meaningful is not a check — it is an
+   assertion the reader will believe and nobody will test.* The repair was a real digest
+   (`model_weights_sha256`), a comment that explains **why** the check is meaningful rather than
+   asserting **that** it is, and a test that exercises the A1/A2 case.
+5. The first version of the tripwires below used **`pytest.skip`**, which reads as "do nothing
    here" — and would have failed the integration job on *every* run, because that job rejects
    any skip outside two allowed messages. The one mechanism that looks inert was the one that
    could not be inert here. They use a bare `return` instead, and the tripwires were then
    verified to fire by writing a probe runner that violates each constraint and watching both
    assertions trip — rather than assuming they were connected.
+6. One of those tripwires then **fired on a *correct* runner**, because a text grep matched a
+   docstring explaining what the runner does *not* do. A false positive is not a weaker version
+   of the right check; it is a different and worse thing, because it punishes whoever got it
+   right and the cheapest way out is to delete the test. Replaced with an `ast.walk` over `Call`
+   nodes and **verified in both directions** — correct runner passes, violating runner fails.
+   The AST form had been available the whole time; the constraint that seemed to rule it out
+   ("nothing stronger exists for a file that does not exist") was about *importing* the file and
+   was generalized too far.
 
 The common form: **verifying that something produces a plausible value does not verify that it
 computes the quantity you believe it computes.** Every instance was caught by someone checking
