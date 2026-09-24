@@ -1,0 +1,1169 @@
+{
+  "arms": [
+    {
+      "encoder": null,
+      "head": "MLP(86 -> 512 -> 512 -> 7)",
+      "image_pathway": "none",
+      "name": "A0_proprio_only",
+      "role": "control: the schedule alone",
+      "trains": true
+    },
+    {
+      "encoder": "random",
+      "head": "MLP(214 -> 512 -> 512 -> 7)",
+      "image_pathway": "frozen randomly initialized LeWM encoder, identical architecture and seed discipline",
+      "name": "A1_random_encoder",
+      "role": "control: do any visual features suffice",
+      "trains": true
+    },
+    {
+      "encoder": "E0 frozen",
+      "head": "MLP(214 -> 512 -> 512 -> 7)",
+      "image_pathway": "frozen E0 image_features (image-only, NOT encode(), because E0 has state_fusion=true)",
+      "name": "A2_bc_frozen_e0",
+      "role": "PRIMARY: the preregistered behaviour-cloning line",
+      "trains": true
+    },
+    {
+      "encoder": "E0 trainable",
+      "head": "MLP(214 -> 512 -> 512 -> 7)",
+      "image_pathway": "E0 encoder fine-tuned end-to-end",
+      "name": "A3_bc_finetuned_e0",
+      "role": "is freezing the limitation",
+      "trains": true
+    },
+    {
+      "encoder": "E0 frozen",
+      "hard_precondition": "P3",
+      "head": "none: scripted.apple_collector_policy phase machine constructed from the ESTIMATED truth",
+      "image_pathway": "frozen E0 -> declared readouts apple_position, apple_minus_plate, palm_position, evaluated ONCE at reset",
+      "name": "A4_readout_scripted",
+      "not_a_learned_policy": "A4 is learned perception driving a scripted phase machine. It is never reported as a learned policy.",
+      "role": "can demonstrated perception alone close the loop",
+      "scene_constants": "OracleManipulationPolicy.__init__ also reads container_surface_z and object_support_height from initial_truth (scripted.py L43-44), and no declared readout supplies them. Under wide_reset only object_xy and plate_xy are jittered, so both are FIXED SCENE CONSTANTS on this distribution. A4 takes them from the committed embodiment/scene description as declared constants, never by calling sim.task_truth() at run time, and the runner asserts zero task_truth calls. If that assertion cannot be satisfied, A4 DOES NOT RUN: G6 demands exactly zero privileged reads and this protocol does not carve out an exception for its own convenient arm.",
+      "trains": false
+    }
+  ],
+  "baselines": {
+    "demo_replay": {
+      "correction_note": "An earlier draft of this design stated 5/24 success. That was WRONG; the verified pooled figure is 6/24 = 25.0%. G1's threshold was recomputed against the corrected null and moved from 14/40 to 17/40.",
+      "cross_check": "apple_wide_grasp_closure_results_v3.md L152-154 reports 45000-45107 pooled as grasp 6/16 and success 5/16, which is exactly 2+4 and 2+3",
+      "manifest_cross_check": "apple-wide-object-ceiling-v2.json result.primary.demo_replay_grasp_resets=4 and result.secondary.demo_replay={grasp_resets 2, full_successes 2}; apple-wide-grasp-closure-v3.json result.primary.demo_replay_grasp_resets=2 and result.secondary.demo_replay={grasp_resets 6, full_successes 5}. The manifests carry the grasp counts but NOT demo_replay's primary full-success counts; those come from the equally committed results documents.",
+      "per_cohort": [
+        {
+          "cohort": "45000-45007",
+          "grasp": "2/8",
+          "source": "docs/experiments/apple_wide_object_ceiling_results_v2.md L103-104",
+          "success": "2/8"
+        },
+        {
+          "cohort": "45100-45107",
+          "grasp": "4/8",
+          "source": "docs/experiments/apple_wide_object_ceiling_results_v2.md L87-88",
+          "success": "3/8"
+        },
+        {
+          "cohort": "45200-45207",
+          "grasp": "2/8",
+          "source": "docs/experiments/apple_wide_grasp_closure_results_v3.md L128-129",
+          "success": "1/8"
+        }
+      ],
+      "pooled_grasp": "8/24",
+      "pooled_grasp_rate": 0.3333,
+      "pooled_grasp_wilson95": [
+        18.0,
+        53.3
+      ],
+      "pooled_success": "6/24",
+      "pooled_success_rate": 0.25,
+      "pooled_success_wilson95": [
+        12.0,
+        44.9
+      ],
+      "provenance_note": "The GRASP counts are also manifest fields (apple-wide-object-ceiling-v2.json result.primary.demo_replay_grasp_resets=4 and result.secondary.demo_replay; apple-wide-grasp-closure-v3.json the same fields). The FULL-SUCCESS counts for the primary cohorts are NOT a manifest field and are sourced from the results documents, which are equally committed and are cited by file and line.",
+      "role": "THE NULL for G1 and G4: open-loop replay of a retrieved TRAIN demonstration, the strongest non-perceptual reference on this distribution",
+      "sealed_manifests_deliberately_not_amended": "Coordinator ruling 2026-09-24: the two prior manifests are the sealed record of completed experiments and are NOT amended by this task, even additively. The cost of a precedent for editing sealed manifests is higher than the benefit of the extra field."
+    },
+    "hold": {
+      "measured": "0/50 on apple->plate",
+      "role": "scorer sanity",
+      "source": "docs/experiments/mvp_results.md"
+    },
+    "privileged_object_v3_ceiling": {
+      "measured": "24/24",
+      "role": "non-learned ceiling, CITED not rerun",
+      "source": "benchmarks/manifests/apple-wide-grasp-closure-v3.json"
+    },
+    "random": {
+      "measured": "0/50 on apple->plate",
+      "role": "scorer sanity",
+      "source": "docs/experiments/mvp_results.md"
+    },
+    "scripted_oracle": {
+      "measured": "8/8 on each of 45000-45007, 45100-45107, 45200-45207 = 24/24",
+      "role": "upper reference (privileged: reads the apple pose at reset)",
+      "sources": [
+        "docs/experiments/apple_wide_object_ceiling_results_v2.md",
+        "docs/experiments/apple_wide_grasp_closure_results_v3.md"
+      ]
+    }
+  },
+  "bc_labels": {
+    "privilege": "collector__ is a privileged training label (training_labels.py); requires acknowledge_privileged_training_labels=True; never a model input, controller input or scoring quantity",
+    "target": "collector__base_action (dims 6-11 and 13)",
+    "why": "the UNPERTURBED scripted command at every visited state; 150 of 200 roots were driven with injected OU noise, so the corpus is structurally noise-injected (DART-style) behaviour cloning"
+  },
+  "best_learned_arm_rule": "most full successes on C; ties by more grasps, then by lower median control time. Declared before any number is seen.",
+  "blind_prior_baseline": {
+    "derivation": "wide_reset (scripts/collect_apple_wide.py L44-45, 91-93) places object_xy at centre (0.34, -0.18) plus uniform(-0.03, +0.03) independently per axis. The blind error is therefore the norm of a point uniform on a 6 cm x 6 cm square centred on zero; its median is 2.3937 cm (2e6 samples, and asserted in tests/test_policy_preflight.py).",
+    "fraction_of_resets_within_1_5_cm_of_centre": 0.196,
+    "independently_confirmed": "Reproduced to the digit by the reviewer and by the coordinator.",
+    "median_error_cm": 2.3937,
+    "median_error_m": 0.023937,
+    "standing_rule_is_necessary_not_sufficient": "The rule 'every absolute pre-flight threshold must sit strictly below the blind prior' is NECESSARY BUT NOT SUFFICIENT. It rules out a gate that a pure prior passes outright; it does not rule out a gate that a near-prior model passes. Only the ratio condition does that, and only the ratio condition is independent of the reset jitter width.",
+    "the_absolute_threshold_is_NOT_the_blind_model_defence": "STATED EXPLICITLY so a future reader does not look at P3 = 2.0 cm against the 2.3937 cm prior, see a 0.39 cm gap, and conclude the gate is nearly toothless. The absolute thresholds are thin defences on their own. THE RATIO CONDITION IS WHAT CARRIES THE LOAD: a model that ignores the image produces the SAME output for a foreign frame as for the real one, so its shuffled-frame control error EQUALS its own error and its ratio is ~1.0. That fails <= 0.7 decisively, and by a margin that does not depend on the jitter width at all -- unlike the absolute thresholds, which do.",
+    "what_it_is": "The median apple-position error of a predictor that always emits the reset centre and never reads the image.",
+    "why_it_is_recorded_here": "So no future reader has to rediscover why the pre-flight gates sit where they do. Every absolute pre-flight threshold must sit STRICTLY BELOW this number or it certifies nothing. The first draft's P2 (2.5 cm) and P3 (3.0 cm) did not, and were tightened to 1.5 cm = 0.63x this baseline. Only 19.6% of resets land within 1.5 cm of the centre, which is why a 1.5 cm gate is not passable by a prior."
+  },
+  "budget": {
+    "device": "mps",
+    "expected_total_hours": 5.5,
+    "fallback_device": "cpu",
+    "global_max_seconds": 28800,
+    "max_steps_per_attempt": 1000,
+    "per_attempt_max_seconds": 300,
+    "per_training_arm_max_seconds": 7200,
+    "precedents": {
+      "grasp_closure_v3_cap_seconds": 32400,
+      "grasp_closure_v3_used_seconds": 4836.6,
+      "task054_per_arm_cap_seconds": 10800,
+      "task054_total_hours": 4.02
+    },
+    "stage_estimates_seconds": {
+      "cohort_C": 10800,
+      "decode_and_precompute": 1500,
+      "development_precheck": 1800,
+      "preflight": 2700,
+      "train_A0": 600,
+      "train_A1": 600,
+      "train_A2": 600,
+      "train_A3": 1800,
+      "train_A4": 0
+    },
+    "why_n40_is_affordable": "A feed-forward policy evaluates far more cheaply per command than the CEM ceiling: the G7 cap of 100 ms is already 6.2x under the ceiling's measured 0.621-0.649 s, and the expected cost (one encoder forward plus a 380k-parameter head) is another order below the cap. That is why n=40 is affordable where prior protocols could afford n=8."
+  },
+  "closed_loop_started": false,
+  "cohorts": {
+    "C_frozen_gating": {
+      "cohort_sha256": "4f888154c055bcbbbc0df333442e6886d8f65c2389596fe1aedde1d2cb0b533e",
+      "disjointness_verified_against": [
+        "42000-42031",
+        "43000-43004",
+        "44000-44019 (reserved for TASK-034, not touched)",
+        "45000-45007",
+        "45100-45107",
+        "45200-45207",
+        "48000-48199",
+        "48900-48931",
+        "49000-49015",
+        "49100-49131"
+      ],
+      "n": 40,
+      "never_simulated": true,
+      "pin_check": "regenerating seed 45200 from this rule reproduces benchmarks/manifests/apple-wide-grasp-closure-v3.json resets.45200 EXACTLY (object_xy [0.3229653854661023,-0.15092924454200007], plate_xy [0.5010270523751088,-0.1025915174158386])",
+      "reset_rule": "wide_reset (TASK-047): apple +-3 cm about (0.34,-0.18), plate +-2 cm about (0.49,-0.09)",
+      "resets": {
+        "45300": {
+          "object_xy": [
+            0.33438480504326884,
+            -0.16082599380655122
+          ],
+          "plate_xy": [
+            0.501137340141797,
+            -0.10316228725053854
+          ],
+          "seed": 45300
+        },
+        "45301": {
+          "object_xy": [
+            0.32958069104656523,
+            -0.15381521768222603
+          ],
+          "plate_xy": [
+            0.4796328917795462,
+            -0.0942001696694676
+          ],
+          "seed": 45301
+        },
+        "45302": {
+          "object_xy": [
+            0.33573485461012603,
+            -0.1931714394268015
+          ],
+          "plate_xy": [
+            0.47981469267583665,
+            -0.0811258967748615
+          ],
+          "seed": 45302
+        },
+        "45303": {
+          "object_xy": [
+            0.33686298979519125,
+            -0.17886879739659883
+          ],
+          "plate_xy": [
+            0.4794433386454572,
+            -0.07388845038745098
+          ],
+          "seed": 45303
+        },
+        "45304": {
+          "object_xy": [
+            0.3315224479690649,
+            -0.1721328254460956
+          ],
+          "plate_xy": [
+            0.47884052433998525,
+            -0.10382329450161455
+          ],
+          "seed": 45304
+        },
+        "45305": {
+          "object_xy": [
+            0.3419565950933512,
+            -0.18532312388739444
+          ],
+          "plate_xy": [
+            0.4887840287247112,
+            -0.07692293397485503
+          ],
+          "seed": 45305
+        },
+        "45306": {
+          "object_xy": [
+            0.31306619833539184,
+            -0.15053847546033475
+          ],
+          "plate_xy": [
+            0.4730955598412887,
+            -0.10996911648902835
+          ],
+          "seed": 45306
+        },
+        "45307": {
+          "object_xy": [
+            0.3274413650098918,
+            -0.1792389140778823
+          ],
+          "plate_xy": [
+            0.4917837093687984,
+            -0.07380404251977837
+          ],
+          "seed": 45307
+        },
+        "45308": {
+          "object_xy": [
+            0.3692455932865118,
+            -0.172056094293881
+          ],
+          "plate_xy": [
+            0.5081794519826695,
+            -0.10717706979929689
+          ],
+          "seed": 45308
+        },
+        "45309": {
+          "object_xy": [
+            0.32448289631580546,
+            -0.15915797701811002
+          ],
+          "plate_xy": [
+            0.4784370320795881,
+            -0.09705662272974903
+          ],
+          "seed": 45309
+        },
+        "45310": {
+          "object_xy": [
+            0.33240854650450186,
+            -0.19025664422418853
+          ],
+          "plate_xy": [
+            0.4954309378152163,
+            -0.08355804561263949
+          ],
+          "seed": 45310
+        },
+        "45311": {
+          "object_xy": [
+            0.329165396698784,
+            -0.19107847718013668
+          ],
+          "plate_xy": [
+            0.502721333901603,
+            -0.07790955676661508
+          ],
+          "seed": 45311
+        },
+        "45312": {
+          "object_xy": [
+            0.3368464277848152,
+            -0.1929739044645155
+          ],
+          "plate_xy": [
+            0.49664731611594015,
+            -0.08450505249790452
+          ],
+          "seed": 45312
+        },
+        "45313": {
+          "object_xy": [
+            0.33720944320916435,
+            -0.18199520214464132
+          ],
+          "plate_xy": [
+            0.4763575596851376,
+            -0.07224467684099592
+          ],
+          "seed": 45313
+        },
+        "45314": {
+          "object_xy": [
+            0.3153345993134338,
+            -0.1789423263320928
+          ],
+          "plate_xy": [
+            0.4824300202594071,
+            -0.0880911853161019
+          ],
+          "seed": 45314
+        },
+        "45315": {
+          "object_xy": [
+            0.35433217745386636,
+            -0.1877108688061135
+          ],
+          "plate_xy": [
+            0.4985971966045348,
+            -0.08619471951162183
+          ],
+          "seed": 45315
+        },
+        "45316": {
+          "object_xy": [
+            0.3360271143987784,
+            -0.17616405176555702
+          ],
+          "plate_xy": [
+            0.4877265723585532,
+            -0.10951563469966548
+          ],
+          "seed": 45316
+        },
+        "45317": {
+          "object_xy": [
+            0.3111751406447659,
+            -0.15019603541695475
+          ],
+          "plate_xy": [
+            0.4738022224837955,
+            -0.08476330843180942
+          ],
+          "seed": 45317
+        },
+        "45318": {
+          "object_xy": [
+            0.3228413165806306,
+            -0.1829568293905933
+          ],
+          "plate_xy": [
+            0.5034356173190593,
+            -0.07872622744478074
+          ],
+          "seed": 45318
+        },
+        "45319": {
+          "object_xy": [
+            0.31297611811960996,
+            -0.17919885388277895
+          ],
+          "plate_xy": [
+            0.5062452237248244,
+            -0.0942212829510676
+          ],
+          "seed": 45319
+        },
+        "45320": {
+          "object_xy": [
+            0.335777878109988,
+            -0.16133357837156387
+          ],
+          "plate_xy": [
+            0.48454664542786435,
+            -0.08718568642317327
+          ],
+          "seed": 45320
+        },
+        "45321": {
+          "object_xy": [
+            0.36808998491888356,
+            -0.15221939844314714
+          ],
+          "plate_xy": [
+            0.4700520408682446,
+            -0.08535699347177161
+          ],
+          "seed": 45321
+        },
+        "45322": {
+          "object_xy": [
+            0.36202898945983236,
+            -0.16549221424190705
+          ],
+          "plate_xy": [
+            0.48622643544268906,
+            -0.09053514740254416
+          ],
+          "seed": 45322
+        },
+        "45323": {
+          "object_xy": [
+            0.3694305050711407,
+            -0.20324703647259262
+          ],
+          "plate_xy": [
+            0.492852652441358,
+            -0.07446308817531755
+          ],
+          "seed": 45323
+        },
+        "45324": {
+          "object_xy": [
+            0.34566078463136773,
+            -0.17945795421703714
+          ],
+          "plate_xy": [
+            0.5033718208990963,
+            -0.07443423762141207
+          ],
+          "seed": 45324
+        },
+        "45325": {
+          "object_xy": [
+            0.3489649115432638,
+            -0.1589403909768502
+          ],
+          "plate_xy": [
+            0.4833272590260692,
+            -0.07870152002265525
+          ],
+          "seed": 45325
+        },
+        "45326": {
+          "object_xy": [
+            0.3643394356439878,
+            -0.16656161478767512
+          ],
+          "plate_xy": [
+            0.4872790561883816,
+            -0.095355270829535
+          ],
+          "seed": 45326
+        },
+        "45327": {
+          "object_xy": [
+            0.3488622048205398,
+            -0.15377286307526652
+          ],
+          "plate_xy": [
+            0.5038240020932542,
+            -0.07778814131300833
+          ],
+          "seed": 45327
+        },
+        "45328": {
+          "object_xy": [
+            0.3692252090165187,
+            -0.16751432023694413
+          ],
+          "plate_xy": [
+            0.5047996664650023,
+            -0.08884189809767926
+          ],
+          "seed": 45328
+        },
+        "45329": {
+          "object_xy": [
+            0.33288695302895166,
+            -0.1607217229416445
+          ],
+          "plate_xy": [
+            0.5041851898647178,
+            -0.0786990349629825
+          ],
+          "seed": 45329
+        },
+        "45330": {
+          "object_xy": [
+            0.3379332770354357,
+            -0.16952634546509424
+          ],
+          "plate_xy": [
+            0.4875006389297776,
+            -0.10601275014959363
+          ],
+          "seed": 45330
+        },
+        "45331": {
+          "object_xy": [
+            0.33778828791589455,
+            -0.1740636186821096
+          ],
+          "plate_xy": [
+            0.47376361891801627,
+            -0.0871452068646161
+          ],
+          "seed": 45331
+        },
+        "45332": {
+          "object_xy": [
+            0.3201481108452977,
+            -0.1700745302606873
+          ],
+          "plate_xy": [
+            0.49498777683873957,
+            -0.0886800191611767
+          ],
+          "seed": 45332
+        },
+        "45333": {
+          "object_xy": [
+            0.3178005760686604,
+            -0.19985747153546063
+          ],
+          "plate_xy": [
+            0.4833146724688761,
+            -0.09917043382916282
+          ],
+          "seed": 45333
+        },
+        "45334": {
+          "object_xy": [
+            0.3698708433095749,
+            -0.1729522813178398
+          ],
+          "plate_xy": [
+            0.4738411156913813,
+            -0.10935859552957167
+          ],
+          "seed": 45334
+        },
+        "45335": {
+          "object_xy": [
+            0.3247330503833089,
+            -0.19489511575924173
+          ],
+          "plate_xy": [
+            0.4741352416858802,
+            -0.1068421231625454
+          ],
+          "seed": 45335
+        },
+        "45336": {
+          "object_xy": [
+            0.36830044016085195,
+            -0.20772696209775804
+          ],
+          "plate_xy": [
+            0.4892673482549665,
+            -0.0725152613105305
+          ],
+          "seed": 45336
+        },
+        "45337": {
+          "object_xy": [
+            0.34409486565145,
+            -0.19257092075532312
+          ],
+          "plate_xy": [
+            0.5073643699534314,
+            -0.07313957988978731
+          ],
+          "seed": 45337
+        },
+        "45338": {
+          "object_xy": [
+            0.3618297547683256,
+            -0.17679925889607942
+          ],
+          "plate_xy": [
+            0.5052664299003568,
+            -0.07005578848845029
+          ],
+          "seed": 45338
+        },
+        "45339": {
+          "object_xy": [
+            0.3303300143035913,
+            -0.19676278558726545
+          ],
+          "plate_xy": [
+            0.5014233775056322,
+            -0.09815019701828878
+          ],
+          "seed": 45339
+        }
+      },
+      "runs_per_arm": 1,
+      "seeds": [
+        45300,
+        45301,
+        45302,
+        45303,
+        45304,
+        45305,
+        45306,
+        45307,
+        45308,
+        45309,
+        45310,
+        45311,
+        45312,
+        45313,
+        45314,
+        45315,
+        45316,
+        45317,
+        45318,
+        45319,
+        45320,
+        45321,
+        45322,
+        45323,
+        45324,
+        45325,
+        45326,
+        45327,
+        45328,
+        45329,
+        45330,
+        45331,
+        45332,
+        45333,
+        45334,
+        45335,
+        45336,
+        45337,
+        45338,
+        45339
+      ]
+    },
+    "D_development_never_gating": {
+      "n": 16,
+      "seeds": [
+        45000,
+        45001,
+        45002,
+        45003,
+        45004,
+        45005,
+        45006,
+        45007,
+        45100,
+        45101,
+        45102,
+        45103,
+        45104,
+        45105,
+        45106,
+        45107
+      ],
+      "use": "debugging and the stop rule only; never gates, never reported as a result"
+    }
+  },
+  "dataset": {
+    "action_dim": 14,
+    "action_manifest": "g1_sim_action_v0",
+    "action_schema": "ee_delta_grasp_v0",
+    "cameras_used": [
+      "onboard_rgb"
+    ],
+    "collection_manifest": "benchmarks/manifests/apple-wide-collection-v1.json",
+    "collector": "scripts/collect_apple_wide.py",
+    "collector_sha256": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+    "dataset_manifest_sha256": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+    "episodes": {
+      "branch": 597,
+      "root": 200,
+      "total": 797
+    },
+    "fps": 20,
+    "group_by": "session_id (one reset seed; branches share their root's session)",
+    "hand_crop_not_used": "TASK-052 measured the second camera as harmful (6.62 cm vs 3.65 cm)",
+    "image_px": 112,
+    "plan_sha256": "15ed1a99e45114a5cec6013d345804ec561fad859dc3f0dd89dd93ec1e33062c",
+    "root": "data/apple-wide-v1",
+    "root_full_success": 115,
+    "source_revision": "32865f57a69655c574de444030204f6be561998c",
+    "split_episodes": {
+      "holdout": 0,
+      "test": 40,
+      "train": 677,
+      "val": 80
+    },
+    "split_roots": {
+      "test": 10,
+      "train": 170,
+      "val": 20
+    },
+    "split_seed": 48,
+    "state_dim": 86,
+    "state_schema": "g1_dex3_proprio_v0",
+    "test_split_decoded": false,
+    "transitions": {
+      "branch": 91412,
+      "root": 114107,
+      "total": 205519
+    }
+  },
+  "declared_risks": {
+    "R1_close_phase_starvation": {
+      "close_phase_train_transitions": "at most 6165",
+      "derivation": "45 close commands (scripted.py phase budget) x 137 surviving train roots",
+      "pre_declared_reading": "if G4 fails while G2 passes, the reading is close-phase data starvation, not 'cloning does not work', and Outcome C fires with a corpus spec that oversamples close",
+      "upper_bound_not_estimate": "45 close commands x 137 surviving train roots assumes every surviving root reaches and completes the close phase. Committed terminations are 115 success / 160 guard_refused / 65 policy_complete, so roots that stop early contribute fewer. The run records the exact count. The bound being an upper bound makes R1 worse, not better.",
+      "why_it_matters": "Grasp-closure v3 proved the task is decided in the close phase and named the mechanism: LATERAL PALM DRIFT while the fingers shut. The v2 close cost is nearly flat in the lateral command, so over the eleven closing commands that command is statistically indistinguishable from the CEM's undirected proposal noise (mean |dxy| 0.219-0.313 against 0.228 for noise alone), the palm walks off the apple and the still-open thumb strikes it first (apple_wide_grasp_closure_v3.md L32-41). It is NOT a 'closed too early' mechanism: early first contact is a CONSEQUENCE of the lateral drift, not its cause. The 2.45-9.12 cm ejection displacements are the 16 forensic TRAIN tuning closes; v2's GATED failures were 2.70-19.10 cm. The branch exclusion removes the corpus's only dense close-phase coverage (all 597 branches start at the pre-grasp state, BRANCH_PHASE=2). The collector closes on a COUNTER, not an observable event."
+    },
+    "R2_shortcut_perception": "The encoder's grasp-cohort accuracy is measured on the scripted collector's own stereotyped state distribution. If part of it comes from inferring the apple's position from where the PALM is (known from proprioception anyway) rather than from the apple's pixels, it evaporates off-distribution: right on every frame we can score, wrong on every frame that matters. This is the shape of the last five failures and nothing in the record rules it out. Aggravating: the aim-offset exclusion removes the 20% of the corpus with the MOST apple-position variation relative to the palm.",
+    "R3_close_timing": "the collector closes on a counter, not an observable event; expect failures at close entry",
+    "R4_mean_apple_regression": "if vision contributes nothing the policy servos to the corpus-mean apple and behaves like a closed-loop demo_replay; this is exactly what G2 measures",
+    "R5_grasp_command_smearing": "a regression head on a near-binary target (std 0.865, 34.7% interior) emits interior values; reported as a separate metric, never folded into the action error",
+    "R6_single_seed": "one training seed per arm; every difference between arms is a single-run difference"
+  },
+  "engineering_constraints": {
+    "artifacts": {
+      "checkpoints": "checkpoints/task056-policy-v1/",
+      "outputs": "outputs/apple-policy-v1/"
+    },
+    "backend_swap_preserved": "the policy consumes the world model only through image_features/encode/readout, so swapping leworldmodel for native_jepa stays a one-line world_model.backend change",
+    "ci_check": "a branch CI check loads checkpoints/task054-wm-v4/leworldmodel_baseline.pt and asserts the implementation hash",
+    "evaluate_policy_constraint": "scripts/evaluate_policy.py IMPORTS wide_reset, the scorer and the plan/provenance/supervision helpers from scripts/evaluate_apple.py, PINNED TO THE SAME FUNCTION NOT A COPY, and is covered by the existing wide_reset equality test extended to the new module",
+    "new_modules": [
+      "src/embodied_jepa/policy.py",
+      "src/embodied_jepa/cloning.py",
+      "scripts/evaluate_policy.py",
+      "scripts/measure_policy_preflight.py"
+    ],
+    "no_overwrite": "the runner refuses to write over an existing path; nothing under data/, checkpoints/ or outputs/ is overwritten",
+    "off_limits_files": [
+      "src/embodied_jepa/models/base.py",
+      "src/embodied_jepa/models/lewm.py"
+    ],
+    "registry": "new POLICIES registry in registry.py, registered at the top of config.py alongside PLANNERS",
+    "why": "base.py carries implementation_sha256 4ad0a6856d847aaf724daba5e721c078ee599658d4733357ab8703eccbb15a92 which the v4 checkpoints enforce; any edit makes the E0 checkpoint unloadable and destroys the frozen feature source"
+  },
+  "evidence_framing": {
+    "claim": "HYPOTHESIS (not a finding): The encoder's PERCEPTION on a nearly-current frame is good, it was never the gated quantity, and it is what a reactive controller needs.",
+    "claim_that_is_NOT_made": "The world model works. It does not: no gate in this protocol tests the model's dynamics and none is claimed to.",
+    "decisive_limitation_stated_first": "The h~0 perception on the grasp-relevant cohort has NEVER been measured in this project. The claim is a HYPOTHESIS, not a finding, and P1 is its first direct test.",
+    "held_auroc_on_encoded_latents_is_unmeasured": "The 0.99949 figure is the h=8 ROLLOUT's AUROC (gates.G5_held_auroc_lift_h8). The AUROC of apple_held on an ENCODED CURRENT latent has never been measured in this project; the pre-flight produces it. The run-time monitor gates nothing.",
+    "not_a_contradiction_of_the_merged_record": "This protocol does not dispute README/DECISIONS' 2.35-2.59 cm and does not claim a better encoder number. It claims only that the quantity those figures report -- directly-encoded readout on the MOVING cohort -- is not the quantity a reactive controller depends on, and that the quantity it does depend on is unmeasured.",
+    "only_committed_h0_numbers": {
+      "cohort": "moving",
+      "encoded_start_median_m": 0.023536449298262596,
+      "encoded_target_median_m": 0.025902658700942993,
+      "note": "computed in world_model_v4.py L111-115 as ||readout(encode(frame)) - truth||. These are exactly the 2.35-2.59 cm README/DECISIONS publish, and BOTH EXCEED P1's 1.5 cm threshold."
+    },
+    "refutation_carried_as_stated_context": {
+      "best_ever_g2a_is_0_831_v3_arm_D": true,
+      "g2a_never_passed": {
+        "threshold": 0.8,
+        "v2": [
+          0.835
+        ],
+        "v3": [
+          1.01,
+          0.876,
+          0.94,
+          0.831
+        ],
+        "v4": [
+          0.8763,
+          0.8814,
+          0.8635,
+          0.9036
+        ]
+      },
+      "held_lift_auroc_by_horizon": {
+        "1": 0.9995,
+        "16": 0.99929,
+        "4": 0.99949,
+        "8": 0.99949
+      },
+      "held_lift_shuffled_auroc_by_horizon": {
+        "1": 0.99737,
+        "16": 0.70736,
+        "4": 0.84996,
+        "8": 0.76765
+      },
+      "moving_cohort_rollout_over_persistence_h1": 0.9524,
+      "moving_cohort_rollout_over_persistence_h16": 0.7878,
+      "moving_cohort_rollout_over_persistence_h8": 0.8763,
+      "reading_of_the_auroc_split": "At h=1 the apple_held readout computed from a DIFFERENT window's actions is as good as the real one (0.99737 vs 0.99950). A readout computable from someone else's actions is reading the frame, not the dynamics. The gap opens only as the frame goes stale, which is where the model fails.",
+      "reading_of_the_ratio": "At one step ahead the model's action-conditioned rollout is 5% better than assuming nothing moves. h=8 is gate G2a and is committed; h=1 and h=16 are unverified_pending_P0 item U2."
+    },
+    "the_one_load_bearing_inference": "At h=1 the shuffled-action AUROC is 0.99737 against a real-action 0.99950, so the h=1 rollout readout is CLOSE TO what the encoded latent alone supports, and the grasp-cohort h=1 figure of 0.834 cm is the best available hint that close-phase perception beats the moving-cohort 2.35 cm. That is an INFERENCE ACROSS A ONE-STEP PREDICTOR, NOT A MEASUREMENT. The h=8 and h=16 figures are not evidence for the hypothesis at all.",
+    "which_numbers_are_rollouts": "world_model_v2.window_metrics computes palm_apple_median_m, palm_apple_grasp_cohort_median_m, G4 and G5 from predicted_readouts(model, arrays, starts, actions, ...) -- see world_model_v2.py L381 'palm = error(predicted, \"palm_minus_apple\")'. They are h-step ACTION-CONDITIONED ROLLOUT readouts, NOT perception measurements, and this protocol does not present them as such."
+  },
+  "exclusions": {
+    "aim_offset_roots": {
+      "rule": "index % AIM_OFFSET_EVERY == AIM_OFFSET_EVERY-1 over FROZEN_SEEDS=range(48000,48200), AIM_OFFSET_EVERY=5",
+      "test": 2,
+      "total": 40,
+      "train": 33,
+      "val": 5,
+      "why": "their script aims 1.5-3.0 cm off the apple by design (AIM_OFFSET_M), so their base action is self-consistent with a WRONG target: 1.5-3.0 cm of label noise, larger than the 1.5 cm grasp tolerance"
+    },
+    "all_branch_episodes": {
+      "count": 597,
+      "test": 30,
+      "train": 507,
+      "val": 60,
+      "why": "base policy deliberately corrupted (shift_close, weak_close, early_lift, open_during_lift); base_action is the corrupted script, not an expert. Legitimate negative data for a later critic."
+    },
+    "post_displacement_frames": {
+      "count": "measured and recorded by the run",
+      "rule": "mask frames where ||privileged__apple_position_world[t] - [0]|| > 0.01 m before the grasp stage, or privileged__apple_dropped is set",
+      "why": "the collector's targets come once from initial_truth; after a perturbation knocks the apple the script servos to where the apple WAS"
+    },
+    "surviving_roots": {
+      "approximate_train_transitions_before_mask": 78000,
+      "basis": "114107 root transitions / 200 roots = 570.5 per root x 137",
+      "derivation": "computed from committed source scripts/collect_apple_wide.py (FROZEN_SEEDS, SPLIT_SEED=48, AIM_OFFSET_EVERY=5); a reviewer can recompute",
+      "test": 8,
+      "train": 137,
+      "val": 15
+    }
+  },
+  "format_version": 1,
+  "frozen_feature_source": {
+    "arm": "E0_baseline_arm_b_rerun",
+    "backend": "leworldmodel",
+    "checkpoint": "checkpoints/task054-wm-v4/leworldmodel_baseline.pt",
+    "checkpoint_sha256": "01ba8d0500feaabae858ec6457b05fa60e1e87e4dcbf5982e673949f4770d2ea",
+    "evaluation_revision": "c9cf9a6a063f652b128789630fd8849c7cd5ff82",
+    "loaded": "read-only, via image_features/encode/readout only; never fine-tuned in A0/A1/A2/A4",
+    "model_implementation_sha256": "4ad0a6856d847aaf724daba5e721c078ee599658d4733357ab8703eccbb15a92",
+    "model_parameters": 2415398,
+    "python_source_sha256": "3cb9c6f1df075733ccd6b25a536eff8e0a0528e638b2d916c8ccbca0cc6c5b6f",
+    "source": "benchmarks/manifests/apple-world-model-v4.json results.E0_baseline_arm_b_rerun",
+    "training_revision": "46d62eb6732053c9a8f16dde4e5b98f354b136a2"
+  },
+  "gate_definitions": {
+    "G1": "full Apple->Plate successes of the best learned arm on cohort C, AND strictly more than demo_replay's own count on the identical 40 resets",
+    "G2": "(best learned arm successes) - (A0 proprioception-only successes) on the identical 40 resets",
+    "G3": "(best learned arm successes) - (A1 random-encoder successes) on the identical 40 resets",
+    "G4": "scorer grasp stage reached by the best learned arm on cohort C",
+    "G5": "harness soundness: hold and random successes; scripted_oracle successes",
+    "G6": "reads of sim.task_truth(), of any privileged__ label, or of the scorer's output by any learned arm's controller, asserted structurally and counted per attempt",
+    "G7": "median control time per command, deadline misses, attempts counted"
+  },
+  "gate_threshold_derivation": {
+    "G1": "Null p0 = 0.25 (demo_replay 6/24, verified from committed results documents). One-sided binomial P(X>=17|40,0.25) = 0.0116; Wilson95 [28.5,57.8]. Power 0.866 at a true rate of 0.50, 0.992 at 0.60. Comparison at the same null: 14/40 -> p=0.103, 15/40 -> 0.054, 16/40 -> 0.026. 17/40 = 42.5% is deliberately far below scripted_oracle's 24/24 and far below TASK-034's 16/20 (80%): this gate asks for the FIRST learned success, not the MVP. The second condition prevents a pathological pass on a cohort that happens to be easy for open-loop replay.",
+    "G2_G3": "Exact one-sided McNemar under H0 (equal rates, discordant pairs exchangeable, b ~ Bin(n_d, 0.5), reject when b - c >= 8): p <= 0.0039 at n_d=8, 0.0193 at 12, 0.0384 at 16, 0.0577 at 20, 0.0758 at 24. So p <= 0.05 for any discordance UP TO 16 PAIRS -- stated exactly that precisely, and NOT beyond. +6 was CONSIDERED AND REJECTED: at n_d=12/16/20 it gives 0.073/0.105/0.132. (At n_d=8 and 10 the d>=6 rule is nominally 0.0352 and 0.0547, but those discordance counts cannot arise when G1 requires >=17 successes and A0 is near 0, which forces n_d >= 17.) The realized n_d and exact p are reported alongside the count in every case; the fixed threshold is never re-read as a significance claim beyond the range where it holds.",
+    "G4": "Null p0 = 0.3333 (demo_replay 8/24, verified). One-sided binomial P(X>=20|40,1/3) = 0.0214; Wilson95 [35.2,64.8]. Power 0.926 at a true rate of 0.60. 19/40 -> p=0.044 was considered; 20/40 taken as the round number just above. Grasp is the stage the entire object-ceiling line identified as decisive.",
+    "G5": "measured: hold and random 0/50 on apple->plate; scripted_oracle 24/24 pooled over three prior wide cohorts. A failure here invalidates the RUN, not the arms.",
+    "G6": "non-negotiable project rule (AGENTS.md). Any violation VOIDS the run. The assertion covers A4: its single reset-time truth read is REPLACED, not permitted.",
+    "G7": "the CEM ceiling ran at 0.621-0.649 s per command against a 10 s deadline; a feed-forward policy has no excuse for exceeding 100 ms, and a slow arm would falsify the budget."
+  },
+  "gates": {
+    "G1_also_requires": "strictly more than demo_replay's own count on the identical 40 resets",
+    "G1_full_success_min": 17,
+    "G1_n": 40,
+    "G2_minus_A0_min": 8,
+    "G3_minus_A1_min": 8,
+    "G4_grasp_min": 20,
+    "G5_hold_max": 0,
+    "G5_random_max": 0,
+    "G5_scripted_oracle_min": 38,
+    "G6_privileged_reads_max": 0,
+    "G7_deadline_misses_max": 0,
+    "G7_median_control_seconds_max": 0.1
+  },
+  "independent_review": {
+    "blocking_findings_addressed": [
+      "B1 rollout-vs-perception mislabelling of the entire section-1.1 evidence table",
+      "B2 missing no-vision control; P2 and P3 were passable blind",
+      "B3 P1 provenance republished a retracted ejection range",
+      "B4 mislabelled h=16 row",
+      "B5 P2 had no declared consequence (abandonment-clause loophole)",
+      "B6 R1 misattributed the close-phase failure mechanism"
+    ],
+    "note": "Re-review required before merge.",
+    "post_approval_fixes": [
+      "broken GFM gate table row (G3-G7 would not have rendered)",
+      "E-band mislabelled a ratio-only failure as E-near; added E-prior with precedence",
+      "P3 2.0 cm restored with a real derivation after the reviewer showed 1.5 cm would likely pre-doom A4",
+      "stale same_handling_for key contradicting the B5 fix",
+      "R2 early-signal named P2 as the abort; it is P1's ratio",
+      "evidence_framing.claim prefixed HYPOTHESIS",
+      "'at most 6165' in section 8",
+      "0.7 stated as a judgement call, not a derivation",
+      "P0a residual weakness and its permissive direction stated",
+      "load-bearing h=1 inference marked as itself unverified (U1)"
+    ],
+    "reviewer_verdict_1": "BLOCK",
+    "reviewer_verdict_2": "APPROVE WITH NON-BLOCKING COMMENTS on e0f20ec"
+  },
+  "kind": "learned_control",
+  "label": "Behaviour cloning on the frozen E0 encoder, plus a readout-driven scripted-controller arm, on a fresh frozen wide-jitter cohort",
+  "leakage_discipline": {
+    "cohort": "C never simulated before this protocol and never reused after",
+    "model_inputs": "onboard_rgb 112 px + 86-D train-normalized proprioception ONLY",
+    "never": "a model input, a controller input, a planning cost, a window filter, or any run-time quantity",
+    "normalization": "fitted on train only; the model's own frozen state_mean/state_scale buffers",
+    "privileged_label_use": "collector__base_action as a BC training target; privileged__ arrays for the post-displacement training mask and for pre-flight scoring references ONLY",
+    "splits": "grouped by whole reset session; test never decoded"
+  },
+  "learned_control": true,
+  "missing_values": "a gate that cannot be evaluated counts as FAILED",
+  "not_done_in_this_task": [
+    "the critic (see predecessor.critic_deliberately_not_implemented)",
+    "the test split (never decoded)",
+    "TASK-034's cohort and thresholds (seeds 44000-44019 not simulated)",
+    "multiple training seeds, ensembles, longer training",
+    "action chunking, frame stacking, readouts as policy input, phase-weighted sampling",
+    "the native backend as a frozen arm (smoked only)",
+    "real hardware (disabled)"
+  ],
+  "pass_rule": "an arm passes only if EVERY gate passes",
+  "policy_io": {
+    "chunk_size": 1,
+    "declared_not_done": [
+      "action chunking",
+      "frame stacking",
+      "readouts as policy input",
+      "phase-weighted sampling"
+    ],
+    "emitted": "assembled into a contract-valid 14-vector and passed through the embodiment's UNCHANGED project_candidates guard",
+    "goal_image": false,
+    "history": 1,
+    "pinned_dims": "left arm 0, left_grasp -1, per the frozen v3/v4 action bounds in configs/apple_wm_v4.yaml; predicting them would be free accuracy",
+    "predicted_dims": [
+      "right_dx",
+      "right_dy",
+      "right_dz",
+      "right_droll",
+      "right_dpitch",
+      "right_dyaw",
+      "right_grasp"
+    ],
+    "proprio_normalization": "the model's own frozen train moments (state_mean / state_scale buffers): fitted on train only, bit-identical to the model's",
+    "why_not_done": "each would be an intervention arm, and TASK-054's lesson is that the untouched control beat every intervention"
+  },
+  "pre_declared_outcomes": {
+    "A_g1_g2_g4_pass": "The first learned, non-privileged Apple->Plate successes exist. Next: TASK-034's fresh-cohort validation (new frozen cohort n>=50, >=3 training seeds per arm, full stage breakdown, Wilson intervals, replay video, matched hold/random controls). If G3 also failed, TASK-034 must carry the random-encoder arm forward as a CO-PRIMARY, and no claim that the world model drives the robot is made until G3 passes there. TASK-034's own thresholds are NOT modified by this protocol.",
+    "B_g4_passes_g1_fails": "Grasps but does not place. Perception and approach work; the failure is downstream. This is the v2-object-ceiling profile exactly and has a known, already-passing, non-learned remedy: the v3 release predictor and phase design (24/24). Next: keep the learned approach and grasp, hand transport and place to the v3 phase machine. DO NOT retrain the policy.",
+    "C_g1_g4_fail_but_A4_succeeds": "Perception is adequate in the closed loop and CLONING is the failing component. The binding constraint is the demonstration set. Next task is data collection with a spec: >=500 clean roots, no aim offsets, no corrupted branches, DART noise only, close phase oversampled (risk R1), ~2 h of compute at the committed collection rate (2345.9 s collection + 883.2 s assembly for 797 episodes on 12 workers). Only then is BC retried.",
+    "D_abandonment_clause": "If Outcome D holds, THIS LINE STOPS. No third control formulation is preregistered on this corpus and this camera. The next task is a perception/data task (resolution, camera placement, corpus design), and if that does not move the closed-loop number either, the honest published conclusion is that a 112 px onboard camera plus a single-mode scripted-collector corpus does not support learned Apple->Plate on this platform, and the product goal needs a data or hardware change, not another model.",
+    "D_g1_g4_fail_and_A4_also_fails": "The readouts are accurate on recorded frames and do not survive the state distribution their own controller induces. That is covariate shift, and it is the last five generations' failure in a different costume.",
+    "D_if_A4_was_dropped": "Outcome D still fires and is reported as REACHED ON PARTIAL EVIDENCE, with that stated.",
+    "D_if_P2_failed": "Outcome D still fires and is reported as REACHED ON PARTIAL EVIDENCE, with the P2 value stated, exactly as for a dropped A4. A P2 failure is not an escape from the abandonment clause.",
+    "E_p1_fails": "The task stops before training, IN EVERY SUB-CASE. See preflight.P1_abort_rule. Takes precedence over every other outcome. The sub-cases exist ONLY to make the abort produce a usable next task instead of a bare stop; they change nothing about whether this task proceeds, and NO sub-case permits continuing. There is no value of P1 above the threshold for which any arm is trained, any feature is precomputed for training, or any cohort is opened.",
+    "E_sub_cases_affect_only_the_next_task": {
+      "E_clear": "The ratio passed AND P1 >= 2.0 cm. A CLEAR FAILURE: not distinguishable from the blind prior in any way that matters. Begin with the demoted v3 information-ceiling probe (single-frame apple-position regression at 112 px and at the native render resolution, no dynamics).",
+      "E_near": "The ratio passed AND P1 in [1.5, 2.0) cm. A NEAR MISS, recorded as a distinct reading: perception is materially better than the 2.394 cm no-vision prior but not inside the grasp boundary the task turns on. Follow-up is a perception/data task with a concrete target: render resolution, camera placement, close-phase coverage (risk R1).",
+      "E_prior": "P1's RATIO to the P0a control failed, whatever its absolute value. The encoder is reading the prior, not the apple. TAKES PRECEDENCE over E_near and E_clear, because a small absolute value here is not evidence of good perception. No amount of resolution fixes it, so the follow-up is the information-ceiling probe, NEVER a resolution change.",
+      "agent_does_not_choose": "In every sub-case the executing agent stops and reports to the coordinator and does not select the follow-up itself.",
+      "binding_note": "The distinction can only ever affect what the NEXT task is, never whether this one proceeds.",
+      "control_reported_either_way": "The P0a shuffled-frame control value is reported alongside P1 whatever happens. '1.7 cm at 0.4x the shuffled control' and '1.7 cm at 0.95x the shuffled control' are very different results and only the first is worth a follow-up: the second says the encoder is reading the prior, not the apple, and no amount of resolution fixes that. The ratio is part of the recorded outcome, not a diagnostic footnote.",
+      "precedence_within_E": "E_prior takes precedence over E_near and E_clear. A ratio-only failure must never be labelled E_near just because its absolute value is small: that would point the next generation at resolution when the problem is that the encoder is not reading the apple at all."
+    },
+    "in_every_outcome": "all arms' numbers and all four references are published whatever they say; failures and negative results stay in the results doc and this manifest; the apple-wide-v1 test split is never decoded; cohort C is consumed by this task and never reused; nothing is retuned and re-reported after the gates are read, and any rerun is a new disclosed protocol version.",
+    "precedence": "Outcome E takes precedence over all others; Outcome A takes precedence over B. Preconditions on C and D read 'P1 passed (P2 and P3 recorded whatever they say)': only P1 can stop the task, only P3 can drop an arm, and P2 can neither."
+  },
+  "pre_run_changes": [],
+  "pre_run_review": {
+    "none_implies_the_next": true,
+    "one_task_one_agent": true,
+    "required": true,
+    "rule": "A gated run starts only on the pre-run reviewer's REPORTED verdict, delivered as a message, never on a review file read from disk. The same rule applies to merging.",
+    "three_separate_authorizations": [
+      "1. merge the preregistration, on the reviewer's REPORTED APPROVE",
+      "2. start the gated run, whose first step is the pre-flight",
+      "3. open frozen cohort C, after the pre-flight values, training reports and development numbers have been reported"
+    ],
+    "why": "grasp-closure v3 broke it: the author read an interim 'CLEAR TO RUN' file from the working tree while the reviewer's final verdict was BLOCK"
+  },
+  "predecessor": {
+    "clause_this_protocol_implements": "behaviour cloning with the world model as a critic or residual becomes the primary line and CEM over this cost is abandoned",
+    "critic_deliberately_not_implemented": "A critic is Q(s,a), a counterfactual action-conditioned value. Every action-conditioned quantity in this model has failed its gate (G2a never passed in any generation; G9 failed on all four v4 arms; held_lift_shuffled_auroc is 0.99737 at h=1, i.e. at short horizon the action is nearly irrelevant to the model's own readout). Building a critic on this model re-imports the failed component under a new name. The critic is a declared follow-up conditioned on Outcome A.",
+    "manifest": "benchmarks/manifests/apple-world-model-v4.json",
+    "overall": "All four arms failed the primary gate G2a (0.8763/0.8814/0.8635/0.9036 vs <=0.8) and the untouched control E0 passed more gates (10/14) than every intervention (9/14). Outcome B fired: CEM over this cost is abandoned and behaviour cloning with the world model as a critic or residual becomes the primary line.",
+    "protocol": "apple_world_model_v4",
+    "task": "TASK-054"
+  },
+  "preflight": {
+    "P0a_residual_weakness": "Pairing is by phase index alone and orient runs 130 commands, so a foreign frame from early orient can be paired with late-orient proprioception. The encoder then sees an off-distribution combination and may read worse than a fair control would, which INFLATES P0a and makes the ratio EASIER to pass. P0a is a reliable detector of a fully blind or shortcut readout and a somewhat lenient grader of degree. It cannot create a false failure. The runner asserts that at least 95% of frames were re-paired with a foreign image, so a degenerate control is tamper-evident.",
+    "P1_abort_rule": {
+      "agent_stops_and_reports": "on a P1 failure the executing agent stops and reports to the coordinator; it does not select a replacement plan on its own",
+      "binding": true,
+      "evaluated_before_any_training_starts": true,
+      "honest_limit": "P1 failing does not strictly prove BC impossible, since BC need not route through the readout. It does mean the one demonstrated capability this line rests on is absent. Immediate follow-up: the demoted v3 information-ceiling probe (single-frame apple-position regression at 112 px and at native render resolution, no dynamics).",
+      "on_failure": "the task STOPS; the per-phase localization table is written to the results doc and the manifest; the outcome is Outcome E; the runner exits non-zero",
+      "proceed_anyway_is_not_an_available_outcome": "there is no branch in pre_declared_outcomes for 'P1 failed but we proceeded because X'",
+      "recorded_either_way": true
+    },
+    "P1_stays_at_1_5_cm": "Coordinator ruling after the review tightened P1's siblings: P1 is CARRIED from G1 rather than invented, and the grasp/eject evidence (holds 0.49-1.35 cm; the lowest gated v2 crossing at 1.61 cm) puts it at the boundary the task actually turns on. Loosening it immediately after its siblings were tightened would be the worst possible time to move it. The near-miss band is the concession, and it affects only the follow-up.",
+    "P2_has_a_declared_consequence": {
+      "loophole_this_closes": "Outcomes C and D both read 'P1/P2/P3 passed'; P3 was patched by the dropped-A4 clause and P2 was NOT, so a P2 failure followed by G1 and G4 failing would have matched NO pre-declared outcome and 'Outcome D's preconditions were not met' would have been available as an argument against the abandonment clause.",
+      "preconditions_now_read": "P1 passed (P2 and P3 recorded whatever they say). Only P1 can stop the task; only P3 can drop an arm.",
+      "rule": "A P2 failure changes nothing about which outcome fires. It drops no arm and blocks no gate. It is recorded in pre_run_changes with its value, the runner prints it explicitly, and Outcome D if reached is reported ON PARTIAL EVIDENCE, as for a dropped A4."
+    },
+    "P2_is_expected_to_fail_and_that_is_a_measurement": "On the moving-cohort reasoning in P3_is_the_threshold_most_likely_to_bite, a P2 failure is EXPECTED rather than surprising. P2 binds nothing (it drops no arm and blocks no gate) and this is declared in advance, so P2 is a RECORDED MEASUREMENT, not a failed gate. REPORTING RULE: the results document and every summary count must report P2 as a measurement with its value and its control ratio, and must NEVER include it in a count of failed gates, or the outcome will read as worse than it is.",
+    "P3_is_a_hard_precondition_for_A4": {
+      "consequence_for_outcome_D": "without A4, a joint failure of G1 and G4 can no longer distinguish 'perception is inadequate in the loop' from 'cloning is the failing component'. The abandonment clause STILL FIRES, but is reported as reached ON PARTIAL EVIDENCE and explicitly labelled a weaker reading.",
+      "recorded_as": "a pre-run protocol change with its reason and its P3 value, in the results doc and in pre_run_changes; never a silent omission",
+      "rule": "if P3 fails, A4 DOES NOT RUN"
+    },
+    "P3_is_the_threshold_most_likely_to_bite": "Declared before the run. The moving cohort is windows whose palm-apple offset moves >= 1 cm over 8 steps. With translation_per_step_m = 0.015 and the collector's +-0.4 clip a servoing palm covers up to 0.6 cm per step, i.e. up to 4.8 cm over 8, so during orient and descend essentially every frame is a moving window while close and lift hold station. The moving cohort is therefore approximately the APPROACH phases, and E0's one committed h=0 measurement of that population is 2.3536 cm. P2 and P3 are scored on exactly those phases. Consequences are asymmetric: a P2 failure costs nothing and is EXPECTED on this reasoning; a P3 failure drops A4, makes Outcome C unreachable and downgrades Outcome D to partial evidence before the run starts, losing the decomposition A4 exists to provide.",
+    "also_rederives": "unverified_pending_P0 items U1-U4",
+    "gates": {
+      "P1_close_phase_palm_apple_median_m": 0.015,
+      "P2_orient_descend_palm_apple_median_m": 0.015,
+      "P3_orient_apple_position_median_m": 0.02,
+      "max_ratio_to_shuffled_frame_control": 0.7
+    },
+    "is_inside_the_gated_run": "The pre-flight is part of the gated run, NOT a preliminary. It runs after this preregistration and its manifest have merged, and only once the gated run has been authorized on the pre-run reviewer's reported verdict. It is not a scouting measurement taken before the protocol is sealed, and no closed-loop gate threshold may be adjusted in response to it.",
+    "measurement": "frozen E0 readouts on DIRECTLY ENCODED val frames of the 15 surviving val roots, broken out by collector__phase_index",
+    "no_vision_control": {
+      "P0a_shuffled_frame": "identical readouts with the IMAGE drawn from a different val episode at the same collector phase, proprioception held. The direct analogue of held_lift_shuffled_auroc. Every gate must beat it by the ratio factor; a MISSING control counts as FAILED, never as a free pass.",
+      "P0b_analytic_prior_median_m": 0.023937,
+      "P0b_derivation": "wide_reset jitters object_xy by uniform(+-0.03) per axis, so a predictor that always emits the reset centre has median error = median norm of a uniform square = 2.3937 cm (2e6 samples; closed form asserted by the runner).",
+      "what_it_fixed": "As originally written P3 (3.0 cm) sat 0.6 cm ABOVE the blind baseline and P2 (2.5 cm) 0.1 cm above it: both were passable by a model that never opens its eyes. Worse, risk R2's declared early-signal ('~1 cm on close but ~4 cm on orient/descend') could not fire, because a pure-prior model reads ~2.4 cm on orient/descend and would have PASSED a 2.5 cm P2.",
+      "why": "The protocol's own argument one level up is 'a readout you can compute equally well from someone else's ACTIONS is reading the frame, not the dynamics'. The same argument one level down: a readout you can compute equally well from someone else's FRAME is reading the prior, not the frame.",
+      "why_P1_needs_it_too": "scripted.py targets obj + [-0.03, 0, 0.052] in BOTH descend and close, so the collector P-servos the palm to a fixed apple-relative offset and the true palm_minus_apple on close frames is nearly a phase-conditional constant. With state_fusion: true the latent carries the proprioception needed to infer the phase, so a head that has learned that constant scores well on P1 WITHOUT reading the apple's pixels."
+    },
+    "script": "scripts/measure_policy_preflight.py (committed as part of this task)",
+    "thresholds": {
+      "P1": "1.5 cm is CARRIED from v3/v4's own G1 threshold, not invented. Corroborated (not derived) by the grasp/eject boundary: grasp-closure v3's 24 ceiling holds sat at close-phase apple xy 0.49-1.35 cm. CORRECTED MARGIN: that document's 'Corrected by this verification' section (L375-386) retracts the 2.45-9.28 cm ejection range for the GATED failures (those were 2.70-19.10 cm; 2.45-9.12 cm are the 16 forensic TRAIN tuning closes) and records that SIX of v2's 16 gated closes crossed the 1.5 cm measure, the lowest at 1.61 cm. The gap around P1 is therefore 1.35 -> 1.61 cm, not 1.35 -> 2.45 cm. Construct note: close_phase_apple_xy_cm measures how far the apple MOVED, not the model's ESTIMATION error; the bridge is stated, not assumed.",
+      "P2": "TIGHTENED from 2.5 cm, which sat 0.1 cm above the 2.394 cm no-vision prior and was therefore passable by a model that never reads the image. 1.5 cm is 0.63x that prior.",
+      "P3": "TIGHTENED from 3.0 cm, which a constant-centre predictor passes outright (2.394 cm) and which therefore certified nothing. 2.0 cm clears the blind prior by 0.4 cm AND stays inside the corpus's own 1.5-3.0 cm injected mis-aim band, which is the band A4 must live in. An intermediate draft set it to 1.5 cm to 'match P1's scale'; that was aesthetic and would very likely have PRE-DOOMED A4.",
+      "ratio": "0.7 is A JUDGEMENT CALL FIXED IN ADVANCE, not a derivation. What makes it acceptable is that P0a has never been measured, so 0.7 cannot have been reverse-engineered from a known value; the realized ratio is reported whatever it turns out to be. It mirrors the repo's G2a idiom (error / a baseline) and is stricter than G2a's 0.8 because this baseline carries zero information."
+    },
+    "what_P1_certifies": "P1 measures readout(encode(image, robot_state)), which for E0 (state_fusion: true) fuses proprioception -- that is exactly A4's front end. A2 instead consumes image_features (image-only) plus separately-normalized proprioception through a learned head. A P1 pass is therefore DIRECT evidence for A4's pathway and only INDIRECT evidence for A2's.",
+    "what_makes_P3_at_2_0_cm_safe": "Not the 0.39 cm gap to the blind prior, which is thin. The ratio condition: a blind or shortcut readout scores the same with a foreign frame as with its own, so its ratio is ~1.0 and it fails <= 0.7 decisively. The absolute threshold keeps the gate inside the corpus's own 1.5-3.0 cm mis-aim band that A4 must live in; the ratio keeps it honest."
+  },
+  "primary_gate": "G1_full_success",
+  "protocol": "apple_policy_v1",
+  "protocol_doc": "docs/experiments/apple_policy_v1.md",
+  "rebased_onto": {
+    "corrections_carried": {
+      "best_ever_g2a": {
+        "arm": "v3 arm D",
+        "note": "0.8635 is only the best IN V4 (arm E2). docs/DECISIONS.md: 'G2a has never passed: 0.835 at v2, 0.831 at best in v3.' Against a threshold of 0.8 the whole line's best attempt missed by 4%.",
+        "value": 0.831
+      },
+      "frozen_wall_clock_caps_differ_by_generation": {
+        "note": "10800 s is not a standing limit; each protocol freezes its own budget",
+        "sources": [
+          "benchmarks/manifests/apple-world-model-v2.json frozen.training.max_seconds",
+          "docs/experiments/apple_world_model_v2.md L174",
+          "docs/RESOURCES.md"
+        ],
+        "v2_per_run_seconds": 6000,
+        "v3_per_arm_seconds": 10800,
+        "v4_per_arm_seconds": 10800
+      }
+    },
+    "main_revision": "ac9625db2dafdf4226b45241363dcf316002e4c0",
+    "models_md_note": "docs/MODELS.md records that state_fusion and readout_heads have NOT been ablated on/off: untested rather than shown to help. This protocol depends on state_fusion being ON in E0 (arms use image_features, not encode(), so the A0 ablation stays honest) and says so.",
+    "this_protocol_cites_rather_than_restates": [
+      "docs/DECISIONS.md (Decision 2026-09-24, abandon CEM over this world-model cost)",
+      "README.md (Status - 2026-09-24)",
+      "docs/MODELS.md (Shared backend-agnostic extensions)"
+    ],
+    "what_it_merged": "TASK-055 (PR #31): README dated honest-status section, docs/DECISIONS.md entry recording the CEM abandonment, docs/MODELS.md shared config keys, CLAUDE.md now tracked"
+  },
+  "results": null,
+  "results_doc": "docs/experiments/apple_policy_v1_results.md",
+  "status": "preregistered_not_run",
+  "stop_rule_protecting_cohort_C": {
+    "cohort_C_is_not_opened_autonomously": "After the development pre-check and before the first attempt on C, the executing agent reports the pre-flight values, the training reports and the D numbers to the coordinator and waits. Opening the frozen cohort is a SEPARATE authorization, not a continuation of the one that started the pre-flight.",
+    "never_gates": true,
+    "never_reported_as_a_result": true,
+    "recorded_as": "dead_on_development with its D numbers; its gate rows are None, which counts as failed",
+    "rule": "every learned arm runs the 16 development resets D; an arm reaching the scorer's grasp stage on 0/16 does NOT run on C",
+    "when": "after training, before C is opened",
+    "why": "so a dead arm cannot consume a frozen cohort, and so a dead line is detected in about an hour rather than a day"
+  },
+  "task": "TASK-056",
+  "training": {
+    "a3_batch_size": 32,
+    "a3_steps": 15000,
+    "batch_size": 256,
+    "declared_selection_weakness": "val action error is a WEAK proxy for closed-loop success. It is used because selecting on closed-loop outcomes would either consume the frozen cohort or select on the gate metric. Stated in advance.",
+    "head_parameters_approx": 380000,
+    "seed": 0,
+    "selection_eligibility": {
+      "min_per_dimension_output_std": 0.02
+    },
+    "selection_metric": "median per-dimension expert action error on masked val frames of the 15 surviving val roots",
+    "selection_split": "val",
+    "steps": 50000
+  },
+  "unverified_pending_P0": {
+    "do_not_promote": "A reviewer may not promote U1-U4 to established on the strength of any individual's independent read of the untracked artifact. Reading the file does not make the file committed. They are promoted only by the committed pre-flight report.",
+    "items": {
+      "U1": {
+        "note": "ROLLOUT quantity (1-, 8- and 16-step), not a perception measurement. See evidence_framing.which_numbers_are_rollouts.",
+        "quantity": "palm-apple readout error, grasp cohort (phase in {close, lift}), h=1/8/16",
+        "value_read_m": [
+          0.008335628546774387,
+          0.009834349621087313,
+          0.011468937620520592
+        ]
+      },
+      "U2": {
+        "note": "h=8's 0.8763 IS committed as gate G2a",
+        "quantity": "rollout / persistence on the moving cohort at h=1 and h=16",
+        "value_read": [
+          0.9524,
+          0.7878
+        ]
+      },
+      "U3": {
+        "note": "the across-arm range 0.714-0.812 at the gate horizon IS committed",
+        "quantity": "held_lift_shuffled_auroc per horizon, E0",
+        "value_read": [
+          0.997368,
+          0.84996,
+          0.767649,
+          0.70736
+        ]
+      },
+      "U4": {
+        "note": "h=8's 0.78 cm IS committed (apple_world_model_v4_results.md L261, L322) ROLLOUT quantity, not a perception measurement.",
+        "quantity": "palm-apple, all valid windows, h=1/8/16",
+        "value_read_m": [
+          0.007100926944985986,
+          0.00781842041760683,
+          0.00913066603243351
+        ]
+      }
+    },
+    "resolution": "scripts/measure_policy_preflight.py, committed by this task, re-derives every one of them from the E0 checkpoint and writes a committed report. Until that report exists, NO GATE THRESHOLD DEPENDS ON THEM.",
+    "verification_note": "The coordinator independently re-read these values from the same untracked file and they matched exactly. That establishes the read is reproducible; it does NOT make the artifact committed, and this protocol does not treat it as such.",
+    "why": "data/, outputs/ and checkpoints/ are git-ignored (.gitignore), so run artifacts cannot be cited. The following are used in the protocol's framing section and exist ONLY in the untracked outputs/task054-wm-v4/leworldmodel_baseline-val-gates.json."
+  },
+  "what_a_pass_would_and_would_not_mean": [
+    "G1 passing would be the first learned, non-privileged Apple->Plate success in this project. It would NOT be an MVP: 17/40 = 42.5% against TASK-034's 16/20 = 80%.",
+    "G1 is not passable by any control in this protocol: hold and random are 0/50 measured, demo_replay is 6/24, A0 and A1 are gated against separately.",
+    "G1 passing while G2 fails would mean almost nothing and is read that way: it would say the policy reproduces the schedule on a cohort the schedule happens to fit. G1 and G2 are read jointly, never G1 alone.",
+    "G4 can pass while G1 fails (grasps that do not place). That is Outcome B and it has a known non-learned remedy.",
+    "NO gate in this protocol tests the world model's dynamics, and none is claimed to.",
+    "A4 succeeding is not a learned-policy result and is never reported as one.",
+    "n=40 with ONE training seed per arm. Every difference between arms is a single-run difference, as in v3 and v4. Multiple seeds are TASK-034's job."
+  ]
+}
