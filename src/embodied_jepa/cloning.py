@@ -75,9 +75,13 @@ SURVIVING_ROOTS = {"train": 137, "val": 15}
 DISPLACEMENT_LIMIT_M = 0.01
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class SampleMask:
-    """Named rather than a six-tuple, which is easy to mis-unpack at the one call site."""
+    """Named rather than a six-tuple, which is easy to mis-unpack at the one call site.
+
+    ``eq=False`` because the generated ``__eq__`` would raise on the numpy fields (``bool()``
+    of an array is ambiguous). Nothing compares these, and this removes the trap.
+    """
 
     keep: np.ndarray
     accounting: dict
@@ -220,7 +224,7 @@ def precompute_features(source, arrays, rows, *, chunk=256):
     for start in range(0, len(rows), chunk):
         part = rows[start : start + chunk]
         out[start : start + len(part)] = (
-            source.features(images(arrays, part), inference=True).cpu().numpy()
+            source.features(images(arrays, part), inference=True).detach().cpu().numpy()
         )
     return out
 

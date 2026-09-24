@@ -924,6 +924,7 @@
     "reviewer_verdict_1": "BLOCK",
     "reviewer_verdict_2": "APPROVE WITH NON-BLOCKING COMMENTS on e0f20ec",
     "reviewer_verdict_3": "APPROVE WITH NON-BLOCKING COMMENTS on c93c901 (round 2): B1/B2/B3 closed, verified by execution; no regressions from the signature changes; alignment re-verified 117/117 after the change.",
+    "reviewer_verdict_4": "BLOCK on 939e748 (round 3): the NB-B fix made A3 checkpoints unloadable. load() compared the weights digest BEFORE restoring the encoder, so a post-training saved digest could never match a freshly-loaded-E0 live one and the saved encoder weights were never reached. Reproduced on the real leworldmodel backend with the real E0 checkpoint. Fixed by splitting the comparison around the restore, which is also strictly stronger. Verified on the real backend: 170 tensors saved, live digest differs at load time, reload succeeds, encoder restored byte-exactly.",
     "round2_nonblocking_addressed": [
       "NB-A: evaluate_policy's live path built an autograd graph, because torch.enable_grad() OVERRIDES an enclosing no_grad. A 512-image ViT forward retaining activations for a tensor detached one line later; a plausible MPS OOM mid-validation that would end an arm as failed against its frozen budget. FrozenEncoder.features gained an explicit inference flag.",
       "NB-B: the round-1 NB4 fix did NOT close what it claimed. FrozenEncoder.provenance() was weight-INDEPENDENT, so A1 (random) and A2 (loaded E0) produced byte-identical provenance and load()'s check could not tell them apart -- while a code comment and a test docstring both asserted it could. Fixed for real with model_weights_sha256 over the sorted state_dict, and the comment corrected to say why the check is meaningful. A new test exercises the A1/A2 case, which the old one never did.",
@@ -932,6 +933,13 @@
       "NB-E: sample_mask's six-tuple return replaced by a SampleMask dataclass; the stale annotation is gone.",
       "NB-F: val_features_precomputed conflated A0 with A3; val_features_recomputed_live added.",
       "NB-G: the smoke lesson said the A0/A2 smokes 'missed' B1 and B2. They could not have: both are A3-only and the A3 path was never smoked. Corrected, which sharpens the lesson."
+    ],
+    "round3_also_fixed": [
+      "predict_free -- the CONTROL LOOP -- did not pass inference=True, so an A3 policy built an autograd graph on every step of a 50 ms loop. The one method whose entire contract is 'this is inference'.",
+      "precompute_features had dropped its defensive .detach(), relying on the source honouring the flag. Restored.",
+      "The AST tripwire had four demonstrated false negatives. Three closed (aliased import, local binding, attribute reference); the fourth -- REIMPLEMENTING the reset arithmetic inline -- cannot be closed by parsing and is now NAMED in the docstring so nobody inherits it believing the parse is airtight.",
+      "SampleMask given eq=False: the generated __eq__ would raise on its numpy fields.",
+      "weights_sha256 docstring notes that it covers key name and raw bytes but not dtype or shape, and that bfloat16 would raise (this backend produces bool/float32/int64 only)."
     ]
   },
   "integrity_guard_change": {

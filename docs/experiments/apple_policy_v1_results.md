@@ -301,14 +301,28 @@ they are worth listing together because the shape repeats and the surface change
    could not be inert here. They use a bare `return` instead, and the tripwires were then
    verified to fire by writing a probe runner that violates each constraint and watching both
    assertions trip — rather than assuming they were connected.
-6. One of those tripwires then **fired on a *correct* runner**, because a text grep matched a
+6. **The fix for instance 4 made the check meaningful and simultaneously made it always fail.**
+   Adding the weights digest to `provenance()` closed the A1/A2 gap for real — and `load()`
+   compared the whole provenance *before* restoring the encoder, so an A3 checkpoint's saved
+   digest (post-training) could never match the live one (freshly loaded E0). **B2 went from
+   "the trained encoder is discarded at save" to "saved and unreachable"**: the arm still could
+   not be reproduced from its checkpoint, which is the property B2 existed to establish. The
+   suite stayed green because the only test covering that path used a stand-in whose
+   `provenance()` was hardcoded without a digest — **a test whose name covered a case its
+   fixtures could not reach**, which is instance 4 again one level down. The repair splits the
+   comparison around the restore, which is also strictly stronger: afterwards the digest asserts
+   *"the encoder in memory is byte-identical to the one that trained this head"*.
+7. One of those tripwires then **fired on a *correct* runner**, because a text grep matched a
    docstring explaining what the runner does *not* do. A false positive is not a weaker version
    of the right check; it is a different and worse thing, because it punishes whoever got it
    right and the cheapest way out is to delete the test. Replaced with an `ast.walk` over `Call`
    nodes and **verified in both directions** — correct runner passes, violating runner fails.
    The AST form had been available the whole time; the constraint that seemed to rule it out
    ("nothing stronger exists for a file that does not exist") was about *importing* the file and
-   was generalized too far.
+   was generalized too far. The AST walk now also catches an aliased import and a binding to a
+   local, and **names the hole it cannot close** — reimplementing the reset arithmetic inline
+   references nothing — so whoever inherits it knows what they are inheriting rather than
+   believing the parse is airtight.
 
 The common form: **verifying that something produces a plausible value does not verify that it
 computes the quantity you believe it computes.** Every instance was caught by someone checking

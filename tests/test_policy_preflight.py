@@ -410,8 +410,13 @@ def test_the_closed_loop_runner_resets_cohort_c_from_stored_values():
 
     TEXT CHECK, TO BE REPLACED when the runner exists: assert that the resets the runner
     actually executes equal the stored manifest values, rather than that its source does not
-    mention wide_reset. If you are reading this because it just fired, that behavioural test is
-    what you owe in exchange.
+    reference wide_reset. If you are reading this because it just fired, that behavioural test
+    is what you owe in exchange.
+
+    KNOWN HOLE, so nobody inherits it believing the parse is airtight: this catches a call, an
+    aliased import, and a binding to a local. It CANNOT catch REIMPLEMENTATION -- someone
+    writing ``np.random.default_rng(seed).uniform(-0.03, 0.03, 2)`` inline never references
+    wide_reset at all, and no amount of parsing will see it. Only the behavioural test will.
     """
     if not EVALUATE_POLICY.exists():
         return  # vacuously green until the runner is written
@@ -421,11 +426,20 @@ def test_the_closed_loop_runner_resets_cohort_c_from_stored_values():
         "values in benchmarks/manifests/apple-policy-v1.json, not recompute them from "
         "wide_reset. See cohorts.C_frozen_gating.runner_must_reset_from_stored_values."
     )
-    called = {
-        node.func.id if isinstance(node.func, ast.Name) else getattr(node.func, "attr", "")
-        for node in ast.walk(ast.parse(source))
-        if isinstance(node, ast.Call)
-    }
+    tree = ast.parse(source)
+    mentioned = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            func = node.func
+            mentioned.add(func.id if isinstance(func, ast.Name) else getattr(func, "attr", ""))
+        elif isinstance(node, ast.alias):
+            # from ... import wide_reset as wr
+            mentioned.add((node.name or "").rsplit(".", 1)[-1])
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+            mentioned.add(node.id)  # f = wide_reset, then f(seed)
+        elif isinstance(node, ast.Attribute):
+            mentioned.add(node.attr)  # getattr-free module.wide_reset references
+    called = mentioned
     # Parsed, not grepped: a correct runner whose docstring says "NOT recomputed from
     # wide_reset()" must not be punished for explaining itself. Tripwires that bite the person
     # who got it right teach people to weaken tripwires.

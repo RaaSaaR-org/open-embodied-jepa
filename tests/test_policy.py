@@ -287,8 +287,21 @@ class MovingEncoder:
     def parameters(self):
         return self.model.parameters()
 
+    def weights_sha256(self):
+        import hashlib
+
+        digest = hashlib.sha256()
+        state = self.model.state_dict()
+        for key in sorted(state):
+            digest.update(key.encode())
+            digest.update(state[key].detach().cpu().contiguous().numpy().tobytes())
+        return digest.hexdigest()
+
     def provenance(self):
-        return {"kind": self.kind, "frozen": False}
+        # Carries the digest, like the real FrozenEncoder. Without it the test named for the
+        # trainable save/load path is structurally incapable of seeing the field, which is how
+        # the A3-unloadable regression stayed green.
+        return {"kind": self.kind, "frozen": False, "model_weights_sha256": self.weights_sha256()}
 
 
 def test_a_trainable_encoder_is_saved_and_restored(tmp_path):
@@ -309,10 +322,36 @@ def test_a_trainable_encoder_is_saved_and_restored(tmp_path):
     saved = torch.load(path, weights_only=True)
     assert saved["feature_source_weights"] is not None
 
+    # The reloading policy starts from DIFFERENT encoder weights, as A3 does in practice: the
+    # saved digest is the post-training encoder, the live one is a fresh initialization.
     fresh = MovingEncoder()
+    with torch.no_grad():
+        fresh.model.weight.fill_(0.125)
+    assert fresh.weights_sha256() != source.weights_sha256()
     q = ClonedPolicy(schema(), fresh, device="cpu", seed=0)
     q.load(path)
     assert float(fresh.model.weight[0, 0].detach()) == 2.5
+    # After the restore the digest must match: "the encoder in memory is byte-identical to the
+    # one that trained this head". Comparing it BEFORE the restore made A3 unloadable.
+    assert fresh.weights_sha256() == saved["feature_source"]["model_weights_sha256"]
+
+
+def test_a_tampered_encoder_checkpoint_is_refused(tmp_path):
+    """The post-restore digest is a real round-trip assertion, not a formality."""
+    source = MovingEncoder()
+    p = ClonedPolicy(schema(), source, device="cpu", seed=0)
+    p.fit_state_normalization(
+        np.zeros(6, np.float32), np.ones(6, np.float32), training_episode_ids=("a",)
+    )
+    path = tmp_path / "a3.pt"
+    p.save(path)
+    payload = torch.load(path, weights_only=True)
+    payload["feature_source_weights"]["weight"] = torch.zeros(4, 4)
+    torch.save(payload, path)
+
+    q = ClonedPolicy(schema(), MovingEncoder(), device="cpu", seed=0)
+    with pytest.raises(ContractError, match="not restored exactly"):
+        q.load(path)
 
 
 def test_a_frozen_arms_checkpoint_records_no_encoder_weights(tmp_path):
@@ -393,3 +432,21 @@ def test_evaluate_policy_recomputes_features_when_the_encoder_is_trainable():
     # NB-A: torch.enable_grad() overrides an enclosing no_grad, so validation must ask for
     # inference explicitly or it retains activations for a tensor detached one line later.
     assert source.last_inference is True, "validation must not build an autograd graph"
+
+
+def test_the_control_loop_does_not_build_an_autograd_graph():
+    """predict_free is the one method whose entire contract is "this is inference".
+
+    A trainable source's ``enable_grad()`` overrides the ``no_grad`` inside ``predict_free``,
+    so without the explicit flag an A3 policy builds a graph on every step of a 50 ms loop.
+    """
+    source = MovingEncoder()
+    p = ClonedPolicy(schema(), source, device="cpu", seed=0)
+    p.fit_state_normalization(
+        np.zeros(6, np.float32), np.ones(6, np.float32), training_episode_ids=("a",)
+    )
+    state = RobotState(
+        np.zeros((1, 6), np.float32), np.ones((1, 6), bool), np.array([1.0]), p.state_schema
+    )
+    p.predict_free({"onboard_rgb": np.zeros((1, 2, 2, 3), np.uint8)}, state)
+    assert source.last_inference is True, "the control loop must request inference"

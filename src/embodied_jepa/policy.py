@@ -182,6 +182,10 @@ class FrozenEncoder:
         provenance, and ``ClonedPolicy.load`` cannot tell them apart. That is precisely the
         cross-arm confusion gate G2 exists to detect.
         """
+        # Every tensor this backend produces on cpu/mps is bool/float32/int64 and therefore
+        # .numpy()-able; a bfloat16 parameter would raise here, which this backend does not
+        # produce. The digest covers key name and raw bytes, not dtype or shape -- harmless
+        # because the architecture fixes both.
         digest = hashlib.sha256()
         state = self.model.state_dict()
         for key in sorted(state):
@@ -331,7 +335,14 @@ class ClonedPolicy(nn.Module):
             raise ContractError("incompatible robot-state schema")
         self.eval()
         with torch.no_grad():
-            visual = self.features.features(images) if self.features.feature_dim else None
+            # inference=True is load-bearing, not an optimization: enable_grad() inside a
+            # trainable source OVERRIDES the no_grad above, so an A3 policy would build an
+            # autograd graph on every control step of a 50 ms loop.
+            visual = (
+                self.features.features(images, inference=True)
+                if self.features.feature_dim
+                else None
+            )
             state = self.normalized_state(robot_state.values, robot_state.mask)
             free = self(visual, state)
         return free.detach().cpu().numpy().astype(np.float32)
@@ -415,11 +426,22 @@ class ClonedPolicy(nn.Module):
             if checkpoint.get(key) != value:
                 raise ContractError(f"policy checkpoint {key} is incompatible")
         # An A2 head loaded onto an A1 random encoder is exactly the cross-arm confusion gate
-        # G2 exists to detect. This check is only meaningful because provenance() carries
-        # model_weights_sha256: every other field it holds is weight-INDEPENDENT, so without
-        # that digest A1 and A2 produce byte-identical provenance and this comparison would
-        # pass while claiming to have prevented the thing it is named for.
-        if checkpoint.get("feature_source") != self.features.provenance():
+        # G2 exists to detect, and the check is only meaningful because provenance() carries
+        # model_weights_sha256: every other field is weight-INDEPENDENT, so without that digest
+        # A1 and A2 produce byte-identical provenance.
+        #
+        # The comparison is SPLIT around the restore, and it has to be. Comparing the whole
+        # provenance up front makes an A3 checkpoint unloadable by construction: its saved
+        # digest is the POST-TRAINING encoder's, while the policy doing the loading is built
+        # over a freshly loaded E0, so they differ every time and the saved encoder weights are
+        # never reached. Splitting it is also strictly stronger -- after the restore the digest
+        # asserts "the encoder in memory is byte-identical to the one that trained this head",
+        # which is a real round-trip property rather than a guaranteed failure.
+        saved_source = dict(checkpoint.get("feature_source") or {})
+        live_source = self.features.provenance()
+        saved_digest = saved_source.pop("model_weights_sha256", None)
+        live_digest = live_source.pop("model_weights_sha256", None)
+        if saved_source != live_source:
             raise ContractError("policy checkpoint was trained on a different feature source")
         self.head.load_state_dict(checkpoint["weights"], strict=True)
         encoder_weights = checkpoint.get("feature_source_weights")
@@ -427,6 +449,15 @@ class ClonedPolicy(nn.Module):
             raise ContractError("policy checkpoint disagrees on whether its encoder was trained")
         if encoder_weights is not None:
             self.features.model.load_state_dict(encoder_weights, strict=True)
+        if saved_digest is not None:
+            restored = self.features.weights_sha256()
+            if restored != saved_digest:
+                raise ContractError(
+                    "policy checkpoint's encoder weights were not restored exactly: the head "
+                    "was trained against a different encoder than the one now in memory"
+                )
+        elif live_digest is not None:
+            raise ContractError("policy checkpoint carries no encoder digest to verify")
         for name in ("state_mean", "state_scale", "state_normalization_fitted"):
             if name not in checkpoint:
                 raise ContractError(f"policy checkpoint is missing {name}")
