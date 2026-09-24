@@ -4,7 +4,7 @@ aliases:
 - TASK-055
 title: Sweep the top-level and cross-cutting documentation into line with TASK-054
 slug: sweep-the-top-level-and-cross-cutting-documentation-into-line-with-task-054
-status: review
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -19,6 +19,7 @@ due_date: ''
 created: 2026-09-24
 updated: 2026-09-24
 ---
+
 
 
 # Sweep the top-level and cross-cutting documentation into line with TASK-054
@@ -57,6 +58,13 @@ Learned Apple->Plate remains at zero successes.
 - Branch `docs/task-055-honest-status-sweep` from main `bc1fca6` (TASK-054 closure).
 - Documentation only: no source, test, config, manifest or experiment artifact changed, so the
   research record is untouched and no result is revised.
-- Final status update follows the merge, per the AGENTS.md rule for acceptance that depends on
-  the merge itself.
+- Delivery: PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/31 (squash-merged as
+  `ac9625d`). Independent review found two wrong figures and both were fixed before merge: the
+  best-ever G2a (the record is 0.831 at v3, not v4's 0.8635) and the world-model v2 wall-clock
+  cap (6,000 s per run, not 10,800 s). Five non-blocking findings were also taken. ruff check,
+  ruff format --check, `mc validate`, `mc index` and all three CI jobs were green on the merged
+  head.
+- Documentation only. Nothing under `docs/experiments/`, `docs/reviews/` or
+  `benchmarks/manifests/` was rewritten, `PRD.md` is preserved as the original snapshot, no
+  frozen value changed, and learned Apple->Plate remains at zero successes.
 %% mc-links: [[TASK-054]] %%
