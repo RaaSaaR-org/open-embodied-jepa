@@ -1,5 +1,15 @@
 # Apple grasp closure: diagnosis of the v2 close-phase ejection (TASK-051)
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S1-09 (mislabelled).** L15–17 inherit the v2 wording "eject the apple 8–9 commands into the close". That push is transient, and contact is lost 10–40 commands later. See the errata of `apple_wide_object_ceiling_results_v2.md`.
+> - **S1-16 (mislabelled).** Finding 2 (L63–83) says "all four ejected … The separation is complete" and "leaving the hand before it shuts". Early first contact (≤ 8) coincided with the ≥ 1.5 cm displacement label on 4/4, but that follows from how the label is defined. It coincided with eventual **loss** of the apple on 3/4: 49103 held and latched grasp. In the three lost cases the apple was re-centred (≤ 0.3 cm) and in contact by close command 13–15. It was lost at close command 29–30 or lift command 5, not before the hand shut. The source is scratch forensics, so this is not citable.
+> - **S1-17 (mislabelled, unmeasured).** L105–107 say the lateral commands are "statistically indistinguishable" from proposal noise (0.219–0.313 against 0.228). 0.228 is E|clip(N(0, 0.3), ±0.5)| for a single zero-mean draw. The CEM warm-starts from the previous plan, so its null under a flat cost is a clipped random walk, not that draw. No test was run. The claim is unmeasured, not refuted. The flat-cost argument and the lateral drift rate are what actually support it, and neither is citable.
+> - **S1-18 (not citable).** The paired-experiment counts in Finding 4 come from a scratch harness that is not in the repository.
+
 **EXPLORATORY. This document is a diagnosis, not gate evidence.** Every run reported
 here is a NON-LEARNED privileged diagnostic on **TRAIN-side tuning resets only**
 (49100–49131, drawn with `evaluate_apple.wide_reset`, used nowhere else in the

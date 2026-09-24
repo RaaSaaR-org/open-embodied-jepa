@@ -1,5 +1,16 @@
 # Apple world model v4: redesign the action-conditioned prediction step (TASK-054)
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S4-02 (mislabelled).** "Beats the model's own persistence readout for the first time" (L371–372) and "below the model's own persistence readout (G2a < 0.8)" (L60–61) mean *by the required 20 % margin* (G2a ≤ 0.8). G2a < 1 already held for v2 and three v3 arms, and in the event it held for every v4 arm too.
+> - **S4-05 (mislabelled).** "G4 on a 120-step model says nothing" (L519): G4 says nothing for **any** model. A constant zero-height predictor passes it (0.36 cm).
+> - **S4-12 (mislabelled).** G9, "the prediction step's own contribution" (L26–28, L258–287), is the difference between the rollout median and the encoded-target median. The median of the per-window excess is 0.479 / 0.527 / 0.469 / 0.526 cm. That is at or below 0.53 cm for every arm, the control included. The verdicts under the frozen definition are unchanged, and no outcome depended on G9.
+> - **S3-05 / S3-07.** The "perfect predictor" floor (L38–39) is not a lower bound. The v2 anchor of the v2 → v3 "excess tripling" (L20–30) is not committed. See the errata of `apple_world_model_v3_results.md`.
+> - **S4-20 (wrong).** The pre-run review (L543–544) says "1.04× and 1.56×". The correct values are 1.05× and 1.54×, as stated at L273–276.
+
 **Preregistration. Written before any frozen run and committed before the first one
 starts.** Every threshold, cohort, budget, arm, command and decision rule below is fixed
 at the commit that carries this file. It was **amended once, by a fresh-context pre-run

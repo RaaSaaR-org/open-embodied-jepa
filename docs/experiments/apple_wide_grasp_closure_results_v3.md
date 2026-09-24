@@ -1,5 +1,14 @@
 # Apple wide-jitter grasp closure v3: results
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S1-13 (wrong; withdrawn).** L230–234 say "The close phase needs **no** prediction: v3's closure is a fixed schedule …". v3's closure is not prediction-free. The vertical command is chosen on every close command by the CEM over exact rollouts, under a cost that reads the true apple pose. In the 24 recorded closes it ranged from 0 to −0.5 (std 0.17–0.21), with only 3–8 of 45 commands at the bound. Every fixed-schedule closure in the diagnosis failed. It is untested whether a prediction-free closure works from this entry state, so the inference that a learned controller needs no close-phase prediction does not follow.
+> - **S1-10 (mislabelled).** L26–31 and L177–187: v2's "2.70–19.10 cm" is the **maximum** apple displacement over the whole 45-command close. For 45100, 45105 and 45000 it is dominated by the apple rolling away after contact was lost (10.9–19.1 cm). For 45103 it is the transient push only (2.70 cm), and that apple was lost during the lift. The measure cannot separate a recovered push from a lost apple. The 1.5 cm "ejection" count includes the successful 45002 and 45005.
+> - **S1-12 (unverifiable).** No committed code computes the manifest field `close_phase_apple_xy_cm` (0.49–1.35 cm, 0 ejections). The audit recomputed it from git-ignored traces, and it matches.
+
 **Every arm here is a NON-LEARNED diagnostic.** `privileged_object` (v3) plans with
 exact MuJoCo rollouts and an exact release probe, and its cost and phase transitions read
 simulator object state; `demo_replay` replays a retrieved TRAIN demonstration open loop;

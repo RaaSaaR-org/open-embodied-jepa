@@ -1,5 +1,20 @@
 # Apple world model v3: results (TASK-052)
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S3-04 (clarification).** "palm–apple, all valid windows 0.78 cm" (L119, L287, L353) is an **8-step rollout**. An oracle predictor that freezes the true offset scores 0.50 cm on those windows. This manifest field, `apple-world-model-v3.json` `results.B_lewm_onboard_only.key_metrics_h8.palm_apple_median_m`, is the committed source of the "0.78 cm" later misread as perception.
+> - **S3-05 (mislabelled).** "encoded TARGET … what a *perfect* predictor could achieve" (L242–244, L262–263, L434–435) is not a lower bound. The rollout is closer to the truth than the encoded target on 47 / 32 / 49 / 36 % of moving windows (A/B/C/D). It is what a predictor that reproduced the encoded target latent would score. That 2.47 cm exceeds 1.5 cm still stands.
+> - **S3-06 (mislabelled).** "Rollout excess … the prediction step's own contribution" and "encoder share" are a difference and a ratio of two cohort medians. Errors are norms and do not add. The median of the per-window difference is 0.11 / 0.48 / 0.05 / 0.38 cm.
+> - **S3-07 (unverifiable).** L250–259 ("encoder improved 21 % / 24 %"; "rollout excess 0.39 → 1.06 cm, two to three times"; "the error moved out of the encoder and into the prediction") rest on v2 figures that no committed code computes (S2-08), and they compare differences of medians. The branch-2 decision does not depend on them, because it fires on G7a under the pre-declared ordering.
+> - **S3-10 (mislabelled).** G4 can be passed without a model. Predicting the apple at its rest height (constant 0) scores 0.362 cm on the same 2,398 windows, and the untrained step-0 checkpoints score 0.13–0.15 cm on the selection cohort. G4 is counted in the "8 / 10 / 10 / 10 of 13" totals and in the one-factor tallies. Without it the tallies are 8/12 and 4/5, and the reading is unchanged.
+> - **S3-11 (mislabelled, unmeasured).** "Most of that AUROC comes from the encoded state and the fused proprioception" (L367–369): shuffled actions are wrong, not absent, so this control cannot apportion the AUROC between state and action, and no h = 0 AUROC was computed. For scale, copying the true start apple height reaches AUROC 0.997.
+> - **S3-12 (mislabelled).** "The one place where v3 measures something better than v2" and "improved a lot over v2" (TASK-052) compare G6a, a new within-state statistic, with v2's cross-window ρ of 0.165. On v2's own statistic the v3 arms score 0.005 / 0.097 / 0.064 / 0.228. No improvement is measured.
+> - **S3-14 (mislabelled).** "The siblings' start states coincide exactly" (L331–332): the check compares one label, the palm–apple offset, and not the full state.
+> - **S3-16, S3-17, S3-18 (not citable).** The second agent's resampling (L208–212), the validation-curve numbers (L180–189, L373–380) and the other-horizon tables (L333–338, L358–363) exist only in git-ignored artifacts. The "unresolved" disagreement is settled by the audit's episode-clustered bootstrap: A − B +2.97 cm [+1.72, +4.52]; C − A −0.51 [−1.38, +0.40]; D − B −0.34 [−1.13, +0.08]. That supports the conservative reading adopted here, in which only A↔B exceeds sampling noise.
+
 **All four arms FAIL the preregistered gate set.** No arm passes the primary gate G1
 (median palm–apple readout error at h = 8 on moving windows, ≤ 1.5 cm): the best arm is
 3.30 cm, 2.2× the threshold. No arm passes G2a either, so **no arm beats its own

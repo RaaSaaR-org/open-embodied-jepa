@@ -1,5 +1,13 @@
 # Apple world model v3: preregistration (TASK-052)
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S3-06 / S2-08.** "About **89 %** of the rollout error is already in the encoding" is a ratio of two medians, built on v2 figures that were never committed. It is not a share of the error.
+> - **S3-13 (not citable).** No committed code or artifact holds the G6 null pass rates (1.0e-4 / 5.9 %). Only a uniformly random ranker was considered, and a model-free ranker that integrates the commanded actions was not tested. "Not passable by chance" does not mean "not passable without a learned model".
+
 This is the prospective protocol for the follow-up to TASK-050. It is committed before
 the frozen training runs. **Everything here is OFFLINE evaluation of learned models on
 recorded validation data.** No closed-loop control is run, and no number here is a

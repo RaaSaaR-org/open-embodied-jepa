@@ -118,3 +118,32 @@ manifest `benchmarks/manifests/apple-world-model-v4.json`, merged as `c5ec88c`.
 specific designs at one seed and one budget. What it establishes is that the pre-declared
 decision rule's condition was met and the rule is being followed rather than renegotiated
 after the fact. Learned Apple→Plate remains at 0 successes.
+
+**Erratum 2026-09-25 (TASK-058).** The decision stands. Its trigger, G2a, is correctly computed,
+and neither a copy-last nor a constant predictor passes it. The entry text above is kept as
+written. The audit [claim_audit_v1.md](experiments/claim_audit_v1.md) corrects how several of
+the supporting statements are read:
+
+- **"The untouched control passed more gates than every intervention" (S4-09).** The count is
+  right, 10 against 9. The difference is G6a at h = 16. At least three passes that every arm
+  shares are also cleared without a learned predictor: G4 by a constant zero-height
+  predictor, and G3 and G5 by copying the true simulator state forward.
+- **"All three v4 interventions also cost candidate ranking" (S4-10).** This holds at the gated
+  h = 16 only, on one seed and with no interval. At the planner's h = 8 (10 groups), E1 has the
+  highest ρ (0.50 against E0's 0.36).
+- **"The excess roughly tripling between v2 and v4" (S4-12, S3-07, S2-08).** The excess is the
+  difference between two medians. The v2 figures (3.26 / 0.39 cm) were never committed; a
+  TASK-058 re-run reproduces them. The median of the per-window excess is 0.47–0.53 cm in all
+  four v4 arms, including the control.
+- **"E3 +0.761 cm … E3 damaged the encoder" (S4-17).** The interval quoted is the rollout
+  contrast. The encoder evidence is the encoded-target contrast, +1.023 cm [+0.485, +1.435].
+- **"Motion-weighted readout shaping (v3, no help and it hurt candidate ranking)" (S4-24).** This
+  was one bundled factor: motion weighting together with auxiliary position targets. "Hurt
+  ranking" is a lower G6a on one seed.
+- **"Palm–apple offset read to 2.35–2.59 cm, against 3.13 cm at v2" (S4-18, S2-08).**
+  - The figure is correctly an encode-then-readout number, not a rollout.
+  - It covers the moving validation windows only. That split was also used for checkpoint
+    selection.
+  - The encoding includes fused proprioception.
+  - 2.35–2.40 cm is the start frame and 2.54–2.59 cm the target frame.
+  - The v2 3.13 cm is carried over, not recomputed. It is also not citable as recorded.

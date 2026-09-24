@@ -152,3 +152,7 @@ machine with a CPU-bound TASK-051. Checkpoints and reports under the main checko
   the resolution contrast is B<->D (not A<->D); and arm C removes the motion weighting together
   with the auxiliary readouts.
 %% mc-links: [[TASK-050]] %%
+
+## Erratum 2026-09-25 (TASK-058)
+
+The numerical-claim audit `docs/experiments/claim_audit_v1.md` corrects or withdraws readings recorded above. Rows: S3-05, S3-06, S3-07, S3-10 (G4 is passable by a constant), S3-11, S3-12 (the claim 'improved a lot over v2' is unmeasured). The evidence text above is unchanged. Each corrected source document carries a dated errata block.

@@ -1,5 +1,14 @@
 # Apple wide-jitter TRAIN corpus v1: results (TASK-048)
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S1-03 (mislabelled).** L128–131 read the 329 grasps and 468 failures as "grasp-phase outcomes on both sides of the success boundary". 154 of the 468 failures are episodes the velocity guard stopped (`guard_refused`). 96 of those are branches stopped before the 45-command close finished, so they are not completed failed grasps. The A4/A5 verdicts are unchanged.
+> - **S1-04 (mislabelled).** L60 "Branches dropped after grasp | 44" counts branches that latched grasp **and ended with the apple off the table** (apple z < 0.70 m; all 44 on the floor). It does not count every release after grasp.
+> - **S1-05, S1-06 (not citable).** The A6–A8 values (L107–109, L116–121) and the level/kind/failure-stage tables exist only in the git-ignored `collection_report.json`. The manifest holds only the A6–A8 booleans and the terminations.
+
 **Every preregistered acceptance check passed (A1–A13).** The corpus is
 accepted as the TASK-050 world-model-v2 training corpus.
 

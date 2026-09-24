@@ -1,5 +1,17 @@
 # Handover from TASK-056 to whoever takes TASK-057
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S6-07 (omission).** §1 gives only the controls' 0/16. The learned arms each grasped on one seed (A2/45100, A3/45006), lifted the apple ~17 cm, and were still in contact and undropped at the step cap. That is an end state only; continuity of contact is not measured. A3 reached `reach` on 4/16 seeds.
+> - **S6-10 / S6-12 (withdrawn as unmeasured).** §5's "sits at exactly 0.400 in 44.89 %" is an |dz| rate (+0.400 on only 18.45 %), and "every trained arm under-shoots it" is read off |dz| medians compared with a different population. See the errata of `apple_policy_v1_results.md`.
+> - **S6-04 (wrong).** "Every attempt hitting the 1000-step cap" (L101): A3 hit it on 14/16.
+> - **S6-16, S6-17 (not citable).** "~27 %" is `droll` only, and "91.78 %" is |grasp| = 1. The mass-at-max test (9×–242×) reproduces, but no committed code computes it.
+> - **S6-22 (not citable).** The retracted ejection figures rest on git-ignored traces. Their construction is corrected in S1-10.
+> - **S6-23 (wrong).** "Ten instances are recorded in full in §7 and §8" (L220, L236): the results document records **eleven**, in §13. "782 passed" has no artifact.
+
 Written for someone with **none** of TASK-056's context, because the alternative is that you
 reconstruct it wrongly. It does not design your task. It tells you what is measured, what is
 merely believed, and where the traps are.

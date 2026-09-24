@@ -1,5 +1,14 @@
 # Apple world model v2: preregistration (TASK-050)
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S2-22 (wrong).** L81–83 say "in 242 episodes". The count is **240**, recounted from the sidecar labels. The frame count, 32,961, is exact.
+> - **S2-18 (nit).** "max predicted apple_held over h = 32…64": the code slices predicted steps `[32:64]`, which is h = 33…64.
+> - **S2-24 (not citable).** The pilot figures (L338–379) exist only in git-ignored scratch metrics.
+
 This is the prospective protocol for roadmap step T3. It is committed before the
 frozen training runs. **Everything here is OFFLINE evaluation of learned models on
 recorded validation data.** No closed-loop control is run, and no number here is a

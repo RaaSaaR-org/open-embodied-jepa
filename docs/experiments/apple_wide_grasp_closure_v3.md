@@ -1,5 +1,12 @@
 # Apple wide-jitter grasp closure v3: preregistered protocol (TASK-051)
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S1-13 (wrong; amendment note to a frozen preregistration).** L208–211 ("the close phase no longer needs any prediction at all, because v3's closure is a fixed schedule in proprioception") and the L225 row ("**Nothing** | **close** | the closure is an open-loop proprioceptive primitive") are wrong about the implemented controller. `object_ceiling_v3._bounds` pins the lateral and rotational commands. It leaves the vertical command in [−`close_descent_bound`, 0] to the CEM on **every** close command, over exact MuJoCo rollouts, with a cost built from the true apple pose (`object_ceiling_v2.phase_costs`). The row should read: close: vertical palm command, from rollout-predicted palm-to-grasp-point height and apple disturbance, with lateral and rotation pinned. The gate and its verdict are unaffected.
+
 **Frozen before any attempt on the gate cohort 45200–45207.** Every arm here is a
 NON-LEARNED diagnostic. Nothing in this protocol is a learned result; learned
 Apple→Plate remains at zero successes, and TASK-033/TASK-034 stay open.

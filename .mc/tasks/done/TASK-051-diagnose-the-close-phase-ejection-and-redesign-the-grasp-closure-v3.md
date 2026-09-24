@@ -65,3 +65,7 @@ CPU. One command, 72 attempts (24 each of `demo_replay`, `scripted_oracle`, `pri
 
 ## Notes
 %% mc-links: [[TASK-049]] %%
+
+## Erratum 2026-09-25 (TASK-058)
+
+The numerical-claim audit `docs/experiments/claim_audit_v1.md` corrects or withdraws readings recorded above. Rows: S1-13 (wrong: the v3 closure is rollout-planned in the vertical command, not a fixed schedule; the line 'The close phase needs no prediction at all' is withdrawn), S1-10, S1-12, S1-16, S1-17. The evidence text above is unchanged. Each corrected source document carries a dated errata block.

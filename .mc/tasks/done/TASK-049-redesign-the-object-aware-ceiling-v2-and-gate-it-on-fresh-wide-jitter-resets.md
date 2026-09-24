@@ -61,3 +61,7 @@ Executed once from the clean tracked checkout `7b94f06410f8453d4cf2e88d67bccc968
 
 ## Notes
 %% mc-links: [[TASK-047]] %%
+
+## Erratum 2026-09-25 (TASK-058)
+
+The numerical-claim audit `docs/experiments/claim_audit_v1.md` corrects or withdraws readings recorded above. Rows: S1-09 (the v2 close push is transient, and contact is lost later), S1-19. The evidence text above is unchanged. Each corrected source document carries a dated errata block.
