@@ -1,0 +1,328 @@
+{
+  "abandonment_clause": "If G-SUB fails - no configuration, including all_translation, reaches 8/16 grasp resets - then no single command channel carries the failure and the preregistered Outcome D abandonment clause of apple_policy_v1.md section 7 fires AS WRITTEN. This control line stops on this corpus and this camera. No further loss, head or output-parameterisation variant is preregistered on it. The next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and reports and does not select the follow-up itself.",
+  "baselines": {
+    "B1_harness_soundness": {
+      "hold": "0/16",
+      "on_failure": "every number in this task is void",
+      "random": "0/16",
+      "scripted_oracle_grasp": ">= 14/16",
+      "scripted_oracle_success": ">= 12/16"
+    },
+    "B2_zero_substitution_control": "the 'none' configuration must reproduce outputs/task056-cohort-d/a2.json: same single grasp seed (45100), same 16 termination reasons, same executed-step counts. If the harness changes the pure-policy result the harness is a confound and the sweep is void. This is the control that makes G-SUB interpretable and the one most likely to be skipped.",
+    "B3_inert_probe_tripwire_RUN_FIRST": "the 'full' configuration (all seven dimensions from the shadow expert) must reach >= 14/16 grasp resets. If it does not, the substitution channel is not reaching the robot and the sweep is void before it starts. apple_policy_v1_results.md section 13 instance 9: a control whose output is indistinguishable from a real pass CONCEALS the class it was built to catch, so this one must fail loudly when inert.",
+    "B4_shadow_expert_is_not_an_input": "behavioural test that the shadow command is computed strictly after policy.act returns and is never an argument to it, plus the ast.walk form (its text-grep predecessor produced a false positive on a correct runner) asserting policy.py imports no label or truth module. G6's zero-privileged-reads rule applies to the CONTROLLER; in a substituted configuration the expert IS part of the commanded action, hence the labelling rule.",
+    "B5_standing_offline_anchor": "A1 0.011059 < A0 0.013129 < A2 0.017935 < A3 0.023404. The primary is third of four, beaten by the arm that never sees an image. Carried, not re-measured.",
+    "B6_does_the_learned_part_do_work": "NOT DEMONSTRATED, on any metric. This task does not attempt to establish it. Every probe is diagnostic and no result here may be reported as progress toward a learned result."
+  },
+  "budget": {
+    "device": "MPS/CPU only, Apple M5 Pro 48 GB",
+    "estimate_hours": 3.5,
+    "global_cap_seconds": 21600,
+    "note": "The parent protocol's 28800 s cap is not carried; each protocol freezes its own (docs/RESOURCES.md).",
+    "per_attempt_cap_seconds": 300,
+    "per_attempt_step_cap": 1000,
+    "trains_nothing": true
+  },
+  "cohort_discipline": {
+    "cohort_C": "NOT TOUCHED BY THIS TASK AT ANY STAGE. No gate references it. This protocol preregisters no use of it. The handover's blocking stored-values debt attaches to a runner that opens C; this protocol builds no such runner, so that debt does not land here and must not be discharged speculatively.",
+    "cohort_D_development_never_gating": [
+      45000,
+      45001,
+      45002,
+      45003,
+      45004,
+      45005,
+      45006,
+      45007,
+      45100,
+      45101,
+      45102,
+      45103,
+      45104,
+      45105,
+      45106,
+      45107
+    ],
+    "no_selection_on_D": "D is a mechanism instrument, not a scoreboard. No checkpoint is chosen, retrained or tuned against a D outcome.",
+    "substituted_numbers_are_never_learned_results": "Every configuration with a non-empty substitution set puts a privileged controller partly in command. Every number it produces is labelled non-learned in the table itself, not only in a footnote."
+  },
+  "committed_in_advance": "A rescue under expert substitution injects privileged information at 50 Hz, which the policy does not get. It shows WHICH CHANNEL the failure flows through; it does NOT show that a learned version of that channel is attainable. No D3 number may be read as evidence that a fix will work.",
+  "corrections_to_the_TASK_056_record_established_by_this_preregistration": {
+    "1_the_dz_hedging_mechanism_is_contradicted": "The expert's right_dz is a signed near-symmetric bang-bang: +0.400 on 18.45%, -0.400 on 26.44%, |dz|=0.400 on 44.89% (reproducing the committed rate exactly), MEAN -0.0012. The committed 44.89% is an ABSOLUTE-value rate. Offline, the trained heads reproduce the saturated command: median |dz| error 0.0133-0.0283 with predicted dz std 0.2656-0.2735 and predicted grasp std 0.971-0.979. A head hedging toward the interior would show a COMPRESSED output std and a LARGE error on saturated rows; it shows neither. Declared risk R5 did not occur. Separately, cloning.py calls smooth_l1_loss with default beta=1.0 and every residual is inside |x|<1, so the objective was pure L2 throughout and its minimizer is the conditional MEAN.",
+    "2_the_sign_of_every_TASK_056_command_is_unrecoverable": "scripts/evaluate_policy.py computed every stored command statistic from np.abs(...). Zero negative numbers exist anywhere in command_statistics across all 64 attempts. |dz| q50 = 0.0125 is equally consistent with descending slowly, ascending slowly and oscillating about zero; |grasp| q50 = 1.0 is equally consistent with a hand held fully OPEN - which is what the expert does through orient and descend - and one held fully closed. The under-shoot reading in apple_policy_v1_results.md section 16 and task056_handover.md section 5 is therefore UNMEASURED rather than refuted. This is why D1-grasp is the most informative probe here.",
+    "3_both_learned_arms_grasped_and_lifted_the_apple": "A2 on seed 45100 and A3 on seed 45006 each reached the scorer's grasp stage, lifted the apple +0.1678 m and +0.1694 m against a 0.05 m gate, and were STILL HOLDING IT, undropped, when the 1000-step cap ended the attempt. Neither reached transport. The 1/16 counts ARE in apple_policy_v1_results.md sections 14 and 16; the lift height, the sustained contact and the undropped state are nowhere in the record; and task056_handover.md gives neither arm's grasp count at all, stating only the controls' 0/16. The compression into the handover removed the run's single most encouraging measurement.",
+    "4_the_near_constant_reading_is_translation_only": "Median across attempts: dx q90/q50 1.00-1.22 and dz 1.01-1.32, versus droll q50 0.179-0.243, q90 0.478-0.498, q99 0.503-0.513 (ratio 2.05-2.67). Stated at that strength and no further: droll's out-of-distribution rate is 5-7% and its q90 sits at the 0.5 configured bound, which is LESS saturation than the expert's measured ~27% at |max|, so this is not roll running away. The observation is that the one dimension with real online variance is rotational, and it is the dimension with the SMALLEST offline error in Table A. Largest online/offline behavioural gap in the run, and not in the dimension the dz hypothesis pointed at.",
+    "5_scope_correction_on_the_control_arms": "A0 and A1: reach 0/16 each (latched; near = ||palm-apple|| <= 6.5 cm or hand_contact), hand_contact false at every attempt's end, final object_plate_distance_m within 0.1 mm of the report's own stored reset geometry on 16/16, and object_height_m a single value 0.766633 across all 32 attempts. Contact is the only route by which the robot can move the apple, so reach 0/32 establishes this independently of the distance statistic. A3 is NOT covered: its reach is 4/16 with five distinct heights. An earlier draft extended the statement to A3 from a mis-scoped count.",
+    "6_no_statement_that_every_attempt_hit_the_cap": "A3 had two guard_refusal terminations, on seeds 45001 (157 executed steps) and 45003 (143). They are physical stops, not cap hits."
+  },
+  "definitions_every_scope_term_used_in_a_gate_or_stop_rule": {
+    "arm": [
+      "A0_proprio_only",
+      "A1_random_encoder",
+      "A2_bc_frozen_e0",
+      "A3_bc_finetuned_e0"
+    ],
+    "arm_dimension": [
+      "dx",
+      "dy",
+      "dz",
+      "droll",
+      "dpitch",
+      "dyaw"
+    ],
+    "arm_dimension_note": "grasp is NEVER included in an arm-dimension aggregate and is always reported separately.",
+    "arm_note": "A4 is NOT an arm in this protocol. It is not built and this protocol does not propose building it.",
+    "attempt": "one closed-loop episode of one arm on one development seed under one named configuration, capped at 1000 executed commands",
+    "configuration": "the named subset of the seven free dimensions taken from the shadow expert; 'none' is empty, 'full' is all seven",
+    "control_arm": [
+      "A0_proprio_only",
+      "A1_random_encoder"
+    ],
+    "departure_at_step_t": "median over the six arm dimensions of |policy - shadow expert|",
+    "development_cohort": [
+      45000,
+      45001,
+      45002,
+      45003,
+      45004,
+      45005,
+      45006,
+      45007,
+      45100,
+      45101,
+      45102,
+      45103,
+      45104,
+      45105,
+      45106,
+      45107
+    ],
+    "grasp_reset": "a development seed on which the latched score['grasp'] is true at any point",
+    "primary_arm": [
+      "A2_bc_frozen_e0"
+    ],
+    "shadow_expert_command": "OracleManipulationPolicy(sim.task_truth()).action(robot) at indices (6,7,8,9,10,11,13), advanced by advance(result) on every executed step, computed strictly AFTER policy.act returns",
+    "step_zero_command": "the policy's 7-vector at the first act() call after robot.reset, before any execute()",
+    "why": "apple_policy_v1_results.md section 15: one undefined term ('learned arm', used thirteen times across the frozen artifacts, defined in none) decided whether an irreplaceable cohort would be consumed. Every scope term below is enumerated by name."
+  },
+  "engineering_constraints": {
+    "artifacts": "outputs/task057-diagnostics/. Nothing under data/, checkpoints/ or outputs/ is overwritten; the runner refuses to write over an existing path.",
+    "models_base_and_lewm_untouched": true,
+    "ordering_constraint_blocking": "D1, D2 and D3 run to completion BEFORE any edit to src/embodied_jepa/policy.py. ClonedPolicy.implementation_sha256 is sha256(policy.py) and load() refuses a mismatch - demonstrated, not theoretical (apple_policy_v1_results.md section 9: a source fix made all four checkpoints unloadable).",
+    "runner_changes_landed_with_this_preregistration": {
+      "per_dimension_clip_counts": "clipped_commands_per_dimension, alongside the any-dimension clipped_commands counter which keeps its former meaning exactly.",
+      "signed_per_dimension_logging": "command_statistics now records a 'signed' block per dimension ALONGSIDE the absolute fields, which keep their exact former values so reports stay comparable with TASK-056's. run_attempt also records first_command, the signed step-zero 7-vector.",
+      "stage_label_defect_WITHDRAWN": "A third requirement was proposed - that stages[t] is one step stale - and it is WRONG. scorer.evaluate() is the last statement of the loop body and robot.observe() the first of the next iteration, with nothing mutating the simulator between them, so the stage label is contemporaneous with the observation the command was computed from. Verified by tracing the ordering, not by reading. The claim is withdrawn rather than quietly dropped."
+    }
+  },
+  "frozen_D1_thresholds_three_times_table_A": {
+    "A0_proprio_only": {
+      "right_dpitch": 0.035328,
+      "right_droll": 0.029553000000000003,
+      "right_dx": 0.056873999999999994,
+      "right_dy": 0.05586000000000001,
+      "right_dyaw": 0.030162,
+      "right_dz": 0.047078999999999996
+    },
+    "A1_random_encoder": {
+      "right_dpitch": 0.029109,
+      "right_droll": 0.021765,
+      "right_dx": 0.06297,
+      "right_dy": 0.075132,
+      "right_dyaw": 0.020202,
+      "right_dz": 0.039981
+    },
+    "A2_bc_frozen_e0": {
+      "right_dpitch": 0.060222000000000005,
+      "right_droll": 0.037448999999999996,
+      "right_dx": 0.08144699999999999,
+      "right_dy": 0.086586,
+      "right_dyaw": 0.044229,
+      "right_dz": 0.059763000000000004
+    },
+    "A3_bc_finetuned_e0": {
+      "right_dpitch": 0.08327999999999999,
+      "right_droll": 0.056195999999999996,
+      "right_dx": 0.090867,
+      "right_dy": 0.084177,
+      "right_dyaw": 0.0645,
+      "right_dz": 0.08497199999999999
+    }
+  },
+  "frozen_D1_thresholds_three_times_table_A_note": "Derived from the ROUNDED Table A cells, which are the authority. Tripling an unrounded intermediate instead put the manifest 1e-6 out of agreement with its own table; a consistency test caught it before merge.",
+  "frozen_offline_error_table_A": {
+    "predicted_output_std": {
+      "A0_proprio_only": {
+        "right_dpitch": 0.190188,
+        "right_droll": 0.228657,
+        "right_dx": 0.160344,
+        "right_dy": 0.153921,
+        "right_dyaw": 0.105481,
+        "right_dz": 0.273488,
+        "right_grasp": 0.97942
+      },
+      "A1_random_encoder": {
+        "right_dpitch": 0.18809,
+        "right_droll": 0.231827,
+        "right_dx": 0.164477,
+        "right_dy": 0.15014,
+        "right_dyaw": 0.105059,
+        "right_dz": 0.273484,
+        "right_grasp": 0.977598
+      },
+      "A2_bc_frozen_e0": {
+        "right_dpitch": 0.195052,
+        "right_droll": 0.226441,
+        "right_dx": 0.161114,
+        "right_dy": 0.154288,
+        "right_dyaw": 0.102762,
+        "right_dz": 0.270837,
+        "right_grasp": 0.973685
+      },
+      "A3_bc_finetuned_e0": {
+        "right_dpitch": 0.178829,
+        "right_droll": 0.220689,
+        "right_dx": 0.150127,
+        "right_dy": 0.139683,
+        "right_dyaw": 0.085868,
+        "right_dz": 0.265636,
+        "right_grasp": 0.970933
+      }
+    },
+    "provenance": "re-derived by EXECUTING cloning.evaluate_policy against the four TASK-056 checkpoints; agreement with the training-time validation[best_step] record is float32 round-trip (max abs diff 3.6e-7/6.6e-7/6.9e-7/1.3e-7 for A0-A3; <=6e-8 on output std). Selection scores reproduce: A1 0.011059 < A0 0.013129 < A2 0.017935 < A3 0.023404.",
+    "spread_note": "0.00673 (A1 right_dyaw) to 0.03029 (A3 right_dx). This measured 4.50x spread is the justification for D1's 3x factor and was fixed before any probe runs.",
+    "spread_ratio": 4.498,
+    "values": {
+      "A0_proprio_only": {
+        "right_dpitch": 0.011776,
+        "right_droll": 0.009851,
+        "right_dx": 0.018958,
+        "right_dy": 0.01862,
+        "right_dyaw": 0.010054,
+        "right_dz": 0.015693,
+        "right_grasp": 0.01043
+      },
+      "A1_random_encoder": {
+        "right_dpitch": 0.009703,
+        "right_droll": 0.007255,
+        "right_dx": 0.02099,
+        "right_dy": 0.025044,
+        "right_dyaw": 0.006734,
+        "right_dz": 0.013327,
+        "right_grasp": 0.007306
+      },
+      "A2_bc_frozen_e0": {
+        "right_dpitch": 0.020074,
+        "right_droll": 0.012483,
+        "right_dx": 0.027149,
+        "right_dy": 0.028862,
+        "right_dyaw": 0.014743,
+        "right_dz": 0.019921,
+        "right_grasp": 0.009306
+      },
+      "A3_bc_finetuned_e0": {
+        "right_dpitch": 0.02776,
+        "right_droll": 0.018732,
+        "right_dx": 0.030289,
+        "right_dy": 0.028059,
+        "right_dyaw": 0.0215,
+        "right_dz": 0.028324,
+        "right_grasp": 0.01105
+      }
+    },
+    "what": "median |predicted - expert| per dimension on the val split, 7723 rows, 15 surviving val roots",
+    "withdrawal_clause_status": "DISCHARGED - the re-derivation agreed, so nothing is withdrawn"
+  },
+  "gates": {
+    "D1": {
+      "derivation": "the offline error is measured on recorded val frames at arbitrary phase; a reset frame is one specific in-distribution phase, so the claim tested is 'same order', not 'equal'. The per-dimension errors themselves span 4.50x, so a factor below 3 cannot be distinguished from ordinary per-dimension variation while 10x or more is unambiguous. A judgement call fixed before the numbers exist; realized ratios reported per dimension whatever they are.",
+      "rule": "passes for arm X iff, for EVERY one of the six arm dimensions, the median across the 16 seeds of |step-zero policy - shadow expert| is <= 3x X's own frozen_offline_error_table_A cell"
+    },
+    "D1_grasp": {
+      "rule": "a reported count 0-16 per arm",
+      "threshold": null
+    },
+    "D2": {
+      "determines_no_gate_outcome": true,
+      "is_a_gate": false,
+      "reading_fixed_in_advance": {
+        "gradual": "median first_departure_step >= 50",
+        "immediate": "<= 5",
+        "otherwise": "inconclusive, and reported as inconclusive"
+      },
+      "why_stated_this_way": "apple_policy_v1.md section 5.3 announced a rule was 'not a gate' and then decided gate outcomes through the missing-values rule (apple_policy_v1_results.md section 15). D2 feeds nothing."
+    },
+    "G_SUB": {
+      "derivation": "8/16 is the midpoint between the pure-policy 1/16 = 6.25% and the 100% ceiling, and sits above the demo_replay null of 33.3%, so a configuration that merely matches open-loop replay does not pass. THIS IS A MAGNITUDE THRESHOLD, NOT A SIGNIFICANCE THRESHOLD, and is not presented as one: against p0 = 1/3 the one-sided binomial probability of >= 8/16 is 0.189. D is a non-gating development cohort and no p-value from it is a result.",
+      "is_the_only_gate_with_a_threshold_that_can_stop_the_line": true,
+      "metric": "grasp resets out of 16, per configuration, A2 only",
+      "reference_points_fixed_before_the_run": {
+        "demo_replay_pooled_grasp": "8/24 = 33.3%",
+        "pure_policy_A2": "1/16 (outputs/task056-cohort-d/a2.json)",
+        "scripted_oracle": "24/24 pooled on three prior wide cohorts"
+      },
+      "rule": "passes iff at least one configuration reaches >= 8/16 grasp resets"
+    }
+  },
+  "missing_values": "A gate that cannot be evaluated counts as failed. D1 and G-SUB are the only gates.",
+  "not_done_declared": [
+    "any model, loss, head or output-parameterisation change",
+    "any retraining of any arm",
+    "A4 (still deferred, still not dropped)",
+    "cohort C",
+    "the test split (never decoded)",
+    "the on-policy-relabeling argument for a follow-up, which is recorded in the results document as a named candidate and deliberately NOT preregistered here"
+  ],
+  "predecessor": {
+    "outcome": "failed on the development stop rule; 0 full successes over 64 development attempts",
+    "protocol": "apple_policy_v1",
+    "task": "TASK-056"
+  },
+  "probes": {
+    "D1": "step-zero contrast: signed step-zero command vs shadow expert, 4 arms x 16 seeds",
+    "D1_grasp": "the expert's step-zero right_grasp is -1.0 exactly on every reset (scripted.py orient phase). Report per arm the count out of 16 where the step-zero policy grasp is > 0. NO THRESHOLD: the reference is known-correct.",
+    "D2": "divergence trace, 4 arms x 16 seeds x <=1000 steps, signed per-step logging of both commands plus ||palm-apple||, stage, step index",
+    "D2_named_traces": {
+      "contrast_rule": "the lowest-numbered seed of the same arm, chosen by rule rather than inspection so it cannot be picked after the traces are seen",
+      "declared_in_advance": true,
+      "failing_contrast": [
+        {
+          "arm": "A2_bc_frozen_e0",
+          "seed": 45000
+        },
+        {
+          "arm": "A3_bc_finetuned_e0",
+          "seed": 45000
+        }
+      ],
+      "reached_grasp": [
+        {
+          "arm": "A2_bc_frozen_e0",
+          "seed": 45100
+        },
+        {
+          "arm": "A3_bc_finetuned_e0",
+          "seed": 45006
+        }
+      ]
+    },
+    "D3": "per-dimension expert substitution, A2 only, 9 configurations x 16 seeds",
+    "no_dimension_is_privileged": "D2 and D3 report all seven dimensions. The protocol does NOT report dz preferentially: the largest online/offline behavioural gap in TASK-056 is in droll, not translation."
+  },
+  "process": {
+    "authorizations_in_order_neither_implying_the_next": [
+      "merge the preregistration on the reviewer's REPORTED APPROVE",
+      "start the diagnostic run"
+    ],
+    "merge_before_any_probe_runs": true,
+    "no_third_authorization_because_cohort_C_is_not_opened": true,
+    "one_task_one_agent": true,
+    "reported_verdicts_only": "A gated run starts only on the pre-run reviewer's REPORTED verdict, delivered as a message - never on a review file read from disk. The same rule applies to merging."
+  },
+  "protocol": "apple_policy_diagnostics_v1",
+  "status": "preregistration",
+  "success_clause": "Continues iff EITHER (a) D1 fails for >= 3 of the 4 arms, or D1-grasp returns a step-zero grasp sign error on >= 8/16 seeds for >= 3 of the 4 arms - follow-up is a pipeline audit and re-measurement, NOT a model change and NOT a retrain; OR (b) G-SUB passes, naming the failing channel. In both cases the follow-up is a NEW preregistration with its own gates and controls, never a build started inside this task.",
+  "supersedes_nothing": true,
+  "task": "TASK-057",
+  "what_this_task_is": "A DIAGNOSTIC task. It trains nothing, changes no model, and proposes no output-parameterisation change. Its only purpose is to locate the gap between TASK-056's near-perfect open-loop imitation and its closed-loop failure. Its single gate can fire the abandonment clause that apple_policy_v1.md section 7 already preregistered."
+}

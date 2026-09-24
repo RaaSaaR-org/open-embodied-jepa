@@ -190,14 +190,28 @@ def command_statistics(commands, stages):
     A POOLED figure across dimensions is uninterpretable and is not produced: translation
     saturation is unprecedented in the demonstrations while rotation saturation is normal at
     27%, and the grasp dimension is at its maximum 91.8% of the time by design.
+
+    **Every statistic above is computed from an ABSOLUTE value, and that destroys the sign.**
+    TASK-056 stored only these fields, so the direction of every command it issued is
+    unrecoverable from its reports: ``|dz| q50 = 0.0125`` is equally consistent with descending
+    slowly, ascending slowly and oscillating about zero, and ``|grasp| q50 = 1.0`` is equally
+    consistent with a hand held fully OPEN -- which is what the expert does through ``orient``
+    and ``descend`` -- and one held fully closed. A directional reading was published off these
+    numbers and could not have been supported by them.
+
+    So a ``signed`` block is recorded ALONGSIDE, never replacing: the absolute fields keep their
+    exact former values so reports stay comparable with TASK-056's, and the signed fields are
+    what makes a direction measurable at all.
     """
     commands = np.asarray(commands, np.float32)
     if not len(commands):
         return None
-    free = np.abs(commands[:, list(FREE_INDICES)])
+    signed_free = commands[:, list(FREE_INDICES)]
+    free = np.abs(signed_free)
     result = {"commands": int(len(commands)), "per_dimension": {}}
     for i, name in enumerate(FREE_NAMES):
         column = free[:, i]
+        signed = signed_free[:, i]
         result["per_dimension"][name] = {
             "expert_maximum": EXPERT_MAXIMUM[i],
             "out_of_distribution_rate": float((column > EXPERT_MAXIMUM[i] + 1e-6).mean()),
@@ -205,6 +219,21 @@ def command_statistics(commands, stages):
             "q50": float(np.quantile(column, 0.50)),
             "q90": float(np.quantile(column, 0.90)),
             "q99": float(np.quantile(column, 0.99)),
+            # Signed, and deliberately not summarized by |.| anywhere in this block. The mean
+            # and the two saturation rates are the quantities that separate "commands the
+            # boundary in one direction" from "oscillates across it", which no absolute
+            # statistic can do.
+            "signed": {
+                "mean": float(signed.mean()),
+                "q10": float(np.quantile(signed, 0.10)),
+                "q50": float(np.quantile(signed, 0.50)),
+                "q90": float(np.quantile(signed, 0.90)),
+                "min": float(signed.min()),
+                "max": float(signed.max()),
+                "rate_at_positive_maximum": float((signed >= EXPERT_MAXIMUM[i] - 1e-6).mean()),
+                "rate_at_negative_maximum": float((signed <= -EXPERT_MAXIMUM[i] + 1e-6).mean()),
+                "rate_positive": float((signed > 0).mean()),
+            },
         }
     # Stage concentration: the scorer's own stage flags are the only phase signal available in
     # closed loop. Scoring-only -- they never reach the policy.
@@ -224,7 +253,15 @@ def command_statistics(commands, stages):
 
 
 def clip_to_configured_bounds(action, lower, upper):
-    """Clip a policy command to the protocol's frozen bounds and verify the pinned parts."""
+    """Clip a policy command to the protocol's frozen bounds and verify the pinned parts.
+
+    Returns ``(clipped, was_clipped, per_dimension)``. ``was_clipped`` keeps its former
+    meaning exactly -- "any dimension of this command was reshaped" -- because the report's
+    ``clipped_commands`` counter is defined in terms of it. ``per_dimension`` is the free
+    components' own boolean mask, added because a single any-dimension count cannot recover a
+    per-dimension clip rate for translation, which ``apple_policy_v1_results.md`` 14.1 records
+    as a limitation of the instrument.
+    """
     from embodied_jepa.policy import PINNED_ACTION_VALUES
 
     action = np.asarray(action, np.float32)
@@ -237,7 +274,8 @@ def clip_to_configured_bounds(action, lower, upper):
                 "module pins it and the configured bounds freeze it"
             )
     clipped = np.clip(action, lower, upper).astype(np.float32)
-    return clipped, bool(np.any(clipped != action))
+    reshaped = clipped != action
+    return clipped, bool(np.any(reshaped)), reshaped[list(FREE_INDICES)].copy()
 
 
 def run_attempt(policy, robot, scorer, *, lower, upper, max_steps, deadline_seconds):
@@ -245,13 +283,21 @@ def run_attempt(policy, robot, scorer, *, lower, upper, max_steps, deadline_seco
     reason, score, clipped_commands, control_times = "step_limit", {}, 0, []
     executed = 0
     commands, stages = [], []
+    clipped_per_dimension = np.zeros(len(FREE_INDICES), np.int64)
+    first_command = None
     try:
         for _ in range(max_steps):
             began = time.perf_counter()
             observation = robot.observe()
             raw = policy.act(observation.images, observation.state)
-            command, was_clipped = clip_to_configured_bounds(raw, lower, upper)
+            command, was_clipped, clipped_dims = clip_to_configured_bounds(raw, lower, upper)
             clipped_commands += int(was_clipped)
+            clipped_per_dimension += clipped_dims.astype(np.int64)
+            if first_command is None:
+                # The step-ZERO command, signed and unreduced. At step zero nothing has
+                # compounded and the state is the reset state, so this is the one command whose
+                # correctness is decidable without a covariate-shift argument.
+                first_command = np.asarray(raw, np.float32)[list(FREE_INDICES)].copy()
             # The RAW command is recorded, before the bound reshapes it: the question is what
             # the policy asked for, not what the robot was allowed to do.
             commands.append(np.asarray(raw, np.float32).copy())
@@ -308,6 +354,12 @@ def run_attempt(policy, robot, scorer, *, lower, upper, max_steps, deadline_seco
         "termination_reason": reason,
         "executed_steps": executed,
         "clipped_commands": clipped_commands,
+        # Per dimension, alongside the any-dimension count above rather than replacing it.
+        "clipped_commands_per_dimension": dict(
+            zip(FREE_NAMES, (int(v) for v in clipped_per_dimension), strict=True)
+        ),
+        # Signed, for the step-zero contrast. None only if no command was ever issued.
+        "first_command": None if first_command is None else [float(v) for v in first_command],
         "command_statistics": command_statistics(commands, stages),
         "median_control_seconds": float(np.median(control_times)) if control_times else None,
         "max_control_seconds": float(np.max(control_times)) if control_times else None,

@@ -534,7 +534,7 @@ def test_the_runner_clips_to_the_protocols_bounds_not_the_contracts():
     saturated[6:12] = 1.0  # what a saturated head emits after act()'s contract clip
     saturated[12] = -1.0
     saturated[13] = 1.0
-    clipped, was_clipped = module.clip_to_configured_bounds(saturated, lower, upper)
+    clipped, was_clipped, _ = module.clip_to_configured_bounds(saturated, lower, upper)
 
     assert was_clipped is True
     assert np.all(clipped[6:12] == 0.5), "right-arm deltas must be clipped to the bound"
@@ -545,7 +545,7 @@ def test_the_runner_clips_to_the_protocols_bounds_not_the_contracts():
     inside = np.zeros(14, np.float32)
     inside[6:12] = 0.25
     inside[12] = -1.0
-    passed, touched = module.clip_to_configured_bounds(inside, lower, upper)
+    passed, touched, _ = module.clip_to_configured_bounds(inside, lower, upper)
     assert touched is False and np.array_equal(passed, inside)
 
 
@@ -808,3 +808,87 @@ def test_the_guard_refusal_list_matches_the_precedent_it_cites():
     from embodied_jepa.object_ceiling import GUARD_REFUSALS as CEILING
 
     assert module.GUARD_REFUSALS == CEILING == HYBRID
+
+
+def test_the_runner_records_the_step_zero_command_and_a_per_dimension_clip_count():
+    """TASK-057's two remaining instrument requirements, at ``run_attempt`` level.
+
+    Preserved properties, named because a fix is written under the belief the area has just
+    been understood and that belief suppresses the check:
+
+    * ``clipped_commands`` still counts commands where ANY dimension was reshaped -- the report
+      field is defined that way and TASK-056's numbers are stated in those terms;
+    * what reaches the embodiment is still the CLIPPED command.
+
+    Both are asserted here alongside the new fields rather than assumed from the older test.
+    """
+    import yaml
+
+    module = runner()
+    frozen = yaml.safe_load((ROOT / "configs" / "apple_wm_v4.yaml").read_text())["planner"]
+    lower = np.asarray(frozen["lower_bounds"], np.float32)
+    upper = np.asarray(frozen["upper_bounds"], np.float32)
+
+    executed = []
+
+    class Robot:
+        def observe(self):
+            return SimpleNamespace(images={}, state=None)
+
+        def project_candidates(self, candidates):
+            return SimpleNamespace(
+                feasible=np.ones((1, 1), bool), actions=np.asarray(candidates, np.float32)
+            )
+
+        def execute(self, action):
+            executed.append(np.asarray(action, np.float32).copy())
+            return SimpleNamespace(applied_action=action, status="ok", reason=None)
+
+        def stop(self, reason):
+            pass
+
+    class OneDimensionOverBound:
+        """Only dz exceeds the 0.5 bound; dx sits inside it. A pooled count cannot say which."""
+
+        def act(self, images, state):
+            action = np.zeros(14, np.float32)
+            action[6] = 0.25  # dx, inside the bound -> never clipped
+            action[8] = -1.0  # dz, below the bound -> clipped every step, downward
+            action[12] = -1.0
+            action[13] = -1.0  # hand OPEN, which |grasp| alone cannot distinguish from closed
+            return action
+
+    class Scorer:
+        def evaluate(self):
+            return {"success": False, "grasp": False}
+
+    result = module.run_attempt(
+        OneDimensionOverBound(),
+        Robot(),
+        Scorer(),
+        lower=lower,
+        upper=upper,
+        max_steps=4,
+        deadline_seconds=99.0,
+    )
+
+    # Preserved: the any-dimension counter, and the clipped command reaching the embodiment.
+    assert result["clipped_commands"] == 4
+    assert len(executed) == 4
+    for command in executed:
+        assert float(command[8]) == -0.5, "the embodiment received an unclipped dz"
+
+    # New: which dimension was clipped is now recoverable, and it is dz and not dx.
+    per_dimension = result["clipped_commands_per_dimension"]
+    assert per_dimension["dz"] == 4
+    assert per_dimension["dx"] == 0
+    assert per_dimension["dy"] == 0
+    assert sum(per_dimension.values()) == 4
+
+    # New: the step-zero command is stored SIGNED and before the bound reshapes it, so a
+    # descent is distinguishable from an ascent and an open hand from a closed one.
+    first = result["first_command"]
+    assert first is not None
+    assert first[module.FREE_NAMES.index("dz")] == pytest.approx(-1.0)
+    assert first[module.FREE_NAMES.index("grasp")] == pytest.approx(-1.0)
+    assert first[module.FREE_NAMES.index("dx")] == pytest.approx(0.25)

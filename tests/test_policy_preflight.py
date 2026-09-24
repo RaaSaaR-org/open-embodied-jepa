@@ -447,3 +447,134 @@ def test_the_clip_rate_cannot_see_the_out_of_distribution_band():
         "the out-of-distribution rate must exceed what a clip rate could see; if they are "
         "equal the (0.4, 0.5] band has been lost and the second statistic is pointless"
     )
+
+
+def test_the_absolute_statistics_cannot_tell_a_descent_from_an_ascent():
+    """TASK-057's blocking instrument requirement, discharged by exhibiting the failure.
+
+    Two command streams that are exact negations of each other -- one commanding the boundary
+    downward on every step, one commanding it upward -- must produce BYTE-IDENTICAL absolute
+    statistics, because every one of those fields is computed from ``np.abs``. That is the
+    defect: TASK-056 published a directional reading ("the policies under-shoot the descent")
+    off statistics that provably cannot distinguish descending from ascending.
+
+    The same pair must be separated by the signed block. Asserting both halves is the point --
+    a test that only checked the signed fields would not show WHY they are needed.
+    """
+    module = runner()
+
+    def stream(sign):
+        out = []
+        for value in (0.40, 0.40, 0.40, 0.10, 0.40):
+            action = np.zeros(14, np.float32)
+            action[8] = sign * value
+            action[12], action[13] = -1.0, sign * 1.0
+            out.append(action)
+        return out
+
+    stages = ["none"] * 5
+    down = module.command_statistics(stream(-1.0), stages)["per_dimension"]
+    up = module.command_statistics(stream(+1.0), stages)["per_dimension"]
+
+    absolute = ("expert_maximum", "out_of_distribution_rate", "max_abs", "q50", "q90", "q99")
+    for name in ("dz", "grasp"):
+        for field in absolute:
+            assert down[name][field] == up[name][field], (
+                f"{name}.{field} differs between a pure descent and a pure ascent, so this "
+                "test no longer demonstrates the limitation it exists to demonstrate"
+            )
+
+    # ... and the signed block separates exactly the pair the absolute fields cannot.
+    assert down["dz"]["signed"]["mean"] == pytest.approx(-0.34)
+    assert up["dz"]["signed"]["mean"] == pytest.approx(+0.34)
+    assert down["dz"]["signed"]["rate_at_negative_maximum"] == pytest.approx(0.8)
+    assert down["dz"]["signed"]["rate_at_positive_maximum"] == pytest.approx(0.0)
+    assert up["dz"]["signed"]["rate_at_positive_maximum"] == pytest.approx(0.8)
+    assert down["dz"]["signed"]["rate_positive"] == pytest.approx(0.0)
+    assert up["dz"]["signed"]["rate_positive"] == pytest.approx(1.0)
+    # The hand: fully open and fully closed are the case that was misread.
+    assert down["grasp"]["signed"]["q50"] == pytest.approx(-1.0)
+    assert up["grasp"]["signed"]["q50"] == pytest.approx(+1.0)
+
+
+def test_an_oscillating_command_is_distinguishable_from_a_steady_one():
+    """A mean near zero must not be reported the same way as a command that is near zero.
+
+    ``|dz| q50`` is 0.40 for a stream that alternates +-0.40 and 0.40 for one that holds
+    +0.40, so the absolute median cannot see the difference. The signed rates can, and this is
+    the case the closed-loop reading turns on: a policy oscillating about zero goes nowhere
+    while a policy committing to one direction travels.
+    """
+    module = runner()
+
+    def build(values):
+        out = []
+        for value in values:
+            action = np.zeros(14, np.float32)
+            action[8] = value
+            action[12], action[13] = -1.0, 1.0
+            out.append(action)
+        return out
+
+    stages = ["none"] * 4
+    osc = module.command_statistics(build([0.40, -0.40, 0.40, -0.40]), stages)["per_dimension"]
+    steady = module.command_statistics(build([0.40, 0.40, 0.40, 0.40]), stages)["per_dimension"]
+
+    assert osc["dz"]["q50"] == pytest.approx(steady["dz"]["q50"])
+    assert osc["dz"]["max_abs"] == pytest.approx(steady["dz"]["max_abs"])
+    assert osc["dz"]["signed"]["mean"] == pytest.approx(0.0)
+    assert steady["dz"]["signed"]["mean"] == pytest.approx(0.40)
+    assert osc["dz"]["signed"]["rate_at_negative_maximum"] == pytest.approx(0.5)
+    assert steady["dz"]["signed"]["rate_at_negative_maximum"] == pytest.approx(0.0)
+
+
+def test_the_diagnostics_manifest_pins_D1_thresholds_to_its_own_offline_table():
+    """TASK-057's D1 thresholds must be exactly 3x the frozen offline table, in the manifest.
+
+    The threshold and the table it derives from live in the same file, so they can drift apart
+    in a single edit and nothing would notice. apple_policy_v1_results.md section 15's finding
+    was that a frozen artifact's own internal consistency is not self-enforcing.
+
+    Also pins the two facts a later editor is most likely to soften: that cohort C is untouched,
+    and that the arm list is enumerated rather than named by a predicate.
+    """
+    manifest = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json").read_text()
+    )
+    table = manifest["frozen_offline_error_table_A"]["values"]
+    thresholds = manifest["frozen_D1_thresholds_three_times_table_A"]
+    arm_dimensions = manifest["definitions_every_scope_term_used_in_a_gate_or_stop_rule"][
+        "arm_dimension"
+    ]
+
+    assert set(thresholds) == set(table), "every arm needs a threshold row"
+    for arm, row in thresholds.items():
+        # Compared as sets: the manifest is serialized with sort_keys, so its key order is
+        # alphabetical and carries no meaning. What must hold is coverage, not order.
+        assert {d.removeprefix("right_") for d in row} == set(arm_dimensions), (
+            f"{arm}'s thresholds must cover the six arm dimensions and only those; grasp is "
+            "reported separately and has no threshold"
+        )
+        for dimension, value in row.items():
+            assert value == pytest.approx(3 * table[arm][dimension], rel=1e-9), (
+                f"{arm}.{dimension}: threshold {value} is not 3x its table cell "
+                f"{table[arm][dimension]}"
+            )
+
+    # The spread quoted as the derivation of the 3x factor must be the table's own spread.
+    flat = [v for row in table.values() for v in row.values()]
+    assert manifest["frozen_offline_error_table_A"]["spread_ratio"] == pytest.approx(
+        max(flat) / min(flat), rel=1e-3
+    )
+
+    # Cohort C is not referenced by any gate, and the arm list is enumerated.
+    assert manifest["definitions_every_scope_term_used_in_a_gate_or_stop_rule"]["arm"] == [
+        "A0_proprio_only",
+        "A1_random_encoder",
+        "A2_bc_frozen_e0",
+        "A3_bc_finetuned_e0",
+    ]
+    frozen_c = set(range(45300, 45340))
+    development = set(manifest["cohort_discipline"]["cohort_D_development_never_gating"])
+    assert not (development & frozen_c), "the development cohort must not intersect cohort C"
+    assert len(development) == 16
