@@ -163,8 +163,8 @@ Gates G1–G7 were **never evaluated**: no cohort-C attempt was ever run. No gat
 
 **Durable findings**, recorded in `docs/experiments/apple_policy_v1_results.md` §§14–17:
 
-- **The protocol gap.** "Learned arm" appears four times across the protocol and manifest and is
-  defined in none of them; the manifest tags A0/A1 as both `role: control` and `trains: true` and
+- **The protocol gap.** "Learned arm" is used seven times in the protocol and six times in the
+  manifest as frozen, and is defined in none of them; the manifest tags A0/A1 as both `role: control` and `trains: true` and
   the stop rule keys off neither. A preregistration that was gated, frozen and independently
   reviewed five times still contained one undefined term that decided the fate of a frozen cohort.
   Future protocols must define the domain of every scope term in a stop rule or gate by naming the

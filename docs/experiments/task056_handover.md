@@ -120,8 +120,9 @@ TASK-056's preregistration was written in advance, gated, **independently review
 and carries a frozen manifest with cohort hashes. It still contained **one undefined term that
 decided whether an irreplaceable frozen cohort would be consumed.**
 
-The stop rule says "every **learned arm** runs the 16 development resets." **"Learned arm" appears
-in four places across the protocol and manifest and is defined in none of them.** The manifest
+The stop rule says "every **learned arm** runs the 16 development resets." **The term is used
+seven times in the protocol and six times in the manifest as frozen, and is defined in none of
+them.** The manifest
 independently tags A0 and A1 `role: "control: …"` *and* `trains: true`; the stop rule keys off
 neither. So when both controls came back 0/16, the frozen text could not say whether they were
 subject to the rule.
@@ -130,6 +131,11 @@ Two internal tensions, true under either reading: `best_learned_arm_rule` select
 successes on C" and would overlap G2's own subtrahend; and a rule headed "**not a gate**"
 determines gate outcomes, because its consequence (`None` rows) routes through "a gate that
 cannot be evaluated counts as failed."
+
+Worse: mid-task, the executing agent wrote *both* "all four learned arms" (implying A0 and A1 are
+in) and "G2 (best learned arm − A0)" (implying A0 is out) into the same manifest, without noticing
+the contradiction. **A term nobody defined is a term everybody uses fluently while privately
+supplying a different meaning.**
 
 **For your protocol: define the domain of every scope term that appears in a stop rule or a gate,
 by naming the arms it covers, at the point the term is introduced.** "Every learned arm" reads as

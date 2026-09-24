@@ -601,8 +601,8 @@ Stage occupancy, in commands issued while the scorer reported that stage:
 | A2 | 15140 | 77 | 783 |
 | A3 | 12593 | 906 | 803 |
 
-Grasp occurred on seed 45006 for A2 and for A3. A3's two guard stops were seeds **45001** and
-**45003**, at 143 steps and later.
+Grasp occurred on seed **45100** for A2 and on seed **45006** for A3 — *different* resets. A3's
+two guard stops were seeds **45001** and **45003**, at 143 and 157 executed steps.
 
 Median control time per command: A0 12.1 ms, A1 13.6 ms, A2 13.6 ms, A3 13.8 ms. G7's threshold
 is 100 ms and **is not enforced on development**; this is the same quantity measured, recorded so
@@ -619,6 +619,10 @@ in 44.89 %** of the 68 791 BC target commands.
 | A1 | 0.0544 | 0.0548 | 0.3743 | 0.4136 | 0.0011 |
 | A2 | 0.0317 | 0.0343 | 0.3649 | 0.6070 | 0.0353 |
 | A3 | 0.0857 | 0.0890 | 0.3131 | 0.6490 | 0.0057 |
+
+Aggregation, stated so the table is reproducible: each quantile is the **median across the 16 attempts**
+of that attempt's own quantile; `max` is the maximum across attempts; the out-of-distribution rate is
+**command-weighted** across attempts.
 
 Rotation, the one family where the expert maximum and the configured bound coincide at 0.500 so
 **the out-of-distribution rate *is* the clip rate**: `droll` 0.0510 / 0.0726 / 0.0602 / 0.0856
@@ -645,20 +649,46 @@ The stop rule (§5.3 of the protocol, `/stop_rule_protecting_cohort_C` in the ma
 > every learned arm runs the 16 development resets D; an arm reaching the scorer's `grasp` stage
 > on 0/16 does **not** run on C
 
-**"Learned arm" appears in four places across the two frozen artifacts and is defined in none of
-them.** The manifest's `/arms` block independently tags A0 `"role": "control: the schedule
+**"Learned arm" is used seven times in the protocol and six times in the manifest as frozen at
+preregistration — thirteen uses — and is defined in none of them.** (The manifest now carries
+eleven; the five additional uses were written during the task, and §15.1 is about exactly that.) The manifest's `/arms` block independently tags A0 `"role": "control: the schedule
 alone"` and A1 `"role": "control: do any visual features suffice"`, while also tagging both
 `"trains": true`. **The stop rule keys off neither field.** So when both controls came back 0/16,
 the frozen text could not say whether they were subject to the rule — not because it said
 something ambiguous, but because it never addressed the question.
 
-Neither A0 nor A1 is named in the stop rule in either artifact. The only in-text signal about
-what "learned arm" ranges over is G6, which says "any **learned arm's** controller" and then
-states separately that "**The assertion covers A4**" — which speaks to A4's inclusion, not to the
-controls'. G2 and G3 contain no clause of any kind about what happens if their reference arm does
+Neither A0 nor A1 is named in the stop rule in either artifact. Within the **frozen** text the
+only signal about what "learned arm" ranges over is G6, which says "any **learned arm's**
+controller" and then states separately that "**The assertion covers A4**" — which speaks to A4's
+inclusion, not to the controls'. G2 and G3 contain no clause of any kind about what happens if their reference arm does
 not run. §7's pre-declared outcomes contain no outcome, sub-case or clause conditioned on a
 control being dead on development; its only sentence about an arm not running is "only P3 can
 drop an arm," and P3 drops A4.
+
+### 15.1 The term was used confidently by people who had not defined it — including here
+
+An independent review found that this section originally claimed G6 was *the only* in-text signal
+about the term's range, and that the claim was false. Two further uses exist in this manifest:
+
+- `/results/A4_deferred_not_abandoned`: "If **all four learned arms** die on development, A4 is
+  the next thing built." With five arms declared and A4 marked `trains: false`, "all four learned
+  arms" states plainly that **A0 and A1 are learned arms** — the reading under which the controls
+  *are* subject to the stop rule.
+- `/results/observations/A0_is_now_the_most_informative_arm`: "G2 (best **learned arm** − A0)",
+  which sets A0 against the class rather than inside it, and so points the other way.
+
+**Neither is frozen text.** Both live under `/results`, which is written *during* the task; the
+preregistered manifest at `3006b3b` contains neither, and used the term six times rather than
+eleven. So they cannot settle what the preregistration meant, and the closure decision does not
+rest on them — the branch they point to is the one this section already traces to G2 and G3
+losing their reference terms.
+
+**They are recorded because of what they show.** Both sentences were written by the executing
+agent, mid-task, using "learned arm" as though its extension were obvious — and contradicting
+each other within one file. **That is how an undefined term survives five review rounds: everyone
+uses it fluently, nobody notices they are each supplying their own definition, and the
+disagreement only surfaces when a result depends on it.** The original claim of emptiness in this
+section was itself an instance of the same reflex — asserting a scope without checking it.
 
 Two internal tensions, recorded verbatim because both exist under either reading:
 
@@ -696,8 +726,10 @@ not already picked a reading.
 **No arm distinguished itself from the no-vision control on task outcome.** A2, the preregistered
 primary, and A3 each reached grasp once in sixteen; A0 and A1 never left stage `none`. The
 offline selection scores had already put A2 third of four, behind both controls (§12). Cohort D
-does not predict cohort C and no gate was evaluated, so this is not a gate result — but there is
-no development evidence that the primary arm does anything the blind control does not.
+does not predict cohort C and no gate was evaluated, so this is not a gate result. The one difference
+that exists is that A2 and A3 reached grasp at all and the two controls never did: **1/16 against
+0/16, a single reset each.** That is a difference of one attempt, on 16 attempts, with no interval
+that would separate it from noise and no success behind it.
 
 **The dz prediction was made in advance and is borne out, at that strength and no further.**
 Every arm's median dz sits between 0.012 and 0.086 against an expert that spends 44.89 % of its
@@ -752,6 +784,10 @@ consuming frozen evidence, it was already consumed before this task began, and t
 states it "never gates and is never reported as a result." Re-running A3 on D is not re-running a
 result, because D is not a result. **The hazard this rule guards against bites when the numbers
 are evidence; these are not.** The same change against cohort C would have been refused.
+
+**`a3.json` carries `source.dirty: true`; the other three do not.** A3's report was produced with the
+fix applied but not yet committed (all four record revision `103b14f`). That is the honest record
+of when it ran, and it is stated here rather than left for a reader to notice in the JSON.
 
 **Unplanned cross-check.** Before the fix existed, A3 was probed as 16 independent single-seed
 runs to find which seeds tripped the stop. The fixed runner's 16-attempt report reproduces those
