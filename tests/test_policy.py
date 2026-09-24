@@ -9,6 +9,7 @@ error happens to look small.
 
 from __future__ import annotations
 
+import ast
 import json
 from pathlib import Path
 
@@ -487,3 +488,122 @@ def test_the_control_loop_does_not_build_an_autograd_graph():
     )
     p.predict_free({"onboard_rgb": np.zeros((1, 2, 2, 3), np.uint8)}, state)
     assert source.last_inference is True, "the control loop must request inference"
+
+
+# ---------------------------------------------------------------------------------------
+# Behavioural tests for scripts/evaluate_policy.py, replacing the two source-text tripwires
+# now that the runner exists -- the debt recorded against them in
+# benchmarks/manifests/apple-policy-v1.json, come due.
+#
+# They live HERE and not in tests/test_policy_preflight.py because importing the runner pulls
+# in embodied_jepa.policy and therefore torch, and that file is deliberately torch-free so it
+# runs in the core CI job. This file already guards with importorskip("torch").
+#
+# One of the two cannot be written in its intended form: the "resets cohort C from stored
+# values" check has no cohort-C code path to exercise, because the runner REFUSES cohort C.
+# What is asserted instead is that refusal, and the stored-values behavioural test is STILL
+# OWED when cohort-C support is built.
+# ---------------------------------------------------------------------------------------
+EVALUATE_POLICY = ROOT / "scripts" / "evaluate_policy.py"
+
+
+def runner():
+    """Import the runner by path; it is a script, not a package module."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("_evaluate_policy", EVALUATE_POLICY)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_the_runner_clips_to_the_protocols_bounds_not_the_contracts():
+    """BEHAVIOURAL, replacing the text tripwire.
+
+    ``ClonedPolicy.act`` clips to the contract's [-1, 1]; the protocol's frozen right-arm
+    bounds are +-0.5. A runner executing a policy's raw output would command twice the delta
+    every prior generation operated under, and the action would still be contract-valid, so
+    nothing downstream would object.
+    """
+    module = runner()
+    lower = np.array([0.0] * 6 + [-0.5] * 6 + [-1.0, -1.0], np.float32)
+    upper = np.array([0.0] * 6 + [0.5] * 6 + [-1.0, 1.0], np.float32)
+
+    saturated = np.zeros(14, np.float32)
+    saturated[6:12] = 1.0  # what a saturated head emits after act()'s contract clip
+    saturated[12] = -1.0
+    saturated[13] = 1.0
+    clipped, was_clipped = module.clip_to_configured_bounds(saturated, lower, upper)
+
+    assert was_clipped is True
+    assert np.all(clipped[6:12] == 0.5), "right-arm deltas must be clipped to the bound"
+    assert clipped[13] == 1.0, "the grasp bound is +-1 and must not be narrowed"
+    assert np.all(clipped[:6] == 0.0) and clipped[12] == -1.0
+
+    # A command already inside the bounds is passed through untouched and not counted.
+    inside = np.zeros(14, np.float32)
+    inside[6:12] = 0.25
+    inside[12] = -1.0
+    passed, touched = module.clip_to_configured_bounds(inside, lower, upper)
+    assert touched is False and np.array_equal(passed, inside)
+
+
+def test_the_runner_rejects_a_command_that_moves_a_pinned_component():
+    """The pinned components are frozen by the bounds AND by the policy module."""
+    module = runner()
+    lower = np.array([0.0] * 6 + [-0.5] * 6 + [-1.0, -1.0], np.float32)
+    upper = np.array([0.0] * 6 + [0.5] * 6 + [-1.0, 1.0], np.float32)
+    rogue = np.zeros(14, np.float32)
+    rogue[0] = 0.3  # a left-arm delta, which nothing in this protocol may command
+    with pytest.raises(ContractError, match="pinned component"):
+        module.clip_to_configured_bounds(rogue, lower, upper)
+
+
+def test_the_runner_refuses_the_frozen_cohort():
+    """BEHAVIOURAL, and the strongest guarantee available at this scope.
+
+    The stored-values test cannot be written yet -- there is no cohort-C code path to
+    exercise, because this runner refuses cohort C outright. That refusal is what is asserted
+    here. **The stored-values behavioural test is still owed** when cohort-C support is built;
+    see benchmarks/manifests/apple-policy-v1.json.
+    """
+    module = runner()
+    assert set(module.COHORT_C) == set(range(45300, 45340))
+    assert not set(module.COHORT_D) & set(module.COHORT_C)
+
+    with pytest.raises(ContractError, match="FROZEN gating cohort"):
+        module.cohort_resets((45300,))
+    with pytest.raises(ContractError, match="FROZEN gating cohort"):
+        module.cohort_resets((45000, 45339))  # one development seed does not excuse the other
+
+    development = module.cohort_resets(module.COHORT_D)
+    assert len(development) == 16
+
+
+def test_the_runner_imports_the_committed_reset_rule_rather_than_reimplementing_it():
+    """The one tripwire hole a parser cannot close.
+
+    A reimplementation of ``default_rng(seed).uniform(...)`` references nothing and would
+    silently produce a different cohort. This asserts the runner's resets equal the committed
+    generator's, and that the runner contains no reset arithmetic of its own.
+    """
+    module = runner()
+    evaluator = module.load_wide_reset()
+    for seed in (45000, 45107):
+        assert module.cohort_resets((seed,))[seed] == evaluator(seed)
+
+    # PARSED, not grepped -- and this test caught itself making that mistake. The first
+    # version checked for the TEXT "default_rng", which fired on the runner's own docstring
+    # explaining what it must not do: the exact false positive that was removed from the
+    # tripwire one commit earlier, reintroduced in the test replacing it.
+    called = set()
+    for node in ast.walk(ast.parse(source := EVALUATE_POLICY.read_text())):
+        if isinstance(node, ast.Call):
+            func = node.func
+            called.add(func.id if isinstance(func, ast.Name) else getattr(func, "attr", ""))
+    assert "default_rng" not in called, (
+        "scripts/evaluate_policy.py calls default_rng: the reset rule must be IMPORTED from "
+        "the committed generator, never reimplemented. A reimplementation references nothing "
+        "and no parser can catch it."
+    )
+    assert "wide_reset" in source, "the committed generator must be reached by name"

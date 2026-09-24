@@ -399,7 +399,7 @@ they are worth listing together because the shape repeats and the surface change
    fixtures could not reach**, which is instance 4 again one level down. The repair splits the
    comparison around the restore, which is also strictly stronger: afterwards the digest asserts
    *"the encoder in memory is byte-identical to the one that trained this head"*.
-7. One of those tripwires then **fired on a *correct* runner**, because a text grep matched a
+8. One of those tripwires then **fired on a *correct* runner**, because a text grep matched a
    docstring explaining what the runner does *not* do. A false positive is not a weaker version
    of the right check; it is a different and worse thing, because it punishes whoever got it
    right and the cheapest way out is to delete the test. Replaced with an `ast.walk` over `Call`
