@@ -556,12 +556,33 @@ they are worth listing together because the shape repeats and the surface change
     had solved this, and a grep for the error string — which is how it was eventually found —
     would have surfaced both before the runner was written.
 
+11. **The commit that fixed findings B1–B3 introduced two new errors of exactly the two classes it
+    was fixing**, and the independent review blocked it a second time. A wrong per-seed number
+    went into the section headed "This section contains no interpretation": A3's two guard stops
+    were paired with their step counts **backwards** (45001 is 157 steps, 45003 is 143). The
+    wording it replaced — "at 143 steps and later" — had been vague but *true*. And the corrected
+    count of an undefined term went stale **inside the commit that corrected it**: the text said
+    the manifest "now carries eleven" while that same commit pushed it to fifteen, because the
+    record of the problem itself uses the term four more times. Two durable forms. **Vagueness is
+    sometimes load-bearing** — replacing an imprecise true statement with a precise one is a
+    change that can fail, and it must be checked as one rather than waved through as tidying.
+    And **never state a live count of a document inside that document**: the figure is falsified
+    by its own next edit. Only a count at a named immutable revision is stable, so the corrected
+    text quotes `3006b3b` and quotes no running total at all.
+
 The common form of instances 1–9: **verifying that something produces a plausible value does not
 verify that it computes the quantity you believe it computes.** Every one of those was caught by
 someone checking construction rather than output, and none would have been caught by more careful
-reading of the numbers. **Instance 10 is not of that family** — it was caught by a robot refusing
-to move — and it is left outside the generalization rather than folded into it, because a summary
-that covers every instance by widening its own claim is the same error the list is about.
+reading of the numbers. **Instances 10 and 11 are not of that family** — 10 was caught
+by a robot refusing to move, 11 by a reviewer re-reading a fix — and they are left outside the
+generalization rather than folded into it, because a summary that covers every instance by
+widening its own claim is the same error the list is about.
+
+**Instance 11 is the one that should be read last.** It is the pattern named at the head of this
+list happening to the document that names it: a defect introduced by the work of fixing a defect,
+in the section about that exact failure. It was caught only because the reviewer applied the same
+standard to the correction as to the thing corrected, which is the habit worth taking from all
+eleven.
 
 That is the argument for the ordering this protocol uses — build, review, merge, *then* train —
 and it is recorded here rather than left in a message, because the next person to run a stage of
@@ -602,7 +623,7 @@ Stage occupancy, in commands issued while the scorer reported that stage:
 | A3 | 12593 | 906 | 803 |
 
 Grasp occurred on seed **45100** for A2 and on seed **45006** for A3 — *different* resets. A3's
-two guard stops were seeds **45001** and **45003**, at 143 and 157 executed steps.
+two guard stops were seeds **45001** (157 executed steps) and **45003** (143).
 
 Median control time per command: A0 12.1 ms, A1 13.6 ms, A2 13.6 ms, A3 13.8 ms. G7's threshold
 is 100 ms and **is not enforced on development**; this is the same quantity measured, recorded so
@@ -650,8 +671,11 @@ The stop rule (§5.3 of the protocol, `/stop_rule_protecting_cohort_C` in the ma
 > on 0/16 does **not** run on C
 
 **"Learned arm" is used seven times in the protocol and six times in the manifest as frozen at
-preregistration — thirteen uses — and is defined in none of them.** (The manifest now carries
-eleven; the five additional uses were written during the task, and §15.1 is about exactly that.) The manifest's `/arms` block independently tags A0 `"role": "control: the schedule
+preregistration (`3006b3b`) — thirteen uses — and is defined in none of them.** The manifest has
+since accumulated further uses, including this record of the problem; §15.1 is about exactly that.
+**No running total of the current file is quoted here**, because a live count of a document stated
+inside that document is falsified by its own next edit — which is how the figure in this sentence
+was wrong once already. The manifest's `/arms` block independently tags A0 `"role": "control: the schedule
 alone"` and A1 `"role": "control: do any visual features suffice"`, while also tagging both
 `"trains": true`. **The stop rule keys off neither field.** So when both controls came back 0/16,
 the frozen text could not say whether they were subject to the rule — not because it said
@@ -678,8 +702,8 @@ about the term's range, and that the claim was false. Two further uses exist in 
   which sets A0 against the class rather than inside it, and so points the other way.
 
 **Neither is frozen text.** Both live under `/results`, which is written *during* the task; the
-preregistered manifest at `3006b3b` contains neither, and used the term six times rather than
-eleven. So they cannot settle what the preregistration meant, and the closure decision does not
+preregistered manifest at `3006b3b` contains neither, and used the term six times — against a
+current count that keeps rising as records like this one are added. So they cannot settle what the preregistration meant, and the closure decision does not
 rest on them — the branch they point to is the one this section already traces to G2 and G3
 losing their reference terms.
 
