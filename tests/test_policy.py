@@ -12,6 +12,7 @@ from __future__ import annotations
 import ast
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -546,6 +547,80 @@ def test_the_runner_clips_to_the_protocols_bounds_not_the_contracts():
     inside[12] = -1.0
     passed, touched = module.clip_to_configured_bounds(inside, lower, upper)
     assert touched is False and np.array_equal(passed, inside)
+
+
+def test_the_live_loop_executes_the_CLIPPED_command_not_the_raw_one():
+    """The debt the manifest calls blocking, discharged at the level it specifies.
+
+    The manifest requires asserting "what ACTUALLY REACHES THE EMBODIMENT is clipped to the
+    bound". A test of ``clip_to_configured_bounds`` alone does not do that: an independent
+    probe changed ``run_attempt`` to project and execute the RAW command while still counting
+    the clip, and the entire suite stayed green at 782 passed while the robot received twice
+    the configured delta and the report's clip counter actively lied.
+
+    Bounds are read from the frozen config rather than restated here, so a widened config
+    cannot pass silently.
+    """
+    import yaml
+
+    module = runner()
+    frozen = yaml.safe_load((ROOT / "configs" / "apple_wm_v4.yaml").read_text())["planner"]
+    lower = np.asarray(frozen["lower_bounds"], np.float32)
+    upper = np.asarray(frozen["upper_bounds"], np.float32)
+    assert float(upper[6]) == 0.5, "the frozen right-arm bound is the thing under test"
+
+    executed = []
+
+    class Robot:
+        def observe(self):
+            return SimpleNamespace(images={}, state=None)
+
+        def project_candidates(self, candidates):
+            # The real projection only ever scales arm deltas toward zero, so passing the
+            # candidate through is the permissive case: if the loop is wrong, it shows here.
+            return SimpleNamespace(
+                feasible=np.ones((1, 1), bool), actions=np.asarray(candidates, np.float32)
+            )
+
+        def execute(self, action):
+            executed.append(np.asarray(action, np.float32).copy())
+            return SimpleNamespace(applied_action=action, status="ok", reason=None)
+
+        def stop(self, reason):
+            pass
+
+    class Saturated:
+        """What a saturated head emits after act()'s contract clip to [-1, 1]."""
+
+        def act(self, images, state):
+            action = np.zeros(14, np.float32)
+            action[6:12] = 1.0
+            action[12] = -1.0
+            action[13] = 1.0
+            return action
+
+    class Scorer:
+        def evaluate(self):
+            return {"success": False, "grasp": False}
+
+    result = module.run_attempt(
+        Saturated(),
+        Robot(),
+        Scorer(),
+        lower=lower,
+        upper=upper,
+        max_steps=3,
+        deadline_seconds=99.0,
+    )
+
+    assert len(executed) == 3
+    for command in executed:
+        assert float(np.abs(command[6:12]).max()) == 0.5, (
+            "the embodiment received an unclipped right-arm delta: the loop is executing the "
+            "raw command, not the clipped one"
+        )
+        assert float(command[13]) == 1.0, "the grasp bound is +-1 and must not be narrowed"
+    assert result["clipped_commands"] == 3
 
 
 def test_the_runner_rejects_a_command_that_moves_a_pinned_component():

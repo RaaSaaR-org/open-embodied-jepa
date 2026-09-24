@@ -296,6 +296,13 @@ inside its run (42 000/50 000, 40 000/50 000, 26 000/50 000). A3 used 207 s of a
 retrained** — altering either after seeing the ordering is exactly what the protocol forbids.
 This is recorded as a limitation that travels with A3's reading wherever it is used.
 
+**Both controls beat the primary arm.** The offline selection scores, lower better, are
+**A1 0.01106 < A0 0.01313 < A2 0.01793 < A3 0.02340**. So A2, the preregistered primary, is
+third of four — beaten not only by the random-encoder control but by **A0, which sees no image
+at all**. A0 versus the best learned arm is the offline shadow of gate G2, and on this metric it
+points the wrong way for the hypothesis. Stated here because an earlier version of this section
+named only the A1 result and printed no scores, so a reader could not see where A2 sat.
+
 **The A1 < A2 ordering is left as an open question.** A randomly initialized frozen encoder
 scoring better than the trained one on the offline metric is not explained here. A plausible
 story exists — the head may ignore the image in both cases, and A1's less structured features
@@ -399,6 +406,18 @@ they are worth listing together because the shape repeats and the surface change
    fixtures could not reach**, which is instance 4 again one level down. The repair splits the
    comparison around the restore, which is also strictly stronger: afterwards the digest asserts
    *"the encoder in memory is byte-identical to the one that trained this head"*.
+7. The runner's new behavioural tests were added to `tests/test_policy_preflight.py`, which is
+   **deliberately torch-free** so it runs in the core CI job. Importing the runner pulls in
+   `embodied_jepa.policy` and therefore torch, so the whole file failed on both core jobs while
+   the local suite was green at 782 — because this machine has the optional `learning` extra
+   installed and the core job does not. Same family as instance 2: **a green local suite is not
+   evidence for a claim about an environment you are not in, and you are in fewer environments
+   than you think.** The durable fix is not "remember this": the core environment is now
+   reproducible locally by blocking `torch` through `sys.meta_path`, which takes seconds and
+   would have caught it before the push. *The commit that fixed this claimed in its message to
+   have recorded the lesson here and did not — the renumber landed and the entry did not. An
+   independent review caught the gap. That is itself the pattern, so it is recorded rather than
+   silently repaired.*
 8. One of those tripwires then **fired on a *correct* runner**, because a text grep matched a
    docstring explaining what the runner does *not* do. A false positive is not a weaker version
    of the right check; it is a different and worse thing, because it punishes whoever got it
