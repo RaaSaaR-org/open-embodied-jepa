@@ -4,7 +4,7 @@ aliases:
 - TASK-058
 title: Audit every accepted numerical claim in the experiment record against the code that computes it
 slug: audit-every-accepted-numerical-claim-against-the-code-that-computes-it
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -17,8 +17,9 @@ sprint: ''
 depends_on: []
 due_date: ''
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-25
 ---
+
 
 
 
@@ -139,3 +140,16 @@ protocol.
   git-ignored data; no simulation or training was run.
 - **Not edited.** CLAUDE.md (agent configuration, which repeats the 0/150 and "every attempt"
   wording), `src/` docstrings (implementation hashes), and manifests.
+- 2026-09-25: Merged as PR #42 (https://github.com/RaaSaaR-org/open-embodied-jepa/pull/42),
+  squash commit `34bac32`. CI was green on the final head `6c0b997`. An independent
+  reviewer's first verdict was REQUEST_CHANGES: three blocking findings (the MVP guard-stop
+  wording, the D1 consequence stated too strongly, and the README's 3.13 cm figure) and seven
+  non-blocking ones. All were fixed in `6c0b997`. The re-review verdict was APPROVE.
+- Known residuals, non-blocking and not fixed: the README's per-episode MVP medians and maximum
+  (3–15, max 170) come from git-ignored `outputs/mvp-v0-*/episode-*/episode.json`, and the
+  reviewer's S5-10 exact-definition figures come from an uncommitted scratch script. Both are
+  **not citable**, and neither is yet in the audit's consolidated not-citable list.
+- Handed to the TASK-057 owner, not done here: amend `apple_policy_diagnostics_v1.md` for
+  S6-29 (shadow expert `apple_collector_policy`, 745 commands), the Table E phase names, the
+  S6-26 "bracketed by" wording, and §1.1(c)/§1.5 "near-constant command" (magnitude only).
+  The CLAUDE.md 0/150 and "every attempt" wording (S4-25, L-01) is left to the maintainer.
