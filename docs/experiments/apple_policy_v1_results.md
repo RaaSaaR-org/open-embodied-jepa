@@ -243,7 +243,61 @@ too small to feel like it needed verification. The nesting now carries a comment
 must stay nested. All four load properties were then verified directly on the real backend:
 A2→A2 loads, A2→A1 refuses, A3→fresh-E0 loads, A3→frozen refuses.
 
-## 8. Process notes
+## 8. The most serious defect found in this task, and its class
+
+**A type coercion could have silently consumed the frozen cohort.**
+
+`scripts/evaluate_policy.py` refused cohort C by testing `set(seeds) & set(COHORT_C)` — **before**
+coercing the seeds to `int`. `"45300"` is not equal to `45300`, so the intersection was empty, and
+the coercion that followed produced the frozen reset. Verified: the string form returned exactly
+the manifest's stored `resets["45300"]`.
+
+**This is categorically worse than every other defect in this protocol.** The others produce a
+wrong number or a failed load — visible, recoverable, costing a day. This one consumes cohort C,
+which is **unrecoverable**: there is no re-running a cohort whose whole value is never having been
+seen. Cohort C is gated behind three separate authorizations precisely because opening it cannot be
+undone, and a type coercion could have walked through all three without any of them being asked.
+
+**The class, which is the part worth carrying:**
+
+> **A guard that enumerates what is FORBIDDEN fails open. A guard that enumerates what is
+> PERMITTED fails closed.**
+
+The original guard was a blacklist of cohort C. It would equally have admitted 45400, 46000, or
+any seed nobody thought to forbid — and the report hard-codes `"cohort": "D_development_never_gating"`,
+so such a run would have been *filed as development data*. The replacement is a whitelist of
+cohort D, and it is right not because it happens to catch the string case but because **refusal is
+its default**.
+
+Both are now tested at the type boundary — `int`, `str`, `float`, `np.int64`, `np.int32`, `bool`,
+whitespace — including that legitimate non-canonical forms of a *permitted* seed are still
+accepted, since a guard that refuses valid input is a different defect rather than extra safety.
+Each guard was verified by **injecting its own violation and watching the test fail**: restoring
+the blacklist, and restoring membership-before-coercion, each break the test.
+
+**No cohort-C seed has ever been simulated.** The defect was found by independent review before the
+runner was used for anything.
+
+## 9. Two demonstrations that the integrity machinery works
+
+**The implementation-hash guard refused to let a source change re-interpret historical
+checkpoints.** The clean fix for the mutating-digest defect was a helper in `models/../policy.py`;
+applying it changed that file's `implementation_sha256`, and **all four trained checkpoints
+immediately became unloadable.** That is the guard doing exactly its job — a later source fix does
+not make a historical checkpoint compatible. Found by attempting the refactor, not by reasoning
+about it. The minimal non-mutating fix was used instead and the clean refactor is recorded as owed,
+belonging with a retrain.
+
+**A test that claimed to discharge a preregistered debt did not, and an injected violation proved
+it.** The clipping test exercised a helper, never the control loop. The reviewer changed
+`run_attempt` to execute the raw command while still counting the clip: the robot received twice
+the configured delta, the report's counter actively lied, and **the full suite stayed green at 782
+passed**. That is now twice in this protocol a test has claimed a debt it did not discharge.
+
+> **Standard adopted for every debt-discharging test from here: write the violation, watch the test
+> fail, then fix it.** A test that has only been seen to pass is not known to discriminate.
+
+## 10. Process notes
 
 - **A bug was found by smoking the runner on two episodes before the real run.**
   `world_model_v2._write_json` writes through a sibling `.tmp` and does not create directories,
@@ -258,7 +312,7 @@ A2→A2 loads, A2→A1 refuses, A3→fresh-E0 loads, A3→frozen refuses.
 - **Cohort C (45300–45339) has not been simulated**, not even once, and opening it is a separate
   authorization.
 
-## 9. How the stage-3 results will be read — committed before they exist
+## 11. How the stage-3 results will be read — committed before they exist
 
 Same class as the withdrawal clause of §6, and recorded for the same reason: it is cheap to
 commit to now and expensive to argue about once results are in hand.
@@ -284,7 +338,7 @@ reading hard to un-bias from the inside.
 is written down, whatever it says, and it applies equally to a result that supports the
 hypothesis and one that refutes it.
 
-## 10. Stage 3: training — declared caveats recorded before the closed-loop numbers exist
+## 12. Stage 3: training — declared caveats recorded before the closed-loop numbers exist
 
 **A3's result cannot distinguish "fine-tuning hurts" from "fine-tuning had not finished."**
 A3's best step is its **final** step (15 000 of 15 000), so there is no evidence it converged —
@@ -316,7 +370,7 @@ inadequate in the loop") from **Outcome C** ("cloning is the failing component")
 learned arms die on development, A4 is the next thing built and the protocol still decomposes
 the failure. A future reader should not see it absent here and conclude it was dropped.
 
-## 11. Next
+## 13. Next
 
 Stage 2 was **not** a training launch. `src/embodied_jepa/policy.py`,
 `src/embodied_jepa/cloning.py`, the `POLICIES` registry and the arm configs did not exist; the

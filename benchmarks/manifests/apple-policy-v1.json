@@ -967,6 +967,10 @@
     "which_check_is_load_bearing": "Two guards protect policy.py and they are NOT equivalent. 'assert \"policy.py\" not in allowed' is a tautology against a literal set: it can only fail when someone edits that set, which is exactly and only its job (a future widening fails loudly instead of silently). THE LOAD-BEARING CHECK IS THE LOOP BENEATH IT, which parses every non-allow-listed module and asserts it neither mentions nor imports a label module; policy.py is covered by that loop PRECISELY BECAUSE it is not on the allow-list. Removing the loop on the grounds that the assertion covers it would delete the real protection and leave a tautology behind.",
     "why_recorded_here": "A leakage guard was widened during an active protocol by the agent running that protocol. It is defensible, and it was checked independently by the coordinator, but a future auditor comparing the guard before and after TASK-056 deserves to find the reasoning in the record rather than reconstruct it from a diff."
   },
+  "integrity_machinery_demonstrations": {
+    "debt_discharging_test_standard": "A clipping test claimed to discharge a preregistered blocking debt and did not: it exercised a helper, never the loop. An injected violation (execute the raw command, keep the clip counter) left the robot taking twice the configured delta while the full suite stayed green at 782 passed. STANDARD ADOPTED: for every debt-discharging test, write the violation, watch the test fail, then fix it.",
+    "implementation_hash_guard": "The clean fix for the mutating-digest defect changed policy.py's implementation_sha256 and ALL FOUR trained checkpoints immediately became unloadable -- the guard doing exactly its job, since a later source fix must not make a historical checkpoint compatible. Found by ATTEMPTING the refactor, not by reasoning about it."
+  },
   "kind": "learned_control",
   "label": "Behaviour cloning on the frozen E0 encoder, plus a readout-driven scripted-controller arm, on a fresh frozen wide-jitter cohort",
   "leakage_discipline": {
@@ -982,6 +986,14 @@
     "a_green_local_suite_is_not_evidence_for_a_cross_platform_reproducibility_claim": "The first CI run of this preregistration failed on Linux x86-64 while the full suite passed locally on macOS arm64, because a test asserted exact float equality between a stored cohort value and a regenerated one. Locally the generator reproduced the stored values with ZERO deviation, so no amount of local testing could have surfaced it. This protocol's credibility rests on a third party being able to verify the seal on a different machine, so the class of claim matters more than the instance: any assertion that something is bit-identical must be validated on more than one platform, or stated as holding only on the platform that produced it."
   },
   "missing_values": "a gate that cannot be evaluated counts as FAILED",
+  "most_serious_defect_found": {
+    "found_by": "independent review, before the runner was used for anything",
+    "no_cohort_c_seed_has_ever_been_simulated": true,
+    "status": "Fixed: seeds are coerced before the membership test, and the guard is a whitelist of cohort D. Tested at the type boundary (int, str, float, np.int64, np.int32, bool, whitespace), including that non-canonical forms of PERMITTED seeds are still accepted. Each guard verified by injecting its own violation and watching the test fail.",
+    "the_class": "A guard that enumerates what is FORBIDDEN fails open. A guard that enumerates what is PERMITTED fails closed. The whitelist is right not because it catches the string case but because refusal is its default.",
+    "what": "scripts/evaluate_policy.py tested cohort-C membership BEFORE coercing seeds to int, so the string '45300' bypassed the refusal and produced exactly the manifest's stored resets['45300']. The guard was also a BLACKLIST of cohort C rather than a whitelist of cohort D, so any unenumerated seed ran and was filed under 'D_development_never_gating'.",
+    "why_it_is_worse_than_the_others": "Every other defect in this protocol produces a wrong number or a failed load: visible, recoverable, costing a day. This one SILENTLY CONSUMES THE FROZEN COHORT, which is unrecoverable -- there is no re-running a cohort whose entire value is never having been seen. Cohort C is gated behind three separate authorizations because opening it cannot be undone, and a type coercion could have walked through all three."
+  },
   "not_done_in_this_task": [
     "the critic (see predecessor.critic_deliberately_not_implemented)",
     "the test split (never decoded)",

@@ -106,6 +106,21 @@ def cohort_resets(seeds):
     return {seed: generator(seed) for seed in seeds}
 
 
+def frozen_flag_for(checkpoint):
+    """Whether the encoder of this checkpoint's arm was trained frozen.
+
+    ``cloning.train`` sets ``frozen = (encoder != "finetune")`` and saves encoder weights only
+    when the source is trainable. So the flag follows the **absence** of saved weights:
+    A1/A2 save none and were frozen; A3 saves them and was not.
+
+    This is a named function rather than an inline expression because inverting it made every
+    encoder arm fail to load -- three of the four, including the primary -- and the only arm
+    smoked was the one that still worked. A function can be enumerated over all four arm
+    shapes without a checkpoint or a simulator, which is what ``tests/test_policy.py`` does.
+    """
+    return checkpoint.get("feature_source_weights") is None
+
+
 def clip_to_configured_bounds(action, lower, upper):
     """Clip a policy command to the protocol's frozen bounds and verify the pinned parts."""
     action = np.asarray(action, np.float32)
@@ -245,11 +260,7 @@ def evaluate(config_path, checkpoint, *, arm, seeds, output, device, max_steps, 
             != FrozenEncoder(model, frozen=False).weights_sha256()
         ):
             model.load(config.checkpoint)
-        # A1/A2 save NO encoder weights and were trained FROZEN; A3 saves them and was not.
-        # cloning.train sets frozen = (encoder != "finetune"), so the flag follows the ABSENCE
-        # of saved weights. Inverting it makes every encoder arm fail to load -- which is what
-        # it did, and only A0 was smoked, so nothing caught it.
-        source = FrozenEncoder(model, frozen=saved.get("feature_source_weights") is None)
+        source = FrozenEncoder(model, frozen=frozen_flag_for(saved))
     policy = ClonedPolicy(store.state_schema, source, device=device, seed=0)
     policy.load(checkpoint)
     report["feature_source"] = source.provenance()
