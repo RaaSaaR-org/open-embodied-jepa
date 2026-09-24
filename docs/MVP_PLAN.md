@@ -77,9 +77,10 @@ The engineering MVP closed with a complete negative benchmark. Work since then i
 separately labelled task-specific mode on the apple corpus, not the historical unseen-pair
 benchmark, and it is recorded protocol-by-protocol under
 [docs/experiments/](experiments/) with machine-readable manifests under
-[benchmarks/manifests/](../benchmarks/manifests/). Every gated closed-loop attempt in
+[benchmarks/manifests/](../benchmarks/manifests/). Every gated **learned** closed-loop attempt in
 that line has failed its declared gate, and the fresh 20-reset final cohort (TASK-034) has
-not been executed.
+not been executed. Some non-learned privileged-ceiling diagnostics did pass their gates;
+they are feasibility evidence, not learned-policy results.
 
 The last of those protocols, [world model v4](experiments/apple_world_model_v4_results.md)
 (TASK-054), failed all four arms and fired its pre-declared abandonment clause. The next

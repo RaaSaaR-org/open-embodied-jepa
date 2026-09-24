@@ -64,8 +64,9 @@ that collapse is avoided: measure the saved diagnostics on held-out episodes.
 ## Shared backend-agnostic extensions
 
 `VisualModel.defaults` in `models/base.py` carries options written once in shared code so
-that enabling one stays a config change rather than a backend branch. **Every one of them
-is off at its default**, and with them off a model written before the option was added
+that enabling one stays a config change rather than a backend branch. **Every one is
+inactive at its default** — the flags are off, and the numeric settings beside them only
+take effect once their gating flag is on — so a model written before an option was added
 keeps its exact latents, its exact predictor and its exact loss. TASK-054 verified that
 end-to-end for the three prediction-step keys: re-training a pre-TASK-054 configuration at
 the new revision reproduced all 170 weight tensors bit-for-bit (`torch.equal`).
@@ -80,14 +81,17 @@ the new revision reproduced all 170 weight tensors bit-for-bit (`torch.equal`).
 | `predictor_step_embedding` | `False` | TASK-054 | Adds a learned per-step vector, making the rollout horizon-conditioned |
 | `multistep_tail_weight` | `0.0` | TASK-054 | Ramps the multistep loss towards the late steps at constant total weight |
 
-**None of these options has been shown to help.** In the
+**None of the five options that have been ablated has been shown to help.** In the
 [v3](experiments/apple_world_model_v3_results.md) and
 [v4](experiments/apple_world_model_v4_results.md) gated comparisons the second camera made
 readout precision worse, the readout shaping hurt candidate ranking, and all three
 prediction-step options failed to beat the untouched control, which passed more gates than
-every intervention. They are kept because the negative results are part of the record and
-the options are inert by default; enabling one is a research choice that needs its own
-preregistration, not a recommended setting.
+every intervention. `state_fusion` and `readout_heads` have **not** been ablated on/off in
+those protocols — they are untested rather than shown not to help, and `readout_heads` is
+the apparatus the physical-readout gates are measured through. All of them are kept because
+the negative results are part of the record and the options are inactive by default;
+enabling one is a research choice that needs its own preregistration, not a recommended
+setting.
 
 ## Optional LeWM source
 

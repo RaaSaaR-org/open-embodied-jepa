@@ -35,8 +35,9 @@ checkpoints on recorded validation data — none of them is a manipulation resul
   provenance, frozen goal/reset manifests, a validated result schema, and mock-only SDK2
   preparation. Isaac and physical robot execution remain future work.
 - **The encoder is the component that works.** A directly encoded observation reads the
-  palm–apple offset to **2.35–2.59 cm** median on held-out validation windows, against
-  3.13 cm at v2. It is not sufficient: that error alone exceeds the 1.5 cm gate.
+  palm–apple offset to **2.35–2.59 cm** median on held-out validation windows (start to
+  target, on the three v4 arms whose encoder was intact), against 3.13 cm at v2. It is not
+  sufficient: 2.59 cm alone exceeds the 1.5 cm gate.
 - **`apple_held` AUROC 0.9992–0.9997** on the lift cohort. Read it with its control — the
   shuffled-action AUROC on the same cohort is 0.714–0.812, so most of that signal comes
   from the encoded state and fused proprioception, not from action-conditioned prediction.
@@ -47,7 +48,8 @@ checkpoints on recorded validation data — none of them is a manipulation resul
 
 - **Five specific attempts to fix the prediction step under motion.** That step has never
   beaten the model's own persistence readout by the required margin (gate G2a ≤ 0.8; best
-  ever recorded 0.8635), and these five did not change it: a second camera (made readout
+  ever recorded **0.831**, at v3, against 0.8635 at best in v4 and 0.835 at v2), and these
+  five did not change it: a second camera (made readout
   precision worse), motion-weighted readout shaping (no help, and it hurt candidate
   ranking), action-chunk conditioning (no effect), a tail-weighted multistep loss (about
   15% of the needed change, and not distinguishable from cohort sampling), and a
@@ -63,6 +65,13 @@ checkpoints on recorded validation data — none of them is a manipulation resul
   That is a non-learned diagnostic: it says the design is adequate as a target for a
   learned controller, and it moves attention to the learned rollout. It does not prove
   that nothing else in the loop is also wrong.
+
+**The one learned result that ever beat its controls**, kept here so the summary is
+complete in both directions: the corrected v2 development *reaching* models each reached
+**1/5** fixed development goals against 0/5 for hold and random
+([reach_results.md](docs/experiments/reach_results.md)). The 95% Wilson interval for 1/5,
+[0.036, 0.624], overlaps the controls' [0, 0.434], so this is observed progress on an
+intermediate milestone, not established superiority and not the full task.
 
 **Open, not decided.** Whether the prediction step can be fixed at all: v4 tested three
 specific designs at one seed and one budget. The test split has still never been decoded,
