@@ -207,7 +207,43 @@ from inside a running experiment is how a protocol stops being a protocol, so it
 and no task is opened for it by this protocol. It is recorded so that it is carried rather than
 forgotten.
 
-## 7. Process notes
+## 7. A discipline adopted mid-protocol, and what it caught immediately
+
+**Every blocking finding in the stage-2 review was in code written while fixing a previous
+finding.** Round 1 found three defects in the fresh implementation; round 2 found two in round
+1's fixes; round 3 found one in round 2's fix. The findings narrowed, but the location did not
+move.
+
+The mechanism is not carelessness about the original code. **A fix is written under the belief
+that the surrounding area has just been understood — and that belief is precisely what suppresses
+the check.** The specific miss was identical every time: *the fix was verified to do the new
+thing, and not verified to still do the old one.*
+
+So, adopted for every fix from here on, and stated before a reviewer sees it:
+
+> **Name the property that existed before the fix and must still hold after it, and say how you
+> checked that it does.** Not "the tests pass" — the named property and the check. If you cannot
+> name it, that is the signal you do not yet understand what you are changing.
+
+**It found something within minutes of being adopted.** Applying it retroactively to the round-3
+`load`-ordering fix, the preserved property is *"an A2 head still refuses an A1 encoder."* The
+suite said yes. Checking it directly on the real backend also said yes — but surfaced that the
+refusal message said *"weights were not restored exactly"* for a frozen arm where **nothing was
+restored**, which would send a debugger to the wrong place.
+
+**And repairing that message broke the thing again, in the same way.** Folding two nested
+conditions into one `if saved_digest is not None and …` re-attached the `else` branch to the
+combined expression, so a *matching* digest began raising "carries no encoder digest to verify".
+A correct A3 checkpoint became unloadable a second time, by a different route, inside a
+two-line cosmetic edit. The round-trip test caught it — but only because the previous round had
+given the test stand-in a real digest, without which it would have been invisible again.
+
+That is the fourth occurrence of the same shape, and the most instructive, because the edit was
+too small to feel like it needed verification. The nesting now carries a comment saying why it
+must stay nested. All four load properties were then verified directly on the real backend:
+A2→A2 loads, A2→A1 refuses, A3→fresh-E0 loads, A3→frozen refuses.
+
+## 8. Process notes
 
 - **A bug was found by smoking the runner on two episodes before the real run.**
   `world_model_v2._write_json` writes through a sibling `.tmp` and does not create directories,
@@ -222,7 +258,7 @@ forgotten.
 - **Cohort C (45300–45339) has not been simulated**, not even once, and opening it is a separate
   authorization.
 
-## 8. Next
+## 9. Next
 
 Stage 2 was **not** a training launch. `src/embodied_jepa/policy.py`,
 `src/embodied_jepa/cloning.py`, the `POLICIES` registry and the arm configs did not exist; the

@@ -350,7 +350,7 @@ def test_a_tampered_encoder_checkpoint_is_refused(tmp_path):
     torch.save(payload, path)
 
     q = ClonedPolicy(schema(), MovingEncoder(), device="cpu", seed=0)
-    with pytest.raises(ContractError, match="not restored exactly"):
+    with pytest.raises(ContractError, match="did not reproduce the trained encoder"):
         q.load(path)
 
 

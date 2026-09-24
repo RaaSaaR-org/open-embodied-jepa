@@ -449,15 +449,24 @@ class ClonedPolicy(nn.Module):
             raise ContractError("policy checkpoint disagrees on whether its encoder was trained")
         if encoder_weights is not None:
             self.features.model.load_state_dict(encoder_weights, strict=True)
-        if saved_digest is not None:
-            restored = self.features.weights_sha256()
-            if restored != saved_digest:
-                raise ContractError(
-                    "policy checkpoint's encoder weights were not restored exactly: the head "
-                    "was trained against a different encoder than the one now in memory"
+        if saved_digest is None:
+            if live_digest is not None:
+                raise ContractError("policy checkpoint carries no encoder digest to verify")
+        elif self.features.weights_sha256() != saved_digest:
+            # Two different situations reach here and a debugger needs to know which. For a
+            # trainable source the weights WERE restored and did not take; for a frozen one
+            # nothing was restored and the live encoder is simply a different one -- which is
+            # the A1-versus-A2 cross-arm case this check exists for. NOTE the nesting: folding
+            # these into one `if saved_digest is not None and ...` makes the else-branch fire on
+            # a MATCHING digest, which is how this was broken once already.
+            raise ContractError(
+                "policy checkpoint's encoder weights do not match the encoder in memory: "
+                + (
+                    "the restore did not reproduce the trained encoder"
+                    if encoder_weights is not None
+                    else "this head was trained against a different frozen encoder"
                 )
-        elif live_digest is not None:
-            raise ContractError("policy checkpoint carries no encoder digest to verify")
+            )
         for name in ("state_mean", "state_scale", "state_normalization_fitted"):
             if name not in checkpoint:
                 raise ContractError(f"policy checkpoint is missing {name}")
