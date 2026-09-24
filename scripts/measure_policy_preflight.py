@@ -380,6 +380,8 @@ def main() -> int:
     from embodied_jepa.config import MODELS
     from embodied_jepa.training import source_identity
 
+    # ``_write_json`` writes through a sibling .tmp file and does not create directories.
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     started = time.perf_counter()
     config, store, settings, cameras = _open(args.config)
     report = {
