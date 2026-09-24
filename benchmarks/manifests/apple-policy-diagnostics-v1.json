@@ -106,6 +106,20 @@
       },
       "D1_grasp": {
         "prior_only_mean_grasp": -0.009225231595337391,
+        "sound_arms_amended_count_on_reset_frames": {
+          "train": {
+            "A0_proprio_only": 0,
+            "A1_random_encoder": 0,
+            "A2_bc_frozen_e0": 0,
+            "A3_bc_finetuned_e0": 0
+          },
+          "val": {
+            "A0_proprio_only": 0,
+            "A1_random_encoder": 0,
+            "A2_bc_frozen_e0": 0,
+            "A3_bc_finetuned_e0": 0
+          }
+        },
         "sound_arms_count_on_reset_frames": {
           "train": {
             "A0_proprio_only": 0,
@@ -161,6 +175,8 @@
       },
       "D1_pipeline": {
         "A0_proprio_only": {
+          "act_vs_clipped_batched_max_abs": 2.384185791015625e-07,
+          "act_vs_unclipped_batched_max_abs": 0.01607036590576172,
           "float_noise_max_abs_single_vs_batched": 2.384185791015625e-07,
           "next_frame_state_min_of_per_frame_max_change": 0.036659449338912964,
           "swapped_reset_image_max_abs_change": 0.0,
@@ -168,6 +184,8 @@
           "zero_image_min_of_per_frame_max_change": 0.0
         },
         "A1_random_encoder": {
+          "act_vs_clipped_batched_max_abs": 8.344650268554688e-07,
+          "act_vs_unclipped_batched_max_abs": 0.002233743667602539,
           "float_noise_max_abs_single_vs_batched": 8.344650268554688e-07,
           "next_frame_state_min_of_per_frame_max_change": 0.04651811718940735,
           "swapped_reset_image_max_abs_change": 0.0031546950340270996,
@@ -175,6 +193,8 @@
           "zero_image_min_of_per_frame_max_change": 1.3366246223449707
         },
         "A2_bc_frozen_e0": {
+          "act_vs_clipped_batched_max_abs": 1.6093254089355469e-06,
+          "act_vs_unclipped_batched_max_abs": 0.005733013153076172,
           "float_noise_max_abs_single_vs_batched": 1.6093254089355469e-06,
           "next_frame_state_min_of_per_frame_max_change": 0.021528005599975586,
           "swapped_reset_image_max_abs_change": 0.011296212673187256,
@@ -182,11 +202,33 @@
           "zero_image_min_of_per_frame_max_change": 1.3712716102600098
         },
         "A3_bc_finetuned_e0": {
+          "act_vs_clipped_batched_max_abs": 4.172325134277344e-07,
+          "act_vs_unclipped_batched_max_abs": 0.005335807800292969,
           "float_noise_max_abs_single_vs_batched": 5.960464477539062e-07,
           "next_frame_state_min_of_per_frame_max_change": 0.04998624324798584,
           "swapped_reset_image_max_abs_change": 0.00668644905090332,
           "swapped_reset_image_median_of_per_frame_max_change": 0.01564192771911621,
           "zero_image_min_of_per_frame_max_change": 0.5757009983062744
+        }
+      },
+      "D1_pipeline_train_reset_equivalence": {
+        "all_images_identical": true,
+        "max_state_abs": 0.0,
+        "roots": [
+          48000,
+          48008,
+          48001,
+          48013,
+          48002,
+          48006,
+          48003,
+          48011
+        ],
+        "worst_act_vs_clipped_offline": {
+          "A0_proprio_only": 0.0,
+          "A1_random_encoder": 0.0,
+          "A2_bc_frozen_e0": 0.0,
+          "A3_bc_finetuned_e0": 0.0
         }
       },
       "D2": "see gates.D2.persistence_calibration",
@@ -220,18 +262,63 @@
         "revision": "50e457540bb1107e34a3bba42e93d4790a356f81",
         "sha256": "bbe224f3f3047035b7b599d6c8f32496f8b9100bbc107cb4ff9e8c9c2dee6b0d"
       },
+      "closed-loop-rerun": {
+        "dirty": false,
+        "identical_to_original_except_source_and_elapsed": true,
+        "path": "outputs/task057-diagnostics/calibration-rerun-d91cf0b/closed-loop.json",
+        "revision": "d91cf0b84dfa28079f6d3e6e158d9642d8ad1541",
+        "sha256": "c752743233712e344561cc197ac96faa02fe9336de58a7a6774b1f49cb851256"
+      },
       "offline": {
         "dirty": false,
         "path": "outputs/task057-diagnostics/calibration/offline.json",
         "revision": "50e457540bb1107e34a3bba42e93d4790a356f81",
         "sha256": "888c973f382da4e1663e246194fe36b8e6104b1b7329dc050888d2f4e9aa353b"
       },
+      "offline-rerun": {
+        "dirty": false,
+        "identical_to_original_except_source_and_elapsed": true,
+        "path": "outputs/task057-diagnostics/calibration-rerun-d91cf0b/offline.json",
+        "revision": "d91cf0b84dfa28079f6d3e6e158d9642d8ad1541",
+        "sha256": "59d4c2e83fe6f3f00938be06fbc2576e7855269fc43218dd432fae810097d67d"
+      },
+      "offline-v2": {
+        "adds": "act()-path noise floor, unclipped-vs-clipped difference, train-root reset equivalence, the amended D1-grasp count, train-cohort dz statistics",
+        "dirty": false,
+        "path": "outputs/task057-diagnostics/calibration/offline-v2.json",
+        "revision": "676d397b2672982ba190f024385c3935cd92e1b7",
+        "sha256": "1b092de93406c38dee02bbfea85d1405187de3dc5ef9ca66b7379c03e6427660"
+      },
       "provenance": {
         "dirty": false,
         "path": "outputs/task057-diagnostics/calibration/provenance.json",
         "revision": "50e457540bb1107e34a3bba42e93d4790a356f81",
         "sha256": "90e1e93ba4f3dfd8acf4a205df950497e0e788a5874dde214091b6098ba0bb7d"
+      },
+      "provenance-rerun": {
+        "dirty": false,
+        "identical_to_original_except_source_and_elapsed": true,
+        "path": "outputs/task057-diagnostics/calibration-rerun-d91cf0b/provenance.json",
+        "revision": "d91cf0b84dfa28079f6d3e6e158d9642d8ad1541",
+        "sha256": "9e90b882b241e9d22b9101979f3028a367459c57e3801f7e5860d2676f600560"
+      },
+      "provenance-superseded-reads-test-labels": {
+        "DISCLOSURE": "this superseded report read the LABEL SIDECARS (collector phase indices and base actions) of the 8 non-aim TEST-split roots for aggregate phase counts (160 roots, phase-4 mean 57.375, 1 375 ramp rows). No image or state was decoded and nothing was selected on it. Restricted to train+val at 50e4575. Not cited anywhere else.",
+        "path": "outputs/task057-diagnostics/calibration/provenance-superseded-reads-test-labels.json",
+        "revision": "b853560",
+        "sha256": "e583f100a2f379946fcb91c2d6216aff4e22a2ef0b8716ae650fba7365783649"
       }
+    },
+    "claim_audit_TASK_058_findings_folded_in": {
+      "S1-13_close_not_a_solved_primitive": "noted in 13.8",
+      "S5-04_proprio_reads_apple_position": "context in 13.7",
+      "S5-14_S5-16": "marker at B5",
+      "S6-07_end_state_only": "marker at 1.3; per-step hand_contact/height/dropped logged",
+      "S6-26_bracketed_by": "marker at 1.1(b); the median is BRACKETED BY the non-saturated rows",
+      "S6-27_train_dz_mean": "now computed by committed code: offline-v2 train_bc_target_right_dz",
+      "S6-29_wrong_expert": "sections 13.1-13.2",
+      "Table_E_phase_names": "section 13.3 #3",
+      "near_constant_is_magnitude_only": "markers at 1.1(c) and 1.5; the sign is unmeasured"
     },
     "date": "2026-09-25",
     "defect": "The frozen protocol and manifest named plain scripted.OracleManipulationPolicy as the shadow expert. Every surviving BC root was collected with scripted.apple_collector_policy (scripts/collect_apple_wide.py run_root), whose collector__base_action is the BC target (cloning.py).",
@@ -376,6 +463,7 @@
       },
       "step_zero_on_the_development_cohort": {
         "median_abs_difference_right_dx": 0.047944530844688416,
+        "note": "median over all 16 seeds, including the 6 where the two experts agree; 0.0479 is 84% of A0's right_dx D1 threshold (3 x 0.018958 = 0.0569). Independently reproduced by the TASK-058 claim audit (S6-29) from labels on 152 roots.",
         "seeds_where_collector_and_plain_differ": 10
       }
     },
@@ -397,6 +485,8 @@
       "src/embodied_jepa/policy.py": "d682078bc47ddb19f5ece4dc5dd87550cd429f6ab17eb6d0f4ac3b3dc1b7489f",
       "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc"
     },
+    "per_step_truth_in_the_trace": "every trace row records the scorer's hand_contact, the apple height and dropped at that step, alongside ||palm - apple||. Scoring-only simulator truth; never a controller input.",
+    "provenance_note_103b14f": "the TASK-056 cohort-D reports ran at 103b14f, which is not on main; it is held on origin/feat/task-056-clip-instrumentation, which must not be deleted.",
     "status": "pre-run amendment; no probe has executed; exemption_spent stays false",
     "superseded": [
       {
@@ -420,7 +510,7 @@
       {
         "frozen_value": "the expert's step-zero right_grasp is -1.0 exactly on every reset (scripted.py orient phase). Report per arm the count out of 16 where the step-zero policy grasp is > 0. NO THRESHOLD: the reference is known-correct.",
         "path": "/probes/D1_grasp",
-        "reason": "AMENDMENT 1: the frozen manifest still carried the one-sided 'count where grasp > 0, NO THRESHOLD' wording that protocol section 3 had already replaced with a two-sided count; and the two-sided count's cut at |g+1| >= 1.0 does not fire on the prior-only predictor (-0.0092, error 0.9908). Cut moved to > 0.5.",
+        "reason": "AMENDMENT 1: the frozen manifest still carried the one-sided 'count where grasp > 0, NO THRESHOLD' wording that protocol section 3 had already replaced with a two-sided count; and the two-sided count's cut at |g+1| >= 1.0 does not fire on the prior-only predictor (-0.0092, error 0.9908). Cut moved to |g+1| > 0.5, i.e. g > -0.5.",
         "replacement": "see this path"
       },
       {
@@ -503,8 +593,46 @@
         "path": "/shadow_expert_exhaustion_preregistered_behaviour/non_empty_substitution_set",
         "reason": "805 was the wrong expert's budget, and scripted_oracle is apple_collector_policy, so the sentence paired one entity's budget with another's result",
         "replacement": "see this path"
+      },
+      {
+        "frozen_value": "D1 FAILS for arm X iff on ANY of the 15 val resets: (i) for A1/A2/A3, the closed-loop onboard_rgb frame is not byte-identical to the stored training frame; or (ii) the closed-loop robot_state differs from the stored state by more than 1e-6 in any component, or the state mask differs; or (iii) any of the seven free components of X's act() output differs from X's offline prediction on the stored frame by more than 1e-4. A0 consumes no image, so (i) does not apply to it.",
+        "path": "/gates/D1/rule (amendment 1, first version)",
+        "reason": "review of amendment 1: compared act() (clipped) with the UNCLIPPED offline prediction, which fails every arm on a sound pipeline; now clipped",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "Float noise between act()'s single-observation path and the batched training path is <= 1.61e-6 (A2; A0 2.4e-7, A1 8.3e-7, A3 6.0e-7). The smallest input change that must be detectable -- another val root's reset image -- moves the output by at least 3.15e-3 (A1; A2 1.13e-2, A3 6.7e-3); a zeroed image by >= 0.576; the next frame's state by >= 0.0215. 1e-4 sits 62x above the noise and 31x below the smallest such change. Inputs are compared exactly because they are exact in a sound pipeline.",
+        "path": "/gates/D1/derivation (amendment 1, first version)",
+        "reason": "noise floor re-measured through act(); neighbour-pair scope stated; train-root reset equivalence added",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "preregistration",
+        "path": "/status",
+        "reason": "the protocol is now amended",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": true,
+        "path": "/supersedes_nothing",
+        "reason": "amendment 1 supersedes the entries listed here",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "divergence trace, 4 arms x 16 seeds x <=1000 steps, signed per-step logging of both commands plus ||palm-apple||, stage, step index",
+        "path": "/probes/D2",
+        "reason": "appended a pointer to the first_departure_step definition",
+        "replacement": "see this path"
       }
-    ]
+    ],
+    "train_bc_target_right_dz": {
+      "mean": -0.001180413761176169,
+      "median_abs": 0.19682887196540833,
+      "rate_abs_at_0_4": 0.44886685758311407,
+      "rate_at_minus_0_4": 0.2643950516782719,
+      "rate_at_plus_0_4": 0.1844718059048422,
+      "rows": 68791
+    }
   },
   "baselines": {
     "B1_harness_soundness": {
@@ -564,7 +692,7 @@
     ],
     "no_selection_on_D": "D is a mechanism instrument, not a scoreboard. No checkpoint is chosen, retrained or tuned against a D outcome.",
     "substituted_numbers_are_never_learned_results": "Every configuration with a non-empty substitution set puts a privileged controller partly in command. Every number it produces is labelled non-learned in the table itself, not only in a footnote.",
-    "val_root_resets_for_D1_pipeline_amendment_1": "D1-pipeline resets the simulator to the recorded reset of each of the 15 surviving val roots (enumerated in gates.D1.val_root_seeds) and executes ZERO commands; nothing is scored. The val split is already decoded for Table A. The cohort-D whitelist of evaluate_policy.py is not widened; D1-pipeline has its own whitelist of these 15 seeds. Cohort C and the test split are not touched."
+    "val_root_resets_for_D1_pipeline_amendment_1": "D1-pipeline resets the simulator to the recorded reset of each of the 15 surviving val roots (enumerated in gates.D1.val_root_seeds) and executes ZERO commands; nothing is scored. The val split is already decoded for Table A. The cohort-D whitelist of evaluate_policy.py is not widened; D1-pipeline has its own whitelist of these 15 seeds. Cohort C is not touched and the RUN does not touch the test split; one superseded pre-freeze calibration count read test-split LABEL sidecars (see amendment_1.calibration_artifacts.provenance-superseded-reads-test-labels)."
   },
   "committed_in_advance": "A rescue under expert substitution injects privileged information at 50 Hz, which the policy does not get. It shows WHICH CHANNEL the failure flows through; it does NOT show that a learned version of that channel is attainable. No D3 number may be read as evidence that a fix will work.",
   "corrections_to_the_TASK_056_record_established_by_this_preregistration": {
@@ -573,7 +701,8 @@
     "3_both_learned_arms_grasped_and_lifted_the_apple": "A2 on seed 45100 and A3 on seed 45006 each reached the scorer's grasp stage, lifted the apple +0.1678 m and +0.1694 m against a 0.05 m gate, and were STILL HOLDING IT, undropped, when the 1000-step cap ended the attempt. Neither reached transport. The 1/16 counts ARE in apple_policy_v1_results.md sections 14 and 16; the lift height, the sustained contact and the undropped state are nowhere in the record; and task056_handover.md gives neither arm's grasp count at all, stating only the controls' 0/16. The compression into the handover removed the run's single most encouraging measurement.",
     "4_the_near_constant_reading_is_translation_only": "Median across attempts: dx q90/q50 1.00-1.22 and dz 1.01-1.32, versus droll q50 0.179-0.243, q90 0.478-0.498, q99 0.503-0.513 (ratio 2.05-2.67). Stated at that strength and no further: droll's out-of-distribution rate is 5-7% and its q90 sits at the 0.5 configured bound, which is LESS saturation than the expert's measured ~27% at |max|, so this is not roll running away. The observation is that the one dimension with real online variance is rotational, and it is the dimension with the SMALLEST offline error in Table A. Largest online/offline behavioural gap in the run, and not in the dimension the dz hypothesis pointed at.",
     "5_scope_correction_on_the_control_arms": "A0 and A1: reach 0/16 each (latched; near = ||palm-apple|| <= 6.5 cm or hand_contact), hand_contact false at every attempt's end, final object_plate_distance_m within 0.1 mm of the report's own stored reset geometry on 16/16, and object_height_m a single value 0.766633 across all 32 attempts. Contact is the only route by which the robot can move the apple, so reach 0/32 establishes this independently of the distance statistic. A3 is NOT covered: its reach is 4/16 with five distinct heights. An earlier draft extended the statement to A3 from a mis-scoped count.",
-    "6_no_statement_that_every_attempt_hit_the_cap": "A3 had two guard_refusal terminations, on seeds 45001 (157 executed steps) and 45003 (143). They are physical stops, not cap hits."
+    "6_no_statement_that_every_attempt_hit_the_cap": "A3 had two guard_refusal terminations, on seeds 45001 (157 executed steps) and 45003 (143). They are physical stops, not cap hits.",
+    "amendment_1_note": "In 1, 'sits inside the non-saturated group' should read 'bracketed by the non-saturated rows'. In 4, 'near-constant' is near-constant in MAGNITUDE: the statistics are of |.| and the sign is unmeasured. In 3, contact, lift and undropped are measured at the FINAL step only; 'sustained' contact is unmeasured (TASK-058 S6-26, S6-07)."
   },
   "definitions_every_scope_term_used_in_a_gate_or_stop_rule": {
     "arm": [
@@ -699,6 +828,7 @@
   },
   "frozen_D1_thresholds_three_times_table_A_note": "Derived from the ROUNDED Table A cells, which are the authority. Tripling an unrounded intermediate instead put the manifest 1e-6 out of agreement with its own table; a consistency test caught it before merge. HEADROOM CHECKED BEFORE THE RUN: Table A is an all-phase median while D1 is scored on reset (orient-phase) frames, so the populations differ. The worst realized orient-to-unconditional error ratio across all four arms and all seven dimensions is 1.313 (A2 right_dpitch), so the 3x threshold retains 2.28x headroom and a sound pipeline should pass D1 rather than fail it spuriously -- the property that had to hold for the precedence rule not to become an automatic exemption. -- AMENDMENT 1: THE HEADROOM CHECK ABOVE IS WITHDRAWN. It used every orient-phase row (130 per root) as a stand-in for the reset frame; restricted to the reset frames D1 is actually scored on, every arm exceeds its right_dx threshold by 3.76-5.37x on val and 4.40-5.32x on train, so a sound pipeline FAILS this D1 and the precedence rule WOULD have become the automatic exemption this note says it must not. These thresholds now serve only gates.D1_contrast_reported_not_decisional.",
   "frozen_offline_conditionals_and_phase_table": {
+    "amendment_1_wording_note": "'why' says the unconditional median 'necessarily sits inside the NON-saturated group'; the correct form is 'is necessarily BRACKETED BY the non-saturated rows' (min <= median <= max). Verdict unchanged (TASK-058 S6-26).",
     "generating_script": "scripts/measure_policy_offline_conditionals.py (committed). Reproduces every value in this block exactly. cloning.evaluate_policy CANNOT produce them: it returns one unconditional per-dimension median and the PREDICTIONS' std. A separate script rather than an edit to cloning.py, which participates in no checkpoint implementation_sha256 (VisualModel's digest covers models/base.py, the backend module, models/readout.py and readout_labels.py; ClonedPolicy's covers policy.py alone) but whose provenance surface stays untouched while any TASK-056 checkpoint must remain loadable.",
     "per_arm": {
       "A0_proprio_only": {
@@ -1267,12 +1397,32 @@
   },
   "gates": {
     "D1": {
-      "derivation": "Float noise between act()'s single-observation path and the batched training path is <= 1.61e-6 (A2; A0 2.4e-7, A1 8.3e-7, A3 6.0e-7). The smallest input change that must be detectable -- another val root's reset image -- moves the output by at least 3.15e-3 (A1; A2 1.13e-2, A3 6.7e-3); a zeroed image by >= 0.576; the next frame's state by >= 0.0215. 1e-4 sits 62x above the noise and 31x below the smallest such change. Inputs are compared exactly because they are exact in a sound pipeline.",
+      "derivation": "Float noise between act() on a stored reset frame and the clipped batched training path is <= 1.61e-6 (A2; A0 2.4e-7, A1 8.3e-7, A3 4.2e-7; offline-v2). Replacing each stored reset image with its neighbour's (k -> k+1 mod 15, 15 pairs) moves the output by at least 3.15e-3 (A1; A2 1.13e-2, A3 6.7e-3); a zeroed image by >= 0.576 (image arms); the next frame's state by >= 0.0215. 1e-4 sits 62x above the noise and 31x below the smallest such change. Inputs are compared exactly because they are exact in a sound pipeline: the same zero-command procedure on 8 TRAIN roots (disjoint from the val gate population) gave byte-identical images, state difference 0.0, identical masks, and act() equal to the clipped offline prediction to 0.0 for every arm.",
       "device": "cpu",
       "name": "D1-pipeline: observation-path equivalence at reset (amendment 1)",
       "output_tolerance": 0.0001,
       "population": "the 15 surviving val roots, reset coordinates from collect_apple_wide.make_plan; zero commands executed; nothing scored",
-      "rule": "D1 FAILS for arm X iff on ANY of the 15 val resets: (i) for A1/A2/A3, the closed-loop onboard_rgb frame is not byte-identical to the stored training frame; or (ii) the closed-loop robot_state differs from the stored state by more than 1e-6 in any component, or the state mask differs; or (iii) any of the seven free components of X's act() output differs from X's offline prediction on the stored frame by more than 1e-4. A0 consumes no image, so (i) does not apply to it.",
+      "rule": "D1 FAILS for arm X iff on ANY of the 15 val resets: (i) for A1/A2/A3, the closed-loop onboard_rgb frame is not byte-identical to the stored training frame; or (ii) the closed-loop robot_state differs from the stored state by more than 1e-6 in any component, or the state mask differs; or (iii) any of the seven free components of X's act() output differs by more than 1e-4 from X's offline prediction on the stored frame CLIPPED TO [-1, 1] (ClonedPolicy.act clips; the step-zero grasp heads sit just below -1, so an unclipped comparison would fail a sound pipeline by up to 0.0161). A0 consumes no image, so (i) does not apply to it.",
+      "sound_pipeline_demonstration_on_train_roots": {
+        "all_images_identical": true,
+        "max_state_abs": 0.0,
+        "roots": [
+          48000,
+          48008,
+          48001,
+          48013,
+          48002,
+          48006,
+          48003,
+          48011
+        ],
+        "worst_act_vs_clipped_offline": {
+          "A0_proprio_only": 0.0,
+          "A1_random_encoder": 0.0,
+          "A2_bc_frozen_e0": 0.0,
+          "A3_bc_finetuned_e0": 0.0
+        }
+      },
       "state_tolerance": 1e-06,
       "val_root_seeds": [
         48005,
@@ -1306,8 +1456,9 @@
     },
     "D2": {
       "determines_no_gate_outcome": true,
-      "first_departure_step_definition": "AMENDMENT 1 (the frozen text named first_departure_step and never defined it): the first step t at which departure > tau_X on 5 consecutive steps t..t+4, where departure is the median over the six arm dimensions of |controller - shadow expert| and tau_X = 3 x the median of arm X's six Table A arm-dimension cells. Steps after the shadow expert's exhaustion end the search (departure undefined, never zero). No departure found = censored at the attempt's last defined step and counted as that step for the median.",
+      "first_departure_step_definition": "AMENDMENT 1 (the frozen text named first_departure_step and never defined it): the first step t at which departure > tau_X on 5 consecutive steps t..t+4, where departure is the median over the six arm dimensions of |controller - shadow expert| and tau_X = 3 x the median of arm X's six Table A arm-dimension cells. Steps after the shadow expert's exhaustion end the search (departure undefined, never zero). No departure found = censored, and counted in the median as the NUMBER OF STEPS WITH A DEFINED DEPARTURE (what the calibration uses).",
       "is_a_gate": false,
+      "limit_declared_in_advance": "Sound arms already depart 116-205 steps into their own recorded trajectories open loop, so a closed-loop 'gradual' reading cannot separate compounding error from ordinary open-loop error. Only 'immediate' is informative, and only against a sound start.",
       "persistence_calibration": {
         "open_loop_val_median_first_departure_persistence_1": {
           "A0_proprio_only": 115.0,
@@ -1457,7 +1608,7 @@
     "task": "TASK-056"
   },
   "probes": {
-    "D1": "D1 (amended) = D1-pipeline, the observation-path equivalence probe: for each of the 15 surviving val roots, reset the simulator to that root's recorded reset exactly as scripts/evaluate_policy.py resets a development seed, take the first observation, and compare it and each arm's act() output against the stored training-path frame and the arm's offline prediction on it. Zero commands are executed. The frozen D1 (step-zero contrast against the shadow expert on the development cohort) is kept as D1-contrast: reported, never decisional.",
+    "D1": "D1 (amended) = D1-pipeline, the observation-path equivalence probe: for each of the 15 surviving val roots, reset the simulator to that root's recorded reset exactly as scripts/evaluate_policy.py resets a development seed, take the first observation, and compare it and each arm's act() output against the stored training-path frame and the arm's offline prediction on it, clipped to [-1, 1] as act() clips. Zero commands are executed. The frozen D1 (step-zero contrast against the shadow expert on the development cohort) is kept as D1-contrast: reported, never decisional.",
     "D1_contrast": "reported, not decisional: signed step-zero command vs shadow expert (apple_collector_policy), 4 arms x 16 development seeds, per-dimension median |difference| and its ratio to 3x Table A. Declared before the run: on recorded reset frames all four arms exceed 3x Table A in right_dx (ratios 3.76-5.37 on val, 4.40-5.32 on train).",
     "D1_grasp": "the expert's step-zero right_grasp is -1.0 exactly on every reset (apple_collector_policy, orient phase). PRIMARY REPORT: the signed step-zero right_grasp per arm per seed, the full 4x16 table. DERIVED, DECISION-RELEVANT COUNT: seeds where step-zero right_grasp > -0.5 (|g - (-1.0)| > 0.5).",
     "D2": "divergence trace, 4 arms x 16 seeds x <=1000 steps, signed per-step logging of both commands plus ||palm-apple||, stage, step index; first_departure_step as defined in gates.D2 (amendment 1)",

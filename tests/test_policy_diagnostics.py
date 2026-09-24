@@ -172,11 +172,23 @@ def test_d1_pipeline_tolerance_sits_between_noise_and_the_smallest_real_change()
     gate = m["gates"]["D1"]
     calibration = m["amendment_1"]["blind_predictor_and_sound_pipeline_checks"]["D1_pipeline"]
     tolerance = gate["output_tolerance"]
-    noise = max(a["float_noise_max_abs_single_vs_batched"] for a in calibration.values())
+    # The noise floor is measured through act() -- the path the rule compares -- against the
+    # CLIPPED offline prediction. The first version of amendment 1 compared act() with the
+    # unclipped prediction, which differs by up to 0.016 on a sound pipeline (the step-zero
+    # grasp heads sit just below -1): a sound pipeline would have failed every arm.
+    noise = max(a["act_vs_clipped_batched_max_abs"] for a in calibration.values())
+    unclipped = max(a["act_vs_unclipped_batched_max_abs"] for a in calibration.values())
+    assert "CLIPPED" in gate["rule"], "rule (iii) must compare against the clipped prediction"
+    assert unclipped > tolerance, "the recorded reason for clipping must still hold"
     image_arms = [a for name, a in calibration.items() if not name.startswith("A0")]
     smallest = min(a["swapped_reset_image_max_abs_change"] for a in image_arms)
     assert tolerance >= 10 * noise, "a sound pipeline must pass"
     assert tolerance <= smallest / 10, "a swapped reset image must fail"
+    # And it was SHOWN to pass, end to end, on train roots disjoint from the val gate population.
+    demo = gate["sound_pipeline_demonstration_on_train_roots"]
+    assert demo["all_images_identical"] and demo["max_state_abs"] <= gate["state_tolerance"]
+    assert max(demo["worst_act_vs_clipped_offline"].values()) <= tolerance
+    assert not set(demo["roots"]) & set(gate["val_root_seeds"])
     assert gate["state_tolerance"] <= 1e-6 and gate["device"] == "cpu"
     assert len(gate["val_root_seeds"]) == 15
     assert not set(gate["val_root_seeds"]) & set(range(45300, 45340))
@@ -391,3 +403,41 @@ def test_substituted_components_reach_the_robot_and_unsubstituted_ones_do_not():
 def test_the_guard_refusals_match_the_runner():
     evaluate_policy = _load("_evaluate_policy", "scripts/evaluate_policy.py")
     assert pd.GUARD_REFUSALS == evaluate_policy.GUARD_REFUSALS
+
+
+def test_the_scripted_oracle_ends_its_attempt_as_policy_complete(monkeypatch):
+    """B1's scripted_oracle: its own exhaustion is policy_complete, caught by exact message."""
+    monkeypatch.setattr(pd, "collector_shadow_policy", lambda truth: _ScriptedStub(3))
+    controller = pd.ScriptedOracleController(TRUTH, robot=None)
+    log = []
+    result = pd.run_diagnostic_attempt(
+        controller,
+        _FakeRobot(log),
+        SimpleNamespace(evaluate=lambda: {}),
+        configuration="none",
+        clip=_clip,
+        lower=np.array((0.0,) * 6 + (-0.5,) * 6 + (-1.0, -1.0), np.float32),
+        upper=np.array((0.0,) * 6 + (0.5,) * 6 + (-1.0, 1.0), np.float32),
+        max_steps=10,
+        deadline_seconds=5.0,
+        shadow=_LoggingShadow([], 100),
+        trace=False,
+    )
+    assert result["termination_reason"] == "policy_complete"
+    assert result["executed_steps"] == 3
+    # Any other ContractError from the oracle still propagates.
+    monkeypatch.setattr(pd, "collector_shadow_policy", lambda truth: _ScriptedStub(0, "boom"))
+    with pytest.raises(ContractError, match="boom"):
+        pd.run_diagnostic_attempt(
+            pd.ScriptedOracleController(TRUTH, robot=None),
+            _FakeRobot([]),
+            SimpleNamespace(evaluate=lambda: {}),
+            configuration="none",
+            clip=_clip,
+            lower=np.zeros(14, np.float32) - 1,
+            upper=np.ones(14, np.float32),
+            max_steps=10,
+            deadline_seconds=5.0,
+            shadow=_LoggingShadow([], 100),
+            trace=False,
+        )
