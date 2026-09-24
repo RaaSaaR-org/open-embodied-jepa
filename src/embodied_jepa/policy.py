@@ -441,6 +441,10 @@ class ClonedPolicy(nn.Module):
         live_source = self.features.provenance()
         saved_digest = saved_source.pop("model_weights_sha256", None)
         live_digest = live_source.pop("model_weights_sha256", None)
+        # This comparison must stay ABOVE the digest check, and not only for readability: a
+        # NoEncoder source has no weights_sha256(), so an encoder checkpoint loaded onto A0
+        # would raise AttributeError instead of ContractError if the kinds were not rejected
+        # here first. Reordering these is a real hazard, not a style choice.
         if saved_source != live_source:
             raise ContractError("policy checkpoint was trained on a different feature source")
         self.head.load_state_dict(checkpoint["weights"], strict=True)

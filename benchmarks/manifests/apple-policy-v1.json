@@ -921,10 +921,12 @@
       "P0a residual weakness and its permissive direction stated",
       "load-bearing h=1 inference marked as itself unverified (U1)"
     ],
+    "record_correction": "NB-1 of round 4 was a claim-of-closure error INSIDE the entry documenting hole-closing: the manifest said three AST false negatives were closed when two were, and named only one of the two that remain. Same shape as the comment asserting a protection it could not provide. Corrected above.",
     "reviewer_verdict_1": "BLOCK",
     "reviewer_verdict_2": "APPROVE WITH NON-BLOCKING COMMENTS on e0f20ec",
     "reviewer_verdict_3": "APPROVE WITH NON-BLOCKING COMMENTS on c93c901 (round 2): B1/B2/B3 closed, verified by execution; no regressions from the signature changes; alignment re-verified 117/117 after the change.",
     "reviewer_verdict_4": "BLOCK on 939e748 (round 3): the NB-B fix made A3 checkpoints unloadable. load() compared the weights digest BEFORE restoring the encoder, so a post-training saved digest could never match a freshly-loaded-E0 live one and the saved encoder weights were never reached. Reproduced on the real leworldmodel backend with the real E0 checkpoint. Fixed by splitting the comparison around the restore, which is also strictly stronger. Verified on the real backend: 170 tensors saved, live digest differs at load time, reload succeeds, encoder restored byte-exactly.",
+    "reviewer_verdict_5": "APPROVE WITH NON-BLOCKING COMMENTS on 29b0db5 (round 4): the round-3 blocker is closed, verified across all four arms on the real backend. Round 4 did NOT block on round 3's fixes. The three remaining notes are corrections to what the record and the messages SAY, not to what the code does.",
     "round2_nonblocking_addressed": [
       "NB-A: evaluate_policy's live path built an autograd graph, because torch.enable_grad() OVERRIDES an enclosing no_grad. A 512-image ViT forward retaining activations for a tensor detached one line later; a plausible MPS OOM mid-validation that would end an arm as failed against its frozen budget. FrozenEncoder.features gained an explicit inference flag.",
       "NB-B: the round-1 NB4 fix did NOT close what it claimed. FrozenEncoder.provenance() was weight-INDEPENDENT, so A1 (random) and A2 (loaded E0) produced byte-identical provenance and load()'s check could not tell them apart -- while a code comment and a test docstring both asserted it could. Fixed for real with model_weights_sha256 over the sorted state_dict, and the comment corrected to say why the check is meaningful. A new test exercises the A1/A2 case, which the old one never did.",
@@ -937,7 +939,7 @@
     "round3_also_fixed": [
       "predict_free -- the CONTROL LOOP -- did not pass inference=True, so an A3 policy built an autograd graph on every step of a 50 ms loop. The one method whose entire contract is 'this is inference'.",
       "precompute_features had dropped its defensive .detach(), relying on the source honouring the flag. Restored.",
-      "The AST tripwire had four demonstrated false negatives. Three closed (aliased import, local binding, attribute reference); the fourth -- REIMPLEMENTING the reset arithmetic inline -- cannot be closed by parsing and is now NAMED in the docstring so nobody inherits it believing the parse is airtight.",
+      "The AST tripwire had four demonstrated false negatives. TWO closed (aliased import, binding to a local). A third, module-attribute calls, was ALREADY covered by the original walk, so widening to ast.Attribute closed nothing that was open -- an earlier version of this entry claimed three, which was wrong and is corrected here rather than quietly amended. TWO REMAIN OPEN: getattr(x, 'wide_reset')(seed), which cannot be caught without walking ast.Constant and would re-introduce the string-literal false positive that was just removed; and REIMPLEMENTING the reset arithmetic inline, which references nothing. Both are named in the tripwire's docstring. Only the behavioural test owed under tripwires_are_text_checks_and_must_be_upgraded closes either.",
       "SampleMask given eq=False: the generated __eq__ would raise on its numpy fields.",
       "weights_sha256 docstring notes that it covers key name and raw bytes but not dtype or shape, and that bfloat16 would raise (this backend produces bool/float32/int64 only)."
     ]

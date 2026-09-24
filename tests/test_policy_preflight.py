@@ -413,10 +413,17 @@ def test_the_closed_loop_runner_resets_cohort_c_from_stored_values():
     reference wide_reset. If you are reading this because it just fired, that behavioural test
     is what you owe in exchange.
 
-    KNOWN HOLE, so nobody inherits it believing the parse is airtight: this catches a call, an
-    aliased import, and a binding to a local. It CANNOT catch REIMPLEMENTATION -- someone
-    writing ``np.random.default_rng(seed).uniform(-0.03, 0.03, 2)`` inline never references
-    wide_reset at all, and no amount of parsing will see it. Only the behavioural test will.
+    TWO KNOWN HOLES, named so nobody inherits them believing the parse is airtight. This
+    catches a direct call, a module-attribute call, an aliased import and a binding to a local.
+    It does NOT catch:
+
+    * ``getattr(module, "wide_reset")(seed)`` -- closing it needs a walk over ``ast.Constant``,
+      which would re-introduce the string-literal false positive this walk was just fixed to
+      avoid. Deliberately left open.
+    * **Reimplementation** -- ``np.random.default_rng(seed).uniform(-0.03, 0.03, 2)`` inline
+      references nothing, and no amount of parsing will see it.
+
+    Only the behavioural test owed in exchange closes either.
     """
     if not EVALUATE_POLICY.exists():
         return  # vacuously green until the runner is written
@@ -444,7 +451,9 @@ def test_the_closed_loop_runner_resets_cohort_c_from_stored_values():
     # wide_reset()" must not be punished for explaining itself. Tripwires that bite the person
     # who got it right teach people to weaken tripwires.
     assert "wide_reset" not in called, (
-        "scripts/evaluate_policy.py calls wide_reset() directly. Cohort C is defined by the "
+        "scripts/evaluate_policy.py references wide_reset -- as a call, an aliased import, a "
+        "module attribute, or a local binding. (If you merely named a local variable "
+        "'wide_reset', that is a known false positive: rename it.) Cohort C is defined by the "
         "stored manifest values; recomputing them can differ by one ULP across platforms and "
         "would let two machines run subtly different cohorts while both passing the digest "
         "check. Read the resets from the manifest instead."
