@@ -84,9 +84,13 @@ def test_manifest_is_wellformed_and_declares_the_frozen_feature_source():
     manifest = json.loads(MANIFEST.read_text())
     assert manifest["task"] == "TASK-056"
     assert manifest["protocol"] == "apple_policy_v1"
-    assert manifest["status"] == "preregistered_not_run"
     assert manifest["closed_loop_started"] is False
-    assert manifest["results"] is None
+    # Results accumulate stage by stage, so this is no longer "results is None". What must
+    # hold at every stage until the third authorization is that cohort C is untouched.
+    results = manifest["results"]
+    if results is not None:
+        assert results["cohort_C_simulated"] is False
+        assert results["learned_apple_to_plate_successes"] == 0
     source = manifest["frozen_feature_source"]
     assert source["model_implementation_sha256"] == E0_IMPLEMENTATION_SHA256
     assert manifest["dataset"]["test_split_decoded"] is False

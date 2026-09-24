@@ -1095,7 +1095,106 @@
     ],
     "what_it_merged": "TASK-055 (PR #31): README dated honest-status section, docs/DECISIONS.md entry recording the CEM abandonment, docs/MODELS.md shared config keys, CLAUDE.md now tracked"
   },
-  "results": null,
+  "results": {
+    "arms_trained": 0,
+    "cohort_C_simulated": false,
+    "learned_apple_to_plate_successes": 0,
+    "observations": {
+      "A0_is_now_the_most_informative_arm": "If relative palm-apple accuracy is largely recoverable from proprioception, a proprioception-only policy may be strong, and G2 (best learned arm - A0) becomes the gate that decides whether anything visual is happening at all. A0 is to be built and trained with the same care as A2. If A0 turns out strong, that is a FINDING, not an inconvenience.",
+      "P2_ratio_margin": "0.682 against the 0.7 threshold, a margin of 0.018. PASSES. No threshold was adjusted in response. On approach frames a FOREIGN image still yields 0.669 cm, so most of the RELATIVE palm-apple accuracy is available without looking at the apple: the R2 shortcut signature partially present. At the first draft's P2 of 2.5 cm with no control this would have been invisible.",
+      "P3_is_the_cleanest_measurement": "Its control lands at 2.269 cm, essentially on the 2.394 cm analytic blind prior: absolute apple position genuinely cannot be inferred from the palm's own pose, so P3 is the one measurement here with NO shortcut available to it. The model reads 0.873 cm against it. This is the result that most supports A4.",
+      "R2_not_borne_out_as_written": "R2 was that the encoder might localize the apple only once the palm is beside it. Approach phases read 0.404-0.490 cm, so the accuracy is not confined to the close phase.",
+      "place_phase_flagged_in_advance": "release_high 1.579 cm and lower_open 4.084 cm are far worse than every other phase (the apple is at the plate, partly out of the onboard view). A4's place phase runs exactly there and the v3 release predictor has no learned substitute. RECORDED BEFORE ANY ARM RUNS: if A4 grasps reliably and then fails at the plate, that is the failure this table predicted."
+    },
+    "preflight": {
+      "all_passed": true,
+      "artifact": "outputs/apple-policy-v1/preflight.json (git-ignored run artifact)",
+      "by_phase": {
+        "close": {
+          "apple_position_median_m": 0.007944959215819836,
+          "palm_apple_median_m": 0.004908261355012655,
+          "phase_index": 2,
+          "rows": 675
+        },
+        "descend": {
+          "apple_position_median_m": 0.0075382262002676725,
+          "palm_apple_median_m": 0.00403766892850399,
+          "phase_index": 1,
+          "rows": 1200
+        },
+        "lift": {
+          "apple_position_median_m": 0.00936488714069128,
+          "palm_apple_median_m": 0.003556860378012061,
+          "phase_index": 3,
+          "rows": 2181
+        },
+        "lower_open": {
+          "apple_position_median_m": 0.040714915841817856,
+          "palm_apple_median_m": 0.04084280505776405,
+          "phase_index": 6,
+          "rows": 179
+        },
+        "orient": {
+          "apple_position_median_m": 0.008730045054107904,
+          "palm_apple_median_m": 0.0049042298924177885,
+          "phase_index": 0,
+          "rows": 1950
+        },
+        "release_high": {
+          "apple_position_median_m": 0.018101200461387634,
+          "palm_apple_median_m": 0.015789255499839783,
+          "phase_index": 5,
+          "rows": 709
+        },
+        "transfer": {
+          "apple_position_median_m": 0.00982176885008812,
+          "palm_apple_median_m": 0.0024589383974671364,
+          "phase_index": 4,
+          "rows": 840
+        }
+      },
+      "elapsed_seconds": 9.515970041975379,
+      "gates": {
+        "P1_close_palm_apple": {
+          "absolute_passed": true,
+          "op": "<=",
+          "passed": true,
+          "ratio_passed": true,
+          "ratio_threshold": 0.7,
+          "ratio_to_control": 0.373606058902547,
+          "shuffled_frame_control": 0.013137531466782093,
+          "threshold": 0.015,
+          "value": 0.004908261355012655
+        },
+        "P2_approach_palm_apple": {
+          "absolute_passed": true,
+          "op": "<=",
+          "passed": true,
+          "ratio_passed": true,
+          "ratio_threshold": 0.7,
+          "ratio_to_control": 0.6821585065618949,
+          "shuffled_frame_control": 0.006688364315778017,
+          "threshold": 0.015,
+          "value": 0.004562524612993002
+        },
+        "P3_orient_apple_position": {
+          "absolute_passed": true,
+          "op": "<=",
+          "passed": true,
+          "ratio_passed": true,
+          "ratio_threshold": 0.7,
+          "ratio_to_control": 0.3846742049912527,
+          "shuffled_frame_control": 0.022694646380841732,
+          "threshold": 0.02,
+          "value": 0.008730045054107904
+        }
+      },
+      "rows_dropped_apple_off_table": 985,
+      "rows_scored": 7734,
+      "surviving_val_roots": 15
+    },
+    "stage": "preflight_only"
+  },
   "results_doc": "docs/experiments/apple_policy_v1_results.md",
   "status": "preregistered_not_run",
   "stop_rule_protecting_cohort_C": {
@@ -1162,7 +1261,40 @@
         ]
       }
     },
+    "new_to_the_record": "U2 at h=4 is 1.0461: the rollout is WORSE than persistence at that horizon. The protocol quoted only h=1, 8 and 16, where the ratio is below 1, so this was not visible. It changes no gate (G2a is scored at h=8 and has already failed in every generation) and is one more data point against the abandoned line. Kept precisely because it is inconvenient and unimportant, which is how such things get dropped.",
+    "rederived_values": {
+      "1": {
+        "U1_palm_apple_grasp_cohort_median_m": 0.008335628546774387,
+        "U2_rollout_over_persistence_moving": 0.9523976478988462,
+        "U3_held_lift_auroc": 0.9994949081278838,
+        "U3_held_lift_shuffled_auroc": 0.9973680618123243,
+        "U4_palm_apple_all_valid_windows_median_m": 0.007100926944985986
+      },
+      "16": {
+        "U1_palm_apple_grasp_cohort_median_m": 0.011468937620520592,
+        "U2_rollout_over_persistence_moving": 0.7877713832252812,
+        "U3_held_lift_auroc": 0.9992848884725019,
+        "U3_held_lift_shuffled_auroc": 0.7073599178742999,
+        "U4_palm_apple_all_valid_windows_median_m": 0.00913066603243351
+      },
+      "4": {
+        "U1_palm_apple_grasp_cohort_median_m": 0.009012576192617416,
+        "U2_rollout_over_persistence_moving": 1.0460892126393302,
+        "U3_held_lift_auroc": 0.9994894982497082,
+        "U3_held_lift_shuffled_auroc": 0.8499597540948183,
+        "U4_palm_apple_all_valid_windows_median_m": 0.007314702961593866
+      },
+      "8": {
+        "U1_palm_apple_grasp_cohort_median_m": 0.009834349621087313,
+        "U2_rollout_over_persistence_moving": 0.8763473937806117,
+        "U3_held_lift_auroc": 0.9994916015732763,
+        "U3_held_lift_shuffled_auroc": 0.7676487820770506,
+        "U4_palm_apple_all_valid_windows_median_m": 0.00781842041760683
+      }
+    },
     "resolution": "scripts/measure_policy_preflight.py, committed by this task, re-derives every one of them from the E0 checkpoint and writes a committed report. Until that report exists, NO GATE THRESHOLD DEPENDS ON THEM.",
+    "status": "RESOLVED: all four re-derived exactly by scripts/measure_policy_preflight.py over 4807 windows; the committed script is now their provenance.",
+    "still_rollout_quantities": "Re-derivation establishes that the protocol quoted these accurately. It does NOT change what they measure: they remain rollout readouts, not perception measurements.",
     "verification_note": "The coordinator independently re-read these values from the same untracked file and they matched exactly. That establishes the read is reproducible; it does NOT make the artifact committed, and this protocol does not treat it as such.",
     "why": "data/, outputs/ and checkpoints/ are git-ignored (.gitignore), so run artifacts cannot be cited. The following are used in the protocol's framing section and exist ONLY in the untracked outputs/task054-wm-v4/leworldmodel_baseline-val-gates.json."
   },

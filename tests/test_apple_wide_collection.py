@@ -215,13 +215,20 @@ def test_model_planner_and_evaluation_code_never_import_training_labels():
     # references; every other package module must not even be able to import a label
     # module. The text guard cannot cover readout_labels (models/base.py names the file
     # when it hashes it), so imports are checked by parsing instead.
+    # TRAINING RUNNERS may build targets from labels; CONTROL-LOOP code may not. cloning.py
+    # is a trainer in exactly the sense world_model_v2.py is -- it reads
+    # collector__base_action as the behaviour-cloning target under the same explicit
+    # acknowledgement -- so it joins the list. policy.py deliberately does NOT: it runs inside
+    # the control loop, where a label would be a leak, and the assertion below pins that.
     allowed = {
         "training_labels.py",
         "readout_labels.py",
         "world_model_v2.py",
         "world_model_v3.py",
         "world_model_v4.py",
+        "cloning.py",
     }
+    assert "policy.py" not in allowed, "control-loop code must never be allowed a label import"
     labels = {"training_labels", "readout_labels"}
     for path in package.rglob("*.py"):
         if path.name in allowed:

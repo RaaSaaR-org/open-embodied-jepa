@@ -12,7 +12,7 @@ from typing import Any
 import yaml
 
 from embodied_jepa.planning import CEMConfig
-from embodied_jepa.registry import EMBODIMENTS, MODELS, PLANNERS, TASKS
+from embodied_jepa.registry import EMBODIMENTS, MODELS, PLANNERS, POLICIES, TASKS
 
 MODELS.register("native_jepa", "embodied_jepa.models:NativeJEPA")
 MODELS.register("leworldmodel", "embodied_jepa.models:LeWM")
@@ -35,6 +35,9 @@ BACKEND_KEYS = (
 )
 EMBODIMENTS.register("unitree_g1_dex3", "embodied_jepa.embodiment:G1Embodiment")
 PLANNERS.register("cem", "embodied_jepa.planning:CEMPlanner")
+# A policy is the control-side sibling of a planner: both turn an observation into an
+# action through the model contract, and a run selects one by config (TASK-056).
+POLICIES.register("cloned_bc_v1", "embodied_jepa.policy:ClonedPolicy")
 TASKS.register("reach", "embodied_jepa.task:ReachTask")
 TASKS.register("apple_to_plate", "embodied_jepa.task:AppleToPlateTask")
 
