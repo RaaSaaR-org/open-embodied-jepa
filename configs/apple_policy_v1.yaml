@@ -15,8 +15,7 @@
 # The planner block is inherited but unused: a policy is selected instead of a planner. Its
 # bounds are kept because they are what pins the seven action components the policy does not
 # predict. `policy._check_pinned_bounds` exists to refuse a config that frees any of them, but
-# it is NOT yet wired into a runtime path -- there is no closed-loop runner yet. Wiring it, and
-# clipping emitted actions to these configured bounds rather than to the contract's [-1, 1],
-# are blocking requirements on scripts/evaluate_policy.py: the right-arm bounds here are +-0.5,
-# so an unclipped head could command twice the delta every prior generation operated under.
+# it is wired by scripts/evaluate_policy.py, which calls it on these bounds and clips every
+# command to them before projection and execution. The right-arm bounds here are +-0.5, so an
+# unclipped head would command twice the delta every prior generation operated under.
 extends: apple_wm_v4_lewm.yaml

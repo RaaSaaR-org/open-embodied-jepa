@@ -174,6 +174,7 @@
       "n": 40,
       "never_simulated": true,
       "one_ulp_platform_difference": "IDENTIFIED, so the next person does not re-investigate. numpy's compiled Generator.uniform evaluates low + range * next_double; whether that multiply-add contracts to an FMA depends on the numpy build's compiler and target, so the result can differ by one ULP (~1.4e-17 m here) between macOS arm64 and Linux x86-64. The underlying PCG64 doubles are integer-derived and bit-exact everywhere; only the affine rescale differs. Reproduced locally: rng.uniform(-0.03, 0.03, 2) != [lo + (hi-lo)*x for x in raw] in the first element under numpy 2.5.3. Precedent: the wide corpus hit the same class of problem (scripts/collect_apple_wide.py plan hash; docs/experiments/apple_wide_collection_results_v1.md L174-179) and solved it with a platform-robust hash rounded to 1e-9 on every platform plus the exact hash on macOS arm64 only. This protocol needs no rounded hash because its digest is over stored decimals rather than recomputed floats.",
+      "owed_refactor_non_mutating_digest": "scripts/evaluate_policy.py builds FrozenEncoder(model, frozen=False) purely to read a weights digest, because frozen=True is NOT a pure accessor -- it calls model.eval() and requires_grad_(False) on the shared model, which permanently freezes an arm about to be restored as trainable and breaks A3's optimizer load. A non-mutating digest helper in policy.py would be cleaner and is NOT done, because policy.py's implementation_sha256 is enforced by every trained checkpoint: touching that file invalidates all four arms. VERIFIED, not assumed -- the refactor was attempted and all four checkpoints became unloadable. It belongs with a retrain.",
       "pin_check": "regenerating seed 45200 from this rule reproduces benchmarks/manifests/apple-wide-grasp-closure-v3.json resets.45200 EXACTLY (object_xy [0.3229653854661023,-0.15092924454200007], plate_xy [0.5010270523751088,-0.1025915174158386]) Checked to a tolerance of 1e-12 m, not exact equality -- see generator_cross_check_tolerance.",
       "reset_rule": "wide_reset (TASK-047): apple +-3 cm about (0.34,-0.18), plate +-2 cm about (0.49,-0.09)",
       "resets": {
@@ -618,7 +619,7 @@
           "seed": 45339
         }
       },
-      "runner_must_clip_to_configured_bounds": "BLOCKING requirement on scripts/evaluate_policy.py, alongside runner_must_reset_from_stored_values. ClonedPolicy.act clips to the CONTRACT range [-1, 1] because validate_actions demands it, but the protocol's frozen right-arm bounds are +-0.5. The runner must wire policy._check_pinned_bounds and clip emitted actions to the configured bounds, or a head could command twice the delta every prior generation operated under. Not yet wired: there is no closed-loop runner.",
+      "runner_must_clip_to_configured_bounds": "BLOCKING requirement on scripts/evaluate_policy.py, alongside runner_must_reset_from_stored_values. ClonedPolicy.act clips to the CONTRACT range [-1, 1] because validate_actions demands it, but the protocol's frozen right-arm bounds are +-0.5. The runner must wire policy._check_pinned_bounds and clip emitted actions to the configured bounds, or a head could command twice the delta every prior generation operated under. WIRED as of the development runner: scripts/evaluate_policy.py calls policy._check_pinned_bounds on the configured bounds and clips every command to them before projection and execution. Discharged by a BEHAVIOURAL test that drives run_attempt with stubs and asserts what reaches robot.execute, with the bounds read from configs/apple_wm_v4.yaml rather than restated. An earlier helper-level test did NOT discharge it: an independent probe made the loop execute the raw command while keeping the clip counter, and the full suite stayed green at 782 passed.",
       "runner_must_reset_from_stored_values": "The evaluation runner MUST instantiate each reset from the stored object_xy/plate_xy in this manifest and MUST NOT recompute them from wide_reset at run time. Otherwise two machines could execute subtly different cohorts while both passing the digest check. This is a requirement on scripts/evaluate_policy.py, stated before it is written.",
       "runs_per_arm": 1,
       "seeds": [
@@ -663,7 +664,7 @@
         45338,
         45339
       ],
-      "tripwires_are_text_checks_and_must_be_upgraded": "BLOCKING requirement on scripts/evaluate_policy.py. The two constraints above are currently enforced by SOURCE-TEXT tripwires in tests/test_policy_preflight.py. A grep cannot prove the runner correct; it can only make the requirement impossible to miss at the moment the file is created, and nothing stronger is available now because you cannot import and introspect a file that does not exist. WHEN THAT FILE IS WRITTEN, THE TEXT CHECKS MUST BE REPLACED BY BEHAVIOURAL TESTS: (1) import the runner, hand it an action beyond the frozen +-0.5 right-arm bound, and assert that what actually reaches the embodiment is clipped to the bound; (2) assert that the resets the runner executes equal the stored manifest values rather than recomputed ones. Shipping the weak check plus this obligation is deliberate: a weak check that fires at the right moment beats a strong check that cannot be written, PROVIDED the debt is recorded rather than the weak check being treated as sufficient. NOTE on the bounds tripwire specifically: it is satisfied by a bare MENTION of lower_bounds/upper_bounds anywhere in the file, including in a comment or an unrelated config dump. It bites the case it was written for -- a runner authored with no awareness of the constraint -- but it is NOT a guarantee and must not be treated as one. The reset tripwire was upgraded from a text grep to an AST walk after a demonstrated false positive: it fired on a CORRECT runner whose docstring explained that it does not recompute from wide_reset. A tripwire that bites the person who got it right teaches people to weaken tripwires.",
+      "tripwires_are_text_checks_and_must_be_upgraded": "BLOCKING requirement on scripts/evaluate_policy.py. The two constraints above are currently enforced by SOURCE-TEXT tripwires in tests/test_policy_preflight.py. A grep cannot prove the runner correct; it can only make the requirement impossible to miss at the moment the file is created, and nothing stronger is available now because you cannot import and introspect a file that does not exist. WHEN THAT FILE IS WRITTEN, THE TEXT CHECKS MUST BE REPLACED BY BEHAVIOURAL TESTS: (1) import the runner, hand it an action beyond the frozen +-0.5 right-arm bound, and assert that what actually reaches the embodiment is clipped to the bound; (2) assert that the resets the runner executes equal the stored manifest values rather than recomputed ones. Shipping the weak check plus this obligation is deliberate: a weak check that fires at the right moment beats a strong check that cannot be written, PROVIDED the debt is recorded rather than the weak check being treated as sufficient. NOTE on the bounds tripwire specifically: it is satisfied by a bare MENTION of lower_bounds/upper_bounds anywhere in the file, including in a comment or an unrelated config dump. It bites the case it was written for -- a runner authored with no awareness of the constraint -- but it is NOT a guarantee and must not be treated as one. The reset tripwire was upgraded from a text grep to an AST walk after a demonstrated false positive: it fired on a CORRECT runner whose docstring explained that it does not recompute from wide_reset. A tripwire that bites the person who got it right teaches people to weaken tripwires. STATUS: the bounds tripwire is now a behavioural test at run_attempt level, verified to catch the injected regression. The STORED-VALUES behavioural test REMAINS OWED -- this runner refuses cohort C outright, so there is no cohort-C reset path to exercise; what is asserted instead is the refusal, now including coercion of non-int seeds, which previously let the string '45300' bypass it.",
       "values_are_the_definition": true,
       "what_freezes_the_cohort": "THE STORED VALUES IN THIS MANIFEST ARE THE DEFINITION OF COHORT C, not the generator. cohort_sha256 is a sha256 over the stored decimals (json.dumps(resets, sort_keys=True, separators=(',',':'))). It never re-runs wide_reset, and json.loads -> float -> repr is idempotent because CPython's shortest-round-trip repr and correctly-rounded strtod are platform-independent. So the seal reproduces on ANY platform and is verifiable by a third party on a different machine."
     },
@@ -966,6 +967,10 @@
     "which_check_is_load_bearing": "Two guards protect policy.py and they are NOT equivalent. 'assert \"policy.py\" not in allowed' is a tautology against a literal set: it can only fail when someone edits that set, which is exactly and only its job (a future widening fails loudly instead of silently). THE LOAD-BEARING CHECK IS THE LOOP BENEATH IT, which parses every non-allow-listed module and asserts it neither mentions nor imports a label module; policy.py is covered by that loop PRECISELY BECAUSE it is not on the allow-list. Removing the loop on the grounds that the assertion covers it would delete the real protection and leave a tautology behind.",
     "why_recorded_here": "A leakage guard was widened during an active protocol by the agent running that protocol. It is defensible, and it was checked independently by the coordinator, but a future auditor comparing the guard before and after TASK-056 deserves to find the reasoning in the record rather than reconstruct it from a diff."
   },
+  "integrity_machinery_demonstrations": {
+    "debt_discharging_test_standard": "A clipping test claimed to discharge a preregistered blocking debt and did not: it exercised a helper, never the loop. An injected violation (execute the raw command, keep the clip counter) left the robot taking twice the configured delta while the full suite stayed green at 782 passed. STANDARD ADOPTED: for every debt-discharging test, write the violation, watch the test fail, then fix it.",
+    "implementation_hash_guard": "The clean fix for the mutating-digest defect changed policy.py's implementation_sha256 and ALL FOUR trained checkpoints immediately became unloadable -- the guard doing exactly its job, since a later source fix must not make a historical checkpoint compatible. Found by ATTEMPTING the refactor, not by reasoning about it."
+  },
   "kind": "learned_control",
   "label": "Behaviour cloning on the frozen E0 encoder, plus a readout-driven scripted-controller arm, on a fresh frozen wide-jitter cohort",
   "leakage_discipline": {
@@ -981,6 +986,14 @@
     "a_green_local_suite_is_not_evidence_for_a_cross_platform_reproducibility_claim": "The first CI run of this preregistration failed on Linux x86-64 while the full suite passed locally on macOS arm64, because a test asserted exact float equality between a stored cohort value and a regenerated one. Locally the generator reproduced the stored values with ZERO deviation, so no amount of local testing could have surfaced it. This protocol's credibility rests on a third party being able to verify the seal on a different machine, so the class of claim matters more than the instance: any assertion that something is bit-identical must be validated on more than one platform, or stated as holding only on the platform that produced it."
   },
   "missing_values": "a gate that cannot be evaluated counts as FAILED",
+  "most_serious_defect_found": {
+    "found_by": "independent review, before the runner was used for anything",
+    "no_cohort_c_seed_has_ever_been_simulated": true,
+    "status": "Fixed: seeds are coerced before the membership test, and the guard is a whitelist of cohort D. Tested at the type boundary (int, str, float, np.int64, np.int32, bool, whitespace), including that non-canonical forms of PERMITTED seeds are still accepted. Each guard verified by injecting its own violation and watching the test fail.",
+    "the_class": "A guard that enumerates what is FORBIDDEN fails open. A guard that enumerates what is PERMITTED fails closed. The whitelist is right not because it catches the string case but because refusal is its default.",
+    "what": "scripts/evaluate_policy.py tested cohort-C membership BEFORE coercing seeds to int, so the string '45300' bypassed the refusal and produced exactly the manifest's stored resets['45300']. The guard was also a BLACKLIST of cohort C rather than a whitelist of cohort D, so any unenumerated seed ran and was filed under 'D_development_never_gating'.",
+    "why_it_is_worse_than_the_others": "Every other defect in this protocol produces a wrong number or a failed load: visible, recoverable, costing a day. This one SILENTLY CONSUMES THE FROZEN COHORT, which is unrecoverable -- there is no re-running a cohort whose entire value is never having been seen. Cohort C is gated behind three separate authorizations because opening it cannot be undone, and a type coercion could have walked through all three."
+  },
   "not_done_in_this_task": [
     "the critic (see predecessor.critic_deliberately_not_implemented)",
     "the test split (never decoded)",
@@ -1140,7 +1153,8 @@
     "what_it_merged": "TASK-055 (PR #31): README dated honest-status section, docs/DECISIONS.md entry recording the CEM abandonment, docs/MODELS.md shared config keys, CLAUDE.md now tracked"
   },
   "results": {
-    "arms_trained": 0,
+    "A4_deferred_not_abandoned": "A4 is not built yet because the development pre-check does not need it. It becomes MORE important if the learned arms fail on development: A4 is what distinguishes Outcome D (perception inadequate in the loop) from Outcome C (cloning is the failing component). If all four learned arms die on development, A4 is the next thing built. Its absence at this stage is sequencing, not abandonment.",
+    "arms_trained": 4,
     "cohort_C_simulated": false,
     "learned_apple_to_plate_successes": 0,
     "observations": {
@@ -1237,7 +1251,7 @@
       "rows_scored": 7734,
       "surviving_val_roots": 15
     },
-    "stage": "preflight_only",
+    "stage": "training_complete_development_precheck_pending",
     "stage1_withdrawal_clause": {
       "committed": "2026-09-24, while the alignment review of the runner was still running and its answer was unknown.",
       "expectation": "Not expected to fire. If it does not, the clause stays in the record as what was committed to while the answer was still open.",
@@ -1252,6 +1266,55 @@
       "related_exposure_named_not_acted_on": "The same gap -- verifying a number's VALUE does not verify WHAT PRODUCED IT -- applies in principle to every accepted numerical claim in the experiment record, and the claims nobody has had reason to re-examine carry it most, since 'nobody re-examined it' is not evidence of anything. Re-auditing the record from inside a running experiment is how a protocol stops being a protocol, so it is NOT done here and NO task is opened for it by this protocol. Recorded so it is carried rather than forgotten.",
       "the_unverified_dependency": "shuffled_frame_control deliberately uses TWO DIFFERENT row arrays (image_rows for the image, rows for the proprioception) and compares the readouts against truth[valid_rows]. The stage-1 result was accepted on its VALUES; the row/position correspondence underneath them was not checked. Same shape of gap as the rollout-versus-perception error that section 1 was rewritten to fix.",
       "why_now": "Cheap to commit to in advance, expensive to argue about once a passing result is in hand and a day of work sits behind it."
+    },
+    "training": {
+      "A1_beats_A2_unexplained": "A randomly initialized frozen encoder scored better than the trained one on the offline metric. Left as an OPEN QUESTION rather than given a plausible story; an unexplained measurement is more useful to the next generation than a tidy account of it.",
+      "A3_did_not_converge": "A3's best step IS its final step (15000/15000), so there is no evidence it converged; every other arm's best step is well inside its run. It used 207 s of a 7200 s cap, so the binding constraint was the DECLARED STEP COUNT, not wall clock. steps and a3_steps are in the frozen block and were NOT changed; A3 was NOT retrained. A3's result therefore cannot distinguish 'fine-tuning hurts' from 'fine-tuning had not finished', and that caveat travels with its reading.",
+      "all_four_arms": "completed",
+      "arms": {
+        "A0_proprio_only": {
+          "best_step": 42000,
+          "elapsed_s": 126,
+          "encoder": "none",
+          "selection_score": 0.01313,
+          "steps": 50000
+        },
+        "A1_random_encoder": {
+          "best_step": 40000,
+          "elapsed_s": 145,
+          "encoder": "random",
+          "selection_score": 0.01106,
+          "steps": 50000
+        },
+        "A2_bc_frozen_e0": {
+          "best_step": 26000,
+          "elapsed_s": 145,
+          "encoder": "frozen",
+          "selection_score": 0.01793,
+          "steps": 50000
+        },
+        "A3_bc_finetuned_e0": {
+          "best_step": 15000,
+          "elapsed_s": 207,
+          "encoder": "finetune",
+          "selection_score": 0.0234,
+          "steps": 15000
+        }
+      },
+      "cohort": {
+        "protocol_upper_bound": 6165,
+        "train_close_phase_rows": 6033,
+        "train_rows_sampled": 68791,
+        "train_surviving_roots": 137,
+        "train_target_sha256": "76fbcff0d6f799d5",
+        "val_rows_sampled": 7723,
+        "val_surviving_roots": 15
+      },
+      "device": "mps",
+      "offline_metric_is_a_declared_weak_proxy": "The protocol declares in advance that val action error is a weak proxy for closed-loop success. The ordering is recorded as a measurement; the closed-loop gates remain what decides the hypothesis. Abandoning on this evidence would be abandoning on evidence preregistered as non-decisive.",
+      "revision": "919a75becd33",
+      "seed": 0,
+      "validation_every_not_frozen": "validation_every is absent from the frozen training block; the runner default of 2000 was used and is disclosed rather than presented as preregistered."
     }
   },
   "results_doc": "docs/experiments/apple_policy_v1_results.md",
