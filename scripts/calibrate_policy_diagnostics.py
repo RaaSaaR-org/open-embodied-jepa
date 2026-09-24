@@ -446,11 +446,26 @@ def offline(output, workers, device):
                     zip(names, predicted.std(0).tolist(), strict=True)
                 ),
                 "d1_grasp_two_sided_count": int((grasp >= 0.0).sum()),
+                # Amendment 1's cut, reported beside the frozen one.
+                "d1_grasp_amended_count_gt_minus_0_5": int((grasp > -0.5).sum()),
                 "step_zero_grasp_min": float(grasp.min()),
                 "step_zero_grasp_max": float(grasp.max()),
             }
         report["step_zero"][split] = entry
-        if split != "val":
+        if split == "train":
+            # §1.1(a)'s train-cohort dz statistics, from committed code (claim audit S6-27).
+            dz = base[rows][:, 8]
+            report["train_bc_target_right_dz"] = {
+                "rows": int(len(rows)),
+                "mean": float(dz.mean()),
+                "rate_at_plus_0_4": float(np.isclose(dz, 0.4, atol=1e-6).mean()),
+                "rate_at_minus_0_4": float(np.isclose(dz, -0.4, atol=1e-6).mean()),
+                "rate_abs_at_0_4": float(np.isclose(np.abs(dz), 0.4, atol=1e-6).mean()),
+                "median_abs": float(np.median(np.abs(dz))),
+            }
+            report["d1_pipeline_train_reset_equivalence"] = reset_equivalence(
+                arrays, ids, first, policies, measure, precompute_features
+            )
             continue
 
         # D1-pipeline: float-noise floor (single observation, as act() runs it, vs the batched
@@ -483,7 +498,29 @@ def offline(output, workers, device):
                     zeroed.append(run({c: np.zeros_like(v) for c, v in frames.items()}, state))
                     later.append(run(frames, state_later))
             single = np.array(single)
+            # The path D1-pipeline actually compares: act() on a RobotState, against the
+            # CLIPPED offline prediction (act clips to [-1, 1]; the review of amendment 1 found
+            # the step-zero grasp heads sit just below -1, so an unclipped comparison fails a
+            # sound pipeline).
+            from embodied_jepa.contracts import RobotState
+
+            acted = []
+            for row in first:
+                state = RobotState(
+                    arrays.states[[row]],
+                    arrays.mask[[row]],
+                    np.asarray(arrays.timestamps[[row]], np.float64),
+                    store.state_schema,
+                )
+                acted.append(
+                    policy.act(images(arrays, np.array([row])), state)[list(FREE_ACTION_INDICES)]
+                )
+            acted = np.array(acted)
             pipeline[label] = {
+                "act_vs_clipped_batched_max_abs": float(
+                    np.abs(acted - np.clip(batched, -1.0, 1.0)).max()
+                ),
+                "act_vs_unclipped_batched_max_abs": float(np.abs(acted - batched).max()),
                 "float_noise_max_abs_single_vs_batched": float(np.abs(single - batched).max()),
                 "swapped_reset_image_max_abs_change": float(
                     np.abs(np.array(swapped) - single).max(axis=1).min()
@@ -538,6 +575,55 @@ def offline(output, workers, device):
     report["elapsed_seconds"] = time.perf_counter() - started
     _write(output, report)
     return report
+
+
+def reset_equivalence(arrays, ids, first, policies, measure, precompute_features):
+    """A sound-pipeline demonstration on TRAIN roots (disjoint from D1-pipeline's val roots).
+
+    Resets the simulator to each provenance root's recorded reset exactly as the runner will,
+    executes nothing, and compares the live observation and every arm's act() with the stored
+    frame and the clipped offline prediction. This is what "a sound pipeline passes D1" rests on.
+    """
+    from embodied_jepa.policy import FREE_ACTION_INDICES
+
+    c = collector()
+    plan = {r["seed"]: r for r in c.make_plan(c.FROZEN_SEEDS)["roots"]}
+    by_seed = {int(e.split("-")[1]): int(row) for e, row in zip(ids, first, strict=True)}
+    out = {"roots": list(PROVENANCE_ROOTS), "per_root": {}}
+    worst = {label: 0.0 for label in policies}
+    for seed in PROVENANCE_ROOTS:
+        row = by_seed[seed]
+        robot = _robot()
+        try:
+            robot.observe()
+            robot.reset(
+                seed=seed, object_xy=plan[seed]["object_xy"], plate_xy=plan[seed]["plate_xy"]
+            )
+            obs = robot.observe()
+        finally:
+            robot.sim.close()
+        entry = {
+            "image_identical": bool(
+                np.array_equal(obs.images["onboard_rgb"][0], arrays.frames["onboard_rgb"][row])
+            ),
+            "state_max_abs": float(np.abs(obs.robot_state[0] - arrays.states[row]).max()),
+            "mask_identical": bool(np.array_equal(obs.state_mask[0], arrays.mask[row])),
+            "act_vs_clipped_offline_max_abs": {},
+        }
+        for label, (policy, source) in policies.items():
+            one = np.array([row])
+            offline = measure.predictions(
+                policy, arrays, one, precompute_features(source, arrays, one)
+            )[0]
+            live = policy.act(obs.images, obs.state)[list(FREE_ACTION_INDICES)]
+            diff = float(np.abs(live - np.clip(offline, -1.0, 1.0)).max())
+            entry["act_vs_clipped_offline_max_abs"][label] = diff
+            worst[label] = max(worst[label], diff)
+        out["per_root"][str(seed)] = entry
+    out["all_images_identical"] = all(e["image_identical"] for e in out["per_root"].values())
+    out["max_state_abs"] = max(e["state_max_abs"] for e in out["per_root"].values())
+    out["worst_act_vs_clipped_offline"] = worst
+    return out
 
 
 def _write(output, report):
