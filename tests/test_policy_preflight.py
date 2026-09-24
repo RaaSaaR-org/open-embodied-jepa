@@ -719,10 +719,27 @@ def test_every_joint_D1_G_SUB_outcome_maps_to_exactly_one_pre_declared_outcome()
     assert "unbounded escape" in rule["why_the_once_is_load_bearing"]
 
     # Outcome X must NOT be conditioned on G-SUB alone; the joint case has its own entry.
-    assert "clause (a)" in outcomes["X"].lower(), (
-        "Outcome X must be conditioned on CLAUSE (a) not holding. Conditioning it on G-SUB "
-        "alone reproduces the contradiction with the success clause; conditioning it on D1 "
-        "alone reproduces it on the D1-grasp disjunct, which is the B-2 defect."
+    # Vocabulary AND polarity. Checking only that "clause (a)" appears passes an Outcome X
+    # rewritten to "G-SUB fails AND clause (a) HOLDS" -- the B-2 defect reintroduced in the
+    # correct vocabulary, sailing straight past the guard built to prevent it. The general
+    # form, which is why this comment is here rather than a bare second assertion:
+    #
+    #   A guard that matches on VOCABULARY rather than on the CONDITION will pass any
+    #   mutation fluent enough to reuse the vocabulary.
+    #
+    # Same insight as the string-equality choice in the Table A drift test, applied to logic
+    # instead of to numbers.
+    outcome_x = outcomes["X"].lower()
+    assert "clause (a)" in outcome_x, (
+        "Outcome X must be conditioned on CLAUSE (a). Conditioning it on G-SUB alone "
+        "reproduces the contradiction with the success clause; conditioning it on D1 alone "
+        "reproduces it on the D1-grasp disjunct, which is the B-2 defect."
+    )
+    assert "not hold" in outcome_x, (
+        "Outcome X names clause (a) but with the wrong POLARITY: it must fire when clause (a) "
+        "does NOT hold. 'G-SUB fails AND clause (a) holds' is the B-2 defect wearing the "
+        "correct vocabulary -- the abandonment clause would fire on exactly the joint outcome "
+        "the precedence rule exempts."
     )
     assert "P_over_X_precedence" in outcomes
     joint = outcomes["P_over_X_precedence"]
@@ -773,6 +790,19 @@ def test_every_joint_D1_G_SUB_outcome_maps_to_exactly_one_pre_declared_outcome()
     contract = rule["exemption_spent_contract"].lower()
     assert "successor protocol must cite this field" in contract
     assert "may not claim the exemption while it reads true" in contract
+
+    # The spent cell must be NAMED, and named with the right polarity. Without this the cell is
+    # prose: deleting it left the suite green, which is the same unnamed-cell shape as B-2 and
+    # was found by injecting its removal rather than by reading.
+    assert "X_when_the_exemption_is_already_spent" in outcomes, (
+        "the outcome for (exemption spent, G-SUB fails, clause (a) holds) is not named. An "
+        "unnamed cell is what the B-2 defect was."
+    )
+    spent = outcomes["X_when_the_exemption_is_already_spent"].lower()
+    assert "abandonment clause fires" in spent, (
+        "with the exemption spent, a G-SUB failure under a holding clause (a) must fire the "
+        "clause; anything else makes the 'once' unbounded after all"
+    )
 
 
 def test_the_none_configuration_is_not_terminated_by_shadow_expert_exhaustion():

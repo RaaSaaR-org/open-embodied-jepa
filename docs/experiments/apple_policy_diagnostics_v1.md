@@ -290,7 +290,8 @@ consumed. Every scope term used in a gate or stop rule below is enumerated here 
 **The rule is keyed on whether the substitution set is empty, never on which probe is running.**
 That distinction is load-bearing and an earlier revision got it wrong — see the box below.
 
-- **Empty substitution set** — all of D1 and D2, **and the `none` configuration of D3**: the
+- **Empty substitution set** — all of D1 and D2, **the `none` configuration of D3**, and B1's
+  three reference baselines `scripted_oracle`, `hold` and `random`: the
   shadow expert is a *recording*, not a command source, so its exhaustion cannot affect the
   robot. It stops being recorded, **the attempt continues to its cap**, and the report records
   `shadow_expert_exhausted_at_step`. Departure is undefined past that step and is recorded as
@@ -506,6 +507,13 @@ only gates", which left D1-grasp's count outside the rule while §5.2(a) made it
 > cite this field in its own gate section** and may not claim the exemption while it reads `true`.
 > Without a field to flip, "once" is prose binding a document this protocol cannot reach.
 >
+> **The spent cell, named rather than left to inference.** If `exemption_spent` is already `true`
+> and G-SUB fails while clause (a) holds, **the abandonment clause fires.** The exemption is gone;
+> a second failure through a channel that was supposed to have been fixed is the clause's case,
+> not an exception to it. This is properly the successor protocol's outcome to declare, but the
+> entire point of `exemption_spent` is that this protocol binds its successor — **and an unnamed
+> cell is exactly what the B-2 defect was.**
+>
 > The "once" is the load-bearing half. Without it this is an unbounded escape from abandonment,
 > which is worse than the contradiction it replaces.
 
@@ -689,6 +697,14 @@ Total 16.1 s on CPU.
 
 **The manifest is authoritative for every cell above.** `benchmarks/manifests/apple-policy-diagnostics-v1.json` `frozen_offline_error_table_A.values` holds these numbers at 6 decimal places, and D1's 24 thresholds are exactly **3 ×** those cells. The tables here print the manifest's own values at the manifest's own precision, so the document and the manifest cannot disagree — and `tests/test_policy_preflight.py` parses this table and asserts cell-by-cell agreement, because a test that compares the manifest against itself cannot see document drift.
 
+> **The general form, which now governs every consistency check in this protocol.**
+> **A guard that matches on vocabulary rather than on the condition will pass any mutation fluent
+> enough to reuse the vocabulary.** The decision-table guard asserted that Outcome X mentions
+> "clause (a)" and not that it fires when clause (a) does *not* hold, so an Outcome X rewritten to
+> "G-SUB fails **and** clause (a) holds" — the B-2 defect in the correct vocabulary — passed the
+> guard built to prevent it. It now asserts polarity too. The string-equality choice below is the
+> same insight applied to numbers rather than to logic: match the condition, not the wording.
+>
 > **Why this is spelled out.** An earlier revision printed Table A rounded to 5 decimal places while the manifest carried 6, so **22 of 28 cells disagreed** and the sentence "D1's thresholds are 3 × the cell" was false of the document's own printed numbers: 3 × 0.01896 = 0.05688 against a stored threshold of 0.056874. The manifest was internally perfect throughout and its self-consistency test passed, which is exactly why the drift was invisible: **a consistency check that compares an artifact with itself certifies nothing about the artifact a reader actually reads.**
 
 **The spread quoted as the derivation of the 3× factor is computed from these cells:** **0.006734** (A1 `right_dyaw`) to **0.030289** (A3 `right_dx`), a ratio of **4.498**. Verified, not estimated.
