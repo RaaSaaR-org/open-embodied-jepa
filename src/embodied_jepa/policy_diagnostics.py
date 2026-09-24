@@ -49,6 +49,18 @@ CONFIGURATIONS = {**G_SUB_CANDIDATES, **CONTROLS}
 
 #: ``apple_collector_policy``'s phase budget: 130+80+45+150+60+100+100+80.
 SHADOW_EXPERT_BUDGET = 745
+#: ``apple_collector_policy``'s phase names (EarlyRelease). Plain ``OracleManipulationPolicy``
+#: has ``lower``/``release`` where the collector has ``release_high``/``lower_open``.
+SHADOW_EXPERT_PHASES = (
+    "orient",
+    "descend",
+    "close",
+    "lift",
+    "transfer",
+    "release_high",
+    "lower_open",
+    "retreat",
+)
 #: ``scripted.OracleManipulationPolicy.action``'s exhaustion message. Caught by exact text only;
 #: any other ContractError propagates.
 EXHAUSTED_MESSAGE = "scripted policy has finished"
@@ -74,13 +86,20 @@ class ShadowExpert:
     robot executed, so after ``orient`` this is "expert targets on the controller's clock".
     """
 
-    def __init__(self, initial_truth, *, factory: Callable = collector_shadow_policy):
-        self.policy = factory(initial_truth)
+    def __init__(self, initial_truth, *, factory: Callable | None = None):
+        # The default is resolved at CALL time, so the preregistered guard below also applies
+        # when the module-level factory is replaced (which is how its test injects a violation).
+        # An explicit factory is for calibration only (the plain-oracle dry run) and is unguarded.
+        guarded = factory is None
+        self.policy = (collector_shadow_policy if guarded else factory)(initial_truth)
         self.budget = int(self.policy.max_steps)
-        if factory is collector_shadow_policy and self.budget != SHADOW_EXPERT_BUDGET:
-            raise ContractError(
-                f"shadow expert budget {self.budget} != preregistered {SHADOW_EXPERT_BUDGET}"
-            )
+        if guarded:
+            names = tuple(phase.name for phase in self.policy.phases)
+            if self.budget != SHADOW_EXPERT_BUDGET or names != SHADOW_EXPERT_PHASES:
+                raise ContractError(
+                    f"shadow expert {names} / {self.budget} commands is not the preregistered "
+                    f"apple_collector_policy {SHADOW_EXPERT_PHASES} / {SHADOW_EXPERT_BUDGET}"
+                )
         self.exhausted_at_step: int | None = None
         self.calls = 0
 

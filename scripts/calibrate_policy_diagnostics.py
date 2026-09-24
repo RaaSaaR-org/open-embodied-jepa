@@ -118,7 +118,9 @@ def _attempt(job):
     robot.reset(**reset)
     scorer = AppleToPlateTask(robot)
     truth = robot.sim.task_truth()
-    factory = pd.collector_shadow_policy if expert_kind == "collector" else OracleManipulationPolicy
+    # None = the preregistered, guarded shadow expert; the plain oracle is the dry run of what
+    # the frozen text would have run.
+    factory = None if expert_kind == "collector" else OracleManipulationPolicy
     shadow = pd.ShadowExpert(truth, factory=factory)
     if controller_kind == "constant":
         controller = pd.ConstantController(payload, name="prior_only_mean")

@@ -4,7 +4,7 @@ aliases:
 - TASK-057
 title: Locate the open-loop/closed-loop gap with cheap diagnostics on the development cohort
 slug: locate-the-open-loop-closed-loop-gap-with-cheap-diagnostics
-status: todo
+status: in-progress
 priority: 1
 owner: ''
 projects: []
@@ -18,8 +18,9 @@ depends_on:
 - "[[TASK-056]]"
 due_date: ''
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-25
 ---
+
 
 
 # Locate the open-loop/closed-loop gap with cheap diagnostics on the development cohort
@@ -66,3 +67,25 @@ Manifest: `benchmarks/manifests/apple-policy-diagnostics-v1.json`.
   numbers from reading.
 - Cohort C (45300–45339) is not simulated at any stage.
 - If G-SUB fails, the abandonment clause fires as written and the line stops.
+%% mc-links: [[TASK-056]] %%
+
+## Amendment 1 (2026-09-25, pre-run)
+
+The merged preregistration named the wrong shadow expert: plain `OracleManipulationPolicy`
+(805 commands) instead of `scripted.apple_collector_policy` (745), the policy every BC root was
+collected with. Verified by bit-exact replay of 8 train roots, the corpus phase budgets and the
+early-release signature. With the frozen expert, B3's `full` configuration scores 0/16 in a dry
+run, so the run would have been void.
+
+The whole-document sweep and a blind-predictor check of every absolute threshold found more:
+- the frozen D1 fails for all four arms on recorded reset frames, so it cannot detect a pipeline
+  defect. It is demoted to a reported D1-contrast and replaced by D1-pipeline, an
+  observation-path equivalence test;
+- the D1-grasp cut does not fire on the prior-only predictor. It moves to > -0.5;
+- G-SUB's 8/16 does not discriminate for `dy`: a clock-only controller with `dy` substituted
+  scores 9/16. Thresholds are now per candidate against that blind reference;
+- `first_departure_step` was never defined. It is now defined;
+- Table E mislabelled two phases, and the manifest had two stale entries.
+
+Protocol §13 and `amendment_1` in the manifest have the details.
+`exemption_spent` stays false. Numbers: `scripts/calibrate_policy_diagnostics.py`.
