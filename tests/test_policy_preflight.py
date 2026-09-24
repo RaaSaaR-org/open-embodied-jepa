@@ -25,6 +25,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from embodied_jepa.contracts import ContractError
+
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "benchmarks" / "manifests" / "apple-policy-v1.json"
 
@@ -347,114 +349,117 @@ def test_a_ratio_only_failure_is_never_labelled_a_near_miss():
 
 
 # ---------------------------------------------------------------------------------------
-# Tripwires for scripts/evaluate_policy.py, which does not exist yet.
+# The runner now EXISTS, so the two text tripwires have been replaced by BEHAVIOURAL tests --
+# the debt recorded against them in benchmarks/manifests/apple-policy-v1.json, come due.
 #
-# Both constraints below are recorded in benchmarks/manifests/apple-policy-v1.json as blocking
-# requirements on that runner. A requirement recorded in prose depends on someone reading it;
-# a requirement encoded in a test depends on nobody deleting it. The person who writes that
-# runner may well never open the manifest, so these fail by themselves instead.
-#
-# THESE ARE TEXT CHECKS, AND THAT IS A KNOWN LIMITATION WITH A DEBT ATTACHED. A grep cannot
-# prove the runner correct; it can only make the requirement impossible to miss at the moment
-# someone creates the file. Nothing stronger is available yet -- you cannot import and
-# introspect a file that does not exist. IF YOU ARE READING THIS BECAUSE ONE OF THEM JUST
-# FIRED: you owe a behavioural test in exchange. Replace the text check with one that imports
-# your runner, hands it an action beyond the frozen right-arm bound, and asserts that what
-# actually reaches the embodiment is clipped to that bound; and one that asserts the resets it
-# executes are the stored manifest values rather than recomputed. Recorded as a blocking
-# requirement in benchmarks/manifests/apple-policy-v1.json.
-#
-# While the file does not exist they PASS VACUOUSLY -- deliberately a bare return, not
-# pytest.skip: .github/workflows/integration.yml rejects every skip whose message is not
-# "graphics opt-in" or "MPS unavailable", so skipping here would fail that job. The moment the
-# file appears without the constraint, CI goes red and the assertion message says why.
+# What changed and why, so the exchange is visible rather than implied. The text checks
+# asserted things about a file's SOURCE because no file existed to exercise. These assert what
+# the runner DOES. One of the two originals cannot be written in its intended form yet: the
+# "resets cohort C from stored values" check has no cohort-C code path to exercise, because
+# this runner REFUSES cohort C by design. What is asserted instead is that refusal, which is
+# the stronger guarantee available at this scope -- and the stored-values behavioural test is
+# still owed when cohort-C support is built.
 # ---------------------------------------------------------------------------------------
 EVALUATE_POLICY = ROOT / "scripts" / "evaluate_policy.py"
 
 
-def test_the_closed_loop_runner_clips_to_the_protocols_bounds_not_the_contracts():
-    """ClonedPolicy.act clips to [-1, 1] because validate_actions demands it.
+def runner():
+    """Import the runner by path; it is a script, not a package module."""
+    import importlib.util
 
-    The protocol's frozen right-arm bounds are +-0.5 (configs/apple_wm_v4.yaml), so a runner
-    that executes act()'s output unmodified could command twice the delta every prior
-    generation operated under -- silently, because the action is still contract-valid.
+    spec = importlib.util.spec_from_file_location("_evaluate_policy", EVALUATE_POLICY)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
-    TEXT CHECK, TO BE REPLACED when the runner exists: import it, hand it an action beyond the
-    +-0.5 right-arm bound, and assert that what actually reaches the embodiment is clipped to
-    the bound. A grep cannot prove the runner correct; it only makes the requirement impossible
-    to miss at the moment the file is created. If you are reading this because it just fired,
-    that behavioural test is what you owe in exchange.
+
+def test_the_runner_clips_to_the_protocols_bounds_not_the_contracts():
+    """BEHAVIOURAL, replacing the text tripwire.
+
+    ``ClonedPolicy.act`` clips to the contract's [-1, 1]; the protocol's frozen right-arm
+    bounds are +-0.5. A runner executing a policy's raw output would command twice the delta
+    every prior generation operated under, and the action would still be contract-valid, so
+    nothing downstream would object.
     """
-    if not EVALUATE_POLICY.exists():
-        return  # vacuously green until the runner is written
-    source = EVALUATE_POLICY.read_text()
-    assert any(
-        marker in source
-        for marker in ("lower_bounds", "upper_bounds", "_check_pinned_bounds", "project_candidates")
-    ), (
-        "scripts/evaluate_policy.py must apply the protocol's configured action bounds "
-        "(planner.lower_bounds / planner.upper_bounds, +-0.5 on the right arm) and/or the "
-        "embodiment's projection to the policy's output. ClonedPolicy.act clips only to the "
-        "contract range [-1, 1], so executing its output unmodified doubles the permitted "
-        "right-arm delta. See benchmarks/manifests/apple-policy-v1.json: "
-        "cohorts.C_frozen_gating.runner_must_clip_to_configured_bounds."
-    )
+    module = runner()
+    lower = np.array([0.0] * 6 + [-0.5] * 6 + [-1.0, -1.0], np.float32)
+    upper = np.array([0.0] * 6 + [0.5] * 6 + [-1.0, 1.0], np.float32)
+
+    saturated = np.zeros(14, np.float32)
+    saturated[6:12] = 1.0  # what a saturated head emits after act()'s contract clip
+    saturated[12] = -1.0
+    saturated[13] = 1.0
+    clipped, was_clipped = module.clip_to_configured_bounds(saturated, lower, upper)
+
+    assert was_clipped is True
+    assert np.all(clipped[6:12] == 0.5), "right-arm deltas must be clipped to the bound"
+    assert clipped[13] == 1.0, "the grasp bound is +-1 and must not be narrowed"
+    assert np.all(clipped[:6] == 0.0) and clipped[12] == -1.0
+
+    # A command already inside the bounds is passed through untouched and not counted.
+    inside = np.zeros(14, np.float32)
+    inside[6:12] = 0.25
+    inside[12] = -1.0
+    passed, touched = module.clip_to_configured_bounds(inside, lower, upper)
+    assert touched is False and np.array_equal(passed, inside)
 
 
-def test_the_closed_loop_runner_resets_cohort_c_from_stored_values():
-    """numpy's Generator.uniform can differ by one ULP across platforms.
+def test_the_runner_rejects_a_command_that_moves_a_pinned_component():
+    """The pinned components are frozen by the bounds AND by the policy module."""
+    module = runner()
+    lower = np.array([0.0] * 6 + [-0.5] * 6 + [-1.0, -1.0], np.float32)
+    upper = np.array([0.0] * 6 + [0.5] * 6 + [-1.0, 1.0], np.float32)
+    rogue = np.zeros(14, np.float32)
+    rogue[0] = 0.3  # a left-arm delta, which nothing in this protocol may command
+    with pytest.raises(ContractError, match="pinned component"):
+        module.clip_to_configured_bounds(rogue, lower, upper)
 
-    A runner that recomputes the resets from ``wide_reset`` would let two machines execute
-    subtly different cohorts while both passing the manifest's digest check, because that
-    digest is over the STORED decimals.
 
-    TEXT CHECK, TO BE REPLACED when the runner exists: assert that the resets the runner
-    actually executes equal the stored manifest values, rather than that its source does not
-    reference wide_reset. If you are reading this because it just fired, that behavioural test
-    is what you owe in exchange.
+def test_the_runner_refuses_the_frozen_cohort():
+    """BEHAVIOURAL, and the strongest guarantee available at this scope.
 
-    TWO KNOWN HOLES, named so nobody inherits them believing the parse is airtight. This
-    catches a direct call, a module-attribute call, an aliased import and a binding to a local.
-    It does NOT catch:
-
-    * ``getattr(module, "wide_reset")(seed)`` -- closing it needs a walk over ``ast.Constant``,
-      which would re-introduce the string-literal false positive this walk was just fixed to
-      avoid. Deliberately left open.
-    * **Reimplementation** -- ``np.random.default_rng(seed).uniform(-0.03, 0.03, 2)`` inline
-      references nothing, and no amount of parsing will see it.
-
-    Only the behavioural test owed in exchange closes either.
+    The stored-values test cannot be written yet -- there is no cohort-C code path to
+    exercise, because this runner refuses cohort C outright. That refusal is what is asserted
+    here. **The stored-values behavioural test is still owed** when cohort-C support is built;
+    see benchmarks/manifests/apple-policy-v1.json.
     """
-    if not EVALUATE_POLICY.exists():
-        return  # vacuously green until the runner is written
-    source = EVALUATE_POLICY.read_text()
-    assert "apple-policy-v1.json" in source or "cohort" in source, (
-        "scripts/evaluate_policy.py must instantiate each cohort-C reset from the STORED "
-        "values in benchmarks/manifests/apple-policy-v1.json, not recompute them from "
-        "wide_reset. See cohorts.C_frozen_gating.runner_must_reset_from_stored_values."
-    )
-    tree = ast.parse(source)
-    mentioned = set()
-    for node in ast.walk(tree):
+    module = runner()
+    assert set(module.COHORT_C) == set(range(45300, 45340))
+    assert not set(module.COHORT_D) & set(module.COHORT_C)
+
+    with pytest.raises(ContractError, match="FROZEN gating cohort"):
+        module.cohort_resets((45300,))
+    with pytest.raises(ContractError, match="FROZEN gating cohort"):
+        module.cohort_resets((45000, 45339))  # one development seed does not excuse the other
+
+    development = module.cohort_resets(module.COHORT_D)
+    assert len(development) == 16
+
+
+def test_the_runner_imports_the_committed_reset_rule_rather_than_reimplementing_it():
+    """The one tripwire hole a parser cannot close.
+
+    A reimplementation of ``default_rng(seed).uniform(...)`` references nothing and would
+    silently produce a different cohort. This asserts the runner's resets equal the committed
+    generator's, and that the runner contains no reset arithmetic of its own.
+    """
+    module = runner()
+    evaluator = module.load_wide_reset()
+    for seed in (45000, 45107):
+        assert module.cohort_resets((seed,))[seed] == evaluator(seed)
+
+    # PARSED, not grepped -- and this test caught itself making that mistake. The first
+    # version checked for the TEXT "default_rng", which fired on the runner's own docstring
+    # explaining what it must not do: the exact false positive that was removed from the
+    # tripwire one commit earlier, reintroduced in the test replacing it.
+    called = set()
+    for node in ast.walk(ast.parse(source := EVALUATE_POLICY.read_text())):
         if isinstance(node, ast.Call):
             func = node.func
-            mentioned.add(func.id if isinstance(func, ast.Name) else getattr(func, "attr", ""))
-        elif isinstance(node, ast.alias):
-            # from ... import wide_reset as wr
-            mentioned.add((node.name or "").rsplit(".", 1)[-1])
-        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-            mentioned.add(node.id)  # f = wide_reset, then f(seed)
-        elif isinstance(node, ast.Attribute):
-            mentioned.add(node.attr)  # getattr-free module.wide_reset references
-    called = mentioned
-    # Parsed, not grepped: a correct runner whose docstring says "NOT recomputed from
-    # wide_reset()" must not be punished for explaining itself. Tripwires that bite the person
-    # who got it right teach people to weaken tripwires.
-    assert "wide_reset" not in called, (
-        "scripts/evaluate_policy.py references wide_reset -- as a call, an aliased import, a "
-        "module attribute, or a local binding. (If you merely named a local variable "
-        "'wide_reset', that is a known false positive: rename it.) Cohort C is defined by the "
-        "stored manifest values; recomputing them can differ by one ULP across platforms and "
-        "would let two machines run subtly different cohorts while both passing the digest "
-        "check. Read the resets from the manifest instead."
+            called.add(func.id if isinstance(func, ast.Name) else getattr(func, "attr", ""))
+    assert "default_rng" not in called, (
+        "scripts/evaluate_policy.py calls default_rng: the reset rule must be IMPORTED from "
+        "the committed generator, never reimplemented. A reimplementation references nothing "
+        "and no parser can catch it."
     )
+    assert "wide_reset" in source, "the committed generator must be reached by name"

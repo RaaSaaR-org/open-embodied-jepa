@@ -1140,6 +1140,7 @@
     "what_it_merged": "TASK-055 (PR #31): README dated honest-status section, docs/DECISIONS.md entry recording the CEM abandonment, docs/MODELS.md shared config keys, CLAUDE.md now tracked"
   },
   "results": {
+    "A4_deferred_not_abandoned": "A4 is not built yet because the development pre-check does not need it. It becomes MORE important if the learned arms fail on development: A4 is what distinguishes Outcome D (perception inadequate in the loop) from Outcome C (cloning is the failing component). If all four learned arms die on development, A4 is the next thing built. Its absence at this stage is sequencing, not abandonment.",
     "arms_trained": 0,
     "cohort_C_simulated": false,
     "learned_apple_to_plate_successes": 0,
@@ -1237,7 +1238,7 @@
       "rows_scored": 7734,
       "surviving_val_roots": 15
     },
-    "stage": "preflight_only",
+    "stage": "training_complete_development_precheck_pending",
     "stage1_withdrawal_clause": {
       "committed": "2026-09-24, while the alignment review of the runner was still running and its answer was unknown.",
       "expectation": "Not expected to fire. If it does not, the clause stays in the record as what was committed to while the answer was still open.",
@@ -1252,6 +1253,55 @@
       "related_exposure_named_not_acted_on": "The same gap -- verifying a number's VALUE does not verify WHAT PRODUCED IT -- applies in principle to every accepted numerical claim in the experiment record, and the claims nobody has had reason to re-examine carry it most, since 'nobody re-examined it' is not evidence of anything. Re-auditing the record from inside a running experiment is how a protocol stops being a protocol, so it is NOT done here and NO task is opened for it by this protocol. Recorded so it is carried rather than forgotten.",
       "the_unverified_dependency": "shuffled_frame_control deliberately uses TWO DIFFERENT row arrays (image_rows for the image, rows for the proprioception) and compares the readouts against truth[valid_rows]. The stage-1 result was accepted on its VALUES; the row/position correspondence underneath them was not checked. Same shape of gap as the rollout-versus-perception error that section 1 was rewritten to fix.",
       "why_now": "Cheap to commit to in advance, expensive to argue about once a passing result is in hand and a day of work sits behind it."
+    },
+    "training": {
+      "A1_beats_A2_unexplained": "A randomly initialized frozen encoder scored better than the trained one on the offline metric. Left as an OPEN QUESTION rather than given a plausible story; an unexplained measurement is more useful to the next generation than a tidy account of it.",
+      "A3_did_not_converge": "A3's best step IS its final step (15000/15000), so there is no evidence it converged; every other arm's best step is well inside its run. It used 207 s of a 7200 s cap, so the binding constraint was the DECLARED STEP COUNT, not wall clock. steps and a3_steps are in the frozen block and were NOT changed; A3 was NOT retrained. A3's result therefore cannot distinguish 'fine-tuning hurts' from 'fine-tuning had not finished', and that caveat travels with its reading.",
+      "all_four_arms": "completed",
+      "arms": {
+        "A0_proprio_only": {
+          "best_step": 42000,
+          "elapsed_s": 126,
+          "encoder": "none",
+          "selection_score": 0.01313,
+          "steps": 50000
+        },
+        "A1_random_encoder": {
+          "best_step": 40000,
+          "elapsed_s": 145,
+          "encoder": "random",
+          "selection_score": 0.01106,
+          "steps": 50000
+        },
+        "A2_bc_frozen_e0": {
+          "best_step": 26000,
+          "elapsed_s": 145,
+          "encoder": "frozen",
+          "selection_score": 0.01793,
+          "steps": 50000
+        },
+        "A3_bc_finetuned_e0": {
+          "best_step": 15000,
+          "elapsed_s": 207,
+          "encoder": "finetune",
+          "selection_score": 0.0234,
+          "steps": 15000
+        }
+      },
+      "cohort": {
+        "protocol_upper_bound": 6165,
+        "train_close_phase_rows": 6033,
+        "train_rows_sampled": 68791,
+        "train_surviving_roots": 137,
+        "train_target_sha256": "76fbcff0d6f799d5",
+        "val_rows_sampled": 7723,
+        "val_surviving_roots": 15
+      },
+      "device": "mps",
+      "offline_metric_is_a_declared_weak_proxy": "The protocol declares in advance that val action error is a weak proxy for closed-loop success. The ordering is recorded as a measurement; the closed-loop gates remain what decides the hypothesis. Abandoning on this evidence would be abandoning on evidence preregistered as non-decisive.",
+      "revision": "919a75becd33",
+      "seed": 0,
+      "validation_every_not_frozen": "validation_every is absent from the frozen training block; the runner default of 2000 was used and is disclosed rather than presented as preregistered."
     }
   },
   "results_doc": "docs/experiments/apple_policy_v1_results.md",

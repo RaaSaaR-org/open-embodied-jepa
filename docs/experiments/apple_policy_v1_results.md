@@ -284,7 +284,32 @@ reading hard to un-bias from the inside.
 is written down, whatever it says, and it applies equally to a result that supports the
 hypothesis and one that refutes it.
 
-## 10. Next
+## 10. Stage 3: training — declared caveats recorded before the closed-loop numbers exist
+
+**A3's result cannot distinguish "fine-tuning hurts" from "fine-tuning had not finished."**
+A3's best step is its **final** step (15 000 of 15 000), so there is no evidence it converged —
+it was still improving when its step budget ended. Every other arm's best step sits comfortably
+inside its run (42 000/50 000, 40 000/50 000, 26 000/50 000). A3 used 207 s of a 7 200 s cap, so
+**the binding constraint was the declared step count, not wall clock.**
+
+`steps` and `a3_steps` are in the frozen training block. **They were not changed, and A3 was not
+retrained** — altering either after seeing the ordering is exactly what the protocol forbids.
+This is recorded as a limitation that travels with A3's reading wherever it is used.
+
+**The A1 < A2 ordering is left as an open question.** A randomly initialized frozen encoder
+scoring better than the trained one on the offline metric is not explained here. A plausible
+story exists — the head may ignore the image in both cases, and A1's less structured features
+may be less misleading — but it is untested, and an unexplained measurement is more useful to
+the next generation than a tidy account of it.
+
+**A4 is deferred, not abandoned.** The readout-driven scripted controller is not built yet
+because the development pre-check does not need it. It becomes *more* important if the learned
+arms fail on development, not less: A4 is what distinguishes **Outcome D** ("perception is
+inadequate in the loop") from **Outcome C** ("cloning is the failing component"). If all four
+learned arms die on development, A4 is the next thing built and the protocol still decomposes
+the failure. A future reader should not see it absent here and conclude it was dropped.
+
+## 11. Next
 
 Stage 2 was **not** a training launch. `src/embodied_jepa/policy.py`,
 `src/embodied_jepa/cloning.py`, the `POLICIES` registry and the arm configs did not exist; the
