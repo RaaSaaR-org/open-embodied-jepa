@@ -1,0 +1,22 @@
+# Apple->Plate policy v1 (TASK-056): behaviour cloning over the FROZEN v4 E0 encoder.
+#
+# This file is the shared base for every learned arm. It inherits the world-model side from
+# the v4 LeWM arm unchanged, because the encoder that arms A1/A2/A3 consume IS that arm's
+# checkpoint and its implementation hash is enforced on load. The backend swap therefore
+# stays a one-line change here exactly as it is everywhere else: point `world_model.backend`
+# at another registered model and the policy consumes its `image_features` instead.
+#
+# Arms differ by the trainer's --encoder flag, not by this config:
+#   A0  --encoder none      proprioception only            (the does-vision-work control)
+#   A1  --encoder random    frozen randomly-initialized    (the does-pretraining-work control)
+#   A2  --encoder frozen    frozen E0                      (PRIMARY)
+#   A3  --encoder finetune  E0, trained end to end
+#
+# The planner block is inherited but unused: a policy is selected instead of a planner. Its
+# bounds are kept because they are what pins the seven action components the policy does not
+# predict. `policy._check_pinned_bounds` exists to refuse a config that frees any of them, but
+# it is NOT yet wired into a runtime path -- there is no closed-loop runner yet. Wiring it, and
+# clipping emitted actions to these configured bounds rather than to the contract's [-1, 1],
+# are blocking requirements on scripts/evaluate_policy.py: the right-arm bounds here are +-0.5,
+# so an unclipped head could command twice the delta every prior generation operated under.
+extends: apple_wm_v4_lewm.yaml

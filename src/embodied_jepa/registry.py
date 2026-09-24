@@ -37,4 +37,5 @@ class Registry:
 MODELS = Registry("world model")
 EMBODIMENTS = Registry("embodiment")
 PLANNERS = Registry("planner")
+POLICIES = Registry("policy")
 TASKS = Registry("task")
