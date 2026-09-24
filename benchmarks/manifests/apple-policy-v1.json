@@ -1215,7 +1215,20 @@
       "rows_scored": 7734,
       "surviving_val_roots": 15
     },
-    "stage": "preflight_only"
+    "stage": "preflight_only",
+    "stage1_withdrawal_clause": {
+      "committed": "2026-09-24, while the alignment review of the runner was still running and its answer was unknown.",
+      "expectation": "Not expected to fire. If it does not, the clause stays in the record as what was committed to while the answer was still open.",
+      "if_a_defect_is_found": [
+        "The stage-1 result is WITHDRAWN, not patched: section 1's gate table stops being the result.",
+        "The fix lands and the runner RE-RUNS from the same frozen checkpoint; the new numbers stand on their own, INCLUDING the possibility that a gate which passed now fails and Outcome E fires.",
+        "The 0.491 / 0.456 / 0.873 figures are NOT carried forward alongside a corrected runner; they are reported as withdrawn, next to what replaced them.",
+        "NO argument is entertained about whether the defect 'would have mattered'. A result whose correctness was established by reasoning after the fact is not a measurement.",
+        "The withdrawal, the defect and the re-run are recorded with BOTH sets of numbers, so the record shows what we believed and what corrected it."
+      ],
+      "the_unverified_dependency": "shuffled_frame_control deliberately uses TWO DIFFERENT row arrays (image_rows for the image, rows for the proprioception) and compares the readouts against truth[valid_rows]. The stage-1 result was accepted on its VALUES; the row/position correspondence underneath them was not checked. Same shape of gap as the rollout-versus-perception error that section 1 was rewritten to fix.",
+      "why_now": "Cheap to commit to in advance, expensive to argue about once a passing result is in hand and a day of work sits behind it."
+    }
   },
   "results_doc": "docs/experiments/apple_policy_v1_results.md",
   "status": "preregistered_not_run",

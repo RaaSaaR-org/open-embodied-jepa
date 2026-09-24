@@ -161,7 +161,39 @@ guard `policy.py` and they are not equivalent:
 Removing the loop on the grounds that the assertion covers it would delete the real protection and
 leave a tautology behind. Both are kept.
 
-## 6. Process notes
+## 6. Withdrawal clause for the stage-1 result — pre-committed, before the answer is known
+
+**Committed on 2026-09-24, while the alignment review of the runner was still running and its
+answer was unknown to everyone involved.** It is written now precisely because it is cheap to
+commit to in advance and expensive to argue about once a passing result is in hand and a day of
+work sits behind it.
+
+The pre-flight's numbers depend on a row/position correspondence that nobody has yet verified:
+`shuffled_frame_control` deliberately uses **two different row arrays** — `image_rows` for the
+image, `rows` for the proprioception — and compares the resulting readouts against
+`truth[valid_rows]`. The result in §1 was accepted on its *values*; the correspondence underneath
+those values was not checked. That is the same shape of gap as the rollout-versus-perception error
+this protocol's §1 was rewritten to fix, which is why it is being checked at all.
+
+**If the alignment check finds a defect in `shuffled_frame_control`, or anywhere else the
+pre-flight depends on, then:**
+
+1. **The stage-1 result is WITHDRAWN, not patched.** §1's gate table stops being the result.
+2. The fix lands, and **the runner re-runs from the same frozen checkpoint**. The new numbers
+   stand on their own — **including the possibility that a gate which passed now fails**, and
+   with it the possibility that Outcome E fires and this task stops.
+3. **The 0.491 / 0.456 / 0.873 figures are not carried forward alongside a corrected runner.**
+   They are reported as withdrawn, next to what replaced them.
+4. **No argument is entertained about whether the defect "would have mattered."** A result whose
+   correctness was established by reasoning after the fact is not a measurement. This clause
+   exists to remove that conversation, not to have it more carefully.
+5. The withdrawal, the defect and the re-run are all recorded here, **with both sets of numbers**,
+   so the record shows what we believed and what corrected it.
+
+This is not expected to fire. If it does not, this section stays in the document as a record of
+what was committed to while the answer was still open.
+
+## 7. Process notes
 
 - **A bug was found by smoking the runner on two episodes before the real run.**
   `world_model_v2._write_json` writes through a sibling `.tmp` and does not create directories,
@@ -176,7 +208,7 @@ leave a tautology behind. Both are kept.
 - **Cohort C (45300–45339) has not been simulated**, not even once, and opening it is a separate
   authorization.
 
-## 7. Next
+## 8. Next
 
 Stage 2 is **not** a training launch. `src/embodied_jepa/policy.py`,
 `src/embodied_jepa/cloning.py`, the `POLICIES` registry and the arm configs do not exist; the
