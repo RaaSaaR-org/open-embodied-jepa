@@ -922,6 +922,28 @@
     "reviewer_verdict_1": "BLOCK",
     "reviewer_verdict_2": "APPROVE WITH NON-BLOCKING COMMENTS on e0f20ec"
   },
+  "integrity_guard_change": {
+    "after": [
+      "training_labels.py",
+      "readout_labels.py",
+      "world_model_v2.py",
+      "world_model_v3.py",
+      "world_model_v4.py",
+      "cloning.py"
+    ],
+    "before": [
+      "training_labels.py",
+      "readout_labels.py",
+      "world_model_v2.py",
+      "world_model_v3.py",
+      "world_model_v4.py"
+    ],
+    "policy_py_excluded_by_design": "src/embodied_jepa/policy.py runs INSIDE the control loop -- its inputs become the robot's inputs -- so a label there would be a genuine leak. It imports no label module and must not.",
+    "rule_unchanged": "Training runners may build targets from labels; control-loop code may not. world_model_v2.py is on the list because it builds readout targets; cloning.py is on it because it reads collector__base_action as the BC target under the same acknowledge_privileged_training_labels gate. This APPLIES the existing rule to a new trainer; it does not relax it.",
+    "what": "src/embodied_jepa/cloning.py was added to the allow-list of tests/test_apple_wide_collection.py::test_model_planner_and_evaluation_code_never_import_training_labels during stage 2 of this protocol.",
+    "which_check_is_load_bearing": "Two guards protect policy.py and they are NOT equivalent. 'assert \"policy.py\" not in allowed' is a tautology against a literal set: it can only fail when someone edits that set, which is exactly and only its job (a future widening fails loudly instead of silently). THE LOAD-BEARING CHECK IS THE LOOP BENEATH IT, which parses every non-allow-listed module and asserts it neither mentions nor imports a label module; policy.py is covered by that loop PRECISELY BECAUSE it is not on the allow-list. Removing the loop on the grounds that the assertion covers it would delete the real protection and leave a tautology behind.",
+    "why_recorded_here": "A leakage guard was widened during an active protocol by the agent running that protocol. It is defensible, and it was checked independently by the coordinator, but a future auditor comparing the guard before and after TASK-056 deserves to find the reasoning in the record rather than reconstruct it from a diff."
+  },
   "kind": "learned_control",
   "label": "Behaviour cloning on the frozen E0 encoder, plus a readout-driven scripted-controller arm, on a fresh frozen wide-jitter cohort",
   "leakage_discipline": {

@@ -126,7 +126,42 @@ data point against the abandoned line rather than a new finding. It stays in the
 L381: `palm = error(predicted, …)`). Their re-derivation establishes that the protocol quoted
 them accurately; it does not change what they measure. The directly-encoded numbers are §1's.
 
-## 5. Process notes
+## 5. A research-integrity guard was widened during this protocol — deliberately, and here is why
+
+`tests/test_apple_wide_collection.py::test_model_planner_and_evaluation_code_never_import_training_labels`
+forbids every module in `src/embodied_jepa/` from importing a label module, with a short
+allow-list. **`src/embodied_jepa/cloning.py` was added to that allow-list in stage 2.** A guard
+against leakage was widened during an active protocol, by the agent running that protocol, so the
+reasoning belongs in the record rather than in a diff a future auditor has to reconstruct.
+
+**What changed.** The allow-list went from `{training_labels.py, readout_labels.py,
+world_model_v2.py, world_model_v3.py, world_model_v4.py}` to the same set plus `cloning.py`.
+
+**Why the boundary is where it is.** The rule the repo already uses is *training runners may build
+targets from labels; control-loop code may not.* `world_model_v2.py` is on the list because it
+builds readout targets. `cloning.py` is on it for the identical reason: it reads
+`collector__base_action` as the behaviour-cloning target, under the same explicit
+`acknowledge_privileged_training_labels` gate. **This applies the existing rule to a new trainer;
+it does not relax the rule.**
+
+**`src/embodied_jepa/policy.py` is excluded by design.** The policy runs *inside the control
+loop*, where a label would be a genuine leak — it is the module whose inputs become the robot's
+inputs. It imports no label module and must not.
+
+**Which check is load-bearing, stated so nobody later "simplifies" the wrong one.** Two things
+guard `policy.py` and they are not equivalent:
+
+- `assert "policy.py" not in allowed` is a **tautology against a literal set**. It can only fail
+  when someone edits that set, which is exactly and only its job: it makes a future widening
+  fail loudly rather than pass silently.
+- **The load-bearing check is the loop beneath it**, which parses every non-allow-listed module
+  and asserts it neither mentions nor imports a label module. `policy.py` is covered by that loop
+  *precisely because* it is not on the allow-list.
+
+Removing the loop on the grounds that the assertion covers it would delete the real protection and
+leave a tautology behind. Both are kept.
+
+## 6. Process notes
 
 - **A bug was found by smoking the runner on two episodes before the real run.**
   `world_model_v2._write_json` writes through a sibling `.tmp` and does not create directories,
@@ -141,7 +176,7 @@ them accurately; it does not change what they measure. The directly-encoded numb
 - **Cohort C (45300–45339) has not been simulated**, not even once, and opening it is a separate
   authorization.
 
-## 6. Next
+## 7. Next
 
 Stage 2 is **not** a training launch. `src/embodied_jepa/policy.py`,
 `src/embodied_jepa/cloning.py`, the `POLICIES` registry and the arm configs do not exist; the
