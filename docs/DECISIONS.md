@@ -16,16 +16,19 @@ A candidate starting point for `native_jepa` is a compact RGB encoder, robot-sta
 
 ## Open decisions with resolving tasks
 
-| Unknown | Current assumption | Resolve in |
-| --- | --- | --- |
-| Local compute | Observed arm64 macOS 26.5.1, 48 GiB memory; MPS support and free storage still to measure | TASK-001, 003 |
-| Actual G1 EDU4 joint/hand/camera configuration | Dual Dex3 as specified, precise calibration pending | TASK-001, 008 |
-| Existing demonstrations and rights | No usable dataset assumed yet | TASK-001, 010 |
-| Python/framework versions | Choose macOS arm64 compatible pins after MuJoCo and LeWM spike | TASK-002, 003, 005 |
-| External checkpoint suitability | Train on G1 canonical data; no transferable checkpoint assumed | TASK-002, 015 |
-| Action frequency/scales and IK implementation | Unset until tested in simulation | TASK-004, 008 |
-| Owners, staffing, delivery date | Unassigned; effort ranges only | Assign when execution starts |
-| Isaac and physical execution | Future ports; local preparation now, commissioning when resources exist | TASK-022, 025, 026 |
+The status column was swept on 2026-09-24. The original assumptions are kept as written so
+the record shows what was assumed before each was resolved.
+
+| Unknown | Assumption as recorded | Resolve in | Status |
+| --- | --- | --- | --- |
+| Local compute | Observed arm64 macOS 26.5.1, 48 GiB memory; MPS support and free storage still to measure | TASK-001, 003 | **Resolved** — measured in [RESOURCES.md](RESOURCES.md) |
+| Actual G1 EDU4 joint/hand/camera configuration | Dual Dex3 as specified, precise calibration pending | TASK-001, 008 | **Simulation only** — MJCF verified in [MUJOCO_SPIKE.md](MUJOCO_SPIKE.md); physical calibration still unset |
+| Existing demonstrations and rights | No usable dataset assumed yet | TASK-001, 010 | **Resolved by collection** — all corpora are locally collected simulation data; no external demonstrations |
+| Python/framework versions | Choose macOS arm64 compatible pins after MuJoCo and LeWM spike | TASK-002, 003, 005 | **Resolved** — pinned in `uv.lock` |
+| External checkpoint suitability | Train on G1 canonical data; no transferable checkpoint assumed | TASK-002, 015 | **Resolved as assumed** — no upstream pretrained weights are used |
+| Action frequency/scales and IK implementation | Unset until tested in simulation | TASK-004, 008 | **Resolved for simulation** — `configs/g1_sim_action.json`; hardware values remain unset |
+| Owners, staffing, delivery date | Unassigned; effort ranges only | Assign when execution starts | Still open |
+| Isaac and physical execution | Future ports; local preparation now, commissioning when resources exist | TASK-022, 025, 026 | Still open — TASK-025/026 are in the backlog |
 
 ## Risk register
 
