@@ -35,6 +35,7 @@ import argparse
 import hashlib
 import json
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -72,6 +73,18 @@ AIM_OFFSET_SEEDS = frozenset(
 SURVIVING_ROOTS = {"train": 137, "val": 15}
 #: A frame is dropped once the apple has moved this far from where the script aimed.
 DISPLACEMENT_LIMIT_M = 0.01
+
+
+@dataclass(frozen=True)
+class SampleMask:
+    """Named rather than a six-tuple, which is easy to mis-unpack at the one call site."""
+
+    keep: np.ndarray
+    accounting: dict
+    base: np.ndarray
+    has_command: np.ndarray
+    dropped: np.ndarray
+    displaced: np.ndarray
 
 
 def is_surviving_root(episode_id: str) -> bool:
@@ -116,7 +129,7 @@ def base_actions(store, arrays, *, acknowledge: bool) -> tuple[np.ndarray, np.nd
     return result, has_command
 
 
-def sample_mask(store, arrays, *, acknowledge: bool) -> tuple[np.ndarray, dict]:
+def sample_mask(store, arrays, *, acknowledge: bool) -> SampleMask:
     """Rows eligible as BC training samples, plus the accounting a reviewer can check."""
     targets = arrays.targets
     total = len(arrays.states)
@@ -145,7 +158,7 @@ def sample_mask(store, arrays, *, acknowledge: bool) -> tuple[np.ndarray, dict]:
         "rows_kept": int(keep.sum()),
         "displacement_limit_m": DISPLACEMENT_LIMIT_M,
     }
-    return keep, accounting, base, has_command, dropped, displaced
+    return SampleMask(keep, accounting, base, has_command, dropped, displaced)
 
 
 def load_bc_split(store, split, cameras, *, workers, limit, acknowledge):
@@ -164,8 +177,12 @@ def load_bc_split(store, split, cameras, *, workers, limit, acknowledge):
             f"{split}: expected {SURVIVING_ROOTS[split]} surviving roots, found "
             f"{len(surviving)}; the cohort does not match the protocol's exclusion table"
         )
-    keep, accounting, base, has_command, dropped_mask, displaced_mask = sample_mask(
-        store, arrays, acknowledge=acknowledge
+    masks = sample_mask(store, arrays, acknowledge=acknowledge)
+    keep, accounting, base = masks.keep, masks.accounting, masks.base
+    has_command, dropped_mask, displaced_mask = (
+        masks.has_command,
+        masks.dropped,
+        masks.displaced,
     )
     root_rows = np.zeros(len(arrays.states), bool)
     for index, episode_id in enumerate(arrays.episode_ids):
@@ -203,7 +220,7 @@ def precompute_features(source, arrays, rows, *, chunk=256):
     for start in range(0, len(rows), chunk):
         part = rows[start : start + chunk]
         out[start : start + len(part)] = (
-            source.features(images(arrays, part)).detach().cpu().numpy()
+            source.features(images(arrays, part), inference=True).cpu().numpy()
         )
     return out
 
@@ -240,7 +257,7 @@ def evaluate_policy(policy, arrays, rows, features, targets, *, chunk=512) -> di
                 )
             elif policy.features.feature_dim:
                 # A3: the encoder has moved since any cache would have been built.
-                visual = policy.features.features(images(arrays, part)).detach()
+                visual = policy.features.features(images(arrays, part), inference=True)
             state = policy.normalized_state(arrays.states[part], arrays.mask[part])
             predictions[start : start + len(part)] = policy(visual, state).detach().cpu().numpy()
     result = action_error(predictions, targets)
@@ -396,6 +413,7 @@ def train(
         val_features = None if live else precompute_features(source, val_arrays, val_rows)
         report["data"]["features_precomputed"] = cached is not None
         report["data"]["val_features_precomputed"] = val_features is not None
+        report["data"]["val_features_recomputed_live"] = live and source.feature_dim > 0
         clock.check(max_seconds)
 
         sampler = np.random.default_rng(seed)

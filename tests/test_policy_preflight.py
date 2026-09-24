@@ -421,7 +421,15 @@ def test_the_closed_loop_runner_resets_cohort_c_from_stored_values():
         "values in benchmarks/manifests/apple-policy-v1.json, not recompute them from "
         "wide_reset. See cohorts.C_frozen_gating.runner_must_reset_from_stored_values."
     )
-    assert "wide_reset(" not in source.replace("# ", ""), (
+    called = {
+        node.func.id if isinstance(node.func, ast.Name) else getattr(node.func, "attr", "")
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Call)
+    }
+    # Parsed, not grepped: a correct runner whose docstring says "NOT recomputed from
+    # wide_reset()" must not be punished for explaining itself. Tripwires that bite the person
+    # who got it right teach people to weaken tripwires.
+    assert "wide_reset" not in called, (
         "scripts/evaluate_policy.py calls wide_reset() directly. Cohort C is defined by the "
         "stored manifest values; recomputing them can differ by one ULP across platforms and "
         "would let two machines run subtly different cohorts while both passing the digest "

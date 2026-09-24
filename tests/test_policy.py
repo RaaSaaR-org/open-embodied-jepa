@@ -277,8 +277,9 @@ class MovingEncoder:
         self.model = torch.nn.Linear(4, 4)
         self.calls = 0
 
-    def features(self, images):
+    def features(self, images, *, inference: bool = False):
         self.calls += 1
+        self.last_inference = inference
         batch = int(images["onboard_rgb"].shape[0])
         base = torch.ones(batch, 4)
         return self.model(base)
@@ -322,13 +323,50 @@ def test_a_frozen_arms_checkpoint_records_no_encoder_weights(tmp_path):
 
 
 def test_a_checkpoint_refuses_a_different_feature_source(tmp_path):
-    """NB4: an A2 head on an A1 encoder is the cross-arm confusion gate G2 exists to detect."""
+    """An A2 head on an A1 encoder is the cross-arm confusion gate G2 exists to detect."""
     p = policy()
     path = tmp_path / "a0.pt"
     p.save(path)
     other = ClonedPolicy(schema(), MovingEncoder(), device="cpu", seed=0)
     with pytest.raises(ContractError, match="different feature source"):
         other.load(path)
+
+
+def test_provenance_distinguishes_two_encoders_of_the_same_architecture():
+    """The A1-versus-A2 case, which differing ``kind`` does NOT exercise.
+
+    Every other field of ``provenance()`` is weight-independent: ``model_implementation_sha256``
+    hashes source files and ``model_parameters`` is a count. So a randomly initialized encoder
+    and a loaded checkpoint of the SAME architecture produce identical provenance unless the
+    weights are digested. Without this the compatibility check in ``load`` would pass while
+    claiming to prevent exactly the confusion it is named for.
+    """
+    from embodied_jepa.policy import FrozenEncoder
+
+    class Tiny(torch.nn.Module):
+        backend = "tiny"
+        camera_names = ("onboard_rgb",)
+        config = {"latent_dim": 4}
+
+        def __init__(self):
+            super().__init__()
+            self.layer = torch.nn.Linear(4, 4)
+
+        implementation_sha256 = "identical-for-both"
+
+    a1, a2 = Tiny(), Tiny()
+    with torch.no_grad():
+        a2.layer.weight.fill_(0.5)  # "loaded a checkpoint"
+
+    # FrozenEncoder type-checks its argument, so exercise the digest directly.
+    digest_a1 = FrozenEncoder.weights_sha256.__get__(type("S", (), {"model": a1})(), object)()
+    digest_a2 = FrozenEncoder.weights_sha256.__get__(type("S", (), {"model": a2})(), object)()
+    assert digest_a1 != digest_a2, (
+        "two encoders of the same architecture with different weights must be distinguishable"
+    )
+    assert (
+        digest_a1 == FrozenEncoder.weights_sha256.__get__(type("S", (), {"model": a1})(), object)()
+    ), "the digest must be stable for unchanged weights"
 
 
 def test_evaluate_policy_recomputes_features_when_the_encoder_is_trainable():
@@ -352,3 +390,6 @@ def test_evaluate_policy_recomputes_features_when_the_encoder_is_trainable():
     before = source.calls
     cloning.evaluate_policy(p, Arrays(), np.arange(4), None, np.zeros((4, 7), np.float32))
     assert source.calls > before, "a trainable encoder must be re-evaluated, not cached"
+    # NB-A: torch.enable_grad() overrides an enclosing no_grad, so validation must ask for
+    # inference explicitly or it retains activations for a tensor detached one line later.
+    assert source.last_inference is True, "validation must not build an autograd graph"

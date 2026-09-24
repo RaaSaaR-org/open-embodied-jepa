@@ -153,22 +153,47 @@ class FrozenEncoder:
             for parameter in self.model.parameters():
                 parameter.requires_grad_(False)
 
-    def features(self, images) -> torch.Tensor:
-        """Image-only features. **Never** ``encode``: that fuses proprioception in E0."""
-        context = torch.no_grad() if self.frozen else torch.enable_grad()
-        with context:
+    def features(self, images, *, inference: bool = False) -> torch.Tensor:
+        """Image-only features. **Never** ``encode``: that fuses proprioception in E0.
+
+        ``inference=True`` forces ``no_grad`` even for a trainable source. That is not an
+        optimization: ``torch.enable_grad()`` **overrides** an enclosing ``no_grad``, so
+        validating a fine-tuned arm inside ``torch.no_grad()`` would still retain activations
+        for a whole batch of ViT forwards, for a tensor detached one line later. On MPS that
+        is a plausible out-of-memory mid-validation, which would end the arm as ``failed``
+        against its frozen wall-clock budget.
+        """
+        graph = self.trainable and not inference
+        with torch.enable_grad() if graph else torch.no_grad():
             values, prefix = self.model.image_features(images)
         if len(prefix) != 1:
             raise ContractError("policy features expect a flat batch of observations")
-        return values.detach() if self.frozen else values
+        return values if graph else values.detach()
 
     def parameters(self):
         return self.model.parameters()
+
+    def weights_sha256(self) -> str:
+        """Digest over the encoder's own weights, in a fixed key order.
+
+        Without this, ``provenance()`` is weight-INDEPENDENT -- ``model_implementation_sha256``
+        hashes source files and ``model_parameters`` is a count -- so a randomly initialized
+        encoder (arm A1) and the loaded E0 checkpoint (arm A2) produce byte-identical
+        provenance, and ``ClonedPolicy.load`` cannot tell them apart. That is precisely the
+        cross-arm confusion gate G2 exists to detect.
+        """
+        digest = hashlib.sha256()
+        state = self.model.state_dict()
+        for key in sorted(state):
+            digest.update(key.encode())
+            digest.update(state[key].detach().cpu().contiguous().numpy().tobytes())
+        return digest.hexdigest()
 
     def provenance(self) -> dict[str, Any]:
         return {
             "kind": self.kind,
             "backend": self.model.backend,
+            "model_weights_sha256": self.weights_sha256(),
             "frozen": self.frozen,
             "camera": self.camera,
             "latent_dim": self.feature_dim,
@@ -389,8 +414,11 @@ class ClonedPolicy(nn.Module):
         for key, value in expected.items():
             if checkpoint.get(key) != value:
                 raise ContractError(f"policy checkpoint {key} is incompatible")
-        # NB4: an A2 head loaded onto an A1 random encoder is exactly the cross-arm confusion
-        # gate G2 exists to detect, so the feature source is part of the compatibility check.
+        # An A2 head loaded onto an A1 random encoder is exactly the cross-arm confusion gate
+        # G2 exists to detect. This check is only meaningful because provenance() carries
+        # model_weights_sha256: every other field it holds is weight-INDEPENDENT, so without
+        # that digest A1 and A2 produce byte-identical provenance and this comparison would
+        # pass while claiming to have prevented the thing it is named for.
         if checkpoint.get("feature_source") != self.features.provenance():
             raise ContractError("policy checkpoint was trained on a different feature source")
         self.head.load_state_dict(checkpoint["weights"], strict=True)

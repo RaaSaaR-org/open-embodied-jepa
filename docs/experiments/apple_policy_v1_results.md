@@ -257,8 +257,11 @@ exists.
 **The smokes proved the pipeline runs. They could not prove it computes the right thing.**
 
 Both stage-2 smokes — A0 and A2, on 20 episodes — completed successfully and reported
-`status: "completed"` **while all three of the defects above were live.** Two of the three would
-not have announced themselves at all:
+`status: "completed"` **while all three of the defects above were live.** The point is sharper
+than "the smokes missed them": **two of the three are A3-only, and the A3 path was never smoked
+at all.** The smokes did not fail to notice B1 and B2 — they never touched the code containing
+them, and nothing about a green A0/A2 run said so. And had they been smoked, neither would have
+announced itself:
 
 - the stale-feature defect would have produced a plausible, merely-bad validation curve for A3;
 - the step-0 selection defect would have produced a checkpoint that passes the collapse rule,
