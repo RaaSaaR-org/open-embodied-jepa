@@ -315,7 +315,11 @@ def provenance(output, workers):
     c = collector()
     from embodied_jepa.cloning import AIM_OFFSET_SEEDS
 
-    non_aim = [s for s in c.FROZEN_SEEDS if s not in AIM_OFFSET_SEEDS]
+    # TEST-split roots are excluded: not even their label sidecars are read here.
+    splits = c.split_assignment(c.FROZEN_SEEDS)
+    non_aim = [
+        s for s in c.FROZEN_SEEDS if s not in AIM_OFFSET_SEEDS and splits[s] in ("train", "val")
+    ]
     per_phase = {k: [] for k in range(8)}
     lengths, ramp_values = [], 0
     for seed in non_aim:
@@ -357,7 +361,8 @@ def provenance(output, workers):
             },
             "collect_apple_wide_ROOT_MAX_COMMANDS": c.ROOT_MAX_COMMANDS,
         },
-        "corpus_non_aim_roots": len(non_aim),
+        "corpus_non_aim_train_and_val_roots": len(non_aim),
+        "test_split_roots_read": 0,
         "corpus_max_root_commands": max(lengths),
         "corpus_phase_commands_per_root": {
             str(k): {
