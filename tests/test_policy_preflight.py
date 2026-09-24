@@ -119,8 +119,30 @@ def test_surviving_root_counts_match_the_committed_collection_rule():
     )
 
 
+# The generator cross-check runs to this tolerance, not to exact equality. numpy's compiled
+# Generator.uniform evaluates ``low + range * next_double``; whether that multiply-add contracts
+# to an FMA depends on the numpy build's compiler and target, so the result can differ by one
+# ULP (~1.4e-17 m here) between macOS arm64 and Linux x86-64 even though the underlying PCG64
+# doubles are integer-derived and bit-exact everywhere. 1e-12 m is five orders looser than that
+# ULP and ten orders tighter than the smallest physically meaningful quantity in this protocol
+# (the 1.5 cm gates, the +-3 cm jitter). The repo hit the same class of problem in
+# tests/test_apple_wide_collection.py, which pins a plan hash rounded to 1e-9 on every platform
+# and the exact bytes only on macOS arm64.
+GENERATOR_CHECK_TOLERANCE_M = 1e-12
+
+
 def test_frozen_cohort_is_reproducible_and_disjoint():
-    """Cohort C must regenerate bit-for-bit, and must never have been simulated."""
+    """The STORED values define cohort C; the generator is cross-checked to a tolerance.
+
+    Two different things are asserted here and the distinction is the point:
+
+    * **The seal** is the sha256 over the decimals stored in the manifest. It never re-runs the
+      generator, so it reproduces on any platform, and it is what freezes the cohort.
+    * **The cross-check** re-runs ``wide_reset`` and compares to the stored values only to prove
+      the stored cohort came from the committed rule and not from a lookalike. That purpose is
+      fully served at 1e-12 m, and exact equality was the wrong assertion: it passed on macOS
+      arm64 and failed on Linux x86-64 by one ULP.
+    """
     manifest = json.loads(MANIFEST.read_text())
     cohort = manifest["cohorts"]["C_frozen_gating"]
     centers = {"object_xy": (0.34, -0.18), "plate_xy": (0.49, -0.09)}
@@ -137,11 +159,18 @@ def test_frozen_cohort_is_reproducible_and_disjoint():
     for seed in range(45300, 45340):
         expected = wide_reset(seed)
         stored = cohort["resets"][str(seed)]
-        assert stored["object_xy"] == expected["object_xy"]
-        assert stored["plate_xy"] == expected["plate_xy"]
+        for key in ("object_xy", "plate_xy"):
+            assert stored[key] == pytest.approx(expected[key], abs=GENERATOR_CHECK_TOLERANCE_M), (
+                f"{key} of seed {seed} did not come from the committed wide_reset rule"
+            )
 
+    # The seal: a digest over the STORED decimals. json.loads -> float -> repr is idempotent
+    # (CPython's shortest-round-trip repr and correctly-rounded strtod are platform-independent),
+    # so this pin holds on any machine and does not depend on re-running the generator.
     blob = json.dumps(cohort["resets"], sort_keys=True, separators=(",", ":"))
+    assert json.dumps(json.loads(blob), sort_keys=True, separators=(",", ":")) == blob
     assert hashlib.sha256(blob.encode()).hexdigest() == cohort["cohort_sha256"]
+    assert cohort["values_are_the_definition"] is True
 
     consumed = (
         set(range(42000, 42032))
@@ -159,15 +188,23 @@ def test_frozen_cohort_is_reproducible_and_disjoint():
 
 
 def test_the_generator_matches_the_prior_frozen_cohorts():
-    """The cohort rule must be the one the earlier ceilings used, not a lookalike."""
+    """The cohort rule must be the one the earlier ceilings used, not a lookalike.
+
+    Same tolerance and same reasoning as the cross-check above: this one happened to pass on
+    macOS arm64, but it carried the identical exact-equality exposure.
+    """
     prior = json.loads(
         (ROOT / "benchmarks" / "manifests" / "apple-wide-grasp-closure-v3.json").read_text()
     )
     rng = np.random.default_rng(45200)
     obj = (np.array((0.34, -0.18)) + rng.uniform(-0.03, 0.03, 2)).tolist()
     plate = (np.array((0.49, -0.09)) + rng.uniform(-0.02, 0.02, 2)).tolist()
-    assert prior["resets"]["45200"]["object_xy"] == obj
-    assert prior["resets"]["45200"]["plate_xy"] == plate
+    assert prior["resets"]["45200"]["object_xy"] == pytest.approx(
+        obj, abs=GENERATOR_CHECK_TOLERANCE_M
+    )
+    assert prior["resets"]["45200"]["plate_xy"] == pytest.approx(
+        plate, abs=GENERATOR_CHECK_TOLERANCE_M
+    )
 
 
 def test_gate_thresholds_are_the_preregistered_ones():

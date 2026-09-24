@@ -331,11 +331,36 @@ the unchanged `wide_reset` rule (apple ±3 cm, plate ±2 cm about `object_xy (0.
 `benchmarks/manifests/apple-policy-v1.json`, **cohort sha256
 `4f888154c055bcbbbc0df333442e6886d8f65c2389596fe1aedde1d2cb0b533e`** over the canonical JSON.
 
+**The stored values are the definition of the cohort, not the generator.** `cohort_sha256` is a
+digest over the decimals stored in the manifest; it never re-runs `wide_reset`, and
+`json.loads → float → repr` is idempotent because CPython's shortest-round-trip repr and
+correctly-rounded `strtod` are platform-independent. **So the seal reproduces on any machine and a
+third party can verify it.** The evaluation runner **must instantiate each reset from the stored
+values and must not recompute them**, or two machines could execute subtly different cohorts while
+both passing the digest check.
+
 *Pin check performed at preregistration time:* regenerating seed 45200 from the rule reproduces
 the committed coordinates in `benchmarks/manifests/apple-wide-grasp-closure-v3.json`
-`resets.45200` **exactly** (`object_xy [0.3229653854661023, −0.15092924454200007]`, `plate_xy
-[0.5010270523751088, −0.1025915174158386]`). The generator is therefore the same one the prior
-cohorts used.
+`resets.45200` to within **1e-12 m** (`object_xy [0.3229653854661023, −0.15092924454200007]`,
+`plate_xy [0.5010270523751088, −0.1025915174158386]`). The generator is therefore the same one the
+prior cohorts used. The check is to a tolerance rather than exact because numpy's compiled
+`Generator.uniform` evaluates `low + range * next_double`, and whether that multiply-add contracts
+to an FMA depends on the build's compiler and target — so the value can differ by **one ULP
+(~1.4e-17 m)** between macOS arm64 and Linux x86-64. The underlying PCG64 doubles are bit-exact
+everywhere; only the affine rescale differs. 1e-12 m is five orders looser than that ULP and ten
+orders tighter than the smallest physically meaningful quantity here. The wide corpus hit the same
+class of problem and solved it with a hash rounded to 1e-9
+(`docs/experiments/apple_wide_collection_results_v1.md` L174–179); this protocol needs no rounded
+hash because its digest is over stored decimals rather than recomputed floats.
+
+> **Lesson recorded, because the local suite could not have taught it.** The first CI run of this
+> preregistration failed on Linux while the full suite passed on macOS, on an assertion of exact
+> float equality between a stored cohort value and a regenerated one — and locally the generator
+> reproduced the stored values with *zero* deviation, so no amount of local testing would have
+> surfaced it. **A green local suite is not evidence for a cross-platform reproducibility claim.**
+> This protocol's credibility rests on someone else verifying the seal on a different machine, so
+> any claim that something is bit-identical must either be validated on more than one platform or
+> be stated as holding only on the platform that produced it.
 
 Seed disjointness verified against every consumed range: 42000–42031 (narrow corpus),
 43000–43004 (narrow development), **44000–44019 (reserved for TASK-034 — not touched by this
