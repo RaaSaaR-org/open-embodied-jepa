@@ -1,5 +1,19 @@
 # Apple world model v4: results (TASK-054)
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S4-02 (mislabelled).** L493–495 say "it has never been beaten", and L311–312 say "every arm still loses to its own persistence readout by the required margin". In fact the rollout beats the model's own persistence readout in every v4 arm (G2a 0.86–0.90, 10–14 %), but never by the required 20 % margin. It has never beaten the true-state copy-last baseline (2.49 cm).
+> - **S4-05 (mislabelled).** G4 (L105) is passed by a constant zero-height predictor: 0.36 cm on the identical 2,398 windows. It carries no information about prediction.
+> - **S4-07 (mislabelled).** "Most of it comes from the encoded state and fused proprioception" (L481–485) cannot be established by a shuffled-action control. Wrong actions are not absent actions, so this attribution is unmeasured. Copying the true start state reaches AUROC 0.956 (held flag) and 0.997 (height).
+> - **S4-09 (mislabelled).** "The control passed more gates than every intervention" (L12–13, L115): the count is right (10 against 9). The difference is G6a at h = 16 (E1, E2), and G6a/G3 against G7a (E3). At least three of the passes every arm shares (G3, G4, G5) are also cleared by a copy-last or constant predictor, so the count is not a quality ranking.
+> - **S4-10 (mislabelled).** "Every intervention hurt candidate ranking" (L313–317) and "markedly worse at the metric a CEM actually uses" (L220–221) hold at the gated h = 16 only, on one seed and with no interval. At the planner's h = 8 (10 groups) ρ is E0 0.36, E1 0.50, E2 0.36, E3 0.30. At h = 32, E1 and E3 are above E0.
+> - **S4-11 (mislabelled).** "Making the predictor horizon-conditioned *did* improve …" (L283–284) rests on E3 winning 3 more of 106 sibling pairs (77 against 74), with one seed and no interval. No improvement is established.
+> - **S4-12 (mislabelled).** G9 (L114, L122–127, L168–180) is the difference between the rollout median and the encoded-target median, not a per-window "contribution". The median per-window excess is 0.479 / 0.527 / 0.469 / 0.526 cm. By that estimand E2, not E3, has the lowest excess.
+> - **S4-13 (mislabelled; withdrawn).** L233–236 ("almost all of its gain is in the term this task attacked … The mechanism behaved as designed") and TASK-054's "90 % of its gain is in the targeted term" are withdrawn. Measured per window, E2's excess changed by −0.010 cm [−0.134, +0.134], about 6 % of the 0.173 cm rollout gain. Where the gain sits is not measured.
+
 **All four arms FAIL the preregistered gate set, and the primary gate fails on every
 one.** G2a — the rollout's readout error divided by the model's own persistence readout —
 is 0.8763 / 0.8814 / 0.8635 / 0.9036 against a threshold of 0.8. **None of the three

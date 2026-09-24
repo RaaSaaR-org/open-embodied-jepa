@@ -96,3 +96,7 @@ main checkout's ignored `checkpoints/task050-wm-v2/` and `outputs/task050-wm-v2/
   `benchmarks/manifests/apple-world-model-v2.json`, reports under the ignored
   `checkpoints/task050-wm-v2/` and `outputs/task050-wm-v2/`.
 %% mc-links: [[TASK-048]] %%
+
+## Erratum 2026-09-25 (TASK-058)
+
+The numerical-claim audit `docs/experiments/claim_audit_v1.md` corrects or withdraws readings recorded above. Rows: S2-05, S2-06, S2-08 (the 3.13 / 3.26 cm and 89 % figures were never committed; 89 % is a ratio of medians), S2-09, S2-13, S2-17, S2-25. The evidence text above is unchanged. Each corrected source document carries a dated errata block.

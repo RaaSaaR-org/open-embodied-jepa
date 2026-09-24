@@ -86,7 +86,12 @@ the new revision reproduced all 170 weight tensors bit-for-bit (`torch.equal`).
 [v4](experiments/apple_world_model_v4_results.md) gated comparisons the second camera made
 readout precision worse, the readout shaping hurt candidate ranking, and all three
 prediction-step options failed to beat the untouched control, which passed more gates than
-every intervention. `state_fusion` and `readout_heads` have **not** been ablated on/off in
+every intervention. (*Erratum 2026-09-25, TASK-058
+[S4-09](experiments/claim_audit_v1.md):* the control passed one more gate, G6a at h = 16.
+That gap does not hold at the planner's h = 8. Several of the gates every arm passed are
+also cleared by a copy-last or constant predictor, so the count is not a quality ranking.
+v3's "readout shaping" was one bundled factor, and "hurt ranking" rests on one seed.)
+`state_fusion` and `readout_heads` have **not** been ablated on/off in
 those protocols — they are untested rather than shown not to help, and `readout_heads` is
 the apparatus the physical-readout gates are measured through. All of them are kept because
 the negative results are part of the record and the options are inactive by default;

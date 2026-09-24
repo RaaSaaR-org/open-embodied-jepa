@@ -4,7 +4,7 @@ aliases:
 - TASK-058
 title: Audit every accepted numerical claim in the experiment record against the code that computes it
 slug: audit-every-accepted-numerical-claim-against-the-code-that-computes-it
-status: todo
+status: in-progress
 priority: 1
 owner: ''
 projects: []
@@ -19,6 +19,7 @@ due_date: ''
 created: 2026-09-24
 updated: 2026-09-24
 ---
+
 
 
 # Audit every accepted numerical claim in the experiment record against the code that computes it
@@ -101,3 +102,40 @@ Raised during TASK-056/TASK-057 after the four instances above were found in a s
 They span TASK-054 to TASK-057. Whether the pattern reaches further back is **not established** —
 it is what this audit is for, and the scope is deliberately TASK-048 onward rather than one
 protocol.
+
+## Evidence log
+
+- 2026-09-25: The audit was run as six independent corpus slices plus lead adjudication. The
+  deliverable is `docs/experiments/claim_audit_v1.md`: 145 rows, each naming its computing
+  function. Classes: 72 confirmed, 46 mislabelled, 11 wrong (1 of them already withdrawn at
+  source), 16 unverifiable / not citable.
+- **No preregistered gate verdict or pre-declared outcome changes.** The CEM abandonment (G2a,
+  Outcome B) and the TASK-056 FAIL stand.
+- **Withdrawn or corrected readings.**
+  - P3's "no shortcut available" is wrong. A proprioception-only linear probe reads orient
+    apple position to 1.01 cm, or 0.163 cm when fit on orient rows only.
+  - The P2 threshold rationale is wrong for the relative quantity.
+  - The dz under-shoot is withdrawn as unmeasured.
+  - v3's "close needs no prediction" is wrong: the closure is rollout-planned.
+  - The ejection mechanism is overstated.
+  - G4 is passed by a constant in v2, v3 and v4.
+  - v4's gate-count and ranking readings hold at h = 16 only.
+  - The encoder/rollout decomposition is a difference and a ratio of medians, and its v2
+    anchor was never committed.
+  - E2's "90 % in the targeted term" is withdrawn.
+  - In the README, "15 % of needed change" is wrong (it is 29 %), and the 0/150 lacked its
+    guard-stop qualifier.
+- **Cross-reference for TASK-057, not edited here.**
+  - The shadow expert must be `scripted.apple_collector_policy`, with a budget of 745, not
+    `OracleManipulationPolicy` with 805.
+  - A label-based step-zero reconstruction puts the expert dx gap at 84 % of A0's D1 dx
+    threshold (median over cohort D).
+  - Table E's phase names 5 and 6 are wrong (they are `release_high` and `lower_open`).
+  - The §1.1(b) wording should be "bracketed by".
+- **Errata.** Dated errata blocks were added to 14 experiment docs, plus in-place corrections
+  with a dated note in the README, an erratum in DECISIONS and MODELS, and erratum pointers
+  in the TASK-049/050/051/052/054/055/056 logs.
+- **Reproduction scripts.** These are in `benchmarks/audits/task058/`. They need the
+  git-ignored data; no simulation or training was run.
+- **Not edited.** CLAUDE.md (agent configuration, which repeats the 0/150 and "every attempt"
+  wording), `src/` docstrings (implementation hashes), and manifests.

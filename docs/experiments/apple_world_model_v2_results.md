@@ -1,5 +1,21 @@
 # Apple world model v2: results (TASK-050)
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S2-08 (unverifiable; share mislabelled).** L87–94 give encoded start 3.13 cm, encoded target 3.26 cm, and "about 89 % of the rollout's error is already in the encoding". These were never written to a committed or run artifact. A TASK-058 re-run with the `3b6af0b` code and the frozen checkpoint reproduces G1 bit-for-bit and gives 3.1297 / 3.2607 cm, so the values stand. But "89 %" is a ratio of two medians, not a share of per-window error. On 46 % of these windows the rollout is closer to the truth than the direct encoding of the target. Read it as "the directly encoded target is almost as far off as the rollout", not as an additive split. Every later "v2 3.13 / 3.26 / 0.39 cm / 89 %" restatement inherits this.
+> - **S2-09 (mislabelled).** L61–63 say "accurate on still frames … 0.77 cm over all valid windows". 0.77 cm is the **8-step rollout** median over all 3,961 valid windows, 37 % of which are moving (0.39 cm on the non-moving ones). Copying the true start offset scores 0.50 cm on the same windows. It is a prediction figure, not a still-frame or perception figure, and it is where the later "0.78 cm perception" misreading started.
+> - **S2-05 (mislabelled).** For G3's LeWM/onboard PASS at 1.93 cm, the model's own no-prediction readout (encoded start frame) scores 1.55 cm on the same windows. The pass shows static apple–plate localisation, not prediction, and the rollout makes it worse.
+> - **S2-06 (mislabelled).** G4's PASS carries no information. 60 % of the grasp cohort is an apple at rest, and a train-median constant scores 0.047 cm, better than every arm. "Hand crop slightly better on apple height" is not measured by this statistic.
+> - **S2-07 (strengthened).** G5 is not "partly" trivial. The model's own encoded-start readout, with no prediction, already scores AUROC 0.996.
+> - **S2-13 (addition; FAIL verdict unchanged).** A constant cost equal to the train median (2.74 cm) would score 0.131 and pass G6. Every arm is worse than that constant.
+> - **S2-17 (mislabelled).** "No collapse" should read **no collapse of the fused latent**. G8 is measured after proprioception is fused in, so it cannot detect an image-encoder collapse. The native arm's image pathway alone has effective rank 2.19, below G8b's 4.
+> - **S2-11 (mislabelled).** L74–76 say "The other two arms behave the same way". At h = 1 both are worse than their own persistence readout (hand crop 3.57 vs 3.45 cm; native 5.40 vs 4.84 cm). This is not citable (git-ignored reports).
+> - **S2-10 (not citable).** The h = 1/4/16 rows (L67–72) exist only in the git-ignored, hash-pinned gate reports.
+> - **S2-25 (mislabelled).** The follow-up rationale ("because the measured decomposition shows the error is in the encoding") rests on the uncited S2-08 figures and their ratio of medians. "Occluded" was never measured: no occlusion variable exists.
+
 **All three arms FAIL the preregistered gate set.** No arm passes, so by the
 protocol's pre-declared readings **TASK-051 does not start the closed loop.**
 Learned Apple→Plate remains at **0 successes**; nothing here is a control

@@ -67,3 +67,7 @@ Learned Apple->Plate remains at zero successes.
   `benchmarks/manifests/` was rewritten, `PRD.md` is preserved as the original snapshot, no
   frozen value changed, and learned Apple->Plate remains at zero successes.
 %% mc-links: [[TASK-054]] %%
+
+## Erratum 2026-09-25 (TASK-058)
+
+The numerical-claim audit `docs/experiments/claim_audit_v1.md` corrects or withdraws readings recorded above. Rows: S4-09, S4-15, S4-18, S4-24, S4-25 (top-level restatements, corrected in the README and in a DECISIONS erratum). The evidence text above is unchanged. Each corrected source document carries a dated errata block.

@@ -144,3 +144,7 @@ array-order tie-breaking on a double-counted arm.
 
 ## Notes
 %% mc-links: [[TASK-052]] %%
+
+## Erratum 2026-09-25 (TASK-058)
+
+The numerical-claim audit `docs/experiments/claim_audit_v1.md` corrects or withdraws readings recorded above. Rows: S4-02, S4-05, S4-09, S4-10, S4-11, S4-12, S4-13 (the claim '90 % of its gain is in the targeted term' is withdrawn). Outcome B and the CEM abandonment stand. The evidence text above is unchanged. Each corrected source document carries a dated errata block.

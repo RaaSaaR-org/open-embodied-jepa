@@ -1,5 +1,26 @@
 # Apple→Plate policy v1 results (TASK-056) — FAILED on the development stop rule
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S5-04 (wrong; reading withdrawn).** §3 (L98–107) says "absolute apple position genuinely cannot be inferred from the palm's own pose … no shortcut available". A proprioception-only linear probe, with no image and no phase, reads orient-phase apple position to 1.01 cm. Fit on orient rows only, it reads 0.163 cm, against E0's 0.873 cm. The reason is that the collector servos the palm to an apple-relative station during `orient`. P3's value and its PASS stand, because the ratio is model-relative. The "cleanest measurement / stronger evidential status" reading is withdrawn: P3 shows that E0's readout depends on the image, not that the image adds information beyond proprioception.
+> - **S5-05 (mislabelled).** "Declared risk R2 is not borne out … approach 0.404–0.490 cm" (L64–66): a per-phase constant reads 0.31–0.37 cm (mean) or 0.10 cm (median) there, better than E0. R2 is untested by these numbers, not refuted.
+> - **S5-07 (mislabelled).** P0a is a *foreign-image* control, not a no-vision control. Measured no-image predictors beat it on all three cohorts. It is a valid ratio denominator, but it does not estimate what is available without vision.
+> - **S5-11 (mislabelled).** "0.491 cm sits at the bottom of the measured grasp/hold band" (L61–62): that band measures how far the apple *moved* in ceiling holds, not an estimation error. The bridge between the two is stated in the protocol, not measured.
+> - **S5-16 (mislabelled).** "A3 … was still improving" (L362–366): its last val scores are not monotone (0.0237 → 0.0243 → 0.0234). A3 also trained at batch 32 against 256 for the other arms, about 27× fewer samples, which is a second unstated reason it is not comparable.
+> - **S5-17 / S6-10 (mislabelled; not citable).** "`right_dz` sits at exactly 0.400 in 44.89 %" (L386–387, L634–635, L759–760) is an **absolute-value** rate: |`right_dz`| = 0.400 on 44.89 % of the 68,791 train BC targets, made up of +0.400 on 18.45 % and −0.400 on 26.44 %. No committed code computes the train figure.
+> - **S6-11 (mislabelled).** The §14.1 headers "dz q50 / q90 / q99" should read "|dz| q50 / q90 / q99". Every statistic in that table is computed after `np.abs` (`evaluate_policy.py:197` at `6e728ce`), so no sign survives.
+> - **S6-12 (withdrawn as unmeasured).** "The dz prediction … is borne out", "every trained arm under-shoots" and "under-shooting descent" (L758–767) are withdrawn. The statistics are per-attempt medians of |dz|, which carry no sign, so "descent" and "under-shoot" cannot be read from them. They were also compared with an all-phase expert saturation rate, not with the same statistic over the matching phase: the expert's own median |dz| in `orient` is 0.057, inside the policies' 0.013–0.086. TASK-056's record neither bears out nor refutes the §12 prediction.
+> - **S6-04 (wrong).** "Every arm hitting the cap on every attempt" (L765–768): A3 hit the cap on 14/16. The correct statement is that every attempt the embodiment did not stop (62/64) ran to 1000 steps.
+> - **S6-13 (mislabelled).** "The policies do not approach the boundary" (L761–762) holds only at the median. Every arm's maximum |dz| (0.41–0.65) exceeds 0.400, and 0.11–3.53 % of commands lie beyond anything demonstrated.
+> - **S6-14 (mislabelled).** In L771–775, the "rotation clip rate" is `droll` only. A3 has the lowest |dz| q99 (0.3131), so "the most aggressive motion" holds only for some statistics.
+> - **S6-16 (mislabelled; not citable).** "Rotation saturation ~27 %" is `droll` alone (dpitch 4 %, dyaw 2 %). "Grasp at its maximum 91.78 %" is |grasp| = 1, which counts open as well as closed.
+> - **S6-02, S6-09 (minor).** "No attempt terminated on task failure" is guaranteed by the runner, which has no task-failure exit, so it is not an observation. "Median control time per command" is a median, over the 16 attempts, of each attempt's median.
+> - **S6-24, S6-25, S6-01 (provenance).** No artifact survives of the crashed A3 run or of the single-seed cross-check. The recorded revision `103b14f` is not on `main`; it survives only on `origin/feat/task-056-clip-instrumentation`. The four policy checkpoint hashes are now recorded in `claim_audit_v1.md` (Provenance).
+> - **S6-07 (omission).** Both learned arms that grasped also lifted and held the apple: A2/45100 +0.168 m and A3/45006 +0.169 m, still in contact and undropped at step 1000. This is an **end state only**, since the runner stores no per-step contact. A3 reached `reach` on 4/16 seeds.
+
 Protocol: [apple_policy_v1.md](apple_policy_v1.md). Manifest:
 `benchmarks/manifests/apple-policy-v1.json`, merged as `3006b3b` (PR #33).
 

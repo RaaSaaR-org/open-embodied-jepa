@@ -217,3 +217,7 @@ reports and development numbers have been reported.
 **A gated run starts only on the pre-run reviewer's REPORTED verdict, delivered as a message —
 never on a review file read from disk. The same rule applies to merging. One task, one agent.**
 If P1 fails, stop and report; do not select a replacement plan.
+
+## Erratum 2026-09-25 (TASK-058)
+
+The numerical-claim audit `docs/experiments/claim_audit_v1.md` corrects or withdraws readings recorded above. Rows: S5-04 (P3 'no shortcut' is wrong), S5-06, S5-10, S5-16, S5-17/S6-10, S6-04, S6-07, S6-12 (the dz under-shoot is withdrawn as unmeasured), S6-23. The TASK-056 FAIL verdict stands. The evidence text above is unchanged. Each corrected source document carries a dated errata block.

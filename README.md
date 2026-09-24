@@ -8,8 +8,10 @@ A Mac-first research framework for action-conditioned visual world models on a s
 
 **Learned Apple→Plate has never succeeded: 0 successes.** The frozen unseen-pair
 benchmark recorded 0/50 on each of three training seeds for both backends — **0/150 per
-model**, 400 attempts including hold and random controls — and every task-specific apple
-control attempt since has failed its own declared gate. Scripted-collector and
+model**, 400 attempts including hold and random controls. The same 50 resets were reused
+across seeds, and every learned episode ended on a joint-rate guard stop within about
+5–22 commands. Every *learned* task-specific apple control attempt since has failed its own
+declared gate. Scripted-collector and
 privileged-oracle successes are collection and feasibility evidence, not learned-policy
 results. Green CI and a passing integration smoke run are software evidence, not working
 manipulation.
@@ -34,13 +36,19 @@ checkpoints on recorded validation data — none of them is a manipulation resul
   with verified hashes, two trainable model adapters, checkpoints that enforce their
   provenance, frozen goal/reset manifests, a validated result schema, and mock-only SDK2
   preparation. Isaac and physical robot execution remain future work.
-- **The encoder is the component that works.** A directly encoded observation reads the
-  palm–apple offset to **2.35–2.59 cm** median on held-out validation windows (start to
-  target, on the three v4 arms whose encoder was intact), against 3.13 cm at v2. It is not
-  sufficient: 2.59 cm alone exceeds the 1.5 cm gate.
-- **`apple_held` AUROC 0.9992–0.9997** on the lift cohort. Read it with its control — the
-  shuffled-action AUROC on the same cohort is 0.714–0.812, so most of that signal comes
-  from the encoded state and fused proprioception, not from action-conditioned prediction.
+- **The encoder is the component that works.** A directly encoded observation reads the palm–apple
+  offset to a median of **2.35–2.40 cm** on the start frame and **2.54–2.59 cm** on the target
+  frame, on the three v4 arms whose encoder was intact. Four qualifiers apply:
+  - the figure covers only the moving validation windows;
+  - that validation split was also used for checkpoint selection;
+  - the encoding includes fused proprioception;
+  - the v2 comparison figure, 3.13 cm, was never recomputed or committed.
+
+  It is not sufficient: 2.59 cm alone exceeds the 1.5 cm gate.
+- **`apple_held` AUROC 0.9992–0.9997** on the lift cohort. This is weak evidence. Copying the
+  true start state forward already reaches AUROC 0.956, and the shuffled-action control
+  (0.714–0.812) cannot say how much of the signal comes from the encoded state rather than
+  from action-conditioned prediction.
 - **No representation collapse:** effective rank 6.74–8.23, collapsed fraction 0.000,
   mean latent std 0.850–0.873 on all four v4 arms.
 
@@ -49,13 +57,20 @@ checkpoints on recorded validation data — none of them is a manipulation resul
 - **Five specific attempts to fix the prediction step under motion.** That step has never
   beaten the model's own persistence readout by the required margin (gate G2a ≤ 0.8; best
   ever recorded **0.831**, at v3, against 0.8635 at best in v4 and 0.835 at v2), and these
-  five did not change it: a second camera (made readout precision worse), motion-weighted
-  readout shaping (no help, and it hurt candidate ranking), action-chunk conditioning (no
-  effect), a tail-weighted multistep loss (about 15% of the needed change, and not
-  distinguishable from cohort sampling), and a non-shared per-step predictor (damaged the
-  encoder). In v4 the **untouched control passed more gates (10 of 14) than every
-  intervention (9 of 14)**. This does not establish that the prediction step cannot be
-  fixed — it is three designs at one seed and one budget in v4, and two more in v3.
+  five did not change it:
+  - a second camera, which made readout precision worse;
+  - v3's readout shaping, which bundled motion weighting with auxiliary position targets. It
+    did not help, and G6a was lower on one seed;
+  - action-chunk conditioning, which had no effect;
+  - a tail-weighted multistep loss. It reduced the excess by 14.6 % where 49.9 % was needed,
+    under a third of the required change, and was not distinguishable from cohort sampling;
+  - a non-shared per-step predictor, which damaged the encoder.
+
+  In v4 the untouched control passed 10 of 14 gates and every intervention passed 9. The
+  one-gate difference is G6a at h = 16. It does not hold at the planner's h = 8. G3, G4 and G5
+  are also cleared by a copy-last or constant predictor, so the gate count is not a quality
+  ranking. None of this establishes that the prediction step cannot be fixed: v4 tested three
+  designs at one seed and one budget, and v3 tested two more.
 - **The cost-and-phase design as the explanation for the physical failures.** Under exact
   MuJoCo dynamics and perfect object state the
   [v3 grasp-closure ceiling](docs/experiments/apple_wide_grasp_closure_results_v3.md)
@@ -76,6 +91,13 @@ intermediate milestone, not established superiority and not the full task.
 specific designs at one seed and one budget. The test split has still never been decoded,
 so one unbiased check remains available. The fresh 20-reset final apple cohort
 (TASK-034) remains unexecuted.
+
+**Corrected 2026-09-25 (TASK-058).** The audit
+[claim_audit_v1.md](docs/experiments/claim_audit_v1.md) corrected four statements in this
+section in place: the 0/150 qualifiers, the encoder figure, the `apple_held` attribution, and the
+list of five attempts with its gate count. The earlier wording is in git history. The audit
+rows are L-01, S4-07, S4-09, S4-15, S4-18, S4-24 and S4-25. The old "about 15 % of the needed
+change" was wrong: it is 29 %.
 
 Detail lives in the per-experiment record under [docs/experiments/](docs/experiments/)
 and the manifests under [benchmarks/manifests/](benchmarks/manifests/). Those files are

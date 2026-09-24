@@ -1,5 +1,13 @@
 # Apple wide-jitter object-aware ceiling v2: results
 
+> **Errata — 2026-09-25 (TASK-058).** The original text below is unchanged. Where these
+> notes conflict with it, the notes take precedence. Each row ID refers to
+> [claim_audit_v1.md](claim_audit_v1.md), which names the code that computes the number and
+> the evidence. Line numbers are those at `8306633`, before this block was inserted.
+>
+> - **S1-09 (mislabelled).** L132–138 say "the fingers pushed the apple out of the hand: 8–9 commands into the close …". The per-attempt traces show the 2.7–3.5 cm push is **transient**: by close command 13–15 the apple is back within 1 cm, still in hand contact. Contact is lost later, at close command ~20–27 on 45100, 45105 and 45000, and in the first lift commands on 45103, whose apple stayed centred through the whole close. The same transient push (1.6–1.9 cm) occurred on the successful 45002 and 45005. The failure is a later loss of contact, and these traces do not establish its cause. The traces are git-ignored, so this is not citable either way.
+> - **S1-19 (not citable in part).** The tuning figures (15/16, 1/16 ejection) are prose only. The secondary counts are confirmed against the manifest.
+
 **Every arm here is a NON-LEARNED diagnostic.** `privileged_object` (v2) plans
 with exact MuJoCo rollouts and an exact release probe, and its cost and phase
 transitions read simulator object state; `demo_replay` replays a retrieved TRAIN
