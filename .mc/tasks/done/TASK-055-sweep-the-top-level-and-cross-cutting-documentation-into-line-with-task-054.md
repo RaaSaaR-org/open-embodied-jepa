@@ -21,7 +21,6 @@ updated: 2026-09-24
 ---
 
 
-
 # Sweep the top-level and cross-cutting documentation into line with TASK-054
 
 ## Description
