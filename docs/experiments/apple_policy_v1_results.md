@@ -277,6 +277,12 @@ they are worth listing together because the shape repeats and the surface change
    machine that wrote it and failed on Linux by one ULP. A green local suite is not evidence for
    a cross-platform claim.
 3. The stage-2 smokes **ran to completion with three defects live**. Running is not measuring.
+4. The first version of the tripwires below used **`pytest.skip`**, which reads as "do nothing
+   here" — and would have failed the integration job on *every* run, because that job rejects
+   any skip outside two allowed messages. The one mechanism that looks inert was the one that
+   could not be inert here. They use a bare `return` instead, and the tripwires were then
+   verified to fire by writing a probe runner that violates each constraint and watching both
+   assertions trip — rather than assuming they were connected.
 
 The common form: **verifying that something produces a plausible value does not verify that it
 computes the quantity you believe it computes.** Every instance was caught by someone checking

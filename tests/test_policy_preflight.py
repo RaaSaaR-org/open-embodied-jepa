@@ -354,6 +354,16 @@ def test_a_ratio_only_failure_is_never_labelled_a_near_miss():
 # a requirement encoded in a test depends on nobody deleting it. The person who writes that
 # runner may well never open the manifest, so these fail by themselves instead.
 #
+# THESE ARE TEXT CHECKS, AND THAT IS A KNOWN LIMITATION WITH A DEBT ATTACHED. A grep cannot
+# prove the runner correct; it can only make the requirement impossible to miss at the moment
+# someone creates the file. Nothing stronger is available yet -- you cannot import and
+# introspect a file that does not exist. IF YOU ARE READING THIS BECAUSE ONE OF THEM JUST
+# FIRED: you owe a behavioural test in exchange. Replace the text check with one that imports
+# your runner, hands it an action beyond the frozen right-arm bound, and asserts that what
+# actually reaches the embodiment is clipped to that bound; and one that asserts the resets it
+# executes are the stored manifest values rather than recomputed. Recorded as a blocking
+# requirement in benchmarks/manifests/apple-policy-v1.json.
+#
 # While the file does not exist they PASS VACUOUSLY -- deliberately a bare return, not
 # pytest.skip: .github/workflows/integration.yml rejects every skip whose message is not
 # "graphics opt-in" or "MPS unavailable", so skipping here would fail that job. The moment the
@@ -368,6 +378,12 @@ def test_the_closed_loop_runner_clips_to_the_protocols_bounds_not_the_contracts(
     The protocol's frozen right-arm bounds are +-0.5 (configs/apple_wm_v4.yaml), so a runner
     that executes act()'s output unmodified could command twice the delta every prior
     generation operated under -- silently, because the action is still contract-valid.
+
+    TEXT CHECK, TO BE REPLACED when the runner exists: import it, hand it an action beyond the
+    +-0.5 right-arm bound, and assert that what actually reaches the embodiment is clipped to
+    the bound. A grep cannot prove the runner correct; it only makes the requirement impossible
+    to miss at the moment the file is created. If you are reading this because it just fired,
+    that behavioural test is what you owe in exchange.
     """
     if not EVALUATE_POLICY.exists():
         return  # vacuously green until the runner is written
@@ -391,6 +407,11 @@ def test_the_closed_loop_runner_resets_cohort_c_from_stored_values():
     A runner that recomputes the resets from ``wide_reset`` would let two machines execute
     subtly different cohorts while both passing the manifest's digest check, because that
     digest is over the STORED decimals.
+
+    TEXT CHECK, TO BE REPLACED when the runner exists: assert that the resets the runner
+    actually executes equal the stored manifest values, rather than that its source does not
+    mention wide_reset. If you are reading this because it just fired, that behavioural test is
+    what you owe in exchange.
     """
     if not EVALUATE_POLICY.exists():
         return  # vacuously green until the runner is written
