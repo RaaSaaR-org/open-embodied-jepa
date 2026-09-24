@@ -344,3 +344,65 @@ def test_a_ratio_only_failure_is_never_labelled_a_near_miss():
     ]
     assert "E_prior" in outcomes
     assert "takes precedence" in outcomes["precedence_within_E"].lower()
+
+
+# ---------------------------------------------------------------------------------------
+# Tripwires for scripts/evaluate_policy.py, which does not exist yet.
+#
+# Both constraints below are recorded in benchmarks/manifests/apple-policy-v1.json as blocking
+# requirements on that runner. A requirement recorded in prose depends on someone reading it;
+# a requirement encoded in a test depends on nobody deleting it. The person who writes that
+# runner may well never open the manifest, so these fail by themselves instead.
+#
+# While the file does not exist they PASS VACUOUSLY -- deliberately a bare return, not
+# pytest.skip: .github/workflows/integration.yml rejects every skip whose message is not
+# "graphics opt-in" or "MPS unavailable", so skipping here would fail that job. The moment the
+# file appears without the constraint, CI goes red and the assertion message says why.
+# ---------------------------------------------------------------------------------------
+EVALUATE_POLICY = ROOT / "scripts" / "evaluate_policy.py"
+
+
+def test_the_closed_loop_runner_clips_to_the_protocols_bounds_not_the_contracts():
+    """ClonedPolicy.act clips to [-1, 1] because validate_actions demands it.
+
+    The protocol's frozen right-arm bounds are +-0.5 (configs/apple_wm_v4.yaml), so a runner
+    that executes act()'s output unmodified could command twice the delta every prior
+    generation operated under -- silently, because the action is still contract-valid.
+    """
+    if not EVALUATE_POLICY.exists():
+        return  # vacuously green until the runner is written
+    source = EVALUATE_POLICY.read_text()
+    assert any(
+        marker in source
+        for marker in ("lower_bounds", "upper_bounds", "_check_pinned_bounds", "project_candidates")
+    ), (
+        "scripts/evaluate_policy.py must apply the protocol's configured action bounds "
+        "(planner.lower_bounds / planner.upper_bounds, +-0.5 on the right arm) and/or the "
+        "embodiment's projection to the policy's output. ClonedPolicy.act clips only to the "
+        "contract range [-1, 1], so executing its output unmodified doubles the permitted "
+        "right-arm delta. See benchmarks/manifests/apple-policy-v1.json: "
+        "cohorts.C_frozen_gating.runner_must_clip_to_configured_bounds."
+    )
+
+
+def test_the_closed_loop_runner_resets_cohort_c_from_stored_values():
+    """numpy's Generator.uniform can differ by one ULP across platforms.
+
+    A runner that recomputes the resets from ``wide_reset`` would let two machines execute
+    subtly different cohorts while both passing the manifest's digest check, because that
+    digest is over the STORED decimals.
+    """
+    if not EVALUATE_POLICY.exists():
+        return  # vacuously green until the runner is written
+    source = EVALUATE_POLICY.read_text()
+    assert "apple-policy-v1.json" in source or "cohort" in source, (
+        "scripts/evaluate_policy.py must instantiate each cohort-C reset from the STORED "
+        "values in benchmarks/manifests/apple-policy-v1.json, not recompute them from "
+        "wide_reset. See cohorts.C_frozen_gating.runner_must_reset_from_stored_values."
+    )
+    assert "wide_reset(" not in source.replace("# ", ""), (
+        "scripts/evaluate_policy.py calls wide_reset() directly. Cohort C is defined by the "
+        "stored manifest values; recomputing them can differ by one ULP across platforms and "
+        "would let two machines run subtly different cohorts while both passing the digest "
+        "check. Read the resets from the manifest instead."
+    )

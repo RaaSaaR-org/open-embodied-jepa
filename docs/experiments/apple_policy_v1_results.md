@@ -252,6 +252,41 @@ All three are fixed, each with a regression test. The reviewer's observation tha
 test on `--encoder finetune` would have caught the first two** is correct, and that test now
 exists.
 
+### Why the review gate sits before training and not after it
+
+**The smokes proved the pipeline runs. They could not prove it computes the right thing.**
+
+Both stage-2 smokes — A0 and A2, on 20 episodes — completed successfully and reported
+`status: "completed"` **while all three of the defects above were live.** Two of the three would
+not have announced themselves at all:
+
+- the stale-feature defect would have produced a plausible, merely-bad validation curve for A3;
+- the step-0 selection defect would have produced a checkpoint that passes the collapse rule,
+  because a LayerNorm-MLP at initialization has healthy per-dimension output std.
+
+Both would have fed the G-gates numbers that look like results. The only thing that caught them
+was an independent review reading the code before any arm trained.
+
+**This is the third distinct instance of the same lesson in this protocol's short history**, and
+they are worth listing together because the shape repeats and the surface changes:
+
+1. §1 of the protocol originally presented **rollout readouts as perception measurements**. The
+   values were correct and were independently verified; what nobody checked was *what code
+   produced them*.
+2. The frozen cohort's generator check asserted **bit-exact float equality**, which passed on the
+   machine that wrote it and failed on Linux by one ULP. A green local suite is not evidence for
+   a cross-platform claim.
+3. The stage-2 smokes **ran to completion with three defects live**. Running is not measuring.
+
+The common form: **verifying that something produces a plausible value does not verify that it
+computes the quantity you believe it computes.** Every instance was caught by someone checking
+construction rather than output, and none would have been caught by more careful reading of the
+numbers.
+
+That is the argument for the ordering this protocol uses — build, review, merge, *then* train —
+and it is recorded here rather than left in a message, because the next person to run a stage of
+this protocol will be tempted to treat a passing smoke as a green light. It is not one.
+
 **The withdrawal clause of §6 did not fire.** The reviewer verified the row/position
 correspondence by execution rather than by reading — a synthetic corpus in which every quantity
 carries a fingerprint of its own row, checked so that positions and rows genuinely diverge past
