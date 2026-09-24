@@ -1,6 +1,6 @@
 # Mac-first platform plan
 
-The user confirmed local Mac-only development and MuJoCo first. Prepare Isaac Sim and physical G1/Dex3 support without making either necessary for the local MVP. Observed host on 2026-09-20: arm64, macOS 26.5.1, 48 GiB memory. Exact chip, free disk, Python environment, and MPS runtime remain to be recorded by TASK-001.
+The user confirmed local Mac-only development and MuJoCo first. Prepare Isaac Sim and physical G1/Dex3 support without making either necessary for the local MVP. The host was measured by TASK-001 and is recorded in [RESOURCES.md](RESOURCES.md): Apple M5 Pro, arm64, macOS 26.5.1, 48 GiB memory, CPython 3.12.13 with PyTorch 2.14.0, and CPU/MPS forward and backward both producing finite loss and gradients. That is a capability check, not proof that every model operation supports MPS.
 
 | Layer | Local MVP | Future Isaac Lab / Sim | Future physical robot |
 | --- | --- | --- | --- |
@@ -25,7 +25,7 @@ Begin with a fixed/stabilized base and a single RGB view approximating the exist
 
 Use a compact native model, float32 initially, short history, and bounded candidate chunks. Proposed smoke settings are horizon 4, 64 candidates, and 2 CEM iterations. Final common-mode settings start from the PRD-inspired horizon 8 / 500 candidates; freeze an affordable shared budget after measuring both models on the Mac. The smoke profile never substitutes for a labeled final evaluation.
 
-TASK-002 checks LeWM forward/backward and action-conditioning on CPU and MPS if available. TASK-005 selects a tested Python/PyTorch environment. Do not assume MPS implements every upstream operation; log unsupported operations and deliberate CPU fallback. Keep timings synchronized, include host/device transfers, and identify memory metrics correctly. Reduce resolution/batch/architecture inside model configuration as needed; both models still receive the same raw observations and physical actions.
+TASK-002 checked LeWM forward/backward and action-conditioning on CPU and MPS ([LEWM_SPIKE.md](LEWM_SPIKE.md)); TASK-005 selected the tested Python/PyTorch environment now pinned in `uv.lock`. Do not assume MPS implements every upstream operation; log unsupported operations and deliberate CPU fallback. Keep timings synchronized, include host/device transfers, and identify memory metrics correctly. Reduce resolution/batch/architecture inside model configuration as needed; both models still receive the same raw observations and physical actions.
 
 ## Prepare later ports now
 

@@ -61,6 +61,38 @@ and off-diagonal covariance penalties. Defaults: `ema_decay=0.99`,
 current observations use the online encoder. Noncollapse penalties are not proof
 that collapse is avoided: measure the saved diagnostics on held-out episodes.
 
+## Shared backend-agnostic extensions
+
+`VisualModel.defaults` in `models/base.py` carries options written once in shared code so
+that enabling one stays a config change rather than a backend branch. **Every one is
+inactive at its default** — the flags are off, and the numeric settings beside them only
+take effect once their gating flag is on — so a model written before an option was added
+keeps its exact latents, its exact predictor and its exact loss. TASK-054 verified that
+end-to-end for the three prediction-step keys: re-training a pre-TASK-054 configuration at
+the new revision reproduced all 170 weight tensors bit-for-bit (`torch.equal`).
+
+| Key | Default | Added by | What it does |
+| --- | --- | --- | --- |
+| `state_fusion` | `False` | TASK-050 | Adds a learned embedding of train-normalized proprioception to every latent |
+| `readout_heads`, `readout_weight`, `readout_hidden_dim` | `False`, `1.0`, `256` | TASK-050 | Declared physical readout heads and their loss weight |
+| `cameras` | `None` | TASK-052 | Multi-camera fusion; `None` keeps the single `camera` |
+| `readout_moving_weight`, `readout_moving_threshold_m`, `readout_auxiliary_weight` | `0.0`, `0.01`, `0.0` | TASK-052 | Extra readout-loss weight on frames whose true offset has moved, plus auxiliary absolute-position readouts |
+| `action_chunk` | `1` | TASK-054 | Conditions each rollout step jointly on a chunk of future actions |
+| `predictor_step_embedding` | `False` | TASK-054 | Adds a learned per-step vector, making the rollout horizon-conditioned |
+| `multistep_tail_weight` | `0.0` | TASK-054 | Ramps the multistep loss towards the late steps at constant total weight |
+
+**None of the five options that have been ablated has been shown to help.** In the
+[v3](experiments/apple_world_model_v3_results.md) and
+[v4](experiments/apple_world_model_v4_results.md) gated comparisons the second camera made
+readout precision worse, the readout shaping hurt candidate ranking, and all three
+prediction-step options failed to beat the untouched control, which passed more gates than
+every intervention. `state_fusion` and `readout_heads` have **not** been ablated on/off in
+those protocols — they are untested rather than shown not to help, and `readout_heads` is
+the apparatus the physical-readout gates are measured through. All of them are kept because
+the negative results are part of the record and the options are inactive by default;
+enabling one is a research choice that needs its own preregistration, not a recommended
+setting.
+
 ## Optional LeWM source
 
 ```sh

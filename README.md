@@ -2,40 +2,88 @@
 
 One robot stack. One benchmark. Many world models.
 
-A Mac-first research framework for action-conditioned visual world models on a simulated Unitree G1 with dual Dex3 hands. Native JEPA and the pinned upstream LeWM implementation share canonical LeRobot data, an image-goal CEM/MPC planner, robot actions and evaluation.
+A Mac-first research framework for action-conditioned visual world models on a simulated Unitree G1 with dual Dex3 hands. Native JEPA and the pinned upstream LeWM implementation share canonical LeRobot data, robot actions, one planner implementation and one evaluator.
 
-**Implemented:** real MuJoCo collection/control, both trainable model adapters, strict checkpoints, CPU/MPS checks, a frozen benchmark runner, and mock-only SDK2 preparation. All six training runs and 400 frozen benchmark attempts are complete. **Learned Apple→Plate remains unsuccessful: 0/150 for each model.** The [acceptance audit](docs/ACCEPTANCE.md) separates implemented software from demonstrated research outcomes. Isaac and physical robot execution are future work.
+## Status — 2026-09-24
 
-The [completed feasibility follow-up](docs/experiments/feasibility_results_v2.md)
-finished 20/20 matched attempts after a roughly 2.1× projection speedup, with
-1,000/1,000 projected actions accepted. It still produced no learned pick-and-place.
+**Learned Apple→Plate has never succeeded: 0 successes.** The frozen unseen-pair
+benchmark recorded 0/50 on each of three training seeds for both backends — **0/150 per
+model**, 400 attempts including hold and random controls — and every task-specific apple
+control attempt since has failed its own declared gate. Scripted-collector and
+privileged-oracle successes are collection and feasibility evidence, not learned-policy
+results. Green CI and a passing integration smoke run are software evidence, not working
+manipulation.
 
-Task-specific apple work now adds a learned RGB/proprioceptive `sensor_wm`,
-TRAIN-image waypoint planning, 31/32 successful scripted collection episodes, and
-528 audited matched action branches. The first learned-control diagnostic was
-**0/6 placements**. Balanced H16 training now passes the
-[primary causal-prediction gate](docs/experiments/apple_branch_h16_diagnostics_results_v1.md)
-with 89.40% action assignment and 81.41% endpoint error reduction. Physical control
-still fails: the resumed development comparison completed one learned run with
-reach but no grasp, timed out one persistence control, and left four attempts
-unstarted under its fixed budget. A [saved-state forecast audit](docs/experiments/apple_control_forecast_results_v1.md)
-reproduced the stalled trace and found useful progress from complete chosen plans
-at two states. The subsequent [four-command comparison](docs/experiments/apple_control_commitment_results_v1.md)
-started all six attempts but reached no physical stage (two completed learned
-failures and four timed-out controls). An [arrival-feedback audit](docs/experiments/apple_arrival_feedback_results_v1.md)
-also failed to complete waypoint dwell. The next [image-goal alignment screen](docs/experiments/apple_goal_alignment_results_v1.md)
-passed offline: a TRAIN-fitted image encoder improved held-out predicted arm-goal
-ranking from 73.38% to 89.82%. The subsequent fixed
-[combined visual-and-pose cost](docs/experiments/apple_aligned_control_results_v1.md)
-reached 77.68%, a 4.30-point gain that missed the preregistered five-point gate.
-That version stopped before physical control without tuning or retries.
-Prediction accuracy and short-branch progress do not establish manipulation success.
-The fresh 20-reset final cohort remains unexecuted. This is a separate task-specific
-mode; the historical unseen-pair benchmark above is unchanged. The optional
+**The control line has changed.** The [world model v4 results](docs/experiments/apple_world_model_v4_results.md)
+(TASK-054) failed all four arms against 14 preregistered gates and fired the protocol's
+pre-declared abandonment clause: **sampling-based planning (CEM/MPC) over this
+world-model cost is abandoned as the primary control line**, and behaviour cloning with
+the world model as a critic becomes the primary line. The CEM/MPC implementation, the
+frozen benchmark and the backend-swap invariant stay in the repository, keep their tests
+and remain usable. The product goal — LeWM on G1 + dual Dex3 — is unchanged; only the
+control formulation changed. The decision and its evidence are recorded in
+[docs/DECISIONS.md](docs/DECISIONS.md).
+
+**What is demonstrated.** These are software properties and offline properties of
+checkpoints on recorded validation data — none of them is a manipulation result.
+
+- **The backend-swap invariant.** `configs/mvp_lewm.yaml` is `extends: mvp_common.yaml`
+  plus `world_model.backend`; both backends run the same data, actions, planner, task and
+  evaluator, and the swap is exercised by tests and by the reproduction smoke.
+- **Infrastructure:** a real MuJoCo G1 + dual-Dex3 runtime, LeRobot-v3-compatible storage
+  with verified hashes, two trainable model adapters, checkpoints that enforce their
+  provenance, frozen goal/reset manifests, a validated result schema, and mock-only SDK2
+  preparation. Isaac and physical robot execution remain future work.
+- **The encoder is the component that works.** A directly encoded observation reads the
+  palm–apple offset to **2.35–2.59 cm** median on held-out validation windows (start to
+  target, on the three v4 arms whose encoder was intact), against 3.13 cm at v2. It is not
+  sufficient: 2.59 cm alone exceeds the 1.5 cm gate.
+- **`apple_held` AUROC 0.9992–0.9997** on the lift cohort. Read it with its control — the
+  shuffled-action AUROC on the same cohort is 0.714–0.812, so most of that signal comes
+  from the encoded state and fused proprioception, not from action-conditioned prediction.
+- **No representation collapse:** effective rank 6.74–8.23, collapsed fraction 0.000,
+  mean latent std 0.850–0.873 on all four v4 arms.
+
+**What has been ruled out, with evidence.**
+
+- **Five specific attempts to fix the prediction step under motion.** That step has never
+  beaten the model's own persistence readout by the required margin (gate G2a ≤ 0.8; best
+  ever recorded **0.831**, at v3, against 0.8635 at best in v4 and 0.835 at v2), and these
+  five did not change it: a second camera (made readout precision worse), motion-weighted
+  readout shaping (no help, and it hurt candidate ranking), action-chunk conditioning (no
+  effect), a tail-weighted multistep loss (about 15% of the needed change, and not
+  distinguishable from cohort sampling), and a non-shared per-step predictor (damaged the
+  encoder). In v4 the **untouched control passed more gates (10 of 14) than every
+  intervention (9 of 14)**. This does not establish that the prediction step cannot be
+  fixed — it is three designs at one seed and one budget in v4, and two more in v3.
+- **The cost-and-phase design as the explanation for the physical failures.** Under exact
+  MuJoCo dynamics and perfect object state the
+  [v3 grasp-closure ceiling](docs/experiments/apple_wide_grasp_closure_results_v3.md)
+  reached 8/8 full successes on fresh wide-jitter resets (`ceiling_adequate`), after the
+  [v2 ceiling](docs/experiments/apple_wide_object_ceiling_results_v2.md) failed at 5/8.
+  That is a non-learned diagnostic: it says the design is adequate as a target for a
+  learned controller, and it moves attention to the learned rollout. It does not prove
+  that nothing else in the loop is also wrong.
+
+**The one learned closed-loop result that ever beat its controls**, kept here so the
+summary is complete in both directions: the corrected v2 development *reaching* models
+each reached **1/5** fixed development goals against 0/5 for hold and random
+([reach_results.md](docs/experiments/reach_results.md)). The 95% Wilson interval for 1/5,
+[0.036, 0.624], overlaps the controls' [0, 0.434], so this is observed progress on an
+intermediate milestone, not established superiority and not the full task.
+
+**Open, not decided.** Whether the prediction step can be fixed at all: v4 tested three
+specific designs at one seed and one budget. The test split has still never been decoded,
+so one unbiased check remains available. The fresh 20-reset final apple cohort
+(TASK-034) remains unexecuted.
+
+Detail lives in the per-experiment record under [docs/experiments/](docs/experiments/)
+and the manifests under [benchmarks/manifests/](benchmarks/manifests/). Those files are
+the frozen historical record, including refuted hypotheses, and are not rewritten. The
+[acceptance audit](docs/ACCEPTANCE.md) is the 2026-09-20 snapshot separating implemented
+software from demonstrated research outcomes. The optional
 [JEPA-WMs adapter](docs/experiments/jepa_wms_spike.md) has CPU software compatibility
 coverage and no manipulation-performance claim.
-
-Development reaching models passed the declared per-dimension collapse and action-sensitivity checks, with each achieving 1/5 successes versus hold/random 0/5. An earlier-release scripted controller achieved 4/4 full pick-and-place successes on seen pairings. Scripted successes are not learned-policy results. Failures and diagnostic corrections remain in the [research reports](docs/experiments/reach_results.md).
 
 ## Run a small end-to-end example
 
@@ -75,12 +123,23 @@ flowchart LR
 
 Models own visual features, latent dynamics and goal distance. The embodiment owns frames, IK, hand synergies and limits. Planner code has no model-specific branches. Both models train on the same sealed dataset, and frozen image goals/reset manifests keep evaluation consistent.
 
-The final local corpus has **184 episodes and 42,127 transitions**, with preserved **146/19/19** train/validation/test assignments. Apple→Plate is reserved as an unseen pairing; its component appearances are seen separately. Large datasets and checkpoints remain local; versioned manifests, protocols and summaries provide their hashes and reproduction commands.
+The CEM/MPC planner above is the implemented common planner and the one the historical
+benchmark ran. As of TASK-054 it is **no longer the primary control line** (see the status
+section); it remains in the repository, under test, as the shared planner contract.
+
+The MVP corpus has **184 episodes and 42,127 transitions**, with preserved **146/19/19**
+train/validation/test assignments; Apple→Plate is reserved there as an unseen pairing and
+its component appearances are seen separately. The later task-specific apple corpus
+(`data/apple-wide-v1`, [manifest](benchmarks/manifests/apple-wide-collection-v1.json)) adds
+797 episodes and 205,519 transitions of privileged scripted collection with injected
+perturbations. Large datasets and checkpoints remain local; versioned manifests, protocols
+and summaries provide their hashes and reproduction commands.
 
 ## Documentation
 
 - [Setup](docs/SETUP.md), [models](docs/MODELS.md), [training](docs/TRAINING.md), [data format](docs/DATA_FORMAT.md), [simulation](docs/SIMULATION.md).
 - [Measured MVP results](docs/experiments/mvp_results.md), [final training protocol](docs/experiments/mvp_final.md), [frozen evaluation protocol](docs/experiments/mvp_evaluation.md), [evaluation semantics](docs/EVALUATION.md).
+- Latest experimental record: [world model v4 results](docs/experiments/apple_world_model_v4_results.md) (the abandonment of CEM over this cost), [v3 results](docs/experiments/apple_world_model_v3_results.md), [v2 results](docs/experiments/apple_world_model_v2_results.md).
 - [Original PRD](PRD.md), [MVP plan](docs/MVP_PLAN.md), [architecture](docs/ARCHITECTURE.md), [decisions](docs/DECISIONS.md).
 - [SDK2 hardware preparation](docs/HARDWARE.md), [Isaac port](docs/ISAAC_PORT.md), [Mac resources](docs/RESOURCES.md), [dependency provenance](docs/DEPENDENCIES.md).
 - [Contributing](CONTRIBUTING.md), [AGENTS.md](AGENTS.md), and [Codex project skills](docs/SKILLS.md) define the commit → PR → review → merge workflow.

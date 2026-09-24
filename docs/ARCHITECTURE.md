@@ -91,6 +91,8 @@ Action `t` applies between snapshot `t` and `t+1`. Interior terminal markers fai
 
 CEM configuration declares horizon, candidates, elite count, iterations, seed, normalized bounds, and optional shared penalties. Candidate memory is chunked inside the model adapter. Keep evaluation budget and common-mode policy fixed. MPC owns observation, goal encoding, plan, execution, termination, and logging. No model is allowed to select an alternate planner in common mode.
 
+This describes the implemented planner contract, which is unchanged. It is **not** a statement that sampling-based planning is the project's control approach: since TASK-054 that line is abandoned as the primary one in favour of behaviour cloning with the world model as a critic. See [DECISIONS.md](DECISIONS.md) for the decision and its evidence. The planner, its tests and the frozen benchmark remain in place.
+
 ## Optional candidate feasibility preview (TASK-029)
 
 `CEMConfig.project_candidates=true` enables the version-1 `CandidateProjector`
@@ -134,3 +136,5 @@ results remain valid and untouched (a missing flag in schema-v1 means false).
 The experimental `aligned_sensor_wm_v1` backend composes the existing frozen sensor dynamics with a separately trained image-to-seven-arm-position encoder. The goal remains an image. The backend compares predicted visual and arm features with image-derived goal features, using fixed equal weights after TRAIN-only scale calibration. Its progress callback also accepts images only and infers both current and goal pose; it does not read current or goal joint arrays from the planner. Latents and goal representations remain opaque to generic planning code.
 
 This backend is a frozen inference composition: `train_step` rejects updates explicitly. Training and selection occur in separately versioned tasks, with strict model/head/calibration identities in a portable checkpoint bundle. This does not change the native/LeWM training interfaces or the existing sensor checkpoint implementation. A learned pose estimate is not physical task truth; visual evidence and ordered manipulation scoring remain necessary. See the [prospective integration/control protocol](experiments/apple_aligned_control_v1.md) for validation and limits.
+
+**Outcome:** this composition **missed its preregistered gate** — 77.68% against the required five-point gain, a 4.30-point gain — and stopped before physical control ([results](experiments/apple_aligned_control_results_v1.md)). The interface above is described as implemented; it is not a working control result.

@@ -1,5 +1,10 @@
 # MVP acceptance audit — development snapshot
 
+> **Historical record, kept as written.** This draft was superseded by
+> [ACCEPTANCE.md](ACCEPTANCE.md) and is retained because its open gates and negative
+> findings are part of the record. For the current position see the
+> [README status section](../README.md#status--2026-09-24).
+
 Audit date: 2026-09-20. Reviewed the working implementation based on Git
 `9afff34922100e4de3ba77178fe4bd74240ad0a6`, including explicitly identified
 uncommitted work. This is a draft while collection and model experiments continue;

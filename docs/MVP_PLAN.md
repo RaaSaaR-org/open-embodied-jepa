@@ -2,6 +2,16 @@
 
 Prepared 2026-09-20 from PRD sections 1–21, updated with the user’s Mac-only / MuJoCo-first constraint. The copied PRD remains unchanged; this plan records the platform refinement. MissionControl holds execution status; this document holds scope and milestone gates.
 
+> **Status as of 2026-09-24.** The M0–M5 engineering milestones below were delivered and
+> audited ([ACCEPTANCE.md](ACCEPTANCE.md)); the research outcome was negative. **Learned
+> Apple→Plate is still 0 successes.** Since TASK-054 the planning line in this plan is no
+> longer the primary control line: CEM over the world-model cost is abandoned in favour of
+> behaviour cloning with the world model as a critic. The current position, what is
+> demonstrated and what has been ruled out are summarised in the
+> [README status section](../README.md#status--2026-09-24); the decision and its evidence
+> are in [DECISIONS.md](DECISIONS.md). The milestone table below is kept as the original
+> plan of record and is not rewritten.
+
 ## Deliverable
 
 Run goal-image tabletop manipulation in G1 + Dex3 MuJoCo simulation on the local Mac using two trained, action-conditioned world models. Switch only `world_model.backend` to compare them with the same data, action space, CEM/MPC budget, task, seeds, and evaluator. Store reproducible machine-readable results. Prepare the Unitree SDK2 transport mapping and mock-based checks, plus an Isaac Lab/Sim port specification. Executing those integrations requires future access to suitable hardware/compute and is not a prerequisite for the local MVP.
@@ -60,3 +70,19 @@ Each task must produce its stated artifacts and pass its acceptance checks befor
 | Configuration-only backend change | 006, 016, 020 | Backend-key-only comparison test and archived configs |
 
 TASK-023 audits all rows. Engineering completion never implies that the hypothesis of reusable physical dynamics was proven.
+
+## After the MVP: the task-specific apple line
+
+The engineering MVP closed with a complete negative benchmark. Work since then is a
+separately labelled task-specific mode on the apple corpus, not the historical unseen-pair
+benchmark, and it is recorded protocol-by-protocol under
+[docs/experiments/](experiments/) with machine-readable manifests under
+[benchmarks/manifests/](../benchmarks/manifests/). Every gated **learned** closed-loop attempt in
+that line has failed its declared gate, and the fresh 20-reset final cohort (TASK-034) has
+not been executed. Some non-learned privileged-ceiling diagnostics did pass their gates;
+they are feasibility evidence, not learned-policy results.
+
+The last of those protocols, [world model v4](experiments/apple_world_model_v4_results.md)
+(TASK-054), failed all four arms and fired its pre-declared abandonment clause. The next
+line is behaviour cloning with the world model as a critic; it is not designed or started
+in this plan.

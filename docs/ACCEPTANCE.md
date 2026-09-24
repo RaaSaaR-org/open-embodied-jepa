@@ -1,5 +1,12 @@
 # MVP acceptance and measured limitations
 
+> **This is a dated snapshot, not the current status.** It audits the local engineering
+> MVP as of 2026-09-20 and is not rewritten. For where the project is now — including the
+> TASK-054 decision to abandon CEM over the world-model cost as the primary control line —
+> see the [README status section](../README.md#status--2026-09-24) and
+> [DECISIONS.md](DECISIONS.md). Nothing below has been superseded in the direction of a
+> better outcome: **learned Apple→Plate is still 0 successes.**
+
 Evidence date: 2026-09-20. **The local engineering MVP and its preregistered
 evaluation are complete; learned Apple→Plate manipulation failed.** All eight
 50-episode runs completed, each with **0/50 full-task successes and zero stage
