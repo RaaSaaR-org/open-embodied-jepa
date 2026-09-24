@@ -37,7 +37,6 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -176,14 +175,6 @@ class FrozenEncoder:
             "model_implementation_sha256": self.model.implementation_sha256,
             "model_parameters": int(sum(p.numel() for p in self.model.parameters())),
         }
-
-
-@dataclass(frozen=True)
-class PolicyDefaults:
-    hidden_dim: int = 512
-    learning_rate: float = 3e-4
-    weight_decay: float = 1e-4
-    gradient_clip: float = 1.0
 
 
 class ClonedPolicy(nn.Module):
@@ -371,6 +362,13 @@ class ClonedPolicy(nn.Module):
                 "state_mean": self.state_mean.cpu(),
                 "state_scale": self.state_scale.cpu(),
                 "state_normalization_fitted": self.state_normalization_fitted.cpu(),
+                # A trainable feature source is NOT an nn.Module attribute of this policy, so
+                # it is absent from state_dict() and would be silently discarded. For A3 the
+                # encoder IS part of the trained artifact: without it the reloaded head is
+                # paired with the original E0 encoder and the arm cannot be reproduced.
+                "feature_source_weights": (
+                    self.features.model.state_dict() if self.features.trainable else None
+                ),
                 "optimizer": self.optimizer.state_dict(),
                 "metadata": self.metadata,
                 "seed": self.seed,
@@ -391,7 +389,16 @@ class ClonedPolicy(nn.Module):
         for key, value in expected.items():
             if checkpoint.get(key) != value:
                 raise ContractError(f"policy checkpoint {key} is incompatible")
+        # NB4: an A2 head loaded onto an A1 random encoder is exactly the cross-arm confusion
+        # gate G2 exists to detect, so the feature source is part of the compatibility check.
+        if checkpoint.get("feature_source") != self.features.provenance():
+            raise ContractError("policy checkpoint was trained on a different feature source")
         self.head.load_state_dict(checkpoint["weights"], strict=True)
+        encoder_weights = checkpoint.get("feature_source_weights")
+        if self.features.trainable != (encoder_weights is not None):
+            raise ContractError("policy checkpoint disagrees on whether its encoder was trained")
+        if encoder_weights is not None:
+            self.features.model.load_state_dict(encoder_weights, strict=True)
         for name in ("state_mean", "state_scale", "state_normalization_fitted"):
             if name not in checkpoint:
                 raise ContractError(f"policy checkpoint is missing {name}")

@@ -224,9 +224,36 @@ forgotten.
 
 ## 8. Next
 
-Stage 2 is **not** a training launch. `src/embodied_jepa/policy.py`,
-`src/embodied_jepa/cloning.py`, the `POLICIES` registry and the arm configs do not exist; the
-protocol declares them as to-be-built. They are built, reviewed independently and merged
+Stage 2 was **not** a training launch. `src/embodied_jepa/policy.py`,
+`src/embodied_jepa/cloning.py`, the `POLICIES` registry and the arm configs did not exist; the
+protocol declared them as to-be-built. They are built, independently reviewed and merged
 **before any arm is trained**, because a bug in the feature pipeline or the masking rules would
 produce numbers that could not be trusted and would not announce themselves until the gates read
 strangely.
+
+That review returned **BLOCK** on the first submission, and it was right to. Three defects, all
+in the **A3 fine-tune arm** and the **selection rule**, none of them touching the feature/target
+alignment:
+
+- **A3's validation was scored against stale features.** The val feature cache was built once,
+  before training, from the pre-training encoder — so a head trained on live features was scored
+  against an input distribution frozen at initialization. A3's val curve, `best_step` and
+  selected checkpoint would have been meaningless *while still looking like a merely-bad curve*.
+- **A3's fine-tuned encoder was never saved.** `FrozenEncoder` is a plain object, not an
+  `nn.Module`, so it is absent from `state_dict()`; the trained encoder was silently discarded and
+  the reloaded head would have been paired with the original E0 encoder.
+- **The untrained step-0 policy was selectable**, and the run then reported `completed`. A random
+  head passes the collapse rule — a LayerNorm-MLP at initialization has healthy per-dimension
+  output std — so it could be written as `best`, never beaten, and fed to the gates.
+  `world_model_v2.selectable` guards against exactly this with `step > 0` and says so in a
+  comment; this runner had omitted it.
+
+All three are fixed, each with a regression test. The reviewer's observation that **a two-step
+test on `--encoder finetune` would have caught the first two** is correct, and that test now
+exists.
+
+**The withdrawal clause of §6 did not fire.** The reviewer verified the row/position
+correspondence by execution rather than by reading — a synthetic corpus in which every quantity
+carries a fingerprint of its own row, checked so that positions and rows genuinely diverge past
+an excluded episode — and found the chain correct, including in `shuffled_frame_control`, on
+which the stage-1 result depends. **Nothing is withdrawn.**

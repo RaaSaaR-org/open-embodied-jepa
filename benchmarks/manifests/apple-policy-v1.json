@@ -618,6 +618,7 @@
           "seed": 45339
         }
       },
+      "runner_must_clip_to_configured_bounds": "BLOCKING requirement on scripts/evaluate_policy.py, alongside runner_must_reset_from_stored_values. ClonedPolicy.act clips to the CONTRACT range [-1, 1] because validate_actions demands it, but the protocol's frozen right-arm bounds are +-0.5. The runner must wire policy._check_pinned_bounds and clip emitted actions to the configured bounds, or a head could command twice the delta every prior generation operated under. Not yet wired: there is no closed-loop runner.",
       "runner_must_reset_from_stored_values": "The evaluation runner MUST instantiate each reset from the stored object_xy/plate_xy in this manifest and MUST NOT recompute them from wide_reset at run time. Otherwise two machines could execute subtly different cohorts while both passing the digest check. This is a requirement on scripts/evaluate_policy.py, stated before it is written.",
       "runs_per_arm": 1,
       "seeds": [
@@ -1233,7 +1234,11 @@
     }
   },
   "results_doc": "docs/experiments/apple_policy_v1_results.md",
-  "status": "preregistered_not_run",
+  "status": "preregistration_merged_stage1_complete",
+  "status_history": [
+    "preregistered_not_run (at merge of PR #33)",
+    "preregistration_merged_stage1_complete (pre-flight run and passed; no arm trained; cohort C untouched)"
+  ],
   "stop_rule_protecting_cohort_C": {
     "cohort_C_is_not_opened_autonomously": "After the development pre-check and before the first attempt on C, the executing agent reports the pre-flight values, the training reports and the D numbers to the coordinator and waits. Opening the frozen cohort is a SEPARATE authorization, not a continuation of the one that started the pre-flight.",
     "never_gates": true,
@@ -1255,6 +1260,7 @@
       "min_per_dimension_output_std": 0.02
     },
     "selection_metric": "median per-dimension expert action error on masked val frames of the 15 surviving val roots",
+    "selection_metric_as_implemented": "The frozen wording is 'median per-dimension expert action error'. cloning.action_error computes np.median over the flattened [N,7] error array, which is the median over all dimensions jointly, NOT the median of the seven per-dimension medians. The per-dimension medians ARE recorded alongside it in every validation event, so either reading is recoverable from the artifact. Disclosed rather than changed: the frozen text is not edited after the fact.",
     "selection_split": "val",
     "steps": 50000
   },

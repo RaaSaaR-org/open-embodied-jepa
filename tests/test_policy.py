@@ -191,10 +191,23 @@ def test_a_collapsed_head_is_never_selected():
     eligibility = {"min_output_std": 0.02}
     collapsed = {"median_abs_error": 0.001, "output_std_min": 0.0}
     healthy = {"median_abs_error": 0.5, "output_std_min": 0.3}
-    assert cloning.selectable(collapsed, None, eligibility) is False
-    assert cloning.selectable(healthy, None, eligibility) is True
+    assert cloning.selectable(100, collapsed, None, eligibility) is False
+    assert cloning.selectable(100, healthy, None, eligibility) is True
     # Even against a worse incumbent, a collapsed head does not win.
-    assert cloning.selectable(collapsed, (10, 0.9), eligibility) is False
+    assert cloning.selectable(100, collapsed, (10, 0.9), eligibility) is False
+
+
+def test_the_untrained_step_zero_policy_is_never_selectable():
+    """A random head passes the collapse rule -- a LayerNorm-MLP at init has healthy std.
+
+    Without a step guard it is written as ``best``, never beaten, and the run still reports
+    ``completed``, feeding the gates a policy that learned nothing. ``world_model_v2`` guards
+    the same way for the same reason.
+    """
+    eligibility = {"min_output_std": 0.02}
+    healthy = {"median_abs_error": 0.4, "output_std_min": 0.3}
+    assert cloning.selectable(0, healthy, None, eligibility) is False
+    assert cloning.selectable(1, healthy, None, eligibility) is True
 
 
 def test_surviving_root_rule_excludes_branches_and_aim_offset_roots():
@@ -251,3 +264,91 @@ def test_the_image_pathway_uses_image_features_not_encode():
     # And the whole module must never reach for the fused encoder on a model.
     source = (ROOT / "src" / "embodied_jepa" / "policy.py").read_text()
     assert "model.encode(" not in source
+
+
+class MovingEncoder:
+    """A trainable stand-in whose features shift once its parameter is updated."""
+
+    kind = "moving"
+    feature_dim = 4
+    trainable = True
+
+    def __init__(self):
+        self.model = torch.nn.Linear(4, 4)
+        self.calls = 0
+
+    def features(self, images):
+        self.calls += 1
+        batch = int(images["onboard_rgb"].shape[0])
+        base = torch.ones(batch, 4)
+        return self.model(base)
+
+    def parameters(self):
+        return self.model.parameters()
+
+    def provenance(self):
+        return {"kind": self.kind, "frozen": False}
+
+
+def test_a_trainable_encoder_is_saved_and_restored(tmp_path):
+    """B2: a plain-object feature source is not in state_dict() and was silently discarded.
+
+    For A3 the encoder IS part of the trained artifact. Losing it pairs the reloaded head with
+    the original E0 encoder, and the arm cannot be reproduced.
+    """
+    source = MovingEncoder()
+    p = ClonedPolicy(schema(), source, device="cpu", seed=0)
+    p.fit_state_normalization(
+        np.zeros(6, np.float32), np.ones(6, np.float32), training_episode_ids=("a",)
+    )
+    with torch.no_grad():
+        source.model.weight.fill_(2.5)
+    path = tmp_path / "a3.pt"
+    p.save(path)
+    saved = torch.load(path, weights_only=True)
+    assert saved["feature_source_weights"] is not None
+
+    fresh = MovingEncoder()
+    q = ClonedPolicy(schema(), fresh, device="cpu", seed=0)
+    q.load(path)
+    assert float(fresh.model.weight[0, 0].detach()) == 2.5
+
+
+def test_a_frozen_arms_checkpoint_records_no_encoder_weights(tmp_path):
+    p = policy()
+    path = tmp_path / "a0.pt"
+    p.save(path)
+    assert torch.load(path, weights_only=True)["feature_source_weights"] is None
+
+
+def test_a_checkpoint_refuses_a_different_feature_source(tmp_path):
+    """NB4: an A2 head on an A1 encoder is the cross-arm confusion gate G2 exists to detect."""
+    p = policy()
+    path = tmp_path / "a0.pt"
+    p.save(path)
+    other = ClonedPolicy(schema(), MovingEncoder(), device="cpu", seed=0)
+    with pytest.raises(ContractError, match="different feature source"):
+        other.load(path)
+
+
+def test_evaluate_policy_recomputes_features_when_the_encoder_is_trainable():
+    """B1: a stale VAL cache scores a live head against features frozen at initialization.
+
+    ``features=None`` must mean "recompute", not "no image pathway", whenever the source is
+    trainable -- otherwise A3's val curve, best_step and selected checkpoint are meaningless
+    while still looking like a merely-bad curve.
+    """
+    source = MovingEncoder()
+    p = ClonedPolicy(schema(), source, device="cpu", seed=0)
+    p.fit_state_normalization(
+        np.zeros(6, np.float32), np.ones(6, np.float32), training_episode_ids=("a",)
+    )
+
+    class Arrays:
+        states = np.zeros((4, 6), np.float32)
+        mask = np.ones((4, 6), bool)
+        frames = {"onboard_rgb": np.zeros((4, 2, 2, 3), np.uint8)}
+
+    before = source.calls
+    cloning.evaluate_policy(p, Arrays(), np.arange(4), None, np.zeros((4, 7), np.float32))
+    assert source.calls > before, "a trainable encoder must be re-evaluated, not cached"

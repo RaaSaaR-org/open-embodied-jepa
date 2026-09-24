@@ -86,7 +86,7 @@ def is_surviving_root(episode_id: str) -> bool:
     return seed in set(FROZEN_SEEDS) and seed not in AIM_OFFSET_SEEDS
 
 
-def base_actions(store, arrays, *, acknowledge: bool) -> np.ndarray:
+def base_actions(store, arrays, *, acknowledge: bool) -> tuple[np.ndarray, np.ndarray]:
     """``collector__base_action`` aligned with ``arrays``' contiguous observation rows.
 
     The collector records one command per transition (T rows for T+1 observations). The final
@@ -105,8 +105,12 @@ def base_actions(store, arrays, *, acknowledge: bool) -> np.ndarray:
         )
         base = np.asarray(labels["collector__base_action"], np.float32)
         start, length = int(arrays.offsets[index]), int(arrays.lengths[index])
-        if not 0 < len(base) <= length:
-            raise ContractError(f"base actions of {episode_id} disagree with its observations")
+        # Exactly one command per transition: T commands for T+1 observations. Anything else
+        # would make the terminal observation sampleable with a bogus target, silently.
+        if len(base) != length - 1:
+            raise ContractError(
+                f"base actions of {episode_id}: {len(base)} commands for {length} observations"
+            )
         result[start : start + len(base)] = base
         has_command[start : start + len(base)] = True
     return result, has_command
@@ -116,7 +120,7 @@ def sample_mask(store, arrays, *, acknowledge: bool) -> tuple[np.ndarray, dict]:
     """Rows eligible as BC training samples, plus the accounting a reviewer can check."""
     targets = arrays.targets
     total = len(arrays.states)
-    _, has_command = base_actions(store, arrays, acknowledge=acknowledge)
+    base, has_command = base_actions(store, arrays, acknowledge=acknowledge)
 
     dropped = targets["apple_dropped"][:, 0] > 0.5
     # Post-displacement: the apple has moved from where the script aimed, so the recorded
@@ -141,7 +145,7 @@ def sample_mask(store, arrays, *, acknowledge: bool) -> tuple[np.ndarray, dict]:
         "rows_kept": int(keep.sum()),
         "displacement_limit_m": DISPLACEMENT_LIMIT_M,
     }
-    return keep, accounting
+    return keep, accounting, base, has_command, dropped, displaced
 
 
 def load_bc_split(store, split, cameras, *, workers, limit, acknowledge):
@@ -160,7 +164,9 @@ def load_bc_split(store, split, cameras, *, workers, limit, acknowledge):
             f"{split}: expected {SURVIVING_ROOTS[split]} surviving roots, found "
             f"{len(surviving)}; the cohort does not match the protocol's exclusion table"
         )
-    keep, accounting = sample_mask(store, arrays, acknowledge=acknowledge)
+    keep, accounting, base, has_command, dropped_mask, displaced_mask = sample_mask(
+        store, arrays, acknowledge=acknowledge
+    )
     root_rows = np.zeros(len(arrays.states), bool)
     for index, episode_id in enumerate(arrays.episode_ids):
         if is_surviving_root(episode_id):
@@ -171,7 +177,22 @@ def load_bc_split(store, split, cameras, *, workers, limit, acknowledge):
     accounting["episodes_decoded"] = len(arrays.episode_ids)
     rows = np.flatnonzero(keep & root_rows)
     accounting["rows_sampled"] = int(len(rows))
-    return arrays, rows, accounting
+    # The counts above run over every decoded episode, so they include the branch and
+    # aim-offset episodes that root_rows then discards. Report the same exclusions restricted
+    # to the cohort actually sampled, or the numbers do not describe the cohort they head.
+    accounting["on_cohort"] = {
+        "rows_without_a_command": int((~has_command & root_rows).sum()),
+        "rows_apple_dropped": int((dropped_mask & root_rows).sum()),
+        "rows_post_displacement_pre_grasp": int((displaced_mask & root_rows).sum()),
+    }
+    # Declared risk R1: the protocol pre-committed to worrying about this number most, and
+    # Outcome C's reading depends on it. At most 45 x 137 = 6165 on the train split.
+    phase = arrays.phase[rows]
+    accounting["rows_sampled_by_phase"] = {
+        str(int(v)): int((phase == v).sum()) for v in sorted(set(int(x) for x in phase) - {-1})
+    }
+    accounting["rows_sampled_close_phase"] = int((phase == PHASE_CLOSE).sum())
+    return arrays, rows, accounting, base
 
 
 def precompute_features(source, arrays, rows, *, chunk=256):
@@ -217,6 +238,9 @@ def evaluate_policy(policy, arrays, rows, features, targets, *, chunk=512) -> di
                 visual = torch.from_numpy(features[start : start + len(part)]).to(
                     policy.device_name
                 )
+            elif policy.features.feature_dim:
+                # A3: the encoder has moved since any cache would have been built.
+                visual = policy.features.features(images(arrays, part)).detach()
             state = policy.normalized_state(arrays.states[part], arrays.mask[part])
             predictions[start : start + len(part)] = policy(visual, state).detach().cpu().numpy()
     result = action_error(predictions, targets)
@@ -228,8 +252,17 @@ def evaluate_policy(policy, arrays, rows, features, targets, *, chunk=512) -> di
     return result
 
 
-def selectable(decision, best, eligibility) -> bool:
-    """Best-by-val, but a collapsed head is never selected however good its error looks."""
+def selectable(step, decision, best, eligibility) -> bool:
+    """An eligible val score that improves on the best.
+
+    ``step > 0`` matches ``world_model_v2.selectable``, which guards the same way for the same
+    reason: **the untrained step-0 state is logged but never selectable.** Without it a random
+    head can be written as ``best`` and never beaten -- it passes the collapse rule, because a
+    LayerNorm-MLP at initialization has healthy per-dimension output std -- and the run still
+    reports ``completed``. That would feed the G-gates a policy that learned nothing.
+    """
+    if step <= 0:
+        return False
     if decision["output_std_min"] < eligibility["min_output_std"]:
         return False
     return best is None or decision["median_abs_error"] < best[1]
@@ -304,10 +337,10 @@ def train(
 
     policy, completed, best, failed = None, 0, None, None
     try:
-        train_arrays, train_rows, train_counts = load_bc_split(
+        train_arrays, train_rows, train_counts, train_base = load_bc_split(
             store, "train", cameras, workers=workers, limit=limit_episodes, acknowledge=True
         )
-        val_arrays, val_rows, val_counts = load_bc_split(
+        val_arrays, val_rows, val_counts, val_base = load_bc_split(
             store, "val", cameras, workers=workers, limit=limit_episodes, acknowledge=True
         )
         report["data"] = {"train": train_counts, "val": val_counts}
@@ -347,19 +380,22 @@ def train(
         report["policy_parameters"] = int(sum(p.numel() for p in policy.head.parameters()))
         report["policy_implementation_sha256"] = policy.implementation_sha256
 
-        train_base, _ = base_actions(store, train_arrays, acknowledge=True)
-        val_base, _ = base_actions(store, val_arrays, acknowledge=True)
         train_targets = train_base[train_rows][:, list(FREE_ACTION_INDICES)]
         val_targets = val_base[val_rows][:, list(FREE_ACTION_INDICES)]
         report["data"]["train"]["target_sha256"] = hashlib.sha256(
             train_targets.tobytes()
         ).hexdigest()
 
-        cached = (
-            precompute_features(source, train_arrays, train_rows) if encoder != "finetune" else None
-        )
-        val_features = precompute_features(source, val_arrays, val_rows)
+        # A fine-tuned encoder moves, so neither cache may be built: the train cache would go
+        # stale, and a stale VAL cache is worse -- it would score a head trained on live
+        # features against an input distribution frozen at initialization, making A3's val
+        # curve, its best_step and its selected checkpoint meaningless while still looking
+        # like a merely-bad curve. Both are None for A3 and recomputed live.
+        live = encoder == "finetune"
+        cached = None if live else precompute_features(source, train_arrays, train_rows)
+        val_features = None if live else precompute_features(source, val_arrays, val_rows)
         report["data"]["features_precomputed"] = cached is not None
+        report["data"]["val_features_precomputed"] = val_features is not None
         clock.check(max_seconds)
 
         sampler = np.random.default_rng(seed)
@@ -368,7 +404,7 @@ def train(
         def validate():
             nonlocal best
             decision = evaluate_policy(policy, val_arrays, val_rows, val_features, val_targets)
-            improved = selectable(decision, best, eligibility)
+            improved = selectable(completed, decision, best, eligibility)
             event = {
                 "kind": "validation",
                 "step": completed,
