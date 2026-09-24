@@ -178,10 +178,16 @@ this protocol's §1 was rewritten to fix, which is why it is being checked at al
 **If the alignment check finds a defect in `shuffled_frame_control`, or anywhere else the
 pre-flight depends on, then:**
 
+0. **The executing agent STOPS AND REPORTS BEFORE FIXING ANYTHING.** Added 2026-09-24 as a
+   refinement that makes this clause stricter, not looser: the original wording went straight to
+   "the fix lands", which would have let a repair happen as a reflex inside a merge. A defect
+   here would have implications wider than one script, and that response is decided deliberately
+   with the coordinator rather than chosen by whoever finds it.
 1. **The stage-1 result is WITHDRAWN, not patched.** §1's gate table stops being the result.
-2. The fix lands, and **the runner re-runs from the same frozen checkpoint**. The new numbers
-   stand on their own — **including the possibility that a gate which passed now fails**, and
-   with it the possibility that Outcome E fires and this task stops.
+2. Once the response is agreed, the fix lands and **the runner re-runs from the same frozen
+   checkpoint**. The new numbers stand on their own — **including the possibility that a gate
+   which passed now fails**, and with it the possibility that Outcome E fires and this task
+   stops.
 3. **The 0.491 / 0.456 / 0.873 figures are not carried forward alongside a corrected runner.**
    They are reported as withdrawn, next to what replaced them.
 4. **No argument is entertained about whether the defect "would have mattered."** A result whose
@@ -192,6 +198,14 @@ pre-flight depends on, then:**
 
 This is not expected to fire. If it does not, this section stays in the document as a record of
 what was committed to while the answer was still open.
+
+**A related exposure is named here and deliberately NOT acted on.** The same gap — that verifying
+a number's *value* does not verify *what produced it* — applies in principle to every accepted
+numerical claim in this experiment record, and the claims nobody has had reason to re-examine
+carry it most, since "nobody re-examined it" is not evidence of anything. Re-auditing the record
+from inside a running experiment is how a protocol stops being a protocol, so it is not done here
+and no task is opened for it by this protocol. It is recorded so that it is carried rather than
+forgotten.
 
 ## 7. Process notes
 
