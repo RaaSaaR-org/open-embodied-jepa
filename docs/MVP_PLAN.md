@@ -11,6 +11,11 @@ Prepared 2026-09-20 from PRD sections 1–21, updated with the user’s Mac-only
 > [README status section](../README.md#status--2026-09-24); the decision and its evidence
 > are in [DECISIONS.md](DECISIONS.md). The milestone table below is kept as the original
 > plan of record and is not rewritten.
+>
+> **Update 2026-09-25.** The behaviour-cloning line has also hit its pre-declared
+> abandonment clause (TASK-057), so there is currently no primary control line. No third
+> control formulation is preregistered on this corpus and this camera; the next task is a
+> perception/data task (TASK-059). See [DECISIONS.md](DECISIONS.md).
 
 ## Deliverable
 
@@ -77,12 +82,14 @@ The engineering MVP closed with a complete negative benchmark. Work since then i
 separately labelled task-specific mode on the apple corpus, not the historical unseen-pair
 benchmark, and it is recorded protocol-by-protocol under
 [docs/experiments/](experiments/) with machine-readable manifests under
-[benchmarks/manifests/](../benchmarks/manifests/). Every gated **learned** closed-loop attempt in
-that line has failed its declared gate, and the fresh 20-reset final cohort (TASK-034) has
+[benchmarks/manifests/](../benchmarks/manifests/). Every **learned** control attempt in that line,
+through TASK-057, has ended without meeting its declared gate (failed it, stopped at an
+earlier offline gate or stop rule, or ran incomplete), and the fresh 20-reset final cohort (TASK-034) has
 not been executed. Some non-learned privileged-ceiling diagnostics did pass their gates;
 they are feasibility evidence, not learned-policy results.
 
 The last of those protocols, [world model v4](experiments/apple_world_model_v4_results.md)
 (TASK-054), failed all four arms and fired its pre-declared abandonment clause. The next
-line is behaviour cloning with the world model as a critic; it is not designed or started
-in this plan.
+line was behaviour cloning with the world model as a critic, which this plan does not
+design. It ran as TASK-056 and TASK-057, and at TASK-057 its own pre-declared abandonment
+clause fired as well; see [DECISIONS.md](DECISIONS.md).

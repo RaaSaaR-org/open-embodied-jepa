@@ -91,7 +91,7 @@ Action `t` applies between snapshot `t` and `t+1`. Interior terminal markers fai
 
 CEM configuration declares horizon, candidates, elite count, iterations, seed, normalized bounds, and optional shared penalties. Candidate memory is chunked inside the model adapter. Keep evaluation budget and common-mode policy fixed. MPC owns observation, goal encoding, plan, execution, termination, and logging. No model is allowed to select an alternate planner in common mode.
 
-This describes the implemented planner contract, which is unchanged. It is **not** a statement that sampling-based planning is the project's control approach: since TASK-054 that line is abandoned as the primary one in favour of behaviour cloning with the world model as a critic. See [DECISIONS.md](DECISIONS.md) for the decision and its evidence. The planner, its tests and the frozen benchmark remain in place.
+This describes the implemented planner contract, which is unchanged. It is **not** a statement that sampling-based planning is the project's control approach: since TASK-054 that line is abandoned as the primary one in favour of behaviour cloning with the world model as a critic, and since TASK-057 that behaviour-cloning line has also stopped on this corpus and camera, so there is currently no primary control line. See [DECISIONS.md](DECISIONS.md) for the decision and its evidence. The planner, its tests and the frozen benchmark remain in place.
 
 ## Optional candidate feasibility preview (TASK-029)
 
