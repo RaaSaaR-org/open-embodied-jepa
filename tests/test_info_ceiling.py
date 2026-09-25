@@ -497,7 +497,8 @@ def test_a_failed_guard_writes_a_void_report(tmp_path, monkeypatch):
     pytest.importorskip("mujoco")
     runner = _load("_probe_t4", "scripts/probe_info_ceiling.py")
     tampered = json.loads(json.dumps(MANIFEST))
-    tampered["hashes"]["configs/g1_sim_action.json"] = "0" * 64
+    # Only committed inputs, so the test runs where checkpoints and data are absent (CI).
+    tampered["hashes"] = {"configs/g1_sim_action.json": "0" * 64}
     path = tmp_path / "manifest.json"
     path.write_text(json.dumps(tampered))
     monkeypatch.setattr(runner, "MANIFEST", path)
@@ -540,3 +541,17 @@ def test_paired_ratio_stays_finite_when_a_baseline_resample_is_zero():
     result = ic.paired_ratio(np.array([1.0, 1.0]), np.array([0.0, 1.0]), idx, ic._median)
     assert np.isfinite(result["ci95"]).all()
     json.dumps(result, allow_nan=False)
+
+
+def test_a_missing_input_voids_instead_of_crashing(tmp_path, monkeypatch):
+    pytest.importorskip("torch")
+    pytest.importorskip("mujoco")
+    runner = _load("_probe_t5", "scripts/probe_info_ceiling.py")
+    tampered = json.loads(json.dumps(MANIFEST))
+    tampered["hashes"] = {"checkpoints/does-not-exist.pt": "0" * 64}
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps(tampered))
+    monkeypatch.setattr(runner, "MANIFEST", path)
+    report = runner.run(tmp_path / "out", smoke=True)
+    assert report["decision"]["outcome"] == "VOID"
+    assert "sha256 None" in report["decision"]["reason"]

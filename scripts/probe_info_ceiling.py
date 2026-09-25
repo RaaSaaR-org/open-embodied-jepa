@@ -531,7 +531,11 @@ def run(output: Path, *, smoke: bool = False) -> dict:
     manifest = json.loads(MANIFEST.read_text())
     try:
         # --- G-hash (inputs) ---
-        actual = {name: sha256(ROOT / name) for name in manifest["hashes"]}
+        # A missing input is recorded as None, so G-hash voids the run instead of crashing it.
+        actual = {
+            name: sha256(ROOT / name) if (ROOT / name).is_file() else None
+            for name in manifest["hashes"]
+        }
         ic.check_hashes(manifest["hashes"], actual)
         report["hashes"] = actual
         if not smoke:
