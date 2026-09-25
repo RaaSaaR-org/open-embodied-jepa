@@ -441,3 +441,17 @@ def test_the_scripted_oracle_ends_its_attempt_as_policy_complete(monkeypatch):
             shadow=_LoggingShadow([], 100),
             trace=False,
         )
+
+
+def test_amendment_2_makes_an_early_stop_void_and_scopes_missing_values():
+    """A cap/crash stop is Outcome V (never a G-SUB failure); missing-values only in completed runs."""
+    m = manifest()
+    a2 = m["amendment_2"]
+    assert "VOID" in a2["void_on_stop"] and "does NOT fire" in a2["void_on_stop"]
+    assert "no gate counts as passed or failed" in a2["void_on_stop"]
+    assert "INCONCLUSIVE" in a2["second_void"]
+    assert "ONLY inside a run that completed" in m["missing_values"]
+    assert "stops for any reason" in m["pre_declared_outcomes"]["V"]
+    assert m["precedence_rule_D1_over_G_SUB"]["exemption_spent"] is False
+    text = PROTOCOL.read_text()
+    assert "## 14. Amendment 2" in text and "## 13. Amendment 1" in text

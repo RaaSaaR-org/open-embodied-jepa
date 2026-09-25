@@ -4,7 +4,7 @@
 no cohort has been opened, and **cohort C (seeds 45300–45339) is not touched by this task at any
 stage** — this protocol preregisters no use of it.
 
-> **Amended before any run — read §13 first.** Amendment 1 (2026-09-25) corrects the shadow expert, which the frozen text below names as plain `OracleManipulationPolicy`; the BC corpus was collected with `scripted.apple_collector_policy` (745-command budget, not 805). It also replaces D1 with an observation-path equivalence test, moves the D1-grasp cut, sets per-candidate G-SUB thresholds against a blind reference, and defines `first_departure_step`. The frozen text is kept below unchanged, with a marker at each superseded statement. Nothing has run. `exemption_spent` is still `false`.
+> **Amended before any run — read §13 first.** Amendment 1 (2026-09-25) corrects the shadow expert, which the frozen text below names as plain `OracleManipulationPolicy`; the BC corpus was collected with `scripted.apple_collector_policy` (745-command budget, not 805). It also replaces D1 with an observation-path equivalence test, moves the D1-grasp cut, sets per-candidate G-SUB thresholds against a blind reference, and defines `first_departure_step`. The frozen text is kept below unchanged, with a marker at each superseded statement. Nothing has run. `exemption_spent` is still `false`. **Amendment 2 (§14)** defines the outcome of a run that stops before its gates are evaluated: that run is void, not failed.
 
 Predecessor: [`apple_policy_v1.md`](apple_policy_v1.md) / [`_results.md`](apple_policy_v1_results.md)
 (TASK-056), which failed on its development stop rule: four arms, 64 development attempts, **0 full
@@ -1305,3 +1305,51 @@ findings to this amendment:
 not land here. The protocol does not treat the close as a solved primitive either. S1-13
 records that the only working closure without prediction is the collector's own servo, from
 its own entry state, and G-SUB's `grasp` candidate is read with that in mind.
+
+---
+
+## 14. Amendment 2 — 2026-09-25 (pre-run; nothing has executed)
+
+**Why.** While the probe runner was being built (PR #45), its independent review found a gap.
+The protocol never said what happens when a run **stops before its gates can be evaluated**,
+whether because of the 6 h global cap, a cascade of per-attempt caps, a crash or a host failure.
+
+- The missing-values rule (§5, as amended) says that "a quantity that cannot be evaluated counts
+  as failed". Read literally, a cap stop during D3 would fail G-SUB, and that could fire the
+  abandonment clause because of a budget accident.
+- The rule covers none of the voiding controls (B1, B2, B3), so a stop before those finish had no
+  defined outcome at all.
+- The draft runner wrote a bare `status: stopped` with no decision. That leaves the verdict to be
+  chosen after the numbers are seen, which a preregistration exists to prevent.
+
+The executing agent escalated the gap instead of resolving it. The task owner chose the rule
+below before any run.
+
+**The rule.**
+
+1. **Outcome V (void).** A run is **VOID** if it stops for any reason before every voiding control
+   (B1, B2, B3) and every gate (D1-pipeline, D1-grasp's count, G-SUB) has been evaluated. The
+   reason can be the global cap, a cascade of per-attempt caps, a crash or a host failure. In a
+   void run the abandonment clause does **not** fire. No gate counts as passed or as failed.
+   `exemption_spent` is untouched.
+2. **Partial results.** The partial results of a void run are archived with their SHA-256 and
+   reported in the results document **as void**. They are not used for any decision, threshold or
+   change to the protocol.
+3. **One repeat.** A void run may be repeated **once**, from scratch, on the same cohorts and seeds.
+   If the stop was a crash caused by a runner bug, the fix lands through a reviewed PR and the
+   repeat runs at that fixed revision. That diff may change **runner mechanics only**: no
+   thresholds, gates, stage order or cohorts. The repeat still counts as the single allowed repeat.
+4. **Inconclusive.** If the repeat is also void, TASK-057 closes as **INCONCLUSIVE**, not as failed.
+   There is no further attempt, and the agent reports to the task owner.
+5. **Scope of the missing-values rule.** The rule applies **only inside a run that completed**:
+   every stage ran, and a particular quantity could not be computed.
+6. **What the runner writes.** The runner writes an explicit `outcome: V` together with the stop
+   reason, never a bare `status: stopped`.
+   - A cap stop during D3 yields V.
+   - A completed run with a missing gate quantity yields that gate failed.
+
+   Tests pin both directions.
+
+A voiding **control** failure (B1, B2 or B3 evaluated and failed) was already Outcome V under §7,
+and is unchanged. It is not a "stop". It is a completed evaluation of a voiding control, and it
+counts as the run.
