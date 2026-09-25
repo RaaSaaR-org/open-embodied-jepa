@@ -555,3 +555,109 @@ def test_a_missing_input_voids_instead_of_crashing(tmp_path, monkeypatch):
     report = runner.run(tmp_path / "out", smoke=True)
     assert report["decision"]["outcome"] == "VOID"
     assert "sha256 None" in report["decision"]["reason"]
+
+
+# ----- run-1 fix (void on crash, zero baselines): streams and finite values unchanged ---------
+#: sha256 of every statistic below, computed with the module AT ccb8fd7 (the code run-1 used),
+#: with its inf point ratios mapped to null. The fix must reproduce it exactly: same seeds, same
+#: bootstrap indices, identical finite values.
+STREAM_DIGEST_AT_CCB8FD7 = "ca14603c7851843ade92a56c361ac32a344cddb084855240fa8f175d90eddda4"
+
+
+def _stream_scenario(ic):
+    rng = np.random.default_rng(3)
+    n = 190
+    xy = np.column_stack([0.34 + rng.uniform(-0.03, 0.03, n), -0.18 + rng.uniform(-0.03, 0.03, n)])
+    dx = np.clip((xy[:, 0] - 0.333) / 0.015, -0.4, 0.4)
+    dy = np.where(xy[:, 1] > -0.16, -0.3, -0.4)
+    occluded = xy[:, 1] < -0.18
+    fold = ic.fold_of(n)
+    priors = ic.prior_predictions(xy, dx, occluded, fold, dy=dy)
+    x = np.column_stack([xy, rng.normal(size=(n, 6))]) + rng.normal(0, 0.01, (n, 8))
+    g, diag = ic.gram(x)
+    xy_pred, _, sel = ic.nested_cv(g, diag, xy, fold)
+    dx_pred, _, _ = ic.nested_cv(g, diag, dx, fold)
+    dy_pred, _, _ = ic.nested_cv(g, diag, dy, fold)
+    rand = rng.normal(size=(n, 8))
+    gr, dr = ic.gram(rand)
+    rxy, _, _ = ic.nested_cv(gr, dr, xy, fold)
+    rdx, _, _ = ic.nested_cv(gr, dr, dx, fold)
+    out = {"selections": sel, "xy_pred": xy_pred.tolist(), "dx_pred": dx_pred.tolist()}
+    masks = {"all": np.ones(n, bool), "occluded": occluded, "visible": ~occluded}
+    for name, mask in masks.items():
+        a = ic.evaluate(xy_pred, dx_pred, xy, dx, priors, mask)
+        b = ic.evaluate(rxy, rdx, xy, dx, priors, mask)
+        out[name] = ic.public(a)
+        out[name + "_floor"] = ic.beats_random_floor(a, b)
+        out[name + "_cmp"] = ic.compare_sources(a, b)
+        out[name + "_t4"] = ic.evaluate_reported(
+            xy_pred, dy_pred, dx_pred, xy, dy, dx, priors, mask
+        )
+    return out
+
+
+def _strip(value):
+    if isinstance(value, dict):
+        drop = ("undefined_resamples", "undefined_zero_baseline")
+        return {k: _strip(v) for k, v in value.items() if k not in drop}
+    if isinstance(value, list):
+        return [_strip(v) for v in value]
+    if isinstance(value, float) and not np.isfinite(value):
+        return None  # the old module's inf point ratio == the new module's null
+    return value
+
+
+def test_fix_leaves_every_stream_and_finite_value_unchanged():
+    blob = json.dumps(_strip(_stream_scenario(ic)), sort_keys=True, allow_nan=False).encode()
+    assert hashlib.sha256(blob).hexdigest() == STREAM_DIGEST_AT_CCB8FD7
+
+
+def test_zero_baseline_ratio_is_null_and_never_passes():
+    idx = ic.bootstrap_indices(4)
+    result = ic.paired_ratio(np.array([0.1, 0.2, 0.0, 0.3]), np.zeros(4), idx, ic._mean)
+    assert result["ratio"] is None and result["undefined_zero_baseline"] is True
+    assert result["undefined_resamples"] == len(idx)
+    assert result["ci95"][1] > ic.T3_MAX_RATIO_UPPER  # a null ratio can never pass
+    json.dumps(result, allow_nan=False)
+    finite = ic.paired_ratio(np.ones(4), np.full(4, 2.0), idx, ic._mean)
+    assert finite["ratio"] == 0.5 and "undefined_zero_baseline" not in finite
+
+
+def test_non_finite_guard_lists_every_replaced_field(tmp_path):
+    runner = _load("_probe_t6", "scripts/probe_info_ceiling.py")
+    value = {"a": 1.0, "b": [float("inf"), 2.0], "c": {"d": np.float64("nan")}}
+    runner._write(tmp_path / "r.json", value)
+    written = json.loads((tmp_path / "r.json").read_text())
+    assert written["a"] == 1.0 and written["b"] == [None, 2.0] and written["c"]["d"] is None
+    assert sorted(written["non_finite_fields"]) == ["/b/0=inf", "/c/d=nan"]
+
+
+def test_unserialisable_report_still_leaves_a_void_report(tmp_path):
+    runner = _load("_probe_t7", "scripts/probe_info_ceiling.py")
+    with pytest.raises(TypeError):
+        runner.write_report(tmp_path / "report.json", {"task": "TASK-059", "x": object()})
+    written = json.loads((tmp_path / "report.json").read_text())
+    assert written["outcome"] == "V" and "serialisation" in written["void_reason"]
+
+
+def test_a_crash_mid_run_writes_a_void_report_and_reraises(tmp_path, monkeypatch):
+    pytest.importorskip("torch")
+    pytest.importorskip("mujoco")
+    runner = _load("_probe_t8", "scripts/probe_info_ceiling.py")
+    committed = json.loads(json.dumps(MANIFEST))
+    committed["hashes"] = {
+        "configs/g1_sim_action.json": MANIFEST["hashes"]["configs/g1_sim_action.json"]
+    }
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps(committed))
+    monkeypatch.setattr(runner, "MANIFEST", path)
+
+    def boom():
+        raise RuntimeError("injected crash")
+
+    monkeypatch.setattr(runner, "plan_roots", boom)
+    with pytest.raises(RuntimeError, match="injected crash"):
+        runner.run(tmp_path / "out", smoke=True)
+    written = json.loads((tmp_path / "out" / "report.json").read_text())
+    assert written["outcome"] == "V" and written["decision"]["outcome"] == "VOID"
+    assert "injected crash" in written["void_reason"] and "Traceback" in written["traceback"]

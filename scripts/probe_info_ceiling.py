@@ -84,11 +84,32 @@ def sha256(path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def finite_json(value):
+    """Replace any non-finite float by None and list where, so a report is always writable
+    and nothing is hidden (run-1 of TASK-059 crashed here and wrote no report)."""
+    found = []
+
+    def clean(item, path):
+        if isinstance(item, dict):
+            return {k: clean(v, f"{path}/{k}") for k, v in item.items()}
+        if isinstance(item, list | tuple):
+            return [clean(v, f"{path}/{i}") for i, v in enumerate(item)]
+        if isinstance(item, float | np.floating) and not np.isfinite(item):
+            found.append(f"{path}={float(item)!r}")
+            return None
+        return item
+
+    return clean(value, ""), found
+
+
 def _write(path: Path, value) -> None:
     if path.exists():
         raise FileExistsError(f"refusing to overwrite {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=1, sort_keys=True, allow_nan=False) + "\n")
+    clean, found = finite_json(value)
+    if isinstance(clean, dict):
+        clean["non_finite_fields"] = found
+    path.write_text(json.dumps(clean, indent=1, sort_keys=True, allow_nan=False) + "\n")
 
 
 class Clock:
@@ -755,20 +776,48 @@ def run(output: Path, *, smoke: bool = False) -> dict:
             for i, r in enumerate(rows)
         ]
         report["status"] = "complete"
+        report["outcome"] = report["decision"]["outcome"]
     except (ic.GuardError, VoidRun) as error:
         report["status"] = "void"
         report["decision"] = {"outcome": "VOID", "reason": str(error)}
-    except Exception as error:  # noqa: BLE001 - record, then re-raise after writing
-        report["status"] = "error"
-        report["error"] = "".join(traceback.format_exception(error))
+        report["outcome"] = "V"
+        report["void_reason"] = f"guard: {error}"
+    except Exception as error:  # noqa: BLE001 - a crash is recorded as VOID, then re-raised
+        report["status"] = "void: crashed before the report was complete"
+        report["decision"] = {"outcome": "VOID", "reason": f"{type(error).__name__}: {error}"}
+        report["outcome"] = "V"
+        report["void_reason"] = f"exception: {type(error).__name__}: {error}"
+        report["traceback"] = "".join(traceback.format_exception(error))
         report["elapsed_seconds"] = clock.elapsed()
         report["peak_rss_bytes"] = peak_rss_bytes()
-        _write(output / "report.json", report)
+        write_report(output / "report.json", report)
         raise
     report["elapsed_seconds"] = clock.elapsed()
     report["peak_rss_bytes"] = peak_rss_bytes()
-    _write(output / "report.json", report)
+    write_report(output / "report.json", report)
     return report
+
+
+def write_report(path: Path, report: dict) -> None:
+    """Write the report; if serialising it fails, still leave a VOID report on disk."""
+    try:
+        _write(path, report)
+    except FileExistsError:
+        raise
+    except Exception as error:  # noqa: BLE001 - the fallback must never leave nothing behind
+        minimal = {
+            key: report.get(key)
+            for key in ("protocol", "task", "smoke", "source", "environment", "hashes")
+        }
+        minimal |= {
+            "status": "void: the report could not be serialised",
+            "outcome": "V",
+            "decision": {"outcome": "VOID"},
+            "void_reason": f"report serialisation failed: {type(error).__name__}: {error}",
+            "traceback": "".join(traceback.format_exception(error)),
+        }
+        path.write_text(json.dumps(minimal, indent=1, sort_keys=True, default=str) + "\n")
+        raise
 
 
 def main() -> int:
