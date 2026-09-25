@@ -121,8 +121,11 @@ The gated run took 46.5 min on CPU from a clean tree. Output is in
 - D1-pipeline passed for all four arms and D1-grasp fired for none, so clause (a) does not hold.
 - G-SUB failed: the best candidate reached 1/16, against thresholds of 8–12.
 
-Where it breaks:
-- **Approach.** On 61/64 attempts the arm never gets 1 cm closer to the apple than at reset.
+Where it breaks (non-gating development cohort, n = 16 per configuration; the substitution
+results are privileged diagnostics):
+- **Approach, mostly.** Most attempts copy the expert's early rise and then never descend toward
+  the apple: 61/64 never get 1 cm closer than at reset. The arms that descend on some resets are
+  A2 on 1 and A3 on 3.
 - **Carry, on the 2 grasping attempts.** The hand holds the apple on every step after the grasp
   but never moves it toward the plate.
 

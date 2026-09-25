@@ -1,13 +1,18 @@
 # Apple→Plate policy diagnostics v1: results (TASK-057)
 
-**Outcome X. The abandonment clause fires.** All three voiding controls passed, so the run is
-valid. Clause (a) does not hold: the observation pipeline is sound. G-SUB fails: no single
-substituted command channel reaches its threshold, and the best candidate scores 1/16. Under
-§5.1 and Amendment 1, the consequence of `apple_policy_v1.md` §7's Outcome D clause therefore
-applies as written. **The behaviour-cloning control line stops on this corpus and this camera.**
-No further loss, head or output-parameterisation variant is preregistered on it. The next task
-is a perception/data task. Cohort C remains unconsumed. `exemption_spent` stays `false`,
-because the exemption was not claimed.
+**Outcome X. The abandonment clause fires.**
+
+- **The run is valid:** all three voiding controls passed.
+- **Clause (a) does not hold**, within D1-pipeline's stated scope (§2). The observation the loop
+  receives is the training observation.
+- **G-SUB fails:** no single substituted command channel reaches its threshold, and the best
+  candidate scores 1/16.
+
+Under §5.1 and Amendment 1, the *consequence* of `apple_policy_v1.md` §7's clause applies as
+written (§6 quotes it verbatim). **This behaviour-cloning control line stops on this corpus and
+this camera.** No third control formulation is preregistered on them. The next task is a
+perception/data task: resolution, camera placement or corpus design. Cohort C remains unconsumed.
+`exemption_spent` stays `false`, because the exemption was not claimed.
 
 **Learned Apple→Plate is still 0 successes**: 0/64 attempts across the four arms, with nothing
 substituted. This run, like the TASK-056 runs before it, was on the development cohort, which
@@ -35,11 +40,19 @@ Amendment 1, §14 Amendment 2. Run manifest:
 | budget | caps of 6 h global, 300 s per attempt and 1 000 steps per attempt. Elapsed **2 792 s (46.5 min)**. No cap was reached. |
 | report | `outputs/task057-diagnostics/run-1/report.json`, sha256 `4f0cc8a4…41c7` |
 | per-attempt files | 256 files under `outputs/task057-diagnostics/run-1/attempts/`, each hashed in the run manifest |
-| summary | `outputs/task057-diagnostics/run-1-summary.json`, produced by `scripts/summarize_policy_diagnostics.py` (committed). It supplies every trace-derived number in §4 and §5. |
+| summary | `outputs/task057-diagnostics/run-1-summary.json`, produced by `scripts/summarize_policy_diagnostics.py` (committed). It supplies the per-attempt table, the grasp-attempt table and the D3 counts. The per-reset approach numbers, the representative trace, the like-for-like \|·\| statistics after the grasp latch, the D3 `dropped` counts and the failing-contrast distances come from `scripts/summarize_policy_approach.py` (committed, read-only). |
 | pre-run review | independent reviewer's **reported** verdict APPROVE, no blocking findings, at `e9f4670` |
 
-**B2 ruling, logged as instructed.** At **2026-09-25T11:07:35Z**, before the B2 stage had started
-(B3, D1-pipeline and B1 were complete), the task owner ruled as follows:
+**B2 ruling, logged as instructed.** The task owner's ruling reached the executing agent at
+**2026-09-25T11:07:35Z**.
+
+- **The timing, stated exactly** (from the artifact timestamps):
+  - B3, D1-pipeline and B1 were complete. The last B1 file was written at 11:07:33.7Z.
+  - B2's first attempt (A2 with nothing substituted, seed 45000) had begun about 1 s earlier,
+    at about 11:07:33.9Z. It completed at 11:07:47.7Z, 12 s after the ruling.
+  - **No B2 result existed when the ruling was made.** Every B2 file postdates it.
+
+The ruling:
 
 - B2 is judged exactly as the frozen protocol states.
 - A mismatch is a failed control, whatever its cause.
@@ -183,21 +196,28 @@ The two attempts that grasped (§1.3 of the protocol, reproduced here) now have 
 every one of the ~800 steps after the grasp latched. The apple was lifted about 17 cm and never
 dropped.
 
-Named failing contrasts: A2/45000 and A3/45000 both stay at a palm–apple distance of 0.0996 m for
-all 1 000 steps. They make no contact, and the apple rises by 0.001 m.
+Named failing contrasts: A2/45000 and A3/45000 start at a palm–apple distance of 0.0996 m, which
+is also their minimum.
+
+- The distance grows during the orient-like rise, to 0.134 m (A2) and 0.142 m (A3) by step 130.
+- It stays there to step 1 000; the maxima are 0.135 m and 0.143 m.
+- Neither makes contact. The apple rises by 0.001 m.
 
 ### D3 detail
 
-| candidate | reach | contact | grasp | success | terminations |
-|---|---|---|---|---|---|
-| `all_translation` | 2 | 2 | 1 | **1 (45003)** | exhausted; one `success` |
-| `dx` | 16 | 16 | 0 | 0 | exhausted |
-| `dy` | 12 | 12 | 0 | 0 | **14/16 `guard_refusal`** at steps 428–527; the rest exhausted |
-| `dz` | 4 | 4 | 0 | 0 | exhausted |
-| `droll` | 0 | 0 | 0 | 0 | exhausted |
-| `dpitch` | 1 | 1 | 1 | 0 | exhausted |
-| `dyaw` | 0 | 0 | 0 | 0 | exhausted |
-| `grasp` | 16 | 16 | 1 | 0 | exhausted; `guard_refusal` on 45003 |
+| candidate | reach | contact | grasp | success | apple `dropped` at the end (> 1 m from the plate) | terminations |
+|---|---|---|---|---|---|---|
+| `all_translation` | 2 | 2 | 1 | **1 (45003)** | 1 (1) | exhausted; one `success` |
+| `dx` | 16 | 16 | 0 | 0 | 2 (2) | exhausted |
+| `dy` | 12 | 12 | 0 | 0 | 1 (1) | **14/16 `guard_refusal`** at steps 428–527; the rest exhausted |
+| `dz` | 4 | 4 | 0 | 0 | 0 | exhausted |
+| `droll` | 0 | 0 | 0 | 0 | 0 | exhausted |
+| `dpitch` | 1 | 1 | 1 | 0 | 0 | exhausted |
+| `dyaw` | 0 | 0 | 0 | 0 | 0 | exhausted |
+| `grasp` | 16 | 16 | 1 | 0 | **12 (11)** | exhausted; `guard_refusal` on 45003 |
+
+On `grasp` and `dx`, reach and contact of 16/16 are not progress toward grasp. Under `grasp`, the
+expert's closing hand knocks the apple off the table on 12 of 16 resets.
 
 §5.3 requires the fraction of commands issued after the expert's `close` phase to be reported,
 because it matters for any pass. The mean per candidate is 0.47 (`dy`) to 0.66. No candidate
@@ -211,64 +231,98 @@ This section is interpretation, not measurement. Each claim carries its qualifie
 1. **The dominant failure is before `reach`: the approach.**
    - On 61 of 64 unsubstituted attempts the palm never gets 1 cm closer to the apple than at
      reset.
-   - **Context for that statistic, so it is not over-read.** The expert's own `orient` phase
-     first *raises* the palm to 13 cm above the apple. The arms do the same: over steps 0–19
-     every arm commands roughly dy ≈ −0.2 to −0.44 and dz ≈ +0.22 to +0.25. The palm–apple
-     distance grows from 0.099 m at reset to about 0.14 m by step 130 on every attempt (+0.015
-     to +0.049 m).
-     - What never happens is the next phase, `descend`.
-     - After about step 100, the mean commanded translation is at most 0.1 in every component
-       for every arm.
-     - Across resets the command is nearly identical for A0 and A1 (standard deviation ≤ 0.006),
-       and varies more for A2 and A3 (dz standard deviation 0.08–0.10).
-     - Numbers are from the per-step traces, computed by
-       `scripts/summarize_policy_approach.py` (committed).
-   - In the representative trace A2/45001 the palm–apple distance is 0.139 m from step ~130 to
-     step 1 000. Over the same span the policy commands a nearly constant (+0.04, −0.03, −0.03),
-     while the shadow expert commands (+0.4, −0.4, ∓0.4).
-   - The loop is a fixed point: small command, no motion, unchanged state, the same small
-     command.
-   - This matches H-shift (§1.5), not H-pipeline, because D1-pipeline shows the observation is
-     the training observation.
+   - **Context for that statistic, so it is not over-read.**
+     - The expert's own `orient` target is 0.13 m above the apple (`scripted.py`: `obj + [−0.03,
+       0, 0.13]`, plus the collector's +0.015 m palm offset). In B3 the expert's palm–apple
+       distance at step 130 is 0.134 m.
+     - The arms make the same early rise. Over steps 0–19 every arm's per-reset mean command
+       lies in dy −0.17 to −0.44 and dz +0.21 to +0.25.
+     - Palm–apple distance at step 130 exceeds its reset value on every attempt, by +0.014 to
+       +0.049 m. So "never 1 cm closer than at reset" partly reflects this shared first phase.
+   - **What follows on most resets is no descent.**
+     - After step 100, the per-reset mean commanded translation is at most 0.07 in any component
+       on every reset of A0 and A1.
+     - It is at most 0.10 on 15/16 resets of A2 (including the grasp reset 45100) and on 12/16
+       of A3.
+     - A3's grasp reset 45006 is lifting, with mean dz +0.13.
+   - **The exceptions are the resets that descend** (per-reset mean dz after step 100 below −0.15):
+     - A2/45003: mean dz −0.40, and it ends 0.119 m from the apple without contact.
+     - A3/45100: mean dz −0.23, and it gets to within 0.046 m of the apple.
+     - A3/45001 and A3/45003: mean dz −0.19 and −0.22; both end on the joint-velocity guard, at
+       steps 157 and 143.
+     - A3/45006 (the grasp) and A2/45100 (the grasp) are the other close approaches.
+   - Across resets the late command is nearly identical for A0 and A1 (standard deviation
+     ≤ 0.006). It varies more for A2 and A3 (dz standard deviation 0.08–0.10), mostly because of
+     these exceptions.
+   - **Representative trace A2/45001**, from step 130 to 1 000:
+     - The palm–apple distance is constant at 0.1385 m.
+     - The policy commands a constant (+0.040, −0.028, −0.028), with standard deviation ≤ 0.002.
+     - The shadow expert, on its own clock, commands bang-bang ±0.4 in each translation
+       component: mean \|·\| 0.4 each, and mean (+0.40, +0.04, +0.11) over its 615 defined
+       steps.
+   - **On the non-descending resets, and on A2/45001 exactly,** the loop behaves as a fixed
+     point: a small constant command, no motion, an unchanged state, and the same command
+     again. This is not claimed for the descending resets above.
+   - This is more consistent with H-shift (§1.5) than with H-pipeline. D1-pipeline shows the
+     observation is the training observation, within its stated scope.
    - **Unmeasured: why** the policy's command collapses instead of continuing the approach. The
      candidate declared in §13.7 is that a policy which reads motion from joint velocities
      continues motion but cannot start it. It fits the traces and is not tested here.
 2. **On the two resets where the approach happened, grasp and lift work and carry fails.**
    - Both grasps held for the rest of the episode with continuous contact.
-   - After the lift, the arm stops translating in the plane: mean \|dx\|, \|dy\| ≤ 0.034, against
-     the expert's mean 0.11–0.33 over the same steps.
+   - After the grasp latch, the arm barely translates in the plane. Mean \|dx\|, \|dy\| are
+     0.015 and 0.012 for A2, and 0.034 and 0.019 for A3.
+   - The shadow expert's mean \|dx\|, \|dy\| over its defined steps in the same span is 0.40
+     and 0.40 (A2) and 0.33 and 0.38 (A3).
+   - Caveat: the expert runs on the policy's clock, not its own. At the latch it is in `close`
+     (A2) and `descend` (A3), not in its carry phase. So this is a contrast in how much the arm
+     moves, not a like-for-like comparison with the expert's carry.
    - The apple ends 0.19–0.22 m from the plate, and `transport` is never latched.
    - So on the only evidence available, **grasp → carry is where those attempts break.**
    - `place` and `release` are never reached, so nothing is known about them from the learned
      arms.
    - Caveat: this is n = 2 attempts, on resets that were already known before the run.
-3. **No single command channel carries the failure.** G-SUB reached at most 1/16. Worse, A2's
-   own unsubstituted channels did *worse than a controller that knows only the step index* on
-   every candidate, for example:
-   - `all_translation`: 1 against 5;
-   - `dy`: 0 against 9;
-   - `dx`: 0 against 5.
-
-   The learned complement is not neutral: it actively degrades a substituted channel. The clearest
-   case is `dy`, where 14/16 attempts end on the joint-velocity guard.
+3. **No single command channel carries the failure.** G-SUB reached at most 1/16.
+   - On every candidate, A2 plus substitution scored below the same substitution with a clock-only
+     complement, by 1–9 attempts of 16.
+     - On `dz`, `dpitch` and `grasp` the gap is a single attempt (0 against 1, 1 against 2, 1
+       against 2).
+     - Only `dy` shows a large gap (0 against 9). There 14/16 attempts end on the joint-velocity
+       guard.
+   - Against A2's own unsubstituted 1/16, three candidates are equal and five are one attempt
+     lower.
+   - The clock-only controller alone, with nothing substituted, already reaches 2/16 against A2's
+     1/16 (§13.4).
+   - The honest reading: substituting any one channel does not help this policy. Only on `dy` is
+     there evidence that the learned complement makes a substituted channel markedly worse, with
+     n = 16 per configuration.
 4. **What this does not show.**
    - It does not show that a learned controller cannot do this task.
    - It does not show that the encoder is at fault. B5/B6 stand: A1 (random encoder) and A0 (no
-     image) behave like A2 on the approach.
+     image) behave like A2 on the approach on most resets.
    - A substitution rescue would not have shown attainability (§5.3), and there was no rescue.
 
 ## 6. Consequence and recommendation
 
-**The abandonment clause fires as written** (§5.1, with Amendment 1's clarification of "as
-written"):
+**The abandonment clause fires as written.** Amendment 1 defines "as written" as the consequence
+of `apple_policy_v1.md` §7's clause, quoted here in full:
 
-- the BC control line stops on this corpus and this camera;
-- no further loss, head or output-parameterisation variant is preregistered on it;
+> **Abandonment clause. If Outcome D holds, this line stops. No third control formulation is
+> preregistered on this corpus and this camera.** The next task is a perception/data task
+> (resolution, camera placement, corpus design), and if that does not move the closed-loop number
+> either, the honest published conclusion is that a 112 px onboard camera plus a single-mode
+> scripted-collector corpus does not support learned Apple→Plate on this platform, and the
+> product goal needs a data or hardware change — not another model.
+>
+> — `apple_policy_v1.md` §7, quoted verbatim
+
+`apple_policy_diagnostics_v1.md` §5.1 adds three points:
+
+- no further loss, head or output-parameterisation variant is preregistered on this line;
 - cohort C remains unconsumed;
-- `exemption_spent` stays `false`.
+- the executing agent does not select the follow-up.
 
-The clause's next task is a **perception/data task**. The protocol leaves the choice of that task
-to the task owner.
+`exemption_spent` stays `false`. The task owner chooses the perception/data task.
 
 **Recommendation for the owner, not a selection.** The evidence points to one question that a
 perception/data task could settle cheaply before anything else is built:
@@ -279,8 +333,8 @@ perception/data task could settle cheaply before anything else is built:
   **in-sample on its own training frames** (§13.4). Proprioception is identical across resets,
   so only the image can carry the apple's position at step zero.
 - The claim audit (S5-04) shows that after the first commands the arm's own pose reads out the
-  apple position to about 1 cm. That makes a copy-the-motion shortcut available to BC, and the
-  traces are consistent with it.
+  apple position to about 1 cm. That makes a shortcut available to BC that uses proprioception
+  after the start. The traces are consistent with it, but it is **not tested**.
 
 The proposed task is the **information-ceiling probe** that `apple_policy_v1.md` Outcome E names:
 
@@ -317,3 +371,10 @@ be preregistered only after the approach question has an answer.
 - **The global cap** is checked between attempts, not inside one; it was not approached (46.5 min
   against 6 h).
 - **The D1-pipeline scope limit** is stated in §2.
+- **Corrected at review of this document:**
+  - The failing-contrast distances were first misstated as constant.
+  - The "no descent" and "at most 0.1" statements were first given without their per-reset
+    exceptions.
+  - The B2-ruling timing was first stated as "before B2 started".
+  - The `dy`-gap reading was first stated as "actively degrades" on every candidate.
+  - The §7 consequence was first paraphrased rather than quoted.
