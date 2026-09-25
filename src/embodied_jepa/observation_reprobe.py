@@ -27,6 +27,9 @@ _LOOK_COMMAND = np.array(
     [0.0] * 6 + [0.0, -0.4, 0.4, -0.5, -0.5, 0.5] + [-1.0, -1.0], dtype=np.float32
 )
 _LOOK_COMMAND.setflags(write=False)
+# The collector's bounds (``scripts/collect_apple_wide.py`` LOWER/UPPER; a test pins equality).
+COLLECTION_LOWER = np.array((0.0,) * 6 + (-0.5,) * 6 + (-1.0, -1.0), np.float32)
+COLLECTION_UPPER = np.array((0.0,) * 6 + (0.5,) * 6 + (-1.0, 1.0), np.float32)
 LOOK_SEQUENCE_SHA256 = "17bfb0702a25124b44dc2565310fb947742b5f025c8211dd16d66ede15be587c"
 
 DECISIONAL = ("L-raw", "L-E0", "LH-raw", "O-raw")  # listed order = Holm tie-break order
@@ -63,7 +66,8 @@ def execute_look(robot, after_step=None) -> np.ndarray:
     applied = []
     for command in look_sequence():
         robot.observe()
-        projected = robot.project_candidates(np.array(command, np.float32)[None, None, None])
+        requested = np.clip(command, COLLECTION_LOWER, COLLECTION_UPPER).astype(np.float32)
+        projected = robot.project_candidates(requested[None, None, None])
         if not projected.feasible[0, 0]:
             raise GuardError("G-look: a look command's projection is infeasible")
         result = robot.execute(np.asarray(projected.actions[0, 0, 0], np.float32))
@@ -252,6 +256,19 @@ def hypothesis_pvalues(xy_pred, dx_pred, xy, dx, priors, mask) -> dict:
         "accuracy": accuracy,
         "B_maj": p0,
     }
+
+
+def qualifier(*, passes: bool, succeeds: bool, rejected: bool, beats_prior: bool) -> str | None:
+    """§8 qualifiers. 'unadjusted only' is reserved for meeting the bars but not Holm."""
+    if passes:
+        return "pass"
+    if succeeds and not rejected:
+        return "unadjusted only; not a pass"
+    if succeeds:
+        return "meets bars and Holm, but demoted or spurious; not a pass"
+    if beats_prior:
+        return "partial information"
+    return None
 
 
 def holm(pvalues: dict, *, alpha=ALPHA_ONE_SIDED, order=DECISIONAL) -> dict:

@@ -50,6 +50,8 @@ def test_look_command_lies_inside_the_collection_bounds():
     collector = _load("_collect_apple_wide_t", "scripts/collect_apple_wide.py")
     command = orp.look_sequence()[0]
     assert np.array_equal(np.clip(command, collector.LOWER, collector.UPPER), command)
+    assert np.array_equal(orp.COLLECTION_LOWER, collector.LOWER)
+    assert np.array_equal(orp.COLLECTION_UPPER, collector.UPPER)
 
 
 class FakeRobot:
@@ -159,7 +161,14 @@ def _tamper(key, fn):
     ("key", "fn", "message"),
     [
         ("sequence_sha", lambda v: "0" * 64, "sequence"),
-        ("applied", lambda a: a.__setitem__((2, 1, 4, 7), -0.39) or a, "differ from the requested"),
+        (
+            "applied",
+            lambda a: (
+                a.__setitem__((2, 1, 4, 7), float(np.nextafter(np.float32(-0.4), np.float32(0))))
+                or a
+            ),
+            "differ from the requested",
+        ),
         ("applied", lambda a: a[:, :1], "shape"),
         ("post_states", lambda s: s + np.arange(3)[:, None] * 1e-3, "post-look joint state"),
         ("apple_xy_moves", lambda m: m + [0, 2e-6, 0], "apple moved"),
@@ -339,6 +348,84 @@ def test_a_prior_only_readout_gets_p_one():
     assert not p["point_conditions_hold"] and p["p"] == 1.0
 
 
+def _pvalue_scenario(noise_cm, flip, seed):
+    rng = np.random.default_rng(seed)
+    n = 190
+    xy = np.column_stack([0.34 + rng.uniform(-0.03, 0.03, n), -0.18 + rng.uniform(-0.03, 0.03, n)])
+    dx = np.clip((xy[:, 0] - 0.333) / 0.015, -0.4, 0.4)
+    dx[dx == 0] = 0.1
+    occluded = xy[:, 1] < -0.19
+    priors = ic.prior_predictions(xy, dx, occluded, ic.fold_of(n))
+    xy_pred = xy + rng.normal(0, noise_cm / 100, xy.shape)
+    dx_pred = dx * rng.uniform(0.6, 1.6, n)  # unclipped: T3 must clip
+    dx_pred[rng.uniform(size=n) < flip] *= -1
+    return xy_pred, dx_pred, xy, dx, priors
+
+
+def test_hypothesis_pvalues_agree_with_evaluates_bars_on_the_same_draws():
+    mask = np.ones(190, bool)
+    checked = {"T1": 0, "T2": 0, "T3": 0}
+    for i, (noise, flip) in enumerate(
+        [(a, b) for a in (0.2, 0.8, 1.2, 1.6, 2.5) for b in (0.0, 0.05, 0.1, 0.2, 0.35)]
+    ):
+        args = _pvalue_scenario(noise, flip, seed=i)
+        p = orp.hypothesis_pvalues(*args, mask)
+        e = ic.evaluate(*args, mask)
+        assert p["B_maj"] == e["T2"]["B_maj_accuracy"]
+        assert p["median_cm"] == e["T1"]["median"] and p["accuracy"] == e["T2"]["accuracy"]
+        upper1 = e["T1"]["ratio_to_B_occ"]["ci95"][1]
+        if abs(upper1 - 0.6) > 3e-3:
+            assert (p["p_T1"] <= 0.025) == (upper1 <= 0.6)
+            checked["T1"] += 1
+        lower = e["T2"]["wilson95"][0]
+        if abs(lower - p["B_maj"]) > 1e-9:
+            assert (p["p_T2"] < 0.025) == (lower > p["B_maj"])
+            checked["T2"] += 1
+        upper3 = e["T3"]["ratio_to_B_const"]["ci95"][1]
+        if abs(upper3 - 0.6) > 3e-3:
+            assert (p["p_T3"] <= 0.025) == (upper3 <= 0.6)
+            checked["T3"] += 1
+        if p["point_conditions_hold"]:
+            assert p["p"] == max(p["p_T1"], p["p_T2"], p["p_T3"])
+        else:
+            assert p["p"] == 1.0
+    assert min(checked.values()) >= 20
+    both = [
+        orp.hypothesis_pvalues(*_pvalue_scenario(n, f, 99), mask)["p"]
+        for n, f in ((0.2, 0), (3, 0.3))
+    ]
+    assert both[0] < 0.00625 < both[1]
+
+
+def test_a_readout_failing_only_t2_gets_a_large_p():
+    xy_pred, dx_pred, xy, dx, priors = _pvalue_scenario(0.2, 0.0, 5)
+    dx_pred = np.where(np.arange(190) % 7 == 0, -dx_pred, dx_pred)  # accuracy about 0.857
+    mask = np.ones(190, bool)
+    p = orp.hypothesis_pvalues(xy_pred, dx_pred, xy, dx, priors, mask)
+    assert p["point_conditions_hold"] and p["p_T1"] < 0.001
+    assert p["p"] == max(p["p_T1"], p["p_T2"], p["p_T3"]) >= p["p_T2"]
+    # T2 fails outright once accuracy drops below 0.85: p is forced to 1, not min(...).
+    worse = np.where(np.arange(190) % 5 == 0, -dx_pred, dx_pred)
+    assert orp.hypothesis_pvalues(xy_pred, worse, xy, dx, priors, mask)["p"] == 1.0
+
+
+def test_p_t1_is_against_b_occ_not_b_mean():
+    xy_pred, dx_pred, xy, dx, priors = _pvalue_scenario(0.5, 0.0, 11)
+    # Scale the errors so the share is strictly between 0 and 1: it then pins the draws too.
+    ratio = np.median(ic.xy_error_cm(xy_pred, xy)) / np.median(ic.xy_error_cm(priors["B_occ"], xy))
+    xy_pred = xy + (xy_pred - xy) * (0.6 / ratio)
+    mask = np.ones(190, bool)
+    p = orp.hypothesis_pvalues(xy_pred, dx_pred, xy, dx, priors, mask)
+    idx = ic.bootstrap_indices(190)
+    err = ic.xy_error_cm(xy_pred, xy)
+    want = orp.bootstrap_share_above(err, ic.xy_error_cm(priors["B_occ"], xy), idx, ic._median, 0.6)
+    assert 0.0 < want < 1.0 and p["p_T1"] == want
+    other = orp.bootstrap_share_above(
+        err, ic.xy_error_cm(priors["B_occ"], xy), ic.bootstrap_indices(190, seed=1), ic._median, 0.6
+    )
+    assert other != want  # a different draw would be detected
+
+
 def test_holm_step_down_both_directions():
     thresholds = [0.025 / 4, 0.025 / 3, 0.025 / 2, 0.025]
     assert MANIFEST["multiplicity"]["step_thresholds"] == pytest.approx(thresholds)
@@ -501,6 +588,38 @@ def test_a_crash_mid_run_writes_a_v_report_with_a_void_reason_and_reraises(tmp_p
     written = json.loads((tmp_path / "out" / "report.json").read_text())
     assert written["outcome"] == "V" and written["decision"]["outcome"] == "V"
     assert "injected crash" in written["void_reason"] and "Traceback" in written["traceback"]
+
+
+def test_a_dirty_tree_voids_the_gated_run(tmp_path, monkeypatch):
+    pytest.importorskip("torch")
+    pytest.importorskip("mujoco")
+    runner = _load("_probe_orp_t9", "scripts/probe_observation_reprobe.py")
+    monkeypatch.setattr(runner, "MANIFEST", _committed_only_manifest(tmp_path))
+    import embodied_jepa.training as training
+
+    monkeypatch.setattr(training, "source_identity", lambda: {"dirty": True, "revision": "x"})
+    report = runner.run(tmp_path / "out", smoke=False)
+    assert report["outcome"] == "V" and "clean tree" in report["void_reason"]
+
+
+def test_qualifiers_follow_section_8():
+    q = orp.qualifier
+    assert q(passes=True, succeeds=True, rejected=True, beats_prior=True) == "pass"
+    assert q(passes=False, succeeds=True, rejected=False, beats_prior=True).startswith("unadjusted")
+    assert "demoted or spurious" in q(passes=False, succeeds=True, rejected=True, beats_prior=True)
+    assert (
+        q(passes=False, succeeds=False, rejected=False, beats_prior=True) == "partial information"
+    )
+    assert q(passes=False, succeeds=False, rejected=False, beats_prior=False) is None
+
+
+def test_the_executor_clips_to_the_collection_bounds():
+    robot = FakeRobot({})
+    orp.execute_look(robot)
+    assert all(
+        np.array_equal(r, np.clip(r, orp.COLLECTION_LOWER, orp.COLLECTION_UPPER))
+        for r in robot.requested
+    )
 
 
 def test_a_mismatched_module_look_hash_voids(tmp_path, monkeypatch):

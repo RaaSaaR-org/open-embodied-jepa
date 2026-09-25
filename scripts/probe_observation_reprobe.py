@@ -34,6 +34,7 @@ the clean-tree check (full-cohort or gated-run facts).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import sys
@@ -105,7 +106,6 @@ def make_robot(size):
 
 def model_settings(robot) -> dict:
     """P5: render-relevant model facts; the 112 and 224 px instances may differ only in size."""
-    import hashlib
 
     model = robot.model
     return {
@@ -506,6 +506,11 @@ def run(output: Path, *, smoke: bool = False) -> dict:
             steps_checked=[r["look_steps_checked"] for r in rows],
         ) | {
             "sequence_sha256": orp.sequence_sha256(orp.look_sequence()),
+            "applied_commands": frames["applied"][0, 0].tolist(),
+            "applied_sha256_all_instances_and_roots": hashlib.sha256(
+                np.ascontiguousarray(frames["applied"], np.float32).tobytes()
+            ).hexdigest(),
+            "applied_shape": list(frames["applied"].shape),
             "apple_z_move_min_max_m": [
                 min(r["apple_z_move_m"] for r in rows),
                 max(r["apple_z_move_m"] for r in rows),
@@ -694,14 +699,11 @@ def run(output: Path, *, smoke: bool = False) -> dict:
                     spurious=spurious[hypothesis]["spurious"],
                 ),
             }
-            hypotheses[hypothesis]["qualifier"] = (
-                "pass"
-                if hypotheses[hypothesis]["passes"]
-                else "unadjusted only; not a pass"
-                if succeeds
-                else "partial information"
-                if hypotheses[hypothesis]["beats_prior_all_roots"]
-                else None
+            hypotheses[hypothesis]["qualifier"] = orp.qualifier(
+                passes=hypotheses[hypothesis]["passes"],
+                succeeds=succeeds,
+                rejected=rejected,
+                beats_prior=hypotheses[hypothesis]["beats_prior_all_roots"],
             )
         report["hypotheses"] = hypotheses
         report["holm"] = holm
@@ -788,6 +790,7 @@ def run(output: Path, *, smoke: bool = False) -> dict:
             }
             for i, r in enumerate(rows)
         ]
+        clock.check("report")
         report["status"] = "complete"
         report["outcome"] = report["decision"]["outcome"]
     except (ic.GuardError, VoidRun) as error:
