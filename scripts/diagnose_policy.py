@@ -245,10 +245,16 @@ def b2_verdict(none_attempts, reference) -> dict:
 
 def b3_verdict(full_attempts) -> dict:
     count = grasp_resets(full_attempts)
-    return {"grasp_resets": count, "attempts": len(full_attempts), "passed": count >= 14}
+    return {
+        "grasp_resets": count,
+        "attempts": len(full_attempts),
+        "passed": count >= 14 and len(full_attempts) == 16,
+    }
 
 
-def d1_pipeline_verdict(rows, *, uses_image, output_tolerance, state_tolerance) -> dict:
+def d1_pipeline_verdict(
+    rows, *, uses_image, output_tolerance, state_tolerance, expected=15
+) -> dict:
     """Arm fails iff ANY reset breaks (i) image identity, (ii) state/mask, or (iii) output."""
     failures = []
     for row in rows:
@@ -259,9 +265,10 @@ def d1_pipeline_verdict(rows, *, uses_image, output_tolerance, state_tolerance) 
             failures.append({"seed": row["seed"], "check": "image"})
         if row["state_max_abs"] > state_tolerance or not row["mask_identical"]:
             failures.append({"seed": row["seed"], "check": "state"})
-        if not np.isfinite(row["output_max_abs"]) or row["output_max_abs"] > output_tolerance:
+        output = row["output_max_abs"]
+        if output is None or not np.isfinite(output) or output > output_tolerance:
             failures.append({"seed": row["seed"], "check": "output"})
-    if len(rows) != 15:
+    if len(rows) != expected:
         failures.append({"missing": True, "resets": len(rows)})
     return {"failed": bool(failures), "failures": failures}
 
@@ -389,15 +396,44 @@ def past_close_fraction(attempt) -> float | None:
 
 
 # ----- D1-pipeline ---------------------------------------------------------------------------
-def d1_pipeline(manifest, config, store, cameras, policies):
-    """Zero executed commands: reset, observe, compare. Returns per-arm rows."""
+def compare_reset(
+    *,
+    seed,
+    live_image,
+    stored_image,
+    live_state,
+    stored_state,
+    live_mask,
+    stored_mask,
+    live_output,
+    offline_output,
+) -> dict:
+    """One D1-pipeline row. The offline prediction is CLIPPED to [-1, 1] as ``act`` clips
+    (amendment 1, rule (iii)); a non-finite difference is recorded as None, never NaN."""
+    difference = np.abs(
+        np.asarray(live_output, np.float64) - np.clip(np.asarray(offline_output, np.float64), -1, 1)
+    ).max()
+    return {
+        "seed": int(seed),
+        "image_identical": None
+        if live_image is None
+        else bool(np.array_equal(live_image, stored_image)),
+        "state_max_abs": float(np.abs(np.asarray(live_state) - np.asarray(stored_state)).max()),
+        "mask_identical": bool(np.array_equal(live_mask, stored_mask)),
+        "output_max_abs": float(difference) if np.isfinite(difference) else None,
+    }
+
+
+def d1_pipeline(manifest, store, cameras, policies, *, resets=None, split="val", expected=15):
+    """Zero executed commands: reset, observe, compare. ``resets`` defaults to the 15 val roots;
+    ``--smoke`` passes train provenance roots (split "train") to show a sound pipeline passes."""
     from embodied_jepa.cloning import load_bc_split, precompute_features
     from embodied_jepa.policy import FREE_ACTION_INDICES
 
     measure = _load("_measure", "scripts/measure_policy_offline_conditionals.py")
-    resets = val_root_resets(manifest)
-    arrays, rows, _counts, _base = load_bc_split(
-        store, "val", cameras, workers=8, limit=None, acknowledge=True
+    resets = val_root_resets(manifest) if resets is None else resets
+    arrays, _rows, _counts, _base = load_bc_split(
+        store, split, cameras, workers=8, limit=None, acknowledge=True
     )
     first = {}
     for index, episode in enumerate(arrays.episode_ids):
@@ -405,7 +441,7 @@ def d1_pipeline(manifest, config, store, cameras, policies):
         if len(parts) == 2 and int(parts[1]) in resets:
             first[int(parts[1])] = int(arrays.offsets[index])
     if sorted(first) != sorted(resets):
-        raise ContractError("a D1-pipeline val root is missing from the decoded val split")
+        raise ContractError(f"a D1-pipeline root is missing from the decoded {split} split")
     order = sorted(resets)
     stored_rows = np.array([first[s] for s in order])
     observations = {}
@@ -419,6 +455,7 @@ def d1_pipeline(manifest, config, store, cameras, policies):
             observations[seed] = robot.observe()
         finally:
             _close(robot)
+    gate = manifest["gates"]["D1"]
     report = {}
     for label, (policy, source) in policies.items():
         offline = measure.predictions(
@@ -426,25 +463,21 @@ def d1_pipeline(manifest, config, store, cameras, policies):
         )
         arm_rows = []
         for k, seed in enumerate(order):
-            obs = observations[seed]
-            row = stored_rows[k]
-            live = np.asarray(policy.act(obs.images, obs.state), np.float32)[
-                list(FREE_ACTION_INDICES)
-            ]
+            obs, row = observations[seed], stored_rows[k]
+            live = np.asarray(policy.act(obs.images, obs.state), np.float32)
             arm_rows.append(
-                {
-                    "seed": seed,
-                    "image_identical": bool(
-                        np.array_equal(
-                            obs.images["onboard_rgb"][0], arrays.frames["onboard_rgb"][row]
-                        )
-                    ),
-                    "state_max_abs": float(np.abs(obs.robot_state[0] - arrays.states[row]).max()),
-                    "mask_identical": bool(np.array_equal(obs.state_mask[0], arrays.mask[row])),
-                    "output_max_abs": float(np.abs(live - offline[k]).max()),
-                }
+                compare_reset(
+                    seed=seed,
+                    live_image=obs.images["onboard_rgb"][0],
+                    stored_image=arrays.frames["onboard_rgb"][row],
+                    live_state=obs.robot_state[0],
+                    stored_state=arrays.states[row],
+                    live_mask=obs.state_mask[0],
+                    stored_mask=arrays.mask[row],
+                    live_output=live[list(FREE_ACTION_INDICES)],
+                    offline_output=offline[k],
+                )
             )
-        gate = manifest["gates"]["D1"]
         report[label] = {
             "rows": arm_rows,
             **d1_pipeline_verdict(
@@ -452,6 +485,7 @@ def d1_pipeline(manifest, config, store, cameras, policies):
                 uses_image=bool(source.feature_dim),
                 output_tolerance=gate["output_tolerance"],
                 state_tolerance=gate["state_tolerance"],
+                expected=expected,
             ),
         }
     return report
@@ -486,17 +520,182 @@ def _summary(attempts):
     ]
 
 
+def execute_stages(report, *, attempts_for, controllers, d1_pipeline_fn, b2_reference):
+    """The preregistered stage order (§13.6), stopping at the first voiding control.
+
+    ``attempts_for(make, configuration, trace=, stage=)`` runs one configuration over the 16
+    development seeds; ``controllers`` maps "policy" (a function of the arm label),
+    "scripted_oracle", "hold" and "random" to controller factories. Returns the unsubstituted
+    arm attempts, or raises ``VoidRun`` naming the control that failed.
+    """
+    policy = controllers["policy"]
+    # 1. B3, first.
+    full = attempts_for(policy(PRIMARY), "full", trace=True, stage="B3-A2-full")
+    report["stages"]["B3"] = b3_verdict(full) | {"attempts": _summary(full)}
+    if not report["stages"]["B3"]["passed"]:
+        raise VoidRun("B3")
+    # 2. D1-pipeline.
+    report["stages"]["D1_pipeline"] = d1_pipeline_fn()
+    # 3. B1.
+    oracle = attempts_for(
+        controllers["scripted_oracle"], "none", trace=False, stage="B1-scripted_oracle"
+    )
+    hold = attempts_for(controllers["hold"], "none", trace=False, stage="B1-hold")
+    rand = attempts_for(controllers["random"], "none", trace=False, stage="B1-random")
+    report["stages"]["B1"] = b1_verdict(oracle, hold, rand) | {
+        "scripted_oracle": _summary(oracle),
+        "hold": _summary(hold),
+        "random": _summary(rand),
+    }
+    if not report["stages"]["B1"]["passed"]:
+        raise VoidRun("B1")
+    # 4. Arms unsubstituted; A2's run is B2.
+    arms = {}
+    for label in ARM_ORDER:
+        arms[label] = attempts_for(policy(label), "none", trace=True, stage=f"none-{label}")
+        if label == PRIMARY:
+            report["stages"]["B2"] = b2_verdict(arms[label], b2_reference)
+            if not report["stages"]["B2"]["passed"]:
+                raise VoidRun("B2")
+    report["stages"]["arms_none"] = {label: _summary(a) for label, a in arms.items()}
+    # 5. D3.
+    d3 = {}
+    for candidate in pd.G_SUB_CANDIDATES:
+        d3[candidate] = attempts_for(
+            policy(PRIMARY), candidate, trace=True, stage=f"D3-A2-{candidate}"
+        )
+    report["stages"]["D3"] = {
+        c: {
+            "grasp_resets": grasp_resets(a),
+            "full_successes": sum(bool(x["success"]) for x in a),
+            "mean_past_close_fraction": _mean_or_none([past_close_fraction(x) for x in a]),
+            "attempts": _summary(a),
+        }
+        for c, a in d3.items()
+    }
+    return arms
+
+
+def _mean_or_none(values):
+    values = [v for v in values if v is not None]
+    return float(np.mean(values)) if values else None
+
+
+def evaluate_gates(report, manifest, arms):
+    """Every gate and the decision, from a completed stage sequence."""
+    tables = manifest["gates"]
+    thresholds_d1 = manifest["frozen_D1_thresholds_three_times_table_A"]
+    d1p = report["stages"]["D1_pipeline"]
+    d1_failed = {label: d1p[label]["failed"] for label in ARMS}
+    grasp_counts = {label: d1_grasp_count(arms[label]) for label in ARMS}
+    gsub = g_sub_verdict(
+        {c: report["stages"]["D3"][c]["grasp_resets"] for c in pd.G_SUB_CANDIDATES},
+        tables["G_SUB"]["per_candidate_threshold"],
+    )
+    report["gates"] = {
+        "D1_pipeline_failed": d1_failed,
+        "D1_grasp_count": grasp_counts,
+        "D1_grasp_signed_table": {
+            label: {
+                str(a["seed"]): None if a.get("first_command") is None else a["first_command"][6]
+                for a in arms[label]
+            }
+            for label in ARMS
+        },
+        "D1_contrast": {label: d1_contrast(arms[label], thresholds_d1[label]) for label in ARMS},
+        "D2": {
+            label: d2_reading(arms[label], tables["D2"]["tau_per_arm"][label]) for label in ARMS
+        },
+        "G_SUB": gsub,
+    }
+    report["decision"] = decide(
+        void=False,
+        d1_failed=d1_failed,
+        grasp_counts=grasp_counts,
+        g_sub_passed=gsub["passed"],
+        exemption_spent=manifest["precedence_rule_D1_over_G_SUB"]["exemption_spent"],
+    )
+    report["status"] = "completed"
+
+
+def conduct(report, manifest, *, attempts_for, controllers, d1_pipeline_fn, b2_reference):
+    """Stages, gates and the outcome, under amendment 2's stop rule.
+
+    * A voiding CONTROL evaluated and failed (B1/B2/B3) is Outcome V, as in section 7.
+    * A run that STOPS before every voiding control and gate is evaluated -- the global cap or
+      any exception, including a crash or an interrupt -- is Outcome V with the stop reason.
+      Abandonment does not fire and no gate passes or fails. The exception is re-raised after
+      the outcome is recorded, so a crash still exits non-zero.
+    * Only a run that completed every stage is evaluated; only there does the missing-values
+      rule apply.
+    """
+    try:
+        arms = execute_stages(
+            report,
+            attempts_for=attempts_for,
+            controllers=controllers,
+            d1_pipeline_fn=d1_pipeline_fn,
+            b2_reference=b2_reference,
+        )
+    except VoidRun as error:
+        report["decision"] = decide(
+            void=True, d1_failed={}, grasp_counts={}, g_sub_passed=False, exemption_spent=None
+        ) | {"void_reason": f"voiding control {error} evaluated and failed"}
+        report["outcome"] = "V"
+        report["status"] = f"void: voiding control {error} failed"
+        return report
+    except BaseException as error:
+        stop(report, f"{type(error).__name__}: {error}")
+        raise
+    try:
+        evaluate_gates(report, manifest, arms)
+    except BaseException as error:
+        stop(report, f"gate evaluation crashed: {type(error).__name__}: {error}")
+        raise
+    report["outcome"] = report["decision"]["outcome"]
+    return report
+
+
+def stop(report, reason):
+    """Amendment 2: a run stopped before evaluation is VOID, never a bare 'stopped'."""
+    report.pop("gates", None)
+    report["decision"] = decide(
+        void=True, d1_failed={}, grasp_counts={}, g_sub_passed=False, exemption_spent=None
+    ) | {"void_reason": f"stopped before every control and gate was evaluated: {reason}"}
+    report["outcome"] = "V"
+    report["status"] = "void: stopped before evaluation (amendment 2)"
+
+
+#: Load-bearing inputs amendment 1 does not hash; recorded in the report (review of PR #45).
+RECORDED_INPUTS = (
+    "benchmarks/manifests/apple-policy-diagnostics-v1.json",
+    "docs/experiments/apple_policy_diagnostics_v1.md",
+    "scripts/diagnose_policy.py",
+    "scripts/evaluate_apple.py",
+    "scripts/evaluate_policy.py",
+    "scripts/measure_policy_offline_conditionals.py",
+    "src/embodied_jepa/policy_diagnostics.py",
+    "configs/g1_sim_action.json",
+)
+
+
 def run(output: Path):
-    from embodied_jepa.config import ExperimentConfig
-    from embodied_jepa.data import DatasetStore
+    """The gated run. Refuses a dirty tree, a changed input, or an existing output."""
     from embodied_jepa.training import source_identity
-    from embodied_jepa.world_model_v2 import _open
 
     if output.exists():
         raise FileExistsError(f"refusing to overwrite {output}")
     started, deadline_at = time.perf_counter(), time.monotonic() + GLOBAL_WALL_SECONDS
     manifest = frozen_manifest()
     hashes = verify_hashes(manifest)
+    source = source_identity()
+    if source["dirty"] is not False:
+        raise ContractError("the gated run requires a clean, committed tree")
+    from embodied_jepa.config import ExperimentConfig
+    from embodied_jepa.data import DatasetStore
+    from embodied_jepa.policy import _check_pinned_bounds
+    from embodied_jepa.world_model_v2 import _open
+
     r = runner()
     seeds = tuple(r.COHORT_D)
     resets = r.cohort_resets(seeds)  # the development whitelist; refuses cohort C
@@ -504,20 +703,20 @@ def run(output: Path):
     store = DatasetStore(config.dataset_root)
     lower = np.asarray(config.planner.lower_bounds, np.float32)
     upper = np.asarray(config.planner.upper_bounds, np.float32)
-    from embodied_jepa.policy import _check_pinned_bounds
-
     _check_pinned_bounds(lower, upper)
     _cfg, _store, _settings, cameras = _open(CONFIG)
     report = {
         "protocol": PROTOCOL,
         "amendment": AMENDMENT,
         "task": TASK,
-        "source": source_identity(),
+        "source": source,
         "device": DEVICE,
         "cohort_D_seeds": list(seeds),
         "cohort_C_touched": False,
         "config": str(CONFIG.relative_to(ROOT)),
         "verified_hashes": hashes,
+        "recorded_input_sha256": {p: sha256(ROOT / p) for p in RECORDED_INPUTS},
+        "artifacts": str(output),
         "budget": {
             "global_wall_seconds": GLOBAL_WALL_SECONDS,
             "attempt_wall_seconds": ATTEMPT_WALL_SECONDS,
@@ -526,139 +725,61 @@ def run(output: Path):
         "stages": {},
         "status": "running",
     }
-    tables = manifest["gates"]
-    thresholds_d1 = manifest["frozen_D1_thresholds_three_times_table_A"]
-    policies = {label: load_arm(label, config, store) for label in ARMS}
-    report["policy_implementation_sha256"] = policies[PRIMARY][0].implementation_sha256
-
-    def policy_controller(label):
-        controller = pd.PolicyController(policies[label][0])
-        return lambda truth, robot, seed: controller
-
-    def attempts_for(make, configuration, *, trace, stage):
-        out = []
-        for seed in seeds:
-            attempt = run_one(
-                make,
-                resets[seed],
-                configuration,
-                lower=lower,
-                upper=upper,
-                trace=trace,
-                deadline_at=deadline_at,
-            )
-            out.append(attempt)
-            _write(output / "attempts" / stage / f"{seed}.json", attempt)
-        return out
-
-    void = None
     try:
-        # 1. B3, first.
-        full = attempts_for(policy_controller(PRIMARY), "full", trace=True, stage="B3-A2-full")
-        report["stages"]["B3"] = b3_verdict(full) | {"attempts": _summary(full)}
-        if not report["stages"]["B3"]["passed"]:
-            raise VoidRun("B3")
-        # 2. D1-pipeline.
-        report["stages"]["D1_pipeline"] = d1_pipeline(manifest, config, store, cameras, policies)
-        # 3. B1.
-        oracle = attempts_for(
-            lambda truth, robot, seed: pd.ScriptedOracleController(truth, robot),
-            "none",
-            trace=False,
-            stage="B1-scripted_oracle",
-        )
-        hold = attempts_for(
-            lambda truth, robot, seed: pd.hold_controller(), "none", trace=False, stage="B1-hold"
-        )
-        rand = attempts_for(
-            lambda truth, robot, seed: pd.RandomController(seed, lower, upper),
-            "none",
-            trace=False,
-            stage="B1-random",
-        )
-        report["stages"]["B1"] = b1_verdict(oracle, hold, rand) | {
-            "scripted_oracle": _summary(oracle),
-            "hold": _summary(hold),
-            "random": _summary(rand),
+        policies = {label: load_arm(label, config, store) for label in ARMS}
+        report["policy_implementation_sha256"] = policies[PRIMARY][0].implementation_sha256
+
+        def attempts_for(make, configuration, *, trace, stage):
+            out = []
+            for seed in seeds:
+                attempt = run_one(
+                    make,
+                    resets[seed],
+                    configuration,
+                    lower=lower,
+                    upper=upper,
+                    trace=trace,
+                    deadline_at=deadline_at,
+                )
+                out.append(attempt)
+                _write(output / "attempts" / stage / f"{seed}.json", attempt)
+            return out
+
+        def policy(label):
+            controller = pd.PolicyController(policies[label][0])
+            return lambda truth, robot, seed: controller
+
+        controllers = {
+            "policy": policy,
+            "scripted_oracle": lambda truth, robot, seed: pd.ScriptedOracleController(truth, robot),
+            "hold": lambda truth, robot, seed: pd.hold_controller(),
+            "random": lambda truth, robot, seed: pd.RandomController(seed, lower, upper),
         }
-        if not report["stages"]["B1"]["passed"]:
-            raise VoidRun("B1")
-        # 4. Arms unsubstituted; A2's run is B2.
-        arms = {}
-        for label in ARM_ORDER:
-            arms[label] = attempts_for(
-                policy_controller(label), "none", trace=True, stage=f"none-{label}"
-            )
-            if label == PRIMARY:
-                reference = json.loads(B2_REFERENCE.read_text())
-                report["stages"]["B2"] = b2_verdict(arms[label], reference)
-                if not report["stages"]["B2"]["passed"]:
-                    raise VoidRun("B2")
-        report["stages"]["arms_none"] = {label: _summary(a) for label, a in arms.items()}
-        # 5. D3.
-        d3 = {}
-        for candidate in pd.G_SUB_CANDIDATES:
-            d3[candidate] = attempts_for(
-                policy_controller(PRIMARY), candidate, trace=True, stage=f"D3-A2-{candidate}"
-            )
-        report["stages"]["D3"] = {
-            c: {
-                "grasp_resets": grasp_resets(a),
-                "full_successes": sum(bool(x["success"]) for x in a),
-                "mean_past_close_fraction": float(np.mean([past_close_fraction(x) for x in a])),
-                "attempts": _summary(a),
-            }
-            for c, a in d3.items()
-        }
-    except VoidRun as error:
-        void = str(error)
-    except GlobalCap as error:
-        report["status"] = f"stopped: {error}"
-    # ---- gates
-    if void is None and report["status"] == "running":
-        d1p = report["stages"]["D1_pipeline"]
-        d1_failed = {label: d1p[label]["failed"] for label in ARMS}
-        grasp_counts = {label: d1_grasp_count(arms[label]) for label in ARMS}
-        gsub = g_sub_verdict(
-            {c: report["stages"]["D3"][c]["grasp_resets"] for c in pd.G_SUB_CANDIDATES},
-            tables["G_SUB"]["per_candidate_threshold"],
+        conduct(
+            report,
+            manifest,
+            attempts_for=attempts_for,
+            controllers=controllers,
+            d1_pipeline_fn=lambda: d1_pipeline(manifest, store, cameras, policies),
+            b2_reference=json.loads(B2_REFERENCE.read_text()),
         )
-        report["gates"] = {
-            "D1_pipeline_failed": d1_failed,
-            "D1_grasp_count": grasp_counts,
-            "D1_grasp_signed_table": {
-                label: {str(a["seed"]): a["first_command"][6] for a in arms[label]}
-                for label in ARMS
-            },
-            "D1_contrast": {
-                label: d1_contrast(arms[label], thresholds_d1[label]) for label in ARMS
-            },
-            "D2": {
-                label: d2_reading(arms[label], tables["D2"]["tau_per_arm"][label]) for label in ARMS
-            },
-            "G_SUB": gsub,
-        }
-        report["decision"] = decide(
-            void=False,
-            d1_failed=d1_failed,
-            grasp_counts=grasp_counts,
-            g_sub_passed=gsub["passed"],
-            exemption_spent=manifest["precedence_rule_D1_over_G_SUB"]["exemption_spent"],
-        )
-        report["status"] = "completed"
-    elif void is not None:
-        report["decision"] = decide(
-            void=True, d1_failed={}, grasp_counts={}, g_sub_passed=False, exemption_spent=None
-        )
-        report["status"] = f"void: {void} failed"
-    report["elapsed_seconds"] = time.perf_counter() - started
-    _write(output / "report.json", report)
+    except GlobalCap:
+        pass  # conduct() recorded outcome V with the stop reason (amendment 2)
+    except BaseException as error:
+        if report.get("outcome") != "V":  # e.g. a crash while loading the arms
+            stop(report, f"{type(error).__name__}: {error}")
+        raise
+    finally:
+        report["elapsed_seconds"] = time.perf_counter() - started
+        _write(output / "report.json", report)
     return report
 
 
 #: Smoke reset: a surviving TRAIN root, not a cohort seed, so wiring can be exercised before the
 #: pre-run review without touching the development cohort's outcome.
 SMOKE_ROOT = 48000
+#: The calibration's train provenance roots; disjoint from the 15 val gate roots.
+SMOKE_D1_ROOTS = (48000, 48008, 48001, 48013, 48002, 48006, 48003, 48011)
 
 
 def smoke(output: Path, steps: int = 20):
@@ -707,8 +828,40 @@ def smoke(output: Path, steps: int = 20):
         }
     finally:
         MAX_STEPS = saved
+    from embodied_jepa.world_model_v2 import _open
+
+    _cfg, _store, _settings, cameras = _open(CONFIG)
+    collector_plan = {r["seed"]: r for r in collector.make_plan(collector.FROZEN_SEEDS)["roots"]}
+    train_resets = {
+        seed: {
+            "seed": seed,
+            "object_xy": collector_plan[seed]["object_xy"],
+            "plate_xy": collector_plan[seed]["plate_xy"],
+        }
+        for seed in SMOKE_D1_ROOTS
+    }
+    if any(collector_plan[s]["split"] != "train" for s in SMOKE_D1_ROOTS):
+        raise ContractError("the smoke D1-pipeline roots must be train roots")
+    policies = {label: load_arm(label, config, store) for label in ARMS}
+    pipeline = d1_pipeline(
+        manifest,
+        store,
+        cameras,
+        policies,
+        resets=train_resets,
+        split="train",
+        expected=len(SMOKE_D1_ROOTS),
+    )
+    results["D1_pipeline_on_train_roots"] = pipeline
     _write(output / "smoke.json", results)
-    return {k: (v["termination_reason"], v["executed_steps"]) for k, v in results.items()}
+    failed = [label for label, v in pipeline.items() if v["failed"]]
+    if failed:
+        raise ContractError(f"D1-pipeline fails a sound pipeline on train roots for {failed}")
+    return {
+        k: (v["termination_reason"], v["executed_steps"])
+        for k, v in results.items()
+        if k != "D1_pipeline_on_train_roots"
+    } | {"D1_pipeline_on_train_roots": "passed for every arm"}
 
 
 def main() -> int:

@@ -337,3 +337,198 @@ def test_the_per_attempt_wall_cap_ends_an_attempt():
     scores = [{"success": False}] * 50
     out = _attempt_loop(scores, max_steps=50, trace=False, attempt_wall_seconds=0.0)
     assert out["termination_reason"] == "attempt_wall_cap" and out["executed_steps"] == 1
+
+
+# ----- review of PR #45: the D1-pipeline comparison, the orchestration and amendment 2 --------
+def test_compare_reset_uses_the_clipped_offline_prediction():
+    """act() clips; the step-zero grasp head sits just below -1 (A0: -1.01607)."""
+    base = dict(
+        seed=1,
+        live_image=np.zeros((2, 2, 3), np.uint8),
+        stored_image=np.zeros((2, 2, 3), np.uint8),
+        live_state=np.zeros(4),
+        stored_state=np.zeros(4),
+        live_mask=np.ones(4, bool),
+        stored_mask=np.ones(4, bool),
+    )
+    live = np.array([0.1, 0, 0, 0, 0, 0, -1.0])
+    offline = np.array([0.1, 0, 0, 0, 0, 0, -1.01607])
+    row = R.compare_reset(live_output=live, offline_output=offline, **base)
+    assert row["output_max_abs"] == pytest.approx(0.0)
+    kw = {"output_tolerance": 1e-4, "state_tolerance": 1e-6}
+    assert not R.d1_pipeline_verdict([row] * 15, uses_image=True, **kw)["failed"]
+    moved = R.compare_reset(live_output=live + 1e-3, offline_output=offline, **base)
+    assert R.d1_pipeline_verdict([moved] * 15, uses_image=True, **kw)["failed"]
+    nan = R.compare_reset(live_output=live * np.nan, offline_output=offline, **base)
+    assert nan["output_max_abs"] is None
+    assert R.d1_pipeline_verdict([nan] * 15, uses_image=True, **kw)["failed"]
+    json.dumps(nan, allow_nan=False)  # a NaN must never reach the report writer
+
+
+DEV = [*range(45000, 45008), *range(45100, 45108)]
+REFERENCE = {
+    "attempts": [
+        {
+            "seed": s,
+            "termination_reason": "step_limit",
+            "executed_steps": 1000,
+            "score": {"grasp": s == 45100},
+        }
+        for s in DEV
+    ]
+}
+CONTROLLERS = {"policy": lambda label: label, "scripted_oracle": 1, "hold": 2, "random": 3}
+
+
+class _Stages:
+    """A fake attempts_for that records the stage order and returns scripted outcomes."""
+
+    def __init__(self, *, b3=16, oracle=16, b2_ok=True, raise_at=None, first=-1.0):
+        self.order, self.b3, self.oracle, self.b2_ok = [], b3, oracle, b2_ok
+        self.raise_at, self.first = raise_at, first
+
+    def __call__(self, make, configuration, *, trace, stage):
+        self.order.append(stage)
+        if self.raise_at == stage:
+            raise R.GlobalCap("global wall cap reached before the next attempt")
+        out = []
+        for i, seed in enumerate(DEV):
+            first = None if self.first is None else [0, 0, 0, 0, 0, 0, self.first]
+            a = {
+                "seed": seed,
+                "termination_reason": "step_limit",
+                "executed_steps": 1000,
+                "grasp": False,
+                "success": False,
+                "shadow_expert_exhausted_at_step": None,
+                "first_command": first,
+                "first_shadow_expert": [0, 0, 0, 0, 0, 0, -1.0],
+                "clipped_commands": 0,
+                "score": {},
+                "departures": [0.0] * 100,
+                "trace": None,
+            }
+            if stage == "B3-A2-full":
+                a["grasp"] = i < self.b3
+            elif stage == "B1-scripted_oracle":
+                a["grasp"] = a["success"] = i < self.oracle
+            elif stage == f"none-{R.PRIMARY}":
+                a["grasp"] = seed == 45100
+                if not self.b2_ok and seed == 45000:
+                    a["executed_steps"] = 999
+            out.append(a)
+        return out
+
+
+def _pipeline():
+    return lambda: {a: {"failed": False, "rows": []} for a in ARMS}
+
+
+def _conduct(stages, pipeline=None, report=None):
+    report = {"stages": {}, "status": "running"} if report is None else report
+    R.conduct(
+        report,
+        MANIFEST,
+        attempts_for=stages,
+        controllers=CONTROLLERS,
+        d1_pipeline_fn=pipeline or _pipeline(),
+        b2_reference=REFERENCE,
+    )
+    return report, stages
+
+
+def test_stage_order_is_the_preregistered_one():
+    report, stages = _conduct(_Stages())
+    expected = [
+        "B3-A2-full",
+        "B1-scripted_oracle",
+        "B1-hold",
+        "B1-random",
+        *(f"none-{a}" for a in R.ARM_ORDER),
+        *(f"D3-A2-{c}" for c in pd.G_SUB_CANDIDATES),
+    ]
+    assert stages.order == expected
+    assert list(report["stages"])[:2] == ["B3", "D1_pipeline"], "D1-pipeline runs right after B3"
+    # Nothing substituted grasps and nothing fires: G-SUB fails, clause (a) does not hold -> X.
+    assert report["outcome"] == "X" and report["decision"]["outcome"] == "X"
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "control", "last_stage"),
+    [
+        ({"b3": 13}, "B3", "B3-A2-full"),
+        ({"oracle": 13}, "B1", "B1-random"),
+        ({"b2_ok": False}, "B2", "none-A2_bc_frozen_e0"),
+    ],
+)
+def test_a_failed_voiding_control_stops_the_run_as_outcome_v(kwargs, control, last_stage):
+    report, stages = _conduct(_Stages(**kwargs))
+    assert stages.order[-1] == last_stage, "nothing may run after a voiding control fails"
+    assert report["outcome"] == "V" and control in report["status"]
+    assert "gates" not in report
+
+
+def test_a_cap_stop_during_d3_is_void_not_a_g_sub_failure():
+    """Amendment 2, direction 1: a stop before every gate is evaluated is V."""
+    report = {"stages": {}, "status": "running"}
+    with pytest.raises(R.GlobalCap):
+        _conduct(_Stages(raise_at="D3-A2-dz"), report=report)
+    assert report["outcome"] == "V" and "amendment 2" in report["status"]
+    assert "gates" not in report and not report["decision"].get("claims_the_exemption")
+    assert report["decision"]["outcome"] == "V"
+
+
+def test_a_crash_is_void_and_still_raises():
+    def crash():
+        raise RuntimeError("renderer died")
+
+    report = {"stages": {}, "status": "running"}
+    with pytest.raises(RuntimeError):
+        _conduct(_Stages(), pipeline=crash, report=report)
+    assert report["outcome"] == "V" and "renderer died" in report["decision"]["void_reason"]
+
+
+def test_a_completed_run_with_a_missing_quantity_fails_that_gate():
+    """Amendment 2, direction 2: inside a completed run, missing counts as failed."""
+    report, _ = _conduct(_Stages(first=None))
+    assert report["gates"]["D1_grasp_count"] == {a: 16 for a in ARMS}
+    assert report["decision"]["d1_grasp_disjunct"] is True
+    assert report["outcome"] == "P_over_X_precedence"
+
+
+def test_run_verifies_hashes_before_anything_else(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(R, "frozen_manifest", lambda: calls.append("manifest") or MANIFEST)
+
+    def refuse(manifest):
+        calls.append("hashes")
+        raise ContractError("sha256 mismatch")
+
+    monkeypatch.setattr(R, "verify_hashes", refuse)
+    monkeypatch.setattr(R, "runner", lambda: pytest.fail("reset generator reached"))
+    with pytest.raises(ContractError, match="sha256"):
+        R.run(tmp_path / "out")
+    assert calls == ["manifest", "hashes"]
+    existing = tmp_path / "exists"
+    existing.mkdir()
+    with pytest.raises(FileExistsError):
+        R.run(existing)
+
+
+def test_run_refuses_a_dirty_tree(tmp_path, monkeypatch):
+    import embodied_jepa.training as training
+
+    monkeypatch.setattr(R, "frozen_manifest", lambda: MANIFEST)
+    monkeypatch.setattr(R, "verify_hashes", lambda manifest: {})
+    monkeypatch.setattr(training, "source_identity", lambda: {"dirty": True})
+    monkeypatch.setattr(R, "runner", lambda: pytest.fail("reset generator reached"))
+    with pytest.raises(ContractError, match="clean"):
+        R.run(tmp_path / "out")
+
+
+def test_b3_needs_sixteen_attempts_and_d2_boundary_at_fifty():
+    assert not R.b3_verdict([_attempt(s, grasp=True) for s in range(15)])["passed"]
+    at_fifty = {"seed": 1, "departures": [0.0] * 50 + [0.1] * 10}
+    assert R.d2_reading([at_fifty], 0.05)["reading"] == "gradual"
+    at_49 = {"seed": 1, "departures": [0.0] * 49 + [0.1] * 10}
+    assert R.d2_reading([at_49], 0.05)["reading"] == "inconclusive"
