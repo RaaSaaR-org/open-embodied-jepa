@@ -558,10 +558,20 @@ def test_a_missing_input_voids_instead_of_crashing(tmp_path, monkeypatch):
 
 
 # ----- run-1 fix (void on crash, zero baselines): streams and finite values unchanged ---------
-#: sha256 of every statistic below, computed with the module AT ccb8fd7 (the code run-1 used),
-#: with its inf point ratios mapped to null. The fix must reproduce it exactly: same seeds, same
-#: bootstrap indices, identical finite values.
-STREAM_DIGEST_AT_CCB8FD7 = "ca14603c7851843ade92a56c361ac32a344cddb084855240fa8f175d90eddda4"
+def _paired_ratio_ccb8fd7(numerator, denominator, idx, statistic) -> dict:
+    """``paired_ratio`` exactly as it was at ccb8fd7 (the code run-1 used), pasted verbatim.
+
+    It is the only function of ``info_ceiling`` the run-1 fix changed. The test below runs the
+    whole statistics path with it and with the fixed version in one process, so the comparison
+    is exact on every platform (a pinned digest is not: BLAS differs across machines).
+    """
+    num, den = np.asarray(numerator, np.float64), np.asarray(denominator, np.float64)
+    point = float(statistic(num) / statistic(den))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        boot = statistic(num[idx], axis=1) / statistic(den[idx], axis=1)
+    boot = np.where(np.isfinite(boot), boot, np.finfo(np.float64).max)
+    lo, hi = ic.percentile_ci(boot)
+    return {"ratio": point, "ci95": [lo, hi]}
 
 
 def _stream_scenario(ic):
@@ -607,9 +617,17 @@ def _strip(value):
     return value
 
 
-def test_fix_leaves_every_stream_and_finite_value_unchanged():
-    blob = json.dumps(_strip(_stream_scenario(ic)), sort_keys=True, allow_nan=False).encode()
-    assert hashlib.sha256(blob).hexdigest() == STREAM_DIGEST_AT_CCB8FD7
+def test_fix_leaves_every_stream_and_finite_value_unchanged(monkeypatch):
+    """Same seeds, same bootstrap indices, identical values for every finite field; the only
+    difference allowed is an old inf/nan point ratio that is now null."""
+    new = _strip(_stream_scenario(ic))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        monkeypatch.setattr(ic, "paired_ratio", _paired_ratio_ccb8fd7)
+        old = _strip(_stream_scenario(ic))
+    assert old == new
+    json.dumps(new, allow_nan=False)
+    # The scenario really exercises a zero baseline (the run-1 crash), so the check is not vacuous.
+    assert "null" in json.dumps(new)
 
 
 def test_zero_baseline_ratio_is_null_and_never_passes():
