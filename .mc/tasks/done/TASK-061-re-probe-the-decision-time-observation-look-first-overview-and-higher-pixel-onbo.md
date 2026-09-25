@@ -4,7 +4,7 @@ aliases:
 - TASK-061
 title: 'Re-probe the decision-time observation: look-first, overview and higher-pixel onboard arms'
 slug: re-probe-the-decision-time-observation-look-first-overview-and-higher-pixel-onbo
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -18,8 +18,9 @@ depends_on:
 - "[[TASK-059]]"
 due_date: ''
 created: 2026-09-25
-updated: 2026-09-25
+updated: 2026-09-26
 ---
+
 
 
 
@@ -51,23 +52,37 @@ Manifest: `benchmarks/manifests/apple-observation-reprobe-v1.json`.
 Calibration: `scripts/calibrate_observation_reprobe.py`. It fits nothing.
 
 ## Acceptance Criteria
-- [ ] The preregistration, manifest and calibration script merge on an independent reviewer's
+- [x] The preregistration, manifest and calibration script merge on an independent reviewer's
       reported APPROVE, with green CI, before any readout is fitted (PR 1).
-- [ ] The runner merges with tests (PR 2) that exercise, in both directions:
+- [x] The runner merges with tests (PR 2) that exercise, in both directions:
   - every guard, the render-path checks, Holm, the p-values and the spurious check;
   - the reset-independence of the look motion;
   - crash → `report.json` with outcome V and a `void_reason`;
   - non-finite → `null` plus `non_finite_fields`.
 
   It merges on a reported APPROVE with green CI.
-- [ ] The gated run starts only on the pre-run reviewer's reported verdict, with a clean tree.
-- [ ] The results document, the results manifest and the summarize script (PR 3) state:
+- [x] The gated run starts only on the pre-run reviewer's reported verdict, with a clean tree.
+- [x] The results document, the results manifest and the summarize script (PR 3) state:
   - the outcome row, and the numbers with CIs against their baselines;
   - every negative result;
   - a recommended (not chosen) next task.
-- [ ] The test split, cohort C and cohort D are untouched, and `exemption_spent` stays false.
+- [x] The test split, cohort C and cohort D are untouched, and `exemption_spent` stays false.
 
 ## Notes
 - Void rule: an early stop is V. One from-scratch repeat is allowed; a second void is
   INCONCLUSIVE.
+## Results (2026-09-25)
+
+**Outcome O-LOOK-RAW** (run-1, 44be6d6, 155 s CPU, all guards passed; report sha256 `289470f4…fa88`).
+- L-raw, LH-raw and O-raw pass the unchanged TASK-059 bars, Holm and the apple-hidden check.
+  L-raw reads 0.469 cm (ratio to B-occ 0.242 [0.211, 0.289]), with dx sign 180/190.
+  On the 111 roots hidden at reset it reads 0.482 cm.
+- L-E0 fails (1.273 cm, upper bound 0.779; 147/190) and is no better than a random-init encoder.
+- The anchor reproduces TASK-059 bit-exactly. R-float differs by at most 5.7e-9: a cold-render
+  artifact, with an owner ruling.
+- Recommended next task (the owner chooses): encoder work on post-look frames, then a
+  prereg-gated look-prefix corpus at 112 px.
+- Learned Apple→Plate is still 0 successes. `exemption_spent` is false.
+- PRs: #54 (prereg), #55 (runner), #56 (results).
+- Results: `docs/experiments/apple_observation_reprobe_v1_results.md`.
 %% mc-links: [[TASK-059]] %%

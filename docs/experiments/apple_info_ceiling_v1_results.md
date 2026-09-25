@@ -330,6 +330,13 @@ The carry failure after a grasp (TASK-057 §5, item 2) remains a separate questi
 
 ## 8. Caveats kept in the record
 
+- **Cross-reference note (added 2026-09-25, TASK-061; no number or verdict here changes).** This
+  run did not warm up its 448 px renderer, so the first root's (48000) native render was a cold
+  first render. That render differs from a warm one by 1 pixel of 1 level. The (v-b) and raw-448
+  figures above therefore carry this artifact on one root. TASK-061's warmed re-run of (v-b)
+  differs from them by at most 5.7e-9 in the T1 and T3 values, with identical T2 counts and
+  readings. See [`apple_observation_reprobe_v1_results.md`](apple_observation_reprobe_v1_results.md) §5.
+
 - **Run-1 was void** (§1). Run-2 is the single permitted repeat.
 - **The §10 shadow-off re-render is uninformative by construction** (the ruling in §1). It was
   not triggered.
