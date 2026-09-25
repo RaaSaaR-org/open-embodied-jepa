@@ -28,7 +28,7 @@ It measures:
   post-look targets, plus each arm's visibility-conditional mean.
 
     uv run --no-sync python scripts/calibrate_observation_reprobe.py \
-        --output outputs/task061-observation-reprobe/calibration-v4.json
+        --output outputs/task061-observation-reprobe/calibration-v5.json
 """
 
 from __future__ import annotations
@@ -260,6 +260,33 @@ def hold_control(roots, steps):
     return np.asarray(moves)
 
 
+def first_render_check(roots) -> dict:
+    """Does a FRESH renderer's first render differ from its second? Per size and camera, on
+    every root's reset state, with a renderer created for that root and discarded after it.
+    This is the evidence for the warm-up rule, and for the claim that 112 px is unaffected."""
+    robot = make_robot(SMALL)
+    counts = {
+        f"{camera}_{size}": 0 for size in (SMALL, LARGE) for camera in ("onboard_rgb", "overview")
+    }
+    try:
+        for root in roots:
+            robot.reset(seed=root["seed"], object_xy=root["object_xy"], plate_xy=root["plate_xy"])
+            for size in (SMALL, LARGE):
+                for camera in ("onboard_rgb", "overview"):
+                    renderer = robot.mj.Renderer(robot.model, height=size, width=size)
+                    try:
+                        frames = []
+                        for _ in range(2):
+                            renderer.update_scene(robot.sim.data, camera=camera)
+                            frames.append(renderer.render().copy())
+                    finally:
+                        renderer.close()
+                    counts[f"{camera}_{size}"] += int(not np.array_equal(*frames))
+    finally:
+        robot.sim.close()
+    return {"roots": len(roots), "first_render_differs_from_second": counts}
+
+
 def model_settings(robot) -> dict:
     """Render-relevant model facts: the MJCF the instance was built from, offscreen size and
     anti-aliasing samples. The 112 and 224 px instances must agree on all of them."""
@@ -463,6 +490,7 @@ def main() -> int:
     chosen = choose_look({n: c["visible_roots_by_k"] for n, c in candidates.items()}, len(roots))
     sequence = look_sequence(chosen["variant"], chosen["steps"])
     rows = measure_arms(roots, dataset, sequence)
+    first_render = first_render_check(roots)
     settings = {}
     for size in (SMALL, LARGE):
         probe = make_robot(size)
@@ -569,6 +597,7 @@ def main() -> int:
             "physics_224_equals_112": int(sum(r["physics_224_equals_112"] for r in rows)),
             "roots": len(rows),
             "model_settings": settings,
+            "first_render": first_render,
             "P5_model_224_equals_112_except_render_size": all(
                 settings["224"][k] == settings["112"][k]
                 for k in settings["112"]

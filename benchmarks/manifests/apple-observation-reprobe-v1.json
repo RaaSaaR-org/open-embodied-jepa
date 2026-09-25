@@ -148,6 +148,7 @@
   "sequence_sha256_float32_bytes": "17bfb0702a25124b44dc2565310fb947742b5f025c8211dd16d66ede15be587c",
   "execution": "collector step per command: clip to collect_apple_wide LOWER/UPPER, project_candidates, execute; observe before each command",
   "reset_independent": "a constant; the executor receives only the robot",
+  "selection_basis": "rendering facts only (apple visibility and pixel counts in the 112 px onboard segmentation render); never a readout, command target or label",
   "selection_rule": "per candidate, smallest k in 1..10 with every root visible (>=1 onboard 112 px segmentation pixel); smallest such k across candidates; ties by listed order",
   "selection_disclosure": "candidates first explored in an uncommitted scratch script computing the same visibility table; rule written after seeing it; selection uses visibility only",
   "candidates_visible_roots_by_k": {
@@ -383,7 +384,7 @@
     "P4"
    ]
   },
-  "warm_up_rule": "every renderer (simulation's own, segmentation, native, ablation) renders once and discards the result before any frame is kept; a fresh renderer's first 224 px onboard render differs from later renders (1 px, 1 level), found while PR 2 was being written, before the freeze",
+  "warm_up_rule": "every renderer (simulation's own, segmentation, native, ablation) renders once and discards the result before any frame is kept; a fresh renderer's first 224 px onboard render differs from later renders (1 px, 1 level), found while PR 2 was being written, before the freeze; applied uniformly to every arm incl. 112 px and overview; first-render check (calibration render_path_validation.first_render): first render differs from second on 0/190 roots at 112 px onboard and overview, 190/190 at 224 px onboard, 8/190 at 224 px overview; owner ruling 2026-09-25 accepted warm-up + P4 + P5, failures demote rather than void",
   "calibration_counts": {
    "reset_112_equals_stored": 190,
    "reset_112_replica": 190,
@@ -422,6 +423,15 @@
       224,
       224
      ]
+    }
+   },
+   "first_render": {
+    "roots": 190,
+    "first_render_differs_from_second": {
+     "onboard_rgb_112": 0,
+     "overview_112": 0,
+     "onboard_rgb_224": 190,
+     "overview_224": 8
     }
    },
    "P5_model_224_equals_112_except_render_size": true
@@ -503,7 +513,7 @@
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
   "data/apple-wide-v1/meta/jepa_manifest.json": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
   "scripts/calibrate_info_ceiling.py": "de8818ae9479033ae3dddc240b90f3a95b22ca2eb2c081fa0b62adde286c7aa3",
-  "scripts/calibrate_observation_reprobe.py": "1b3c593007320879235894479cb79f3035172299199a810096466c2ab89d4f74",
+  "scripts/calibrate_observation_reprobe.py": "a9d3c0fa09ff43b58ffeee53cc4d4965a6a6f94bc009905e73125b5edb0c53fe",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
   "scripts/measure_policy_offline_conditionals.py": "0e88ec4692d612358de0cb8bb0f2fed471dd7c23cf0abc91925a6212b6143144",
   "scripts/probe_info_ceiling.py": "f64b01a1db02b5e82540d9b941fe4508d509287a0a82a8d90204fcda83b21dd2",
@@ -516,14 +526,15 @@
  },
  "calibration": {
   "script": "scripts/calibrate_observation_reprobe.py",
-  "artifact": "outputs/task061-observation-reprobe/calibration-v4.json",
-  "artifact_sha256": "c04325dc94005987825ca7242720998fbd7de7e8db1869e826e4aec3588d64ef",
+  "artifact": "outputs/task061-observation-reprobe/calibration-v5.json",
+  "artifact_sha256": "cc00ae31216f443199807c082f8fd9e0a4edbbaf1ca1325248fccd6b293bf079",
   "superseded": {
    "outputs/task061-observation-reprobe/calibration-draft-1.json": "6cabd9a854b028ea6d6a5d9c47a50e04261a72833914cdc9b44e2c47fa4eb165",
    "outputs/task061-observation-reprobe/calibration.json": "a554c1ceb24aa612cf3236acf1eba6fb78a2fd8a7579ff2aac7ec93ff56675e9",
    "outputs/task061-observation-reprobe/calibration-v2.json": "bfb55fa4e28d74a7fb09371c2fbe1d8e493e7aab528b1a527470b223bca73ae2",
    "outputs/task061-observation-reprobe/calibration-v3.json": "7fbe79cd94a53dcb097d6434d90b0bc425527f374631600f2c6385a830e474fe",
-   "note": "earlier script versions: draft reported 3-D apple displacement; v1 lacked the hold control; v2 (first review) lacked renderer warm-up and P4; v3 lacked P5; every shared value identical except elapsed time"
+   "outputs/task061-observation-reprobe/calibration-v4.json": "c04325dc94005987825ca7242720998fbd7de7e8db1869e826e4aec3588d64ef",
+   "note": "earlier script versions: draft reported 3-D apple displacement; v1 lacked the hold control; v2 (first review) lacked renderer warm-up and P4; v3 lacked P5; v4 lacked the first-render check; every shared value identical except elapsed time"
   },
   "fits_nothing": true,
   "prior_baselines_disclosure": "prior-only baselines need the expert's post-look command (a simulation fact); they read no observation and fit nothing, as in TASK-059",
@@ -748,6 +759,15 @@
        224,
        224
       ]
+     }
+    },
+    "first_render": {
+     "roots": 190,
+     "first_render_differs_from_second": {
+      "onboard_rgb_112": 0,
+      "overview_112": 0,
+      "onboard_rgb_224": 190,
+      "overview_224": 8
      }
     },
     "P5_model_224_equals_112_except_render_size": true

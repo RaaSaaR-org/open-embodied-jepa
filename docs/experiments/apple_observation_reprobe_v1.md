@@ -96,9 +96,11 @@ Each command goes through the collector's own step: clip to the collection bound
 execute. **The motion reads nothing about the reset.** The sequence is a constant, and the code
 that executes it receives only the robot (PR 2 tests this, §9).
 
-**How it was chosen.** The calibration ran five constant right-arm candidates for 1–10 steps on
-all 190 roots and counted the roots with ≥ 1 apple pixel in the 112 px onboard frame
-(segmentation; a rendering fact):
+**How it was chosen: from rendering facts only.** The selection used apple visibility and pixel
+counts from the 112 px onboard segmentation render. It never used a readout, a command target,
+the expert's command or any label. The calibration ran five constant right-arm candidates for
+1–10 steps on all 190 roots. For each, it counted the roots with ≥ 1 apple pixel in the 112 px
+onboard frame:
 
 | candidate (dx, dy, dz, droll, dpitch, dyaw) | visible roots after k = 0 / 2 / 4 / 6 / 8 / 10 steps |
 |---|---|
@@ -224,15 +226,33 @@ produces**, and that it is reproducible.
 - P1, P2 and P4 can fail only through nondeterminism or dependence on render history. They are
   determinism checks.
 
-**An unforeseen rendering fact (found while PR 2 was being written, before this document froze).**
-A freshly created MuJoCo renderer's **first** onboard render at 224 px differs from every later
-render of the same state: 1 pixel, by 1 level. From the second render on it is stable. At 112 px
-no difference was seen.
-- A replica comparison cannot see this effect, because both instances' first renders shift
+**An unforeseen rendering fact, found while PR 2 was being written and before this document froze.**
+A freshly created MuJoCo renderer's **first** render can differ from its later renders of the
+same state. In the first scratch finding the difference was 1 pixel, by 1 level. From the second
+render on, the output is stable. The task owner ruled on the handling (2026-09-25).
+
+The calibration's first-render check quantifies it. On each of the 190 reset states it creates a
+fresh renderer, renders twice, and compares the two renders:
+
+| size / camera | roots where the first render differs from the second |
+|---|---|
+| 112 px `onboard_rgb` | **0 / 190** |
+| 112 px `overview` | **0 / 190** |
+| 224 px `onboard_rgb` | **190 / 190** |
+| 224 px `overview` | 8 / 190 (not used by any arm) |
+
+- **112 px is unaffected**, so neither TASK-059 nor the stored `apple-wide-v1` corpus is
+  affected. The claim rests on two things:
+  - this first-render check, which finds 0/190 differences for both 112 px cameras;
+  - TASK-059's G-render, which compared fresh re-renders with the stored frames and found them
+    byte-identical on 190/190. Its first root's frame was a first render.
+- **A replica comparison (P1) cannot see this effect.** Both instances' first renders shift
   alike.
-- Rule: **every renderer (the simulation's own, segmentation, native and ablation) renders once
-  and discards the result before any frame is kept.**
-- P4 then checks, on every root, that re-rendering each arm's decision state reproduces its frame.
+- **Rule, applied uniformly to every arm, including the 112 px and overview arms:** every
+  renderer renders once and discards the result before any frame is kept. That covers the
+  simulation's own, the segmentation, the native 448 px and the ablation renderers.
+- **P4 checks every root.** Re-rendering each arm's decision state must reproduce its frame.
+- **Failure consequence.** A P4 or P5 failure demotes the arm (below); it does not void the run.
 
 The checks:
 
@@ -387,7 +407,8 @@ Render-path validation (§5) is **not** a void guard; it demotes an arm.
 
 **PR 2's tests** must exercise, in both directions:
 - every guard;
-- the render-path checks;
+- the render-path checks, including P4 and P5: a planted 1-pixel difference fails the check and
+  demotes the arm, and a clean render passes (owner ruling);
 - the Holm step-down;
 - the p-values against the Wilson and percentile bars;
 - the spurious check;
@@ -431,7 +452,7 @@ Render-path validation (§5) is **not** a void guard; it demotes an arm.
 ## 12. Pre-freeze calibration (fits nothing)
 
 `uv run --no-sync python scripts/calibrate_observation_reprobe.py --output
-outputs/task061-observation-reprobe/calibration-v4.json` (sha256 in the manifest; about 280 s on
+outputs/task061-observation-reprobe/calibration-v5.json` (sha256 in the manifest; about 400 s on
 CPU).
 
 - **What it reads.** It opens only the 190 train + val episode files, each after its sha256
@@ -439,13 +460,14 @@ CPU).
 - **What it computes.** Visibility, pixel counts, render-path checks, the look facts, the targets
   and the prior-only baselines. It fits no readout.
 - **Superseded artifacts.** Earlier versions of the script wrote `calibration-draft-1.json`,
-  `calibration.json`, `calibration-v2.json` and `calibration-v3.json`. All are kept, and their
-  hashes are in the manifest.
+  `calibration.json`, `calibration-v2.json`, `calibration-v3.json` and `calibration-v4.json`. All
+  are kept, and their hashes are in the manifest.
   - The draft reported apple displacement as one 3-D number (3.37 mm). It was then split into xy
     (1.5e-15 m) and z-settling.
   - v1 lacked the hold control of §3.1.
   - v2 lacked the renderer warm-up and P4 (§5). v2 was the version under the first review.
   - v3 lacked P5.
+  - v4 lacked the first-render check (§5), which the owner's ruling asked for.
   - Every value the versions share is identical, apart from elapsed time.
 - **Disclosure: the prior baselines.** The brief limited pre-freeze calibration to rendering facts.
   The prior-only baselines also need the expert's post-look command, a simulation fact. They read
