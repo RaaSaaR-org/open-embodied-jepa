@@ -4,7 +4,7 @@ aliases:
 - TASK-057
 title: Locate the open-loop/closed-loop gap with cheap diagnostics on the development cohort
 slug: locate-the-open-loop-closed-loop-gap-with-cheap-diagnostics
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -20,6 +20,7 @@ due_date: ''
 created: 2026-09-24
 updated: 2026-09-25
 ---
+
 
 
 
@@ -138,4 +139,7 @@ Acceptance:
 - D1, D1-grasp, D2 and G-SUB are reported.
 - Cohort C was not simulated.
 - The abandonment clause fired as written.
+
+Closed 2026-09-25: results merged in PR #47 (`e840968`). The follow-up perception/data task is
+TASK-059.
 %% mc-links: [[TASK-056]] %%
