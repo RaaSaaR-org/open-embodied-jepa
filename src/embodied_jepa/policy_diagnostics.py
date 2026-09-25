@@ -279,6 +279,18 @@ def palm_apple_distance(robot) -> float:
     return float(np.linalg.norm(palm - np.asarray(truth["object_position"], float)))
 
 
+def _plain(value):
+    return float(value) if isinstance(value, (float, np.floating)) else value
+
+
+def _flag(value):
+    return None if value is None else bool(value)
+
+
+def _number(value):
+    return None if value is None else float(value)
+
+
 def _stage(score) -> str:
     return next(
         (s for s in ("release", "place", "transport", "grasp", "reach") if score.get(s)), "none"
@@ -298,12 +310,18 @@ def run_diagnostic_attempt(
     deadline_seconds: float,
     shadow: ShadowExpert,
     trace: bool = True,
+    attempt_wall_seconds: float | None = None,
 ):
     """One closed-loop attempt under one configuration. Mirrors ``evaluate_policy.run_attempt``.
 
     Order per step: observe -> ``controller.act`` -> shadow expert (strictly after) ->
     substitution -> configured-bounds clip -> the embodiment's unchanged projection -> execute ->
     advance both -> score.
+
+    Every trace row also records the scorer's per-step ``hand_contact``, ``object_height_m`` and
+    ``dropped`` AFTER the step's command (scoring-only truth; never a controller input), so contact
+    and lift are measured per step and not only at the end. ``attempt_wall_seconds`` ends an
+    attempt that has run longer than the protocol's per-attempt cap as ``attempt_wall_cap``.
     """
     if configuration not in CONFIGURATIONS:
         raise ContractError(f"unknown configuration {configuration!r}")
@@ -311,6 +329,7 @@ def run_diagnostic_attempt(
     reason, score, executed, clipped_commands = "step_limit", {}, 0, 0
     first_command, first_expert = None, None
     rows, control_times, departures = [], [], []
+    attempt_began = time.perf_counter()
     try:
         for step in range(max_steps):
             began = time.perf_counter()
@@ -370,11 +389,24 @@ def run_diagnostic_attempt(
             shadow.advance(result)
             controller.advance(result)
             score = scorer.evaluate()
+            if trace:
+                rows[-1]["after"] = {
+                    "hand_contact": _flag(score.get("hand_contact")),
+                    "object_height_m": _number(score.get("object_height_m")),
+                    "dropped": _flag(score.get("dropped")),
+                    "stage": _stage(score),
+                }
             if score.get("success", False):
                 reason = "success"
                 break
             if control_times[-1] > deadline_seconds:
                 reason = "deadline_miss"
+                break
+            if (
+                attempt_wall_seconds is not None
+                and time.perf_counter() - attempt_began > attempt_wall_seconds
+            ):
+                reason = "attempt_wall_cap"
                 break
     except BaseException:
         reason = "error"
@@ -394,7 +426,10 @@ def run_diagnostic_attempt(
         "first_shadow_expert": None if first_expert is None else [float(v) for v in first_expert],
         "departures": departures,
         "trace": rows if trace else None,
-        "score": {k: (bool(v) if isinstance(v, (bool, np.bool_)) else v) for k, v in score.items()},
+        "score": {
+            k: (bool(v) if isinstance(v, (bool, np.bool_)) else _plain(v)) for k, v in score.items()
+        },
+        "elapsed_seconds": time.perf_counter() - attempt_began,
         "grasp": bool(score.get("grasp", False)),
         "success": bool(score.get("success", False)),
         "median_control_seconds": float(np.median(control_times)) if control_times else None,
