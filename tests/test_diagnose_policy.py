@@ -420,8 +420,13 @@ class _Stages:
         return out
 
 
-def _pipeline():
-    return lambda: {a: {"failed": False, "rows": []} for a in ARMS}
+def _pipeline(order=None):
+    def fn():
+        if order is not None:
+            order.append("D1-pipeline")
+        return {a: {"failed": False, "rows": []} for a in ARMS}
+
+    return fn
 
 
 def _conduct(stages, pipeline=None, report=None):
@@ -438,9 +443,11 @@ def _conduct(stages, pipeline=None, report=None):
 
 
 def test_stage_order_is_the_preregistered_one():
-    report, stages = _conduct(_Stages())
+    stages = _Stages()
+    report, stages = _conduct(stages, pipeline=_pipeline(stages.order))
     expected = [
         "B3-A2-full",
+        "D1-pipeline",
         "B1-scripted_oracle",
         "B1-hold",
         "B1-random",
@@ -474,6 +481,7 @@ def test_a_cap_stop_during_d3_is_void_not_a_g_sub_failure():
     with pytest.raises(R.GlobalCap):
         _conduct(_Stages(raise_at="D3-A2-dz"), report=report)
     assert report["outcome"] == "V" and "amendment 2" in report["status"]
+    assert report["stop"]["kind"] == "global_cap" and report["stop"]["traceback"]
     assert "gates" not in report and not report["decision"].get("claims_the_exemption")
     assert report["decision"]["outcome"] == "V"
 
@@ -486,6 +494,35 @@ def test_a_crash_is_void_and_still_raises():
     with pytest.raises(RuntimeError):
         _conduct(_Stages(), pipeline=crash, report=report)
     assert report["outcome"] == "V" and "renderer died" in report["decision"]["void_reason"]
+    assert report["stop"]["kind"] == "exception" and report["stop"]["valid_void"]
+    assert (
+        "Traceback" in report["stop"]["traceback"]
+        and "renderer died" in report["stop"]["traceback"]
+    )
+    assert "def crash" in report["stop"]["traceback"] or "crash" in report["stop"]["traceback"]
+
+
+def test_an_interruption_is_flagged_as_a_process_violation_not_a_valid_void():
+    def interrupt():
+        raise KeyboardInterrupt
+
+    report = {"stages": {}, "status": "running"}
+    with pytest.raises(KeyboardInterrupt):
+        _conduct(_Stages(), pipeline=interrupt, report=report)
+    assert report["outcome"] == "V" and report["stop"]["kind"] == "interrupted"
+    assert report["stop"]["valid_void"] is False and "process violation" in report["status"]
+
+
+def test_a_crash_in_gate_evaluation_is_void(monkeypatch):
+    def broken(report, manifest, arms):
+        raise ValueError("bad gate")
+
+    monkeypatch.setattr(R, "evaluate_gates", broken)
+    report = {"stages": {}, "status": "running"}
+    with pytest.raises(ValueError):
+        _conduct(_Stages(), report=report)
+    assert report["outcome"] == "V" and report["stop"]["during"] == "gate evaluation"
+    assert "gates" not in report
 
 
 def test_a_completed_run_with_a_missing_quantity_fails_that_gate():

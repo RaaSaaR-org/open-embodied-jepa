@@ -1,4 +1,4 @@
-"""TASK-057 diagnostic run: ``apple_policy_diagnostics_v1`` as amended by amendment 1.
+"""TASK-057 diagnostic run: ``apple_policy_diagnostics_v1`` as amended by amendments 1 and 2.
 
 Runs, in the preregistered order, and stops at the first voiding control:
 
@@ -31,6 +31,7 @@ import importlib.util
 import json
 import sys
 import time
+import traceback
 from pathlib import Path
 
 import numpy as np
@@ -42,7 +43,7 @@ from embodied_jepa import policy_diagnostics as pd  # noqa: E402
 from embodied_jepa.contracts import ContractError  # noqa: E402
 
 PROTOCOL = "apple_policy_diagnostics_v1"
-AMENDMENT = 1
+AMENDMENTS = (1, 2)
 TASK = "TASK-057"
 MANIFEST = ROOT / "benchmarks" / "manifests" / "apple-policy-diagnostics-v1.json"
 CONFIG = ROOT / "configs" / "apple_policy_v1.yaml"
@@ -645,25 +646,55 @@ def conduct(report, manifest, *, attempts_for, controllers, d1_pipeline_fn, b2_r
         report["status"] = f"void: voiding control {error} failed"
         return report
     except BaseException as error:
-        stop(report, f"{type(error).__name__}: {error}")
+        stop(report, error)
         raise
     try:
         evaluate_gates(report, manifest, arms)
     except BaseException as error:
-        stop(report, f"gate evaluation crashed: {type(error).__name__}: {error}")
+        stop(report, error, during="gate evaluation")
         raise
     report["outcome"] = report["decision"]["outcome"]
     return report
 
 
-def stop(report, reason):
-    """Amendment 2: a run stopped before evaluation is VOID, never a bare 'stopped'."""
+def stop(report, error, during="stages"):
+    """Amendment 2: a run stopped before evaluation is VOID, never a bare 'stopped'.
+
+    The stop reason is recorded BY THE RUNNER: the exception, its full traceback (archived in
+    the report written with the partial results) and, for the global cap, the cap record. An
+    interrupt (KeyboardInterrupt / signal) is labelled ``interrupted``: amendment 2 makes an
+    agent-initiated interruption a process violation reported to the owner, not a valid void.
+    """
+    interrupted = isinstance(error, KeyboardInterrupt | SystemExit)
+    kind = (
+        "global_cap"
+        if isinstance(error, GlobalCap)
+        else ("interrupted" if interrupted else "exception")
+    )
+    reason = f"{type(error).__name__}: {error}"
     report.pop("gates", None)
     report["decision"] = decide(
         void=True, d1_failed={}, grasp_counts={}, g_sub_passed=False, exemption_spent=None
-    ) | {"void_reason": f"stopped before every control and gate was evaluated: {reason}"}
+    ) | {
+        "void_reason": f"stopped during {during} before every control and gate was evaluated: "
+        f"{reason}"
+    }
     report["outcome"] = "V"
-    report["status"] = "void: stopped before evaluation (amendment 2)"
+    report["stop"] = {
+        "kind": kind,
+        "during": during,
+        "reason": reason,
+        "traceback": "".join(traceback.format_exception(error)),
+        "valid_void": not interrupted,
+        "note": "an interruption is a process violation reported to the owner, not a valid void"
+        if interrupted
+        else "stop recorded by the runner (amendment 2)",
+    }
+    report["status"] = (
+        "void: INTERRUPTED - process violation, report to the owner (amendment 2)"
+        if interrupted
+        else "void: stopped before evaluation (amendment 2)"
+    )
 
 
 #: Load-bearing inputs amendment 1 does not hash; recorded in the report (review of PR #45).
@@ -707,7 +738,7 @@ def run(output: Path):
     _cfg, _store, _settings, cameras = _open(CONFIG)
     report = {
         "protocol": PROTOCOL,
-        "amendment": AMENDMENT,
+        "amendments": list(AMENDMENTS),
         "task": TASK,
         "source": source,
         "device": DEVICE,
@@ -767,7 +798,7 @@ def run(output: Path):
         pass  # conduct() recorded outcome V with the stop reason (amendment 2)
     except BaseException as error:
         if report.get("outcome") != "V":  # e.g. a crash while loading the arms
-            stop(report, f"{type(error).__name__}: {error}")
+            stop(report, error)
         raise
     finally:
         report["elapsed_seconds"] = time.perf_counter() - started
