@@ -664,7 +664,7 @@
       }
     ],
     "void_on_stop": "A run that stops for ANY reason before every voiding control (B1, B2, B3) and every gate (D1-pipeline, D1-grasp count, G-SUB) has been evaluated is Outcome V (VOID). The abandonment clause does NOT fire; no gate counts as passed or failed; exemption_spent is untouched.",
-    "voiding_control_failure_unchanged": "B1, B2 or B3 evaluated and failed is Outcome V under section 7 as before; it is a completed evaluation, not a stop, and it counts as the run.",
+    "voiding_control_failure_unchanged": "B1, B2 or B3 evaluated and failed is Outcome V under section 7 as before; it is a completed evaluation, not a stop, and it gets NO repeat.",
     "why": "the protocol did not define the outcome of a run that stops (global cap, per-attempt cap cascade, crash, host failure) before its voiding controls and gates are evaluated; the missing-values rule read literally would fail G-SUB on a budget accident and could fire the abandonment clause. Found by the independent review of the probe runner (PR #45); decided by the task owner before any run."
   },
   "baselines": {

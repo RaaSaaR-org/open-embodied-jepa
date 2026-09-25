@@ -710,11 +710,10 @@ MPS/CPU only, Apple M5 Pro 48 GB. No training. No corpus decoding beyond §9's r
 | **Total** | | **≈ 3.5 h** |
 
 **Caps: 6 h global, 300 s per attempt, 1000 steps per attempt.** At the cap the task stops and
-reports what it has.
+reports what it has. The parent protocol's 28 800 s cap is not carried; each protocol freezes its
+own (`docs/RESOURCES.md`).
 
 > **Amended by Amendment 2 (§14, 2026-09-25).** "The task stops" at the **global** cap means the run is **void** (Outcome V), not failed. The 300 s per-attempt cap only ends that attempt.
- The parent protocol's 28 800 s cap is not carried; each protocol freezes its
-own (`docs/RESOURCES.md`).
 
 ---
 
