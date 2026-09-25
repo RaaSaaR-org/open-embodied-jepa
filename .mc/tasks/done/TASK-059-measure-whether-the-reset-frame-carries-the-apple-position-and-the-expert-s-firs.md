@@ -4,7 +4,7 @@ aliases:
 - TASK-059
 title: Measure whether the reset frame carries the apple position and the expert's first command
 slug: measure-whether-the-reset-frame-carries-the-apple-position-and-the-expert-s-firs
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -20,6 +20,7 @@ due_date: ''
 created: 2026-09-25
 updated: 2026-09-25
 ---
+
 
 
 
@@ -58,17 +59,40 @@ Manifest: `benchmarks/manifests/apple-info-ceiling-v1.json`.
   2026-09-25.
 
 ## Acceptance Criteria
-- [ ] The preregistration and manifest merge on an independent reviewer's reported APPROVE, before
+- [x] The preregistration and manifest merge on an independent reviewer's reported APPROVE, before
       any readout is fitted (PR 1).
-- [ ] Probe code merges with tests that exercise every guard in both directions (split, hashes,
+- [x] Probe code merges with tests that exercise every guard in both directions (split, hashes,
       render, expert, prior) and the resolution-equivalence checker (reported, not a guard), on a
       reported APPROVE (PR 2).
-- [ ] The gated run starts on the pre-run reviewer's reported verdict, with a clean tree and all
+- [x] The gated run starts on the pre-run reviewer's reported verdict, with a clean tree and all
       guards passing.
-- [ ] The results document states the outcome row, the numbers with CIs against their baselines,
+- [x] The results document states the outcome row, the numbers with CIs against their baselines,
       and every negative result, and recommends (does not choose) the next task (PR 3).
-- [ ] The test split, cohort D and cohort C are not touched.
+- [x] The test split, cohort D and cohort C are not touched.
 
 ## Notes
 - PR 1 also closes TASK-057 (results PR #47, `e840968`).
+
+## Results (2026-09-25)
+
+**Outcome O-OCC-NONE.** No decisional source (E0, A3, random, raw-112) succeeds, either on all
+190 roots or on the 79 visible ones. On the visible stratum no 112 px source beats the
+visibility-aware prior either:
+- raw-112 reaches a ratio of 0.964 [0.751, 1.207];
+- E0 reaches 2.067 cm, worse than the prior's 1.720 cm.
+
+So occlusion explains the occluded roots (111/190, behind `right_wrist_yaw_link`) but not the
+failure as a whole. E0 is worse than raw-112 (+0.296 cm [0.110, 0.475]) and better than the
+random encoder (−0.212 cm [−0.383, −0.045]).
+
+- **PRs.** Prereg #48 (`781664f`); probe #49 (`ccb8fd7`); run-1 void fix #52 (`b209740`). Each
+  merged on an independent reviewer's reported APPROVE, with green CI.
+- **Runs.** Run-1 was VOID: it crashed at serialisation and wrote no output. Run-2 was the
+  single permitted repeat: clean tree at `b209740`, CPU, 619 s. Its report sha256 is `9bff6c46…aac3`.
+- **Documents.** Results: `docs/experiments/apple_info_ceiling_v1_results.md`. Manifest:
+  `benchmarks/manifests/apple-info-ceiling-v1-results.json`.
+- **Recommended next task (the owner chooses).** A joint preregistered re-probe with this probe
+  frozen. It would cross two axes: look-first pose or motion (the apple is visible by step 9 on
+  the expert path), and apple pixel count (`overview` camera, higher-resolution or closer
+  camera). The named risk is that look-first alone may not suffice.
 %% mc-links: [[TASK-057]] %%
