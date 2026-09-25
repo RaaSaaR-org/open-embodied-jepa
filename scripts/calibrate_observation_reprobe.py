@@ -28,7 +28,7 @@ It measures:
   post-look targets, plus each arm's visibility-conditional mean.
 
     uv run --no-sync python scripts/calibrate_observation_reprobe.py \
-        --output outputs/task061-observation-reprobe/calibration.json
+        --output outputs/task061-observation-reprobe/calibration-v4.json
 """
 
 from __future__ import annotations
@@ -145,13 +145,23 @@ def png_roundtrip(frame: np.ndarray) -> np.ndarray:
         return np.asarray(image).copy()
 
 
+def warm_up(renderer, data, camera="onboard_rgb"):
+    """One discarded render. A fresh MuJoCo renderer's FIRST onboard render at 224 px differs
+    from every later render of the same state (1 pixel, 1 level); from the second render on it
+    is stable. Every renderer is warmed up once before any frame is kept."""
+    renderer.update_scene(data, camera=camera)
+    renderer.render()
+
+
 def make_robot(size):
     from embodied_jepa.embodiment import G1Embodiment
     from embodied_jepa.simulation import MuJoCoSimulation
 
-    return G1Embodiment(
+    robot = G1Embodiment(
         MuJoCoSimulation(object_kind="apple", container_kind="plate", width=size, height=size)
     )
+    robot.sim.render()  # creates the simulation's own renderer and warms it up
+    return robot
 
 
 class Segmenter:
@@ -166,6 +176,7 @@ class Segmenter:
         for n in sizes:
             renderer = mj.Renderer(robot.model, height=n, width=n)
             renderer.enable_segmentation_rendering()
+            warm_up(renderer, robot.sim.data)
             self.renderers[n] = renderer
 
     def count(self, size, camera="onboard_rgb"):
@@ -249,6 +260,20 @@ def hold_control(roots, steps):
     return np.asarray(moves)
 
 
+def model_settings(robot) -> dict:
+    """Render-relevant model facts: the MJCF the instance was built from, offscreen size and
+    anti-aliasing samples. The 112 and 224 px instances must agree on all of them."""
+    model = robot.model
+    return {
+        "scene_sha256": hashlib.sha256(robot.sim._scene().encode()).hexdigest(),
+        "offwidth": int(model.vis.global_.offwidth),
+        "offheight": int(model.vis.global_.offheight),
+        "offsamples": int(model.vis.quality.offsamples),
+        "shadowsize": int(model.vis.quality.shadowsize),
+        "render_size": [int(robot.sim.width), int(robot.sim.height)],
+    }
+
+
 def state_vector(robot):
     sim = robot.sim
     return np.concatenate((sim.data.qpos[sim.qadr], sim.data.qvel[sim.vadr])).astype(np.float64)
@@ -269,6 +294,8 @@ def measure_arms(roots, dataset, sequence):
         k: robots[k].mj.Renderer(robots[k].model, height=NATIVE, width=NATIVE)
         for k in ("112", "112_replica")
     }
+    for k, renderer in native.items():
+        warm_up(renderer, robots[k].sim.data)
     rows = []
     try:
         for root in roots:
@@ -284,6 +311,7 @@ def measure_arms(roots, dataset, sequence):
             overview = {
                 k: robots[k].sim.render(camera="overview").copy() for k in ("112", "112_replica")
             }
+            overview_again = robots["112"].sim.render(camera="overview").copy()
             n448 = {}
             for k, renderer in native.items():
                 renderer.update_scene(robots[k].sim.data, camera="onboard_rgb")
@@ -304,6 +332,7 @@ def measure_arms(roots, dataset, sequence):
             }
             applied = {k: execute_look(r, sequence) for k, r in robots.items()}
             post_obs = {k: r.observe().images["onboard_rgb"][0].copy() for k, r in robots.items()}
+            rerender = {k: robots[k].sim.render().copy() for k in ("112", "224")}
             post_truth = robots["112"].sim.task_truth()
             post_state = {k: state_vector(r) for k, r in robots.items()}
             expert_post = apple_collector_policy(truth).action(robots["112"])
@@ -373,6 +402,9 @@ def measure_arms(roots, dataset, sequence):
                             )
                         ),
                         "post_112_differs_from_reset": bool(not same(post_obs["112"], obs["112"])),
+                        "P4_post_112_rerender": bool(same(rerender["112"], post_obs["112"])),
+                        "P4_post_224_rerender": bool(same(rerender["224"], post_obs["224"])),
+                        "P4_overview_rerender": bool(same(overview_again, overview["112"])),
                     },
                 }
             )
@@ -431,6 +463,11 @@ def main() -> int:
     chosen = choose_look({n: c["visible_roots_by_k"] for n, c in candidates.items()}, len(roots))
     sequence = look_sequence(chosen["variant"], chosen["steps"])
     rows = measure_arms(roots, dataset, sequence)
+    settings = {}
+    for size in (SMALL, LARGE):
+        probe = make_robot(size)
+        settings[str(size)] = model_settings(probe)
+        probe.sim.close()
     hold_moves = hold_control(roots, chosen["steps"])
     look_moves = np.array([r["apple_move_m"] for r in rows])
 
@@ -531,6 +568,12 @@ def main() -> int:
         | {
             "physics_224_equals_112": int(sum(r["physics_224_equals_112"] for r in rows)),
             "roots": len(rows),
+            "model_settings": settings,
+            "P5_model_224_equals_112_except_render_size": all(
+                settings["224"][k] == settings["112"][k]
+                for k in settings["112"]
+                if k != "render_size"
+            ),
         },
         "prior_baselines": {
             "reset_targets": reset_priors,

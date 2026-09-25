@@ -37,9 +37,9 @@
    "T2": "accuracy with Wilson 95% interval (caveat: OOF predictions from 10 models, independence approximate)",
    "T3": "MAE with bootstrap CI; paired bootstrap ratio to constant-median-dx MAE",
    "bootstrap_indices": "for a set of n roots default_rng(5901).integers(0, n, (10000, n)), drawn within the set (strata resampled within themselves), shared by every source and baseline on that set",
-   "multiplicity": "not corrected; declared",
    "strata": "all; occluded (0 apple pixels at 112 px); visible (>= 1 pixel)",
-   "stratum_baseline_rule": "all-roots out-of-fold prediction restricted to the stratum, except the occlusion-conditional mean (fitted within the stratum)"
+   "stratum_baseline_rule": "all-roots out-of-fold prediction restricted to the stratum, except the occlusion-conditional mean (fitted within the stratum)",
+   "multiplicity": "TASK-059: not corrected; TASK-061: Holm, see multiplicity"
   },
   "seeds": {
    "bootstrap": 5901,
@@ -280,25 +280,36 @@
   "loader": "measure_policy_offline_conditionals.build_policy via probe_info_ceiling.encoder_features, CPU, inference=True",
   "E0": {
    "checkpoint": "checkpoints/task056-policy-v1/a2.pt",
-   "decisional": true,
    "dim": 128,
    "encoder_weights_sha256": "6590d51cf58cf1bead05231fed5d0bc0e07bf324c8165d3732905db8fc52de95",
-   "what": "image_features of the frozen E0 encoder as arm A2 uses it"
+   "what": "image_features of the frozen E0 encoder as arm A2 uses it",
+   "decisional_in": [
+    "L"
+   ],
+   "reported_in": [
+    "O"
+   ]
   },
   "A3": {
    "checkpoint": "checkpoints/task056-policy-v1/a3.pt",
-   "decisional": true,
    "dim": 128,
    "encoder_weights_sha256": "f631686368da65997ddaedd5d6b6e72c9fb9d0bf9a57df80ec73de9c1074f609",
-   "what": "image_features of arm A3's fine-tuned encoder"
+   "what": "image_features of arm A3's fine-tuned encoder",
+   "decisional_in": [],
+   "reported_in": [
+    "L"
+   ]
   },
   "random": {
    "checkpoint": "checkpoints/task056-policy-v1/a1.pt",
-   "decisional": true,
    "dim": 128,
    "encoder_weights_sha256": "cae0ad8880bab6cdf05bc47e40b4944a17d71abe150bb212bae1a5ad2159437b",
-   "role": "floor",
-   "what": "image_features of arm A1's frozen random-init encoder (same architecture, seed)"
+   "what": "image_features of arm A1's frozen random-init encoder (same architecture, seed)",
+   "decisional_in": [],
+   "reported_in": [
+    "L"
+   ],
+   "role": "B-rand floor qualifier for L-E0"
   },
   "E0_input_contract": "112x112 RGB from onboard_rgb; decisional only in arm L",
   "no_encoder_trained_or_fine_tuned": true
@@ -322,7 +333,7 @@
  },
  "multiplicity": {
   "method": "Holm step-down over the 4 decisional hypotheses, family-wise one-sided alpha 0.025",
-  "p_value": "p_h = max(p_T1, p_T2, p_T3); p_T1 = share of the 10000 paired resamples with median ratio to B-occ > 0.6; p_T3 = share with MAE ratio to B-const > 0.6; p_T2 = 1 - Phi((acc - p0)/sqrt(p0(1-p0)/n)), p0 = B-maj on the same roots; p_h = 1 if median > 1.5 cm or accuracy < 0.85",
+  "p_value": "p_h = max(p_T1, p_T2, p_T3); p_T1 = share of the 10000 paired resamples (ic.bootstrap_indices(190), seed 5901, the same draws as the percentile bars) with median ratio to B-occ > 0.6, a non-finite ratio counting as above; p_T3 = same for the MAE ratio to B-const; p_T2 = 1 - Phi((acc - p0)/sqrt(p0(1-p0)/n)), p0 = B-maj on the same roots, p_T2 = 1 if p0 is 0 or 1; p_h = 1 if median > 1.5 cm or accuracy < 0.85",
   "step_thresholds": [
    0.00625,
    0.008333333333333333,
@@ -346,10 +357,33 @@
  },
  "render_path_validation": {
   "role": "not a void guard; a failure makes that arm non-decisional; the Holm family is not shrunk",
-  "P0": "112 px onboard re-render at reset equals the stored frame (L)",
+  "P0": "112 px onboard re-render at reset equals the stored frame (L); a P0 failure is a G-render failure, hence V",
   "P1": "frame equals an independent replica instance's frame after the same reset and look (L, LH, O)",
-  "P2": "PNG encode/decode round trip unchanged (L, LH, O)",
+  "P2": "PNG encode/decode round trip unchanged; same PIL PNG encoding as data.py (L, LH, O)",
   "P3": "224 px instance joint state equals the 112 px instance's at reset and post-look (LH)",
+  "P4": "an immediate re-render of the arm's decision state equals the kept frame (L, LH, O)",
+  "P5": "112 and 224 px instances built from the same MJCF with the same offscreen buffer, offsamples and shadow size; only render size differs (LH)",
+  "required": {
+   "L": [
+    "P0",
+    "P1",
+    "P2",
+    "P4"
+   ],
+   "LH": [
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5"
+   ],
+   "O": [
+    "P1",
+    "P2",
+    "P4"
+   ]
+  },
+  "warm_up_rule": "every renderer (simulation's own, segmentation, native, ablation) renders once and discards the result before any frame is kept; a fresh renderer's first 224 px onboard render differs from later renders (1 px, 1 level), found while PR 2 was being written, before the freeze",
   "calibration_counts": {
    "reset_112_equals_stored": 190,
    "reset_112_replica": 190,
@@ -361,8 +395,36 @@
    "r448_u8_equals_stored": 0,
    "png_roundtrip": 190,
    "post_112_differs_from_reset": 190,
+   "P4_post_112_rerender": 190,
+   "P4_post_224_rerender": 190,
+   "P4_overview_rerender": 190,
    "physics_224_equals_112": 190,
-   "roots": 190
+   "roots": 190,
+   "model_settings": {
+    "112": {
+     "scene_sha256": "dd87175e0d60e0672a85c5aa10ae4b5e7b206dc00d2e8e7a3ef27d088e168f25",
+     "offwidth": 640,
+     "offheight": 480,
+     "offsamples": 4,
+     "shadowsize": 4096,
+     "render_size": [
+      112,
+      112
+     ]
+    },
+    "224": {
+     "scene_sha256": "dd87175e0d60e0672a85c5aa10ae4b5e7b206dc00d2e8e7a3ef27d088e168f25",
+     "offwidth": 640,
+     "offheight": 480,
+     "offsamples": 4,
+     "shadowsize": 4096,
+     "render_size": [
+      224,
+      224
+     ]
+    }
+   },
+   "P5_model_224_equals_112_except_render_size": true
   }
  },
  "guards_void_the_run": {
@@ -370,7 +432,7 @@
   "G_split": "exactly the plan's 190 train+val seeds, splits agree with the dataset manifest; refuse test ids, cohort C, cohort D, seeds outside 48000-48199; fold hash matches",
   "G_render": "112 px re-render byte-identical on 190/190; reset proprio max std <= 1e-6",
   "G_expert": "recomputed step-0 expert equals recorded label within 1e-6 on the 152 non-aim roots; apple label equals reset truth within 1e-6 m",
-  "G_look": "(a) executed sequence sha256 equals look_motion.sequence_sha256_float32_bytes; (b) in every instance applied == requested (max abs 0), identical across roots, no infeasible projection or rejection; (c) post-look joint state max abs spread across roots <= 1e-6; (d) apple xy and plate displacement during the look <= 1e-6 m, no hand-apple contact",
+  "G_look": "(a) executed sequence sha256 equals look_motion.sequence_sha256_float32_bytes; (b) in every instance applied == requested (max abs 0), identical across roots, no infeasible projection or rejection; (c) post-look joint state max abs spread across roots <= 1e-6; (d) after every look command on the 112 px instance: apple xy displacement from reset and plate displacement <= 1e-6 m, no hand-apple contact",
   "G_prior": "reset-target baselines equal the TASK-059 manifest and post-look baselines equal calibration.values.prior_baselines.post_look_targets, within 1e-9 on every key",
   "not_guards": "render-path validation (demotes an arm); the spurious check (blocks a pass)"
  },
@@ -411,6 +473,11 @@
    "next": "a hardware or camera design change, stated as such; no corpus collection on any tested observation"
   }
  ],
+ "reported_only_readings": {
+  "R": "quantisation does not explain the 448-down result if the paired bootstrap CI of median T1 difference R_u8 - R_float on the reset-visible stratum (compare_sources) contains 0",
+  "anchor_and_R_float": "expected to reproduce TASK-059's raw-112 and (v-b) results-manifest numbers exactly on the same machine; a mismatch changes no row, is reported as a caveat and escalated to the owner before the results document",
+  "H_T2_ceiling": "about 0.77 (109 occluded at 224 px)"
+ },
  "always_reported": "every hypothesis's numbers, p-values, Holm steps and spurious check; every source on every stratum; secondary train->val; reported-only sources; which further rows also match; qualifiers 'unadjusted only; not a pass' and 'partial information'",
  "void_rule": {
   "void": "any stop before a complete report (guard, crash, wall cap) is V; nothing in it is read",
@@ -436,7 +503,7 @@
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
   "data/apple-wide-v1/meta/jepa_manifest.json": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
   "scripts/calibrate_info_ceiling.py": "de8818ae9479033ae3dddc240b90f3a95b22ca2eb2c081fa0b62adde286c7aa3",
-  "scripts/calibrate_observation_reprobe.py": "8dc26257e663d58c23fbd2cddcdd3b56e44d8456f5944c344e98b47746e21543",
+  "scripts/calibrate_observation_reprobe.py": "1b3c593007320879235894479cb79f3035172299199a810096466c2ab89d4f74",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
   "scripts/measure_policy_offline_conditionals.py": "0e88ec4692d612358de0cb8bb0f2fed471dd7c23cf0abc91925a6212b6143144",
   "scripts/probe_info_ceiling.py": "f64b01a1db02b5e82540d9b941fe4508d509287a0a82a8d90204fcda83b21dd2",
@@ -449,12 +516,14 @@
  },
  "calibration": {
   "script": "scripts/calibrate_observation_reprobe.py",
-  "artifact": "outputs/task061-observation-reprobe/calibration-v2.json",
-  "artifact_sha256": "bfb55fa4e28d74a7fb09371c2fbe1d8e493e7aab528b1a527470b223bca73ae2",
+  "artifact": "outputs/task061-observation-reprobe/calibration-v4.json",
+  "artifact_sha256": "c04325dc94005987825ca7242720998fbd7de7e8db1869e826e4aec3588d64ef",
   "superseded": {
    "outputs/task061-observation-reprobe/calibration-draft-1.json": "6cabd9a854b028ea6d6a5d9c47a50e04261a72833914cdc9b44e2c47fa4eb165",
    "outputs/task061-observation-reprobe/calibration.json": "a554c1ceb24aa612cf3236acf1eba6fb78a2fd8a7579ff2aac7ec93ff56675e9",
-   "note": "earlier script versions; draft reported 3-D apple displacement, v1 lacked the hold control; every shared value identical except elapsed time"
+   "outputs/task061-observation-reprobe/calibration-v2.json": "bfb55fa4e28d74a7fb09371c2fbe1d8e493e7aab528b1a527470b223bca73ae2",
+   "outputs/task061-observation-reprobe/calibration-v3.json": "7fbe79cd94a53dcb097d6434d90b0bc425527f374631600f2c6385a830e474fe",
+   "note": "earlier script versions: draft reported 3-D apple displacement; v1 lacked the hold control; v2 (first review) lacked renderer warm-up and P4; v3 lacked P5; every shared value identical except elapsed time"
   },
   "fits_nothing": true,
   "prior_baselines_disclosure": "prior-only baselines need the expert's post-look command (a simulation fact); they read no observation and fit nothing, as in TASK-059",
@@ -652,8 +721,36 @@
     "r448_u8_equals_stored": 0,
     "png_roundtrip": 190,
     "post_112_differs_from_reset": 190,
+    "P4_post_112_rerender": 190,
+    "P4_post_224_rerender": 190,
+    "P4_overview_rerender": 190,
     "physics_224_equals_112": 190,
-    "roots": 190
+    "roots": 190,
+    "model_settings": {
+     "112": {
+      "scene_sha256": "dd87175e0d60e0672a85c5aa10ae4b5e7b206dc00d2e8e7a3ef27d088e168f25",
+      "offwidth": 640,
+      "offheight": 480,
+      "offsamples": 4,
+      "shadowsize": 4096,
+      "render_size": [
+       112,
+       112
+      ]
+     },
+     "224": {
+      "scene_sha256": "dd87175e0d60e0672a85c5aa10ae4b5e7b206dc00d2e8e7a3ef27d088e168f25",
+      "offwidth": 640,
+      "offheight": 480,
+      "offsamples": 4,
+      "shadowsize": 4096,
+      "render_size": [
+       224,
+       224
+      ]
+     }
+    },
+    "P5_model_224_equals_112_except_render_size": true
    },
    "prior_baselines": {
     "reset_targets": {

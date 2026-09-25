@@ -121,8 +121,9 @@ reproduces the table.
   ones (max |Δ| = 0.0). No projection was infeasible and no command was rejected.
 - **The robot state after the look is identical on every root** (maximum absolute spread 0.0).
   So proprioception still carries no reset information, and a clock reads 8 on every root.
-- **The look does not touch the apple or the plate.** Apple xy moves by at most 1.5e-15 m. The
-  plate does not move. No hand–apple contact. The apple settles 3.37 mm in z under gravity on
+- **The look does not move the apple or the plate.** Apple xy moves by at most 1.5e-15 m. The
+  plate does not move. There is no hand–apple contact after the look. (The calibration checks
+  contact only at the end; the run checks it after every look command, §9.) The apple settles 3.37 mm in z under gravity on
   every root. A hold control (the same 8 steps with a zero arm command) moves the apple
   identically (look − hold = 0.0 m on every root), so the settling is not the look's doing. T1
   therefore stays the reset apple xy.
@@ -156,14 +157,21 @@ from the `onboard_rgb` camera.
 
 - **H (224 px at reset).** The wrist still hides the apple on **109/190** roots at 224 px (106 at
   448 px). TASK-059 §2.3 applies: with the occluded roots at the majority prior, T2 cannot reach
-  0.85 overall (the ceiling is 0.768). Spending a Holm step on an arm that cannot pass would only
+  0.85 overall (the ceiling is about 0.77, TASK-059's 0.768 recomputed for 109 occluded roots). Spending a Holm step on an arm that cannot pass would only
   cost the others power. Its visible-stratum numbers are reported as the resolution-only
   comparison with TASK-059.
-- **R (448↓).** Neither variant is a render path that a robot observation would use. R-float
-  exactly repeats TASK-059's source (v-b), and a matching value confirms the reuse. R-u8 rounds it
-  to uint8, as a stored frame would be. The pair tests TASK-059 §6.3's quantisation confound.
-  Declared reading: if R-u8's visible-stratum T1 is within its own CI of R-float's, quantisation
-  does not explain the 448↓ result. **It gates nothing.**
+- **R (448↓).** Neither variant is a render path that a robot observation would use.
+  - R-u8 rounds R-float to uint8, as a stored frame would be. The pair tests TASK-059 §6.3's
+    quantisation confound.
+  - Declared reading: if the paired bootstrap CI of the median T1 difference R-u8 − R-float on
+    the reset-visible stratum (`compare_sources`) contains 0, quantisation does not explain the
+    448↓ result. **It gates nothing.**
+- **Anchor and R-float repeat TASK-059 sources.** The anchor repeats raw-112 and R-float repeats
+  (v-b), on the same roots, targets, folds and code. They are expected to reproduce TASK-059's
+  results-manifest numbers exactly on the same machine.
+  - Both are reported only.
+  - A mismatch changes no row. It is reported as a caveat and escalated to the task owner before
+    the results document is written, because it would mean the reuse is not what §2 claims.
 
 ### 3.4 Not tested, declared
 
@@ -199,23 +207,54 @@ Post-look target facts (calibration):
 
 The 224 px instance computes the identical post-look command on 190/190 roots.
 
+**T4's derived dx sign** at the post-look state is the expert's command at the post-look pose
+(palm x 0.31755 m) for an apple at the *predicted* xy; at reset it is TASK-059's.
+
 ## 5. Render-path validation (not a guard: a failed arm becomes non-decisional)
 
 TASK-059 validated its 112 px path by showing that a re-render reproduces the stored training
 frame byte for byte. The post-look, 224 px and overview frames have no stored counterpart. So
 this protocol validates that **the probe's frame is the frame the robot's own observation path
-produces**, and that it is reproducible:
+produces**, and that it is reproducible.
+
+**What the checks can and cannot show.**
+- The frames come from the stored-frame pipeline by construction: `G1Embodiment.observe()` →
+  `MuJoCoSimulation.render()` on one `mujoco.Renderer`, at another size or camera.
+- P5 checks that the instances differ in nothing else.
+- P1, P2 and P4 can fail only through nondeterminism or dependence on render history. They are
+  determinism checks.
+
+**An unforeseen rendering fact (found while PR 2 was being written, before this document froze).**
+A freshly created MuJoCo renderer's **first** onboard render at 224 px differs from every later
+render of the same state: 1 pixel, by 1 level. From the second render on it is stable. At 112 px
+no difference was seen.
+- A replica comparison cannot see this effect, because both instances' first renders shift
+  alike.
+- Rule: **every renderer (the simulation's own, segmentation, native and ablation) renders once
+  and discards the result before any frame is kept.**
+- P4 then checks, on every root, that re-rendering each arm's decision state reproduces its frame.
+
+The checks:
 
 | check | what | calibration |
 |---|---|---|
 | P0 | 112 px onboard re-render at reset equals the stored frame (TASK-059 G-render) | 190/190 |
 | P1 | each arm's frame equals the frame from an independent replica simulation that performed the same reset and look, byte for byte. Onboard frames come from `G1Embodiment.observe()` of a `MuJoCoSimulation` at that size; `overview` comes from `MuJoCoSimulation.render(camera="overview")` | L 190/190, LH 190/190, O 190/190, H 190/190, R-u8 190/190 |
-| P2 | the frame survives the dataset's PNG encode/decode (`data.py`) unchanged | 190/190 |
+| P2 | the frame survives a PNG encode/decode unchanged. This is the same PIL PNG encoding as `data.py` uses (re-implemented, not called) | 190/190 |
 | P3 | the 224 px instance's joint state equals the 112 px instance's exactly, at reset and after the look (resolution does not touch physics) | 190/190 |
+| P4 | an immediate re-render of the arm's decision state, through the same path, equals the kept frame (independent of render history) | L 190/190, LH 190/190, O 190/190 |
+| P5 | the 112 and 224 px instances are built from the same MJCF, with the same offscreen buffer (640 × 480), anti-aliasing samples (4) and shadow map size; only the render size differs | holds |
 
 **Consequence, fixed now.** An arm is decisional only if every applicable check holds on 190/190
-in the run: P0 for L, P1 and P2 for L, LH and O, and P3 for LH. If one fails, that arm's
-hypotheses are recorded as **non-decisional (render path not validated)** and cannot pass.
+in the run:
+- L: P0, P1, P2 and P4;
+- LH: P1, P2, P3, P4 and P5;
+- O: P1, P2 and P4.
+
+If one fails, that arm's hypotheses are recorded as **non-decisional (render path not
+validated)** and cannot pass.
+- **P0 is also G-render.** A P0 failure is therefore a G-render failure, and the run is V
+  (§9, which comes first).
 - The Holm family is **not** shrunk. A failed validation costs power; it never buys it.
 - R-u8 is not byte-identical to the stored frame (0/190, as TASK-059 found). That is why R is
   reported only.
@@ -272,7 +311,11 @@ the following hold:
      - p_T1 = the share of the 10 000 paired resamples whose median ratio to B-occ exceeds 0.6;
      - p_T3 = the share whose MAE ratio to B-const exceeds 0.6;
      - p_T2 = 1 − Φ(z), with z = (acc − p₀) / √(p₀(1 − p₀)/n) and p₀ = B-maj on the same roots.
-       This is the score test that the Wilson interval inverts.
+       This is the score test that the Wilson interval inverts. If p₀ is 0 or 1, p_T2 = 1 (never
+       passes).
+   - p_T1 and p_T3 use **the same draws as the percentile bars**: `ic.bootstrap_indices(190)`
+     (seed 5901) and the same median/mean statistics. A resample whose ratio is non-finite (a
+     zero baseline) counts as exceeding 0.6, matching `paired_ratio`'s largest-float rule.
    - If the point conditions fail (median > 1.5 cm or accuracy < 0.85), p_h = 1.
    - Sort p_h ascending; ties go to the listed order L-raw, L-E0, LH-raw, O-raw. The j-th
      hypothesis is rejected if every p up to it is ≤ 0.025 / (4 − j + 1). The thresholds are
@@ -337,7 +380,7 @@ a next task and does not choose it.
 | **G-split** | Exactly the plan's 190 train + val roots, with splits that agree with the dataset manifest. Test ids, cohort C, cohort D and seeds outside 48000–48199 are refused. The fold hash matches. |
 | **G-render** | The 112 px re-render at reset is byte-identical to the stored frame on 190/190, and the maximum std of reset proprioception is ≤ 1e-6. |
 | **G-expert** | The recomputed reset expert equals the recorded step-0 label within 1e-6 on the 152 non-aim roots, and the apple label equals the reset truth within 1e-6 m. |
-| **G-look** | (a) The executed sequence's sha256 equals the manifest's. (b) On every root, in every simulation instance, the applied commands equal the requested ones (max abs 0) and are identical across roots; no projection is infeasible and no command is rejected. (c) The post-look joint state's maximum absolute spread across roots is ≤ 1e-6. (d) Apple xy displacement ≤ 1e-6 m and plate displacement ≤ 1e-6 m during the look, with no hand–apple contact. |
+| **G-look** | (a) The executed sequence's sha256 equals the manifest's. (b) On every root, in every simulation instance, the applied commands equal the requested ones (max abs 0) and are identical across roots; no projection is infeasible and no command is rejected. (c) The post-look joint state's maximum absolute spread across roots is ≤ 1e-6. (d) **After every look command**, on the 112 px instance: apple xy displacement from reset ≤ 1e-6 m, plate displacement ≤ 1e-6 m, and no hand–apple contact. |
 | **G-prior** | The reset-target baselines equal TASK-059's manifest, and the post-look baselines equal this manifest's calibration, each within 1e-9 on every key. |
 
 Render-path validation (§5) is **not** a void guard; it demotes an arm.
@@ -388,18 +431,21 @@ Render-path validation (§5) is **not** a void guard; it demotes an arm.
 ## 12. Pre-freeze calibration (fits nothing)
 
 `uv run --no-sync python scripts/calibrate_observation_reprobe.py --output
-outputs/task061-observation-reprobe/calibration-v2.json` (sha256 in the manifest; about 275 s on
+outputs/task061-observation-reprobe/calibration-v4.json` (sha256 in the manifest; about 280 s on
 CPU).
 
 - **What it reads.** It opens only the 190 train + val episode files, each after its sha256
   check, and constructs no `DatasetStore`.
 - **What it computes.** Visibility, pixel counts, render-path checks, the look facts, the targets
   and the prior-only baselines. It fits no readout.
-- **Superseded artifacts.** Two earlier versions of the script wrote
-  `calibration-draft-1.json` and `calibration.json`, and both are kept.
+- **Superseded artifacts.** Earlier versions of the script wrote `calibration-draft-1.json`,
+  `calibration.json`, `calibration-v2.json` and `calibration-v3.json`. All are kept, and their
+  hashes are in the manifest.
   - The draft reported apple displacement as one 3-D number (3.37 mm). It was then split into xy
     (1.5e-15 m) and z-settling.
   - v1 lacked the hold control of §3.1.
+  - v2 lacked the renderer warm-up and P4 (§5). v2 was the version under the first review.
+  - v3 lacked P5.
   - Every value the versions share is identical, apart from elapsed time.
 - **Disclosure: the prior baselines.** The brief limited pre-freeze calibration to rendering facts.
   The prior-only baselines also need the expert's post-look command, a simulation fact. They read
