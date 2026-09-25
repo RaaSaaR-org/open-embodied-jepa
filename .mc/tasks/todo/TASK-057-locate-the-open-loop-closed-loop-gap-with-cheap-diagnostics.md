@@ -89,3 +89,21 @@ The whole-document sweep and a blind-predictor check of every absolute threshold
 
 Protocol §13 and `amendment_1` in the manifest have the details.
 `exemption_spent` stays false. Numbers: `scripts/calibrate_policy_diagnostics.py`.
+
+## Phase B: probe runner (2026-09-25)
+
+Amendment 1 merged in PR #44 (`56194a5`). The runner is `scripts/diagnose_policy.py`. It runs
+the stages in the amended order: B3, D1-pipeline, B1, the arms with nothing substituted (A2 first,
+since that run is also B2), then D3. After that it evaluates every gate and the decision table.
+
+- **Device:** CPU.
+- **Inputs:** it refuses to run if any hashed input differs from the amendment's record.
+- **Seeds:** development resets go only through `evaluate_policy.cohort_resets`. D1-pipeline
+  has its own whitelist of 15 val roots.
+- **Manifest:** the runner never writes to it.
+
+The harness now records `hand_contact`, apple height and `dropped` after every step, and it
+enforces the 300 s per-attempt cap.
+
+`--smoke` checks the wiring on train root 48000 only. It confirmed that `full` commands match
+`scripted_oracle` exactly and that the oracle's departure is 0.
