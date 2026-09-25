@@ -63,6 +63,29 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-25 — the behaviour-cloning abandonment clause fired (TASK-057)
+
+**Decision.** This applies the clause that `apple_policy_v1.md` §7 pre-declared and
+`apple_policy_diagnostics_v1.md` §5.1 wired to G-SUB. Its consequence applies as written:
+- **Behaviour cloning as the control line stops on this corpus (`apple-wide-v1`) and this camera
+  (112 px onboard).** No further loss, head or output-parameterisation variant is preregistered
+  on it.
+- The next task is a perception/data task. The task owner selects it; the executing agent does
+  not.
+- Cohort C remains unconsumed, and `exemption_spent` remains `false`.
+
+The product goal is unchanged: LeWM on G1 + dual Dex3. So are the LeWM backend, the encoder and
+the backend-swap invariant.
+
+**Evidence.** [apple_policy_diagnostics_v1_results.md](experiments/apple_policy_diagnostics_v1_results.md),
+with manifest `benchmarks/manifests/apple-policy-diagnostics-v1-results.json`.
+- B1, B2 and B3 passed. B3 reached 16/16. B2 reproduced TASK-056's A2 report exactly.
+- D1-pipeline passed for all four arms: the observations were byte-identical and the state
+  difference was 0.0. D1-grasp fired for none. So clause (a) does not hold.
+- G-SUB failed. The best candidate reached 1/16, against thresholds of 8–12. With a learned
+  complement, every candidate scored below the same substitution with a clock-only complement.
+- The result is Outcome X.
+
 ## Decision 2026-09-24 — abandon CEM over this world-model cost as the primary control line (TASK-054)
 
 **Decision.** Sampling-based planning (CEM/MPC) over the learned world model's cost is

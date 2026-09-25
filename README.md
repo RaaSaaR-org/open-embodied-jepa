@@ -26,6 +26,16 @@ and remain usable. The product goal — LeWM on G1 + dual Dex3 — is unchanged;
 control formulation changed. The decision and its evidence are recorded in
 [docs/DECISIONS.md](docs/DECISIONS.md).
 
+**The behaviour-cloning line has also hit its abandonment clause (TASK-057, 2026-09-25).**
+The preregistered [policy diagnostics](docs/experiments/apple_policy_diagnostics_v1_results.md)
+ran with every control passing. They found that the controller's observation matches the
+training observation exactly. No single expert-substituted command channel rescues the cloned
+policy: the best channel reached 1/16, against thresholds of 8–12. The clause therefore fired.
+**BC on this corpus and this camera stops**, and the next task is a perception/data task, chosen
+by the task owner. The learned arms fail mostly before reaching the apple. On 61 of 64 attempts
+the palm never got 1 cm closer to the apple than at reset. On the two attempts that did grasp,
+the hand held the apple throughout and never carried it to the plate.
+
 **What is demonstrated.** These are software properties and offline properties of
 checkpoints on recorded validation data — none of them is a manipulation result.
 

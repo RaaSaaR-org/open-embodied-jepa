@@ -4,7 +4,7 @@ aliases:
 - TASK-057
 title: Locate the open-loop/closed-loop gap with cheap diagnostics on the development cohort
 slug: locate-the-open-loop-closed-loop-gap-with-cheap-diagnostics
-status: in-progress
+status: review
 priority: 1
 owner: ''
 projects: []
@@ -20,6 +20,7 @@ due_date: ''
 created: 2026-09-24
 updated: 2026-09-25
 ---
+
 
 
 
@@ -67,8 +68,6 @@ Manifest: `benchmarks/manifests/apple-policy-diagnostics-v1.json`.
   numbers from reading.
 - Cohort C (45300–45339) is not simulated at any stage.
 - If G-SUB fails, the abandonment clause fires as written and the line stops.
-%% mc-links: [[TASK-056]] %%
-
 ## Amendment 1 (2026-09-25, pre-run)
 
 The merged preregistration named the wrong shadow expert: plain `OracleManipulationPolicy`
@@ -107,3 +106,33 @@ enforces the 300 s per-attempt cap.
 
 `--smoke` checks the wiring on train root 48000 only. It confirmed that `full` commands match
 `scripted_oracle` exactly and that the oracle's departure is 0.
+
+## Phase C and D: run and results (2026-09-25)
+
+Amendment 2 merged in PR #46 (`82eafa9`) and the runner in PR #45 (`e9f4670`), each on its
+reviewer's reported APPROVE. The pre-run reviewer reported APPROVE at `e9f4670`.
+
+The gated run took 46.5 min on CPU from a clean tree. Output is in
+`outputs/task057-diagnostics/run-1`; hashes are in
+`benchmarks/manifests/apple-policy-diagnostics-v1-results.json`.
+
+**Outcome X. The abandonment clause fired.**
+- The controls all passed: B3 16/16, B1 16/16 (hold and random 0), and B2 reproduced exactly.
+- D1-pipeline passed for all four arms and D1-grasp fired for none, so clause (a) does not hold.
+- G-SUB failed: the best candidate reached 1/16, against thresholds of 8–12.
+
+Where it breaks:
+- **Approach.** On 61/64 attempts the arm never gets 1 cm closer to the apple than at reset.
+- **Carry, on the 2 grasping attempts.** The hand holds the apple on every step after the grasp
+  but never moves it toward the plate.
+
+`exemption_spent` stays false. Results are in `docs/experiments/apple_policy_diagnostics_v1_results.md`.
+
+Acceptance:
+- The prereg merged on a reported APPROVE.
+- The diagnostics ran before any edit to `policy.py`.
+- B1, B2 and B3 passed, with B3 first.
+- D1, D1-grasp, D2 and G-SUB are reported.
+- Cohort C was not simulated.
+- The abandonment clause fired as written.
+%% mc-links: [[TASK-056]] %%
