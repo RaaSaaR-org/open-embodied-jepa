@@ -45,7 +45,7 @@ manifest. §2–§5 hold the numbers; §6–§7 hold the reading.
 | environment | macOS-26.5.1-arm64, Python 3.12.13, NumPy 2.5.3, torch 2.14.0, MuJoCo 3.13.0, **CPU** |
 | budget | 2 h cap; **619 s** elapsed; peak RSS 4.08 GB |
 | report | `outputs/task059-info-ceiling/run-2/report.json`, sha256 `9bff6c46cdffb0d5024cffd3a836fb2c215c84f8a34b0f2f033f693f5cb6aac3` |
-| guards | **all passed**: G-hash (18 inputs, every episode file, encoder digests E0 `6590d51c…`, A3 `f6316863…`, random `cae0ad88…`), G-split, G-render (190/190 byte-identical, reset-state std 0), G-expert (152 non-aim roots), G-prior (every preregistered baseline within 1e-9) |
+| guards | **all passed**: G-hash (18 inputs, every episode file, encoder digests E0 `6590d51c…`, A3 `f6316863…`, random `cae0ad88…`), G-split, G-render (190/190 byte-identical; reset-state std ≤ 1e-6 by the guard, 0.0 in the calibration), G-expert (152 non-aim roots), G-prior (every preregistered baseline within 1e-9) |
 | fold assignment | `1dcc9086…c9b172a`, as preregistered |
 | `non_finite_fields` | none |
 | zero baselines | only in the **reported-only** T4 dy ratio on occluded roots, where every dy is −0.4, so the constant is exact and the ratio is null. **No decisional baseline was zero.** |
@@ -107,6 +107,8 @@ The §10 ruling, **verbatim** from the PR #49 description:
 >   conservative; it is not a finding about the readout.
 > - **Follow-up.** An apple-only shadow ablation may be proposed as follow-up in PR 3, if the
 >   results make it matter.
+
+(The PR #49 body's next paragraph, on how the code applies the ruling, is omitted here.)
 
 In run-2 **no decisional source beat the prior on occluded resets**, so the §10 check was not
 triggered and neither re-render was read out. So none of the ruling's limitations touch this
@@ -170,7 +172,7 @@ no source beats the prior on any stratum.
 | A3 − random | −0.390 [−0.557, −0.258] cm | −0.677 [−1.154, −0.426] cm |
 | random − raw-112 | +0.508 [0.320, 0.713] cm | +0.915 [0.573, 1.212] cm |
 
-The exact McNemar tests on the T2 dx sign find no pair different on all roots (p ≥ 0.238). On
+The exact McNemar tests on the T2 dx sign find no pair different on all roots (p ≥ 0.2379). On
 visible roots, E0 against random has 7 against 0 discordant pairs (p = 0.016), and random
 against raw-112 has 2 against 10 (p = 0.039). The random-floor qualifier (§9) holds for E0 and
 for A3, but it qualifies nothing, because neither succeeds.
@@ -245,8 +247,8 @@ reported only.
   | `overview` at 448 px | **0** | 183 / 185 / 188 / 190 / 193 |
 
 - **Frame near-identity among occluded resets** (6 105 pairs): mean absolute difference min 0.038,
-  median 0.717 levels. Pixels differing by more than 8 levels: min 25, median 151. That residue is
-  mostly the independently placed plate.
+  median 0.717 levels. Pixels differing by more than 8 levels: min 25, median 151. Interpretation, not
+  measured: that residue is mostly the independently placed plate.
 - **Native equivalence**, re-measured: it is not equivalent, exactly as in the calibration.
   - The downsampled render identifies its own reset on 162/190 roots, and on 169/190 after bias
     correction.
@@ -261,7 +263,7 @@ reported only.
      as §2.3 predicted before any readout existed.
    - On the 79 visible resets, the 112 px frame is not read out beyond a visibility-aware prior
      by any decisional source, **including raw pixels** (ratio 0.964 [0.751, 1.207]). A visible
-     apple at 112 px covers at most 21 px of 12 544, and the median is 0. **So hiding explains the
+     apple at 112 px covers 1–21 px of 12 544 (median 5 over the 79 visible resets). **So hiding explains the
      occluded roots, but not the failure as a whole.**
 2. **E0 discards some position information, but that is not what binds here.** E0 is worse than
    raw-112 on T1: +0.296 cm [0.110, 0.475] overall and +0.409 cm [0.180, 0.746] on visible roots.
@@ -273,11 +275,15 @@ reported only.
    native render reads the apple much better than the stored 112 px frame (0.946 cm, ratio 0.550;
    apple x 0.568 cm; derived dx sign 67/79).
    - It is non-decisional, because it is **not** the stored-frame pipeline. The stored frame is
-     4× MSAA at 112 px; 448↓ is a 16-sample box filter. §2.4 showed that the two differ at edges by
-     more than any two resets differ.
+     4× MSAA at 112 px; 448↓ is a 16-sample box filter. §2.4 showed that, even after bias correction, the two differ
+     per frame by more than the closest pair of resets does (0.130–0.212 against 0.038 levels).
    - It still misses both bars.
-   - The hypothesis it raises: anti-aliasing quality or effective resolution matters when the
-     object covers a handful of pixels. It is untested.
+   - One more confound: 448↓ features are unrounded float box means, while the stored frames are
+     uint8, so quantisation is also a candidate. Raw-448 native (1.482 cm), which carries the same
+     information, reads worse than 448↓ (0.946 cm), which points at the readout's sensitivity to
+     representation.
+   - The hypothesis it raises: when the object covers a handful of pixels, anti-aliasing quality,
+     effective resolution or quantisation matters. It is untested.
 4. **The step-0 command is decided before the apple can be seen, but it becomes visible within a
    few steps.** Along the expert's own path the apple is visible by step 9 on every train root
    (median step 3). On 100/170 roots that happens before the x command has converged.
@@ -305,7 +311,9 @@ observation along two axes:
    - the existing `overview` camera, which sees the apple on 190/190 resets (≈ 12 px at 112 px,
      ≈ 185 px at 448 px);
    - a native higher-resolution or closer camera, rendered through a validated pipeline, so that
-     the §2.4 confound does not recur.
+     the §2.4 confound does not recur;
+   - optionally, a cheap rendering-path arm: a 112 px supersampled render, rounded and unrounded,
+     to test the §6.3 hypothesis. Suggested at review; the owner decides.
 
 The arms should cross the two axes, so the re-probe can say which one binds.
 

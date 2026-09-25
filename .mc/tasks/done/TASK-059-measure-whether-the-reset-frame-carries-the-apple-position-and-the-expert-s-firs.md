@@ -76,7 +76,7 @@ Manifest: `benchmarks/manifests/apple-info-ceiling-v1.json`.
 ## Results (2026-09-25)
 
 **Outcome O-OCC-NONE.** No decisional source (E0, A3, random, raw-112) succeeds, either on all
-190 roots or on the 79 visible ones. On the visible stratum no 112 px source beats the
+190 roots or on the 79 visible ones. On the visible stratum no decisional 112 px source beats the
 visibility-aware prior either:
 - raw-112 reaches a ratio of 0.964 [0.751, 1.207];
 - E0 reaches 2.067 cm, worse than the prior's 1.720 cm.
