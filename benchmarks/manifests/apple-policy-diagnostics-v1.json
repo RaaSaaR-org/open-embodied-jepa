@@ -1,21 +1,668 @@
 {
-  "abandonment_clause": "If G-SUB fails - none of the EIGHT G-SUB CANDIDATE configurations, including all_translation, reaches 8/16 grasp resets - then no single command channel carries the failure and the preregistered Outcome D abandonment clause of apple_policy_v1.md section 7 fires AS WRITTEN. This control line stops on this corpus and this camera. No further loss, head or output-parameterisation variant is preregistered on it. The next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and reports and does not select the follow-up itself. SUBJECT TO precedence_rule_D1_over_G_SUB: if CLAUSE (a) HOLDS BY EITHER DISJUNCT, this clause does NOT fire, once, and exemption_spent is set to true.",
+  "abandonment_clause": "If G-SUB fails - none of the EIGHT G-SUB CANDIDATE configurations, including all_translation, reaches its per-candidate threshold (gates.G_SUB.per_candidate_threshold) - then no single command channel carries the failure, and the CONSEQUENCE of the Outcome D abandonment clause of apple_policy_v1.md section 7 applies as written. (Outcome D's own CONDITION -- G1 and G4 fail on cohort C and A4 also fails -- is not what triggers it here: A4 was deferred, cohort C was never opened, and this protocol substitutes its own condition.) This control line stops on this corpus and this camera. No further loss, head or output-parameterisation variant is preregistered on it. The next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and reports and does not select the follow-up itself. SUBJECT TO precedence_rule_D1_over_G_SUB: if CLAUSE (a) HOLDS BY EITHER DISJUNCT, this clause does NOT fire, once, and exemption_spent is set to true.",
+  "amendment_1": {
+    "blind_predictor_and_sound_pipeline_checks": {
+      "B1": "hold/random are themselves the blind baselines",
+      "B3": "discriminates: inert channel 1/16 (TASK-056 A2), full substitution 16/16",
+      "D1_frozen": {
+        "expert_step_zero_std_per_dimension_val": {
+          "right_dpitch": 0.0,
+          "right_droll": 0.0,
+          "right_dx": 0.35745248198509216,
+          "right_dy": 0.03738529980182648,
+          "right_dyaw": 0.0,
+          "right_dz": 2.9802322387695312e-08,
+          "right_grasp": 0.0
+        },
+        "frozen_d1_would_pass": {
+          "train": {
+            "A0_proprio_only": false,
+            "A1_random_encoder": false,
+            "A2_bc_frozen_e0": false,
+            "A3_bc_finetuned_e0": false
+          },
+          "val": {
+            "A0_proprio_only": false,
+            "A1_random_encoder": false,
+            "A2_bc_frozen_e0": false,
+            "A3_bc_finetuned_e0": false
+          }
+        },
+        "ratio_to_frozen_threshold_train": {
+          "A0_proprio_only": {
+            "right_dpitch": 1.0817244052886963,
+            "right_droll": 0.24542923271656036,
+            "right_dx": 4.839377403259277,
+            "right_dy": 0.19963927567005157,
+            "right_dyaw": 0.13407883048057556,
+            "right_dz": 0.14628072082996368
+          },
+          "A1_random_encoder": {
+            "right_dpitch": 0.3304465413093567,
+            "right_droll": 0.13802316784858704,
+            "right_dx": 5.319116592407227,
+            "right_dy": 0.23225519061088562,
+            "right_dyaw": 0.443768709897995,
+            "right_dz": 0.3323598802089691
+          },
+          "A2_bc_frozen_e0": {
+            "right_dpitch": 0.1731773167848587,
+            "right_droll": 0.13189610838890076,
+            "right_dx": 4.402742385864258,
+            "right_dy": 0.18801869451999664,
+            "right_dyaw": 0.6608590483665466,
+            "right_dz": 0.19530212879180908
+          },
+          "A3_bc_finetuned_e0": {
+            "right_dpitch": 0.8976979851722717,
+            "right_droll": 0.19564761221408844,
+            "right_dx": 4.990085601806641,
+            "right_dy": 0.09174683690071106,
+            "right_dyaw": 0.33444398641586304,
+            "right_dz": 0.24625110626220703
+          }
+        },
+        "ratio_to_frozen_threshold_val": {
+          "A0_proprio_only": {
+            "right_dpitch": 1.0817244052886963,
+            "right_droll": 0.24542923271656036,
+            "right_dx": 4.839377403259277,
+            "right_dy": 0.19963927567005157,
+            "right_dyaw": 0.13407883048057556,
+            "right_dz": 0.14628072082996368
+          },
+          "A1_random_encoder": {
+            "right_dpitch": 0.3006308972835541,
+            "right_droll": 0.14062616229057312,
+            "right_dx": 5.367758274078369,
+            "right_dy": 0.24289178848266602,
+            "right_dyaw": 0.465138703584671,
+            "right_dz": 0.3505173921585083
+          },
+          "A2_bc_frozen_e0": {
+            "right_dpitch": 0.09001467376947403,
+            "right_droll": 0.03306833282113075,
+            "right_dx": 4.551098346710205,
+            "right_dy": 0.19367483258247375,
+            "right_dyaw": 0.45020782947540283,
+            "right_dz": 0.2313762903213501
+          },
+          "A3_bc_finetuned_e0": {
+            "right_dpitch": 0.8610917329788208,
+            "right_droll": 0.21607902646064758,
+            "right_dx": 3.764765501022339,
+            "right_dy": 0.11154141277074814,
+            "right_dyaw": 0.32849645614624023,
+            "right_dz": 0.25345301628112793
+          }
+        },
+        "state_max_std_across_resets": {
+          "train": 2.2351741790771484e-07,
+          "val": 2.9802322387695312e-08
+        },
+        "train_reset_frames": 137,
+        "val_reset_frames": 15,
+        "verdict": "DOES NOT DISCRIMINATE: a sound pipeline fails it"
+      },
+      "D1_grasp": {
+        "prior_only_mean_grasp": -0.009225231595337391,
+        "sound_arms_amended_count_on_reset_frames": {
+          "train": {
+            "A0_proprio_only": 0,
+            "A1_random_encoder": 0,
+            "A2_bc_frozen_e0": 0,
+            "A3_bc_finetuned_e0": 0
+          },
+          "val": {
+            "A0_proprio_only": 0,
+            "A1_random_encoder": 0,
+            "A2_bc_frozen_e0": 0,
+            "A3_bc_finetuned_e0": 0
+          }
+        },
+        "sound_arms_count_on_reset_frames": {
+          "train": {
+            "A0_proprio_only": 0,
+            "A1_random_encoder": 0,
+            "A2_bc_frozen_e0": 0,
+            "A3_bc_finetuned_e0": 0
+          },
+          "val": {
+            "A0_proprio_only": 0,
+            "A1_random_encoder": 0,
+            "A2_bc_frozen_e0": 0,
+            "A3_bc_finetuned_e0": 0
+          }
+        },
+        "sound_arms_step_zero_grasp_range": {
+          "train": {
+            "A0_proprio_only": [
+              -1.0160703659057617,
+              -1.0160703659057617
+            ],
+            "A1_random_encoder": [
+              -1.0043007135391235,
+              -0.9990962147712708
+            ],
+            "A2_bc_frozen_e0": [
+              -1.0147751569747925,
+              -0.9771900177001953
+            ],
+            "A3_bc_finetuned_e0": [
+              -1.010597825050354,
+              -0.9958451390266418
+            ]
+          },
+          "val": {
+            "A0_proprio_only": [
+              -1.0160703659057617,
+              -1.0160703659057617
+            ],
+            "A1_random_encoder": [
+              -1.0022337436676025,
+              -1.000029444694519
+            ],
+            "A2_bc_frozen_e0": [
+              -1.0057330131530762,
+              -0.9865929484367371
+            ],
+            "A3_bc_finetuned_e0": [
+              -1.005335807800293,
+              -0.997693657875061
+            ]
+          }
+        }
+      },
+      "D1_pipeline": {
+        "A0_proprio_only": {
+          "act_vs_clipped_batched_max_abs": 2.384185791015625e-07,
+          "act_vs_unclipped_batched_max_abs": 0.01607036590576172,
+          "float_noise_max_abs_single_vs_batched": 2.384185791015625e-07,
+          "next_frame_state_min_of_per_frame_max_change": 0.036659449338912964,
+          "swapped_reset_image_max_abs_change": 0.0,
+          "swapped_reset_image_median_of_per_frame_max_change": 0.0,
+          "zero_image_min_of_per_frame_max_change": 0.0
+        },
+        "A1_random_encoder": {
+          "act_vs_clipped_batched_max_abs": 8.344650268554688e-07,
+          "act_vs_unclipped_batched_max_abs": 0.002233743667602539,
+          "float_noise_max_abs_single_vs_batched": 8.344650268554688e-07,
+          "next_frame_state_min_of_per_frame_max_change": 0.04651811718940735,
+          "swapped_reset_image_max_abs_change": 0.0031546950340270996,
+          "swapped_reset_image_median_of_per_frame_max_change": 0.006471306085586548,
+          "zero_image_min_of_per_frame_max_change": 1.3366246223449707
+        },
+        "A2_bc_frozen_e0": {
+          "act_vs_clipped_batched_max_abs": 1.6093254089355469e-06,
+          "act_vs_unclipped_batched_max_abs": 0.005733013153076172,
+          "float_noise_max_abs_single_vs_batched": 1.6093254089355469e-06,
+          "next_frame_state_min_of_per_frame_max_change": 0.021528005599975586,
+          "swapped_reset_image_max_abs_change": 0.011296212673187256,
+          "swapped_reset_image_median_of_per_frame_max_change": 0.04114153981208801,
+          "zero_image_min_of_per_frame_max_change": 1.3712716102600098
+        },
+        "A3_bc_finetuned_e0": {
+          "act_vs_clipped_batched_max_abs": 4.172325134277344e-07,
+          "act_vs_unclipped_batched_max_abs": 0.005335807800292969,
+          "float_noise_max_abs_single_vs_batched": 5.960464477539062e-07,
+          "next_frame_state_min_of_per_frame_max_change": 0.04998624324798584,
+          "swapped_reset_image_max_abs_change": 0.00668644905090332,
+          "swapped_reset_image_median_of_per_frame_max_change": 0.01564192771911621,
+          "zero_image_min_of_per_frame_max_change": 0.5757009983062744
+        }
+      },
+      "D1_pipeline_train_reset_equivalence": {
+        "all_images_identical": true,
+        "max_state_abs": 0.0,
+        "roots": [
+          48000,
+          48008,
+          48001,
+          48013,
+          48002,
+          48006,
+          48003,
+          48011
+        ],
+        "worst_act_vs_clipped_offline": {
+          "A0_proprio_only": 0.0,
+          "A1_random_encoder": 0.0,
+          "A2_bc_frozen_e0": 0.0,
+          "A3_bc_finetuned_e0": 0.0
+        }
+      },
+      "D2": "see gates.D2.persistence_calibration",
+      "G_SUB": {
+        "prior_only_constant_complement": {
+          "all_translation": 0,
+          "dpitch": 0,
+          "droll": 0,
+          "dx": 0,
+          "dy": 0,
+          "dyaw": 0,
+          "dz": 0,
+          "grasp": 0
+        },
+        "time_indexed_complement": {
+          "all_translation": 5,
+          "dpitch": 2,
+          "droll": 3,
+          "dx": 5,
+          "dy": 9,
+          "dyaw": 3,
+          "dz": 1,
+          "grasp": 2
+        }
+      }
+    },
+    "calibration_artifacts": {
+      "closed-loop": {
+        "dirty": false,
+        "path": "outputs/task057-diagnostics/calibration/closed-loop.json",
+        "revision": "50e457540bb1107e34a3bba42e93d4790a356f81",
+        "sha256": "bbe224f3f3047035b7b599d6c8f32496f8b9100bbc107cb4ff9e8c9c2dee6b0d"
+      },
+      "closed-loop-rerun": {
+        "dirty": false,
+        "identical_to_original_except_source_and_elapsed": true,
+        "path": "outputs/task057-diagnostics/calibration-rerun-d91cf0b/closed-loop.json",
+        "revision": "d91cf0b84dfa28079f6d3e6e158d9642d8ad1541",
+        "sha256": "c752743233712e344561cc197ac96faa02fe9336de58a7a6774b1f49cb851256"
+      },
+      "offline": {
+        "dirty": false,
+        "path": "outputs/task057-diagnostics/calibration/offline.json",
+        "revision": "50e457540bb1107e34a3bba42e93d4790a356f81",
+        "sha256": "888c973f382da4e1663e246194fe36b8e6104b1b7329dc050888d2f4e9aa353b"
+      },
+      "offline-rerun": {
+        "dirty": false,
+        "identical_to_original_except_source_and_elapsed": true,
+        "path": "outputs/task057-diagnostics/calibration-rerun-d91cf0b/offline.json",
+        "revision": "d91cf0b84dfa28079f6d3e6e158d9642d8ad1541",
+        "sha256": "59d4c2e83fe6f3f00938be06fbc2576e7855269fc43218dd432fae810097d67d"
+      },
+      "offline-v2": {
+        "adds": "act()-path noise floor, unclipped-vs-clipped difference, train-root reset equivalence, the amended D1-grasp count, train-cohort dz statistics",
+        "dirty": false,
+        "path": "outputs/task057-diagnostics/calibration/offline-v2.json",
+        "revision": "676d397b2672982ba190f024385c3935cd92e1b7",
+        "sha256": "1b092de93406c38dee02bbfea85d1405187de3dc5ef9ca66b7379c03e6427660"
+      },
+      "provenance": {
+        "dirty": false,
+        "path": "outputs/task057-diagnostics/calibration/provenance.json",
+        "revision": "50e457540bb1107e34a3bba42e93d4790a356f81",
+        "sha256": "90e1e93ba4f3dfd8acf4a205df950497e0e788a5874dde214091b6098ba0bb7d"
+      },
+      "provenance-rerun": {
+        "dirty": false,
+        "identical_to_original_except_source_and_elapsed": true,
+        "path": "outputs/task057-diagnostics/calibration-rerun-d91cf0b/provenance.json",
+        "revision": "d91cf0b84dfa28079f6d3e6e158d9642d8ad1541",
+        "sha256": "9e90b882b241e9d22b9101979f3028a367459c57e3801f7e5860d2676f600560"
+      },
+      "provenance-superseded-reads-test-labels": {
+        "DISCLOSURE": "this superseded report read the LABEL SIDECARS (collector phase indices and base actions) of the 8 non-aim TEST-split roots for aggregate phase counts (160 roots, phase-4 mean 57.375, 1 375 ramp rows). No image or state was decoded and nothing was selected on it. Restricted to train+val at 50e4575. Not cited anywhere else.",
+        "path": "outputs/task057-diagnostics/calibration/provenance-superseded-reads-test-labels.json",
+        "revision": "b853560",
+        "sha256": "e583f100a2f379946fcb91c2d6216aff4e22a2ef0b8716ae650fba7365783649"
+      }
+    },
+    "claim_audit_TASK_058_findings_folded_in": {
+      "S1-13_close_not_a_solved_primitive": "noted in 13.8",
+      "S5-04_proprio_reads_apple_position": "context in 13.7",
+      "S5-14_S5-16": "marker at B5",
+      "S6-07_end_state_only": "marker at 1.3; per-step hand_contact/height/dropped logged",
+      "S6-26_bracketed_by": "marker at 1.1(b); the median is BRACKETED BY the non-saturated rows",
+      "S6-27_train_dz_mean": "now computed by committed code: offline-v2 train_bc_target_right_dz",
+      "S6-29_wrong_expert": "sections 13.1-13.2",
+      "Table_E_phase_names": "section 13.3 #3",
+      "near_constant_is_magnitude_only": "markers at 1.1(c) and 1.5; the sign is unmeasured"
+    },
+    "date": "2026-09-25",
+    "defect": "The frozen protocol and manifest named plain scripted.OracleManipulationPolicy as the shadow expert. Every surviving BC root was collected with scripted.apple_collector_policy (scripts/collect_apple_wide.py run_root), whose collector__base_action is the BC target (cloning.py).",
+    "evidence": {
+      "bit_exact_replay": [
+        {
+          "max_abs_replay_minus_stored": 0.0,
+          "noise_level": 0,
+          "plain_oracle_commands_compared": 501,
+          "plain_oracle_commands_differing": 468,
+          "seed": 48000,
+          "stored_commands": 501
+        },
+        {
+          "max_abs_replay_minus_stored": 0.0,
+          "noise_level": 0,
+          "plain_oracle_commands_compared": 501,
+          "plain_oracle_commands_differing": 466,
+          "seed": 48008,
+          "stored_commands": 501
+        },
+        {
+          "max_abs_replay_minus_stored": 0.0,
+          "noise_level": 1,
+          "plain_oracle_commands_compared": 522,
+          "plain_oracle_commands_differing": 478,
+          "seed": 48001,
+          "stored_commands": 522
+        },
+        {
+          "max_abs_replay_minus_stored": 0.0,
+          "noise_level": 1,
+          "plain_oracle_commands_compared": 501,
+          "plain_oracle_commands_differing": 446,
+          "seed": 48013,
+          "stored_commands": 501
+        },
+        {
+          "max_abs_replay_minus_stored": 0.0,
+          "noise_level": 2,
+          "plain_oracle_commands_compared": 518,
+          "plain_oracle_commands_differing": 469,
+          "seed": 48002,
+          "stored_commands": 518
+        },
+        {
+          "max_abs_replay_minus_stored": 0.0,
+          "noise_level": 2,
+          "plain_oracle_commands_compared": 745,
+          "plain_oracle_commands_differing": 684,
+          "seed": 48006,
+          "stored_commands": 745
+        },
+        {
+          "max_abs_replay_minus_stored": 0.0,
+          "noise_level": 3,
+          "plain_oracle_commands_compared": 745,
+          "plain_oracle_commands_differing": 637,
+          "seed": 48003,
+          "stored_commands": 745
+        },
+        {
+          "max_abs_replay_minus_stored": 0.0,
+          "noise_level": 3,
+          "plain_oracle_commands_compared": 525,
+          "plain_oracle_commands_differing": 451,
+          "seed": 48011,
+          "stored_commands": 525
+        }
+      ],
+      "budgets": {
+        "OracleManipulationPolicy": {
+          "commands": [
+            130,
+            80,
+            45,
+            150,
+            160,
+            100,
+            60,
+            80
+          ],
+          "phases": [
+            "orient",
+            "descend",
+            "close",
+            "lift",
+            "transfer",
+            "lower",
+            "release",
+            "retreat"
+          ],
+          "total": 805
+        },
+        "apple_collector_policy": {
+          "commands": [
+            130,
+            80,
+            45,
+            150,
+            60,
+            100,
+            100,
+            80
+          ],
+          "phases": [
+            "orient",
+            "descend",
+            "close",
+            "lift",
+            "transfer",
+            "release_high",
+            "lower_open",
+            "retreat"
+          ],
+          "total": 745
+        },
+        "collect_apple_wide_ROOT_MAX_COMMANDS": 745
+      },
+      "code": "collect_apple_wide.py run_root: policy = apple_collector_policy(sim.task_truth()); ROOT_MAX_COMMANDS = 745 'the collector's full phase budget'; apple_collector_policy = EarlyReleaseOracleManipulationPolicy(opening_ramp=0.08) + palm_x_offset 0.015 + transfer_x_shift -0.035; evaluate_apple.py scripted_oracle also builds apple_collector_policy.",
+      "corpus_max_root_commands": 745,
+      "corpus_phase_4_commands": {
+        "distinct_nonzero": [
+          60
+        ],
+        "max": 60,
+        "mean_over_all_non_aim_roots": 57.63157894736842,
+        "roots_visiting": 146
+      },
+      "corpus_rows_with_the_opening_ramp_value_0_92_in_phase_5_plus": 1323,
+      "corpus_train_and_val_non_aim_roots": 152,
+      "full_substitution_dry_run": {
+        "OracleManipulationPolicy": [
+          0,
+          0
+        ],
+        "apple_collector_policy": [
+          16,
+          16
+        ],
+        "format": "[grasp resets, full successes] out of 16"
+      },
+      "step_zero_on_the_development_cohort": {
+        "median_abs_difference_right_dx": 0.047944530844688416,
+        "note": "median over all 16 seeds, including the 6 where the two experts agree; 0.0479 is 84% of A0's right_dx D1 threshold (3 x 0.018958 = 0.0569). Independently reproduced by the TASK-058 claim audit (S6-29) from labels on 152 roots.",
+        "seeds_where_collector_and_plain_differ": 10
+      }
+    },
+    "frozen_version": {
+      "commit": "4c72ffa",
+      "manifest_sha256": "f7e57111965387b3ce437f00a1a6122c3f2a0b144df33db2eebebd2f38e4db21",
+      "protocol_sha256": "f7dc9c78735d11fd455b38a225ddf28dfe61db4ab4fb80babc6357a3872f689c"
+    },
+    "generating_script": "scripts/calibrate_policy_diagnostics.py (committed); provenance, closed-loop and offline subcommands",
+    "hashes": {
+      "checkpoints/task056-policy-v1/a0.pt": "960dd6f094b2948a99c48017b36047791ba9778e65565c91d32309ddc33189f4",
+      "checkpoints/task056-policy-v1/a1.pt": "6e9912b82cbb9a03e2868b2682c59def68a77f11c2e8d94366571026884bad46",
+      "checkpoints/task056-policy-v1/a2.pt": "0dc2fb701862d418beb12fb9a0c9f0aec86509eeee8f99966a21c908cf6b8735",
+      "checkpoints/task056-policy-v1/a3.pt": "e61e2e090c3130f2555b9c87f4abae415489a9724d7870a663f836fe903614c1",
+      "configs/apple_policy_v1.yaml": "c768ee238b512c248eca550aea532c2b31e04cd0ee0a117179a25ef0f8aa591a",
+      "data/apple-wide-v1/meta/jepa_manifest.json": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+      "outputs/task056-cohort-d/a2.json (B2 reference)": "c141d9ea6ee15f569df29c48a94a8b1183ca460ed60b21d5442da95f41e304b2",
+      "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+      "src/embodied_jepa/policy.py": "d682078bc47ddb19f5ece4dc5dd87550cd429f6ab17eb6d0f4ac3b3dc1b7489f",
+      "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc"
+    },
+    "per_step_truth_in_the_trace": "every trace row records the scorer's hand_contact, the apple height and dropped at that step, alongside ||palm - apple||. Scoring-only simulator truth; never a controller input.",
+    "provenance_note_103b14f": "the TASK-056 cohort-D reports ran at 103b14f, which is not on main; it is held on origin/feat/task-056-clip-instrumentation, which must not be deleted.",
+    "status": "pre-run amendment; no probe has executed; exemption_spent stays false",
+    "superseded": [
+      {
+        "frozen_value": "OracleManipulationPolicy(sim.task_truth()).action(robot) at indices (6,7,8,9,10,11,13), advanced by advance(result) on every executed step, computed strictly AFTER policy.act returns",
+        "path": "/definitions_every_scope_term_used_in_a_gate_or_stop_rule/shadow_expert_command/definition",
+        "reason": "AMENDMENT 1: the frozen text named plain OracleManipulationPolicy, which is NOT the policy the corpus was collected with (scripts/collect_apple_wide.py run_root builds scripted.apple_collector_policy). Different phase table (805 vs 745), different targets, no early release.",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "scripted.py's phase table sums to 130+80+45+150+160+100+60+80 = 805 and action() RAISES once done. Every TASK-056 attempt not stopped by the embodiment ran to 1000, so the shadow expert dies around step 805 on nearly every attempt, and run_attempt's bare `except BaseException` would turn that into a dead run with no report.",
+        "path": "/definitions_every_scope_term_used_in_a_gate_or_stop_rule/shadow_expert_command/it_is_exhausted_after_805_commands",
+        "reason": "AMENDMENT 1: 805 is plain OracleManipulationPolicy's budget. The shadow expert's is 745 (130+80+45+150+60+100+100+80); replaced by it_is_exhausted_after_745_commands.",
+        "replacement": "removed"
+      },
+      {
+        "frozen_value": "step-zero contrast: signed step-zero command vs shadow expert, 4 arms x 16 seeds",
+        "path": "/probes/D1",
+        "reason": "AMENDMENT 1: the frozen D1 fails for all four arms on RECORDED reset frames through the training pipeline itself (see amendment_1.blind_predictor_and_sound_pipeline_checks.D1), so it cannot distinguish a broken observation path from a sound one.",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "the expert's step-zero right_grasp is -1.0 exactly on every reset (scripted.py orient phase). Report per arm the count out of 16 where the step-zero policy grasp is > 0. NO THRESHOLD: the reference is known-correct.",
+        "path": "/probes/D1_grasp",
+        "reason": "AMENDMENT 1: the frozen manifest still carried the one-sided 'count where grasp > 0, NO THRESHOLD' wording that protocol section 3 had already replaced with a two-sided count; and the two-sided count's cut at |g+1| >= 1.0 does not fire on the prior-only predictor (-0.0092, error 0.9908). Cut moved to |g+1| > 0.5, i.e. g > -0.5.",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": {
+          "derivation": "the offline error is measured on recorded val frames at arbitrary phase; a reset frame is one specific in-distribution phase, so the claim tested is 'same order', not 'equal'. The per-dimension errors themselves span 4.50x, so a factor below 3 cannot be distinguished from ordinary per-dimension variation while 10x or more is unambiguous. A judgement call fixed before the numbers exist; realized ratios reported per dimension whatever they are.",
+          "rule": "passes for arm X iff, for EVERY one of the six arm dimensions, the median across the 16 seeds of |step-zero policy - shadow expert| is <= 3x X's own frozen_offline_error_table_A cell"
+        },
+        "path": "/gates/D1",
+        "reason": "AMENDMENT 1: the frozen D1 fails on a SOUND pipeline (every arm, val and train reset frames), so clause (a) would have held structurally and the one-shot exemption would have been spent on no defect. Retained in full as gates.D1_contrast_reported_not_decisional.",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "seeds where |step-zero right_grasp - (-1.0)| >= 1.0, equivalently where the commanded value is >= 0.0",
+        "path": "/gates/D1_grasp/derived_two_sided_count",
+        "reason": "AMENDMENT 1: the frozen cut (|g+1| >= 1.0, i.e. g >= 0.0) sits exactly at the inert value, and the actual prior-only predictor (mean of collector__base_action grasp over the 137 surviving train roots, -0.0092) lands 0.009 on the NON-firing side. The count was blind to the canonical blind predictor.",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "passes iff at least one of the EIGHT G-SUB CANDIDATE configurations reaches >= 8/16 grasp resets. 'none' and 'full' are CONTROLS and NOT candidates, so a passing 'full' cannot pass the gate.",
+        "path": "/gates/G_SUB/rule",
+        "reason": "AMENDMENT 1: with a blind controller that knows only the step index (the mean collector__base_action at each step over the 137 surviving train roots), substituting the expert's dy alone reaches grasp on 9/16 -- above the frozen 8/16. Under the frozen rule the dy candidate would pass for any controller no worse than a clock, so a pass would not be about THIS policy. The frozen convention (reference 1/16 -> 8/16 = floor of the midpoint to the ceiling) is kept and applied to the stronger reference.",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "A gate that cannot be evaluated counts as failed. D1 and G-SUB are the only gates.",
+        "path": "/missing_values",
+        "reason": "stale against protocol section 5, which already covered D1-grasp's count",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "Clause (a) holds: D1 fails for >= 3 of the 4 arms, OR D1-grasp's two-sided count is >= 8/16 for >= 3 of the 4 arms. A locatable pipeline discrepancy. Next: an audit of the observation path from G1Embodiment.observe to ClonedPolicy.act against cloning.py's training path, then a re-measurement. No model change, no retrain.",
+        "path": "/pre_declared_outcomes/P",
+        "reason": "clause (a) re-keyed on D1-pipeline and the > -0.5 grasp cut",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "Clause (a) does NOT hold (D1 passes for >= 2 of the 4 arms AND D1-grasp's count is < 8/16 for >= 2 of the 4 arms) and G-SUB passes. The failing channel is named. Next: a new preregistration for a targeted fix, with its own controls. That task may ask for cohort C.",
+        "path": "/pre_declared_outcomes/S",
+        "reason": "clause (a) re-keyed on D1-pipeline and the > -0.5 grasp cut",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "GOVERNED BY precedence_rule_D1_over_G_SUB, which ranges over CLAUSE (a) AS A WHOLE. Continues iff EITHER (a) D1 fails for >= 3 of the 4 arms, OR D1-grasp's TWO-SIDED count (seeds where |step-zero right_grasp - (-1.0)| >= 1.0) is >= 8/16 for >= 3 of the 4 arms - follow-up is a pipeline audit and re-measurement, NOT a model change and NOT a retrain; OR (b) G-SUB passes, naming the failing channel. If EITHER DISJUNCT of (a) holds AND G-SUB fails, clause (a) applies and the abandonment clause does not fire, ONCE. In both cases the follow-up is a NEW preregistration with its own gates and controls.",
+        "path": "/success_clause",
+        "reason": "clause (a) re-keyed; G-SUB thresholds per candidate",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "If G-SUB fails - none of the EIGHT G-SUB CANDIDATE configurations, including all_translation, reaches 8/16 grasp resets - then no single command channel carries the failure and the preregistered Outcome D abandonment clause of apple_policy_v1.md section 7 fires AS WRITTEN. This control line stops on this corpus and this camera. No further loss, head or output-parameterisation variant is preregistered on it. The next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and reports and does not select the follow-up itself. SUBJECT TO precedence_rule_D1_over_G_SUB: if CLAUSE (a) HOLDS BY EITHER DISJUNCT, this clause does NOT fire, once, and exemption_spent is set to true.",
+        "path": "/abandonment_clause",
+        "reason": "clause (a) re-keyed; G-SUB thresholds per candidate",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "the 'full' configuration (all seven dimensions from the shadow expert) must reach >= 14/16 grasp resets. If it does not, the substitution channel is not reaching the robot and the sweep is void before it starts. apple_policy_v1_results.md section 13 instance 9: a control whose output is indistinguishable from a real pass CONCEALS the class it was built to catch, so this one must fail loudly when inert.",
+        "path": "/baselines/B3_inert_probe_tripwire_RUN_FIRST",
+        "reason": "the source run of the >= 14/16 threshold was a different controller",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "the 'none' configuration must reproduce outputs/task056-cohort-d/a2.json: same single grasp seed (45100), same 16 termination reasons, same executed-step counts. If the harness changes the pure-policy result the harness is a confound and the sweep is void. This is the control that makes G-SUB interpretable and the one most likely to be skipped.",
+        "path": "/baselines/B2_zero_substitution_control",
+        "reason": "device was unpinned; the reference run is CPU",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "MPS/CPU only, Apple M5 Pro 48 GB",
+        "path": "/budget/device",
+        "reason": "B2 reproduces a CPU run",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "Derived from the ROUNDED Table A cells, which are the authority. Tripling an unrounded intermediate instead put the manifest 1e-6 out of agreement with its own table; a consistency test caught it before merge. HEADROOM CHECKED BEFORE THE RUN: Table A is an all-phase median while D1 is scored on reset (orient-phase) frames, so the populations differ. The worst realized orient-to-unconditional error ratio across all four arms and all seven dimensions is 1.313 (A2 right_dpitch), so the 3x threshold retains 2.28x headroom and a sound pipeline should pass D1 rather than fail it spuriously -- the property that had to hold for the precedence rule not to become an automatic exemption.",
+        "path": "/frozen_D1_thresholds_three_times_table_A_note",
+        "reason": "its headroom check measured all orient-phase rows (130 per root), not the reset frame D1 is scored on; on the reset frames themselves every arm fails",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "'full' and the eight G-SUB candidates. The expert IS part of the commanded action, so at exhaustion the attempt TERMINATES with reason shadow_expert_exhausted and counts as a NON-SUCCESS. Not a concession: the oracle's budget is 805 commands and scripted_oracle succeeds inside it (24/24 pooled).",
+        "path": "/shadow_expert_exhaustion_preregistered_behaviour/non_empty_substitution_set",
+        "reason": "805 was the wrong expert's budget, and scripted_oracle is apple_collector_policy, so the sentence paired one entity's budget with another's result",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "D1 FAILS for arm X iff on ANY of the 15 val resets: (i) for A1/A2/A3, the closed-loop onboard_rgb frame is not byte-identical to the stored training frame; or (ii) the closed-loop robot_state differs from the stored state by more than 1e-6 in any component, or the state mask differs; or (iii) any of the seven free components of X's act() output differs from X's offline prediction on the stored frame by more than 1e-4. A0 consumes no image, so (i) does not apply to it.",
+        "path": "/gates/D1/rule (amendment 1, first version)",
+        "reason": "review of amendment 1: compared act() (clipped) with the UNCLIPPED offline prediction, which fails every arm on a sound pipeline; now clipped",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "Float noise between act()'s single-observation path and the batched training path is <= 1.61e-6 (A2; A0 2.4e-7, A1 8.3e-7, A3 6.0e-7). The smallest input change that must be detectable -- another val root's reset image -- moves the output by at least 3.15e-3 (A1; A2 1.13e-2, A3 6.7e-3); a zeroed image by >= 0.576; the next frame's state by >= 0.0215. 1e-4 sits 62x above the noise and 31x below the smallest such change. Inputs are compared exactly because they are exact in a sound pipeline.",
+        "path": "/gates/D1/derivation (amendment 1, first version)",
+        "reason": "noise floor re-measured through act(); neighbour-pair scope stated; train-root reset equivalence added",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "preregistration",
+        "path": "/status",
+        "reason": "the protocol is now amended",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": true,
+        "path": "/supersedes_nothing",
+        "reason": "amendment 1 supersedes the entries listed here",
+        "replacement": "see this path"
+      },
+      {
+        "frozen_value": "divergence trace, 4 arms x 16 seeds x <=1000 steps, signed per-step logging of both commands plus ||palm-apple||, stage, step index",
+        "path": "/probes/D2",
+        "reason": "appended a pointer to the first_departure_step definition",
+        "replacement": "see this path"
+      }
+    ],
+    "train_bc_target_right_dz": {
+      "mean": -0.001180413761176169,
+      "median_abs": 0.19682887196540833,
+      "rate_abs_at_0_4": 0.44886685758311407,
+      "rate_at_minus_0_4": 0.2643950516782719,
+      "rate_at_plus_0_4": 0.1844718059048422,
+      "rows": 68791
+    }
+  },
   "baselines": {
     "B1_harness_soundness": {
+      "definitions_amendment_1": {
+        "hold": "benchmark.py _control's hold: zero on every free arm component, both grasps -1",
+        "metric_for_hold_and_random": "0/16 grasp resets AND 0/16 successes (the cited source measured zero on all five stages)",
+        "random": "benchmark.py _control's random: default_rng(seed).uniform(lower, upper) over the configured bounds of configs/apple_policy_v1.yaml, seed = the development seed",
+        "scripted_oracle": "embodied_jepa.policy_diagnostics.ScriptedOracleController: its own apple_collector_policy instance in command (as evaluate_apple.py scripted_oracle); exhaustion ends the attempt as policy_complete",
+        "scripted_oracle_source_on_exactly_D": "apple_wide_grasp_closure_results_v3.md: 8/8 grasp and 8/8 success on 45000-45007 and on 45100-45107 -- 16/16 on exactly the development cohort, with apple_collector_policy (evaluate_apple.py scripted_oracle).",
+        "source_caveat": "hold/random's 0/50 source is the MVP benchmark (mvp_results.md): other resets, other scene rule, an 805-step cap. Transferred as an expectation, not re-derived."
+      },
       "hold": "0/16",
       "on_failure": "every number in this task is void",
       "random": "0/16",
       "scripted_oracle_grasp": ">= 14/16",
       "scripted_oracle_success": ">= 12/16"
     },
-    "B2_zero_substitution_control": "the 'none' configuration must reproduce outputs/task056-cohort-d/a2.json: same single grasp seed (45100), same 16 termination reasons, same executed-step counts. If the harness changes the pure-policy result the harness is a confound and the sweep is void. This is the control that makes G-SUB interpretable and the one most likely to be skipped.",
-    "B3_inert_probe_tripwire_RUN_FIRST": "the 'full' configuration (all seven dimensions from the shadow expert) must reach >= 14/16 grasp resets. If it does not, the substitution channel is not reaching the robot and the sweep is void before it starts. apple_policy_v1_results.md section 13 instance 9: a control whose output is indistinguishable from a real pass CONCEALS the class it was built to catch, so this one must fail loudly when inert.",
+    "B2_zero_substitution_control": "the 'none' configuration must reproduce outputs/task056-cohort-d/a2.json: same single grasp seed (45100), same 16 termination reasons, same executed-step counts. If the harness changes the pure-policy result the harness is a confound and the sweep is void. This is the control that makes G-SUB interpretable and the one most likely to be skipped. AMENDMENT 1: the reference report ran on device cpu at revision 103b14f; this run's policy inference is therefore pinned to cpu, so a numerical difference between devices cannot fail B2 for a reason unrelated to the harness.",
+    "B3_inert_probe_tripwire_RUN_FIRST": "the 'full' configuration (all seven dimensions from the shadow expert) must reach >= 14/16 grasp resets. If it does not, the substitution channel is not reaching the robot and the sweep is void before it starts. apple_policy_v1_results.md section 13 instance 9: a control whose output is indistinguishable from a real pass CONCEALS the class it was built to catch, so this one must fail loudly when inert. AMENDMENT 1: with the corrected shadow expert, 'full' is command-identical to scripted_oracle (apple_collector_policy), whose recorded result on exactly these 16 resets is 16/16 grasp and 16/16 success; the pre-freeze dry run (blind controller, all seven components substituted) reproduced 16/16 and 16/16. Under the FROZEN text 'full' would have run plain OracleManipulationPolicy, which the same dry run scores 0/16 grasp (15 guard_refusal at steps 249-258, one exhausted at 805): B3 would have failed and Outcome V would have voided the run. Threshold unchanged at >= 14/16. The inert channel (the pure policy, TASK-056 A2) scores 1/16.",
     "B4_shadow_expert_is_not_an_input": "behavioural test that the shadow command is computed strictly after policy.act returns and is never an argument to it, plus the ast.walk form (its text-grep predecessor produced a false positive on a correct runner) asserting policy.py imports no label or truth module. G6's zero-privileged-reads rule applies to the CONTROLLER; in a substituted configuration the expert IS part of the commanded action, hence the labelling rule.",
     "B5_standing_offline_anchor": "A1 0.011059 < A0 0.013129 < A2 0.017935 < A3 0.023404. The primary is third of four, beaten by the arm that never sees an image. Carried, not re-measured.",
-    "B6_does_the_learned_part_do_work": "NOT DEMONSTRATED, on any metric. This task does not attempt to establish it. Every probe is diagnostic and no result here may be reported as progress toward a learned result."
+    "B6_does_the_learned_part_do_work": "NOT DEMONSTRATED, on any metric. This task does not attempt to establish it. Every probe is diagnostic and no result here may be reported as progress toward a learned result.",
+    "blind_controller_reference_points_amendment_1": {
+      "note": "a controller that sees nothing but the step index reaches grasp on 2/16 of the development resets; TASK-056's best learned arms reached 1/16. Recorded before the run.",
+      "prior_only_mean_unsubstituted_grasp_resets": 0,
+      "time_indexed_mean_unsubstituted_grasp_resets": 2
+    }
   },
   "budget": {
-    "device": "MPS/CPU only, Apple M5 Pro 48 GB",
+    "device": "CPU for all policy inference and simulation (AMENDMENT 1: the B2 reference ran on cpu). Apple M5 Pro 48 GB. MPS is not used: nothing here trains, and a device change would put B2 at risk for a reason unrelated to the harness.",
     "estimate_hours": 3.5,
     "global_cap_seconds": 21600,
     "note": "The parent protocol's 28800 s cap is not carried; each protocol freezes its own (docs/RESOURCES.md).",
@@ -44,7 +691,8 @@
       45107
     ],
     "no_selection_on_D": "D is a mechanism instrument, not a scoreboard. No checkpoint is chosen, retrained or tuned against a D outcome.",
-    "substituted_numbers_are_never_learned_results": "Every configuration with a non-empty substitution set puts a privileged controller partly in command. Every number it produces is labelled non-learned in the table itself, not only in a footnote."
+    "substituted_numbers_are_never_learned_results": "Every configuration with a non-empty substitution set puts a privileged controller partly in command. Every number it produces is labelled non-learned in the table itself, not only in a footnote.",
+    "val_root_resets_for_D1_pipeline_amendment_1": "D1-pipeline resets the simulator to the recorded reset of each of the 15 surviving val roots (enumerated in gates.D1.val_root_seeds) and executes ZERO commands; nothing is scored. The val split is already decoded for Table A. The cohort-D whitelist of evaluate_policy.py is not widened; D1-pipeline has its own whitelist of these 15 seeds. Cohort C is not touched and the RUN does not touch the test split; one superseded pre-freeze calibration count read test-split LABEL sidecars (see amendment_1.calibration_artifacts.provenance-superseded-reads-test-labels)."
   },
   "committed_in_advance": "A rescue under expert substitution injects privileged information at 50 Hz, which the policy does not get. It shows WHICH CHANNEL the failure flows through; it does NOT show that a learned version of that channel is attainable. No D3 number may be read as evidence that a fix will work.",
   "corrections_to_the_TASK_056_record_established_by_this_preregistration": {
@@ -53,7 +701,8 @@
     "3_both_learned_arms_grasped_and_lifted_the_apple": "A2 on seed 45100 and A3 on seed 45006 each reached the scorer's grasp stage, lifted the apple +0.1678 m and +0.1694 m against a 0.05 m gate, and were STILL HOLDING IT, undropped, when the 1000-step cap ended the attempt. Neither reached transport. The 1/16 counts ARE in apple_policy_v1_results.md sections 14 and 16; the lift height, the sustained contact and the undropped state are nowhere in the record; and task056_handover.md gives neither arm's grasp count at all, stating only the controls' 0/16. The compression into the handover removed the run's single most encouraging measurement.",
     "4_the_near_constant_reading_is_translation_only": "Median across attempts: dx q90/q50 1.00-1.22 and dz 1.01-1.32, versus droll q50 0.179-0.243, q90 0.478-0.498, q99 0.503-0.513 (ratio 2.05-2.67). Stated at that strength and no further: droll's out-of-distribution rate is 5-7% and its q90 sits at the 0.5 configured bound, which is LESS saturation than the expert's measured ~27% at |max|, so this is not roll running away. The observation is that the one dimension with real online variance is rotational, and it is the dimension with the SMALLEST offline error in Table A. Largest online/offline behavioural gap in the run, and not in the dimension the dz hypothesis pointed at.",
     "5_scope_correction_on_the_control_arms": "A0 and A1: reach 0/16 each (latched; near = ||palm-apple|| <= 6.5 cm or hand_contact), hand_contact false at every attempt's end, final object_plate_distance_m within 0.1 mm of the report's own stored reset geometry on 16/16, and object_height_m a single value 0.766633 across all 32 attempts. Contact is the only route by which the robot can move the apple, so reach 0/32 establishes this independently of the distance statistic. A3 is NOT covered: its reach is 4/16 with five distinct heights. An earlier draft extended the statement to A3 from a mis-scoped count.",
-    "6_no_statement_that_every_attempt_hit_the_cap": "A3 had two guard_refusal terminations, on seeds 45001 (157 executed steps) and 45003 (143). They are physical stops, not cap hits."
+    "6_no_statement_that_every_attempt_hit_the_cap": "A3 had two guard_refusal terminations, on seeds 45001 (157 executed steps) and 45003 (143). They are physical stops, not cap hits.",
+    "amendment_1_note": "In 1, 'sits inside the non-saturated group' should read 'bracketed by the non-saturated rows'. In 4, 'near-constant' is near-constant in MAGNITUDE: the statistics are of |.| and the sign is unmeasured. In 3, contact, lift and undropped are measured at the FINAL step only; 'sustained' contact is unmeasured (TASK-058 S6-26, S6-07)."
   },
   "definitions_every_scope_term_used_in_a_gate_or_stop_rule": {
     "arm": [
@@ -125,9 +774,10 @@
     ],
     "shadow_expert_command": {
       "consequence_for_D3_declared_before_any_number": "A D3 configuration can inject a lift-phase ascent into an attempt whose hand has never closed on anything. A confound on the only gate. shadow_expert_phase is logged per step, and a G-SUB pass whose attempts spent most of their commands past the expert's close phase is REPORTED AS SUCH next to the pass. Reporting requirement, not a threshold.",
-      "definition": "OracleManipulationPolicy(sim.task_truth()).action(robot) at indices (6,7,8,9,10,11,13), advanced by advance(result) on every executed step, computed strictly AFTER policy.act returns",
+      "definition": "scripted.apple_collector_policy(sim.task_truth()).action(robot) at indices (6,7,8,9,10,11,13) -- EarlyReleaseOracleManipulationPolicy(opening_ramp=0.08) with palm_x_offset=+0.015 on every phase and transfer_x_shift=-0.035 on phases 4-7, no aim offset and no perturbation, i.e. exactly the policy whose collector__base_action is the BC target on every surviving root -- advanced by advance(result) on every executed step, computed strictly AFTER the controller's act() returns. Implemented as embodied_jepa.policy_diagnostics.ShadowExpert.",
       "it_is_a_HYBRID_reference_after_roughly_step_130": "advance(result) is called on THE POLICY'S executed result, so the expert's phase counter advances on the policy's clock rather than its own progress. A policy that has gone nowhere still drives the reference into descend and then lift. It is 'expert targets on a policy-driven clock' and is named that way wherever used.",
-      "it_is_exhausted_after_805_commands": "scripted.py's phase table sums to 130+80+45+150+160+100+60+80 = 805 and action() RAISES once done. Every TASK-056 attempt not stopped by the embodiment ran to 1000, so the shadow expert dies around step 805 on nearly every attempt, and run_attempt's bare `except BaseException` would turn that into a dead run with no report."
+      "it_is_exhausted_after_745_commands": "apple_collector_policy's phase table is orient 130, descend 80, close 45, lift 150, transfer 60, release_high 100, lower_open 100, retreat 80 = 745 (= collect_apple_wide.ROOT_MAX_COMMANDS), and action() RAISES 'scripted policy has finished' once done. The harness catches exactly that message and nothing broader. Phase boundaries on the controller's clock: close starts at step 210, lift at 255, transfer at 405, release_high at 465, lower_open at 565, retreat at 665.",
+      "its_release_grasp_depends_on_the_EXECUTED_grasp": "AMENDMENT 1, a hybrid property the frozen text could not state because it named the wrong policy: from release_high (phase index 5) on, the collector commands grasp = max(-1, accepted_grasp - 0.08), where accepted_grasp is the grasp component of the last EXECUTED action. In an unsubstituted or partly substituted attempt that is the controller's grasp, not the expert's own previous command. Declared, not corrected: it is how the collector itself behaved under perturbation."
     },
     "step_zero_command": "the policy's 7-vector at the first act() call after robot.reset, before any execute()",
     "why": "apple_policy_v1_results.md section 15: one undefined term ('learned arm', used thirteen times across the frozen artifacts, defined in none) decided whether an irreplaceable cohort would be consumed. Every scope term below is enumerated by name."
@@ -176,8 +826,9 @@
       "right_dz": 0.08497199999999999
     }
   },
-  "frozen_D1_thresholds_three_times_table_A_note": "Derived from the ROUNDED Table A cells, which are the authority. Tripling an unrounded intermediate instead put the manifest 1e-6 out of agreement with its own table; a consistency test caught it before merge. HEADROOM CHECKED BEFORE THE RUN: Table A is an all-phase median while D1 is scored on reset (orient-phase) frames, so the populations differ. The worst realized orient-to-unconditional error ratio across all four arms and all seven dimensions is 1.313 (A2 right_dpitch), so the 3x threshold retains 2.28x headroom and a sound pipeline should pass D1 rather than fail it spuriously -- the property that had to hold for the precedence rule not to become an automatic exemption.",
+  "frozen_D1_thresholds_three_times_table_A_note": "Derived from the ROUNDED Table A cells, which are the authority. Tripling an unrounded intermediate instead put the manifest 1e-6 out of agreement with its own table; a consistency test caught it before merge. HEADROOM CHECKED BEFORE THE RUN: Table A is an all-phase median while D1 is scored on reset (orient-phase) frames, so the populations differ. The worst realized orient-to-unconditional error ratio across all four arms and all seven dimensions is 1.313 (A2 right_dpitch), so the 3x threshold retains 2.28x headroom and a sound pipeline should pass D1 rather than fail it spuriously -- the property that had to hold for the precedence rule not to become an automatic exemption. -- AMENDMENT 1: THE HEADROOM CHECK ABOVE IS WITHDRAWN. It used every orient-phase row (130 per root) as a stand-in for the reset frame; restricted to the reset frames D1 is actually scored on, every arm exceeds its right_dx threshold by 3.76-5.37x on val and 4.40-5.32x on train, so a sound pipeline FAILS this D1 and the precedence rule WOULD have become the automatic exemption this note says it must not. These thresholds now serve only gates.D1_contrast_reported_not_decisional.",
   "frozen_offline_conditionals_and_phase_table": {
+    "amendment_1_wording_note": "'why' says the unconditional median 'necessarily sits inside the NON-saturated group'; the correct form is 'is necessarily BRACKETED BY the non-saturated rows' (min <= median <= max). Verdict unchanged (TASK-058 S6-26).",
     "generating_script": "scripts/measure_policy_offline_conditionals.py (committed). Reproduces every value in this block exactly. cloning.evaluate_policy CANNOT produce them: it returns one unconditional per-dimension median and the PREDICTIONS' std. A separate script rather than an edit to cloning.py, which participates in no checkpoint implementation_sha256 (VisualModel's digest covers models/base.py, the backend module, models/readout.py and readout_labels.py; ClonedPolicy's covers policy.py alone) but whose provenance surface stays untouched while any TASK-056 checkpoint must remain loadable.",
     "per_arm": {
       "A0_proprio_only": {
@@ -637,6 +1288,11 @@
         }
       }
     },
+    "phase_label_correction_amendment_1": {
+      "lower": "release_high",
+      "release": "lower_open",
+      "why": "by_phase_median_error is keyed by collector__phase_index through a name table copied from OracleManipulationPolicy. Indices 5 and 6 are release_high and lower_open in the collector's own table. Values are unchanged; only these two labels were wrong. The generating script now uses the collector's names."
+    },
     "reading_rule_for_the_phase_table_fixed_in_advance": "An OFFLINE error on recorded frames. A phase with a low error here is NOT thereby a phase the controller handles -- that is the covariate-shift gap this protocol exists to measure.",
     "target_std_per_dimension": {
       "right_dpitch": 0.19232681393623352,
@@ -741,11 +1397,58 @@
   },
   "gates": {
     "D1": {
+      "derivation": "Float noise between act() on a stored reset frame and the clipped batched training path is <= 1.61e-6 (A2; A0 2.4e-7, A1 8.3e-7, A3 4.2e-7; offline-v2). Replacing each stored reset image with its neighbour's (k -> k+1 mod 15, 15 pairs) moves the output by at least 3.15e-3 (A1; A2 1.13e-2, A3 6.7e-3); a zeroed image by >= 0.576 (image arms); the next frame's state by >= 0.0215. 1e-4 sits 62x above the noise and 31x below the smallest such change. Inputs are compared exactly because they are exact in a sound pipeline: the same zero-command procedure on 8 TRAIN roots (disjoint from the val gate population) gave byte-identical images, state difference 0.0, identical masks, and act() equal to the clipped offline prediction to 0.0 for every arm.",
+      "device": "cpu",
+      "name": "D1-pipeline: observation-path equivalence at reset (amendment 1)",
+      "output_tolerance": 0.0001,
+      "population": "the 15 surviving val roots, reset coordinates from collect_apple_wide.make_plan; zero commands executed; nothing scored",
+      "rule": "D1 FAILS for arm X iff on ANY of the 15 val resets: (i) for A1/A2/A3, the closed-loop onboard_rgb frame is not byte-identical to the stored training frame; or (ii) the closed-loop robot_state differs from the stored state by more than 1e-6 in any component, or the state mask differs; or (iii) any of the seven free components of X's act() output differs by more than 1e-4 from X's offline prediction on the stored frame CLIPPED TO [-1, 1] (ClonedPolicy.act clips; the step-zero grasp heads sit just below -1, so an unclipped comparison would fail a sound pipeline by up to 0.0161). A0 consumes no image, so (i) does not apply to it.",
+      "sound_pipeline_demonstration_on_train_roots": {
+        "all_images_identical": true,
+        "max_state_abs": 0.0,
+        "roots": [
+          48000,
+          48008,
+          48001,
+          48013,
+          48002,
+          48006,
+          48003,
+          48011
+        ],
+        "worst_act_vs_clipped_offline": {
+          "A0_proprio_only": 0.0,
+          "A1_random_encoder": 0.0,
+          "A2_bc_frozen_e0": 0.0,
+          "A3_bc_finetuned_e0": 0.0
+        }
+      },
+      "state_tolerance": 1e-06,
+      "val_root_seeds": [
+        48005,
+        48030,
+        48040,
+        48052,
+        48071,
+        48072,
+        48086,
+        48096,
+        48103,
+        48113,
+        48117,
+        48137,
+        48168,
+        48180,
+        48193
+      ]
+    },
+    "D1_contrast_reported_not_decisional": {
       "derivation": "the offline error is measured on recorded val frames at arbitrary phase; a reset frame is one specific in-distribution phase, so the claim tested is 'same order', not 'equal'. The per-dimension errors themselves span 4.50x, so a factor below 3 cannot be distinguished from ordinary per-dimension variation while 10x or more is unambiguous. A judgement call fixed before the numbers exist; realized ratios reported per dimension whatever they are.",
-      "rule": "passes for arm X iff, for EVERY one of the six arm dimensions, the median across the 16 seeds of |step-zero policy - shadow expert| is <= 3x X's own frozen_offline_error_table_A cell"
+      "rule": "passes for arm X iff, for EVERY one of the six arm dimensions, the median across the 16 seeds of |step-zero policy - shadow expert| is <= 3x X's own frozen_offline_error_table_A cell",
+      "status": "AMENDMENT 1: demoted from gate to report. Thresholds unchanged (3x Table A, frozen_D1_thresholds_three_times_table_A)."
     },
     "D1_grasp": {
-      "derived_two_sided_count": "seeds where |step-zero right_grasp - (-1.0)| >= 1.0, equivalently where the commanded value is >= 0.0",
+      "derived_two_sided_count": "seeds where step-zero right_grasp > -0.5, i.e. |g - (-1.0)| > 0.5. Fires on the prior-only predictor (-0.0092), on an inert 0.0 and on a closed +1.0; does not fire on -1.0 or on -0.5. Sound arms on recorded reset frames: max |g+1| = 0.023, 0 fires on val (15) and train (137) for every arm.",
       "primary_report": "the SIGNED step-zero right_grasp value, per arm per seed -- the full 4x16 table of numbers, not a count",
       "reading": "the policy is not commanding the hand open at the one instant where the correct command is known and unambiguous",
       "reference": "the expert's step-zero right_grasp is -1.0 EXACTLY on every reset (scripted.py orient phase), so no threshold is needed",
@@ -753,16 +1456,65 @@
     },
     "D2": {
       "determines_no_gate_outcome": true,
+      "first_departure_step_definition": "AMENDMENT 1 (the frozen text named first_departure_step and never defined it): the first step t at which departure > tau_X on 5 consecutive steps t..t+4, where departure is the median over the six arm dimensions of |controller - shadow expert| and tau_X = 3 x the median of arm X's six Table A arm-dimension cells. Steps after the shadow expert's exhaustion end the search (departure undefined, never zero). No departure found = censored, and counted in the median as the NUMBER OF STEPS WITH A DEFINED DEPARTURE (what the calibration uses).",
       "is_a_gate": false,
+      "limit_declared_in_advance": "Sound arms already depart 116-205 steps into their own recorded trajectories open loop, so a closed-loop 'gradual' reading cannot separate compounding error from ordinary open-loop error. Only 'immediate' is informative, and only against a sound start.",
+      "persistence_calibration": {
+        "open_loop_val_median_first_departure_persistence_1": {
+          "A0_proprio_only": 115.0,
+          "A1_random_encoder": 43.0,
+          "A2_bc_frozen_e0": 117.0,
+          "A3_bc_finetuned_e0": 115.0
+        },
+        "open_loop_val_median_first_departure_persistence_5": {
+          "A0_proprio_only": 116.0,
+          "A1_random_encoder": 125.0,
+          "A2_bc_frozen_e0": 205.0,
+          "A3_bc_finetuned_e0": 205.0
+        },
+        "prior_only_mean_median_first_departure_persistence_5": {
+          "A0_proprio_only": 0.0,
+          "A1_random_encoder": 0.0,
+          "A2_bc_frozen_e0": 0.0,
+          "A3_bc_finetuned_e0": 0.0
+        },
+        "why_5": "with persistence 1, open-loop A1 departs at a median step 43 (< 50) on its own training-distribution frames, so 'gradual' would be unreachable for a sound arm; with 5, every arm's open-loop median is >= 116 and the prior-only predictor's is 0."
+      },
       "reading_fixed_in_advance": {
         "gradual": "median first_departure_step >= 50",
         "immediate": "<= 5",
         "otherwise": "inconclusive, and reported as inconclusive"
       },
+      "tau_per_arm": {
+        "A0_proprio_only": 0.041203500000000004,
+        "A1_random_encoder": 0.034545000000000006,
+        "A2_bc_frozen_e0": 0.059992500000000004,
+        "A3_bc_finetuned_e0": 0.0837285
+      },
       "why_stated_this_way": "apple_policy_v1.md section 5.3 announced a rule was 'not a gate' and then decided gate outcomes through the missing-values rule (apple_policy_v1_results.md section 15). D2 feeds nothing."
     },
     "G_SUB": {
       "CORRECTION_carried_in_the_open": "An earlier draft defended this gate against a demo_replay null of p0=1/3 and quoted 'the one-sided binomial probability of >= 8/16 is 0.189'. 0.189 IS WRONG: P(X>=8|n=16,p=1/3) = 0.126501. 0.189 corresponds to p0 = 0.363344, which nothing here uses. At the correct value the FAMILY-WISE probability across the eight candidates is 0.661077, so under that null the gate would have been near a coin flip rather than the screen it was presented as. The demo_replay null is DROPPED ENTIRELY: it is an open-loop baseline while G-SUB asks whether substitution moves THIS policy.",
+      "blind_reference_prior_only_constant_complement": {
+        "all_translation": 0,
+        "dpitch": 0,
+        "droll": 0,
+        "dx": 0,
+        "dy": 0,
+        "dyaw": 0,
+        "dz": 0,
+        "grasp": 0
+      },
+      "blind_reference_time_indexed_complement": {
+        "all_translation": 5,
+        "dpitch": 2,
+        "droll": 3,
+        "dx": 5,
+        "dy": 9,
+        "dyaw": 3,
+        "dz": 1,
+        "grasp": 2
+      },
       "candidates": [
         "all_translation",
         "dx",
@@ -780,19 +1532,41 @@
       },
       "derivation_of_8_of_16": "the midpoint between the pure-policy 1/16 = 6.25% and the 100% ceiling: the effect must be at least half the distance to the ceiling. A MAGNITUDE threshold, not a significance threshold; D is non-gating and no p-value from it is a result.",
       "family_wise_over_8_candidates_at_p0_one_sixteenth": 1.519332743427082e-05,
+      "family_wise_over_8_candidates_at_their_references": 0.12115554977783649,
       "is_the_only_gate_with_a_threshold_that_can_stop_the_line": true,
       "metric": "grasp resets out of 16, per configuration, A2 only",
       "null_defended_against": "the PURE POLICY'S OWN RATE, 1/16 (outputs/task056-cohort-d/a2.json). That is the rate substitution must beat for substitution to have done anything, and the only null with a defensible claim to being this experiment's.",
+      "one_sided_binomial_at_each_candidates_reference": {
+        "all_translation": 0.009779519717503213,
+        "dpitch": 3.7095467963155215e-05,
+        "droll": 0.0009068654757426202,
+        "dx": 0.009779519717503213,
+        "dy": 0.10201454438300953,
+        "dyaw": 0.0009068654757426202,
+        "dz": 1.8991785533264516e-06,
+        "grasp": 3.7095467963155215e-05
+      },
       "one_sided_binomial_at_p0_one_sixteenth": 1.8991785533264516e-06,
+      "per_candidate_threshold": {
+        "all_translation": 10,
+        "dpitch": 9,
+        "droll": 9,
+        "dx": 10,
+        "dy": 12,
+        "dyaw": 9,
+        "dz": 8,
+        "grasp": 9
+      },
       "precision_note": "Stored at full double precision rather than rounded. A consistency test recomputes each from the stated null and the enumerated candidate count; rounding made that test fail at 1e-6 and the fix is more digits, not a looser tolerance.",
       "reference_points_fixed_before_the_run": {
         "pure_policy_A2": "1/16",
         "scripted_oracle": "24/24 pooled on three prior wide cohorts"
       },
-      "rule": "passes iff at least one of the EIGHT G-SUB CANDIDATE configurations reaches >= 8/16 grasp resets. 'none' and 'full' are CONTROLS and NOT candidates, so a passing 'full' cannot pass the gate."
+      "rule": "passes iff at least one of the EIGHT G-SUB CANDIDATE configurations c reaches >= tau_c grasp resets, tau_c = max(8, floor((r_c + 16) / 2)), r_c = max(1, b_c), b_c = the grasp resets of candidate c with the TIME-INDEXED BLIND complement on the same 16 resets (amendment_1 calibration). 'none' and 'full' are CONTROLS and NOT candidates.",
+      "threshold_rule_note": "AMENDMENT 1. The frozen floor of 8/16 is kept, so no candidate's threshold is lower than before. The binomials are informational: the simulator is deterministic and the blind references are exact counts on these 16 resets, not estimates."
     }
   },
-  "missing_values": "A gate that cannot be evaluated counts as failed. D1 and G-SUB are the only gates.",
+  "missing_values": "AMENDMENT 1 (the frozen value read 'D1 and G-SUB are the only gates', stale against protocol section 5): a quantity that cannot be evaluated counts as failed. This covers D1 (D1-pipeline), D1-grasp's derived count, and G-SUB -- every quantity that decides an outcome. D1-contrast and D2 decide nothing and are excluded by name.",
   "not_done_declared": [
     "any model, loss, head or output-parameterisation change",
     "any retraining of any arm",
@@ -802,15 +1576,16 @@
     "the on-policy-relabeling argument for a follow-up, which is recorded in the results document as a named candidate and deliberately NOT preregistered here"
   ],
   "pre_declared_outcomes": {
-    "P": "Clause (a) holds: D1 fails for >= 3 of the 4 arms, OR D1-grasp's two-sided count is >= 8/16 for >= 3 of the 4 arms. A locatable pipeline discrepancy. Next: an audit of the observation path from G1Embodiment.observe to ClonedPolicy.act against cloning.py's training path, then a re-measurement. No model change, no retrain.",
+    "P": "Clause (a) holds -- clause (a) (amended): D1-pipeline FAILS for A2 or for >= 3 of the 4 arms, OR D1-grasp's derived count (step-zero right_grasp > -0.5) is >= 8/16 for >= 3 of the 4 arms. A locatable pipeline discrepancy. Next: an audit of the observation path from G1Embodiment.observe to ClonedPolicy.act against cloning.py's training path, then a re-measurement. No model change, no retrain.",
     "P_over_X_precedence": "G-SUB fails AND clause (a) HOLDS BY EITHER DISJUNCT: OUTCOME P TAKES PRECEDENCE AND OUTCOME X DOES NOT FIRE, once. exemption_spent is set to true in the results document, and a re-run after the fix whose G-SUB fails with clause (a) not holding fires the abandonment clause as written.",
-    "S": "Clause (a) does NOT hold (D1 passes for >= 2 of the 4 arms AND D1-grasp's count is < 8/16 for >= 2 of the 4 arms) and G-SUB passes. The failing channel is named. Next: a new preregistration for a targeted fix, with its own controls. That task may ask for cohort C.",
+    "S": "Clause (a) does NOT hold (D1-pipeline passes for A2 and for >= 2 of the 4 arms, AND D1-grasp's count is < 8/16 for >= 2 of the 4 arms) and G-SUB passes. The failing channel is named. Next: a new preregistration for a targeted fix, with its own controls. That task may ask for cohort C.",
     "V": "B1, B2 or B3 fails. The run is void. No arm numbers are reported as results; the defect and the void are recorded.",
     "X": "G-SUB fails AND clause (a) does NOT hold. The abandonment clause fires. The line stops.",
     "X_when_the_exemption_is_already_spent": "If exemption_spent is already true and G-SUB fails while clause (a) holds, THE ABANDONMENT CLAUSE FIRES. The exemption is gone; a second failure through a channel that was supposed to have been fixed is the clause case, not an exception to it. Properly the successor protocol outcome to declare, but the entire point of exemption_spent is that this protocol binds its successor, and an unnamed cell is exactly what the B-2 defect was.",
     "a_grasp_latched_before_exhaustion_still_counts": "Under the definition of grasp_reset ('a development seed on which the latched score.grasp is true at any point'), termination by shadow_expert_exhausted ends the attempt but does not un-latch a stage already reached."
   },
   "precedence_rule_D1_over_G_SUB": {
+    "amended_clause_a": "clause (a) (amended): D1-pipeline FAILS for A2 or for >= 3 of the 4 arms, OR D1-grasp's derived count (step-zero right_grasp > -0.5) is >= 8/16 for >= 3 of the 4 arms. The precedence, the once-only bound and exemption_spent are UNCHANGED; D1 now names D1-pipeline. A2 is named because G-SUB is conducted through A2's channel alone.",
     "exemption_spent": false,
     "exemption_spent_contract": "Frozen at false. The results document sets it true the first time the exemption is claimed. ANY SUCCESSOR PROTOCOL MUST CITE THIS FIELD IN ITS OWN GATE SECTION and may not claim the exemption while it reads true. Without a field to flip, 'once' is prose binding a document this protocol cannot reach.",
     "guards_must_match_the_CONDITION_not_the_VOCABULARY": "A guard that matches on vocabulary rather than on the condition will pass any mutation fluent enough to reuse the vocabulary. The decision-table guard asserted that Outcome X MENTIONS clause (a) and not that it fires when clause (a) does NOT hold, so an Outcome X rewritten to \"G-SUB fails AND clause (a) HOLDS\" -- the B-2 defect in the correct vocabulary -- passed the guard built to prevent it. Reproduced, then fixed by asserting polarity, then re-verified by re-running that injection.",
@@ -820,7 +1595,8 @@
       "protocol section 5.1",
       "protocol section 5.2",
       "protocol section 7",
-      "this manifest"
+      "this manifest",
+      "protocol amendment 1"
     ],
     "the_defect_it_fixes": "An earlier revision had the abandonment clause fire unconditionally on a G-SUB failure while the success clause said the line continues if D1 fails for >=3 arms. On the joint outcome 'D1 fails for >=3 arms AND G-SUB fails' -- plausible, arguably the modal one -- one clause said stop and the other said continue, and the pre-declared outcomes listed both side by side with NO PRECEDENCE. A preregistration whose function is to bind the executing agent left the agent free to pick AFTER SEEING THE NUMBERS.",
     "the_exemption_is_available_exactly_once": "Once the defect is fixed, a re-run whose G-SUB fails with clause (a) not holding fires the clause as written. The exemption is recorded as spent by setting exemption_spent to true in the results document the first time it is claimed, so a second claim is visibly unavailable.",
@@ -832,9 +1608,10 @@
     "task": "TASK-056"
   },
   "probes": {
-    "D1": "step-zero contrast: signed step-zero command vs shadow expert, 4 arms x 16 seeds",
-    "D1_grasp": "the expert's step-zero right_grasp is -1.0 exactly on every reset (scripted.py orient phase). Report per arm the count out of 16 where the step-zero policy grasp is > 0. NO THRESHOLD: the reference is known-correct.",
-    "D2": "divergence trace, 4 arms x 16 seeds x <=1000 steps, signed per-step logging of both commands plus ||palm-apple||, stage, step index",
+    "D1": "D1 (amended) = D1-pipeline, the observation-path equivalence probe: for each of the 15 surviving val roots, reset the simulator to that root's recorded reset exactly as scripts/evaluate_policy.py resets a development seed, take the first observation, and compare it and each arm's act() output against the stored training-path frame and the arm's offline prediction on it, clipped to [-1, 1] as act() clips. Zero commands are executed. The frozen D1 (step-zero contrast against the shadow expert on the development cohort) is kept as D1-contrast: reported, never decisional.",
+    "D1_contrast": "reported, not decisional: signed step-zero command vs shadow expert (apple_collector_policy), 4 arms x 16 development seeds, per-dimension median |difference| and its ratio to 3x Table A. Declared before the run: on recorded reset frames all four arms exceed 3x Table A in right_dx (ratios 3.76-5.37 on val, 4.40-5.32 on train).",
+    "D1_grasp": "the expert's step-zero right_grasp is -1.0 exactly on every reset (apple_collector_policy, orient phase). PRIMARY REPORT: the signed step-zero right_grasp per arm per seed, the full 4x16 table. DERIVED, DECISION-RELEVANT COUNT: seeds where step-zero right_grasp > -0.5 (|g - (-1.0)| > 0.5).",
+    "D2": "divergence trace, 4 arms x 16 seeds x <=1000 steps, signed per-step logging of both commands plus ||palm-apple||, stage, step index; first_departure_step as defined in gates.D2 (amendment 1)",
     "D2_named_traces": {
       "contrast_rule": "the lowest-numbered seed of the same arm, chosen by rule rather than inspection so it cannot be picked after the traces are seen",
       "declared_in_advance": true,
@@ -875,15 +1652,16 @@
   "protocol": "apple_policy_diagnostics_v1",
   "shadow_expert_exhaustion_preregistered_behaviour": {
     "BLOCKING_DEFECT_THIS_FIXES": "An earlier revision keyed the rule on 'D3', and 'none' IS a D3 configuration, so every 'none' attempt would have terminated at ~805 with shadow_expert_exhausted. B2 requires 'none' to reproduce outputs/task056-cohort-d/a2.json, whose sixteen attempts are ALL step_limit at exactly 1000 executed steps. B2 could never have passed, Outcome V would have fired, and THE RUN WOULD HAVE BEEN VOID WITH NO ARM NUMBERS REPORTED. 'full' was never at risk: orient+descend+close = 255 commands, +lift = 405, well inside 805. The second-order hazard is worse: a preregistration that provokes its own violation invites the executing agent to reason its way out of an obviously-unintended void mid-run, which is exactly what the process section's 'stops and reports rather than repairing as a reflex' exists to prevent.",
+    "amendment_1_note_on_the_BLOCKING_DEFECT_text": "'~805' in BLOCKING_DEFECT_THIS_FIXES describes the frozen revision's wrong expert; with the collector the same defect would have terminated every 'none' attempt at 745. The fix (keying on the substitution set) is unaffected.",
     "caught_by_enumerated_message_never_by_a_broad_except": true,
     "empty_substitution_set": "all of D1 and D2, the 'none' configuration of D3, and B1's three reference baselines scripted_oracle, hold and random. The shadow expert is a RECORDING, not a command source, so its exhaustion cannot affect the robot. It stops being recorded, THE ATTEMPT CONTINUES TO ITS CAP, and the report records shadow_expert_exhausted_at_step. Departure past that step is null, NEVER zero.",
     "keyed_on_the_SUBSTITUTION_SET_never_on_which_probe_is_running": true,
-    "non_empty_substitution_set": "'full' and the eight G-SUB candidates. The expert IS part of the commanded action, so at exhaustion the attempt TERMINATES with reason shadow_expert_exhausted and counts as a NON-SUCCESS. Not a concession: the oracle's budget is 805 commands and scripted_oracle succeeds inside it (24/24 pooled).",
+    "non_empty_substitution_set": "'full' and the eight G-SUB candidates. The expert IS part of the commanded action, so at exhaustion (step 745) the attempt TERMINATES with reason shadow_expert_exhausted and counts as a NON-SUCCESS. Not a concession: scripted_oracle IS apple_collector_policy, its budget is 745 commands, and it succeeds inside it on 16/16 of exactly these resets (apple_wide_grasp_closure_results_v3.md) -- AMENDMENT 1 (the frozen text said 805).",
     "reported_for_every_attempt": "shadow_expert_exhausted_at_step, so a reader can see how many attempts the rule bound."
   },
-  "status": "preregistration",
-  "success_clause": "GOVERNED BY precedence_rule_D1_over_G_SUB, which ranges over CLAUSE (a) AS A WHOLE. Continues iff EITHER (a) D1 fails for >= 3 of the 4 arms, OR D1-grasp's TWO-SIDED count (seeds where |step-zero right_grasp - (-1.0)| >= 1.0) is >= 8/16 for >= 3 of the 4 arms - follow-up is a pipeline audit and re-measurement, NOT a model change and NOT a retrain; OR (b) G-SUB passes, naming the failing channel. If EITHER DISJUNCT of (a) holds AND G-SUB fails, clause (a) applies and the abandonment clause does not fire, ONCE. In both cases the follow-up is a NEW preregistration with its own gates and controls.",
-  "supersedes_nothing": true,
+  "status": "preregistration, AMENDED (amendment 1, 2026-09-25); nothing has run",
+  "success_clause": "GOVERNED BY precedence_rule_D1_over_G_SUB, which ranges over CLAUSE (a) AS A WHOLE. Continues iff EITHER (a) clause (a) (amended): D1-pipeline FAILS for A2 or for >= 3 of the 4 arms, OR D1-grasp's derived count (step-zero right_grasp > -0.5) is >= 8/16 for >= 3 of the 4 arms - follow-up is a pipeline audit and re-measurement, NOT a model change and NOT a retrain; OR (b) G-SUB passes (a candidate reaches its per-candidate threshold), naming the failing channel. If EITHER DISJUNCT of (a) holds AND G-SUB fails, clause (a) applies and the abandonment clause does not fire, ONCE. In both cases the follow-up is a NEW preregistration with its own gates and controls.",
+  "supersedes_nothing": false,
   "task": "TASK-057",
   "what_this_task_is": "A DIAGNOSTIC task. It trains nothing, changes no model, and proposes no output-parameterisation change. Its only purpose is to locate the gap between TASK-056's near-perfect open-loop imitation and its closed-loop failure. Its single gate can fire the abandonment clause that apple_policy_v1.md section 7 already preregistered."
 }

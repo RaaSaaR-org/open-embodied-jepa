@@ -839,8 +839,28 @@ def test_the_none_configuration_is_not_terminated_by_shadow_expert_exhaustion():
     assert set(controls) == {"none", "full"}
 
     # B3/`full` must fit inside the expert's own budget, or its own threshold is unreachable.
-    # scripted.py phase commands: orient 130, descend 80, close 45, lift 150 -> grasp by 405.
-    assert 130 + 80 + 45 + 150 <= 805, "the oracle must reach grasp well inside 805 commands"
+    # Amendment 1: the frozen line here asserted `130 + 80 + 45 + 150 <= 805` -- the budget of
+    # plain OracleManipulationPolicy, which is not the shadow expert. Read from the collector's
+    # own phase table instead of transcribing numbers, so the check follows the code.
+    import numpy as np
+
+    from embodied_jepa.scripted import apple_collector_policy
+
+    expert = apple_collector_policy(
+        {
+            "position_frame": "world",
+            "base_position_world": [0.0, 0.0, 0.0],
+            "base_rotation_world": np.eye(3),
+            "object_position": [0.34, -0.18, 0.77],
+            "plate_position": [0.49, -0.09, 0.75],
+            "container_surface_z": 0.76,
+            "object_support_height": 0.04,
+        }
+    )
+    names = [p.name for p in expert.phases]
+    through_lift = sum(p.commands for p in expert.phases[: names.index("lift") + 1])
+    assert expert.max_steps == 745
+    assert through_lift <= expert.max_steps, "the expert must reach grasp inside its budget"
 
 
 def test_the_committed_script_is_the_provenance_of_the_conditional_tables():

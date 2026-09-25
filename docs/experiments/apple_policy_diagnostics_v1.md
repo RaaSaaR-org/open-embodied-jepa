@@ -4,6 +4,8 @@
 no cohort has been opened, and **cohort C (seeds 45300–45339) is not touched by this task at any
 stage** — this protocol preregisters no use of it.
 
+> **Amended before any run — read §13 first.** Amendment 1 (2026-09-25) corrects the shadow expert, which the frozen text below names as plain `OracleManipulationPolicy`; the BC corpus was collected with `scripted.apple_collector_policy` (745-command budget, not 805). It also replaces D1 with an observation-path equivalence test, moves the D1-grasp cut, sets per-candidate G-SUB thresholds against a blind reference, and defines `first_departure_step`. The frozen text is kept below unchanged, with a marker at each superseded statement. Nothing has run. `exemption_spent` is still `false`.
+
 Predecessor: [`apple_policy_v1.md`](apple_policy_v1.md) / [`_results.md`](apple_policy_v1_results.md)
 (TASK-056), which failed on its development stop rule: four arms, 64 development attempts, **0 full
 successes**. Handover: [`task056_handover.md`](task056_handover.md).
@@ -69,6 +71,9 @@ saturated rows". Likewise `output_std_per_dimension` is the **predictions only**
 standard deviation is never computed anywhere, so "compressed" had **no referent**. An earlier
 draft of this section drew a conclusion from both. That conclusion is withdrawn.
 
+> **Superseded by Amendment 1 (§13.8, 2026-09-25).** "Necessarily sits inside the *non-saturated* group" is replaced by "is necessarily **bracketed by** the non-saturated rows: min(non-sat) ≤ median ≤ max(non-sat)". The conclusion does not change (claim audit S6-26). The train-cohort figures in (a) are now computed by committed code (`calibrate_policy_diagnostics.py offline`, `train_bc_target_right_dz`). The committed code reproduces the mean of −0.00118 and the rates of 18.447 %, 26.440 % and 44.887 % on 68 791 rows (claim audit S6-27).
+
+
 **The three conditionals that can test it were computed for this protocol** (§9.1), on the same
 7 723 val rows, and they are reported whatever they say:
 
@@ -119,6 +124,9 @@ attempt's own |·| quantiles:
 **The claim is a ≤ q90 claim and is stated as one.** Up to the 90th percentile, a head whose
 validation output standard deviation is 0.27 produced a translation command whose 90th percentile
 equals its median over a thousand consecutive steps, while roll's q90 is 2.05–2.67× its median.
+
+> **Superseded by Amendment 1 (§13.8, 2026-09-25).** These are quantiles of **|·|**. They show that the translation *magnitude* is near-constant, and nothing about the command. §1.2 establishes that the sign is unrecoverable, so a command that flips sign at constant magnitude fits these numbers equally well. Read "near-constant" in (c) and in §1.5 as "near-constant in magnitude, sign unmeasured" (claim audit §1.1(c)/§1.5). D2's signed trace measures the sign.
+
 
 **At q99 the separation disappears, and the cells are printed rather than left blank.** `dz`
 reaches 0.3131–0.3743 and `dy` reaches 0.1745–0.4512, against `droll`'s 0.5029–0.5129 — the same
@@ -185,6 +193,9 @@ written to carry TASK-056 forward — states only the controls' 0/16 and never g
 grasp count at all. **The compression into the handover removed the run's single most encouraging
 measurement.** That is a finding about handover practice and it is recorded as one.
 
+> **Superseded by Amendment 1 (§13.8, 2026-09-25).** The record supports contact, lift and the undropped state **as an end state only**, at the final step (`run_attempt` stores the last score only). "Sustained contact" is **unmeasured** (claim audit S6-07). The probe runner therefore logs `hand_contact`, apple height and `dropped` at **every** step (§13.6).
+
+
 **Consequences carried into this protocol:**
 - Seeds **45100 (A2)** and **45006 (A3)** are named targets for D2 (§3), because they are the only
   two attempts where the loop got far enough for a divergence trace to show anything other than
@@ -231,6 +242,9 @@ two encoder arms it reaches, grasps and holds on one reset each but never transp
 Both predict a near-constant translation command. They differ in **when** the command first departs from what
 the expert would have issued, and that is measurable at step zero, before anything can compound.
 
+> **Superseded by Amendment 1 (§13.8, 2026-09-25).** "Near-constant" here means near-constant **in magnitude**. The sign is unmeasured (§1.2). In addition, §13.4 shows that at step zero every arm's `right_dx` is already wrong on recorded frames. So step zero cannot separate H-pipeline from H-shift on the command. It can separate them on the observation, which is what D1-pipeline tests.
+
+
 ---
 
 ## 2. Definitions — the domain of every scope term, at introduction
@@ -267,6 +281,9 @@ consumed. Every scope term used in a gate or stop rule below is enumerated here 
     advances on the policy's clock rather than on its own progress. A policy that has gone nowhere
     still drives the reference into `descend`, then `lift`. **The shadow expert is therefore
     "expert targets on a policy-driven clock", and is named that way wherever it is used.**
+
+> **Superseded by Amendment 1 (§13.1–13.2, 2026-09-25).** The shadow expert is `scripted.apple_collector_policy(sim.task_truth())`, the policy every surviving BC root was collected with, not `OracleManipulationPolicy`. It is exhausted after **745** commands (130 + 80 + 45 + 150 + 60 + 100 + 100 + 80), not 805. The hybrid-clock property above still holds. A third property is added in §13.2: from `release_high` on, its grasp command ramps from the controller's executed grasp.
+
 - **Departure at step t** — median over the six arm dimensions of |policy − shadow expert|.
 - **Configuration** — one of the ten named below. Nothing else is a configuration.
   **The eight G-SUB candidates**, which are the only configurations G-SUB ranges over:
@@ -302,6 +319,9 @@ That distinction is load-bearing and an earlier revision got it wrong — see th
   budget is 805 commands and `scripted_oracle` succeeds inside it (24/24 pooled), so a
   configuration that cannot reach `grasp` within the expert's own budget has not been cut short.
 
+> **Superseded by Amendment 1 (§13.3 #2, 2026-09-25).** `scripted_oracle` **is** `apple_collector_policy`, so its budget is 745 and not 805. It succeeds inside that budget on 16/16 of exactly these development resets, and the terminating rule stands. Under the frozen expert, `full` would have scored 0/16 (§13.1).
+
+
 > **Why this is keyed on the substitution set: the earlier wording made B2 unpassable and voided
 > the run before any gate could be read.** The rule was keyed on "D3", and `none` is a D3
 > configuration — so every `none` attempt would have terminated at ~805 with
@@ -310,6 +330,8 @@ That distinction is load-bearing and an earlier revision got it wrong — see th
 > have passed, Outcome V would have fired, and **the run would have been void with no arm numbers
 > reported.** `full` was never at risk: orient + descend + close = 255 commands, + lift = 405, well
 > inside 805.
+>
+> *Superseded by Amendment 1 (§13.2):* the collector's budget is 745, and 405 is still inside it.
 >
 > The second-order hazard is the worse one. A preregistration that provokes its own violation
 > invites the executing agent to reason its way out of an obviously-unintended void mid-run, which
@@ -330,6 +352,9 @@ For each arm and each of the 16 seeds, capture the step-zero command **with sign
 expert command at the same instant. At step zero no error has compounded and the state is the reset
 state, drawn from the distribution the corpus was collected from. If the input pipeline is sound,
 the step-zero command must be right.
+
+> **Superseded by Amendment 1 (§13.4, 2026-09-25).** On recorded reset frames, through the training pipeline, every arm's step-zero `right_dx` is wrong by 3.76–5.37× its threshold. So "if the input pipeline is sound, the step-zero command must be right" is false for these arms. This probe is kept as **D1-contrast** and is reported, not decisional. The decisional D1 is now D1-pipeline (§13.4).
+
 
 ### D1-grasp — the one measurement with a ground truth
 
@@ -353,6 +378,9 @@ the commanded value is ≥ 0.0. It fires on an inert `0.0` (error exactly 1.0) a
 `+1.0` (error 2.0), and not on `−1.0` (0.0) or `−0.5` (0.5). Its reading: *the policy is not
 commanding the hand open at the one instant in the episode where the correct command is known and
 unambiguous.*
+
+> **Superseded by Amendment 1 (§13.4, 2026-09-25).** The derived count's cut moves from |g + 1| ≥ 1.0 to **|g + 1| > 0.5** (step-zero `right_grasp` > −0.5). The frozen cut does not fire on the prior-only predictor, whose grasp is −0.0092.
+
 
 ### D2 — the divergence trace
 
@@ -389,6 +417,9 @@ error rather than tested it. The sweep costs the same and tests seven hypotheses
   whitelist enforces it and is not widened. The whitelist form is load-bearing —
   `apple_policy_v1_results.md` §8 records a type coercion that would otherwise have consumed the
   frozen cohort — and a guard that enumerates what is permitted fails closed.
+
+> **Superseded by Amendment 1 (§13.6, 2026-09-25).** D1-pipeline adds one exception, with its own whitelist. It resets the simulator to the recorded resets of the 15 surviving **val** roots and executes zero commands. Cohort C remains untouched. The run does not touch the test split. One pre-freeze calibration count read test-split label sidecars and was superseded; §13.3 discloses it.
+
 - **Cohort C (45300–45339) is not touched by this task at any stage.** No gate references it. The
   handover's blocking stored-values debt attaches to a runner that opens C; **this protocol builds
   no such runner, so that debt does not land here and must not be discharged speculatively.**
@@ -422,6 +453,9 @@ scored on reset frames, which are `orient`-phase, so the two populations differ.
 the population mismatch. **A sound pipeline should pass D1 rather than fail it spuriously**, which
 is the property that had to hold for §5.1's precedence rule not to become an automatic exemption.
 
+> **Superseded by Amendment 1 (§13.4 and 13.3 #4, 2026-09-25).** **This headroom check is withdrawn.** It measured every `orient` row (130 per root) in place of the one reset frame per root that D1 is scored on. On the reset frames themselves every arm fails this D1 (`right_dx` 3.76–5.37× on val, 4.40–5.32× on train). A sound pipeline therefore fails it, so the automatic exemption this paragraph rules out would have happened. D1 is replaced by **D1-pipeline**; this rule survives as the non-decisional **D1-contrast**.
+
+
 **D1-grasp.** The primary report is the **signed 4 × 16 table of step-zero `right_grasp` values**
 (§3), which carries no threshold because its reference is known exactly. The **derived two-sided
 count** — seeds where |step-zero `right_grasp` − (−1.0)| ≥ 1.0 — **is decision-relevant**: §5.2(a)
@@ -435,12 +469,18 @@ through the missing-values rule (`apple_policy_v1_results.md` §15). D2 feeds no
 Reading fixed in advance: median `first_departure_step` ≥ 50 → **gradual**; ≤ 5 → **immediate**;
 otherwise → **inconclusive, and reported as inconclusive**.
 
+> **Superseded by Amendment 1 (§13.5, 2026-09-25).** `first_departure_step` was never defined. It is now the first step at which departure exceeds τ_X = 3 × the median of the arm's six Table A arm-dimension cells on 5 consecutive steps. It is calibrated so that open-loop sound arms read gradual (116–205) and the prior-only predictor reads immediate (0).
+
+
 **G-SUB — the only gate. Per-dimension expert substitution, A2 only.**
 Metric: grasp resets out of 16, per configuration.
 
 > **G-SUB passes iff at least one of the eight G-SUB CANDIDATE configurations enumerated in §2
 > reaches ≥ 8/16 grasp resets.** `none` and `full` are controls and are **not** candidates; a
 > passing `full` therefore cannot pass the gate.
+
+> **Superseded by Amendment 1 (§13.4, 2026-09-25).** The threshold is now **per candidate**: τ_c = max(8, ⌊(r_c + 16)/2⌋), where r_c is the larger of 1/16 and the candidate's score with a clock-only blind complement. The thresholds are `all_translation` 10, `dx` 10, `dy` **12**, `dz` 8, `droll` 9, `dpitch` 9, `dyaw` 9, `grasp` 9. The frozen 8/16 does not discriminate for `dy`: a controller that knows only the step index, with the expert's `dy` substituted, grasps 9/16.
+
 
 *The null this gate is defended against is **the pure policy's own rate**, 1/16*
 (`outputs/task056-cohort-d/a2.json`, A2's `result.grasp_resets`). That is the rate the substitution
@@ -483,6 +523,9 @@ only gates", which left D1-grasp's count outside the rule while §5.2(a) made it
 > this camera. No further loss, head or output-parameterisation variant is preregistered on it. The
 > next task is a perception/data task. Cohort C remains unconsumed. The executing agent stops and
 > reports and does not select the follow-up itself.
+
+> **Superseded by Amendment 1 (§13.3 #10 and 13.6, 2026-09-25).** "Reaches 8/16" becomes "reaches its per-candidate threshold". "Fires as written" means the clause's *consequence* applies as written. Outcome D's own condition (A4 failing on C) is not what triggers it here.
+
 
 > **Precedence over §5.2, and it is taken by CLAUSE (a) AS A WHOLE — either disjunct.** If
 > **either** D1 fails for ≥ 3 of the 4 arms **or** D1-grasp's two-sided count is ≥ 8/16 for ≥ 3 of
@@ -534,6 +577,9 @@ The line continues iff **either**:
   |step-zero `right_grasp` − (−1.0)| ≥ 1.0 — is ≥ 8/16 for ≥ 3 of the 4 arms. Either is a concrete, locatable discrepancy between the
   loop's observation pipeline and the trainer's. The follow-up is a pipeline audit and a
   re-measurement — **not** a model change and **not** a retrain.
+
+> **Superseded by Amendment 1 (§13.6, 2026-09-25).** In clause (a), "D1 fails for ≥ 3 of the 4 arms" becomes "**D1-pipeline** fails for A2 or for ≥ 3 of the 4 arms", and the D1-grasp count uses the > −0.5 cut. The same substitution applies wherever §5.1, §5.2 and §7 state clause (a).
+
 - **(b)** G-SUB passes, naming the failing channel.
 
 In both cases the follow-up is a **new preregistration with its own gates and controls**, never a
@@ -569,17 +615,26 @@ gate, it is declared here before any number exists, and two things follow:
   14/16 permits two harder resets without admitting a broken harness. `hold`/`random` at 0 is the
   measured 0/50 on apple→plate (`docs/experiments/mvp_results.md`, via `apple_policy_v1.md` §5.2).
   **If B1 fails, every number in this task is void**, exactly as G5 works in the parent protocol.
+
+> **Superseded by Amendment 1 (§13.3 #11 and 13.6, 2026-09-25).** `hold` and `random` are exactly those of `benchmark.py _control`. `random` is seeded with the development seed over `configs/apple_policy_v1.yaml`'s bounds. Both must be 0/16 on grasp and on success. Their 0/50 source is a different harness (the MVP benchmark). `scripted_oracle` is `apple_collector_policy`, which scored 16/16 on exactly this cohort.
+
 - **B2 — the zero-substitution control.** The `none` configuration must reproduce
   `outputs/task056-cohort-d/a2.json`: the same single grasp seed (45100), the same 16 termination
   reasons, the same executed-step counts. If the harness changes the pure-policy result, the harness
   is a confound and the sweep is void. This is the control that makes G-SUB interpretable and the
   one most likely to be skipped.
+
+> **Superseded by Amendment 1 (§13.3 #8, 2026-09-25).** The reference report ran on **CPU**, so this run's policy inference is pinned to CPU.
+
 - **B3 — the inert-probe tripwire, run FIRST.** `apple_policy_v1_results.md` §13 instance 9: a
   control whose output is indistinguishable from a real pass **conceals** the class it was built to
   catch. The `full` configuration — all seven dimensions from the shadow expert — must reach
   ≥ 14/16 grasp resets. If it does not, the substitution channel is not reaching the robot and the
   sweep is void before it starts. This probe exists only to prove the mechanism is connected and it
   **fails loudly when inert**.
+
+> **Superseded by Amendment 1 (§13.1, 2026-09-25).** With the frozen expert, `full` scores **0/16** in a dry run, so B3 would have voided the run. With `apple_collector_policy`, it scores 16/16, and `full` is command-identical to `scripted_oracle`.
+
 - **B4 — the shadow expert is not an input.** A behavioural test that the shadow command is computed
   strictly after `policy.act` returns and is never an argument to it; plus the `ast.walk` form
   (its text-grep predecessor produced a false positive on a correct runner — §13 instance 8)
@@ -589,6 +644,9 @@ gate, it is declared here before any number exists, and two things follow:
 - **B5 — the standing offline anchor, carried not re-measured.** A1 0.01106 < A0 0.01313 <
   A2 0.01793 < A3 0.02340: the primary is third of four, beaten by the arm that never sees an
   image. Any claim that vision does work must survive it.
+
+> **Superseded by Amendment 1 (§13.8, 2026-09-25).** Two further facts qualify this ordering. A per-phase train-median constant, which needs only the phase, scores **0.01685** on the same metric and beats A2 and A3 (claim audit S5-14). A3 trained at batch 32 against 256, on about 27× fewer samples (S5-16).
+
 - **B6 — does the learned part do work?** From B5 and §1.3 the honest answer is **not
   demonstrated, on any metric.** This task does not attempt to establish it. Every probe is
   diagnostic, and no result here may be reported as progress toward a learned result.
@@ -632,6 +690,9 @@ re-reported after the gates are read.
 ## 8. Budget
 
 MPS/CPU only, Apple M5 Pro 48 GB. No training. No corpus decoding beyond §9's re-derivation.
+
+> **Superseded by Amendment 1 (§13.6, 2026-09-25).** The run uses **CPU only**, because B2 reproduces a CPU run. Amendment 1's pre-freeze calibration also decoded the train split's reset frames and the val split. Nothing else is decoded.
+
 
 | Stage | Basis | Estimate |
 |---|---|---|
@@ -800,6 +861,9 @@ TASK-056 checkpoint must remain loadable.
 | `release` | 178 | 0.1205 | 0.0660 | 0.1742 | 0.0668 | 0.0765 | 0.0308 | 0.0196 |
 | `transfer` | 840 | 0.0403 | 0.0322 | 0.0326 | 0.0196 | 0.0160 | 0.0306 | 0.0086 |
 
+> **Superseded by Amendment 1 (§13.3 #3, 2026-09-25).** In Table E, the rows labelled `lower` and `release` are collector phase indices 5 and 6, which are **`release_high`** and **`lower_open`** in the collector's own table. The labels came from `OracleManipulationPolicy`. The values are unchanged.
+
+
 **Reading rule for Table E, fixed in advance:** it is an OFFLINE error on recorded frames. A phase with a low error here is not thereby a phase the controller handles — that is the covariate-shift gap this whole protocol exists to measure, and `apple_policy_v1.md` §2 already records that a readout measured on recorded frames is not one that survives the state distribution its own controller induces.
 
 ## 10. Engineering constraints
@@ -873,3 +937,371 @@ TASK-056 checkpoint must remain loadable.
   never on a review file read from disk.** The same rule applies to merging.
 - On any voiding control (B1, B2, B3) the executing agent stops and reports rather than repairing
   as a reflex.
+
+---
+
+## 13. Amendment 1 — 2026-09-25 (pre-run; nothing has executed)
+
+**Status.** Written after the preregistration merged (PR #40, commit `4c72ffa`) and **before any
+probe ran**. Sections 1–12 above are kept verbatim as frozen. Every statement this amendment
+replaces carries an inline *"Superseded by Amendment 1"* marker pointing here, and the manifest
+keeps each replaced value verbatim under `amendment_1.superseded` with its reason. Frozen hashes:
+protocol `f7dc9c78…689c`, manifest `f7e57111…db21` (full digests in the manifest).
+`precedence_rule_D1_over_G_SUB.exemption_spent` **stays `false`**.
+
+Every number in this section is generated by `scripts/calibrate_policy_diagnostics.py`
+(committed), subcommands `provenance`, `closed-loop` and `offline`. Those three ran at
+revision `50e4575` with a clean tree. A second `offline` report (`offline-v2`, revision
+`676d397`, clean) adds the measurements the review asked for; see §13.4 and §13.8. A full
+rerun of all three parts at a later revision reproduced every value exactly. The reports and
+their SHA-256 are listed in `amendment_1.calibration_artifacts`. **No trained arm was run in closed loop to produce them.**
+The closed-loop part drives scripted and blind controllers only. The offline part runs the four
+arms on *recorded* frames, as §9 already did.
+
+### 13.1 The defect: the protocol named the wrong expert
+
+§2 defines the shadow expert as `OracleManipulationPolicy(sim.task_truth())`. **That is not the
+policy the BC corpus was collected with.** `scripts/collect_apple_wide.py` `run_root` builds
+`scripted.apple_collector_policy(sim.task_truth())`: an `EarlyReleaseOracleManipulationPolicy`
+with `opening_ramp=0.08`, a `palm_x_offset` of +0.015 m on every phase target and a
+`transfer_x_shift` of −0.035 m on phases 4–7. `cloning.py` trains every arm on that policy's
+`collector__base_action`. The two policies have different phase tables, different targets and
+different release behaviour.
+
+| | `OracleManipulationPolicy` (frozen text) | `apple_collector_policy` (the collector) |
+|---|---|---|
+| phases | orient, descend, close, lift, transfer, lower, release, retreat | orient, descend, close, lift, transfer, **release_high**, **lower_open**, retreat |
+| commands | 130, 80, 45, 150, **160**, 100, 60, 80 | 130, 80, 45, 150, **60**, 100, 100, 80 |
+| budget | **805** | **745** (= `collect_apple_wide.ROOT_MAX_COMMANDS`) |
+| release | opens after lowering, from step 665 | opens at the high transfer pose from step 465, ramping from the executed grasp by 0.08 per step |
+
+**Evidence. I checked each item from code and data instead of taking it on trust.**
+
+- **Bit-exact replay.** I re-ran the collector's own loop (`Controller`, `Perturber`, `step`)
+  with `apple_collector_policy` on 8 surviving train roots, two per perturbation level
+  (48000, 48008, 48001, 48013, 48002, 48006, 48003, 48011). The replay reproduces the stored
+  `collector__base_action` with **maximum absolute difference 0.0** on every command of every
+  root. Plain `OracleManipulationPolicy`, advanced on the same executed results, issues a
+  different command on 446–684 of those roots' 501–745 recorded commands (per-root counts are in
+  `amendment_1.evidence.bit_exact_replay`).
+- **Phase budgets in the corpus.** The count covers the 152 non-aim-offset train and val roots;
+  no test-split sidecar is read. `collector__phase_index` = 4 occurs on **exactly 60 commands on
+  every one of the 146 roots that reach it** (mean 57.63 over all 152, because six stop earlier).
+  The plain policy's phase 4 lasts 160. The longest root has 745 commands.
+- **The early-release signature.** 1 323 commands in phases ≥ 5 carry a base grasp of exactly
+  0.92 = 1 − 0.08, the first step of the opening ramp. `OracleManipulationPolicy` cannot emit that
+  value.
+- **The committed record already said so.** The per-phase table in `apple_policy_v1_results.md`
+  lists `release_high` and `lower_open`, which exist only in the collector's table. And the
+  `scripted_oracle` in `evaluate_apple.py`, the source of the "24/24" in B1 and §2.1, also builds
+  `apple_collector_policy`.
+
+**Consequences, measured on the development cohort before freezing:**
+
+- **B3 would have voided the run.** With all seven components substituted from plain
+  `OracleManipulationPolicy`, the `full` configuration reaches grasp on **0/16**: 15 attempts end
+  in `guard_refusal` at steps 249–258, and one exhausts at 805. B3 requires ≥ 14/16, so Outcome V
+  would have fired and no arm number would have been reported. With `apple_collector_policy`,
+  `full` reaches **16/16 grasp and 16/16 success**, which reproduces `scripted_oracle`'s recorded
+  16/16 on exactly these resets.
+- **D1's reference would have been wrong at step zero.** The two experts' step-zero commands
+  differ on **10 of the 16** development resets, and on 3 of them the sign of `right_dx` flips.
+  The median of |Δ `right_dx`| over all 16 seeds, including the 6 where the experts agree, is
+  0.048. That is 84 % of A0's `right_dx` D1 threshold of 0.0569 (claim audit S6-29, which
+  reached the same figure independently by reconstructing the step-zero commands from labels
+  on 152 roots). All other components agree at step zero.
+- **Every D3 configuration would have substituted a controller the arms never imitated.**
+
+Three prior reviews checked this protocol for internal consistency, and it was internally
+consistent: 805 is the correct budget *of the policy it named*. The defect was that the named
+policy was not the one the data came from, and no internal check can detect that. §13.3 applies
+the same provenance check to every other named entity.
+
+### 13.2 The corrected definitions
+
+- **Shadow expert command:** `scripted.apple_collector_policy(sim.task_truth()).action(robot)`
+  at indices (6, 7, 8, 9, 10, 11, 13), with **no aim offset and no perturbation**. The surviving
+  roots are exactly the non-aim-offset roots, and the BC target is the unperturbed base action.
+  It is advanced by `advance(result)` on every executed step and computed strictly after the
+  controller's `act` returns. It is implemented as `embodied_jepa.policy_diagnostics.ShadowExpert`,
+  which refuses to construct if the policy's budget is not 745.
+- **Budget: 745 commands.** On the controller's clock, `close` starts at step 210, `lift` at 255,
+  `transfer` at 405, `release_high` at 465, `lower_open` at 565 and `retreat` at 665. The expert
+  is exhausted at step 745. `full` reaches grasp inside that budget: in the dry run every attempt
+  succeeds by executed step 501–502.
+- **A third hybrid property. The frozen text could not state it because it named a different
+  policy.** From `release_high` on, the collector commands `grasp = max(−1, accepted_grasp − 0.08)`,
+  where `accepted_grasp` is the grasp of the last **executed** action. So in any configuration
+  where the controller supplies the grasp, the shadow expert's release command is a ramp from the
+  *controller's* grasp. The collector behaved the same way under perturbation, so this is declared
+  and not corrected.
+- **The step-zero `right_grasp` reference is still −1.0 on every reset.** `orient` carries −1.0,
+  and the ramp applies only from phase index 5.
+
+### 13.3 Named-entity sweep
+
+For each entity the protocol names, this table gives the entity the data or artifacts actually
+came from:
+
+| # | Named in the protocol | Where | Actual provenance | Verdict |
+|---|---|---|---|---|
+| 1 | shadow expert `OracleManipulationPolicy` | §2, §2.1, §5.3, manifest | `apple_collector_policy` (§13.1) | **Defect — corrected** |
+| 2 | "the oracle's own budget is 805 commands and `scripted_oracle` succeeds inside it (24/24 pooled)" | §2.1 | `scripted_oracle` **is** `apple_collector_policy` (`evaluate_apple.py`), with budget 745 | **Defect:** the sentence paired one entity's budget with another's result. Corrected by #1 |
+| 3 | Table E phase names `lower`, `release` | §9.1, manifest `by_phase_median_error` | `collector__phase_index` 5 and 6 are `release_high` and `lower_open`; the generating script's name table was copied from `OracleManipulationPolicy` | **Defect — relabelled.** Values are unchanged. The script now uses the collector's names and a test pins them. The manifest carries `phase_label_correction_amendment_1` |
+| 4 | the population for D1's headroom check: "reset frames, which are `orient`-phase" | §5 | measured on **all** `orient` rows (130 per root, 1 950 val rows), not on the one reset frame per root that D1 is scored on | **Defect — wrong population** (§13.4) |
+| 5 | `first_departure_step` | §5 D2, manifest | named, never defined anywhere | **Defect — now defined** (§13.5) |
+| 6 | manifest `probes.D1_grasp` | manifest | still the one-sided "count > 0, no threshold" text that §3 had replaced | **Defect — stale; corrected** |
+| 7 | manifest `missing_values` | manifest | still "D1 and G-SUB are the only gates", which §5 had already superseded | **Defect — stale; corrected** |
+| 8 | device "MPS/CPU" | §8, manifest | B2's reference `outputs/task056-cohort-d/a2.json` ran on **cpu** at `103b14f` | **Under-specified — pinned to CPU**, so B2 cannot fail because of a device difference |
+| 9 | the runner's `--config` | never named | the TASK-056 reports do not record a config path; the bounds in `configs/apple_policy_v1.yaml` equal the reports' `configured_bounds` exactly | **Unnamed — now named** |
+| 10 | "the preregistered Outcome D abandonment clause … fires as written" | §5.1 | Outcome D's condition (G1 and G4 fail on C **and A4 fails**) is not what triggers it here: A4 was deferred and C was never opened | **Clarified:** this protocol imports the clause's *consequence* under its own condition (G-SUB fails and clause (a) does not hold) |
+| 11 | B1 `hold` / `random`, "measured 0/50" | §6 | the hold and random of `benchmark.py _control`, measured on the MVP benchmark (other resets, other scene rule, 805-step cap) | **Correct source, different harness.** Both are now defined by reference to `benchmark.py`, and the metric is fixed as 0/16 grasp **and** 0/16 success |
+| 12 | arms = `checkpoints/task056-policy-v1/{a0..a3}.pt` | §2 | SHA-256 `960dd6f0…`, `6e9912b8…`, `0dc2fb70…`, `e61e2e09…` equal the TASK-056 reports' `checkpoint_sha256`; `policy.py` SHA-256 `d682078b…` equals their `policy_implementation_sha256` | Match |
+| 13 | development cohort 45000–45007, 45100–45107 | §2, §4 | `evaluate_policy.COHORT_D`; the resets come from `evaluate_apple.wide_reset`, which is the corpus's own rule | Match |
+| 14 | the splits behind Table A: val with 7 723 rows and 15 surviving roots; train with 68 791 rows and 137 roots | §9, §1.1 | reproduced (15 val roots; 68 791 train rows) | Match |
+| 15 | D1 thresholds = 3 × Table A, where Table A is measured against `collector__base_action` | §5, §9 | that is the BC target, the collector's own command | Match. #1 never affected Table A |
+| 16 | B2 reference `a2.json`: grasp seed 45100, 16 × `step_limit` at 1 000 | §6 | confirmed | Match |
+| 17 | §1.3 lift heights +0.1678 / +0.1694 m, contact true, not dropped | §1.3 | confirmed from `a2.json` / `a3.json` | Match |
+
+**Test-split disclosure.** The first provenance count, at revision `b853560`, read the
+**label sidecars** (collector phase indices and base actions) of the 8 non-aim **test-split**
+roots. It counted phases over 160 roots and got a phase-4 mean of 57.375 and 1 375 ramp rows.
+No image or state was decoded, and the count selected nothing. The count was then restricted to
+train and val at `50e4575`. The superseded report is kept as
+`outputs/task057-diagnostics/calibration/provenance-superseded-reads-test-labels.json`. The
+"about 57.4 per root" in the task brief is that 160-root figure. Every number in this
+amendment uses the 152 train and val roots. Apart from these label sidecars, the test split was
+not touched.
+
+### 13.4 Does each absolute threshold discriminate? What a blind or prior-only predictor scores
+
+This section uses two blind controllers throughout. Both are built from
+`collector__base_action` over every command row of the 137 surviving train roots:
+
+- **prior-only:** the per-component mean, as one constant 7-vector;
+- **time-indexed:** the mean command at each step index. This controller knows the clock and
+  nothing else.
+
+**D1 (frozen): does not discriminate, because a sound pipeline fails it.** The table scores D1
+through the *training* pipeline on *recorded* reset frames. There is no closed loop, so there can
+be no pipeline defect:
+
+| arm | `right_dx` ratio to its D1 threshold, val (15 resets) | train (137, in-sample) | frozen D1 passes (val / train)? |
+|---|---|---|---|
+| A0 | 4.84 | 4.84 | no / no |
+| A1 | 5.37 | 5.32 | no / no |
+| A2 | 4.55 | 4.40 | no / no |
+| A3 | 3.76 | 4.99 | no / no |
+
+Only one other ratio exceeds 1: A0 `right_dpitch` at 1.08. So `right_dx` decides the result, and
+the reason is structural:
+
+- At step zero the expert's `right_dx` is a reset-dependent ±0.4 bang-bang, with standard deviation
+  0.357 over the val resets. By contrast `dz`, `droll`, `dpitch`, `dyaw` and `grasp` are
+  **identical on every reset** (standard deviation 0).
+- The robot's state at reset is identical across resets (max standard deviation ≤ 2.2e-7). So A0
+  is blind at step zero by construction.
+- The image arms' predicted step-zero `right_dx` barely varies (standard deviation 0.002–0.029),
+  against the target's 0.357.
+- On four of the six dimensions, a constant predictor scores zero error.
+
+So **clause (a) would have held on a sound pipeline**, Outcome P would have fired, and the
+one-shot exemption would have been spent on no defect. §5 said that failure had to be ruled out
+("the property that had to hold for §5.1's precedence rule not to become an automatic
+exemption"). The headroom check that claimed to rule it out measured the wrong population (#4
+above). **The frozen D1 is kept as *D1-contrast*. It is reported in full and is never decisional,
+and its offline outcome is declared here:** every arm exceeds its `right_dx` threshold on recorded
+reset frames. Reading a closed-loop failure of D1-contrast as a pipeline defect is excluded in
+advance.
+
+**D1 (amended) = D1-pipeline, the observation-path equivalence test D1 was meant to be.**
+H-pipeline (§1.5) is a claim about the observation, so this test checks the observation directly.
+
+- **Procedure.** For each of the 15 surviving val roots (seeds in the manifest), the simulator is
+  reset to the root's recorded reset exactly as `scripts/evaluate_policy.py` resets a development
+  seed. The first observation is compared with the stored training frame. Each arm's `act` output
+  on that observation is compared with the same arm's offline prediction on the stored frame,
+  clipped to [−1, 1] as `act` clips.
+  **No command is executed and nothing is scored.**
+- **Failure rule.** Arm X **fails** D1 iff, on any of the 15 resets:
+  - (i) for A1–A3, the `onboard_rgb` frame is not byte-identical to the stored frame;
+  - (ii) any `robot_state` component differs by more than 1e-6, or the mask differs; or
+  - (iii) any of the seven free components of X's `act()` output differs by more than
+    **1e-4** from X's offline prediction on the stored frame **clipped to [−1, 1]**.
+    `ClonedPolicy.act` clips its output. The step-zero grasp heads sit just below −1
+    (−1.016 to −0.977), so an unclipped comparison would fail a sound pipeline by up to
+    0.0161. The independent review caught this in the first version of the amendment.
+- **Calibration, measured on stored frames only.**
+  - Float noise between `act()` (a stored reset frame and state passed through `act`) and
+    the clipped batched training path is ≤ 1.61e-6 (A2; A0 2.4e-7, A1 8.3e-7, A3 4.2e-7).
+  - Replacing each stored reset image with its neighbour's (reset k with reset k+1 mod 15,
+    so 15 pairs rather than all pairs) moves the output by at least 3.15e-3 (A1; A2 1.13e-2,
+    A3 6.7e-3). That is the smallest input change the test must catch.
+  - A zeroed image moves an image arm's output by ≥ 0.576. The next frame's state moves any arm's
+    output by ≥ 0.0215.
+  - So 1e-4 is 62× above the noise and 31× below the smallest such change.
+
+**A sound pipeline was shown to pass, on a disjoint population.** The same zero-command
+procedure was run on 8 **train** roots (48000, 48008, 48001, 48013, 48002, 48006, 48003,
+48011), so the val gate population is untouched. The result was:
+
+- every reset image is byte-identical to its stored frame;
+- the maximum state difference is 0.0 and every mask is identical;
+- every arm's `act()` equals its clipped offline prediction to 0.0.
+
+A swapped, zeroed or stale input fails the test.
+
+**D1-grasp: the frozen cut did not fire on the prior-only predictor.** The frozen count fires at
+|g + 1| ≥ 1.0, that is at g ≥ 0.0, which is exactly the inert value. The prior-only predictor's
+grasp is **−0.0092**, an error of 0.9908, so it falls on the non-firing side by 0.009.
+
+- **Amended cut:** count the seeds where the step-zero `right_grasp` is > −0.5 (|g + 1| > 0.5).
+- On recorded reset frames the sound arms' step-zero grasp lies in [−1.016, −0.977]. The count
+  under the amended cut is 0 on val (15 resets) and on train (137) for every arm
+  (`offline-v2`, `d1_grasp_amended_count_gt_minus_0_5`). The prior-only predictor fires;
+  −1.0 and −0.5 do not.
+- The count still cannot tell a sound arm from one that has learned only the step-zero prior
+  (−1.0). It is not claimed to.
+
+**G-SUB: the frozen 8/16 did not discriminate for `dy`.** The table runs each candidate with a
+blind complement on the same 16 development resets. The simulator is deterministic, so these are
+exact counts:
+
+| candidate | prior-only complement | time-indexed complement *b_c* | amended threshold τ_c |
+|---|---|---|---|
+| `all_translation` | 0/16 | 5/16 | **10/16** |
+| `dx` | 0/16 | 5/16 | **10/16** |
+| `dy` | 0/16 | **9/16** | **12/16** |
+| `dz` | 0/16 | 1/16 | **8/16** |
+| `droll` | 0/16 | 3/16 | **9/16** |
+| `dpitch` | 0/16 | 2/16 | **9/16** |
+| `dyaw` | 0/16 | 3/16 | **9/16** |
+| `grasp` | 0/16 | 2/16 | **9/16** |
+
+With the expert's `dy` substituted, a clock-only controller grasps on **9/16**, which is above
+the frozen 8/16. Under the frozen rule, any controller no worse than a clock could have passed on
+`dy`, and that pass would have said nothing about A2.
+
+**Amended rule:** candidate c passes iff it reaches τ_c = max(8, ⌊(r_c + 16)/2⌋), where
+r_c = max(1, b_c).
+
+- The derivation is the frozen one, unchanged: "at least half the distance from the reference to
+  the ceiling", with the frozen rounding (reference 1/16 → 8/16 = ⌊8.5⌋). The change is the
+  reference: it is now the stronger of the pure policy's own 1/16 and the same substitution with
+  a clock-only complement.
+- The frozen 8/16 is kept as a floor, so no threshold is lower than before.
+- The one-sided binomial at each reference is informational only: 0.102 for `dy`, ≤ 0.0098 for
+  the rest, and 0.121 family-wise. As §5 already said, this is a magnitude threshold.
+
+**Recorded before the run because it bears on every result: the clock-only controller, with
+nothing substituted, reaches grasp on 2/16 development resets.** TASK-056's best arms reached
+1/16. The prior-only constant reaches 0/16.
+
+**B1, B2, B3.**
+
+- `hold` and `random` are themselves the blind baselines.
+- For B3, the inert channel is the pure policy (1/16) and the substituted channel is 16/16 in the
+  dry run, so ≥ 14/16 discriminates.
+- B2 is an exact-reproduction control, so it has no blind analogue.
+
+### 13.5 D2: `first_departure_step`, defined
+
+The frozen reading rule uses `first_departure_step`, but nothing defines it.
+
+**Definition.** `first_departure_step` is the first step t at which departure > τ_X on **5
+consecutive steps**, t … t+4. Departure is §2's median over the six arm dimensions of
+|controller − shadow expert|, and **τ_X = 3 × the median of arm X's six Table A arm-dimension
+cells** (A0 0.0412, A1 0.0345, A2 0.0600, A3 0.0837).
+
+- The search ends at the shadow expert's exhaustion, because departure is undefined after it and
+  is never read as zero.
+- An attempt with no departure is censored. It counts in the median as the **number of steps
+  with a defined departure**, which is also what the calibration uses.
+
+**Calibration on the val split, open loop (each arm on its own recorded trajectories).** With
+persistence 5, the median first departure is 116 (A0), 125 (A1), 205 (A2) and 205 (A3). All four
+read **gradual**. The prior-only predictor's median is **0** for every arm, which reads
+**immediate**. Persistence 1 was rejected: A1's open-loop median is then 43 (< 50), so a sound
+arm on its own training distribution would already read *inconclusive*. D2 remains a reading
+rule and decides nothing.
+
+**A limit D2 cannot overcome.** Sound arms already depart 116–205 steps into their own
+recorded trajectories, open loop. So a closed-loop *gradual* reading cannot tell compounding
+error apart from the arm's ordinary open-loop error. Only *immediate* is informative, and only
+as evidence against a sound start.
+
+### 13.6 Amended gates, outcomes and discipline
+
+- **Clause (a), amended.** Clause (a) holds if D1-pipeline fails **for A2 or for ≥ 3 of the 4
+  arms**, *or* if D1-grasp's count (step-zero `right_grasp` > −0.5) is ≥ 8/16 for ≥ 3 of the 4
+  arms. A2 is named because G-SUB runs through A2's channel alone.
+  - The precedence rule, the once-only bound, `exemption_spent` and the decision table of §5.1,
+    §5.2 and §7 are otherwise unchanged.
+  - Outcome S now reads: "D1-pipeline passes for A2 and for ≥ 2 of the 4 arms, and D1-grasp's
+    count is < 8/16 for ≥ 2 of the 4 arms".
+- **G-SUB** passes iff some candidate reaches its τ_c (§13.4). `none` and `full` remain controls.
+- **The missing-values rule** covers D1 (D1-pipeline), D1-grasp's count and G-SUB. D1-contrast
+  and D2 are excluded by name. The protocol text already said this; the manifest did not.
+- **B1 definitions.**
+  - `scripted_oracle` is its own `apple_collector_policy` instance in command. Its exhaustion
+    ends the attempt as `policy_complete`.
+  - `hold` and `random` are the ones in `benchmark.py`. `random` is seeded with the development
+    seed and draws within the bounds in `configs/apple_policy_v1.yaml`.
+  - Hold and random must be 0/16 on grasp **and** on success.
+- **B3** is unchanged at ≥ 14/16. Its source is now the right controller: `full` is
+  command-identical to `scripted_oracle`, which is 16/16 on exactly these resets.
+- **Device: CPU** for all policy inference and simulation. The B2 reference ran on CPU, so MPS
+  would put B2 at risk for a reason unrelated to the harness. Nothing here trains.
+- **Configuration:** `configs/apple_policy_v1.yaml`.
+- **Cohort discipline.** D1-pipeline resets the simulator to the recorded resets of the 15 val
+  roots, using its own 15-seed whitelist, and executes nothing. The cohort-D whitelist in
+  `evaluate_policy.py` is not widened. **Cohort C (45300–45339) is not touched, and the run does
+  not touch the test split.** One pre-freeze calibration count read the test split's label
+  sidecars, and §13.3 discloses it.
+- **Per-step truth in the trace.** Every trace row records the scorer's `hand_contact`,
+  the apple height and `dropped` at that step, alongside ‖palm − apple‖. These are
+  scoring-only simulator truth and never reach a controller. With them, contact and lift are
+  measured per step rather than only at the end (claim audit S6-07).
+- **Provenance note.** The TASK-056 reports ran at revision `103b14f`, which is not on `main`.
+  It is held on `origin/feat/task-056-clip-instrumentation`, which must not be deleted.
+- **Order of the run:** B3 first (as frozen), then D1-pipeline, then B1, B2 and the rest.
+
+### 13.7 Declared before the run, so that it cannot be discovered after it
+
+The offline calibration already shows that **no arm commands a reset-appropriate `right_dx` at
+step zero, even in-sample**. The arms' step-zero `right_dx` is nearly constant, while the
+expert's flips sign with the reset. D1-contrast will therefore almost certainly fail for every
+arm. That is an **offline, pre-run** fact about the arms, not a pipeline finding.
+
+It is **not measured** how the arms nonetheless reach a low `orient`-phase error once they are
+moving (Table E). One candidate explanation: the state carries joint velocities
+(`G1Embodiment.observe` returns qpos and qvel), so after the first steps the current motion
+predicts the next command. That is a hypothesis for D2 to inform, not a finding.
+The claim audit
+adds related context (S5-04). A linear probe from proprioception alone, with no image, reads
+the orient-phase apple position to 1.01 cm, and to 0.163 cm when fit on orient rows. The reason
+is that the collector servos the palm to an apple-relative station, so after the first commands
+the arm's own pose encodes where the apple is. At reset it cannot: the state is identical on
+every reset.
+
+### 13.8 Other frozen statements corrected by the TASK-058 claim audit
+
+`docs/experiments/claim_audit_v1.md` (TASK-058) audited this document read-only, and left its
+findings to this amendment:
+
+- **S6-29, the wrong expert.** Addressed by §13.1 and §13.2. The audit confirmed it
+  independently: the step-zero commands rebuilt from labels match the recorded ones on 152
+  roots.
+- **S6-26:** "sits inside the non-saturated group" becomes "bracketed by". Marked in §1.1(b).
+- **The §1.1(c)/§1.5 "near-constant" reading:** only the magnitude is measured. Marked in both
+  places.
+- **S6-27, the train mean −0.0012:** it now has committed computing code.
+- **Table E phase names:** addressed as §13.3 #3.
+- **S6-07:** the lift and contact are end-state only. Marked in §1.3, with per-step logging
+  added.
+- **S5-14 and S5-16:** marked in B5.
+
+**Also checked.** This protocol does not cite the world model as a critic, so S4-05/07/09 do
+not land here. The protocol does not treat the close as a solved primitive either. S1-13
+records that the only working closure without prediction is the collector's own servo, from
+its own entry state, and G-SUB's `grasp` candidate is read with that in mind.

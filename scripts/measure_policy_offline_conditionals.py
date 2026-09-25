@@ -46,8 +46,19 @@ sys.path.insert(0, str(ROOT / "src"))
 PROTOCOL = "apple_policy_diagnostics_v1"
 TASK = "TASK-057"
 
-#: Collector phase order, from ``scripted.OracleManipulationPolicy.phases``.
-PHASES = ("orient", "descend", "close", "lift", "transfer", "lower", "release", "retreat")
+#: Collector phase order, from ``scripted.apple_collector_policy`` (EarlyRelease), the policy the
+#: corpus was collected with. Amendment 1: this read ``OracleManipulationPolicy``'s names, which
+#: mislabelled phase indices 5 and 6 as "lower" and "release"; a test pins it to the collector.
+PHASES = (
+    "orient",
+    "descend",
+    "close",
+    "lift",
+    "transfer",
+    "release_high",
+    "lower_open",
+    "retreat",
+)
 #: The four TASK-056 arms, by checkpoint stem and by the label the manifest uses.
 ARMS = {
     "a0": "A0_proprio_only",
