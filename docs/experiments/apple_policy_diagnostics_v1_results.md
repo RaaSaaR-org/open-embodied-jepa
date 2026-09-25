@@ -233,7 +233,7 @@ This section is interpretation, not measurement. Each claim carries its qualifie
      reset.
    - **Context for that statistic, so it is not over-read.**
      - The expert's own `orient` target is 0.13 m above the apple (`scripted.py`: `obj + [−0.03,
-       0, 0.13]`, plus the collector's +0.015 m palm offset). In B3 the expert's palm–apple
+       0, 0.13]` at `scripted.py:51`, plus the collector's +0.015 m palm offset). In B3 the expert's palm–apple
        distance at step 130 is 0.134 m.
      - The arms make the same early rise. Over steps 0–19 every arm's per-reset mean command
        lies in dy −0.17 to −0.44 and dz +0.21 to +0.25.
@@ -287,7 +287,8 @@ This section is interpretation, not measurement. Each claim carries its qualifie
      complement, by 1–9 attempts of 16.
      - On `dz`, `dpitch` and `grasp` the gap is a single attempt (0 against 1, 1 against 2, 1
        against 2).
-     - Only `dy` shows a large gap (0 against 9). There 14/16 attempts end on the joint-velocity
+     - The gap is intermediate on `dx` (0 against 5) and `all_translation` (1 against 5), and
+       largest on `dy` (0 against 9). There 14/16 attempts end on the joint-velocity
        guard.
    - Against A2's own unsubstituted 1/16, three candidates are equal and five are one attempt
      lower.

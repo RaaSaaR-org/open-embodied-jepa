@@ -73,9 +73,8 @@ as quoted in the results §6:
   or output-parameterisation variant either.
 - The next task is a perception/data task: resolution, camera placement or corpus design. If that
   task does not move the closed-loop number, the §7 conclusion is that the product goal needs a
-  data or hardware change, not another model.
-- The next task is a perception/data task. The task owner selects it; the executing agent does
-  not.
+  data or hardware change, not another model. The task owner selects the task; the executing
+  agent does not.
 - Cohort C remains unconsumed, and `exemption_spent` remains `false`.
 
 The product goal is unchanged: LeWM on G1 + dual Dex3. So are the LeWM backend, the encoder and

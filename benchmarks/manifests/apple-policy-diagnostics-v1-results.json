@@ -281,7 +281,7 @@
   "applied": "not needed: B2 reproduced exactly",
   "received_utc": "2026-09-25T11:07:35Z",
   "ruling": "B2 is judged exactly as the frozen protocol states. A mismatch is a failed control whatever the cause; a host-stall explanation is context only; the sole exception is a stop meeting amendment 2's definition, recorded by the runner.",
-  "state_of_run_at_ruling": "B3, D1-pipeline and B1 complete; the A2 'none' stage (B2) not yet started"
+  "state_of_run_at_ruling": "B3, D1-pipeline and B1 complete (last B1 file 11:07:33.7Z); B2's first attempt (none-A2, seed 45000) had begun about 1 s earlier (~11:07:33.9Z) and completed 12 s later (11:07:47.7Z); no B2 result existed when the ruling was received"
  },
  "exemption_note": "not claimed: clause (a) did not hold, so precedence_rule_D1_over_G_SUB.exemption_spent stays false",
  "exemption_spent": false,
