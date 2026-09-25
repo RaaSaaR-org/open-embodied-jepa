@@ -61,7 +61,8 @@ Manifest: `benchmarks/manifests/apple-info-ceiling-v1.json`.
 - [ ] The preregistration and manifest merge on an independent reviewer's reported APPROVE, before
       any readout is fitted (PR 1).
 - [ ] Probe code merges with tests that exercise every guard in both directions (split, hashes,
-      render/resolution equivalence) on a reported APPROVE (PR 2).
+      render, expert, prior) and the resolution-equivalence checker (reported, not a guard), on a
+      reported APPROVE (PR 2).
 - [ ] The gated run starts on the pre-run reviewer's reported verdict, with a clean tree and all
       guards passing.
 - [ ] The results document states the outcome row, the numbers with CIs against their baselines,

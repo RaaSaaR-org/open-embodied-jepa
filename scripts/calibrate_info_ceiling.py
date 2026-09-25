@@ -5,8 +5,11 @@ a threshold before any readout exists. It fits **no** readout on any image or en
 the only "models" here are prior-only predictors (train-fold mean, majority sign), which read no
 observation at all.
 
-Over the 190 train + val roots of ``data/apple-wide-v1`` (the test split and every seed outside
-48000-48199 are refused), it measures:
+Over the 190 train + val roots of ``data/apple-wide-v1`` it measures the list below. The roots are
+filtered from the collection plan and then checked: the run refuses unless every root's split
+agrees with the dataset manifest's frozen split, no root is a test/holdout episode, and every seed
+lies in 48000-48199. No test episode is decoded (the dataset manifest is read as JSON; no
+``DatasetStore`` is constructed, so not even a hash pass touches test files).
 
 * whether a 112 px re-render from the recorded reset coordinates is byte-identical to the stored
   training frame, and whether the reset proprioception is identical across resets;
@@ -15,6 +18,8 @@ Over the 190 train + val roots of ``data/apple-wide-v1`` (the test split and eve
 * how closely a 4x4 box-downsample of the 448 px render reproduces the stored 112 px frame, and
   whether it identifies its own reset among the 190;
 * the scripted expert's step-zero command, recomputed from the reset, against the recorded label;
+* which body occludes the apple on occluded resets (segmentation at the apple centre's
+  projection, 448 px);
 * the prior-only baselines: predict-the-mean apple xy, the majority dx sign, the constant dx.
 
     uv run --no-sync python scripts/calibrate_info_ceiling.py \
@@ -64,6 +69,20 @@ def roots_train_val():
     return roots
 
 
+def check_roots(roots, manifest) -> None:
+    splits = manifest["splits"]
+    forbidden = set(splits.get("test", [])) | set(splits.get("holdout", []))
+    for root in roots:
+        if not 48000 <= root["seed"] <= 48199:
+            raise RuntimeError(f"seed {root['seed']} outside 48000-48199")
+        if root["episode_id"] in forbidden:
+            raise RuntimeError(f"{root['episode_id']} is a test/holdout episode")
+        if root["episode_id"] not in set(splits[root["split"]]):
+            raise RuntimeError(
+                f"{root['episode_id']} is not in the dataset's {root['split']} split"
+            )
+
+
 def fold_of(n: int) -> np.ndarray:
     """Outer fold per root (roots sorted by seed): a seeded permutation, then index mod 10."""
     order = np.random.default_rng(FOLD_SEED).permutation(n)
@@ -98,6 +117,25 @@ def apple_pixels(robot, renderer, camera="onboard_rgb") -> int:
     return int((np.isin(seg[..., 0], geoms) & (seg[..., 1] == int(mj.mjtObj.mjOBJ_GEOM))).sum())
 
 
+def body_at_point(robot, renderer, camera, point):
+    """Name of the body drawn at a world point's projection in the onboard camera (448 px)."""
+    data = robot.sim.data
+    rotation = data.cam_xmat[camera].reshape(3, 3)
+    local = rotation.T @ (np.asarray(point, float) - data.cam_xpos[camera])
+    if local[2] >= 0:
+        return None
+    focal = (NATIVE_SIZE / 2) / np.tan(np.deg2rad(float(robot.model.cam_fovy[camera])) / 2)
+    col = int(np.floor(NATIVE_SIZE / 2 + focal * local[0] / -local[2]))
+    row = int(np.floor(NATIVE_SIZE / 2 - focal * local[1] / -local[2]))
+    if not (0 <= row < NATIVE_SIZE and 0 <= col < NATIVE_SIZE):
+        return None
+    renderer.update_scene(data, camera="onboard_rgb")
+    object_id, object_type = renderer.render()[row, col]
+    if object_type != int(robot.mj.mjtObj.mjOBJ_GEOM) or object_id < 0:
+        return None
+    return robot.model.body(int(robot.model.geom_bodyid[object_id])).name
+
+
 def box_down(image, factor):
     h, w, c = image.shape
     return (
@@ -122,7 +160,10 @@ def measure_roots():
         renderer.enable_segmentation_rendering()
     native = robot.mj.Renderer(robot.model, height=NATIVE_SIZE, width=NATIVE_SIZE)
     rows, stored_frames, down_frames, states = [], [], [], []
-    for root in roots_train_val():
+    roots = roots_train_val()
+    check_roots(roots, manifest)
+    camera = robot.mj.mj_name2id(robot.model, robot.mj.mjtObj.mjOBJ_CAMERA, "onboard_rgb")
+    for root in roots:
         truth = robot.reset(
             seed=root["seed"], object_xy=root["object_xy"], plate_xy=root["plate_xy"]
         )
@@ -144,6 +185,9 @@ def measure_roots():
                 ),
                 "apple_pixels_112": apple_pixels(robot, seg[IMAGE_SIZE]),
                 "apple_pixels_448": apple_pixels(robot, seg[NATIVE_SIZE]),
+                "body_at_apple_centre_448": body_at_point(
+                    robot, seg[NATIVE_SIZE], camera, truth["object_position"]
+                ),
                 "apple_xy": [float(v) for v in truth["object_position"][:2]],
                 "apple_xy_label_max_abs": float(
                     np.abs(
@@ -176,6 +220,21 @@ def equivalence(stored, down, train):
     off = np.where(np.eye(len(mae), dtype=bool), np.inf, mae)
     between = np.abs(stored[:, None] - stored[None]).mean(axis=(2, 3, 4))
     between = np.where(np.eye(len(between), dtype=bool), np.inf, between)
+    over = np.abs(down - stored).max(axis=3) > 8
+    level = stored.max(axis=3)
+    edge = np.zeros_like(over)
+    centre = level[:, 1:-1, 1:-1]
+    edge[:, 1:-1, 1:-1] = (
+        np.stack(
+            [
+                np.abs(centre - level[:, 1:-1, :-2]),
+                np.abs(centre - level[:, 1:-1, 2:]),
+                np.abs(centre - level[:, :-2, 1:-1]),
+                np.abs(centre - level[:, 2:, 1:-1]),
+            ]
+        ).max(axis=0)
+        > 8
+    )
     bias = (down - stored)[train].mean(axis=0)
     corrected = np.abs((down - bias)[:, None] - stored[None]).mean(axis=(2, 3, 4))
     c_own = np.diag(corrected).copy()
@@ -185,7 +244,9 @@ def equivalence(stored, down, train):
         "downsample": "4x4 box mean, float64, no rounding",
         "own_frame_mae_levels": {"min": own.min(), "median": np.median(own), "max": own.max()},
         "own_frame_max_abs_levels": float(np.abs(down - stored).max()),
-        "fraction_pixels_over_8_levels": float((np.abs(down - stored).max(axis=3) > 8).mean()),
+        "fraction_pixels_over_8_levels": float(over.mean()),
+        "share_of_over_8_pixels_at_edges": float(edge[over].mean()),
+        "edge_definition": "stored-frame max-channel level differs by > 8 from a 4-neighbour",
         "identifies_own_reset": int((own < off.min(axis=1)).sum()),
         "stored_frames_nearest_other_reset_mae_levels": {
             "min": between.min(),
@@ -193,6 +254,8 @@ def equivalence(stored, down, train):
         },
         "bias_corrected": {
             "bias_estimated_on": "train roots only",
+            "own_frame_mae_levels_min": c_own.min(),
+            "own_frame_mae_levels_median": float(np.median(c_own)),
             "own_frame_mae_levels_max": c_own.max(),
             "identifies_own_reset": int((c_own < c_off.min(axis=1)).sum()),
         },
@@ -248,6 +311,10 @@ def prior_baselines(xy, dx, occluded, fold, train):
         "ceiling_if_visible_perfect_and_occluded_at_majority": float(
             ((~occluded).sum() + (majority == sign)[occluded].sum()) / n
         ),
+        "cv_y_conditional_dx_sign_accuracy_visible": float((y_prior == sign)[~occluded].mean()),
+        "cv_constant_median_dx_mae_occluded": float(np.abs(dx_median - dx)[occluded].mean()),
+        "cv_constant_median_dx_mae_visible": float(np.abs(dx_median - dx)[~occluded].mean()),
+        "constant_plus_clip_dx_mae": float(np.abs(TRANSLATION_CLIP - dx).mean()),
         "cv_majority_dx_sign_accuracy": float((majority == sign).mean()),
         "cv_majority_dx_sign_accuracy_occluded": float((majority == sign)[occluded].mean()),
         "cv_majority_dx_sign_accuracy_visible": float((majority == sign)[~occluded].mean()),
@@ -260,6 +327,11 @@ def prior_baselines(xy, dx, occluded, fold, train):
         ),
         "val_constant_median_dx_mae": float(np.abs(np.median(dx[train]) - dx[val]).mean()),
     }
+
+
+def occluders(rows, occluded) -> dict:
+    names = [str(r["body_at_apple_centre_448"]) for r, o in zip(rows, occluded, strict=True) if o]
+    return {name: names.count(name) for name in sorted(set(names))}
 
 
 def main() -> int:
@@ -311,6 +383,7 @@ def main() -> int:
             "mean_apple_x_visible": float(xy[~occluded, 0].mean()),
             "occluded_fraction_dx_positive": float(occluded[dx > 0].mean()),
             "occluded_fraction_dx_negative": float(occluded[dx < 0].mean()),
+            "body_at_apple_centre_on_occluded_448": occluders(rows, occluded),
         },
         "expert_step0": {
             "recomputed_equals_recorded_on_non_aim_roots_max_abs": float(

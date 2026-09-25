@@ -25,7 +25,7 @@ TASK-057 established three facts, all on the development cohort:
   reset, so only the image can locate the apple.
 - **The arms get the first command wrong.** At step 0 every behaviour-cloning arm commands a
   `right_dx` that does not depend on the reset. The scripted expert's `right_dx` changes sign with
-  the apple's position. The arms miss it by 3.8–5.4× the D1 threshold, and they miss it on their
+  the apple's position. The arms miss it by 3.8–5.3× the D1 threshold (closed loop), and they miss it on their
   own training frames too (§13.4 there).
 - **The observation pipeline is not the cause.** The observation the loop receives is
   byte-identical to the training observation (D1-pipeline).
@@ -40,7 +40,8 @@ source carries that information?
 ## 2. Facts established before freezing (calibration; fits nothing)
 
 Command: `uv run --no-sync python scripts/calibrate_info_ceiling.py --output
-outputs/task059-info-ceiling/calibration.json`. Scope: the 190 train + val roots of
+outputs/task059-info-ceiling/calibration-v2.json` (v1 of the artifact predates review fixes that
+added fields; every shared value except elapsed time is identical). Scope: the 190 train + val roots of
 `data/apple-wide-v1` (170 train, 20 val), including aim-offset roots (§3). Elapsed about 20 s on
 CPU. Every figure below is in the manifest under `calibration`.
 
@@ -65,7 +66,8 @@ input.**
 
 - **Occlusion depends on the apple's y, not its x.** The mean apple y is −0.193 m on occluded
   resets and −0.166 m on visible ones; the mean x is 0.341 m on both. The apple is hidden behind
-  the right hand.
+  the right hand: on all 111 occluded resets the body drawn at the apple centre's projection
+  (448 px) is `right_wrist_yaw_link` (`body_at_apple_centre_on_occluded_448`).
 - **So occlusion is roughly independent of the dx sign.** 57.3 % of dx > 0 resets are occluded,
   and 60.3 % of dx < 0 resets.
 - **Where the apple is visible, it is tiny.** At 112 px the image has 12 544 pixels, and the apple
@@ -103,14 +105,14 @@ the stored 112 px frame:
 | check | result |
 |---|---|
 | byte-for-byte | **fails** |
-| per-frame mean absolute difference | 2.54–2.62 levels; maximum pixel 136.2; 11.3 % of pixels differ by > 8 levels, all at edges |
+| per-frame mean absolute difference | 2.54–2.62 levels; maximum pixel 136.2; 11.3 % of pixels differ by > 8 levels; 98.7 % of those lie at edges (stored-frame level differs by > 8 from a 4-neighbour) |
 | does the downsample pick out its own reset among the 190? | **162 / 190** |
 | same, after subtracting a fixed bias field estimated on train roots | residual ≤ 0.21 levels per frame, but only **169 / 190** |
-| emulating the 4× MSAA sample pattern from a non-MSAA 448 px render (scratch probe, not committed) | mean ≥ 1.75 levels |
+| emulating the 4× MSAA sample pattern from a non-MSAA 448 px render | mean ≥ 1.75 levels on 6 train roots — **unverified**: an uncommitted scratch probe, not reproducible from committed code and used for no decision |
 
 - **Why it fails.** The 112 px frame is rendered with MuJoCo's 4× MSAA, and a box filter does not
   reproduce that sampling.
-- **Why no tolerance rescues it.** The mismatch (≥ 0.15 levels even after bias correction) exceeds
+- **Why no tolerance rescues it.** The mismatch (0.130–0.212 levels per frame even after bias correction) exceeds
   the smallest gap between two different resets' frames (0.038 levels). **So no tolerance can be
   stated under which the downsampled native render reproduces its own stored frame rather than
   another reset's.**
@@ -148,10 +150,17 @@ None of these reads an image or a feature. Each one is fit on the training folds
 | baseline | all 190 | occluded (111) | visible (79) | val (20), fit on train |
 |---|---|---|---|---|
 | predict the mean: median apple-xy error | **2.369 cm** | 2.233 cm | 2.559 cm | 2.384 cm |
-| occlusion-conditional mean* (median) | **1.939 cm** | 2.006 cm | 1.720 cm | — |
+| occlusion-conditional mean* (median) | **1.939 cm** | 2.006 cm | 1.720 cm | not used |
 | majority dx sign: accuracy | **0.616** | 0.604 | 0.633 | 0.600 |
-| y-conditional dx-sign prior*: accuracy | 0.616 | **0.604** | — | — |
-| constant (median) dx: MAE | **0.314** | — | — | 0.343 |
+| y-conditional dx-sign prior*: accuracy | 0.616 | **0.604** | 0.633 | not used |
+| constant (median) dx: MAE | **0.314** | 0.316 | 0.310 | 0.343 |
+
+**Stratum rule.** Every stratum value is the all-roots out-of-fold prediction restricted to the
+stratum, except the occlusion-conditional mean, which is fitted within the stratum by definition.
+The run recomputes every value in this table by the same rule, and G-prior compares them all.
+
+A constant +0.4 dx (the clip) scores MAE 0.306, marginally below the median constant; both are far
+above the T3 bar (§9), so the choice of constant does not affect any threshold.
 
 \* Privileged baselines. They are fed the true occlusion flag, or the true apple y in 5
 quantile bins, and are used **only** to set a harder bar. The occlusion-conditional mean is what a
@@ -184,10 +193,13 @@ The clock-only and proprioception-only baselines **coincide with the constant ba
     split has only 20 roots: a Wilson interval on 19/20 still reaches down to 0.764. That cannot
     carry a decision.
 - **Secondary confirmation: the frozen split, train (170) → val (20).** Same pipeline, fit on
-  train with 5-fold inner CV, scored once on val. It is reported with CIs and **decides nothing**.
+  train with 5-fold inner CV (inner seed 5910), scored once on val against baselines fitted on
+  train. It is reported with CIs and **decides nothing**.
   A disagreement with the primary estimate is reported as a caveat.
 - **Never touched:**
-  - the test split, whose episode files are never opened;
+  - the test split, which is never decoded: no test frame, action or label is read. (Loading the
+    encoders through `build_policy` constructs `DatasetStore`, whose `verify()` reads every
+    episode file's bytes only to check its sha256; that is the only contact.)
   - cohort D and cohort C, and every seed outside 48000–48199.
 - **Disclosure.** TASK-057's D1-pipeline re-rendered 15 of the 20 val roots. They are members of
   the val split and were never a gating cohort; this task uses them as val roots like any other.
@@ -224,9 +236,10 @@ the constant baseline.
 
 ## 6. Readout families and capacity: identical for every source
 
-Every readout is fitted in the **dual (kernel) form** on n ≤ 171 training rows. So capacity is set
-by n and by λ, not by the feature dimension, and it is the same for a 128-d feature and a 602 112-d
-pixel vector.
+Every readout is fitted in the **dual (kernel) form** on n ≤ 171 training rows. The procedure and
+the λ grid are identical for every source, and capacity is bounded by n and λ for all of them. It
+is not literally equal: a linear kernel on a 128-d feature has rank ≤ 128, while the pixel kernel
+can reach rank ≈ n.
 
 - **Preprocessing (same for every source).**
   - Cast to float64.
@@ -245,7 +258,10 @@ pixel vector.
   - For every (source, target group, outer fold), choose the family and λ (18 configurations) by
     5-fold inner CV on the outer training part, minimizing mean squared error: xy for T1, dx for
     T2/T3.
-  - Inner folds: `default_rng(5900 + outer_fold).permutation`, then position mod 5.
+  - Inner folds: `default_rng(5900 + outer_fold).permutation(m)`, where m is the size of the outer
+    training part and its rows keep their seed order; inner fold = position mod 5.
+  - Centring, σ² and the λ scale are recomputed on each inner fit part, never on the rows it
+    predicts.
   - Refit on the whole outer training part, then predict the held-out fold once.
 - **Predictions.**
   - T2 is the sign of the unclipped dx prediction; a prediction of exactly 0 counts as wrong.
@@ -261,16 +277,20 @@ pixel vector.
 All metrics use the 190 out-of-fold predictions, one per root.
 
 - **T1.** The median Euclidean apple-xy error in cm is primary; the mean is reported.
-  - 95 % percentile bootstrap CI over roots: 10 000 resamples, `default_rng(5901)`.
+  - 95 % percentile bootstrap CI over roots: 10 000 resamples. For a set of n roots the index
+    matrix is `default_rng(5901).integers(0, n, (10000, n))`, drawn over that set only (a stratum
+    is resampled within itself). The same matrix serves every source and every baseline on that
+    set, so all ratios and differences are paired.
   - Ratio to a baseline: the **paired** bootstrap of median(source) / median(baseline), with the
     same resample indices for both.
-- **T2.** Accuracy with a Wilson 95 % interval.
+- **T2.** Accuracy with a Wilson 95 % interval. Declared caveat: out-of-fold predictions come
+  from ten different models, so the Wilson interval's independence assumption holds only
+  approximately.
 - **T3.** MAE with a bootstrap CI, and a paired-bootstrap ratio to the constant-median-dx MAE.
 - **Comparing two sources.** A paired bootstrap of the difference in median T1 error. A McNemar
   exact test on the discordant T2 pairs is reported.
 - **Strata.** Everything is reported on all roots, on occluded roots (0 apple pixels at 112 px) and
-  on visible roots (≥ 1 pixel). The stratum baselines are recomputed inside the run by §2.6's
-  procedure.
+  on visible roots (≥ 1 pixel). The stratum baselines follow §2.6's stratum rule.
 - **No multiplicity correction.** Four decisional sources times two strata are read. The thresholds
   below are absolute and conservative, and this is declared rather than corrected.
 
@@ -333,7 +353,8 @@ The rule:
   occluded-stratum result is recorded as **spurious**, and the source is treated as **not
   succeeding overall**, whatever its numbers.
 - **Drops to the prior on apple-hidden frames.** The cue is apple-caused. The shadow-off result
-  says whether it is the shadow (the accuracy drops) or residual apple pixels below segmentation
+  says whether it is the shadow (it no longer beats the prior, by the same criterion) or residual
+   apple pixels below segmentation
   resolution (it does not). The result is **believed**, with that explanation attached.
 
 If no source beats the prior on occluded resets, the check is not run and that is recorded.
@@ -370,7 +391,7 @@ If no source beats the prior on occluded resets, the check is not run and that i
 
 | guard | condition |
 |---|---|
-| **G-hash** | Every hashed input equals the manifest's `hashes`: dataset manifest, the three policy checkpoints, the E0 checkpoint, `configs/apple_policy_v1.yaml`, `collect_apple_wide.py`, `scripted.py`, `simulation.py`, `embodiment.py`, `policy.py`, `assets/manifest.json`, `configs/g1_sim_action.json`. Every episode file read is checked against the dataset manifest's sha256 before it is decoded. Each encoder's weights sha256 equals the manifest's. |
+| **G-hash** | Every hashed input equals the manifest's `hashes`: dataset manifest, the three policy checkpoints, the E0 checkpoint, `configs/apple_policy_v1.yaml` and its parents `configs/apple_wm_v4_lewm.yaml` and `configs/apple_wm_v4.yaml`, `collect_apple_wide.py`, `calibrate_info_ceiling.py`, `measure_policy_offline_conditionals.py`, `scripted.py`, `simulation.py`, `embodiment.py`, `policy.py`, `readout_labels.py`, `assets/manifest.json`, `configs/g1_sim_action.json`. Every episode file read is checked against the dataset manifest's sha256 before it is decoded. Each encoder's weights sha256 equals the manifest's. |
 | **G-split** | The roots are exactly the plan's 190 train + val seeds, and each root's split agrees with the dataset manifest's frozen splits. The runner refuses any test-split episode id, any seed in cohort C (45300–45339) or cohort D (45000–45007, 45100–45107), and any seed outside 48000–48199. The fold assignment hash equals the manifest's. |
 | **G-render** | The 112 px re-render is byte-identical to the stored frame on **190/190**, and the maximum std of reset proprioception is ≤ 1e-6. |
 | **G-expert** | The recomputed expert equals the recorded step-0 label to within 1e-6 on all 152 non-aim roots, and the apple label equals the reset truth to within 1e-6 m. |
@@ -391,8 +412,8 @@ The outcomes are read on the **primary (CV)** estimate, over the decisional sour
 | **O-BC** | **E0 succeeds on all roots** | The reset frame carries the apple and the step-0 command, and E0 exposes them to a readout. **The BC objective or data is the problem**, not perception. | corpus design (e.g. demonstrations that start with motion, on-policy relabelling) |
 | **O-ENC** | E0 does not succeed on all roots, but A3, raw-112 or random does | The information is in the frame, and **E0's frozen encoder discards it**. A3 succeeding means fine-tuning recovers it. | encoder / representation work |
 | **O-OCC-BC** | no decisional source succeeds on all roots, **and E0 succeeds on the visible stratum** | The frame carries the apple only when it is visible. **Occlusion at reset is binding on the occluded resets (camera placement or reset pose); on visible resets, BC is the problem.** | camera placement or reset pose (a look-first reset), informed by §11.1–11.2 |
-| **O-OCC-ENC** | no source succeeds on all roots, E0 does **not** succeed on the visible stratum, but raw-112, A3 or random does | Occlusion is binding, **and** E0 discards the visible apple as well | camera or reset pose, plus encoder |
-| **O-OCC-NONE** | no source succeeds on all roots, and no decisional source succeeds on the visible stratum | Even a visible apple at ≤ 21 px is not read out at 112 px. **The camera is the problem**, and this protocol cannot separate resolution from placement. (v)'s numbers are reported beside it as suggestive only (§2.4). | camera change (placement and/or resolution), with an equivalence-validated render path |
+| **O-OCC-ENC** | no decisional source succeeds on all roots, E0 does **not** succeed on the visible stratum, but raw-112, A3 or random does | Occlusion is binding, **and** E0 discards the visible apple as well | camera or reset pose, plus encoder |
+| **O-OCC-NONE** | no decisional source succeeds on all roots, and no decisional source succeeds on the visible stratum | Even a visible apple at ≤ 21 px is not read out at 112 px. **The camera is the problem**, and this protocol cannot separate resolution from placement. (v)'s numbers are reported beside it as suggestive only (§2.4). | camera change (placement and/or resolution), with an equivalence-validated render path |
 
 **Why no "native only" row.** The brief asked for a row reading "it succeeds only at native
 resolution: the camera is the problem". §2.4 withdraws it: without a validated render path, a

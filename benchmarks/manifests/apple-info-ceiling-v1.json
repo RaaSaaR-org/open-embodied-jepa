@@ -14,14 +14,18 @@
   "global_wall_seconds": 7200
  },
  "calibration": {
-  "artifact": "outputs/task059-info-ceiling/calibration.json",
-  "artifact_sha256": "2f4893e494ac28d682f135f589ba4e812472325521e373df2bf5185a8c00fa69",
+  "artifact": "outputs/task059-info-ceiling/calibration-v2.json",
+  "artifact_sha256": "f3db4b03a5506b1decad1f6cd8ba5054abfdaa05200fe49b34af28b6033eb3ce",
+  "artifact_v1_superseded": "outputs/task059-info-ceiling/calibration.json (sha256 2f4893e494ac28d682f135f589ba4e812472325521e373df2bf5185a8c00fa69) predates review fixes that added fields; every shared value except elapsed time is identical",
   "fits_nothing": true,
-  "scratch_not_committed": "MSAA-pattern emulation from a non-MSAA 448 render: best mean abs difference >= 1.75 levels (6 train roots)",
   "script": "scripts/calibrate_info_ceiling.py",
+  "unverified_scratch_not_committed": "MSAA-pattern emulation from a non-MSAA 448 render: best mean abs difference >= 1.75 levels (6 train roots); not reproducible from committed code; used for no decision",
   "values": {
    "apple_label_equals_reset_truth_max_abs_m": 1.478203170979242e-08,
    "apple_visible_pixels_at_reset": {
+    "body_at_apple_centre_on_occluded_448": {
+     "right_wrist_yaw_link": 111
+    },
     "mean_apple_x_occluded": 0.3409430706698823,
     "mean_apple_x_visible": 0.3414043039565303,
     "mean_apple_y_occluded": -0.1928039828878459,
@@ -46,7 +50,7 @@
      334.0
     ]
    },
-   "elapsed_seconds": 19.664247541921213,
+   "elapsed_seconds": 19.367837167112157,
    "expert_step0": {
     "dx_positive_count": 117,
     "dx_positive_fraction": 0.6157894736842106,
@@ -101,9 +105,12 @@
     "bias_corrected": {
      "bias_estimated_on": "train roots only",
      "identifies_own_reset": 169,
-     "own_frame_mae_levels_max": 0.21162857721213488
+     "own_frame_mae_levels_max": 0.21162857721213488,
+     "own_frame_mae_levels_median": 0.17470633761317028,
+     "own_frame_mae_levels_min": 0.1304798481892757
     },
     "downsample": "4x4 box mean, float64, no rounding",
+    "edge_definition": "stored-frame max-channel level differs by > 8 from a 4-neighbour",
     "fraction_pixels_over_8_levels": 0.11262461399033298,
     "identifies_own_reset": 162,
     "native_size": 448,
@@ -113,6 +120,7 @@
      "min": 2.5367672459608843
     },
     "own_frame_max_abs_levels": 136.1875,
+    "share_of_over_8_pixels_at_edges": 0.9871546987054112,
     "stored_frames_nearest_other_reset_mae_levels": {
      "median": 0.12501328656462585,
      "min": 0.038451318027210885
@@ -120,7 +128,10 @@
    },
    "prior_baselines": {
     "ceiling_if_visible_perfect_and_occluded_at_majority": 0.7684210526315789,
+    "constant_plus_clip_dx_mae": 0.30595330571657736,
     "cv_constant_median_dx_mae": 0.31361119641285196,
+    "cv_constant_median_dx_mae_occluded": 0.31619726295943734,
+    "cv_constant_median_dx_mae_visible": 0.30997760923980155,
     "cv_majority_dx_sign_accuracy": 0.6157894736842106,
     "cv_majority_dx_sign_accuracy_occluded": 0.6036036036036037,
     "cv_majority_dx_sign_accuracy_visible": 0.6329113924050633,
@@ -132,6 +143,7 @@
     "cv_predict_the_mean_median_cm_visible": 2.5585438469301867,
     "cv_y_conditional_dx_sign_accuracy": 0.6157894736842106,
     "cv_y_conditional_dx_sign_accuracy_occluded": 0.6036036036036037,
+    "cv_y_conditional_dx_sign_accuracy_visible": 0.6329113924050633,
     "val_constant_median_dx_mae": 0.3429479972459376,
     "val_majority_dx_sign_accuracy": 0.6,
     "val_predict_the_mean_median_cm": 2.3843683034509695
@@ -170,7 +182,7 @@
     48000,
     48199
    ],
-   "test_split": "episode files never opened"
+   "test_split": "never decoded (no frame, action or label read); DatasetStore.verify, reached via build_policy, reads episode bytes only to check sha256"
   },
   "roots": "all 190 train+val roots of the frozen collection plan (170 train, 20 val), one reset frame each, aim-offset roots included; branch episodes excluded"
  },
@@ -184,7 +196,7 @@
  "guards_void_the_run": {
   "G_expert": "recomputed step-0 expert equals recorded label within 1e-6 on the 152 non-aim roots; apple label equals reset truth within 1e-6 m",
   "G_hash": "every file in `hashes` matches; every episode file matches the dataset manifest sha256 before decoding; encoder weight digests match `sources`",
-  "G_prior": "recomputed prior baselines equal `calibration.prior_baselines` within 1e-9",
+  "G_prior": "recomputed prior baselines equal `calibration.values.prior_baselines` within 1e-9 (every key)",
   "G_render": "112 px re-render byte-identical on 190/190; reset proprio max std <= 1e-6",
   "G_split": "exactly the plan's 190 train+val seeds, splits agree with the dataset manifest; refuse test ids, cohort C, cohort D, seeds outside 48000-48199; fold hash matches",
   "not_a_guard": "native equivalence (known to fail; why source v is non-decisional)"
@@ -196,25 +208,33 @@
   "checkpoints/task056-policy-v1/a2.pt": "0dc2fb701862d418beb12fb9a0c9f0aec86509eeee8f99966a21c908cf6b8735",
   "checkpoints/task056-policy-v1/a3.pt": "e61e2e090c3130f2555b9c87f4abae415489a9724d7870a663f836fe903614c1",
   "configs/apple_policy_v1.yaml": "c768ee238b512c248eca550aea532c2b31e04cd0ee0a117179a25ef0f8aa591a",
+  "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
+  "configs/apple_wm_v4_lewm.yaml": "b134687b2cb4064ed3736552746e870d3772f55038e9f37ff158d828682e1c63",
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
   "data/apple-wide-v1/meta/jepa_manifest.json": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+  "scripts/calibrate_info_ceiling.py": "de8818ae9479033ae3dddc240b90f3a95b22ca2eb2c081fa0b62adde286c7aa3",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+  "scripts/measure_policy_offline_conditionals.py": "0e88ec4692d612358de0cb8bb0f2fed471dd7c23cf0abc91925a6212b6143144",
   "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
   "src/embodied_jepa/policy.py": "d682078bc47ddb19f5ece4dc5dd87550cd429f6ab17eb6d0f4ac3b3dc1b7489f",
+  "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
   "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
   "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739"
  },
  "learned_apple_to_plate_successes": 0,
  "metrics": {
   "T1": "median Euclidean error cm (mean reported); 95% percentile bootstrap over roots, 10000 resamples, default_rng(5901); paired bootstrap ratio to a baseline",
-  "T2": "accuracy with Wilson 95% interval",
+  "T2": "accuracy with Wilson 95% interval (caveat: OOF predictions from 10 models, independence approximate)",
   "T3": "MAE with bootstrap CI; paired bootstrap ratio to constant-median-dx MAE",
+  "bootstrap_indices": "for a set of n roots default_rng(5901).integers(0, n, (10000, n)), drawn within the set (strata resampled within themselves), shared by every source and baseline on that set",
   "multiplicity": "not corrected; declared",
-  "strata": "all; occluded (0 apple pixels at 112 px); visible (>= 1 pixel)"
+  "strata": "all; occluded (0 apple pixels at 112 px); visible (>= 1 pixel)",
+  "stratum_baseline_rule": "all-roots out-of-fold prediction restricted to the stratum, except the occlusion-conditional mean (fitted within the stratum)"
  },
  "occluded_explanation_check": {
   "rerenders": {
    "apple_hidden": "apple geom moved to a hidden geom group: not drawn, casts no shadow",
+   "drops_means": "no longer beats the prior by the same criterion",
    "shadow_off": "scene shadows disabled, apple present"
   },
   "rule": "same out-of-fold fitted readouts applied unchanged; still above prior on apple-hidden => spurious, the source is treated as not succeeding overall; drops to prior => believed, with shadow-off deciding shadow vs residual apple pixels",
@@ -242,12 +262,12 @@
    "row": "O-OCC-BC"
   },
   {
-   "condition": "no source succeeds on all roots; E0 fails the visible stratum but raw-112, A3 or random succeeds there",
+   "condition": "no decisional source succeeds on all roots; E0 fails the visible stratum but raw-112, A3 or random succeeds there",
    "reading": "occlusion binds and E0 discards the visible apple too",
    "row": "O-OCC-ENC"
   },
   {
-   "condition": "no source succeeds on all roots and none on the visible stratum",
+   "condition": "no decisional source succeeds on all roots and none on the visible stratum",
    "reading": "camera is the problem; resolution vs placement not separable here; source v reported as unvalidated qualifier",
    "row": "O-OCC-NONE"
   }
@@ -274,7 +294,8 @@
   "lambda_grid": "10^k * mean(diag K_train), k = -4..4",
   "not_done": "small CNN from scratch",
   "preprocessing": "float64; centre by training-part mean; no per-dimension scaling",
-  "selection": "family and lambda per (source, target group, outer fold) by 5-fold inner CV on the outer training part minimizing MSE; inner folds default_rng(5900 + outer_fold).permutation, position mod 5",
+  "secondary_inner_seed": 5910,
+  "selection": "family and lambda per (source, target group, outer fold) by 5-fold inner CV on the outer training part minimizing MSE; inner folds default_rng(5900 + outer_fold).permutation(m) over the m outer-training rows in seed order, position mod 5; centring, sigma^2 and the lambda scale recomputed on each inner fit part",
   "targets_centred": "training-part mean is the intercept; T1 fitted jointly (2 outputs)"
  },
  "seeds": {
