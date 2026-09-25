@@ -26,6 +26,24 @@ and remain usable. The product goal — LeWM on G1 + dual Dex3 — is unchanged;
 control formulation changed. The decision and its evidence are recorded in
 [docs/DECISIONS.md](docs/DECISIONS.md).
 
+**The behaviour-cloning line has also hit its abandonment clause (TASK-057, 2026-09-25).**
+The preregistered [policy diagnostics](docs/experiments/apple_policy_diagnostics_v1_results.md)
+ran with every control passing. The run used the non-gating development cohort, with n = 16 resets
+per configuration and deterministic simulation.
+
+- **Observation:** the controller's observation matches the training observation.
+- **No single channel rescues the policy.** Substituting any one command channel from the
+  privileged scripted expert (a diagnostic, not a learned result) got at most 1/16 resets to grasp,
+  against thresholds of 8–12. The clause therefore fired.
+- **Consequence:** no third control formulation is preregistered on this corpus and this camera.
+  The next task is a perception/data task, chosen by the task owner.
+- **Where the arms fail:** mostly at the approach. After an early rise that matches the expert's
+  own first phase, most attempts never descend toward the apple.
+- **The two grasps:** on the two attempts that grasped, the hand held the apple on every step
+  afterwards and never carried it to the plate.
+
+Learned Apple→Plate is still 0 successes.
+
 **What is demonstrated.** These are software properties and offline properties of
 checkpoints on recorded validation data — none of them is a manipulation result.
 

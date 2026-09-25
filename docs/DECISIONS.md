@@ -63,6 +63,36 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-25 — the behaviour-cloning abandonment clause fired (TASK-057)
+
+**Decision.** This applies the clause that `apple_policy_v1.md` §7 pre-declared and
+`apple_policy_diagnostics_v1.md` §5.1 wired to G-SUB. Its consequence applies as written,
+as quoted in the results §6:
+- **This behaviour-cloning line stops on this corpus (`apple-wide-v1`) and this camera (112 px
+  onboard).** No third control formulation is preregistered on them, and no further loss, head
+  or output-parameterisation variant either.
+- The next task is a perception/data task: resolution, camera placement or corpus design. If that
+  task does not move the closed-loop number, the §7 conclusion is that the product goal needs a
+  data or hardware change, not another model. The task owner selects the task; the executing
+  agent does not.
+- Cohort C remains unconsumed, and `exemption_spent` remains `false`.
+
+The product goal is unchanged: LeWM on G1 + dual Dex3. So are the LeWM backend, the encoder and
+the backend-swap invariant.
+
+**Evidence.** [apple_policy_diagnostics_v1_results.md](experiments/apple_policy_diagnostics_v1_results.md),
+with manifest `benchmarks/manifests/apple-policy-diagnostics-v1-results.json`.
+- B1, B2 and B3 passed. B3 reached 16/16. B2 reproduced TASK-056's A2 report exactly.
+- D1-pipeline passed for all four arms. The images were byte-identical for A1–A3 (A0 takes no
+  image), and the state difference was 0.0. D1-grasp fired for none. So clause (a) does not
+  hold, within D1-pipeline's stated scope.
+- G-SUB failed on the non-gating development cohort, n = 16 per configuration. The best candidate
+  reached 1/16, against thresholds of 8–12. These are privileged-substitution diagnostics.
+- With A2 as the complement, every candidate scored below the same substitution with a
+  clock-only complement, by 1–9 attempts. That is a single attempt on `dz`, `dpitch` and
+  `grasp`, and 9 only on `dy`.
+- The result is Outcome X.
+
 ## Decision 2026-09-24 — abandon CEM over this world-model cost as the primary control line (TASK-054)
 
 **Decision.** Sampling-based planning (CEM/MPC) over the learned world model's cost is
