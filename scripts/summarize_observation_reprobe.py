@@ -122,6 +122,7 @@ def summarize(report: dict, report_path: Path) -> dict:
         "status": report["status"],
         "outcome": report["outcome"],
         "decision": report["decision"],
+        # Fixed status lines (protocol §8), not report fields: this task trains no controller.
         "learned_apple_to_plate_successes": 0,
         "exemption_spent": False,
         "provenance": {

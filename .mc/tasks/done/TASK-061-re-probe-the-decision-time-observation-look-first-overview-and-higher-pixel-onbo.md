@@ -83,6 +83,6 @@ Calibration: `scripts/calibrate_observation_reprobe.py`. It fits nothing.
 - Recommended next task (the owner chooses): encoder work on post-look frames, then a
   prereg-gated look-prefix corpus at 112 px.
 - Learned Apple→Plate is still 0 successes. `exemption_spent` is false.
-- PRs: #54 (prereg), #55 (runner), PR 3 (results).
+- PRs: #54 (prereg), #55 (runner), #56 (results).
 - Results: `docs/experiments/apple_observation_reprobe_v1_results.md`.
 %% mc-links: [[TASK-059]] %%
