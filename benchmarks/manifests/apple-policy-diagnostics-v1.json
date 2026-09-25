@@ -636,6 +636,13 @@
   },
   "amendment_2": {
     "date": "2026-09-25",
+    "definitions_added_at_review": {
+      "complete_vs_stopped": "COMPLETE iff every stage executed all its attempts and the runner evaluated every gate and wrote its decision (or ended at a failed voiding control, evaluated). Anything else, including a crash inside the evaluation of any quantity, is a STOP -> V. Rules 1 and 5 use this single definition.",
+      "control_failure_void_gets_no_repeat": "B1/B2/B3 evaluated and failed: Outcome V under section 7, no repeat.",
+      "per_attempt_cap": "300 s per attempt ends THAT attempt as attempt_wall_cap (non-success; a latched grasp still counts). Only the 6 h global cap, an uncaught exception or a host failure stops the run.",
+      "repeat_changes_nothing_but_runner_mechanics": "same cohorts, seeds, caps (6 h, 300 s, 1000 steps), device (CPU), stage order, thresholds and gates. Section 8's 'slack for one repeat' row predates this amendment and is not an allowance for it.",
+      "stop_reason_recorded_by_the_runner": "cap record or exception traceback archived with the partial results. An agent-initiated interruption of a gated run is a process violation reported to the owner, not a valid void. The results doc states whether partial data showed any gate trend."
+    },
     "missing_values_scope": "the missing-values rule applies ONLY inside a run that completed every stage",
     "one_repeat": "exactly one repeat, from scratch, same cohorts and seeds. If the stop was a runner-bug crash, the fix lands through a reviewed PR touching runner mechanics only (no thresholds, gates, stage order or cohorts) and the repeat runs at that revision; it still counts as the single repeat.",
     "partial_results": "archived with sha256 and reported as void; never used for any decision, threshold or protocol change",
@@ -644,13 +651,16 @@
     "status": "pre-run amendment; nothing has executed; exemption_spent stays false",
     "superseded": [
       {
-        "frozen_value_prefix": "B1, B2 or B3 fails. The run is void.",
-        "path": "/pre_declared_outcomes/V",
-        "reason": "extended to runs that stop before evaluation"
+        "change": "appended (append-only); frozen value is the text before ' AMENDMENT 2:'",
+        "path": "/pre_declared_outcomes/V"
       },
       {
-        "path": "/missing_values",
-        "reason": "scoped to completed runs"
+        "change": "appended (append-only); frozen value is the text before ' AMENDMENT 2:'",
+        "path": "/missing_values"
+      },
+      {
+        "frozen_value": "preregistration, AMENDED (amendment 1, 2026-09-25); nothing has run",
+        "path": "/status"
       }
     ],
     "void_on_stop": "A run that stops for ANY reason before every voiding control (B1, B2, B3) and every gate (D1-pipeline, D1-grasp count, G-SUB) has been evaluated is Outcome V (VOID). The abandonment clause does NOT fire; no gate counts as passed or failed; exemption_spent is untouched.",

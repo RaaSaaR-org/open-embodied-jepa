@@ -514,6 +514,9 @@ D1-grasp's derived two-sided count, and G-SUB** — every quantity that decides 
 excluded by name because it decides nothing (§5). An earlier revision said "D1 and G-SUB are the
 only gates", which left D1-grasp's count outside the rule while §5.2(a) made it a decision.
 
+> **Amended by Amendment 2 (§14, 2026-09-25).** This rule applies only inside a **complete** run. A run that stops before its controls and gates are evaluated is Outcome V (void), and no gate counts as failed.
+
+
 ### 5.1 Abandonment clause
 
 > **If G-SUB fails — none of the eight G-SUB candidate configurations enumerated in §2,
@@ -681,6 +684,9 @@ already reached. Stated rather than left inferable.
 - **Outcome V — B1, B2 or B3 fails.** The run is void. No arm numbers are reported as results;
   the defect and the void are recorded.
 
+> **Amended by Amendment 2 (§14, 2026-09-25).** Outcome V also covers a run that **stops** (global cap, crash, host failure) before every control and gate is evaluated. Such a run gets exactly one repeat from scratch, and a second void closes the task as INCONCLUSIVE. A failed voiding control gets no repeat.
+
+
 In every outcome: all numbers are published whatever they say; failures and negative results stay
 in the versioned record; the `apple-wide-v1` test split is never decoded; nothing is retuned and
 re-reported after the gates are read.
@@ -704,7 +710,10 @@ MPS/CPU only, Apple M5 Pro 48 GB. No training. No corpus decoding beyond §9's r
 | **Total** | | **≈ 3.5 h** |
 
 **Caps: 6 h global, 300 s per attempt, 1000 steps per attempt.** At the cap the task stops and
-reports what it has. The parent protocol's 28 800 s cap is not carried; each protocol freezes its
+reports what it has.
+
+> **Amended by Amendment 2 (§14, 2026-09-25).** "The task stops" at the **global** cap means the run is **void** (Outcome V), not failed. The 300 s per-attempt cap only ends that attempt.
+ The parent protocol's 28 800 s cap is not carried; each protocol freezes its
 own (`docs/RESOURCES.md`).
 
 ---
@@ -1351,5 +1360,33 @@ below before any run.
    Tests pin both directions.
 
 A voiding **control** failure (B1, B2 or B3 evaluated and failed) was already Outcome V under §7,
-and is unchanged. It is not a "stop". It is a completed evaluation of a voiding control, and it
-counts as the run.
+and is unchanged. It is not a "stop". It is a completed evaluation of a voiding control. **It
+gets no repeat under rule 3**: §7 grants none, and the task reports the defect.
+
+**Definitions and limits, added at review of this amendment:**
+
+- **Complete versus stopped: one definition.**
+  - A run is **complete** iff every stage of §13.6 executed all of its attempts and the runner
+    evaluated every gate and wrote its decision. This also covers a run that ended at a failed
+    voiding control, which is evaluated as described above.
+  - Anything else is a **stop**, including a crash inside the evaluation of any quantity.
+    Rule 1 and rule 5 both use this definition.
+  - The missing-values rule applies to a quantity that is undefined *inside a complete run*,
+    for example an attempt that issued no command, so it has no step-zero value.
+- **The per-attempt cap is not a stop.**
+  - An attempt that reaches the 300 s per-attempt wall-clock cap ends with termination reason
+    `attempt_wall_cap`. It counts as a non-success, and a `grasp` stage already latched in it
+    still counts, as for any other termination.
+  - Only the 6 h global cap, an uncaught exception or a host failure stops the run. "A cascade
+    of per-attempt caps" in rule 1 means a cascade that reaches the global cap.
+- **The stop must come from the runner.** The stop reason is recorded by the runner itself:
+  either the cap record or the exception and its traceback, archived with the partial results.
+  - An **agent-initiated interruption** of a gated run is a **process violation**. It is not a
+    valid void. It is reported to the task owner, and the owner decides what follows.
+  - If partial results exist, the results document states whether they showed any trend on any
+    gate before the stop.
+- **The repeat changes nothing but runner mechanics.** It runs on the same cohorts and seeds,
+  with the same caps (6 h global, 300 s and 1000 steps per attempt), on the same device (CPU), in
+  the same stage order, with the same thresholds and gates.
+  - The "slack for one repeat" row in §8's budget table predates this amendment. It is not an
+    allowance for this repeat.
