@@ -211,6 +211,18 @@ This section is interpretation, not measurement. Each claim carries its qualifie
 1. **The dominant failure is before `reach`: the approach.**
    - On 61 of 64 unsubstituted attempts the palm never gets 1 cm closer to the apple than at
      reset.
+   - **Context for that statistic, so it is not over-read.** The expert's own `orient` phase
+     first *raises* the palm to 13 cm above the apple. The arms do the same: over steps 0–19
+     every arm commands roughly dy ≈ −0.2 to −0.44 and dz ≈ +0.22 to +0.25. The palm–apple
+     distance grows from 0.099 m at reset to about 0.14 m by step 130 on every attempt (+0.015
+     to +0.049 m).
+     - What never happens is the next phase, `descend`.
+     - After about step 100, the mean commanded translation is at most 0.1 in every component
+       for every arm.
+     - Across resets the command is nearly identical for A0 and A1 (standard deviation ≤ 0.006),
+       and varies more for A2 and A3 (dz standard deviation 0.08–0.10).
+     - Numbers are from the per-step traces, computed by
+       `scripts/summarize_policy_approach.py` (committed).
    - In the representative trace A2/45001 the palm–apple distance is 0.139 m from step ~130 to
      step 1 000. Over the same span the policy commands a nearly constant (+0.04, −0.03, −0.03),
      while the shadow expert commands (+0.4, −0.4, ∓0.4).
