@@ -17,8 +17,9 @@ Order (protocol §12 first, then §5-§11, then §13):
    cameras at reset, frame near-identity, native equivalence.
 6. **Decision** (§13).
 
-CPU only. The manifest is never written. The test split is never opened: the frame reader
-refuses any episode id that is not one of the 190 checked roots.
+CPU only. The manifest is never written. The test split is never decoded: the frame reader
+refuses any episode id that is not one of the 190 checked roots. (Loading the encoders builds a
+``DatasetStore``, whose ``verify()`` reads every episode file's bytes only to check its sha256.)
 
     uv run --no-sync python scripts/probe_info_ceiling.py \
         --output outputs/task059-info-ceiling/run-1
@@ -421,8 +422,7 @@ def encoder_features(frames_by_name, manifest, *, smoke=False):
         digest = source.weights_sha256()
         digests[name] = digest
         want = manifest["sources"][MANIFEST_SOURCE_KEYS[name]]["encoder_weights_sha256"]
-        if digest != want:
-            raise ic.GuardError(f"{name} encoder weights {digest} != preregistered {want}")
+        ic.check_encoder_digest(name, digest, want)
         source.model.eval()
         for frames_name, frames in frames_by_name.items():
             out = []
@@ -449,10 +449,11 @@ def environment():
     }
 
 
-def evaluate_source(name, g, diag, xy, dx, fold, priors, masks, train_mask, split_priors):
+def evaluate_source(name, g, diag, xy, dx, dy, fold, priors, masks, train_mask, split_priors):
     xy_pred, xy_fits, xy_sel = ic.nested_cv(g, diag, xy, fold)
     dx_pred, dx_fits, dx_sel = ic.nested_cv(g, diag, dx, fold)
-    result = {"selections": {"xy": xy_sel, "dx": dx_sel}}
+    dy_pred, _dy_fits, dy_sel = ic.nested_cv(g, diag, dy, fold)  # T4, reported only
+    result = {"selections": {"xy": xy_sel, "dx": dx_sel, "dy": dy_sel}}
     kept = {}
     for stratum, mask in masks.items():
         evaluation = ic.evaluate(xy_pred, dx_pred, xy, dx, priors, mask)
@@ -466,7 +467,13 @@ def evaluate_source(name, g, diag, xy, dx, fold, priors, masks, train_mask, spli
     result["secondary_train_to_val"] = ic.public(
         ic.evaluate(full_xy, full_dx, xy, dx, split_priors, val)
     ) | {"selections": {"xy": s_sel_xy, "dx": s_sel_dx}}
-    predictions = {"xy": xy_pred, "dx": dx_pred, "xy_fits": xy_fits, "dx_fits": dx_fits}
+    predictions = {
+        "xy": xy_pred,
+        "dx": dx_pred,
+        "dy": dy_pred,
+        "xy_fits": xy_fits,
+        "dx_fits": dx_fits,
+    }
     return result, kept, predictions
 
 
@@ -497,14 +504,14 @@ def explanation_check(
         report[label] = ic.public(ic.evaluate(xy_hat, dx_hat, xy, dx, priors, occluded_mask))
     still = report["apple_hidden"]["beats_prior"]
     report["spurious"] = bool(still)
+    # Owner ruling (pre-run, recorded in PR #49): scene-wide shadow-off changes ~59 % of every
+    # frame, so the shadow-vs-residual sub-label is not interpretable and is never assigned.
+    # The shadow-off numbers are kept, marked non-decisional.
+    report["shadow_off"]["non_decisional"] = True
     report["reading"] = (
         "cue is not the apple: spurious"
         if still
-        else (
-            "apple-caused; shadow"
-            if not report["shadow_off"]["beats_prior"]
-            else "apple-caused; residual apple pixels, not the shadow"
-        )
+        else "apple-caused: believed (shadow-vs-residual sub-label not interpretable)"
     )
     return report
 
@@ -527,8 +534,8 @@ def run(output: Path, *, smoke: bool = False) -> dict:
         actual = {name: sha256(ROOT / name) for name in manifest["hashes"]}
         ic.check_hashes(manifest["hashes"], actual)
         report["hashes"] = actual
-        if not smoke and report["source"]["dirty"] is not False:
-            raise ic.GuardError("the gated run requires a clean tree")
+        if not smoke:
+            ic.check_clean_tree(report["source"]["dirty"])
         # --- G-split ---
         roots, collector = plan_roots()
         dataset = json.loads((STORE / "meta" / "jepa_manifest.json").read_text())
@@ -542,20 +549,17 @@ def run(output: Path, *, smoke: bool = False) -> dict:
         seeds = [r["seed"] for r in roots]
         fold = ic.fold_of(len(roots))
         fold_hash = ic.fold_assignment_sha256(seeds, fold)
-        if not smoke and fold_hash != manifest["split"]["fold_assignment_sha256"]:
-            raise ic.GuardError(f"fold assignment {fold_hash} != preregistered")
+        if not smoke:
+            ic.check_fold_hash(fold_hash, manifest["split"]["fold_assignment_sha256"])
         report["fold_assignment_sha256"] = fold_hash
         reader = FrameReader(dataset, [r["episode_id"] for r in roots])
         # --- measurements ---
         rows, frames = measure_resets(roots, reader, clock=clock)
         # --- G-render, G-expert ---
         ic.check_render([r["rerender_identical"] for r in rows], frames["states"])
-        fresh_identical = all(
-            np.array_equal(a, b)
-            for a, b in zip(frames["fresh_small"], frames["stored"], strict=True)
+        ic.check_frames_identical(
+            frames["fresh_small"], frames["stored"], "the ablation renderer vs stored frames"
         )
-        if not fresh_identical:
-            raise ic.GuardError("the ablation renderer does not reproduce the stored frame")
         ic.check_expert(
             [r["expert_step0"] for r in rows],
             [r["recorded_step0"] for r in rows],
@@ -565,6 +569,7 @@ def run(output: Path, *, smoke: bool = False) -> dict:
         )
         xy = np.array([r["apple_xy_truth"] for r in rows], np.float64)
         dx = np.array([r["expert_step0"][0] for r in rows], np.float64)
+        dy = np.array([r["expert_step0"][1] for r in rows], np.float64)
         train_mask = np.array([r["split"] == "train" for r in rows])
         pixels = np.array([r["apple_pixels"]["onboard_112"] for r in rows])
         occluded = pixels == 0
@@ -579,6 +584,7 @@ def run(output: Path, *, smoke: bool = False) -> dict:
             xy = xy.mean(0) + noise.normal(0, 0.017, xy.shape)
             dx = np.clip(noise.normal(0.1, 0.4, dx.shape), -0.4, 0.4)
             dx[dx == 0] = 0.1
+            dy = noise.normal(-0.39, 0.02, dy.shape)
             report["smoke_targets"] = "seeded noise; no real target reached a readout"
         clock.check("features")
         # --- sources ---
@@ -617,16 +623,16 @@ def run(output: Path, *, smoke: bool = False) -> dict:
             }
             for name in ic.DECISIONAL
         }
-        priors = ic.prior_predictions(xy, dx, occluded, fold)
+        priors = ic.prior_predictions(xy, dx, occluded, fold, dy=dy)
         split_fold = np.where(train_mask, 1, 0)
-        split_priors = ic.prior_predictions(xy, dx, occluded, split_fold)
+        split_priors = ic.prior_predictions(xy, dx, occluded, split_fold, dy=dy)
         masks = {"all": np.ones(len(rows), bool), "occluded": occluded, "visible": ~occluded}
         results, kept, preds = {}, {}, {}
         for name, x in sources.items():
             clock.check(f"readout {name}")
             g, diag = ic.gram(x)
             results[name], kept[name], preds[name] = evaluate_source(
-                name, g, diag, xy, dx, fold, priors, masks, train_mask, split_priors
+                name, g, diag, xy, dx, dy, fold, priors, masks, train_mask, split_priors
             )
             results[name]["decisional"] = name in ic.DECISIONAL
             results[name]["feature_dim"] = int(x.shape[1])
@@ -636,18 +642,24 @@ def run(output: Path, *, smoke: bool = False) -> dict:
                 stratum: ic.beats_random_floor(kept[name][stratum], kept["random"][stratum])
                 for stratum in ("all", "visible")
             }
-        results["raw112"]["compare_E0_visible"] = ic.paired_difference(
-            kept["E0"]["visible"]["_errors_cm"],
-            kept["raw112"]["visible"]["_errors_cm"],
-            ic.bootstrap_indices(int((~occluded).sum())),
-            ic._median,
-        )
-        # --- derived dx sign (reported only) ---
-        for name in ic.DECISIONAL:
+        # --- §7 pairwise comparisons of decisional sources ---
+        pairs = {}
+        for i, first in enumerate(ic.DECISIONAL):
+            for second in ic.DECISIONAL[i + 1 :]:
+                pairs[f"{first}_minus_{second}"] = {
+                    stratum: ic.compare_sources(kept[first][stratum], kept[second][stratum])
+                    for stratum in ("all", "visible")
+                }
+        report["pairwise_decisional"] = pairs
+        # --- T4, reported only: dy, apple x alone, derived dx sign, per stratum ---
+        for name in sources:
             derived = derived_dx(rows, preds[name]["xy"])
-            results[name]["derived_dx_sign_accuracy_all"] = float(
-                (np.sign(derived) == np.sign(dx)).mean()
-            )
+            results[name]["T4_reported"] = {
+                stratum: ic.evaluate_reported(
+                    preds[name]["xy"], preds[name]["dy"], derived, xy, dy, dx, priors, mask
+                )
+                for stratum, mask in masks.items()
+            }
         # --- §10 explanation check ---
         occluded_index = np.flatnonzero(occluded)
         triggered = [s for s in ic.DECISIONAL if results[s]["occluded"]["beats_prior"]]
@@ -726,8 +738,13 @@ def run(output: Path, *, smoke: bool = False) -> dict:
                 "apple_pixels": r["apple_pixels"],
                 "apple_xy": r["apple_xy_truth"],
                 "expert_dx": r["expert_step0"][0],
+                "expert_dy": r["expert_step0"][1],
                 "predictions": {
-                    s: {"xy": preds[s]["xy"][i].tolist(), "dx": float(preds[s]["dx"][i])}
+                    s: {
+                        "xy": preds[s]["xy"][i].tolist(),
+                        "dx": float(preds[s]["dx"][i]),
+                        "dy": float(preds[s]["dy"][i]),
+                    }
                     for s in preds
                 },
             }

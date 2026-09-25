@@ -431,6 +431,112 @@ def test_apple_hidden_and_shadow_off_renders_change_only_what_they_claim():
         assert not np.array_equal(hidden, normal)
         assert not np.array_equal(no_shadow, normal)
         assert np.array_equal(renders.small_rgb(), normal)  # state restored afterwards
+        # Hiding the apple equals removing it: teleport it far below the floor and re-render.
+        joint = robot.sim.data.joint("apple_free")
+        saved = joint.qpos.copy()
+        joint.qpos[:3] = [0.0, 0.0, -10.0]
+        robot.mj.mj_forward(robot.model, robot.sim.data)
+        assert np.array_equal(renders.small_rgb(), hidden)
+        joint.qpos[:] = saved
+        robot.mj.mj_forward(robot.model, robot.sim.data)
+        assert np.array_equal(renders.small_rgb(), normal)
     finally:
         renders.close()
         robot.sim.close()
+
+
+# ----- the guards that run() applies inline (both directions) --------------------------------
+def test_clean_tree_guard():
+    ic.check_clean_tree(False)
+    for dirty in (True, None, "unavailable"):
+        with pytest.raises(ic.GuardError, match="clean tree"):
+            ic.check_clean_tree(dirty)
+
+
+def test_fold_hash_guard():
+    want = MANIFEST["split"]["fold_assignment_sha256"]
+    ic.check_fold_hash(want, want)
+    with pytest.raises(ic.GuardError, match="fold assignment"):
+        ic.check_fold_hash("0" * 64, want)
+
+
+def test_encoder_digest_guard():
+    for key in ("i_E0", "ii_A3", "iii_random"):
+        want = MANIFEST["sources"][key]["encoder_weights_sha256"]
+        ic.check_encoder_digest(key, want, want)
+        with pytest.raises(ic.GuardError, match="encoder weights"):
+            ic.check_encoder_digest(key, "f" * 64, want)
+    digests = {
+        MANIFEST["sources"][k]["encoder_weights_sha256"] for k in ("i_E0", "ii_A3", "iii_random")
+    }
+    assert len(digests) == 3  # three distinct encoders, so a swap would be caught
+
+
+def test_frames_identical_guard():
+    a = [np.zeros((4, 4, 3), np.uint8) for _ in range(3)]
+    ic.check_frames_identical(a, [x.copy() for x in a], "frames")
+    b = [x.copy() for x in a]
+    b[1][2, 2, 0] = 1
+    with pytest.raises(ic.GuardError, match="1 frames differ"):
+        ic.check_frames_identical(a, b, "frames")
+    with pytest.raises(ic.GuardError, match="counts"):
+        ic.check_frames_identical(a, a[:2], "frames")
+    with pytest.raises(ic.GuardError, match="counts"):
+        ic.check_frames_identical([], [], "frames")
+
+
+def test_wall_cap_voids():
+    runner = _load("_probe_t3", "scripts/probe_info_ceiling.py")
+    runner.Clock(3600).check("stage")
+    with pytest.raises(runner.VoidRun, match="wall cap"):
+        runner.Clock(-1).check("stage")
+
+
+def test_a_failed_guard_writes_a_void_report(tmp_path, monkeypatch):
+    pytest.importorskip("torch")
+    pytest.importorskip("mujoco")
+    runner = _load("_probe_t4", "scripts/probe_info_ceiling.py")
+    tampered = json.loads(json.dumps(MANIFEST))
+    tampered["hashes"]["configs/g1_sim_action.json"] = "0" * 64
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps(tampered))
+    monkeypatch.setattr(runner, "MANIFEST", path)
+    report = runner.run(tmp_path / "out", smoke=True)
+    assert report["status"] == "void"
+    assert report["decision"]["outcome"] == "VOID"
+    written = json.loads((tmp_path / "out" / "report.json").read_text())
+    assert written["decision"]["outcome"] == "VOID"
+    assert "g1_sim_action.json" in written["decision"]["reason"]
+    with pytest.raises(FileExistsError):  # never overwrites evidence
+        runner.run(tmp_path / "out", smoke=True)
+
+
+# ----- reported-only readouts and comparisons ------------------------------------------------
+def test_reported_t4_and_pairwise_comparison():
+    xy, dx, occluded = _synthetic_cohort()
+    dy = np.full(len(dx), -0.4)
+    dy[::7] = -0.3
+    fold = ic.fold_of(len(dx))
+    priors = ic.prior_predictions(xy, dx, occluded, fold, dy=dy)
+    mask = np.ones(len(dx), bool)
+    perfect = ic.evaluate_reported(xy, dy, dx, xy, dy, dx, priors, mask)
+    assert perfect["apple_x_abs_error_cm"]["median"] == 0.0
+    assert perfect["dy_mae"]["mae"] == 0.0 and perfect["derived_dx_sign"]["accuracy"] == 1.0
+    blind = ic.evaluate_reported(
+        priors["B_mean"], priors["B_const_dy"], priors["B_const"], xy, dy, dx, priors, mask
+    )
+    assert blind["dy_mae"]["ratio_to_B_const_dy"]["ratio"] == pytest.approx(1.0)
+    good = ic.evaluate(xy, dx, xy, dx, priors, mask)
+    bad = ic.evaluate(priors["B_mean"], priors["B_const"], xy, dx, priors, mask)
+    comparison = ic.compare_sources(good, bad)
+    assert comparison["median_error_difference_cm"]["ci95"][1] < 0
+    assert (
+        comparison["mcnemar"]["only_second_correct"] <= comparison["mcnemar"]["only_first_correct"]
+    )
+
+
+def test_paired_ratio_stays_finite_when_a_baseline_resample_is_zero():
+    idx = np.array([[0, 0], [1, 1]])
+    result = ic.paired_ratio(np.array([1.0, 1.0]), np.array([0.0, 1.0]), idx, ic._median)
+    assert np.isfinite(result["ci95"]).all()
+    json.dumps(result, allow_nan=False)

@@ -136,6 +136,31 @@ def check_expert(expert, recorded, aim_offset, apple_label, apple_truth, *, tol=
         raise GuardError(f"apple label differs from reset truth by {drift} m")
 
 
+def check_clean_tree(dirty) -> None:
+    """The gated run requires a clean tree (``source_identity()['dirty'] is False``)."""
+    if dirty is not False:
+        raise GuardError(f"the gated run requires a clean tree (dirty={dirty!r})")
+
+
+def check_fold_hash(got: str, want: str) -> None:
+    if got != want:
+        raise GuardError(f"fold assignment {got} != preregistered {want}")
+
+
+def check_encoder_digest(name: str, got: str, want: str) -> None:
+    if got != want:
+        raise GuardError(f"{name} encoder weights {got} != preregistered {want}")
+
+
+def check_frames_identical(first, second, what: str) -> None:
+    first, second = list(first), list(second)
+    if len(first) != len(second) or not first:
+        raise GuardError(f"{what}: frame counts differ or are empty")
+    bad = sum(not np.array_equal(a, b) for a, b in zip(first, second, strict=True))
+    if bad:
+        raise GuardError(f"{what}: {bad} frames differ")
+
+
 def check_priors(computed: dict, recorded: dict, *, tol=1e-9) -> None:
     """G-prior: the run's prior baselines reproduce the preregistered calibration."""
     for key, want in recorded.items():
@@ -178,6 +203,21 @@ def native_equivalence(stored, down, train_mask) -> dict:
     corrected = np.stack([np.abs(flat_d[i] - bias - flat_s).mean(axis=1) for i in range(n)])
     c_own = np.diag(corrected).copy()
     c_other = np.where(np.eye(n, dtype=bool), np.inf, corrected).min(axis=1)
+    over = np.abs(down - stored).max(axis=3) > 8
+    level = stored.max(axis=3)
+    edge = np.zeros_like(over)
+    centre = level[:, 1:-1, 1:-1]
+    edge[:, 1:-1, 1:-1] = (
+        np.stack(
+            [
+                np.abs(centre - level[:, 1:-1, :-2]),
+                np.abs(centre - level[:, 1:-1, 2:]),
+                np.abs(centre - level[:, :-2, 1:-1]),
+                np.abs(centre - level[:, 2:, 1:-1]),
+            ]
+        ).max(axis=0)
+        > 8
+    )
     byte_identical = bool(np.array_equal(np.floor(down + 0.5), stored))
     identified = int((own < other).sum())
     return {
@@ -190,6 +230,10 @@ def native_equivalence(stored, down, train_mask) -> dict:
         "own_frame_max_abs_levels": float(np.abs(down - stored).max()),
         "identifies_own_reset": identified,
         "stored_frames_nearest_other_reset_mae_levels_min": float(between.min()),
+        "fraction_pixels_over_8_levels": float(over.mean()),
+        "share_of_over_8_pixels_at_edges": float(edge[over].mean()) if over.any() else None,
+        "bias_corrected_own_mae_min": float(c_own.min()),
+        "bias_corrected_own_mae_median": float(np.median(c_own)),
         "bias_corrected_own_mae_max": float(c_own.max()),
         "bias_corrected_identifies_own_reset": int((c_own < c_other).sum()),
         "roots": n,
@@ -336,9 +380,10 @@ def split_fit(g, diag, y, train_mask) -> tuple[np.ndarray, Readout, dict]:
 
 
 # ----- prior-only baselines (§2.6 / §8) ------------------------------------------------------
-def prior_predictions(xy, dx, occluded, fold) -> dict:
+def prior_predictions(xy, dx, occluded, fold, dy=None) -> dict:
     """Out-of-fold predictions of every prior-only baseline. Reads no observation."""
     xy, dx = np.asarray(xy, np.float64), np.asarray(dx, np.float64)
+    dy_const = None if dy is None else np.zeros(len(dx))
     occluded = np.asarray(occluded, bool)
     n = len(dx)
     out = {
@@ -352,6 +397,8 @@ def prior_predictions(xy, dx, occluded, fold) -> dict:
         fit, held = fold != k, fold == k
         out["B_mean"][held] = xy[fit].mean(0)
         out["B_const"][held] = np.median(dx[fit])
+        if dy_const is not None:
+            dy_const[held] = np.median(np.asarray(dy, np.float64)[fit])
         out["B_maj"][held] = 1.0 if (dx[fit] > 0).mean() >= 0.5 else -1.0
         for flag in (True, False):
             out["B_occ"][held & (occluded == flag)] = xy[fit & (occluded == flag)].mean(0)
@@ -361,6 +408,8 @@ def prior_predictions(xy, dx, occluded, fold) -> dict:
         for b in range(5):
             share = (dx[fit][fit_bin == b] > 0).mean()
             out["B_y"][held_index[held_bin == b]] = 1.0 if share >= 0.5 else -1.0
+    if dy_const is not None:
+        out["B_const_dy"] = dy_const
     return out
 
 
@@ -442,7 +491,9 @@ def paired_ratio(numerator, denominator, idx, statistic) -> dict:
     point = float(statistic(num) / statistic(den))
     with np.errstate(divide="ignore", invalid="ignore"):
         boot = statistic(num[idx], axis=1) / statistic(den[idx], axis=1)
-    boot = np.where(np.isfinite(boot), boot, np.inf)
+    # A zero-error baseline resample would divide by zero; record it as the largest finite float
+    # so the report stays valid JSON (allow_nan=False) and the upper bound still fails any bar.
+    boot = np.where(np.isfinite(boot), boot, np.finfo(np.float64).max)
     lo, hi = percentile_ci(boot)
     return {"ratio": point, "ci95": [lo, hi]}
 
@@ -529,6 +580,52 @@ def evaluate(xy_pred, dx_pred, xy, dx, priors, mask) -> dict:
         "beats_prior": beats_prior,
         "_errors_cm": err,
         "_correct": correct,
+    }
+
+
+def evaluate_reported(xy_pred, dy_pred, derived_dx, xy, dy, dx, priors, mask) -> dict:
+    """T4, reported only (§4): step-0 dy, apple x alone, and the dx sign derived from T1."""
+    mask = np.asarray(mask, bool)
+    n = int(mask.sum())
+    idx = bootstrap_indices(n)
+    x_true = np.asarray(xy, np.float64)[mask, 0]
+    x_err = np.abs(np.asarray(xy_pred)[mask, 0] - x_true) * 100.0
+    x_base = np.abs(priors["B_mean"][mask, 0] - x_true) * 100.0
+    dy = np.asarray(dy, np.float64)[mask]
+    dy_err = np.abs(np.asarray(dy_pred, np.float64)[mask] - dy)
+    dy_base = np.abs(priors["B_const_dy"][mask] - dy)
+    sign = np.sign(np.asarray(dx, np.float64)[mask])
+    derived = np.sign(np.asarray(derived_dx, np.float64)[mask]) == sign
+    lower, upper = wilson(int(derived.sum()), n)
+    return {
+        "n": n,
+        "apple_x_abs_error_cm": median_ci(x_err, idx)
+        | {
+            "B_mean_median_cm": float(np.median(x_base)),
+            "ratio_to_B_mean": paired_ratio(x_err, x_base, idx, _median),
+        },
+        "dy_mae": {
+            "mae": float(dy_err.mean()),
+            "ci95": list(percentile_ci(dy_err[idx].mean(axis=1))),
+            "B_const_dy_mae": float(dy_base.mean()),
+            "ratio_to_B_const_dy": paired_ratio(dy_err, dy_base, idx, _mean),
+        },
+        "derived_dx_sign": {
+            "accuracy": float(derived.mean()),
+            "correct": int(derived.sum()),
+            "wilson95": [lower, upper],
+        },
+    }
+
+
+def compare_sources(first: dict, second: dict) -> dict:
+    """§7: paired median-T1 difference (first - second) and exact McNemar on T2."""
+    n = len(first["_errors_cm"])
+    return {
+        "median_error_difference_cm": paired_difference(
+            first["_errors_cm"], second["_errors_cm"], bootstrap_indices(n), _median
+        ),
+        "mcnemar": mcnemar_exact(first["_correct"], second["_correct"]),
     }
 
 
