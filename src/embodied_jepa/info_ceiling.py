@@ -488,14 +488,22 @@ def median_ci(errors, idx) -> dict:
 def paired_ratio(numerator, denominator, idx, statistic) -> dict:
     """``statistic(num)/statistic(den)`` with a paired bootstrap CI (same resamples)."""
     num, den = np.asarray(numerator, np.float64), np.asarray(denominator, np.float64)
-    point = float(statistic(num) / statistic(den))
+    base = float(statistic(den))
     with np.errstate(divide="ignore", invalid="ignore"):
         boot = statistic(num[idx], axis=1) / statistic(den[idx], axis=1)
+    undefined = int((~np.isfinite(boot)).sum())
     # A zero-error baseline resample would divide by zero; record it as the largest finite float
     # so the report stays valid JSON (allow_nan=False) and the upper bound still fails any bar.
     boot = np.where(np.isfinite(boot), boot, np.finfo(np.float64).max)
     lo, hi = percentile_ci(boot)
-    return {"ratio": point, "ci95": [lo, hi]}
+    result = {"ratio": None, "ci95": [lo, hi], "undefined_resamples": undefined}
+    if base == 0.0:
+        # The baseline is exact on this set, so the ratio is undefined: recorded as null, and a
+        # null ratio never satisfies a pass rule (the CI upper bound is the largest float).
+        result["undefined_zero_baseline"] = True
+    else:
+        result["ratio"] = float(statistic(num) / base)
+    return result
 
 
 def paired_difference(a, b, idx, statistic) -> dict:
