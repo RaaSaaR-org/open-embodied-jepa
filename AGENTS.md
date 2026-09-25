@@ -10,7 +10,7 @@ The repository is being implemented incrementally. Read the [README status secti
 
 - **Primary platform:** native MuJoCo on macOS; CPU execution and validated PyTorch MPS support.
 - **Models:** `native_jepa` and a LeWM adapter over pinned upstream source; both are integrated and trainable, and the backend swap is a one-line config change.
-- **Control line:** since TASK-054, behaviour cloning with the world model as a critic. CEM/MPC over the world-model cost is abandoned as the primary control line but remains implemented and under test; see [docs/DECISIONS.md](docs/DECISIONS.md).
+- **Control line:** none is currently primary. Two pre-declared abandonment clauses have fired: TASK-054 abandoned CEM/MPC over the world-model cost as the primary control line, and TASK-057 stopped the behaviour-cloning line that replaced it on this corpus (`apple-wide-v1`) and this camera (112 px onboard). No third control formulation is preregistered on them; the next task is a perception/data task (TASK-059, the reset-frame information-ceiling probe, [docs/experiments/apple_info_ceiling_v1.md](docs/experiments/apple_info_ceiling_v1.md)). CEM/MPC remains implemented and under test. The LeWM backend, the encoder and the product goal are not abandoned; see [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Future platforms:** Isaac Lab/Sim and Unitree SDK2 behind adapter boundaries. Neither blocks local MVP progress.
 - **Task:** tabletop reach → grasp → transport → place → release, leading to Apple → Plate.
 
