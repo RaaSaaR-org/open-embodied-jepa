@@ -4,7 +4,7 @@ aliases:
 - TASK-060
 title: Bring CLAUDE.md and AGENTS.md status wording into line with TASK-057
 slug: bring-claude-md-and-agents-md-status-wording-into-line-with-task-057
-status: review
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -19,6 +19,7 @@ due_date: ''
 created: 2026-09-25
 updated: 2026-09-25
 ---
+
 
 
 
@@ -45,8 +46,19 @@ Documentation only. No experiment is run; nothing under `docs/experiments/`,
 - [x] The "every attempt since" sentence is exactly true and scoped to learned control attempts
       through TASK-057, with non-learned and diagnostic successes excluded.
 - [x] `planning.py` note no longer implies a primary control line exists.
-- [ ] Independent review reports APPROVE; CI green; merged.
+- [x] Independent review reports APPROVE; CI green; merged (PR #50, `464ca9b`).
+- [x] Follow-up sweep: present-tense "behaviour cloning is the current line" wording corrected
+      in `README.md` (status section and planner note), `docs/EVALUATION.md`,
+      `docs/ARCHITECTURE.md` and `docs/MVP_PLAN.md`, keeping the dated history (follow-up PR).
 
 ## Notes
 - Branch `docs/agent-status-refresh` from origin/main `781664f`.
+- Delivery: PR https://github.com/RaaSaaR-org/open-embodied-jepa/pull/50, squash-merged as
+  `464ca9b`. Independent reviewer (reported verdicts): round 1 APPROVE, round 2
+  REQUEST_CHANGES (an unsourced claim that the task owner selected TASK-059; fixed), round 3
+  APPROVE. CI (core on macOS and Ubuntu, macos-integration) green on the PR head.
+- The reviewer found the same stale wording in `docs/EVALUATION.md`, `docs/ARCHITECTURE.md`,
+  `docs/MVP_PLAN.md` and the README status section. It is fixed under this task in a follow-up
+  PR on branch `docs/task-060-status-sweep`, which also closes this card. Documentation only;
+  no DECISIONS entry, experiment doc, manifest or TASK-059 file changed.
 %% mc-links: [[TASK-057]] %%

@@ -10,8 +10,9 @@ A Mac-first research framework for action-conditioned visual world models on a s
 benchmark recorded 0/50 on each of three training seeds for both backends — **0/150 per
 model**, 400 attempts including hold and random controls. The same 50 resets were reused
 across seeds, and every learned episode ended on a joint-rate guard stop, typically within
-a few commands (per-run medians 3–15, maximum 170). Every *learned* task-specific apple control attempt since has failed its own
-declared gate. Scripted-collector and
+a few commands (per-run medians 3–15, maximum 170). Every *learned* task-specific apple control attempt since, through TASK-057, has ended
+without meeting its own declared gate (failed it, stopped at an earlier offline gate or stop
+rule, or ran incomplete). Scripted-collector and
 privileged-oracle successes are collection and feasibility evidence, not learned-policy
 results. Green CI and a passing integration smoke run are software evidence, not working
 manipulation.
@@ -20,7 +21,8 @@ manipulation.
 (TASK-054) failed all four arms against 14 preregistered gates and fired the protocol's
 pre-declared abandonment clause: **sampling-based planning (CEM/MPC) over this
 world-model cost is abandoned as the primary control line**, and behaviour cloning with
-the world model as a critic becomes the primary line. The CEM/MPC implementation, the
+the world model as a critic became the primary line; that line has since hit its own
+abandonment clause too (below), so there is currently no primary control line. The CEM/MPC implementation, the
 frozen benchmark and the backend-swap invariant stay in the repository, keep their tests
 and remain usable. The product goal — LeWM on G1 + dual Dex3 — is unchanged; only the
 control formulation changed. The decision and its evidence are recorded in
@@ -166,8 +168,8 @@ flowchart LR
 Models own visual features, latent dynamics and goal distance. The embodiment owns frames, IK, hand synergies and limits. Planner code has no model-specific branches. Both models train on the same sealed dataset, and frozen image goals/reset manifests keep evaluation consistent.
 
 The CEM/MPC planner above is the implemented common planner and the one the historical
-benchmark ran. As of TASK-054 it is **no longer the primary control line** (see the status
-section); it remains in the repository, under test, as the shared planner contract.
+benchmark ran. As of TASK-054 it is **no longer the primary control line**, and since
+TASK-057 there is no primary control line (see the status section); it remains in the repository, under test, as the shared planner contract.
 
 The MVP corpus has **184 episodes and 42,127 transitions**, with preserved **146/19/19**
 train/validation/test assignments; Apple→Plate is reserved there as an unseen pairing and
