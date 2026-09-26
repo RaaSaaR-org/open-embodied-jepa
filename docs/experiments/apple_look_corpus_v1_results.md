@@ -57,7 +57,7 @@ agent's clock, because the report records none.
 | report | `data/apple-look-v1-work/collection_report.json`, sha256 `f3d2d3d5bc03c4dc9853aeae3d8d90a05d364d0315f498e64289b4c7825f6680` |
 | **dataset** | `data/apple-look-v1/`, 2.06 GB (2 057 238 759 bytes). **Dataset manifest sha256 `81d760d1f5a61834b4f37c3daf12ad1a7175e57fe99fe11d5fb4cecbff8edb64`**; the file on disk matches the report. **The data is not committed.** |
 | plan | sha256 `99dd7ffc…a71b` (exact, as pinned) and rounded `37ad7a31…0f30` (as pinned) |
-| guards | **all passed**: G-hash (28 pinned files at preflight, re-checked at finalize), G-plan, G-stop, Q-split, Q-folds (`da6b5b5a…486b`), Q-render, Q-expert, G-weights, G-repro, G-finite, G-wall |
+| guards | **no guard voided the run** (the report records the outcome, not a per-guard log): G-hash (28 pinned files at preflight, re-checked at finalize), G-plan, G-stop, Q-split, Q-folds (`da6b5b5a…486b`), Q-render, Q-expert, G-weights, G-repro, G-finite, G-wall |
 | `non_finite_fields` | none |
 | void runs | none. **Run-1 is the only run.** |
 
@@ -155,7 +155,7 @@ agent's clock, because the report records none.
 ## 4. The readability gate (primary estimate, 10-fold CV, n = 190 train + val roots)
 
 - **Visibility.** The apple was hidden by the wrist at reset on 116/190 roots. After the look it
-  is visible on 190/190: 2 / 7 / 12 / 19 / 44 px (min / p25 / median / p75 / max).
+  is visible on 190/190: 2 / 7.25 / 12 / 19 / 44 px (min / p25 / median / p75 / max).
 - **In-run baselines.**
   - B-occ median: 1.866 cm.
   - B-maj: 0.705. Here 134/190 post-look dx signs are positive. On TASK-063's roots B-maj was
