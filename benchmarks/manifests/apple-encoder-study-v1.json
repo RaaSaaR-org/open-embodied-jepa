@@ -1,0 +1,492 @@
+{
+ "task": "TASK-062",
+ "protocol": "apple_encoder_study_v1",
+ "document": "docs/experiments/apple_encoder_study_v1.md",
+ "status": "preregistration; no encoder trained, no readout fitted on any new feature",
+ "what_this_task_is": "a perception/representation study; trains image encoders, not controllers; collects no corpus; preregisters no control formulation",
+ "learned_apple_to_plate_successes": 0,
+ "exemption_spent": false,
+ "exemption_spent_source": "benchmarks/manifests/apple-policy-diagnostics-v1.json; stays false, not claimed",
+ "owner_ordering": "2026-09-26: encoder/representation work first; the look-prefix corpus later, only once a frozen encoder exposes the post-look apple",
+ "predecessor": {
+  "task": "TASK-061",
+  "protocol": "docs/experiments/apple_observation_reprobe_v1.md",
+  "results": "docs/experiments/apple_observation_reprobe_v1_results.md",
+  "results_manifest": "benchmarks/manifests/apple-observation-reprobe-v1-results.json",
+  "outcome": "O-LOOK-RAW",
+  "facts_used_rounded": {
+   "L_raw": {
+    "T1_median_cm": 0.469,
+    "T1_ratio_to_B_occ": 0.242,
+    "T1_ratio_ci95": [
+     0.211,
+     0.289
+    ],
+    "T2": "180/190"
+   },
+   "L_E0": {
+    "T1_median_cm": 1.273,
+    "T1_ratio_to_B_occ": 0.656,
+    "T1_ratio_ci95": [
+     0.519,
+     0.779
+    ],
+    "T2": "147/190"
+   },
+   "L_random": {
+    "T1_median_cm": 1.124,
+    "T1_ratio_to_B_occ": 0.58,
+    "T1_ratio_ci95": [
+     0.513,
+     0.711
+    ],
+    "T2": "176/190"
+   }
+  }
+ },
+ "question": "can a change to how the encoder is trained or read out give a frozen encoder whose features pass TASK-061's L probe (same post-look 112 px frames, readouts, unchanged TASK-059 bars) on roots the encoder never saw, and beat a random-init encoder of the same architecture",
+ "reused_unchanged": {
+  "code": "scripts/probe_observation_reprobe.py, src/embodied_jepa/observation_reprobe.py, scripts/probe_info_ceiling.py, src/embodied_jepa/info_ceiling.py, loaded as they are (G-hash)",
+  "frames": "TASK-061 measure(): post_112 and post_112_hidden; renderer warm-up; 8-command look; G-render, G-expert, G-look, G-prior",
+  "targets": "T1 reset apple xy; T2/T3 sign/value of the expert right_dx at the post-look state",
+  "readouts": "info_ceiling linear + RBF kernel ridge, nested 5-fold inner CV (seed 5900 + k), lambda grid 1e-4..1e4",
+  "folds": "default_rng(59) 10-fold; fold hash 1dcc908677bbbb4bcfd723fd0b0f8ae628cb6bb762e63f42ca539e022c9b172a",
+  "bootstrap": "10000 paired resamples, ic.bootstrap_indices(190), seed 5901; Wilson for T2",
+  "baselines": "B-occ (TASK-059 reset visibility flag), B-maj, B-const on the post-look targets",
+  "bars": "T1 median <= 1.5 cm and ratio-to-B-occ upper bound <= 0.6; T2 acc >= 0.85 and Wilson lower > B-maj; T3 MAE-ratio upper bound <= 0.6",
+  "random_floor_definition": "info_ceiling.beats_random_floor: paired 95% CI of median T1 error (source - floor) upper < 0 AND T2 accuracy higher",
+  "spurious_check": "TASK-061 section 7.4 apple-hidden check"
+ },
+ "held_out_design": {
+  "method": "two-way cross-fitting over the TASK-061 folds",
+  "half_A_folds": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "half_B_folds": [
+   5,
+   6,
+   7,
+   8,
+   9
+  ],
+  "encoder_e_A": "trained only on train-split episodes whose root is a train root in half B; featurises every root of half A",
+  "encoder_e_B": "trained only on train-split episodes whose root is a train root in half A; featurises every root of half B",
+  "outer_readout_for_fold_k": "selected and fitted on the other 171 roots with the features of the encoder that excluded k's half",
+  "grouping": "root episode + its 3 branch episodes, by root_episode_id",
+  "never_used_for_training": [
+   "val split (20 roots)",
+   "test split",
+   "holdout",
+   "any val-based selection"
+  ],
+  "state_normalization": "Welford moments over the training half's episodes only (DatasetStore.fit_normalization's method)",
+  "secondary_non_decisional": "val roots in half h: readout fitted on the 170 train roots with e(h) features",
+  "E0_not_held_out": "E0 was trained on all 170 train roots and selected on val; anchor and reported-only diagnostic only"
+ },
+ "explanations": {
+  "E-pool": "tested by A-tok (and E0-tok, reported only)",
+  "E-collapse": "tested by A-sig",
+  "E-objective": "tested by A-rec",
+  "E-capacity": "not tested: E0's probe feature has effective rank 3.2 of 128 on the post-look frames (calibration)",
+  "E-input": "not tested: E0's patch embedding and tokens respond to the apple (calibration); LH-raw added only 0.084 cm over L-raw in TASK-061",
+  "E-distribution": "not separable here; declared"
+ },
+ "training_recipe": {
+  "config": "configs/apple_policy_v1.yaml -> apple_wm_v4_lewm.yaml (LeWM, E0's model settings)",
+  "budget": "benchmarks/manifests/apple-world-model-v4.json frozen.training: 15000 steps, batch 32, horizon 16, cosine to 0.1x; lr 3e-4, AdamW weight decay 1e-4, gradient clip 1.0",
+  "model_seed": 0,
+  "window_sampler_seed": {
+   "e_A": 6200,
+   "e_B": 6201
+  },
+  "selection": "none; the final weights of the fixed budget",
+  "device": "mps",
+  "readout_heads_and_state_fusion": "as E0 (privileged readout labels of the training half only)"
+ },
+ "arms_decisional_in_holm_order": [
+  {
+   "arm": "A-tok",
+   "tests": "E-pool",
+   "training": "none beyond the recipe (the R0 model)",
+   "feature": "final patch tokens last_hidden_state[:, 1:] after the final LayerNorm, 64 x 128 = 8192-d",
+   "floor": "F-tok"
+  },
+  {
+   "arm": "A-sig",
+   "tests": "E-collapse",
+   "training": "sigreg_weight 1.0 (E0: 0.09)",
+   "feature": "probe feature (FrozenEncoder.features -> image_features, 128-d)",
+   "floor": "F-cls"
+  },
+  {
+   "arm": "A-rec",
+   "tests": "E-objective",
+   "training": "pixel reconstruction of the ImageNet-normalised 112 px first frame of each window from the 128-d image feature (before state fusion), weight 1.0; decoder Linear 128 -> 256*7*7 then 4 ConvTranspose2d (k4, s2, p1) 256-128-64-32-3 with GELU between; init torch.manual_seed(6210) in a forked RNG; own AdamW with the same lr, schedule and weight decay; joint gradient clip 1.0; at weight 0 the step equals LeWM.train_step",
+   "feature": "probe feature",
+   "floor": "F-cls"
+  }
+ ],
+ "reported_only_sources": {
+  "L-raw": "ceiling reference and anchor",
+  "L-E0": "anchor",
+  "F-cls": "= TASK-061 L-random (seed-0 init, a1 digest); floor for A-sig and A-rec; anchor",
+  "F-tok": "seed-0 init final patch tokens; floor for A-tok",
+  "R0-cls": "recipe unchanged, cross-fitted, probe feature; control",
+  "E0-tok": "frozen E0 final patch tokens; cheap readout test of E-pool before any training; NOT held out, never decisional"
+ },
+ "pass_rule": [
+  "trained: both encoders complete 15000 steps within 7200 s each, with finite losses",
+  "not collapsed: probe feature on 1024 training-half frames (seed 6220): collapsed_fraction <= 0.05, effective_rank >= 2, latent_std_mean >= 0.1 (VisualModel _statistics), for both encoders",
+  "succeeds on all 190 roots under the unchanged bars",
+  "beats its floor (beats_random_floor, all 190 roots)",
+  "Holm rejection over the 3 arms",
+  "not spurious (apple-hidden check, per-half hidden features; ablation renderer reproduces 190/190)"
+ ],
+ "multiplicity": {
+  "method": "Holm step-down over the 3 decisional arms, family-wise one-sided alpha 0.025",
+  "p_value": "p_arm = max(p_T1, p_T2, p_T3, p_F); p_T1..p_T3 = observation_reprobe.hypothesis_pvalues unchanged; p_F = share of the same 10000 paired resamples with median(arm error) - median(floor error) >= 0; p_arm = 1 if T1 median > 1.5 cm, T2 accuracy < 0.85, or T2 accuracy not higher than the floor's",
+  "step_thresholds": [
+   0.008333333333333333,
+   0.0125,
+   0.025
+  ],
+  "ties": "listed order A-tok, A-sig, A-rec"
+ },
+ "qualifiers_not_rows": {
+  "unadjusted_only": "meets the bars and the floor but not Holm",
+  "bars_not_floor": "meets the bars, not the floor",
+  "partial_information": "beats the prior on all roots without succeeding"
+ },
+ "diagnostics_reported": {
+  "collapse": "_statistics of the probe feature and the flattened final tokens on 1024 training-half frames (seed 6220) and on the 190 post-look frames",
+  "action_sensitivity": "512 training-half windows, horizon 8, seed 6230: median over windows of ||z8(a) - z8(a_perm)|| / ||z8(a) - z8_true||, a_perm a seeded derangement of the windows' actions",
+  "label_free_table": "the calibration statistics for every trained encoder on its held-out roots"
+ },
+ "reproduction_anchors": {
+  "sources": [
+   "L_raw",
+   "L_E0",
+   "L_random"
+  ],
+  "reference": "outputs/task061-observation-reprobe/run-1/report.json",
+  "reference_sha256": "289470f4f50855e0280198c4757fca5c1b79b521b3bf0be7e96c04f14787fa88",
+  "compared": "every field of results[name] produced by evaluate_source and the strata masks (primary per stratum, secondary, selections) and per_root xy/dx/dy predictions",
+  "when": "before any encoder is trained",
+  "bit_exact": "anchors hold",
+  "void": "any T2 count, pass/fail flag, succeeds/beats_prior reading or selection differs, or numeric max |delta| > 1e-6: G-anchor fails, V; the owner is told before any repeat",
+  "caveat": "0 < max |delta| <= 1e-6 with every count, flag and selection identical: continue; reproduction caveat; escalated to the owner before the results document; no row change",
+  "machine": "the same machine as TASK-061 run-1"
+ },
+ "guards_void_the_run": {
+  "G_hash": "every file in hashes matches; episode files checked before decoding; E0 and random encoder digests match TASK-061's; clean tree",
+  "G_split": "TASK-061 G-split (190 roots, fold hash) plus: every training episode is in the train split and its root_episode_id is a train root of the encoder's training half, never a root of the half it featurises; e(A) and e(B) training root sets are disjoint and together exactly the 170 train roots; no val, test or holdout episode is decoded for training",
+  "G_render_G_expert_G_look_G_prior": "TASK-061's, unchanged",
+  "G_anchor": "reproduction_anchors",
+  "not_guards_arm_demotion": [
+   "training budget stop",
+   "non-finite loss or gradient in an arm",
+   "failed collapse gate"
+  ],
+  "crash": "any other exception is V"
+ },
+ "pre_declared_outcomes_in_order": [
+  {
+   "row": "V",
+   "condition": "a guard fails (incl. G-anchor) or the run stops before a complete report (crash, global wall cap)",
+   "next": "one from-scratch repeat (void_rule)"
+  },
+  {
+   "row": "O-ENC-LATENT",
+   "condition": "A-sig or A-rec passes",
+   "reading": "a changed objective or regime gives LeWM's own 128-d latent the apple on held-out roots, beyond random init",
+   "next": "preregister the look-prefix 112 px corpus with that arm's recipe as the encoder (both pass: smaller p_arm, ties A-sig); no control formulation until the retrained encoder passes this probe on that corpus's decision frames"
+  },
+  {
+   "row": "O-ENC-TOKENS",
+   "condition": "A-tok passes, A-sig and A-rec do not",
+   "reading": "the recipe's tokens carry the apple beyond random init; its pooled latent does not",
+   "next": "preregister the look-prefix corpus plus, separately, a LeWM variant whose latent is the token grid (or a pooling that keeps it)"
+  },
+  {
+   "row": "O-ENC-ARCH",
+   "condition": "no arm passes; at least one arm succeeds (bars) and is not spurious",
+   "reading": "features of this architecture expose the apple but the gain cannot be credited to training (floor or Holm fails)",
+   "next": "the abandonment clause fires; one preregistered test of an externally pretrained frozen encoder against its own random-init floor on this probe, before any corpus"
+  },
+  {
+   "row": "O-ENC-NONE",
+   "condition": "no arm succeeds, or every succeeding arm is spurious",
+   "reading": "no tested change gives a frozen encoder that exposes the apple on held-out roots",
+   "next": "the abandonment clause fires; as O-ENC-ARCH; if that also fails, no look-prefix corpus, and the remaining route is the overview camera (a hardware/workspace change)"
+  }
+ ],
+ "abandonment_clause": "under O-ENC-ARCH or O-ENC-NONE the line 'train a LeWM-family encoder on apple-wide-v1 train-split frames so that its frozen features expose the post-look apple' is closed: no further objective, regularisation, pooling, capacity, augmentation or input-handling variant of it is preregistered on this corpus without new evidence of a different kind; the LeWM backend, the encoder as a component and the product goal are not abandoned",
+ "void_rule": {
+  "void": "any stop before a complete report (guard, crash, global wall cap) is V; nothing in it is read",
+  "repeat": "exactly one from-scratch repeat into run-2: same seeds, caps and device, clean tree, every encoder retrained; MPS training is not bit-deterministic (weight digests recorded); any fix limited to runner mechanics via a reviewed PR and a fresh pre-run GO",
+  "second_void": "closes TASK-062 as INCONCLUSIVE",
+  "owner_rulings": "recorded with a UTC timestamp before the run they affect"
+ },
+ "budget": {
+  "training_device": "mps",
+  "probe_device": "cpu",
+  "per_encoder_seconds": 7200,
+  "global_wall_seconds": 54000,
+  "expected_seconds": 23400,
+  "encoders": 6,
+  "reference": "E0's full-data run took 3512 s including 16 validation passes (checkpoints/task054-wm-v4/leworldmodel_baseline.run.json)"
+ },
+ "seeds": {
+  "model_init": 0,
+  "window_sampler": {
+   "e_A": 6200,
+   "e_B": 6201
+  },
+  "rec_decoder": 6210,
+  "collapse_sample": 6220,
+  "action_sensitivity_sample": 6230,
+  "probe": {
+   "folds": 59,
+   "inner": "5900 + k",
+   "bootstrap": 5901
+  }
+ },
+ "output_directory": "outputs/task062-encoder-study/run-1",
+ "process": {
+  "reported_verdicts_only": "A gated run starts only on the pre-run reviewer's REPORTED verdict, delivered as a message - never on a review file read from disk. Same rule for merging: only on the reviewer's reported APPROVE.",
+  "one_task_one_agent": "One task, one agent. Do not launch a closeout/follow-up agent while the original task agent can still resume.",
+  "post_freeze_defects": "escalated to the task owner; fixed only by disclosed amendment",
+  "agent_recommends_does_not_choose_next_task": true
+ },
+ "encoders": {
+  "E0": {
+   "loader": "measure_policy_offline_conditionals.build_policy(checkpoints/task056-policy-v1/a2.pt), CPU",
+   "encoder_weights_sha256": "6590d51cf58cf1bead05231fed5d0bc0e07bf324c8165d3732905db8fc52de95"
+  },
+  "random": {
+   "loader": "build_policy(checkpoints/task056-policy-v1/a1.pt), CPU; the seed-0 LeWM init",
+   "encoder_weights_sha256": "cae0ad8880bab6cdf05bc47e40b4944a17d71abe150bb212bae1a5ad2159437b"
+  }
+ },
+ "hashes": {
+  "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+  "benchmarks/manifests/apple-info-ceiling-v1.json": "e92557effb3564f9a1d2b88083dadb290f56020a6f8d168e0af7af181a6a330c",
+  "benchmarks/manifests/apple-observation-reprobe-v1.json": "6b7f27ffb92af203fb2e3a4fea984c1f92e395f168381d3a0c677bd20526be0a",
+  "benchmarks/manifests/apple-world-model-v4.json": "0bb56579f1f7c34fb446451854656061f59c2a912efcd4c76eb6bd73f6d391f4",
+  "checkpoints/task054-wm-v4/leworldmodel_baseline.pt": "01ba8d0500feaabae858ec6457b05fa60e1e87e4dcbf5982e673949f4770d2ea",
+  "checkpoints/task056-policy-v1/a1.pt": "6e9912b82cbb9a03e2868b2682c59def68a77f11c2e8d94366571026884bad46",
+  "checkpoints/task056-policy-v1/a2.pt": "0dc2fb701862d418beb12fb9a0c9f0aec86509eeee8f99966a21c908cf6b8735",
+  "configs/apple_policy_v1.yaml": "c768ee238b512c248eca550aea532c2b31e04cd0ee0a117179a25ef0f8aa591a",
+  "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
+  "configs/apple_wm_v4_lewm.yaml": "b134687b2cb4064ed3736552746e870d3772f55038e9f37ff158d828682e1c63",
+  "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+  "data/apple-wide-v1/meta/jepa_manifest.json": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+  "outputs/task061-observation-reprobe/run-1/report.json": "289470f4f50855e0280198c4757fca5c1b79b521b3bf0be7e96c04f14787fa88",
+  "scripts/calibrate_encoder_study.py": "277692c5f34c7602fbeb108a008be9a94f9f3a91e1a195a1e7c1ed9babe80e76",
+  "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+  "scripts/measure_policy_offline_conditionals.py": "0e88ec4692d612358de0cb8bb0f2fed471dd7c23cf0abc91925a6212b6143144",
+  "scripts/probe_info_ceiling.py": "f64b01a1db02b5e82540d9b941fe4508d509287a0a82a8d90204fcda83b21dd2",
+  "scripts/probe_observation_reprobe.py": "9c75a23e0465b465d463a2639f9241af3fc0db8bae0da03d50629e4810454557",
+  "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+  "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+  "src/embodied_jepa/models/base.py": "939c83d66cadca640cedbc4574e4ba22b2ec75ad7bf962aa6a6daaee2dff66b5",
+  "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
+  "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
+  "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+  "src/embodied_jepa/policy.py": "d682078bc47ddb19f5ece4dc5dd87550cd429f6ab17eb6d0f4ac3b3dc1b7489f",
+  "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
+  "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+  "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+  "src/embodied_jepa/world_model_v2.py": "e4e26793d542a98183d51903f5d57e825b41b19e70e206b6b531464f0c31d347"
+ },
+ "calibration": {
+  "script": "scripts/calibrate_encoder_study.py",
+  "artifact": "outputs/task062-encoder-study/calibration-v1.json",
+  "artifact_sha256": "c2c99ed3668d29e1863e70fff8ac60b87ca03cf1a47af1551673f040dc21aca7",
+  "superseded": {
+   "outputs/task062-encoder-study/calibration-draft-1.json": "6dcef71b9611db3aeb113f279cacf32166bce4aa9420908652629d495d41484f",
+   "note": "the draft labelled the energy ratio a 'variance fraction' and divided by 2n; every S value and effective rank is identical"
+  },
+  "reads_no_target_fits_nothing": true,
+  "post_look_frames_sha256": "bff0fb6049d72ebdc3737d3506f10971ac11ac4458ece4f120049fba06191831",
+  "ablation_renderer_reproduces_post_look": 190,
+  "values": {
+   "raw_pixels": {
+    "S_apple": 0.24503133309457292,
+    "S_plate": 1.5471812412267083,
+    "R_apple": 0.14475840784440538,
+    "R_plate": 4.791774688186441,
+    "effective_rank": 17.995780744368865,
+    "dimension": 37632
+   },
+   "E0": {
+    "block1_tokens": {
+     "S_apple": 0.2800666546599225,
+     "S_plate": 3.163619408242256,
+     "R_apple": 0.2590174434170836,
+     "R_plate": 19.313837582504785,
+     "effective_rank": 14.22833954350218,
+     "dimension": 8192
+    },
+    "block2_tokens": {
+     "S_apple": 0.28828665543771087,
+     "S_plate": 3.185757937721175,
+     "R_apple": 0.26084567427129435,
+     "R_plate": 19.665841713650156,
+     "effective_rank": 14.246004487472575,
+     "dimension": 8192
+    },
+    "block3_tokens": {
+     "S_apple": 0.29870151996200694,
+     "S_plate": 3.3838947868073244,
+     "R_apple": 0.3458823147566503,
+     "R_plate": 22.056581581678692,
+     "effective_rank": 13.887354326823587,
+     "dimension": 8192
+    },
+    "block4_tokens": {
+     "S_apple": 0.28665115312196254,
+     "S_plate": 3.387768721266349,
+     "R_apple": 0.3281198452295525,
+     "R_plate": 22.074004616532726,
+     "effective_rank": 13.78358883984479,
+     "dimension": 8192
+    },
+    "cls": {
+     "S_apple": 0.17705059047913865,
+     "S_plate": 3.8003382457637986,
+     "R_apple": 0.5265022365456216,
+     "R_plate": 22.68865412418726,
+     "effective_rank": 7.4115276854563925,
+     "dimension": 128
+    },
+    "final_tokens": {
+     "S_apple": 0.33837860136543807,
+     "S_plate": 3.0547183070164134,
+     "R_apple": 0.39668748109384766,
+     "R_plate": 17.97751502183348,
+     "effective_rank": 14.659713951058968,
+     "dimension": 8192
+    },
+    "final_tokens_mean": {
+     "S_apple": 0.3401570308196041,
+     "S_plate": 5.252224157596881,
+     "R_apple": 0.5331457196471747,
+     "R_plate": 49.552595629830435,
+     "effective_rank": 11.295527447339877,
+     "dimension": 128
+    },
+    "patch_embedding_tokens": {
+     "S_apple": 0.27489669048777343,
+     "S_plate": 3.042503284196086,
+     "R_apple": 0.24911940347287173,
+     "R_plate": 17.93608438582132,
+     "effective_rank": 13.881964229374672,
+     "dimension": 8192
+    },
+    "probe_feature": {
+     "S_apple": 0.15103736194486989,
+     "S_plate": 4.140188807492433,
+     "R_apple": 0.22844176457070126,
+     "R_plate": 25.562448715745592,
+     "effective_rank": 3.1663020128188526,
+     "dimension": 128
+    },
+    "projector": {
+     "S_apple": 0.16368270884188485,
+     "S_plate": 4.309467132270562,
+     "R_apple": 0.32712472471044485,
+     "R_plate": 30.00358542279942,
+     "effective_rank": 4.726844669024918,
+     "dimension": 128
+    }
+   },
+   "random": {
+    "block1_tokens": {
+     "S_apple": 0.24534448278565582,
+     "S_plate": 1.5124765763229315,
+     "R_apple": 0.15117708971476557,
+     "R_plate": 4.585956663655624,
+     "effective_rank": 17.54315433814669,
+     "dimension": 8192
+    },
+    "block2_tokens": {
+     "S_apple": 0.2448861608438291,
+     "S_plate": 1.512139869358273,
+     "R_apple": 0.149609040730112,
+     "R_plate": 4.564790374736377,
+     "effective_rank": 17.421293520547344,
+     "dimension": 8192
+    },
+    "block3_tokens": {
+     "S_apple": 0.24425039888579533,
+     "S_plate": 1.5058767912461024,
+     "R_apple": 0.14869403285393998,
+     "R_plate": 4.528152044429768,
+     "effective_rank": 17.43231448910385,
+     "dimension": 8192
+    },
+    "block4_tokens": {
+     "S_apple": 0.244015631156594,
+     "S_plate": 1.505583467453132,
+     "R_apple": 0.14762866048481796,
+     "R_plate": 4.529913749629926,
+     "effective_rank": 17.3306750333657,
+     "dimension": 8192
+    },
+    "cls": {
+     "S_apple": 0.22908585561951433,
+     "S_plate": 3.168131637048029,
+     "R_apple": 0.13226869018722895,
+     "R_plate": 19.38856230181633,
+     "effective_rank": 11.06709517611212,
+     "dimension": 128
+    },
+    "final_tokens": {
+     "S_apple": 0.22117874461058118,
+     "S_plate": 1.8080442287614287,
+     "R_apple": 0.12651395842170945,
+     "R_plate": 6.536347672025518,
+     "effective_rank": 16.375879894640608,
+     "dimension": 8192
+    },
+    "final_tokens_mean": {
+     "S_apple": 0.2425619144825793,
+     "S_plate": 2.4524510739604146,
+     "R_apple": 0.16006382962428256,
+     "R_plate": 12.507621490927109,
+     "effective_rank": 18.65173275943281,
+     "dimension": 128
+    },
+    "patch_embedding_tokens": {
+     "S_apple": 0.24924929665239243,
+     "S_plate": 1.4981955901445687,
+     "R_apple": 0.15110066446645481,
+     "R_plate": 4.49681544906077,
+     "effective_rank": 17.6911597750059,
+     "dimension": 8192
+    },
+    "probe_feature": {
+     "S_apple": 0.28281343147472515,
+     "S_plate": 3.4585773583766435,
+     "R_apple": 0.1850731106742589,
+     "R_plate": 22.549508267732833,
+     "effective_rank": 10.033032320493719,
+     "dimension": 128
+    },
+    "projector": {
+     "S_apple": 0.2574331169472217,
+     "S_plate": 3.4858110015616965,
+     "R_apple": 0.16678089463014306,
+     "R_plate": 22.667027709430975,
+     "effective_rank": 9.84879153468585,
+     "dimension": 128
+    }
+   }
+  }
+ }
+}
