@@ -540,3 +540,53 @@ uv run --no-sync python scripts/train_apple_latent_dynamics.py run \
    script. The card goes to done.
 5. **One task, one agent.** A protocol defect found after the freeze is escalated to the task owner
    and fixed only through a disclosed amendment.
+
+## 16. Changes made in PR 2 (disclosed; no gated run yet)
+
+PR 2 commits the runner (`scripts/train_apple_latent_dynamics.py`), its guard tests
+(`tests/test_latent_dynamics_runner.py`) and the runner's pin in the manifest. The rows, gates,
+thresholds, seeds and caps are unchanged. Additions, all mechanics:
+
+- **G4 and an undefined resample.** `cluster_ratio` counts a zero-denominator resample as the
+  largest float. That fails every upper bound, but it would help a lower bound. So the runner's G4
+  also requires `undefined_resamples == 0` for both of its ratios (PR 1 review, non-blocking).
+- **The preflight order.** The manifest is read and every pinned file hashed and recorded before
+  torch or any model is imported. A crash anywhere, preflight included, writes a V report
+  (§3.3).
+- **What the report records beyond §11:**
+  - the cross-session shuffle is applied per evaluated half;
+  - the val-root secondary estimate uses a probe selected and fitted on all 170 train roots;
+  - the optimizer state in a checkpoint is the final one, and its weights are the selected
+    update's.
+- **Smoke runs (not evidence, not rows).**
+  - What a smoke run is: `smoke` mode on a subset (8 train sessions per half, 8 val episodes,
+    seed 0 only, 20 updates, selection every 10), with **the apple targets replaced by seeded
+    noise**. Its gates are meaningless by construction and were not read as results.
+  - `outputs/task065-scratch/smoke-a/` (report sha256 `904c3515…ff2b`):
+    - preflight, G-anchor (frames `20b67967…`, features `24bc50f5…`) and G-repro passed;
+    - G-cache 0.0;
+    - labels within 1.4e-8 m;
+    - 17 620 frames featurised in 236 s (13.4 ms per frame);
+    - four models trained;
+    - every report section was written, `non_finite_fields` empty, `test_split_decoded` false;
+    - 266 s in total.
+  - smoke-a ran the runner before the preflight reorder above.
+- **After PR 2's first review** (all mechanics; no row, gate, threshold, seed or cap changed):
+  - The reader checks Q-split before any import, so a test id is refused even without the
+    optional imaging packages.
+  - **G-finite now covers every statistic.** A non-finite statistic before the decision is V, not
+    a failed gate. A NaN interval would otherwise fail a gate and could fire the clause.
+  - Two quantities §7.3 preregisters are now computed; both are reported only:
+    - the latent-MSE ratios on the E-post roots (W/copy-last, W/N, wrong/W, zero/W);
+    - the collapse statistics of N and copy-last.
+  - G4's undefined-resample rule is a tested helper (`g4_gate`).
+  - The normalisation episodes are asserted equal to the training episodes (G-split).
+  - `look_corpus.py` is pinned.
+  - Copy-last reads only frames 0 and h.
+  - **smoke-b**, with the committed code, same subset and noise targets:
+    - report sha256 `88c038ba…8363`;
+    - 266 s in total;
+    - every section written, `non_finite_fields` empty.
+- **After PR 2's second review:** in the reader, both optional imports (`pyarrow`, `PIL`) now come
+  after Q-split and the file-hash check. Before this, the core-only CI job, which has neither
+  package, failed the hash-mismatch test on the import. This is an import-order change only.
