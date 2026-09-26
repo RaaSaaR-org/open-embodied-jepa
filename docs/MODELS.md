@@ -99,6 +99,45 @@ the negative results are part of the record and the options are inactive by defa
 enabling one is a research choice that needs its own preregistration, not a recommended
 setting.
 
+### Frozen external encoder (`frozen_encoder`, TASK-065)
+
+`frozen_encoder: dinov2_small_cls` swaps the backend's trainable image encoder for the pinned,
+frozen DINOv2 ViT-S/14 CLS feature of `pretrained_encoder` (TASK-063: 112 → 224 px bicubic, no
+crop, ImageNet normalisation, `pooler_output`, CPU float32). It is preregistered by
+[apple_latent_dynamics_v1.md](experiments/apple_latent_dynamics_v1.md) and has **no result yet**.
+
+- **It is off unless a run selects it.** It is written once, backend-agnostically, in
+  `models/frozen_encoder.py`: `frozen_encoder_model("leworldmodel")` (or `"native_jepa"`) puts a
+  mixin in front of the backend class.
+  - The plain backends reject the key as unknown, and the frozen class refuses to run without it.
+  - It is **not** in `VisualModel.defaults`. `models/base.py`, the backend files, `readout.py` and
+    `readout_labels.py` are unchanged. That keeps every earlier checkpoint's
+    `implementation_sha256` valid, including TASK-054's E0 checkpoint, which
+    `tests/test_policy_preflight.py` guards.
+
+- **The latent is the feature, standardised.** Per-dimension mean and std are fitted once on
+  training frames only (`fit_frozen_feature_normalization`, std floored at 1e-3), before any
+  update. There is no projector, so a prediction maps back to the raw feature exactly
+  (`predict_features`). An external probe fitted on the raw feature can therefore read
+  predictions.
+- **The encoder never trains.** It is not a submodule, not in the optimizer, not moved to MPS and
+  not in the checkpoint's weights. Its weights digest is in the model metadata, which the
+  checkpoint saves and `load` compares, so a load under a different frozen encoder is refused.
+  `implementation_sha256` also covers `frozen_encoder.py`, the backend file and
+  `pretrained_encoder.py`.
+- **The backend's training step and predictor are unchanged.** The same configuration trains
+  native or LeWM, and the backend swap stays one key.
+  - `train_step(batch)` encodes frames on the fly.
+  - `train_step_features(features, actions)` hands cached raw features to the backend's own
+    `train_step` in place of the frames' features. Because the encoder is frozen, this is the same
+    update, bit for bit (tested for both backends).
+- The backend's own encoder and projector are still built but receive no gradient.
+- It requires `latent_dim` 384 and refuses `state_fusion`, `readout_heads` and a `cameras` list.
+- LeWM's SIGReg shapes a trainable encoder's embedding; with a frozen encoder, TASK-065 sets its
+  weight to 0.
+- Planners still receive only `VisualLatent`. `predict_features` is an evaluation path for
+  probes, and it exists only for a frozen encoder.
+
 ## Optional LeWM source
 
 ```sh
