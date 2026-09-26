@@ -63,6 +63,31 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-26 — the in-corpus encoder-training line is closed (TASK-062)
+
+**Decision.** This applies the clause that `apple_encoder_study_v1.md` §10 pre-declared for the
+rows O-ENC-ARCH and O-ENC-NONE. The run ended in O-ENC-ARCH.
+- **What is closed:** the line "train a LeWM-family encoder on `apple-wide-v1` train-split frames
+  so that its frozen features expose the post-look apple". No further readout-point,
+  regularisation, objective or supervision variant of the TASK-054 recipe is preregistered on this
+  corpus without new evidence of a different kind.
+- **Recorded as untested:** capacity, input handling and the shared distribution confound.
+- **Not abandoned:** the LeWM backend, the encoder as a component, and the product goal.
+- **The look-prefix corpus is not collected.** The owner's precondition, a frozen encoder that
+  exposes the post-look apple beyond its random init, is not met.
+- **Recommended next task (the owner chooses):** one preregistered test of an externally
+  pretrained frozen encoder against its random-init floor, on the same probe.
+
+**Evidence.** [apple_encoder_study_v1_results.md](experiments/apple_encoder_study_v1_results.md),
+with manifest `benchmarks/manifests/apple-encoder-study-v1-results.json`.
+- Four cross-fitted arms were tested on held-out roots. None passed, and all were evaluated.
+- A-tok (the recipe's patch tokens) met every bar: 0.463 cm [0.422, 0.536], 178/190. But it did
+  not beat its random-init token floor F-tok, which reached 179/190 by itself.
+- The three pooled-latent changes (image-feature SIGReg, pixel reconstruction, readout heads off)
+  all failed the bars.
+
+Learned Apple→Plate remains at 0 successes.
+
 ## Decision 2026-09-25 — the behaviour-cloning abandonment clause fired (TASK-057)
 
 **Decision.** This applies the clause that `apple_policy_v1.md` §7 pre-declared and
