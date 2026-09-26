@@ -571,3 +571,19 @@ thresholds, seeds and caps are unchanged. Additions, all mechanics:
     - every report section was written, `non_finite_fields` empty, `test_split_decoded` false;
     - 266 s in total.
   - smoke-a ran the runner before the preflight reorder above.
+- **After PR 2's first review** (all mechanics; no row, gate, threshold, seed or cap changed):
+  - The reader checks Q-split before any import, so a test id is refused even without the
+    optional imaging packages.
+  - **G-finite now covers every statistic.** A non-finite statistic before the decision is V, not
+    a failed gate. A NaN interval would otherwise fail a gate and could fire the clause.
+  - Two quantities §7.3 preregisters are now computed; both are reported only:
+    - the latent-MSE ratios on the E-post roots (W/copy-last, W/N, wrong/W, zero/W);
+    - the collapse statistics of N and copy-last.
+  - G4's undefined-resample rule is a tested helper (`g4_gate`).
+  - The normalisation episodes are asserted equal to the training episodes (G-split).
+  - `look_corpus.py` is pinned.
+  - Copy-last reads only frames 0 and h.
+  - **smoke-b**, with the committed code, same subset and noise targets:
+    - report sha256 `88c038ba…8363`;
+    - 266 s in total;
+    - every section written, `non_finite_fields` empty.

@@ -247,14 +247,28 @@ def test_t1_stats_carry_the_g5_quantities():
     assert ld.g5_passes(stats)
 
 
-def test_g4_refuses_an_undefined_resample():
-    """The runner's G4 also requires no zero-denominator resample (float max would otherwise
-    help a lower bound)."""
-    source = (ROOT / "scripts" / "train_apple_latent_dynamics.py").read_text()
-    assert 'e["wrong_over_W"]["undefined_resamples"] == 0' in source
-    assert 'e["zero_over_W"]["undefined_resamples"] == 0' in source
-    clusters = np.array([0, 1])
+def _r(lo, hi, undefined=0):
+    return {"ratio": (lo + hi) / 2, "ci95": [lo, hi], "undefined_resamples": undefined}
+
+
+def test_g4_gate_refuses_an_undefined_resample():
+    """Float max for a zero-denominator resample would help a lower bound: G4 then fails."""
+    assert R.g4_gate(_r(1.2, 2.0), _r(1.3, 3.0))
+    assert not R.g4_gate(_r(1.2, 2.0, undefined=1), _r(1.3, 3.0))
+    assert not R.g4_gate(_r(1.2, 2.0), _r(1.3, 3.0, undefined=3))
+    assert not R.g4_gate(_r(1.0, 2.0), _r(1.3, 3.0))
     ratio = ld.cluster_ratio(
-        np.array([1.0, 1.0]), np.array([0.0, 1.0]), clusters, ld.cluster_bootstrap_indices(2)
+        np.array([1.0, 1.0]),
+        np.array([0.0, 1.0]),
+        np.array([0, 1]),
+        ld.cluster_bootstrap_indices(2),
     )
     assert ratio["undefined_resamples"] > 0
+
+
+def test_non_finite_statistics_void_the_run_instead_of_failing_a_gate():
+    R.check_statistics_finite({"eall": {"0": {"8": {"ratio": 0.7, "ci95": [0.6, 0.8]}}}})
+    with pytest.raises(R.GuardError, match="G-finite"):
+        R.check_statistics_finite({"eall": {"0": {"8": {"ci95": [0.6, float("nan")]}}}})
+    with pytest.raises(R.GuardError, match="G-finite"):
+        R.check_statistics_finite({"per_root": [{"errors_cm": {"W@8": np.float64(np.inf)}}]})

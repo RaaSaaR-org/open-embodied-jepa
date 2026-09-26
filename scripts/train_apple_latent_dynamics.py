@@ -266,6 +266,7 @@ class TrainValReader:
     def episode(self, episode_id, *, frames=True):
         """``(frames uint8 [L,112,112,3] or None, actions float32 [L,14], action_valid [L])``;
         the last row's action is invalid (T actions need T+1 observations)."""
+        self.row(episode_id)  # Q-split first: a test id is refused before any import or open
         from PIL import Image
 
         columns = ["frame_index", "action", "action_valid"]
@@ -315,6 +316,24 @@ def t1_stats(err, err_occ, err_enc, idx) -> dict:
     out["excess_over_encoded_cm"] = ic.paired_difference(err, err_enc, idx, ic._median)
     out["B_occ_median_cm"] = float(np.median(err_occ))
     return out
+
+
+def g4_gate(wrong_over_true: dict, zero_over_true: dict) -> bool:
+    """G4, and no undefined (zero-denominator) resample in either ratio: such a resample counts
+    as float max, which would otherwise help a lower bound."""
+    return bool(
+        ld.g4_passes(wrong_over_true, zero_over_true)
+        and wrong_over_true["undefined_resamples"] == 0
+        and zero_over_true["undefined_resamples"] == 0
+    )
+
+
+def check_statistics_finite(statistics: dict) -> None:
+    """G-finite on every statistic before the decision: a non-finite value is mechanical (V),
+    never a failed gate."""
+    _, found = finite_json(statistics)
+    if found:
+        raise GuardError(f"G-finite: non-finite statistics {found[:5]}")
 
 
 def read_source(fits, fold, reference, source):
@@ -461,6 +480,10 @@ def train_one(ctx, arm, seed, half, clock):
     )
     mean, std = moments(features[frame_rows])
     model.fit_frozen_feature_normalization(mean, std, training_episode_ids=member_ids)
+    if model.metadata["frozen_feature_normalization_episodes_sha256"] != sha256_bytes(
+        json.dumps(sorted(member_ids)).encode()
+    ):
+        raise GuardError("G-split: normalisation episodes are not the training episodes")
     windows = ld.training_windows([table[i]["length"] - 1 for i in members])
     starts = offsets[np.asarray(members)[windows[:, 0]]] + windows[:, 1]
     rng = np.random.default_rng(ld.sampler_seed(seed, half, arm))
@@ -526,8 +549,10 @@ def train_one(ctx, arm, seed, half, clock):
             ev["perm"],
         )
         out[f"eall_{mode}"] = errs
-        if arm == "W" and mode == "true":
-            out["eall_kept"], out["eall_targets"] = kept, targets
+        if mode == ("true" if arm == "W" else "zero"):
+            out["eall_kept"] = kept
+            if arm == "W":
+                out["eall_targets"] = targets
     post = ctx["post"][ld.other(half)]
     for mode in modes:
         a = post["actions"]
@@ -809,7 +834,9 @@ def _run(report, output, checkpoints, clock, smoke):
     report["models"] = models
     stages["training"] = clock.elapsed()
     # ----- 6. statistics ------------------------------------------------------------------------
-    report |= statistics(ctx, results, seeds, train_roots, val_roots, targets, fold, smoke)
+    stats = statistics(ctx, results, seeds, train_roots, val_roots, targets, fold, smoke)
+    check_statistics_finite(stats)
+    report |= stats
     stages["statistics"] = clock.elapsed()
     # ----- G-hash again, then the decision -------------------------------------------------------
     report["pinned_hashes_at_end"] = check_pins(manifest["hashes"])
@@ -885,13 +912,15 @@ def statistics(ctx, results, seeds, train_roots, val_roots, targets, fold, smoke
     # E-all pools both halves, each predicted by the other half's model; sessions are clusters.
     sess = np.concatenate([ctx["eval"][h]["sessions"] for h in ld.HALVES])
     idx_c = ld.cluster_bootstrap_indices(len(np.unique(sess)))
-    copy = {}
-    for h in EALL_HORIZONS:
-        parts = []
-        for half in ld.HALVES:
-            f, _ = gather(features, ctx["actions"], ctx["eval"][half]["starts"], h)
-            parts.append(ld.normalized_sq_error(f[:, 0], f[:, h], scale))
-        copy[h] = np.concatenate(parts)
+    all_starts = np.concatenate([ctx["eval"][h]["starts"] for h in ld.HALVES])
+    copy = {
+        h: ld.normalized_sq_error(features[all_starts], features[all_starts + h], scale)
+        for h in EALL_HORIZONS
+    }
+    copy_collapse = {
+        h: ld.collapse_statistics(features[all_starts] / scale, features[all_starts + h] / scale)
+        for h in ld.GATED_HORIZONS
+    }
     for seed in seeds:
         s = str(seed)
 
@@ -924,6 +953,11 @@ def statistics(ctx, results, seeds, train_roots, val_roots, targets, fold, smoke
                     [results[("W", seed, ld.other(half))]["eall_targets"][h] for half in ld.HALVES]
                 )
                 eall[h]["collapse_W"] = ld.collapse_statistics(pred, enc)
+                pred_n = np.concatenate(
+                    [results[("N", seed, ld.other(half))]["eall_kept"][h] for half in ld.HALVES]
+                )
+                eall[h]["collapse_N"] = ld.collapse_statistics(pred_n, enc)
+                eall[h]["collapse_copy_last"] = copy_collapse[h]
         eall_report[s] = eall
         # --- E-post readability ---
         post = {}
@@ -948,6 +982,28 @@ def statistics(ctx, results, seeds, train_roots, val_roots, targets, fold, smoke
             post[h]["W_minus_N_cm"] = ic.paired_difference(
                 w_err, per_root_err[(f"s{seed}_N", h)], idx, ic._median
             )
+        root_sessions = np.asarray([table[i]["session"] for i in train_roots])
+        idx_r = ld.cluster_bootstrap_indices(len(np.unique(root_sessions)))
+        for h in ALL_HORIZONS:
+            target = features[offsets[train_roots] + ld.DECISION_FRAME + h]
+            mse = {
+                name: ld.normalized_sq_error(post_source(arm, seed, mode, h), target, scale)
+                for name, arm, mode in (
+                    ("W", "W", "true"),
+                    ("wrong", "W", "wrong"),
+                    ("zero", "W", "zero"),
+                    ("N", "N", "zero"),
+                )
+            }
+            mse["copy_last"] = ld.normalized_sq_error(encoded[0], target, scale)
+            post[h]["latent_mse"] = {
+                "W_over_copy_last": ld.cluster_ratio(
+                    mse["W"], mse["copy_last"], root_sessions, idx_r
+                ),
+                "W_over_N": ld.cluster_ratio(mse["W"], mse["N"], root_sessions, idx_r),
+                "wrong_over_W": ld.cluster_ratio(mse["wrong"], mse["W"], root_sessions, idx_r),
+                "zero_over_W": ld.cluster_ratio(mse["zero"], mse["W"], root_sessions, idx_r),
+            }
         post_report[s] = post
         # --- gates ---
         horizons = {}
@@ -957,11 +1013,7 @@ def statistics(ctx, results, seeds, train_roots, val_roots, targets, fold, smoke
                 "G1": ld.g1_passes(e["collapse_W"]),
                 "G2": ld.g2_passes(e["W_over_copy_last"]),
                 "G3": ld.g3_passes(e["W_over_N"]),
-                # an undefined (zero-denominator) resample counts as float max, which would
-                # otherwise help a lower bound: G4 then does not pass
-                "G4": ld.g4_passes(e["wrong_over_W"], e["zero_over_W"])
-                and e["wrong_over_W"]["undefined_resamples"] == 0
-                and e["zero_over_W"]["undefined_resamples"] == 0,
+                "G4": g4_gate(e["wrong_over_W"], e["zero_over_W"]),
                 "G5": ld.g5_passes(post[h]["W"]),
             }
         gates[s] = {"per_horizon": horizons, "seed": ld.seed_gates(horizons)}
