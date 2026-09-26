@@ -1,0 +1,298 @@
+{
+ "task": "TASK-065",
+ "protocol": "apple_latent_dynamics_v1",
+ "document": "docs/experiments/apple_latent_dynamics_v1.md",
+ "status": "preregistration; no predictor trained on apple-look-v1; no readout fitted",
+ "what_this_task_is": "a world-model test only: an action-conditioned LeWM predictor on frozen DINOv2 CLS latents, trained on apple-look-v1 train sessions and measured offline; no control formulation preregistered or implied",
+ "claim_scope": "WM-DYNAMICS would say: at h = 8 and 16 on 170 cross-fitted train sessions, this predictor on this frozen feature does not collapse, beats copy-last and a no-action predictor, uses the actions, and keeps the post-look apple readable (TASK-059 T1 bar, within 0.5 cm of the encoded target); nothing about control, the test split, longer horizons or other encoders",
+ "learned_apple_to_plate_successes": 0,
+ "exemption_spent": false,
+ "exemption_spent_source": "benchmarks/manifests/apple-policy-diagnostics-v1.json",
+ "control_lines": "CEM abandoned as the primary control line at TASK-054; the behaviour-cloning line stopped at TASK-057; both clauses hold; no control formulation preregistered or implied",
+ "predecessor": {
+  "task": "TASK-064",
+  "outcome": "C-ACCEPT",
+  "results_manifest": "benchmarks/manifests/apple-look-corpus-v1-results.json",
+  "row_next": "a separately preregistered world-model task on apple-look-v1 with this frozen encoder as a candidate image encoder; no control formulation implied",
+  "facts": {
+   "P_cls": "0.550 cm [0.478, 0.642], 178/190; beats R-cls by -0.298 cm [-0.454, -0.178]",
+   "P_cls_minus_L_raw": "-0.034 cm [-0.125, 0.054]",
+   "corpus": "200 roots + 599 branches, 200 345 transitions; train 679 / val 80 / test 40"
+  },
+  "caveats_carried_forward": [
+   "P-cls is not detectably different from raw pixels; no equivalence margin",
+   "random-init features also read the apple (R-tok met every bar; R-cls missed T3 only)",
+   "one encoder, one input size, one floor seed",
+   "the cause (pretraining data, width, input size) is not identified",
+   "readability is not prediction (this task is the first prediction test)",
+   "render nondeterminism: a re-collection would not reproduce the dataset hash"
+  ]
+ },
+ "data": {
+  "dataset": "data/apple-look-v1",
+  "dataset_manifest_sha256": "81d760d1f5a61834b4f37c3daf12ad1a7175e57fe99fe11d5fb4cecbff8edb64",
+  "sessions": {
+   "train": 170,
+   "val": 20,
+   "test": 10
+  },
+  "episodes": {
+   "train": 679,
+   "val": 80,
+   "test": 40
+  },
+  "read_splits": [
+   "train",
+   "val"
+  ],
+  "test_split_decoded": false,
+  "frames_featurised_train_val": 192789,
+  "labels_read": {
+   "privileged__apple_position_world": "E-post probe target (analysis only)",
+   "collector__phase_index": "G-labels look check"
+  },
+  "task064_report_sha256": "f3d2d3d5bc03c4dc9853aeae3d8d90a05d364d0315f498e64289b4c7825f6680",
+  "task064_stored_post_look_frames_sha256": "20b6796728c4baab20739f60d718f97f9b4c98118186d96022f07236d65f3612",
+  "task064_P_cls_feature_sha256": "24bc50f5d2e2f8edc605bd422e3bec6f68d85bd7f6710aa9c9d3f64490a9feec"
+ },
+ "halves": {
+  "seed": 65,
+  "rule": "sorted train sessions permuted by default_rng(65); first 85 = A",
+  "sha256": "26709b93d05be672c78b026feaaae6f5518714704d118dd075866d06692e5061",
+  "sessions": {
+   "A": 85,
+   "B": 85
+  },
+  "episodes": {
+   "A": 339,
+   "B": 340
+  },
+  "transitions": {
+   "A": 85521,
+   "B": 86035
+  },
+  "probe_roots": "cross-fitted: each train root predicted by the half model that never trained on it, read by the probe fold that held it out"
+ },
+ "model": {
+  "backend": "leworldmodel",
+  "predictor": "pinned upstream LeWM ARPredictor + Embedder + pred_proj via the adapter's unchanged next_embedding; history one",
+  "upstream_revision": "8edfeb336732b5f3ce7b8b210d0ba370a09e2cac",
+  "config": {
+   "camera": "onboard_rgb",
+   "frozen_encoder": "dinov2_small_cls",
+   "latent_dim": 384,
+   "sigreg_weight": 0.0,
+   "max_horizon": 64
+  },
+  "option": {
+   "key": "frozen_encoder",
+   "value": "dinov2_small_cls",
+   "module": "src/embodied_jepa/models/frozen_encoder.py",
+   "class": "frozen_encoder_model(BACKEND): FrozenEncoderMixin in front of the backend",
+   "off_unless_selected": "plain backends reject the key; the frozen class requires it",
+   "existing_model_files_unchanged": [
+    "src/embodied_jepa/models/base.py",
+    "src/embodied_jepa/models/lewm.py",
+    "src/embodied_jepa/models/native.py",
+    "src/embodied_jepa/models/readout.py",
+    "src/embodied_jepa/readout_labels.py"
+   ],
+   "why": "TASK-054's E0 checkpoint implementation_sha256 covers those files (tests/test_policy_preflight.py); editing them would orphan it",
+   "cached_feature_update_equals_frame_update": "bit for bit, both backends (tests)"
+  },
+  "frozen_encoder": {
+   "name": "dinov2_small_cls",
+   "hf": "facebook/dinov2-small @ ed25f3a31f01632728cabb09d1542f84ab7b0056",
+   "files_sha256": {
+    "config.json": "1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d",
+    "model.safetensors": "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1"
+   },
+   "pretrained_weights_digest": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
+   "read_out": "CLS after the final LayerNorm (pooler_output), 384-d, CPU float32",
+   "input": "112 px uint8 -> 224 px bicubic, no crop, ImageNet normalisation"
+  },
+  "normalisation": "per-dimension mean/std of the raw CLS over the model's training-half frames, std floored at 1e-3",
+  "metric_scale": "per-dimension std of the raw CLS over every frame of the 170 train sessions, floored at 1e-3"
+ },
+ "arms": {
+  "W": "true executed actions",
+  "N": "every action zero in training and evaluation (no-action baseline)",
+  "copy_last": "the start latent repeated (untrained baseline)"
+ },
+ "training": {
+  "model_seeds": [
+   0,
+   1,
+   2
+  ],
+  "runs": 12,
+  "updates": 10000,
+  "batch_size": 64,
+  "window_transitions": 16,
+  "sampler": "default_rng(SeedSequence([6500, seed, half index])), shared by W and N (paired); uniform over every valid 16-transition window of the half's train episodes",
+  "selection": "val criterion (normalised MSE over steps 1..16, val windows at stride 4) every 500 updates; lowest kept, ties to the earlier",
+  "device": "mps",
+  "learning_rate_schedule": "constant"
+ },
+ "evaluation": {
+  "E_all": "every train window of 16 transitions starting at every 4th frame, predicted by the other half's model",
+  "E_post": "the 170 train roots from frame 8 with their executed actions",
+  "gated_horizons": [
+   8,
+   16
+  ],
+  "reported_horizons": [
+   1,
+   2,
+   4,
+   8,
+   16
+  ],
+  "extended_horizons": [
+   32,
+   64
+  ],
+  "eval_stride": 4,
+  "cluster_bootstrap": {
+   "unit": "session",
+   "resamples": 10000,
+   "seed": 6501
+  },
+  "wrong_actions": "cross-session shuffle, seed 6502",
+  "probe": {
+   "readouts": "info_ceiling nested CV (linear + RBF kernel ridge, lambda 1e-4..1e4)",
+   "fit_on": "encoded raw CLS of frame 8 + h of the 170 train roots, 10-fold CV",
+   "fold_seed": 59,
+   "fold_assignment_sha256": "44a3f267f3fd94788889ab523b9fa5facf0479cdd1d1fa6307d4b953631b86a7",
+   "target": "privileged__apple_position_world xy at frame 8 + h",
+   "bootstrap_seed": 5901,
+   "B_occ_flags": "TASK-064 report readability.per_root.reset_occluded"
+  }
+ },
+ "gates": {
+  "thresholds": {
+   "G1_max_collapsed_fraction": 0.05,
+   "G1_min_effective_rank_ratio": 0.5,
+   "G1_min_std_ratio": 0.5,
+   "G2_max_ratio_upper": 0.8,
+   "G3_max_ratio_upper_exclusive": 1.0,
+   "G4_min_ratio_lower": 1.1,
+   "G5_max_median_cm": 1.5,
+   "G5_max_ratio_to_B_occ_upper": 0.6,
+   "G5_max_excess_over_encoded_upper_cm": 0.5
+  },
+  "order": [
+   "G1",
+   "G2",
+   "G3",
+   "G4",
+   "G5"
+  ],
+  "dynamics_gates": [
+   "G1",
+   "G2",
+   "G3",
+   "G4"
+  ],
+  "per_seed_rule": "a gate passes for a seed only if it passes at h = 8 and h = 16; the seed passes if G1-G5 all pass"
+ },
+ "guards_void_the_run": [
+  "G-hash",
+  "G-data",
+  "Q-split",
+  "G-split",
+  "G-labels",
+  "G-weights",
+  "G-anchor",
+  "G-repro",
+  "G-cache (1e-5)",
+  "G-folds",
+  "G-finite",
+  "G-cap",
+  "G-device"
+ ],
+ "pre_declared_outcomes_in_order": {
+  "V": "a guard fails or the run stops early; nothing is read; one repeat",
+  "WM-DYNAMICS": "every seed passes G1-G5",
+  "WM-UNSTABLE": "one or two seeds pass; clause does not fire",
+  "WM-APPLE-LOST": "no seed passes; G1-G4 pass on at least two seeds; clause fires",
+  "WM-NO-DYNAMICS": "otherwise; clause fires"
+ },
+ "inconclusive_task_level": "a second V closes TASK-065 as INCONCLUSIVE; the clause does not fire",
+ "abandonment_clause": {
+  "fires_on": [
+   "WM-APPLE-LOST",
+   "WM-NO-DYNAMICS"
+  ],
+  "closes": "an action-conditioned LeWM-family predictor on frozen, externally pretrained pooled (CLS) latents on apple-look-v1; no further predictor variant with frozen pooled pretrained latents on this corpus without new evidence of a different kind",
+  "does_not_close": [
+   "the LeWM backend",
+   "the encoder as a component",
+   "the product goal",
+   "the corpus (sealed; test split unread)"
+  ],
+  "untested_not_refuted": [
+   "token-grid latents (P-tok)",
+   "a trainable encoder initialised from the pretrained one",
+   "other encoders"
+  ]
+ },
+ "void_rule": "an early stop is V with a void_reason; one from-scratch repeat into run-2 with the same seeds, caps and device and recomputed features; a second V is INCONCLUSIVE; rulings recorded with a UTC timestamp before the run they affect",
+ "budget": {
+  "device_training": "mps",
+  "device_features_and_statistics": "cpu",
+  "feature_threads": 6,
+  "feature_seconds": 5400.0,
+  "per_run_seconds": 1800.0,
+  "global_wall_seconds": 21600.0,
+  "expected": "features ~45 min; ~10 min per model; ~3 h total"
+ },
+ "run_command": "uv run --no-sync python scripts/train_apple_latent_dynamics.py run --output outputs/task065-latent-dynamics/run-1 --checkpoints checkpoints/task065-latent-dynamics/run-1",
+ "output": {
+  "report": "outputs/task065-latent-dynamics/run-1/report.json",
+  "checkpoints": "checkpoints/task065-latent-dynamics/run-1/ (never committed)"
+ },
+ "pre_freeze_facts": {
+  "anchor_reproduced": true,
+  "cache_layout_max_abs_difference_20_roots": 0.0,
+  "label_inspection": "apple/palm/phase labels of 40 train roots (look-47000..look-47045) read while designing horizons; no feature, prediction or readout computed",
+  "timing_synthetic": {
+   "mps_update_s": 0.054,
+   "cpu_update_s": 0.107,
+   "feature_s_per_frame": 0.013
+  }
+ },
+ "process": [
+  "PR 1: protocol, manifest, latent_dynamics.py, frozen_encoder option, tests, card",
+  "PR 2: runner, guard tests, runner pin",
+  "gated run on the pre-run reviewer's reported verdict only",
+  "PR 3: results doc, results manifest, summarize script; numbers checked by script"
+ ],
+ "hashes": {
+  "benchmarks/manifests/apple-look-corpus-v1-results.json": "ae302317c27f9d84c28a1b8303e6b9237fa45781d65d55bae0219580c026c861",
+  "benchmarks/manifests/apple-pretrained-encoder-v1.json": "01b374962b5a6201d29216dd47bcd3870b43d0f14c3537dafecf32c54b711f03",
+  "data/apple-look-v1-work/collection_report.json": "f3d2d3d5bc03c4dc9853aeae3d8d90a05d364d0315f498e64289b4c7825f6680",
+  "data/apple-look-v1-work/plan.json": "99dd7ffc305cceab4d4e1eb1438a47b8f5a469f1fab0ca3493a4e689af32a71b",
+  "data/apple-look-v1/meta/jepa_manifest.json": "81d760d1f5a61834b4f37c3daf12ad1a7175e57fe99fe11d5fb4cecbff8edb64",
+  "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
+  "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
+  "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+  "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
+  "src/embodied_jepa/models/__init__.py": "694622858ffd8a892d6746c65f162c2cea19e9ead1aa5c566ab4edc6fb962f94",
+  "src/embodied_jepa/models/base.py": "939c83d66cadca640cedbc4574e4ba22b2ec75ad7bf962aa6a6daaee2dff66b5",
+  "src/embodied_jepa/models/frozen_encoder.py": "c1a4622a0765e44fc060c5313a85e4f727f51dc361acd5de50cb6990845e6011",
+  "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
+  "src/embodied_jepa/models/native.py": "95e112e13b0bf4d587fd5c35008e99b1e0a3759fb4f458c24bdd20304d0fadf3",
+  "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
+  "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+  "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+  "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
+  "src/embodied_jepa/training_labels.py": "59b4e5db91b257c5da23c3a4377d52b3f0acdca543acbded8102ed2777dc5f3d",
+  "third_party/dinov2-small/config.json": "1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d",
+  "third_party/dinov2-small/model.safetensors": "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1",
+  "third_party/le-wm/LICENSE": "4882021920cbd61e050e4dc2e02440e9bd36ea4cbc5803e738a2ee3d63502e07",
+  "third_party/le-wm/jepa.py": "41bad7fd21e0f14aea4c9c3d39a9c87037e787746d953ab62cdc0677e938ce96",
+  "third_party/le-wm/module.py": "0b258a9e8dc24c29fcb1e8c50a09ec78b8ea85aeb79e21dd8adf712396646620",
+  "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
+ }
+}
