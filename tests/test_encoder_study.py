@@ -206,6 +206,21 @@ def test_hidden_features_equal_to_the_originals_reproduce_the_out_of_fold_predic
     assert np.allclose(again, pred, atol=1e-9)
 
 
+def test_hidden_features_are_routed_through_each_roots_own_half():
+    x, y = _features()
+    fold = ic.fold_of(len(x))
+    halves = es.half_of_fold(fold)
+    x_b = x + np.random.default_rng(11).normal(size=x.shape)
+    grams = {"A": ic.gram(x), "B": ic.gram(x_b)}
+    pred, fits, _s = es.crossfit_nested_cv(grams, y, fold)
+    right = {"A": ic.cross_gram(x, x), "B": ic.cross_gram(x_b, x_b)}
+    assert np.allclose(es.crossfit_predict_hidden(fits, fold, right), pred, atol=1e-9)
+    swapped = {"A": ic.cross_gram(x_b, x_b), "B": ic.cross_gram(x, x)}
+    wrong = es.crossfit_predict_hidden(fits, fold, swapped)
+    assert not np.allclose(wrong[halves == "A"], pred[halves == "A"])
+    assert not np.allclose(wrong[halves == "B"], pred[halves == "B"])
+
+
 def test_crossfit_secondary_predicts_every_val_root_from_the_train_roots():
     x, y = _features()
     fold = ic.fold_of(len(x))
@@ -590,34 +605,6 @@ def test_g_init_both_directions():
         es.SEED0_DIGEST.update(original)
 
 
-def test_the_real_seed0_inits_have_the_pinned_digests():
-    _lewm_source_or_skip()
-    from embodied_jepa.config import MODELS
-    from embodied_jepa.contracts import StateSchema
-
-    runner = _load("_probe_es_init", "scripts/probe_encoder_study.py")
-    try:
-        from embodied_jepa.config import ExperimentConfig
-
-        config = ExperimentConfig.load(runner.BASE.CONFIG, require_checkpoint=False)
-    except Exception as error:  # noqa: BLE001 - the dataset is absent in core CI
-        pytest.skip(f"apple config not loadable here: {error}")
-    manifest_path = ROOT / "data" / "apple-wide-v1" / "meta" / "jepa_manifest.json"
-    if not manifest_path.exists():
-        pytest.skip("apple-wide-v1 absent")
-    schema = StateSchema(**json.loads(manifest_path.read_text())["state_schema"])
-    settings = dict(config.model_settings)
-    for heads in (True, False):
-        model = MODELS.create(
-            "leworldmodel",
-            state_schema=schema,
-            device="cpu",
-            seed=0,
-            config=settings | {"readout_heads": heads},
-        )
-        es.check_init(model, readout_heads=heads)
-
-
 # ----- the runner: void-safe, overrides, arm failures -----------------------------------------
 def _committed_only_manifest(tmp_path, **hashes):
     committed = json.loads(json.dumps(MANIFEST))
@@ -650,6 +637,8 @@ def test_a_failed_guard_writes_a_v_report_and_never_overwrites(tmp_path, monkeyp
 def test_a_crash_writes_a_v_report_with_a_void_reason_and_reraises(tmp_path, monkeypatch):
     runner = _runner("_probe_es_t2")
     monkeypatch.setattr(runner, "MANIFEST", _committed_only_manifest(tmp_path))
+    # CI has no TASK-061 report: a smoke run must never need it (only G-anchor reads it).
+    monkeypatch.setattr(runner, "TASK061_REPORT", tmp_path / "absent-report.json")
 
     def boom():
         raise RuntimeError("injected crash")

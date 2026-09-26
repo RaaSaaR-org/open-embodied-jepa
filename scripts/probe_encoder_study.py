@@ -392,7 +392,6 @@ def run(output: Path, *, smoke: bool = False, smoke_steps: int = 3, device: str 
                 raise ic.GuardError(f"training device {device} != the manifest's")
         task059 = json.loads(TASK059_MANIFEST.read_text())
         task061 = json.loads(TASK061_MANIFEST.read_text())
-        task061_report = json.loads(TASK061_REPORT.read_text())
         # --- G-split (TASK-061's) ---
         roots, _collector = BASE.plan_roots()
         dataset = json.loads((STORE / "meta" / "jepa_manifest.json").read_text())
@@ -503,7 +502,7 @@ def run(output: Path, *, smoke: bool = False, smoke_steps: int = 3, device: str 
         single("L_random", features[("random", "post_112")])
         if not smoke:
             comparison = es.anchor_compare(
-                anchor_reference(task061_report),
+                anchor_reference(json.loads(TASK061_REPORT.read_text())),
                 {s: recomputed_view(results[s], preds[s]) for s in es.ANCHOR_SOURCES},
             )
             report["anchor"] = comparison
