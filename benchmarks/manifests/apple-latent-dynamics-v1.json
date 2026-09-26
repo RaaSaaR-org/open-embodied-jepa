@@ -2,7 +2,7 @@
  "task": "TASK-065",
  "protocol": "apple_latent_dynamics_v1",
  "document": "docs/experiments/apple_latent_dynamics_v1.md",
- "status": "preregistration; no predictor trained on apple-look-v1; no readout fitted",
+ "status": "preregistration, amended after run-1's void (section 17); no model trained, no readout fitted",
  "what_this_task_is": "a world-model test only: an action-conditioned LeWM predictor on frozen DINOv2 CLS latents, trained on apple-look-v1 train sessions and measured offline; no control formulation preregistered or implied",
  "claim_scope": "WM-DYNAMICS would say: at h = 8 and 16 on 170 cross-fitted train sessions, this predictor on this frozen feature does not collapse, beats copy-last and a no-action predictor, uses the actions, and keeps the post-look apple readable (TASK-059 T1 bar, within 0.5 cm of the encoded target); nothing about control, the test split, longer horizons or other encoders",
  "learned_apple_to_plate_successes": 0,
@@ -205,7 +205,7 @@
   "G-weights",
   "G-anchor",
   "G-repro",
-  "G-cache (1e-5)",
+  "G-cache (amended: cache path bit-identical on re-featurisation; anchor bound 1e-3)",
   "G-folds",
   "G-finite",
   "G-cap",
@@ -247,10 +247,10 @@
   "global_wall_seconds": 21600.0,
   "expected": "features ~45 min; ~10 min per model; ~3 h total"
  },
- "run_command": "uv run --no-sync python scripts/train_apple_latent_dynamics.py run --output outputs/task065-latent-dynamics/run-1 --checkpoints checkpoints/task065-latent-dynamics/run-1",
+ "run_command": "uv run --no-sync python scripts/train_apple_latent_dynamics.py run --output outputs/task065-latent-dynamics/run-2 --checkpoints checkpoints/task065-latent-dynamics/run-2",
  "output": {
-  "report": "outputs/task065-latent-dynamics/run-1/report.json",
-  "checkpoints": "checkpoints/task065-latent-dynamics/run-1/ (never committed)"
+  "report": "outputs/task065-latent-dynamics/run-2/report.json",
+  "checkpoints": "checkpoints/task065-latent-dynamics/run-2/ (never committed)"
  },
  "pre_freeze_facts": {
   "anchor_reproduced": true,
@@ -274,7 +274,7 @@
   "data/apple-look-v1-work/collection_report.json": "f3d2d3d5bc03c4dc9853aeae3d8d90a05d364d0315f498e64289b4c7825f6680",
   "data/apple-look-v1-work/plan.json": "99dd7ffc305cceab4d4e1eb1438a47b8f5a469f1fab0ca3493a4e689af32a71b",
   "data/apple-look-v1/meta/jepa_manifest.json": "81d760d1f5a61834b4f37c3daf12ad1a7175e57fe99fe11d5fb4cecbff8edb64",
-  "scripts/train_apple_latent_dynamics.py": "15803fd6bbd579455b0535e08fd7ee2200c37a37ddd0869ccfc04291025f30a6",
+  "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
   "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
   "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
   "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
@@ -296,5 +296,28 @@
   "third_party/le-wm/jepa.py": "41bad7fd21e0f14aea4c9c3d39a9c87037e787746d953ab62cdc0677e938ce96",
   "third_party/le-wm/module.py": "0b258a9e8dc24c29fcb1e8c50a09ec78b8ea85aeb79e21dd8adf712396646620",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
- }
+ },
+ "runs": {
+  "run-1": {
+   "outcome": "V",
+   "revision": "26d6801126d3f7c1e22587ca9c58ad3a11076d6c",
+   "started_utc": "about 2026-09-26T22:51Z",
+   "stopped_utc": "2026-09-26T23:35:23Z",
+   "void_reason": "GuardError: G-cache: frame-8 cache rows differ from the anchor by 3.7670135498046875e-05",
+   "stage": "after featurisation; no model trained, no readout fitted",
+   "evidence": "outputs/task065-latent-dynamics/run-1/, outputs/task065-run-1.log"
+  },
+  "run-2": "the single allowed repeat (section 12); a second V closes TASK-065 as INCONCLUSIVE"
+ },
+ "amendments": [
+  {
+   "ruling_utc": "2026-09-26T23:37Z (time received; corrects an earlier estimate of about 23:45Z)",
+   "by": "task owner, option A plus a coarse anchor bound",
+   "cause": "deterministic float32 batch-size effect: the last 14 roots by seed (47186-47199) were a partial batch of 14 in TASK-064's anchor layout; max abs 3.767e-05, max relative 4.3e-06; the pre-freeze check covered only the first 20 roots (all in full batches)",
+   "G_cache_original": "cache frame-8 rows within 1e-5 of the anchor rows",
+   "G_cache_amended": "a second featurisation of the 190 post-look frames in the cache's own layout equals the cache rows bit for bit; and cache rows within 1e-3 absolute of the anchor rows (reported: max abs, max relative, differing roots)",
+   "G_anchor": "unchanged",
+   "unchanged": "rows, gates, thresholds, seeds, caps, statistics"
+  }
+ ]
 }

@@ -115,11 +115,29 @@ def test_check_repro_and_cache_both_directions():
     R.check_repro(x, x.copy())
     with pytest.raises(R.GuardError, match="G-repro"):
         R.check_repro(x, x + 1e-12)
-    assert R.check_cache(x.astype(np.float32), x) == 0.0
-    with pytest.raises(R.GuardError, match="G-cache"):
-        R.check_cache(x + 1e-4, x)
-    with pytest.raises(R.GuardError, match="G-cache"):
+    # G-cache (amended): the cache path is bit-identical on a second featurisation
+    R.check_cache(x.astype(np.float32), x.astype(np.float32).copy())
+    with pytest.raises(R.GuardError, match="not deterministic"):
+        R.check_cache(x, x + 1e-9)
+    with pytest.raises(R.GuardError, match="not deterministic"):
         R.check_cache(x * np.nan, x)
+
+
+def test_cache_anchor_sanity_bound_both_directions():
+    """The amendment's coarse anchor bound (1e-3): a batch-size difference of the size run-1
+    showed (3.8e-5) passes and is disclosed; a real data fault fails."""
+    anchor = np.random.default_rng(0).normal(0, 2, (4, 384))
+    cache = anchor.copy()
+    cache[3, 7] += 3.767e-5
+    facts = R.cache_anchor_sanity(cache, anchor, ["a", "b", "c", "d"])
+    assert facts["differing_roots"] == ["d"] and facts["bound"] == 1e-3
+    assert facts["max_abs"] == pytest.approx(3.767e-5, rel=1e-6)
+    assert 0 < facts["max_relative_to_row_norm"] < 1e-5
+    assert R.cache_anchor_sanity(anchor, anchor, list("abcd"))["differing_roots"] == []
+    with pytest.raises(R.GuardError, match="G-cache"):
+        R.cache_anchor_sanity(anchor + 2e-3, anchor, list("abcd"))
+    with pytest.raises(R.GuardError, match="G-cache"):
+        R.cache_anchor_sanity(anchor * np.nan, anchor, list("abcd"))
 
 
 # ----- G-labels, G-finite -----------------------------------------------------------------------

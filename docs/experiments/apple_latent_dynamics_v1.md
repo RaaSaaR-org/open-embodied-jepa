@@ -239,11 +239,15 @@ beyond what the image predicts.
   order) into a feature cache under the run's output directory (sha256 recorded; never
   committed). Training reads only this cache. Given the same features, the cached-feature update
   equals the frame update bit for bit (`tests/test_frozen_encoder.py`). Batched float32 CPU
-  inference could in principle depend on how frames are batched; G-cache bounds that on the
-  post-look frames, and the pre-freeze check found 0.0 (§13).
+  inference does depend on how frames are batched: run-1 found differences up to 3.8e-5 against
+  the anchor's layout (§17). G-cache, as amended, checks that the cache path itself is
+  deterministic.
 - **G-anchor** (§9): the 190 train + val post-look frames, featurised as TASK-064 did (its root
-  order, batches of 16), hash to TASK-064's `feature_sha256.P_cls`, `24bc50f5…`. **G-cache**: the
-  cache's frame-8 rows equal those anchor rows within 1e-5.
+  order, batches of 16), hash to TASK-064's `feature_sha256.P_cls`, `24bc50f5…`. **G-cache** (amended,
+  §17): a second featurisation of the post-look frames in the cache's own layout equals the
+  cache rows bit for bit, and the cache rows stay within 1e-3 of the anchor rows (a coarse bound
+  against a real data fault). *Original text, void at run-1:* "the cache's frame-8 rows equal
+  those anchor rows within 1e-5".
 
 ## 6. Training (fixed now)
 
@@ -384,7 +388,7 @@ horizons.
 | **G-weights** | the DINOv2 files match their pins and the loaded digest is `3a697b87…2af27` |
 | **G-anchor** | the 190 post-look frames hash to TASK-064's `stored_post_look_frames_sha256` (`20b67967…3612`), and their features to `feature_sha256.P_cls` (`24bc50f5…feec`) |
 | **G-repro** | a second featurisation of the 190 post-look frames is bit-identical |
-| **G-cache** | the cache's frame-8 rows equal the anchor rows within 1e-5 (the pre-freeze check found 0.0, §13) |
+| **G-cache** (amended 2026-09-26, §17) | a second featurisation of the 190 post-look frames in the cache's own layout (each root's frames 0–15 in one batch) equals the cache rows bit for bit; **and** the cache rows are within 1e-3 absolute of the anchor rows. The actual difference is reported (max absolute, max relative, which roots). *Original, run-1:* within 1e-5 of the anchor rows |
 | **G-folds** | the probe fold hash over the 170 train roots equals `44a3f267…86a7` |
 | **G-finite** | every feature, loss, prediction and statistic is finite (a non-finite value is mechanical, V) |
 | **G-cap** | featurisation ≤ 5400 s; each model (10 000 updates + 20 val evaluations) ≤ 1800 s; the whole run ≤ 21 600 s |
@@ -590,3 +594,60 @@ thresholds, seeds and caps are unchanged. Additions, all mechanics:
 - **After PR 2's second review:** in the reader, both optional imports (`pyarrow`, `PIL`) now come
   after Q-split and the file-hash check. Before this, the core-only CI job, which has neither
   package, failed the hash-mismatch test on the import. This is an import-order change only.
+
+## 17. Amendment after run-1's void (owner ruling, disclosed)
+
+**Run-1 was V.** It started at about 2026-09-26T22:51Z on 26d6801, after the pre-run
+reviewer's reported PRE-RUN: GO.
+- It stopped at 23:35Z, after featurisation and before any model was trained or any readout
+  fitted, with `void_reason`: `GuardError: G-cache: frame-8 cache rows differ from the anchor by
+  3.7670135498046875e-05`.
+- Preflight, G-anchor (bit-exact to TASK-064's `24bc50f5…`), G-repro and G-labels had passed.
+- Its outputs are kept as evidence: `outputs/task065-latent-dynamics/run-1/` (report, features,
+  `outputs/task065-run-1.log`) and the empty `checkpoints/task065-latent-dynamics/run-1/`.
+- Nothing in it was read beyond the void.
+
+**Cause (a label-free check of features only).**
+- 14 of the 190 roots differ from the anchor: the last 14 by seed, 47186–47199.
+- TASK-064's anchor featurised the 190 post-look frames in batches of 16, so those 14 formed a
+  partial final batch of 14. The cache featurises every root inside a full 16-frame batch
+  (frames 0–15 of its episode).
+- The worst root featurised alone equals the anchor exactly. In the cache layout it equals the
+  cache exactly, and differs from the anchor by 3.77e-5 absolute (values average |x| ≈ 1.9; at
+  most 4.3e-6 relative to the row norm).
+- This is a deterministic batch-size effect of float32 CPU inference, not a data fault.
+- **Why the pre-freeze check missed it:** §13's check covered only the first 20 roots, all of
+  which sit in full anchor batches, and found 0.0. The 1e-5 tolerance was set from that check.
+
+**Owner ruling**, relayed by the coordinator, recorded at **2026-09-26T23:37Z**, the time it was
+received. An earlier estimate of about 23:45Z was corrected by the owner, because a ruling cannot
+be dated after its receipt.
+- It chose option A with an addition. Its grounds: the void fired before any model or readout
+  existed, so no outcome data could influence the choice; and a repeat of the frozen protocol
+  would void identically.
+1. **G-cache becomes a determinism check of the cache path.** A second featurisation of the 190
+   post-look frames, in the cache's own layout and batching, must match the cache rows bit for
+   bit.
+2. **G-anchor is unchanged.** It still requires bit-exact reproduction of TASK-064's features in
+   TASK-064's layout.
+3. **A coarse anchor-vs-cache sanity bound of 1e-3 absolute is kept**, so that a real data
+   fault still fails the run. That is more than 25× the observed 3.767e-5. The actual difference
+   is reported as a disclosed fact: max absolute, max relative, and which roots, with the
+   partial-batch explanation.
+4. This disclosure (the pre-freeze check covered only the first 20 roots, all in full batches).
+5. **Run-1 stays V.** The amendment goes in through a reviewed PR (reported APPROVE, green CI),
+   then a fresh pre-run review. **Run-2 is the single allowed repeat** (§12): same seeds, caps
+   and device, into `outputs/task065-latent-dynamics/run-2` and
+   `checkpoints/task065-latent-dynamics/run-2`, with the features recomputed. A second V closes
+   TASK-065 as INCONCLUSIVE.
+
+No row, gate, threshold, seed, cap or statistic changes. The runner change is `check_cache`
+(the determinism test) and `cache_anchor_sanity` (the bound and the disclosed facts), with
+tests in both directions.
+
+**smoke-d** ran the amended runner on the same smoke subset with noise targets, so it is not
+evidence.
+- Report sha256 `1b49b7aa…4d15`, 270 s.
+- The G-cache determinism check passed.
+- The anchor bound reported 0.0: the subset's roots all sit in full anchor batches.
+- `non_finite_fields` was empty.
