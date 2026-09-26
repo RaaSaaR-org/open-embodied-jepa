@@ -123,7 +123,10 @@ corpus (TASK-062 §6), and it is all this study tests.
 `outputs/task063-pretrained-encoder/calibration-v1.json` (sha256 in the manifest). The encoder,
 the input handling, the read-out points and the floor (§4–§6) were fixed in
 `src/embodied_jepa/pretrained_encoder.py` **before** the calibration ran, and the module's bytes
-did not change afterwards (its hash is pinned). The calibration informs only the budget (§12).
+did not change afterwards (its hash is pinned): the design commit is `74dfe6b`, a formatting-only
+commit `1a50a2e` followed, and the calibration ran after both (the artifact records no revision
+of its own; the order rests on the commit and file timestamps). The calibration informs only the
+budget (§12).
 It reports TASK-062's label-free statistics for both encoders; none of them measures
 readability (TASK-062 §3.3, caveat).
 
@@ -152,7 +155,8 @@ two roots; S_plate: the same for the plate; effective rank over the 190 post-loo
 | *TASK-062, for comparison:* E0 probe feature / E0 final tokens / F-tok | 0.151 / 0.338 / 0.221 | 4.140 / 3.055 / 1.808 | 3.2 / 14.7 / 16.4 |
 
 **Reading (interpretation, not a result, and not a prediction of the run):** in the pretrained
-encoder the apple's relative effect grows block by block (0.207 → 0.760 in the tokens) and stays
+encoder the apple's relative effect grows from the patch embedding to the last block, with small
+non-monotone steps (0.207 → 0.776; 0.760 after the final LayerNorm), and stays
 large in the pooled features, unlike E0, where it shrinks along the head (0.338 → 0.151). The
 random init stays flat at raw-pixel level. S_apple is a size of response, not readability: E0's
 tokens had S_apple 0.338 and read well, F-tok 0.221 and read almost as well. Only the probe decides.
@@ -171,7 +175,7 @@ transformers conversion `facebook/dinov2-small`. One encoder, one input size, no
   ViT with a CLS token, patch size 14 (E0's), 12 blocks, width 384 (E0: 4 blocks, width 128). The
   floor is therefore a meaningful comparison with TASK-062's F-tok.
 - **Permissive licence for code and weights** (Apache-2.0, §4.3). DINOv3 (custom licence), I-JEPA,
-  MAE and V-JEPA checkpoints under CC BY-NC terms, and DINOv2's XRay/Cell variants (non-commercial)
+  MAE and V-JEPA (v1) checkpoints under CC BY-NC terms, and DINOv2's XRay/Cell variants (non-commercial)
   were not chosen, because AGENTS.md keeps restrictive integrations out of the core path.
 - **No new package.** `transformers` 4.57.6 (`Dinov2Model`) and `safetensors` 0.8.0 are already
   locked (the `lewm` extra). A new optional extra `pretrained` names them explicitly (§4.5).
@@ -213,8 +217,8 @@ every sha256 before use. The runner reads only these local files.
     the Apache License 2.0."
   - `MODEL_CARD.md` at the same commit: "License: Apache License 2.0".
   - The repository was relicensed from CC-BY-NC to Apache-2.0 on 2023-08-31 (commit
-    `81b2b6419385a321287de91e00282ef7cbd26f94`, "Update code and models license from CC-BY-NC to
-    Apache 2.0"). The HF model repository's pinned revision is dated after that, 2023-09-06.
+    `81b2b6419385a321287de91e00282ef7cbd26f94`, subject "Update license everywhere (#182)", body
+    "Update code and models license from CC-BY-NC to Apache 2.0"). The HF model repository's pinned revision is dated after that, 2023-09-06.
 - **The HF conversion:** the model card at the pinned revision declares `license: apache-2.0` and
   states that the Hugging Face team, not the DINOv2 authors, wrote the card. The weights are shown
   to be the original ones (§4.2), so the upstream licence statement covers them.
@@ -360,7 +364,7 @@ bit-reproducible across BLAS builds).
 | guard | condition |
 |---|---|
 | **G-hash** | Every file in the manifest's `hashes` matches: TASK-059's and TASK-061's runners and modules; TASK-062's module, runner (`scripts/probe_encoder_study.py`, for its E0 loader and stage code) and calibration script; this study's module, fetch and calibration scripts and calibration artifact; TASK-061's manifest and run-1 report; TASK-062's manifest and run-1 report; the E0 checkpoint and the task056 a1/a2 checkpoints; the configs and the dataset manifest; `models/base.py`, `models/lewm.py`, `models/readout.py`, `policy.py`. Episode files are checked against the dataset manifest before decoding (TASK-061's reader). The tree is clean. |
-| **G-weights** | The three pinned DINOv2 files match (§4.2). The pretrained state dict loads `strict`, and its digest and the seed-0 floor's digest equal the pinned ones. No network access is made: the files are local. |
+| **G-weights** | The two loaded DINOv2 files (`config.json`, `model.safetensors`) match their pins, checked by `pretrained_encoder.check_files` before they are read; the model card `README.md` is pinned through G-hash (§4.2). The pretrained state dict loads `strict`, and its digest and the seed-0 floor's digest equal the pinned ones. No network access is made: the files are local. |
 | **G-split** | TASK-061's: exactly the 190 train + val roots and the fold hash. Episodes are decoded only by TASK-061's reader, for the roots' stored reset frames (G-render); nothing is trained. |
 | **G-render, G-expert, G-look, G-prior** | TASK-061's, unchanged, run by TASK-061's `measure` and checks. |
 | **G-frames** | The post-look frames hash to TASK-062's value (`bff0fb60…`, the calibration's too). The ablation renderer reproduces 190/190 (else the spurious check is unavailable and every arm counts as spurious, TASK-061's rule). |
@@ -421,6 +425,9 @@ recommends a next task and does not choose it.
 - **Device: CPU for everything.** Nothing is trained, so **MPS is not used**: the frozen forward
   pass runs on CPU in float32 so that features are bit-reproducible (G-repro, G-anchor), as
   TASK-061's and TASK-062's features were. The runner refuses any other device.
+  - **Deliberate deviation from the task brief, accepted by the task owner (2026-09-26).** The
+    brief listed an MPS budget. Because nothing is trained, and bit-reproducibility of the
+    features matters more than speed, the budget is CPU-only with the caps below.
 - **Caps:**
   - **Per arm: 1800 s** for the arm's and its floor's featurisation (post-look and apple-hidden
     frames) plus their nested-CV readouts. Exceeding it makes the arm not evaluated.

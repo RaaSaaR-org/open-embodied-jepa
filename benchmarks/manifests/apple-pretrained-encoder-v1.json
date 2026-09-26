@@ -134,12 +134,12 @@
    "21 M parameters; CPU forward in seconds",
    "without registers: the original release held by the HF dinov2-small repository; one encoder, no sweep"
   ],
-  "not_chosen": "DINOv3 (custom licence); I-JEPA, MAE, V-JEPA checkpoints under CC BY-NC terms; XRay-DINO and Cell-DINO (non-commercial); register variant, other sizes, other families (one encoder, no sweep)"
+  "not_chosen": "DINOv3 (custom licence); I-JEPA, MAE, V-JEPA (v1) checkpoints under CC BY-NC terms; XRay-DINO and Cell-DINO (non-commercial); register variant, other sizes, other families (one encoder, no sweep)"
  },
  "licence_and_provenance": {
   "checked": "2026-09-26",
   "upstream_licence": "Apache-2.0 for code and model weights: facebookresearch/dinov2 README 'License' section and MODEL_CARD.md at commit 7764ea0f912e53c92e82eb78a2a1631e92725fc8",
-  "relicensing": "from CC-BY-NC to Apache-2.0 on 2023-08-31, commit 81b2b6419385a321287de91e00282ef7cbd26f94 ('Update code and models license from CC-BY-NC to Apache 2.0'); the pinned HF revision is dated 2023-09-06",
+  "relicensing": "from CC-BY-NC to Apache-2.0 on 2023-08-31, commit 81b2b6419385a321287de91e00282ef7cbd26f94 (subject 'Update license everywhere (#182)', body 'Update code and models license from CC-BY-NC to Apache 2.0'); the pinned HF revision is dated 2023-09-06",
   "hf_conversion": "model card metadata license: apache-2.0 at the pinned revision; card written by the Hugging Face team; tensors shown bit-identical to the original FAIR checkpoint",
   "not_covered_not_used": "XRay-DINO (FAIR Noncommercial Research License), Cell-DINO models (own licence files), DINOv3",
   "obligations": "Apache-2.0 section 4 on redistribution; upstream has no NOTICE file; the weights are not redistributed (git-ignored third_party/, never committed or published); no upstream source copied; the architecture is transformers' own Dinov2Model (Apache-2.0)",
@@ -274,7 +274,7 @@
  },
  "guards_void_the_run": {
   "G-hash": "every file in hashes matches; episode files checked before decoding; clean tree",
-  "G-weights": "the three pinned DINOv2 files match; strict state-dict load; pretrained and seed-0 floor digests equal the pinned ones; local files only",
+  "G-weights": "the two loaded DINOv2 files (config.json, model.safetensors) match their pins (pretrained_encoder.check_files) before they are read; README.md pinned through G-hash; strict state-dict load; pretrained and seed-0 floor digests equal the pinned ones; local files only",
   "G-split": "TASK-061's: exactly the 190 train + val roots and the fold hash",
   "G-render, G-expert, G-look, G-prior": "TASK-061's, unchanged",
   "G-frames": "post-look frames sha256 equals bff0fb6049d72ebdc3737d3506f10971ac11ac4458ece4f120049fba06191831 (TASK-062's calibration and run); the ablation renderer reproduces 190/190 or every arm counts as spurious",
@@ -336,7 +336,8 @@
   "per_arm_seconds": 1800,
   "global_wall_seconds": 7200,
   "expected_seconds": 1800,
-  "calibration_reference": "calibration-v1: forward over 190 frames about 3 s per encoder per frame set; whole calibration 68 s"
+  "calibration_reference": "calibration-v1: forward over 190 frames about 3 s per encoder per frame set; whole calibration 68 s",
+  "deviation_from_brief": "the task brief listed an MPS budget; CPU-only is a deliberate deviation accepted by the task owner on 2026-09-26, because nothing is trained and bit-reproducibility of the features matters more"
  },
  "seeds": {
   "floor_init": 0,
