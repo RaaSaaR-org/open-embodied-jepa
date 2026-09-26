@@ -153,7 +153,9 @@ second-only):
 | P-mean − P-cls | +0.031 [−0.047, 0.095] | 3 / 1, p = 0.625 |
 | P-mean − R-mean | −0.245 [−0.373, −0.095] | 15 / 1, p = 0.0005 |
 
-The manifest also holds every comparison on the reset-occluded and reset-visible strata.
+The manifest also holds the parts of the "always reported" list that are not printed here:
+every source on every stratum with its secondary estimate, and every paired comparison on the
+reset-occluded and reset-visible strata. Both arms are in the state **evaluated**.
 
 ## 4. Diagnostics (reported only)
 
@@ -169,9 +171,10 @@ The manifest also holds every comparison on the reset-occluded and reset-visible
 | R-mean | 0.007 | 0.948 | 18.6 |
 
 The random init's small per-dimension spread (a high "collapsed fraction" at TASK-054's absolute
-0.01 threshold) is a scale property of the untrained network. The kernel readouts are
-scale-invariant (λ is relative, the RBF bandwidth is the median heuristic), and R-tok still reads
-the apple (§3). This is not a gate here; nothing is trained.
+0.01 threshold) is probably a scale property of the untrained network (interpretation). The
+kernel readouts are invariant to a global rescaling of the features, because λ is relative and the
+RBF bandwidth is the median heuristic. They are not invariant to a per-dimension rescaling. R-tok
+still reads the apple (§3). This is not a gate here; nothing is trained.
 
 **Label-free table, recomputed in the run** (S_apple / S_plate / effective rank over the 190
 post-look frames). It equals the pre-freeze calibration's table to the digits shown:
@@ -195,8 +198,12 @@ post-look frames). It equals the pre-freeze calibration's table to the digits sh
      was preregistered, so this is not a claim of equivalence.
    - This is what TASK-062's in-corpus encoders did not achieve: R0-cls there read 1.223 cm,
      and P-cls − L-E0 here is −0.735 cm.
-2. **The tokens read it best of any source on this probe.**
-   - P-tok is 0.394 cm with 187/190, and it is below raw pixels: −0.075 cm [−0.142, −0.007].
+2. **The tokens have the lowest point estimate of any source on this probe.** That is a ranking
+   by point estimate only.
+   - P-tok is 0.394 cm with 187/190.
+   - It is not distinguishable from E0-tok: −0.021 cm [−0.074, 0.043], and E0-tok is not held out.
+   - Its difference from raw pixels, −0.075 cm [−0.142, −0.007], is one of nine unadjusted,
+     reported-only comparisons.
    - Its margin over its own floor is smaller: −0.106 cm [−0.182, −0.041]. This fits TASK-062's
      finding that random ViT tokens already carry the apple (F-tok; here also R-tok, 0.500 cm).
 3. **Why this encoder works and TASK-062's did not is not identified** (protocol §3.2, stated in

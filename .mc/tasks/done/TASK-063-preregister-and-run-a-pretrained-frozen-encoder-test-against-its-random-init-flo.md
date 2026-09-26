@@ -57,7 +57,7 @@ Calibration (label-free, fits nothing): `scripts/calibrate_pretrained_encoder.py
 - [x] PR 2 (runner, decision code, guard tests) merges on a reported APPROVE with green CI (#62, 198d1f1).
 - [x] The gated run starts only on the pre-run reviewer's reported verdict, with a clean tree
       (PRE-RUN: GO; started 2026-09-26T19:21:32Z at 198d1f1).
-- [x] PR 3 (results document, results manifest, summarize script) states the outcome row, the
+- [x] PR 3 (#63; ticked on the reviewer's reported APPROVE) (results document, results manifest, summarize script) states the outcome row, the
       numbers with CIs against floors and baselines, every negative result, and a recommended
       (not chosen) next task; a reviewer checks every restated number against report.json by
       script.
