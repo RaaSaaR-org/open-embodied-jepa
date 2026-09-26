@@ -153,6 +153,9 @@ def test_void_first_missing_arms_refused_and_abandonment_rows():
     with pytest.raises(ContractError):
         ps.decide(void=False, arms={"P-cls": _arm()})
     assert [r for r in ps.ROWS if ps.abandonment_fires(r)] == ["O-PT-FLOOR", "O-PT-NONE"]
+    assert ps.also_matching("O-PT-POOLED", arms) == ["O-PT-TOKENS"]
+    assert ps.also_matching("O-PT-POOLED", arms | {"P-tok": _arm()}) == []
+    assert ps.also_matching("O-PT-NONE", {"P-cls": _arm(), "P-tok": _arm()}) == []
 
 
 # ----- spurious check ---------------------------------------------------------------------
@@ -339,9 +342,9 @@ def _tiny_floor(tmp_path):
 
 
 def test_a_non_finite_feature_is_an_arm_level_failure_not_a_crash(tmp_path):
+    runner = _runner("_probe_pt_t7")
     import torch
 
-    runner = _runner("_probe_pt_t7")
     model = _tiny_floor(tmp_path)
     frames = {"post_112": np.zeros((2, 112, 112, 3), np.uint8)}
     out, seconds, reason = runner.featurise(model, frames)

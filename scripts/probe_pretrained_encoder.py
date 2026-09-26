@@ -91,6 +91,10 @@ def _stats(values) -> dict:
     return _statistics(torch.from_numpy(np.asarray(values, np.float64)))
 
 
+# The rows of the protocol's §3.3 label-free table, recomputed in the run (§8).
+LABEL_FREE_STAGES = ("patch_embedding_tokens", "block6_tokens", "tokens", "cls", "tokens_mean")
+
+
 def token_mean(tokens) -> np.ndarray:
     """Mean of the 256 final patch tokens (P-mean / R-mean), float64."""
     return np.asarray(tokens).reshape(len(tokens), pe.GRID * pe.GRID, pe.WIDTH).mean(1)
@@ -244,11 +248,14 @@ def run(output: Path, *, smoke: bool = False, device: str = ps.DEVICE) -> dict:
         flag = np.array([r["apple_pixels_post_look"]["onboard_112"] == 0 for r in rows])
         if flag.any() and (~flag).any():
             masks |= {"arm_occluded": flag, "arm_visible": ~flag}
-        results, kept, preds, readout_seconds = {}, {}, {}, {}
+        results, kept, preds, readout_seconds, feature_sha = {}, {}, {}, {}, {}
 
         def single(name, x):
             clock.check(f"readout {name}")
             begin = time.monotonic()
+            feature_sha[name] = hashlib.sha256(
+                np.ascontiguousarray(np.asarray(x, np.float64)).tobytes()
+            ).hexdigest()
             g, diag = ic.gram(x)
             results[name], kept[name], preds[name] = BASE.evaluate_source(
                 name, g, diag, xy, dx, dy, fold, priors, masks, train_mask, split_priors
@@ -318,14 +325,6 @@ def run(output: Path, *, smoke: bool = False, device: str = ps.DEVICE) -> dict:
             report["G_repro"] = "bit-identical"
         report["feature_seconds"] = feat_seconds
         report["feature_failures"] = failures
-        report["feature_sha256"] = {
-            f"{enc}_{point}": hashlib.sha256(
-                np.ascontiguousarray(feats[enc]["post_112"][point]).tobytes()
-            ).hexdigest()
-            for enc in ("P", "R")
-            if feats[enc] is not None
-            for point in ("cls", "tokens", "mean")
-        }
         # --- stage 2: readouts ---
         for enc in ("P", "R"):
             if feats[enc] is None:
@@ -380,16 +379,24 @@ def run(output: Path, *, smoke: bool = False, device: str = ps.DEVICE) -> dict:
             name, entry = ps.SOURCE[arm], arms[arm]
             point = ps.ARM_POINT[arm]
             hidden_eval = None
-            if entry["state"] == "evaluated" and reproduces:
+            if entry["state"] != "evaluated":
+                entry["spurious_check"] = {
+                    "available": False,
+                    "spurious": True,
+                    "reading": "arm not evaluated; no spurious check",
+                    "hidden_all_roots": None,
+                }
+            elif reproduces:
                 g_new, norms = ic.cross_gram(
                     feats["P"]["post_112_hidden"][point], feats["P"]["post_112"][point]
                 )
                 xy_hat = orp.predict_with_fold_readouts(preds[name]["xy_fits"], fold, g_new, norms)
                 dx_hat = orp.predict_with_fold_readouts(preds[name]["dx_fits"], fold, g_new, norms)
                 hidden_eval = ic.evaluate(xy_hat, dx_hat[:, 0], xy, dx, priors, np.ones(n, bool))
-            entry["spurious_check"] = orp.spurious_verdict(
-                hidden_eval, renderer_reproduces=reproduces
-            ) | {"hidden_all_roots": ic.public(hidden_eval) if hidden_eval else None}
+            if entry["state"] == "evaluated":
+                entry["spurious_check"] = orp.spurious_verdict(
+                    hidden_eval, renderer_reproduces=reproduces
+                ) | {"hidden_all_roots": ic.public(hidden_eval) if hidden_eval else None}
             entry["spurious"] = bool(entry["spurious_check"]["spurious"])
             entry["holm_rejected"] = bool(holm["rejected"][arm])
             entry["passes"] = ps.passes(
@@ -411,6 +418,7 @@ def run(output: Path, *, smoke: bool = False, device: str = ps.DEVICE) -> dict:
         report["holm"] = holm
         decision = ps.decide(void=False, arms=arms)
         decision["abandonment_clause_fires"] = ps.abandonment_fires(decision["outcome"])
+        decision["also_matching_rows"] = ps.also_matching(decision["outcome"], arms)
         report["decision"] = decision
         # --- reported: diagnostics, label-free table, paired comparisons ---
         report["diagnostics"] = {
@@ -432,20 +440,15 @@ def run(output: Path, *, smoke: bool = False, device: str = ps.DEVICE) -> dict:
         for enc, model in (("P", pretrained), ("R", floor)):
             if feats[enc] is None:
                 continue
-            extra, _s, _f = featurise(
-                model,
-                {
-                    "apple_hidden": cal_frames["apple_hidden"],
-                    "plate_hidden": cal_frames["plate_hidden"],
-                },
-            )
-            if extra is None:
-                continue
-            for point in ("cls", "tokens", "mean"):
-                label_free[f"{enc}_{point}"] = CAL.shares(
-                    feats[enc]["post_112"][point],
-                    extra["apple_hidden"][point],
-                    extra["plate_hidden"][point],
+            staged = {
+                k: pe.features(model, cal_frames[k], hidden_states=True)
+                for k in ("post", "apple_hidden", "plate_hidden")
+            }
+            for stage in LABEL_FREE_STAGES:
+                label_free[f"{enc}_{stage}"] = CAL.shares(
+                    staged["post"][stage],
+                    staged["apple_hidden"][stage],
+                    staged["plate_hidden"][stage],
                 )
         report["label_free"] = label_free
         pairs = [
@@ -471,6 +474,7 @@ def run(output: Path, *, smoke: bool = False, device: str = ps.DEVICE) -> dict:
             if a in kept and b in kept
         }
         report["readout_seconds"] = readout_seconds
+        report["feature_sha256"] = feature_sha
         report["results"] = results
         report["per_root"] = [
             {
@@ -494,7 +498,7 @@ def run(output: Path, *, smoke: bool = False, device: str = ps.DEVICE) -> dict:
         clock.check("report")
         report["status"] = "complete"
         report["outcome"] = decision["outcome"]
-    except (ic.GuardError, VoidRun) as error:
+    except (ic.GuardError, pe.WeightsError, VoidRun) as error:
         report["status"] = "void"
         report["decision"] = {"outcome": "V", "reason": str(error)}
         report["outcome"] = "V"

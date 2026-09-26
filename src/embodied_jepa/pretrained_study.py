@@ -83,6 +83,14 @@ def decide(*, void: bool, arms: dict) -> dict:
     return {"outcome": "O-PT-NONE", "passed": passed}
 
 
+def also_matching(outcome: str, arms: dict) -> list[str]:
+    """Rows below the first match that also hold (§11 'always reported'). Only O-PT-TOKENS can:
+    after a pass, the other rows need no arm to pass."""
+    if outcome == "O-PT-POOLED" and arms["P-tok"]["passes"]:
+        return ["O-PT-TOKENS"]
+    return []
+
+
 def abandonment_fires(outcome: str) -> bool:
     return outcome in ("O-PT-FLOOR", "O-PT-NONE")
 
