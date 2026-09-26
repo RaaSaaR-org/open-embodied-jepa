@@ -564,13 +564,29 @@ corpus seed was simulated:
   - a non-finite feature is V;
   - pilot and smoke runs record `"smoke (not a row)"`;
   - the QA reader was renamed to `TrainValReader`.
-- **A final smoke of the committed code, `pilot-c`, on 47900–47931.** Readability ran in smoke
-  mode, with noise targets. Report sha256 `28ae2770…0e57`.
+- **After PR 2's first review** (all mechanics; nothing about rows, gates or thresholds changed):
+  - G-hash is re-checked at `finalize` for the frozen run. `tracked_inputs` also covers the gate
+    code (`read_apple_look.py`, `probe_info_ceiling.py`). `preflight.json` records every
+    per-file hash.
+  - A crash anywhere during collection writes a V report and kills the workers.
+  - A standalone `finalize` on the frozen run is refused (§12), and the report records
+    `invoked_via`.
+  - A frozen run refuses workers or caps other than those of §11.
+  - A read root that stored no policy command after the look is a named Q-expert failure (V).
+  - The gate's Q-folds, G-weights, G-repro, G-finite and G-wall checks became tested helpers.
+- **Two readings, made explicit:**
+  - A root that errors before its look leaves no look record, so L1 fails. Under §10 a
+    readability failure alongside it is then C-DATA-FAIL (confounded), not C-READ-FAIL.
+  - A6 and A7 are computed over every train + val transition, the 8 look transitions per root
+    episode included.
+- **A final smoke of the committed code, `pilot-d`, on 47900–47931** (`pilot-c` ran the code as
+  it was before the review). Readability ran in smoke mode, with noise targets. Report sha256
+  `e437946a…4ec0`.
   - The facts match pilot-a: 21/32 root successes, 127 episodes, L1 ok, Q-expert 24 roots with
     max |Δ| 0.0, ablation 30/30, G-repro bit-identical.
-  - The outcome is recorded as "smoke (not a row)". The whole command took 189 s.
+  - The outcome is recorded as "smoke (not a row)". The whole command took 188 s.
 - **A rendering fact found while comparing the three pilot runs**
-  (pilot-a, pilot-b, pilot-c: 32 roots, 33 878 frames each):
+  (pilot-a, pilot-b, pilot-c: 32 roots, 33 878 frames each; pilot-d came later):
   - **Physics, states, actions and timestamps are bit-identical across the runs.**
   - Three stored frames mid-episode differ between some pair of runs:
     - `look-47910` frame 142: 2 px, 1 level;

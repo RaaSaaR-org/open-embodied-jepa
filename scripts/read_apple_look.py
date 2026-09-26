@@ -86,10 +86,11 @@ class CorpusFrames:
         return self.rows[episode_id]
 
     def frames(self, episode_id, indices):
+        row = self.row(episode_id)  # Q-split refusal before anything is imported or opened
+
         import pyarrow.parquet as pq
         from PIL import Image
 
-        row = self.row(episode_id)
         path = self.store.root / row["path"]
         if (
             hashlib.sha256(path.read_bytes()).hexdigest()
@@ -106,6 +107,45 @@ class CorpusFrames:
             with Image.open(io.BytesIO(item["bytes"])) as image:
                 out.append(np.asarray(image).copy())
         return out
+
+
+# ----- guards, as testable helpers (protocol §9) -------------------------------------------------
+def check_folds(got: str, want: str) -> None:
+    if got != want:
+        raise lc.GuardError(f"Q-folds: fold hash {got[:12]} != pinned {want[:12]}")
+
+
+def check_weights(weights: dict, task063: dict) -> None:
+    if weights["pretrained_digest"] != task063["encoder"]["pretrained_weights_digest"]:
+        raise lc.GuardError("G-weights: pretrained digest differs from TASK-063's pin")
+    if weights["floor_digest"] != task063["floors"]["weights_digest"]:
+        raise lc.GuardError("G-weights: floor digest differs from TASK-063's pin")
+
+
+def check_repro(first: dict, again: dict) -> None:
+    for key in again:
+        if key not in first or not np.array_equal(again[key], first[key]):
+            raise lc.GuardError(f"G-repro: second forward pass differs at {key}")
+
+
+def finite_features(featurise, name: str, frames):
+    """G-finite: a non-finite feature is mechanical, not a readability result -- the run is V."""
+    try:
+        return featurise(frames)
+    except ContractError as error:
+        if "non-finite" not in str(error):
+            raise
+        raise lc.GuardError(f"G-finite: non-finite {name} features: {error}") from error
+
+
+def recorded_first_policy_action(labels, episode_id):
+    """Q-expert: the root must have stored its first policy command after the look."""
+    base = np.asarray(labels["collector__base_action"])
+    if len(base) <= lc.LOOK_STEPS:
+        raise lc.GuardError(
+            f"Q-expert: {episode_id} stored no policy command after the look ({len(base)} steps)"
+        )
+    return base[lc.LOOK_STEPS]
 
 
 def warm(renders, data) -> None:
@@ -173,7 +213,7 @@ def measure(roots, corpus, *, clock):
                     "expert_post_look": [float(v) for v in expert_post[FREE]],
                     "recorded_post_look": [
                         float(v)
-                        for v in np.asarray(labels["collector__base_action"][lc.LOOK_STEPS])[FREE]
+                        for v in recorded_first_policy_action(labels, root["episode_id"])[FREE]
                     ],
                     "recorded_look_phases_ok": bool(
                         np.all(
@@ -222,9 +262,7 @@ def readability(dataset, plan, *, clock_start: float = 0.0, smoke: bool = False)
     fold = ic.fold_of(len(roots))
     fold_hash = ic.fold_assignment_sha256(seeds, fold)
     if not smoke and manifest is not None:
-        want = manifest["readability_gate"]["fold_assignment_sha256"]
-        if fold_hash != want:
-            raise lc.GuardError(f"Q-folds: fold hash {fold_hash[:12]} != pinned {want[:12]}")
+        check_folds(fold_hash, manifest["readability_gate"]["fold_assignment_sha256"])
     gate = {
         "roots": len(roots),
         "splits": {k: sum(r["split"] == k for r in roots) for k in lc.READ_SPLITS},
@@ -292,33 +330,21 @@ def readability(dataset, plan, *, clock_start: float = 0.0, smoke: bool = False)
         "pretrained_digest": pe.weights_digest(pretrained),
         "floor_digest": pe.weights_digest(floor),
     }
-    if weights["pretrained_digest"] != task063["encoder"]["pretrained_weights_digest"]:
-        raise lc.GuardError("G-weights: pretrained digest differs from TASK-063's pin")
-    if weights["floor_digest"] != task063["floors"]["weights_digest"]:
-        raise lc.GuardError("G-weights: floor digest differs from TASK-063's pin")
+    check_weights(weights, task063)
     gate["weights"] = weights
     gate["environment"] = {"torch": torch.__version__, "torch_threads": torch.get_num_threads()}
     feats, finite = {}, True
     for name, model in (("P", pretrained), ("R", floor)):
         clock.check(f"features {name}")
-        try:
-            feats[name] = {
-                "post": pe.features(model, frames["stored_post"]),
-                "hidden": pe.features(model, frames["hidden"]),
-            }
-        except ContractError as error:
-            if "non-finite" not in str(error):
-                raise
-            # Mechanical, not a readability result (protocol §8): the run is V.
-            raise lc.GuardError(f"non-finite {name} features: {error}") from error
+        feats[name] = {
+            key: finite_features(lambda x, m=model: pe.features(m, x), name, frames[source])
+            for key, source in (("post", "stored_post"), ("hidden", "hidden"))
+        }
         for key in ("post", "hidden"):
             tokens = feats[name][key]["tokens"]
             feats[name][key]["mean"] = tokens.reshape(n, pe.GRID * pe.GRID, pe.WIDTH).mean(1)
     if "P" in feats:
-        again = pe.features(pretrained, frames["stored_post"])
-        for key in again:
-            if not np.array_equal(again[key], feats["P"]["post"][key]):
-                raise lc.GuardError(f"G-repro: second forward pass differs at {key}")
+        check_repro(feats["P"]["post"], pe.features(pretrained, frames["stored_post"]))
         gate["G_repro"] = "bit-identical"
     # --- readouts ---
     results, kept, preds, feature_sha, seconds = {}, {}, {}, {}, {}

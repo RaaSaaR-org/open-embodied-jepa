@@ -660,7 +660,9 @@ def acceptance(dataset, plan, workers) -> dict:
         "decoded_interval_max": max(gaps),
         "decoded_intervals_ok": lc.frame_interval_ok(gaps),
         "collection_records_cover_every_stored_episode": stored_ids <= set(recorded),
-        "collection_intervals_ok": all(recorded[e]["intervals_ok"] for e in stored_ids),
+        "collection_intervals_ok": all(
+            recorded.get(e, {}).get("intervals_ok", False) for e in stored_ids
+        ),
         "storage_bytes": sum(p.stat().st_size for p in Path(dataset).rglob("*") if p.is_file()),
     }
     result["audit"]["all_intervals_ok"] = bool(
@@ -693,12 +695,27 @@ def tracked_inputs():
     return {
         "collector_sha256": digest(Path(__file__)),
         "wide_collector_sha256": digest(ROOT / "scripts/collect_apple_wide.py"),
+        "readability_gate_sha256": digest(ROOT / "scripts/read_apple_look.py"),
+        "probe_info_ceiling_sha256": digest(ROOT / "scripts/probe_info_ceiling.py"),
         "look_corpus_module_sha256": digest(ROOT / "src/embodied_jepa/look_corpus.py"),
         "protocol_sha256": digest(PROTOCOL_DOC) if PROTOCOL_DOC.is_file() else None,
         "manifest_sha256": digest(MANIFEST) if MANIFEST.is_file() else None,
         "action_manifest_sha256": digest(ROOT / "configs/g1_sim_action.json"),
         "asset_manifest_sha256": digest(ROOT / "assets/manifest.json"),
     }
+
+
+def check_pins(manifest: dict, root=ROOT) -> dict:
+    """G-hash: every pinned file matches. Returns the per-file sha256 that was found."""
+    found, mismatched = {}, []
+    for name, want in manifest["hashes"].items():
+        path = Path(root) / name
+        found[name] = digest(path) if path.is_file() else None
+        if found[name] != want:
+            mismatched.append(name)
+    if mismatched:
+        raise lc.GuardError(f"G-hash: {len(mismatched)} pinned files differ: {mismatched[:5]}")
+    return found
 
 
 def preflight(plan, dirty, manifest_path=MANIFEST, root=ROOT) -> dict:
@@ -708,13 +725,7 @@ def preflight(plan, dirty, manifest_path=MANIFEST, root=ROOT) -> dict:
     if not Path(manifest_path).is_file():
         raise lc.GuardError(f"G-hash: manifest {manifest_path} is missing")
     manifest = json.loads(Path(manifest_path).read_text())
-    mismatched = []
-    for name, want in manifest["hashes"].items():
-        path = Path(root) / name
-        if not path.is_file() or digest(path) != want:
-            mismatched.append(name)
-    if mismatched:
-        raise lc.GuardError(f"G-hash: {len(mismatched)} pinned files differ: {mismatched[:5]}")
+    found = check_pins(manifest, root)
     for script in ("scripts/collect_apple_look.py", "scripts/read_apple_look.py"):
         if script not in manifest["hashes"]:
             raise lc.GuardError(f"G-hash: {script} is not pinned in the manifest")
@@ -730,6 +741,7 @@ def preflight(plan, dirty, manifest_path=MANIFEST, root=ROOT) -> dict:
         raise lc.GuardError(f"G-plan: plan hash {exact[:12]} != pinned")
     return {
         "hashes_checked": len(manifest["hashes"]),
+        "hashes": found,
         "plan_sha256": exact,
         "plan_sha256_rounded": rounded,
         "exact_plan_hash_checked": exact_checked,
@@ -769,6 +781,29 @@ def run(args):
             print(json.dumps({k: report[k] for k in ("status", "outcome", "void_reason")}))
             return 1
         write(work / "preflight.json", report_preflight)
+    try:
+        collect(args, work, plan, dirty)
+    except BaseException as error:
+        report = {
+            "protocol": lc.PROTOCOL,
+            "task": lc.TASK,
+            "status": "void: crashed during collection",
+            "outcome": "V",
+            "void_reason": f"exception: {type(error).__name__}: {error}",
+            "traceback": "".join(traceback.format_exception(error)),
+            "decision": {"outcome": "V", "reason": f"{type(error).__name__}: {error}"},
+            "learned_apple_to_plate_successes": 0,
+            "exemption_spent": False,
+            "total_seconds": elapsed(),
+        }
+        write_report(work / "collection_report.json", report)
+        raise
+    return finalize(work, dataset, readability=not args.skip_readability, invoked_via="run")
+
+
+def collect(args, work, plan, dirty) -> None:
+    """Provenance, workers and the supervisor loop; writes ``supervisor.json``. Workers are
+    killed if anything here raises."""
     source_hashes = {
         str(p.relative_to(ROOT)): digest(p) for p in sorted((ROOT / "src").rglob("*.py"))
     }
@@ -820,15 +855,18 @@ def run(args):
         for i in range(args.workers)
     ]
     timed_out = False
-    while any(p.poll() is None for p in processes):
-        if elapsed() >= args.max_seconds:
-            timed_out = True
-            for p in processes:
+    try:
+        while any(p.poll() is None for p in processes):
+            if elapsed() >= args.max_seconds:
+                timed_out = True
+                break
+            time.sleep(1)
+    finally:
+        for p in processes:
+            if p.poll() is None:
                 p.kill()
-            break
-        time.sleep(1)
-    for p in processes:
-        p.wait()
+        for p in processes:
+            p.wait()
     write(
         work / "supervisor.json",
         {
@@ -837,7 +875,6 @@ def run(args):
             "collection_seconds": elapsed(),
         },
     )
-    return finalize(work, dataset, readability=not args.skip_readability)
 
 
 def integrity_of(plan, workers, supervisor, source_changed, inputs_changed) -> dict:
@@ -888,7 +925,11 @@ def _guards():
 GUARDS = _guards()
 
 
-def finalize(work, dataset, *, readability=True):
+def load_reader():
+    return _load("_read_apple_look", "scripts/read_apple_look.py")
+
+
+def finalize(work, dataset, *, readability=True, invoked_via="finalize"):
     """Assemble shards, seal, score, run the readability gate and decide. Re-runnable from an
     existing work directory into a NEW dataset directory; never re-simulates. Always writes
     ``<work>/collection_report.json``, with outcome V and a ``void_reason`` on any stop."""
@@ -910,6 +951,7 @@ def finalize(work, dataset, *, readability=True):
         "learned_apple_to_plate_successes": 0,
         "exemption_spent": False,
         "seed_set": provenance["seed_set"],
+        "invoked_via": invoked_via,
     }
     try:
         source_changed = [
@@ -918,6 +960,9 @@ def finalize(work, dataset, *, readability=True):
         inputs_changed = [k for k, v in tracked_inputs().items() if provenance.get(k) != v]
         report["source_changed"] = source_changed
         report["inputs_changed"] = inputs_changed
+        if provenance["seed_set"] == "frozen":
+            # G-hash again, now covering the gate code loaded below (protocol §9).
+            report["pinned_hashes_at_finalize"] = check_pins(json.loads(MANIFEST.read_text()))
         if digest(work / "plan.json") != provenance["plan_sha256"]:
             raise lc.GuardError("plan changed after collection started")
         reason = void_reason_of(supervisor, source_changed, inputs_changed)
@@ -947,7 +992,7 @@ def finalize(work, dataset, *, readability=True):
         report["plan_sha256"] = provenance["plan_sha256"]
         report["plan_sha256_rounded"] = provenance["plan_sha256_rounded"]
         if readability:
-            reader = _load("_read_apple_look", "scripts/read_apple_look.py")
+            reader = load_reader()
             gate = reader.readability(
                 dataset, plan, clock_start=elapsed(), smoke=provenance["seed_set"] == "pilot"
             )
@@ -1032,9 +1077,23 @@ def main():
         worker(args.plan, args.work, args.index, args.count, args.max_seconds)
         return 0
     if args.command == "finalize":
+        provenance = json.loads((args.work / "provenance.json").read_text())
+        if provenance["seed_set"] == "frozen":
+            raise SystemExit("finalize is not a recovery path for the frozen run (protocol §12)")
         return finalize(args.work, args.output, readability=not args.skip_readability)
     if args.seeds == "frozen" and (args.limit or args.allow_dirty or args.skip_readability):
         raise SystemExit("--limit, --allow-dirty and --skip-readability are pilot/smoke only")
+    preregistered = (lc.WORKERS, lc.SUPERVISOR_SECONDS, lc.WORKER_SECONDS)
+    if (
+        args.seeds == "frozen"
+        and (
+            args.workers,
+            args.max_seconds,
+            args.worker_seconds,
+        )
+        != preregistered
+    ):
+        raise SystemExit("the frozen run uses the preregistered workers and caps (protocol §11)")
     return run(args)
 
 

@@ -248,6 +248,105 @@ def test_frozen_runs_refuse_smoke_flags(monkeypatch):
             collector.main()
 
 
+def test_frozen_runs_refuse_other_workers_and_caps(monkeypatch):
+    for flags in (["--workers", "8"], ["--max-seconds", "9000"], ["--worker-seconds", "100"]):
+        argv = ["x", "run", "--seeds", "frozen", "--output", "o", "--work", "w", *flags]
+        monkeypatch.setattr("sys.argv", argv)
+        with pytest.raises(SystemExit, match="preregistered workers and caps"):
+            collector.main()
+
+
+def test_standalone_finalize_is_refused_for_the_frozen_run(tmp_path, monkeypatch):
+    work = tmp_path / "w"
+    work.mkdir()
+    (work / "provenance.json").write_text(json.dumps({"seed_set": "frozen"}))
+    argv = ["x", "finalize", "--work", str(work), "--output", str(tmp_path / "d")]
+    monkeypatch.setattr("sys.argv", argv)
+    with pytest.raises(SystemExit, match="not a recovery path"):
+        collector.main()
+
+
+def test_a_crash_during_collection_writes_a_void_report(tmp_path, monkeypatch):
+    def boom(*_args):
+        raise RuntimeError("Popen failed")
+
+    monkeypatch.setattr(collector, "collect", boom)
+    monkeypatch.setattr(collector, "git", lambda *a: "")
+    args = SimpleNamespace(
+        output=tmp_path / "d",
+        work=tmp_path / "w",
+        allow_dirty=True,
+        seeds="pilot",
+        limit=2,
+        skip_readability=True,
+    )
+    with pytest.raises(RuntimeError, match="Popen failed"):
+        collector.run(args)
+    report = json.loads((tmp_path / "w" / "collection_report.json").read_text())
+    assert report["outcome"] == "V" and "Popen failed" in report["void_reason"]
+
+
+def test_a_guard_inside_the_gate_is_v(tmp_path, monkeypatch):
+    work = work_dir(tmp_path, {"timed_out": False, "worker_returncodes": [0]})
+    (work / "worker-00.json").write_text(json.dumps({"roots": [], "episodes": [], "looks": []}))
+    monkeypatch.setattr(collector, "assemble", lambda *a: SimpleNamespace(manifest_hash="0" * 64))
+    monkeypatch.setattr(collector, "acceptance", lambda *a: {})
+    monkeypatch.setattr(
+        lc, "checks", lambda result: {"checks": {"L1_look_prefix": True}, "all_passed": True}
+    )
+
+    def gate(*_a, **_k):
+        raise lc.GuardError("Q-render: stored post-look frame differs on 1 roots")
+
+    monkeypatch.setattr(collector, "load_reader", lambda: SimpleNamespace(readability=gate))
+    assert collector.finalize(work, tmp_path / "dataset") == 1
+    report = json.loads((work / "collection_report.json").read_text())
+    assert report["outcome"] == "V" and "Q-render" in report["void_reason"]
+
+
+# ----- the gate's guards, both directions -------------------------------------------------------
+def test_clock_wall_cap_both_ways():
+    reader.Clock(0.0, cap=100.0).check("ok")
+    with pytest.raises(lc.GuardError, match="global wall cap"):
+        reader.Clock(101.0, cap=100.0).check("late")
+
+
+def test_fold_weight_repro_finite_and_expert_guards():
+    reader.check_folds("a" * 64, "a" * 64)
+    with pytest.raises(lc.GuardError, match="Q-folds"):
+        reader.check_folds("a" * 64, "b" * 64)
+    pins = {"encoder": {"pretrained_weights_digest": "p"}, "floors": {"weights_digest": "f"}}
+    reader.check_weights({"pretrained_digest": "p", "floor_digest": "f"}, pins)
+    for bad in (
+        {"pretrained_digest": "x", "floor_digest": "f"},
+        {"pretrained_digest": "p", "floor_digest": "x"},
+    ):
+        with pytest.raises(lc.GuardError, match="G-weights"):
+            reader.check_weights(bad, pins)
+    first = {"cls": np.ones((2, 3)), "tokens": np.zeros((2, 4))}
+    reader.check_repro(first, {k: v.copy() for k, v in first.items()})
+    changed = {"cls": np.ones((2, 3)), "tokens": np.full((2, 4), 1e-12)}
+    with pytest.raises(lc.GuardError, match="G-repro"):
+        reader.check_repro(first, changed)
+    assert reader.finite_features(lambda x: x, "P", 5) == 5
+
+    def nonfinite(_x):
+        raise reader.ContractError("non-finite cls features")
+
+    with pytest.raises(lc.GuardError, match="G-finite"):
+        reader.finite_features(nonfinite, "P", None)
+
+    def other(_x):
+        raise reader.ContractError("expected uint8 frames")
+
+    with pytest.raises(reader.ContractError, match="uint8"):
+        reader.finite_features(other, "P", None)
+    labels = {"collector__base_action": np.arange(9 * 14).reshape(9, 14)}
+    assert reader.recorded_first_policy_action(labels, "e")[0] == 8 * 14
+    with pytest.raises(lc.GuardError, match="no policy command"):
+        reader.recorded_first_policy_action({"collector__base_action": np.zeros((8, 14))}, "e")
+
+
 # ----- simulation (graphics opt-in) ---------------------------------------------------------------
 @pytest.mark.skipif(os.environ.get("JEPA_TEST_RENDER") != "1", reason="graphics opt-in")
 def test_the_collector_look_is_identical_from_two_resets_and_leaves_the_apple(tmp_path):
