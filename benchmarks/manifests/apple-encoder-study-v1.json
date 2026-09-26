@@ -76,7 +76,7 @@
   "encoder_e_A": "trained only on train-split episodes whose root is a train root in half B; features for all 190 roots, held-out predictions only for half A",
   "encoder_e_B": "trained only on train-split episodes whose root is a train root in half A; features for all 190 roots, held-out predictions only for half B",
   "outer_readout_for_fold_k": "selected and fitted on the other 171 roots with the features of the encoder that excluded k's half",
-  "grouping": "root episode + its 3 branch episodes, by root_episode_id",
+  "grouping": "root episode + its branch episodes (3 for most roots, 2 for 3 roots), by root_episode_id",
   "never_used_for_training": [
    "val split (20 roots)",
    "test split",

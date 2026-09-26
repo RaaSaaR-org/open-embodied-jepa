@@ -166,8 +166,10 @@ the run rather than assumed. E0-tok (§5.3) is the cheap readout test of E-pool 
 it runs before any training.
 
 **Collapse reference** (also in `calibration-v2.json`). `VisualModel._statistics` over 1024
-train-split frames (64 episodes and the frames both drawn with seed 6220; only frames and
-proprioception decoded):
+train-split frames. The 64 episodes and the frames are both drawn with seed 6220. Each episode's
+Parquet is decoded, but only its frames and proprioception are used, and no label sidecar is
+opened. (The script's docstring says "only frames and proprioception are decoded"; the precise
+statement is this one.)
 
 | model | image feature: std mean / collapsed fraction / effective rank | fused latent: same |
 |---|---|---|
@@ -417,7 +419,7 @@ G-hash). Compared are:
 |---|---|---|---|
 | **V** | a guard fails (§11, incl. G-anchor), or the run stops before writing a complete report (crash, global wall cap) | nothing is read | one repeat (§12) |
 | **O-ENC-LATENT** | A-sig, A-rec or A-plain passes | A changed objective, regime or supervision gives LeWM's own 128-d image latent the apple, on held-out roots, beyond its random init. | **Preregister the look-prefix 112 px corpus with that arm's recipe as the encoder.** If more than one arm passes, the one with the smallest p_arm is used (ties: listed order). No control formulation is preregistered until the encoder, retrained on that corpus, passes this probe on its decision frames. |
-| **O-ENC-TOKENS** | A-tok passes, and no other arm does | The recipe's tokens carry the apple beyond random init. Its pooled latent does not. | **Preregister the look-prefix corpus, plus, separately preregistered, a LeWM variant whose latent is the token grid (or a pooling that keeps it).** The pooled 128-d latent is not used for the apple. |
+| **O-ENC-TOKENS** | A-tok passes, and no other arm does | The recipe's tokens carry the apple beyond random init. Its pooled latent does not, as far as the evaluated latent arms show. A latent arm that was not evaluated is reported as untested. | **Preregister the look-prefix corpus, plus, separately preregistered, a LeWM variant whose latent is the token grid (or a pooling that keeps it).** The pooled 128-d latent is not used for the apple. |
 | **O-ENC-INCOMPLETE** | no arm passes, and at least one arm was **not evaluated** (mechanical failure, §7) | The explanations of the failed arms are untested. | **The abandonment clause does not fire.** The owner decides whether a disclosed amendment re-runs the unevaluated arm or arms. |
 | **O-ENC-ARCH** | no arm passes, every arm was evaluated, and at least one arm **succeeds** (bars) and is not spurious | Features of an evaluated arm expose the apple, but no arm meets every pass condition (floor, Holm or collapse gate). | **The abandonment clause fires** (below). Recommended next: one preregistered test of an externally pretrained frozen encoder against its own random-init floor, on this probe, before any corpus. |
 | **O-ENC-NONE** | no arm passes, every arm was evaluated, and no arm succeeds without being spurious | No tested change to the readout point, regime, objective or supervision gives a frozen encoder that exposes the apple on held-out roots. | **The abandonment clause fires.** Recommended next: as for O-ENC-ARCH. If that test also fails, no look-prefix corpus is collected. The remaining route is then the observation change TASK-061 already validated: the `overview` camera, a **hardware/workspace change** on the robot. |
