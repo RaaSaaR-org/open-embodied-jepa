@@ -48,8 +48,8 @@ about closed-loop behaviour.
 
 The probe is TASK-061's L arm, as TASK-062 ran it. `scripts/probe_observation_reprobe.py`,
 `src/embodied_jepa/observation_reprobe.py`, `scripts/probe_info_ceiling.py`,
-`src/embodied_jepa/info_ceiling.py`, and TASK-062's `src/embodied_jepa/encoder_study.py` and
-`scripts/calibrate_encoder_study.py` are loaded as they are, and their bytes are pinned (G-hash,
+`src/embodied_jepa/info_ceiling.py`, and TASK-062's `src/embodied_jepa/encoder_study.py`,
+`scripts/probe_encoder_study.py` and `scripts/calibrate_encoder_study.py` are loaded as they are, and their bytes are pinned (G-hash,
 §10).
 
 - **Frames.** TASK-061's `measure` renders them: the same 190 train + val roots, the **renderer
@@ -127,7 +127,35 @@ did not change afterwards (its hash is pinned). The calibration informs only the
 It reports TASK-062's label-free statistics for both encoders; none of them measures
 readability (TASK-062 §3.3, caveat).
 
-CALIBRATION_TABLE
+Facts (from the artifact):
+- 190 roots; the post-look frames hash to `bff0fb60…1831`, **identical to TASK-062's
+  calibration and run**; the ablation renderer reproduces the post-look frame on 190/190 roots.
+- Both weight digests as pinned (§4.2); a second forward pass is bit-identical for both encoders.
+- The converted weights equal the original FAIR checkpoint tensor for tensor (§4.2).
+- CPU forward pass over 190 frames: about 3 s per encoder per frame set (torch 2.14.0, 6 threads).
+  The whole calibration, rendering included, took 68 s.
+
+Label-free statistics (S_apple: the apple's own effect relative to the typical difference between
+two roots; S_plate: the same for the plate; effective rank over the 190 post-look frames):
+
+| representation | S_apple | S_plate | effective rank |
+|---|---|---|---|
+| raw pixels | 0.245 | 1.547 | 18.0 |
+| pretrained, patch-embedding tokens | 0.207 | 0.867 | 34.2 |
+| pretrained, tokens after block 6 | 0.476 | 1.949 | 20.3 |
+| **pretrained, final tokens (P-tok)** | **0.760** | 1.903 | 15.8 |
+| **pretrained, CLS (P-cls)** | **0.883** | 2.353 | 11.0 |
+| pretrained, mean of final tokens (P-mean) | 0.914 | 2.121 | 10.2 |
+| random init, final tokens (R-tok) | 0.205 | 1.695 | 14.8 |
+| random init, CLS (R-cls) | 0.258 | 4.298 | 17.5 |
+| random init, mean of final tokens (R-mean) | 0.247 | 4.630 | 18.6 |
+| *TASK-062, for comparison:* E0 probe feature / E0 final tokens / F-tok | 0.151 / 0.338 / 0.221 | 4.140 / 3.055 / 1.808 | 3.2 / 14.7 / 16.4 |
+
+**Reading (interpretation, not a result, and not a prediction of the run):** in the pretrained
+encoder the apple's relative effect grows block by block (0.207 → 0.760 in the tokens) and stays
+large in the pooled features, unlike E0, where it shrinks along the head (0.338 → 0.151). The
+random init stays flat at raw-pixel level. S_apple is a size of response, not readability: E0's
+tokens had S_apple 0.338 and read well, F-tok 0.221 and read almost as well. Only the probe decides.
 
 ## 4. The encoder, its provenance and its licence
 
@@ -331,7 +359,7 @@ bit-reproducible across BLAS builds).
 
 | guard | condition |
 |---|---|
-| **G-hash** | Every file in the manifest's `hashes` matches: TASK-059's and TASK-061's runners and modules; TASK-062's module and calibration script; this study's module, fetch and calibration scripts and calibration artifact; TASK-061's manifest and run-1 report; TASK-062's manifest and run-1 report; the E0 checkpoint and the task056 a1/a2 checkpoints; the configs and the dataset manifest; `models/base.py`, `models/lewm.py`, `models/readout.py`, `policy.py`. Episode files are checked against the dataset manifest before decoding (TASK-061's reader). The tree is clean. |
+| **G-hash** | Every file in the manifest's `hashes` matches: TASK-059's and TASK-061's runners and modules; TASK-062's module, runner (`scripts/probe_encoder_study.py`, for its E0 loader and stage code) and calibration script; this study's module, fetch and calibration scripts and calibration artifact; TASK-061's manifest and run-1 report; TASK-062's manifest and run-1 report; the E0 checkpoint and the task056 a1/a2 checkpoints; the configs and the dataset manifest; `models/base.py`, `models/lewm.py`, `models/readout.py`, `policy.py`. Episode files are checked against the dataset manifest before decoding (TASK-061's reader). The tree is clean. |
 | **G-weights** | The three pinned DINOv2 files match (§4.2). The pretrained state dict loads `strict`, and its digest and the seed-0 floor's digest equal the pinned ones. No network access is made: the files are local. |
 | **G-split** | TASK-061's: exactly the 190 train + val roots and the fold hash. Episodes are decoded only by TASK-061's reader, for the roots' stored reset frames (G-render); nothing is trained. |
 | **G-render, G-expert, G-look, G-prior** | TASK-061's, unchanged, run by TASK-061's `measure` and checks. |
