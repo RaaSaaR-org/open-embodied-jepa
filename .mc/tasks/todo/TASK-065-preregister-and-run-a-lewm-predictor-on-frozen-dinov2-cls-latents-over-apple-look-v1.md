@@ -86,4 +86,24 @@ Design code: `src/embodied_jepa/latent_dynamics.py`; model option in
   choose horizons (apple static until frame ≥ 117); no feature, prediction or readout computed.
 - Worktree: `data`, `outputs`, `checkpoints` and `third_party` are ignored convenience symlinks to
   the main checkout; `.venv` is the worktree's own. Nothing under them is overwritten.
+
+## Run log and rulings (UTC)
+- 2026-09-26T22:51Z: run-1 started at 26d6801 on the pre-run reviewer's reported PRE-RUN: GO.
+- 2026-09-26T23:35:23Z: **run-1 is V.** `void_reason`: `GuardError: G-cache: frame-8 cache rows
+  differ from the anchor by 3.7670135498046875e-05`. It stopped after featurisation; no model was
+  trained and no readout was fitted.
+  - Cause: a deterministic float32 batch-size effect. The last 14 roots by seed (47186–47199)
+    formed a partial batch of 14 in TASK-064's anchor layout.
+  - Size: at most 3.77e-5 absolute, 4.3e-6 relative.
+  - Why it was missed: the pre-freeze check covered only the first 20 roots, all in full batches.
+  - Evidence kept: `outputs/task065-latent-dynamics/run-1/`, `outputs/task065-run-1.log`.
+- **Owner ruling, 2026-09-26, about 23:45Z** (as stated by the owner; the relayed message arrived
+  at 23:37Z): option A plus a coarse bound.
+  - G-cache becomes a bit-exact determinism check of the cache path.
+  - G-anchor is unchanged.
+  - An anchor-vs-cache sanity bound of 1e-3 absolute is kept, and the actual difference is
+    disclosed.
+  - The amendment goes in through a reviewed PR, followed by a fresh pre-run review.
+  - Run-2 is the single allowed repeat; a second V is INCONCLUSIVE.
+  - Protocol §17.
 %% mc-links: [[TASK-064]] %%

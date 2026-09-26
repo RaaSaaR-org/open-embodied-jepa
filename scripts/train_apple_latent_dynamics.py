@@ -55,7 +55,8 @@ TASK064_PLAN = ROOT / "data" / "apple-look-v1-work" / "plan.json"
 ALL_HORIZONS = (1, 2, 4, 8, 16, 32, 64)  # E-post: reported + extended
 EALL_HORIZONS = ld.REPORTED_HORIZONS  # (1, 2, 4, 8, 16)
 LABEL_TOLERANCE_M = 1e-6
-CACHE_TOLERANCE = 1e-5
+CACHE_ANCHOR_SANITY = 1e-3  # amendment 2026-09-26: coarse anchor bound, not the G-cache test
+CACHE_LAYOUT = 16  # the cache featurises each episode in batches of 16 from frame 0
 APPLE_MOVE_M = 1e-3
 EVAL_CHUNK = 2048
 SMOKE = {"sessions_per_half": 8, "val_episodes": 8, "updates": 20, "select_every": 10}
@@ -211,11 +212,34 @@ def check_repro(first, again) -> None:
         raise GuardError("G-repro: a second featurisation is not bit-identical")
 
 
-def check_cache(cache_rows, anchor_rows, tol: float = CACHE_TOLERANCE) -> float:
-    diff = float(np.max(np.abs(np.asarray(cache_rows, np.float64) - anchor_rows)))
-    if not diff <= tol:
-        raise GuardError(f"G-cache: frame-8 cache rows differ from the anchor by {diff}")
-    return diff
+def check_cache(cache_rows, again_rows) -> None:
+    """G-cache (amended, owner ruling 2026-09-26): the cache path is deterministic -- a second
+    featurisation of the post-look frames in the cache's own layout is bit-identical."""
+    if not np.array_equal(np.asarray(cache_rows), np.asarray(again_rows)):
+        diff = float(np.nanmax(np.abs(np.asarray(cache_rows, np.float64) - again_rows)))
+        raise GuardError(f"G-cache: the cache path is not deterministic (max |diff| {diff})")
+
+
+def cache_anchor_sanity(cache_rows, anchor_rows, labels, tol: float = CACHE_ANCHOR_SANITY):
+    """The coarse anchor bound kept by the amendment: a real data fault still fails (G-cache).
+    Returns the disclosed facts: max absolute and relative difference and the differing rows."""
+    cache = np.asarray(cache_rows, np.float64)
+    anchor = np.asarray(anchor_rows, np.float64)
+    diff = np.abs(cache - anchor)
+    max_abs = float(np.max(diff)) if diff.size else 0.0
+    if not max_abs <= tol:
+        raise GuardError(f"G-cache: cache rows differ from the anchor by {max_abs} > {tol}")
+    rel = np.linalg.norm(cache - anchor, axis=1) / np.linalg.norm(anchor, axis=1)
+    differing = [str(labels[k]) for k in np.flatnonzero(diff.max(1) > 0)]
+    return {
+        "bound": tol,
+        "max_abs": max_abs,
+        "max_relative_to_row_norm": float(rel.max()) if len(rel) else 0.0,
+        "differing_roots": differing,
+        "explanation": "float32 CPU inference differs by batch size: TASK-064's anchor ran 190 "
+        "frames in batches of 16, so its last 14 roots (by seed) were a partial batch of 14; "
+        "the cache runs every root in a full 16-frame batch",
+    }
 
 
 def check_look_labels(phases, episode_id: str) -> None:
@@ -701,8 +725,11 @@ def _run(report, output, checkpoints, clock, smoke):
     # ----- 2. anchor ---------------------------------------------------------------------------
     plan = json.loads(TASK064_PLAN.read_text())
     anchor_roots = lc.read_roots(plan)
+    first_frames = {}  # each root's frames 0..15: the cache's own first batch (G-cache)
+    for r in anchor_roots:
+        first_frames[int(r["seed"])] = reader.episode(r["episode_id"])[0][:CACHE_LAYOUT]
     anchor_frames = np.stack(
-        [reader.episode(r["episode_id"])[0][ld.DECISION_FRAME] for r in anchor_roots]
+        [first_frames[int(r["seed"])][ld.DECISION_FRAME] for r in anchor_roots]
     )
     anchor = pe.features(featurizer._frozen_module, anchor_frames)["cls"]
     again = pe.features(featurizer._frozen_module, anchor_frames)["cls"]
@@ -744,14 +771,27 @@ def _run(report, output, checkpoints, clock, smoke):
     # ----- 4. features -------------------------------------------------------------------------
     features, actions, offsets, feature_seconds = featurise(featurizer, reader, table, clock, smoke)
     np.save(output / "features.npy", features)
-    cache_rows = [features[offsets[i] + ld.DECISION_FRAME] for i in train_roots + val_roots]
-    cache_anchor = [anchor_by_seed[table[i]["seed"]] for i in train_roots + val_roots]
+    read_roots = train_roots + val_roots
+    cache_rows = np.stack([features[offsets[i] + ld.DECISION_FRAME] for i in read_roots])
+    again_rows = np.stack(
+        [
+            featurizer.frozen_features(first_frames[table[i]["seed"]])[ld.DECISION_FRAME]
+            for i in read_roots
+        ]
+    )
+    check_cache(cache_rows, again_rows)
+    sanity = cache_anchor_sanity(
+        cache_rows,
+        np.stack([anchor_by_seed[table[i]["seed"]] for i in read_roots]),
+        [table[i]["episode_id"] for i in read_roots],
+    )
     report["features"] = {
         "frames": int(len(features)),
         "sha256": array_sha256(features),
         "file_sha256": sha256_file(output / "features.npy"),
         "seconds": feature_seconds,
-        "cache_vs_anchor_max_abs": check_cache(cache_rows, np.stack(cache_anchor)),
+        "G_cache": "cache path bit-identical on a second featurisation of the post-look frames",
+        "cache_vs_anchor": sanity,
     }
     train_rows = np.concatenate(
         [
