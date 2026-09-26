@@ -131,7 +131,9 @@ def preprocess(frames):
 
     frames = np.asarray(frames)
     if frames.dtype != np.uint8 or frames.ndim != 4 or frames.shape[1:] != (112, 112, 3):
-        raise ContractError(f"expected uint8 [N, 112, 112, 3] frames, got {frames.dtype} {frames.shape}")
+        raise ContractError(
+            f"expected uint8 [N, 112, 112, 3] frames, got {frames.dtype} {frames.shape}"
+        )
     x = torch.from_numpy(np.ascontiguousarray(frames)).permute(0, 3, 1, 2).float() / 255.0
     x = F.interpolate(
         x, size=(INPUT_SIZE, INPUT_SIZE), mode="bicubic", align_corners=False, antialias=False
