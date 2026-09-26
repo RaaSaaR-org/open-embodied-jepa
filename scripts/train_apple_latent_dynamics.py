@@ -253,22 +253,19 @@ class TrainValReader:
         return self.rows[episode_id]
 
     def _table(self, episode_id, columns):
-        row = self.row(episode_id)
-        import pyarrow.parquet as pq
-
+        row = self.row(episode_id)  # Q-split first: a test id is refused before anything else
         path = self.store.root / row["path"]
         payload = path.read_bytes()
         if sha256_bytes(payload) != self.store.manifest["sha256"][row["path"]]:
             raise GuardError(f"G-data: episode file hash mismatch: {episode_id}")
+        import pyarrow.parquet as pq  # optional runtime, only after both guards
+
         self.decoded.add(episode_id)
         return pq.read_table(io.BytesIO(payload), columns=columns), row
 
     def episode(self, episode_id, *, frames=True):
         """``(frames uint8 [L,112,112,3] or None, actions float32 [L,14], action_valid [L])``;
         the last row's action is invalid (T actions need T+1 observations)."""
-        self.row(episode_id)  # Q-split first: a test id is refused before any import or open
-        from PIL import Image
-
         columns = ["frame_index", "action", "action_valid"]
         if frames:
             columns.append(f"observation.images.{ld.CAMERA}")
@@ -283,6 +280,8 @@ class TrainValReader:
         actions[-1] = 0.0  # the invalid final row is never used as a transition
         images = None
         if frames:
+            from PIL import Image  # after Q-split and the hash check, never before
+
             images = []
             for item in table[f"observation.images.{ld.CAMERA}"].to_pylist():
                 with Image.open(io.BytesIO(item["bytes"])) as image:

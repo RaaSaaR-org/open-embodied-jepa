@@ -587,3 +587,6 @@ thresholds, seeds and caps are unchanged. Additions, all mechanics:
     - report sha256 `88c038ba…8363`;
     - 266 s in total;
     - every section written, `non_finite_fields` empty.
+- **After PR 2's second review:** in the reader, both optional imports (`pyarrow`, `PIL`) now come
+  after Q-split and the file-hash check. Before this, the core-only CI job, which has neither
+  package, failed the hash-mismatch test on the import. This is an import-order change only.
