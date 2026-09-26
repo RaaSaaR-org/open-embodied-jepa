@@ -37,10 +37,13 @@ PLAN_SALT = 64  # per-root draws: default_rng(SeedSequence([seed, PLAN_SALT]))
 RESERVED_RANGES = {
     "apple_wide_v1_corpus_and_pilots": (48000, 48999),
     "cohort_D_wide_development": (45000, 45107),
+    "wide_v3_cohort": (45200, 45207),
     "cohort_C": (45300, 45339),
     "final_cohort": (44000, 44019),
     "narrow_development": (43000, 43004),
     "earlier_train_val_test": (42000, 42031),
+    "mechanics_probes": (41000, 41101),
+    "mvp_frozen_resets": (20000, 20049),
     "grasp_closure_probes": (49000, 49199),
 }
 
@@ -269,9 +272,10 @@ def look_facts(applied, post_state, apple_xy_moves, plate_moves, contacts) -> di
     }
 
 
-def check_look_records(records: list[dict], expected_roots: int) -> dict:
+def check_look_records(records: list[dict], planned_seeds) -> dict:
     """L1 over every root's collection-time look record. Returns the facts and ``ok``; ``ok``
-    needs one record per planned root."""
+    needs exactly one record per planned root seed."""
+    planned = sorted(int(s) for s in planned_seeds)
     if not records:
         return {"ok": False, "reason": "no look records", "roots": 0}
     complete = [r for r in records if r["look_commands_executed"] == LOOK_STEPS]
@@ -292,10 +296,12 @@ def check_look_records(records: list[dict], expected_roots: int) -> dict:
         "hand_contact_roots": int(touched),
         "every_look_command_checked": bool(checked_all),
     }
-    facts["expected_roots"] = int(expected_roots)
+    facts["expected_roots"] = len(planned)
+    facts["records_match_planned_seeds"] = (
+        sorted(int(r.get("seed", -1)) for r in records) == planned
+    )
     facts["ok"] = bool(
-        len(records) == expected_roots
-        and len({r.get("seed") for r in records}) == expected_roots
+        facts["records_match_planned_seeds"]
         and len(complete) == len(records)
         and worst_applied == 0.0
         and spread is not None
@@ -417,6 +423,10 @@ def check_read_split(roots, splits_by_episode: dict) -> None:
         split = root["split"]
         if split not in READ_SPLITS:
             raise GuardError(f"Q-split: {root['episode_id']} is {split}, not train or val")
+        if root["episode_id"] not in splits_by_episode:
+            # A planned train/val root that errored or never started: the gate cannot be
+            # evaluated on the preregistered 190 roots, so the run is V (protocol §9).
+            raise GuardError(f"Q-split: planned read root {root['episode_id']} is not stored")
         if splits_by_episode.get(root["episode_id"]) != split:
             raise GuardError(f"Q-split: {root['episode_id']} is not in its planned split")
         counts[split] += 1
@@ -425,13 +435,16 @@ def check_read_split(roots, splits_by_episode: dict) -> None:
 
 
 # ----- decision (protocol §10) -----------------------------------------------------------------
-def decide(*, void: bool, data_all_passed: bool, readability_passed: bool) -> dict:
-    """First matching row: V, C-ACCEPT, C-READ-FAIL, C-DATA-FAIL."""
+def decide(*, void: bool, data_all_passed: bool, readability_passed: bool, look_ok: bool) -> dict:
+    """First matching row: V, C-ACCEPT, C-READ-FAIL, C-DATA-FAIL.
+
+    C-READ-FAIL (and its abandonment clause) needs the look check L1 to hold: if the look itself
+    failed, a readability failure is confounded by a data defect and the row is C-DATA-FAIL."""
     if void:
         return {"outcome": "V"}
     if data_all_passed and readability_passed:
         row = "C-ACCEPT"
-    elif not readability_passed:
+    elif not readability_passed and look_ok:
         row = "C-READ-FAIL"
     else:
         row = "C-DATA-FAIL"
@@ -442,6 +455,8 @@ def decide(*, void: bool, data_all_passed: bool, readability_passed: bool) -> di
         "outcome": row,
         "data_all_passed": bool(data_all_passed),
         "readability_passed": bool(readability_passed),
+        "look_ok": bool(look_ok),
+        "readability_failure_confounded_by_look": bool(not readability_passed and not look_ok),
         "also_matching_rows": also,
         "abandonment_clause_fires": row == "C-READ-FAIL",
         "corpus_accepted": row == "C-ACCEPT",

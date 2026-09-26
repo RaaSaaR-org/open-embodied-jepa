@@ -89,7 +89,22 @@ def test_seed_ranges_are_new_and_reserved_ranges_are_refused():
     assert len(seeds) == 200 and not seeds & set(lc.PILOT_SEEDS)
     lc.check_seeds(lc.FROZEN_SEEDS)
     lc.check_seeds(lc.PILOT_SEEDS)
-    for reserved in (48000, 48199, 48931, 45000, 45107, 45300, 45339, 44000, 43000, 42000, 49100):
+    for reserved in (
+        48000,
+        48199,
+        48931,
+        45000,
+        45107,
+        45200,
+        45300,
+        45339,
+        44000,
+        43000,
+        42000,
+        41000,
+        20000,
+        49100,
+    ):
         with pytest.raises(ContractError, match="reserved"):
             lc.check_seeds([reserved])
         with pytest.raises(ContractError, match="reserved"):
@@ -160,6 +175,10 @@ def test_check_read_split_both_directions():
         lc.check_read_split(roots, moved)
     with pytest.raises(lc.GuardError, match="read roots"):
         lc.check_read_split(roots[1:], splits)
+    # A planned train/val root that errored or never started is absent: the run is V.
+    absent = {k: v for k, v in splits.items() if k != roots[5]["episode_id"]}
+    with pytest.raises(lc.GuardError, match="not stored"):
+        lc.check_read_split(roots, absent)
 
 
 # ----- L1: the look records ----------------------------------------------------------------------
@@ -178,9 +197,12 @@ def look_record(seed, **overrides):
 
 def test_look_records_pass_and_every_failure_is_caught():
     good = [look_record(s) for s in range(4)]
-    assert lc.check_look_records(good, 4)["ok"]
-    assert not lc.check_look_records(good[:3], 4)["ok"]  # a planned root without a record
-    assert not lc.check_look_records([], 4)["ok"]
+    seeds = range(4)
+    assert lc.check_look_records(good, seeds)["ok"]
+    assert not lc.check_look_records(good[:3], seeds)["ok"]  # a planned root without a record
+    assert not lc.check_look_records([], seeds)["ok"]
+    assert not lc.check_look_records(good[:3] + [look_record(9)], seeds)["ok"]  # unplanned seed
+    assert not lc.check_look_records(good[:3] + [look_record(2)], seeds)["ok"]  # duplicate
     bad_cases = [
         {"applied_max_abs_minus_requested": 1e-7},
         {"post_look_state": [1e-5] + [0.0] * 85},
@@ -192,7 +214,7 @@ def test_look_records_pass_and_every_failure_is_caught():
     ]
     for override in bad_cases:
         records = good[:3] + [look_record(3, **override)]
-        assert not lc.check_look_records(records, 4)["ok"], override
+        assert not lc.check_look_records(records, seeds)["ok"], override
 
 
 def test_look_facts_measures_a_perturbed_look():
@@ -321,17 +343,25 @@ def test_render_and_expert_guards_both_directions():
 
 
 def test_outcome_rows_first_match():
-    assert lc.decide(void=True, data_all_passed=True, readability_passed=True) == {"outcome": "V"}
-    accept = lc.decide(void=False, data_all_passed=True, readability_passed=True)
+    def decide(data, read, look=True):
+        return lc.decide(void=False, data_all_passed=data, readability_passed=read, look_ok=look)
+
+    void = lc.decide(void=True, data_all_passed=True, readability_passed=True, look_ok=True)
+    assert void == {"outcome": "V"}
+    accept = decide(True, True)
     assert accept["outcome"] == "C-ACCEPT" and accept["corpus_accepted"]
     assert not accept["abandonment_clause_fires"] and accept["also_matching_rows"] == []
-    read = lc.decide(void=False, data_all_passed=True, readability_passed=False)
+    read = decide(True, False)
     assert read["outcome"] == "C-READ-FAIL" and read["abandonment_clause_fires"]
     assert not read["corpus_accepted"] and read["also_matching_rows"] == []
-    both = lc.decide(void=False, data_all_passed=False, readability_passed=False)
+    both = decide(False, False)
     assert both["outcome"] == "C-READ-FAIL" and both["also_matching_rows"] == ["C-DATA-FAIL"]
-    data = lc.decide(void=False, data_all_passed=False, readability_passed=True)
+    data = decide(False, True)
     assert data["outcome"] == "C-DATA-FAIL" and not data["abandonment_clause_fires"]
+    # A failed look confounds a readability failure: C-DATA-FAIL, and the clause does not fire.
+    confounded = decide(False, False, look=False)
+    assert confounded["outcome"] == "C-DATA-FAIL" and not confounded["abandonment_clause_fires"]
+    assert confounded["readability_failure_confounded_by_look"]
     assert set(lc.ROWS) == {"V", "C-ACCEPT", "C-READ-FAIL", "C-DATA-FAIL"}
 
 

@@ -8,7 +8,7 @@
  "learned_apple_to_plate_successes": 0,
  "exemption_spent": false,
  "exemption_spent_source": "benchmarks/manifests/apple-policy-diagnostics-v1.json",
- "control_lines": "CEM abandoned at TASK-054, behaviour cloning stopped at TASK-057; both clauses hold; no control formulation preregistered or implied",
+ "control_lines": "CEM abandoned as the primary control line at TASK-054; the behaviour-cloning line stopped at TASK-057 on apple-wide-v1 and the 112 px onboard camera, with no third control formulation preregistered on them; both clauses hold; no control formulation preregistered or implied here",
  "predecessor": {
   "task": "TASK-063",
   "outcome": "O-PT-POOLED",
@@ -46,6 +46,10 @@
     45000,
     45107
    ],
+   "wide_v3_cohort": [
+    45200,
+    45207
+   ],
    "cohort_C": [
     45300,
     45339
@@ -61,6 +65,14 @@
    "earlier_train_val_test": [
     42000,
     42031
+   ],
+   "mechanics_probes": [
+    41000,
+    41101
+   ],
+   "mvp_frozen_resets": [
+    20000,
+    20049
    ],
    "grasp_closure_probes": [
     49000,
@@ -356,7 +368,7 @@
  "guards_void_the_run": {
   "G-hash": "every file in hashes matches before collection; clean tracked tree; src/**/*.py and tracked inputs unchanged at finalize",
   "G-plan": "plan.json hashes to the pin (exact on macOS arm64, rounded everywhere) and is unchanged at finalize",
-  "G-stop": "supervisor cap not reached; every worker exits 0",
+  "G-stop": "supervisor cap not reached; every worker exits 0; no root left unstarted by the worker cap",
   "Q-split": "exactly the planned 170 train + 20 val roots; any other id refused",
   "Q-folds": "fold hash equals the pin",
   "Q-render": "stored frame 0 and frame 8 equal fresh re-renders; post-look re-render stable",
@@ -365,7 +377,7 @@
   "G-repro": "second forward pass bit-identical",
   "G-finite": "no non-finite feature",
   "G-wall": "global wall cap",
-  "not_guards": "a root-level runtime error fails A13; a failed look fails L1; both are C-DATA-FAIL, not V; any other exception is a crash and V"
+  "failed_roots": "a planned train/val root that is not stored (runtime error, look stopped before 8 transitions, never started) fails Q-split: V; a runtime error on a stored test root fails A13: C-DATA-FAIL; a failed look on a stored root fails L1 (data outcome, and C-READ-FAIL then cannot match); any other exception is a crash and V"
  },
  "pre_declared_outcomes_in_order": [
   {
@@ -381,20 +393,20 @@
   },
   {
    "row": "C-READ-FAIL",
-   "condition": "the readability gate fails (whatever the acceptance checks say)",
+   "condition": "the readability gate fails and L1 holds (whatever the other acceptance checks say)",
    "reading": "TASK-063's P-cls result does not replicate on fresh resets",
    "next": "the abandonment clause fires"
   },
   {
    "row": "C-DATA-FAIL",
-   "condition": "the readability gate passes and at least one acceptance check fails",
-   "reading": "the corpus is not as designed; kept as evidence, not accepted, not repaired",
+   "condition": "otherwise: at least one acceptance check fails (gate passing, or gate failing while L1 fails)",
+   "reading": "the corpus is not as designed; kept as evidence, not accepted, not repaired; a gate failure alongside a failed L1 is reported as confounded by the look",
    "next": "any re-collection uses a new seed range and version, preregistered separately; no abandonment"
   }
  ],
  "inconclusive_task_level": "a second V closes TASK-064 as INCONCLUSIVE; nothing is read; the abandonment clause does not fire",
  "abandonment_clause": {
-  "fires_on": "C-READ-FAIL",
+  "fires_on": "C-READ-FAIL (which requires L1 to hold)",
   "closes": "the frozen-DINOv2 route to a look-prefix corpus: no world model is preregistered on this corpus with this encoder, and no further pretrained encoder, read-out point, input size or look variant is preregistered on this corpus without new evidence of a different kind",
   "corpus": "kept, sealed, as evidence",
   "does_not_close": [
@@ -451,6 +463,7 @@
    "bytes": 347052601
   },
   "thresholds_changed": false,
+  "report_outcome_field": "the pilot report's outcome 'C-READ-FAIL' came from noise targets and the draft code and means nothing; PR 2 records pilot/smoke runs as 'smoke (not a row)'",
   "earlier_smoke": "outputs/task064-scratch/smoke-a (4 roots, readability skipped), pipeline only"
  },
  "process": [
@@ -486,7 +499,7 @@
   "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
   "src/embodied_jepa/encoder_study.py": "bcb1c8b2509539d46c421f43668aadfb2be3d074b369654a0e49b5baddc511fe",
   "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
-  "src/embodied_jepa/look_corpus.py": "16736dbf2109ea60031f28bd935da57f7ab42f8949b0b55725eded16fb90fd09",
+  "src/embodied_jepa/look_corpus.py": "5b7e71c7a7a8db1078101808f1f9a945958412d92b48f2b38c7f6eddf995b696",
   "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
   "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
   "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",

@@ -10,8 +10,10 @@ its readability targets replaced by seeded noise, so it measured nothing about r
 This is a **data task**. It builds one corpus and validates it: that the collection went as
 designed, and that the pinned frozen encoder reads the apple from the corpus's own post-look
 frames on fresh resets. It trains nothing, fits no world model and preregisters no control
-formulation. CEM over the world-model cost was abandoned at TASK-054, and the behaviour-cloning
-line at TASK-057 (`docs/DECISIONS.md`); both clauses still hold, and nothing here implies a third.
+formulation. CEM over the world-model cost was abandoned as the primary control line at TASK-054,
+and at TASK-057 the behaviour-cloning line stopped on `apple-wide-v1` and the 112 px onboard
+camera, with no third control formulation preregistered on them (`docs/DECISIONS.md`). Both
+clauses still hold, and nothing here implies a third formulation on this corpus either.
 **Learned Apple→Plate is still 0 successes.** The corpus comes from the **privileged scripted
 collector**, which reads simulator truth at reset. Its successes are scripted, not learned.
 
@@ -129,11 +131,12 @@ They all apply to this task and to anything built on its corpus.
 | Cohort D (wide development) | 45000–45007, 45100–45107 | never simulated |
 | Cohort C | 45300–45339 | never simulated |
 | Final cohort | 44000–44019 | never simulated |
-| All other earlier ranges | 41000–43004, 49000–49199, 20000-range and others | unchanged |
+| TASK-051 wide v3 cohort | 45200–45207 | never simulated |
+| Earlier ranges | 41000–41101, 42000–42031, 43000–43004, 49000–49199, 20000–20049 | never simulated |
 
 - **No collision.** No seed in 47000–47199 or 47900–47931 is used anywhere else in the
-  repository (checked by search). `look_corpus.check_seeds` refuses every reserved range above,
-  and a test pins the refusal.
+  repository (checked by search). `look_corpus.check_seeds` refuses every range in the table
+  above (`RESERVED_RANGES`), and `tests/test_look_corpus.py` pins the refusal.
 - **Reset rule.** TASK-047's, per seed: `rng = default_rng(seed)`, apple
   `(0.34, −0.18) + U(±0.03)²`, then plate `(0.49, −0.09) + U(±0.02)²`.
 - **The corpus's own val/test** are for future model selection and held-out diagnostics only.
@@ -176,8 +179,8 @@ TASK-048.
 ### 4.3 What the look is, and what it is not
 
 - It is the same constant on every reset; `look_sequence()` takes no argument. The collector's
-  `LookController` returns only rows of that constant; a test proves two different resets issue
-  identical look streams.
+  `LookController` returns only rows of that constant; PR 2's tests must prove that two different
+  resets issue identical look streams (§9).
 - TASK-061 established, on the `apple-wide-v1` roots, that after the look the robot state is
   identical across roots, the apple and plate do not move, and the hand does not touch the apple.
   This corpus **re-checks all of it on every one of its 200 roots at collection time** (check L1,
@@ -276,8 +279,8 @@ only differences are the resets and the path the frame takes: the corpus's PNG, 
 - **Manifest metadata is read for counts on all splits** (lengths, terminations, the privileged
   outcome flags). That is not decoding, and it is how TASK-048 counted.
 - **Decoding-based QA reads train + val only:** A6–A8, the A10 audit, the A11 sidecar loads and
-  the readability gate. A reader that refuses any other episode id enforces it, and a test pins
-  the refusal.
+  the readability gate. A reader that refuses any other episode id enforces it, and PR 2's tests
+  must pin the refusal (§9).
 - **For any later use of the corpus:** train on train, select on val, never decode test during
   training or selection.
 
@@ -376,7 +379,7 @@ not read.**
 |---|---|
 | **G-hash** | Every file in the manifest's `hashes` matches before collection starts, and the tracked tree is clean. The collector re-checks every `src/**/*.py` hash and its tracked inputs at finalize; a change during the run is V. |
 | **G-plan** | The recorded `plan.json` hashes to the pinned value (exact on macOS arm64; rounded everywhere) and is unchanged at finalize. |
-| **G-stop** | The collection supervisor's wall cap is not reached, and every worker exits 0. |
+| **G-stop** | The collection supervisor's wall cap is not reached, every worker exits 0, and no root is left unstarted by the 4500 s worker cap (an unstarted root is an early stop). |
 | **Q-split** | The readability gate reads exactly the planned 170 train + 20 val roots, each in its planned split; any other episode id is refused. |
 | **Q-folds** | The fold hash equals the pinned value. |
 | **Q-render** | On every read root, the stored frame 0 equals a fresh re-render of the reset, the stored frame 8 equals a fresh re-render after the look, and an immediate second render of the post-look state equals the first. |
@@ -386,9 +389,16 @@ not read.**
 | **G-finite** | No non-finite feature (a mechanical failure, not a readability result). |
 | **G-wall** | The whole run (collection, assembly, checks, gate) stays under the global wall cap (§11). |
 
-**Not guards.** A root-level runtime error (for example a MuJoCo instability) does not stop the
-run: the root is recorded and A13 fails. A failed look on a root fails L1. Both are data
-outcomes (C-DATA-FAIL), not V. Any other exception is a crash, and a crash is V.
+**What a failed root does, fixed now.**
+- **A planned train or val root that is not stored** (a root-level runtime error, a look stopped
+  before 8 transitions, or a root never started) leaves the gate without its preregistered 190
+  roots. Q-split fails and **the run is V**. A never-started root is already V under G-stop.
+- **A root-level runtime error on a test root**, where the root is stored and nothing is read
+  from it, does not stop the run: A13 fails and the row is C-DATA-FAIL.
+- **A failed look on a stored root** (for example contact, or a moved apple) fails L1. That is a
+  data outcome, not V. Because a failed look also confounds the readability gate, C-READ-FAIL
+  requires L1 to hold (§10).
+- Any other exception is a crash, and a crash is V.
 
 **PR 2's tests** must exercise, in both directions: every guard; every acceptance check and L1 on
 planted records; the readability rule R1–R4 through `readability_passes`; every outcome row; that
@@ -402,8 +412,8 @@ non-finite values written as `null` and listed in `non_finite_fields`.
 |---|---|---|---|
 | **V** | a guard fails (§9), or the run stops before writing a complete report (crash, a cap) | nothing is read | one from-scratch repeat (§12) |
 | **C-ACCEPT** | every acceptance check (A1–A13, L1) passes **and** the readability gate passes | The look-prefix 112 px corpus was collected as designed, and on its own train + val post-look frames from fresh resets, the frozen DINOv2 CLS reads the apple beyond its random init. The corpus is accepted as `apple-look-v1`. | A **separately preregistered** world-model task on `apple-look-v1` with this frozen encoder as a candidate image encoder. It needs its own hypothesis, controls, collapse and action-sensitivity diagnostics, and its own gates. **No control formulation is implied.** |
-| **C-READ-FAIL** | the readability gate fails (whatever the acceptance checks say) | TASK-063's P-cls result does not replicate on this corpus's fresh resets under the unchanged probe. | **The abandonment clause fires** (below). |
-| **C-DATA-FAIL** | the readability gate passes, and at least one acceptance check fails | The encoder reads the apple on the new resets, but the corpus is not as designed. | The corpus is kept as evidence and **not accepted**, and it is not silently repaired. Any re-collection uses a **new seed range and a new version**, preregistered separately. The abandonment clause does not fire. |
+| **C-READ-FAIL** | the readability gate fails **and** L1 holds (whatever the other acceptance checks say) | TASK-063's P-cls result does not replicate on this corpus's fresh resets under the unchanged probe. | **The abandonment clause fires** (below). |
+| **C-DATA-FAIL** | otherwise: at least one acceptance check fails (with the gate passing, or with the gate failing while L1 fails) | The corpus is not as designed. If the gate failed too, that failure is reported as **confounded by the failed look** and is not read as a readability result. | The corpus is kept as evidence and **not accepted**, and it is not silently repaired. Any re-collection uses a **new seed range and a new version**, preregistered separately. The abandonment clause does not fire. |
 
 **INCONCLUSIVE (task-level, not a row of a run).** A second V closes TASK-064 as INCONCLUSIVE
 (§12). Nothing is read, the abandonment clause does not fire, and the owner decides what follows.
@@ -503,6 +513,9 @@ sha256 in the manifest).
     347 MB for 127 episodes.
 - **Thresholds were not changed** in response. The rates are close to TASK-048's pilot-c, so its
   frozen thresholds were kept.
+- **The pilot report's `outcome` field reads "C-READ-FAIL".** That value comes from the noise
+  targets and the draft code, and it means nothing. PR 2's collector records a pilot or smoke run
+  as `"smoke (not a row)"` instead.
 - An earlier 4-root smoke (`smoke-a`, readability skipped) checked the pipeline only.
 - The pilot draft differs from the collector that PR 2 commits only as PR 2 discloses.
 
