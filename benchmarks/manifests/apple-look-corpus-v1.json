@@ -466,6 +466,53 @@
   "report_outcome_field": "the pilot report's outcome 'C-READ-FAIL' came from noise targets and the draft code and means nothing; PR 2 records pilot/smoke runs as 'smoke (not a row)'",
   "earlier_smoke": "outputs/task064-scratch/smoke-a (4 roots, readability skipped), pipeline only"
  },
+ "pr2_changes": {
+  "review_nits": "decide() refuses L1-failed-but-all-passed; wording in sections 9 and 4.1",
+  "collector_additions_over_pilot_draft": [
+   "G-hash/G-plan preflight",
+   "G-stop for unstarted roots",
+   "look_ok passed to decide",
+   "L1 checked against the planned seeds",
+   "non-finite feature is V",
+   "pilot/smoke runs recorded as 'smoke (not a row)'",
+   "QA reader renamed TrainValReader"
+  ],
+  "after_pr2_review": [
+   "G-hash re-checked at finalize for the frozen run; tracked_inputs cover the gate code",
+   "a crash during collection writes a V report and kills the workers",
+   "standalone finalize on the frozen run refused; report records invoked_via",
+   "frozen run refuses non-preregistered workers or caps",
+   "a read root with no stored policy command is a named Q-expert failure (V)",
+   "Q-folds, G-weights, G-repro, G-finite, G-wall as tested helpers"
+  ],
+  "readings_made_explicit": [
+   "a root erroring before its look fails L1; a readability failure with it is C-DATA-FAIL (confounded)",
+   "A6/A7 include the 8 look transitions per root episode"
+  ],
+  "final_smoke": {
+   "directory": "outputs/task064-scratch/pilot-d",
+   "seeds": [
+    47900,
+    47931
+   ],
+   "readability": "smoke mode (noise targets)",
+   "report_sha256": "e437946ad7a998c11d5c47625f6e884e95d6527394d6e8eb2529e299e0aa4ec0",
+   "facts": "21/32 root successes, 127 episodes, L1 ok, Q-expert 24 roots max 0.0, ablation 30/30, G-repro bit-identical, outcome 'smoke (not a row)', 188 s"
+  },
+  "render_nondeterminism": {
+   "physics_states_actions_timestamps": "bit-identical across pilot-a, -b, -c",
+   "differing_frames": [
+    "look-47910 frame 142: 2 px, 1 level",
+    "look-47926 frame 117: 1 px, 1 level",
+    "look-47929-b1-early_lift frame 35: 1 px, 2 levels"
+   ],
+   "frames_per_run": 33878,
+   "consequences": [
+    "a from-scratch repeat need not reproduce the dataset bytes or manifest hash",
+    "Q-render (exact equality, 380 frames) has a spurious-mismatch risk of order 1%; it is not relaxed; a mismatch is V and the one repeat applies"
+   ]
+  }
+ },
  "process": [
   "PR 1: protocol, manifest, look_corpus.py, tests, task card; merges on a reported APPROVE and green CI",
   "PR 2: collector, readability gate, guard tests, script pins; merges on a reported APPROVE and green CI",
@@ -491,15 +538,17 @@
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
   "docs/experiments/apple_pretrained_encoder_v1_results.md": "c4ddf68c87f9de4943f187742f54b1b9fe2be2d8509165ac68a5ed79cc116008",
   "outputs/task063-pretrained-encoder/run-1/report.json": "575ae6500c33c480b36fcf956f810d5b8815da22d92ef5093011b7b4b22ee90b",
+  "scripts/collect_apple_look.py": "425f606b3bc63f1116f57a18548b3ca2368c423774303154d1f72020c3b38722",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
   "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
   "scripts/fetch_dinov2.py": "f34bb01300448b7ef029a8fd899cd55ab2607ac696a11de18d3bfc71fecaeea7",
   "scripts/probe_info_ceiling.py": "f64b01a1db02b5e82540d9b941fe4508d509287a0a82a8d90204fcda83b21dd2",
+  "scripts/read_apple_look.py": "01d3373cfd552315a0b280de14685b90c443ee49d94f09e0876c9f28a99f325a",
   "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
   "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
   "src/embodied_jepa/encoder_study.py": "bcb1c8b2509539d46c421f43668aadfb2be3d074b369654a0e49b5baddc511fe",
   "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
-  "src/embodied_jepa/look_corpus.py": "5b7e71c7a7a8db1078101808f1f9a945958412d92b48f2b38c7f6eddf995b696",
+  "src/embodied_jepa/look_corpus.py": "41a05027d30375884f9e562a4887814db65bf5111fc7bc8fe2ddcf38e206d84b",
   "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
   "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
   "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
