@@ -274,6 +274,7 @@
   "data/apple-look-v1-work/collection_report.json": "f3d2d3d5bc03c4dc9853aeae3d8d90a05d364d0315f498e64289b4c7825f6680",
   "data/apple-look-v1-work/plan.json": "99dd7ffc305cceab4d4e1eb1438a47b8f5a469f1fab0ca3493a4e689af32a71b",
   "data/apple-look-v1/meta/jepa_manifest.json": "81d760d1f5a61834b4f37c3daf12ad1a7175e57fe99fe11d5fb4cecbff8edb64",
+  "scripts/train_apple_latent_dynamics.py": "16e6f09fe818511d516cb726b683165edd0ffa265ef6d89128bc138926364da3",
   "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
   "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
   "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",

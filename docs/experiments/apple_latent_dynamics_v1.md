@@ -540,3 +540,34 @@ uv run --no-sync python scripts/train_apple_latent_dynamics.py run \
    script. The card goes to done.
 5. **One task, one agent.** A protocol defect found after the freeze is escalated to the task owner
    and fixed only through a disclosed amendment.
+
+## 16. Changes made in PR 2 (disclosed; no gated run yet)
+
+PR 2 commits the runner (`scripts/train_apple_latent_dynamics.py`), its guard tests
+(`tests/test_latent_dynamics_runner.py`) and the runner's pin in the manifest. The rows, gates,
+thresholds, seeds and caps are unchanged. Additions, all mechanics:
+
+- **G4 and an undefined resample.** `cluster_ratio` counts a zero-denominator resample as the
+  largest float. That fails every upper bound, but it would help a lower bound. So the runner's G4
+  also requires `undefined_resamples == 0` for both of its ratios (PR 1 review, non-blocking).
+- **The preflight order.** The manifest is read and every pinned file hashed and recorded before
+  torch or any model is imported. A crash anywhere, preflight included, writes a V report
+  (§3.3).
+- **What the report records beyond §11:**
+  - the cross-session shuffle is applied per evaluated half;
+  - the val-root secondary estimate uses a probe selected and fitted on all 170 train roots;
+  - the optimizer state in a checkpoint is the final one, and its weights are the selected
+    update's.
+- **Smoke runs (not evidence, not rows).**
+  - What a smoke run is: `smoke` mode on a subset (8 train sessions per half, 8 val episodes,
+    seed 0 only, 20 updates, selection every 10), with **the apple targets replaced by seeded
+    noise**. Its gates are meaningless by construction and were not read as results.
+  - `outputs/task065-scratch/smoke-a/` (report sha256 `904c3515…ff2b`):
+    - preflight, G-anchor (frames `20b67967…`, features `24bc50f5…`) and G-repro passed;
+    - G-cache 0.0;
+    - labels within 1.4e-8 m;
+    - 17 620 frames featurised in 236 s (13.4 ms per frame);
+    - four models trained;
+    - every report section was written, `non_finite_fields` empty, `test_split_decoded` false;
+    - 266 s in total.
+  - smoke-a ran the runner before the preflight reorder above.
