@@ -90,14 +90,19 @@ def test_halves_are_pinned_and_disjoint():
         ld.session_halves(["x", "x"])
 
 
-def test_sampler_seeds_differ_by_seed_half_and_arm():
+def test_sampler_streams_differ_by_seed_and_half_and_pair_the_arms():
     states = {
-        (s, h, a): ld.sampler_seed(s, h, a).generate_state(2).tolist()
+        (s, h, a): tuple(ld.sampler_seed(s, h, a).generate_state(2).tolist())
         for s in ld.MODEL_SEEDS
         for h in ld.HALVES
         for a in ld.ARMS
     }
-    assert len({tuple(v) for v in states.values()}) == len(states) == 12
+    assert len(set(states.values())) == 6  # one stream per (seed, half)
+    for s in ld.MODEL_SEEDS:
+        for h in ld.HALVES:
+            assert states[(s, h, "W")] == states[(s, h, "N")]  # W and N see the same windows
+    with pytest.raises(ContractError):
+        ld.sampler_seed(0, "A", "X")
 
 
 def _training_fixture():

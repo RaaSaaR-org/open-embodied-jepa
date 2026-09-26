@@ -69,7 +69,7 @@ TRAIN_HORIZON = 16  # transitions per training window (17 frames)
 BATCH_SIZE = 64
 UPDATES = 10_000
 SELECT_EVERY = 500  # val criterion after every 500 updates; the best checkpoint is kept
-SAMPLER_SALT = 6500  # default_rng(SeedSequence([6500, seed, half index, arm index]))
+SAMPLER_SALT = 6500  # default_rng(SeedSequence([6500, seed, half index])); W and N share it
 DEVICE = "mps"  # training and prediction; features and statistics on CPU
 FEATURE_DEVICE = "cpu"
 FEATURE_THREADS = 6  # TASK-064's gate thread count, so the anchor is comparable
@@ -140,7 +140,11 @@ def other(half: str) -> str:
 
 
 def sampler_seed(seed: int, half: str, arm: str) -> np.random.SeedSequence:
-    return np.random.SeedSequence([SAMPLER_SALT, int(seed), HALVES.index(half), ARMS.index(arm)])
+    """The batch stream of one model. It does not depend on the arm: W and N of the same seed
+    and half see the identical windows in the identical order, so G3 is a paired comparison."""
+    if arm not in ARMS:
+        raise ContractError(f"unknown arm {arm!r}")
+    return np.random.SeedSequence([SAMPLER_SALT, int(seed), HALVES.index(half)])
 
 
 def check_training_episodes(training: dict, sessions_of: dict, halves: dict, splits: dict) -> None:
@@ -228,6 +232,7 @@ def cluster_ratio(numerator, denominator, clusters, idx) -> dict:
     base = float(den_c.sum())
     with np.errstate(divide="ignore", invalid="ignore"):
         boot = num_c[idx].sum(1) / den_c[idx].sum(1)
+    undefined = int((~np.isfinite(boot)).sum())
     boot = np.where(np.isfinite(boot), boot, np.finfo(np.float64).max)
     lo, hi = np.percentile(boot, [2.5, 97.5])
     return {
@@ -237,6 +242,8 @@ def cluster_ratio(numerator, denominator, clusters, idx) -> dict:
         "denominator_mean": float(den.mean()),
         "windows": int(len(num)),
         "clusters": int(len(labels)),
+        # a zero-denominator resample counts as the largest float: it passes no upper bound
+        "undefined_resamples": undefined,
     }
 
 

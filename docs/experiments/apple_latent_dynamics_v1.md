@@ -237,8 +237,10 @@ beyond what the image predicts.
 - Every frame of every train and val episode is featurised **once**, through the model's own
   `frozen_features` (CPU, float32, 6 torch threads, batches of 16 frames per episode in frame
   order) into a feature cache under the run's output directory (sha256 recorded; never
-  committed). A frozen encoder makes the feature a pure function of the frame, so the cache is
-  exact (`tests/test_frozen_encoder.py`).
+  committed). Training reads only this cache. Given the same features, the cached-feature update
+  equals the frame update bit for bit (`tests/test_frozen_encoder.py`). Batched float32 CPU
+  inference could in principle depend on how frames are batched; G-cache bounds that on the
+  post-look frames, and the pre-freeze check found 0.0 (§13).
 - **G-anchor** (§9): the 190 train + val post-look frames, featurised as TASK-064 did (its root
   order, batches of 16), hash to TASK-064's `feature_sha256.P_cls`, `24bc50f5…`. **G-cache**: the
   cache's frame-8 rows equal those anchor rows within 1e-5.
@@ -248,13 +250,16 @@ beyond what the image predicts.
 ### 6.1 Runs
 
 2 arms (W, N) × 3 model seeds (0, 1, 2) × 2 halves (A, B) = **12 models**. Each model:
-- is constructed with `LeWM(state_schema, device="mps", seed=s, config=MODEL_CONFIG)`;
+- is constructed with
+  `frozen_encoder_model("leworldmodel")(state_schema, device="mps", seed=s, config=MODEL_CONFIG)`;
 - fits its input normalisation on its half's frames;
 - takes **10 000 updates** of batch 64 windows of 16 transitions (17 frames), through
   `train_step_features`;
 - samples windows uniformly over every start of every valid 16-transition window of its half's
   episodes (a window never crosses an episode boundary, and never includes the final row, whose
-  `action_valid` is false), with `default_rng(SeedSequence([6500, s, half index, arm index]))`;
+  `action_valid` is false), with `default_rng(SeedSequence([6500, s, half index]))`;
+  - **the stream does not depend on the arm**: W and N of the same seed and half draw the identical
+    windows in the identical order, so G3 compares them paired;
 - runs at a constant learning rate (no scheduler).
 
 ### 6.2 Device and determinism
@@ -311,13 +316,15 @@ not the bits.
   - N's prediction;
   - W with wrong or zero actions.
 - **Statistics:** TASK-059's T1 quantities (median error in cm with its bootstrap CI, ratio to
-  B-occ; B-occ uses TASK-064's reset-occlusion flags and the same folds). Paired median
-  differences use `ic.bootstrap_indices(170)` (seed 5901).
+  B-occ; B-occ uses TASK-064's reset-occlusion flags and the same folds). A "median difference"
+  is the difference of the two medians (`info_ceiling.paired_difference` with `_median`), with a
+  paired percentile interval over `ic.bootstrap_indices(170)` (seed 5901).
 - **What the pre-freeze label inspection says about this target (§13):** on the 40 train roots
   inspected, the apple did not move before frame 117, and the right palm moved 1.2–3.4 cm in the
-  first 8 post-look steps (0.9–7.1 cm by frame 40). **So the apple is static over h ≤ 16 here
-  (and over the extended h ≤ 64), and copy-last carries it by construction.** Beating copy-last on apple readability is therefore
-  *not* a dynamics test on these windows, and it is not a gate. The dynamics gates are on E-all.
+  first 8 post-look steps (0.9–7.1 cm by frame 40). **So, on those 40 roots, the apple is static
+  over h ≤ 16 (and over the extended h ≤ 64), and copy-last carries it by construction.** This is
+  a 40-root observation; the run reports the count for all roots (§7.3). Beating copy-last on
+  apple readability is therefore *not* a dynamics test on these windows, and it is not a gate. The dynamics gates are on E-all.
   The readability gate asks whether prediction **keeps** the apple: an absolute bar and a
   non-inferiority margin to the encoded target.
 
@@ -344,7 +351,7 @@ horizons.
 | **G2 beats copy-last** | E-all | upper 95 % bound of MSE(W) / MSE(copy-last) **≤ 0.8** |
 | **G3 beats no-action** | E-all | upper 95 % bound of MSE(W) / MSE(N) **< 1.0** |
 | **G4 action sensitivity** | E-all | lower 95 % bound of MSE(W, wrong actions) / MSE(W, true) **≥ 1.10**, **and** lower bound of MSE(W, zero actions) / MSE(W, true) **≥ 1.10** |
-| **G5 the apple stays readable** | E-post (170 roots) | W's predicted feature under the frame-(8 + h) probe: median T1 error **≤ 1.5 cm** **and** upper bound of its ratio to B-occ **≤ 0.6** (TASK-059's T1 bar, unchanged), **and** upper bound of the paired median difference (W − encoded frame 8 + h) **≤ 0.5 cm** |
+| **G5 the apple stays readable** | E-post (170 roots) | W's predicted feature under the frame-(8 + h) probe: median T1 error **≤ 1.5 cm** **and** upper bound of its ratio to B-occ **≤ 0.6** (TASK-059's T1 bar, unchanged), **and** upper bound of the median difference (median W − median encoded frame 8 + h, paired interval) **≤ 0.5 cm** |
 
 **Why these thresholds** (fixed before any predictor was trained on the corpus; none was tuned):
 - **G2's 0.8** is TASK-054's G2a threshold (rollout ÷ persistence ≤ 0.8), applied here to the
@@ -359,7 +366,7 @@ horizons.
 - **G1's 0.5 ratios.** Predictions regress to a conditional mean, so some loss of spread is
   expected. Halving the spread or the rank is collapse.
 - **G5.** The absolute bar is the one every readability result since TASK-059 met. The 0.5 cm
-  margin is about a third of the gap between the encoded P-cls (0.550 cm on this corpus) and
+  margin is about 38 % of the 1.316 cm gap between the encoded P-cls (0.550 cm on this corpus) and
   B-occ (1.866 cm). It asks that prediction keep most of what the encoder reads, not merely stay
   above the prior.
 
@@ -396,7 +403,7 @@ horizons.
 |---|---|---|---|
 | **V** | a guard fails (§9), or the run stops before writing a complete report | nothing is read | one from-scratch repeat (§12) |
 | **WM-DYNAMICS** | every seed (0, 1, 2) passes G1–G5 | On `apple-look-v1`, a LeWM predictor on frozen DINOv2 CLS latents learns action-conditioned dynamics: no collapse, beats copy-last and a no-action predictor, uses the actions, and keeps the post-look apple readable through 16-step prediction. | A separately preregistered **held-out confirmation on the corpus's test split** (never decoded until then), and/or a harder world-model test (later task phases, longer horizons, what the apple does once touched). **No control formulation is implied**; any control use needs its own preregistration and must answer the TASK-054 and TASK-057 clauses. |
-| **WM-UNSTABLE** | one or two seeds pass | The result does not hold across seeds. Nothing is established either way. | **The abandonment clause does not fire.** The owner decides whether a disclosed amendment adds seeds. |
+| **WM-UNSTABLE** | one or two seeds pass | The result does not hold across seeds. Nothing is established either way. | **The abandonment clause does not fire.** The owner decides whether a disclosed amendment adds seeds. If it does, the added seeds are counted together with these three, the rule stays "every seed passes", and the amended result is reported as exploratory. |
 | **WM-APPLE-LOST** | no seed passes, and G1–G4 pass on at least two seeds | The predictor learns dynamics, but the apple does not survive prediction on this latent. | **The abandonment clause fires** (below). |
 | **WM-NO-DYNAMICS** | otherwise (no seed passes, and G1–G4 fail on at least two seeds) | The predictor on this latent does not learn action-conditioned dynamics that beat the baselines (or collapses). | **The abandonment clause fires** (below). |
 
@@ -443,7 +450,7 @@ also match further down.
 - **Caps:** featurisation **5400 s**; each model **1800 s**; the whole run **21 600 s** (6 h).
   Expected (§13): featurisation about 45 min (192 789 frames at about 13 ms), each model about
   10 min (about 54 ms per update on MPS), evaluation about 10 min; about 3 h in total.
-- **Seeds:** model seeds 0, 1, 2; halves 65; sampler `SeedSequence([6500, seed, half, arm])`;
+- **Seeds:** model seeds 0, 1, 2; halves 65; sampler `SeedSequence([6500, seed, half])` (shared by W and N);
   cluster bootstrap 6501; cross-session shuffle 6502; probe folds 59, inner 5900 + k, bootstrap
   5901. Nothing else is random.
 - **Recorded** (`outputs/task065-latent-dynamics/run-<k>/report.json`):

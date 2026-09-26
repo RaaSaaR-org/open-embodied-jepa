@@ -21,9 +21,11 @@ class, and the class refuses to run without it.
   model's metadata, which the checkpoint envelope saves and ``load`` compares, so a checkpoint is
   refused under a different frozen encoder. ``implementation_sha256`` also covers this file, the
   backend's own file and ``pretrained_encoder.py``.
-* **Features are always CPU float32**, whatever the model device, so a feature cache built with
-  ``frozen_features`` is the feature the model computes from frames. ``train_step_features``
-  therefore makes exactly the update ``train_step`` makes from the frames (tested bit for bit).
+* **Features are always CPU float32**, whatever the model device, through the same
+  ``frozen_features``. Given the same features, ``train_step_features`` makes exactly the update
+  ``train_step`` makes from the frames (tested bit for bit). Batched float32 inference may in
+  principle depend on the batch layout; a run that caches features must bound that itself (TASK-065
+  does, with its G-cache guard).
 * The backend's own image encoder (and LeWM's projector) are still built, so the predictor's
   initialisation stream is the backend's; they never receive a gradient.
 
@@ -195,7 +197,8 @@ class FrozenEncoderMixin:
     def train_step_features(self, features, actions):
         """One update from cached raw features ``[B, T+1, width]`` and normalised float32 actions
         ``[B, T, 14]``: the backend's own ``train_step``, with the features standing in for the
-        frames' ``frozen_features`` (a frozen encoder makes those a pure function of the frames).
+        frames' ``frozen_features`` (the frozen encoder never changes, so given the same features
+        the update is the frame update).
         """
         features = np.asarray(features)
         actions = np.asarray(actions)

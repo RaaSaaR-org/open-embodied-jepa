@@ -41,11 +41,14 @@ multi-step prediction?
 **This is a world-model test only.** No control formulation is preregistered or implied: the
 TASK-054 (CEM) and TASK-057 (BC) clauses hold. **Learned Apple->Plate is still 0 successes.**
 
-- Architecture: a new shared option `frozen_encoder` (off by default, bit-exact when off) feeds
-  the pinned upstream LeWM predictor (`ARPredictor` + `Embedder` + `pred_proj`, history one) with
-  the train-standardised frozen CLS; SIGReg weight 0.
-- Arms: W (true actions) and N (no-action baseline: all actions zero), 3 seeds, 2 cross-fitting
-  halves of the 170 train sessions; copy-last as an untrained baseline. Selection on val only.
+- Architecture: a new option `frozen_encoder`, written once in `models/frozen_encoder.py` (a
+  mixin in front of an unchanged backend; the plain backends reject the key; no existing model
+  file changes, so the TASK-054 E0 checkpoint stays valid). It feeds the pinned upstream LeWM
+  predictor (`ARPredictor` + `Embedder` + `pred_proj`, history one) with the train-standardised
+  frozen CLS; SIGReg weight 0.
+- Arms: W (true actions) and N (no-action baseline: all actions zero, same batch stream as W),
+  3 seeds, 2 cross-fitting halves of the 170 train sessions; copy-last as an untrained baseline.
+  Selection on val only.
 - Gates at h = 8 and 16, per seed: G1 collapse, G2 beats copy-last (ratio upper bound ≤ 0.8), G3
   beats no-action (< 1.0), G4 action sensitivity (wrong/zero-action ratio lower bound ≥ 1.10), G5
   the apple stays readable (TASK-059 T1 bar and ≤ 0.5 cm over the encoded target) under the
@@ -57,7 +60,8 @@ TASK-054 (CEM) and TASK-057 (BC) clauses hold. **Learned Apple->Plate is still 0
 
 Protocol: `docs/experiments/apple_latent_dynamics_v1.md`.
 Manifest: `benchmarks/manifests/apple-latent-dynamics-v1.json`.
-Design code: `src/embodied_jepa/latent_dynamics.py`; model option in `src/embodied_jepa/models/base.py`.
+Design code: `src/embodied_jepa/latent_dynamics.py`; model option in
+`src/embodied_jepa/models/frozen_encoder.py`.
 
 ## Acceptance Criteria
 - [ ] PR 1 (protocol, manifest, `latent_dynamics.py`, `frozen_encoder` option with
@@ -76,7 +80,8 @@ Design code: `src/embodied_jepa/latent_dynamics.py`; model option in `src/embodi
 - Void rule: an early stop is V (with a void_reason). One from-scratch repeat into `run-2` with
   the same seeds, caps and device; a second void closes the task as INCONCLUSIVE. Rulings are
   recorded here with a UTC timestamp before the run they affect.
-- Pre-freeze (disclosed in protocol §13): default models bit-exact after the change; the anchor
+- Pre-freeze (disclosed in protocol §13): no existing model file changes (a first draft that
+  edited `models/base.py` failed the E0 guard and was withdrawn before commit); the anchor
   (190 post-look P-cls features) reproduces TASK-064's hash; labels of 40 train roots were read to
   choose horizons (apple static until frame ≥ 117); no feature, prediction or readout computed.
 - Worktree: `data`, `outputs`, `checkpoints` and `third_party` are ignored convenience symlinks to
