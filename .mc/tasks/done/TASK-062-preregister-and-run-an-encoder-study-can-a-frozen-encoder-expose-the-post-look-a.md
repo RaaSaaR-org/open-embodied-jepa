@@ -60,7 +60,7 @@ Calibration (label-free, fits nothing): `scripts/calibrate_encoder_study.py`.
 - [x] The runner merges with the tests of protocol §11 (PR 2, #58, 67a92e9), on a reported
       APPROVE with green CI.
 - [x] The gated run starts only on the pre-run reviewer's reported verdict, with a clean tree
-      (PRE-RUN: GO; started 2026-09-26T10:24:55Z at 67a92e9).
+      (PRE-RUN: GO; started about 10:25Z on 2026-09-26 at 67a92e9).
 - [x] The results document, the results manifest and the summarize script (PR 3) state:
   - the outcome row, and the numbers with CIs against their baselines and floors;
   - every negative result;

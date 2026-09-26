@@ -36,7 +36,7 @@ Results manifest: `benchmarks/manifests/apple-encoder-study-v1-results.json`, ge
 Every number below is copied from that manifest and rounded to 3 decimals. Brackets are 95 %
 intervals: percentile bootstrap (10 000 paired resamples, seed 5901) for medians, ratios and
 differences, and Wilson for T2. The exceptions:
-- the start time, from the run log;
+- the start time, from the launching agent's clock (not in the report);
 - the per-step pace, derived from the manifest's elapsed seconds.
 
 ---
@@ -47,7 +47,7 @@ differences, and Wilson for T2. The exceptions:
 |---|---|
 | command | `uv run --no-sync python scripts/probe_encoder_study.py --output outputs/task062-encoder-study/run-1` |
 | revision | `67a92e9fc1536e688e88d66e19890d8c8583a6e9` (main after PR #58), clean tree (`dirty: false`) |
-| started | 2026-09-26T10:24:55Z, on the pre-run reviewer's reported **PRE-RUN: GO** |
+| started | about 2026-09-26T10:25Z (the launching agent's clock; the report records no start time), on the pre-run reviewer's reported **PRE-RUN: GO** |
 | environment | macOS-26.5.1-arm64, Python 3.12.13, NumPy 2.5.3, torch 2.14.0, MuJoCo 3.13.0. Training on **MPS**; frames, features and readouts on **CPU**. |
 | budget | 64 800 s global cap; **28 274 s** elapsed; peak RSS 6.19 GB |
 | report | `outputs/task062-encoder-study/run-1/report.json`, sha256 `fc9d5e528403db325039b59a15f37a90176a9386d9a31ee5e1700c1e9558962f` |
@@ -169,6 +169,9 @@ All roots, primary CV. None of these gates anything.
 | A-rec − R0-cls | +0.042 [−0.165, 0.242] | 11 / 13, p = 0.84 |
 | A-plain − R0-cls | +0.326 [0.104, 0.466] | 16 / 19, p = 0.74 |
 
+The manifest also holds the parts of the protocol's "always reported" list that are not printed
+here: every arm − L-raw pair, and every source on every stratum.
+
 ## 4. Diagnostics (reported; only the collapse gate decides anything, and it held for every encoder)
 
 **Image feature** on 1024 training-half frames, and action sensitivity. The action-sensitivity
@@ -176,7 +179,7 @@ statistic is the median of ‖ẑ₈(a) − ẑ₈(a_π)‖ / ‖ẑ₈(a) − z
 
 | encoder | std mean (A / B) | collapsed fraction | effective rank (A / B) | action sensitivity (A / B) |
 |---|---|---|---|---|
-| R0 | 0.874 / 0.865 | 0 / 0 | 8.2 / 7.5 | 1.64 / 2.02 |
+| R0 | 0.874 / 0.865 | 0 / 0 | 8.2 / 7.5 | 1.64 / 2.01 |
 | SIG | 0.993 / 1.011 | 0 / 0 | 18.4 / 17.6 | 0.90 / 0.99 |
 | REC | 0.907 / 0.878 | 0 / 0 | 8.5 / 8.3 | 1.67 / 2.07 |
 | PLAIN | 1.011 / 1.012 | 0 / 0 | 7.4 / 5.5 | 1.81 / 2.15 |
@@ -197,15 +200,16 @@ the two are about equal.
 
 ## 5. Reading (interpretation, not measurement)
 
-1. **The apple survives in the ViT's patch tokens and is lost at the pooled 128-d feature. E-pool
-   is supported.**
+1. **The apple survives in the ViT's patch tokens and is lost at the pooled 128-d feature.** E-pool
+   is supported on the reported-only comparisons below. A-tok, the arm that decides it, did not
+   pass.
    - The recipe retrained on held-out roots reads the apple from its tokens: A-tok, 0.463 cm and
      178/190. It does not read it from its pooled feature: R0-cls, 1.223 cm and 162/190.
    - The difference is −0.759 cm [−0.931, −0.585].
    - Frozen E0 shows the same thing: E0-tok 0.415 cm against L-E0 1.273 cm, a difference of
      −0.858 cm [−1.046, −0.599]. Its E0 held-out caveat is that E0 saw the 170 train roots.
-   - A-tok − L-raw is −0.006 cm [−0.068, 0.074], so the recipe's tokens read the apple as well as
-     raw pixels do.
+   - A-tok − L-raw is −0.006 cm [−0.068, 0.074]: no detectable difference from raw pixels. No
+     equivalence margin was preregistered, so this is not a claim of equivalence.
 2. **The gain over random init is not established under the preregistered floor rule.**
    - Random-init tokens (F-tok) also meet every bar: 0.601 cm and 179/190.
    - A-tok's median error is lower than F-tok's by 0.138 cm [0.062, 0.211].
@@ -222,9 +226,11 @@ the two are about equal.
      slightly; they do not hurt it.
    - So E-collapse, E-objective and E-supervision are not supported as fixes to the **pooled**
      latent.
-4. **R0-cls reproduces E0's failure on held-out roots with half the data**: −0.050 cm
-   [−0.264, 0.206] against L-E0. The failure is a property of the recipe's pooled latent, not of
-   E0's particular training run.
+4. **R0-cls reproduces E0's failure on held-out roots with half the data, on position.** Its
+   median T1 is −0.050 cm [−0.264, 0.206] against L-E0, and it fails the bars as E0 does.
+   - On the dx sign, R0-cls is better than L-E0: 162 against 147, McNemar 27 / 12, p = 0.024.
+   - With one training run per half, the failure looks like a property of the recipe's pooled
+     latent more than of E0's particular run, but that is not established.
 5. **What this does not show.**
    - Whether a token-latent world model would carry the apple through prediction. No predictor was
      tested on tokens.
@@ -233,14 +239,17 @@ the two are about equal.
    - E-distribution, the shared confound (§3.2 of the protocol), and capacity and input handling.
      Those remain untested.
 
-## 6. The abandonment clause (protocol §10), applied as written
+## 6. The abandonment clause (protocol §10)
+
+Quoted in full from the protocol, then the consequence for the corpus.
 
 - **What closes.** O-ENC-ARCH fires the clause. The line *"train a LeWM-family encoder on
   `apple-wide-v1` train-split frames so that its frozen features expose the post-look apple"* is
   closed. No further readout-point, regularisation, objective or supervision variant of the
   TASK-054 recipe is preregistered on this corpus without new evidence of a different kind.
 - **Recorded as untested, not refuted:** capacity, input handling and the shared E-distribution
-  confound.
+  confound. They are argued against (§3.2), and this closure is limited by that. The recommended
+  next step (an encoder that was not trained on this corpus) does not depend on them.
 - **What does not close:** the LeWM backend, the encoder as a component, and the product goal.
 - **The look-prefix corpus is not collected.** The owner's precondition was that some frozen
   encoder exposes the post-look apple, beyond its random init, under this protocol. It is not met.
