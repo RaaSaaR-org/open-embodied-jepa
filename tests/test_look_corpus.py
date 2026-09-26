@@ -362,6 +362,8 @@ def test_outcome_rows_first_match():
     confounded = decide(False, False, look=False)
     assert confounded["outcome"] == "C-DATA-FAIL" and not confounded["abandonment_clause_fires"]
     assert confounded["readability_failure_confounded_by_look"]
+    with pytest.raises(ContractError, match="inconsistent"):
+        decide(True, True, look=False)
     assert set(lc.ROWS) == {"V", "C-ACCEPT", "C-READ-FAIL", "C-DATA-FAIL"}
 
 

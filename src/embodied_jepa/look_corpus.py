@@ -442,6 +442,8 @@ def decide(*, void: bool, data_all_passed: bool, readability_passed: bool, look_
     failed, a readability failure is confounded by a data defect and the row is C-DATA-FAIL."""
     if void:
         return {"outcome": "V"}
+    if data_all_passed and not look_ok:
+        raise ContractError("inconsistent inputs: L1 failed but every acceptance check passed")
     if data_all_passed and readability_passed:
         row = "C-ACCEPT"
     elif not readability_passed and look_ok:

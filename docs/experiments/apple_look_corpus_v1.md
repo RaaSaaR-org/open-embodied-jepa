@@ -132,7 +132,7 @@ They all apply to this task and to anything built on its corpus.
 | Cohort C | 45300–45339 | never simulated |
 | Final cohort | 44000–44019 | never simulated |
 | TASK-051 wide v3 cohort | 45200–45207 | never simulated |
-| Earlier ranges | 41000–41101, 42000–42031, 43000–43004, 49000–49199, 20000–20049 | never simulated |
+| Earlier ranges | 41000–41101, 42000–42031, 43000–43004, 49000–49199, 20000–20049 | never simulated here |
 
 - **No collision.** No seed in 47000–47199 or 47900–47931 is used anywhere else in the
   repository (checked by search). `look_corpus.check_seeds` refuses every range in the table
@@ -393,8 +393,8 @@ not read.**
 - **A planned train or val root that is not stored** (a root-level runtime error, a look stopped
   before 8 transitions, or a root never started) leaves the gate without its preregistered 190
   roots. Q-split fails and **the run is V**. A never-started root is already V under G-stop.
-- **A root-level runtime error on a test root**, where the root is stored and nothing is read
-  from it, does not stop the run: A13 fails and the row is C-DATA-FAIL.
+- **A root-level runtime error on a test root** does not stop the run (Q-split never reads test
+  roots): A13 fails, and A1 too if the root is not stored, so the row is C-DATA-FAIL.
 - **A failed look on a stored root** (for example contact, or a moved apple) fails L1. That is a
   data outcome, not V. Because a failed look also confounds the readability gate, C-READ-FAIL
   requires L1 to hold (§10).
@@ -545,3 +545,46 @@ sha256 in the manifest).
    restated number against `collection_report.json` with a script. The card goes to done.
 5. **One task, one agent.** A protocol defect found after the freeze is escalated to the task owner
    and fixed only through a disclosed amendment.
+
+## 16. Changes made in PR 2 (disclosed; no seed of 47000–47199 simulated)
+
+PR 2 commits the collector and the readability gate. The protocol's rows, gates, thresholds,
+seeds and caps are unchanged. The following changes were made after PR 1 merged, all before any
+corpus seed was simulated:
+
+- **Review nits from PR 1, applied:**
+  - `look_corpus.decide` refuses an inconsistent input, where L1 failed but every acceptance
+    check passed;
+  - two wording fixes in §9 (a runtime error on a test root) and §4.1 ("never simulated here").
+- **What the committed collector adds to the pilot draft:**
+  - the G-hash / G-plan preflight;
+  - the G-stop for unstarted roots;
+  - `look_ok` passed to the decision;
+  - the L1 check against the planned seeds;
+  - a non-finite feature is V;
+  - pilot and smoke runs record `"smoke (not a row)"`;
+  - the QA reader was renamed to `TrainValReader`.
+- **A final smoke of the committed code, `pilot-c`, on 47900–47931.** Readability ran in smoke
+  mode, with noise targets. Report sha256 `28ae2770…0e57`.
+  - The facts match pilot-a: 21/32 root successes, 127 episodes, L1 ok, Q-expert 24 roots with
+    max |Δ| 0.0, ablation 30/30, G-repro bit-identical.
+  - The outcome is recorded as "smoke (not a row)". The whole command took 189 s.
+- **A rendering fact found while comparing the three pilot runs**
+  (pilot-a, pilot-b, pilot-c: 32 roots, 33 878 frames each):
+  - **Physics, states, actions and timestamps are bit-identical across the runs.**
+  - Three stored frames mid-episode differ between some pair of runs:
+    - `look-47910` frame 142: 2 px, 1 level;
+    - `look-47926` frame 117: 1 px, 1 level;
+    - `look-47929-b1-early_lift` frame 35: 1 px, 2 levels.
+  - No frame 0 or frame 8 differed.
+  - The 12 workers render concurrently, so the offscreen renderer is not strictly
+    deterministic at the pixel level, at a rate of a few frames in 10⁵.
+  - **Consequences, stated before the run:**
+    1. A from-scratch repeat is not guaranteed to reproduce the dataset's bytes or its manifest
+       hash. It reproduces physics.
+    2. Q-render compares 190 × 2 stored frames with single-process re-renders by exact equality.
+       At the observed rate, a spurious one-pixel mismatch has a probability of order 1 %. Such a
+       mismatch voids the run (V), and the one repeat applies. **Q-render is not relaxed.** The
+       exact-equality rule was preregistered, and TASK-061 and TASK-063 met it on 190/190.
+    3. The corpus frames are the frames the simulator rendered. A 1–2-level difference on one pixel
+       is not a change of scene content.
