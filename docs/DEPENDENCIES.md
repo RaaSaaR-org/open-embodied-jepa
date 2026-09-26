@@ -70,3 +70,20 @@ All pilot images, trajectories and newly trained checkpoints are generated local
 ## Optional JEPA-WMs adapter (TASK-024, 2026-09-21)
 
 The opt-in `jepa-wms` extra adds timm1.0.19 (Apache-2.0, exact wheel hash in uv.lock); torch/einops and timm's normal dependencies remain optional. The real upstream encoder/predictor source is separately fetched at `13cf1d9c7e476f53c17714d2e0f1dc239a883ce0`, verified against every imported file and the root notices, never bundled or copied into this Apache core. Conservatively retain CC BY-NC 4.0 terms for all imported modules: one predictor file's MIT header conflicts with the root CC license. No weights, pretrained encoders or datasets are adopted. See [the audit and CPU conformance report](experiments/jepa_wms_spike.md) for exact provenance, deviations from the full upstream recipe and reproduction commands. This optional adapter establishes software compatibility only; its performance and any resulting checkpoint's redistribution terms remain unverified.
+
+## Pretrained DINOv2 ViT-S/14 encoder (TASK-063, reviewed 2026-09-26)
+
+The first adopted pretrained weights. They are used only as a **frozen** feature extractor in the
+TASK-063 readability probe ([protocol §4](experiments/apple_pretrained_encoder_v1.md)); they are
+not part of any model, planner or controller, and they are optional.
+
+| Item | Value |
+| --- | --- |
+| Name / role | DINOv2 ViT-S/14 without registers (Oquab et al. 2023, arXiv 2304.07193); optional, frozen, TASK-063 probe only |
+| Source | Hugging Face `facebook/dinov2-small`, revision `ed25f3a31f01632728cabb09d1542f84ab7b0056` (2023-09-06), a transformers conversion by the Hugging Face team of FAIR's `dinov2_vits14_pretrain.pth` |
+| Weights | `model.safetensors`, 88 249 960 bytes, sha256 `ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1`; `config.json` sha256 `1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d` |
+| Equivalence to the original | `scripts/fetch_dinov2.py --verify-official`: all 223 converted tensors equal the 175 tensors of `dl.fbaipublicfiles.com/dinov2/dinov2_vits14/dinov2_vits14_pretrain.pth` (sha256 `b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9`, pinned on first download; FAIR publishes no hash) bit for bit, the qkv projection split |
+| Licence (weights and code) | Apache-2.0: upstream README "License" and MODEL_CARD.md at `facebookresearch/dinov2@7764ea0f912e53c92e82eb78a2a1631e92725fc8`; relicensed from CC-BY-NC on 2023-08-31 (`81b2b6419385a321287de91e00282ef7cbd26f94`); HF card metadata `apache-2.0` at the pinned revision. XRay-DINO and Cell-DINO weights in the same repository carry non-commercial terms and are not used |
+| Training data | LVD-142M (not released): about 142 M images retrieved from about 1.2 B web-crawled images to resemble curated sets (ImageNet-22k, ImageNet-1k train, Google Landmarks among them); URL safety filtering, deduplication, NSFW filtering, face blurring (paper §3). ViT-S/14 is distilled from the ViT-g/14. No robot data disclosed |
+| Obligations | Apache-2.0 §4 on redistribution; upstream has no NOTICE file. The weights are fetched into git-ignored `third_party/dinov2-small/` and are **not redistributed** |
+| Runtime | transformers 4.57.6 `Dinov2Model` and safetensors 0.8.0 (both Apache-2.0, already locked); the new `pretrained` extra names them and adds no package to `uv.lock`; imports are lazy |

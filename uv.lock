@@ -848,6 +848,11 @@ lewm = [
     { name = "torch" },
     { name = "transformers" },
 ]
+pretrained = [
+    { name = "safetensors" },
+    { name = "torch" },
+    { name = "transformers" },
+]
 sim = [
     { name = "mujoco" },
     { name = "pillow" },
@@ -876,14 +881,17 @@ requires-dist = [
     { name = "pillow", marker = "extra == 'sim'", specifier = ">=11,<13" },
     { name = "pyarrow", marker = "extra == 'data'", specifier = ">=21,<24" },
     { name = "pyyaml", specifier = ">=6,<7" },
+    { name = "safetensors", marker = "extra == 'pretrained'", specifier = ">=0.4,<1" },
     { name = "timm", marker = "extra == 'jepa-wms'", specifier = "==1.0.19" },
     { name = "torch", marker = "extra == 'jepa-wms'", specifier = ">=2.7,<3" },
     { name = "torch", marker = "extra == 'learning'", specifier = ">=2.7,<3" },
     { name = "torch", marker = "extra == 'lewm'", specifier = ">=2.7,<3" },
+    { name = "torch", marker = "extra == 'pretrained'", specifier = ">=2.7,<3" },
     { name = "torchvision", marker = "extra == 'compatibility'", specifier = ">=0.22,<1" },
     { name = "transformers", marker = "extra == 'lewm'", specifier = ">=4.50,<5" },
+    { name = "transformers", marker = "extra == 'pretrained'", specifier = ">=4.50,<5" },
 ]
-provides-extras = ["learning", "sim", "lewm", "jepa-wms", "data", "compatibility"]
+provides-extras = ["learning", "sim", "lewm", "jepa-wms", "pretrained", "data", "compatibility"]
 
 [package.metadata.requires-dev]
 dev = [

@@ -1,0 +1,454 @@
+{
+ "task": "TASK-063",
+ "protocol": "apple_pretrained_encoder_v1",
+ "document": "docs/experiments/apple_pretrained_encoder_v1.md",
+ "status": "preregistration; no readout fitted on any feature this study introduces",
+ "what_this_task_is": "a perception/representation readability test of one frozen, externally pretrained encoder against its same-architecture random-init floor; trains nothing; collects no corpus; preregisters no control formulation",
+ "claim_scope": "readability of the post-look apple by kernel ridge on 190 roots, beyond the architecture's random init; not prediction by a world model, not control, not closed-loop behaviour",
+ "learned_apple_to_plate_successes": 0,
+ "exemption_spent": false,
+ "exemption_spent_source": "benchmarks/manifests/apple-policy-diagnostics-v1.json; stays false, not claimed",
+ "predecessor": {
+  "task": "TASK-062",
+  "protocol": "docs/experiments/apple_encoder_study_v1.md",
+  "results": "docs/experiments/apple_encoder_study_v1_results.md",
+  "results_manifest": "benchmarks/manifests/apple-encoder-study-v1-results.json",
+  "outcome": "O-ENC-ARCH; abandonment clause fired",
+  "recommended_next": "one preregistered test of an externally pretrained frozen encoder against its own random-init floor, on this probe, before any corpus",
+  "facts_used_rounded": {
+   "L_raw": {
+    "T1_median_cm": 0.469,
+    "T1_ci95": [
+     0.419,
+     0.528
+    ],
+    "T2": "180/190"
+   },
+   "A_tok": {
+    "T1_median_cm": 0.463,
+    "T1_ci95": [
+     0.422,
+     0.536
+    ],
+    "T2": "178/190",
+    "reading": "meets the bars, not the floor"
+   },
+   "F_tok": {
+    "T1_median_cm": 0.601,
+    "T1_ci95": [
+     0.547,
+     0.673
+    ],
+    "T2": "179/190",
+    "reading": "meets the bars (reported only)"
+   },
+   "R0_cls": {
+    "T1_median_cm": 1.223,
+    "T1_ci95": [
+     1.051,
+     1.402
+    ],
+    "T2": "162/190"
+   },
+   "L_E0": {
+    "T1_median_cm": 1.273,
+    "T1_ci95": [
+     1.005,
+     1.462
+    ],
+    "T2": "147/190"
+   }
+  },
+  "reported_only_context": "token features of a ViT, even random-init ones, expose the post-look apple on this probe (F-tok); the information is lost at the pooled 128-d latent. Given no row."
+ },
+ "question": "does a frozen encoder pretrained elsewhere (never on this corpus) expose the apple in TASK-061's post-look 112 px frame to TASK-061's readouts under the unchanged TASK-059 bars, and beat a random-init encoder of the same architecture read at the same point",
+ "reused_unchanged": {
+  "code": "scripts/probe_observation_reprobe.py, src/embodied_jepa/observation_reprobe.py, scripts/probe_info_ceiling.py, src/embodied_jepa/info_ceiling.py, src/embodied_jepa/encoder_study.py, scripts/calibrate_encoder_study.py, scripts/probe_encoder_study.py (G-hash)",
+  "frames": "TASK-061 measure(): post_112 and post_112_hidden; renderer warm-up (every renderer renders once and discards the result); 8-command look; G-render, G-expert, G-look, G-prior",
+  "targets": "T1 reset apple xy; T2/T3 sign/value of the expert right_dx at the post-look state",
+  "readouts": "probe_info_ceiling.evaluate_source: info_ceiling linear + RBF kernel ridge, nested 5-fold inner CV (seed 5900 + k), lambda grid 1e-4..1e4",
+  "folds": "default_rng(59) 10-fold; fold hash 1dcc908677bbbb4bcfd723fd0b0f8ae628cb6bb762e63f42ca539e022c9b172a",
+  "bootstrap": "10000 paired resamples, ic.bootstrap_indices(190), seed 5901; Wilson for T2",
+  "baselines": "B-occ, B-maj, B-const on the post-look targets",
+  "bars": "T1 median <= 1.5 cm and ratio-to-B-occ upper bound <= 0.6; T2 acc >= 0.85 and Wilson lower > B-maj; T3 MAE-ratio upper bound <= 0.6",
+  "floor_rule": "info_ceiling.beats_random_floor: paired 95% CI of median T1 error (arm - floor) upper < 0 AND T2 accuracy higher",
+  "pvalues": "encoder_study.arm_pvalues: p_arm = max(p_T1, p_T2, p_T3, p_F); 1 if a point condition fails",
+  "spurious_check": "observation_reprobe.spurious_verdict on the apple-hidden frames featurised by the same frozen encoder",
+  "cross_fitting": "none: the pretrained encoder never saw the corpus and the floor is untrained; every root is held out by construction"
+ },
+ "encoder": {
+  "name": "DINOv2 ViT-S/14 (without registers)",
+  "paper": "Oquab et al. 2023, arXiv 2304.07193",
+  "hf_repository": "facebook/dinov2-small",
+  "hf_revision": "ed25f3a31f01632728cabb09d1542f84ab7b0056",
+  "hf_revision_date": "2023-09-06",
+  "files": {
+   "model.safetensors": {
+    "bytes": 88249960,
+    "sha256": "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1",
+    "equals_hf_lfs_oid": true
+   },
+   "config.json": {
+    "bytes": 547,
+    "sha256": "1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d"
+   },
+   "README.md": {
+    "bytes": 3033,
+    "sha256": "4c20dca454a8e5c670e8de5c7e6040f512aeca5438516f7623eedc4e3b00599c"
+   }
+  },
+  "official_checkpoint": {
+   "url": "https://dl.fbaipublicfiles.com/dinov2/dinov2_vits14/dinov2_vits14_pretrain.pth",
+   "bytes": 88283115,
+   "sha256": "b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9",
+   "sha256_source": "first download (trust on first use); FAIR publishes no hash",
+   "role": "provenance check only; never loaded by the runner",
+   "equivalence": {
+    "blocks": 12,
+    "compared": 223,
+    "converted_tensors": 223,
+    "converted_without_official_source": [],
+    "differing": [],
+    "identical": true,
+    "mapped_without_converted_tensor": [],
+    "max_abs_delta_of_differing": 0.0,
+    "official_tensors": 175,
+    "official_tensors_unused": []
+   }
+  },
+  "weights_digest_rule": "sha256 over the state dict in sorted key order (encoder_study.weights_digest)",
+  "pretrained_weights_digest": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
+  "local_directory": "third_party/dinov2-small (git-ignored; fetched by scripts/fetch_dinov2.py)",
+  "architecture": {
+   "patch": 14,
+   "width": 384,
+   "blocks": 12,
+   "heads": 6,
+   "parameters_millions": 21
+  },
+  "why": [
+   "externally pretrained on web images (LVD-142M), released 2023, never on apple-wide-v1: held out by construction",
+   "closest permissively licensed match to E0's architecture: ViT with CLS token, patch 14",
+   "Apache-2.0 for code and weights",
+   "no new package: transformers 4.57.6 Dinov2Model and safetensors 0.8.0 are already locked",
+   "21 M parameters; CPU forward in seconds",
+   "without registers: the original release held by the HF dinov2-small repository; one encoder, no sweep"
+  ],
+  "not_chosen": "DINOv3 (custom licence); I-JEPA, MAE, V-JEPA (v1) checkpoints under CC BY-NC terms; XRay-DINO and Cell-DINO (non-commercial); register variant, other sizes, other families (one encoder, no sweep)"
+ },
+ "licence_and_provenance": {
+  "checked": "2026-09-26",
+  "upstream_licence": "Apache-2.0 for code and model weights: facebookresearch/dinov2 README 'License' section and MODEL_CARD.md at commit 7764ea0f912e53c92e82eb78a2a1631e92725fc8",
+  "relicensing": "from CC-BY-NC to Apache-2.0 on 2023-08-31, commit 81b2b6419385a321287de91e00282ef7cbd26f94 (subject 'Update license everywhere (#182)', body 'Update code and models license from CC-BY-NC to Apache 2.0'); the pinned HF revision is dated 2023-09-06",
+  "hf_conversion": "model card metadata license: apache-2.0 at the pinned revision; card written by the Hugging Face team; tensors shown bit-identical to the original FAIR checkpoint",
+  "not_covered_not_used": "XRay-DINO (FAIR Noncommercial Research License), Cell-DINO models (own licence files), DINOv3",
+  "obligations": "Apache-2.0 section 4 on redistribution; upstream has no NOTICE file; the weights are not redistributed (git-ignored third_party/, never committed or published); no upstream source copied; the architecture is transformers' own Dinov2Model (Apache-2.0)",
+  "training_data": "LVD-142M (MODEL_CARD.md; paper section 3 and appendix A): ~142 M images retrieved from ~1.2 B unique web-crawled images to be close to curated datasets (ImageNet-22k, ImageNet-1k train, Google Landmarks among them); unsafe/restricted URLs discarded, PCA-hash deduplication, NSFW filtering, identifiable faces blurred, copy-detection deduplication; not released, contents not auditable",
+  "distillation": "ViT-S/14 distilled from a frozen DINOv2 ViT-g/14 teacher (DINO + iBOT losses, KoLeo)",
+  "disclosed_limitation": "biases toward rich households from Western countries (MODEL_CARD.md)",
+  "robot_data": "none disclosed; the weights predate apple-wide-v1"
+ },
+ "dependencies": {
+  "extra": "pretrained = [torch>=2.7,<3, transformers>=4.50,<5, safetensors>=0.4,<1]",
+  "new_locked_packages": [],
+  "lazy_imports": "src/embodied_jepa/pretrained_encoder.py imports torch, transformers and safetensors inside functions; import embodied_jepa stays torch-free"
+ },
+ "input_handling": {
+  "frame": "uint8 [N,112,112,3] RGB post-look onboard frame (TASK-061 post_112)",
+  "scale": "/255 to [0, 1], float32",
+  "resize": "224 x 224, torch.nn.functional.interpolate bicubic, align_corners=False, antialias=False, no crop",
+  "normalise": {
+   "mean": [
+    0.485,
+    0.456,
+    0.406
+   ],
+   "std": [
+    0.229,
+    0.224,
+    0.225
+   ]
+  },
+  "token_grid": [
+   16,
+   16
+  ],
+  "position_embeddings": "interpolated from 37 x 37 by transformers' own bicubic rule",
+  "execution": "CPU, float32, eager attention, eval(), no_grad, batches of 16; features cast to float64",
+  "hf_image_processor": "not used (its centre crop cuts the borders)"
+ },
+ "arms_decisional_in_holm_order": [
+  {
+   "arm": "P-cls",
+   "encoder": "pretrained",
+   "readout_point": "CLS token after the final LayerNorm (pooler_output)",
+   "dim": 384,
+   "floor": "R-cls"
+  },
+  {
+   "arm": "P-tok",
+   "encoder": "pretrained",
+   "readout_point": "256 final patch tokens after the final LayerNorm (last_hidden_state[:, 1:]), flattened",
+   "dim": 98304,
+   "floor": "R-tok"
+  }
+ ],
+ "floors": {
+  "R-cls": "seed-0 random init of the same config, CLS after the final LayerNorm",
+  "R-tok": "seed-0 random init of the same config, final patch tokens",
+  "init": "Dinov2Model(config) under torch.manual_seed(0) inside torch.random.fork_rng(devices=[]); transformers' own initialiser; never trained",
+  "weights_digest": "3d305f9c8280692af08d2ca5d1d14d040cc0a10ec5b2fb083c58d75f0957c9db"
+ },
+ "reported_only_sources": {
+  "L_raw": "raw post-look pixels (TASK-061 anchor; ceiling reference)",
+  "L_E0": "frozen E0 probe feature (TASK-061 anchor)",
+  "L_random": "seed-0 random init of E0's architecture, probe feature (TASK-061 anchor)",
+  "F_tok": "seed-0 random init of E0's architecture, final patch tokens (TASK-062 anchor)",
+  "E0_tok": "frozen E0, final patch tokens (TASK-062 anchor)",
+  "P_mean": "mean of the pretrained final patch tokens (384-d); cannot change a row",
+  "R_mean": "mean of the floor's final patch tokens (384-d); cannot change a row"
+ },
+ "paired_comparisons_reported": [
+  "P_cls - R_cls",
+  "P_tok - R_tok",
+  "P_cls - L_raw",
+  "P_tok - L_raw",
+  "P_cls - F_tok",
+  "P_tok - F_tok",
+  "P_cls - L_E0",
+  "P_tok - E0_tok",
+  "R_tok - F_tok",
+  "P_mean - P_cls",
+  "P_mean - R_mean"
+ ],
+ "pass_rule": [
+  "evaluated",
+  "succeeds on all 190 roots under the unchanged bars",
+  "beats its floor (beats_random_floor)",
+  "Holm rejection over the two arms",
+  "not spurious (renderer reproduces 190/190)"
+ ],
+ "arm_states": {
+  "not evaluated": "the arm's or its floor's featurisation plus readouts exceed the per-arm cap, or a feature is non-finite; cannot pass",
+  "evaluated": "otherwise; no collapse gate (nothing is trained)"
+ },
+ "multiplicity": {
+  "method": "Holm step-down over the 2 decisional arms, family-wise one-sided alpha 0.025",
+  "p_value": "encoder_study.arm_pvalues unchanged",
+  "step_thresholds": [
+   0.0125,
+   0.025
+  ],
+  "ties": "listed order P-cls, P-tok"
+ },
+ "qualifiers_not_rows": [
+  "unadjusted only; not a pass",
+  "meets the bars, not the floor",
+  "partial information"
+ ],
+ "reproduction_anchors": {
+  "task061": {
+   "sources": [
+    "L_raw",
+    "L_E0",
+    "L_random"
+   ],
+   "report": "outputs/task061-observation-reprobe/run-1/report.json",
+   "sha256": "289470f4f50855e0280198c4757fca5c1b79b521b3bf0be7e96c04f14787fa88"
+  },
+  "task062": {
+   "sources": [
+    "F_tok",
+    "E0_tok"
+   ],
+   "report": "outputs/task062-encoder-study/run-1/report.json",
+   "sha256": "fc9d5e528403db325039b59a15f37a90176a9386d9a31ee5e1700c1e9558962f"
+  },
+  "compared": "results[name] fields in (all, reset_occluded, reset_visible, secondary_train_to_val, selections) and every root's out-of-fold xy, dx, dy",
+  "handling": {
+   "exact": "anchors hold",
+   "void": "any discrete/selection difference or max |delta| > 1e-6 -> V; owner told before any repeat",
+   "caveat": "0 < max |delta| <= 1e-6 with every count/flag/selection identical -> continue, record, escalate before the results document; no row changes"
+  },
+  "tolerance": 1e-06
+ },
+ "guards_void_the_run": {
+  "G-hash": "every file in hashes matches; episode files checked before decoding; clean tree",
+  "G-weights": "the two loaded DINOv2 files (config.json, model.safetensors) match their pins (pretrained_encoder.check_files) before they are read; README.md pinned through G-hash; strict state-dict load; pretrained and seed-0 floor digests equal the pinned ones; local files only",
+  "G-split": "TASK-061's: exactly the 190 train + val roots and the fold hash",
+  "G-render, G-expert, G-look, G-prior": "TASK-061's, unchanged",
+  "G-frames": "post-look frames sha256 equals bff0fb6049d72ebdc3737d3506f10971ac11ac4458ece4f120049fba06191831 (TASK-062's calibration and run); the ablation renderer reproduces 190/190 or every arm counts as spurious",
+  "G-repro": "a second forward pass of the pretrained encoder on the post-look frames is bit-identical",
+  "G-anchor": "reproduction_anchors",
+  "not_guards": "a per-arm cap or non-finite feature makes the arm not evaluated; any other exception is a crash, and a crash is V"
+ },
+ "pre_declared_outcomes_in_order": [
+  {
+   "row": "V",
+   "condition": "a guard fails or the run stops before a complete report (crash, global wall cap)",
+   "next": "one from-scratch repeat (void_rule)"
+  },
+  {
+   "row": "O-PT-POOLED",
+   "condition": "P-cls passes",
+   "reading": "the pinned pretrained encoder's frozen pooled feature exposes the post-look apple beyond its random init on this probe",
+   "next": "recommended: preregister the look-prefix 112 px corpus with this frozen encoder as the candidate image encoder; any world-model or control use needs its own preregistration; none made here"
+  },
+  {
+   "row": "O-PT-TOKENS",
+   "condition": "P-tok passes, P-cls does not",
+   "reading": "the frozen tokens carry the apple beyond random init; the pooled feature does not",
+   "next": "as O-PT-POOLED, with the token grid (or a pooling that keeps it) as the latent, separately preregistered"
+  },
+  {
+   "row": "O-PT-INCOMPLETE",
+   "condition": "no arm passes and at least one arm was not evaluated",
+   "reading": "the unevaluated arm is untested",
+   "next": "the abandonment clause does not fire; the owner decides whether a disclosed amendment re-runs it"
+  },
+  {
+   "row": "O-PT-FLOOR",
+   "condition": "no arm passes, both evaluated, at least one arm succeeds (bars) and is not spurious",
+   "reading": "the pretrained features expose the apple, but not beyond the architecture's random init (or not under Holm)",
+   "next": "the abandonment clause fires"
+  },
+  {
+   "row": "O-PT-NONE",
+   "condition": "no arm passes, both evaluated, no arm succeeds without being spurious",
+   "reading": "neither read-out exposes the apple under the bars",
+   "next": "the abandonment clause fires"
+  }
+ ],
+ "inconclusive_task_level": "a second V closes TASK-063 as INCONCLUSIVE; nothing is read; the abandonment clause does not fire; the owner decides",
+ "abandonment_clause": {
+  "fires_on": [
+   "O-PT-FLOOR",
+   "O-PT-NONE"
+  ],
+  "closes": "the frozen-encoder route: find a frozen image encoder whose features expose the post-look apple in the 112 px onboard frame beyond its random-init floor; no further pretrained encoder, model size, input resolution, layer or read-out point is preregistered on this probe without new evidence of a different kind; together with TASK-062 section 10, no look-prefix corpus is collected",
+  "does_not_close": "the LeWM backend, the encoder as a component, the product goal",
+  "context_not_a_preregistered_follow_up": "the remaining route on record is the fixed overview camera TASK-061 validated (O-raw 0.183 cm [0.168, 0.207], 185/190), a hardware/workspace change on the robot; the owner decides, and it would need its own preregistration"
+ },
+ "void_rule": "an early stop is V with a void_reason; exactly one from-scratch repeat into run-2 with the same seeds, caps and device and a clean tree; a second void closes TASK-063 as INCONCLUSIVE; a fix between runs is runner mechanics only, via a reviewed PR and a fresh pre-run GO, disclosed; owner rulings recorded with a UTC timestamp before the run they affect",
+ "budget": {
+  "device": "cpu",
+  "mps": "not used: nothing is trained; the frozen forward runs on CPU for bit-reproducibility (G-repro, G-anchor); the runner refuses any other device",
+  "per_arm_seconds": 1800,
+  "global_wall_seconds": 7200,
+  "expected_seconds": 1800,
+  "calibration_reference": "calibration-v1: forward over 190 frames about 3 s per encoder per frame set; whole calibration 68 s",
+  "deviation_from_brief": "the task brief listed an MPS budget; CPU-only is a deliberate deviation accepted by the task owner on 2026-09-26, because nothing is trained and bit-reproducibility of the features matters more"
+ },
+ "seeds": {
+  "floor_init": 0,
+  "probe": {
+   "folds": 59,
+   "inner": "5900 + k",
+   "bootstrap": 5901
+  }
+ },
+ "output_directory": "outputs/task063-pretrained-encoder/run-1 (refuses to overwrite)",
+ "process": [
+  "PR 1: document, manifest, encoder module, fetch + calibration scripts, dependency entry, optional extra, task card; merges on a reported APPROVE that explicitly covers the licence and provenance review, and green CI",
+  "PR 2: runner, decision code, tests; merges on a reported APPROVE and green CI",
+  "gated run starts only on the pre-run reviewer's reported verdict, delivered as a message",
+  "PR 3: results document, results manifest, summarize script, recommended next task; restated numbers checked against report.json by script"
+ ],
+ "limitations_declared": [
+  "one pretrained encoder, one input size, one floor seed; floor-seed variance not measured",
+  "a pass would not identify whether pretraining data, width or input size mattered",
+  "R-tok may succeed on its own, as F-tok did; the T2 floor condition is strict at the ceiling",
+  "readability only; no world model, no control"
+ ],
+ "calibration": {
+  "script": "scripts/calibrate_pretrained_encoder.py",
+  "artifact": "outputs/task063-pretrained-encoder/calibration-v1.json",
+  "sha256": "99f7423eaa7940c42efb16147d67042d18a5d1626ca2c2d6bf48597d59c1f01d",
+  "fits_nothing": true,
+  "design_fixed_before": "src/embodied_jepa/pretrained_encoder.py (encoder, input, read-out points, floor) was committed before the calibration ran and is unchanged since",
+  "ablation_renderer_reproduces_post_look": 190,
+  "post_look_frames_sha256": "bff0fb6049d72ebdc3737d3506f10971ac11ac4458ece4f120049fba06191831",
+  "post_look_frames_equal_task062_calibration": true,
+  "label_free_rounded": {
+   "raw_pixels": {
+    "S_apple": 0.245,
+    "S_plate": 1.547,
+    "effective_rank": 17.996
+   },
+   "pretrained_cls": {
+    "S_apple": 0.883,
+    "S_plate": 2.353,
+    "effective_rank": 11.0
+   },
+   "pretrained_tokens": {
+    "S_apple": 0.76,
+    "S_plate": 1.903,
+    "effective_rank": 15.828
+   },
+   "pretrained_tokens_mean": {
+    "S_apple": 0.914,
+    "S_plate": 2.121,
+    "effective_rank": 10.224
+   },
+   "random_cls": {
+    "S_apple": 0.258,
+    "S_plate": 4.298,
+    "effective_rank": 17.513
+   },
+   "random_tokens": {
+    "S_apple": 0.205,
+    "S_plate": 1.695,
+    "effective_rank": 14.827
+   },
+   "random_tokens_mean": {
+    "S_apple": 0.247,
+    "S_plate": 4.63,
+    "effective_rank": 18.602
+   }
+  },
+  "elapsed_seconds": 67.6
+ },
+ "hashes": {
+  "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+  "benchmarks/manifests/apple-encoder-study-v1.json": "2f64b0908a3fbac7a7e7d3c9518adf2a0d933ef2888fb66ea0d7e551ef2a71d5",
+  "benchmarks/manifests/apple-info-ceiling-v1.json": "e92557effb3564f9a1d2b88083dadb290f56020a6f8d168e0af7af181a6a330c",
+  "benchmarks/manifests/apple-observation-reprobe-v1.json": "6b7f27ffb92af203fb2e3a4fea984c1f92e395f168381d3a0c677bd20526be0a",
+  "benchmarks/manifests/apple-world-model-v4.json": "0bb56579f1f7c34fb446451854656061f59c2a912efcd4c76eb6bd73f6d391f4",
+  "checkpoints/task054-wm-v4/leworldmodel_baseline.pt": "01ba8d0500feaabae858ec6457b05fa60e1e87e4dcbf5982e673949f4770d2ea",
+  "checkpoints/task056-policy-v1/a1.pt": "6e9912b82cbb9a03e2868b2682c59def68a77f11c2e8d94366571026884bad46",
+  "checkpoints/task056-policy-v1/a2.pt": "0dc2fb701862d418beb12fb9a0c9f0aec86509eeee8f99966a21c908cf6b8735",
+  "configs/apple_policy_v1.yaml": "c768ee238b512c248eca550aea532c2b31e04cd0ee0a117179a25ef0f8aa591a",
+  "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
+  "configs/apple_wm_v4_lewm.yaml": "b134687b2cb4064ed3736552746e870d3772f55038e9f37ff158d828682e1c63",
+  "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+  "data/apple-wide-v1/meta/jepa_manifest.json": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
+  "outputs/task061-observation-reprobe/run-1/report.json": "289470f4f50855e0280198c4757fca5c1b79b521b3bf0be7e96c04f14787fa88",
+  "outputs/task062-encoder-study/calibration-v2.json": "ad15908af8063564b24387204aedb1ee2277909bde2450af67775e07e3744a89",
+  "outputs/task062-encoder-study/run-1/report.json": "fc9d5e528403db325039b59a15f37a90176a9386d9a31ee5e1700c1e9558962f",
+  "outputs/task063-pretrained-encoder/calibration-v1.json": "99f7423eaa7940c42efb16147d67042d18a5d1626ca2c2d6bf48597d59c1f01d",
+  "scripts/calibrate_encoder_study.py": "47e4d08668ffd0cf3acc681c76fb483cc09f6f3d40473b7cb21e5d4da5a148cb",
+  "scripts/calibrate_pretrained_encoder.py": "ff8b1311b69c72aca9850fe1aba246393eac529401faec9a78b749153e318172",
+  "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+  "scripts/fetch_dinov2.py": "f34bb01300448b7ef029a8fd899cd55ab2607ac696a11de18d3bfc71fecaeea7",
+  "scripts/measure_policy_offline_conditionals.py": "0e88ec4692d612358de0cb8bb0f2fed471dd7c23cf0abc91925a6212b6143144",
+  "scripts/probe_encoder_study.py": "85bf5088a3359d50ea78642d320edd0b8669b2287cff915b197b60fad2ab7966",
+  "scripts/probe_info_ceiling.py": "f64b01a1db02b5e82540d9b941fe4508d509287a0a82a8d90204fcda83b21dd2",
+  "scripts/probe_observation_reprobe.py": "9c75a23e0465b465d463a2639f9241af3fc0db8bae0da03d50629e4810454557",
+  "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+  "src/embodied_jepa/encoder_study.py": "bcb1c8b2509539d46c421f43668aadfb2be3d074b369654a0e49b5baddc511fe",
+  "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+  "src/embodied_jepa/models/base.py": "939c83d66cadca640cedbc4574e4ba22b2ec75ad7bf962aa6a6daaee2dff66b5",
+  "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
+  "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
+  "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+  "src/embodied_jepa/policy.py": "d682078bc47ddb19f5ece4dc5dd87550cd429f6ab17eb6d0f4ac3b3dc1b7489f",
+  "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+  "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
+  "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+  "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+  "src/embodied_jepa/world_model_v2.py": "e4e26793d542a98183d51903f5d57e825b41b19e70e206b6b531464f0c31d347",
+  "third_party/dinov2-small/README.md": "4c20dca454a8e5c670e8de5c7e6040f512aeca5438516f7623eedc4e3b00599c",
+  "third_party/dinov2-small/config.json": "1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d",
+  "third_party/dinov2-small/model.safetensors": "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1"
+ }
+}
