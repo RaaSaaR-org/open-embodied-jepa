@@ -311,7 +311,7 @@
  },
  "amendments": [
   {
-   "ruling_utc": "2026-09-26 about 23:45Z (stated by the owner; relayed message received 23:37Z)",
+   "ruling_utc": "2026-09-26T23:37Z (time received; corrects an earlier estimate of about 23:45Z)",
    "by": "task owner, option A plus a coarse anchor bound",
    "cause": "deterministic float32 batch-size effect: the last 14 roots by seed (47186-47199) were a partial batch of 14 in TASK-064's anchor layout; max abs 3.767e-05, max relative 4.3e-06; the pre-freeze check covered only the first 20 roots (all in full batches)",
    "G_cache_original": "cache frame-8 rows within 1e-5 of the anchor rows",

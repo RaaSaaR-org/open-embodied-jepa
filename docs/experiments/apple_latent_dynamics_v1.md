@@ -619,8 +619,9 @@ reviewer's reported PRE-RUN: GO.
 - **Why the pre-freeze check missed it:** §13's check covered only the first 20 roots, all of
   which sit in full anchor batches, and found 0.0. The 1e-5 tolerance was set from that check.
 
-**Owner ruling**, relayed by the coordinator. Stated as 2026-09-26 about 23:45Z; the message
-reached the executing agent at 23:37Z.
+**Owner ruling**, relayed by the coordinator, recorded at **2026-09-26T23:37Z**, the time it was
+received. An earlier estimate of about 23:45Z was corrected by the owner, because a ruling cannot
+be dated after its receipt.
 - It chose option A with an addition. Its grounds: the void fired before any model or readout
   existed, so no outcome data could influence the choice; and a repeat of the frozen protocol
   would void identically.

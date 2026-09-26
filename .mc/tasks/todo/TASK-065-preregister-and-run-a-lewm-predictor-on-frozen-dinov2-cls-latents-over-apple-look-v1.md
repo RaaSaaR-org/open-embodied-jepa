@@ -97,8 +97,8 @@ Design code: `src/embodied_jepa/latent_dynamics.py`; model option in
   - Size: at most 3.77e-5 absolute, 4.3e-6 relative.
   - Why it was missed: the pre-freeze check covered only the first 20 roots, all in full batches.
   - Evidence kept: `outputs/task065-latent-dynamics/run-1/`, `outputs/task065-run-1.log`.
-- **Owner ruling, 2026-09-26, about 23:45Z** (as stated by the owner; the relayed message arrived
-  at 23:37Z): option A plus a coarse bound.
+- **Owner ruling, 2026-09-26T23:37Z** (the time it was received; the owner corrected an earlier
+  estimate of about 23:45Z): option A plus a coarse bound.
   - G-cache becomes a bit-exact determinism check of the cache path.
   - G-anchor is unchanged.
   - An anchor-vs-cache sanity bound of 1e-3 absolute is kept, and the actual difference is
