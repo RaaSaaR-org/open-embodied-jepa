@@ -37,15 +37,16 @@ Apple→Plate is still 0 successes.** This task trains image encoders, not contr
 no corpus and preregisters no control formulation: the TASK-054 (CEM) and TASK-057 (BC) clauses
 hold.
 
-The study is preregistered, with three decisional arms, each tied to one explanation of E0's
+The study is preregistered, with four decisional arms, each tied to one explanation of E0's
 failure. They are cross-fitted, so that every root is probed with an encoder that never saw it.
 
 - **A-tok** (pooling): read the recipe model's final patch tokens instead of the pooled latent.
-- **A-sig** (collapse regime): SIGReg weight 1.0 instead of 0.09.
-- **A-rec** (objective): add a pixel-reconstruction term to the latent.
+- **A-sig** (collapse regime): an extra SIGReg term, weight 1.0, on the image feature itself.
+- **A-rec** (objective): add a pixel-reconstruction term on the image feature.
+- **A-plain** (supervision): turn the privileged readout heads off.
 
 Each arm must pass the unchanged TASK-059 bars on TASK-061's post-look frames, **beat its own
-random-init floor**, survive Holm over the three arms, and pass the apple-hidden check. Before
+random-init floor**, survive Holm over the four arms, and pass the apple-hidden check. Before
 any training, TASK-061's L-raw, L-E0 and L-random must reproduce bit for bit (G-anchor).
 
 Protocol: `docs/experiments/apple_encoder_study_v1.md`.

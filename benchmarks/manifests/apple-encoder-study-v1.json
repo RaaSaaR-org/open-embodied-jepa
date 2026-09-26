@@ -73,8 +73,8 @@
    8,
    9
   ],
-  "encoder_e_A": "trained only on train-split episodes whose root is a train root in half B; featurises every root of half A",
-  "encoder_e_B": "trained only on train-split episodes whose root is a train root in half A; featurises every root of half B",
+  "encoder_e_A": "trained only on train-split episodes whose root is a train root in half B; features for all 190 roots, held-out predictions only for half A",
+  "encoder_e_B": "trained only on train-split episodes whose root is a train root in half A; features for all 190 roots, held-out predictions only for half B",
   "outer_readout_for_fold_k": "selected and fitted on the other 171 roots with the features of the encoder that excluded k's half",
   "grouping": "root episode + its 3 branch episodes, by root_episode_id",
   "never_used_for_training": [
@@ -85,15 +85,30 @@
   ],
   "state_normalization": "Welford moments over the training half's episodes only (DatasetStore.fit_normalization's method)",
   "secondary_non_decisional": "val roots in half h: readout fitted on the 170 train roots with e(h) features",
-  "E0_not_held_out": "E0 was trained on all 170 train roots and selected on val; anchor and reported-only diagnostic only"
+  "E0_not_held_out": "E0 was trained on all 170 train roots and selected on val; anchor and reported-only diagnostic only",
+  "training_data": {
+   "e_A": {
+    "roots": 84,
+    "episodes": 336,
+    "frames": 85627
+   },
+   "e_B": {
+    "roots": 86,
+    "episodes": 341,
+    "frames": 89824,
+    "note": "3 roots have 3 episodes"
+   }
+  },
+  "mismatch": "readouts fitted on a mix of encoder-seen and unseen roots, tested on unseen roots; expected to work against the arm"
  },
  "explanations": {
   "E-pool": "tested by A-tok (and E0-tok, reported only)",
-  "E-collapse": "tested by A-sig",
+  "E-collapse": "tested by A-sig (SIGReg on the image feature itself; the recipe's SIGReg acts only on the fused latent)",
   "E-objective": "tested by A-rec",
-  "E-capacity": "not tested: E0's probe feature has effective rank 3.2 of 128 on the post-look frames (calibration)",
-  "E-input": "not tested: E0's patch embedding and tokens respond to the apple (calibration); LH-raw added only 0.084 cm over L-raw in TASK-061",
-  "E-distribution": "not separable here; declared"
+  "E-supervision": "tested by A-plain (privileged readout heads off)",
+  "E-capacity": "argued against, not tested (image feature effective rank 3.2 of 128 on the post-look frames; equally consistent with E-collapse)",
+  "E-input": "argued against, not tested (E0 patch embedding and tokens respond to the apple; a response size, not readability)",
+  "E-distribution": "not separable here; a shared confound (every arm trains on the same corpus); declared"
  },
  "training_recipe": {
   "config": "configs/apple_policy_v1.yaml -> apple_wm_v4_lewm.yaml (LeWM, E0's model settings)",
@@ -105,7 +120,14 @@
   },
   "selection": "none; the final weights of the fixed budget",
   "device": "mps",
-  "readout_heads_and_state_fusion": "as E0 (privileged readout labels of the training half only)"
+  "readout_heads_and_state_fusion": "as E0 (privileged readout labels of the training half only)",
+  "step": "LeWM.train_step unchanged for R0 and A-plain; encoder_study.study_train_step for A-sig and A-rec (equals LeWM.train_step with both extra terms at weight 0)",
+  "seed0_init_digests": {
+   "readout_heads_on": "cae0ad8880bab6cdf05bc47e40b4944a17d71abe150bb212bae1a5ad2159437b",
+   "readout_heads_off": "f760fb425eea1616e90150d1789ca482dcf6df171c0820ea85c7a5232563e8e7",
+   "vit_encoder_both": "ba51a1f98e4260f807cdea2b4d9e490c988d9eb9a0750fb1fe7c6461b3db7fa6",
+   "source": "calibration-v2 collapse_reference.seed0_init_digests; FrozenEncoder.weights_sha256 rule"
+  }
  },
  "arms_decisional_in_holm_order": [
   {
@@ -118,53 +140,63 @@
   {
    "arm": "A-sig",
    "tests": "E-collapse",
-   "training": "sigreg_weight 1.0 (E0: 0.09)",
+   "training": "extra SIGReg (the model's own SIGReg module) on the image feature before state fusion, over the window's frames, weight 1.0; the recipe's fused-latent SIGReg stays 0.09",
    "feature": "probe feature (FrozenEncoder.features -> image_features, 128-d)",
    "floor": "F-cls"
   },
   {
    "arm": "A-rec",
    "tests": "E-objective",
-   "training": "pixel reconstruction of the ImageNet-normalised 112 px first frame of each window from the 128-d image feature (before state fusion), weight 1.0; decoder Linear 128 -> 256*7*7 then 4 ConvTranspose2d (k4, s2, p1) 256-128-64-32-3 with GELU between; init torch.manual_seed(6210) in a forked RNG; own AdamW with the same lr, schedule and weight decay; joint gradient clip 1.0; at weight 0 the step equals LeWM.train_step",
+   "training": "pixel reconstruction of the ImageNet-normalised 112 px first frame of each window from the 128-d image feature (before state fusion), weight 1.0; decoder Linear 128 -> 256*7*7 then 4 ConvTranspose2d (k4, s2, p1) 256-128-64-32-3 with GELU between; init torch.manual_seed(6210) in a forked RNG; own AdamW with the same lr, schedule and weight decay; joint gradient clip 1.0",
    "feature": "probe feature",
    "floor": "F-cls"
+  },
+  {
+   "arm": "A-plain",
+   "tests": "E-supervision",
+   "training": "readout_heads false (existing config key): prediction + multistep + SIGReg, state fusion kept; LeWM.train_step with no readout targets",
+   "feature": "probe feature",
+   "floor": "F-plain"
   }
  ],
  "reported_only_sources": {
   "L-raw": "ceiling reference and anchor",
   "L-E0": "anchor",
-  "F-cls": "= TASK-061 L-random (seed-0 init, a1 digest); floor for A-sig and A-rec; anchor",
+  "F-cls": "= TASK-061 L-random (seed-0 init, heads on, digest cae0ad88...); floor for A-sig and A-rec; anchor",
   "F-tok": "seed-0 init final patch tokens; floor for A-tok",
   "R0-cls": "recipe unchanged, cross-fitted, probe feature; control",
-  "E0-tok": "frozen E0 final patch tokens; cheap readout test of E-pool before any training; NOT held out, never decisional"
+  "E0-tok": "frozen E0 final patch tokens; cheap readout test of E-pool before any training; NOT held out, never decisional",
+  "F-plain": "seed-0 init with readout heads off (digest f760fb42...), probe feature; floor for A-plain"
  },
  "pass_rule": [
   "trained: both encoders complete 15000 steps within 7200 s each, with finite losses",
-  "not collapsed: probe feature on 1024 training-half frames (seed 6220): collapsed_fraction <= 0.05, effective_rank >= 2, latent_std_mean >= 0.1 (VisualModel _statistics), for both encoders",
+  "not collapsed: for each encoder, the image feature (probe feature; R0's for A-tok) on 1024 frames of its own training half (seed 6220): collapsed_fraction <= 0.05, effective_rank >= 2, latent_std_mean >= 0.1 (VisualModel _statistics); reference: E0 image feature 0.876 / 0.000 / 7.0, seed-0 init 0.013 / 0.266 / 8.5 (calibration-v2)",
   "succeeds on all 190 roots under the unchanged bars",
   "beats its floor (beats_random_floor, all 190 roots)",
-  "Holm rejection over the 3 arms",
+  "Holm rejection over the 4 arms",
   "not spurious (apple-hidden check, per-half hidden features; ablation renderer reproduces 190/190)"
  ],
  "multiplicity": {
-  "method": "Holm step-down over the 3 decisional arms, family-wise one-sided alpha 0.025",
-  "p_value": "p_arm = max(p_T1, p_T2, p_T3, p_F); p_T1..p_T3 = observation_reprobe.hypothesis_pvalues unchanged; p_F = share of the same 10000 paired resamples with median(arm error) - median(floor error) >= 0; p_arm = 1 if T1 median > 1.5 cm, T2 accuracy < 0.85, or T2 accuracy not higher than the floor's",
+  "method": "Holm step-down over the 4 decisional arms, family-wise one-sided alpha 0.025",
+  "p_value": "p_arm = max(p_T1, p_T2, p_T3, p_F); p_T1..p_T3 = observation_reprobe.hypothesis_pvalues unchanged; p_F = share of the same 10000 paired resamples with median(arm error) - median(floor error) >= 0; p_arm = 1 if T1 median > 1.5 cm, T2 accuracy < 0.85, or T2 accuracy not higher than the floor's; p_arm = 1 for a not-evaluated arm",
   "step_thresholds": [
+   0.00625,
    0.008333333333333333,
    0.0125,
    0.025
   ],
-  "ties": "listed order A-tok, A-sig, A-rec"
+  "ties": "listed order A-tok, A-sig, A-rec, A-plain"
  },
  "qualifiers_not_rows": {
   "unadjusted_only": "meets the bars and the floor but not Holm",
   "bars_not_floor": "meets the bars, not the floor",
-  "partial_information": "beats the prior on all roots without succeeding"
+  "partial_information": "beats the prior on all roots without succeeding",
+  "collapse_demoted": "meets the bars but fails the collapse gate"
  },
  "diagnostics_reported": {
-  "collapse": "_statistics of the probe feature and the flattened final tokens on 1024 training-half frames (seed 6220) and on the 190 post-look frames",
+  "collapse": "_statistics of the image feature and the flattened final tokens on 1024 training-half frames (seed 6220) and on the 190 post-look frames",
   "action_sensitivity": "512 training-half windows, horizon 8, seed 6230: median over windows of ||z8(a) - z8(a_perm)|| / ||z8(a) - z8_true||, a_perm a seeded derangement of the windows' actions",
-  "label_free_table": "the calibration statistics for every trained encoder on its held-out roots"
+  "label_free_table": "the calibration statistics for every trained encoder on the roots of its own held-out half"
  },
  "reproduction_anchors": {
   "sources": [
@@ -183,15 +215,20 @@
  },
  "guards_void_the_run": {
   "G_hash": "every file in hashes matches; episode files checked before decoding; E0 and random encoder digests match TASK-061's; clean tree",
-  "G_split": "TASK-061 G-split (190 roots, fold hash) plus: every training episode is in the train split and its root_episode_id is a train root of the encoder's training half, never a root of the half it featurises; e(A) and e(B) training root sets are disjoint and together exactly the 170 train roots; no val, test or holdout episode is decoded for training",
-  "G_render_G_expert_G_look_G_prior": "TASK-061's, unchanged",
-  "G_anchor": "reproduction_anchors",
-  "not_guards_arm_demotion": [
-   "training budget stop",
-   "non-finite loss or gradient in an arm",
-   "failed collapse gate"
-  ],
-  "crash": "any other exception is V"
+  "G_split": "TASK-061 G-split (190 roots, fold hash) plus: every training episode is in the train split, its root_episode_id is a train root of the encoder's training half, never a root of the half for which the encoder produces held-out predictions; e(A) and e(B) training root sets are disjoint and together exactly the 170 train roots; no val, test or holdout episode is decoded for training",
+  "G_render_G_expert_G_look_G_prior": "TASK-061's, unchanged; the calibration renderer's post-look frames must equal measure()'s",
+  "G_anchor": "reproduction_anchors, including the stage code reproducing TASK-061's E0 and L-random features exactly",
+  "crash": "any other exception is V",
+  "G_init": "before training every model's weight digest equals its architecture's seed-0 digest (heads on cae0ad88..., heads off f760fb42...); every floor's features come from a model with that digest",
+  "not_guards_arm_states": {
+   "not_evaluated": [
+    "per-encoder budget stop",
+    "non-finite loss or gradient"
+   ],
+   "collapse_demoted": [
+    "failed collapse gate"
+   ]
+  }
  },
  "pre_declared_outcomes_in_order": [
   {
@@ -201,30 +238,36 @@
   },
   {
    "row": "O-ENC-LATENT",
-   "condition": "A-sig or A-rec passes",
-   "reading": "a changed objective or regime gives LeWM's own 128-d latent the apple on held-out roots, beyond random init",
-   "next": "preregister the look-prefix 112 px corpus with that arm's recipe as the encoder (both pass: smaller p_arm, ties A-sig); no control formulation until the retrained encoder passes this probe on that corpus's decision frames"
+   "condition": "A-sig, A-rec or A-plain passes",
+   "reading": "a changed objective, regime or supervision gives LeWM's own 128-d image latent the apple on held-out roots, beyond random init",
+   "next": "preregister the look-prefix 112 px corpus with that arm's recipe as the encoder (several pass: smallest p_arm, ties listed order); no control formulation until the retrained encoder passes this probe on that corpus's decision frames"
   },
   {
    "row": "O-ENC-TOKENS",
-   "condition": "A-tok passes, A-sig and A-rec do not",
+   "condition": "A-tok passes, no other arm does",
    "reading": "the recipe's tokens carry the apple beyond random init; its pooled latent does not",
    "next": "preregister the look-prefix corpus plus, separately, a LeWM variant whose latent is the token grid (or a pooling that keeps it)"
   },
   {
+   "row": "O-ENC-INCOMPLETE",
+   "condition": "no arm passes and at least one arm was not evaluated (mechanical failure)",
+   "reading": "the failed arms' explanations are untested",
+   "next": "the abandonment clause does not fire; the owner decides whether a disclosed amendment re-runs the unevaluated arm(s)"
+  },
+  {
    "row": "O-ENC-ARCH",
-   "condition": "no arm passes; at least one arm succeeds (bars) and is not spurious",
-   "reading": "features of this architecture expose the apple but the gain cannot be credited to training (floor or Holm fails)",
+   "condition": "no arm passes, every arm evaluated, at least one arm succeeds (bars) and is not spurious",
+   "reading": "features of an evaluated arm expose the apple but no arm meets every pass condition (floor, Holm or collapse gate)",
    "next": "the abandonment clause fires; one preregistered test of an externally pretrained frozen encoder against its own random-init floor on this probe, before any corpus"
   },
   {
    "row": "O-ENC-NONE",
-   "condition": "no arm succeeds, or every succeeding arm is spurious",
-   "reading": "no tested change gives a frozen encoder that exposes the apple on held-out roots",
+   "condition": "no arm passes, every arm evaluated, no arm succeeds without being spurious",
+   "reading": "no tested change to the readout point, regime, objective or supervision gives a frozen encoder that exposes the apple on held-out roots",
    "next": "the abandonment clause fires; as O-ENC-ARCH; if that also fails, no look-prefix corpus, and the remaining route is the overview camera (a hardware/workspace change)"
   }
  ],
- "abandonment_clause": "under O-ENC-ARCH or O-ENC-NONE the line 'train a LeWM-family encoder on apple-wide-v1 train-split frames so that its frozen features expose the post-look apple' is closed: no further objective, regularisation, pooling, capacity, augmentation or input-handling variant of it is preregistered on this corpus without new evidence of a different kind; the LeWM backend, the encoder as a component and the product goal are not abandoned",
+ "abandonment_clause": "under O-ENC-ARCH or O-ENC-NONE the line 'train a LeWM-family encoder on apple-wide-v1 train-split frames so that its frozen features expose the post-look apple' is closed: no further readout-point, regularisation, objective or supervision variant of the TASK-054 recipe is preregistered on this corpus without new evidence of a different kind; capacity, input handling and the shared E-distribution confound are recorded as untested (argued against, not refuted); the LeWM backend, the encoder as a component and the product goal are not abandoned",
  "void_rule": {
   "void": "any stop before a complete report (guard, crash, global wall cap) is V; nothing in it is read",
   "repeat": "exactly one from-scratch repeat into run-2: same seeds, caps and device, clean tree, every encoder retrained; MPS training is not bit-deterministic (weight digests recorded); any fix limited to runner mechanics via a reviewed PR and a fresh pre-run GO",
@@ -235,9 +278,9 @@
   "training_device": "mps",
   "probe_device": "cpu",
   "per_encoder_seconds": 7200,
-  "global_wall_seconds": 54000,
-  "expected_seconds": 23400,
-  "encoders": 6,
+  "global_wall_seconds": 64800,
+  "expected_seconds": 31500,
+  "encoders": 8,
   "reference": "E0's full-data run took 3512 s including 16 validation passes (checkpoints/task054-wm-v4/leworldmodel_baseline.run.json)"
  },
  "seeds": {
@@ -262,6 +305,27 @@
   "post_freeze_defects": "escalated to the task owner; fixed only by disclosed amendment",
   "agent_recommends_does_not_choose_next_task": true
  },
+ "e0_training_facts": {
+  "loss_terms_on_fused_latent": [
+   "one-step and multistep latent prediction",
+   "SIGReg 0.09",
+   "privileged readout heads incl. palm_minus_apple, apple_minus_plate (core) and absolute apple_position (auxiliary, weight 0.5)"
+  ],
+  "fused_latent": "image feature + learned proprioception embedding (state_fusion)"
+ },
+ "arm_states": {
+  "not_evaluated": "an encoder hit the per-encoder cap or a non-finite loss/gradient; never probed; cannot pass; p_arm = 1",
+  "collapse_demoted": "both encoders trained, the collapse gate fails for at least one; probed and reported; cannot pass",
+  "evaluated": "both encoders trained and the gate holds"
+ },
+ "limitations_declared": [
+  "each encoder sees half the train roots",
+  "one training run per arm and half; seed variance not measured",
+  "no training on post-look frames (E-distribution a shared confound)",
+  "E0 not held out: anchor and diagnostic only",
+  "no external pretrained encoder",
+  "capacity and input handling argued against, not tested"
+ ],
  "encoders": {
   "E0": {
    "loader": "measure_policy_offline_conditionals.build_policy(checkpoints/task056-policy-v1/a2.pt), CPU",
@@ -286,7 +350,8 @@
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
   "data/apple-wide-v1/meta/jepa_manifest.json": "028e130576c052437f7753d74dd64d80dabc1edb8085247e7f56bc71a0412184",
   "outputs/task061-observation-reprobe/run-1/report.json": "289470f4f50855e0280198c4757fca5c1b79b521b3bf0be7e96c04f14787fa88",
-  "scripts/calibrate_encoder_study.py": "277692c5f34c7602fbeb108a008be9a94f9f3a91e1a195a1e7c1ed9babe80e76",
+  "outputs/task062-encoder-study/calibration-v2.json": "ad15908af8063564b24387204aedb1ee2277909bde2450af67775e07e3744a89",
+  "scripts/calibrate_encoder_study.py": "47e4d08668ffd0cf3acc681c76fb483cc09f6f3d40473b7cb21e5d4da5a148cb",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
   "scripts/measure_policy_offline_conditionals.py": "0e88ec4692d612358de0cb8bb0f2fed471dd7c23cf0abc91925a6212b6143144",
   "scripts/probe_info_ceiling.py": "f64b01a1db02b5e82540d9b941fe4508d509287a0a82a8d90204fcda83b21dd2",
@@ -305,11 +370,64 @@
  },
  "calibration": {
   "script": "scripts/calibrate_encoder_study.py",
-  "artifact": "outputs/task062-encoder-study/calibration-v1.json",
-  "artifact_sha256": "c2c99ed3668d29e1863e70fff8ac60b87ca03cf1a47af1551673f040dc21aca7",
+  "artifact": "outputs/task062-encoder-study/calibration-v2.json",
+  "artifact_sha256": "ad15908af8063564b24387204aedb1ee2277909bde2450af67775e07e3744a89",
   "superseded": {
    "outputs/task062-encoder-study/calibration-draft-1.json": "6dcef71b9611db3aeb113f279cacf32166bce4aa9420908652629d495d41484f",
-   "note": "the draft labelled the energy ratio a 'variance fraction' and divided by 2n; every S value and effective rank is identical"
+   "outputs/task062-encoder-study/calibration-v1.json": "c2c99ed3668d29e1863e70fff8ac60b87ca03cf1a47af1551673f040dc21aca7",
+   "note": "the draft labelled the energy ratio a 'variance fraction' and divided by 2n; v1 had no collapse reference; every S value and effective rank is identical across the three, and v1's and v2's representations blocks are identical in every field"
+  },
+  "collapse_reference": {
+   "E0": {
+    "fused_latent": {
+     "collapsed_fraction": 0.0,
+     "dimension": 128,
+     "effective_rank": 7.477391253920976,
+     "latent_std_mean": 0.9350803817992354,
+     "latent_std_min": 0.4080079307332024,
+     "samples": 1024
+    },
+    "image_feature": {
+     "collapsed_fraction": 0.0,
+     "dimension": 128,
+     "effective_rank": 6.976938817436218,
+     "latent_std_mean": 0.8763799052752745,
+     "latent_std_min": 0.3943673642882204,
+     "samples": 1024
+    }
+   },
+   "episodes_sha256": "1a90623637fd1f3c164088d8b9de631765643b2c2c3dec68a7d2b03bd51cb4a1",
+   "frames": 1024,
+   "random": {
+    "fused_latent": {
+     "collapsed_fraction": 0.0,
+     "dimension": 128,
+     "effective_rank": 13.410283705524888,
+     "latent_std_mean": 0.09856285855323915,
+     "latent_std_min": 0.056716482542132865,
+     "samples": 1024
+    },
+    "image_feature": {
+     "collapsed_fraction": 0.265625,
+     "dimension": 128,
+     "effective_rank": 8.528705308855699,
+     "latent_std_mean": 0.012540394378414012,
+     "latent_std_min": 0.006162631569814598,
+     "samples": 1024
+    }
+   },
+   "seed0_init_digests": {
+    "readout_heads_false": {
+     "camera_fusion_sha256": "1432bbd2aba54b74b4cc3e312241a38ddd1bb0f7d013dae280bae15c0c4e1f51",
+     "model_weights_sha256": "f760fb425eea1616e90150d1789ca482dcf6df171c0820ea85c7a5232563e8e7",
+     "vit_encoder_sha256": "ba51a1f98e4260f807cdea2b4d9e490c988d9eb9a0750fb1fe7c6461b3db7fa6"
+    },
+    "readout_heads_true": {
+     "camera_fusion_sha256": "034cf77dd9d331732710982f2865cf78dda1ec0da07ceb2f93518a3f2fc90dd8",
+     "model_weights_sha256": "cae0ad8880bab6cdf05bc47e40b4944a17d71abe150bb212bae1a5ad2159437b",
+     "vit_encoder_sha256": "ba51a1f98e4260f807cdea2b4d9e490c988d9eb9a0750fb1fe7c6461b3db7fa6"
+    }
+   }
   },
   "reads_no_target_fits_nothing": true,
   "post_look_frames_sha256": "bff0fb6049d72ebdc3737d3506f10971ac11ac4458ece4f120049fba06191831",

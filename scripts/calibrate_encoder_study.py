@@ -1,8 +1,10 @@
 """TASK-062 pre-freeze calibration: where does frozen E0 lose the apple? Nothing is fitted.
 
 A **label-free** diagnostic, run before any encoder is trained and before any readout is fitted
-on any new feature. It reads no target (no apple xy, no expert command) and fits no readout. Its
-only inputs are rendered frames and encoder activations.
+on any new feature. No target (apple xy, expert command) and no label enters any statistic, and
+no readout is fitted. Each root's reset coordinates are used only to render its frames. Its
+inputs are rendered frames, encoder activations and (for the collapse reference) train-split
+frames and proprioception.
 
 For each of the 190 train + val roots it renders the TASK-061 post-look 112 px onboard frame
 (the same reset, warm-up and 8-command look as ``scripts/probe_observation_reprobe.py``) and two
@@ -23,8 +25,15 @@ feature -- it reports:
   the plate hidden). It is a ratio, not a fraction: hiding the plate can exceed 1.
 * **effective rank** (exp of the spectral entropy) of r over the 190 post-look frames.
 
+**Collapse reference** (for the protocol's collapse gate): ``VisualModel``'s ``_statistics`` of
+frozen E0's and the seed-0 random init's image feature and fused latent (image feature plus the
+state embedding), on 1024 frames drawn (seed 6220) from 64 train-split episodes drawn (seed 6220).
+Only frames and proprioception are decoded (``DatasetStore.read_episode``); no label sidecar is
+opened. The random init's state normalisation is the dataset's train-split normalisation. It also
+records the seed-0 initialisation digests with the readout heads on and off.
+
     uv run --no-sync python scripts/calibrate_encoder_study.py \
-        --output outputs/task062-encoder-study/calibration.json
+        --output outputs/task062-encoder-study/calibration-v2.json
 """
 
 from __future__ import annotations
@@ -176,6 +185,77 @@ def shares(post, hidden_apple, hidden_plate) -> dict:
     }
 
 
+COLLAPSE_SEED = 6220
+COLLAPSE_EPISODES = 64
+COLLAPSE_FRAMES = 1024
+
+
+def collapse_reference(store, models: dict, settings: dict) -> dict:
+    """``_statistics`` of image features and fused latents on 1024 train-split frames."""
+    import torch
+
+    from embodied_jepa.config import MODELS
+    from embodied_jepa.models.base import _statistics
+    from embodied_jepa.policy import FrozenEncoder
+
+    rng = np.random.default_rng(COLLAPSE_SEED)
+    train = list(store.manifest["splits"]["train"])
+    chosen = sorted(rng.choice(len(train), size=COLLAPSE_EPISODES, replace=False).tolist())
+    frames, states, masks = [], [], []
+    for index in chosen:
+        episode = store.read_episode(train[index])
+        frames.append(np.asarray(episode.observations["onboard_rgb"]))
+        states.append(np.asarray(episode.robot_states, np.float32))
+        masks.append(np.asarray(episode.state_mask, bool))
+    frames, states, masks = np.concatenate(frames), np.concatenate(states), np.concatenate(masks)
+    rows = np.sort(rng.choice(len(frames), size=COLLAPSE_FRAMES, replace=False))
+    normalization = store.manifest["normalization"]
+    moments = normalization["stats"]["observation.state"]
+    out = {
+        "episodes_sha256": hashlib.sha256(
+            json.dumps([train[i] for i in chosen]).encode()
+        ).hexdigest(),
+        "frames": COLLAPSE_FRAMES,
+    }
+    for name, model in models.items():
+        if not bool(model.state_normalization_fitted):
+            model.fit_state_normalization(
+                moments["mean"], moments["std"], training_episode_ids=normalization["episode_ids"]
+            )
+        image = encoder_stages(model, frames[rows])["probe_feature"]
+        with torch.no_grad():
+            state = model.state_features(states[rows], masks[rows]).double().numpy()
+        out[name] = {
+            "image_feature": _statistics(torch.from_numpy(image)),
+            "fused_latent": _statistics(torch.from_numpy(image + state)),
+        }
+    digests = {}
+    for heads in (True, False):
+        fresh = MODELS.create(
+            "leworldmodel",
+            state_schema=store.state_schema,
+            device="cpu",
+            seed=0,
+            config=settings | {"readout_heads": heads},
+        )
+        digests[f"readout_heads_{str(heads).lower()}"] = {
+            "model_weights_sha256": FrozenEncoder(fresh, frozen=False).weights_sha256(),
+            "vit_encoder_sha256": module_digest(fresh.model.encoder),
+            "camera_fusion_sha256": module_digest(fresh.camera_fusion),
+        }
+    out["seed0_init_digests"] = digests
+    return out
+
+
+def module_digest(module) -> str:
+    digest = hashlib.sha256()
+    state = module.state_dict()
+    for key in sorted(state):
+        digest.update(key.encode())
+        digest.update(state[key].detach().cpu().contiguous().numpy().tobytes())
+    return digest.hexdigest()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -191,7 +271,7 @@ def main() -> int:
     measure = _load("_measure", "scripts/measure_policy_offline_conditionals.py")
     from embodied_jepa.world_model_v2 import _open
 
-    config, store, _settings, _cameras = _open(BASE.CONFIG)
+    config, store, settings, _cameras = _open(BASE.CONFIG)
     result = {
         "task": "TASK-062",
         "what": "label-free encoder diagnostic; no target read, no readout fitted",
@@ -205,6 +285,7 @@ def main() -> int:
     result["representations"]["raw_pixels"] = shares(
         flat(frames["post"]), flat(frames["apple_hidden"]), flat(frames["plate_hidden"])
     )
+    models = {}
     for name, arm in (("E0", "a2"), ("random", "a1")):
         _policy, source = measure.build_policy(BASE.CHECKPOINTS / f"{arm}.pt", config, store, "cpu")
         digest = source.weights_sha256()
@@ -221,10 +302,12 @@ def main() -> int:
             for stage in stages["post"]
         }
         result["representations"][name]["_weights_sha256"] = digest
+        models[name] = source.model
+    result["collapse_reference"] = collapse_reference(store, models, dict(settings))
     result["elapsed_seconds"] = time.time() - begin
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
-    print(json.dumps(result["representations"], indent=1))
+    print(json.dumps(result["collapse_reference"], indent=1))
     return 0
 
 
