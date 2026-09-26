@@ -1,0 +1,514 @@
+{
+ "task": "TASK-064",
+ "protocol": "apple_look_corpus_v1",
+ "document": "docs/experiments/apple_look_corpus_v1.md",
+ "status": "preregistration; no corpus seed (47000-47199) simulated",
+ "what_this_task_is": "a data task: build and validate one look-prefix 112 px corpus from the privileged scripted collector; trains nothing, fits no world model, preregisters no control formulation",
+ "claim_scope": "C-ACCEPT would say: this corpus was collected as designed, and the pinned frozen DINOv2 CLS reads the post-look apple position and the expert's first post-look command on its 190 train+val roots beyond its seed-0 random init; nothing about prediction, control or closed loop",
+ "learned_apple_to_plate_successes": 0,
+ "exemption_spent": false,
+ "exemption_spent_source": "benchmarks/manifests/apple-policy-diagnostics-v1.json",
+ "control_lines": "CEM abandoned as the primary control line at TASK-054; the behaviour-cloning line stopped at TASK-057 on apple-wide-v1 and the 112 px onboard camera, with no third control formulation preregistered on them; both clauses hold; no control formulation preregistered or implied here",
+ "predecessor": {
+  "task": "TASK-063",
+  "outcome": "O-PT-POOLED",
+  "results_manifest": "benchmarks/manifests/apple-pretrained-encoder-v1-results.json",
+  "row_next": "preregister the look-prefix 112 px corpus with this frozen encoder as the candidate image encoder",
+  "facts": {
+   "P_cls": "0.538 cm [0.487, 0.611], 183/190; beats R-cls by -0.316 cm [-0.456, -0.214]",
+   "R_cls": "0.853 cm [0.771, 0.990], 169/190; meets the bars",
+   "R_tok": "0.500 cm [0.457, 0.572], 181/190; meets the bars",
+   "L_raw": "0.469 cm [0.419, 0.528], 180/190"
+  },
+  "caveats_carried_forward": [
+   "P-cls is not detectably different from raw pixels: P-cls - L-raw +0.068 cm [-0.010, 0.153]; no equivalence margin",
+   "both random-init floors met the bars on their own",
+   "one encoder, one input size, one floor seed; floor-seed variance not measured",
+   "does not identify whether pretraining data, width or input size caused the result",
+   "readability is not prediction: no world model or controller was tested"
+  ]
+ },
+ "seeds": {
+  "corpus": [
+   47000,
+   47199
+  ],
+  "pilot": [
+   47900,
+   47931
+  ],
+  "reserved_ranges_refused": {
+   "apple_wide_v1_corpus_and_pilots": [
+    48000,
+    48999
+   ],
+   "cohort_D_wide_development": [
+    45000,
+    45107
+   ],
+   "wide_v3_cohort": [
+    45200,
+    45207
+   ],
+   "cohort_C": [
+    45300,
+    45339
+   ],
+   "final_cohort": [
+    44000,
+    44019
+   ],
+   "narrow_development": [
+    43000,
+    43004
+   ],
+   "earlier_train_val_test": [
+    42000,
+    42031
+   ],
+   "mechanics_probes": [
+    41000,
+    41101
+   ],
+   "mvp_frozen_resets": [
+    20000,
+    20049
+   ],
+   "grasp_closure_probes": [
+    49000,
+    49199
+   ]
+  },
+  "split_seed": 64,
+  "per_root_draws": "default_rng(SeedSequence([seed, 64])) in TASK-048's order",
+  "readout_folds": 59,
+  "inner_folds": "5900 + k",
+  "bootstrap": 5901,
+  "floor_init": "torch.manual_seed(0)",
+  "cohorts_never_simulated": {
+   "C": [
+    45300,
+    45339
+   ],
+   "D": [
+    [
+     45000,
+     45007
+    ],
+    [
+     45100,
+     45107
+    ]
+   ]
+  }
+ },
+ "reset_rule": "TASK-047 evaluate_apple.wide_reset: apple (0.34,-0.18)+U(+-0.03)^2, plate (0.49,-0.09)+U(+-0.02)^2",
+ "look_prefix": {
+  "source": "TASK-061 section 3.1 (observation_reprobe.look_sequence)",
+  "steps": 8,
+  "command": {
+   "left_arm": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "right_arm": [
+    0.0,
+    -0.4,
+    0.4,
+    -0.5,
+    -0.5,
+    0.5
+   ],
+   "grasps": [
+    -1.0,
+    -1.0
+   ]
+  },
+  "sequence_sha256_float32_bytes": "17bfb0702a25124b44dc2565310fb947742b5f025c8211dd16d66ede15be587c",
+  "perturbed": false,
+  "on": "every root episode, before the collector policy; branches start after it",
+  "decision_frame_index": 8,
+  "phase_index_label": -1,
+  "policy_built_from": "reset truth (as TASK-061's post-look expert)"
+ },
+ "corpus_design": {
+  "roots": 200,
+  "branches_planned": 600,
+  "episodes_max": 800,
+  "min_stored_transitions": 8,
+  "policy_max_commands_after_look": 745,
+  "noise": {
+   "levels": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "ou_theta": 0.85,
+   "ou_sigma_per_level": {
+    "translation": 0.04,
+    "rotation": 0.025,
+    "grasp": 0.1
+   },
+   "burst_probability_per_level": 0.01,
+   "burst_commands": 4,
+   "applied": "after the look only"
+  },
+  "aim_offset": {
+   "every": 5,
+   "radius_m": [
+    0.015,
+    0.03
+   ],
+   "roots": 40
+  },
+  "branch_kinds": [
+   "noise_only",
+   "shift_close",
+   "weak_close",
+   "early_lift",
+   "open_during_lift"
+  ],
+  "branches_per_root": 3,
+  "branch_start": "first command of the policy's close phase (pre-grasp state); stop after lift",
+  "collector_mechanics": "scripts/collect_apple_wide.py (TASK-048), loaded unchanged",
+  "cameras": [
+   "onboard_rgb"
+  ],
+  "frame_shape": [
+   112,
+   112,
+   3
+  ],
+  "hand_crop": "not stored",
+  "renderer_warm_up": "the simulation's renderer renders once and discards the result before the reset",
+  "fps": 20,
+  "state": "86 floats (43 joint positions + 43 velocities)",
+  "action": "14-D applied ee_delta_grasp_v0",
+  "privileged_truth": "label sidecars only (collector__, privileged__ groups); never model inputs, loss weights or selection filters",
+  "expected_from_pilot_not_thresholds": {
+   "root_successes": 130,
+   "episodes": 790,
+   "transitions": 210000,
+   "bytes": 2200000000.0
+  }
+ },
+ "candidate_encoder": {
+  "status": "candidate only; the corpus stores pixels, never features; any world-model use needs its own preregistration",
+  "encoder": "facebook/dinov2-small @ ed25f3a31f01632728cabb09d1542f84ab7b0056",
+  "module": "src/embodied_jepa/pretrained_encoder.py (unchanged, pinned)",
+  "pretrained_weights_digest": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
+  "floor_weights_digest": "3d305f9c8280692af08d2ca5d1d14d040cc0a10ec5b2fb083c58d75f0957c9db",
+  "files_sha256": {
+   "config.json": "1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d",
+   "model.safetensors": "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1"
+  },
+  "input_handling": {
+   "frame": "the corpus's stored uint8 [N,112,112,3] frame 8 (post-look), decoded from PNG",
+   "scale": "/255 to [0, 1], float32",
+   "resize": "224 x 224, torch.nn.functional.interpolate bicubic, align_corners=False, antialias=False, no crop",
+   "normalise": {
+    "mean": [
+     0.485,
+     0.456,
+     0.406
+    ],
+    "std": [
+     0.229,
+     0.224,
+     0.225
+    ]
+   },
+   "token_grid": [
+    16,
+    16
+   ],
+   "position_embeddings": "interpolated from 37 x 37 by transformers' own bicubic rule",
+   "execution": "CPU, float32, eager attention, eval(), no_grad, batches of 16; features cast to float64",
+   "hf_image_processor": "not used (its centre crop cuts the borders)"
+  },
+  "read_out_point_decisional": "P-cls: CLS after the final LayerNorm (pooler_output), 384-d",
+  "reported_only": [
+   "P-tok (256 final patch tokens, 98304-d)",
+   "P-mean (mean of the final tokens, 384-d)"
+  ],
+  "fine_tuning": "none; frozen",
+  "consistency_with_task063": "same module bytes, preprocessing and read-out points; the stored frame 8 must equal a fresh re-render of the post-look state through the simulation's own 112 px path (Q-render); PNG is lossless (TASK-061 P2 190/190)"
+ },
+ "splits": {
+  "rule": "whole-reset sessions; default_rng(64).shuffle(seeds); first 20 val, next 10 test, remaining 170 train; branches share their root's split",
+  "val_sessions": [
+   47027,
+   47030,
+   47041,
+   47058,
+   47059,
+   47060,
+   47068,
+   47076,
+   47082,
+   47083,
+   47086,
+   47102,
+   47103,
+   47117,
+   47146,
+   47166,
+   47171,
+   47182,
+   47186,
+   47195
+  ],
+  "test_sessions": [
+   47007,
+   47009,
+   47042,
+   47062,
+   47088,
+   47100,
+   47124,
+   47162,
+   47181,
+   47184
+  ],
+  "train_sessions": 170,
+  "normalisation": "fit on train only",
+  "test_never_decoded": "test episodes are written once at assembly and never decoded afterwards; checked by sha256 only; decoding-based QA (A6-A8, A10, A11 loads, readability gate) reads train + val only; all-split facts are recorded at collection time",
+  "later_use": "train on train, select on val, never decode test during training or selection"
+ },
+ "plan": {
+  "sha256_macos_arm64": "99dd7ffc305cceab4d4e1eb1438a47b8f5a469f1fab0ca3493a4e689af32a71b",
+  "sha256_rounded_1e-9": "37ad7a31e05efac99e3225fe1ed5a69fdd57d790cb2d458cddb1e896a1240f30",
+  "authoritative": "the recorded plan.json of the run"
+ },
+ "acceptance_checks": {
+  "thresholds": {
+   "A1_root_episodes_min": 190,
+   "A2_branch_episodes_min": 450,
+   "A3_root_full_success_min": 80,
+   "A4_grasp_phase_failure_fraction": [
+    0.2,
+    0.8
+   ],
+   "A5_grasp_phase_successes_min": 250,
+   "A6_right_arm_sign_fraction_min": 0.03,
+   "A7_off_script_fraction_min": 0.5,
+   "A8_branch_pairs_distinct_fraction_min": 0.9
+  },
+  "source_of_thresholds": "TASK-048's frozen values, unchanged; not tuned on the pilot",
+  "checks": {
+   "A1": "stored root episodes >= 190",
+   "A2": "stored branch episodes >= 450",
+   "A3": "root full-task successes >= 80",
+   "A4": "grasp-phase failure fraction in [0.20, 0.80]",
+   "A5": "grasp-phase successes >= 250",
+   "A6": "each right-arm dim 6-11: >= 3% of transitions > +0.1 and >= 3% < -0.1 (train + val)",
+   "A7": "off-script fraction >= 0.50 (train + val)",
+   "A8": "sibling-branch pairs RGB-distinct at step 16 >= 90% (train + val)",
+   "A9": "no split leakage; normalisation = train; train/val/test nonempty",
+   "A10": "audit: every train + val episode decodes with 0.05 s intervals; every stored episode's collection-time intervals are 0.05 s",
+   "A11": "train + val sidecars load (hash, rows, look phase labels); test sidecars match sha256; privileged access without acknowledgement refused",
+   "A12": "onboard_rgb 112x112x3 and no other camera",
+   "A13": "all 200 roots completed without runtime error; every branched root restored exactly",
+   "L1": "look on every root at collection time: 8 commands executed, applied == requested exactly, post-look state spread <= 1e-6, apple xy and plate moves <= 1e-6 m after every look command, no hand-apple contact"
+  },
+  "descriptive_only": [
+   "outcome tables by noise level, branch kind, split, failure stage",
+   "left-arm coverage"
+  ]
+ },
+ "readability_gate": {
+  "roots": "the 190 train + val roots (170 train, 20 val) sorted by seed; test never read",
+  "frame": "stored frame 8 of each root episode",
+  "targets": "T1 reset apple xy; T2/T3 sign and value of the expert's right_dx at the post-look state (apple_collector_policy(reset truth) at the post-look pose)",
+  "fresh_rerender_gives": [
+   "Q-render check",
+   "B-occ reset visibility flag (112 px segmentation)",
+   "apple-hidden twin",
+   "targets"
+  ],
+  "readouts": "linear and RBF kernel ridge, nested inner CV (info_ceiling), lambda 1e-4..1e4",
+  "folds": "grouped 10-fold, default_rng(59), roots sorted by seed",
+  "fold_assignment_sha256": "da6b5b5a9d0a621db316b94b4e7c246137da96caa94e1ff9994dd0fce4d5486b",
+  "bootstrap": "10000 paired resamples, seed 5901; Wilson for T2",
+  "baselines": "B-occ, B-maj, B-const computed in-run on these roots",
+  "bars": {
+   "T1": "median <= 1.5 cm and ratio-to-B-occ upper bound <= 0.6",
+   "T2": "accuracy >= 0.85 and Wilson lower bound > B-maj",
+   "T3": "MAE-ratio-to-B-const upper bound <= 0.6"
+  },
+  "pass_rule_P_cls": {
+   "R1": "succeeds on all 190 roots under the bars",
+   "R2": "beats R-cls (seed-0 random init, same read-out point): paired CI of median T1 difference below 0 and higher T2",
+   "R3": "p_arm = encoder_study.arm_pvalues <= 0.025 one-sided (one hypothesis, no Holm family)",
+   "R4": "not spurious: apple-hidden frames do not beat the prior on all roots; ablation renderer reproduces 190/190"
+  },
+  "reported_only": [
+   "P-tok",
+   "R-tok",
+   "P-mean",
+   "R-mean",
+   "L-raw",
+   "secondary train->val",
+   "P_cls-R_cls, P_cls-L_raw, P_tok-R_tok, P_tok-L_raw",
+   "visibility facts",
+   "prior summary",
+   "TASK-063 P-cls side by side"
+  ],
+  "stated_in_advance": [
+   "R2's T2 condition is strict",
+   "a failure is a live possibility: these roots are not the ones the look was chosen on",
+   "a pass removes no TASK-063 caveat"
+  ]
+ },
+ "guards_void_the_run": {
+  "G-hash": "every file in hashes matches before collection; clean tracked tree; src/**/*.py and tracked inputs unchanged at finalize",
+  "G-plan": "plan.json hashes to the pin (exact on macOS arm64, rounded everywhere) and is unchanged at finalize",
+  "G-stop": "supervisor cap not reached; every worker exits 0; no root left unstarted by the worker cap",
+  "Q-split": "exactly the planned 170 train + 20 val roots; any other id refused",
+  "Q-folds": "fold hash equals the pin",
+  "Q-render": "stored frame 0 and frame 8 equal fresh re-renders; post-look re-render stable",
+  "Q-expert": "recomputed post-look expert == collector__base_action[8] within 1e-6 on non-aim roots; first 8 phase labels are the look; stored apple label == reset truth within 1e-6 m",
+  "G-weights": "TASK-063's pinned DINOv2 files and both digests",
+  "G-repro": "second forward pass bit-identical",
+  "G-finite": "no non-finite feature",
+  "G-wall": "global wall cap",
+  "failed_roots": "a planned train/val root that is not stored (runtime error, look stopped before 8 transitions, never started) fails Q-split: V; a runtime error on a stored test root fails A13: C-DATA-FAIL; a failed look on a stored root fails L1 (data outcome, and C-READ-FAIL then cannot match); any other exception is a crash and V"
+ },
+ "pre_declared_outcomes_in_order": [
+  {
+   "row": "V",
+   "condition": "a guard fails, or the run stops before writing a complete report",
+   "next": "one from-scratch repeat"
+  },
+  {
+   "row": "C-ACCEPT",
+   "condition": "every acceptance check (A1-A13, L1) passes and the readability gate passes",
+   "reading": "corpus accepted as apple-look-v1",
+   "next": "a separately preregistered world-model task on apple-look-v1 with this frozen encoder as a candidate image encoder; no control formulation implied"
+  },
+  {
+   "row": "C-READ-FAIL",
+   "condition": "the readability gate fails and L1 holds (whatever the other acceptance checks say)",
+   "reading": "TASK-063's P-cls result does not replicate on fresh resets",
+   "next": "the abandonment clause fires"
+  },
+  {
+   "row": "C-DATA-FAIL",
+   "condition": "otherwise: at least one acceptance check fails (gate passing, or gate failing while L1 fails)",
+   "reading": "the corpus is not as designed; kept as evidence, not accepted, not repaired; a gate failure alongside a failed L1 is reported as confounded by the look",
+   "next": "any re-collection uses a new seed range and version, preregistered separately; no abandonment"
+  }
+ ],
+ "inconclusive_task_level": "a second V closes TASK-064 as INCONCLUSIVE; nothing is read; the abandonment clause does not fire",
+ "abandonment_clause": {
+  "fires_on": "C-READ-FAIL (which requires L1 to hold)",
+  "closes": "the frozen-DINOv2 route to a look-prefix corpus: no world model is preregistered on this corpus with this encoder, and no further pretrained encoder, read-out point, input size or look variant is preregistered on this corpus without new evidence of a different kind",
+  "corpus": "kept, sealed, as evidence",
+  "does_not_close": [
+   "the LeWM backend",
+   "the encoder as a component",
+   "the product goal"
+  ],
+  "context_not_preregistered": "the overview camera (TASK-061 O-raw 0.183 cm [0.168, 0.207], 185/190) is a hardware/workspace change; the owner's decision"
+ },
+ "void_rule": {
+  "void": "any early stop (guard, crash, cap) is V with a void_reason",
+  "repeat": "exactly one from-scratch repeat into data/apple-look-v1-run2 and data/apple-look-v1-run2-work, same seeds, caps, workers, device, clean tree",
+  "finalize_is_not_recovery": true,
+  "second_void": "INCONCLUSIVE",
+  "fixes_between_runs": "runner mechanics only, via a reviewed PR and a fresh pre-run GO, disclosed",
+  "rulings": "recorded with a UTC timestamp before the run they affect"
+ },
+ "budget": {
+  "device": "cpu",
+  "workers": 12,
+  "supervisor_seconds": 5400.0,
+  "worker_seconds": 4500.0,
+  "global_wall_seconds": 10800.0,
+  "blas_threads_per_worker": 1,
+  "mps": "not used; nothing is trained; CPU float32 keeps features bit-reproducible",
+  "expected": "collection 15-20 min, assembly and checks ~15 min, gate ~5 min; ~2.2 GB corpus + ~2 GB shards"
+ },
+ "run_command": "uv run --no-sync python scripts/collect_apple_look.py run --seeds frozen --output data/apple-look-v1 --work data/apple-look-v1-work",
+ "output": {
+  "dataset": "data/apple-look-v1",
+  "work": "data/apple-look-v1-work",
+  "report": "data/apple-look-v1-work/collection_report.json",
+  "never_committed": true
+ },
+ "pilot": {
+  "seeds": [
+   47900,
+   47931
+  ],
+  "purpose": "check the collector policy still succeeds from the post-look pose; time and storage; not evidence; not in the corpus",
+  "readability": "smoke mode: targets replaced by seeded noise; wiring only",
+  "directory": "outputs/task064-scratch/pilot-a",
+  "plan_sha256": "53bcdf42dbda54aeb5b840686ea94d94bb672aef4e4716d60eac2aec7e02767c",
+  "report_sha256": "21dd408d706d8979353ef61d365c916dfdf9e787cdcfc89567bce252fbc8d764",
+  "facts": {
+   "root_successes": "21/32",
+   "root_grasps": "24/32",
+   "stored_episodes": 127,
+   "branches_stored": "95/96",
+   "grasp_phase_failure_fraction": 0.488,
+   "look_state_spread": 0.0,
+   "collection_seconds": 146,
+   "total_seconds": 189,
+   "bytes": 347052601
+  },
+  "thresholds_changed": false,
+  "report_outcome_field": "the pilot report's outcome 'C-READ-FAIL' came from noise targets and the draft code and means nothing; PR 2 records pilot/smoke runs as 'smoke (not a row)'",
+  "earlier_smoke": "outputs/task064-scratch/smoke-a (4 roots, readability skipped), pipeline only"
+ },
+ "process": [
+  "PR 1: protocol, manifest, look_corpus.py, tests, task card; merges on a reported APPROVE and green CI",
+  "PR 2: collector, readability gate, guard tests, script pins; merges on a reported APPROVE and green CI",
+  "gated run starts only on the pre-run reviewer's reported verdict, never on a review file read from disk",
+  "PR 3: results document, results manifest (dataset manifest hash), summarize script; a reviewer checks every restated number by script",
+  "one task, one agent; post-freeze defects fixed only through a disclosed amendment"
+ ],
+ "not_done": [
+  "no encoder trained or fine-tuned",
+  "no world model trained",
+  "no controller trained or evaluated",
+  "no closed-loop attempt",
+  "no cohort opened",
+  "no second encoder, input size, read-out point or look",
+  "floor-seed variance not measured",
+  "no hand crop, no overview camera"
+ ],
+ "hashes": {
+  "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+  "benchmarks/manifests/apple-pretrained-encoder-v1-results.json": "6416092cbbcde5993804406bcca617257cc2d1afcb923fca50647788301041e3",
+  "benchmarks/manifests/apple-pretrained-encoder-v1.json": "01b374962b5a6201d29216dd47bcd3870b43d0f14c3537dafecf32c54b711f03",
+  "benchmarks/manifests/apple-wide-collection-v1.json": "ee74b8cb0aaa1485fa27188779236230de7b7c8f619722e6794840d39bdddad8",
+  "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+  "docs/experiments/apple_pretrained_encoder_v1_results.md": "c4ddf68c87f9de4943f187742f54b1b9fe2be2d8509165ac68a5ed79cc116008",
+  "outputs/task063-pretrained-encoder/run-1/report.json": "575ae6500c33c480b36fcf956f810d5b8815da22d92ef5093011b7b4b22ee90b",
+  "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+  "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
+  "scripts/fetch_dinov2.py": "f34bb01300448b7ef029a8fd899cd55ab2607ac696a11de18d3bfc71fecaeea7",
+  "scripts/probe_info_ceiling.py": "f64b01a1db02b5e82540d9b941fe4508d509287a0a82a8d90204fcda83b21dd2",
+  "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
+  "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+  "src/embodied_jepa/encoder_study.py": "bcb1c8b2509539d46c421f43668aadfb2be3d074b369654a0e49b5baddc511fe",
+  "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+  "src/embodied_jepa/look_corpus.py": "5b7e71c7a7a8db1078101808f1f9a945958412d92b48f2b38c7f6eddf995b696",
+  "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+  "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+  "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
+  "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+  "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+  "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+  "src/embodied_jepa/training_labels.py": "59b4e5db91b257c5da23c3a4377d52b3f0acdca543acbded8102ed2777dc5f3d",
+  "third_party/dinov2-small/README.md": "4c20dca454a8e5c670e8de5c7e6040f512aeca5438516f7623eedc4e3b00599c",
+  "third_party/dinov2-small/config.json": "1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d",
+  "third_party/dinov2-small/model.safetensors": "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1"
+ }
+}
