@@ -4,7 +4,7 @@ aliases:
 - TASK-064
 title: Preregister and collect the look-prefix 112 px Apple corpus with the frozen DINOv2 encoder as candidate image encoder
 slug: preregister-and-collect-the-look-prefix-112-px-apple-corpus-with-the-frozen-dino
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -20,6 +20,7 @@ due_date: ''
 created: 2026-09-26
 updated: 2026-09-26
 ---
+
 
 
 # Preregister and collect the look-prefix 112 px Apple corpus with the frozen DINOv2 encoder as candidate image encoder
@@ -53,17 +54,18 @@ Manifest: `benchmarks/manifests/apple-look-corpus-v1.json`.
 Design code: `src/embodied_jepa/look_corpus.py`.
 
 ## Acceptance Criteria
-- [ ] PR 1 (protocol, manifest, `look_corpus.py`, tests, task card) merges on an independent
-      reviewer's reported APPROVE and green CI, before any corpus seed is simulated.
-- [ ] PR 2 (collector, readability gate, guard tests, script pins) merges on a reported APPROVE
-      and green CI.
-- [ ] The gated run starts only on the pre-run reviewer's reported verdict, from a clean tree.
-- [ ] PR 3 (results document, results manifest with the dataset manifest hash, summarize script)
+- [x] PR 1 (protocol, manifest, `look_corpus.py`, tests, task card) merges on an independent
+      reviewer's reported APPROVE and green CI, before any corpus seed is simulated (#65, 22f51c3).
+- [x] PR 2 (collector, readability gate, guard tests, script pins) merges on a reported APPROVE
+      and green CI (#66, 1a7e9d5).
+- [x] The gated run starts only on the pre-run reviewer's reported verdict, from a clean tree
+      (PRE-RUN: GO; started about 2026-09-26T20:49:00Z at 1a7e9d5).
+- [x] PR 3 (ticked on the reviewer's reported APPROVE) (results document, results manifest with the dataset manifest hash, summarize script)
       states the outcome row, every acceptance quantity, the readability numbers with CIs against
       floor and baselines, every negative result and a recommended (not chosen) next task; a
       reviewer checks every restated number against `collection_report.json` by script. The data
       is never committed.
-- [ ] The test split is never decoded; cohorts C and D are untouched; `exemption_spent` stays
+- [x] The test split is never decoded; cohorts C and D are untouched; `exemption_spent` stays
       false.
 
 ## Notes
@@ -76,4 +78,22 @@ Design code: `src/embodied_jepa/look_corpus.py`.
 - Worktree: `data`, `outputs`, `checkpoints`, `third_party` and `.venv` are ignored
   convenience symlinks to the main checkout; nothing under them is overwritten.
 
+## Results (2026-09-26)
+
+**Outcome C-ACCEPT; the corpus is accepted as `apple-look-v1`** (run-1, 1a7e9d5, 1323 s, CPU;
+all guards passed; no void). Dataset manifest sha256 `81d760d1…db64` (2.06 GB, not committed);
+report sha256 `f3d2d3d5…6680`.
+- Corpus: 200 roots + 599 branches, 200 345 transitions; A1-A13 and L1 all pass. Scripted
+  collector (not learned): 103/200 root successes, 330 grasp-phase successes (failure fraction
+  0.587). The look is identical on all 200 roots (spread 0.0, no contact).
+- Readability gate on 190 fresh train + val roots: P-cls 0.550 cm [0.478, 0.642], 178/190
+  (B-maj 0.705); beats R-cls by −0.298 cm [−0.454, −0.178] (172/190); p_arm 1.3e-12;
+  apple-caused (hidden: 2.371 cm, 91/190). TASK-063's P-cls result replicated.
+- Caveats: P-cls − L-raw −0.034 cm [−0.125, 0.054] (not detectably different from raw pixels);
+  R-tok meets the bars alone (R-cls missed T3 here); one encoder, one floor seed; cause
+  unidentified; readability is not prediction. **Learned Apple->Plate is still 0 successes.**
+- Recommended (owner chooses): a separately preregistered world-model task on `apple-look-v1`
+  with this frozen encoder as a candidate; no control formulation implied.
+- Results: `docs/experiments/apple_look_corpus_v1_results.md`,
+  `benchmarks/manifests/apple-look-corpus-v1-results.json`.
 %% mc-links: [[TASK-063]] %%
