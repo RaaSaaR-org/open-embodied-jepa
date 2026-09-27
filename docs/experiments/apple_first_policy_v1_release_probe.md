@@ -111,4 +111,65 @@ number exists. The probe's outcomes choose nothing.
 
 ## 5. Results
 
-*To be filled from `report.json` after the run; nothing below §4 is written before it.*
+*§1–§4 were committed at `e694a45` before the run (draft PR #85).*
+
+**Row: P-CANDIDATE-FAIL.**
+- The mechanism is confirmed by the pre-declared criteria: the release lands **short** of the
+  centre, and every failure at 1.0 cm is a placement outside the radius.
+- The candidate collector reaches only **23/32** at 1.0 cm, below the 28/32 that R8 requires.
+- **Under R8 the work stops here and is reported back.** There is no amendment PR, no option (b),
+  and no bar change.
+
+**Provenance.**
+- run-1 at `e694a45`, clean tree, 463 s, 8 workers on CPU.
+- `outputs/task067-release-probe/run-1/report.json`, sha256 `4ce9a113…6d4f`.
+- 192 attempts, 0 errors.
+
+| arm @ plate error | successes / 32 | grasp | transport | landing dx (cm), q10 / q50 / q90 | landing distance (cm), q10 / q50 / q90 | failures, all transported and landed outside 4 cm |
+|---|---|---|---|---|---|---|
+| current @ 0 | **32** | 32 | 32 | −2.89 / **−2.71** / −2.22 | 2.36 / 2.72 / 2.90 | 0 |
+| current @ 1.0 cm | **21** | 32 | 32 | −3.60 / −2.39 / +3.70 | 2.72 / 3.74 / 4.59 | 11 (11) |
+| current @ 1.5 cm | 24 | 32 | 32 | −3.44 / −1.79 / +3.25 | 2.74 / 3.44 / 4.54 | 8 (8) |
+| candidate @ 0 | 15 | 32 | 32 | −2.70 / +3.12 / +3.88 | 3.18 / 4.53 / 4.57 | 17 (17) |
+| candidate @ 1.0 cm | **23** | 32 | 32 | −2.67 / +3.51 / +3.88 | 2.83 / 3.79 / 4.56 | 9 (9) |
+| candidate @ 1.5 cm | 11 | 32 | 32 | −2.84 / +2.72 / +3.96 | 2.95 / 4.54 / 4.59 | 21 (21) |
+
+**Terminations.** Every success ends in `success`. Every failure ends in `policy_complete`: the
+collector finished its 745 commands with the apple held and transported, but not resting inside
+the radius. No attempt was guard-refused, dropped the apple before transport, or hit the 800-step
+cap.
+
+**Reading (interpretation, not measurement).**
+1. **The current collector lands about 2.7 cm short of the centre, not 3.5 cm.**
+   - Median dx is −2.71 cm (q10–q90 −2.89 to −2.22) with the plate exact. That leaves about
+     1.3 cm of margin to the 4 cm radius.
+   - This falls inside the pre-declared band [−4.5, −2.5], so by the declared rule the mechanism
+     is confirmed.
+   - The results document's "3.5 cm short" figure (§4.2, derived from code constants) overstates
+     the shortfall by about 0.8 cm. The apple travels about 0.8 cm forward after release, which
+     fits §1's disclosure that it moves forward.
+   - C0's 21/32 at 1.0 cm reproduces exactly on these fresh seeds.
+2. **Releasing over the centre makes landing worse and bimodal.**
+   - With the plate exact, the candidate lands either about 2.7 cm short or about 3.1–3.9 cm
+     beyond the centre. The median is +3.12 cm and the median distance is 4.53 cm.
+   - It succeeds on only 15/32 with no plate error. This matches TASK-031's shift-0 record
+     (+3.6 to +3.7 cm), as §1 predicted before the run.
+   - Its 23/32 at 1.0 cm is higher than its own reference, because some error directions happen to
+     offset the forward bounce. That is chance compensation, not tolerance.
+3. **Two things together bind: the landing is sensitive to how the apple leaves the hand, and the
+   margin is small.** Moving the release point alone does not create a margin; on these data it
+   removes the one the current setting has. This is an inference from the table. No release
+   height, opening schedule or orientation was varied.
+
+**What this does not show.** It does not show that no expert modification could tolerate 1.0 cm
+of plate error. Only the one pre-declared candidate was tested, as R8 specifies. A different
+release (lower, slower opening, a place-then-open schedule) is untested. Choosing one would be a
+new design decision, and it belongs to the owner.
+
+**Next (the owner decides; nothing is started).** R8's stop condition applies. Possible routes,
+each needing the owner's ruling:
+- a different, pre-declared expert release design, probed the same way on fresh seeds;
+- a different scoring or plate geometry, which would be a task change;
+- closing TASK-067 on the calibration finding.
+
+Learned Apple→Plate is still 0 successes.
