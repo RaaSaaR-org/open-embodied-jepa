@@ -2,9 +2,9 @@
 
 **Outcome: CAL-ESCALATE.** The run stopped at the C0 calibration, as §7.1 of the protocol
 prescribes. The expert's tolerance to plate error fell below 28/32 at the smallest preregistered
-plate level (1.0 cm → 21/32), so no feasible plate bar exists (the apple bar was feasible). This is a declared early-stop
-row. It is **not** V: nothing is repeated. **The abandonment clause does not fire; the owner
-decides what follows** (§9).
+plate level (1.0 cm → 21/32), so no feasible plate bar exists (the apple bar was feasible). This
+is a declared early-stop row. It is **not** V: nothing is repeated. **The abandonment clause does
+not fire; the owner decides what follows** (§9).
 
 **Status lines.**
 - **Learned Apple→Plate is still 0 successes.** No policy was trained: the run stopped before
@@ -134,9 +134,8 @@ plate part has no feasible level, so CAL-ESCALATE is the row.
      one.
    - Under this reading the collector's own placement has almost no x margin, and a learned policy
      that imitates it inherits that margin. **Whether a plate readout can reach about 0.5 cm in x
-     is not known from this run:** S0-P was never evaluated. Our prior expectation is that it is
-     hard, because the plate readout has never been measured. That is an expectation, not a
-     result.
+     is not known from this run:** S0-P was never evaluated, and no plate readout has been
+     measured in this project.
    - **The harness alternative in protocol §9 ("the harness is off") is not supported.** The
      reference condition scored 32/32 and the two smallest apple levels 32/32, on the same seeds
      and code path.
@@ -162,9 +161,9 @@ each needing its own disclosed amendment or a new protocol version:
   a small, disclosed probe that records C0's per-attempt apple landing positions on fresh
   calibration seeds.
 - **(b) Add plate levels below 1.0 cm to C0** (for example 0.25 and 0.5 cm). This would at best
-  set a plate bar of about 0.5 cm or tighter. Our prior expectation, not a measurement, is that
-  the readout would struggle to meet it, making S0-PLATE-FAIL a plausible next row. For that
-  reason it is not the first recommendation.
+  set a plate bar of about 0.5 cm or tighter. Whether a readout can meet that is unknown, so
+  S0-PLATE-FAIL would be a possible next row. It also leaves the collector's small x margin in
+  place, which is why (a) is recommended first.
 - **(c) Stop TASK-067 here** and record the calibration finding.
 
 **Context, not a basis for this decision.** TASK-066 has since ended as WM-TOK-DYNAMICS on the
