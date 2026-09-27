@@ -413,7 +413,30 @@ channel-PCA 8 × 8 grid (unvalidated design). Its grounds:
   (P-cls, P-tok). The check says nothing about the outcome: it cannot bias G1–G4, or the
   W-versus-encoded comparison in G5.
 
-⟨PRECHECK: results⟩
+**The corpus ceiling pre-check: result.** Report `outputs/task066-calibration/ceiling-1/report.json`,
+revision `96ed14c`, clean tree, 286 s.
+- Both fold hashes matched: TASK-064's 190-root folds and the run's 170-root folds.
+- Frame-0 apple labels matched TASK-064's reset truth within 1.5e-8 m.
+- No predictor was built, and `test_split_decoded` is false.
+
+Reading the table: median T1 in cm, with its 95 % interval in the first brackets and the 95 %
+interval of the ratio to B-occ (1.866 cm) in the second. Every entry here meets the T1 bar.
+
+| roots | h | 4 × 4 grid | full P-tok 16 × 16 | 4 × 4 − P-tok (paired median difference, cm) |
+|---|---|---|---|---|
+| 190 (decisional) | 0 | 0.504 [0.453, 0.581], [0.237, 0.331] | 0.456 [0.406, 0.528], [0.213, 0.300] | +0.049 [−0.003, 0.111] |
+| 190 (decisional) | 8 | 0.607 [0.542, 0.655], [0.287, 0.381] | 0.517 [0.451, 0.611], [0.242, 0.336] | +0.090 [0.009, 0.137] |
+| 190 (decisional) | 16 | 0.492 [0.424, 0.564], [0.222, 0.320] | 0.456 [0.397, 0.501], [0.211, 0.291] | +0.035 [−0.025, 0.097] |
+| 170 train (reported; the run's ceiling) | 8 | 0.632 [0.559, 0.703], [0.290, 0.400] | 0.572 [0.483, 0.643], [0.252, 0.366] | +0.059 [−0.011, 0.134] |
+| 170 train (reported; the run's ceiling) | 16 | 0.503 [0.443, 0.571], [0.232, 0.329] | 0.439 [0.381, 0.523], [0.200, 0.291] | +0.064 [0.004, 0.118] |
+
+- **Verdict: keep 4 × 4 and freeze.** The 190-root and 170-root verdicts agree.
+- Full P-tok at h = 0 on the 190 roots reproduces TASK-064's published 0.456 cm
+  [0.406, 0.528].
+- The pooling costs 0.04–0.09 cm of readability, detectable at some horizons. That loss is part
+  of the latent this task tests, and it is disclosed.
+- **Consequence for G5, stated before any model is trained.** The encoded 4 × 4 ceiling reads
+  about 0.50–0.63 cm at the gated horizons.
 
 ### 6.4 Results (recorded; report `outputs/task066-calibration/run-1/report.json`)
 
@@ -476,15 +499,18 @@ and h = 16**; a gate passes for a seed only if it passes at both.
 
 | gate | set | passes when (at h = 8 and h = 16) |
 |---|---|---|
-| **G1 no collapse** | E-all | collapsed fraction ≤ 0.05, **and** effective-rank ratio ≥ **⟨CAL: B_rank⟩**, **and** std ratio ≥ **⟨CAL: B_std⟩** (both calibrated, §6) |
+| **G1 no collapse** | E-all | (i) collapsed fraction ≤ 0.05; **and** (ii) effective-rank ratio ≥ **⟨CAL: B_rank⟩** and std ratio ≥ **⟨CAL: B_std⟩** (calibrated, never below 0.10 and 0.25; full-width statistic, both halves pooled); **and** (iii) lower 95 % bound of (rank ratio W − rank ratio N) **> 0** (projected 256-direction basis, 2000 session-clustered resamples, seed 6603, no undefined resample) |
 | **G2 beats copy-last** | E-all | upper 95 % bound of MSE(W) / MSE(copy-last) **≤ 0.8** |
 | **G3 beats no-action** | E-all | upper 95 % bound of MSE(W) / MSE(N) **< 1.0** |
 | **G4 action sensitivity** | E-all | lower 95 % bounds of MSE(W, wrong) / MSE(W, true) and MSE(W, zero) / MSE(W, true) **≥ 1.10**, with no undefined resample |
 | **G5 the apple stays readable** | E-post | W's predicted grid under the frame-(8 + h) probe: median T1 **≤ 1.5 cm**, upper bound of its ratio to B-occ **≤ 0.6**, and upper bound of (median W − median encoded frame 8 + h) **≤ 0.5 cm** |
 
-**The ceiling condition (not a gate; it selects a row).** The encoded grid of frame 8 + h itself
-meets the T1 bar (median ≤ 1.5 cm and ratio-to-B-occ upper bound ≤ 0.6) at h = 8 and h = 16. If it
-does not, G5 cannot test prediction on this latent (row WM-TOK-CEILING).
+**The ceiling condition (not a gate; it selects a row).** In the run, on the 170 train roots
+with the run's folds, the encoded 4 × 4 grid of frame 8 + h, read by the cross-fitted
+frame-(8 + h) probe, meets the TASK-059 T1 bar (median ≤ 1.5 cm **and** upper bound of the
+ratio to B-occ ≤ 0.6) at h = 8 **and** at h = 16 (`token_dynamics.ceiling_passes`). If it misses
+at either horizon, G5 cannot test prediction on this latent (row WM-TOK-CEILING). The pre-check
+(§6.6) read 0.632 and 0.503 cm, with upper bounds 0.400 and 0.329, on the same quantity.
 
 **Why these thresholds.**
 - **G1's bars are calibrated** (§6). This is the one change of substance to TASK-065's gates.
@@ -613,7 +639,31 @@ uv run --no-sync python scripts/train_apple_token_dynamics.py run \
 
 ## 14. Pre-freeze facts (disclosed; they fit nothing on the corpus)
 
-⟨ANCHOR and timing: to be filled⟩
+**The anchor holds, for all 190 roots, partial batches included.**
+- Report `outputs/task066-calibration/anchor-1/report.json`: revision `f78257c`, clean tree,
+  183 s, features only.
+- The 190 post-look frames, featurised as TASK-064 did (its root order, batches of 16), hash to
+  TASK-064's recorded values:
+  - the frames to `20b67967…3612`;
+  - the CLS to `P_cls` `24bc50f5…feec`;
+  - **the tokens to `P_tok` `d702fa64…f424`**.
+  A second featurisation is bit-identical.
+- **Pooled cache rows against pooled anchor rows, all 190 roots.**
+  - Max absolute difference 2.93e-5; max relative to the row norm 3.6e-6.
+  - The differing roots are exactly the 14 that formed TASK-064's partial final anchor batch,
+    47186–47199. That is TASK-065 run-1's batch-size effect, as expected, and 34× under the
+    1e-3 bound.
+  - The cache layout is itself bit-identical on a second featurisation.
+- **Whole episodes with partial final batches** (`look-47000`, 510 frames, final batch 14;
+  `look-47001`, 529 frames, final batch 1) re-featurise bit-identically. The runner's G-cache (b)
+  repeats this check in the run.
+
+**Timing and memory (synthetic inputs, MPS, batch 64 × 16).**
+- A token update takes 0.095 s at 4 × 4 (0.281 s on CPU) and 0.313 s at 8 × 8.
+- Prediction of 2048 windows × 16 steps takes 0.85 s.
+- Three concurrent MPS processes run at about 0.19–0.22 s per update each.
+- Featurisation takes about 13.4 ms per frame on 6 CPU threads (pilot, 33 878 frames).
+- One 6144 × 6144 eigendecomposition takes about 13 s (float64).
 
 - **No label was read** by this task before the freeze. TASK-065's disclosed inspection of 40 train
   roots' labels (the apple static until frame ≥ 117) is carried forward, not repeated.
