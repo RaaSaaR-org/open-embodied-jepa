@@ -1,0 +1,455 @@
+{
+  "protocol": "apple_first_policy_v1",
+  "task": "TASK-067",
+  "status": "preregistered; no policy trained, nothing simulated",
+  "document": "docs/experiments/apple_first_policy_v1.md",
+  "owner_rulings": {
+    "received_utc": "2026-09-27T12:43Z",
+    "relayed_by": "the coordinator, for the task owner",
+    "R1": "R1 (clause scope): allowed. The TASK-057 clause stops BC on `apple-wide-v1` + 112 px onboard. TASK-067 uses a different corpus (`apple-look-v1`), a different observation protocol (the look prefix) and a different encoder (DINOv2, readable per TASK-063/064), so it is not a third formulation on that corpus. Disclose prominently that the camera and resolution are unchanged, and state the rationale as an information change, not a retry of the formulation.",
+    "R2": "R2 (learned inputs): accepted. The fixed look prefix, the step counter and the palm pose from forward kinematics all count as legitimate non-privileged inputs. A perception head trained on privileged labels is fine, provided the evaluation makes zero privileged reads. Privileged-expert DAgger labelling is fine at training time only. Label all of these explicitly in the \"learned\" ladder.",
+    "R3": "R3 (primary, fallback, milestone): accepted as proposed. Up to 4 dev-cohort evaluations, with the carried policy selected on dev. The dev result is an existence result only. Any \"learned policy works\" claim must come from the gated cohort-C test against open-loop replay (5/16 on dev) and the named controls. Preregister the fallback trigger exactly as you proposed.",
+    "R4": "R4: accepted. A first success counts as \"learned policy with a DINOv2 encoder\", never \"LeWM driving the robot\". The docs keep that distinction.",
+    "R5": "R5: seeds 46000–46999 are accepted, on condition that you grep the repo, including the manifests, and confirm no overlap. Record the check.",
+    "correction_received_after": "Correction to my last message: the TASK-066 GPU hold runs until about 00:10Z on 2026-09-28 (hard cap 04:08Z), not 2028. Nothing else changes."
+  },
+  "seed_overlap_check": {
+    "performed_utc": "2026-09-27",
+    "revision": "f2e9f63",
+    "command": "grep -rnoE '\\b46[0-9]{3}\\b' --include='*.py' --include='*.json' --include='*.md' --include='*.yaml' --include='*.yml' --include='*.sh' .",
+    "hits": {
+      "docs/experiments/control_formulation_proposal_v1.md": "the proposal naming this range",
+      "tests/test_policy_preflight.py": "46000 as an example of a seed a guard must refuse",
+      "docs/experiments/apple_policy_v1_results.md": "46000 in the same guard discussion",
+      "docs/experiments/reach_pilot_v2.md": "0.46038, a decimal, not a seed",
+      "docs/experiments/apple_control_results_v2_resumed1.md": "0.46615 m, a distance"
+    },
+    "declared_ranges_checked": "every range(...) or (low, high) seed pair in src, scripts, tests and benchmarks/manifests; none contains any of 46000-46999",
+    "local_corpora_checked": "no data/*/meta/jepa_manifest.json records a reset seed in 46000-46999",
+    "result": "no overlap"
+  },
+  "frozen": {
+    "protocol": "apple_first_policy_v1",
+    "task": "TASK-067",
+    "owner_rulings_utc": "2026-09-27T12:43Z",
+    "dataset": "data/apple-look-v1",
+    "dataset_manifest_sha256": "81d760d1f5a61834b4f37c3daf12ad1a7175e57fe99fe11d5fb4cecbff8edb64",
+    "read_splits": [
+      "train",
+      "val"
+    ],
+    "look_steps": 8,
+    "decision_frame": 8,
+    "image_size": 112,
+    "seed_ranges": {
+      "perception_train": [
+        46000,
+        46255
+      ],
+      "perception_heldout": [
+        46256,
+        46383
+      ],
+      "calibration_C0": [
+        46384,
+        46415
+      ],
+      "dagger_1": [
+        46416,
+        46543
+      ],
+      "dagger_2": [
+        46544,
+        46671
+      ],
+      "dagger_3": [
+        46672,
+        46799
+      ]
+    },
+    "reserved_unused": [
+      46800,
+      46999
+    ],
+    "cohort_D": [
+      45000,
+      45001,
+      45002,
+      45003,
+      45004,
+      45005,
+      45006,
+      45007,
+      45100,
+      45101,
+      45102,
+      45103,
+      45104,
+      45105,
+      45106,
+      45107
+    ],
+    "cohort_C": [
+      45300,
+      45301,
+      45302,
+      45303,
+      45304,
+      45305,
+      45306,
+      45307,
+      45308,
+      45309,
+      45310,
+      45311,
+      45312,
+      45313,
+      45314,
+      45315,
+      45316,
+      45317,
+      45318,
+      45319,
+      45320,
+      45321,
+      45322,
+      45323,
+      45324,
+      45325,
+      45326,
+      45327,
+      45328,
+      45329,
+      45330,
+      45331,
+      45332,
+      45333,
+      45334,
+      45335,
+      45336,
+      45337,
+      45338,
+      45339
+    ],
+    "forbidden_ranges": {
+      "mvp_frozen_resets": [
+        20000,
+        20049
+      ],
+      "mechanics_probes": [
+        41000,
+        41101
+      ],
+      "earlier_train_val_test": [
+        42000,
+        42031
+      ],
+      "narrow_development": [
+        43000,
+        43004
+      ],
+      "final_cohort": [
+        44000,
+        44019
+      ],
+      "cohort_D_and_prior_ceilings": [
+        45000,
+        45207
+      ],
+      "cohort_C": [
+        45300,
+        45339
+      ],
+      "apple_look_v1_corpus": [
+        47000,
+        47199
+      ],
+      "apple_look_pilots": [
+        47900,
+        47931
+      ],
+      "apple_wide_v1_corpus_and_pilots": [
+        48000,
+        48999
+      ],
+      "grasp_closure_probes": [
+        49000,
+        49199
+      ]
+    },
+    "seeds": {
+      "model": 0,
+      "readout_folds": 6701,
+      "c0_directions": 6700,
+      "train_sampler": 6702,
+      "random_controller": 6703
+    },
+    "phases": [
+      "orient",
+      "descend",
+      "close",
+      "lift",
+      "transfer",
+      "release_high",
+      "lower_open",
+      "retreat"
+    ],
+    "phase_budgets": [
+      130,
+      80,
+      45,
+      150,
+      60,
+      100,
+      100,
+      80
+    ],
+    "max_policy_steps": 800,
+    "free_indices": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      13
+    ],
+    "config_bounds": "configs/apple_wm_v4.yaml",
+    "clock_frequencies": 16,
+    "policy_inputs": {
+      "estimates": 4,
+      "clock": 33,
+      "proprioception": 86,
+      "palm_pose": 9
+    },
+    "policy_head": {
+      "layers": "LayerNorm -> Linear(132, 512) -> SiLU -> Linear(512, 512) -> SiLU -> Linear(512, 512) -> SiLU -> Linear(512, 7)",
+      "loss": "mean squared error on the 7 free dimensions of the expert label (clipped to configured bounds), inputs standardised by train moments"
+    },
+    "training": {
+      "device": "mps",
+      "optimizer": "AdamW",
+      "learning_rate": 0.0003,
+      "final_learning_rate": 3e-05,
+      "weight_decay": 0.0001,
+      "grad_clip": 1.0,
+      "batch": 256,
+      "updates": 30000,
+      "selection_every": 1000,
+      "selection_min_output_std": 0.02
+    },
+    "dagger": {
+      "iterations": 3,
+      "resets_per_iteration": 128
+    },
+    "sim_workers": 8,
+    "readout": {
+      "feature": "tokens",
+      "family": "TASK-063 probe: linear and RBF kernel ridge, family and lambda by inner CV",
+      "folds": 10
+    },
+    "c0": {
+      "apple_levels_cm": [
+        0.5,
+        0.8,
+        1.0,
+        1.2
+      ],
+      "plate_levels_cm": [
+        1.0,
+        1.5,
+        2.0,
+        2.5
+      ],
+      "resets": 32,
+      "min_successes": 28,
+      "caps_cm": {
+        "apple_median": 0.75,
+        "apple_p90": 1.2,
+        "plate_median": 1.5,
+        "plate_p90": 2.5
+      }
+    },
+    "ladder": {
+      "L1": "learned policy",
+      "L2": "partially learned",
+      "L3": "learned perception, scripted control (not learned)",
+      "L4": "privileged, scripted, replayed or substituted (not learned)"
+    },
+    "arms": {
+      "P-0": [
+        "L1",
+        "P after behaviour cloning only"
+      ],
+      "P-1": [
+        "L1",
+        "P after DAgger iteration 1"
+      ],
+      "P-2": [
+        "L1",
+        "P after DAgger iteration 2"
+      ],
+      "P-3": [
+        "L1",
+        "P after DAgger iteration 3"
+      ],
+      "C-3": [
+        "L1",
+        "no-image control: estimates fixed to the train mean; own DAgger x3"
+      ],
+      "R-3": [
+        "L1",
+        "random-init DINOv2 floor: same pipeline on seed-0 tokens; own DAgger x3"
+      ],
+      "F": [
+        "L2",
+        "fallback: per-phase heads, phase from the collector's clock schedule"
+      ],
+      "A4-look": [
+        "L3",
+        "readout estimates -> scripted apple_collector_policy"
+      ],
+      "D-oracle-perc": [
+        "L4",
+        "P's carried head fed true apple and plate xy"
+      ],
+      "B-oracle": [
+        "L4",
+        "scripted_oracle with the look (harness)"
+      ],
+      "B-hold": [
+        "L4",
+        "hold (harness)"
+      ],
+      "B-random": [
+        "L4",
+        "uniform random within configured bounds (harness)"
+      ],
+      "B-replay": [
+        "L4",
+        "open-loop replay of the nearest successful non-aim train root"
+      ]
+    },
+    "learned_arms": [
+      "P-0",
+      "P-1",
+      "P-2",
+      "P-3",
+      "C-3",
+      "R-3"
+    ],
+    "m1_arms": [
+      "P-0",
+      "P-1",
+      "P-2",
+      "P-3",
+      "C-3",
+      "R-3",
+      "A4-look",
+      "D-oracle-perc",
+      "B-oracle",
+      "B-hold",
+      "B-random",
+      "B-replay"
+    ],
+    "a4_threshold": {
+      "rule": "ceil(0.5 x 16 x mean predicted rate from C0 and S0-P), at least 1",
+      "fraction": 0.5,
+      "minimum": 1
+    },
+    "input_std_floor": 0.001,
+    "worker_torch_threads": 1,
+    "intermediate_states": [
+      "M1-MOTOR"
+    ],
+    "declared_early_stops": [
+      "CAL-ESCALATE",
+      "S0-APPLE-FAIL",
+      "S0-PLATE-FAIL"
+    ],
+    "void_rule": "a run that stops early other than at a declared early-stop row (CAL-ESCALATE, S0-APPLE-FAIL, S0-PLATE-FAIL) is V; exactly one from-scratch repeat with the same seeds, caps and device; a second V closes TASK-067 as INCONCLUSIVE",
+    "no_eligible_checkpoint": "the arm scores 0/16 on D, reported as no_eligible_checkpoint",
+    "ladder_allowances_L1": {
+      "a": "the fixed look prefix (reset-independent, non-privileged)",
+      "b": "the step counter (non-privileged)",
+      "c": "the palm pose by forward kinematics of the robot's own joint readings",
+      "d": "a perception readout trained on privileged reset labels; zero privileged reads at evaluation",
+      "e": "privileged-expert DAgger labels, at training time only"
+    },
+    "oracle_min_successes": 14,
+    "rows": [
+      "V",
+      "INCONCLUSIVE",
+      "CAL-ESCALATE",
+      "S0-APPLE-FAIL",
+      "S0-PLATE-FAIL",
+      "M1-PASS",
+      "M1-MOTOR-F-PARTIAL",
+      "M1-MOTOR-F-NONE",
+      "M1-PERCEPTION"
+    ],
+    "clause_rows": [
+      "M1-MOTOR-F-NONE",
+      "M1-PERCEPTION",
+      "S0-APPLE-FAIL"
+    ],
+    "m2": {
+      "G1_min_successes": 17,
+      "G2_min_difference_vs_C": 8,
+      "G3_min_difference_vs_R": 8,
+      "G4_min_grasps": 20,
+      "G5_harness": {
+        "B-hold_grasp": 0,
+        "B-random_grasp": 0,
+        "B-oracle_min_successes": 38
+      },
+      "G6_privileged_reads": 0,
+      "G7_max_median_control_seconds": 0.1,
+      "stop_rule": "the carried P-k does not run on C if it has 0/16 grasps on D (then M2 fails); the controls C-3, R-3, B-replay and the harness always run on C",
+      "exemption_spent_cited": "apple-policy-diagnostics-v1.json precedence_rule_D1_over_G_SUB.exemption_spent is false at preregistration and is not claimed",
+      "rows": {
+        "M2-PASS": "every gate passes: a learned policy with a DINOv2 encoder works on this cohort (not LeWM driving the robot)",
+        "M2-FAIL-VISION": "G1 and G4 pass, G2 fails: no evidence the image is used",
+        "M2-FAIL": "any other failing gate; the claim is not made; the owner decides",
+        "M2-VOID": "G5 or G6 fails: the run is invalid, not the arms"
+      },
+      "cohort_values": "stored in benchmarks/manifests/apple-policy-v1.json, never recomputed"
+    },
+    "caps_seconds": {
+      "global": 36000.0,
+      "per_training": 1800.0,
+      "per_rollout_batch": 3600.0,
+      "c0": 3600.0,
+      "perception_collection": 1800.0,
+      "per_attempt": 300.0
+    },
+    "devices": {
+      "features": "cpu",
+      "training": "mps",
+      "rollouts": "cpu"
+    }
+  },
+  "exemption_spent_cited": {
+    "field": "benchmarks/manifests/apple-policy-diagnostics-v1.json precedence_rule_D1_over_G_SUB.exemption_spent",
+    "value_at_preregistration": false,
+    "claimed_here": false
+  },
+  "differences_from_proposal": {
+    "owner_confirmation_needed": [
+      "C-3 (no-image control with its own DAgger x3) replaces the proposal's C-noimg (P-0's recipe, BC only)",
+      "R-3 (random-init floor) is added to M1 and to the learned arms; the proposal had it in M2 G3 only"
+    ],
+    "recorded": [
+      "C0: 9 conditions (4 levels each + reference), caps 0.75/1.2 cm apple, 1.5/2.5 cm plate",
+      "S0-APPLE-FAIL fires the clause outright (the proposal's owner-override is removed)",
+      "DAgger frames are not added to the readout (frozen before any closed loop)",
+      "S0-D1 compares estimates within 1e-4 m at batch size 1, not features",
+      "readout at the tokens read-out point",
+      "no apple-hidden spurious check",
+      "M2 rows added; the stop rule applies to the carried P-k only; controls always run"
+    ],
+    "a4_trigger": "calibrated from C0 and S0-P as proposed (an uncalibrated 8/16 in the first draft of PR #78 was replaced after review, before any merge)"
+  },
+  "calibration": null,
+  "results": null
+}

@@ -2,9 +2,9 @@
 id: TASK-067
 aliases:
 - TASK-067
-title: Propose, then preregister on the owner's ruling, an information-matched control formulation for a first learned Apple->Plate success (DRAFT)
+title: Preregister and run an information-matched learned policy for a first learned Apple->Plate success on the development cohort
 slug: propose-and-preregister-an-information-matched-control-formulation-for-a-first-learned-apple-to-plate-success
-status: backlog
+status: in-progress
 priority: 1
 owner: ''
 projects: []
@@ -12,7 +12,7 @@ customers: []
 tags:
 - apple-pnp
 - control
-- proposal
+- policy
 sprint: ''
 depends_on:
 - "[[TASK-064]]"
@@ -22,55 +22,71 @@ updated: 2026-09-27
 ---
 
 
-# Propose, then preregister on the owner's ruling, an information-matched control formulation for a first learned Apple->Plate success (DRAFT)
+# Preregister and run an information-matched learned policy for a first learned Apple->Plate success on the development cohort
 
 ## Description
 
-**Draft card for a proposal. Nothing here is preregistered.** Since TASK-057 the project has no
-primary control line: CEM over the world-model cost was abandoned at TASK-054, and the
-behaviour-cloning line stopped at TASK-057. **Learned Apple->Plate is still 0 successes.**
+The proposal (`docs/experiments/control_formulation_proposal_v1.md`, PR #77, merged as `f2e9f63`)
+was accepted by owner rulings R1–R5 on 2026-09-27T12:43Z. They are recorded verbatim in the
+protocol's §0 and in the manifest.
 
-The proposal is `docs/experiments/control_formulation_proposal_v1.md` (status: PROPOSAL). Its
-reading of the two failures is that, both times, the controller had to act on information the
-scripted expert had and it did not:
-- **The apple position in the decision frame.** TASK-059 found it missing; the look (TASK-061)
-  and the frozen DINOv2 encoder (TASK-063/064) now make it readable offline.
-- **The expert's command counter.** A new label-only probe finds the expert parked on 43.3 % of
-  `orient` steps (79.3 % on the 43 noise-level-0 roots). 91 of 170 `orient`→`descend` switches are taken
-  from a parked state, on the counter alone.
+**Protocol:** `docs/experiments/apple_first_policy_v1.md`.
+**Manifest:** `benchmarks/manifests/apple-first-policy-v1.json`.
+**Design module:** `src/embodied_jepa/first_policy.py` (pinned by `tests/test_first_policy.py`).
 
-It recommends:
-- **Primary P: information-matched behaviour cloning.**
-  - Inputs: a learned perception bottleneck (apple and plate xy from the post-look DINOv2
-    feature), the robot's own step counter, proprioception and the forward-kinematics palm pose.
-  - Training: BC on the `apple-look-v1` train roots, then up to 3 DAgger iterations labelled by
-    the privileged expert on fresh resets.
-- **Fallback F: a phase-decomposed, partially learned controller.** It runs only on M1-MOTOR, and
-  its successes are never counted as learned.
-- **The world model enters at stage 3**, as a critic of P's samples, and only if TASK-066 passes.
-  Stages 0–2 do not depend on TASK-066.
+**What is tested.** A learned policy P gets, at run time, what the scripted expert acts on and
+nothing privileged:
+- apple and plate xy, read once from the post-look frame by a kernel-ridge readout on frozen
+  DINOv2 tokens;
+- its own step counter;
+- proprioception;
+- the palm pose by forward kinematics.
 
-The first milestone, **M1**, is development-only: P reaches at least 1/16 full successes on cohort
-D with zero privileged reads. It is an existence bar. A non-learned demonstration replay has
-reached 5/16 on D, so beating replay is left to the gated stage M2 on cohort C.
+P is trained by behaviour cloning on the non-aim `apple-look-v1` train roots, then by 3 DAgger
+iterations labelled by the privileged expert, at training time only.
 
-## Acceptance Criteria (of the proposal stage)
-- [ ] The proposal PR merges on an independent reviewer's **reported** verdict and green CI. The
-      reviewer checks every restated number against its source document, including the
-      uncertainty qualifiers.
-- [ ] The owner rules on the proposal's §12 decisions, first of all on whether a control
-      formulation on `apple-look-v1` falls inside the TASK-057 clause.
-- [ ] Only after that ruling: a preregistration PR (protocol, manifest, calibration C0, and the
-      S0 gates with their thresholds frozen from calibration). The arms are enumerated by name,
-      and `exemption_spent` is cited in the gate section.
+**The camera and its resolution are unchanged** (112 px onboard). The change is in the
+information the controller receives (R1).
 
-## Notes
-- **No compute before TASK-066 finishes.** Its gated run has wall-clock caps, so no stage-0 to
-  stage-2 compute starts until that run completes. Documents and code can proceed in parallel.
-- **Probe provenance.** `scripts/probe_expert_dwell.py`, run-4 at `7c9d08a` (run-3 at `04fd767` is superseded; see proposal §13). It read the label
-  sidecars of the 170 train roots only, with hashes checked. Report
-  `outputs/task067-dwell/run-4/report.json`, sha256 `b4197fac…7eba`.
-- **Not run, on purpose.** No DINOv2 featurisation, no plate readout and no simulation. These are
-  S0-P's and the preregistration's jobs.
-- **Standing rules.** The test splits are never decoded. Cohort C needs a separate authorization.
-  `exemption_spent` stays `false`.
+**Stages.**
+- **C0:** the expert's tolerance curve, which sets the perception bars. They can only tighten.
+- **S0-P:** perception on 128 fresh held-out resets.
+- **S0-D1:** pipeline equivalence.
+- **M1 on cohort D:** P-0 to P-3, the controls C-3 and R-3, and the diagnostics A4-look,
+  D-oracle-perc and B-oracle/hold/random/replay.
+- **M2 on cohort C:** preregistered now, run only under a separate authorization.
+
+M1-PASS is an existence result on the development cohort. It is labelled "learned policy with a
+DINOv2 encoder", never "LeWM driving the robot" (R4). **Learned Apple->Plate is still 0
+successes.**
+
+## Acceptance Criteria
+- [ ] PR 1 (the protocol, the manifest, `first_policy.py`, its tests and this card) merges on an
+      independent reviewer's reported APPROVE and green CI.
+- [ ] PR 2 (the runner, policy and training code, guard and row tests, pins) merges on a reported
+      APPROVE and green CI.
+- [ ] The gated run starts only after TASK-066's run has finished and the coordinator has
+      released the GPU, on a fresh pre-run reviewer's reported GO, from a clean tree.
+- [ ] PR 3 states the row and every quantity. A reviewer checks every restated number against
+      `report.json`. If the clause fires, PR 3 adds a DECISIONS entry.
+- [ ] The test split is never decoded. Cohort C is not opened. `exemption_spent` stays false.
+
+## Rulings and log (UTC)
+- 2026-09-27: PR #77 (proposal) merged as `f2e9f63`.
+- **2026-09-27T12:43Z, owner rulings R1–R5**, received via the coordinator and recorded verbatim
+  in the protocol's §0.
+  - R1: allowed; disclose that the camera is unchanged; the rationale is an information change.
+  - R2: the learned inputs are accepted, labelled in the ladder.
+  - R3: the primary, fallback and milestone are accepted, and the dev result is existence only.
+  - R4: "learned policy with a DINOv2 encoder", never "LeWM driving the robot".
+  - R5: seeds 46000–46999, subject to a recorded overlap check.
+- A later coordinator correction changed only the year of the TASK-066 GPU hold: about
+  2026-09-28T00:10Z, hard cap 04:08Z. No compute runs before that hold is released.
+- 2026-09-27: the R5 seed-overlap check at `f2e9f63` found no overlap (protocol §4.1).
+- **Differences from the proposal: protocol §17 and the manifest's
+  `differences_from_proposal`.**
+  - **Two need owner confirmation before PR 1 merges:**
+    - C-3 gets its own DAgger × 3, where the proposal's C-noimg was BC-only;
+    - R-3 is added to M1.
+  - The A4-look trigger is calibrated from C0 and S0-P, as proposed. A first-draft 8/16 was
+    replaced after the PR #78 review.
