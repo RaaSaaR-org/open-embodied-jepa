@@ -88,7 +88,8 @@ with manifest `benchmarks/manifests/apple-token-dynamics-v1-results.json` (run-1
 - G2: W / copy-last upper bounds 0.790–0.792 at h = 8 and 0.652–0.654 at h = 16 (bar ≤ 0.8).
 - G3: W / N upper bounds 0.915–0.916 at h = 8 and 0.873–0.876 at h = 16 (bar < 1.0).
 - G4: wrong / W and zero / W lower bounds 1.67–2.14 (bar ≥ 1.10).
-- G5: W reads the apple at 0.75–0.93 cm, against 0.63 and 0.50 cm encoded. The ratio-to-B-occ
+- G5: W reads the apple at 0.75–0.93 cm (median CI upper bounds ≤ 1.03 cm), against 0.63 and
+  0.50 cm encoded. The ratio-to-B-occ
   upper bounds are 0.469–0.581 (bar 0.6), and the excess-over-encoded upper bounds 0.335–0.423 cm
   (bar 0.5).
 
