@@ -42,7 +42,7 @@ behaviour-cloning failure has a concrete, checkable information gap behind it:
 - The TASK-056 arms saw one 112 px frame plus 86-D joint positions and velocities: **no clock**,
   and (TASK-059) **no readable apple position in the decision frame**.
 - The new probe (§2.2) shows why the missing clock matters. The expert spends 43.3 % of its
-  `orient` steps parked, commanding almost nothing (79.3 % on the noise-level-0 roots). 91 of 170
+  `orient` steps parked, commanding almost nothing (79.3 % on the 43 noise-level-0 roots). 91 of 170
   `orient`→`descend` switches are taken from such a parked state, on the counter alone. A
   memoryless policy is taught "do nothing" there for tens of steps and "go" for one. The TASK-056
   arms stalled at exactly that point.
@@ -83,8 +83,9 @@ errata; [`claim_audit_v1.md`](claim_audit_v1.md); `docs/DECISIONS.md` (2026-09-2
 - **G1** (palm–apple, moving windows, ≤ 1.5 cm) was 3.65 / 3.66 / 3.48 / 4.41 cm. E0's encoded
   target alone was 2.5903 cm, above the threshold, so a perfect predictor on that encoder would
   still have failed G1.
-- The three redesigns did not move the rollout term beyond cohort noise. E2 − E0 on the rollout
-  was −0.173 cm [−0.804, +0.132] (clustered 95 %; it crosses zero). Erratum S4-13 withdraws the
+- None of the three redesigns improved the rollout term. E2 − E0 on the rollout was −0.173 cm
+  [−0.804, +0.132] (clustered 95 %; it crosses zero), and E3 made it worse (+0.761 cm
+  [+0.155, +1.199]). Erratum S4-13 withdraws the
   claim about where E2's gain sits: that is not measured.
 - **Candidate ranking**, the one quantity a CEM directly uses, was fragile: G6a 0.5438 (E0)
   against 0.2865 / 0.3296 / 0.4141, at the gated h = 16 only, on one seed, with no interval.
@@ -92,7 +93,9 @@ errata; [`claim_audit_v1.md`](claim_audit_v1.md); `docs/DECISIONS.md` (2026-09-2
   E0 0.36, E1 0.50, E2 0.36, E3 0.30.
 - At h = 4 the E0 rollout was worse than persistence (U2 = 1.0461;
   [`apple_policy_v1_results.md`](apple_policy_v1_results.md) §4).
-- The earlier frozen MVP benchmark (TASK-020, image-goal CEM) recorded 0/150 per model.
+- The earlier frozen MVP benchmark (TASK-020, image-goal CEM) recorded 0/50 on each of three
+  seeds per backend, on the same 50 resets, so not 150 independent trials; every learned episode
+  ended on a joint-rate guard stop after a few commands (erratum S4-25, `claim_audit_v1.md`).
 
 **Diagnosis** (reading, not measurement):
 1. **The planner's cost was a readout of a rollout that did not beat persistence by the margin
@@ -102,9 +105,10 @@ errata; [`claim_audit_v1.md`](claim_audit_v1.md); `docs/DECISIONS.md` (2026-09-2
 2. **The encoder term alone exceeded the task tolerance** (2.5903 cm against 1.5 cm) on the
    moving windows, so the cost could not resolve the positions the grasp turns on.
 3. **An information limit found later applies to the same camera and encoder.** TASK-059 found
-   that the 112 px onboard reset frame does not carry the apple position beyond a prior:
+   that the 112 px onboard reset frame, read out by the preregistered readouts (kernel ridge,
+   n = 190), does not give the apple position beyond a prior:
    occluded by the wrist on 111/190 resets; on the 79 visible ones raw pixels reach a ratio of
-   0.964 [0.751, 1.207] to the prior, and E0 reads 2.067 cm against the prior's 1.720 cm. That
+   0.964 [0.751, 1.207] to the prior, and E0 reads 2.067 cm against the prior's 1.720 cm (ratio 1.202 [0.977, 1.458]). That
    result postdates TASK-054 and was not one of its gates. It is stated as a contributing
    constraint, not as the cause.
 4. **The goal is hard to state as an image.** An image goal for "apple on this reset's plate"
@@ -149,7 +153,8 @@ Sources: [`apple_policy_v1_results.md`](apple_policy_v1_results.md),
   This is n = 2, on resets known before the run.
 - **The expert succeeds on the same resets.** `scripted_oracle` was 16/16 grasp and 16/16
   success on D (B1); `hold` and `random` 0/16.
-- **The reset frame carried no apple information** (TASK-059, §1 item 3). After the first
+- **The reset frame gave no apple position beyond a prior to the preregistered readouts**
+  (TASK-059, §1 item 3; "little apple-position signal that these readouts can use"). After the first
   commands proprioception does: a proprioception-only probe reads the `orient`-phase apple
   position to 1.01 cm, and to 0.163 cm when fitted on `orient` rows only, because the collector
   servos the palm to an apple-relative station (erratum S5-04). A policy that never makes the
@@ -169,16 +174,16 @@ The probe `scripts/probe_expert_dwell.py` answers from the label sidecars of the
 palm moves less than 1 mm and every commanded translation component is below 0.07 (about 1 mm at
 15 mm per unit command).
 
-| phase | steps | parked | parked, noise-level-0 roots (35) | switches to the next phase taken from a parked step |
+| phase | steps | parked | parked, noise-level-0 roots (43, of which 8 have an aim offset) | switches to the next phase taken from a parked step |
 |---|---|---|---|---|
 | `orient` | 22 100 | **43.3 %** | **79.3 %** (of 5 590) | **91 / 170** |
 | `descend` | 13 600 | 0.0 % | 0.0 % | 0 / 170 |
-| `close` | 7 028 | 0.0 % | 0.0 % | 0 / 170 |
-| `lift` | 21 539 | 7.4 % | 4.8 % | 20 / 150 |
-| `transfer` | 8 530 | 1.5 % | 1.1 % | 8 / 143 |
-| `release_high` | 9 763 | 33.1 % | 64.9 % | 17 / 142 |
-| `lower_open` | 5 668 | 9.7 % | 21.0 % | 6 / 58 |
-| `retreat` | 4 240 | 16.3 % | 58.3 % | 0 / 53 |
+| `close` | 7 028 | 0.0 % | 0.0 % | 0 / 150 |
+| `lift` | 21 539 | 7.4 % | 4.8 % | 20 / 143 |
+| `transfer` | 8 530 | 1.5 % | 1.1 % | 8 / 142 |
+| `release_high` | 9 763 | 33.1 % | 64.9 % | 17 / 58 |
+| `lower_open` | 5 668 | 9.7 % | 21.0 % | 6 / 53 |
+| `retreat` | 4 240 | 16.3 % | 58.3 % | n/a (no next phase) |
 | all phases | 92 468 | 17.1 % | | |
 
 - In `orient`, the first parked step comes at a median of step 16 of 130 (p90 50, max 113; on
@@ -232,8 +237,8 @@ does (§7.1).
 |---|---|---|---|
 | TASK-061 | O-LOOK-RAW | A reset-independent 8-command look makes the apple readable in the 112 px onboard frame: raw pixels 0.469 cm [0.419, 0.528], dx sign 180/190 | E0 fails on the same frame (1.273 cm; ratio upper bound 0.779) and is no better than a random-init encoder on T1 (+0.149 cm [−0.162, 0.347]). Offline, kernel ridge, n = 190. |
 | TASK-063 | O-PT-POOLED | Frozen DINOv2 ViT-S/14 reads the post-look apple: CLS 0.538 cm [0.487, 0.611], 183/190; tokens 0.394 cm [0.363, 0.447], 187/190 | CLS not detectably different from raw pixels (+0.068 cm [−0.010, 0.153]). Both random-init floors meet the bars. One encoder, one input size, one floor seed. |
-| TASK-064 | C-ACCEPT | `apple-look-v1`: 200 roots, 599 branches, 170/20/10 train/val/test sessions; P-cls 0.550 cm [0.478, 0.642], 178/190 on fresh resets | Built by the privileged scripted collector (103/200 root successes are scripted). P-cls − L-raw −0.034 cm [−0.125, 0.054]; R-tok met every bar (0.572 cm); McNemar P-cls vs R-cls 11/5, p = 0.210. Readability is not prediction. |
-| TASK-065 | WM-NO-DYNAMICS | A LeWM predictor on frozen CLS latents beats copy-last (0.746 at h = 8), a no-action predictor (0.879–0.910) and wrong actions (1.78–1.98×), on all seeds | Fails the uncalibrated rank bar (ratio 0.365–0.399 against 0.5) and G5 (0.94–1.19 cm predicted against 0.68–0.83 cm encoded). At h = 1 copy-last beats it (W / copy-last 1.227–1.250). Clause fired for pooled CLS only. |
+| TASK-064 | C-ACCEPT | `apple-look-v1`: 200 roots, 599 branches, 170/20/10 train/val/test sessions; P-cls 0.550 cm [0.478, 0.642], 178/190 on fresh resets | Built by the privileged scripted collector (103/200 root successes are scripted). P-cls not detectably different from raw pixels (−0.034 cm [−0.125, 0.054]); R-tok met every bar (0.572 cm); McNemar P-cls vs R-cls 11/5, p = 0.210. Readability is not prediction. |
+| TASK-065 | WM-NO-DYNAMICS | A LeWM predictor on frozen CLS latents beats copy-last (0.746 at h = 8), a no-action predictor (0.879–0.910) and wrong actions (1.78–1.98×), on all seeds | Fails the uncalibrated rank bar (ratio 0.365–0.399 against 0.5) and G5 (0.94–1.19 cm predicted against 0.68–0.83 cm encoded; the non-inferiority margin fails at h = 16 on every seed, and G5 passed only for seed 2 at h = 8). At h = 1 copy-last beats it (W / copy-last 1.227–1.250). Clause fired for pooled CLS only. |
 | TASK-066 | in progress | Patch-token (4 × 4 pooled) predictor; G1 bars calibrated (rank 0.16, std 0.39, W-over-N comparative) | Not read here. Rows: §8. |
 
 **What did not change.** The 112 px onboard camera; the single-strategy scripted collector; the
@@ -252,7 +257,7 @@ pre-flight and scored 0/64. The ranges are wide on purpose, and each gives its m
 | **O2 = P** | Information-matched BC: perception bottleneck (apple, plate xy from the post-look DINOv2 feature), own step counter, proprioception + FK palm pose; BC then ≤ 3 DAgger iterations from the privileged clock-expert | learned (§6, rung L1) | **50–70 %** | ≈ 3–6 h compute in total (§10); about 1–2 days of implementation and review | apple-look-v1 train roots for BC and the readout; DAgger adds fresh resets and their post-look frames; a small fresh perception and calibration set (§7.1) | Plate readability is unmeasured. Perception tails against the 1.5 cm cliff. Imitation noise (35/35 → 27/37 at noise level 1). Clock desynchronisation under DAgger. The "learned" label could read as cosmetic (§6). |
 | **O3 = F** | Phase-decomposed: learned per-phase heads on the same inputs, phase switched by the collector's counter | partially learned (rung L2) | **55–75 %** | as P, minus most DAgger | as P | Shares P's perception risks. A success is not a learned-policy success. Converting it needs a learned phase switch. |
 | **O4** | World model as critic: rerank K samples of P's stochastic head by a token-WM rollout | learned, and WM-in-the-loop only if a no-critic ablation is worse | **not a first-success route**: it can only reorder samples from a policy that already has support near success | needs per-step DINOv2 tokens (14.3 ms/frame CPU) plus K × h token-WM steps (2048 windows × 16 steps take 0.85 s on MPS in TASK-066 §14, so K = 16, h = 8 is a few ms) | on-policy rollouts from P for ranking gates; TASK-066's latent | Needs TASK-066 to pass. TASK-065's latent lost to copy-last at h = 1. Ranking was the fragile quantity at TASK-054. |
-| **O5** | Latent MPC (CEM) over DINOv2 tokens with a goal latent | learned, WM-driven | **5–10 %** | a replan ≈ 0.2 s (768 rollouts × 8 steps, scaled from TASK-066 §14's prediction timing), plus per-step features; about 1 min per attempt, ≈ 16 min per 16-reset pass | TASK-066's latent; **a goal latent per reset**, which is not available without privileged information or a learned goal generator | Repeats the TASK-054 structure: planner exploits model error, no stable ranking, plus goal specification. Only after O4 shows ranking. |
+| **O5** | Latent MPC (CEM) over DINOv2 tokens with a goal latent | learned, WM-driven | **5–10 %** | a replan ≈ 0.2 s (768 rollouts × 8 steps, scaled from TASK-066 §14's prediction timing), plus per-step features; about 1 min per attempt when replanning every 4 steps (≈ 2–3 min when replanning every step), ≈ 16–45 min per 16-reset pass | TASK-066's latent; **a goal latent per reset**, which is not available without privileged information or a learned goal generator | Repeats the TASK-054 structure: planner exploits model error, no stable ranking, plus goal specification. Only after O4 shows ranking. |
 | (diag.) | **A4-look**: learned perception → the scripted `apple_collector_policy` built from the estimates | **not learned** (learned perception, scripted control) | 70–85 % *of this non-learned kind* | about 1 h | as P's bottleneck | It decomposes failures; it is never a learned result. TASK-056's A4, never built, with the look. |
 | (hw.) | Overview camera (TASK-061 O-raw 0.183 cm [0.168, 0.207], 185/190) | n/a | n/a | a new corpus | new | A hardware or workspace change on the robot. It is the owner's decision, and the §7 route if perception fails in the loop. |
 
@@ -431,6 +436,17 @@ C-noimg.
 | **M1-MOTOR** | every P-k scores 0/16; A4-look ≥ its calibrated threshold *(calibrate from C0 and S0-P)* | perception is adequate in the loop, and motor learning is the failing component | F once (§5.2) |
 | **M1-PERCEPTION** | every P-k scores 0/16; A4-look below its threshold; B-oracle ≥ 14/16 | the estimates do not survive the closed loop, or are not accurate enough | the abandonment clause (§7.6) |
 
+Rules a preregistration must add (the rows above do not yet cover them):
+- **S0-P fails on the apple** (the readout misses its calibrated budget on fresh resets): stop
+  before any closed loop and report to the owner. The apple estimate is what the whole line rests
+  on, so this is the §7.6 route unless the owner rules otherwise.
+- **A second M1-VOID** closes M1 as INCONCLUSIVE; the owner decides.
+- **C-noimg reaching ≥ 1/16.** The clock-only blind controller already grasped 2/16 on D
+  (TASK-057), so this is possible. It is reported and changes no row, since M1 is about P. But a
+  P-k success then says little about vision until M2's G2 (P − C-noimg ≥ +8) is read.
+- **F reaching ≥ 1/16** after M1-MOTOR is a partially learned success, reported as such. The
+  next step is the owner's: M2 for F (under its label) and/or a learned phase switch (§5.2).
+
 ### 7.3 Stage 2: M2, the gated test on cohort C (about 3 h of compute; separate authorization)
 
 This reuses `apple_policy_v1.md` §5.2 with its lessons applied:
@@ -458,8 +474,10 @@ This reuses `apple_policy_v1.md` §5.2 with its lessons applied:
   for h steps and scored by a readout of the predicted grid against the policy's own current
   sub-target. The best sample is executed.
 - **Offline gate before any closed loop.** Within-state ranking ρ ≥ 0.5 over sibling branches.
-  `apple-look-v1` has 473 RGB-distinct sibling pairs at step 16 (A8). Also a ranking gate on P's
-  own on-policy rollouts (fresh resets). This is v4's G6a idea on the new latent, with an interval
+  `apple-look-v1` has 473 RGB-distinct sibling pairs at step 16 (A8), but those are train + val,
+  and val roots are gate-evaluation roots of earlier tasks; a preregistration must say which
+  siblings it reads, or use fresh branches. Also a ranking gate on P's own on-policy rollouts
+  (fresh resets). This is v4's G6a idea on the new latent, with an interval
   this time.
 - **Closed-loop gate.** P + critic beats P alone on the same resets by a pre-declared margin, on
   D first and then on a fresh cohort. Only then is the success "world-model-driven" (§6).
@@ -476,10 +494,10 @@ proposed for preregistration now.
 - **What closes:** learned control on `apple-look-v1` at the 112 px onboard camera. No further
   head, loss, DAgger or bottleneck variant on this corpus and this camera without new evidence of
   a different kind.
-- **The conclusion is the one `apple_policy_v1.md` §7 pre-declared.** It is quoted, not
-  paraphrased, in any results document: a 112 px onboard camera plus a single-mode
+- **The conclusion is the one `apple_policy_v1.md` §7 pre-declared.** Any results document quotes it
+  verbatim rather than paraphrasing it. In substance: a 112 px onboard camera plus a single-mode
   scripted-collector corpus does not support learned Apple→Plate on this platform, and the
-  product goal needs a data or hardware change. The overview camera (TASK-061 O-raw) is the change
+  product goal needs a data or hardware change, "not another model". The overview camera (TASK-061 O-raw) is the change
   on record, and it is the owner's decision.
 - **What does not close:** the LeWM backend, DINOv2 as an encoder, the product goal, and the
   corpus (sealed; test split unread).
@@ -492,11 +510,12 @@ a first learned success.
 
 | TASK-066 row | stages 0–2 | stage 3 (critic) and stage 4 (latent MPC) |
 |---|---|---|
-| **WM-TOK-DYNAMICS** (every seed passes G1–G5) | unchanged | Preregistrable after M1-PASS. That row's own recommendation (a held-out test-split confirmation, and/or a harder world-model test) should come first or run alongside. Stage 3's offline ranking gate is itself a harder, control-relevant test. |
-| **WM-TOK-UNSTABLE** (one or two seeds) | unchanged | Wait. The owner decides about added seeds under that row's rule. |
-| **WM-TOK-CEILING** (the pooled grid misses the T1 bar) | unchanged | Wait. The pooling is the finding; a finer grid needs its own compute plan. |
-| **WM-TOK-APPLE-LOST / WM-TOK-COLLAPSE / WM-TOK-NO-DYNAMICS** (clause fires) | unchanged | **Off on this corpus.** The frozen-pretrained-DINOv2-latent predictor line on `apple-look-v1` is then closed at both read-out points (TASK-065 and TASK-066 clauses). A world model re-enters only through a route with new evidence of a different kind, for example: a predictor trained on P's on-policy DAgger rollouts (different data); a fine-tuned encoder (recorded as untested); or the overview camera. Each is the owner's choice. The product goal is not met by a stage-2 success alone, and this should be said plainly. |
-| **V / INCONCLUSIVE** | unchanged | Wait for the owner. |
+| **WM-TOK-DYNAMICS** (every seed passes G1–G5) | unchanged | Preregistrable after M1-PASS. TASK-066's row itself says "No control formulation is implied; control needs its own preregistration and must answer the TASK-054 and TASK-057 clauses". That row's own recommendation (a held-out test-split confirmation, and/or a harder world-model test) should come first or run alongside. Stage 3's offline ranking gate is itself a harder, control-relevant test. |
+| **WM-TOK-UNSTABLE** (one or two seeds) | unchanged | Wait. The clause does not fire; the owner decides about added seeds under that row's rule. |
+| **WM-TOK-CEILING** (the pooled grid misses the T1 bar) | unchanged | Wait. The clause does not fire; the pooling is the finding, and a finer grid needs its own compute plan. |
+| **WM-TOK-APPLE-LOST / WM-TOK-COLLAPSE / WM-TOK-NO-DYNAMICS** (clause fires) | unchanged | **Off on this corpus.** The frozen-pretrained-DINOv2-latent predictor line on `apple-look-v1` is then closed at both read-out points (TASK-065 and TASK-066 clauses). A world model re-enters only through a route with new evidence of a different kind. Recorded as untested by TASK-065/066: a fine-tuned encoder, other encoders, or the overview camera. A predictor on the same frozen latents trained on P's on-policy DAgger rollouts is **a clause-scope question, not a route**: it is arguably a variant the clause closes, and the owner rules on it. Each is the owner's choice. The product goal is not met by a stage-2 success alone, and this should be said plainly. |
+| **V** | unchanged | Wait: TASK-066's own rule is one from-scratch repeat (its §13). |
+| **INCONCLUSIVE** (a second V) | unchanged | The clause does not fire; the owner decides. |
 
 **Operational coupling.** Every stage-0 to stage-2 step that uses the CPU or MPS should start only
 after TASK-066's gated run has finished. Its caps (featurisation 5 400 s, 4 500 s per model,
@@ -523,8 +542,8 @@ code, review) can go in parallel.
     rules (§12, decision 1).**
   - Also answered: `apple_policy_diagnostics_v1.md` §5.1's "no further loss, head or
     output-parameterisation variant" is read here as applying to the stopped line (E0 features
-    on `apple-wide-v1`); P is not such a variant. That reading is also the owner's to confirm. Cohort C stays unconsumed until a
-    separate authorization. `exemption_spent` stays `false` and is cited in M2's gate section.
+    on `apple-wide-v1`); P is not such a variant. That reading is also the owner's to confirm.
+    Cohort C stays unconsumed until a separate authorization. `exemption_spent` stays `false` and is cited in M2's gate section.
 
 ## 10. Cost and schedule on the M-series Mac (MPS/CPU)
 
@@ -535,13 +554,13 @@ command.
 
 | step | estimate |
 |---|---|
-| C0 tolerance curve: 8 conditions × 32 resets | ≈ 10 min on 12 workers |
+| C0 tolerance curve: 7 conditions (apple error levels with the plate exact, plate levels with the apple exact, sharing the 0/0 cell) × 32 resets | ≈ 10 min on 12 workers |
 | Fresh perception and calibration resets (look plus one frame, about 512) | ≈ 5 min, plus about 10 s of features |
 | Readout fit and S0-P | minutes |
 | BC-0 training (MLP on low-dimensional inputs) | ≤ 10 min |
 | DAgger: 3 × (128 rollouts + retraining) | ≈ 30–90 min |
 | M1 on D: about 10 arm-evaluations × 16 attempts | ≈ 1 h |
-| **Stages 0–1 in total** | **≈ 3–6 h compute**, after TASK-066 finishes |
+| **Stages 0–1 in total** (the rows above, with margin for a void-harness rerun and the sequential parts) | **≈ 3–6 h compute**, after TASK-066 finishes |
 | M2 on C (separate authorization) | ≈ 3 h |
 | Implementation: look-aware runner, policy, DAgger loop, controls, three PRs with review | 1–2 days of agent time |
 
@@ -553,18 +572,21 @@ command.
 3. **Imitation error acts like injected noise.** The expert falls from 35/35 to 27/37 at noise
    level 1. DAgger is the mitigation, and its limit is that the clock-expert is a weak corrector
    far from its own path: 7/34 at noise level 3.
-4. **Clock desynchronisation.** If P falls behind the schedule, the clock-expert's DAgger labels
+4. **No recovery behaviour in the labeller.** The scripted expert has no re-grasp: after a
+   failed or slipped grasp its labels continue the schedule, so DAgger cannot teach recovery.
+   A first success does not need recovery; a high success rate may.
+5. **Clock desynchronisation.** If P falls behind the schedule, the clock-expert's DAgger labels
    switch phase anyway. The mitigation is an event-triggered relabelling expert (a phase advances
    on convergence). It must itself pass ≥ 14/16 on D in command before its labels are used, and
    it would be a declared variant, not a silent swap.
-5. **The "learned" label could read as cosmetic** (§6). The answer is the ladder and C-noimg, not
+6. **The "learned" label could read as cosmetic** (§6). The answer is the ladder and C-noimg, not
    stronger words.
-6. **Grasp physics.** The close-phase lateral drift that ejects the apple (grasp-closure v3) is
+7. **Grasp physics.** The close-phase lateral drift that ejects the apple (grasp-closure v3) is
    handled by the expert at noise level 0 (35/35), but not necessarily by a learner's deviations.
-7. **Reuse of D.** D has been consumed many times, n = 16, and simulation is deterministic, so M1
+8. **Reuse of D.** D has been consumed many times, n = 16, and simulation is deterministic, so M1
    is existence only. `demo_replay` reached 5/16 there.
-8. **Compute contention with TASK-066** (§8).
-9. **The history of forecasts.** Every earlier generation expected more than it got. The chance
+9. **Compute contention with TASK-066** (§8).
+10. **The history of forecasts.** Every earlier generation expected more than it got. The chance
    ranges in §4 are priors, and M1 is sized so that a wrong prior costs hours, not a frozen cohort.
 
 ## 12. Owner decisions needed
@@ -590,12 +612,12 @@ command.
 
 | item | value |
 |---|---|
-| script | `scripts/probe_expert_dwell.py`, committed in this PR at `04fd767` |
-| command | `uv run --no-sync python scripts/probe_expert_dwell.py --dataset data/apple-look-v1 --output outputs/task067-dwell/run-3` |
+| script | `scripts/probe_expert_dwell.py`, committed in this PR; the cited run is at `7c9d08a` |
+| command | `uv run --no-sync python scripts/probe_expert_dwell.py --dataset data/apple-look-v1 --output outputs/task067-dwell/run-4` |
 | reads | the label sidecars of the 170 `apple-look-v1` train roots only, each checked against its recorded sha256; the corpus manifest (sha256 `81d760d1…db64`, checked). No frame decoded; no val, test or branch episode opened. |
-| report | `outputs/task067-dwell/run-3/report.json` (git-ignored), sha256 `ee342baa6ffea09519d7b49229c1a990f78d1a3f272d65a243de97053aa1c383` |
+| report | `outputs/task067-dwell/run-4/report.json` (git-ignored), sha256 `b4197fac6ad188feeaeefaefe81a34b6332fa70f10913714083a4079afd87eba` |
 | device, time | CPU, a few seconds |
-| earlier runs | `run-1` and `run-2` were uncommitted drafts of the same script. `run-2` added the still-palm statistics. Every field they share with `run-3` is identical. They are kept, not cited. |
+| earlier runs | `run-1` and `run-2` were uncommitted drafts. `run-3` (at `04fd767`, sha256 `ee342baa…c383`) was the first committed run; the PR #77 review found that it counted parked switches against phase runs rather than switches (the last phase has no switch). `7c9d08a` adds the `switches` field and the noise-level-0 root count (43), and `run-4` is cited. Every field `run-4` shares with `run-3` is identical, and the reviewer's own re-run of `04fd767` reproduced `run-3` byte for byte. |
 
 **Not run, on purpose.**
 - **No DINOv2 featurisation and no plate readout.** TASK-066's gated run was featurising on the

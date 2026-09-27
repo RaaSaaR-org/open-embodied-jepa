@@ -36,7 +36,7 @@ scripted expert had and it did not:
 - **The apple position in the decision frame.** TASK-059 found it missing; the look (TASK-061)
   and the frozen DINOv2 encoder (TASK-063/064) now make it readable offline.
 - **The expert's command counter.** A new label-only probe finds the expert parked on 43.3 % of
-  `orient` steps (79.3 % on noise-level-0 roots). 91 of 170 `orient`→`descend` switches are taken
+  `orient` steps (79.3 % on the 43 noise-level-0 roots). 91 of 170 `orient`→`descend` switches are taken
   from a parked state, on the counter alone.
 
 It recommends:
@@ -67,9 +67,9 @@ reached 5/16 on D, so beating replay is left to the gated stage M2 on cohort C.
 ## Notes
 - **No compute before TASK-066 finishes.** Its gated run has wall-clock caps, so no stage-0 to
   stage-2 compute starts until that run completes. Documents and code can proceed in parallel.
-- **Probe provenance.** `scripts/probe_expert_dwell.py`, run-3 at `04fd767`. It read the label
+- **Probe provenance.** `scripts/probe_expert_dwell.py`, run-4 at `7c9d08a` (run-3 at `04fd767` is superseded; see proposal §13). It read the label
   sidecars of the 170 train roots only, with hashes checked. Report
-  `outputs/task067-dwell/run-3/report.json`, sha256 `ee342baa…c383`.
+  `outputs/task067-dwell/run-4/report.json`, sha256 `b4197fac…7eba`.
 - **Not run, on purpose.** No DINOv2 featurisation, no plate readout and no simulation. These are
   S0-P's and the preregistration's jobs.
 - **Standing rules.** The test splits are never decoded. Cohort C needs a separate authorization.
