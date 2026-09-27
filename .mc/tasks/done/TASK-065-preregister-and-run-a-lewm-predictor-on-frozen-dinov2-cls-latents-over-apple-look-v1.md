@@ -4,7 +4,7 @@ aliases:
 - TASK-065
 title: Preregister and run a LeWM predictor on frozen DINOv2 CLS latents over apple-look-v1 (world-model test only)
 slug: preregister-and-run-a-lewm-predictor-on-frozen-dinov2-cls-latents-over-apple-look-v1
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -18,8 +18,9 @@ depends_on:
 - "[[TASK-064]]"
 due_date: ''
 created: 2026-09-26
-updated: 2026-09-26
+updated: 2026-09-27
 ---
+
 
 
 
@@ -64,16 +65,19 @@ Design code: `src/embodied_jepa/latent_dynamics.py`; model option in
 `src/embodied_jepa/models/frozen_encoder.py`.
 
 ## Acceptance Criteria
-- [ ] PR 1 (protocol, manifest, `latent_dynamics.py`, `frozen_encoder` option with
+- [x] PR 1 (protocol, manifest, `latent_dynamics.py`, `frozen_encoder` option with
       `docs/MODELS.md`, tests, task card) merges on an independent reviewer's reported APPROVE
-      and green CI, before any predictor is trained on the corpus.
-- [ ] PR 2 (runner, guard tests, runner pin) merges on a reported APPROVE and green CI.
-- [ ] The gated run starts only on the pre-run reviewer's reported verdict, from a clean tree.
-- [ ] PR 3 (results document, results manifest, summarize script) states the outcome row, every
+      and green CI, before any predictor is trained on the corpus (#69, f596e22).
+- [x] PR 2 (runner, guard tests, runner pin) merges on a reported APPROVE and green CI (#70,
+      26d6801); the G-cache amendment merged the same way (#71, c17225a).
+- [x] The gated run starts only on the pre-run reviewer's reported verdict, from a clean tree
+      (run-1 at 26d6801, V; run-2 at c17225a, each on its own reported PRE-RUN: GO).
+- [x] PR 3 (ticked on the reviewer's reported APPROVE; results document, results manifest,
+      summarize script) states the outcome row, every
       gate quantity with its interval per seed and horizon, every negative result and a
       recommended (not chosen) next task; a reviewer checks every restated number against
       `report.json` by script. Checkpoints and features are never committed.
-- [ ] The test split is never decoded; cohorts C and D are untouched; `exemption_spent` stays
+- [x] The test split is never decoded; cohorts C and D are untouched; `exemption_spent` stays
       false.
 
 ## Notes
@@ -106,4 +110,31 @@ Design code: `src/embodied_jepa/latent_dynamics.py`; model option in
   - The amendment goes in through a reviewed PR, followed by a fresh pre-run review.
   - Run-2 is the single allowed repeat; a second V is INCONCLUSIVE.
   - Protocol §17.
+- 2026-09-26T23:58:57Z: run-2 (the single repeat) launched at c17225a on a fresh reported
+  PRE-RUN: GO; the runner's clock started at 23:59:02Z.
+- 2026-09-27T02:37:44Z: run-2 complete, 9522 s, **outcome WM-NO-DYNAMICS**. The abandonment
+  clause fires.
+
+## Results (2026-09-27)
+
+**Outcome WM-NO-DYNAMICS** (run-2; report sha256 `8326fd48…412d`). No seed passes. The row name
+overstates the failure:
+- **G2–G4 pass on all 3 seeds at h = 8 and 16.** W/copy-last is 0.746 (h = 8) and 0.647–0.652
+  (h = 16). W/N is 0.879–0.910. Wrong/W is 1.78–1.98.
+- **G1 fails on the rank criterion alone.** The effective-rank ratio is 0.365–0.399 against an
+  uncalibrated bar of 0.5; std ratio and collapsed fraction pass.
+- **G5 fails.** W reads the apple to 0.94–1.19 cm against 0.68–0.83 cm encoded; the
+  non-inferiority margin fails at h = 16 on every seed.
+- WM-APPLE-LOST would need G1–G4 on two seeds; both rows fire the clause.
+
+**Clause scope.** Closed: the predictor-on-frozen-pooled-CLS line on `apple-look-v1`. Not
+abandoned: LeWM, DINOv2 as an encoder, patch-token latents, the product goal.
+
+**Recommended (the owner chooses):** a preregistered patch-token latent predictor, in the style
+of DINO-WM, with its budget and rank bar calibrated on train/val before the freeze.
+
+**Learned Apple->Plate is still 0 successes.** The test split was never decoded.
+
+Results: `docs/experiments/apple_latent_dynamics_v1_results.md`,
+`benchmarks/manifests/apple-latent-dynamics-v1-results.json`; decision in `docs/DECISIONS.md`.
 %% mc-links: [[TASK-064]] %%
