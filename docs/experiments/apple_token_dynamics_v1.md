@@ -793,9 +793,16 @@ uv run --no-sync python scripts/train_apple_token_dynamics.py run \
   - `cal-smoke-a` (03:10Z–03:24Z) ran 1000 updates of the calibration models on the pilot. §6.3
     quotes one number from it: the encoded effective rank of about 40.
   - The runner's `smoke-a` (03:52Z–04:04Z, revision `96ed14c`, before the freeze) trained four
-    token predictors for 20 updates each on 72 corpus train episodes (8 sessions per half) and
-    8 val episodes. It read the frame-0 apple labels and the phase labels of 18 corpus roots for
-    G-labels, and its readout targets were seeded noise.
+    token predictors for 20 updates each on 64 corpus train episodes (32 per half, 8 sessions
+    each), with 8 val episodes for selection. That is 72 episodes read by the model stages.
+    - It decoded 244 train + val episodes in all: the anchor stage decodes every one of the 190
+      roots.
+    - It did not decode the test split.
+    - On its 18 roots it read the phase labels and the apple labels at frames 0 and 8–72, as
+      G-labels and the E-post targets do.
+    - The probes' targets were replaced by seeded noise. The one real-label quantity it reported
+      is `apple_moved_more_than_1mm_roots`, which was 0 at every h. TASK-065 had already
+      disclosed that the apple stays static until frame ≥ 117.
   - Any later smoke run (PR 2) is disclosed with it.
   - These are the only predictors trained on the corpus before the gated run. No quantity from
     them informed any choice.

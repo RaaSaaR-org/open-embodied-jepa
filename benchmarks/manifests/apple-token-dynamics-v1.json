@@ -391,8 +391,8 @@
    "4x4": 0.095,
    "8x8": 0.313
   },
-  "labels_read_by_this_task": "owner-ruled encoded-grid readability checks only: pilot-d's 30 roots and the corpus's 190 train + val roots (apple and phase labels, frames 0-24); plus the runner smoke's G-labels check of 18 corpus roots (frame-0 apple, phase)",
-  "corpus_predictors_trained_before_freeze": "runner smoke-a only: four token predictors, 20 updates each, noise targets, nothing read",
+  "labels_read_by_this_task": "owner-ruled encoded-grid readability checks only: pilot-d's 30 roots and the corpus's 190 train + val roots (apple and phase labels, frames 0-24); plus the runner smoke-a on 18 corpus roots: phase labels and apple labels at frames 0 and 8-72 (G-labels and E-post targets; the probes used seeded noise; the reported apple_moved_more_than_1mm_roots was 0 at every h)",
+  "corpus_predictors_trained_before_freeze": "runner smoke-a only: four token predictors, 20 updates each, on 64 corpus train episodes (32 per half) with 8 val episodes; 244 train + val episodes decoded in all (the anchor stage reads the 190 roots); test split not decoded; probe targets seeded noise; no quantity from it informed any choice",
   "calibration_checkpoints_sha256": {
    "W-s0": "5dbf18a9a7aec243e9cf4db491f4c00a2e6071ffa3f79f48afce84377dc43f81",
    "W-s1": "cd7ccec554645b46bed0c4a4e5d0a4c852e6d8ec06559198581f730ceaaca7d6",
