@@ -93,6 +93,20 @@ BUDGET_MIN = 10_000
 BUDGET_MAX = 30_000  # beyond it the calibration escalates to the owner (no freeze)
 BAR_FACTOR = 0.5  # G1 bars: half of the recipe's own ratio on disjoint pilot data
 BAR_ESCALATE_BELOW = 0.10  # a pilot rank ratio this low escalates (the recipe may be broken)
+# Absolute floors (owner ruling 2026-09-27, fixed before the calibration's results were seen):
+# a calibrated bar never goes below them. A rank-1 prediction scores about 1 / (encoded effective
+# rank), about 0.025 at an encoded effective rank of 40; the mean predictor scores 0.
+RANK_FLOOR = 0.10
+STD_FLOOR = 0.25
+# G1 (iii), comparative (same ruling): W keeps more rank than the no-action model N. The lower
+# 95 % bound of (rank ratio W - rank ratio N) must exceed 0, from a session-clustered bootstrap
+# of the effective rank in a fixed, model-free basis: the top 256 principal directions of the
+# train-split encoded latents (an approximation of the full-width statistic, disclosed).
+PROJECTION_DIM = 256
+COMPARATIVE_MARGIN = 0.0
+COMPARATIVE_RESAMPLES = 2_000
+COMPARATIVE_SEED = 6603
+TRUNCATION_CONTROLS = (1, 2, 4, 8)  # G1 must fail k = 1, 2, 4 (owner condition); k = 8 reported
 
 
 def saturation_update(curve, tolerance: float = SATURATION_TOLERANCE) -> int:
@@ -123,15 +137,19 @@ def budget_rule(saturation_updates) -> dict:
     }
 
 
-def bar_rule(pilot_ratios) -> dict:
-    """A G1 bar: ``floor(100 * 0.5 * min(pilot ratios)) / 100``; escalate below 0.10."""
+def bar_rule(pilot_ratios, floor: float) -> dict:
+    """A G1 bar: ``max(floor, floor_to_0.01(0.5 * min(pilot ratios)))``; escalate when the
+    reference is below 0.10."""
     values = [float(r) for r in pilot_ratios]
     if not values or any(not math.isfinite(v) or v < 0 for v in values):
         raise ContractError("the bar rule needs finite nonnegative pilot ratios")
     reference = min(values)
+    relative = math.floor(100 * BAR_FACTOR * reference + 1e-9) / 100
     return {
         "reference": reference,
-        "bar": math.floor(100 * BAR_FACTOR * reference + 1e-9) / 100,
+        "relative": relative,
+        "floor": floor,
+        "bar": max(floor, relative),
         "escalate": bool(reference < BAR_ESCALATE_BELOW),
     }
 
@@ -160,6 +178,7 @@ THRESHOLDS = {
     "G1_max_collapsed_fraction": ld.THRESHOLDS["G1_max_collapsed_fraction"],
     "G1_min_effective_rank_ratio": None,  # calibrated (bar_rule on the pilot rank ratios)
     "G1_min_std_ratio": None,  # calibrated (bar_rule on the pilot std ratios)
+    "G1_min_rank_ratio_margin_over_N_lower": COMPARATIVE_MARGIN,  # strictly above, lower bound
 } | {k: v for k, v in ld.THRESHOLDS.items() if not k.startswith("G1")}
 GATES = ld.GATES
 DYNAMICS_GATES = ld.DYNAMICS_GATES
@@ -265,15 +284,153 @@ def require_frozen() -> None:
         raise ContractError(f"the protocol is not frozen: {missing or 'budget'}")
 
 
-def g1_passes(stats: dict, thresholds: dict | None = None) -> bool:
+def g1_parts(stats: dict, comparative: dict, thresholds: dict | None = None) -> dict:
+    """G1's parts: (i)+(ii) the calibrated rank bar (never below the 0.10 floor), the std bar
+    (never below 0.25) and the collapsed fraction, on the full-width statistic; (iii) the
+    comparative W-over-N rank criterion from the projected bootstrap."""
     t = THRESHOLDS if thresholds is None else thresholds
     if t["G1_min_effective_rank_ratio"] is None or t["G1_min_std_ratio"] is None:
         raise ContractError("G1's bars are calibrated; they are not set yet")
-    return bool(
-        stats["predicted_collapsed_fraction"] <= t["G1_max_collapsed_fraction"]
-        and stats["effective_rank_ratio"] >= t["G1_min_effective_rank_ratio"]
-        and stats["std_ratio"] >= t["G1_min_std_ratio"]
-    )
+    if t["G1_min_effective_rank_ratio"] < RANK_FLOOR or t["G1_min_std_ratio"] < STD_FLOOR:
+        raise ContractError("a G1 bar lies below its absolute floor")
+    return {
+        "collapsed_fraction": bool(
+            stats["predicted_collapsed_fraction"] <= t["G1_max_collapsed_fraction"]
+        ),
+        "rank": bool(stats["effective_rank_ratio"] >= t["G1_min_effective_rank_ratio"]),
+        "std": bool(stats["std_ratio"] >= t["G1_min_std_ratio"]),
+        "rank_over_N": bool(
+            comparative["undefined_resamples"] == 0
+            and comparative["ci95"][0] > t["G1_min_rank_ratio_margin_over_N_lower"]
+        ),
+    }
+
+
+def g1_passes(stats: dict, comparative: dict, thresholds: dict | None = None) -> bool:
+    return bool(all(g1_parts(stats, comparative, thresholds).values()))
+
+
+# ----- G1 (iii): per-session moments in a fixed projected basis, and their bootstrap ----------
+def projection_basis(encoded: Moments, k: int = PROJECTION_DIM) -> np.ndarray:
+    """``[d, k]``: the top ``k`` principal directions of the train-split encoded latents (fitted
+    on training frames only, before any model; model-free)."""
+    values, vectors = np.linalg.eigh(encoded.centered())
+    order = np.argsort(values)[::-1][:k]
+    return np.ascontiguousarray(vectors[:, order])
+
+
+class SessionMoments:
+    """Per-session first and second moments of ``(rows - shift) @ basis``."""
+
+    def __init__(self, shift, basis):
+        self.shift = np.asarray(shift, np.float64)
+        self.basis = np.asarray(basis, np.float64)
+        self.sessions: dict = {}
+
+    def add(self, rows, sessions) -> None:
+        y = (np.asarray(rows, np.float64) - self.shift) @ self.basis
+        sessions = np.asarray(sessions)
+        if len(sessions) != len(y):
+            raise ContractError("one session label per row")
+        for label in np.unique(sessions):
+            part = y[sessions == label]
+            n, s1, s2 = self.sessions.get(label, (0, 0.0, 0.0))
+            self.sessions[label] = (n + len(part), s1 + part.sum(0), s2 + part.T @ part)
+
+    def merge(self, other: SessionMoments) -> SessionMoments:
+        out = SessionMoments(self.shift, self.basis)
+        for source in (self, other):
+            for label, (n, s1, s2) in source.sessions.items():
+                m, t1, t2 = out.sessions.get(label, (0, 0.0, 0.0))
+                out.sessions[label] = (m + n, t1 + s1, t2 + s2)
+        return out
+
+    def arrays(self, labels):
+        n = np.array([self.sessions[s][0] for s in labels], np.float64)
+        s1 = np.stack([self.sessions[s][1] for s in labels])
+        s2 = np.stack([self.sessions[s][2] for s in labels]).reshape(len(labels), -1)
+        return n, s1, s2
+
+
+def _rank_from_sums(n, s1, s2) -> float:
+    k = len(s1)
+    m = s1 / n
+    energy = np.clip(np.linalg.eigvalsh(s2.reshape(k, k) - n * np.outer(m, m)), 0.0, None)
+    total = energy.sum()
+    if not total > 0:
+        return float("nan")
+    p = energy[energy > 0] / total
+    return float(np.exp(-(p * np.log(p)).sum()))
+
+
+def comparative_rank(
+    w: SessionMoments,
+    n: SessionMoments,
+    e: SessionMoments,
+    *,
+    resamples=None,
+    seed=COMPARATIVE_SEED,
+    block=100,
+) -> dict:
+    """(rank ratio W - rank ratio N) in the projected basis, with a session-clustered percentile
+    interval (the same resampled sessions for all three)."""
+    labels = sorted(e.sessions)
+    if sorted(w.sessions) != labels or sorted(n.sessions) != labels:
+        raise ContractError("W, N and the encoded targets must cover the same sessions")
+    resamples = COMPARATIVE_RESAMPLES if resamples is None else resamples
+    idx = np.random.default_rng(seed).integers(0, len(labels), size=(resamples, len(labels)))
+    counts = np.stack([np.bincount(row, minlength=len(labels)) for row in idx]).astype(float)
+    parts = {name: m.arrays(labels) for name, m in (("W", w), ("N", n), ("E", e))}
+
+    def ranks(weights):
+        out = {}
+        for name, (cn, c1, c2) in parts.items():
+            out[name] = [
+                _rank_from_sums(wt @ cn, wt @ c1, wt @ c2) for wt in np.atleast_2d(weights)
+            ]
+        return {k: np.asarray(v) for k, v in out.items()}
+
+    point = ranks(np.ones(len(labels)))
+    diffs, undefined = [], 0
+    for lo in range(0, resamples, block):
+        r = ranks(counts[lo : lo + block])
+        d = r["W"] / r["E"] - r["N"] / r["E"]
+        undefined += int((~np.isfinite(d)).sum())
+        diffs.append(d)
+    diffs = np.concatenate(diffs)
+    finite = diffs[np.isfinite(diffs)]
+    lo, hi = np.percentile(finite, [2.5, 97.5]) if len(finite) else (np.nan, np.nan)
+    return {
+        "projected_rank_W": float(point["W"][0]),
+        "projected_rank_N": float(point["N"][0]),
+        "projected_rank_encoded": float(point["E"][0]),
+        "difference": float(point["W"][0] / point["E"][0] - point["N"][0] / point["E"][0]),
+        "ci95": [float(lo), float(hi)],
+        "resamples": int(resamples),
+        "sessions": len(labels),
+        "undefined_resamples": undefined,
+        "basis_dim": int(w.basis.shape[1]),
+    }
+
+
+def truncated_spectrum_statistics(predicted: Moments, encoded: Moments, k: int) -> dict:
+    """A synthetic collapse control: ``predicted`` projected onto its own top ``k`` principal
+    directions (mean kept). Returns the full-width G1 quantities of that truncated predictor."""
+    values, vectors = np.linalg.eigh(predicted.centered() / predicted.n)
+    order = np.argsort(values)[::-1][:k]
+    lam = np.clip(values[order], 0.0, None)
+    v = vectors[:, order]
+    p_std = np.sqrt(np.clip((v * v) @ lam, 0.0, None))
+    p = lam[lam > 0] / lam.sum() if lam.sum() > 0 else np.array([1.0])
+    p_rank = float(np.exp(-(p * np.log(p)).sum())) if lam.sum() > 0 else 0.0
+    e_std, e_rank = encoded.std(), encoded.effective_rank()
+    return {
+        "k": int(k),
+        "std_ratio": float(p_std.mean() / e_std.mean()),
+        "predicted_collapsed_fraction": float((p_std < 0.01).mean()),
+        "effective_rank_ratio": p_rank / e_rank if e_rank > 0 else 0.0,
+        "predicted_effective_rank": p_rank,
+    }
 
 
 g2_passes = ld.g2_passes  # upper 95 % bound of W / copy-last <= 0.8

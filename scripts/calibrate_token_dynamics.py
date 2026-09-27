@@ -331,8 +331,8 @@ def rules(models: dict) -> dict:
             std_ratios.append(stats["std_ratio"])
     return {
         "budget": td.budget_rule(sats),
-        "G1_min_effective_rank_ratio": td.bar_rule(rank_ratios),
-        "G1_min_std_ratio": td.bar_rule(std_ratios),
+        "G1_min_effective_rank_ratio": td.bar_rule(rank_ratios, td.RANK_FLOOR),
+        "G1_min_std_ratio": td.bar_rule(std_ratios, td.STD_FLOOR),
     }
 
 
@@ -412,6 +412,286 @@ def run(output: Path, checkpoints: Path, updates: int = td.CAL_UPDATES) -> dict:
     finally:
         report["total_seconds"] = time.monotonic() - started
         R65.write_report(output / "report.json", report)
+    return report
+
+
+def _load_calibration(cal: Path):
+    features = np.ascontiguousarray(np.load(cal / "features.npy", mmap_mode="r"))
+    meta = json.loads((cal / "table.json").read_text())
+    return (
+        features,
+        np.load(cal / "actions.npy"),
+        np.load(cal / "scale.npy"),
+        np.load(cal / "train_mean.npy"),
+        meta["table"],
+        np.asarray(meta["offsets"]),
+    )
+
+
+def controls(output: Path, cal: Path, checkpoints: Path) -> dict:
+    """The combined G1 on the pilot, and the synthetic collapse controls (owner ruling
+    2026-09-27): W's held-out predictions truncated to their own top k principal directions.
+    The combined G1 must fail k = 1, 2, 4; k = 8 is reported. Latent-space quantities only."""
+    import torch
+
+    from embodied_jepa.contracts import StateSchema
+    from embodied_jepa.models.frozen_tokens import frozen_token_model
+
+    if output.exists():
+        raise FileExistsError(f"refusing to overwrite {output}")
+    output.mkdir(parents=True)
+    torch.set_num_threads(td.FEATURE_THREADS)
+    started = time.monotonic()
+    calibration = json.loads((cal / "report.json").read_text())
+    if calibration.get("outcome") != "calibrated":
+        raise td.GuardError("the calibration did not complete")
+    features, actions, scale, train_mean, table, offsets = _load_calibration(cal)
+    shift = train_mean / scale
+    _, held = heldout_windows(table, offsets, "heldout", ld.EVAL_STRIDE)
+    members, _ = heldout_windows(table, offsets, "train", 1)
+    held_members = [i for i, e in enumerate(table) if e["part"] == "heldout"]
+    held_sessions = R65.window_arrays(
+        table, offsets, held_members, td.TRAIN_HORIZON, ld.EVAL_STRIDE
+    )[2]
+    train_rows = np.concatenate(
+        [np.arange(offsets[i], offsets[i] + table[i]["length"]) for i in members]
+    )
+    train_moments = td.Moments(shift)
+    for lo in range(0, len(train_rows), 8192):
+        train_moments.add(features[train_rows[lo : lo + 8192]] / scale)
+    basis = td.projection_basis(train_moments)
+    del train_moments
+    models = calibration["models"]
+    ranks = [
+        m["collapse_at_selected"][str(h)]["model"]["effective_rank_ratio"]
+        for m in models.values()
+        if m["arm"] == "W"
+        for h in td.GATED_HORIZONS
+    ]
+    stds = [
+        m["collapse_at_selected"][str(h)]["model"]["std_ratio"]
+        for m in models.values()
+        if m["arm"] == "W"
+        for h in td.GATED_HORIZONS
+    ]
+    rank_bar, std_bar = td.bar_rule(ranks, td.RANK_FLOOR), td.bar_rule(stds, td.STD_FLOOR)
+    thresholds = td.THRESHOLDS | {
+        "G1_min_effective_rank_ratio": rank_bar["bar"],
+        "G1_min_std_ratio": std_bar["bar"],
+    }
+    schema = StateSchema(("unused",), ("1",), "calibration_v0")
+
+    def predictions(arm, seed):
+        model = frozen_token_model(td.BACKEND)(
+            schema,
+            device=td.DEVICE,
+            seed=seed,
+            config=td.MODEL_CONFIG,
+            metadata={"protocol": td.PROTOCOL, "calibration": True, "arm": arm},
+        )
+        model.load(checkpoints / f"{arm}-s{seed}.pt")
+        out = {h: [] for h in td.GATED_HORIZONS}
+        for lo in range(0, len(held), EVAL_CHUNK):
+            f, a = R65.gather(features, actions, held[lo : lo + EVAL_CHUNK], td.TRAIN_HORIZON)
+            if arm == "N":
+                a = np.zeros_like(a)
+            p = model.predict_features(f[:, 0], np.ascontiguousarray(a, np.float32))
+            for h in td.GATED_HORIZONS:
+                out[h].append(p[:, h - 1] / scale)
+        return {h: np.concatenate(v) for h, v in out.items()}
+
+    def moments(rows):
+        m = td.Moments(shift)
+        m.add(rows)
+        return m
+
+    def projected(rows):
+        m = td.SessionMoments(shift, basis)
+        m.add(rows, held_sessions)
+        return m
+
+    encoded = {h: features[held + h] / scale for h in td.GATED_HORIZONS}
+    enc_m = {h: moments(encoded[h]) for h in td.GATED_HORIZONS}
+    enc_p = {h: projected(encoded[h]) for h in td.GATED_HORIZONS}
+    n_pred = predictions("N", 0)
+    n_p = {h: projected(n_pred[h]) for h in td.GATED_HORIZONS}
+    result = {}
+    for seed in (0, 1):
+        w_pred = predictions("W", seed)
+        per_h = {}
+        for h in td.GATED_HORIZONS:
+            rows = w_pred[h]
+            full = td.collapse_statistics(moments(rows), enc_m[h])
+            comp = td.comparative_rank(projected(rows), n_p[h], enc_p[h])
+            entry = {
+                "model": {
+                    "collapse": full,
+                    "rank_W_over_N": comp,
+                    "G1_parts": td.g1_parts(full, comp, thresholds),
+                }
+            }
+            mean = rows.mean(0)
+            centered = rows - mean
+            values, vectors = np.linalg.eigh(centered.T @ centered)
+            order = np.argsort(values)[::-1]
+            for k in td.TRUNCATION_CONTROLS:
+                v = vectors[:, order[:k]]
+                truncated = mean + (centered @ v) @ v.T
+                stats = td.collapse_statistics(moments(truncated), enc_m[h])
+                comp_k = td.comparative_rank(projected(truncated), n_p[h], enc_p[h])
+                parts = td.g1_parts(stats, comp_k, thresholds)
+                entry[f"truncated_k{k}"] = {
+                    "collapse": stats,
+                    "rank_W_over_N": comp_k,
+                    "G1_parts": parts,
+                    "G1_passes": bool(all(parts.values())),
+                }
+            per_h[str(h)] = entry
+        result[f"W-s{seed}"] = per_h
+    binding = {
+        f"k{k}": not any(
+            result[s][str(h)][f"truncated_k{k}"]["G1_passes"]
+            for s in result
+            for h in td.GATED_HORIZONS
+        )
+        for k in td.TRUNCATION_CONTROLS
+    }
+    report = {
+        "protocol": td.PROTOCOL,
+        "status": "pre-freeze collapse controls on the pilot (latent-space only; not a row)",
+        "revision": R65.revision(),
+        "tracked_tree_dirty": bool(R65.tracked_tree_dirty()),
+        "calibration_report_sha256": R65.sha256_file(cal / "report.json"),
+        "bars": {"rank": rank_bar, "std": std_bar},
+        "heldout_windows": int(len(held)),
+        "heldout_sessions": int(len(np.unique(held_sessions))),
+        "basis_dim": int(basis.shape[1]),
+        "results": result,
+        "controls_fail_G1": binding,
+        "owner_condition_met": bool(binding["k1"] and binding["k2"] and binding["k4"]),
+        "labels_read": False,
+        "seconds": time.monotonic() - started,
+    }
+    R65.write_report(output / "report.json", report)
+    return report
+
+
+def readability(output: Path, cal: Path) -> dict:
+    """The encoded 4 x 4 grid's readability on the disjoint pilot (owner ruling 2026-09-27):
+    encoded latents only, never a prediction. TASK-063's probe and TASK-059's T1 bar on the
+    pilot's roots at frames 8, 16 and 24 (h = 0, 8, 16), against full 16 x 16 P-tok and P-mean
+    on the same roots. It reads the pilot's label sidecars (disclosed)."""
+    import torch
+
+    from embodied_jepa import info_ceiling as ic
+    from embodied_jepa import pretrained_encoder as pe
+    from embodied_jepa.data import DatasetStore
+    from embodied_jepa.models.frozen_tokens import frozen_token_model
+
+    if output.exists():
+        raise FileExistsError(f"refusing to overwrite {output}")
+    output.mkdir(parents=True)
+    torch.set_num_threads(td.FEATURE_THREADS)
+    started = time.monotonic()
+    features, _, _, _, table, offsets = _load_calibration(cal)
+    store = DatasetStore(ROOT / td.PILOT_DATASET)
+    if store.manifest_hash != td.PILOT_MANIFEST_SHA256:
+        raise td.GuardError("pilot manifest is not the pinned one")
+    work = json.loads(
+        (ROOT / td.PILOT_DATASET).parent.joinpath("work/collection_report.json").read_text()
+    )
+    flags = {int(r["seed"]): r for r in work["readability"]["per_root"]}
+    rows = {r["episode_id"]: r for r in store.manifest["episodes"]}
+    reader = R65.TrainValReader(store, set(rows))
+    featurizer = frozen_token_model(td.BACKEND)(
+        store.state_schema, device="cpu", config=td.MODEL_CONFIG
+    )
+    roots = sorted(
+        (
+            (int(rows[e["episode_id"]]["metadata"]["reset_seed"]), i)
+            for i, e in enumerate(table)
+            if rows[e["episode_id"]]["metadata"]["kind"] == "root"
+        )
+    )
+    roots = [(s, i) for s, i in roots if s in flags]  # the roots with recorded occlusion flags
+    frames_at = (td.DECISION_FRAME, td.DECISION_FRAME + 8, td.DECISION_FRAME + 16)
+    xy, grid, tok, mean_tok, occluded, label_diff = {}, {}, {}, {}, [], 0.0
+    for f in frames_at:
+        xy[f], grid[f], tok[f], mean_tok[f] = [], [], [], []
+    frames_needed = []
+    for seed, i in roots:
+        e = table[i]
+        labels = reader.labels(e["episode_id"])
+        R65.check_look_labels(labels["collector__phase_index"], e["episode_id"])
+        apple = np.asarray(labels["privileged__apple_position_world"], np.float64)[:, :2]
+        label_diff = max(
+            label_diff, R65.check_apple_label(apple[0], flags[seed]["apple_xy"], e["episode_id"])
+        )
+        occluded.append(bool(flags[seed]["reset_occluded"]))
+        frames = reader.episode(e["episode_id"])[0]
+        for f in frames_at:
+            xy[f].append(apple[f])
+            grid[f].append(features[offsets[i] + f])
+            frames_needed.append((f, frames[f]))
+    for f in frames_at:
+        batch = np.stack([fr for g, fr in frames_needed if g == f])
+        read = pe.features(featurizer._frozen_module, batch)
+        tok[f] = read["tokens"]
+        mean_tok[f] = read["tokens"].reshape(len(batch), -1, td.TOKEN_WIDTH).mean(1)
+    n = len(roots)
+    fold = ic.fold_of(n)
+    idx = ic.bootstrap_indices(n)
+    occluded = np.asarray(occluded)
+    results = {}
+    for f in frames_at:
+        truth = np.stack(xy[f])
+        occ = ic.xy_error_cm(
+            ic.prior_predictions(truth, np.ones(n), occluded, fold)["B_occ"], truth
+        )
+        entry = {}
+        for name, x in (
+            ("grid_4x4", np.stack(grid[f])),
+            ("P_tok_16x16", tok[f]),
+            ("P_mean", mean_tok[f]),
+        ):
+            g, diag = ic.gram(np.asarray(x, np.float64))
+            pred, _, selections = ic.nested_cv(g, diag, truth, fold)
+            err = ic.xy_error_cm(pred, truth)
+            stats = R65.t1_stats(err, occ, err, idx)
+            entry[name] = {
+                "median_cm": stats["median_cm"],
+                "median_ci95": stats.get("ci95"),
+                "ratio_to_B_occ": stats["ratio_to_B_occ"],
+                "meets_t1": td.ceiling_passes(stats),
+                "selections": selections,
+            }
+        entry["B_occ_median_cm"] = float(np.median(occ))
+        results[f"h{f - td.DECISION_FRAME}"] = entry
+    gated = [f"h{h}" for h in td.GATED_HORIZONS]
+    grid_ok = all(results[h]["grid_4x4"]["meets_t1"] for h in gated)
+    tok_ok = all(results[h]["P_tok_16x16"]["meets_t1"] for h in gated)
+    report = {
+        "protocol": td.PROTOCOL,
+        "status": "pre-freeze readability of ENCODED 4x4 grids on the pilot (not a row)",
+        "revision": R65.revision(),
+        "tracked_tree_dirty": bool(R65.tracked_tree_dirty()),
+        "roots": n,
+        "root_seeds": [s for s, _ in roots],
+        "labels_read": "pilot-d privileged__apple_position_world and collector__phase_index "
+        "(owner ruling 2026-09-27); no corpus label, no prediction",
+        "apple_label_max_abs_m": label_diff,
+        "results": results,
+        "rule": "reconsider the pooling if the 4x4 grid misses the T1 bar at h = 8 or 16 while "
+        "full P-tok meets it; if full P-tok also misses, the pilot is too small to inform",
+        "grid_meets_t1_at_gated": grid_ok,
+        "p_tok_meets_t1_at_gated": tok_ok,
+        "verdict": "keep 4x4"
+        if grid_ok
+        else ("reconsider pooling" if tok_ok else "pilot too small to inform"),
+        "test_split_decoded": False,
+        "seconds": time.monotonic() - started,
+    }
+    R65.write_report(output / "report.json", report)
     return report
 
 
@@ -529,6 +809,13 @@ def main(argv=None) -> int:
         p.add_argument("--checkpoints", type=Path, required=True)
     a = sub.add_parser("anchor")
     a.add_argument("--output", type=Path, required=True)
+    c = sub.add_parser("controls")
+    c.add_argument("--output", type=Path, required=True)
+    c.add_argument("--calibration", type=Path, required=True)
+    c.add_argument("--checkpoints", type=Path, required=True)
+    r = sub.add_parser("readability")
+    r.add_argument("--output", type=Path, required=True)
+    r.add_argument("--calibration", type=Path, required=True)
     t = sub.add_parser("train")
     t.add_argument("--output", type=Path, required=True)
     t.add_argument("--checkpoints", type=Path, required=True)
@@ -538,6 +825,15 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if args.command == "train":
         train_stage(args.output, args.checkpoints, args.arm, args.seed, args.updates)
+        return 0
+    if args.command == "controls":
+        return (
+            0
+            if controls(args.output, args.calibration, args.checkpoints)["owner_condition_met"]
+            else 1
+        )
+    if args.command == "readability":
+        readability(args.output, args.calibration)
         return 0
     if args.command == "anchor":
         checks = anchor(args.output)["checks"]

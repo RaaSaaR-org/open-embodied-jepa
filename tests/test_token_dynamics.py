@@ -129,17 +129,20 @@ def test_budget_rule_refuses_nonsense():
         td.budget_rule([0])
 
 
-def test_bar_rule_is_half_the_smallest_pilot_ratio_rounded_down():
-    assert td.bar_rule([0.62, 0.58, 0.60])["bar"] == 0.29
-    assert td.bar_rule([0.40])["bar"] == 0.20
-    assert td.bar_rule([0.999])["bar"] == 0.49
-    low = td.bar_rule([0.09, 0.5])
+def test_bar_rule_is_half_the_smallest_pilot_ratio_rounded_down_never_below_its_floor():
+    assert td.bar_rule([0.62, 0.58, 0.60], 0.10)["bar"] == 0.29
+    assert td.bar_rule([0.40], 0.10)["bar"] == 0.20
+    assert td.bar_rule([0.999], 0.10)["bar"] == 0.49
+    floored = td.bar_rule([0.15], td.RANK_FLOOR)
+    assert floored["relative"] == 0.07 and floored["bar"] == td.RANK_FLOOR == 0.10
+    assert td.bar_rule([0.4], td.STD_FLOOR)["bar"] == td.STD_FLOOR == 0.25
+    low = td.bar_rule([0.09, 0.5], 0.10)
     assert low["escalate"] and low["reference"] == 0.09
-    assert not td.bar_rule([0.1])["escalate"]
+    assert not td.bar_rule([0.1], 0.10)["escalate"]
     with pytest.raises(ContractError):
-        td.bar_rule([])
+        td.bar_rule([], 0.10)
     with pytest.raises(ContractError):
-        td.bar_rule([math.inf])
+        td.bar_rule([math.inf], 0.10)
 
 
 # ----- gates --------------------------------------------------------------------------------------
@@ -154,18 +157,114 @@ def _collapse(rank=0.3, std=0.8, collapsed=0.0):
     }
 
 
+def _over_n(lo=0.02, undefined=0):
+    return {"ci95": [lo, lo + 0.1], "undefined_resamples": undefined}
+
+
 def test_g1_uses_the_calibrated_bars_in_both_directions():
-    assert td.g1_passes(_collapse(), BARS)
-    assert td.g1_passes(_collapse(rank=0.2, std=0.4), BARS)  # at the bar passes
-    assert not td.g1_passes(_collapse(rank=0.19), BARS)
-    assert not td.g1_passes(_collapse(std=0.39), BARS)
-    assert not td.g1_passes(_collapse(collapsed=0.06), BARS)
+    assert td.g1_passes(_collapse(), _over_n(), BARS)
+    assert td.g1_passes(_collapse(rank=0.2, std=0.4), _over_n(), BARS)  # at the bar passes
+    assert not td.g1_passes(_collapse(rank=0.19), _over_n(), BARS)
+    assert not td.g1_passes(_collapse(std=0.39), _over_n(), BARS)
+    assert not td.g1_passes(_collapse(collapsed=0.06), _over_n(), BARS)
 
 
-def test_g1_refuses_to_run_without_calibrated_bars():
+def test_g1_comparative_needs_a_lower_bound_strictly_above_zero():
+    assert not td.g1_passes(_collapse(), _over_n(lo=0.0), BARS)
+    assert not td.g1_passes(_collapse(), _over_n(lo=-0.01), BARS)
+    assert not td.g1_passes(_collapse(), _over_n(undefined=1), BARS)
+    parts = td.g1_parts(_collapse(), _over_n(lo=-0.01), BARS)
+    assert parts == {"collapsed_fraction": True, "rank": True, "std": True, "rank_over_N": False}
+
+
+def test_g1_refuses_unset_or_sub_floor_bars():
     unset = td.THRESHOLDS | {"G1_min_effective_rank_ratio": None}
     with pytest.raises(ContractError, match="calibrated"):
-        td.g1_passes(_collapse(), unset)
+        td.g1_passes(_collapse(), _over_n(), unset)
+    low = BARS | {"G1_min_effective_rank_ratio": 0.05}
+    with pytest.raises(ContractError, match="floor"):
+        td.g1_passes(_collapse(), _over_n(), low)
+    low = BARS | {"G1_min_std_ratio": 0.2}
+    with pytest.raises(ContractError, match="floor"):
+        td.g1_passes(_collapse(), _over_n(), low)
+
+
+# ----- G1 (iii): the projected comparative ------------------------------------------------------
+def _session_moments(rows, sessions, shift, basis):
+    m = td.SessionMoments(shift, basis)
+    m.add(rows, sessions)
+    return m
+
+
+def test_projection_basis_is_the_top_principal_directions():
+    rng = np.random.default_rng(10)
+    x = rng.normal(size=(400, 6)) * np.array([5.0, 3, 2, 1, 0.5, 0.1])
+    m = td.Moments(np.zeros(6))
+    m.add(x)
+    basis = td.projection_basis(m, 2)
+    assert basis.shape == (6, 2)
+    assert abs(basis[0, 0]) > 0.99 and abs(basis[1, 1]) > 0.99
+
+
+def test_comparative_rank_point_equals_the_direct_projected_ratio():
+    rng = np.random.default_rng(11)
+    d, k = 8, 5
+    basis = np.linalg.qr(rng.normal(size=(d, d)))[0][:, :k]
+    shift = np.zeros(d)
+    sessions = np.repeat(np.arange(12), 20)
+    enc = rng.normal(size=(240, d))
+    w = enc * 0.8 + rng.normal(size=(240, d)) * 0.1  # keeps most directions
+    n = np.outer(rng.normal(size=240), rng.normal(size=d))  # rank one
+    out = td.comparative_rank(
+        _session_moments(w, sessions, shift, basis),
+        _session_moments(n, sessions, shift, basis),
+        _session_moments(enc, sessions, shift, basis),
+        resamples=300,
+    )
+    direct = (ld.effective_rank(w @ basis) - ld.effective_rank(n @ basis)) / ld.effective_rank(
+        enc @ basis
+    )
+    assert out["difference"] == pytest.approx(direct, rel=1e-9)
+    assert out["ci95"][0] > 0 and out["undefined_resamples"] == 0
+    swapped = td.comparative_rank(
+        _session_moments(n, sessions, shift, basis),
+        _session_moments(w, sessions, shift, basis),
+        _session_moments(enc, sessions, shift, basis),
+        resamples=300,
+    )
+    assert swapped["ci95"][1] < 0  # the other direction: a collapsed W fails (iii)
+
+
+def test_session_moments_merge_and_refusals():
+    rng = np.random.default_rng(12)
+    basis = np.eye(3)
+    a = _session_moments(rng.normal(size=(10, 3)), np.array([0] * 5 + [1] * 5), 0, basis)
+    b = _session_moments(rng.normal(size=(6, 3)), np.array([1] * 3 + [2] * 3), 0, basis)
+    merged = a.merge(b)
+    assert sorted(merged.sessions) == [0, 1, 2] and merged.sessions[1][0] == 8
+    with pytest.raises(ContractError, match="one session"):
+        a.add(np.zeros((2, 3)), np.array([0]))
+    with pytest.raises(ContractError, match="same sessions"):
+        td.comparative_rank(a, merged, merged, resamples=10)
+
+
+def test_truncation_controls_score_low_rank():
+    rng = np.random.default_rng(13)
+    enc_rows = rng.normal(size=(500, 40))
+    pred_rows = enc_rows * 0.7
+    enc, pred = td.Moments(np.zeros(40)), td.Moments(np.zeros(40))
+    enc.add(enc_rows)
+    pred.add(pred_rows)
+    full = td.collapse_statistics(pred, enc)
+    for k in (1, 2, 4):
+        control = td.truncated_spectrum_statistics(pred, enc, k)
+        assert control["predicted_effective_rank"] <= k + 1e-9
+        assert control["effective_rank_ratio"] < full["effective_rank_ratio"]
+    one = td.truncated_spectrum_statistics(pred, enc, 1)
+    assert one["predicted_effective_rank"] == pytest.approx(1.0)
+    everything = td.truncated_spectrum_statistics(pred, enc, 40)
+    assert everything["effective_rank_ratio"] == pytest.approx(full["effective_rank_ratio"])
+    assert everything["std_ratio"] == pytest.approx(full["std_ratio"])
 
 
 def _readability(median=1.0, ratio_hi=0.5):
