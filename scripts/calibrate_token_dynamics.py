@@ -624,9 +624,10 @@ def readability(output: Path, cal: Path) -> dict:
         labels = reader.labels(e["episode_id"])
         R65.check_look_labels(labels["collector__phase_index"], e["episode_id"])
         apple = np.asarray(labels["privileged__apple_position_world"], np.float64)[:, :2]
-        label_diff = max(
-            label_diff, R65.check_apple_label(apple[0], flags[seed]["apple_xy"], e["episode_id"])
-        )
+        # The pilot report's apple_xy are its smoke noise targets, so they are not a check here;
+        # its reset_occluded flags come from rendered apple pixels and are real. The look must
+        # leave the apple still: record how far the label moves over the look (frames 0-8).
+        label_diff = max(label_diff, float(np.abs(apple[: td.DECISION_FRAME + 1] - apple[0]).max()))
         occluded.append(bool(flags[seed]["reset_occluded"]))
         frames = reader.episode(e["episode_id"])[0]
         for f in frames_at:
@@ -679,7 +680,9 @@ def readability(output: Path, cal: Path) -> dict:
         "root_seeds": [s for s, _ in roots],
         "labels_read": "pilot-d privileged__apple_position_world and collector__phase_index "
         "(owner ruling 2026-09-27); no corpus label, no prediction",
-        "apple_label_max_abs_m": label_diff,
+        "apple_label_move_over_look_max_m": label_diff,
+        "occlusion_flags": "pilot-d readability.per_root.reset_occluded (rendered pixels; "
+        "real); its apple_xy are smoke noise and unused",
         "results": results,
         "rule": "reconsider the pooling if the 4x4 grid misses the T1 bar at h = 8 or 16 while "
         "full P-tok meets it; if full P-tok also misses, the pilot is too small to inform",
