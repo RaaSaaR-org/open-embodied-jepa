@@ -122,7 +122,7 @@ Decision: `passing_seeds: [0, 1, 2]`, `dynamics_passing_seeds: [0, 1, 2]`,
 | **(iii) rank ratio W − N** | 0.040 [0.038, 0.043] / 0.052 [0.050, 0.055] / 0.043 [0.040, 0.045] | 0.057 [0.054, 0.060] / 0.079 [0.076, 0.082] / 0.065 [0.062, 0.069] | lower bound > 0 |
 
 - N's rank ratio (reported): 0.296 / 0.289 / 0.294 at h = 8 and 0.259 / 0.245 / 0.256 at h = 16.
-  Copy-last's: 1.004.
+  Copy-last's: 1.004 at h = 8 and 1.005 at h = 16.
 - **Caveat 3.** W's ratios are lower than TASK-065's CLS predictor's (0.373 / 0.392 / 0.399 at
   h = 8, 0.365 / 0.388 / 0.393 at h = 16). The encoded token grid has a higher effective rank
   (53.2 against about 40 for CLS) and the predictions keep about a third of it. G1 passes against
@@ -188,7 +188,8 @@ Latent MSE is not comparable across latents; these are cm and the rank ratio.
   0.925 cm against CLS's 0.940.
 - The rank ratio is lower, not higher (caveat 3). **Much of the difference in outcome comes from
   the G1 bar**, which is calibrated here and was not in TASK-065. Under TASK-065's 0.5 bar this
-  run's G1 would also fail.
+  run's G1 would also fail. The rest comes from G5: TASK-065 also failed G5 on every seed
+  (5 of 6 seed-horizon pairs), and here G5 passes on every seed and horizon.
 - The two tasks differ in more than the latent: the budget (10 000 against 30 000 updates) and
   the gate design changed too. The comparison does not isolate the latent.
 
@@ -197,8 +198,8 @@ Latent MSE is not comparable across latents; these are cm and the rank ratio.
 1. **By the preregistered gates, the predictor learns action-conditioned latent dynamics on this
    latent and keeps the apple readable.** On every seed, at 0.4 s and 0.8 s, it removes about
    22–36 % of copy-last's latent error, beats an equally budgeted no-action predictor by about
-   9–13 %, costs 70–120 % more error with wrong or zero actions, keeps a third of the encoded
-   rank and about 82–84 % of the spread, and reads the apple to 0.75–0.93 cm, within 0.21–0.34 cm
+   9–13 %, costs about 71–119 % more error with wrong or zero actions, keeps a third of the encoded
+   rank and about 82–84 % of the spread, and reads the apple to 0.75–0.93 cm (upper bounds ≤ 1.03 cm), within 0.21–0.34 cm
    of the encoded grid.
 2. **The pass is not strong.** G2 at h = 8 and G5 for seed 2 at h = 8 pass by less than 0.02 on
    their bounds. The N baseline was probably under-trained, which favours W on G3 and G1 (iii).

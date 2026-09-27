@@ -2,8 +2,11 @@
 
 Writes ``benchmarks/manifests/apple-token-dynamics-v1-results.json``. It restates the numbers the
 results document quotes, each copied from the report and rounded to 3 decimals, with the report's
-sha256, so a reviewer can check every restated number against the report by script. Computes
-nothing new. A world-model test only; **learned Apple->Plate is still 0 successes.**
+sha256, so a reviewer can check every restated number against the report by script. It
+computes no new statistic. It derives three fields from the report and TASK-065's results
+manifest: the saturation list, the rows that also match (protocol section 11) and the
+side-by-side with TASK-065. A world-model test only; **learned Apple->Plate is still 0
+successes.**
 
     uv run --no-sync python scripts/summarize_token_dynamics.py \\
         --report outputs/task066-token-dynamics/run-1/report.json
@@ -217,7 +220,7 @@ def rows_also_matching(report) -> list:
         rows.append("WM-TOK-APPLE-LOST")
     if not passing and len(latent) >= 2:
         rows.append("WM-TOK-COLLAPSE")
-    if not passing:
+    if not rows:  # section 11: "otherwise", i.e. only when no row above matches
         rows.append("WM-TOK-NO-DYNAMICS")
     return rows
 

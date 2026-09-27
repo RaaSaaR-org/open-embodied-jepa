@@ -4,7 +4,7 @@ aliases:
 - TASK-066
 title: Preregister and run a LeWM-family predictor on frozen DINOv2 patch-token latents over apple-look-v1 (world-model test only)
 slug: preregister-and-run-a-lewm-family-predictor-on-frozen-dinov2-patch-token-latents
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -69,9 +69,11 @@ Manifest: `benchmarks/manifests/apple-token-dynamics-v1.json`.
       the runner pin. (#75, `87f3f81`.)
 - [x] The gated run starts only on the pre-run reviewer's reported verdict, from a clean tree.
       (run-1 at `87f3f81` on a reported PRE-RUN: GO.)
-- [ ] PR 3 states the outcome row and every gate quantity with its interval. A reviewer checks
+- [x] PR 3 states the outcome row and every gate quantity with its interval. A reviewer checks
       every restated number against `report.json` by script. It contains the results document,
       the results manifest, the summarize script and, if a clause fires, a DECISIONS entry.
+      (#81, `b1bd43c`, on a reported APPROVE; closeout of the reviewer's non-blocking items in a
+      follow-up PR.)
 - [x] The test split is never decoded. Cohorts C and D are untouched. `exemption_spent` stays
       false.
 
