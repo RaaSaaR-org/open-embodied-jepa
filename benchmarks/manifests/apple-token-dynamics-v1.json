@@ -453,5 +453,17 @@
    "topic": "budget escalation (wanted 33 000 > 30 000)",
    "ruling": "option A: 30 000 updates, selection every 1500, caps 4500 s per model and 57 600 s global"
   }
- ]
+ ],
+ "runs": {
+  "run-1": {
+   "outcome": "WM-TOK-DYNAMICS",
+   "revision": "87f3f81131eb0b964cd234fc869906a405b29a39",
+   "started_utc": "2026-09-27T12:08:23Z",
+   "report_written_utc": "2026-09-27T23:00:57Z",
+   "report": "outputs/task066-token-dynamics/run-1/report.json",
+   "report_sha256": "e6b28e07ead8fa47df860c341ab5559208210eeff3faa1bcf312241ef3dd0b60",
+   "results_manifest": "benchmarks/manifests/apple-token-dynamics-v1-results.json",
+   "pre_run_verdict": "PRE-RUN: GO (reported)"
+  }
+ }
 }

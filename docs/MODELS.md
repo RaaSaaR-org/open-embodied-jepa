@@ -149,7 +149,8 @@ ViT-S/14 final patch tokens (TASK-063's `tokens` read-out point), average-pooled
 patch grid to `g × g` and standardised by train-only moments. The latent is flat,
 `g² × 384`-d, row-major over (grid row, grid column, channel). It is preregistered by
 [apple_token_dynamics_v1.md](experiments/apple_token_dynamics_v1.md) with `g = 4` (6144-d) and
-has **no result yet**.
+has a result: outcome WM-TOK-DYNAMICS on the train split, with four caveats
+([results](experiments/apple_token_dynamics_v1_results.md)).
 
 - **It is off unless a run selects it.** It is written once, in `models/frozen_tokens.py`.
   `frozen_token_model("leworldmodel")` (or `"native_jepa"`) puts `FrozenTokenMixin` in front of
