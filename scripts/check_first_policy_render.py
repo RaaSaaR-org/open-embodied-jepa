@@ -11,13 +11,16 @@ It uses the runner's own worker pool and ``run_task`` (the gated code path), the
 
 * pass 1 renders the post-look frame (``frame`` task);
 * pass 2 renders it again, with the task order reversed so it lands on other workers;
-* pass 3 runs a full-length (800-step) ``hold`` attempt with pass 1's sha256 as
-  ``expected_frame_sha256``, exactly as a DAgger or M1 attempt does (a mismatch raises G-frame);
-* pass 4 renders it once more, after every worker has run those long attempts.
+* pass 3 runs a full-length (800-step) attempt -- ``hold``, ``oracle`` or ``random`` in turn, so
+  workers render varied scenes -- with pass 1's sha256 as ``expected_frame_sha256``, exactly as a
+  DAgger or M1 attempt does (a mismatch raises G-frame);
+* pass 4 renders it once more, after every worker has run those long attempts;
+* a negative control (one extra smoke seed, a wrong expectation) must raise G-frame.
 
 Verdict ``IDENTICAL`` only if every seed has one sha256 across all four passes and one post-look
-joint state, no pass-3 attempt raised, and at least ``MIN_CROSS_WORKER`` seeds were rendered on
-two or more distinct workers. Anything else is ``NOT_IDENTICAL``: the gated run must not start.
+joint state, the post-look state is equal across seeds (G-look), no attempt raised, at least
+``MIN_CROSS_WORKER`` seeds were rendered on two or more distinct workers, the negative control
+raised G-frame, and the check ran at the gated worker count. Anything else is ``NOT_IDENTICAL``: the gated run must not start.
 
     uv run --no-sync python scripts/check_first_policy_render.py \\
         --output outputs/task067-scratch/render-determinism-1
@@ -43,6 +46,8 @@ from embodied_jepa import first_policy as fp  # noqa: E402
 
 SEEDS = 32
 MIN_CROSS_WORKER = 16
+PASS3_KINDS = ("hold", "oracle", "random")  # varied scenes before the pass-4 render
+NEGATIVE_SEED = fp.SMOKE_SEEDS[0] + SEEDS  # 46932: the G-frame negative control
 LONG_STEPS = fp.MAX_POLICY_STEPS  # pass 3: full-length attempts, as in the gated run
 
 
@@ -76,6 +81,7 @@ def run_with_pid(task: dict) -> dict:
             "sha": out["post_look_frame_sha256"],
             "state": out["post_look_state"],
             "executed_steps": out.get("executed_steps"),
+            "termination_reason": out.get("termination_reason"),
         }
     except Exception as error:  # noqa: BLE001 - recorded, and it fails the verdict
         return {
@@ -104,6 +110,11 @@ def check(output: Path, workers: int) -> dict:
         }
         for s in seeds
     }
+    RUNNER.check_simulated_seeds("D", (NEGATIVE_SEED,), smoke=True)
+    negative_reset = {
+        "object_xy": list(map(float, wide_reset(NEGATIVE_SEED)["object_xy"])),
+        "plate_xy": list(map(float, wide_reset(NEGATIVE_SEED)["plate_xy"])),
+    }
     started = time.monotonic()
     pool = mp.get_context("spawn").Pool(workers, initializer=init_worker)
     try:
@@ -124,12 +135,12 @@ def check(output: Path, workers: int) -> dict:
                 {
                     "seed": s,
                     "reset": resets[s],
-                    "kind": "hold",
+                    "kind": PASS3_KINDS[i % len(PASS3_KINDS)],  # varied scenes before pass 4
                     "pass": 3,
                     "max_steps": LONG_STEPS,
                     "expected_frame_sha256": sha1[s],
                 }
-                for s in seeds
+                for i, s in enumerate(seeds)
             ],
             chunksize=1,
         )
@@ -140,6 +151,21 @@ def check(output: Path, workers: int) -> dict:
             [{"seed": s, "reset": resets[s], "kind": "frame", "pass": 4} for s in seeds[::-1]],
             chunksize=1,
         )
+        # negative control: a wrong expectation must raise G-frame in the worker
+        negative = pool.map(
+            run_with_pid,
+            [
+                {
+                    "seed": NEGATIVE_SEED,
+                    "reset": negative_reset,
+                    "kind": "hold",
+                    "pass": "negative",
+                    "max_steps": 1,
+                    "expected_frame_sha256": "0" * 64,
+                }
+            ],
+            chunksize=1,
+        )[0]
     finally:
         pool.terminate()
         pool.join()
@@ -151,6 +177,15 @@ def check(output: Path, workers: int) -> dict:
             "shas": sorted({r["sha"] for r in rows if r["ok"]}),
             "workers": sorted({r["pid"] for r in rows}),
             "errors": [r["error"] for r in rows if not r["ok"]],
+            "pass_3": [
+                {
+                    "kind": PASS3_KINDS[seeds.index(s) % len(PASS3_KINDS)],
+                    "executed_steps": r.get("executed_steps"),
+                    "termination_reason": r.get("termination_reason"),
+                }
+                for r in rows
+                if r["pass"] == 3 and r["ok"]
+            ],
             "state_max_abs_difference": float(
                 max(
                     np.abs(np.asarray(r["state"]) - np.asarray(rows[0]["state"])).max()
@@ -167,6 +202,11 @@ def check(output: Path, workers: int) -> dict:
     )
     cross = sum(len(v["workers"]) >= 2 for v in per_seed.values())
     all_states = [np.asarray(r["state"]) for r in records if r["ok"]]
+    states_equal = bool(all_states) and (
+        max(float(np.abs(x - all_states[0]).max()) for x in all_states) <= 1e-6
+    )
+    negative_ok = (not negative["ok"]) and "G-frame" in negative.get("error", "")
+    at_gated_count = workers == fp.SIM_WORKERS
     report = {
         "check": "TASK-067 R7: post-look re-render bit-identity across renders and workers",
         "workers": workers,
@@ -177,14 +217,25 @@ def check(output: Path, workers: int) -> dict:
         "distinct_workers_used": len({r["pid"] for r in records}),
         "seeds_rendered_on_two_or_more_workers": cross,
         "min_cross_worker_seeds": MIN_CROSS_WORKER,
-        "post_look_state_equal_across_seeds": bool(
-            max(float(np.abs(s - all_states[0]).max()) for s in all_states) <= 1e-6
-        ),
+        "post_look_state_equal_across_seeds": states_equal,
+        "negative_control": {
+            "seed": NEGATIVE_SEED,
+            "raised_g_frame": negative_ok,
+            "error": negative.get("error"),
+        },
+        "at_gated_worker_count": at_gated_count,
+        "pass_3_kinds": list(PASS3_KINDS),
         "per_seed": per_seed,
         "seconds": time.monotonic() - started,
         "revision": RUNNER.R65.revision(),
         "tracked_tree_dirty": bool(RUNNER.R65.tracked_tree_dirty()),
-        "verdict": "IDENTICAL" if identical and cross >= MIN_CROSS_WORKER else "NOT_IDENTICAL",
+        "verdict": "IDENTICAL"
+        if identical
+        and cross >= MIN_CROSS_WORKER
+        and states_equal
+        and negative_ok
+        and at_gated_count
+        else "NOT_IDENTICAL",
     }
     payload = json.dumps(report, indent=1, sort_keys=True) + "\n"
     (output / "report.json").write_text(payload)
