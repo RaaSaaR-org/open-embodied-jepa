@@ -853,6 +853,11 @@ thresholds, seeds, budget and caps are unchanged. What the runner does, all mech
 - **Preflight.** G-hash is recorded before any import. G-frozen (`token_dynamics.require_frozen`)
   runs before torch is imported. Any exception from the first line of `run` onwards writes a V
   report.
+- **G-frozen, per model** (after PR 1's review, item N6). Each model's effective configuration
+  must equal the preregistered one: `MODEL_CONFIG` plus the adapter defaults the protocol keeps
+  (hidden 128, depth 2, 2 heads × 24, lr 3e-4, weight decay 1e-4, clip 1.0, multistep weight 1.0)
+  **and `sigreg_projections` 128**. That count is pinned here because the option only type-checks
+  it (§4.1).
 - **G-anchor on tokens.** The 190 post-look frames' CLS and tokens must hash to TASK-064's
   `P_cls` and `P_tok`. G-repro covers both.
 - **G-cache (a/b/c).**
