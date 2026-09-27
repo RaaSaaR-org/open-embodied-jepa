@@ -62,6 +62,13 @@ block to it.
 > R5: seeds 46000–46999 are accepted, on condition that you grep the repo, including the
 > manifests, and confirm no overlap. Record the check.
 
+**Owner ruling R6, verbatim (received 2026-09-27T13:13Z via the coordinator, also posted on
+#78):**
+
+> Owner ruling R6 (2026-09-27 13:13Z), also posted on #78: both §17 departures are accepted.
+> C-3 gets its own 3 DAgger rounds, and R-3 is trained and run on the development cohort. Both
+> make the controls stronger, so G2 and G3 become harder to pass, not easier.
+
 A later correction from the coordinator changed only the year of the TASK-066 GPU hold
 ("about 00:10Z on 2026-09-28 (hard cap 04:08Z), not 2028. Nothing else changes."). The check R5
 asks for is §4.1. The rulings are also recorded, verbatim, in the manifest's `owner_rulings`.
@@ -142,7 +149,8 @@ repeated here. The central facts:
 | perception-held-out (S0-P) | 46256–46383 (128) |
 | C0 calibration | 46384–46415 (32) |
 | DAgger iteration 1 / 2 / 3 | 46416–46543 / 46544–46671 / 46672–46799 (128 each; shared by P, C and R) |
-| reserved, unused | 46800–46999 |
+| reserved, unused | 46800–46899 |
+| smoke runs only (amendment 1; nothing from them is read) | 46900–46999 |
 | development cohort D (M1) | 45000–45007, 45100–45107 |
 | cohort C (M2 only; separate authorization) | 45300–45339, from stored manifest values |
 
@@ -295,7 +303,8 @@ every smaller one reach at least 28/32 successes. The median bar is min(cap, p90
 This follows `first_policy.a4_threshold`. For each of the 128 held-out perception resets, the
 predicted A4-look success probability is the C0 success fraction at the smallest tested level at
 or above its apple error (0 beyond the largest), times the same for its plate error, divided by
-the C0 reference fraction. The threshold T is ⌈0.5 × 16 × the mean prediction⌉, and at least 1.
+the C0 reference fraction, and capped at 1.0 (amendment 1). The threshold T is
+⌈0.5 × 16 × the mean prediction⌉, and at least 1.
 The reading is that perception is "adequate in the loop" when A4-look reaches at least half the
 successes that C0 and S0-P predict for it. T is computed before any D attempt and recorded in
 the report.
@@ -411,7 +420,7 @@ would not mean that LeWM drives the robot (R4).
 | **G-weights** | DINOv2 files and the pretrained and floor digests match their pins |
 | **G-seeds** | `check_seed_ranges`, plus every simulated seed lies in its declared range; the D whitelist; cohort C refused |
 | **G-look** | on every attempt, the applied look commands equal the requested ones, and the post-look joint state equals the first attempt's within 1e-6 |
-| **G-privileged** | Applies to every **evaluation** attempt of an L1 arm. DAgger rollouts read truth through the labeller, before the look and outside `act()`, by design (R2 e). (1) `task_truth()` is wrapped with a counter that records any call made while a controller's `act()` is on the stack; that count must be 0. (2) The attempt's total `task_truth()` count must equal the scorer's own expected count (one per `evaluate()`, plus its construction). (3) L1 controllers are constructed without any robot or simulator handle, and receive only the `Observation` and the step; a PR 2 test asserts this. (4) FK runs on the controller's own MjModel and MjData. |
+| **G-privileged** | Applies to every **evaluation** attempt of an L1 arm. DAgger rollouts read truth through the labeller, before the look and outside `act()`, by design (R2 e). (1) `task_truth()` is wrapped with a counter that records any call made while a controller's `act()` is on the stack; that count must be 0. (2) The counter is installed after the reset and after the scorer's construction (both read `task_truth()`), so the attempt's total count must equal the scorer's `evaluate()` calls (amendment 1). (3) L1 controllers are constructed without any robot or simulator handle, and receive only the `Observation` and the step; a PR 2 test asserts this. (4) FK runs on the controller's own MjModel and MjData. |
 | **G-device** | training on MPS; features and rollouts on CPU |
 | **G-finite** | every feature, estimate, loss, prediction and count is finite |
 | **G-cap** | every cap in §14 |
@@ -493,12 +502,12 @@ committed except manifests and hashes.
   for the plate.
 - No test-split decode, and no cohort-C attempt in this gated run.
 
-## 17. Differences from the accepted proposal (disclosed; two need the owner's confirmation)
+## 17. Differences from the accepted proposal (disclosed; the two substantive ones confirmed by R6)
 
 The owner accepted the proposal "as proposed" (R3). These changes were made while writing the
 preregistration.
 
-**Need the owner's confirmation before this PR merges:**
+**Confirmed by owner ruling R6 (2026-09-27T13:13Z):**
 1. **The no-image control is C-3, not the proposal's C-noimg.** The proposal's C-noimg was
    "P-0's recipe" (behaviour cloning only). C-3 gets its own three DAgger iterations on the same
    seeds. The reason is that M2's G2 compares the carried P-k, which has had DAgger, with this
@@ -521,3 +530,32 @@ preregistration.
 The A4-look trigger follows the proposal: it is calibrated from C0 and S0-P (§7.1a). An earlier
 draft of this PR fixed it at an uncalibrated 8/16. Review caught that it departed from R3, and it
 was replaced before any merge.
+
+## 18. Amendment log
+
+**Amendment 1 (PR 2, before any gated run, before any compute).** Nothing here was changed after
+any number existed; no policy had been trained and nothing had been simulated.
+1. **A4-look threshold: each per-reset predicted rate is capped at 1.0** (`A4_RATE_CAP`). Review
+   of PR #78 found that `ra × rp / ref` can exceed 1 when a C0 level succeeds more often than the
+   reference by sampling. A probability cannot exceed 1. The frozen block gains
+   `a4_threshold.rate_cap`.
+2. **`D_RESETS_FOR_A4` is removed.** `a4_threshold` now uses `D_RESETS`, defined before it. This
+   is a code-only change, with no effect on any value.
+3. **G-privileged (2).** The counter is installed after the reset and after the scorer's
+   construction, both of which read `task_truth()` (`embodiment.reset`, `AppleToPlateTask`), so
+   the expected total is the scorer's `evaluate()` calls. The earlier wording would have voided
+   every attempt.
+4. **Smoke seeds.** Smoke runs use 46900–46999, split off the reserved range, which is now
+   46800–46899. Nothing from a smoke is read.
+5. **Estimate path.** Estimates are computed in the main process, at batch size 1, from the
+   post-look frame a worker renders on the attempt's own reset path. Every attempt re-renders that
+   frame and must match its sha256 (G-frame, part of S0-D1). Live and offline estimates are
+   therefore identical by construction, and S0-D1's 1e-4 m estimate check holds trivially. S0-D1
+   still compares the live `act()` against the batched offline prediction.
+6. **No eligible checkpoint.** If a family's checkpoint at iteration k has none eligible, that
+   family's later iterations are not rolled out, and every later checkpoint of the family also
+   scores 0/16 on D (`no_eligible_checkpoint`). This extends §5.2's rule to DAgger, which needs a
+   policy to roll out.
+7. **S0-D1's timing.** Its `act()` comparison needs a trained P-0, so it runs right after BC-0
+   training. That is still before any DAgger rollout and before any D attempt. The frame
+   comparison runs on every attempt (item 5).

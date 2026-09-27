@@ -83,6 +83,19 @@ successes.**
 - A later coordinator correction changed only the year of the TASK-066 GPU hold: about
   2026-09-28T00:10Z, hard cap 04:08Z. No compute runs before that hold is released.
 - 2026-09-27: the R5 seed-overlap check at `f2e9f63` found no overlap (protocol §4.1).
+- 2026-09-27: PR #78 (preregistration) merged as `ecb1300`.
+- **2026-09-27T13:13Z, owner ruling R6**, received via the coordinator and also posted on #78:
+  both §17 departures are accepted (C-3's own DAgger ×3; R-3 on D). Recorded verbatim in the
+  protocol's §0 and in the manifest in PR 2.
+- PR 2 (implementation) adds:
+  - `first_policy_runtime.py`, `first_policy_model.py`, `first_policy_perception.py` and
+    `scripts/run_first_policy.py`;
+  - `tests/test_first_policy_runtime.py`;
+  - the manifest's `hashes` and `encoder_digests`;
+  - protocol §18, amendment 1: the a4 rate cap, the counter after the reset, `D_RESETS`, the
+    smoke seeds, the estimate path, no-eligible cascading and S0-D1 timing.
+- CPU smokes only (`outputs/task067-scratch/smoke-*`, seeds 46900–46999, noise targets); nothing
+  in them is read. No MPS training or evaluation before the GPU release.
 - **Differences from the proposal: protocol §17 and the manifest's
   `differences_from_proposal`.**
   - **Two need owner confirmation before PR 1 merges:**

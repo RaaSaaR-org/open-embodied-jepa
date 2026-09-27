@@ -36,6 +36,7 @@ class GuardError(ContractError):
 
 # ----- owner rulings (recorded verbatim in the protocol, §0) ----------------------------------
 OWNER_RULINGS_UTC = "2026-09-27T12:43Z"
+OWNER_RULING_R6_UTC = "2026-09-27T13:13Z"  # the two §17 departures are accepted
 
 # ----- data --------------------------------------------------------------------------------------
 DATASET = "data/apple-look-v1"
@@ -58,7 +59,8 @@ SEED_RANGES = {
     "dagger_2": (46544, 46671),
     "dagger_3": (46672, 46799),
 }
-RESERVED_UNUSED = (46800, 46999)
+RESERVED_UNUSED = (46800, 46899)
+SMOKE_SEEDS = (46900, 46999)  # amendment 1: smoke runs only; nothing from them is read
 COHORT_D = tuple(range(45000, 45008)) + tuple(range(45100, 45108))  # development, never gates
 COHORT_C = tuple(range(45300, 45340))  # frozen, gating; M2 only, separate authorization
 # Ranges this task must never simulate for training, perception or calibration.
@@ -277,6 +279,8 @@ LEARNED_ARMS = ("P-0", "P-1", "P-2", "P-3", "C-3", "R-3")  # "learned arm" means
 M1_ARMS = (*LEARNED_ARMS, "A4-look", "D-oracle-perc", "B-oracle", "B-hold", "B-random", "B-replay")
 A4_THRESHOLD_FRACTION = 0.5  # of the C0 + S0-P predicted A4-look successes
 A4_THRESHOLD_MINIMUM = 1
+A4_RATE_CAP = 1.0  # amendment 1 (PR 2): a per-reset predicted rate is a probability
+D_RESETS = len(COHORT_D)
 
 
 def _level_rate(levels, successes, error_cm) -> float:
@@ -295,7 +299,8 @@ def a4_threshold(reference_successes: int, apple: dict, plate: dict, apple_err, 
     success fraction at its apple error times that at its plate error, divided by the reference
     fraction (both levels already include the reference behaviour). The expected number of
     successes on 16 resets is 16 x the mean prediction; the threshold is half of it, rounded
-    up, and at least 1."""
+    up, and at least 1. Each per-reset rate is capped at 1.0 (amendment 1): a level can succeed
+    more often than the reference by sampling, and a probability cannot exceed 1."""
     apple_err = np.asarray(apple_err, float)
     plate_err = np.asarray(plate_err, float)
     if apple_err.shape != plate_err.shape or apple_err.size == 0:
@@ -307,14 +312,12 @@ def a4_threshold(reference_successes: int, apple: dict, plate: dict, apple_err, 
     for ea, ep in zip(apple_err, plate_err, strict=True):
         ra = ref if ea <= 0 else _level_rate(C0_APPLE_LEVELS_CM, apple, ea)
         rp = ref if ep <= 0 else _level_rate(C0_PLATE_LEVELS_CM, plate, ep)
-        rates.append(ra * rp / ref)
-    expected = D_RESETS_FOR_A4 * float(np.mean(rates))
+        rates.append(min(A4_RATE_CAP, ra * rp / ref))
+    expected = D_RESETS * float(np.mean(rates))
     return max(A4_THRESHOLD_MINIMUM, int(np.ceil(A4_THRESHOLD_FRACTION * expected)))
 
 
-D_RESETS_FOR_A4 = 16
 ORACLE_MIN_SUCCESSES = 14  # of 16
-D_RESETS = len(COHORT_D)
 
 ROWS = (
     "V",
@@ -438,6 +441,7 @@ def frozen_block() -> dict:
             "protocol": PROTOCOL,
             "task": TASK,
             "owner_rulings_utc": OWNER_RULINGS_UTC,
+            "owner_ruling_r6_utc": OWNER_RULING_R6_UTC,
             "dataset": DATASET,
             "dataset_manifest_sha256": DATASET_MANIFEST_SHA256,
             "read_splits": READ_SPLITS,
@@ -446,6 +450,7 @@ def frozen_block() -> dict:
             "image_size": IMAGE_SIZE,
             "seed_ranges": SEED_RANGES,
             "reserved_unused": RESERVED_UNUSED,
+            "smoke_seeds": SMOKE_SEEDS,
             "cohort_D": COHORT_D,
             "cohort_C": COHORT_C,
             "forbidden_ranges": FORBIDDEN_RANGES,
@@ -495,6 +500,7 @@ def frozen_block() -> dict:
                 "rule": "ceil(0.5 x 16 x mean predicted rate from C0 and S0-P), at least 1",
                 "fraction": A4_THRESHOLD_FRACTION,
                 "minimum": A4_THRESHOLD_MINIMUM,
+                "rate_cap": A4_RATE_CAP,
             },
             "input_std_floor": INPUT_STD_FLOOR,
             "worker_torch_threads": WORKER_TORCH_THREADS,

@@ -1,7 +1,7 @@
 {
   "protocol": "apple_first_policy_v1",
   "task": "TASK-067",
-  "status": "preregistered; no policy trained, nothing simulated",
+  "status": "preregistered (PR 1, ecb1300); implemented (PR 2); no gated run yet",
   "document": "docs/experiments/apple_first_policy_v1.md",
   "owner_rulings": {
     "received_utc": "2026-09-27T12:43Z",
@@ -11,7 +11,9 @@
     "R3": "R3 (primary, fallback, milestone): accepted as proposed. Up to 4 dev-cohort evaluations, with the carried policy selected on dev. The dev result is an existence result only. Any \"learned policy works\" claim must come from the gated cohort-C test against open-loop replay (5/16 on dev) and the named controls. Preregister the fallback trigger exactly as you proposed.",
     "R4": "R4: accepted. A first success counts as \"learned policy with a DINOv2 encoder\", never \"LeWM driving the robot\". The docs keep that distinction.",
     "R5": "R5: seeds 46000–46999 are accepted, on condition that you grep the repo, including the manifests, and confirm no overlap. Record the check.",
-    "correction_received_after": "Correction to my last message: the TASK-066 GPU hold runs until about 00:10Z on 2026-09-28 (hard cap 04:08Z), not 2028. Nothing else changes."
+    "correction_received_after": "Correction to my last message: the TASK-066 GPU hold runs until about 00:10Z on 2026-09-28 (hard cap 04:08Z), not 2028. Nothing else changes.",
+    "R6": "Owner ruling R6 (2026-09-27 13:13Z), also posted on #78: both §17 departures are accepted. C-3 gets its own 3 DAgger rounds, and R-3 is trained and run on the development cohort. Both make the controls stronger, so G2 and G3 become harder to pass, not easier.",
+    "R6_received_utc": "2026-09-27T13:13Z"
   },
   "seed_overlap_check": {
     "performed_utc": "2026-09-27",
@@ -32,6 +34,7 @@
     "protocol": "apple_first_policy_v1",
     "task": "TASK-067",
     "owner_rulings_utc": "2026-09-27T12:43Z",
+    "owner_ruling_r6_utc": "2026-09-27T13:13Z",
     "dataset": "data/apple-look-v1",
     "dataset_manifest_sha256": "81d760d1f5a61834b4f37c3daf12ad1a7175e57fe99fe11d5fb4cecbff8edb64",
     "read_splits": [
@@ -69,6 +72,10 @@
     },
     "reserved_unused": [
       46800,
+      46899
+    ],
+    "smoke_seeds": [
+      46900,
       46999
     ],
     "cohort_D": [
@@ -355,7 +362,8 @@
     "a4_threshold": {
       "rule": "ceil(0.5 x 16 x mean predicted rate from C0 and S0-P), at least 1",
       "fraction": 0.5,
-      "minimum": 1
+      "minimum": 1,
+      "rate_cap": 1.0
     },
     "input_std_floor": 0.001,
     "worker_torch_threads": 1,
@@ -435,10 +443,7 @@
     "claimed_here": false
   },
   "differences_from_proposal": {
-    "owner_confirmation_needed": [
-      "C-3 (no-image control with its own DAgger x3) replaces the proposal's C-noimg (P-0's recipe, BC only)",
-      "R-3 (random-init floor) is added to M1 and to the learned arms; the proposal had it in M2 G3 only"
-    ],
+    "owner_confirmation_needed": [],
     "recorded": [
       "C0: 9 conditions (4 levels each + reference), caps 0.75/1.2 cm apple, 1.5/2.5 cm plate",
       "S0-APPLE-FAIL fires the clause outright (the proposal's owner-override is removed)",
@@ -448,8 +453,55 @@
       "no apple-hidden spurious check",
       "M2 rows added; the stop rule applies to the carried P-k only; controls always run"
     ],
-    "a4_trigger": "calibrated from C0 and S0-P as proposed (an uncalibrated 8/16 in the first draft of PR #78 was replaced after review, before any merge)"
+    "a4_trigger": "calibrated from C0 and S0-P as proposed (an uncalibrated 8/16 in the first draft of PR #78 was replaced after review, before any merge)",
+    "confirmed_by_R6": [
+      "C-3 gets its own 3 DAgger rounds",
+      "R-3 is trained and run on the development cohort"
+    ]
   },
   "calibration": null,
-  "results": null
+  "results": null,
+  "amendments": [
+    {
+      "id": 1,
+      "pr": "PR 2",
+      "before_any_gated_run": true,
+      "changes": [
+        "a4_threshold caps each per-reset predicted rate at 1.0 (A4_RATE_CAP); the frozen block gains a4_threshold.rate_cap",
+        "D_RESETS_FOR_A4 removed; a4_threshold uses D_RESETS, defined before it (code only)",
+        "G-privileged (2): the counter is installed after the reset and after the scorer's construction; the expected total is the scorer's evaluate() calls",
+        "smoke runs use 46900-46999, split off the reserved range (now 46800-46899); nothing from a smoke is read",
+        "estimates are computed in the main process at batch size 1 from the worker-rendered post-look frame; every attempt re-renders that frame and must match its sha256 (G-frame, part of S0-D1), so live and offline estimates are identical by construction",
+        "no eligible checkpoint at iteration k: the family's later iterations are not rolled out and score 0/16 on D",
+        "S0-D1's act() comparison runs right after BC-0 training (it needs P-0), before any DAgger rollout or D attempt"
+      ]
+    }
+  ],
+  "encoder_digests": {
+    "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
+    "floor": "3d305f9c8280692af08d2ca5d1d14d040cc0a10ec5b2fb083c58d75f0957c9db"
+  },
+  "hashes": {
+    "docs/experiments/apple_first_policy_v1.md": "dfd00015a277c70e81c7e8985438994ad53495ab141339ab90fcce54ca8daf67",
+    "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
+    "src/embodied_jepa/first_policy_runtime.py": "c28c3bda67aeb8230b3c8590f6654dc2acf91eaf98cef50414205c535fb5c2e3",
+    "src/embodied_jepa/first_policy_model.py": "5ebd70e07d9c6eba38f0fa4c8980602205f0e24420d39f252935dc47673fb984",
+    "src/embodied_jepa/first_policy_perception.py": "d2ae40118a78646c13e89a089049f80cdc0389dfdd2106f5862a03ab134ed497",
+    "scripts/run_first_policy.py": "763edfc1bda8da0e99b47f98cdd3c4dc7f0aacae984925cd350450aeb83c7061",
+    "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
+    "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
+    "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+    "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
+    "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+    "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+    "src/embodied_jepa/policy_diagnostics.py": "3898e34588145c14696835e5f89e75b112bc35f1087f206d4c4525774cab9faa",
+    "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+    "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+    "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+    "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+    "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
+    "src/embodied_jepa/training_labels.py": "59b4e5db91b257c5da23c3a4377d52b3f0acdca543acbded8102ed2777dc5f3d",
+    "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
+    "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1"
+  }
 }
