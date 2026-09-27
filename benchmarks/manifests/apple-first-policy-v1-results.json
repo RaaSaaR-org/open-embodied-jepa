@@ -1,0 +1,119 @@
+{
+  "C0": {
+    "bars": {
+      "escalate": "C0: the smallest plate level is below 28/32"
+    },
+    "bars_recomputed_from_counts": {
+      "escalate": "C0: the smallest plate level is below 28/32"
+    },
+    "seconds": 619.9600360419136,
+    "successes_of_32": {
+      "apple_0.5": 32,
+      "apple_0.8": 32,
+      "apple_1.0": 28,
+      "apple_1.2": 20,
+      "plate_1.0": 21,
+      "plate_1.5": 21,
+      "plate_2.0": 17,
+      "plate_2.5": 10,
+      "reference": 32
+    }
+  },
+  "clause_fires": false,
+  "data": {
+    "dataset_manifest_sha256": "81d760d1f5a61834b4f37c3daf12ad1a7175e57fe99fe11d5fb4cecbff8edb64",
+    "seeds_simulated": {
+      "calibration_C0": [
+        46384,
+        46415,
+        32
+      ],
+      "perception_heldout": [
+        46256,
+        46383,
+        128
+      ],
+      "perception_train": [
+        46000,
+        46255,
+        256
+      ]
+    },
+    "train_roots": 170,
+    "val_roots": 20
+  },
+  "exemption_spent": false,
+  "learned_apple_to_plate_successes": 0,
+  "not_reached": [
+    "S0-P (its held-out errors were computed in memory and not written; none was seen)",
+    "S0-D1",
+    "BC-0 and every training",
+    "DAgger",
+    "M1 on cohort D (no D reset was simulated)"
+  ],
+  "outcome": "CAL-ESCALATE",
+  "prerun_render_check": {
+    "negative_control": {
+      "error": "GuardError: S0-D1/G-frame: seed 46932 post-look frame differs",
+      "raised_g_frame": true,
+      "seed": 46932
+    },
+    "path": "outputs/task067-scratch/prerun-go-render-1/report.json",
+    "revision": "9b0c5806ef8f4da1c4d68903290ece0ec5bdf5e3",
+    "seeds_rendered_on_two_or_more_workers": 32,
+    "sha256": "b5de81a74ef73518043fa6a3f559d39c1cdb44a37ac142b97c3153ae705b336f",
+    "verdict": "IDENTICAL",
+    "workers": 8
+  },
+  "protocol": "apple_first_policy_v1",
+  "readout_selection": {
+    "P": {
+      "selection": {
+        "family": "linear",
+        "inner_mse": 2.4089574134476793e-05,
+        "lam_rel": 0.01
+      }
+    },
+    "R": {
+      "selection": {
+        "family": "linear",
+        "inner_mse": 2.5554217607761976e-05,
+        "lam_rel": 0.001
+      }
+    }
+  },
+  "report": {
+    "decoded_episodes": 190,
+    "encoder_digests": {
+      "floor": "3d305f9c8280692af08d2ca5d1d14d040cc0a10ec5b2fb083c58d75f0957c9db",
+      "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27"
+    },
+    "environment": {
+      "mps_available": true,
+      "numpy": "2.5.3",
+      "platform": "macOS-26.5.1-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch": "2.14.0",
+      "train_device": "mps"
+    },
+    "non_finite_fields": [],
+    "path": "outputs/task067-first-policy/run-1/report.json",
+    "pinned_files_at_end": 21,
+    "pinned_files_at_preflight": 21,
+    "revision": "9b0c5806ef8f4da1c4d68903290ece0ec5bdf5e3",
+    "sha256": "4da883def3b9cbbb7210fb6074afa06b2482440fb3e3c4bc40ca2f58e7ebeb3b",
+    "stages_recorded": [
+      "C0",
+      "perception_frames",
+      "preflight",
+      "readouts"
+    ],
+    "started_utc": "2026-09-27T23:06:14Z",
+    "test_split_decoded": false,
+    "total_seconds": 679.014236249961,
+    "tracked_tree_dirty": false
+  },
+  "run": "run-1",
+  "task": "TASK-067",
+  "void_reason": null
+}
