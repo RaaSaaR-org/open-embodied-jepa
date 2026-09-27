@@ -103,3 +103,13 @@ successes.**
     - R-3 is added to M1.
   - The A4-look trigger is calibrated from C0 and S0-P, as proposed. A first-draft 8/16 was
     replaced after the PR #78 review.
+- 2026-09-27T13:56Z, **owner ruling R7** (posted on #79): amendment 1 items 4–10 accepted, with a
+  condition on item 5 (render bit-identity at the gated worker count before GO). PR #80 added
+  `scripts/check_first_policy_render.py`, merged as `9b0c580`.
+- Pre-run reviewer's reported verdict: **PRE-RUN: GO** at `9b0c580`. Its R7 render check was
+  IDENTICAL (8 workers, 32/32 seeds on ≥ 2 workers, negative control raised G-frame; sha256
+  `b5de81a7…336f`).
+- 2026-09-27T23:06:14Z–23:17:33Z UTC: gated run-1 (`outputs/task067-first-policy/run-1`,
+  report sha256 `4da883de…eb3b`). **Outcome CAL-ESCALATE** at C0: the plate at 1.0 cm scored
+  21/32, below 28/32. The clause does not fire. No policy was trained; D and C were not simulated.
+  The owner decides next (results §5).
