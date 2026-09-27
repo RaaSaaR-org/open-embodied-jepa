@@ -20,7 +20,8 @@ It uses the runner's own worker pool and ``run_task`` (the gated code path), the
 Verdict ``IDENTICAL`` only if every seed has one sha256 across all four passes and one post-look
 joint state, the post-look state is equal across seeds (G-look), no attempt raised, at least
 ``MIN_CROSS_WORKER`` seeds were rendered on two or more distinct workers, the negative control
-raised G-frame, and the check ran at the gated worker count. Anything else is ``NOT_IDENTICAL``: the gated run must not start.
+raised G-frame, and the check ran at the gated worker count. Anything else is
+``NOT_IDENTICAL``: the gated run must not start.
 
     uv run --no-sync python scripts/check_first_policy_render.py \\
         --output outputs/task067-scratch/render-determinism-1
