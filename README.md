@@ -60,8 +60,13 @@ training budget did not saturate, which may favour W on G3 and G1 (iii); G2 at h
 seed 2 at h = 8 pass by narrow margins; the token latent's rank ratio is not better than
 TASK-065's CLS ratio; and the claim is train-split only. TASK-067, an apple-first
 learned-policy control formulation
-([protocol](docs/experiments/apple_first_policy_v1.md)), is preregistered and implemented; its
-gated run is pending. Outcomes and caveats are in the results
+([results](docs/experiments/apple_first_policy_v1_results.md)), ended with outcome
+**CAL-ESCALATE**: its gated run stopped at the C0 calibration, before any policy was trained or
+evaluated, because the privileged scripted expert's tolerance to plate error fell to 21/32 at
+the smallest preregistered plate level (1.0 cm), below the 28/32 bar, so no feasible plate bar
+exists. The abandonment clause does not fire; the owner has chosen a diagnostic probe of the
+collector's release point, to be followed by a v2 amendment if the probe supports it. Outcomes
+and caveats are in the results
 documents under [docs/experiments/](docs/experiments/) and in [AGENTS.md](AGENTS.md).
 
 **What is demonstrated.** These are software properties and offline properties of
