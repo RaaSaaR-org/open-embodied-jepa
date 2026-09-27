@@ -113,3 +113,15 @@ successes.**
   report sha256 `4da883de…eb3b`). **Outcome CAL-ESCALATE** at C0: the plate at 1.0 cm scored
   21/32, below 28/32. The clause does not fire. No policy was trained; D and C were not simulated.
   The owner decides next (results §5).
+- 2026-09-27T23:36Z, **owner ruling R8**: option (a), probe first. Recorded verbatim in the probe
+  document.
+- Release-point probe (PR #85), declared at `e694a45` before running. Seeds 46800–46831; seeds
+  46832–46863 are reserved for any v2 calibration. Row **P-CANDIDATE-FAIL**:
+  - The current collector scores 32/32 at the reference, landing a median 2.7 cm short. At a
+    1.0 cm plate error it scores 21/32.
+  - The mechanism counts as confirmed by the declared rule only. The per-attempt data contradict
+    it as the cause: at 1.0 cm every failure of the current collector lands forward or sideways
+    at the rim (4.53–4.62 cm), not short.
+  - The release-at-centre candidate scores 15/32 at the reference and 23/32 at 1.0 cm, below
+    28/32.
+  - Under R8 the work stops and goes back to the owner.
