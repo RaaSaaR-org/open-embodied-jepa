@@ -258,6 +258,9 @@ default (as in TASK-065). The backend swap is one key (`token_dynamics.BACKEND`)
 - It uses **data disjoint from the gate-evaluation roots**: TASK-064's pilot, below. No
   `apple-look-v1` episode is opened by the calibration. (The label-free anchor check of §14 reads
   corpus frames for features only; it computes no model quantity.)
+- **One disclosed exception, by owner ruling (§6.6):** a readability check of **encoded** 4 × 4
+  grids (never a prediction) on the pilot. It reads the pilot's label sidecars
+  (`privileged__apple_position_world`, `collector__phase_index`), and only the pilot's.
 
 ### 6.2 The pilot
 
@@ -291,9 +294,9 @@ sorted, are permuted by `default_rng(6600)`: the first 24 are **pilot-train**, t
 - **G1 bar rule** (`bar_rule`). At each W calibration model's selected checkpoint, on the
   pilot-held-out windows, the effective-rank ratio and the std ratio of predicted against encoded
   latents at h = 8 and h = 16. The reference is the smallest of the four values (two seeds × two
-  horizons); **the bar is half the reference, rounded down to 0.01.** The rank bar and the std bar
-  are each set this way. If the rank reference is below 0.10 the calibration escalates to the
-  owner (the recipe itself may be collapsing).
+  horizons). **The relative bar is half the reference, rounded down to the nearest 0.01.** If the
+  rank reference is below 0.10 the calibration escalates to the owner (the recipe itself may be
+  collapsing).
 - **Why half of the recipe's own ratio.** A predictor that regresses to a conditional mean
   loses rank against its targets even when it is working; TASK-065's uncalibrated bar compared
   predictions with the targets directly and could not tell that apart from collapse. The reference
@@ -301,10 +304,116 @@ sorted, are permuted by `default_rng(6600)`: the first 24 are **pilot-train**, t
   contains the regression-to-the-mean loss. **Keeping less than half of that is collapse.** The
   factor one half is TASK-065's own reading of "collapse" (halving the rank), now applied to a
   calibrated reference instead of to the raw targets.
+- **The relative bar alone would be circular**, because it is set from the tested architecture's
+  own pilot behaviour: a recipe that collapsed on the pilot would lower its own bar. The owner's
+  ruling (§6.6) therefore adds two parts that do not come from W's pilot behaviour:
+  - **Absolute floors, fixed before the calibration's results were seen.** The rank bar is never
+    below **0.10** and the std bar never below **0.25**: `bar = max(floor, relative bar)`. What a
+    collapsed predictor scores: the mean predictor 0; a rank-1 prediction about 1 / (encoded
+    effective rank), so about 0.025 at the encoded effective rank of about 40 seen in the pilot
+    smoke; a rank-4 prediction at most 0.10.
+  - **A comparative part: W keeps more rank than the no-action model N.** The lower 95 % bound of
+    (rank ratio W − rank ratio N) must be **above 0** (margin 0). N collapsed hardest in TASK-065
+    (0.28–0.33 against W's 0.37–0.40). A W whose predictions are no more diverse than an
+    action-blind model's fails.
+    - *How it is computed, and the approximation.* A session bootstrap of the full 6144-d
+      effective rank needs a 6144 × 6144 eigendecomposition per resample (about 13 s each), which
+      is infeasible. So this part is computed in a fixed, model-free basis: the top 256 principal
+      directions of the train-split encoded latents, fitted on training frames before any model
+      is trained. Per-session moments of W, N and the encoded targets are resampled together
+      (2000 session-clustered resamples, seed 6603). **It is an approximation of the full-width
+      statistic, and is disclosed as one.** On the pilot the bootstrap has only 8 held-out
+      sessions.
+- **The bars must bind: synthetic collapse controls (owner condition).** On the pilot-held-out
+  windows, W's predictions are truncated to their own top k principal directions (the mean
+  kept), for k = 1, 2, 4, 8. **The combined G1 (every part, with the calibrated bars) must fail
+  k = 1, 2 and 4.** If any passes, the bar is raised and that is disclosed; a gate that lets a
+  truncated predictor through is not shipped. Where k = 8 lands is reported either way (§6.4).
 - The collapsed-fraction part of G1 (≤ 0.05 of dimensions with std < 0.01) is an absolute check
   and is kept unchanged.
 - Nothing from the calibration is read beyond these rules: the rules' inputs, the curves and the
-  collapse statistics are reported (§6.4).
+  collapse statistics are reported (§6.4). **Disclosed:** the bars are set after seeing pilot
+  behaviour of the same architecture. The calibration started at 03:24Z (revision `7fa8183`; its
+  training subprocesses at 03:32Z) before the floors and the comparative part were added
+  (revision `753c42c`, 03:43Z). Its training code did not change, and the floors and the
+  comparative part were fixed before any calibration result was read.
+
+### 6.6 Owner rulings before the freeze, and the pooling checks
+
+Rulings are relayed by the coordinator and recorded at the UTC time they were received.
+
+**Ruling 1, received about 03:35Z; condition received about 03:40Z (G1 design).** The first
+design derived G1's bars from the tested architecture's own pilot ratios alone. The owner found
+that circular and possibly lax, and ruled for:
+- absolute floors (rank 0.10, std 0.25);
+- the comparative W-over-N rank part (margin 0, projected 256-direction bootstrap, disclosed as an
+  approximation);
+- synthetic truncation controls that the combined G1 must fail at k = 1, 2, 4 (§6.3);
+- an encoded-only 4 × 4 readability check on pilot-d, with its label read disclosed.
+
+The rejected alternative: a fixed fraction of the encoded rank would repeat TASK-065's flaw,
+because the conditional mean loses rank against its targets.
+
+**The pilot-d pooling check (encoded latents only), and its rule.**
+- The rule, fixed before it ran: reconsider the pooling if the 4 × 4 grid misses the TASK-059 T1
+  bar at h = 8 or 16 while full P-tok meets it. If both miss, the pilot is too small to inform.
+- 30 pilot roots were read (the pilot's 2 test roots have no recorded occlusion flag), with
+  TASK-063's probe and 10-fold CV.
+- The occlusion flags come from rendered pixels and are real. The pilot report's `apple_xy` are
+  its smoke noise targets and were not used. A first attempt (`readability-1`) stopped on that
+  before any readout.
+- Report: `outputs/task066-calibration/readability-3/report.json`, revision `4b34ea2`.
+  `readability-2` has the same numbers, without the per-root errors.
+
+Reading the table: median T1 in cm, with the 95 % interval of the ratio to B-occ in brackets.
+The T1 bar needs a median ≤ 1.5 cm and the upper end of that interval ≤ 0.6.
+
+| h | 4 × 4 grid | full P-tok 16 × 16 | P-mean 1 × 1 |
+|---|---|---|---|
+| 0 (frame 8) | 1.069 [0.369, 0.711] | 0.848 [0.276, 0.664] | 1.320 [0.434, 0.875] |
+| 8 (frame 16) | 1.061 [0.387, **0.644**] | 0.989 [0.302, 0.588] | 1.238 [0.397, 0.761] |
+| 16 (frame 24) | 0.871 [0.242, **0.618**] | 0.815 [0.268, 0.540] | 1.038 [0.313, 0.709] |
+
+- **The rule fired** ("reconsider pooling"): the 4 × 4 grid misses at h = 8 and 16 while P-tok
+  meets the bar.
+- **The pilot is too weak to decide the question.**
+  - The paired median difference (4 × 4 − P-tok; reported only) is +0.071 cm [−0.061, 0.300] at
+    h = 8 and +0.056 [−0.198, 0.317] at h = 16. Both intervals include 0.
+  - P-mean, which the 4 × 4 grid contains linearly, fails every pilot bar. On the corpus's 190
+    roots it passed with a ratio upper bound of 0.376 (TASK-064).
+  - Full P-tok itself fails at h = 0.
+
+**Ruling 2, received 2026-09-27T03:46Z (pooling).** Option A: keep 4 × 4, subject to one more
+pre-freeze check that decides whether it stays. Neither an 8 × 8 grid (about 14 h more) nor a
+channel-PCA 8 × 8 grid (unvalidated design). Its grounds:
+- the rule fired correctly, but the pilot cannot decide the question;
+- the informative check is available now.
+
+**The corpus ceiling pre-check (owner-ruled; written here before it ran).**
+- **What it reads.** The **encoded** latents only, of the 190 train + val roots of
+  `apple-look-v1`, at frames 8, 16 and 24 (h = 0, 8, 16). The sources are the 4 × 4 grid, as the
+  run's cache will compute it (each root's frames 0–31 in batches of 16), and full 16 × 16 P-tok
+  as the reference. Targets are the apple labels at those frames, and B-occ uses TASK-064's
+  reset-occlusion flags.
+- **What it does not do.** No predictor, no predicted latent and no test-split episode.
+- **The probe.** TASK-063's (linear + RBF kernel ridge, nested CV), with TASK-064's 10 folds over
+  the 190 roots (`default_rng(59)`; the fold hash must equal TASK-064's `da6b5b5a…486b`).
+- **Reported only.** The same numbers on the 170 train roots with the run's own folds
+  (`44a3f267…86a7`), which is the run's exact ceiling quantity.
+- **Decision rule** (the owner's):
+  - If the 4 × 4 encoded grid meets the TASK-059 T1 bar (median ≤ 1.5 cm and ratio-to-B-occ upper
+    bound ≤ 0.6) at h = 8 **and** h = 16 on the 190 roots, 4 × 4 stays and the protocol freezes.
+  - If it misses at either horizon while full P-tok meets it, the agent stops and reports to the
+    owner before freezing, and the owner chooses between the 8 × 8 options with these numbers.
+  - If both miss, the agent reports to the owner.
+  - Added by the agent: if the 170-root version disagrees with the 190-root verdict, the agent
+    also reports before freezing.
+- **Disclosure.** This check reads gate-evaluation roots, for encoded features only. Those
+  features are the ceiling quantity. TASK-064 already read these roots at the frame-8 anchor
+  (P-cls, P-tok). The check says nothing about the outcome: it cannot bias G1–G4, or the
+  W-versus-encoded comparison in G5.
+
+⟨PRECHECK: results⟩
 
 ### 6.4 Results (recorded; report `outputs/task066-calibration/run-1/report.json`)
 

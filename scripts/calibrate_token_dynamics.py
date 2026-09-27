@@ -708,6 +708,140 @@ def readability(output: Path, cal: Path) -> dict:
     return report
 
 
+def ceiling(output: Path) -> dict:
+    """The corpus ceiling pre-check (owner ruling 2026-09-27T03:46Z; protocol section 6.6).
+
+    ENCODED latents only, of the 190 train + val roots of ``apple-look-v1``: the 4 x 4 grid as
+    the run's cache computes it (frames 0-31 in batches of 16) and full 16 x 16 P-tok, at
+    frames 8, 16, 24. TASK-063's probe with TASK-064's 190-root folds decides; the 170 train roots
+    with the run's folds are reported. No predictor, no predicted latent, no test split."""
+    import torch
+
+    from embodied_jepa import info_ceiling as ic
+    from embodied_jepa import look_corpus as lc
+    from embodied_jepa import pretrained_encoder as pe
+    from embodied_jepa.data import DatasetStore
+    from embodied_jepa.models.frozen_tokens import frozen_token_model
+
+    if output.exists():
+        raise FileExistsError(f"refusing to overwrite {output}")
+    output.mkdir(parents=True)
+    torch.set_num_threads(td.FEATURE_THREADS)
+    started = time.monotonic()
+    store = DatasetStore(ROOT / td.DATASET)
+    if store.manifest_hash != td.DATASET_MANIFEST_SHA256:
+        raise td.GuardError("the corpus manifest is not the pinned one")
+    splits = store.manifest["splits"]
+    reader = R65.TrainValReader(store, set(splits["train"]) | set(splits["val"]))
+    featurizer = frozen_token_model(td.BACKEND)(
+        store.state_schema, device="cpu", config=td.MODEL_CONFIG
+    )
+    plan = json.loads((ROOT / "data/apple-look-v1-work/plan.json").read_text())
+    roots = sorted(lc.read_roots(plan), key=lambda r: int(r["seed"]))
+    task064 = json.loads((ROOT / "data/apple-look-v1-work/collection_report.json").read_text())
+    per_root = {int(r["seed"]): r for r in task064["readability"]["per_root"]}
+    frames_at = (td.DECISION_FRAME, td.DECISION_FRAME + 8, td.DECISION_FRAME + 16)
+    split_of = {e: k for k in ("train", "val") for e in splits[k]}
+    grid = {f: [] for f in frames_at}
+    tok = {f: [] for f in frames_at}
+    xy = {f: [] for f in frames_at}
+    occluded, is_train, label_diff = [], [], 0.0
+    for r in roots:
+        seed = int(r["seed"])
+        frames = reader.episode(r["episode_id"])[0][: 2 * pe.BATCH]
+        labels = reader.labels(r["episode_id"])
+        R65.check_look_labels(labels["collector__phase_index"], r["episode_id"])
+        apple = np.asarray(labels["privileged__apple_position_world"], np.float64)[:, :2]
+        label_diff = max(
+            label_diff, R65.check_apple_label(apple[0], per_root[seed]["apple_xy"], r["episode_id"])
+        )
+        pooled = featurizer.frozen_features(frames)  # the cache's layout: batches of 16 from 0
+        tokens = pe.features(featurizer._frozen_module, frames)["tokens"]
+        for f in frames_at:
+            grid[f].append(pooled[f])
+            tok[f].append(tokens[f])
+            xy[f].append(apple[f])
+        occluded.append(bool(per_root[seed]["reset_occluded"]))
+        is_train.append(split_of[r["episode_id"]] == "train")
+    occluded, is_train = np.asarray(occluded), np.asarray(is_train)
+    seeds = [int(r["seed"]) for r in roots]
+    fold190 = ic.fold_of(len(roots))
+    fold190_sha = ic.fold_assignment_sha256(seeds, fold190)
+    if fold190_sha != task064["readability"]["fold_assignment_sha256"]:
+        raise td.GuardError("the 190-root folds are not TASK-064's")
+    train_seeds = [s for s, t in zip(seeds, is_train, strict=True) if t]
+    fold170 = ic.fold_of(len(train_seeds))
+    fold170_sha = ic.fold_assignment_sha256(train_seeds, fold170)
+    manifest = json.loads((ROOT / "benchmarks/manifests/apple-latent-dynamics-v1.json").read_text())
+    if fold170_sha != manifest["evaluation"]["probe"]["fold_assignment_sha256"]:
+        raise td.GuardError("the 170-root folds are not the run's")
+
+    def read(mask, fold):
+        n = int(mask.sum())
+        idx = ic.bootstrap_indices(n)
+        out = {}
+        for f in frames_at:
+            truth = np.stack(xy[f])[mask]
+            occ = ic.xy_error_cm(
+                ic.prior_predictions(truth, np.ones(n), occluded[mask], fold)["B_occ"], truth
+            )
+            entry, errors = {}, {}
+            for name, x in (("grid_4x4", grid[f]), ("P_tok_16x16", tok[f])):
+                values = np.asarray(np.stack(x)[mask], np.float64)
+                g, diag = ic.gram(values)
+                pred, _, selections = ic.nested_cv(g, diag, truth, fold)
+                err = ic.xy_error_cm(pred, truth)
+                errors[name] = err
+                stats = R65.t1_stats(err, occ, err, idx)
+                entry[name] = {
+                    "median_cm": stats["median_cm"],
+                    "median_ci95": stats.get("ci95"),
+                    "ratio_to_B_occ": stats["ratio_to_B_occ"],
+                    "meets_t1": td.ceiling_passes(stats),
+                    "selections": selections,
+                }
+            entry["B_occ_median_cm"] = float(np.median(occ))
+            entry["grid_minus_P_tok_cm"] = ic.paired_difference(
+                errors["grid_4x4"], errors["P_tok_16x16"], idx, ic._median
+            )
+            out[f"h{f - td.DECISION_FRAME}"] = entry
+        return out
+
+    all190 = read(np.ones(len(roots), bool), fold190)
+    train170 = read(is_train, fold170)
+    gated = [f"h{h}" for h in td.GATED_HORIZONS]
+
+    def verdict(result):
+        grid_ok = all(result[h]["grid_4x4"]["meets_t1"] for h in gated)
+        tok_ok = all(result[h]["P_tok_16x16"]["meets_t1"] for h in gated)
+        if grid_ok:
+            return "keep 4x4 and freeze"
+        return "stop and report (P-tok meets, 4x4 misses)" if tok_ok else "report (both miss)"
+
+    decision, check = verdict(all190), verdict(train170)
+    report = {
+        "protocol": td.PROTOCOL,
+        "status": "owner-ruled corpus ceiling pre-check: ENCODED latents only (not a row)",
+        "ruling": "2026-09-27T03:46Z",
+        "revision": R65.revision(),
+        "tracked_tree_dirty": bool(R65.tracked_tree_dirty()),
+        "roots": len(roots),
+        "train_roots": int(is_train.sum()),
+        "fold_assignment_sha256": {"190": fold190_sha, "170": fold170_sha},
+        "apple_label_max_abs_m": label_diff,
+        "results_190_decisional": all190,
+        "results_170_reported": train170,
+        "verdict_190": decision,
+        "verdict_170": check,
+        "report_before_freezing": decision != "keep 4x4 and freeze" or check != decision,
+        "predictor_built": False,
+        "test_split_decoded": bool(reader.decoded - reader.allowed),
+        "seconds": time.monotonic() - started,
+    }
+    R65.write_report(output / "report.json", report)
+    return report
+
+
 def anchor(output: Path) -> dict:
     """The label-free anchor pre-check on the corpus (protocol section 13): features only.
 
@@ -826,6 +960,8 @@ def main(argv=None) -> int:
     c.add_argument("--output", type=Path, required=True)
     c.add_argument("--calibration", type=Path, required=True)
     c.add_argument("--checkpoints", type=Path, required=True)
+    ce = sub.add_parser("ceiling")
+    ce.add_argument("--output", type=Path, required=True)
     r = sub.add_parser("readability")
     r.add_argument("--output", type=Path, required=True)
     r.add_argument("--calibration", type=Path, required=True)
@@ -845,6 +981,8 @@ def main(argv=None) -> int:
             if controls(args.output, args.calibration, args.checkpoints)["owner_condition_met"]
             else 1
         )
+    if args.command == "ceiling":
+        return 0 if not ceiling(args.output)["report_before_freezing"] else 2
     if args.command == "readability":
         readability(args.output, args.calibration)
         return 0
