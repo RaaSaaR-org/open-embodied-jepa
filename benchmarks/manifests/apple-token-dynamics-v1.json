@@ -412,6 +412,7 @@
   "outputs/task066-calibration/run-1/report.json": "a1d9fc1740cbba795a0404428e8a956de97e946a9e912d6592f188141e2f53e1",
   "scripts/calibrate_token_dynamics.py": "675a1ea4789603bd0579cc5faedd761c116561c5f0f6a74e754032b62f48e17f",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
+  "scripts/train_apple_token_dynamics.py": "7a89aee1dfc62d28db1bd473df9e008b132ab90c4c738e587befa9675d27878b",
   "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
   "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
   "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
