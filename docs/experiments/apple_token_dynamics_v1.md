@@ -1,8 +1,9 @@
 # Apple→Plate token dynamics v1: does an action-conditioned predictor over frozen DINOv2 patch-token latents avoid rank collapse on `apple-look-v1`, and keep the apple readable through multi-step prediction? (TASK-066)
 
-**Status: preregistration. No predictor has been trained on `apple-look-v1` token latents, and no
-readout has been fitted on any predicted latent.** The numbers here come from three kinds of
-source:
+**Status: preregistration. No gated predictor has been trained on `apple-look-v1` token latents,
+and no readout has been fitted on any predicted latent.** The only corpus-trained predictors are
+the runner smoke's four 20-update models with noise targets (§14), which nothing reads. The
+numbers here come from three kinds of source:
 - published results of TASK-063/064/065;
 - the latent-space calibration on a disjoint pilot (§6);
 - the pre-freeze checks: the label-free anchor check (§14) and two owner-ruled readability checks
@@ -177,6 +178,9 @@ is off unless a run selects it.**
   backend's file and `pretrained_encoder.py`.
 - It refuses `state_fusion`, `readout_heads`, a `cameras` list and every TASK-054 prediction-step
   option (none is preregistered with it).
+- Known gap, not fixed: `sigreg_projections` is type-checked but not required to be ≥ 1, as the
+  plain LeWM adapter requires. The frozen configuration uses the default of 128. Fixing it would
+  change the implementation hash, and the calibration checkpoints would no longer load.
 
 ### 4.2 The predictor: the pinned upstream LeWM predictor, adapted to a token sequence
 
@@ -432,7 +436,8 @@ revision `96ed14c`, clean tree, 286 s.
 - No predictor was built, and `test_split_decoded` is false.
 
 Reading the table: median T1 in cm, with its 95 % interval in the first brackets and the 95 %
-interval of the ratio to B-occ (1.866 cm) in the second. Every entry here meets the T1 bar.
+interval of the ratio to B-occ in the second. B-occ's median is 1.866 cm on the 190 roots and
+1.859 cm on the 170. Every entry here meets the T1 bar.
 
 | roots | h | 4 × 4 grid | full P-tok 16 × 16 | 4 × 4 − P-tok (paired median difference, cm) |
 |---|---|---|---|---|
@@ -468,13 +473,14 @@ report.
 | model | 2500 | 5000 | 7500 | 10 000 | 15 000 | 20 000 | 25 000 | 30 000 | selected (criterion) | u_sat |
 |---|---|---|---|---|---|---|---|---|---|---|
 | W s0 | 0.405 | 0.388 | 0.380 | 0.375 | 0.380 | 0.384 | 0.386 | 0.388 | 9500 (0.3749) | 6500 |
-| W s1 | 0.403 | 0.381 | 0.378 | 0.374 | 0.376 | 0.381 | 0.389 | 0.397 | 9000 (0.3709) | 7000 |
-| N s0 | 0.442 | 0.423 | 0.405 | 0.401 | 0.414 | 0.412 | 0.408 | 0.409 | 28 000 (0.3942) | 16 500 |
+| W s1 | 0.402 | 0.381 | 0.378 | 0.374 | 0.376 | 0.380 | 0.389 | 0.397 | 9000 (0.3709) | 7000 |
+| N s0 | 0.442 | 0.423 | 0.405 | 0.401 | 0.414 | 0.412 | 0.407 | 0.409 | 28 000 (0.3942) | 16 500 |
 
 - W saturates by about 7000 updates on the pilot, and it overfits the 24 pilot-train sessions
   after about 10 000.
-- N's curve is flat and noisy from 10 000 on, between 0.400 and 0.414. Its 1 % saturation point,
-  16 500, reflects that noise.
+- N's curve is flat and noisy from 10 000 on, between 0.394 and 0.414. Its minimum is 0.3942 at
+  28 000, and five points from 10 000 on lie below 0.400: 11 500, 16 500, 18 500, 27 000 and
+  28 000. Its 1 % saturation point, 16 500, reflects that noise.
 - **The budget rule escalates.** 2 × max u_sat = 33 000 > 30 000, so the rule asks for the
   owner (Ruling 3, below).
 
@@ -493,9 +499,13 @@ full width).
 - The collapsed fraction was 0 everywhere. Copy-last's rank ratio was 1.006 at h = 8 and 1.010 at
   h = 16.
 - **The G1 references and bars.**
-  - The rank reference is **0.3315**, from W s0's val-selected checkpoint (update 9500) at h = 16.
+  - The rank reference is **0.3315**, from W s0's val-selected checkpoint (update 9500) at h = 16:
+    `checkpoints/task066-calibration/run-1/W-s0.pt`, sha256 `5dbf18a9…3f81`.
     The relative bar is 0.16, so **B_rank = max(0.10, 0.16) = 0.16**.
-  - The std reference is **0.7963**, from W s1's val-selected checkpoint (update 9000) at h = 8.
+  - The std reference is **0.7963**, from W s1's val-selected checkpoint (update 9000) at h = 8:
+    `checkpoints/task066-calibration/run-1/W-s1.pt`, sha256 `cd7ccec5…a7d6`. The N reference is
+    `N-s0.pt`, sha256 `e31b3d4a…0213`. Each checkpoint holds the selected update's weights, while
+    its `updates` field records 30 000 (the final count), as in TASK-065.
     The relative bar is 0.39, so **B_std = max(0.25, 0.39) = 0.39**.
   - Neither escalates: the rank reference is well above 0.10.
 - **W's rank ratio rises with training while its held-out criterion worsens.** Along W s0's
@@ -509,7 +519,7 @@ full width).
 `2c32bdd`; see the disclosure below). They use the bars above, and the W − N comparative against N
 s0 on the 8 held-out sessions.
 
-| predictor (both W seeds, h = 8 and 16) | effective-rank ratio | std ratio | W − N (lower 95 % bound) | combined G1 |
+| predictor (both W seeds, h = 8 and 16) | effective-rank ratio | std ratio | W − N (point; lower 95 % bound for the untruncated row) | combined G1 |
 |---|---|---|---|---|
 | untruncated W | 0.332–0.340 | 0.796–0.819 | +0.033 to +0.062 (0.029 to 0.059) | **passes** every part |
 | k = 1 | 0.025 | 0.375–0.395 | −0.28 to −0.31 | **fails** (rank, W − N; std too at 3 of 4) |
@@ -698,6 +708,11 @@ the executing agent recommends a next task and does not choose it.
 - **A pass is 170 cross-fitted train sessions and one corpus**, not a test-split result.
 - **Random-init tokens also read the apple** (TASK-064), and no random-init or raw-pixel predictor
   is run: a pass would not show that pretraining matters for dynamics.
+- **G1 (iii) alone can decide WM-TOK-COLLAPSE.** If only the comparative part fails (W no more
+  diverse than N), the row is still WM-TOK-COLLAPSE. The results document states which G1 part
+  failed.
+  - The rank ratio rises with training (§6.5). So a W selected early and an N selected late
+    handicap W on (iii). The selected updates are reported.
 - **The G1 bars come from a 32-root pilot** (24 sessions of training data). A gated model trains on
   85 sessions; its ratios may differ from the pilot's for that reason alone. The bar is half the
   pilot reference to leave room for that.
@@ -770,11 +785,23 @@ uv run --no-sync python scripts/train_apple_token_dynamics.py run \
 - A token update takes 0.095 s at 4 × 4 (0.281 s on CPU) and 0.313 s at 8 × 8.
 - Prediction of 2048 windows × 16 steps takes 0.85 s.
 - Three concurrent MPS processes run at about 0.19–0.22 s per update each.
-- Featurisation takes about 13.4 ms per frame on 6 CPU threads (pilot, 33 878 frames).
+- Featurisation takes about 14.3 ms per frame on 6 CPU threads (calibration run-1, pilot, 33 878
+  frames).
 - One 6144 × 6144 eigendecomposition takes about 13 s (float64).
 
-- **Labels read before the freeze, all owner-ruled (§6.4).** Only the apple and phase labels were
-  read, and only for encoded-grid readability checks:
+- **Smoke runs before the freeze (mechanics only; nothing in them is read).**
+  - `cal-smoke-a` (03:10Z–03:24Z) ran 1000 updates of the calibration models on the pilot. §6.3
+    quotes one number from it: the encoded effective rank of about 40.
+  - The runner's `smoke-a` (03:52Z–04:04Z, revision `96ed14c`, before the freeze) trained four
+    token predictors for 20 updates each on 72 corpus train episodes (8 sessions per half) and
+    8 val episodes. It read the frame-0 apple labels and the phase labels of 18 corpus roots for
+    G-labels, and its readout targets were seeded noise.
+  - Any later smoke run (PR 2) is disclosed with it.
+  - These are the only predictors trained on the corpus before the gated run. No quantity from
+    them informed any choice.
+- **Labels read before the freeze.** Only the apple and phase labels were read. Beyond the
+  smokes' G-labels checks above, all reads were owner-ruled (§6.4), for encoded-grid readability
+  checks:
   - the pilot's 30 roots at frames 0–24;
   - the corpus's 190 train + val roots at frames 0–24 (the ceiling pre-check).
   TASK-065's disclosed inspection of 40 train roots' labels (the apple static until frame ≥ 117)

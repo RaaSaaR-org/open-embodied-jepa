@@ -59,7 +59,9 @@ Manifest: `benchmarks/manifests/apple-token-dynamics-v1.json`.
 
 ## Acceptance Criteria
 - [ ] PR 1 merges on an independent reviewer's reported APPROVE and green CI, before any
-      predictor is trained on the corpus. It contains the protocol, the manifest,
+      gated predictor is trained on the corpus. (The runner smoke-a trained four 20-update models
+      on corpus train episodes with noise targets before the freeze; it is disclosed in protocol
+      §14.) It contains the protocol, the manifest,
       `token_dynamics.py`, the `frozen_tokens` option with `docs/MODELS.md`, the calibration
       script and its recorded results, the tests and this card.
 - [ ] PR 2 merges on a reported APPROVE and green CI. It contains the runner, the guard tests and
@@ -81,7 +83,7 @@ Manifest: `benchmarks/manifests/apple-token-dynamics-v1.json`.
 ## Rulings and pre-freeze log (UTC)
 - 2026-09-27T03:10Z–03:24Z: the calibration smoke (`outputs/task066-scratch/cal-smoke-a`, 1000 updates)
   checked the mechanics only; it is not read.
-- 2026-09-27T03:18Z: the anchor pre-check (`outputs/task066-calibration/anchor-1`, `f78257c`)
+- 2026-09-27T03:14Z–03:17Z: the anchor pre-check (`outputs/task066-calibration/anchor-1`, `f78257c`)
   ran on features only. P_cls and P_tok reproduce TASK-064's hashes. The pooled cache differs
   from the pooled anchor by at most 2.93e-5, on exactly the 14 partial-batch roots. Whole episodes
   with partial final batches re-featurise bit-identically.
@@ -107,7 +109,7 @@ Manifest: `benchmarks/manifests/apple-token-dynamics-v1.json`.
 - **2026-09-27T03:46Z, owner ruling 2** (pooling): option A, keep 4×4, subject to an
   encoded-only ceiling pre-check on the 190 train + val corpus roots. The decision rule was
   written into the prereg before the check ran (`96ed14c`).
-- 03:49Z: the ceiling pre-check (`outputs/task066-calibration/ceiling-1`) says **keep 4×4 and
+- 03:47Z–03:52Z: the ceiling pre-check (`outputs/task066-calibration/ceiling-1`) says **keep 4×4 and
   freeze**. The 190 roots read 0.607 and 0.492 cm at h = 8 and 16, with upper bounds 0.381 and
   0.320. The run's 170-root ceiling agrees.
 - 03:52Z–04:04Z: the runner smoke (`outputs/task066-scratch/smoke-a`) ran with noise targets. It

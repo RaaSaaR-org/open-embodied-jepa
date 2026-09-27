@@ -247,13 +247,14 @@
   "wrong_actions": "cross-session shuffle, seed 6502",
   "probe": {
    "readouts": "info_ceiling nested CV (linear + RBF kernel ridge, lambda 1e-4..1e4)",
-   "fit_on": "encoded raw CLS of frame 8 + h of the 170 train roots, 10-fold CV",
+   "fit_on": "encoded pooled 4x4 token grid (6144-d, raw) of frame 8 + h of the 170 train roots, 10-fold CV",
    "fold_seed": 59,
    "fold_assignment_sha256": "44a3f267f3fd94788889ab523b9fa5facf0479cdd1d1fa6307d4b953631b86a7",
    "target": "privileged__apple_position_world xy at frame 8 + h",
    "bootstrap_seed": 5901,
    "B_occ_flags": "TASK-064 report readability.per_root.reset_occluded"
-  }
+  },
+  "ceiling": "the encoded 4x4 grid of frame 8 + h meets the TASK-059 T1 bar at h = 8 and 16 on the 170 train roots (selects WM-TOK-CEILING; not a gate)"
  },
  "gates": {
   "thresholds": {
@@ -390,7 +391,13 @@
    "4x4": 0.095,
    "8x8": 0.313
   },
-  "labels_read_by_this_task": false
+  "labels_read_by_this_task": "owner-ruled encoded-grid readability checks only: pilot-d's 30 roots and the corpus's 190 train + val roots (apple and phase labels, frames 0-24); plus the runner smoke's G-labels check of 18 corpus roots (frame-0 apple, phase)",
+  "corpus_predictors_trained_before_freeze": "runner smoke-a only: four token predictors, 20 updates each, noise targets, nothing read",
+  "calibration_checkpoints_sha256": {
+   "W-s0": "5dbf18a9a7aec243e9cf4db491f4c00a2e6071ffa3f79f48afce84377dc43f81",
+   "W-s1": "cd7ccec554645b46bed0c4a4e5d0a4c852e6d8ec06559198581f730ceaaca7d6",
+   "N-s0": "e31b3d4a5c7f688e1ad4a4e3c5bf3b7a4a876702ca043c1a7428ae223af00213"
+  }
  },
  "hashes": {
   "benchmarks/manifests/apple-latent-dynamics-v1.json": "01e55f623bb2bb197454d248c43270801a681ec60ea7413f6de0258e2dc1ab2b",
