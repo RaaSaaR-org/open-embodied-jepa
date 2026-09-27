@@ -5,9 +5,13 @@
         --render outputs/task067-scratch/prerun-go-render-1/report.json \\
         --output benchmarks/manifests/apple-first-policy-v1-results.json
 
-Every number in the results manifest is copied from the two reports; nothing is recomputed
-except the sha256 of each report and the C0 bar rule, which is re-applied from the recorded
-counts with ``first_policy.c0_bars`` as a consistency check.
+Every measured number in the results manifest is copied from the two reports. Recomputed: the
+sha256 of each report, and the C0 bar rule, re-applied from the recorded counts with
+``first_policy.c0_bars`` as a consistency check. Asserted rather than copied, because a
+CAL-ESCALATE report does not carry them: ``run``, ``not_reached``,
+``learned_apple_to_plate_successes`` (0), ``exemption_spent`` (false), and ``clause_fires`` /
+``void_reason`` (absent from the report, so false / null). ``path`` records the argument as
+given.
 """
 
 from __future__ import annotations

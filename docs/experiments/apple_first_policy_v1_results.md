@@ -2,7 +2,7 @@
 
 **Outcome: CAL-ESCALATE.** The run stopped at the C0 calibration, as §7.1 of the protocol
 prescribes. The expert's tolerance to plate error fell below 28/32 at the smallest preregistered
-plate level (1.0 cm → 21/32), so no feasible perception bar exists. This is a declared early-stop
+plate level (1.0 cm → 21/32), so no feasible plate bar exists (the apple bar was feasible). This is a declared early-stop
 row. It is **not** V: nothing is repeated. **The abandonment clause does not fire; the owner
 decides what follows** (§9).
 
@@ -124,12 +124,22 @@ plate part has no feasible level, so CAL-ESCALATE is the row.
    - It releases at `container_x − 0.03 + 0.015 − 0.035 = container_x − 0.05`.
    - If the held apple keeps its grasp offset, it lands about 3.5 cm short of the plate centre in
      x, which is only about 0.5 cm inside the scorer's 4 cm plate radius (`task.py`).
-   - A plate error with a component of about −0.4 cm or more along x then moves the landing point
-     outside the radius. For a 1 cm error in a uniformly random direction, that happens on
-     roughly a third of seeds, which is consistent with 21/32.
-   - Under this reading the collector's own placement has almost no x margin. A learned policy
-     that imitates it inherits that margin, and no plate readout on this camera is likely to be
-     accurate to about 0.5 cm in x.
+   - A plate error whose x component is about −0.39 cm or less (pointing toward the robot) then
+     moves the landing point outside the radius. For a 1 cm error in a uniformly random
+     direction, that happens with probability of about 0.37, which is consistent with 11/32 = 0.34
+     failures.
+   - **The simple model fits unevenly across levels.** With the run's actual `default_rng(6700)`
+     plate directions (review of #83), it predicts 21 / 18 / 17 / 14 successes at 1.0 / 1.5 /
+     2.0 / 2.5 cm, against 21 / 21 / 17 / 10 observed. It is a candidate mechanism, not a fitted
+     one.
+   - Under this reading the collector's own placement has almost no x margin, and a learned policy
+     that imitates it inherits that margin. **Whether a plate readout can reach about 0.5 cm in x
+     is not known from this run:** S0-P was never evaluated. Our prior expectation is that it is
+     hard, because the plate readout has never been measured. That is an expectation, not a
+     result.
+   - **The harness alternative in protocol §9 ("the harness is off") is not supported.** The
+     reference condition scored 32/32 and the two smallest apple levels 32/32, on the same seeds
+     and code path.
 3. **What this does and does not show.**
    - **It shows** that TASK-067 as preregistered cannot proceed past C0. The clause does not fire,
      because nothing about perception or learning was tested.
@@ -152,8 +162,9 @@ each needing its own disclosed amendment or a new protocol version:
   a small, disclosed probe that records C0's per-attempt apple landing positions on fresh
   calibration seeds.
 - **(b) Add plate levels below 1.0 cm to C0** (for example 0.25 and 0.5 cm). This would at best
-  set a plate bar of about 0.5 cm or tighter, which the readout is unlikely to meet. That would
-  make S0-PLATE-FAIL the likely next row, so it is not recommended.
+  set a plate bar of about 0.5 cm or tighter. Our prior expectation, not a measurement, is that
+  the readout would struggle to meet it, making S0-PLATE-FAIL a plausible next row. For that
+  reason it is not the first recommendation.
 - **(c) Stop TASK-067 here** and record the calibration finding.
 
 **Context, not a basis for this decision.** TASK-066 has since ended as WM-TOK-DYNAMICS on the
