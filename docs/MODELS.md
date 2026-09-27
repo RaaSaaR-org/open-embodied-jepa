@@ -103,8 +103,12 @@ setting.
 
 `frozen_encoder: dinov2_small_cls` swaps the backend's trainable image encoder for the pinned,
 frozen DINOv2 ViT-S/14 CLS feature of `pretrained_encoder` (TASK-063: 112 → 224 px bicubic, no
-crop, ImageNet normalisation, `pooler_output`, CPU float32). It is preregistered by
-[apple_latent_dynamics_v1.md](experiments/apple_latent_dynamics_v1.md) and has **no result yet**.
+crop, ImageNet normalisation, `pooler_output`, CPU float32). It was preregistered by
+[apple_latent_dynamics_v1.md](experiments/apple_latent_dynamics_v1.md). Its result
+([results](experiments/apple_latent_dynamics_v1_results.md)) is outcome WM-NO-DYNAMICS, and the
+clause for the pooled-CLS predictor line fired. The latent-error gates G2–G4 passed on all
+seeds. G1 failed on an uncalibrated rank bar, and G5 (apple readability through prediction)
+failed.
 
 - **It is off unless a run selects it.** It is written once, backend-agnostically, in
   `models/frozen_encoder.py`: `frozen_encoder_model("leworldmodel")` (or `"native_jepa"`) puts a
@@ -137,6 +141,41 @@ crop, ImageNet normalisation, `pooler_output`, CPU float32). It is preregistered
   weight to 0.
 - Planners still receive only `VisualLatent`. `predict_features` is an evaluation path for
   probes, and it exists only for a frozen encoder.
+
+### Frozen patch-token latent (`frozen_encoder: dinov2_small_tokens`, `token_grid`, TASK-066)
+
+`frozen_encoder: dinov2_small_tokens` with `token_grid: g` makes the latent the pinned DINOv2
+ViT-S/14 final patch tokens (TASK-063's `tokens` read-out point), average-pooled from the 16 × 16
+patch grid to `g × g` and standardised by train-only moments. The latent is flat,
+`g² × 384`-d, row-major over (grid row, grid column, channel). It is preregistered by
+[apple_token_dynamics_v1.md](experiments/apple_token_dynamics_v1.md) with `g = 4` (6144-d) and
+has **no result yet**.
+
+- **It is off unless a run selects it.** It is written once, in `models/frozen_tokens.py`.
+  `frozen_token_model("leworldmodel")` (or `"native_jepa"`) puts `FrozenTokenMixin` in front of
+  the backend class.
+  - `FrozenTokenMixin` **subclasses the TASK-065 `FrozenEncoderMixin`** and keeps its
+    normalisation, its feature injection, `train_step_features` and `predict_features`.
+  - The plain backends and the CLS class reject `token_grid` as unknown. The token class refuses
+    to run without both keys.
+  - No existing file changes, so every earlier `implementation_sha256` stays valid.
+- **The prediction step is a token predictor.** It maps the grid of one frame and that frame's
+  action to the grid of the next frame. The backend's own `train_step`, `rollout`, losses and
+  optimizer run unchanged on the flat latent; only `next_embedding` reshapes it to tokens.
+  - **LeWM**: the pinned upstream `ARPredictor`, `Embedder` and `pred_proj`, composed by upstream
+    `JEPA.predict`. The token grid is the sequence axis, with one learned position embedding per
+    token. The action embedding conditions every token through AdaLN-zero. Attention is
+    **bidirectional within the frame**: the upstream attention modules are used with their mask
+    fixed to non-causal, and no upstream byte changes.
+  - **Native**: a residual token step. One shared MLP reads each token plus its position
+    embedding, the frame's mean token and the action.
+- **Nothing of the backend's own image pathway is built.** At a 6144-d latent, LeWM's ViT encoder
+  would be about 0.9 B parameters. The frozen feature replaces the pathway.
+- It refuses `state_fusion`, `readout_heads`, a `cameras` list and every TASK-054 prediction-step
+  option.
+- **`pool_tokens` is layout-independent, but the tokens it pools are not.** Batched float32 CPU
+  inference differs slightly between batch sizes (TASK-065 run-1). A run that caches features
+  must check its own cache path for determinism, partial batches included.
 
 ## Optional LeWM source
 
