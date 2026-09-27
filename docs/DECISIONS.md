@@ -63,6 +63,41 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-27 — the predictor-on-frozen-pooled-CLS line is closed (TASK-065)
+
+**Decision.** This applies the clause that `apple_latent_dynamics_v1.md` §10 pre-declared for
+the rows WM-APPLE-LOST and WM-NO-DYNAMICS. Run-2 ended in **WM-NO-DYNAMICS**.
+- **What is closed:** the line "an action-conditioned LeWM-family predictor on frozen,
+  externally pretrained **pooled (CLS)** latents on `apple-look-v1`". No further predictor
+  variant on this corpus with frozen pooled pretrained latents is preregistered without new
+  evidence of a different kind: not history length, action chunking, step embeddings, loss
+  weighting, capacity, residual parameterisation or budget.
+- **Not abandoned:** the LeWM backend, DINOv2 as an encoder, patch-token latents, the product
+  goal, and the corpus (sealed; test split unread).
+- **Recommended next task (the owner chooses):** a preregistered patch-token latent predictor
+  (P-tok, in the style of DINO-WM) on `apple-look-v1`. Its training budget and any rank/collapse
+  bar are to be calibrated on train/val before the freeze.
+
+**Evidence.** [apple_latent_dynamics_v1_results.md](experiments/apple_latent_dynamics_v1_results.md),
+with manifest `benchmarks/manifests/apple-latent-dynamics-v1-results.json`.
+- **The row name overstates the failure.** G2–G4 passed on all three seeds at h = 8 and 16:
+  - the predictor beats copy-last (0.746 at h = 8, 0.647–0.652 at h = 16);
+  - it beats an equally trained no-action predictor (0.879–0.910);
+  - wrong actions cost it 1.78–1.98× the error.
+- **It fails the preregistered no-collapse rank gate and the apple-readability gate.**
+  - **G1:** the effective-rank ratio is 0.365–0.399 against an uncalibrated bar of 0.5; std ratio
+    and collapsed fraction pass.
+  - **G5:** the apple readout from predicted latents is 0.94–1.19 cm against 0.68–0.83 cm encoded.
+    The non-inferiority margin fails at h = 16 on every seed.
+- **Why this row:** WM-APPLE-LOST needs G1–G4 on two seeds, so WM-NO-DYNAMICS matched. Both rows
+  fire the clause.
+- **Run-1 was V at G-cache.** A float32 batch-size effect caused it, before any model existed. The
+  guard was amended by owner ruling under §15.5, beyond §12's "runner mechanics" limit, before any
+  outcome data existed. Run-2 was the single repeat.
+
+This is a world-model test only; no control formulation is preregistered or implied. Learned
+Apple→Plate remains at 0 successes.
+
 ## Decision 2026-09-26 — the in-corpus encoder-training line is closed (TASK-062)
 
 **Decision.** This applies the clause that `apple_encoder_study_v1.md` §10 pre-declared for the
