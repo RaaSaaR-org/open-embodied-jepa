@@ -840,3 +840,54 @@ uv run --no-sync python scripts/train_apple_token_dynamics.py run \
    `report.json` by script.
 5. **One task, one agent.** A protocol defect found after the freeze is escalated to the task owner
    and fixed only through a disclosed amendment.
+
+## 17. Changes made in PR 2 (disclosed; no gated run yet)
+
+PR 2 commits the runner (`scripts/train_apple_token_dynamics.py`), its guard tests
+(`tests/test_token_dynamics_runner.py`) and the runner's pin in the manifest. The rows, gates,
+thresholds, seeds, budget and caps are unchanged. What the runner does, all mechanics:
+
+- **Reuse.** It imports TASK-065's runner read-only, for its reader (Q-split before any file is
+  opened), its guard helpers, its window, gather and val-criterion code and its report writer.
+  That file's bytes are pinned by this manifest.
+- **Preflight.** G-hash is recorded before any import. G-frozen (`token_dynamics.require_frozen`)
+  runs before torch is imported. Any exception from the first line of `run` onwards writes a V
+  report.
+- **G-anchor on tokens.** The 190 post-look frames' CLS and tokens must hash to TASK-064's
+  `P_cls` and `P_tok`. G-repro covers both.
+- **G-cache (a/b/c).**
+  - (a) is TASK-065's amended determinism check.
+  - (b) re-featurises the first two train episodes whose length is not a multiple of 16, and
+    checks them bit for bit against the cache.
+  - (c) is the 1e-3 bound on the pooled rows, which reports the differing roots and names
+    TASK-064's partial anchor batch.
+- **Memory.**
+  - Normalisation and the metric scale are computed in float64 in chunks, not as a copy of the
+    cache.
+  - G1's full-width statistics are streamed: `Moments` per model and horizon, and `SessionMoments`
+    in the projected basis.
+  - Each seed's moments are reduced as soon as its four models exist, then released.
+  - The projected basis is fitted on every train frame's encoded latent before any model is
+    trained.
+- **Recorded beyond §12:**
+  - every model's `selected_in_last_two_points`;
+  - every seed's `G1_parts` per horizon;
+  - `rank_W_over_N` with its interval;
+  - the ceiling per gated horizon;
+  - the projection basis sha256;
+  - the frozen values themselves.
+- **Smoke runs (not evidence, not rows).** `smoke` mode uses a subset: 8 train sessions per half,
+  8 val episodes, seed 0 only, 20 updates, selection every 10. **The apple targets are replaced by
+  seeded noise**, and G1 is not evaluated. Its gates are meaningless by construction and were not
+  read.
+  - `outputs/task066-scratch/smoke-a`: an earlier draft with a provisional manifest.
+  - `outputs/task066-scratch/smoke-b`, with the committed code (`581baa1`):
+    - report sha256 `b8d075f4…ab1ca`, 422 s;
+    - every section was written, `non_finite_fields` was empty, and `test_split_decoded` was
+      false;
+    - G-cache (b) held on `look-47000` (final batch 14) and `look-47000-b0-noise_only` (final
+      batch 4);
+    - **peak RSS 14.2 GB.** smoke-a peaked at 6.98 GB on the same subset. The difference is not
+      explained. MPS allocations count towards the process footprint on unified memory.
+- **The memory expectation of §12 is therefore widened, not as a guard: about 15–30 GB** on the
+  48 GiB machine. The report records the peak.
