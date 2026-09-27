@@ -56,6 +56,11 @@ def load_runner():
 RUNNER = load_runner()
 
 
+def init_worker() -> None:
+    """The runner's worker initialiser, reached through this module (spawn pickles by name)."""
+    RUNNER.worker_init()
+
+
 def run_with_pid(task: dict) -> dict:
     """The runner's ``run_task``, plus the worker's pid; a worker exception is returned."""
     try:
@@ -98,7 +103,7 @@ def check(output: Path, workers: int) -> dict:
         for s in seeds
     }
     started = time.monotonic()
-    pool = mp.get_context("spawn").Pool(workers, initializer=RUNNER.worker_init)
+    pool = mp.get_context("spawn").Pool(workers, initializer=init_worker)
     try:
         first = pool.map(
             run_with_pid,
