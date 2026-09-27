@@ -154,15 +154,24 @@ def bar_rule(pilot_ratios, floor: float) -> dict:
     }
 
 
-# The calibration's results (protocol section 6.4), copied from its report; the freeze uses these.
+# The calibration's results (protocol section 6.5), copied from its report; the freeze uses these.
 CALIBRATION = {
-    "report_sha256": None,
-    "saturation_updates": None,
-    "rank_ratio_reference": None,
-    "std_ratio_reference": None,
+    "report": "outputs/task066-calibration/run-1/report.json",
+    "report_sha256": "a1d9fc1740cbba795a0404428e8a956de97e946a9e912d6592f188141e2f53e1",
+    "revision": "7fa8183499f0b0001bbbd25674a3f18f13f0708a",
+    "saturation_updates": {"W-s0": 6500, "W-s1": 7000, "N-s0": 16500},
+    "budget_rule": {"wanted": 33000.0, "updates": 30000, "escalate": True},
+    # the G1 references: the W calibration models' val-selected checkpoints (W-s0 at update
+    # 9500, W-s1 at update 9000), pilot-held-out windows, h = 8 and 16
+    "rank_ratio_reference": 0.33151133423512424,  # W-s0 at h = 16
+    "std_ratio_reference": 0.7963489955650851,  # W-s1 at h = 8
+    "controls_report": "outputs/task066-calibration/controls-1/report.json",
+    "controls_fail_G1": {"k1": True, "k2": True, "k4": True, "k8": True},
 }
-UPDATES = None  # budget_rule(...)["updates"]
-SELECT_EVERY = None  # UPDATES // 20: 20 selection points, as in TASK-065
+# Owner ruling 2026-09-27T05:36Z on the escalation: option A, the 30 000-update ceiling (an
+# under-trained N would bias G3 and G1 (iii) towards W), selection every 1500 updates.
+UPDATES = 30_000
+SELECT_EVERY = 1_500  # 20 selection points, as in TASK-065
 
 # ----- evaluation: TASK-065's, unchanged ---------------------------------------------------------
 EVAL_STRIDE = ld.EVAL_STRIDE
@@ -176,8 +185,9 @@ METRIC_FLOOR_STD = ld.METRIC_FLOOR_STD
 # ----- gates (protocol section 8), per seed, at each gated horizon --------------------------------
 THRESHOLDS = {
     "G1_max_collapsed_fraction": ld.THRESHOLDS["G1_max_collapsed_fraction"],
-    "G1_min_effective_rank_ratio": None,  # calibrated (bar_rule on the pilot rank ratios)
-    "G1_min_std_ratio": None,  # calibrated (bar_rule on the pilot std ratios)
+    # calibrated: bar_rule on the pilot ratios, max(floor, floor_to_0.01(0.5 * reference))
+    "G1_min_effective_rank_ratio": 0.16,  # reference 0.3315, floor 0.10
+    "G1_min_std_ratio": 0.39,  # reference 0.7963, floor 0.25
     "G1_min_rank_ratio_margin_over_N_lower": COMPARATIVE_MARGIN,  # strictly above, lower bound
 } | {k: v for k, v in ld.THRESHOLDS.items() if not k.startswith("G1")}
 GATES = ld.GATES
@@ -185,9 +195,11 @@ DYNAMICS_GATES = ld.DYNAMICS_GATES
 LATENT_GATES = ("G2", "G3", "G4")  # the latent-error gates, without G1
 
 # ----- budget ------------------------------------------------------------------------------------
-PER_RUN_SECONDS = None  # set from the calibrated budget and the measured update time
-FEATURE_SECONDS = ld.FEATURE_SECONDS
-GLOBAL_WALL_SECONDS = None
+# Owner ruling 2026-09-27T05:36Z. Expected: about 0.095 s per update on MPS (synthetic), so
+# about 2850 s of updates plus selection and evaluation per model; about 12 h in total.
+PER_RUN_SECONDS = 4_500.0  # one model: 30 000 updates, 20 val evaluations, its evaluation
+FEATURE_SECONDS = ld.FEATURE_SECONDS  # 5400 s
+GLOBAL_WALL_SECONDS = 57_600.0  # 16 h
 
 ROWS = (
     "V",

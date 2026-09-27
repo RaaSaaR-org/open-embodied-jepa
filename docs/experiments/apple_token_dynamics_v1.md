@@ -1,9 +1,15 @@
 # Apple→Plate token dynamics v1: does an action-conditioned predictor over frozen DINOv2 patch-token latents avoid rank collapse on `apple-look-v1`, and keep the apple readable through multi-step prediction? (TASK-066)
 
 **Status: preregistration. No predictor has been trained on `apple-look-v1` token latents, and no
-readout has been fitted on any feature this study introduces.** The only numbers here are
-published results of TASK-063/064/065, the latent-space calibration on a disjoint pilot (§6) and
-the label-free pre-freeze checks (§14). **The test split of `apple-look-v1` is never decoded.
+readout has been fitted on any predicted latent.** The numbers here come from three kinds of
+source:
+- published results of TASK-063/064/065;
+- the latent-space calibration on a disjoint pilot (§6);
+- the pre-freeze checks: the label-free anchor check (§14) and two owner-ruled readability checks
+  of **encoded** 4 × 4 grids (§6.4). One ran on the pilot. The other ran on the corpus's 190
+  train + val roots, and it is the only corpus readout fitted before the freeze.
+
+**The test split of `apple-look-v1` is never decoded.
 Cohorts C (45300–45339) and D (45000–45007, 45100–45107) are never simulated; nothing is
 simulated at all. `exemption_spent` (`benchmarks/manifests/apple-policy-diagnostics-v1.json`)
 stays `false`.**
@@ -103,9 +109,11 @@ On this corpus's 190 train + val post-look frames (TASK-064, reported rows):
   (0.572 cm).
 
 The 4 × 4 grid of this task contains P-mean as a linear function (the mean of its 16 cells).
-That is a published fact about the encoder, not a new readout: **no readout was fitted on the
-4 × 4 grid before the freeze** (§6.1). Whether the encoded grid meets the T1 bar is measured in
-the run, and a failure has its own row (WM-TOK-CEILING, §11).
+That is a published fact about the encoder, not a new readout. Before the freeze, by owner
+ruling, the **encoded** 4 × 4 grid was read on the pilot and on the corpus's 190 train + val roots
+(§6.4). It meets the T1 bar on the corpus: 0.504–0.607 cm. In the run, whether the encoded grid
+meets the T1 bar is measured again (the ceiling, §9), and a failure has its own row
+(WM-TOK-CEILING, §11).
 
 ### 3.3 Caveats carried forward, unchanged
 
@@ -258,9 +266,13 @@ default (as in TASK-065). The backend swap is one key (`token_dynamics.BACKEND`)
 - It uses **data disjoint from the gate-evaluation roots**: TASK-064's pilot, below. No
   `apple-look-v1` episode is opened by the calibration. (The label-free anchor check of §14 reads
   corpus frames for features only; it computes no model quantity.)
-- **One disclosed exception, by owner ruling (§6.6):** a readability check of **encoded** 4 × 4
-  grids (never a prediction) on the pilot. It reads the pilot's label sidecars
-  (`privileged__apple_position_world`, `collector__phase_index`), and only the pilot's.
+- **Two disclosed exceptions, by owner ruling (§6.4).** Neither is part of the calibration of
+  the budget or of G1. Both read **encoded** 4 × 4 grids only, never a prediction.
+  - The pilot readability check reads the pilot's label sidecars
+    (`privileged__apple_position_world`, `collector__phase_index`).
+  - The corpus ceiling pre-check reads the same sidecars of the 190 train + val roots of
+    `apple-look-v1`. These are gate-evaluation roots, read for the ceiling quantity only; test
+    split excluded.
 
 ### 6.2 The pilot
 
@@ -306,7 +318,7 @@ sorted, are permuted by `default_rng(6600)`: the first 24 are **pilot-train**, t
   calibrated reference instead of to the raw targets.
 - **The relative bar alone would be circular**, because it is set from the tested architecture's
   own pilot behaviour: a recipe that collapsed on the pilot would lower its own bar. The owner's
-  ruling (§6.6) therefore adds two parts that do not come from W's pilot behaviour:
+  ruling (§6.4) therefore adds two parts that do not come from W's pilot behaviour:
   - **Absolute floors, fixed before the calibration's results were seen.** The rank bar is never
     below **0.10** and the std bar never below **0.25**: `bar = max(floor, relative bar)`. What a
     collapsed predictor scores: the mean predictor 0; a rank-1 prediction about 1 / (encoded
@@ -328,17 +340,17 @@ sorted, are permuted by `default_rng(6600)`: the first 24 are **pilot-train**, t
   windows, W's predictions are truncated to their own top k principal directions (the mean
   kept), for k = 1, 2, 4, 8. **The combined G1 (every part, with the calibrated bars) must fail
   k = 1, 2 and 4.** If any passes, the bar is raised and that is disclosed; a gate that lets a
-  truncated predictor through is not shipped. Where k = 8 lands is reported either way (§6.4).
+  truncated predictor through is not shipped. Where k = 8 lands is reported either way (§6.5).
 - The collapsed-fraction part of G1 (≤ 0.05 of dimensions with std < 0.01) is an absolute check
   and is kept unchanged.
 - Nothing from the calibration is read beyond these rules: the rules' inputs, the curves and the
-  collapse statistics are reported (§6.4). **Disclosed:** the bars are set after seeing pilot
+  collapse statistics are reported (§6.5). **Disclosed:** the bars are set after seeing pilot
   behaviour of the same architecture. The calibration started at 03:24Z (revision `7fa8183`; its
   training subprocesses at 03:32Z) before the floors and the comparative part were added
   (revision `753c42c`, 03:43Z). Its training code did not change, and the floors and the
   comparative part were fixed before any calibration result was read.
 
-### 6.6 Owner rulings before the freeze, and the pooling checks
+### 6.4 Owner rulings before the freeze, and the pooling checks
 
 Rulings are relayed by the coordinator and recorded at the UTC time they were received.
 
@@ -438,13 +450,103 @@ interval of the ratio to B-occ (1.866 cm) in the second. Every entry here meets 
 - **Consequence for G5, stated before any model is trained.** The encoded 4 × 4 ceiling reads
   about 0.50–0.63 cm at the gated horizons.
 
-### 6.4 Results (recorded; report `outputs/task066-calibration/run-1/report.json`)
+### 6.5 Results (recorded; report `outputs/task066-calibration/run-1/report.json`)
 
-⟨CAL: to be filled from the calibration report⟩
+**The run.**
+- Report sha256 `a1d9fc17…53e1`, revision `7fa8183`, clean tree, 7283 s. Outcome `calibrated`.
+- Pilot: 127 episodes, 33 878 frames, 24 / 8 sessions, 95 / 32 episodes by part.
+- Pilot-train gave 23 485 training windows; pilot-held-out gave 2101 windows at stride 4.
+- Featurisation took 14.3 ms per frame.
+- Two whole pilot episodes re-featurised bit-identically: `look-47900`, whose final batch is 14,
+  and `look-47900-b0-noise_only`, whose final batch is 4.
+- The models ran at about 0.225 s per update each, as three parallel MPS processes.
+- No label was read, no apple readout was fitted, and no corpus episode was opened.
 
-### 6.5 What the calibration fixes
+**Held-out criterion curves**, sampled every 2500 of the 500-update points; all points are in the
+report.
 
-⟨CAL: budget, SELECT_EVERY, G1 bars, caps⟩
+| model | 2500 | 5000 | 7500 | 10 000 | 15 000 | 20 000 | 25 000 | 30 000 | selected (criterion) | u_sat |
+|---|---|---|---|---|---|---|---|---|---|---|
+| W s0 | 0.405 | 0.388 | 0.380 | 0.375 | 0.380 | 0.384 | 0.386 | 0.388 | 9500 (0.3749) | 6500 |
+| W s1 | 0.403 | 0.381 | 0.378 | 0.374 | 0.376 | 0.381 | 0.389 | 0.397 | 9000 (0.3709) | 7000 |
+| N s0 | 0.442 | 0.423 | 0.405 | 0.401 | 0.414 | 0.412 | 0.408 | 0.409 | 28 000 (0.3942) | 16 500 |
+
+- W saturates by about 7000 updates on the pilot, and it overfits the 24 pilot-train sessions
+  after about 10 000.
+- N's curve is flat and noisy from 10 000 on, between 0.400 and 0.414. Its 1 % saturation point,
+  16 500, reflects that noise.
+- **The budget rule escalates.** 2 × max u_sat = 33 000 > 30 000, so the rule asks for the
+  owner (Ruling 3, below).
+
+**G1 quantities at the selected checkpoints** (pilot-held-out windows, predicted against encoded,
+full width).
+
+| model (selected update) | h | effective-rank ratio | std ratio | predicted / encoded effective rank |
+|---|---|---|---|---|
+| W s0 (9500) | 8 | 0.336 | 0.814 | 13.5 / 40.3 |
+| W s0 (9500) | 16 | **0.332** | 0.819 | 13.3 / 40.2 |
+| W s1 (9000) | 8 | 0.340 | **0.796** | 13.7 / 40.3 |
+| W s1 (9000) | 16 | 0.337 | 0.803 | 13.5 / 40.2 |
+| N s0 (28 000), reported | 8 | 0.294 | 0.764 | 11.8 / 40.3 |
+| N s0 (28 000), reported | 16 | 0.263 | 0.771 | 10.6 / 40.2 |
+
+- The collapsed fraction was 0 everywhere. Copy-last's rank ratio was 1.006 at h = 8 and 1.010 at
+  h = 16.
+- **The G1 references and bars.**
+  - The rank reference is **0.3315**, from W s0's val-selected checkpoint (update 9500) at h = 16.
+    The relative bar is 0.16, so **B_rank = max(0.10, 0.16) = 0.16**.
+  - The std reference is **0.7963**, from W s1's val-selected checkpoint (update 9000) at h = 8.
+    The relative bar is 0.39, so **B_std = max(0.25, 0.39) = 0.39**.
+  - Neither escalates: the rank reference is well above 0.10.
+- **W's rank ratio rises with training while its held-out criterion worsens.** Along W s0's
+  curve it is 0.31 at 5000, 0.34 at 10 000, 0.38 at 20 000 and 0.39 at 30 000 (h = 8). W s1
+  behaves alike. N's rises too, from 0.27 to 0.32.
+  - So the budget and the checkpoint move G1.
+  - **G1 is read at the val-selected checkpoint, in the calibration and in the run. This is
+    fixed now.** The references above are the val-selected checkpoints'.
+
+**The truncation controls** (`outputs/task066-calibration/controls-1/report.json`, revision
+`2c32bdd`; see the disclosure below). They use the bars above, and the W − N comparative against N
+s0 on the 8 held-out sessions.
+
+| predictor (both W seeds, h = 8 and 16) | effective-rank ratio | std ratio | W − N (lower 95 % bound) | combined G1 |
+|---|---|---|---|---|
+| untruncated W | 0.332–0.340 | 0.796–0.819 | +0.033 to +0.062 (0.029 to 0.059) | **passes** every part |
+| k = 1 | 0.025 | 0.375–0.395 | −0.28 to −0.31 | **fails** (rank, W − N; std too at 3 of 4) |
+| k = 2 | 0.047–0.048 | 0.515–0.532 | −0.25 to −0.28 | **fails** (rank, W − N) |
+| k = 4 | 0.085–0.086 | 0.630–0.652 | −0.20 to −0.22 | **fails** (rank, W − N) |
+| k = 8 | 0.139–0.141 | 0.710–0.731 | −0.12 to −0.15 | **fails** (rank, W − N) |
+
+- **The owner's condition is met.** The combined G1 fails k = 1, 2 and 4, so no bar was raised.
+  k = 8 fails too.
+- The rank bar alone (0.16) already fails every control. The comparative part fails each of them
+  independently.
+- **Disclosed:** controls-1 ran on a tree that was dirty only in the task card (Markdown; no code).
+
+### 6.6 What the calibration fixes
+
+**Ruling 3, received 2026-09-27T05:36Z (budget escalation).** Option A.
+- **U = 30 000 updates** (the ceiling), with **selection on val every 1500 updates** (20 points).
+- **Caps:** 4500 s per model, 57 600 s (16 h) for the whole run.
+- The owner's grounds:
+  - an under-trained N would bias both G3 and G1 (iii) towards W, so N reaching its plateau is a
+    validity requirement;
+  - selection on val protects W from overfitting;
+  - each corpus half has about 3.5× the pilot-train data, so its saturation may come later;
+  - about 12 h is acceptable.
+
+**Frozen values** (`token_dynamics`, tested against the rules in `tests/test_token_dynamics.py`):
+
+| quantity | value | source |
+|---|---|---|
+| updates per model | 30 000 | budget rule escalated (wanted 33 000); Ruling 3 |
+| selection | every 1500 updates (20 points), lowest val criterion, ties to the earlier | Ruling 3; TASK-065's rule |
+| G1 rank bar B_rank | 0.16 | reference 0.3315 (W s0 at 9500, h = 16); floor 0.10 |
+| G1 std bar B_std | 0.39 | reference 0.7963 (W s1 at 9000, h = 8); floor 0.25 |
+| G1 comparative | lower 95 % bound of (rank ratio W − rank ratio N) > 0 | Ruling 1 |
+| G1 collapsed fraction | ≤ 0.05 | TASK-065, unchanged |
+| per-model cap | 4500 s | Ruling 3 (expected about 3100 s: 30 000 × 0.095 s plus selection and evaluation) |
+| global cap | 57 600 s | Ruling 3 (expected about 12 h) |
 
 ## 7. Training (fixed now)
 
@@ -454,7 +556,7 @@ interval of the ratio to B-occ (1.866 cm) in the second. Every entry here meets 
 - is constructed with `frozen_token_model("leworldmodel")(state_schema, device="mps", seed=s,
   config=MODEL_CONFIG)`;
 - fits its input normalisation on its half's frames;
-- takes **⟨CAL: U⟩ updates** of batch 64 windows of 16 transitions (17 frames), through
+- takes **30 000 updates** (§6.6) of batch 64 windows of 16 transitions (17 frames), through
   `train_step_features`;
 - samples windows with TASK-065's stream `SeedSequence([6500, s, half index])`, shared by W and N;
 - runs at a constant learning rate.
@@ -466,7 +568,7 @@ bit-reproducible run to run; this is disclosed, not a guard.
 
 ### 7.3 Model selection, on val only
 
-After every ⟨CAL: U / 20⟩ updates (20 points), the **val criterion** (TASK-065's) is computed over
+After every 1500 updates (20 points), the **val criterion** (TASK-065's) is computed over
 the windows of all 80 val episodes starting at every 4th frame (for N, with zero actions). The
 checkpoint with the lowest criterion is kept (ties to the earlier one) and evaluated. **Reported
 only:** whether a model selected one of its last two points (a saturation diagnostic, not a gate).
@@ -499,7 +601,7 @@ and h = 16**; a gate passes for a seed only if it passes at both.
 
 | gate | set | passes when (at h = 8 and h = 16) |
 |---|---|---|
-| **G1 no collapse** | E-all | (i) collapsed fraction ≤ 0.05; **and** (ii) effective-rank ratio ≥ **⟨CAL: B_rank⟩** and std ratio ≥ **⟨CAL: B_std⟩** (calibrated, never below 0.10 and 0.25; full-width statistic, both halves pooled); **and** (iii) lower 95 % bound of (rank ratio W − rank ratio N) **> 0** (projected 256-direction basis, 2000 session-clustered resamples, seed 6603, no undefined resample) |
+| **G1 no collapse** | E-all | (i) collapsed fraction ≤ 0.05; **and** (ii) effective-rank ratio ≥ **0.16** and std ratio ≥ **0.39** (calibrated, never below 0.10 and 0.25; full-width statistic, both halves pooled); **and** (iii) lower 95 % bound of (rank ratio W − rank ratio N) **> 0** (projected 256-direction basis, 2000 session-clustered resamples, seed 6603, no undefined resample) |
 | **G2 beats copy-last** | E-all | upper 95 % bound of MSE(W) / MSE(copy-last) **≤ 0.8** |
 | **G3 beats no-action** | E-all | upper 95 % bound of MSE(W) / MSE(N) **< 1.0** |
 | **G4 action sensitivity** | E-all | lower 95 % bounds of MSE(W, wrong) / MSE(W, true) and MSE(W, zero) / MSE(W, true) **≥ 1.10**, with no undefined resample |
@@ -510,7 +612,7 @@ with the run's folds, the encoded 4 × 4 grid of frame 8 + h, read by the cross-
 frame-(8 + h) probe, meets the TASK-059 T1 bar (median ≤ 1.5 cm **and** upper bound of the
 ratio to B-occ ≤ 0.6) at h = 8 **and** at h = 16 (`token_dynamics.ceiling_passes`). If it misses
 at either horizon, G5 cannot test prediction on this latent (row WM-TOK-CEILING). The pre-check
-(§6.6) read 0.632 and 0.503 cm, with upper bounds 0.400 and 0.329, on the same quantity.
+(§6.4) read 0.632 and 0.503 cm, with upper bounds 0.400 and 0.329, on the same quantity.
 
 **Why these thresholds.**
 - **G1's bars are calibrated** (§6). This is the one change of substance to TASK-065's gates.
@@ -540,7 +642,7 @@ at either horizon, G5 cannot test prediction on this latent (row WM-TOK-CEILING)
 | **G-cache** (TASK-065 amended, extended) | (a) a second featurisation of the 190 post-look frames in the cache's own layout equals the cache rows bit for bit; (b) **two whole train episodes whose last batch is partial, re-featurised, equal their cache rows bit for bit**; (c) the pooled cache rows of the 190 roots are within **1e-3** absolute of the pooled anchor rows (the actual max absolute and relative difference and the differing roots are reported) |
 | **G-folds** | the probe fold hash is `44a3f267…86a7` |
 | **G-finite** | every feature, loss, prediction and statistic is finite |
-| **G-cap** | featurisation ≤ 5400 s; each model ≤ ⟨CAL⟩ s; the whole run ≤ ⟨CAL⟩ s |
+| **G-cap** | featurisation ≤ 5400 s; each model (30 000 updates, 20 val evaluations and its evaluation) ≤ 4500 s; the whole run ≤ 57 600 s |
 | **G-device** | MPS available and used for every model; CPU for features and statistics |
 
 Any other exception is a crash, and a crash is V; `report.json` is written with outcome V and a
@@ -603,13 +705,19 @@ the executing agent recommends a next task and does not choose it.
 ## 12. Budget, device, seeds, recording
 
 - **Device:** MPS for the 12 models; CPU (6 threads, float32) for features and every statistic.
-- **Caps:** ⟨CAL⟩.
+- **Caps:** featurisation 5400 s; each model 4500 s; the whole run 57 600 s (Ruling 3).
+  Expected: featurisation about 45 min (192 789 frames at about 14 ms), each model about
+  52 min (30 000 × 0.095 s plus selection and evaluation), statistics about 30 min; about
+  12 h in total.
 - **Seeds:** model seeds 0, 1, 2; halves 65; sampler `SeedSequence([6500, seed, half])`; cluster
   bootstrap 6501; cross-session shuffle 6502; probe folds 59, inner 5900 + k, bootstrap 5901.
   Calibration: pilot partition 6600, calibration sampler `SeedSequence([6600, seed])`. Nothing
   else is random.
-- **Memory.** Expected peak RSS ⟨CAL⟩ (the 4.74 GB feature cache, per-seed G1 moments of 0.30 GB
-  each, and E-all errors); TASK-065 peaked at 6.38 GB.
+- **Memory.** Not a guard. The feature cache is 4.74 GB. Per seed, the G1 moments are eight
+  6144 × 6144 float64 accumulators of 0.30 GB each, plus the encoded references and the
+  projected per-session moments. The runner smoke on a subset peaked at 6.98 GB RSS. The
+  expected peak is about 12–20 GB on a 48 GiB machine; TASK-065 peaked at 6.38 GB. The report
+  records the peak.
 - **Recorded** (`outputs/task066-token-dynamics/run-<k>/report.json`): as TASK-065 §11, plus the
   token anchor, the partial-batch determinism facts, the encoded-grid ceiling and the calibration
   report's sha256.
@@ -665,8 +773,12 @@ uv run --no-sync python scripts/train_apple_token_dynamics.py run \
 - Featurisation takes about 13.4 ms per frame on 6 CPU threads (pilot, 33 878 frames).
 - One 6144 × 6144 eigendecomposition takes about 13 s (float64).
 
-- **No label was read** by this task before the freeze. TASK-065's disclosed inspection of 40 train
-  roots' labels (the apple static until frame ≥ 117) is carried forward, not repeated.
+- **Labels read before the freeze, all owner-ruled (§6.4).** Only the apple and phase labels were
+  read, and only for encoded-grid readability checks:
+  - the pilot's 30 roots at frames 0–24;
+  - the corpus's 190 train + val roots at frames 0–24 (the ceiling pre-check).
+  TASK-065's disclosed inspection of 40 train roots' labels (the apple static until frame ≥ 117)
+  is carried forward, not repeated.
 
 ## 15. Not done (declared)
 

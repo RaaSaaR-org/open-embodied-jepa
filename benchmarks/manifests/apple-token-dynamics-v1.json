@@ -1,0 +1,449 @@
+{
+ "task": "TASK-066",
+ "protocol": "apple_token_dynamics_v1",
+ "document": "docs/experiments/apple_token_dynamics_v1.md",
+ "status": "preregistration; calibrated on the disjoint pilot; no model trained on the corpus, no readout fitted",
+ "what_this_task_is": "a world-model test only: an action-conditioned LeWM-family predictor on frozen DINOv2 final patch tokens pooled to a 4x4 grid, trained on apple-look-v1 train sessions and measured offline; no control formulation preregistered or implied",
+ "learned_apple_to_plate_successes": 0,
+ "exemption_spent": false,
+ "exemption_spent_source": "benchmarks/manifests/apple-policy-diagnostics-v1.json",
+ "control_lines": "CEM abandoned as the primary control line at TASK-054; the behaviour-cloning line stopped at TASK-057; both clauses hold; no control formulation preregistered or implied",
+ "predecessor": {
+  "task": "TASK-065",
+  "outcome": "WM-NO-DYNAMICS",
+  "results_manifest": "benchmarks/manifests/apple-latent-dynamics-v1-results.json",
+  "clause_closed": "an action-conditioned LeWM-family predictor on frozen, externally pretrained pooled (CLS) latents on apple-look-v1",
+  "facts": {
+   "G2_G4": "passed on all three seeds at h = 8 and 16",
+   "G1": "failed on effective rank alone: ratio 0.365-0.399 against an uncalibrated 0.5",
+   "G5": "failed: 0.94-1.19 cm predicted against 0.68-0.83 cm encoded",
+   "selection": "checkpoints selected at updates 8000-10000 of 10000"
+  }
+ },
+ "data": {
+  "dataset": "data/apple-look-v1",
+  "dataset_manifest_sha256": "81d760d1f5a61834b4f37c3daf12ad1a7175e57fe99fe11d5fb4cecbff8edb64",
+  "sessions": {
+   "train": 170,
+   "val": 20,
+   "test": 10
+  },
+  "episodes": {
+   "train": 679,
+   "val": 80,
+   "test": 40
+  },
+  "read_splits": [
+   "train",
+   "val"
+  ],
+  "test_split_decoded": false,
+  "frames_featurised_train_val": 192789,
+  "labels_read": {
+   "privileged__apple_position_world": "E-post probe target (analysis only)",
+   "collector__phase_index": "G-labels look check"
+  },
+  "task064_report_sha256": "f3d2d3d5bc03c4dc9853aeae3d8d90a05d364d0315f498e64289b4c7825f6680",
+  "task064_stored_post_look_frames_sha256": "20b6796728c4baab20739f60d718f97f9b4c98118186d96022f07236d65f3612",
+  "task064_P_cls_feature_sha256": "24bc50f5d2e2f8edc605bd422e3bec6f68d85bd7f6710aa9c9d3f64490a9feec",
+  "task064_P_tok_feature_sha256": "d702fa64d9a21cbb4c366d5a1a9991f8f4f03637c6c1ec2dcdf9ef709fa7f424"
+ },
+ "halves": {
+  "seed": 65,
+  "rule": "sorted train sessions permuted by default_rng(65); first 85 = A",
+  "sha256": "26709b93d05be672c78b026feaaae6f5518714704d118dd075866d06692e5061",
+  "sessions": {
+   "A": 85,
+   "B": 85
+  },
+  "episodes": {
+   "A": 339,
+   "B": 340
+  },
+  "transitions": {
+   "A": 85521,
+   "B": 86035
+  },
+  "probe_roots": "cross-fitted: each train root predicted by the half model that never trained on it, read by the probe fold that held it out"
+ },
+ "model": {
+  "backend": "leworldmodel",
+  "config": {
+   "camera": "onboard_rgb",
+   "frozen_encoder": "dinov2_small_tokens",
+   "token_grid": 4,
+   "latent_dim": 6144,
+   "sigreg_weight": 0.0,
+   "max_horizon": 64
+  },
+  "latent": "DINOv2 ViT-S/14 final patch tokens (after the final LayerNorm), 16x16 average-pooled to 4x4 (float64 mean, float32), 6144-d, row-major (row, column, channel)",
+  "predictor": "pinned upstream LeWM ARPredictor (num_frames = 16 tokens) + Embedder + pred_proj via upstream JEPA.predict; token grid as the sequence axis; action embedding per frame broadcast over tokens by AdaLN-zero; attention bidirectional within the frame",
+  "upstream_revision": "8edfeb336732b5f3ce7b8b210d0ba370a09e2cac",
+  "option": {
+   "keys": [
+    "frozen_encoder",
+    "token_grid"
+   ],
+   "value": {
+    "frozen_encoder": "dinov2_small_tokens",
+    "token_grid": 4
+   },
+   "module": "src/embodied_jepa/models/frozen_tokens.py",
+   "class": "frozen_token_model(BACKEND): FrozenTokenMixin(FrozenEncoderMixin) in front of the backend",
+   "off_unless_selected": "plain backends and the CLS class reject token_grid; the token class requires both keys",
+   "existing_files_unchanged": [
+    "src/embodied_jepa/models/base.py",
+    "src/embodied_jepa/models/lewm.py",
+    "src/embodied_jepa/models/native.py",
+    "src/embodied_jepa/models/readout.py",
+    "src/embodied_jepa/readout_labels.py",
+    "src/embodied_jepa/models/frozen_encoder.py",
+    "src/embodied_jepa/pretrained_encoder.py"
+   ]
+  },
+  "frozen_encoder": {
+   "name": "dinov2_small_tokens",
+   "hf": "facebook/dinov2-small @ ed25f3a31f01632728cabb09d1542f84ab7b0056",
+   "files_sha256": {
+    "config.json": "1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d",
+    "model.safetensors": "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1"
+   },
+   "pretrained_weights_digest": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
+   "read_out": "final patch tokens, pooled 4x4",
+   "input": "112 px uint8 -> 224 px bicubic, no crop, ImageNet normalisation"
+  },
+  "parameters": 2836246
+ },
+ "arms": {
+  "W": "true executed actions",
+  "N": "every action zero in training and evaluation (no-action baseline)",
+  "copy_last": "the start latent repeated (untrained baseline)"
+ },
+ "calibration": {
+  "report": "outputs/task066-calibration/run-1/report.json",
+  "report_sha256": "a1d9fc1740cbba795a0404428e8a956de97e946a9e912d6592f188141e2f53e1",
+  "revision": "7fa8183499f0b0001bbbd25674a3f18f13f0708a",
+  "pilot": {
+   "dataset": "outputs/task064-scratch/pilot-d/dataset",
+   "manifest_sha256": "0a41d302558c8cb7aaba1b4ddc6f656438bf43b00f261e632c0c43ff54d9f50c",
+   "reset_seeds": "47900-47931",
+   "sessions": {
+    "train": 24,
+    "heldout": 8
+   },
+   "partition_seed": 6600
+  },
+  "leakage": "latent-space quantities only; no label read; no apple readout; no corpus episode opened; no test split",
+  "runs": [
+   "W-s0",
+   "W-s1",
+   "N-s0"
+  ],
+  "updates": 30000,
+  "rules": {
+   "budget": "U = clamp(5000 * ceil(2 * max u_sat / 5000), 10000, 30000); escalate if 2 * max u_sat > 30000; u_sat = first point within 1 % of the run's min criterion",
+   "G1_bars": "floor(100 * 0.5 * min over W seeds and h in {8,16} of the pilot ratio) / 100; escalate if the rank reference < 0.10"
+  },
+  "results": {
+   "report": "outputs/task066-calibration/run-1/report.json",
+   "report_sha256": "a1d9fc1740cbba795a0404428e8a956de97e946a9e912d6592f188141e2f53e1",
+   "revision": "7fa8183499f0b0001bbbd25674a3f18f13f0708a",
+   "saturation_updates": {
+    "W-s0": 6500,
+    "W-s1": 7000,
+    "N-s0": 16500
+   },
+   "budget_rule": {
+    "wanted": 33000.0,
+    "updates": 30000,
+    "escalate": true
+   },
+   "rank_ratio_reference": 0.33151133423512424,
+   "std_ratio_reference": 0.7963489955650851,
+   "controls_report": "outputs/task066-calibration/controls-1/report.json",
+   "controls_fail_G1": {
+    "k1": true,
+    "k2": true,
+    "k4": true,
+    "k8": true
+   }
+  },
+  "frozen": {
+   "updates": 30000,
+   "select_every": 1500,
+   "G1_min_effective_rank_ratio": 0.16,
+   "G1_min_std_ratio": 0.39,
+   "G1_rank_over_N_margin": 0.0,
+   "rank_floor": 0.1,
+   "std_floor": 0.25,
+   "projection_dim": 256,
+   "comparative_resamples": 2000,
+   "comparative_seed": 6603,
+   "G1_read_at": "the val-selected checkpoint (fixed)"
+  },
+  "pre_freeze_checks": {
+   "controls": "outputs/task066-calibration/controls-1/report.json: combined G1 fails truncations k = 1, 2, 4, 8; untruncated pilot W passes (tree dirty in the task card only)",
+   "pilot_readability": "outputs/task066-calibration/readability-3/report.json: the pooling rule fired (4x4 upper ratio 0.644 / 0.618 at h = 8 / 16, P-tok 0.588 / 0.540); pilot judged uninformative",
+   "corpus_ceiling": "outputs/task066-calibration/ceiling-1/report.json: encoded 4x4 meets T1 on 190 roots (0.607 / 0.492 cm, upper 0.381 / 0.320 at h = 8 / 16); keep 4x4"
+  },
+  "rules_output": {
+   "G1_min_effective_rank_ratio": {
+    "bar": 0.16,
+    "escalate": false,
+    "reference": 0.33151133423512424
+   },
+   "G1_min_std_ratio": {
+    "bar": 0.39,
+    "escalate": false,
+    "reference": 0.7963489955650851
+   },
+   "budget": {
+    "escalate": true,
+    "max_saturation_update": 16500,
+    "updates": 30000,
+    "wanted": 33000.0
+   }
+  }
+ },
+ "training": {
+  "model_seeds": [
+   0,
+   1,
+   2
+  ],
+  "runs": 12,
+  "updates": 30000,
+  "select_every": 1500,
+  "batch_size": 64,
+  "window_transitions": 16,
+  "sampler": "TASK-065's default_rng(SeedSequence([6500, seed, half index])), shared by W and N",
+  "device": "mps",
+  "learning_rate_schedule": "constant"
+ },
+ "evaluation": {
+  "E_all": "every train window of 16 transitions starting at every 4th frame, predicted by the other half's model",
+  "E_post": "the 170 train roots from frame 8 with their executed actions",
+  "gated_horizons": [
+   8,
+   16
+  ],
+  "reported_horizons": [
+   1,
+   2,
+   4,
+   8,
+   16
+  ],
+  "extended_horizons": [
+   32,
+   64
+  ],
+  "eval_stride": 4,
+  "cluster_bootstrap": {
+   "unit": "session",
+   "resamples": 10000,
+   "seed": 6501
+  },
+  "wrong_actions": "cross-session shuffle, seed 6502",
+  "probe": {
+   "readouts": "info_ceiling nested CV (linear + RBF kernel ridge, lambda 1e-4..1e4)",
+   "fit_on": "encoded raw CLS of frame 8 + h of the 170 train roots, 10-fold CV",
+   "fold_seed": 59,
+   "fold_assignment_sha256": "44a3f267f3fd94788889ab523b9fa5facf0479cdd1d1fa6307d4b953631b86a7",
+   "target": "privileged__apple_position_world xy at frame 8 + h",
+   "bootstrap_seed": 5901,
+   "B_occ_flags": "TASK-064 report readability.per_root.reset_occluded"
+  }
+ },
+ "gates": {
+  "thresholds": {
+   "G1_max_collapsed_fraction": 0.05,
+   "G1_min_effective_rank_ratio": 0.16,
+   "G1_min_std_ratio": 0.39,
+   "G1_min_rank_ratio_margin_over_N_lower": 0.0,
+   "G2_max_ratio_upper": 0.8,
+   "G3_max_ratio_upper_exclusive": 1.0,
+   "G4_min_ratio_lower": 1.1,
+   "G5_max_median_cm": 1.5,
+   "G5_max_ratio_to_B_occ_upper": 0.6,
+   "G5_max_excess_over_encoded_upper_cm": 0.5
+  },
+  "order": [
+   "G1",
+   "G2",
+   "G3",
+   "G4",
+   "G5"
+  ],
+  "dynamics_gates": [
+   "G1",
+   "G2",
+   "G3",
+   "G4"
+  ],
+  "latent_gates": [
+   "G2",
+   "G3",
+   "G4"
+  ],
+  "ceiling": "the encoded grid of frame 8 + h meets the T1 bar at h = 8 and 16 (selects row WM-TOK-CEILING; not a gate)",
+  "per_seed_rule": "a gate passes for a seed only if it passes at h = 8 and h = 16; the seed passes if G1-G5 all pass"
+ },
+ "guards_void_the_run": [
+  "G-hash",
+  "G-frozen",
+  "G-data",
+  "Q-split",
+  "G-split",
+  "G-labels",
+  "G-weights",
+  "G-anchor (frames, P_cls and P_tok)",
+  "G-repro (CLS and tokens)",
+  "G-cache (a: cache path bit-identical; b: two whole episodes with partial final batches bit-identical; c: pooled cache rows within 1e-3 of pooled anchor rows)",
+  "G-folds",
+  "G-finite",
+  "G-cap",
+  "G-device"
+ ],
+ "pre_declared_outcomes_in_order": {
+  "V": "a guard fails or the run stops early; nothing is read; one repeat",
+  "WM-TOK-DYNAMICS": "every seed passes G1-G5",
+  "WM-TOK-UNSTABLE": "one or two seeds pass; clause does not fire",
+  "WM-TOK-CEILING": "no seed passes; G1-G4 on >= 2 seeds; the encoded grid misses the T1 bar at h = 8 or 16; clause does not fire",
+  "WM-TOK-APPLE-LOST": "no seed passes; G1-G4 on >= 2 seeds; clause fires",
+  "WM-TOK-COLLAPSE": "no seed passes; G2-G4 on >= 2 seeds; clause fires",
+  "WM-TOK-NO-DYNAMICS": "otherwise; clause fires"
+ },
+ "inconclusive_task_level": "a second V closes TASK-066 as INCONCLUSIVE; the clause does not fire",
+ "abandonment_clause": {
+  "fires_on": [
+   "WM-TOK-APPLE-LOST",
+   "WM-TOK-COLLAPSE",
+   "WM-TOK-NO-DYNAMICS"
+  ],
+  "closes": "an action-conditioned LeWM-family predictor on frozen, externally pretrained DINOv2 patch-token latents on apple-look-v1, including pooling grid and resolution, history, attention masking, action chunking, step embeddings, loss weighting, capacity, residual parameterisation and budget",
+  "does_not_close": [
+   "the LeWM backend",
+   "the encoder as a component",
+   "the product goal",
+   "the corpus (sealed; test split unread)"
+  ],
+  "untested_not_refuted": [
+   "a trainable encoder initialised from the pretrained one",
+   "other encoders",
+   "another observation (the fixed overview camera; an owner decision)"
+  ]
+ },
+ "void_rule": "an early stop is V with a void_reason; one from-scratch repeat into run-2 with the same seeds, caps and device and recomputed features; a second V is INCONCLUSIVE; any guard change needs an owner ruling; rulings recorded with a UTC timestamp",
+ "budget": {
+  "device_training": "mps",
+  "device_features_and_statistics": "cpu",
+  "feature_threads": 6,
+  "feature_seconds": 5400.0,
+  "per_run_seconds": 4500.0,
+  "global_wall_seconds": 57600.0
+ },
+ "run_command": "uv run --no-sync python scripts/train_apple_token_dynamics.py run --output outputs/task066-token-dynamics/run-1 --checkpoints checkpoints/task066-token-dynamics/run-1",
+ "pre_freeze_facts": {
+  "anchor_report": "outputs/task066-calibration/anchor-1/report.json",
+  "anchor_report_sha256": "83e8aa76b22f8d1c353a3842f3f8300c23f40f2e8f4c74979f97b234c4cb0c2b",
+  "anchor_checks": {
+   "P_cls_equal_task064": true,
+   "P_tok_equal_task064": true,
+   "frames_equal_task064": true,
+   "repro_bit_identical": true
+  },
+  "pooled_cache_vs_pooled_anchor": {
+   "differing_roots": [
+    "look-47186",
+    "look-47187",
+    "look-47188",
+    "look-47189",
+    "look-47190",
+    "look-47191",
+    "look-47192",
+    "look-47193",
+    "look-47194",
+    "look-47195",
+    "look-47196",
+    "look-47197",
+    "look-47198",
+    "look-47199"
+   ],
+   "max_abs": 2.9325485229492188e-05,
+   "max_relative_to_row_norm": 3.5712853026527874e-06,
+   "roots_compared": 190
+  },
+  "whole_episode_determinism": {
+   "look-47000": {
+    "bit_identical": true,
+    "final_batch": 14,
+    "frames": 510
+   },
+   "look-47001": {
+    "bit_identical": true,
+    "final_batch": 1,
+    "frames": 529
+   }
+  },
+  "timing_synthetic_s_per_update_mps": {
+   "4x4": 0.095,
+   "8x8": 0.313
+  },
+  "labels_read_by_this_task": false
+ },
+ "hashes": {
+  "benchmarks/manifests/apple-latent-dynamics-v1.json": "01e55f623bb2bb197454d248c43270801a681ec60ea7413f6de0258e2dc1ab2b",
+  "benchmarks/manifests/apple-look-corpus-v1-results.json": "ae302317c27f9d84c28a1b8303e6b9237fa45781d65d55bae0219580c026c861",
+  "data/apple-look-v1-work/collection_report.json": "f3d2d3d5bc03c4dc9853aeae3d8d90a05d364d0315f498e64289b4c7825f6680",
+  "data/apple-look-v1-work/plan.json": "99dd7ffc305cceab4d4e1eb1438a47b8f5a469f1fab0ca3493a4e689af32a71b",
+  "data/apple-look-v1/meta/jepa_manifest.json": "81d760d1f5a61834b4f37c3daf12ad1a7175e57fe99fe11d5fb4cecbff8edb64",
+  "outputs/task066-calibration/anchor-1/report.json": "83e8aa76b22f8d1c353a3842f3f8300c23f40f2e8f4c74979f97b234c4cb0c2b",
+  "outputs/task066-calibration/ceiling-1/report.json": "3e4933ed64ff5bb34a76b8e918bf1bc810f422bbbfbacd5096df432aaacecf0f",
+  "outputs/task066-calibration/controls-1/report.json": "6cfbb647f6143c57f1f1c67e871ce5c6a8d18d7d464cfef30da806b45128470b",
+  "outputs/task066-calibration/readability-3/report.json": "560e0e0d7ae8487d05b136c529d8e170a68576935d8448ad589399abc0e410f5",
+  "outputs/task066-calibration/run-1/report.json": "a1d9fc1740cbba795a0404428e8a956de97e946a9e912d6592f188141e2f53e1",
+  "scripts/calibrate_token_dynamics.py": "675a1ea4789603bd0579cc5faedd761c116561c5f0f6a74e754032b62f48e17f",
+  "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
+  "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
+  "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
+  "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+  "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
+  "src/embodied_jepa/look_corpus.py": "41a05027d30375884f9e562a4887814db65bf5111fc7bc8fe2ddcf38e206d84b",
+  "src/embodied_jepa/models/__init__.py": "694622858ffd8a892d6746c65f162c2cea19e9ead1aa5c566ab4edc6fb962f94",
+  "src/embodied_jepa/models/base.py": "939c83d66cadca640cedbc4574e4ba22b2ec75ad7bf962aa6a6daaee2dff66b5",
+  "src/embodied_jepa/models/frozen_encoder.py": "c1a4622a0765e44fc060c5313a85e4f727f51dc361acd5de50cb6990845e6011",
+  "src/embodied_jepa/models/frozen_tokens.py": "33e8e819ad557d4fec6167482f91b5aa0c5da5a1169e7f8e6e8f050390c9a3a2",
+  "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
+  "src/embodied_jepa/models/native.py": "95e112e13b0bf4d587fd5c35008e99b1e0a3759fb4f458c24bdd20304d0fadf3",
+  "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
+  "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+  "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+  "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
+  "src/embodied_jepa/token_dynamics.py": "b80ec3506ff359c0e159b1f89e3bc234fcdecbdeccaa38e2ead455c438e34672",
+  "src/embodied_jepa/training_labels.py": "59b4e5db91b257c5da23c3a4377d52b3f0acdca543acbded8102ed2777dc5f3d",
+  "third_party/dinov2-small/config.json": "1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d",
+  "third_party/dinov2-small/model.safetensors": "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1",
+  "third_party/le-wm/LICENSE": "4882021920cbd61e050e4dc2e02440e9bd36ea4cbc5803e738a2ee3d63502e07",
+  "third_party/le-wm/jepa.py": "41bad7fd21e0f14aea4c9c3d39a9c87037e787746d953ab62cdc0677e938ce96",
+  "third_party/le-wm/module.py": "0b258a9e8dc24c29fcb1e8c50a09ec78b8ea85aeb79e21dd8adf712396646620",
+  "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
+ },
+ "owner_rulings": [
+  {
+   "received_utc": "about 2026-09-27T03:35Z (condition about 03:40Z)",
+   "topic": "G1 design",
+   "ruling": "absolute floors (rank 0.10, std 0.25); comparative W-over-N rank part (lower 95 % bound > 0, projected 256-direction bootstrap); truncation controls must fail at k = 1, 2, 4; encoded-only 4x4 readability check on pilot-d (label read disclosed)"
+  },
+  {
+   "received_utc": "2026-09-27T03:46Z",
+   "topic": "pooling (the pilot rule fired)",
+   "ruling": "option A: keep 4x4 subject to an encoded-only ceiling pre-check on the 190 train + val corpus roots, rule written before it ran; result: keep 4x4"
+  },
+  {
+   "received_utc": "2026-09-27T05:36Z",
+   "topic": "budget escalation (wanted 33 000 > 30 000)",
+   "ruling": "option A: 30 000 updates, selection every 1500, caps 4500 s per model and 57 600 s global"
+  }
+ ]
+}

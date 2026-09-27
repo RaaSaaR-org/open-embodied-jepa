@@ -343,3 +343,19 @@ def test_a_gated_decision_needs_the_frozen_values():
             td.require_frozen()
     else:
         td.require_frozen()
+
+
+def test_the_frozen_values_follow_the_calibration_rules_and_rulings():
+    cal = td.CALIBRATION
+    rank = td.bar_rule([cal["rank_ratio_reference"]], td.RANK_FLOOR)
+    std = td.bar_rule([cal["std_ratio_reference"]], td.STD_FLOOR)
+    assert td.THRESHOLDS["G1_min_effective_rank_ratio"] == rank["bar"] == 0.16
+    assert td.THRESHOLDS["G1_min_std_ratio"] == std["bar"] == 0.39
+    budget = td.budget_rule(cal["saturation_updates"].values())
+    assert budget["escalate"] and budget["wanted"] == 33_000
+    # the owner's ruling on the escalation: the ceiling, 20 selection points
+    assert td.UPDATES == td.BUDGET_MAX == 30_000
+    assert td.SELECT_EVERY * 20 == td.UPDATES
+    assert (td.PER_RUN_SECONDS, td.GLOBAL_WALL_SECONDS) == (4_500.0, 57_600.0)
+    assert all(cal["controls_fail_G1"][f"k{k}"] for k in (1, 2, 4))
+    td.require_frozen()

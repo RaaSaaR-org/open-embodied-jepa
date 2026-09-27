@@ -5,11 +5,17 @@ It fixes two things before the freeze, from latent-space quantities only:
 - the G1 bars, from the effective-rank and std ratios of predicted against encoded latents
   (``token_dynamics.bar_rule``).
 
-**Leakage rules (binding).** It reads only TASK-064's pilot ``pilot-d`` (reset seeds
-47900-47931), which is not part of ``apple-look-v1``: no corpus episode, no corpus split and no
-test split is opened. It reads frames and actions only: no label sidecar is opened, no apple
-readout is fitted or evaluated, and nothing but loss curves and collapse statistics is computed.
-It simulates nothing. **Learned Apple->Plate is still 0 successes.**
+**Leakage rules (binding).** ``run`` and ``controls`` read only TASK-064's pilot ``pilot-d``
+(reset seeds 47900-47931), which is not part of ``apple-look-v1``: no corpus episode, no corpus
+split and no test split is opened. They read frames and actions only: no label sidecar is opened,
+no apple readout is fitted or evaluated, and nothing but loss curves and collapse statistics is
+computed. It simulates nothing. **Learned Apple->Plate is still 0 successes.**
+
+The other subcommands are pre-freeze checks, each disclosed in the protocol:
+- ``anchor``: corpus post-look frames, features only (no label, no readout, no model);
+- ``readability`` (owner ruling): encoded 4 x 4 grids on the pilot, reading its label sidecars;
+- ``ceiling`` (owner ruling 2026-09-27T03:46Z): encoded 4 x 4 grids and P-tok of the corpus's
+  190 train + val roots with their labels. No predictor and no test split.
 
     uv run --no-sync python scripts/calibrate_token_dynamics.py run \\
         --output outputs/task066-calibration/run-1 \\
