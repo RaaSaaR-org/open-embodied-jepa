@@ -46,6 +46,8 @@ from embodied_jepa import first_policy_runtime as rt  # noqa: E402
 
 MANIFEST = ROOT / "benchmarks" / "manifests" / "apple-first-policy-v1.json"
 SMOKE_SEEDS = tuple(range(fp.SMOKE_SEEDS[0], fp.SMOKE_SEEDS[1] + 1))
+PHASE_CLOSE = fp.PHASES.index("close")  # 2, as world_model_v2.PHASE_CLOSE
+DISPLACEMENT_LIMIT_M = 0.01  # cloning.DISPLACEMENT_LIMIT_M
 SMOKE = {
     "workers": 2,
     "updates": 20,
@@ -107,11 +109,17 @@ def check_simulated_seeds(role: str, seeds, smoke: bool) -> None:
         raise fp.GuardError(f"G-seeds: {outside[:4]} are not {role} seeds")
 
 
-def check_look_states(records: list[dict], tolerance: float = 1e-6) -> None:
-    """G-look (b): the post-look joint state is the same on every attempt."""
+def check_look_states(records: list[dict], reference=None, tolerance: float = 1e-6):
+    """G-look (b): every attempt's post-look joint state equals the run's first attempt's.
+
+    Returns the reference (the first state seen when none is given)."""
     states = [np.asarray(r["post_look_state"]) for r in records if "post_look_state" in r]
-    if states and max(float(np.abs(s - states[0]).max()) for s in states) > tolerance:
-        raise fp.GuardError("G-look: the post-look joint state differs between attempts")
+    if not states:
+        return reference
+    reference = states[0] if reference is None else np.asarray(reference)
+    if max(float(np.abs(s - reference).max()) for s in states) > tolerance:
+        raise fp.GuardError("G-look: the post-look joint state differs from the first attempt's")
+    return reference
 
 
 def check_privileged(records: list[dict], arm: str) -> None:
@@ -224,7 +232,14 @@ class Pool:
     def __init__(self, workers: int):
         self.pool = mp.get_context("spawn").Pool(workers, initializer=worker_init)
 
+    look_reference = None
+
     def map(self, tasks: list[dict], cap: float, what: str) -> list[dict]:
+        out = self._map(tasks, cap, what)
+        self.look_reference = check_look_states(out, self.look_reference)  # every attempt
+        return out
+
+    def _map(self, tasks: list[dict], cap: float, what: str) -> list[dict]:
         started = time.monotonic()
         result = self.pool.map_async(run_task, tasks, chunksize=1)
         remaining = cap - (time.monotonic() - started)
@@ -288,22 +303,31 @@ def bc_rows(root: dict, bounds) -> dict:
     base = np.asarray(labels["collector__base_action"], np.float64)
     apple = np.asarray(labels["privileged__apple_position_world"], np.float64)
     dropped = np.asarray(labels["privileged__apple_dropped"], bool)
-    stages = np.asarray(labels["privileged__stages"], bool)
-    grasp_latched = np.maximum.accumulate(stages[:, 1])
     keep, steps = [], []
+    accounting = {"policy_steps": 0, "dropped": 0, "post_displacement_pre_grasp": 0, "kept": 0}
     for t in range(len(phase)):
         if phase[t] < 0 or not root["valid"][t]:
             continue
-        moved = float(np.linalg.norm(apple[t, :2] - apple[0, :2])) > 0.01
-        if (moved and not grasp_latched[t]) or dropped[t]:
+        accounting["policy_steps"] += 1
+        # TASK-056's mask (cloning.sample_mask, claim audit S5-18): the apple's 3-D drift from
+        # its first frame exceeds 1 cm while the collector's phase is before close, or dropped.
+        drift = float(np.linalg.norm(apple[t] - apple[0]))
+        displaced = drift > DISPLACEMENT_LIMIT_M and phase[t] < PHASE_CLOSE
+        if dropped[t]:
+            accounting["dropped"] += 1
+            continue
+        if displaced:
+            accounting["post_displacement_pre_grasp"] += 1
             continue
         keep.append(t)
         steps.append(t - fp.DECISION_FRAME)
     keep = np.asarray(keep, int)
+    accounting["kept"] = len(keep)
     return {
         "states": root["states"][keep],
         "steps": np.asarray(steps, np.int64),
         "labels": np.clip(base[keep][:, free], lower[free], upper[free]).astype(np.float32),
+        "accounting": accounting,
     }
 
 
@@ -366,6 +390,13 @@ def attempt_summary(records) -> list[dict]:
             ).tolist()
         out.append(item)
     return out
+
+
+def end_checks(report, manifest, smoke) -> None:
+    """G-hash after the last stage, on every row (early stops included)."""
+    report["pinned_hashes_at_end"] = R65.check_pins(manifest["hashes"])
+    if not smoke and R65.tracked_tree_dirty():
+        raise fp.GuardError("G-hash: the tracked tree changed during the run")
 
 
 # ----- the run -----
@@ -495,14 +526,42 @@ def _run(report, output, checkpoints, clock, smoke):  # noqa: C901 - one linear 
     # ----- 2. perception frames -----
     clock.check("perception")
     started = time.monotonic()
-    frames = {}
-    for role in ("perception_train", "perception_heldout"):
-        frames[role] = pool.map(
-            tasks(role, "frame"), fp.CAPS_SECONDS["perception_collection"], "perception collection"
-        )
-    check_look_states(frames["perception_train"] + frames["perception_heldout"])
+    frame_tasks = {
+        role: tasks(role, "frame") for role in ("perception_train", "perception_heldout")
+    }
+    both = pool.map(
+        frame_tasks["perception_train"] + frame_tasks["perception_heldout"],
+        fp.CAPS_SECONDS["perception_collection"],
+        "perception collection",
+    )
+    n_train = len(frame_tasks["perception_train"])
+    frames = {"perception_train": both[:n_train], "perception_heldout": both[n_train:]}
     corpus = corpus_roots(store, smoke)
     roots = {split: [read_root(reader, row) for row in corpus[split]] for split in corpus}
+    if not smoke:
+        got = {k: len(v) for k, v in roots.items()}
+        if got != fp.EXPECTED_ROOTS:
+            raise fp.GuardError(f"G-data: roots {got} != {fp.EXPECTED_ROOTS}")
+        non_aim = sum(not r["aim"] for r in roots["train"])
+        if non_aim != 134:
+            raise fp.GuardError(f"G-data: {non_aim} non-aim train roots, not 134")
+    report["data"] = {
+        "dataset_manifest_sha256": store.manifest_hash,
+        "train_roots": [r["episode_id"] for r in roots["train"]],
+        "val_roots": [r["episode_id"] for r in roots["val"]],
+        "seeds": {
+            role: list(map(int, seeds_for(role)))
+            for role in (
+                "perception_train",
+                "perception_heldout",
+                "calibration_C0",
+                "dagger_1",
+                "dagger_2",
+                "dagger_3",
+                "D",
+            )
+        },
+    }
     report["stages"]["perception_frames"] = {
         "seconds": time.monotonic() - started,
         "train_roots": len(roots["train"]),
@@ -578,6 +637,7 @@ def _run(report, output, checkpoints, clock, smoke):  # noqa: C901 - one linear 
     }
     if "escalate" in bars and not smoke:
         report["outcome"] = "CAL-ESCALATE"
+        end_checks(report, manifest, smoke)
         return reader, pool
     if "escalate" in bars:
         bars = {
@@ -600,9 +660,11 @@ def _run(report, output, checkpoints, clock, smoke):  # noqa: C901 - one linear 
     if not smoke and not s0["apple_passes"]:
         report["outcome"] = "S0-APPLE-FAIL"
         report["clause_fires"] = True
+        end_checks(report, manifest, smoke)
         return reader, pool
     if not smoke and not s0["plate_passes"]:
         report["outcome"] = "S0-PLATE-FAIL"
+        end_checks(report, manifest, smoke)
         return reader, pool
     reference = c0["reference"] if "reference" in c0 else fp.C0_RESETS
     threshold = fp.a4_threshold(max(reference, 1), apple_c0, plate_c0, apple_err, plate_err)
@@ -624,9 +686,12 @@ def _run(report, output, checkpoints, clock, smoke):  # noqa: C901 - one linear 
         arm: {"states": [], "steps": [], "labels": [], "est": [], "palm9": []}
         for arm in ("P", "C", "R")
     }
+    mask_accounting = {"train": {}, "val": {}}
     for split, index, target in (("train", bc_roots, data), ("val", val_roots, val)):
         for i in index:
             rows_i = bc_rows(roots[split][i], bounds)
+            for key, value in rows_i["accounting"].items():
+                mask_accounting[split][key] = mask_accounting[split].get(key, 0) + value
             palm = [fk.pose9(s) for s in rows_i["states"]]
             for arm in ("P", "C", "R"):
                 if arm == "C":
@@ -659,9 +724,12 @@ def _run(report, output, checkpoints, clock, smoke):  # noqa: C901 - one linear 
         "roots": len(bc_roots),
         "val_roots": len(val_roots),
         "C_mean_estimates": c_mean.tolist(),
+        "C_mean_definition": "mean over the BC-0 roots of the cross-fitted P estimates (per root)",
+        "mask_accounting": mask_accounting,
     }
 
     trainings = {}
+    report["stages"]["trainings"] = trainings  # filled as trainings finish, so a V keeps them
 
     def train_arm(arm, name, heads=1):
         clock.check(f"training {name}")
@@ -701,41 +769,63 @@ def _run(report, output, checkpoints, clock, smoke):  # noqa: C901 - one linear 
 
     # ----- S0-D1 on 8 held-out perception seeds (before any DAgger rollout) -----
     clock.check("S0-D1")
+    d1_arm = next((name for name in ("P-0", "C-0", "R-0") if ckpt[name]), None)
+    if d1_arm is None:
+        raise fp.GuardError("S0-D1: no family has an eligible BC-0 checkpoint to check")
+    d1_est = {"P-0": held_est, "R-0": readouts["R"].predict(feats["R"]["held"])}.get(
+        d1_arm, np.repeat(c_mean[None], len(held_est), axis=0)
+    )
     held_tasks = tasks("perception_heldout", "learned")[:8]
-    d1_tasks = (
+    d1 = pool.map(
         [
             t
             | {
-                "checkpoint": ckpt["P-0"],
-                "estimates": held_est[i].tolist(),
+                "checkpoint": ckpt[d1_arm],
+                "estimates": d1_est[i].tolist(),
                 "expected_frame_sha256": frames["perception_heldout"][i]["post_look_frame_sha256"],
                 "first_input_check": True,
                 "max_steps": 1,
             }
             for i, t in enumerate(held_tasks)
-        ]
-        if ckpt["P-0"]
-        else []
+        ],
+        fp.CAPS_SECONDS["per_rollout_batch"],
+        "S0-D1",
     )
-    d1 = pool.map(d1_tasks, fp.CAPS_SECONDS["per_rollout_batch"], "S0-D1") if d1_tasks else []
-    if d1:
-        saved = torch.load(ckpt["P-0"], map_location="cpu", weights_only=True)
-        model = fm.load(saved["state"])
-        s = rt.Standardiser(saved["mean"].numpy(), saved["std"].numpy())
-        worst = 0.0
-        for r in d1:
-            first = np.asarray(r["first_input"], np.float32)
-            offline = fm.batch_predict(model, s(first[None]), [0])[0]
-            offline = rt.free_of(rt.assemble(offline, *bounds))
-            live = np.asarray(r["commands"][0], np.float32)
-            worst = max(worst, float(np.abs(offline - live).max()))
-        report["stages"]["S0_D1"] = {
-            "seeds": len(d1),
-            "max_abs_act_difference": worst,
-            "frames_identical": True,
-        }
-        if worst > 1e-4 and not smoke:
-            raise fp.GuardError(f"S0-D1: live act differs from offline by {worst}")
+    saved = torch.load(ckpt[d1_arm], map_location="cpu", weights_only=True)
+    model = fm.load(saved["state"])
+    s = rt.Standardiser(saved["mean"].numpy(), saved["std"].numpy())
+    # The offline rows are assembled in the main process from the training path (estimate,
+    # step 0, the recorded post-look state, FK), independently of the worker's live input.
+    offline_inputs = np.stack(
+        [
+            rt.input_vector(
+                d1_est[i],
+                0,
+                frames["perception_heldout"][i]["post_look_state"],
+                fk.pose9(frames["perception_heldout"][i]["post_look_state"]),
+            )
+            for i in range(len(d1))
+        ]
+    )
+    offline = fm.batch_predict(model, s(offline_inputs), np.zeros(len(d1), int))  # one batch
+    input_worst = act_worst = 0.0
+    for i, r in enumerate(d1):
+        live_input = np.asarray(r["first_input"], np.float32)
+        input_worst = max(input_worst, float(np.abs(live_input - offline_inputs[i]).max()))
+        expected = rt.free_of(rt.assemble(offline[i], *bounds))
+        act_worst = max(act_worst, float(np.abs(expected - np.asarray(r["commands"][0])).max()))
+    report["stages"]["S0_D1"] = {
+        "arm": d1_arm,
+        "seeds": len(d1),
+        "frames_identical": True,  # a mismatch raises G-frame inside the worker
+        "max_abs_input_difference": input_worst,
+        "max_abs_act_difference": act_worst,
+        "tolerance": 1e-4,
+    }
+    if input_worst > 1e-4 or act_worst > 1e-4:
+        raise fp.GuardError(
+            f"S0-D1: live differs from offline (input {input_worst}, act {act_worst})"
+        )
 
     # ----- DAgger -----
     dagger_report = {}
@@ -805,7 +895,11 @@ def _run(report, output, checkpoints, clock, smoke):  # noqa: C901 - one linear 
         "R": readouts["R"].predict(tokens(floor, d_frame_list)),
     }
     d_truth = np.asarray([f["truth_xy"] for f in d_frames])
-    library = [r for r in roots["train"] if r["success"] and not r["aim"]] or roots["train"]
+    library = [r for r in roots["train"] if r["success"] and not r["aim"]]
+    if not library and smoke:
+        library = roots["train"]  # smoke only: a 4-root subset may hold no success
+    if not library:
+        raise fp.GuardError("B-replay: the retrieval library is empty")
     lib_cls = fpp.featurise_cls(pretrained, [r["frame8"] for r in library])
     d_cls = fpp.featurise_cls(pretrained, d_frame_list)
     mu, sd = lib_cls.mean(axis=0), np.maximum(lib_cls.std(axis=0), fp.INPUT_STD_FLOOR)
@@ -866,7 +960,6 @@ def _run(report, output, checkpoints, clock, smoke):  # noqa: C901 - one linear 
             "M1 D-oracle-perc",
         )
     counts["D-oracle-perc"] = count(arms.get("D-oracle-perc") or [])
-    check_look_states([r for rs in arms.values() if rs for r in rs])
     decision = fp.decide_m1(counts, threshold)
     f_counts = None
     if decision["row"] == "M1-MOTOR":
@@ -899,9 +992,7 @@ def _run(report, output, checkpoints, clock, smoke):  # noqa: C901 - one linear 
         report["void_reason"] = decision.get("void_reason")
     report["clause_fires"] = bool(decision.get("clause_fires"))
     report["checkpoints"] = {n: p for n, p in ckpt.items()}
-    report["pinned_hashes_at_end"] = R65.check_pins(manifest["hashes"])
-    if not smoke and R65.tracked_tree_dirty():
-        raise fp.GuardError("G-hash: the tracked tree changed during the run")
+    end_checks(report, manifest, smoke)
     return reader, pool
 
 

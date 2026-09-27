@@ -473,7 +473,15 @@
         "smoke runs use 46900-46999, split off the reserved range (now 46800-46899); nothing from a smoke is read",
         "estimates are computed in the main process at batch size 1 from the worker-rendered post-look frame; every attempt re-renders that frame and must match its sha256 (G-frame, part of S0-D1), so live and offline estimates are identical by construction",
         "no eligible checkpoint at iteration k: the family's later iterations are not rolled out and score 0/16 on D",
-        "S0-D1's act() comparison runs right after BC-0 training (it needs P-0), before any DAgger rollout or D attempt"
+        "S0-D1's act() comparison runs right after BC-0 training (it needs P-0), before any DAgger rollout or D attempt",
+        "B-random is seeded 6703 on every attempt (the same sequence on every D reset)",
+        "C-3's constant is the per-root mean of the cross-fitted P estimates over the BC-0 roots",
+        "S0-D1 checks P-0, else C-0, else R-0 (none: V); offline rows are assembled in the main process and batched; live input and command must match within 1e-4"
+      ],
+      "restored_at_review": [
+        "BC-0 mask = TASK-056's cloning.sample_mask (3-D drift > 1 cm while phase < close, or dropped); accounting in report.json",
+        "G-look (b) on every attempt against the run's first attempt",
+        "the 300 s attempt cap is a G-cap (V)"
       ]
     }
   ],
@@ -482,12 +490,12 @@
     "floor": "3d305f9c8280692af08d2ca5d1d14d040cc0a10ec5b2fb083c58d75f0957c9db"
   },
   "hashes": {
-    "docs/experiments/apple_first_policy_v1.md": "dfd00015a277c70e81c7e8985438994ad53495ab141339ab90fcce54ca8daf67",
+    "docs/experiments/apple_first_policy_v1.md": "ebcbbca86e67186695c010755884339fd25cf6c925430a207d14bb66d4d679c6",
     "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
-    "src/embodied_jepa/first_policy_runtime.py": "c28c3bda67aeb8230b3c8590f6654dc2acf91eaf98cef50414205c535fb5c2e3",
+    "src/embodied_jepa/first_policy_runtime.py": "d6d672dc26912371cae78c2d32ba84583adfab4adcab393445a770f994a5f953",
     "src/embodied_jepa/first_policy_model.py": "5ebd70e07d9c6eba38f0fa4c8980602205f0e24420d39f252935dc47673fb984",
     "src/embodied_jepa/first_policy_perception.py": "d2ae40118a78646c13e89a089049f80cdc0389dfdd2106f5862a03ab134ed497",
-    "scripts/run_first_policy.py": "763edfc1bda8da0e99b47f98cdd3c4dc7f0aacae984925cd350450aeb83c7061",
+    "scripts/run_first_policy.py": "adfaa03d37ea43bcc96e512179f9baedaa998958948224124a6cc4e811ac40fe",
     "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
     "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
     "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",

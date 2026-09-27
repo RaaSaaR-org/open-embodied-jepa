@@ -224,9 +224,9 @@ def test_seed_whitelists_refuse_cohort_c_and_strangers():
 def test_bc_rows_mask_the_look_displacement_and_drops():
     runner = load_runner()
     length = 20
-    phase = np.r_[np.full(8, -1), np.zeros(length - 8)].astype(np.int8)
+    phase = np.r_[np.full(8, -1), np.zeros(8), np.full(length - 16, 2)].astype(np.int8)
     apple = np.tile([0.3, -0.2, 0.77], (length + 1, 1))
-    apple[12:, 0] += 0.02  # the apple is knocked 2 cm before any grasp from frame 12
+    apple[12:, 2] += 0.02  # 2 cm of drift in z from frame 12: 3-D, before close (frames 12-15)
     dropped = np.zeros(length + 1, bool)
     dropped[18] = True
     base = np.zeros((length, 14), np.float32)
@@ -243,7 +243,15 @@ def test_bc_rows_mask_the_look_displacement_and_drops():
         },
     }
     rows = runner.bc_rows(root, BOUNDS)
-    assert list(rows["steps"]) == [0, 1, 2, 3]  # frames 8-11: look excluded, 12+ displaced
+    # frames 8-11 kept; 12-15 displaced before close; 16-17 kept (close: the apple may move);
+    # 18 dropped; 19 kept
+    assert list(rows["steps"]) == [0, 1, 2, 3, 8, 9, 11]
+    assert rows["accounting"] == {
+        "policy_steps": 12,
+        "dropped": 1,
+        "post_displacement_pre_grasp": 4,
+        "kept": 7,
+    }
     assert np.all(rows["labels"][:, 0] == 0.5)
 
 
@@ -304,8 +312,10 @@ def test_fk_matches_the_live_palm_and_a4_constants_match_the_scene():
         pose = fk.pose9(state)
         assert np.allclose(pose[:3], position, atol=1e-9)
         assert np.allclose(pose[3:6], rotation[:, 0], atol=1e-9)
+        assert np.allclose(pose[6:9], rotation[:, 1], atol=1e-9)
         a4 = rt.a4_truth([0.33, -0.17, 0.5, -0.1], fk)
         assert np.allclose(a4["object_position"], truth["object_position"], atol=1e-9)
+        assert np.allclose(a4["plate_position"], truth["plate_position"], atol=1e-9)
         assert a4["container_surface_z"] == truth["container_surface_z"]
         assert a4["object_support_height"] == truth["object_support_height"]
         assert np.allclose(a4["base_position_world"], truth["base_position_world"], atol=1e-9)
@@ -341,3 +351,61 @@ def test_counter_total_equals_scorer_calls_on_a_real_attempt():
         assert record["executed_steps"] == 5 and rt.privileged_reads_ok(record)
     finally:
         robot.close()
+
+
+def test_a4_rate_is_capped_at_one():
+    apple = {0.5: 32, 0.8: 32, 1.0: 32, 1.2: 32}
+    plate = {1.0: 32, 1.5: 32, 2.0: 32, 2.5: 32}
+    # reference 28/32 while every level is 32/32: the uncapped rate would be 32/28 > 1
+    capped = fp.a4_threshold(28, apple, plate, np.full(128, 0.3), np.full(128, 0.5))
+    assert capped == 8  # ceil(0.5 * 16 * 1.0), not ceil(0.5 * 16 * 32/28) = 10
+    assert fp.A4_RATE_CAP == 1.0 and fp.frozen_block()["a4_threshold"]["rate_cap"] == 1.0
+
+
+class _SlowRobot:
+    def observe(self):
+        raise AssertionError("never reached: the cap fires first")
+
+    def stop(self, reason):
+        self.stopped = reason
+
+
+def test_attempt_wall_cap_is_a_guard_not_a_non_success():
+    robot = _SlowRobot()
+    counter = rt.PrivilegedReadCounter(FakeSim())
+    with pytest.raises(fp.GuardError, match="G-cap"):
+        rt.run_policy_steps(robot, None, counter, None, bounds=BOUNDS, wall_seconds=-1.0)
+    assert robot.stopped == "attempt_wall_cap"
+
+
+def test_look_state_guard_uses_the_runs_first_reference():
+    runner = load_runner()
+    reference = runner.check_look_states([{"post_look_state": [0.0, 1.0]}])
+    assert runner.check_look_states([{"post_look_state": [0.0, 1.0]}], reference) is reference
+    with pytest.raises(fp.GuardError):  # a later group that agrees with itself but not the run
+        runner.check_look_states(
+            [{"post_look_state": [0.0, 1.2]}, {"post_look_state": [0.0, 1.2]}], reference
+        )
+
+
+@render
+def test_a_frame_mismatch_voids_the_attempt():
+    pytest.importorskip("mujoco")
+    runner = load_runner()
+    runner.worker_init()
+    try:
+        task = {
+            "seed": 46902,
+            "reset": {"object_xy": [0.33, -0.17], "plate_xy": [0.5, -0.1]},
+            "kind": "hold",
+            "expected_frame_sha256": "0" * 64,
+            "max_steps": 2,
+        }
+        with pytest.raises(fp.GuardError, match="G-frame"):
+            runner.run_task(task)
+        good = runner.run_task(task | {"kind": "frame", "expected_frame_sha256": None})
+        again = runner.run_task(task | {"expected_frame_sha256": good["post_look_frame_sha256"]})
+        assert again["executed_steps"] == 2
+    finally:
+        runner._W["robot"].close()
+        runner._W["fk"].close()

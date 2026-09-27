@@ -341,8 +341,9 @@ def run_policy_steps(
     try:
         for step in range(max_steps):
             if time.monotonic() - started > wall_seconds:
+                # G-cap (protocol §12-§14): a cap is V, not a non-success.
                 reason = "attempt_wall_cap"
-                break
+                raise fp.GuardError(f"G-cap: an attempt exceeded its {wall_seconds} s cap")
             observation = robot.observe()
             try:
                 command = counter.act(controller, observation, step)

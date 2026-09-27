@@ -533,8 +533,10 @@ was replaced before any merge.
 
 ## 18. Amendment log
 
-**Amendment 1 (PR 2, before any gated run, before any compute).** Nothing here was changed after
-any number existed; no policy had been trained and nothing had been simulated.
+**Amendment 1 (PR 2, before any gated run).** Nothing here was changed after any number
+existed. No policy had been trained on MPS, and no protocol seed had been simulated. The only
+simulations were CPU smokes on the smoke seeds 46900–46999, with noise targets, and nothing in
+them was read.
 1. **A4-look threshold: each per-reset predicted rate is capped at 1.0** (`A4_RATE_CAP`). Review
    of PR #78 found that `ra × rp / ref` can exceed 1 when a C0 level succeeds more often than the
    reference by sampling. A probability cannot exceed 1. The frozen block gains
@@ -559,3 +561,22 @@ any number existed; no policy had been trained and nothing had been simulated.
 7. **S0-D1's timing.** Its `act()` comparison needs a trained P-0, so it runs right after BC-0
    training. That is still before any DAgger rollout and before any D attempt. The frame
    comparison runs on every attempt (item 5).
+8. **B-random.** It is seeded with 6703 on every attempt (`RandomController(6703, …)`), so every
+   D reset receives the same random command sequence. §5.4's "(random seed 6703)" allows this
+   reading, and it is recorded so that it is not mistaken for TASK-057's per-reset seeding.
+9. **C-3's constant.** It is the mean, over the 134 BC-0 roots, of each root's cross-fitted P
+   estimate (one row per root, not per training step). It is recorded in `report.json`.
+10. **S0-D1's arm.** S0-D1 checks P-0. If P-0 has no eligible checkpoint, it checks C-0, then
+    R-0; if none has one, the run is V. Its offline rows are assembled in the main process from the
+    estimate, step 0, the recorded post-look state and FK, and run as one batch. The worker's
+    live input must equal them within 1e-4, and the live command must equal their prediction
+    within 1e-4.
+
+**Clarifications made in PR 2 at review, restoring the protocol's text (not amendments).**
+- **The BC-0 mask** is TASK-056's (`cloning.sample_mask`; claim audit S5-18). A step is dropped
+  when the apple's 3-D drift from its first frame exceeds 1 cm while the collector's phase is
+  before `close`, or when the apple is dropped. The first PR 2 draft used xy drift and the
+  scorer's grasp stage instead. The per-criterion accounting is written to `report.json`.
+- **G-look (b)** is checked on every attempt of the run, against the run's first attempt.
+- **The 300 s attempt cap** is a G-cap, so it voids the run (§13) rather than ending the attempt
+  as a non-success.
