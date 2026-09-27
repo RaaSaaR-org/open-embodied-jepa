@@ -46,6 +46,15 @@ per configuration and deterministic simulation.
 
 Learned Apple→Plate is still 0 successes.
 
+**Since TASK-057 (as of 2026-09-27).** The tasks since are offline perception, data and
+world-model tests, not controllers: readability probes (TASK-059, TASK-061–TASK-063), the
+`apple-look-v1` corpus (TASK-064), and a LeWM-style predictor on frozen DINOv2 CLS latents
+(TASK-065, outcome WM-NO-DYNAMICS; its clause closed only the pooled-CLS predictor line).
+TASK-066, the same kind of test over frozen DINOv2 patch-token latents
+([protocol](docs/experiments/apple_token_dynamics_v1.md)), is preregistered and implemented;
+its gated run is pending and it has no outcome yet. Outcomes and caveats are in the results
+documents under [docs/experiments/](docs/experiments/) and in [AGENTS.md](AGENTS.md).
+
 **What is demonstrated.** These are software properties and offline properties of
 checkpoints on recorded validation data — none of them is a manipulation result.
 
