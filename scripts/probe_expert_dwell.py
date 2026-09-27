@@ -70,11 +70,19 @@ def probe(dataset: Path) -> dict:
         if e["episode_id"] in train and e["metadata"]["kind"] == "root"
     ]
     per_phase = {
-        name: {"steps": 0, "parked": 0, "runs": 0, "switch_from_parked": 0, "still": 0}
+        name: {
+            "steps": 0,
+            "parked": 0,
+            "runs": 0,
+            "switches": 0,
+            "switch_from_parked": 0,
+            "still": 0,
+        }
         for name in PHASES
     }
     still_commands = {name: [] for name in PHASES}
     per_phase_noise0 = {name: {"steps": 0, "parked": 0, "still": 0} for name in PHASES}
+    noise0_roots = 0
     orient_first_park = []
     outcomes = {}
     total_steps = total_parked = 0
@@ -93,6 +101,7 @@ def probe(dataset: Path) -> dict:
         parked = (move < PARK_MOVE_M) & (command < PARK_COMMAND)
         meta = episode["metadata"]
         noise0 = meta["root_noise_level"] == 0
+        noise0_roots += int(noise0)
         stages = meta["privileged_outcome_labels"]["stages"]
         key = f"aim_offset={meta['aim_offset_applied']},noise_level={meta['root_noise_level']}"
         cell = outcomes.setdefault(key, {"roots": 0, "grasp": 0, "success": 0})
@@ -110,8 +119,9 @@ def probe(dataset: Path) -> dict:
             record["still"] += int(still.sum())
             still_commands[name].extend(command[start:stop][still].tolist())
             record["runs"] += 1
-            if stop < len(phase) and parked[stop - 1]:
-                record["switch_from_parked"] += 1
+            if stop < len(phase):  # a switch to the next phase happens at ``stop``
+                record["switches"] += 1
+                record["switch_from_parked"] += int(parked[stop - 1])
             if noise0:
                 per_phase_noise0[name]["steps"] += stop - start
                 per_phase_noise0[name]["parked"] += int(parked[start:stop].sum())
@@ -147,6 +157,7 @@ def probe(dataset: Path) -> dict:
         "parked_fraction_all_phases": total_parked / total_steps,
         "per_phase": per_phase,
         "per_phase_noise_level_0_roots": per_phase_noise0,
+        "noise_level_0_roots": noise0_roots,
         "root_outcomes_by_aim_offset_and_noise": dict(sorted(outcomes.items())),
         "orient_first_parked_step": {
             "count": len(orient_first_park),
