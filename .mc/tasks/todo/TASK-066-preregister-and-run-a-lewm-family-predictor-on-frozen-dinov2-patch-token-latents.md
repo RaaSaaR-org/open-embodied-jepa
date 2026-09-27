@@ -4,7 +4,7 @@ aliases:
 - TASK-066
 title: Preregister and run a LeWM-family predictor on frozen DINOv2 patch-token latents over apple-look-v1 (world-model test only)
 slug: preregister-and-run-a-lewm-family-predictor-on-frozen-dinov2-patch-token-latents
-status: in-progress
+status: review
 priority: 1
 owner: ''
 projects: []
@@ -18,8 +18,9 @@ depends_on:
 - "[[TASK-065]]"
 due_date: ''
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
+
 
 
 # Preregister and run a LeWM-family predictor on frozen DINOv2 patch-token latents over apple-look-v1 (world-model test only)
@@ -58,19 +59,20 @@ Protocol: `docs/experiments/apple_token_dynamics_v1.md`.
 Manifest: `benchmarks/manifests/apple-token-dynamics-v1.json`.
 
 ## Acceptance Criteria
-- [ ] PR 1 merges on an independent reviewer's reported APPROVE and green CI, before any
+- [x] PR 1 merges on an independent reviewer's reported APPROVE and green CI, before any
       gated predictor is trained on the corpus. (The runner smoke-a trained four 20-update models
       on corpus train episodes with noise targets before the freeze; it is disclosed in protocol
       §14.) It contains the protocol, the manifest,
       `token_dynamics.py`, the `frozen_tokens` option with `docs/MODELS.md`, the calibration
-      script and its recorded results, the tests and this card.
-- [ ] PR 2 merges on a reported APPROVE and green CI. It contains the runner, the guard tests and
-      the runner pin.
-- [ ] The gated run starts only on the pre-run reviewer's reported verdict, from a clean tree.
+      script and its recorded results, the tests and this card. (#74, `eeb12a7`.)
+- [x] PR 2 merges on a reported APPROVE and green CI. It contains the runner, the guard tests and
+      the runner pin. (#75, `87f3f81`.)
+- [x] The gated run starts only on the pre-run reviewer's reported verdict, from a clean tree.
+      (run-1 at `87f3f81` on a reported PRE-RUN: GO.)
 - [ ] PR 3 states the outcome row and every gate quantity with its interval. A reviewer checks
       every restated number against `report.json` by script. It contains the results document,
       the results manifest, the summarize script and, if a clause fires, a DECISIONS entry.
-- [ ] The test split is never decoded. Cohorts C and D are untouched. `exemption_spent` stays
+- [x] The test split is never decoded. Cohorts C and D are untouched. `exemption_spent` stays
       false.
 
 ## Notes
@@ -125,3 +127,34 @@ Manifest: `benchmarks/manifests/apple-token-dynamics-v1.json`.
   - U = 30 000, selection every 1500.
   - Caps: 4500 s per model, 57 600 s global.
   - G1 is read at the val-selected checkpoint (fixed).
+- 2026-09-27T11:54:38Z: #74 merged (`eeb12a7`, by the user). #75 was rebased onto main
+  (head `9d85222`, tree identical to the approved `16dbc6e`; a reviewer reported APPROVE on the
+  diff-of-diffs) and merged (`87f3f81`, by the user from the main session; the classifier blocked
+  the agent's merge twice).
+- 2026-09-27T12:08:23Z: **run-1 started** at `87f3f81` on the pre-run reviewer's reported
+  PRE-RUN: GO. Python PID 50916.
+- 2026-09-27T23:00:57Z: **run-1 complete**, 39 153 s, **outcome WM-TOK-DYNAMICS** (report sha256
+  `e6b28e07…0b60`). No clause fires.
+
+## Results (2026-09-28)
+
+**Outcome WM-TOK-DYNAMICS**: every seed passes G1–G5 at h = 8 and 16, and the encoded grid
+meets the T1 bar (0.632 and 0.503 cm).
+- G1: rank ratio 0.325–0.344 (bar 0.16), std ratio 0.82–0.84, W − N rank lower bounds
+  0.038–0.076.
+- G2: W / copy-last upper bounds 0.790–0.792 at h = 8, 0.652–0.654 at h = 16.
+- G3: W / N upper bounds ≤ 0.916. G4: lower bounds ≥ 1.67.
+- G5: W reads 0.75–0.93 cm; ratio-to-B-occ upper bounds ≤ 0.581; excess upper bounds
+  ≤ 0.423 cm.
+
+**Caveats:** (1) the budget did not saturate: 9 of 12 models, every N, selected a late
+checkpoint, which may favour W on G3 and G1 (iii); (2) narrow margins at G2 h = 8 and G5 seed 2
+h = 8; (3) the token rank ratio is not better than TASK-065's CLS; (4) train split only, no control
+claim.
+
+**Recommended (the owner chooses):** a preregistered held-out confirmation on the test split,
+with the saturation caveat fixed first. **Learned Apple->Plate is still 0 successes.**
+
+Results: `docs/experiments/apple_token_dynamics_v1_results.md`,
+`benchmarks/manifests/apple-token-dynamics-v1-results.json`; decision in `docs/DECISIONS.md`.
+%% mc-links: [[TASK-065]] %%

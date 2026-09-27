@@ -63,6 +63,46 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-28 — the patch-token predictor passes its world-model gates on the train split (TASK-066)
+
+**Decision.** `apple_token_dynamics_v1.md` §11 row **WM-TOK-DYNAMICS** matched: every seed passes
+G1–G5 at h = 8 and h = 16, and the encoded 4 × 4 grid meets the T1 bar. **No abandonment clause
+fires.** The row records a result and does not choose a line.
+- **What it says:** on `apple-look-v1`, on 170 cross-fitted train sessions, the pinned upstream
+  LeWM predictor over frozen DINOv2 patch tokens pooled to 4 × 4 learns action-conditioned latent
+  dynamics that pass a calibrated no-collapse gate, beat copy-last and an equally budgeted
+  no-action predictor, use the actions, and keep the post-look apple readable through 16-step
+  prediction.
+- **Recommended next task (the owner chooses):** a separately preregistered **held-out
+  confirmation on the corpus's test split** (never decoded until then). Fix the saturation caveat
+  first, with a budget or schedule under which N reaches a plateau on train/val, and keep this
+  task's gates and bars unchanged.
+- **Not implied:** any control formulation. Control use needs its own preregistration and must
+  answer the TASK-054 and TASK-057 clauses.
+
+**Evidence.** [apple_token_dynamics_v1_results.md](experiments/apple_token_dynamics_v1_results.md),
+with manifest `benchmarks/manifests/apple-token-dynamics-v1-results.json` (run-1 report sha256
+`e6b28e07…0b60`).
+- G1: rank ratio 0.325–0.344 (bar 0.16), std ratio 0.82–0.84 (bar 0.39), and W − N rank lower
+  bounds 0.038–0.076 (bar > 0).
+- G2: W / copy-last upper bounds 0.790–0.792 at h = 8 and 0.652–0.654 at h = 16 (bar ≤ 0.8).
+- G3: W / N upper bounds 0.915–0.916 at h = 8 and 0.873–0.876 at h = 16 (bar < 1.0).
+- G4: wrong / W and zero / W lower bounds 1.67–2.14 (bar ≥ 1.10).
+- G5: W reads the apple at 0.75–0.93 cm, against 0.63 and 0.50 cm encoded. The ratio-to-B-occ
+  upper bounds are 0.469–0.581 (bar 0.6), and the excess-over-encoded upper bounds 0.335–0.423 cm
+  (bar 0.5).
+
+**Caveats, stated plainly.**
+1. **The budget did not saturate.** 9 of 12 models selected one of their last two checkpoints,
+   and every N model did. An under-trained N may bias G3 and G1 (iii) towards W.
+2. **Narrow margins.** G2 at h = 8 (upper bounds 0.790–0.792 against 0.8), and G5 for seed 2 at
+   h = 8 (ratio upper bound 0.581 against 0.6).
+3. **The token rank ratio (0.325–0.344) is not better than TASK-065's CLS ratio (0.365–0.399).**
+   G1 passes because its bar is calibrated, not because tokens lose less rank.
+4. **Train split only; no control claim.** One corpus, a static apple, 0.4 s and 0.8 s horizons.
+
+This is a world-model test only. Learned Apple→Plate remains at 0 successes.
+
 ## Decision 2026-09-27 — the predictor-on-frozen-pooled-CLS line is closed (TASK-065)
 
 **Decision.** This applies the clause that `apple_latent_dynamics_v1.md` §10 pre-declared for

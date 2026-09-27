@@ -1,5 +1,10 @@
 # Apple→Plate token dynamics v1: does an action-conditioned predictor over frozen DINOv2 patch-token latents avoid rank collapse on `apple-look-v1`, and keep the apple readable through multi-step prediction? (TASK-066)
 
+**Result (2026-09-28): outcome WM-TOK-DYNAMICS**, run-1, report sha256 `e6b28e07…0b60`; see
+[`apple_token_dynamics_v1_results.md`](apple_token_dynamics_v1_results.md), including its four
+caveats (unsaturated budget, narrow margins, no rank advantage over CLS, train split only).
+The text below is the preregistration as frozen.
+
 **Status: preregistration. No gated predictor has been trained on `apple-look-v1` token latents,
 and no readout has been fitted on any predicted latent.** The only corpus-trained predictors are
 the runner smoke's four 20-update models with noise targets (§14), which nothing reads. The
