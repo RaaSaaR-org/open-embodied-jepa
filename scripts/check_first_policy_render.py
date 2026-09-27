@@ -11,10 +11,11 @@ It uses the runner's own worker pool and ``run_task`` (the gated code path), the
 
 * pass 1 renders the post-look frame (``frame`` task);
 * pass 2 renders it again, with the task order reversed so it lands on other workers;
-* pass 3 runs a one-step ``hold`` attempt with pass 1's sha256 as ``expected_frame_sha256``,
-  exactly as a DAgger or M1 attempt does (a mismatch raises G-frame in the worker).
+* pass 3 runs a full-length (800-step) ``hold`` attempt with pass 1's sha256 as
+  ``expected_frame_sha256``, exactly as a DAgger or M1 attempt does (a mismatch raises G-frame);
+* pass 4 renders it once more, after every worker has run those long attempts.
 
-Verdict ``IDENTICAL`` only if every seed has one sha256 across all three passes and one post-look
+Verdict ``IDENTICAL`` only if every seed has one sha256 across all four passes and one post-look
 joint state, no pass-3 attempt raised, and at least ``MIN_CROSS_WORKER`` seeds were rendered on
 two or more distinct workers. Anything else is ``NOT_IDENTICAL``: the gated run must not start.
 
@@ -42,6 +43,7 @@ from embodied_jepa import first_policy as fp  # noqa: E402
 
 SEEDS = 32
 MIN_CROSS_WORKER = 16
+LONG_STEPS = fp.MAX_POLICY_STEPS  # pass 3: full-length attempts, as in the gated run
 
 
 def load_runner():
@@ -124,17 +126,24 @@ def check(output: Path, workers: int) -> dict:
                     "reset": resets[s],
                     "kind": "hold",
                     "pass": 3,
-                    "max_steps": 1,
+                    "max_steps": LONG_STEPS,
                     "expected_frame_sha256": sha1[s],
                 }
                 for s in seeds
             ],
             chunksize=1,
         )
+        # pass 4: render again after every worker has run full-length attempts (pass 3), as the
+        # gated run's workers do between DAgger and M1 attempts
+        fourth = pool.map(
+            run_with_pid,
+            [{"seed": s, "reset": resets[s], "kind": "frame", "pass": 4} for s in seeds[::-1]],
+            chunksize=1,
+        )
     finally:
         pool.terminate()
         pool.join()
-    records = first + second + third
+    records = first + second + third + fourth
     per_seed = {}
     for s in seeds:
         rows = [r for r in records if r["seed"] == s]
@@ -163,7 +172,8 @@ def check(output: Path, workers: int) -> dict:
         "workers": workers,
         "gated_worker_count": fp.SIM_WORKERS,
         "seeds": list(seeds),
-        "renders_per_seed": 3,
+        "renders_per_seed": 4,
+        "pass_3_steps": LONG_STEPS,
         "distinct_workers_used": len({r["pid"] for r in records}),
         "seeds_rendered_on_two_or_more_workers": cross,
         "min_cross_worker_seeds": MIN_CROSS_WORKER,
