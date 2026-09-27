@@ -51,9 +51,17 @@ and world-model tests, not controllers: readability probes (TASK-059, TASK-061â€
 TASK-062 a clause closed the in-corpus encoder-training line), the `apple-look-v1` corpus
 (TASK-064), and a LeWM-style predictor on frozen DINOv2 CLS latents (TASK-065, outcome
 WM-NO-DYNAMICS; its clause closed only the pooled-CLS predictor line). TASK-066, the same kind
-of test over frozen DINOv2 patch-token latents
-([protocol](docs/experiments/apple_token_dynamics_v1.md)), is preregistered and implemented;
-its gated run is pending and it has no outcome yet. Outcomes and caveats are in the results
+of test over frozen DINOv2 patch-token latents pooled to a 4 Ã— 4 grid
+([results](docs/experiments/apple_token_dynamics_v1_results.md)), ended with outcome
+**WM-TOK-DYNAMICS**: every seed passes the preregistered gates at h = 8 and h = 16, on 170
+cross-fitted train sessions of this one corpus, with a static apple. This is a world-model
+dynamics result on the train split only, and it makes no control claim. Four caveats: the
+training budget did not saturate, which may favour W on G3 and G1 (iii); G2 at h = 8 and G5 for
+seed 2 at h = 8 pass by narrow margins; the token latent's rank ratio is not better than
+TASK-065's CLS ratio; and the claim is train-split only. TASK-067, an apple-first
+learned-policy control formulation
+([protocol](docs/experiments/apple_first_policy_v1.md)), is preregistered and implemented; its
+gated run is pending. Outcomes and caveats are in the results
 documents under [docs/experiments/](docs/experiments/) and in [AGENTS.md](AGENTS.md).
 
 **What is demonstrated.** These are software properties and offline properties of
