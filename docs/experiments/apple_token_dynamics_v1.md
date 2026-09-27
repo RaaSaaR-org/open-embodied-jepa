@@ -906,6 +906,14 @@ thresholds, seeds, budget and caps are unchanged. What the runner does, all mech
       differed. So the gap is run-to-run variation, most likely in MPS and unified-memory
       accounting, and not a difference between runners. The PR 2 reviewer's own smoke on
       `d51cf94` peaked at 14.05 GB.
-  - ⟨SMOKE-C⟩
+  - `outputs/task066-scratch/smoke-c`, with the final runner (`7a0e258`, runner sha256
+    `0b3931ab…fc34`, clean tree). It is the smoke of the pinned bytes:
+    - report sha256 `e7183de3…5e83`, 414 s;
+    - every section was written, `non_finite_fields` was empty, and `test_split_decoded` was
+      false;
+    - the per-model configuration check and the evaluation cap ran on every model;
+    - G-cache (b) held on the same two episodes;
+    - the encoded T1 is reported at h = 0 as well;
+    - peak RSS 13.3 GB.
 - **The memory expectation of §12 is therefore widened, not as a guard: about 15–30 GB** on the
   48 GiB machine. The report records the peak.
