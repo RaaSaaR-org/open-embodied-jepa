@@ -106,6 +106,9 @@ def summarize(report: dict, report_sha: str, report_path: str) -> dict:
             "train_seconds": r3(m["train_seconds"]),
             "seconds_with_evaluation": r3(m["seconds_with_evaluation"]),
             "checkpoint_sha256": m["checkpoint_sha256"],
+            # protocol section 10: every model's val curve and selected update, always reported
+            "val_curve": [[int(u), r3(v)] for u, v in m["val_curve"]],
+            "losses": [[int(u), r3(v)] for u, v in m["losses"]],
         }
         for m in report["models"]
     ]

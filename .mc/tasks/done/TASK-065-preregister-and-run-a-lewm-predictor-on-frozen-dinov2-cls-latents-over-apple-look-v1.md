@@ -72,7 +72,8 @@ Design code: `src/embodied_jepa/latent_dynamics.py`; model option in
       26d6801); the G-cache amendment merged the same way (#71, c17225a).
 - [x] The gated run starts only on the pre-run reviewer's reported verdict, from a clean tree
       (run-1 at 26d6801, V; run-2 at c17225a, each on its own reported PRE-RUN: GO).
-- [x] PR 3 (ticked on the reviewer's reported APPROVE) (results document, results manifest, summarize script) states the outcome row, every
+- [x] PR 3 (ticked on the reviewer's reported APPROVE; results document, results manifest,
+      summarize script) states the outcome row, every
       gate quantity with its interval per seed and horizon, every negative result and a
       recommended (not chosen) next task; a reviewer checks every restated number against
       `report.json` by script. Checkpoints and features are never committed.
@@ -109,8 +110,8 @@ Design code: `src/embodied_jepa/latent_dynamics.py`; model option in
   - The amendment goes in through a reviewed PR, followed by a fresh pre-run review.
   - Run-2 is the single allowed repeat; a second V is INCONCLUSIVE.
   - Protocol §17.
-- 2026-09-26T23:58:57Z: run-2 (the single repeat) started at c17225a on a fresh reported
-  PRE-RUN: GO.
+- 2026-09-26T23:58:57Z: run-2 (the single repeat) launched at c17225a on a fresh reported
+  PRE-RUN: GO; the runner's clock started at 23:59:02Z.
 - 2026-09-27T02:37:44Z: run-2 complete, 9522 s, **outcome WM-NO-DYNAMICS**. The abandonment
   clause fires.
 

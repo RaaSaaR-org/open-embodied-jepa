@@ -46,7 +46,7 @@ the void record). Every number below is copied from that manifest, rounded to 3 
 | | run-1 | run-2 (the run read here) |
 |---|---|---|
 | revision | `26d6801` | `c17225a` (after amendment PR #71), `tracked_tree_dirty: false` |
-| started (UTC) | about 2026-09-26T22:51Z, on a reported PRE-RUN: GO | 2026-09-26T23:58:57Z, on a fresh reported PRE-RUN: GO |
+| started (UTC) | about 2026-09-26T22:51Z, on a reported PRE-RUN: GO | launched 2026-09-26T23:58:57Z (the agent's clock), the runner's clock started at 23:59:02Z (completion 02:37:44Z minus 9522 s), on a fresh reported PRE-RUN: GO |
 | result | **V**: `GuardError: G-cache: frame-8 cache rows differ from the anchor by 3.7670135498046875e-05`, after featurisation, before any model or readout | **complete**, outcome WM-NO-DYNAMICS, 9522 s |
 | report sha256 | `56c97ff0…4eace` | `8326fd48…412d` |
 
@@ -70,7 +70,7 @@ the void record). Every number below is copied from that manifest, rounded to 3 
   - Featurisation: 2600 s for 192 789 frames, under the 5400 s cap.
   - Per model: 565–567 s of training (under the 1800 s cap).
   - Whole run: 9522 s (under the 21 600 s cap).
-  - Peak RSS: 6.38 GB.
+  - Peak RSS: 6.38 GB (6 383 419 392 bytes, 5.94 GiB).
 - **Guards.** All held, and none voided the run:
   - G-hash: 27 pins at preflight and again at the end;
   - G-data (manifest `81d760d1…db64`);
@@ -98,8 +98,10 @@ the void record). Every number below is copied from that manifest, rounded to 3 
 | N, 1 | 9000 / 9500 | 0.399 / 0.400 |
 | N, 2 | 10000 / 9500 | 0.398 / 0.400 |
 
-- Every model selected its checkpoint late (updates 8000–10 000), and three selected the last
-  one. So the 10 000-update budget was probably not saturated. This is context, not a finding.
+- Every model selected its checkpoint late (updates 8000–10 000), and two (N seed 0 and N seed
+  2, half A) selected the last one. So the 10 000-update budget was probably not saturated. This is context, not a finding.
+- **Every model's val curve** (20 points) **and training losses** (every 100 updates) are in
+  the results manifest, under `models[].val_curve` and `models[].losses` (protocol §10).
 - The evaluation sets:
   - E-all: 20 193 + 20 327 windows;
   - E-post: 85 + 85 roots;
@@ -275,4 +277,5 @@ DINO-WM. It would predict the frozen DINOv2 final patch tokens (P-tok).
 - **Two items the reviewers left non-blocking, not fixed:**
   - protocol §11 and the runner docstring still name the run-1 paths; the manifest's run command
     named run-2;
-  - the amendment kept about 4 GB of decoded episodes in memory. Peak RSS was 6.38 GB.
+  - the amendment kept about 4 GB of decoded episodes in memory. Peak RSS was 6.38 GB
+    (5.94 GiB).
