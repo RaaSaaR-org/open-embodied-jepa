@@ -76,6 +76,29 @@ SMOKE = {"sessions_per_half": 8, "val_episodes": 8, "updates": 20, "select_every
 
 
 # ----- guards as testable helpers (the TASK-065 ones are reused as they are) ----------------------
+FROZEN_EFFECTIVE_CONFIG = {
+    # the adapter defaults the protocol keeps (section 4.2); SIGReg's projection count is pinned
+    # because the option validates only its type (disclosed gap, protocol section 4.1)
+    "hidden_dim": 128,
+    "predictor_depth": 2,
+    "predictor_heads": 2,
+    "predictor_head_dim": 24,
+    "learning_rate": 3e-4,
+    "weight_decay": 1e-4,
+    "gradient_clip": 1.0,
+    "multistep_weight": 1.0,
+    "sigreg_projections": 128,
+}
+
+
+def check_model_config(config: dict) -> None:
+    """G-frozen, per model: the effective configuration is the preregistered one."""
+    expected = dict(td.MODEL_CONFIG) | FROZEN_EFFECTIVE_CONFIG
+    wrong = {k: config.get(k) for k, v in expected.items() if config.get(k) != v}
+    if wrong:
+        raise GuardError(f"G-frozen: the model configuration differs: {wrong}")
+
+
 def check_frozen() -> None:
     """G-frozen: the calibrated bars, budget and caps are set."""
     try:
@@ -189,6 +212,7 @@ def train_one(ctx, arm, seed, half, clock):
             "half": half,
         },
     )
+    check_model_config(model.config)
     frame_rows = np.concatenate(
         [np.arange(offsets[i], offsets[i] + table[i]["length"]) for i in members]
     )

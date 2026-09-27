@@ -226,3 +226,21 @@ def test_the_runner_refuses_to_overwrite(tmp_path):
     (tmp_path / "ckpt2").mkdir()
     with pytest.raises(FileExistsError):
         R.run(tmp_path / "out2", tmp_path / "ckpt2")
+
+
+def test_check_model_config_both_directions():
+    """G-frozen per model, including SIGReg's projection count (the option checks only its type)."""
+    good = dict(td.MODEL_CONFIG) | R.FROZEN_EFFECTIVE_CONFIG
+    R.check_model_config(good)
+    for key, value in (("sigreg_projections", 0), ("predictor_depth", 6), ("token_grid", 8)):
+        with pytest.raises(R.GuardError, match="G-frozen"):
+            R.check_model_config(good | {key: value})
+
+
+def test_the_lewm_defaults_give_the_frozen_effective_config():
+    """The LeWM token class's defaults plus MODEL_CONFIG equal the pinned effective config."""
+    pytest.importorskip("torch")
+    pytest.importorskip("transformers")
+    from embodied_jepa.models.lewm import LeWM
+
+    R.check_model_config(LeWM.defaults | td.MODEL_CONFIG)
