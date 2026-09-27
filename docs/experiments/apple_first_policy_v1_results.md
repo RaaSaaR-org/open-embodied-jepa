@@ -134,8 +134,9 @@ plate part has no feasible level, so CAL-ESCALATE is the row.
      one.
    - Under this reading the collector's own placement has almost no x margin, and a learned policy
      that imitates it inherits that margin. **Whether a plate readout can reach about 0.5 cm in x
-     is not known from this run:** S0-P was never evaluated, and no plate readout has been
-     measured in this project.
+     is not known from this run:** S0-P was never evaluated, and no absolute plate-xy readout
+     from the post-look frame has been measured. Earlier protocols measured apple–plate
+     relative readouts on other corpora (world-model v2–v4, gate G3); those are not comparable.
    - **The harness alternative in protocol §9 ("the harness is off") is not supported.** The
      reference condition scored 32/32 and the two smallest apple levels 32/32, on the same seeds
      and code path.
