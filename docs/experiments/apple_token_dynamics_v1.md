@@ -881,8 +881,8 @@ thresholds, seeds, budget and caps are unchanged. What the runner does, all mech
   seeded noise**, and G1 is not evaluated. Its gates are meaningless by construction and were not
   read.
   - `outputs/task066-scratch/smoke-a`: an earlier draft with a provisional manifest.
-  - `outputs/task066-scratch/smoke-b`, with the committed code (`581baa1`; after a rebase onto
-    a test-only fix in PR 1 it is `95a69a8`, with the runner's bytes unchanged):
+  - `outputs/task066-scratch/smoke-b`, with the committed code (`581baa1`. The later rebases onto
+    PR 1's fixes left the runner's bytes unchanged, sha256 `7a89aee1…878b`):
     - report sha256 `b8d075f4…ab1ca`, 422 s;
     - every section was written, `non_finite_fields` was empty, and `test_split_decoded` was
       false;
