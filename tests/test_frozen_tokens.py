@@ -61,7 +61,9 @@ def _tiny_dinov2(seed=7):
 
 @pytest.fixture(autouse=True)
 def tiny_frozen_encoder(monkeypatch):
+    # Both mixins: some tests build TASK-065's CLS class too, and CI has no pinned weights.
     monkeypatch.setattr(ft.FrozenTokenMixin, "_load_frozen_module", lambda s, n: _tiny_dinov2())
+    monkeypatch.setattr(fe.FrozenEncoderMixin, "_load_frozen_module", lambda s, n: _tiny_dinov2())
 
 
 def _require_lewm():
