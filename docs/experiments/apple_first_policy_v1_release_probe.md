@@ -70,6 +70,7 @@ it on the current distribution, with the look, on fresh seeds.
   - They are disjoint from the spent 46000–46415, from cohorts C (45300–45339) and D
     (45000–45007, 45100–45107), and from the smoke range 46900–46999.
   - `check_seeds()` asserts this, and also checks every range in `first_policy.FORBIDDEN_RANGES`.
+    The probe uses this guard, not the runner's `check_simulated_seeds` whitelist.
 - **Reserved now for any future v2 calibration: 46832–46863.** The probe never touches them.
 - **Plate-error directions:** one per seed, from `default_rng(6810)`. The same direction is used
   for both arms and both non-zero levels, so the conditions are paired.
@@ -114,8 +115,12 @@ number exists. The probe's outcomes choose nothing.
 *§1–§4 were committed at `e694a45` before the run (draft PR #85).*
 
 **Row: P-CANDIDATE-FAIL.**
-- The mechanism is confirmed by the pre-declared criteria: the release lands **short** of the
-  centre, and every failure at 1.0 cm is a placement outside the radius.
+- **By the declared rule only**, the mechanism counts as confirmed: the current collector's
+  median landing dx at the reference is −2.71 cm, inside [−4.5, −2.5], and all 11 failures at
+  1.0 cm transported the apple and ended outside the radius.
+- **The per-attempt data do not support the mechanism as the cause of those failures** (reading,
+  below). The rule's placement check is blind to which side the apple misses on. §4 binds, so the
+  row stands.
 - The candidate collector reaches only **23/32** at 1.0 cm, below the 28/32 that R8 requires.
 - **Under R8 the work stops here and is reported back.** There is no amendment PR, no option (b),
   and no bar change.
@@ -125,7 +130,7 @@ number exists. The probe's outcomes choose nothing.
 - `outputs/task067-release-probe/run-1/report.json`, sha256 `4ce9a113…6d4f`.
 - 192 attempts, 0 errors.
 
-| arm @ plate error | successes / 32 | grasp | transport | landing dx (cm), q10 / q50 / q90 | landing distance (cm), q10 / q50 / q90 | failures, all transported and landed outside 4 cm |
+| arm @ plate error | successes / 32 | grasp | transport | landing dx (cm), q10 / q50 / q90 | landing distance (cm), q10 / q50 / q90 | failures (transported and ended outside 4 cm) |
 |---|---|---|---|---|---|---|
 | current @ 0 | **32** | 32 | 32 | −2.89 / **−2.71** / −2.22 | 2.36 / 2.72 / 2.90 | 0 |
 | current @ 1.0 cm | **21** | 32 | 32 | −3.60 / −2.39 / +3.70 | 2.72 / 3.74 / 4.59 | 11 (11) |
@@ -134,32 +139,48 @@ number exists. The probe's outcomes choose nothing.
 | candidate @ 1.0 cm | **23** | 32 | 32 | −2.67 / +3.51 / +3.88 | 2.83 / 3.79 / 4.56 | 9 (9) |
 | candidate @ 1.5 cm | 11 | 32 | 32 | −2.84 / +2.72 / +3.96 | 2.95 / 4.54 / 4.59 | 21 (21) |
 
-**Terminations.** Every success ends in `success`. Every failure ends in `policy_complete`: the
-collector finished its 745 commands with the apple held and transported, but not resting inside
-the radius. No attempt was guard-refused, dropped the apple before transport, or hit the 800-step
-cap.
+**Terminations.**
+- Every success ends in `success`.
+- Every failure ends in `policy_complete`: the collector finished its 745 commands, including the
+  release, with the apple not resting inside the radius.
+- **Three attempts dropped the apple:** `candidate` at 1.5 cm on seeds 46809, 46812 and 46831
+  (`dropped = true`). Each apple ended 4.45–4.82 **m** from the plate, after `transport` had
+  latched. They are the three largest values in that cell, so its q90 is unaffected.
+- No attempt was guard-refused or hit the 800-step cap. The longest attempt ran 745 steps.
 
 **Reading (interpretation, not measurement).**
-1. **The current collector lands about 2.7 cm short of the centre, not 3.5 cm.**
-   - Median dx is −2.71 cm (q10–q90 −2.89 to −2.22) with the plate exact. That leaves about
-     1.3 cm of margin to the 4 cm radius.
-   - This falls inside the pre-declared band [−4.5, −2.5], so by the declared rule the mechanism
-     is confirmed.
+1. **With the plate exact, the current collector lands short of the centre by a median 2.7 cm.**
+   - The q10–q90 range is −2.89 to −2.22 cm, but one seed (46800) lands forward at +3.58 cm.
    - The results document's "3.5 cm short" figure (§4.2, derived from code constants) overstates
-     the shortfall by about 0.8 cm. The apple travels about 0.8 cm forward after release, which
-     fits §1's disclosure that it moves forward.
-   - C0's 21/32 at 1.0 cm reproduces exactly on these fresh seeds.
-2. **Releasing over the centre makes landing worse and bimodal.**
-   - With the plate exact, the candidate lands either about 2.7 cm short or about 3.1–3.9 cm
-     beyond the centre. The median is +3.12 cm and the median distance is 4.53 cm.
-   - It succeeds on only 15/32 with no plate error. This matches TASK-031's shift-0 record
-     (+3.6 to +3.7 cm), as §1 predicted before the run.
-   - Its 23/32 at 1.0 cm is higher than its own reference, because some error directions happen to
-     offset the forward bounce. That is chance compensation, not tolerance.
-3. **Two things together bind: the landing is sensitive to how the apple leaves the hand, and the
-   margin is small.** Moving the release point alone does not create a margin; on these data it
-   removes the one the current setting has. This is an inference from the table. No release
-   height, opening schedule or orientation was varied.
+     the median shortfall by about 0.8 cm. The release position itself was not measured, so the
+     amount of travel after release is not known from this probe.
+   - §1 predicted that the mechanism would be refuted, and that the landing would sit about
+     2.9 cm from the centre. The distance prediction is close (median distance 2.72 cm). The
+     refutation prediction does not match the declared rule, and §4's rule decides the row.
+2. **The "release is short" mechanism does not explain the failures at 1.0 cm.**
+   - A short landing near −2.7 cm moved by at most 1.0 cm reaches about −3.7 cm, which is still
+     inside the 4 cm radius. So that mechanism predicts roughly no failures, not 11.
+   - None of the 11 failures is short: all have dx > 0 (+0.15 to +4.52 cm).
+   - All 63 non-dropped failures, in every cell, end in a narrow ring 4.53–4.62 cm from the
+     centre. That looks like the plate's rim. This is an inference; no contact was recorded.
+   - What fails is an apple that goes forward or sideways to the rim. The plate error seems to
+     change the release geometry, so that the apple rolls or bounces there. **The mechanism
+     behind that is not identified by this probe.**
+   - The results document's §4.2 derivation is therefore contradicted as an explanation of the
+     C0 failures. The count matches, though: 21/32 at 1.0 cm, as in C0, on different seeds and
+     directions (`default_rng(6810)` against 6700).
+3. **Releasing over the centre lands forward more often, and fails more.**
+   - With the plate exact, the candidate's dx splits 5 short (−4.0 to −2.5 cm), 4 in between
+     (−1.3 to +1.1 cm) and 23 beyond (+2.8 to +4.5 cm).
+   - It succeeds on 15/32. This is in the direction of TASK-031's shift-0 record (+3.6 to
+     +3.7 cm), which §1 cited.
+   - **Its 23/32 at 1.0 cm against 15/32 at the reference is not significant on the paired
+     seeds**: 12 seeds go from failure to success and 4 the other way, exact McNemar p ≈ 0.08.
+     The flips do not track the error direction: of the 12, 5 have a negative x component and 7 a
+     positive one. With its forward mode at the rim, small lateral differences flip the outcome.
+4. **On these data, moving the release point alone does not create a margin.** It shifts where
+   the apple lands but leaves it near the rim. This is an inference. No release height, opening
+   schedule or orientation was varied.
 
 **What this does not show.** It does not show that no expert modification could tolerate 1.0 cm
 of plate error. Only the one pre-declared candidate was tested, as R8 specifies. A different

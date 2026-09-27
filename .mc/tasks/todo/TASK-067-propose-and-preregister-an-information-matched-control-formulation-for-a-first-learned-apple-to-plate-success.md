@@ -117,8 +117,10 @@ successes.**
   document.
 - Release-point probe (PR #85), declared at `e694a45` before running. Seeds 46800–46831; seeds
   46832–46863 are reserved for any v2 calibration. Row **P-CANDIDATE-FAIL**:
-  - The current collector lands a median 2.7 cm short of the plate centre. It scores 32/32 at the
-    reference and 21/32 at a 1.0 cm plate error; every failure is a placement outside the radius.
+  - The current collector scores 32/32 at the reference, landing a median 2.7 cm short. At a
+    1.0 cm plate error it scores 21/32.
+  - The mechanism counts as confirmed by the declared rule only. The per-attempt data contradict
+    it as the cause: every failure lands forward or sideways at the rim (4.53–4.62 cm), not short.
   - The release-at-centre candidate scores 15/32 at the reference and 23/32 at 1.0 cm, below
     28/32.
   - Under R8 the work stops and goes back to the owner.
