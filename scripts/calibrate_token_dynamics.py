@@ -649,7 +649,7 @@ def readability(output: Path, cal: Path) -> dict:
         occ = ic.xy_error_cm(
             ic.prior_predictions(truth, np.ones(n), occluded, fold)["B_occ"], truth
         )
-        entry = {}
+        entry, errors = {}, {}
         for name, x in (
             ("grid_4x4", np.stack(grid[f])),
             ("P_tok_16x16", tok[f]),
@@ -658,6 +658,7 @@ def readability(output: Path, cal: Path) -> dict:
             g, diag = ic.gram(np.asarray(x, np.float64))
             pred, _, selections = ic.nested_cv(g, diag, truth, fold)
             err = ic.xy_error_cm(pred, truth)
+            errors[name] = err
             stats = R65.t1_stats(err, occ, err, idx)
             entry[name] = {
                 "median_cm": stats["median_cm"],
@@ -665,8 +666,17 @@ def readability(output: Path, cal: Path) -> dict:
                 "ratio_to_B_occ": stats["ratio_to_B_occ"],
                 "meets_t1": td.ceiling_passes(stats),
                 "selections": selections,
+                "per_root_cm": [float(v) for v in err],
             }
         entry["B_occ_median_cm"] = float(np.median(occ))
+        # Reported only (a diagnostic of the pooling loss, not part of the rule): paired
+        # median differences over the same roots and bootstrap resamples.
+        entry["grid_minus_P_tok_cm"] = ic.paired_difference(
+            errors["grid_4x4"], errors["P_tok_16x16"], idx, ic._median
+        )
+        entry["grid_minus_P_mean_cm"] = ic.paired_difference(
+            errors["grid_4x4"], errors["P_mean"], idx, ic._median
+        )
         results[f"h{f - td.DECISION_FRAME}"] = entry
     gated = [f"h{h}" for h in td.GATED_HORIZONS]
     grid_ok = all(results[h]["grid_4x4"]["meets_t1"] for h in gated)
