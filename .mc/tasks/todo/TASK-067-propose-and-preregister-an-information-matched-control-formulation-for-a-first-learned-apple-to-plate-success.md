@@ -83,9 +83,10 @@ successes.**
 - A later coordinator correction changed only the year of the TASK-066 GPU hold: about
   2026-09-28T00:10Z, hard cap 04:08Z. No compute runs before that hold is released.
 - 2026-09-27: the R5 seed-overlap check at `f2e9f63` found no overlap (protocol §4.1).
-- **Differences from the proposal, disclosed in the PR 1 description.**
-  - C0 uses 9 conditions: four levels each, not three.
-  - S0-APPLE-FAIL fires the clause outright, where the proposal said "unless the owner rules
-    otherwise".
-  - The readout uses the tokens read-out point.
-  - The apple-hidden check is not run.
+- **Differences from the proposal: protocol §17 and the manifest's
+  `differences_from_proposal`.**
+  - **Two need owner confirmation before PR 1 merges:**
+    - C-3 gets its own DAgger × 3, where the proposal's C-noimg was BC-only;
+    - R-3 is added to M1.
+  - The A4-look trigger is calibrated from C0 and S0-P, as proposed. A first-draft 8/16 was
+    replaced after the PR #78 review.

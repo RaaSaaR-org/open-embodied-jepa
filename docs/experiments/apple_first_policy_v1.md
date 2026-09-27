@@ -162,8 +162,8 @@ five files, none of them a seed use:
   (0.46615 m, a distance).
 
 Every declared seed range in `src`, `scripts`, `tests` and the manifests was also listed. The
-largest spans are 45000–45339, 48000–48999 and 49000–49199, and none contains any of
-46000–46999. No local corpus manifest (`data/*/meta/jepa_manifest.json`) records a reset seed in
+declared ranges nearest to it are 45000–45107, 45200–45207 and 45300–45339 below, and
+47000–47199, 47900–47931 and 48000–48999 above; none contains any of 46000–46999. No local corpus manifest (`data/*/meta/jepa_manifest.json`) records a reset seed in
 that range. **Result: no overlap.** `first_policy.check_seed_ranges` re-checks, as a guard, that
 every task range lies inside 46000–46999, is pairwise disjoint, and is off every forbidden
 range.
@@ -186,15 +186,23 @@ range.
 
 ### 5.2 The policy P
 
-- **Inputs, 132-d.** Each is standardised by BC-0 train moments, and the moments are fixed
+- **Inputs, 132-d.** Each is standardised by BC-0 train moments, with the std floored at
+  1e-3, so a constant column (C-3's estimates) maps to 0, never NaN. The moments are fixed
   thereafter.
   - Estimates: apple xy and plate xy (4). They are fixed for the attempt.
   - Clock: `clock_features(t)` (33), where t is the post-look step. It is t / 745 plus sin and cos
-    at 16 geometric periods from 2 to 2048 steps.
+    at 16 geometric periods from 4 to 2048 steps. (A period of 2 would make sin(πt) pure
+    rounding noise.)
   - Proprioception: 86-D joint positions and velocities.
   - Palm pose: the right palm position plus the first two rotation columns (9). It is computed
-    by forward kinematics of the observed joint positions on a scratch simulation state, never
-    read from the live simulator.
+    by forward kinematics of the observed joint positions on the controller's own MjModel and
+    MjData (`ee_pose(side, data=scratch)`; the pelvis is fixed in this scene), never read from
+    the live simulator.
+- **What P does not get, and why that is not missing information.** The expert's command also
+  depends on the apple's reset height (its targets are offsets from `obj`) and on its own last
+  applied grasp (the release ramp). The apple rests on the table at a height that is a scene
+  constant across `wide_reset` resets, and the release ramp is a function of the clock. The head
+  learns both from the labels.
 - **Head.** LayerNorm → Linear(132, 512) → SiLU → Linear(512, 512) → SiLU → Linear(512, 512) →
   SiLU → Linear(512, 7). The outputs are the 7 free dimensions, assembled into the 14-D contract
   with the pinned values.
@@ -203,7 +211,8 @@ range.
   AdamW, learning rate 3e-4 cosine to 3e-5, weight decay 1e-4, gradient clip 1.0, batch 256,
   seed 0.
 - **Selection.** Every 1 000 updates, by val mean squared error. The eligibility rule is a
-  per-dimension output std ≥ 0.02 on val and update > 0.
+  per-dimension output std ≥ 0.02 on val and update > 0. If no checkpoint is eligible, the arm
+  scores 0/16 on D and is reported as `no_eligible_checkpoint`.
 - **Declared weakness.** Val action error is a weak proxy for closed-loop success.
 
 ### 5.3 DAgger
@@ -222,7 +231,7 @@ val.
 
 - **The labeller is privileged, at training time only** (R2).
 - **C and R run their own DAgger** on the same seeds with their own policies.
-- **Rollout inference runs on CPU** in 8 simulation workers.
+- **Rollout inference runs on CPU** in 8 simulation workers, with one torch thread each.
 
 ### 5.4 Arms (the full list; "learned arm" means exactly P-0, P-1, P-2, P-3, C-3 and R-3)
 
@@ -232,11 +241,11 @@ val.
 | **C-3** | no-image control: P's recipe with the estimates fixed to their BC-0 train mean; its own DAgger × 3 | L1 |
 | **R-3** | random-init floor: P's recipe on the seed-0 random-init DINOv2 tokens and their own readout; its own DAgger × 3 | L1 |
 | **F** | fallback, trained only on M1-MOTOR (§9): one head per collector phase, same architecture, the head chosen by `scheduled_phase(t)` (the collector's clock schedule, a scripted switch); trained on P-3's final aggregate, 30 000 updates, selected on val | L2 |
-| **A4-look** | readout estimates → the scripted `apple_collector_policy`, built from a dict with the estimated apple and plate xy. The heights and the other scene constants (`container_surface_z`, `object_support_height`, base pose) come from the committed scene description, never from `task_truth()` at run time. | L3 |
+| **A4-look** | readout estimates → the scripted `apple_collector_policy`, built from a dict with the estimated apple and plate xy. The apple and plate heights, `container_surface_z`, `object_support_height` and the base pose are declared constants of the committed scene. They are read from the compiled scene model (static geometry) at construction, never from `task_truth()` at run time, and a PR 2 test checks them against `task_truth()` on a non-cohort reset. | L3 |
 | **D-oracle-perc** | the carried P-k's head (P-3 when no P-k succeeds) fed the **true** reset xy; its own report | L4 |
 | **B-oracle** | `scripted_oracle` with the look | L4, harness |
 | **B-hold**, **B-random** | as TASK-057 B1 (random seed 6703) | L4, harness |
-| **B-replay** | open-loop replay, after the live look, of the successful non-aim train root whose post-look DINOv2 CLS is nearest (Euclidean on train-standardised features) | L4 |
+| **B-replay** | open-loop replay, after the live look, of the successful non-aim train root whose post-look DINOv2 CLS is nearest (Euclidean on train-standardised features). It replays that root's executed `action` column from its post-look step 0 (frame 8) to its end or to 800 steps, through the same clip and projection. | L4 |
 
 Every attempt:
 - runs at most 800 policy steps after the look, with a 300 s wall cap;
@@ -281,6 +290,16 @@ every smaller one reach at least 28/32 successes. The median bar is min(cap, p90
 - **CAL-ESCALATE** is the row if the reference is below 28/32 or if the smallest level of either
   quantity is below 28/32.
 
+### 7.1a The A4-look threshold (calibrated from C0 and S0-P, as the proposal specified)
+
+This follows `first_policy.a4_threshold`. For each of the 128 held-out perception resets, the
+predicted A4-look success probability is the C0 success fraction at the smallest tested level at
+or above its apple error (0 beyond the largest), times the same for its plate error, divided by
+the C0 reference fraction. The threshold T is ⌈0.5 × 16 × the mean prediction⌉, and at least 1.
+The reading is that perception is "adequate in the loop" when A4-look reaches at least half the
+successes that C0 and S0-P predict for it. T is computed before any D attempt and recorded in
+the report.
+
 ### 7.2 S0-P, perception on fresh held-out resets (gate)
 
 On the 128 perception-held-out resets, the frozen readout's apple and plate xy errors are
@@ -295,7 +314,10 @@ here.
 On the first 8 perception-held-out seeds:
 - the post-look frame from the closed-loop runner's own path is byte-identical to the perception
   set's frame for that seed;
-- the live estimates equal the offline ones within 1e-4 m;
+- the live estimates equal the offline reference within 1e-4 m. The reference is computed through
+  the same worker code path at batch size 1 and one thread, so the batch-size effect TASK-065
+  measured (≤ 3.8e-5 in features) cannot enter. The tolerance is 0.01 cm, two orders below
+  any bar;
 - a live `act()` equals the batched offline prediction on the same inputs within 1e-4.
 
 ## 8. Stage 1: M1 on the development cohort D
@@ -315,10 +337,10 @@ other seed is refused, cohort C first.
 | **S0-APPLE-FAIL** | §7.2 | the post-look frame, through this readout, does not give the apple to the expert's tolerance on fresh resets | **the clause fires** (§10) |
 | **S0-PLATE-FAIL** | §7.2 | the apple is read, the plate is not | stop; the owner decides on a design change (for example a per-step plate readout during `transfer`); the clause does not fire |
 | **M1-PASS** | some P-k reaches ≥ 1/16 full successes on D | **the first learned (L1) Apple→Plate success, on the non-gating development cohort: an existence result** (R3). It is "learned policy with a DINOv2 encoder" (R4). | M2 on cohort C, under a separate authorization. The carried arm is the P-k with the most D successes, ties to the later k: a selection on D, declared as one. |
-| **M1-MOTOR** → F | every P-k scores 0/16; A4-look ≥ 8/16 successes | perception is adequate in the loop, and motor learning is the failing component | F is trained and runs once on D (the trigger proposed and accepted under R3) |
+| **M1-MOTOR** → F | every P-k scores 0/16; A4-look ≥ T successes (§7.1a) | perception is adequate in the loop, and motor learning is the failing component | F is trained and runs once on D (the trigger proposed and accepted under R3) |
 | **M1-MOTOR-F-PARTIAL** | as above, and F ≥ 1/16 | a **partially learned** (L2) success; never counted as learned | the owner decides: M2 for F under its label, and/or a learned phase switch |
 | **M1-MOTOR-F-NONE** | as above, and F 0/16 | neither the learned policy nor the phase-decomposed one succeeds | **the clause fires** |
-| **M1-PERCEPTION** | every P-k scores 0/16; A4-look < 8/16 | the estimates do not survive the closed loop, or are not accurate enough in it | **the clause fires** |
+| **M1-PERCEPTION** | every P-k scores 0/16; A4-look < T | the estimates do not survive the closed loop, or are not accurate enough in it | **the clause fires** |
 
 **Reported whatever the row; none of them changes it:**
 - the C-3, R-3, D-oracle-perc and B-replay counts. C-3 can reach ≥ 1/16: the clock-only blind
@@ -329,8 +351,7 @@ other seed is refused, cohort C first.
 - S0-P's values against its bars, and C0's full table;
 - the DAgger data sizes and every training's val curve and selected update.
 
-**The A4-look threshold (8/16) is not calibrated.** It is a judgement fixed now: half of D, and
-far above the 5/16 that open-loop replay reached. It is disclosed as uncalibrated.
+`M1-MOTOR` is an intermediate state of `decide_m1` (train and run F), never a final row.
 
 ## 10. Abandonment clause
 
@@ -353,7 +374,13 @@ The test is on the 40 cohort-C resets. The values come from `benchmarks/manifest
 
 **Arms.** The carried P-k, C-3, R-3, B-replay, B-oracle, B-hold and B-random.
 
-**Stop rule.** An L1 arm with 0/16 grasps on D does not run on C. Its gate rows count as failed.
+**Stop rule.** It applies to the carried P-k only. If it has 0/16 grasps on D it does not run on
+C, and M2 fails. The controls (C-3, R-3, B-replay) and the harness always run on C, so a
+control's D result cannot fail P's gates.
+
+**Precedence field, cited as `apple-policy-diagnostics-v1.json` requires of any successor's gate
+section.** `precedence_rule_D1_over_G_SUB.exemption_spent` is `false` at this preregistration,
+and this protocol does not claim the exemption.
 
 | gate | condition |
 |---|---|
@@ -365,8 +392,13 @@ The test is on the 40 cohort-C resets. The values come from `benchmarks/manifest
 | G6 | zero controller privileged reads by any L1 arm; a violation voids the run |
 | G7 | median control time ≤ 100 ms per command, including the one DINOv2 forward pass |
 
-**Pass** requires every gate. A gate that cannot be evaluated counts as failed. **What a pass
-would mean:** "a learned policy with a DINOv2 encoder works on Apple→Plate on this cohort". It
+**Rows (first match).**
+- **M2-VOID:** G5 or G6 fails; the run is invalid, not the arms.
+- **M2-PASS:** every gate passes.
+- **M2-FAIL-VISION:** G1 and G4 pass and G2 fails. There is no evidence the image is used.
+- **M2-FAIL:** any other failing gate. The claim is not made, and the owner decides.
+
+A gate that cannot be evaluated counts as failed. **What a pass would mean:** "a learned policy with a DINOv2 encoder works on Apple→Plate on this cohort". It
 would not mean that LeWM drives the robot (R4).
 
 ## 12. Guards (any failure is V)
@@ -379,17 +411,21 @@ would not mean that LeWM drives the robot (R4).
 | **G-weights** | DINOv2 files and the pretrained and floor digests match their pins |
 | **G-seeds** | `check_seed_ranges`, plus every simulated seed lies in its declared range; the D whitelist; cohort C refused |
 | **G-look** | on every attempt, the applied look commands equal the requested ones, and the post-look joint state equals the first attempt's within 1e-6 |
-| **G-privileged** | the simulator's `task_truth()` is wrapped with a counter that records any call made while a controller's `act()` is on the stack. The count must be 0 for every L1 arm's attempt. Scorer calls are outside `act()`. The L1 arms' controllers receive only the `Observation` and the step. |
+| **G-privileged** | Applies to every **evaluation** attempt of an L1 arm. DAgger rollouts read truth through the labeller, before the look and outside `act()`, by design (R2 e). (1) `task_truth()` is wrapped with a counter that records any call made while a controller's `act()` is on the stack; that count must be 0. (2) The attempt's total `task_truth()` count must equal the scorer's own expected count (one per `evaluate()`, plus its construction). (3) L1 controllers are constructed without any robot or simulator handle, and receive only the `Observation` and the step; a PR 2 test asserts this. (4) FK runs on the controller's own MjModel and MjData. |
 | **G-device** | training on MPS; features and rollouts on CPU |
 | **G-finite** | every feature, estimate, loss, prediction and count is finite |
 | **G-cap** | every cap in §14 |
 
-S0-D1 (§7.3) and the harness condition on D (§9) also lead to V.
+S0-D1 (§7.3) and the harness condition on D (§9) also lead to V. **`exemption_spent`**
+(`apple-policy-diagnostics-v1.json`, `precedence_rule_D1_over_G_SUB`) is `false` and is not
+claimed; it is cited here as that manifest requires.
 
 ## 13. Void rule
 
-- **A run that stops early, for any reason, is V.** That covers a guard, a crash or a cap. The
-  run records a `void_reason`, and nothing in it is read.
+- **A run that stops early other than at a declared early-stop row (CAL-ESCALATE,
+  S0-APPLE-FAIL, S0-PLATE-FAIL) is V.** That covers a guard, a crash or a cap. The run records a
+  `void_reason`, and nothing in it is read. A declared early-stop row is an outcome, not a
+  void, and it is never repeated.
 - **Exactly one from-scratch repeat** is allowed, into `run-2`, with the same seeds, caps and
   device.
 - **A second V closes TASK-067 as INCONCLUSIVE.**
@@ -402,7 +438,7 @@ S0-D1 (§7.3) and the harness condition on D (§9) also lead to V.
 - Training runs on **MPS**.
 - DINOv2 features, readouts and statistics run on CPU (6 threads, float32, as TASK-063 to
   TASK-066).
-- Simulation and rollout inference run in 8 CPU workers.
+- Simulation and rollout inference run in 8 CPU workers, with one torch thread each.
 
 **Caps.**
 
@@ -452,6 +488,36 @@ committed except manifests and hashes.
   the proposal's stage 3, conditional on TASK-066 passing, with its own preregistration.
 - No per-step image features, no end-to-end image head, no chunked or diffusion head.
 - No apple-hidden spurious check for the readout. The readout's accuracy on fresh held-out
-  resets is what the controller depends on. S0-P measures it, and TASK-061 to TASK-064 already
-  showed the cue is the apple.
+  resets is what the controller depends on, and S0-P measures it for both the apple and the
+  plate. TASK-061 to TASK-064's spurious checks covered the apple only; no such check exists
+  for the plate.
 - No test-split decode, and no cohort-C attempt in this gated run.
+
+## 17. Differences from the accepted proposal (disclosed; two need the owner's confirmation)
+
+The owner accepted the proposal "as proposed" (R3). These changes were made while writing the
+preregistration.
+
+**Need the owner's confirmation before this PR merges:**
+1. **The no-image control is C-3, not the proposal's C-noimg.** The proposal's C-noimg was
+   "P-0's recipe" (behaviour cloning only). C-3 gets its own three DAgger iterations on the same
+   seeds. The reason is that M2's G2 compares the carried P-k, which has had DAgger, with this
+   control, and a control without DAgger would make G2 easier to pass.
+2. **R-3 is added to M1 and to the learned arms.** The proposal had the random-init floor only
+   in M2's G3. It must be trained and run on D for M2's arms to exist, so it is listed now.
+
+**Tightenings or clarifications, recorded:**
+3. C0 has 9 conditions (four levels each, plus the reference) instead of 7, and its caps are
+   0.75 / 1.2 cm for the apple and 1.5 / 2.5 cm for the plate.
+4. S0-APPLE-FAIL fires the clause outright. The proposal said "unless the owner rules
+   otherwise", an escape hatch this removes.
+5. DAgger frames are **not** added to the readout. The proposal said they would grow its
+   training set; the readout is instead frozen before any closed loop.
+6. S0-D1 compares estimates, within 1e-4 m at batch size 1, rather than features.
+7. The readout uses the `tokens` read-out point.
+8. The apple-hidden check is not run (§16).
+9. M2 rows are added; the stop rule applies to the carried P-k only; controls always run.
+
+The A4-look trigger follows the proposal: it is calibrated from C0 and S0-P (§7.1a). An earlier
+draft of this PR fixed it at an uncalibrated 8/16. Review caught that it departed from R3, and it
+was replaced before any merge.

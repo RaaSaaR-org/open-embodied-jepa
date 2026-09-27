@@ -123,14 +123,15 @@ def scheduled_phase(step: int) -> int:
 FREE_INDICES = (6, 7, 8, 9, 10, 11, 13)
 FREE_NAMES = ("dx", "dy", "dz", "droll", "dpitch", "dyaw", "grasp")
 CONFIG_BOUNDS = "configs/apple_wm_v4.yaml"  # +-0.5 right arm, left arm and left grasp pinned
-CLOCK_FREQUENCIES = 16  # sin/cos pairs at geometric periods from 2 to 2048 steps
+CLOCK_FREQUENCIES = 16  # sin/cos pairs at geometric periods from 4 to 2048 steps
+INPUT_STD_FLOOR = 1e-3  # standardisation floor: a constant column maps to 0, never NaN
 CLOCK_SCALE = float(EXPERT_POLICY_STEPS)
 
 
 def clock_features(step: int) -> np.ndarray:
-    """33 features of the post-look step: step / 745, and sin/cos at 16 geometric periods from 2
-    to 2048 steps."""
-    periods = np.geomspace(2.0, 2048.0, CLOCK_FREQUENCIES)
+    """33 features of the post-look step: step / 745, and sin/cos at 16 geometric periods from 4
+    to 2048 steps. (A period of 2 would make sin(pi t) pure rounding noise.)"""
+    periods = np.geomspace(4.0, 2048.0, CLOCK_FREQUENCIES)
     angle = 2.0 * np.pi * float(step) / periods
     return np.concatenate(([float(step) / CLOCK_SCALE], np.sin(angle), np.cos(angle))).astype(
         np.float32
@@ -164,6 +165,7 @@ TRAINING = {
 DAGGER_ITERATIONS = 3
 DAGGER_RESETS_PER_ITERATION = 128
 SIM_WORKERS = 8
+WORKER_TORCH_THREADS = 1  # per simulation worker, so 8 workers do not oversubscribe
 
 # ----- perception readout ------------------------------------------------------------------------
 READOUT_FEATURE = "tokens"  # DINOv2 ViT-S/14 final patch tokens, 256 x 384, TASK-063's P-tok
@@ -247,6 +249,14 @@ LADDER = {
     "L3": "learned perception, scripted control (not learned)",
     "L4": "privileged, scripted, replayed or substituted (not learned)",
 }
+LADDER_ALLOWANCES_L1 = {
+    "a": "the fixed look prefix (reset-independent, non-privileged)",
+    "b": "the step counter (non-privileged)",
+    "c": "the palm pose by forward kinematics of the robot's own joint readings",
+    "d": "a perception readout trained on privileged reset labels; zero privileged reads at "
+    "evaluation",
+    "e": "privileged-expert DAgger labels, at training time only",
+}
 ARMS = {
     "P-0": ("L1", "P after behaviour cloning only"),
     "P-1": ("L1", "P after DAgger iteration 1"),
@@ -265,12 +275,50 @@ ARMS = {
 P_ARMS = ("P-0", "P-1", "P-2", "P-3")
 LEARNED_ARMS = ("P-0", "P-1", "P-2", "P-3", "C-3", "R-3")  # "learned arm" means exactly these
 M1_ARMS = (*LEARNED_ARMS, "A4-look", "D-oracle-perc", "B-oracle", "B-hold", "B-random", "B-replay")
-A4_MOTOR_THRESHOLD = 8  # of 16
+A4_THRESHOLD_FRACTION = 0.5  # of the C0 + S0-P predicted A4-look successes
+A4_THRESHOLD_MINIMUM = 1
+
+
+def _level_rate(levels, successes, error_cm) -> float:
+    """C0 success fraction at the smallest tested level >= error; 0 beyond the largest level;
+    the reference rate below the smallest level is handled by the caller."""
+    for level in levels:
+        if error_cm <= level:
+            return successes[level] / C0_RESETS
+    return 0.0
+
+
+def a4_threshold(reference_successes: int, apple: dict, plate: dict, apple_err, plate_err) -> int:
+    """The M1-MOTOR trigger, calibrated from C0 and S0-P (the proposal's §7.2 rule).
+
+    For each held-out perception reset, the predicted A4-look success probability is the C0
+    success fraction at its apple error times that at its plate error, divided by the reference
+    fraction (both levels already include the reference behaviour). The expected number of
+    successes on 16 resets is 16 x the mean prediction; the threshold is half of it, rounded
+    up, and at least 1."""
+    apple_err = np.asarray(apple_err, float)
+    plate_err = np.asarray(plate_err, float)
+    if apple_err.shape != plate_err.shape or apple_err.size == 0:
+        raise ContractError("A4 threshold needs paired held-out errors")
+    ref = reference_successes / C0_RESETS
+    if ref <= 0:
+        raise ContractError("C0 reference must be positive to calibrate A4")
+    rates = []
+    for ea, ep in zip(apple_err, plate_err, strict=True):
+        ra = ref if ea <= 0 else _level_rate(C0_APPLE_LEVELS_CM, apple, ea)
+        rp = ref if ep <= 0 else _level_rate(C0_PLATE_LEVELS_CM, plate, ep)
+        rates.append(ra * rp / ref)
+    expected = D_RESETS_FOR_A4 * float(np.mean(rates))
+    return max(A4_THRESHOLD_MINIMUM, int(np.ceil(A4_THRESHOLD_FRACTION * expected)))
+
+
+D_RESETS_FOR_A4 = 16
 ORACLE_MIN_SUCCESSES = 14  # of 16
 D_RESETS = len(COHORT_D)
 
 ROWS = (
     "V",
+    "INCONCLUSIVE",  # task level: a second V
     "CAL-ESCALATE",
     "S0-APPLE-FAIL",
     "S0-PLATE-FAIL",
@@ -279,6 +327,15 @@ ROWS = (
     "M1-MOTOR-F-NONE",
     "M1-PERCEPTION",
 )
+# "M1-MOTOR" is an intermediate state of decide_m1 (train and run F), never a final row.
+INTERMEDIATE_STATES = ("M1-MOTOR",)
+DECLARED_EARLY_STOPS = ("CAL-ESCALATE", "S0-APPLE-FAIL", "S0-PLATE-FAIL")
+VOID_RULE = (
+    "a run that stops early other than at a declared early-stop row (CAL-ESCALATE, "
+    "S0-APPLE-FAIL, S0-PLATE-FAIL) is V; exactly one from-scratch repeat with the same seeds, "
+    "caps and device; a second V closes TASK-067 as INCONCLUSIVE"
+)
+NO_ELIGIBLE_CHECKPOINT = "the arm scores 0/16 on D, reported as no_eligible_checkpoint"
 CLAUSE_ROWS = frozenset({"S0-APPLE-FAIL", "M1-MOTOR-F-NONE", "M1-PERCEPTION"})
 
 
@@ -296,10 +353,11 @@ def carried_arm(counts: dict) -> str:
     return max(P_ARMS, key=lambda arm: (counts[arm]["success"], P_ARMS.index(arm)))
 
 
-def decide_m1(counts: dict, *, f_counts: dict | None = None) -> dict:
+def decide_m1(counts: dict, a4_threshold_value: int, *, f_counts: dict | None = None) -> dict:
     """First-matching M1 row from per-arm {"grasp", "success"} counts on the 16 D resets.
 
-    Called only after C0 and S0 passed and the harness is valid (otherwise V or an S0 row)."""
+    Called only after C0 and S0 passed; it checks the harness itself (a failure is V).
+    ``a4_threshold_value`` comes from ``a4_threshold`` (C0 and S0-P)."""
     for arm in M1_ARMS:
         cell = counts.get(arm)
         if cell is None or not (0 <= cell["success"] <= cell["grasp"] <= D_RESETS):
@@ -308,7 +366,9 @@ def decide_m1(counts: dict, *, f_counts: dict | None = None) -> dict:
         return {"row": "V", "void_reason": "harness: B-oracle, B-hold or B-random out of bounds"}
     if any(counts[arm]["success"] >= 1 for arm in P_ARMS):
         return {"row": "M1-PASS", "carried": carried_arm(counts), "clause_fires": False}
-    if counts["A4-look"]["success"] >= A4_MOTOR_THRESHOLD:
+    if not isinstance(a4_threshold_value, int) or a4_threshold_value < A4_THRESHOLD_MINIMUM:
+        raise ContractError("the A4-look threshold is calibrated and at least 1")
+    if counts["A4-look"]["success"] >= a4_threshold_value:
         if f_counts is None:
             return {"row": "M1-MOTOR", "run_F": True, "clause_fires": False}
         if not 0 <= f_counts["success"] <= f_counts["grasp"] <= D_RESETS:
@@ -328,7 +388,21 @@ M2 = {
     "G5_harness": {"B-hold_grasp": 0, "B-random_grasp": 0, "B-oracle_min_successes": 38},
     "G6_privileged_reads": 0,
     "G7_max_median_control_seconds": 0.100,
-    "stop_rule": "an arm with 0/16 grasps on D does not run on C",
+    "stop_rule": (
+        "the carried P-k does not run on C if it has 0/16 grasps on D (then M2 fails); the "
+        "controls C-3, R-3, B-replay and the harness always run on C"
+    ),
+    "exemption_spent_cited": (
+        "apple-policy-diagnostics-v1.json precedence_rule_D1_over_G_SUB.exemption_spent is "
+        "false at preregistration and is not claimed"
+    ),
+    "rows": {
+        "M2-PASS": "every gate passes: a learned policy with a DINOv2 encoder works on this "
+        "cohort (not LeWM driving the robot)",
+        "M2-FAIL-VISION": "G1 and G4 pass, G2 fails: no evidence the image is used",
+        "M2-FAIL": "any other failing gate; the claim is not made; the owner decides",
+        "M2-VOID": "G5 or G6 fails: the run is invalid, not the arms",
+    },
     "cohort_values": "stored in benchmarks/manifests/apple-policy-v1.json, never recomputed",
 }
 
@@ -417,7 +491,18 @@ def frozen_block() -> dict:
             "arms": ARMS,
             "learned_arms": LEARNED_ARMS,
             "m1_arms": M1_ARMS,
-            "a4_motor_threshold": A4_MOTOR_THRESHOLD,
+            "a4_threshold": {
+                "rule": "ceil(0.5 x 16 x mean predicted rate from C0 and S0-P), at least 1",
+                "fraction": A4_THRESHOLD_FRACTION,
+                "minimum": A4_THRESHOLD_MINIMUM,
+            },
+            "input_std_floor": INPUT_STD_FLOOR,
+            "worker_torch_threads": WORKER_TORCH_THREADS,
+            "intermediate_states": INTERMEDIATE_STATES,
+            "declared_early_stops": DECLARED_EARLY_STOPS,
+            "void_rule": VOID_RULE,
+            "no_eligible_checkpoint": NO_ELIGIBLE_CHECKPOINT,
+            "ladder_allowances_L1": LADDER_ALLOWANCES_L1,
             "oracle_min_successes": ORACLE_MIN_SUCCESSES,
             "rows": ROWS,
             "clause_rows": CLAUSE_ROWS,

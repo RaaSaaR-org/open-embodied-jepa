@@ -352,10 +352,34 @@
       "B-random",
       "B-replay"
     ],
-    "a4_motor_threshold": 8,
+    "a4_threshold": {
+      "rule": "ceil(0.5 x 16 x mean predicted rate from C0 and S0-P), at least 1",
+      "fraction": 0.5,
+      "minimum": 1
+    },
+    "input_std_floor": 0.001,
+    "worker_torch_threads": 1,
+    "intermediate_states": [
+      "M1-MOTOR"
+    ],
+    "declared_early_stops": [
+      "CAL-ESCALATE",
+      "S0-APPLE-FAIL",
+      "S0-PLATE-FAIL"
+    ],
+    "void_rule": "a run that stops early other than at a declared early-stop row (CAL-ESCALATE, S0-APPLE-FAIL, S0-PLATE-FAIL) is V; exactly one from-scratch repeat with the same seeds, caps and device; a second V closes TASK-067 as INCONCLUSIVE",
+    "no_eligible_checkpoint": "the arm scores 0/16 on D, reported as no_eligible_checkpoint",
+    "ladder_allowances_L1": {
+      "a": "the fixed look prefix (reset-independent, non-privileged)",
+      "b": "the step counter (non-privileged)",
+      "c": "the palm pose by forward kinematics of the robot's own joint readings",
+      "d": "a perception readout trained on privileged reset labels; zero privileged reads at evaluation",
+      "e": "privileged-expert DAgger labels, at training time only"
+    },
     "oracle_min_successes": 14,
     "rows": [
       "V",
+      "INCONCLUSIVE",
       "CAL-ESCALATE",
       "S0-APPLE-FAIL",
       "S0-PLATE-FAIL",
@@ -381,7 +405,14 @@
       },
       "G6_privileged_reads": 0,
       "G7_max_median_control_seconds": 0.1,
-      "stop_rule": "an arm with 0/16 grasps on D does not run on C",
+      "stop_rule": "the carried P-k does not run on C if it has 0/16 grasps on D (then M2 fails); the controls C-3, R-3, B-replay and the harness always run on C",
+      "exemption_spent_cited": "apple-policy-diagnostics-v1.json precedence_rule_D1_over_G_SUB.exemption_spent is false at preregistration and is not claimed",
+      "rows": {
+        "M2-PASS": "every gate passes: a learned policy with a DINOv2 encoder works on this cohort (not LeWM driving the robot)",
+        "M2-FAIL-VISION": "G1 and G4 pass, G2 fails: no evidence the image is used",
+        "M2-FAIL": "any other failing gate; the claim is not made; the owner decides",
+        "M2-VOID": "G5 or G6 fails: the run is invalid, not the arms"
+      },
       "cohort_values": "stored in benchmarks/manifests/apple-policy-v1.json, never recomputed"
     },
     "caps_seconds": {
@@ -402,6 +433,22 @@
     "field": "benchmarks/manifests/apple-policy-diagnostics-v1.json precedence_rule_D1_over_G_SUB.exemption_spent",
     "value_at_preregistration": false,
     "claimed_here": false
+  },
+  "differences_from_proposal": {
+    "owner_confirmation_needed": [
+      "C-3 (no-image control with its own DAgger x3) replaces the proposal's C-noimg (P-0's recipe, BC only)",
+      "R-3 (random-init floor) is added to M1 and to the learned arms; the proposal had it in M2 G3 only"
+    ],
+    "recorded": [
+      "C0: 9 conditions (4 levels each + reference), caps 0.75/1.2 cm apple, 1.5/2.5 cm plate",
+      "S0-APPLE-FAIL fires the clause outright (the proposal's owner-override is removed)",
+      "DAgger frames are not added to the readout (frozen before any closed loop)",
+      "S0-D1 compares estimates within 1e-4 m at batch size 1, not features",
+      "readout at the tokens read-out point",
+      "no apple-hidden spurious check",
+      "M2 rows added; the stop rule applies to the carried P-k only; controls always run"
+    ],
+    "a4_trigger": "calibrated from C0 and S0-P as proposed (an uncalibrated 8/16 in the first draft of PR #78 was replaced after review, before any merge)"
   },
   "calibration": null,
   "results": null

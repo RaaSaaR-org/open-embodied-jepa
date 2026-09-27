@@ -36,9 +36,15 @@ def test_seed_ranges_are_disjoint_and_off_every_forbidden_range():
         assert len(fp.seeds_of(f"dagger_{k}")) == fp.DAGGER_RESETS_PER_ITERATION
 
 
-def test_seed_check_refuses_an_overlap(monkeypatch):
+def test_seed_check_refuses_leaving_the_range(monkeypatch):
     monkeypatch.setitem(fp.SEED_RANGES, "dagger_3", (46672, 47000))
-    with pytest.raises(fp.GuardError):
+    with pytest.raises(fp.GuardError, match="leaves"):
+        fp.check_seed_ranges()
+
+
+def test_seed_check_refuses_a_pairwise_overlap(monkeypatch):
+    monkeypatch.setitem(fp.SEED_RANGES, "dagger_2", (46500, 46671))
+    with pytest.raises(fp.GuardError, match="overlap"):
         fp.check_seed_ranges()
 
 
@@ -139,38 +145,75 @@ def _counts(**overrides):
     return counts
 
 
+A4T = 8
+
+
+def _decide(counts, **kwargs):
+    return fp.decide_m1(counts, A4T, **kwargs)
+
+
 def test_m1_rows():
-    assert fp.decide_m1(_counts(B_oracle=(16, 13)))["row"] == "V"
-    assert fp.decide_m1(_counts(B_hold=(1, 0)))["row"] == "V"
-    passed = fp.decide_m1(_counts(P_1=(3, 2), P_3=(2, 2)))
+    assert _decide(_counts(B_oracle=(16, 13)))["row"] == "V"
+    assert _decide(_counts(B_hold=(1, 0)))["row"] == "V"
+    passed = _decide(_counts(P_1=(3, 2), P_3=(2, 2)))
     assert passed["row"] == "M1-PASS" and passed["carried"] == "P-3"
     assert not passed["clause_fires"]
-    motor = fp.decide_m1(_counts(A4_look=(12, 8)))
+    motor = _decide(_counts(A4_look=(12, 8)))
     assert motor["row"] == "M1-MOTOR" and motor["run_F"]
-    partial = fp.decide_m1(_counts(A4_look=(12, 8)), f_counts={"grasp": 2, "success": 1})
+    partial = _decide(_counts(A4_look=(12, 8)), f_counts={"grasp": 2, "success": 1})
     assert partial["row"] == "M1-MOTOR-F-PARTIAL" and not partial["clause_fires"]
-    none = fp.decide_m1(_counts(A4_look=(12, 8)), f_counts={"grasp": 2, "success": 0})
+    none = _decide(_counts(A4_look=(12, 8)), f_counts={"grasp": 2, "success": 0})
     assert none["row"] == "M1-MOTOR-F-NONE" and none["clause_fires"]
-    perception = fp.decide_m1(_counts(A4_look=(9, 7)))
+    perception = _decide(_counts(A4_look=(9, 7)))
     assert perception["row"] == "M1-PERCEPTION" and perception["clause_fires"]
 
 
 def test_m1_controls_never_decide_the_row():
     # C-3, R-3, D-oracle-perc and B-replay successes change no row: M1 is about P.
     counts = _counts(C_3=(5, 4), R_3=(5, 4), D_oracle_perc=(16, 16), B_replay=(6, 5))
-    assert fp.decide_m1(counts)["row"] == "M1-PERCEPTION"
+    assert _decide(counts)["row"] == "M1-PERCEPTION"
 
 
 def test_m1_refuses_missing_or_invalid_counts():
     counts = _counts()
     del counts["R-3"]
     with pytest.raises(ContractError):
-        fp.decide_m1(counts)
+        _decide(counts)
     with pytest.raises(ContractError):
-        fp.decide_m1(_counts(P_0=(1, 2)))
+        _decide(_counts(P_0=(1, 2)))
 
 
 def test_learned_arms_are_enumerated_and_labelled():
     assert set(fp.LEARNED_ARMS) == {a for a, (rung, _) in fp.ARMS.items() if rung == "L1"}
     assert fp.ARMS["F"][0] == "L2" and fp.ARMS["A4-look"][0] == "L3"
     assert set(fp.ROWS) >= fp.CLAUSE_ROWS
+
+
+def test_m1_refuses_an_uncalibrated_a4_threshold():
+    with pytest.raises(ContractError):
+        fp.decide_m1(_counts(), 0)
+
+
+def test_a4_threshold_from_c0_and_s0():
+    apple = {0.5: 32, 0.8: 30, 1.0: 28, 1.2: 28}
+    plate = {1.0: 32, 1.5: 32, 2.0: 30, 2.5: 28}
+    # every held-out reset inside the smallest levels: predicted rate 1.0 -> expected 16 -> 8
+    assert fp.a4_threshold(32, apple, plate, np.full(128, 0.3), np.full(128, 0.5)) == 8
+    # half the resets beyond the largest apple level: rate halves -> threshold 4
+    errors = np.r_[np.full(64, 0.3), np.full(64, 2.0)]
+    assert fp.a4_threshold(32, apple, plate, errors, np.full(128, 0.5)) == 4
+    # never below 1
+    assert fp.a4_threshold(32, apple, plate, np.full(128, 5.0), np.full(128, 0.5)) == 1
+
+
+def test_clock_has_no_rounding_noise_feature():
+    features = np.stack([fp.clock_features(t) for t in range(fp.EXPERT_POLICY_STEPS)])
+    assert features.std(axis=0).min() > 1e-3
+
+
+def test_rows_and_rules_are_declared():
+    assert "INCONCLUSIVE" in fp.ROWS and "M1-MOTOR" not in fp.ROWS
+    assert fp.INTERMEDIATE_STATES == ("M1-MOTOR",)
+    assert set(fp.DECLARED_EARLY_STOPS) <= set(fp.ROWS)
+    assert "carried P-k" in fp.M2["stop_rule"] and "always run" in fp.M2["stop_rule"]
+    assert set(fp.LADDER_ALLOWANCES_L1) == {"a", "b", "c", "d", "e"}
