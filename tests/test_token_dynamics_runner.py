@@ -125,8 +125,9 @@ def test_rollout_errors_match_the_direct_computation():
     starts = np.array([0, 4, 30])
     scale = np.full(4, 2.0)
     shift = np.zeros(4)
+    sessions = np.array(["s0", "s0", "s1"])
     errors, moments, projected = R.rollout_errors(
-        _Model(), features, actions, starts, scale, "true", None, shift
+        _Model(), features, actions, starts, scale, "true", None, shift, sessions, np.eye(4)
     )
     f, a = R.R65.gather(features, actions, starts, td.TRAIN_HORIZON)
     predicted = _Model().predict_features(f[:, 0], a)
@@ -139,10 +140,12 @@ def test_rollout_errors_match_the_direct_computation():
         enc.add(f[:, h] / scale)
         got = td.collapse_statistics(moments[h], enc)
         assert got["std_ratio"] == pytest.approx(direct["std_ratio"])
-    zero, _, none = R.rollout_errors(
+        assert sorted(projected[h].sessions) == ["s0", "s1"]
+    # a non-gated mode (W's wrong or zero actions) builds no moments at all
+    zero, no_moments, none = R.rollout_errors(
         _Model(), features, actions, starts, scale, "zero", None, shift
     )
-    assert none is None and projected is None
+    assert none is None and no_moments is None
     want = ld.normalized_sq_error(f[:, 0], f[:, 8], scale)
     np.testing.assert_allclose(zero[8], want, rtol=1e-6)
 
@@ -237,10 +240,34 @@ def test_check_model_config_both_directions():
             R.check_model_config(good | {key: value})
 
 
-def test_the_lewm_defaults_give_the_frozen_effective_config():
-    """The LeWM token class's defaults plus MODEL_CONFIG equal the pinned effective config."""
-    pytest.importorskip("torch")
+def test_a_real_token_model_has_the_frozen_effective_config(monkeypatch):
+    """An instance of the LeWM token class, built with MODEL_CONFIG as the runner builds it,
+    passes the per-model check (a tiny random-init DINOv2 stands in for the pinned weights)."""
+    torch = pytest.importorskip("torch")
     pytest.importorskip("transformers")
-    from embodied_jepa.models.lewm import LeWM
+    if not (ROOT / "third_party/le-wm/jepa.py").exists():
+        pytest.skip("optional pinned LeWM source absent; run scripts/fetch_lewm.py")
+    from transformers import Dinov2Config, Dinov2Model
 
-    R.check_model_config(LeWM.defaults | td.MODEL_CONFIG)
+    from embodied_jepa.contracts import StateSchema
+    from embodied_jepa.models import frozen_tokens as ft
+
+    def tiny(self, name):
+        config = Dinov2Config(
+            hidden_size=384,
+            num_hidden_layers=1,
+            num_attention_heads=6,
+            mlp_ratio=1,
+            patch_size=14,
+            image_size=224,
+        )
+        with torch.random.fork_rng(devices=[]):
+            torch.manual_seed(7)
+            return Dinov2Model(config).float().eval()
+
+    monkeypatch.setattr(ft.FrozenTokenMixin, "_load_frozen_module", tiny)
+    schema = StateSchema(("arm.q",), ("rad",), "fixture_v0")
+    model = ft.frozen_token_model(td.BACKEND)(schema, config=td.MODEL_CONFIG)
+    R.check_model_config(model.config)
+    with pytest.raises(R.GuardError, match="G-frozen"):
+        R.check_model_config(model.config | {"sigreg_projections": 1})

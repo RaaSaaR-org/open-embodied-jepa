@@ -850,9 +850,16 @@ thresholds, seeds, budget and caps are unchanged. What the runner does, all mech
 - **Reuse.** It imports TASK-065's runner read-only, for its reader (Q-split before any file is
   opened), its guard helpers, its window, gather and val-criterion code and its report writer.
   That file's bytes are pinned by this manifest.
-- **Preflight.** G-hash is recorded before any import. G-frozen (`token_dynamics.require_frozen`)
-  runs before torch is imported. Any exception from the first line of `run` onwards writes a V
-  report.
+- **Preflight.** G-hash is recorded before torch or any model is imported; the NumPy-only design
+  modules and TASK-065's runner are imported when the runner loads. G-frozen
+  (`token_dynamics.require_frozen`) runs before torch is imported. Any exception from the first
+  line of `run` onwards writes a V report.
+- **G-cap per model covers its evaluation** (after PR 2's review). The 4500 s cap is checked
+  every 100 updates, after the checkpoint is saved, and again after the model's evaluation
+  (E-all, E-post and the val roots), as §10 states. TASK-065's cap excluded evaluation.
+- **Only the gated modes build G1 moments**: W with true actions and N. W's wrong-action and
+  zero-action rollouts give latent errors only. The encoded grid's T1 is also reported at h = 0
+  (frame 8), as §8 asks.
 - **G-frozen, per model** (after PR 1's review, item N6). Each model's effective configuration
   must equal the preregistered one: `MODEL_CONFIG` plus the adapter defaults the protocol keeps
   (hidden 128, depth 2, 2 heads × 24, lr 3e-4, weight decay 1e-4, clip 1.0, multistep weight 1.0)
@@ -886,14 +893,19 @@ thresholds, seeds, budget and caps are unchanged. What the runner does, all mech
   seeded noise**, and G1 is not evaluated. Its gates are meaningless by construction and were not
   read.
   - `outputs/task066-scratch/smoke-a`: an earlier draft with a provisional manifest.
-  - `outputs/task066-scratch/smoke-b`, with the committed code (`581baa1`. The later rebases onto
-    PR 1's fixes left the runner's bytes unchanged, sha256 `7a89aee1…878b`):
+  - `outputs/task066-scratch/smoke-b`, with the runner as first committed (`581baa1`, runner
+    sha256 `7a89aee1…878b`). It predates the per-model configuration check and the
+    evaluation cap, so it does not cover the final runner; smoke-c (below) does:
     - report sha256 `b8d075f4…ab1ca`, 422 s;
     - every section was written, `non_finite_fields` was empty, and `test_split_decoded` was
       false;
     - G-cache (b) held on `look-47000` (final batch 14) and `look-47000-b0-noise_only` (final
       batch 4);
-    - **peak RSS 14.2 GB.** smoke-a peaked at 6.98 GB on the same subset. The difference is not
-      explained. MPS allocations count towards the process footprint on unified memory.
+    - **peak RSS 14.2 GB.** smoke-a peaked at 6.98 GB on the same subset with byte-identical
+      runner code; only `token_dynamics.py`'s frozen constants and the calibration files
+      differed. So the gap is run-to-run variation, most likely in MPS and unified-memory
+      accounting, and not a difference between runners. The PR 2 reviewer's own smoke on
+      `d51cf94` peaked at 14.05 GB.
+  - ⟨SMOKE-C⟩
 - **The memory expectation of §12 is therefore widened, not as a guard: about 15–30 GB** on the
   48 GiB machine. The report records the peak.

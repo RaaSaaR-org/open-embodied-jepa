@@ -167,9 +167,9 @@ def rollout_errors(
     streamed moments of the normalised predictions (G1 i-ii) and, with ``sessions`` and
     ``basis``, their per-session projected moments (G1 iii). ``mode``: true | zero | wrong."""
     errors = {h: np.empty(len(starts)) for h in EALL_HORIZONS}
-    moments = {h: td.Moments(shift) for h in td.GATED_HORIZONS}
-    projected = None
+    moments = projected = None  # only for the gated mode (W true, N zero): G1 reads no other
     if basis is not None:
+        moments = {h: td.Moments(shift) for h in td.GATED_HORIZONS}
         projected = {h: td.SessionMoments(shift, basis) for h in td.GATED_HORIZONS}
     for lo in range(0, len(starts), EVAL_CHUNK):
         sl = slice(lo, lo + EVAL_CHUNK)
@@ -182,9 +182,9 @@ def rollout_errors(
         R65.check_finite("predictions", predicted)
         for h in EALL_HORIZONS:
             errors[h][sl] = ld.normalized_sq_error(predicted[:, h - 1], f[:, h], scale)
-        for h in td.GATED_HORIZONS:
-            moments[h].add(predicted[:, h - 1] / scale)
-            if projected is not None:
+        if moments is not None:
+            for h in td.GATED_HORIZONS:
+                moments[h].add(predicted[:, h - 1] / scale)
                 projected[h].add(predicted[:, h - 1] / scale, sessions[sl])
     return errors, moments, projected
 
@@ -311,6 +311,8 @@ def train_one(ctx, arm, seed, half, clock):
         :, [h - 1 for h in ALL_HORIZONS]
     ]
     record["seconds_with_evaluation"] = time.monotonic() - started
+    # G-cap covers the model's evaluation too (protocol section 10), unlike TASK-065's cap
+    R65.check_stage_cap(started, ctx["per_run_seconds"], f"model {arm}-s{seed}-{half} evaluation")
     del model
     return out
 
@@ -777,6 +779,11 @@ def statistics(ctx, results, collapse, seeds, train_roots, val_roots, targets, f
         return R65.t1_stats(err, err_occ, err_enc, idx), err
 
     out_read, per_root_err = {"encoded": {}}, {}
+    # the encoded grid at every h, h = 0 (frame 8) included (protocol section 8)
+    err0 = ic.xy_error_cm(probes[0]["pred"], xy[0])
+    out_read["encoded"][0] = R65.t1_stats(
+        err0, ic.xy_error_cm(probes[0]["occ"], xy[0]), err0, idx
+    ) | {"selections": probes[0]["selections"]}
     for h in ALL_HORIZONS:
         err_enc = ic.xy_error_cm(probes[h]["pred"], xy[h])
         err_occ = ic.xy_error_cm(probes[h]["occ"], xy[h])
