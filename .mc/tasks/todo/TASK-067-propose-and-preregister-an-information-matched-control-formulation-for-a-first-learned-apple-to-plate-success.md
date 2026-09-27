@@ -120,7 +120,8 @@ successes.**
   - The current collector scores 32/32 at the reference, landing a median 2.7 cm short. At a
     1.0 cm plate error it scores 21/32.
   - The mechanism counts as confirmed by the declared rule only. The per-attempt data contradict
-    it as the cause: every failure lands forward or sideways at the rim (4.53–4.62 cm), not short.
+    it as the cause: at 1.0 cm every failure of the current collector lands forward or sideways
+    at the rim (4.53–4.62 cm), not short.
   - The release-at-centre candidate scores 15/32 at the reference and 23/32 at 1.0 cm, below
     28/32.
   - Under R8 the work stops and goes back to the owner.

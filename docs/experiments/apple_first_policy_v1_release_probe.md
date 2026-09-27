@@ -163,9 +163,9 @@ number exists. The probe's outcomes choose nothing.
    - None of the 11 failures is short: all have dx > 0 (+0.15 to +4.52 cm).
    - All 63 non-dropped failures, in every cell, end in a narrow ring 4.53–4.62 cm from the
      centre. That looks like the plate's rim. This is an inference; no contact was recorded.
-   - What fails is an apple that goes forward or sideways to the rim. The plate error seems to
-     change the release geometry, so that the apple rolls or bounces there. **The mechanism
-     behind that is not identified by this probe.**
+   - For the current collector at 1.0 cm, what fails is an apple that goes forward or sideways
+     to the rim. **Why it goes there is not identified by this probe.** The candidate also ends
+     at the rim with the plate exact, so the plate error is not the only route to it.
    - The results document's §4.2 derivation is therefore contradicted as an explanation of the
      C0 failures. The count matches, though: 21/32 at 1.0 cm, as in C0, on different seeds and
      directions (`default_rng(6810)` against 6700).
