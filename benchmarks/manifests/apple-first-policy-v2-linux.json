@@ -591,7 +591,7 @@
     "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
     "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
     "docs/experiments/apple_first_policy_v2.md": "13b3470b70bfe8f791d1036e94f0e031847bec14d1c41874c30b34e2c2cea0d7",
-    "docs/experiments/apple_first_policy_v2_linux.md": "6b698f34f5abfba18573ea63558144415c530f154bde184e5281d0029a87a013",
+    "docs/experiments/apple_first_policy_v2_linux.md": "e7be29f88e52940c870fc51d6b122c63ecb027f478dace4e2bb9da792989028c",
     "scripts/check_first_policy_v2_linux_render.py": "70bb6e79c47243d6cdee56df72d99ca7251f14f8d6b713f83c2c1ff70937fd75",
     "scripts/check_first_policy_v2_render.py": "ef448487015d7320770fc4df88ea98da75b0a6d4a20904c9bedf293c87493602",
     "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
