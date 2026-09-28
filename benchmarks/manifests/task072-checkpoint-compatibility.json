@@ -31,7 +31,7 @@
     "tests/test_policy_preflight.py::test_e0_checkpoint_loads_only_at_its_recorded_revision"
   ],
   "guard_tests_rule": "for base.py the guard tests check that each protocol's pin equals sha256_before here (the bytes those checkpoints were written against), and that base.py at HEAD equals sha256_after, so the next edit to base.py fails them again and has to be recorded; every other pinned file is still compared at HEAD",
-  "owner_ruling": null,
+  "owner_ruling": "T72-R1 (2026-09-28T13:15Z, orchestrator for the owner): Accepted. Enabling CUDA in models/base.py and models/sensor.py is required for the product goal (LeWM training on the RTX 5080). World-model checkpoints written at or before 9e23ced remain valid evidence and load only at their recorded revision; no recorded result changes. The next edit to either file needs its own recorded retirement.",
   "other_pinned_files_changed": {
     "note": "changed by TASK-072 and pinned by closed protocols' manifests; not part of any checkpoint's implementation hash, and no guard test protects them. Those protocols re-run only at their recorded revisions.",
     "src/embodied_jepa/config.py": "apple-aligned-cost-v1, apple-control-development-v1, apple-goal-alignment-v1, apple-wide-object-ceiling-v1 (their pins already differed before TASK-072)",
