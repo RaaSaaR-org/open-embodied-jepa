@@ -83,7 +83,7 @@ pre-run reviewer's reported GO, from `main` at `1ba0557`.
 - **The expert:** the privileged scripted expert e9, `RestingPlaceExpert(release_pitch_rad=0.45,
   release_dx=0.015)`.
 - **The result on 32 fresh gated seeds, 50600–50631:** at rest (`apple_at_rest_v0`) on **32/32**
-  with the plate exact and **30/32** at 1.0 cm plate error. The bar was 28/32 at each level, so
+  with the plate exact and **30/32** at 1.0 cm plate error. The bar was 28/32 at each gated level, so
   the row is **PASS**.
 - **Reported alongside:** 28/32 at 1.5 cm, 32/32 latched at every level, and 0 guard stops.
 - **The six misses** all rested 4.02–4.61 cm from the plate centre, outside the 4 cm radius.
