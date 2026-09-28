@@ -194,3 +194,59 @@ each needing the owner's ruling:
 - closing TASK-067 on the calibration finding.
 
 Learned Apple→Plate is still 0 successes.
+
+## 6. Owner ruling R9 (verbatim, received 2026-09-28T00:00Z UTC via the coordinator)
+
+> TASK-067 owner ruling R9, 2026-09-28T00:00Z UTC. PR #85 is merged as 229c5cd. Record R9
+> verbatim in the next PR.
+>
+> R9 has five parts:
+>
+> 1. **Erratum: yes, as one small PR first.**
+>    - Add a dated erratum to docs/experiments/apple_first_policy_v1_results.md §4.2.
+>    - It marks the "releases 3.5 cm short" explanation as contradicted by the R8 probe, and links
+>      apple_first_policy_v1_release_probe.md.
+>    - Keep the original text; don't delete it.
+>    - In the same PR, update the TASK-067 sentences in AGENTS.md, CLAUDE.md and README.md (#84
+>      says "the owner has chosen a diagnostic probe of the collector's release point"). They
+>      should now say:
+>      - the probe ended P-CANDIDATE-FAIL;
+>      - the release-point mechanism is contradicted;
+>      - the cause of the failures is still unidentified.
+>    - Get it reviewed; I merge.
+>
+> 2. **Diagnosis before any redesign (diagnostic only, no gate).**
+>    - Re-run the current collector on the already-probed seeds 46800–46831, at plate exact and
+>      at 1.0 cm plate error. These seeds are spent for probing, so reusing them for diagnosis
+>      only is fine. Disclose it.
+>    - Log the full post-grasp trajectory:
+>      - apple pose and velocity at release and until it comes to rest;
+>      - every contact, with its pair: apple–plate, apple–hand/fingers, hand–plate, apple–table;
+>      - the plate's own pose over time, including whether the hand or the apple pushes or tilts
+>        the plate;
+>      - the hand's pose during approach, release and retract.
+>    - The goal is to explain the 4.53–4.62 cm ring:
+>      - rolling or bouncing to the rim?
+>      - the hand dragging the apple on retract?
+>      - the plate being displaced?
+>      - something in the scorer's frame?
+>    - Report a mechanism only if the logs show it directly; otherwise say it is unidentified.
+>
+> 3. **At most ONE redesign, then only if the diagnosis identifies a cause.**
+>    - Pre-declare one expert change that targets that cause, for example place-then-open, lower
+>      release, or a retract that clears the apple. Commit it before running.
+>    - Probe it on fresh seeds disjoint from every spent or allocated range, including
+>      46832–46863.
+>    - Pass bar: ≥ 28/32 at plate exact AND ≥ 28/32 at 1.0 cm plate error. Report 1.5 cm only.
+>    - If it passes, continue as in R8 §3–4: a v2 amendment PR, then the pre-run reviewer's GO,
+>      then the gated run.
+>    - If it fails, or the cause stays unidentified, stop and report. No second design without a
+>      new ruling.
+>
+> 4. **Frozen, as before.**
+>    - No change to the task, the plate geometry, the scorer radius, or the 28/32 bar.
+>    - Changing the task or the geometry would be a new task, not an amendment.
+>    - Closing TASK-067 stays the fallback if step 3 fails.
+>
+> 5. **Process.**
+>    - Everything is scripted and privileged: no learned policy and no test-split decoding.
