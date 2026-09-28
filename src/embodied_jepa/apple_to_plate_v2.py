@@ -40,6 +40,36 @@ def check_seeds(seeds, *, others=()) -> None:
     rx.check_seeds(seeds, others=(rx.DEV_SEEDS, range(50100, 50200), *others))
 
 
+# ----- the frozen gate (TASK-070 preregistration; docs/experiments/apple_to_plate_v2_expert.md) ---
+# The expert: TASK-070 development design e9 (RestingPlaceExpert keyword arguments).
+GATE_EXPERT = {"release_pitch_rad": 0.45, "release_dx": 0.015}
+GATE_SEEDS = tuple(range(50600, 50632))  # fresh; never simulated before the gated run
+GATE_DIRECTION_SEED = 6860
+GATE_LEVELS_CM = (0.0, 1.0, 1.5)  # 1.5 cm is reported only
+GATE_BAR = {"0.0": 28, "1.0": 28}  # at rest (apple_at_rest_v0), of 32, at each gated level
+
+
+def check_gate_seeds() -> None:
+    """The gated seeds avoid every declared range, including all TASK-068/069/070 dev seeds."""
+    check_seeds(GATE_SEEDS, others=(DEV_SEEDS,))
+    if len(GATE_SEEDS) != 32:
+        raise ValueError("the gate uses 32 seeds")
+
+
+def gate_row(cells: dict) -> str:
+    """VOID if any attempt raised; else PASS iff at rest >= 28/32 at 0 and at 1.0 cm; else FAIL.
+
+    A guard stop is a completed-but-failed attempt (not at rest), not a void."""
+    if any(cells[level]["errors"] for level in cells):
+        return "VOID"
+    for level, bar in GATE_BAR.items():
+        if cells[level]["attempts"] != 32:
+            return "VOID"
+        if cells[level]["at_rest"] < bar:
+            return "FAIL"
+    return "PASS"
+
+
 def apply_v2_scene(model) -> dict:
     """Turn a compiled v1 scene into v2 in place. Refuses anything that is not the v1 apple."""
     geom = model.geom(APPLE_GEOM).id
