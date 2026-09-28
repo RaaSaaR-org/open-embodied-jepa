@@ -4,7 +4,7 @@ aliases:
 - TASK-068
 title: Scripted expert that rests the apple on the plate, with an at-rest success metric
 slug: scripted-expert-that-rests-the-apple-on-the-plate-with-an-at-rest-success-metric
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -20,6 +20,7 @@ due_date: ''
 created: 2026-09-28
 updated: 2026-09-28
 ---
+
 
 
 # Scripted expert that rests the apple on the plate, with an at-rest success metric
@@ -69,10 +70,13 @@ Protocol and log: `docs/experiments/apple_resting_expert_v1.md`.
       default scorer is unchanged (`task.py` and `scripted.py` are byte-identical to `main`).
 - [x] Descent diagnosis run and reported from logs and code only.
 - [x] Development log of every design with its development counts.
-- [ ] Preregistration PR (expert design and revision, metric and thresholds, conditions, seeds,
-      budget) merged on an independent reviewer's reported APPROVE.
-- [ ] Gated evaluation run only on the pre-run reviewer's reported GO; results PR merged on a
-      reported APPROVE; failures reported plainly.
+- [x] ~~Preregistration PR~~ and ~~gated evaluation~~: **not done, by owner ruling R11**, which
+      declined option (a) and closed the task on the development finding. No gated seeds were
+      declared or spent.
+- [x] Development evidence merged: PR #89 (rebase merge; `c17781f`…`221451b` on `main`).
+      The pre-merge head `a8004c8` is tagged `task068-dev-evidence-pre-merge`.
+- [x] Closeout: card done, `docs/DECISIONS.md` entry, status line in AGENTS.md, CLAUDE.md and
+      README.md, and R11 with the SHA map in the protocol §8.
 
 ## Notes
 - 2026-09-28: card opened by the TASK-068 agent on the coordinator's brief.
@@ -84,5 +88,11 @@ Protocol and log: `docs/experiments/apple_resting_expert_v1.md`.
   step, and the backtracked 1/8 step lies inside the IK tolerance and is a hold (protocol §4).
   Blocker reported to the owner before any preregistration (protocol §6). No gated seeds
   declared or spent.
+- 2026-09-28: owner ruling R11 (verbatim in the protocol §8). PR #89 merged by rebase. Tag
+  `task068-dev-evidence-pre-merge` pushed at `a8004c8`. Option (a) declined; TASK-068 closed on
+  the development finding: under the frozen v1 task the privileged expert cannot rest the
+  apple on the plate (reach; a sphere with no rolling resistance keeps rolling). Follow-up:
+  TASK-069 (development-only feasibility scan toward `apple-to-plate-v2`). **Learned
+  Apple→Plate is still 0 successes.**
 
 %% mc-links: [[TASK-067]] %%

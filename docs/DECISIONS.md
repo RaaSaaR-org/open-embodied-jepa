@@ -63,6 +63,50 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-28 — TASK-068 closes on its development finding: under the frozen v1 task the privileged expert cannot rest the apple on the plate (TASK-068)
+
+**Decision.** Owner ruling R11 closes TASK-068 on its development finding, with no gated run.
+- **Option (a) is declined.** No gated run is made to put an expected failure on record.
+- **The development log is the record.** The privileged scripted expert rested the apple on the
+  plate in **0 of 269 completed development attempts**, across 15 design-by-level cells (304
+  attempts; 35 ended early on the joint-velocity guard). The development seeds were
+  50000–50099.
+- **The at-rest check** is `apple_at_rest_v0` (`src/embodied_jepa/at_rest.py`). It reads 20
+  steps at the end of a 60-step settle. On every one of them the apple must be within 4 cm,
+  supported, moving at ≤ 0.001 m/s, and free of hand contact.
+- **Next:** TASK-069, a development-only feasibility scan toward an `apple-to-plate-v2` task
+  definition. The v1 task, its history and the 0/150 benchmark stay untouched and separately
+  named.
+- **Learned Apple→Plate is still 0 successes.** This is privileged scripted engineering, not a
+  learned result.
+
+**Why, under the frozen v1 task.**
+1. **The place pose is beyond the fixed-pelvis arm's reach.**
+   - Measured: no right-arm configuration within the joint limits brings the palm within
+     3.1 cm of any of the eight place targets, whatever the palm orientation (the smallest
+     reachable distance is 3.1–6.2 cm per target).
+   - The pelvis is fixed, and the IK uses the 7 arm joints only.
+   - Measured: when the hand starts to open, the held apple is 8.0–23.2 cm above its resting
+     height.
+2. **The apple, a sphere with no rolling resistance in this scene, keeps rolling.**
+   - Measured: a 0.002 m/s roll persisted unchanged for 10 s.
+   - Measured in the traces examined: the hand's opening rolls the apple off the thumb. No development cell's median
+     landing speed was below 0.08 m/s.
+   - Measured: most grasped apples end rolling at or along the rim, 4.5–4.6 cm from the centre.
+
+**The latch, again.** The best design, d12, scored 32/32 and 29/32 on the latched scorer, and
+0/32 at rest at both levels. Latched scripted counts are not evidence of an apple left on the
+plate.
+
+**Evidence.**
+- [apple_resting_expert_v1.md](experiments/apple_resting_expert_v1.md):
+  - §4, the descent diagnosis;
+  - §5, the development log;
+  - §8, R11 verbatim and the map from the commit SHAs cited before the merge to the SHAs on
+    `main`.
+- The tag `task068-dev-evidence-pre-merge` (`a8004c8`) keeps the SHAs cited before the merge
+  reachable.
+
 ## Decision 2026-09-28 — TASK-067 closes as CAL-ESCALATE; the scripted expert does not rest the apple on the plate, and the scorer latches transient crossings (TASK-067)
 
 **Decision.** Owner ruling R10 closes TASK-067 under the R9 fallback, with outcome

@@ -1,9 +1,12 @@
 # Apple→Plate resting expert v1: at-rest metric, descent diagnosis, development log (TASK-068)
 
-**Status (2026-09-28): development stopped on a blocker, before any preregistration.** No
-design reached a single at-rest success on the development seeds (§5). This document is **not**
-a preregistration. No gated seeds are declared or spent, and no gated run was started. The
-owner's ruling is needed (§6).
+**Status (2026-09-28): closed on the development finding (owner ruling R11, §8).** No design
+reached a single at-rest success on the development seeds (§5). This document is **not** a
+preregistration. No gated seeds were declared or spent, and no gated run was made: R11 declined
+option (a). The follow-up is TASK-069, a development-only feasibility scan.
+
+*§1–§7 are kept as written at the pre-merge head. The commit SHAs they cite are pre-merge
+SHAs; §8 maps them to the SHAs on `main`.*
 
 This is engineering on a **privileged scripted controller**. No learned policy was trained or
 run, no corpus was read, and the test split was not decoded. Scripted-expert results are not
@@ -371,3 +374,82 @@ values, which in turn matched the exploratory values.
 Scan grids used (seed 50003):
 - orientation scan: `[{"opening_ramp":0.04},{"opening_ramp":0.01},{"opening_ramp":0.04,"rpy":[0,-0.9,0]},{"opening_ramp":0.04,"rpy":[0,-0.6,0]},{"opening_ramp":0.04,"rpy":[0,0.45,0]},{"opening_ramp":0.04,"rpy":[0,0.6,0]},{"opening_ramp":0.04,"rpy":[0,0.75,0]},{"opening_ramp":0.04,"rpy":[0,0.9,0]},{"opening_ramp":0.04,"rpy":[0,1.1,0]},{"opening_ramp":0.01,"rpy":[0,0.75,0]},{"opening_ramp":1.0,"rpy":[0,0.6,0]},{"opening_ramp":1.0,"rpy":[0,0.9,0]},{"opening_ramp":0.04,"rpy":[0.5,0,0]},{"opening_ramp":0.04,"rpy":[-0.5,0,0]},{"opening_ramp":0.04,"rpy":[0,0,1.57]},{"opening_ramp":0.04,"rpy":[0,0,-1.57]}]`
 - what-if: `[{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.026},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.026,"opening_ramp":1.0},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.026,"release_pitch_rad":0.45},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.04},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.055},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.07},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.10}]`
+
+## 8. Owner ruling R11 and closeout (2026-09-28)
+
+Owner ruling R11, 2026-09-28T02:47Z UTC, received via the coordinator and recorded verbatim:
+
+> TASK-068 owner ruling R11, 2026-09-28T02:47Z UTC. PR #89 is merged with a rebase merge. main is now at 221451b, and c17781f…221451b are your 7 commits. GitHub rewrote their SHAs, so the SHAs your doc cites, for example a8a579c, are no longer on main.
+>
+> Record R11 verbatim.
+>
+> 1. **Provenance, first.**
+>    - Push the tag `task068-dev-evidence-pre-merge` at a8004c8 so the cited SHAs stay reachable.
+>    - In the closeout PR, add a table mapping old SHAs to new SHAs in docs/experiments/apple_resting_expert_v1.md.
+>
+> 2. **(a) is declined.**
+>    - No gated run to put an expected failure on record. The development log (0 at rest out of 269 completed attempts) is on record and is enough.
+>
+> 3. **Close TASK-068 on the development finding** in one small closeout PR:
+>    - Card to done.
+>    - A DECISIONS entry saying that under the frozen v1 task the privileged expert cannot rest the apple on the plate, for two reasons:
+>      - the place pose is beyond the fixed-pelvis arm's reach;
+>      - the frictionless sphere keeps rolling.
+>    - A one-line update of the TASK-068 status in AGENTS.md, CLAUDE.md and README.md, keeping "Learned Apple→Plate is still 0 successes".
+>    - Reviewed; I merge.
+>
+> 4. **Open TASK-069, a dev-only feasibility scan, no gate, which you own.**
+>    - The question: which minimal task or embodiment change makes a privileged scripted expert rest the apple on the plate?
+>    - Use a new development seed range disjoint from all others, e.g. 50100–50199, verified. Scan with your best design(s):
+>      - **(b3)** apple rolling and torsional friction (condim 6, or similar values that are physically plausible for an apple), alone.
+>      - **(b2)** plates sampled within the reachable set-down region, alone. Measure the region with your reach tool.
+>      - **b2 + b3** together.
+>      - **(b1)** feasibility only, no expert work: can the waist joints be added to the IK internally while keeping the frozen 14-D `ee_delta_grasp_v0` action schema unchanged? What does the MJCF actuate? And would the extra reach bring the current plate region within place distance? Answer from code and models.
+>      - **(b4)** is excluded: it needs a new action contract.
+>    - For each cell, report:
+>      - at-rest and latched counts at plate exact and at 1.0 cm;
+>      - joint-velocity-guard stops;
+>      - the landing speed.
+>    - Nothing is gated or frozen here. The output is a recommendation for an `apple-to-plate-v2` task definition. The v1 task, its history and the 0/150 benchmark stay untouched and separately named.
+>    - I will rule on the v2 definition from your data. Only then comes a preregistered expert gate on v2: fresh seeds, ≥ 28/32 at rest at plate exact and at 1.0 cm.
+>    - Open the TASK-069 card with `mc`.
+>
+> 5. **Keep it honest.** This is privileged scripted engineering, not a learned result. Report numbers with their counts, and say what the logs show directly versus what you infer.
+>
+> Rules, verbatim:
+> 1. "A gated run starts only on the pre-run reviewer's REPORTED verdict, delivered as a message — never on a review file read from disk. Same rule for merging: only on the reviewer's reported APPROVE."
+> 2. "One task, one agent. Do not launch a closeout/follow-up agent while the original task agent can still resume."
+> 3. Reviewers use their own temporary worktree, never yours.
+>
+> Do not merge. For each PR, send me the PR number, the head SHA and the reviewer's reported verdict. If you cite commits in docs, tell me whether you want a squash merge or a rebase merge. With a rebase merge the SHAs change as well, so tag the pre-merge head in either case.
+>
+> Address this before completing your current task.
+
+**Provenance.**
+- The tag `task068-dev-evidence-pre-merge` is pushed at `a8004c8`, the PR #89 head before the
+  merge. It keeps every pre-merge SHA below reachable.
+- The rebase merge of PR #89 rewrote each commit's SHA and left its content unchanged.
+- **Each pair below has the identical git tree** (checked with `git log --format=%T`). The runs
+  cited in §1–§7 at a pre-merge SHA therefore ran on exactly the code at the matching `main`
+  SHA.
+
+| pre-merge SHA (cited in §1–§7) | on `main` | commit |
+|---|---|---|
+| `2764656` | `c17781f` | at-rest check, resting expert and descent diagnosis (the run-2 development runs and diagnosis run-1) |
+| `5345ef9` | `db1dd19` | hold check against the IK seed, and position-only reach (diagnosis run-2) |
+| `415d89d` | `0a1959e` | single-seed release scan (scan run-1) |
+| `627c030` | `27571d4` | what-if release point in the scan (what-if run-1) |
+| `a8a579c` | `9dbb03b` | at-rest check and expert moved out of the hash-pinned files (every run-3, both scan run-2s, diagnosis run-3) |
+| `6ae55b8` | `4ddc268` | protocol document and card |
+| `a8004c8` | `221451b` | review fixes (the PR #89 head) |
+
+The development runs labelled run-1 ran on an uncommitted working tree based on `fa495d1`,
+the parent of `2764656` (§5 says only "the uncommitted working tree"). They have no commit of their own.
+
+**Closeout.**
+- TASK-068 is closed on its development finding. No gated run was made (R11 §2).
+- **Decision:** `docs/DECISIONS.md`, 2026-09-28 (TASK-068).
+- **Follow-up:** TASK-069, a development-only feasibility scan toward an `apple-to-plate-v2` task
+  definition. It has no gate.
+- The v1 task, the v1 scorer, their history and the 0/150 MVP benchmark are untouched.
+- **Learned Apple→Plate is still 0 successes.**
