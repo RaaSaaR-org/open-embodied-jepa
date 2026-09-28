@@ -68,7 +68,9 @@ exists. The abandonment clause does not fire. The owner-ruled diagnostic probe o
 collector's release point ([release probe](docs/experiments/apple_first_policy_v1_release_probe.md))
 ended **P-CANDIDATE-FAIL**: a collector releasing over the plate centre reached 23/32 at 1.0 cm
 plate error, below 28/32. The results document's "releases 3.5 cm short" explanation is
-contradicted: the failures land forward or sideways at the plate rim, not short. The cause of the
+contradicted by the probe's per-attempt landings (its declared rule counted the mechanism as
+confirmed): the probe's failures land forward or sideways, near the plate rim (inferred; no
+contact recorded), not short. The cause of the
 failures is still unidentified, and the owner has ruled a diagnosis of the current collector's
 post-grasp trajectory before any redesign. Outcomes
 and caveats are in the results
