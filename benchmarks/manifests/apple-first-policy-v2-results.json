@@ -1,0 +1,519 @@
+{
+  "a4_threshold": 8,
+  "bc0": {
+    "C_mean_estimates": [
+      0.33882521254092335,
+      -0.18149120625346496,
+      0.48917566659923717,
+      -0.0903199606642725
+    ],
+    "mask_accounting": {
+      "train": {
+        "dropped": 1936,
+        "kept": 116449,
+        "policy_steps": 118790,
+        "post_displacement_pre_grasp": 405
+      },
+      "val": {
+        "dropped": 7,
+        "kept": 13479,
+        "policy_steps": 13486,
+        "post_displacement_pre_grasp": 0
+      }
+    },
+    "roots": 170,
+    "rows": 116449,
+    "val_roots": 20,
+    "val_rows": 13479
+  },
+  "c0": {
+    "at_rest_of_32": {
+      "apple_0.5": 32,
+      "apple_0.8": 32,
+      "apple_1.0": 31,
+      "apple_1.2": 31,
+      "plate_1.0": 29,
+      "plate_1.5": 30,
+      "plate_2.0": 23,
+      "plate_2.5": 21,
+      "reference": 32
+    },
+    "bars": {
+      "apple_median_cm": 0.75,
+      "apple_p90_cm": 1.2,
+      "plate_median_cm": 1.5,
+      "plate_p90_cm": 1.5,
+      "task070_plate_ceiling_cm": 1.5
+    },
+    "counted_success_of_32": {
+      "apple_0.5": 32,
+      "apple_0.8": 32,
+      "apple_1.0": 31,
+      "apple_1.2": 31,
+      "plate_1.0": 29,
+      "plate_1.5": 30,
+      "plate_2.0": 23,
+      "plate_2.5": 21,
+      "reference": 32
+    },
+    "latched_of_32": {
+      "apple_0.5": 32,
+      "apple_0.8": 32,
+      "apple_1.0": 31,
+      "apple_1.2": 31,
+      "plate_1.0": 32,
+      "plate_1.5": 32,
+      "plate_2.0": 31,
+      "plate_2.5": 31,
+      "reference": 32
+    }
+  },
+  "claim_scope": "existence result on the non-gating development cohort D2 of apple-to-plate-v2; a learned policy with a DINOv2 encoder, not LeWM; the official learned Apple->Plate count on the frozen benchmark is still 0; cohort C untouched; M2 not run",
+  "clause_fires": false,
+  "corpus": {
+    "all": {
+      "at_rest": 129,
+      "by_noise_level": {
+        "0": {
+          "at_rest": 50,
+          "complete": 50,
+          "latched": 50,
+          "roots": 50,
+          "success": 50
+        },
+        "1": {
+          "at_rest": 34,
+          "complete": 47,
+          "latched": 45,
+          "roots": 50,
+          "success": 34
+        },
+        "2": {
+          "at_rest": 28,
+          "complete": 45,
+          "latched": 38,
+          "roots": 50,
+          "success": 28
+        },
+        "3": {
+          "at_rest": 17,
+          "complete": 47,
+          "latched": 26,
+          "roots": 50,
+          "success": 17
+        }
+      },
+      "latched": 159,
+      "roots": 200,
+      "success": 129,
+      "terminations": {
+        "guard_refusal": 11,
+        "policy_complete": 189
+      }
+    },
+    "manifest_sha256": "18d30b1a1e172e9d7bc90feeb66fd8ea1ee71c330df05d577543204d6bae3a1b",
+    "splits": {
+      "test": 10,
+      "train": 170,
+      "val": 20
+    },
+    "train": {
+      "at_rest": 112,
+      "by_noise_level": {
+        "0": {
+          "at_rest": 45,
+          "complete": 45,
+          "latched": 45,
+          "roots": 45,
+          "success": 45
+        },
+        "1": {
+          "at_rest": 28,
+          "complete": 39,
+          "latched": 37,
+          "roots": 42,
+          "success": 28
+        },
+        "2": {
+          "at_rest": 24,
+          "complete": 38,
+          "latched": 32,
+          "roots": 41,
+          "success": 24
+        },
+        "3": {
+          "at_rest": 15,
+          "complete": 39,
+          "latched": 20,
+          "roots": 42,
+          "success": 15
+        }
+      },
+      "latched": 134,
+      "roots": 170,
+      "success": 112,
+      "terminations": {
+        "guard_refusal": 9,
+        "policy_complete": 161
+      }
+    }
+  },
+  "counted_success": "apple_at_rest_v0 AND latched grasp AND latched place before the settle (owner rulings T71-R1, T71-R2)",
+  "dagger_rollouts": {
+    "dagger_1": {
+      "C": {
+        "at_rest": 0,
+        "at_rest_not_counted": 0,
+        "grasp": 51,
+        "latched": 4,
+        "rows_added": 58530,
+        "success": 0
+      },
+      "P": {
+        "at_rest": 23,
+        "at_rest_not_counted": 0,
+        "grasp": 127,
+        "latched": 58,
+        "rows_added": 92308,
+        "success": 23
+      },
+      "R": {
+        "at_rest": 22,
+        "at_rest_not_counted": 0,
+        "grasp": 127,
+        "latched": 49,
+        "rows_added": 92309,
+        "success": 22
+      }
+    },
+    "dagger_2": {
+      "C": {
+        "at_rest": 1,
+        "at_rest_not_counted": 0,
+        "grasp": 39,
+        "latched": 27,
+        "rows_added": 50507,
+        "success": 1
+      },
+      "P": {
+        "at_rest": 91,
+        "at_rest_not_counted": 0,
+        "grasp": 124,
+        "latched": 119,
+        "rows_added": 90902,
+        "success": 91
+      },
+      "R": {
+        "at_rest": 96,
+        "at_rest_not_counted": 0,
+        "grasp": 125,
+        "latched": 121,
+        "rows_added": 91349,
+        "success": 96
+      }
+    },
+    "dagger_3": {
+      "C": {
+        "at_rest": 34,
+        "at_rest_not_counted": 1,
+        "grasp": 58,
+        "latched": 51,
+        "rows_added": 61252,
+        "success": 33
+      },
+      "P": {
+        "at_rest": 124,
+        "at_rest_not_counted": 0,
+        "grasp": 126,
+        "latched": 126,
+        "rows_added": 91814,
+        "success": 124
+      },
+      "R": {
+        "at_rest": 124,
+        "at_rest_not_counted": 0,
+        "grasp": 125,
+        "latched": 125,
+        "rows_added": 91337,
+        "success": 124
+      }
+    }
+  },
+  "decision": {
+    "carried": "P-3",
+    "clause_fires": false,
+    "row": "M1-PASS"
+  },
+  "document": "docs/experiments/apple_first_policy_v2_results.md",
+  "m1_b_replay_nearest": [
+    "look2-51024",
+    "look2-51092",
+    "look2-51086",
+    "look2-51186",
+    "look2-51100",
+    "look2-51139",
+    "look2-51088",
+    "look2-51172",
+    "look2-51093",
+    "look2-51034",
+    "look2-51124",
+    "look2-51132",
+    "look2-51096",
+    "look2-51054",
+    "look2-51087",
+    "look2-51165"
+  ],
+  "m1_counts_of_16": {
+    "A4-look": {
+      "at_rest": 16,
+      "at_rest_not_counted": 0,
+      "grasp": 16,
+      "latched": 16,
+      "success": 16
+    },
+    "B-hold": {
+      "at_rest": 0,
+      "at_rest_not_counted": 0,
+      "grasp": 0,
+      "latched": 0,
+      "success": 0
+    },
+    "B-oracle": {
+      "at_rest": 16,
+      "at_rest_not_counted": 0,
+      "grasp": 16,
+      "latched": 16,
+      "success": 16
+    },
+    "B-random": {
+      "at_rest": 0,
+      "at_rest_not_counted": 0,
+      "grasp": 0,
+      "latched": 0,
+      "success": 0
+    },
+    "B-replay": {
+      "at_rest": 9,
+      "at_rest_not_counted": 0,
+      "grasp": 11,
+      "latched": 11,
+      "success": 9
+    },
+    "C-3": {
+      "at_rest": 3,
+      "at_rest_not_counted": 0,
+      "grasp": 5,
+      "latched": 5,
+      "success": 3
+    },
+    "D-oracle-perc": {
+      "at_rest": 16,
+      "at_rest_not_counted": 0,
+      "grasp": 16,
+      "latched": 16,
+      "success": 16
+    },
+    "P-0": {
+      "at_rest": 4,
+      "at_rest_not_counted": 0,
+      "grasp": 16,
+      "latched": 8,
+      "success": 4
+    },
+    "P-1": {
+      "at_rest": 9,
+      "at_rest_not_counted": 0,
+      "grasp": 15,
+      "latched": 14,
+      "success": 9
+    },
+    "P-2": {
+      "at_rest": 15,
+      "at_rest_not_counted": 0,
+      "grasp": 16,
+      "latched": 15,
+      "success": 15
+    },
+    "P-3": {
+      "at_rest": 16,
+      "at_rest_not_counted": 0,
+      "grasp": 16,
+      "latched": 16,
+      "success": 16
+    },
+    "R-3": {
+      "at_rest": 16,
+      "at_rest_not_counted": 0,
+      "grasp": 16,
+      "latched": 16,
+      "success": 16
+    }
+  },
+  "name": "apple-first-policy-v2-results",
+  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes.",
+  "outcome": "M1-PASS",
+  "preregistration_manifest": "benchmarks/manifests/apple-first-policy-v2.json",
+  "prerun": {
+    "render_check": "IDENTICAL at 8 workers",
+    "render_report": "outputs/task071-scratch/prerun-render-1/report.json",
+    "render_report_sha256": "f87bda9448de5e2ddf32c785dfe137fdc4a013494bca5bd7a81b250717e04ba4",
+    "verdict": "PRE-RUN: GO (reported as the reviewer's hand-back message; not relayed to the coordinator before the run started)"
+  },
+  "protocol": "apple_first_policy_v2",
+  "readouts": {
+    "P": {
+      "family": "linear",
+      "inner_mse": 1.968084503045795e-05,
+      "lam_rel": 0.001
+    },
+    "R": {
+      "family": "linear",
+      "inner_mse": 2.944718578513581e-05,
+      "lam_rel": 0.01
+    }
+  },
+  "run": {
+    "decoded_episodes": 190,
+    "encoder_digests": {
+      "floor": "3d305f9c8280692af08d2ca5d1d14d040cc0a10ec5b2fb083c58d75f0957c9db",
+      "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27"
+    },
+    "ended_utc": "2026-09-28T10:19:19Z",
+    "environment": {
+      "mps_available": true,
+      "mujoco": "3.13.0",
+      "numpy": "2.5.3",
+      "platform": "macOS-26.5.1-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch": "2.14.0",
+      "train_device": "mps"
+    },
+    "machine": "Mac (macOS arm64), training on MPS, 8 CPU simulation workers",
+    "non_finite_fields": [],
+    "pins_at_end": 30,
+    "report": "outputs/task071-first-policy-v2/run-1/report.json",
+    "report_sha256": "77aae2077f5e1070f9cdc63b9f228f32515713e869b999b5303a5134c101d90b",
+    "revision": "9e23cedb1fc8a5012cd1fdf4661aa4537b9189fa",
+    "revision_at_end": "9e23cedb1fc8a5012cd1fdf4661aa4537b9189fa",
+    "started_utc": "2026-09-28T08:35:44Z",
+    "test_split_decoded": false,
+    "total_seconds": 6215.2,
+    "tracked_tree_dirty": false,
+    "void": false
+  },
+  "s0_d1": {
+    "arm": "P-0",
+    "frames_identical": true,
+    "max_abs_act_difference": 5.364418029785156e-07,
+    "max_abs_input_difference": 0.0,
+    "seeds": 8,
+    "tolerance": 0.0001
+  },
+  "s0_p": {
+    "apple_median_cm": 0.2695823768472578,
+    "apple_p90_cm": 0.5435256946129,
+    "apple_passes": true,
+    "plate_median_cm": 0.07179103873050077,
+    "plate_p90_cm": 0.1270667301074415,
+    "plate_passes": true
+  },
+  "task": "TASK-071",
+  "trainings": {
+    "C-0": {
+      "rows": 116449,
+      "seconds": 68.6,
+      "selected": {
+        "update": 28000,
+        "val_mse": 0.0022121204528957605
+      }
+    },
+    "C-1": {
+      "rows": 174979,
+      "seconds": 68.3,
+      "selected": {
+        "update": 21000,
+        "val_mse": 0.003110143356025219
+      }
+    },
+    "C-2": {
+      "rows": 225486,
+      "seconds": 72.5,
+      "selected": {
+        "update": 29000,
+        "val_mse": 0.0036577105056494474
+      }
+    },
+    "C-3": {
+      "rows": 286738,
+      "seconds": 71.2,
+      "selected": {
+        "update": 29000,
+        "val_mse": 0.00401017302647233
+      }
+    },
+    "P-0": {
+      "rows": 116449,
+      "seconds": 68.9,
+      "selected": {
+        "update": 28000,
+        "val_mse": 0.0015598301542922854
+      }
+    },
+    "P-1": {
+      "rows": 208757,
+      "seconds": 69.8,
+      "selected": {
+        "update": 14000,
+        "val_mse": 0.0025401150342077017
+      }
+    },
+    "P-2": {
+      "rows": 299659,
+      "seconds": 74.5,
+      "selected": {
+        "update": 22000,
+        "val_mse": 0.003191515104845166
+      }
+    },
+    "P-3": {
+      "rows": 391473,
+      "seconds": 69.2,
+      "selected": {
+        "update": 30000,
+        "val_mse": 0.00357078667730093
+      }
+    },
+    "R-0": {
+      "rows": 116449,
+      "seconds": 68.2,
+      "selected": {
+        "update": 26000,
+        "val_mse": 0.0016264906153082848
+      }
+    },
+    "R-1": {
+      "rows": 208758,
+      "seconds": 68.5,
+      "selected": {
+        "update": 14000,
+        "val_mse": 0.0037770045455545187
+      }
+    },
+    "R-2": {
+      "rows": 300107,
+      "seconds": 71.2,
+      "selected": {
+        "update": 29000,
+        "val_mse": 0.004024706780910492
+      }
+    },
+    "R-3": {
+      "rows": 391444,
+      "seconds": 69.6,
+      "selected": {
+        "update": 23000,
+        "val_mse": 0.0038954506162554026
+      }
+    }
+  }
+}
