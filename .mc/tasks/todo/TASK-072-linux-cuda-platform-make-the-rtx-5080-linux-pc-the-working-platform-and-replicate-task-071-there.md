@@ -71,3 +71,8 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
   (3) `policy.py` (ClonedPolicy) and the scripts pinned by the TASK-059/061 manifests stay
   cpu/mps; `first_policy*`, `latent_dynamics` keep their frozen MPS device.
   (4) Over ssh, rendering needs `MUJOCO_GL=egl`.
+- 2026-09-28: Stage A merged as #98 (4f85f24) with owner ruling T72-R1. Stage B branch
+  `feat/task-072-linux-replication`: protocol `apple_first_policy_v2_linux`
+  (docs/experiments/apple_first_policy_v2_linux.md, manifest
+  benchmarks/manifests/apple-first-policy-v2-linux.json); strict CUDA; 16 workers; floor digest
+  re-pinned from a Linux measurement (546b9011…); reading REPLICATED iff M1-PASS and P-3 >= 14/16.
