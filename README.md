@@ -74,12 +74,12 @@ contact recorded), not short. The owner-ruled diagnosis of the current collector
 diagnosis](docs/experiments/apple_first_policy_v1_landing_diagnosis.md)) then identified the
 mechanism from its logs: the collector drops the apple about 15.5 cm, the apple rolls to the
 plate rim and ends outside the scorer's 4 cm radius on most resets (4/32 at rest with the plate
-exact), and the success scorer latches transient 0.15 s crossings of the disc. The one
+exact), and the success scorer's latched stages count transient 0.15 s crossings of the disc. The one
 owner-allowed redesign, placing the apple at the plate centre before opening, failed (25/32 with the
 plate exact, 20/32 at 1.0 cm, below 28/32) with its premise untested, because the hand did not
 reach the place pose within its budget. TASK-067 is closed under the owner's fallback.
-Scripted-collector and privileged success numbers elsewhere were measured with this latching
-scorer; they are flagged, not rewritten. Outcomes
+Scripted-collector and privileged success numbers elsewhere that were scored with this latching
+scorer are flagged, not rewritten. Outcomes
 and caveats are in the results
 documents under [docs/experiments/](docs/experiments/) and in [AGENTS.md](AGENTS.md).
 

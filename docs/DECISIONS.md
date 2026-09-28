@@ -72,7 +72,7 @@ is kept as written.
 - **The release-point probe** ended **P-CANDIDATE-FAIL**.
 - **The one place redesign** ended **FAIL, with its premise untested**. The hand never reached
   the place pose within its 100-command budget. It was still descending at about 0.44 mm/step
-  with the command saturated, and it made no hand–plate contact. Why the descent is so slow is
+  with the command saturated, and it made no hand–plate contact during `lower_closed`. Why the descent is so slow is
   not identified.
 - **No abandonment clause fires.** The task, the plate geometry, the scorer radius and the 28/32
   bar were not changed.
@@ -106,13 +106,13 @@ is kept as written.
      the apple actually ends on the plate.**
 
 **Past results are not rewritten.**
-- **Flag:** scripted-collector, privileged-ceiling, oracle and scripted-expert-substitution
-  success numbers elsewhere in this repository were measured with this latching scorer. An
-  example is the 103/200 root successes in `apple-look-v1`. Read them as "reached the plate
-  under the latch", not "rested on the plate".
+- **Flag:** scripted-collector and privileged success numbers elsewhere in this repository,
+  where they were scored with `AppleToPlateTask`, were measured with this latching scorer. An
+  example is the 103/200 root successes in `apple-look-v1`, which were. Read such numbers as
+  "reached the plate under the latch", not "rested on the plate".
 - **Not audited or re-measured here:**
-  - which of those numbers include transient crossings;
-  - which past numbers were scored with `AppleToPlateTask` at all.
+  - which past numbers were scored with `AppleToPlateTask`;
+  - which of those include transient crossings.
 - **Learned counts are unaffected.** A latch can only over-count, and the learned count is 0.
 
 **Evidence.**
