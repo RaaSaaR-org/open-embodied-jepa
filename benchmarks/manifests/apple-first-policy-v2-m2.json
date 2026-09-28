@@ -1,0 +1,227 @@
+{
+  "protocol": "apple_first_policy_v2_m2",
+  "task": "TASK-072",
+  "step": "M2",
+  "status": "authorization record and run plan; no cohort-C seed simulated",
+  "document": "docs/experiments/apple_first_policy_v2_m2.md",
+  "preregistered_by": {
+    "protocol": "apple_first_policy_v2",
+    "document": "docs/experiments/apple_first_policy_v2.md",
+    "section": "§12 (carrying apple_first_policy_v1.md §11)"
+  },
+  "owner_go_ahead": "2026-09-28, via the orchestrator: M2 on cohort C for the carried policy P-3 (TASK-072 run-1's checkpoint), through the normal pre-run review",
+  "frozen": {
+    "protocol": "apple_first_policy_v2_m2",
+    "task": "TASK-072",
+    "step": "M2",
+    "carried_from": [
+      "apple_first_policy_v2",
+      "apple_first_policy_v2_linux"
+    ],
+    "m2": {
+      "G1_min_successes": 17,
+      "G2_min_difference_vs_C": 8,
+      "G3_min_difference_vs_R": 8,
+      "G4_min_grasps": 20,
+      "G5_harness": {
+        "B-hold_grasp": 0,
+        "B-random_grasp": 0,
+        "B-oracle_min_successes": 38
+      },
+      "G6_privileged_reads": 0,
+      "G7_max_median_control_seconds": 0.1,
+      "stop_rule": "the carried P-k does not run on C if it has 0/16 grasps on D2 (then M2 fails); the controls C-3, R-3, B-replay and the harness always run on C",
+      "exemption_spent_cited": "apple-policy-diagnostics-v1.json precedence_rule_D1_over_G_SUB.exemption_spent is false at preregistration and is not claimed",
+      "rows": {
+        "M2-PASS": "every gate passes: a learned policy with a DINOv2 encoder works on this cohort under apple-to-plate-v2 (not LeWM driving the robot)",
+        "M2-FAIL-VISION": "G1 and G4 pass, G2 fails: no evidence the image is used",
+        "M2-FAIL": "any other failing gate; the claim is not made; the owner decides",
+        "M2-VOID": "G5 or G6 fails: the run is invalid, not the arms"
+      },
+      "cohort_values": "stored in benchmarks/manifests/apple-policy-v1.json, never recomputed",
+      "success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted",
+      "G5_oracle": "e9 from the reset truth, counted success (T71-R1)"
+    },
+    "success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted",
+    "cohort": {
+      "seeds": [
+        45300,
+        45301,
+        45302,
+        45303,
+        45304,
+        45305,
+        45306,
+        45307,
+        45308,
+        45309,
+        45310,
+        45311,
+        45312,
+        45313,
+        45314,
+        45315,
+        45316,
+        45317,
+        45318,
+        45319,
+        45320,
+        45321,
+        45322,
+        45323,
+        45324,
+        45325,
+        45326,
+        45327,
+        45328,
+        45329,
+        45330,
+        45331,
+        45332,
+        45333,
+        45334,
+        45335,
+        45336,
+        45337,
+        45338,
+        45339
+      ],
+      "source": {
+        "manifest": "benchmarks/manifests/apple-policy-v1.json",
+        "key": [
+          "cohorts",
+          "C_frozen_gating",
+          "resets"
+        ],
+        "cohort_sha256": "4f888154c055bcbbbc0df333442e6886d8f65c2389596fe1aedde1d2cb0b533e",
+        "digest": "sha256 of json.dumps(resets, sort_keys=True, separators=(',', ':'))"
+      }
+    },
+    "arms": [
+      "P-3",
+      "C-3",
+      "R-3",
+      "B-replay",
+      "B-oracle",
+      "B-hold",
+      "B-random"
+    ],
+    "learned_arms": [
+      "P-3",
+      "C-3",
+      "R-3"
+    ],
+    "carried": "P-3",
+    "rows": [
+      "M2-VOID",
+      "M2-PASS",
+      "M2-FAIL-VISION",
+      "M2-FAIL"
+    ],
+    "evidence": {
+      "results_manifest": "benchmarks/manifests/apple-first-policy-v2-linux-results.json",
+      "report": "outputs/task072-first-policy-v2-linux/run-1/report.json",
+      "report_sha256": "877452840d0d03520ec8644321ef32f6b19877caa679e77d173e3d2509edec78",
+      "revision": "db65816eb56dadb73664f08978cadeb6e881b35f",
+      "outcome": "M1-PASS",
+      "carried": "P-3",
+      "checkpoints": {
+        "P-3": "7988162df0b6106db5d007e322b824a3725b74cb103ba5a8de9f552912060be8",
+        "C-3": "d1820db4a1af3a63f02ed96c9a7c51d8b92d56ea7a23cf762940925f586b1289",
+        "R-3": "bea0d422b951287fcad66630aa8ea837a59df441d7a6c1793e2423048e2c0fd3"
+      },
+      "checkpoint_dir": "checkpoints/task072-first-policy-v2-linux/run-1",
+      "corpus": "data/apple-look-v2-linux/run-1",
+      "corpus_manifest_sha256": "67c342f6d37f3bd1910af16139096c109fa0bf6647d87286ca26b0899c9b4f54",
+      "b_replay_library_roots": 112
+    },
+    "reproduction": [
+      "the P and R readouts are refitted, as run-1 fitted them, on the same 426 rows: frame 0 of the 170 sealed train roots of run-1's corpus plus the 256 perception-train post-look frames (51200-51455), re-rendered here",
+      "each readout's selection (family, lam_rel, inner_mse) equals run-1's report exactly",
+      "the P readout's S0-P errors on the 128 re-rendered held-out frames (51456-51583) equal run-1's per-reset apple and plate errors exactly (float equality after the JSON round trip)",
+      "C-3's constant estimate, the mean of the cross-fitted P estimates over the train roots, equals run-1's C_mean_estimates exactly",
+      "B-replay's retrieval, re-run on the 16 re-rendered D2 post-look frames (52000-52015), picks run-1's b_replay_nearest roots exactly, from the same 112-root library",
+      "a mismatch in any of these is V (G-repro): nothing on cohort C is simulated, and the owner decides"
+    ],
+    "control_time": {
+      "definition": "per command of the carried P-k's 40 attempts: the wall time (time.perf_counter) of the controller's act() in its worker (input assembly, palm FK, standardising, the MLP forward and command assembly; 1 torch thread); the first command of each attempt also carries that attempt's one DINOv2 forward pass plus the readout, timed in the main process at batch size 1 (6 torch threads, CPU). G7 compares the median over all of these commands with 0.100 s",
+      "reported_beside": "p90 and max per command; the DINOv2 forward + readout time alone (median, max); and a conservative variant with the forward pass added to every command (descriptive only)",
+      "max_median_seconds": 0.1
+    },
+    "attempt": {
+      "max_policy_steps": 740,
+      "settle_steps": 60,
+      "random_controller_seed": 7103
+    },
+    "platform": {
+      "system": "Linux",
+      "machine": "x86_64",
+      "mujoco_gl": "egl"
+    },
+    "sim_workers": 16,
+    "determinism": {
+      "module": "embodied_jepa.devices",
+      "strict": true,
+      "why": "the main process is put in run-1's strict deterministic state before the readouts are refitted, so the refit runs under the same process-wide settings (no CUDA work is done)"
+    },
+    "caps_seconds": {
+      "global": 7200.0,
+      "perception_collection": 1800.0,
+      "per_rollout_batch": 3600.0,
+      "per_attempt": 300.0
+    },
+    "void_rule": "a guard (G-hash, G-frozen, G-platform, G-device, G-weights, G-evidence, G-repro, G-cohort, G-seeds, G-look, G-frame, G-finite, G-cap, Q-split), a crash or a cap makes the run V: nothing is read. A V before the first cohort-C frame is rendered may be repeated after a reviewed fix. A V after that point is reported to the owner, and a repeat (run-2, cohort C simulated again) needs the owner's ruling; a second V closes M2 as INCONCLUSIVE. M2-VOID (G5 or G6) is an outcome, not a V: the run is invalid, not the arms, and it is not repeated without the owner's ruling. Nothing is re-thresholded, retrained or re-selected"
+  },
+  "encoder_digests": {
+    "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
+    "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
+  },
+  "mujoco_version": "3.13.0",
+  "results": null,
+  "hashes": {
+    "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+    "benchmarks/manifests/apple-first-policy-v2-linux-results.json": "b97258bc14875e1c1de03e721e318b41fa582b216d1f1414637d0a56d1f159b9",
+    "benchmarks/manifests/apple-first-policy-v2-linux.json": "29f2c98302adfe2b214a68a85de769b5ea8cf4f4dddf1622f90970a9c5efb9ba",
+    "benchmarks/manifests/apple-first-policy-v2-results.json": "09b6abdd637c5c763c6e54d4f4f6fcc65316718bed8058fbdb9a281e87fcbd75",
+    "benchmarks/manifests/apple-first-policy-v2.json": "cab7c7c8cfd8ac9aac2d4bbddccea5402d806c32df12396557013f60a5ed6e37",
+    "benchmarks/manifests/apple-policy-v1.json": "749c6f0e38c802b3b20aa7d0de2e089335126455a93e8ddc02369d6b5807a8ba",
+    "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
+    "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+    "docs/experiments/apple_first_policy_v2.md": "13b3470b70bfe8f791d1036e94f0e031847bec14d1c41874c30b34e2c2cea0d7",
+    "docs/experiments/apple_first_policy_v2_linux.md": "e7be29f88e52940c870fc51d6b122c63ecb027f478dace4e2bb9da792989028c",
+    "docs/experiments/apple_first_policy_v2_m2.md": "0dca1ffd2895bf24453e0709641b254a053c027e2a8431582f51b3677fa4e843",
+    "scripts/check_first_policy_v2_linux_render.py": "70bb6e79c47243d6cdee56df72d99ca7251f14f8d6b713f83c2c1ff70937fd75",
+    "scripts/check_first_policy_v2_render.py": "ef448487015d7320770fc4df88ea98da75b0a6d4a20904c9bedf293c87493602",
+    "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+    "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
+    "scripts/run_first_policy_v2.py": "67b425320667ffea87acb9ce07b098f3d3deb84a568bd7232af5a7702fdd8dd7",
+    "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
+    "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
+    "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
+    "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
+    "src/embodied_jepa/at_rest.py": "b5121cb600db6bfb3f92b4161ba46d4cdcb31f98e99de512b257f2519db00527",
+    "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+    "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
+    "src/embodied_jepa/devices.py": "0976ccc0fb6d3c64d8128dbc152dcb2ebd3aee2211bc3ab5e25a772518e2fb72",
+    "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+    "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
+    "src/embodied_jepa/first_policy_model.py": "5ebd70e07d9c6eba38f0fa4c8980602205f0e24420d39f252935dc47673fb984",
+    "src/embodied_jepa/first_policy_perception.py": "d2ae40118a78646c13e89a089049f80cdc0389dfdd2106f5862a03ab134ed497",
+    "src/embodied_jepa/first_policy_runtime.py": "d6d672dc26912371cae78c2d32ba84583adfab4adcab393445a770f994a5f953",
+    "src/embodied_jepa/first_policy_v2.py": "c05385701481bb6463e096899df8a8c4945239954db73f29b42ea19117d7a460",
+    "src/embodied_jepa/first_policy_v2_linux.py": "2ff753d1ae3c8db18d4b8f4dd79e1738a12ccedebc2014977d5c35f541e53ad7",
+    "src/embodied_jepa/first_policy_v2_m2.py": "39beb69a65c31b7b4491dafd092d2e2c98ad19ee6e70aa4514a48d948c86b4ea",
+    "src/embodied_jepa/first_policy_v2_model.py": "5e29fc12f496b2299c1d2d5b4df8ea99660b838a896587b9b890f846312a1a45",
+    "src/embodied_jepa/first_policy_v2_runtime.py": "2caa50e70d04c3d4898896acb402bb7ccc95897cece3c6a5d119db5ec4a3169a",
+    "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+    "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
+    "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+    "src/embodied_jepa/policy_diagnostics.py": "3898e34588145c14696835e5f89e75b112bc35f1087f206d4c4525774cab9faa",
+    "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+    "src/embodied_jepa/resting_expert.py": "9f253b1d5025ff4c3176cdafe98ff59a50a51bdc9b90fe3a1f1d6fddc73bcd23",
+    "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+    "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+    "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c"
+  },
+  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. The policy is a BC/DAgger MLP on a frozen DINOv2 readout, not LeWM."
+}

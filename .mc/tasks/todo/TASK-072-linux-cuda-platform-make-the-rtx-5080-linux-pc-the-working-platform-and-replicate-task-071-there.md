@@ -57,7 +57,11 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
       `52bf2188…4aa8`; the orchestrator was told before the run started).
 - [x] Gated run from a clean checkout of the merged revision on Linux, to completion (run-1 from
       `db65816`, 13:56:57Z–14:17:31Z, 1 235 s, no void).
-- [ ] Results PR, reviewed, merged by the owner (branch `task072-results`).
+- [x] Results PR, reviewed, merged by the owner (#100, `3dcc6ba`).
+- [ ] M2 (owner go-ahead 2026-09-28): authorization record, runner and tests merged on an
+      independent reviewer's reported APPROVE (branch `feat/task-072-m2-cohort-c`).
+- [ ] M2: fresh pre-run reviewer's reported GO, orchestrator told, one gated run on cohort C
+      from a clean merged checkout, reviewed results PR.
 
 ## Notes
 - 2026-09-28: card opened. Stage A branch `feat/task-072-cuda-support`.
@@ -95,3 +99,14 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
   `docs/experiments/apple_first_policy_v2_linux_results.md`,
   `benchmarks/manifests/apple-first-policy-v2-linux-results.json`; results PR branch
   `task072-results`.
+- 2026-09-28: results merged as #100 (`3dcc6ba`). The owner gave go-ahead for **M2 on cohort C**
+  (TASK-071 §12, unchanged) for TASK-072 run-1's P-3, through the normal pre-run review. Branch
+  `feat/task-072-m2-cohort-c`: authorization record `docs/experiments/apple_first_policy_v2_m2.md`,
+  manifest `benchmarks/manifests/apple-first-policy-v2-m2.json`, design
+  `src/embodied_jepa/first_policy_v2_m2.py`, runner `scripts/run_first_policy_v2_m2.py` (modes
+  preflight / smoke / run). The readouts were not stored by run-1, so they are refitted and must
+  reproduce run-1's recorded facts exactly (G-repro). The cohort comes from the stored values in
+  `apple-policy-v1.json`, never recomputed; this discharges the stored-values debt of
+  `task056_handover.md` §7 with a behavioural test. Expected from D2: R-3 ties P-3, so G3 is
+  likely to fail and the row would be M2-FAIL. `mc` is not installed on the Linux PC; MC
+  validation was not run.
