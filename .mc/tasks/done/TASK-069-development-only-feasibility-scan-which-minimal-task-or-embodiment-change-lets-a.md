@@ -4,7 +4,7 @@ aliases:
 - TASK-069
 title: 'Development-only feasibility scan: which minimal task or embodiment change lets a privileged scripted expert rest the apple on the plate (toward apple-to-plate-v2)'
 slug: development-only-feasibility-scan-which-minimal-task-or-embodiment-change-lets-a
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -20,6 +20,7 @@ due_date: ''
 created: 2026-09-28
 updated: 2026-09-28
 ---
+
 
 # Development-only feasibility scan: which minimal task or embodiment change lets a privileged scripted expert rest the apple on the plate (toward apple-to-plate-v2)
 
@@ -71,8 +72,8 @@ successes.**
 - [x] Set-down reach region measured with the reach tool; b1 answered from code and models.
 - [x] Cells b3, b2 and b2+b3 scanned on the development seeds, each with at-rest and latched
       counts at plate exact and at 1.0 cm, guard stops and landing speed.
-- [ ] A recommendation for `apple-to-plate-v2`, with what the logs show kept apart from what is
-      inferred. Reviewed. The owner rules on it.
+- [x] A recommendation for `apple-to-plate-v2`, with what the logs show kept apart from what is
+      inferred. Reviewed (PR #91). The owner rules on it (R12).
 
 ## Notes
 - 2026-09-28: card opened under owner ruling R11 §4.
@@ -83,5 +84,10 @@ successes.**
   waist pitch reaches the v1 plate region kinematically, near its limit, and moves the camera.
   Recommendation: v2 = v1 + b3b. Awaiting review, then the owner's ruling. Privileged scripted
   engineering; learned Apple→Plate is still 0 successes.
+- 2026-09-28: PR #91 merged (rebase merge; `552ebd2`…`d545ee0` on `main`). Owner ruling R12 (verbatim
+  in `docs/experiments/apple_to_plate_v2_expert.md` §0) set v2 = v1 + apple contact condim 6 with
+  the scene's declared friction `1 / 0.01 / 0.001`. It did not take the recommended b3b values and
+  rejected b2 and b1. TASK-069 is done; v2 continued in TASK-070. Learned Apple→Plate is still 0
+  successes.
 
 %% mc-links: [[TASK-068]] %%
