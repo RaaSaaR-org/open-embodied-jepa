@@ -30,7 +30,6 @@ sys.path.insert(0, str(ROOT / "src"))
 from embodied_jepa import first_policy_runtime as rt  # noqa: E402
 from embodied_jepa import resting_expert as rx  # noqa: E402
 from embodied_jepa.embodiment import rotation_delta  # noqa: E402
-from embodied_jepa.scripted import RestingPlaceExpert  # noqa: E402
 
 
 def main() -> int:
@@ -61,7 +60,7 @@ def main() -> int:
             if believed is not None:  # a what-if release point, e.g. over the table
                 truth = dict(truth)
                 truth["plate_position"] = np.array([*believed, truth["plate_position"][2]])
-            expert = RestingPlaceExpert(truth, **params)
+            expert = rx.RestingPlaceExpert(truth, **params)
             if rpy is not None:
                 expert.release_rotation = rotation_delta(rpy) @ expert.pick_rotation
             return expert
