@@ -58,10 +58,11 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
 - [x] Gated run from a clean checkout of the merged revision on Linux, to completion (run-1 from
       `db65816`, 13:56:57Z–14:17:31Z, 1 235 s, no void).
 - [x] Results PR, reviewed, merged by the owner (#100, `3dcc6ba`).
-- [ ] M2 (owner go-ahead 2026-09-28): authorization record, runner and tests merged on an
-      independent reviewer's reported APPROVE (branch `feat/task-072-m2-cohort-c`).
-- [ ] M2: fresh pre-run reviewer's reported GO, orchestrator told, one gated run on cohort C
-      from a clean merged checkout, reviewed results PR.
+- [x] M2 (owner go-ahead 2026-09-28): authorization record, runner and tests merged (#102,
+      `23e2593`).
+- [x] M2: fresh pre-run reviewer's reported GO (PR #102 comment 5879303699; render check
+      IDENTICAL), owner told, one gated run on cohort C from a clean merged checkout.
+- [ ] M2 results PR, reviewed, merged (branch `task072-m2-results`).
 
 ## Notes
 - 2026-09-28: card opened. Stage A branch `feat/task-072-cuda-support`.
@@ -110,3 +111,21 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
   `task056_handover.md` §7 with a behavioural test. Expected from D2: R-3 ties P-3, so G3 is
   likely to fail and the row would be M2-FAIL. `mc` is not installed on the Linux PC; MC
   validation was not run.
+- 2026-09-28: #102 merged as `23e2593` after a REQUEST CHANGES at `714b9d0` (fixed in `3350f3d`).
+  Pre-run GO reported (PR #102 comment 5879303699). **M2 run-1** from `23e2593`, 21:44:49Z–
+  21:47:39Z, 169 s, report sha256 `aa274cdd…01baa`. **Row M2-FAIL; the only failing gate is G3.**
+  Counted successes of 40: P-3 40, R-3 39, C-3 12, B-replay 28, B-oracle 40, B-hold 0,
+  B-random 0. G1, G2 (+28, p = 7.45e-9), G4, G5, G6 and G7 (median 0.42 ms) pass; G3 fails
+  (+1). G3's declared reading ("a learned visuomotor policy works; encoder pretraining
+  contributes nothing measurable") is reported beside the row, and the owner decides. Not
+  LeWM; the frozen v1 benchmark is still 0. Results:
+  `docs/experiments/apple_first_policy_v2_m2_results.md`,
+  `benchmarks/manifests/apple-first-policy-v2-m2-results.json`; branch `task072-m2-results`.
+- 2026-09-28: **Owner ruling (2026-09-28)** on M2, the owner's words verbatim: "yes, do your
+  recommendations". The ruling: M2-FAIL stays the recorded row, and the frozen rule is not
+  rewritten. G3's declared reading is adopted as the interpretation: on held-out
+  apple-to-plate-v2 resets, a learned visuomotor policy (DINOv2 + BC/DAgger, trained on e9
+  demonstrations) works, and encoder pretraining contributes nothing measurable. This does not
+  change the v1 benchmark (still 0/150), and it is not a LeWM result. Cohort C has now been
+  simulated and is no longer held out; any reuse needs a new, disclosed protocol and the
+  owner's ruling. Recorded in the results doc §7 and in DECISIONS (PR #104).
