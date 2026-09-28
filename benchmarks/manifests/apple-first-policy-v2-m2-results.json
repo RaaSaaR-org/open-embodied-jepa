@@ -1,0 +1,536 @@
+{
+  "name": "apple-first-policy-v2-m2-results",
+  "protocol": "apple_first_policy_v2_m2",
+  "task": "TASK-072",
+  "step": "M2",
+  "document": "docs/experiments/apple_first_policy_v2_m2_results.md",
+  "preregistration_manifest": "benchmarks/manifests/apple-first-policy-v2-m2.json",
+  "generator": "scripts/summarize_first_policy_v2_m2.py",
+  "outcome": "M2-FAIL",
+  "gates": {
+    "G1": true,
+    "G2": true,
+    "G3": false,
+    "G4": true,
+    "G5": true,
+    "G6": true,
+    "G7": true
+  },
+  "failed_gates": [
+    "G3"
+  ],
+  "g3_declared_reading": "a learned visuomotor policy works; encoder pretraining contributes nothing measurable",
+  "reading_side_by_side": "row M2-FAIL (first match, §12) and G3's declared reading, reported side by side without choosing between them (doc §3.2); the owner decides",
+  "success_of_40": {
+    "B-hold": 0,
+    "B-oracle": 40,
+    "B-random": 0,
+    "B-replay": 28,
+    "C-3": 12,
+    "P-3": 40,
+    "R-3": 39
+  },
+  "grasp_of_40": {
+    "B-hold": 0,
+    "B-oracle": 40,
+    "B-random": 0,
+    "B-replay": 32,
+    "C-3": 21,
+    "P-3": 40,
+    "R-3": 39
+  },
+  "paired": {
+    "P-3 vs B-replay": {
+      "n_d": 12,
+      "only_first": 12,
+      "only_second": 0,
+      "p_exact_mcnemar": 0.00048828125
+    },
+    "P-3 vs C-3": {
+      "n_d": 28,
+      "only_first": 28,
+      "only_second": 0,
+      "p_exact_mcnemar": 7.450580596923828e-09
+    },
+    "P-3 vs R-3": {
+      "n_d": 1,
+      "only_first": 1,
+      "only_second": 0,
+      "p_exact_mcnemar": 1.0
+    }
+  },
+  "arms": {
+    "P-3": {
+      "counted_success_of_40": 40,
+      "wilson_95": [
+        0.912378,
+        1.0
+      ],
+      "grasp_of_40": 40,
+      "at_rest_of_40": 40,
+      "at_rest_not_counted": 0,
+      "latched_v1_of_40": 40,
+      "terminations": {
+        "step_limit": 40
+      },
+      "final_distance_cm_q10_q50_q90": [
+        2.28,
+        2.82,
+        3.27
+      ],
+      "failed_seeds": [],
+      "success_first_grasp_step_range": [
+        265,
+        269
+      ],
+      "success_first_place_step_range": [
+        611,
+        635
+      ]
+    },
+    "C-3": {
+      "counted_success_of_40": 12,
+      "wilson_95": [
+        0.180748,
+        0.4543
+      ],
+      "grasp_of_40": 21,
+      "at_rest_of_40": 12,
+      "at_rest_not_counted": 0,
+      "latched_v1_of_40": 19,
+      "terminations": {
+        "guard_refusal": 18,
+        "step_limit": 22
+      },
+      "final_distance_cm_q10_q50_q90": [
+        3.13,
+        4.61,
+        18.91
+      ],
+      "failed_seeds": [
+        45300,
+        45301,
+        45302,
+        45303,
+        45304,
+        45306,
+        45307,
+        45308,
+        45309,
+        45312,
+        45313,
+        45315,
+        45317,
+        45320,
+        45321,
+        45322,
+        45323,
+        45324,
+        45325,
+        45327,
+        45328,
+        45329,
+        45330,
+        45333,
+        45334,
+        45336,
+        45337,
+        45338
+      ],
+      "success_first_grasp_step_range": [
+        265,
+        272
+      ],
+      "success_first_place_step_range": [
+        609,
+        633
+      ]
+    },
+    "R-3": {
+      "counted_success_of_40": 39,
+      "wilson_95": [
+        0.871186,
+        0.995573
+      ],
+      "grasp_of_40": 39,
+      "at_rest_of_40": 39,
+      "at_rest_not_counted": 0,
+      "latched_v1_of_40": 39,
+      "terminations": {
+        "guard_refusal": 1,
+        "step_limit": 39
+      },
+      "final_distance_cm_q10_q50_q90": [
+        2.32,
+        2.91,
+        3.37
+      ],
+      "failed_seeds": [
+        45307
+      ],
+      "success_first_grasp_step_range": [
+        264,
+        269
+      ],
+      "success_first_place_step_range": [
+        611,
+        638
+      ]
+    },
+    "B-replay": {
+      "counted_success_of_40": 28,
+      "wilson_95": [
+        0.5457,
+        0.819252
+      ],
+      "grasp_of_40": 32,
+      "at_rest_of_40": 28,
+      "at_rest_not_counted": 0,
+      "latched_v1_of_40": 32,
+      "terminations": {
+        "guard_refusal": 8,
+        "policy_complete": 32
+      },
+      "final_distance_cm_q10_q50_q90": [
+        2.74,
+        3.47,
+        17.4
+      ],
+      "failed_seeds": [
+        45301,
+        45302,
+        45306,
+        45308,
+        45315,
+        45320,
+        45321,
+        45323,
+        45324,
+        45326,
+        45336,
+        45338
+      ],
+      "success_first_grasp_step_range": [
+        264,
+        286
+      ],
+      "success_first_place_step_range": [
+        528,
+        635
+      ]
+    },
+    "B-oracle": {
+      "counted_success_of_40": 40,
+      "wilson_95": [
+        0.912378,
+        1.0
+      ],
+      "grasp_of_40": 40,
+      "at_rest_of_40": 40,
+      "at_rest_not_counted": 0,
+      "latched_v1_of_40": 40,
+      "terminations": {
+        "policy_complete": 40
+      },
+      "final_distance_cm_q10_q50_q90": [
+        3.01,
+        3.46,
+        3.83
+      ],
+      "failed_seeds": [],
+      "success_first_grasp_step_range": [
+        265,
+        266
+      ],
+      "success_first_place_step_range": [
+        613,
+        643
+      ]
+    },
+    "B-hold": {
+      "counted_success_of_40": 0,
+      "wilson_95": [
+        0.0,
+        0.087622
+      ],
+      "grasp_of_40": 0,
+      "at_rest_of_40": 0,
+      "at_rest_not_counted": 0,
+      "latched_v1_of_40": 0,
+      "terminations": {
+        "step_limit": 40
+      },
+      "final_distance_cm_q10_q50_q90": [
+        15.25,
+        17.68,
+        19.8
+      ],
+      "failed_seeds": [
+        45300,
+        45301,
+        45302,
+        45303,
+        45304,
+        45305,
+        45306,
+        45307,
+        45308,
+        45309,
+        45310,
+        45311,
+        45312,
+        45313,
+        45314,
+        45315,
+        45316,
+        45317,
+        45318,
+        45319,
+        45320,
+        45321,
+        45322,
+        45323,
+        45324,
+        45325,
+        45326,
+        45327,
+        45328,
+        45329,
+        45330,
+        45331,
+        45332,
+        45333,
+        45334,
+        45335,
+        45336,
+        45337,
+        45338,
+        45339
+      ],
+      "success_first_grasp_step_range": null,
+      "success_first_place_step_range": null
+    },
+    "B-random": {
+      "counted_success_of_40": 0,
+      "wilson_95": [
+        0.0,
+        0.087622
+      ],
+      "grasp_of_40": 0,
+      "at_rest_of_40": 0,
+      "at_rest_not_counted": 0,
+      "latched_v1_of_40": 0,
+      "terminations": {
+        "step_limit": 40
+      },
+      "final_distance_cm_q10_q50_q90": [
+        15.25,
+        17.68,
+        19.8
+      ],
+      "failed_seeds": [
+        45300,
+        45301,
+        45302,
+        45303,
+        45304,
+        45305,
+        45306,
+        45307,
+        45308,
+        45309,
+        45310,
+        45311,
+        45312,
+        45313,
+        45314,
+        45315,
+        45316,
+        45317,
+        45318,
+        45319,
+        45320,
+        45321,
+        45322,
+        45323,
+        45324,
+        45325,
+        45326,
+        45327,
+        45328,
+        45329,
+        45330,
+        45331,
+        45332,
+        45333,
+        45334,
+        45335,
+        45336,
+        45337,
+        45338,
+        45339
+      ],
+      "success_first_grasp_step_range": null,
+      "success_first_place_step_range": null
+    }
+  },
+  "control_time": {
+    "commands": 29600,
+    "conservative_forward_every_command_median_seconds": 0.031815410999115556,
+    "forward_and_readout_seconds": {
+      "max": 0.04048995900666341,
+      "median": 0.031393385521369055
+    },
+    "max_seconds": 0.04115184402326122,
+    "median_seconds": 0.0004184800200164318,
+    "p90_seconds": 0.0004454409936442971
+  },
+  "privileged_ok": {
+    "C-3": true,
+    "P-3": true,
+    "R-3": true
+  },
+  "stop_rule": {
+    "carried_runs": true,
+    "rule": "the carried P-k does not run on C if it has 0/16 grasps on D2 (then M2 fails); the controls C-3, R-3, B-replay and the harness always run on C"
+  },
+  "readout_errors_on_cohort_C_cm_descriptive": {
+    "apple": {
+      "median": 0.214,
+      "p90": 0.524,
+      "max": 0.808
+    },
+    "plate": {
+      "median": 0.05,
+      "p90": 0.113,
+      "max": 0.208
+    }
+  },
+  "b_replay_distinct_roots": 31,
+  "reproduction": {
+    "b_replay_library": true,
+    "c_mean": true,
+    "d2_b_replay_nearest": true,
+    "fit_rows": true,
+    "readout_P_selection": true,
+    "readout_R_selection": true,
+    "s0p_apple_errors": true,
+    "s0p_plate_errors": true
+  },
+  "cohort": {
+    "seeds": [
+      45300,
+      45339
+    ],
+    "n": 40,
+    "source": {
+      "manifest": "benchmarks/manifests/apple-policy-v1.json",
+      "key": [
+        "cohorts",
+        "C_frozen_gating",
+        "resets"
+      ],
+      "cohort_sha256": "4f888154c055bcbbbc0df333442e6886d8f65c2389596fe1aedde1d2cb0b533e",
+      "digest": "sha256 of json.dumps(resets, sort_keys=True, separators=(',', ':'))"
+    },
+    "executed_resets_equal_stored_values": true
+  },
+  "run": {
+    "command": "MUJOCO_GL=egl nohup uv run --no-sync python scripts/run_first_policy_v2_m2.py run --output outputs/task072-m2-cohort-c/run-1 --evidence /home/huhn/develop/emai/worktrees/task072-run",
+    "report": "outputs/task072-m2-cohort-c/run-1/report.json",
+    "report_sha256": "aa274cddbdb31a3641bc7bc55abc7a43e3ceb0162d60b573b7c68d8d2e301baa",
+    "log": "task072-m2-run-1.log",
+    "revision": "23e25937b1f195d7cf5acf6693fe42334021ac69",
+    "tracked_tree_dirty": false,
+    "started_utc": "2026-09-28T21:44:49Z",
+    "cohort_first_render_utc": "2026-09-28T21:45:30Z",
+    "ended_utc": "2026-09-28T21:47:39Z",
+    "total_seconds": 169.4,
+    "stage_seconds": {
+      "M2": 125.0,
+      "cohort_frames": 3.5,
+      "preflight": 4.7,
+      "reproduction": 24.7,
+      "rerender": 1.9
+    },
+    "platform": {
+      "machine": "x86_64",
+      "mujoco_gl": "egl",
+      "system": "Linux"
+    },
+    "environment": {
+      "accelerator": {
+        "cuda_capability": [
+          12,
+          0
+        ],
+        "cuda_device_name": "NVIDIA GeForce RTX 5080",
+        "cuda_runtime": "13.0",
+        "cuda_total_memory_bytes": 16587751424,
+        "cudnn": 92400
+      },
+      "determinism": {
+        "cublas_workspace_config": ":4096:8",
+        "cuda_matmul_allow_tf32": false,
+        "cudnn_allow_tf32": false,
+        "cudnn_benchmark": false,
+        "cudnn_deterministic": true,
+        "deterministic_algorithms": true,
+        "deterministic_algorithms_warn_only": false,
+        "float32_matmul_precision": "highest",
+        "sdp_backends": {
+          "cudnn": true,
+          "flash": true,
+          "math": true,
+          "mem_efficient": true
+        }
+      },
+      "mujoco": "3.13.0",
+      "numpy": "2.5.3",
+      "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+      "python": "3.12.3",
+      "torch": "2.14.0+cu130",
+      "torch_threads_main": 6
+    },
+    "determinism_at_end": {
+      "cublas_workspace_config": ":4096:8",
+      "cuda_matmul_allow_tf32": false,
+      "cudnn_allow_tf32": false,
+      "cudnn_benchmark": false,
+      "cudnn_deterministic": true,
+      "deterministic_algorithms": true,
+      "deterministic_algorithms_warn_only": false,
+      "float32_matmul_precision": "highest",
+      "sdp_backends": {
+        "cudnn": true,
+        "flash": true,
+        "math": true,
+        "mem_efficient": true
+      }
+    },
+    "encoder_digests": {
+      "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2",
+      "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27"
+    },
+    "evidence": {
+      "C-3": "d1820db4a1af3a63f02ed96c9a7c51d8b92d56ea7a23cf762940925f586b1289",
+      "P-3": "7988162df0b6106db5d007e322b824a3725b74cb103ba5a8de9f552912060be8",
+      "R-3": "bea0d422b951287fcad66630aa8ea837a59df441d7a6c1793e2423048e2c0fd3",
+      "corpus_manifest": "67c342f6d37f3bd1910af16139096c109fa0bf6647d87286ca26b0899c9b4f54",
+      "report": "877452840d0d03520ec8644321ef32f6b19877caa679e77d173e3d2509edec78"
+    },
+    "decoded_episodes": 170,
+    "test_split_decoded": false,
+    "void": false,
+    "cohort_C_simulated": true
+  },
+  "prerun": {
+    "verdict": "GO, reported by the independent pre-run reviewer and posted on PR #102 as comment 5879303699; the orchestrator was told, and told the owner, before the run started",
+    "render_check": "IDENTICAL at 16 workers (16 workers used; 32/32 seeds rendered on >= 2 workers, 4 renders each, including after 740-step attempts; negative control raised G-frame at seed 52132); revision 23e2593, clean, 19 s",
+    "render_report_sha256_prefix": "4a72bb2e…ef2c",
+    "preflight": "PREFLIGHT-READY in 41 s at 23e2593 (G-repro 8/8 exact; G-cohort passed), report sha256 9953997c…9c8f",
+    "earlier_review": "REQUEST CHANGES at 714b9d0 (verdict leak on V, a non-discriminating stored-reset test, the render check missing from the GO); fixed in 3350f3d before the GO"
+  },
+  "claim_scope": "cohort C (40 resets) of apple-to-plate-v2, one run, one camera (112 px onboard); a BC/DAgger MLP on a frozen DINOv2 readout, not LeWM; the frozen v1 benchmark (0/150 per model) is unchanged",
+  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes."
+}

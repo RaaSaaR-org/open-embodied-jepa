@@ -63,6 +63,47 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-28 — M2 on cohort C: P-3 40/40, R-3 39/40; row M2-FAIL on G3 alone (TASK-072)
+
+**Outcome: M2-FAIL. The only failing gate is G3.** M2 was preregistered by TASK-071 §12. It was
+authorized by the owner's go-ahead and PR #102 (`apple_first_policy_v2_m2`), and run once from
+`main` at `23e2593` on the pre-run reviewer's reported GO (render check IDENTICAL). The
+orchestrator told the owner before the run started. It ran on the 40 stored cohort-C resets
+(45300–45339), which had never been simulated before, and took 169 s.
+
+- **Counted successes of 40:** **P-3 40**, R-3 39, C-3 12, B-replay 28, B-oracle 40, B-hold 0,
+  B-random 0.
+- **Gates:**
+  - G1 pass (40 ≥ 17, and 40 > 28).
+  - G2 pass (+28; 28 vs 0 discordant, p = 7.45e-9).
+  - **G3 fail (+1; 1 vs 0, p = 1.0)**.
+  - G4 pass (40 grasps).
+  - G5 pass.
+  - G6 pass.
+  - G7 pass (median 0.42 ms per command; the DINOv2 forward pass took 31 ms).
+
+**Two readings, reported side by side as fixed beforehand (authorization record §3.2).**
+- **The frozen row, M2-FAIL:** "the claim is not made; the owner decides".
+- **G3's declared reading:** "a learned visuomotor policy works; encoder pretraining contributes
+  nothing measurable".
+
+This log does not choose between them. **The owner decides.**
+
+**What it is.** The carried BC/DAgger policy on a frozen DINOv2 readout succeeded on every
+held-out reset. It beat the no-image control and open-loop replay of the expert on identical
+resets, and it made no privileged read. The random-init encoder floor did as well within one
+reset, so pretrained vision shows no measurable contribution here.
+
+**What it is not.**
+- **The official learned Apple→Plate count on the frozen v1 benchmark is still 0** (0/150 per
+  model).
+- **Not LeWM:** no world model is in the loop.
+- **Small scale:** one run, one seed per arm, one camera (112 px onboard), a narrow reset
+  distribution, and a 40-reset cohort that is now spent for this line.
+
+**Evidence.** [apple_first_policy_v2_m2_results.md](experiments/apple_first_policy_v2_m2_results.md);
+`benchmarks/manifests/apple-first-policy-v2-m2-results.json`; report sha256 `aa274cdd…01baa`.
+
 ## Decision 2026-09-28 — TASK-071's development result replicates on the Linux PC (TASK-072)
 
 **Outcome: REPLICATED (M1-PASS, P-3 16/16).** TASK-072's preregistered run (PR #99,
