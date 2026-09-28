@@ -83,7 +83,11 @@ sys.path.insert(0, "/oej/src")  # run_isaac.sh mounts src there; the entrypoint 
 from parity_targets import VARIANTS, trajectory  # noqa: E402
 
 from embodied_jepa.contracts import ContractError  # noqa: E402
-from embodied_jepa.isaac_scene import canonical_sha256  # noqa: E402
+from embodied_jepa.isaac_scene import (  # noqa: E402
+    canonical_sha256,
+    check_render_freshness,
+    usd_canonical_hash,
+)
 from embodied_jepa.isaac_transport import (  # noqa: E402
     IsaacTransport,
     manifest_sha256,
@@ -156,6 +160,7 @@ def main() -> None:
         "usd": args.usd,
         "manifest_sha256": manifest_sha256(manifest),
         "scene_manifest_sha256": canonical_sha256(scene),
+        "usd_canonical_tree_sha256": usd_canonical_hash(args.usd),
         "camera_manifest_sha256": canonical_sha256(camera),
         "trajectory": args.trajectory,
         "objects": objects,
@@ -238,6 +243,7 @@ def main() -> None:
         "post_reset_read_vs_first_reset_frame": d(after_reset, first_reset),
         "post_reset_read_vs_last_pre_reset_frame": d(after_reset, moved_2),
     }
+    check_render_freshness(record["freshness"])
 
     # Rejections.
     tr.reset(0)

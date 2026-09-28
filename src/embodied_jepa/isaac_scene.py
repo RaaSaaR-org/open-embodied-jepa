@@ -47,6 +47,18 @@ def canonical_sha256(manifest: dict) -> str:
     return hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest()
 
 
+def usd_canonical_hash(usd_path: str) -> str | None:
+    """Canonical tree sha256 of a converted USD, from the ``conversion.json`` that
+    ``convert_mjcf_to_usd.py`` wrote beside it (None if no record is found)."""
+    from pathlib import Path
+
+    for parent in Path(usd_path).parents:
+        record = parent / "conversion.json"
+        if record.exists():
+            return json.loads(record.read_text()).get("canonical_tree_sha256")
+    return None
+
+
 def _f(x) -> list[float]:
     return [float(v) for v in np.asarray(x, dtype=float).ravel()]
 
@@ -340,6 +352,19 @@ def is_hand_body(name: str) -> bool:
     return "hand_" in name or "wrist_" in name
 
 
+def check_render_freshness(freshness: dict) -> None:
+    """Raise unless a read right after ``reset()`` shows the reset state.
+
+    ``post_reset_read_vs_last_pre_reset_frame`` must differ (the pre-fix transport returned the
+    last pre-reset frame there) and ``post_reset_read_vs_first_reset_frame`` must be equal.
+    ``second_render_of_moved_state`` shows determinism only, not freshness, so it is not used.
+    """
+    if freshness["post_reset_read_vs_last_pre_reset_frame"]["max_abs_diff"] == 0:
+        raise RuntimeError("stale frame: the post-reset read equals the last pre-reset frame")
+    if freshness["post_reset_read_vs_first_reset_frame"]["max_abs_diff"] != 0:
+        raise RuntimeError("the post-reset read differs from the first reset frame")
+
+
 def settle_time(times, speeds, *, threshold: float = 0.001) -> float | None:
     """First time after which the speed stays at or below ``threshold`` to the end, or None."""
     speeds = np.asarray(speeds, dtype=float)
@@ -369,7 +394,7 @@ ISAAC_PHYSX = {
     "table_material": dict(_MAT_1),
     "apple": {
         "material": dict(_MAT_1),
-        # MuJoCo condim 6 torsional coefficient 0.01 m bounds the spin torque by 0.01 N;
+        # MuJoCo condim 6 torsional coefficient 0.01 m bounds the spin torque by 0.01 m x N;
         # PhysX bounds it by mu N r with the patch radius r, so r = 0.01 m / mu (mu = 1).
         "torsional_patch_radius": 0.01,
         "min_torsional_patch_radius": 0.01,
@@ -389,14 +414,16 @@ ISAAC_PHYSX = {
         "cylinder geometry)",
         "rim_collision": "native PhysX capsules",
     },
-    "solver": "PhysX TGS, GPU pipeline, dt 0.002 s, default 4 position / 1 velocity iterations",
+    "solver": "PhysX TGS, GPU pipeline, dt 0.002 s; the apple reads back 16 position / 1 "
+    "velocity solver iterations (as authored by the spawner), cfmScale 0.025, "
+    "stabilizationThreshold 1e-5",
 }
 
 # Parameters PhysX cannot express as MuJoCo does. Reported with every run.
 UNMATCHED = [
     "rolling friction (MuJoCo condim 6, 0.001 m on the apple): PhysX rigid bodies have none; "
     "not substituted (angular damping would be viscous, not Coulomb, and act in free flight)",
-    "torsional friction: MuJoCo 0.01 m as a Coulomb torque bound 0.01 N; PhysX torsional "
+    "torsional friction: MuJoCo 0.01 m as a Coulomb torque bound 0.01 m x N; PhysX torsional "
     "patch radius 0.01 m (bound mu N r), nominally equal, different algorithm; the PhysX "
     "per-pair combination of patch radii is assumed to be max (set on the apple only)",
     "contact softness: MuJoCo solref (0.02 s, 1) / solimp (0.9, 0.95, 0.001) soft contacts "
@@ -408,6 +435,13 @@ UNMATCHED = [
     "robot geoms: MuJoCo friction (1, 0.005, 0.0001), condim 3; PhysX friction from the "
     "converter's bindings or the scene default material (read back in the run record)",
     "integrator: MuJoCo implicitfast vs PhysX TGS",
+    "PhysX-only settings with no MuJoCo counterpart: apple maxDepenetrationVelocity 1.0 m/s, "
+    "contact offset auto, CCD and speculative CCD off, stabilizationThreshold 1e-5, "
+    "cfmScale 0.025 (all read back in the run record)",
+    "floor: MuJoCo infinite plane at z = 0; Isaac a 4 m x 4 m x 2 cm box with its top at z = 0",
+    "robot link collision shapes: MuJoCo uses the MJCF meshes (convex hulls) and primitives; "
+    "Isaac uses the converter's convexHull approximation of the same meshes; the two hulls "
+    "were not compared vertex by vertex",
 ]
 
 # ----- the pinned Isaac render settings (hand-written; committed into the camera manifest) ------

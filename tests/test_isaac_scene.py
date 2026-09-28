@@ -197,3 +197,48 @@ def test_image_metric_on_identical_and_shifted_frames():
     other = image_parity.compare(rgb, rgb, shifted, cls)
     assert other["mask_iou"]["apple"] == pytest.approx(48 / 80)
     assert other["centroid_px"]["apple"] == pytest.approx(2.0)
+
+
+def test_render_freshness_check_rejects_the_pre_fix_behaviour():
+    good = {
+        "post_reset_read_vs_last_pre_reset_frame": {"max_abs_diff": 149},
+        "post_reset_read_vs_first_reset_frame": {"max_abs_diff": 0},
+    }
+    scene.check_render_freshness(good)
+    stale = copy.deepcopy(good)
+    stale["post_reset_read_vs_last_pre_reset_frame"]["max_abs_diff"] = 0
+    with pytest.raises(RuntimeError, match="stale"):
+        scene.check_render_freshness(stale)
+    other = copy.deepcopy(good)
+    other["post_reset_read_vs_first_reset_frame"]["max_abs_diff"] = 3
+    with pytest.raises(RuntimeError):
+        scene.check_render_freshness(other)
+
+
+def _returned_dict_keys(method: str) -> set[str]:
+    import ast
+
+    tree = ast.parse((ROOT / "src/embodied_jepa/isaac_transport.py").read_text())
+    cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "IsaacTransport")
+    fn = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == method)
+    keys = set()
+    for node in ast.walk(fn):
+        if isinstance(node, ast.Return):
+            assert isinstance(node.value, ast.Dict), f"{method} must return a dict literal"
+            keys |= {k.value for k in node.value.keys}
+    return keys
+
+
+def test_read_and_reset_carry_no_object_state():
+    """Simulator truth is evaluator-only: read() and reset() return robot state and clocks."""
+    assert _returned_dict_keys("read") == {
+        "rgb",
+        "qpos",
+        "qvel",
+        "joint_names",
+        "timestamp",
+        "rgb_timestamp",
+        "clock",
+        "sensor_valid",
+    }
+    assert _returned_dict_keys("reset") == {"timestamp", "clock"}

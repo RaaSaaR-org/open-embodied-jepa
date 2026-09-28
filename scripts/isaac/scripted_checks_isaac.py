@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, "/oej/src")
 from scripted_cases import CASES, targets  # noqa: E402
 
-from embodied_jepa.isaac_scene import canonical_sha256  # noqa: E402
+from embodied_jepa.isaac_scene import canonical_sha256, usd_canonical_hash  # noqa: E402
 from embodied_jepa.isaac_transport import IsaacTransport, manifest_sha256, reset_pose  # noqa: E402
 
 
@@ -55,6 +55,7 @@ def main() -> None:
         "isaac_sim_version": Path("/isaac-sim/VERSION").read_text().strip(),
         "manifest_sha256": manifest_sha256(manifest),
         "scene_manifest_sha256": canonical_sha256(scene),
+        "usd_canonical_tree_sha256": usd_canonical_hash(args.usd),
         "object_properties": tr.object_properties,
         "contact_api_error": tr.contact_api_error,
         "cases": {},

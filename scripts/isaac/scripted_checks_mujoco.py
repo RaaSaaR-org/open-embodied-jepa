@@ -68,11 +68,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--isaac", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--scene",
+        type=Path,
+        default=ROOT / "configs/isaac/apple_to_plate_v2_scene_v1.json",
+        help="scene manifest the Isaac run used (e.g. `git show 45e4d55:<path>` for runs "
+        "made before its descriptive strings were corrected)",
+    )
     args = parser.parse_args()
     if args.output.exists():
         raise SystemExit(f"refusing to overwrite {args.output}")
     isaac = json.loads((args.isaac / "isaac_scripted.json").read_text())
-    scene = json.loads((ROOT / "configs/isaac/apple_to_plate_v2_scene_v1.json").read_text())
+    scene = json.loads(args.scene.read_text())
     if isaac["scene_manifest_sha256"] != canonical_sha256(scene):
         raise SystemExit("the Isaac run used a scene manifest that is not the committed one")
     sim = MuJoCoSimulation(render=False)

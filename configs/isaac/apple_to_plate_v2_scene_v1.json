@@ -447,16 +447,19 @@
       "base_collision": "convex hull of the USD cylinder (Isaac Lab disables PhysX custom cylinder geometry)",
       "rim_collision": "native PhysX capsules"
     },
-    "solver": "PhysX TGS, GPU pipeline, dt 0.002 s, default 4 position / 1 velocity iterations"
+    "solver": "PhysX TGS, GPU pipeline, dt 0.002 s; the apple reads back 16 position / 1 velocity solver iterations (as authored by the spawner), cfmScale 0.025, stabilizationThreshold 1e-5"
   },
   "unmatched_in_physx": [
     "rolling friction (MuJoCo condim 6, 0.001 m on the apple): PhysX rigid bodies have none; not substituted (angular damping would be viscous, not Coulomb, and act in free flight)",
-    "torsional friction: MuJoCo 0.01 m as a Coulomb torque bound 0.01 N; PhysX torsional patch radius 0.01 m (bound mu N r), nominally equal, different algorithm; the PhysX per-pair combination of patch radii is assumed to be max (set on the apple only)",
+    "torsional friction: MuJoCo 0.01 m as a Coulomb torque bound 0.01 m x N; PhysX torsional patch radius 0.01 m (bound mu N r), nominally equal, different algorithm; the PhysX per-pair combination of patch radii is assumed to be max (set on the apple only)",
     "contact softness: MuJoCo solref (0.02 s, 1) / solimp (0.9, 0.95, 0.001) soft contacts allow ~mm penetration; PhysX contacts are rigid with contact/rest offsets",
     "friction cone: MuJoCo pyramidal (cone 0) with one coefficient; PhysX patch friction with static and dynamic coefficients (both set to 1)",
     "plate base: MuJoCo analytic cylinder; PhysX convex hull of the USD cylinder",
     "robot collision: MuJoCo self-collision on; Isaac self-collision off (importer default)",
     "robot geoms: MuJoCo friction (1, 0.005, 0.0001), condim 3; PhysX friction from the converter's bindings or the scene default material (read back in the run record)",
-    "integrator: MuJoCo implicitfast vs PhysX TGS"
+    "integrator: MuJoCo implicitfast vs PhysX TGS",
+    "PhysX-only settings with no MuJoCo counterpart: apple maxDepenetrationVelocity 1.0 m/s, contact offset auto, CCD and speculative CCD off, stabilizationThreshold 1e-5, cfmScale 0.025 (all read back in the run record)",
+    "floor: MuJoCo infinite plane at z = 0; Isaac a 4 m x 4 m x 2 cm box with its top at z = 0",
+    "robot link collision shapes: MuJoCo uses the MJCF meshes (convex hulls) and primitives; Isaac uses the converter's convexHull approximation of the same meshes; the two hulls were not compared vertex by vertex"
   ]
 }

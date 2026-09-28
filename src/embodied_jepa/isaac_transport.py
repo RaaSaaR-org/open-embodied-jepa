@@ -751,9 +751,17 @@ class IsaacTransport:
         dedups on the step count), so without this a render after ``reset()`` or a second
         render of the same step returns the previous frame unchanged. This syncs physics to
         Fabric, pumps Kit's update loop with physics stepping paused, and marks the step as
-        rendered so the camera does not pump again."""
+        rendered so the camera does not pump again.
+
+        It relies on two private Isaac Lab 3 names (``rtx._last_render_update_key``,
+        ``sim._physics_step_count``) and asserts they exist. Unlike upstream it does not wait
+        for RTX texture streaming (``_wait_for_streaming_complete``); the scene has untextured
+        primitives and converted meshes only, so nothing streams."""
         import omni.kit.app
         from isaaclab_physx.renderers import isaac_rtx_renderer_utils as rtx
+
+        assert hasattr(rtx, "_last_render_update_key"), "Isaac Lab render-dedup key moved"
+        assert hasattr(self.sim, "_physics_step_count"), "Isaac Lab step counter moved"
 
         self.sim.physics_manager.forward()
         self.sim.set_setting("/app/player/playSimulations", False)

@@ -346,7 +346,8 @@ def main() -> None:
 
     report = {
         "question": "Does IsaacTransport on the converted USD realise the same joint motion "
-        "as MuJoCoSimulation for identical joint targets? (robot + table only)",
+        "as MuJoCoSimulation for identical joint targets? (robot, floor and table, plus the "
+        "v2 apple and plate when the run has objects)",
         "isaac_run": str(args.isaac),
         "manifest_sha256": manifest_sha256(committed),
         "targets_regenerated_equal": targets_equal,

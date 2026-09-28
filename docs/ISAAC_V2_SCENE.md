@@ -6,7 +6,7 @@ All four items of the brief were delivered: (1) pinned rendering, a camera manif
 
 ## Runs and environment
 
-Image, Isaac Sim/Lab, importer, USD (`g1_29dof_with_hand-ref`, canonical tree sha256 `cd1fdb27…2fa8`) and joint manifest v1 are those of [ISAAC_MJCF_TRANSPORT.md](ISAAC_MJCF_TRANSPORT.md). PhysX GPU pipeline, dt 0.002 s, 25 substeps per 0.05 s interval, one environment. Host MuJoCo 3.13.0.
+Image, Isaac Sim/Lab, importer, USD (`g1_29dof_with_hand-ref`, canonical tree sha256 `cd1fdb27…2fa8`) and joint manifest v1 are those of [ISAAC_MJCF_TRANSPORT.md](ISAAC_MJCF_TRANSPORT.md). The runs below record only the USD **path**, not its hash; the hash comes from that directory's `conversion.json`. From the review fixes onward, `parity_isaac.py` and `scripted_checks_isaac.py` also record `usd_canonical_tree_sha256`. PhysX GPU pipeline, dt 0.002 s, 25 substeps per 0.05 s interval, one environment. Host MuJoCo 3.13.0.
 
 | Run (`outputs/`, git-ignored) | Code | What |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ Image, Isaac Sim/Lab, importer, USD (`g1_29dof_with_hand-ref`, canonical tree sh
 
 Committed manifests (canonical JSON sha256):
 
-- `configs/isaac/apple_to_plate_v2_scene_v1.json`: `82471775be1b7b41a47f370d1456f5dc41f6b9d39fdb764102bb9a0cfc4848d0`
+- `configs/isaac/apple_to_plate_v2_scene_v1.json`: `e698b44d60a52793be734e375d71b5e74f6ac41ec5eca74a3d20ed2b01af3e72`. The runs recorded `82471775be1b7b41a47f370d1456f5dc41f6b9d39fdb764102bb9a0cfc4848d0`, the file at `45e4d55`. The review fixes changed only two descriptive fields, `isaac_physx.solver` and `unmatched_in_physx`; every physical value is identical. To recheck a scripted run made at `45e4d55`, pass `--scene <(git show 45e4d55:configs/isaac/apple_to_plate_v2_scene_v1.json)` to `scripted_checks_mujoco.py`.
 - `configs/isaac/onboard_camera_v1.json`: `866c596a2d3d6e979adf55a354bf6cd1501b2d898c034c5ca47a5438f9423133`
 
 Both are written by `scripts/isaac/write_scene_manifests.py` from `MuJoCoSimulation` (switched to v2 by `apply_v2_scene`) plus the constants in `isaac_scene.py`. `tests/test_isaac_scene.py` checks that they still match.
@@ -55,7 +55,9 @@ In `isaac-v2-parity-1-free`:
 
 - a read after `reset()` equals the first replay's reset frame (max diff 0);
 - it differs from the last pre-reset frame (mean 12.9, max 149 /255); and
-- a second render of a moved state equals the first (max diff 0).
+- a second render of a moved state equals the first (max diff 0). This shows determinism, not freshness: it is the check that tested nothing before the fix.
+
+Only the second check discriminates freshness. `parity_isaac.py` now raises unless it holds and the first holds (`isaac_scene.check_render_freshness`, unit-tested).
 
 The joint-level numbers of 2026-09-28 are unaffected. Only its frames and staleness claim are.
 
@@ -115,7 +117,7 @@ Both must hold on every held-out read.
 
 - **What passes.** The camera pose, intrinsics and scene geometry agree to within about one pixel of mask boundary.
 - **What fails.** Shading differs. The Isaac frames are paler and softer, with fainter shadows, because the path tracer, denoiser, tonemapper and sRGB output are not MuJoCo's fixed-function colours.
-- **Determinism.** Frames repeat exactly: the second replay's frames at all five reads equal the first's (max diff 0).
+- **Determinism.** Frames repeat exactly within a process: the second replay's frames at all five reads equal the first's (max diff 0). They also repeat across two processes on the same host, driver and image. `parity-dev-1` and `parity-1-free` are separate container runs with byte-identical frame PNGs and identical joint traces, although `dev-1` ran uncommitted code. Determinism across drivers or hosts was not tested.
 - **Consequence.** Isaac frames are geometrically consistent observations, but they are **not** a drop-in replacement for MuJoCo frames. A model trained on MuJoCo pixels should be expected to see a distribution shift. Side-by-side images and class maps are in `outputs/isaac-v2-parity-1-free/parity/`.
 
 ## 2. Joint parity without contact
@@ -145,12 +147,18 @@ Contacts are recorded in both simulators:
 | Contact | MuJoCo reads | Isaac reads (last physics step) |
 | --- | --- | --- |
 | Middle fingers on the table | 37–90, with gaps at 38, 67, 68, 78 and 80 | 37–90, gap at 80 only |
-| `right_hand_middle_0_link` on the apple | yes | yes |
-| `right_hand_middle_1_link` on the plate | yes | yes |
+| `left_hand_middle_1_link` on the table | 37–77, 32 reads | 37–79, 43 reads |
+| `right_hand_middle_1_link` on the table | 37–79, 35 reads | 37–90, 48 reads |
+| `right_hand_middle_0_link` on the apple | reads 50 and 56 | reads 51–58 (7 reads) |
+| `right_hand_middle_1_link` on the plate | 81–90 | 81–90 |
 
-The same pairs occur in both simulators. The apple was pushed 6.6 cm (MuJoCo) and 7.6 cm (Isaac).
+The same body pairs occur in both simulators, on largely but not exactly the same reads. The apple was pushed 6.6 cm (MuJoCo) and 7.6 cm (Isaac). Because the apple ended in different places, this run's image geometry **fails** its declared bars: apple IoU 0.74 at read 70 and 0.56 at read 90, and apple centroid 1.85 px at read 90. Photometry also fails (MAD 24–28, SSIM 0.70–0.75).
 
-The differences in that run: Dex3 max 0.21 rad at read 68 (`left_hand_middle_0`), arms 0.0073, waist 0.0059. These are larger than on 2026-09-28 (0.152, 0.0091, 0.0025) because this scene uses friction 1 in PhysX (see §3) and contains the apple and plate. Together with the free-space result, this confirms what the earlier document could only infer: **the Dex3 differences come from contact, not from free-space tracking.**
+The differences in that run: Dex3 max 0.21 rad at read 68 (`left_hand_middle_0`), arms 0.0073, waist 0.0059. These are larger than on 2026-09-28 (0.152, 0.0091, 0.0025). One untested hypothesis is that this scene uses friction 1 in PhysX (see §3), where the earlier default was 0.5, and contains the apple and plate.
+
+The worst Dex3 read (68) is one where Isaac records finger–table contact and MuJoCo records none. So the largest gap coincides with a contact-state mismatch.
+
+Together with the free-space result, this **strongly supports**, but does not confirm, what the earlier document could only infer: the Dex3 differences come from contact, not from free-space tracking. It is not a controlled ablation: `free_space_v1` is a different trajectory (shoulder pitch −0.8, not −0.3).
 
 ## 3. The v2 table, apple and plate in Isaac
 
@@ -183,6 +191,9 @@ The differences in that run: Dex3 max 0.21 rad at read 68 (`left_hand_middle_0`)
 | Body damping, sleeping | none | linear/angular damping 0 (PhysX default angular 0.05), sleep threshold 0 | yes |
 | Robot geoms | friction (1, 0.005, 0.0001), condim 3, self-collision on | scene default material (friction 1), self-collision off | partly |
 | Integrator | implicitfast | PhysX TGS (apple: 16 position / 1 velocity iterations, as authored) | no |
+| PhysX-only settings | none | apple `maxDepenetrationVelocity` 1.0 m/s, contact offset auto, CCD and speculative CCD off, `stabilizationThreshold` 1e-5, `cfmScale` 0.025 (read back) | no counterpart |
+| Floor | infinite plane at z = 0 | 4 m × 4 m × 2 cm box, top at z = 0 | nominal |
+| Robot link collision shapes | MJCF meshes (convex) and primitives | the converter's `convexHull` of the same meshes, plus the primitives | counts match (§2 of ISAAC_MJCF_TRANSPORT.md); hulls not compared vertex by vertex |
 
 ## 4. Scripted checks (no learned policy)
 
@@ -192,13 +203,13 @@ The differences in that run: Dex3 max 0.21 rad at read 68 (`left_hand_middle_0`)
 | --- | --- | --- | --- |
 | Drop 10 cm onto the table | rests at z 0.76683, settles at 0.35 s | rests at z 0.76700, settles at 0.15 s | xy 0.00 mm, z +0.17 mm (MuJoCo's soft-contact penetration), settles 0.20 s earlier |
 | Drop 10 cm onto the plate centre | z 0.77883, 0.35 s | z 0.77900, 0.15 s | xy 0.00 mm, z +0.17 mm, 0.20 s earlier |
-| Drop 5 cm off the plate centre (onto base and rim) | stays on the plate: ends 3.4 cm from the centre, still creeping at 0.0067 m/s after 3 s | rolls off the plate and across the table, hits `right_hip_roll_link` and falls off the table edge (ends at z 0.661) | qualitatively different |
+| Drop 5 cm off the plate centre (onto base and rim) | stays on the plate: ends 3.4 cm from the centre, still creeping at 0.0067 m/s after 3 s | rolls off the plate and across the table toward the robot, and ends wedged between the table edge and `right_hip_roll_link`: at rest from 1.55 s at z 0.661, in contact with both, never with the floor | qualitatively different |
 | Roll on the table, 0.2 m/s with matching spin | slows to 0.053 m/s after 3 s (0.343 m travelled) | does not slow; rolls off the far edge onto the floor at about 2.8 s | the missing rolling friction |
-| Right middle finger pressed onto the resting apple | finger contact from read 47 (max 5.8 N, plus `middle_0` 7.0 N); the apple is squeezed sideways 6.5 cm | finger contact from read 46 (max 35.9 N; table reaction up to 37.8 N); the apple is pinned and moves 4 mm | qualitatively different; joint difference up to 0.031 rad |
+| Right middle finger pressed onto the resting apple | finger contact from read 47 (max 5.8 N, plus `middle_0` 7.0 N); the apple is squeezed sideways 6.5 cm | finger contact from read 46 (max 35.9 N; table reaction up to 37.8 N); the apple is pinned and moves 4 mm | the outcome differs (pinned against squeezed out); joint difference up to 0.031 rad |
 
 - **Drops.** Straight drops agree to 0.17 mm in rest height and 0 mm in xy. Isaac settles 0.2 s sooner because its rigid contacts do not oscillate the way MuJoCo's soft contacts do.
 - **Roll and rim.** Anything involving rolling or the rim differs qualitatively. This is the gap v2 was created to close: MuJoCo's condim-6 rolling friction keeps the apple on the plate, and PhysX has no equivalent.
-- **Press.** The finger press differs in force by a factor of about six and in outcome. The finger's convex hull, rigid versus soft contact, and the friction model are all candidate causes. This run does not separate them.
+- **Press.** The finger press differs in outcome. The sampled peak forces (5.8 N against 35.9 N) belong to different outcomes, a pinned apple against one squeezed out, and are sampled once per interval. They are not a contact-stiffness ratio. The finger's convex hull, rigid versus soft contact, and the friction model are all candidate causes. This run does not separate them.
 - **Contact forces.** Contact forces sampled once per interval are not comparable at impact: MuJoCo 7.4 N against Isaac 0.78 N at the first contact read. The timing of the samples differs, so these are not reported as a difference.
 
 **Implication for running `apple-to-plate-v2` in Isaac.** The TASK-070 expert's at-rest success depends on the apple not rolling away. The roll and rim cases predict that, with PhysX as configured, the apple will roll off the plate where MuJoCo keeps it. An Isaac replay of e9 would therefore measure this engine difference, not the expert's behaviour.
@@ -225,7 +236,7 @@ The differences in that run: Dex3 max 0.21 rad at read 68 (`left_hand_middle_0`)
 
 Caveats:
 
-- **Renderer.** The image choice rests on one frame and one grid, photometric parity fails its declared bars, and the path tracer costs about 20 ms per 112 px frame. Output frames are deterministic within a process; determinism across processes and driver versions was not tested.
+- **Renderer.** The image choice rests on one frame and one grid, photometric parity fails its declared bars, and the path tracer costs about 20 ms per 112 px frame. Output frames are identical within a process and across two processes on the same host, driver and image. Determinism across drivers or hosts was not tested. The apple image-geometry PASS in the free-space run rests on 17–42 apple pixels of a static apple, so it tests projection, not object dynamics.
 - **Contacts.** Isaac contacts come from tensor contact views against named scene bodies, so robot self-contacts are not observed (self-collision is off anyway). MuJoCo contacts are sampled after each interval; Isaac's at the last step and at any substep.
 - **Settle time.** It has 0.05 s resolution.
 - **Simulator version.** Isaac Sim is still release candidate 6.0.0-rc.22.
