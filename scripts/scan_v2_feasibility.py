@@ -140,13 +140,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--cells", default="all")
     parser.add_argument("--count", type=int, default=32)
+    parser.add_argument("--start", type=int, default=0, help="index into DEV_SEEDS")
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise SystemExit(f"refusing to overwrite {args.output}")
     cells = list(CELLS) if args.cells == "all" else args.cells.split(",")
-    seeds = v2.DEV_SEEDS[: args.count]
+    seeds = v2.DEV_SEEDS[args.start : args.start + args.count]
+    if len(seeds) != args.count:
+        raise SystemExit("seed slice leaves the development range")
+    revision = git("rev-parse", "HEAD")  # read at start: the code the workers import
+    dirty = bool(git("status", "--porcelain", "--untracked-files=no"))
     v2.check_seeds(seeds)
     spec = importlib.util.spec_from_file_location("_eval", ROOT / "scripts" / "evaluate_apple.py")
     module = importlib.util.module_from_spec(spec)
@@ -197,8 +202,9 @@ def main() -> int:
         "setdown_box": SETDOWN_BOX,
         "seeds": list(seeds),
         "direction_seed": v2.DEV_DIRECTION_SEED,
-        "revision": git("rev-parse", "HEAD"),
-        "tracked_tree_dirty": bool(git("status", "--porcelain", "--untracked-files=no")),
+        "revision": revision,
+        "revision_at_end": git("rev-parse", "HEAD"),
+        "tracked_tree_dirty": dirty,
         "seconds": time.monotonic() - started,
         "summary": summary,
         "attempts": rows,
