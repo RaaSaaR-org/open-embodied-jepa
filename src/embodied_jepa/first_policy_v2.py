@@ -305,7 +305,7 @@ VOID_RULE = (
     "caps and device (a fresh corpus directory, collected again from the same plan); a second V "
     "closes TASK-071 as INCONCLUSIVE"
 )
-NO_ELIGIBLE_CHECKPOINT = fp.NO_ELIGIBLE_CHECKPOINT
+NO_ELIGIBLE_CHECKPOINT = "the arm scores 0/16 on D2, reported as no_eligible_checkpoint"
 CLAUSE_ROWS = fp.CLAUSE_ROWS
 
 
@@ -356,6 +356,10 @@ M2 = {
     **fp.M2,
     "success": f"{SUCCESS_METRIC} after the 60-step settle; the latched scorer reported beside",
     "G5_harness": {"B-hold_grasp": 0, "B-random_grasp": 0, "B-oracle_min_successes": 38},
+    "stop_rule": (
+        "the carried P-k does not run on C if it has 0/16 grasps on D2 (then M2 fails); the "
+        "controls C-3, R-3, B-replay and the harness always run on C"
+    ),
     "G5_oracle": "e9 from the reset truth, at rest",
     "rows": {
         **fp.M2["rows"],

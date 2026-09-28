@@ -123,7 +123,7 @@ seeds, where v1's collector rested it on 4/32 (TASK-067 landing diagnosis).
 
 ## 3. Every deviation from v1 (for the owner's ruling)
 
-Rows 1–5 are the brief's required changes. Rows 6–15 are consequences of them that this
+Rows 1–5 are the brief's required changes. Rows 6–21 are consequences of them that this
 preregistration had to fix, each with its reason. No row loosens a bar.
 
 | # | item | v1 (TASK-067) | v2 (this protocol) | why |
@@ -134,9 +134,9 @@ preregistration had to fix, each with its reason. No row loosens a bar.
 | 4 | corpus | `apple-look-v1` (TASK-064; manifest `81d760d1…`), 134 non-aim train roots | a fresh `apple-look-v2`, collected by the gated run itself (§5): e9 under v2 on 200 fresh resets, split 170 / 20 / 10 by reset, sealed with per-episode sha256; 170 train roots in BC-0 | brief 2.3 |
 | 5 | perception bars | C0 alone, caps apple 0.75 / 1.2 cm, plate 1.5 / 2.5 cm (median / p90) | C0 re-run with e9, at rest, on fresh seeds, with v1's rule and caps; **then the plate p90 bar is capped at 1.5 cm**, the level v1's rule gives on TASK-070's gated counts (30/32 at 1.0 cm, 28/32 at 1.5 cm); the plate median bar is at most the p90 bar (§8.1) | brief 2.4: e9's apple tolerance has never been measured, and TASK-070 measured the plate only up to 1.5 cm |
 | 6 | seeds | 46000–46999 block; C0 directions `default_rng(6700)`; readout folds 6701; sampler 6702; random controller 6703; model 0 | 51000–51999 for every gated role, D2 52000–52015, smoke 52100–52199; C0 directions 7100, folds 7101, sampler 7102, random controller 7103, model 7104, corpus split 7105, noise-seed salt 7106 (§4) | brief 2.5 |
-| 7 | development cohort | D = 45000–45007, 45100–45107 | **D2 = 52000–52015**, fresh | brief 2.5 ("fresh seeds for everything"): D was decoded by many arms in TASK-056/057 under v1 physics. **The milestone itself is unchanged** (≥ 1/16, now at rest). If the owner prefers v1's D, it is a one-line change before the gated run. |
+| 7 | development cohort | D = 45000–45007, 45100–45107 | **D2 = 52000–52015**, fresh | brief 2.5 ("fresh seeds for everything"): D was decoded by many arms in TASK-056/057 under v1 physics. **The milestone itself is unchanged** (≥ 1/16, now at rest). If the owner prefers v1's D, it is a small change before the gated run (the seed guard, which now forbids 45000–45207 as v1's did, the runner's whitelist and the frozen block), through a reviewed amendment. |
 | 8 | cohort C (M2 only) | 45300–45339, stored values | **unchanged** | the brief keeps "cohort C against open-loop replay" |
-| 9 | policy step budget per attempt | 800 policy steps, expert budget 745 | at most **740** policy commands (`resting_expert.EXPERT_BUDGET`, the budget e9 was gated under), then the task's 60-step settle: 800 steps in all | the at-rest check needs the settle inside the same 800-step attempt that TASK-070 used. As in v1 (745–799), the policy's last steps (725–739) lie beyond e9's clock and carry no DAgger label |
+| 9 | policy step budget per attempt | 800 policy steps, expert budget 745 | at most **740** policy commands (`resting_expert.EXPERT_BUDGET`, the budget e9 was gated under), then the task's 60-step settle: 800 steps in all | the 740-command budget TASK-070 gated e9 under, plus its settle (e9 itself used 725 + 60 = 785 steps); the at-rest check needs the settle inside the attempt. As in v1 (745–799), the policy's last steps (725–739) lie beyond e9's clock and carry no DAgger label |
 | 10 | clock | t / 745 plus sin/cos at 16 periods | t / 725 plus the same sin/cos | e9's budget is 725 |
 | 11 | F (fallback) | one head per collector phase (8) | one head per e9 phase (10), chosen by e9's clock schedule; still rung L2 | e9's schedule |
 | 12 | B-replay library | successful non-aim train roots of `apple-look-v1` (latched) | train roots of `apple-look-v2` that ended **at rest**; replays their executed policy commands (no settle), then the task's settle | corpus and success change |
@@ -146,6 +146,9 @@ preregistration had to fix, each with its reason. No row loosens a bar.
 | 16 | the corpus's noise and plan | TASK-064: noise levels 0–3, aim offsets on every fifth root, 3 branches per root | noise levels 0–3 (root i gets level i mod 4; TASK-048's `Perturber`, loaded unchanged); **no aim offsets and no branches** | v1's BC-0 excluded aim-offset roots and branches, so they would add collection time and nothing that BC-0 reads |
 | 17 | D2 harness condition | B-oracle (collector) ≥ 14/16 latched successes | B-oracle (e9) ≥ 14/16 at rest; B-hold, B-random 0 latched grasps | rows 2–3 |
 | 18 | M2 G5 | B-oracle ≥ 38/40 | B-oracle (e9) ≥ 38/40 at rest | rows 2–3 |
+| 19 | count consistency in `decide_m1` | `0 ≤ success ≤ grasp ≤ 16` (a latched success implied the latched grasp stage) | each count checked separately, `0 ≤ grasp ≤ 16` and `0 ≤ success ≤ 16`; **an at-rest success without a latched grasp counts** | `apple_at_rest_v0` has no grasp requirement (position, support, speed, no hand contact), so an apple pushed onto the plate and left at rest is a success under the brief's metric. **Flagged for the owner's ruling.** The results report, for every at-rest attempt of every arm, its latched grasp flag, so any success without a grasp is visible |
+| 20 | DAgger grasp label in `open`, `clear`, `retreat` | the collector's release had no state-dependent ramp | e9's grasp label there is `max(−1, accepted_grasp − 0.04)`, where `accepted_grasp` is the **learner's** last applied grasp, because the labeller advances on the executed result (as v1's) | a consequence of row 3 and v1's labeller semantics, disclosed |
+| 21 | per-attempt wall cap for corpus roots | no corpus in the run | the corpus collector is covered by the corpus-stage cap (3 600 s) only; the 300 s per-attempt G-cap applies to the controller attempts (C0, DAgger, S0-D1, M1) | the collector is privileged data collection, not an evaluated attempt |
 
 **What is deliberately not changed** (the brief's "stay as in v1" list): the milestone
 (≥ 1/16, at rest, on the development cohort), the M2 gates including G1's "strictly more than
@@ -210,7 +213,9 @@ It ran on 2026-09-28 at `fe696a0` (main after #93). The command, over `src`, `sc
 - **Sealing.** `manifest.json` holds the plan, the splits, every episode's sha256 and the run's
   provenance. Its sha256 is recorded in `report.json`. `CorpusReader` verifies every hash before
   decoding and refuses any episode outside train and val before a file is opened (Q-split);
-  `test_split_decoded` is recorded.
+  `test_split_decoded` is recorded. Q-split covers decoding stored episodes: the collector's own
+  collection-time summaries of the test roots (at rest, latched, termination) are reported with
+  the corpus counts, and no stored test episode is ever opened.
 - **Location.** `data/apple-look-v2/run-<k>`; the runner refuses to overwrite it. A repeat after
   a void collects again into a new directory from the same plan and seeds (§14).
 - **The corpus is privileged scripted data.** Its at-rest counts are reported by noise level and
@@ -501,7 +506,7 @@ workers, 8 distinct workers, 106 s; report sha256 `08133911…124b`
 command for command and verdict for verdict, and that the collector at noise level 0 issues
 exactly e9's commands with frame 0 equal to the post-look frame.
 
-After `be74726` only this section and the manifest's pin of this document changed.
+After `be74726`, this document (this section and the review fixes to §3 and §5), the manifest's pins, and two strings of the frozen block (`NO_ELIGIBLE_CHECKPOINT` and M2's stop rule now name D2 rather than D) changed. No runner, runtime or model code changed.
 
 ## 19. Amendment log
 

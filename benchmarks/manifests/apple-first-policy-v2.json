@@ -26,7 +26,7 @@
       "the render-determinism check at the gated worker count"
     ]
   },
-  "deviations_from_v1": "docs/experiments/apple_first_policy_v2.md \u00a73 (18 rows)",
+  "deviations_from_v1": "docs/experiments/apple_first_policy_v2.md \u00a73 (21 rows)",
   "seed_overlap_check": {
     "performed_utc": "2026-09-28",
     "revision": "fe696a0",
@@ -489,7 +489,7 @@
       "S0-APPLE-FAIL"
     ],
     "void_rule": "a run that stops early other than at a declared early-stop row (CAL-ESCALATE, S0-APPLE-FAIL, S0-PLATE-FAIL) is V; exactly one from-scratch repeat with the same seeds, caps and device (a fresh corpus directory, collected again from the same plan); a second V closes TASK-071 as INCONCLUSIVE",
-    "no_eligible_checkpoint": "the arm scores 0/16 on D, reported as no_eligible_checkpoint",
+    "no_eligible_checkpoint": "the arm scores 0/16 on D2, reported as no_eligible_checkpoint",
     "m2": {
       "G1_min_successes": 17,
       "G2_min_difference_vs_C": 8,
@@ -502,7 +502,7 @@
       },
       "G6_privileged_reads": 0,
       "G7_max_median_control_seconds": 0.1,
-      "stop_rule": "the carried P-k does not run on C if it has 0/16 grasps on D (then M2 fails); the controls C-3, R-3, B-replay and the harness always run on C",
+      "stop_rule": "the carried P-k does not run on C if it has 0/16 grasps on D2 (then M2 fails); the controls C-3, R-3, B-replay and the harness always run on C",
       "exemption_spent_cited": "apple-policy-diagnostics-v1.json precedence_rule_D1_over_G_SUB.exemption_spent is false at preregistration and is not claimed",
       "rows": {
         "M2-PASS": "every gate passes: a learned policy with a DINOv2 encoder works on this cohort under apple-to-plate-v2 (not LeWM driving the robot)",
@@ -557,8 +557,8 @@
   },
   "mujoco_version": "3.13.0",
   "hashes": {
-    "docs/experiments/apple_first_policy_v2.md": "287d5c095f953b592a7123bd2336ee3baf7bc515a2de805df3378d512ab79ef0",
-    "src/embodied_jepa/first_policy_v2.py": "27c0fe65b6b667f369aa808122a57f939d1da8b20c7494c4b08023d3c89474d6",
+    "docs/experiments/apple_first_policy_v2.md": "e2115560e127c8a1bc9a8ace7ba190c3cb0ebd1b0f461351eb67d3228dc0a3b8",
+    "src/embodied_jepa/first_policy_v2.py": "035a98285cecc1d62b153c4ac0770bab82ad38ecc104fe2e3c8410ab53d0ed91",
     "src/embodied_jepa/first_policy_v2_runtime.py": "72a1da6334380b26439f3746421055a442059b1088b57b77525f82fafb241152",
     "src/embodied_jepa/first_policy_v2_model.py": "5e29fc12f496b2299c1d2d5b4df8ea99660b838a896587b9b890f846312a1a45",
     "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
