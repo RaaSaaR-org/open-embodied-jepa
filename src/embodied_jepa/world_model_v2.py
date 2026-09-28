@@ -37,7 +37,7 @@ from pathlib import Path
 
 import numpy as np
 
-from embodied_jepa import readout_labels
+from embodied_jepa import devices, readout_labels
 from embodied_jepa.contracts import ContractError, RobotState, SequenceBatch, StateSchema
 from embodied_jepa.data import DatasetStore
 from embodied_jepa.training import BudgetReached, RunClock, json_hash, peak_rss_bytes
@@ -842,8 +842,7 @@ def train(
         sampler = np.random.default_rng(seed)
 
         def synchronize():
-            if device == "mps":
-                torch.mps.synchronize()
+            devices.synchronize(device)
 
         def validate():
             nonlocal best
@@ -932,8 +931,7 @@ def train(
             best_checkpoint_sha256=_sha256(paths["best"]) if paths["best"].exists() else None,
             latest_checkpoint_sha256=_sha256(paths["latest"]) if paths["latest"].exists() else None,
         )
-        if device == "mps":
-            report["final_mps_driver_bytes"] = torch.mps.driver_allocated_memory()
+        report.update(devices.memory_report(device))
         _write_json(paths["report"], report)
     if failed is not None:
         raise failed
@@ -1044,7 +1042,7 @@ def main():
         command = commands.add_parser(name)
         command.add_argument("--config", type=Path, required=True)
         command.add_argument("--protocol-manifest", type=Path, required=True)
-        command.add_argument("--device", choices=("cpu", "mps"), default="mps")
+        command.add_argument("--device", choices=devices.SUPPORTED_DEVICES, default="mps")
         command.add_argument("--workers", type=int, default=8)
         command.add_argument("--limit-episodes", type=int, help="smoke subsets only")
         command.add_argument("--acknowledge-privileged-training-labels", action="store_true")

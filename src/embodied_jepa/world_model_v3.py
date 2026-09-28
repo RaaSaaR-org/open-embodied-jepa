@@ -30,6 +30,7 @@ from pathlib import Path
 import numpy as np
 
 from embodied_jepa.contracts import ContractError
+from embodied_jepa.devices import SUPPORTED_DEVICES
 from embodied_jepa.world_model_v2 import (
     APPROACH_OFFSET_M,
     GATE_HORIZON,
@@ -291,7 +292,7 @@ def main():
         command = commands.add_parser(name)
         command.add_argument("--config", type=Path, required=True)
         command.add_argument("--protocol-manifest", type=Path, required=True)
-        command.add_argument("--device", choices=("cpu", "mps"), default="mps")
+        command.add_argument("--device", choices=SUPPORTED_DEVICES, default="mps")
         command.add_argument("--workers", type=int, default=8)
         command.add_argument("--limit-episodes", type=int, help="smoke subsets only")
         command.add_argument("--acknowledge-privileged-training-labels", action="store_true")

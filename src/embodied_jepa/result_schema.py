@@ -175,7 +175,9 @@ def validate_results(run_manifest, episodes):
     env = _mapping(run["environment"], "run.environment")
     for name in ("platform", "python", "engine", "torch", "numpy"):
         _text(env.get(name), f"run.environment.{name}")
-    _require(env.get("device") in ("cpu", "mps"), "run.environment.device", "unknown device")
+    _require(
+        env.get("device") in ("cpu", "mps", "cuda"), "run.environment.device", "unknown device"
+    )
     _require(env["engine"] == "mujoco", "run.environment.engine", "unsupported engine")
     _text(env.get("mujoco"), "run.environment.mujoco")
     planner = _mapping(run["planner"], "run.planner")

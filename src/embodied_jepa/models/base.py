@@ -16,6 +16,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from embodied_jepa import devices
 from embodied_jepa.contracts import (
     EE_DELTA_GRASP_V0,
     Capabilities,
@@ -114,10 +115,8 @@ class VisualModel(nn.Module):
 
     def __init__(self, state_schema: StateSchema, device="cpu", seed=0, config=None, metadata=None):
         super().__init__()
-        if device not in ("cpu", "mps"):
-            raise ContractError("validated model devices are cpu and mps")
-        if device == "mps" and not torch.backends.mps.is_available():
-            raise ContractError("MPS was requested but is unavailable")
+        # cuda also applies the deterministic CUDA setup (embodied_jepa.devices).
+        devices.require(device, error=ContractError)
         if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
             raise ContractError("seed must be a nonnegative integer")
         self.device_name = device
@@ -177,6 +176,7 @@ class VisualModel(nn.Module):
         self._owner = object()
         self._rng = torch.Generator().manual_seed(seed).get_state()
         self._mps_rng = None
+        self._cuda_rng = None
         self.register_buffer("latent_variance", torch.ones(self.config["latent_dim"]))
         if self.config["state_fusion"]:
             dimension = state_schema.dimension
@@ -215,29 +215,32 @@ class VisualModel(nn.Module):
             EE_DELTA_GRASP_V0,
             self.state_schema,
             self.config["max_horizon"],
-            supported_devices=("cpu", "mps"),
+            supported_devices=devices.SUPPORTED_DEVICES,
             readouts=self.declared_readouts,
         )
 
     @contextmanager
     def rng_scope(self):
         """Isolate backend stochastic state so comparisons don't perturb each other."""
+        device = self.device_name
+        attribute = {"mps": "_mps_rng", "cuda": "_cuda_rng"}.get(device)
         cpu_before = torch.get_rng_state()
-        mps_before = torch.mps.get_rng_state() if self.device_name == "mps" else None
+        device_before = devices.get_rng_state(device) if attribute else None
         torch.set_rng_state(self._rng)
-        if self.device_name == "mps":
-            if self._mps_rng is None:
-                torch.mps.manual_seed(self.seed)
+        if attribute:
+            own = getattr(self, attribute)
+            if own is None:
+                devices.manual_seed(device, self.seed)
             else:
-                torch.mps.set_rng_state(self._mps_rng)
+                devices.set_rng_state(device, own)
         try:
             yield
         finally:
             self._rng = torch.get_rng_state()
             torch.set_rng_state(cpu_before)
-            if self.device_name == "mps":
-                self._mps_rng = torch.mps.get_rng_state()
-                torch.mps.set_rng_state(mps_before)
+            if attribute:
+                setattr(self, attribute, devices.get_rng_state(device))
+                devices.set_rng_state(device, device_before)
 
     def finish_init(self):
         # Shared modules are built after the backend's own, so a disabled extension
@@ -764,6 +767,7 @@ class VisualModel(nn.Module):
             "optimizer": self.optimizer.state_dict(),
             "rng_cpu": self._rng,
             "rng_mps": self._mps_rng,
+            "rng_cuda": self._cuda_rng,
             "source_revision": self.source_revision,
             "implementation_sha256": self.implementation_sha256,
             "preprocessing": {
@@ -805,6 +809,7 @@ class VisualModel(nn.Module):
         self.updates = checkpoint["updates"]
         self._rng = checkpoint["rng_cpu"]
         self._mps_rng = checkpoint["rng_mps"]
+        self._cuda_rng = checkpoint.get("rng_cuda")  # absent before CUDA support
         self._owner = object()  # Old latents are invalid after checkpoint replacement.
         self.eval()
 
