@@ -785,8 +785,11 @@ def _run(report, output, checkpoints, corpus, clock, smoke, smoke_max_steps=None
         c0_latched[task["condition"]] = c0_latched.get(task["condition"], 0) + int(
             record["latched_success"]
         )
-    if smoke:
-        c0 = {k: round(v * fp2.C0_RESETS / max(len(c0_seeds), 1)) for k, v in c0.items()}
+    if smoke:  # smoke only: every C0 count is scaled to 32, so they stay comparable
+        scale = fp2.C0_RESETS / max(len(c0_seeds), 1)
+        c0, c0_at_rest, c0_latched = (
+            {k: round(v * scale) for k, v in d.items()} for d in (c0, c0_at_rest, c0_latched)
+        )
     apple_c0 = {a: c0[f"apple_{a}"] for a in fp2.C0_APPLE_LEVELS_CM}
     plate_c0 = {p: c0[f"plate_{p}"] for p in fp2.C0_PLATE_LEVELS_CM}
     bars = fp2.c0_bars(c0["reference"], apple_c0, plate_c0)

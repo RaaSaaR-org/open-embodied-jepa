@@ -308,7 +308,7 @@ A4_THRESHOLD_FRACTION = fp.A4_THRESHOLD_FRACTION
 A4_THRESHOLD_MINIMUM = fp.A4_THRESHOLD_MINIMUM
 A4_RATE_CAP = fp.A4_RATE_CAP
 D_RESETS = len(COHORT_D2)
-ORACLE_MIN_SUCCESSES = fp.ORACLE_MIN_SUCCESSES  # of 16, at rest
+ORACLE_MIN_SUCCESSES = fp.ORACLE_MIN_SUCCESSES  # of 16, counted successes (T71-R1)
 
 ROWS = fp.ROWS
 INTERMEDIATE_STATES = fp.INTERMEDIATE_STATES
@@ -330,7 +330,7 @@ def _check_cell(arm: str, cell) -> None:
 
 
 def harness_valid(counts: dict) -> bool:
-    """B-oracle >= 14/16 at rest; B-hold and B-random 0/16 grasps (latched grasp stage)."""
+    """B-oracle >= 14/16 counted successes (T71-R1); B-hold and B-random 0/16 grasps."""
     return (
         counts["B-oracle"]["success"] >= ORACLE_MIN_SUCCESSES
         and counts["B-hold"]["grasp"] == 0
@@ -368,13 +368,13 @@ def decide_m1(counts: dict, a4_threshold_value: int, *, f_counts: dict | None = 
 # ----- M2 on cohort C (separate authorization; preregistered now, run later) ---------------------
 M2 = {
     **fp.M2,
-    "success": f"{SUCCESS_METRIC} after the 60-step settle; the latched scorer reported beside",
+    "success": COUNTED_SUCCESS,
     "G5_harness": {"B-hold_grasp": 0, "B-random_grasp": 0, "B-oracle_min_successes": 38},
     "stop_rule": (
         "the carried P-k does not run on C if it has 0/16 grasps on D2 (then M2 fails); the "
         "controls C-3, R-3, B-replay and the harness always run on C"
     ),
-    "G5_oracle": "e9 from the reset truth, at rest",
+    "G5_oracle": "e9 from the reset truth, counted success (T71-R1)",
     "rows": {
         **fp.M2["rows"],
         "M2-PASS": "every gate passes: a learned policy with a DINOv2 encoder works on this "
@@ -482,7 +482,7 @@ def frozen_block() -> dict:
                     "plate_median": fp.PLATE_MEDIAN_CAP_CM,
                     "plate_p90": fp.PLATE_P90_CAP_CM,
                 },
-                "success": SUCCESS_METRIC,
+                "success": COUNTED_SUCCESS,
             },
             "ladder": LADDER,
             "ladder_allowances_L1": LADDER_ALLOWANCES_L1,

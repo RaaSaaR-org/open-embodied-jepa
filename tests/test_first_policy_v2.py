@@ -223,7 +223,26 @@ def test_counted_success_needs_at_rest_and_a_grasp_t71_r1():
     assert fp2.counted_success(True, True)
     assert not fp2.counted_success(True, False)  # a push onto the plate is not counted
     assert not fp2.counted_success(False, True)
-    assert "T71-R1" in fp2.frozen_block()["counted_success"]
+    frozen = fp2.frozen_block()
+    assert "T71-R1" in frozen["counted_success"]
+    assert frozen["c0"]["success"] == frozen["m2"]["success"] == fp2.COUNTED_SUCCESS
+
+
+def test_runner_counts_only_counted_successes():
+    runner = load_runner()
+
+    def record(at_rest, grasp_before_settle):
+        return {
+            "grasp": grasp_before_settle,
+            "grasp_before_settle": grasp_before_settle,
+            "at_rest": at_rest,
+            "success": fp2.counted_success(at_rest, grasp_before_settle),
+            "latched_success": at_rest,
+        }
+
+    cell = runner.count([record(True, True), record(True, False), record(False, True)])
+    assert cell["success"] == 1 and cell["at_rest"] == 2
+    assert cell["at_rest_without_grasp"] == 1 and cell["grasp"] == 2
 
 
 class _Truth:
@@ -519,3 +538,5 @@ def test_collector_at_noise_zero_is_e9_and_frame0_is_post_look(tmp_path):
     )
     assert runner.frame_sha(frame0) == out["post_look_frame_sha256"]
     assert out["at_rest"] == oracle["at_rest"] and out["termination"] == "policy_complete"
+    assert out["success"] == oracle["success"]
+    assert out["grasp_before_settle"] == oracle["grasp_before_settle"]
