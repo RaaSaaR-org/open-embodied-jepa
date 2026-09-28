@@ -62,7 +62,8 @@ def apply_apple_friction(model, *, condim: int = 6, torsional=0.01, rolling=0.00
 
 def v1_reset(seed: int) -> dict:
     """The TASK-047 wide-jitter reset (``scripts/evaluate_apple.py:wide_reset``), reimplemented
-    here so the scan can draw it without importing that script; a test pins the equality."""
+    here so the scan can draw it without importing that script. The scan checks the equality
+    seed by seed at start-up (``scripts/scan_v2_feasibility.py``)."""
     rng = np.random.default_rng(seed)
     apple = np.array(APPLE_CENTER) + rng.uniform(-APPLE_JITTER_M, APPLE_JITTER_M, 2)
     plate = np.array(PLATE_CENTER_V1) + rng.uniform(-PLATE_JITTER_V1_M, PLATE_JITTER_V1_M, 2)
