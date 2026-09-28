@@ -139,6 +139,69 @@ def position_residual(robot, rng, targets, joint_names) -> dict:
     return out
 
 
+def palm_down_residual(robot, rng, targets, joint_names) -> dict:
+    """As ``position_residual``, but for the full palm-down pose (the collector's rotation),
+    weighted as ``G1Embodiment.solve_ik`` weights it (rotation error x 0.3). Also reports how far
+    the LEFT palm moves from its reset pose at the solution, since the waist carries both arms."""
+    model = robot.model
+    ids = np.array([model.joint(n).id for n in joint_names])
+    limits = model.jnt_range[ids]
+    qadr, vadr = model.jnt_qposadr[ids], model.jnt_dofadr[ids]
+    data = robot.mj.MjData(model)
+    site = model.site("right_ee").id
+    left = model.site("left_ee").id
+    jacp, jacr = np.zeros((3, model.nv)), np.zeros((3, model.nv))
+    pelvis_id = model.body("pelvis").id
+    down = rotation_delta([-np.pi / 2, 0, 0])
+    data.qpos[:] = robot.sim.data.qpos
+    robot._forward_kinematics(data)
+    left_reset = data.site_xpos[left].copy()
+    out = {}
+    for target in targets:
+        best = (np.inf, None, None, None)
+        for _ in range(RESTARTS):
+            data.qpos[:] = robot.sim.data.qpos
+            data.qpos[qadr] = rng.uniform(limits[:, 0], limits[:, 1])
+            for _ in range(ITERATIONS):
+                robot._forward_kinematics(data)
+                base_rot = data.xmat[pelvis_id].reshape(3, 3)
+                goal = data.xpos[pelvis_id] + base_rot @ np.asarray(target)
+                dp = goal - data.site_xpos[site]
+                quat = np.empty(4)
+                current = data.site_xmat[site].reshape(3, 3)
+                robot.mj.mju_mat2Quat(quat, ((base_rot @ down) @ current.T).ravel())
+                if quat[0] < 0:
+                    quat *= -1
+                dr = np.empty(3)
+                robot.mj.mju_quat2Vel(dr, quat, 1.0)
+                robot.mj.mj_jacSite(model, data, jacp, jacr, site)
+                jac = np.vstack((jacp[:, vadr], 0.3 * jacr[:, vadr]))
+                error = np.concatenate((dp, 0.3 * dr))
+                step = jac.T @ np.linalg.solve(jac @ jac.T + 0.02**2 * np.eye(6), error)
+                data.qpos[qadr] = np.clip(
+                    data.qpos[qadr] + np.clip(step, -0.12, 0.12), limits[:, 0], limits[:, 1]
+                )
+            robot._forward_kinematics(data)
+            base_rot = data.xmat[pelvis_id].reshape(3, 3)
+            goal = data.xpos[pelvis_id] + base_rot @ np.asarray(target)
+            position = float(np.linalg.norm(goal - data.site_xpos[site]))
+            quat = np.empty(4)
+            current = data.site_xmat[site].reshape(3, 3)
+            robot.mj.mju_mat2Quat(quat, ((base_rot @ down) @ current.T).ravel())
+            angle = float(2 * np.arccos(min(1.0, abs(quat[0]))))
+            score = position + 0.3 * angle
+            if score < best[0]:
+                shift = float(np.linalg.norm(data.site_xpos[left] - left_reset))
+                best = (score, (position, angle), data.qpos[qadr].copy(), shift)
+        out[",".join(f"{v:.4f}" for v in target)] = {
+            "position_residual_m": best[1][0],
+            "rotation_residual_rad": best[1][1],
+            "left_palm_shift_m": best[3],
+            "joints": dict(zip(joint_names, np.round(best[2], 3).tolist(), strict=True)),
+        }
+    return out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--output", type=Path, required=True)
@@ -172,6 +235,10 @@ def main() -> int:
         "arm_only": position_residual(robot, rng, targets, arm),
         "arm_plus_waist": position_residual(robot, rng, targets, WAIST + arm),
     }
+    palm_down = {
+        "arm_only": palm_down_residual(robot, rng, targets, arm),
+        "arm_plus_waist": palm_down_residual(robot, rng, targets, WAIST + arm),
+    }
     report = {
         "task": "TASK-069 reach measurements (development only, kinematics only)",
         "revision": git("rev-parse", "HEAD"),
@@ -184,6 +251,7 @@ def main() -> int:
         },
         "setdown_region": region,
         "position_only_residuals": waist,
+        "palm_down_residuals": palm_down,
         "v1_region_palm_targets": [list(t) for t in v1_region],
         "seconds": time.monotonic() - started,
     }
