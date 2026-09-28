@@ -46,6 +46,9 @@ DESIGNS: dict[str, dict] = {
     # forward (e5) was best. Continue that direction.
     "e8": {"release_pitch_rad": 0.45, "release_dx": 0.005},
     "e9": {"release_pitch_rad": 0.45, "release_dx": 0.015},
+    # Held-back check (50232-50295): e9 59/64 at 1.0 cm, e5 56/64, e1 54/64. One more step.
+    "e10": {"release_pitch_rad": 0.45, "release_dx": 0.025},
+    "e11": {"release_pitch_rad": 0.4, "release_dx": 0.015},
 }
 
 _W: dict = {}
