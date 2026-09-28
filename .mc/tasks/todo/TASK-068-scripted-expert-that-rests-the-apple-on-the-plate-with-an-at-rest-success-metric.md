@@ -64,9 +64,9 @@ Protocol and log: `docs/experiments/apple_resting_expert_v1.md`.
   every spent or reserved range, and fixed in the preregistration PR.
 
 ## Acceptance Criteria
-- [x] At-rest check implemented under its own name (`task.apple_at_rest`,
-      `task.AppleAtRestCheck`, `AtRestThresholds` version `apple_at_rest_v0`), with tests; the
-      default scorer is unchanged.
+- [x] At-rest check implemented under its own name (`at_rest.apple_at_rest`,
+      `at_rest.AppleAtRestCheck`, `AtRestThresholds` version `apple_at_rest_v0`), with tests; the
+      default scorer is unchanged (`task.py` and `scripted.py` are byte-identical to `main`).
 - [x] Descent diagnosis run and reported from logs and code only.
 - [x] Development log of every design with its development counts.
 - [ ] Preregistration PR (expert design and revision, metric and thresholds, conditions, seeds,
@@ -77,8 +77,11 @@ Protocol and log: `docs/experiments/apple_resting_expert_v1.md`.
 ## Notes
 - 2026-09-28: card opened by the TASK-068 agent on the coordinator's brief.
 - 2026-09-28: at-rest check, expert code, development harness and descent diagnosis written;
-  development designs d1–d12 and the collector baseline run. **Every design is 0 at rest on
-  development seeds** (see the protocol §5). Blocker reported to the owner before any
-  preregistration; see the protocol §6.
+  development designs d1–d12 and the collector baseline run (final runs at `a8a579c`).
+  **0 at rest in 269 complete development attempts across 15 design-by-level cells** (protocol
+  §5). Descent diagnosis: the place pose is 3.1–6.2 cm beyond the arm's reach, whatever the
+  palm orientation; from step 11–21 of the lowering phase the IK refuses the full step, and
+  the backtracked 1/8 step lies inside the IK tolerance and is a hold (protocol §4). Blocker reported to the owner before any
+  preregistration (protocol §6). No gated seeds declared or spent.
 
 %% mc-links: [[TASK-067]] %%
