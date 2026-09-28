@@ -443,8 +443,8 @@ Owner ruling R11, 2026-09-28T02:47Z UTC, received via the coordinator and record
 | `6ae55b8` | `4ddc268` | protocol document and card |
 | `a8004c8` | `221451b` | review fixes (the PR #89 head) |
 
-The development runs labelled run-1 ran on an uncommitted working tree based on `fa495d1`
-(§5). They have no commit of their own.
+The development runs labelled run-1 ran on an uncommitted working tree based on `fa495d1`,
+the parent of `2764656` (§5 says only "the uncommitted working tree"). They have no commit of their own.
 
 **Closeout.**
 - TASK-068 is closed on its development finding. No gated run was made (R11 §2).

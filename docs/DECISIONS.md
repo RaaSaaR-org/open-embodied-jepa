@@ -83,13 +83,14 @@ is kept as written.
 **Why, under the frozen v1 task.**
 1. **The place pose is beyond the fixed-pelvis arm's reach.**
    - Measured: no right-arm configuration within the joint limits brings the palm within
-     3.1–6.2 cm of the eight place targets, whatever the palm orientation.
+     3.1 cm of any of the eight place targets, whatever the palm orientation (the smallest
+     reachable distance is 3.1–6.2 cm per target).
    - The pelvis is fixed, and the IK uses the 7 arm joints only.
    - Measured: when the hand starts to open, the held apple is 8.0–23.2 cm above its resting
      height.
 2. **The apple, a sphere with no rolling resistance in this scene, keeps rolling.**
    - Measured: a 0.002 m/s roll persisted unchanged for 10 s.
-   - Measured: the hand's opening rolls the apple off the thumb. No development cell's median
+   - Measured in the traces examined: the hand's opening rolls the apple off the thumb. No development cell's median
      landing speed was below 0.08 m/s.
    - Measured: most grasped apples end rolling at or along the rim, 4.5–4.6 cm from the centre.
 

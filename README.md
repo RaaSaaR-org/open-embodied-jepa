@@ -80,7 +80,7 @@ plate exact, 20/32 at 1.0 cm, below 28/32) with its premise untested, because th
 reach the place pose within its budget. TASK-067 is closed under the owner's fallback.
 Scripted-collector and privileged success numbers elsewhere that were scored with this latching
 scorer are flagged, not rewritten.
-TASK-068 ([docs/experiments/apple_resting_expert_v1.md](docs/experiments/apple_resting_expert_v1.md)) closed on its development finding, with no gated run: under the frozen v1 task no privileged scripted expert design rested the apple on the plate (0 at rest in 269 completed development attempts), because the place pose is beyond the fixed-pelvis arm's reach and the apple, a sphere with no rolling resistance in this scene, keeps rolling; TASK-069 is a development-only feasibility scan toward an `apple-to-plate-v2` task definition. Learned Apple→Plate is still 0 successes. Outcomes
+TASK-068 ([docs/experiments/apple_resting_expert_v1.md](docs/experiments/apple_resting_expert_v1.md)) closed on its development finding, with no gated run: under the frozen v1 task no privileged scripted expert design tried rested the apple on the plate (0 at rest in 269 completed development attempts), because the place pose is beyond the fixed-pelvis arm's reach and the apple, a sphere with no rolling resistance in this scene, keeps rolling; TASK-069 is a development-only feasibility scan toward an `apple-to-plate-v2` task definition. Learned Apple→Plate is still 0 successes. Outcomes
 and caveats are in the results
 documents under [docs/experiments/](docs/experiments/) and in [AGENTS.md](AGENTS.md).
 
