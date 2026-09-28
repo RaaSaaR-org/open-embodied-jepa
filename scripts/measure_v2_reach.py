@@ -238,6 +238,9 @@ def main() -> int:
     palm_down = {
         "arm_only": palm_down_residual(robot, rng, targets, arm),
         "arm_plus_waist": palm_down_residual(robot, rng, targets, WAIST + arm),
+        "arm_plus_waist_pitch_only": palm_down_residual(
+            robot, rng, targets, ("waist_pitch_joint",) + arm
+        ),
     }
     report = {
         "task": "TASK-069 reach measurements (development only, kinematics only)",
