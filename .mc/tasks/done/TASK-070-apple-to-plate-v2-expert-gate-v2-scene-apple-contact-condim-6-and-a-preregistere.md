@@ -4,7 +4,7 @@ aliases:
 - TASK-070
 title: 'apple-to-plate-v2 expert gate: v2 scene (apple contact condim 6) and a preregistered at-rest expert gate'
 slug: apple-to-plate-v2-expert-gate-v2-scene-apple-contact-condim-6-and-a-preregistere
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -20,6 +20,7 @@ due_date: ''
 created: 2026-09-28
 updated: 2026-09-28
 ---
+
 
 # apple-to-plate-v2 expert gate: v2 scene (apple contact condim 6) and a preregistered at-rest expert gate
 
@@ -62,7 +63,7 @@ successes.**
       rebase-merged; `1ba0557` on `main`).
 - [x] Gated run started only on the pre-run reviewer's reported GO (reviewer's own worktree at
       `1ba0557`). Outcome **PASS**: 32/32 and 30/32 at rest.
-- [ ] Results PR merged on a reported APPROVE.
+- [x] Results PR merged on a reported APPROVE (PR #93, squash-merged as `fe696a0`).
 - [x] The PR #91 old→new SHA map is added (R12 §1), once #91 is merged.
 
 ## Notes
@@ -78,5 +79,8 @@ successes.**
   - Results in protocol §8.
   - e9 was selected on the development seeds. This is a privileged scripted expert, not a
     learned result. Learned Apple→Plate is still 0 successes.
+- 2026-09-28: PR #93 (results) merged as `fe696a0`. TASK-070 done: PASS on record. The closeout
+  adds the DECISIONS entry and the status lines. The learned-policy task goes to a new agent.
+  Learned Apple→Plate is still 0 successes.
 
 %% mc-links: [[TASK-069]] %%

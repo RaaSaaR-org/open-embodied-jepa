@@ -63,6 +63,46 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-28 — apple-to-plate-v2 is defined, and its privileged expert passes the at-rest gate (TASK-069, TASK-070)
+
+**Decision.** `apple-to-plate-v2` is defined by owner ruling R12, which is recorded verbatim in
+[apple_to_plate_v2_expert.md](experiments/apple_to_plate_v2_expert.md) §0.
+- **Definition:** v1 plus the apple's contact at condim 6, with the v1 scene's own declared
+  friction `1 / 0.01 / 0.001`. Nothing else changes.
+- **Friction source (R12 §3 (i)):** the values were declared before any scan and were not chosen
+  from it. No other value was tried under v2.
+- **Code:** `src/embodied_jepa/apple_to_plate_v2.py`, scene version `apple_to_plate_v2`, applied at
+  run time.
+- **v2 is a separate benchmark from v1.** v1, its scorer, its history and the 0/150 MVP benchmark
+  are unchanged. `simulation.py`, `task.py` and `scripted.py` are untouched.
+- **What R12 rejected:** the TASK-069 scan's b2 option (plates moved into reach) and b1 option
+  (the waist in the IK), and choosing friction values from the scan.
+
+**The expert gate passed.** TASK-070's preregistered gate was PR #92. The run was made on the
+pre-run reviewer's reported GO, from `main` at `1ba0557`.
+- **The expert:** the privileged scripted expert e9, `RestingPlaceExpert(release_pitch_rad=0.45,
+  release_dx=0.015)`.
+- **The result on 32 fresh gated seeds, 50600–50631:** at rest (`apple_at_rest_v0`) on **32/32**
+  with the plate exact and **30/32** at 1.0 cm plate error. The bar was 28/32 at each level, so
+  the row is **PASS**.
+- **Reported alongside:** 28/32 at 1.5 cm, 32/32 latched at every level, and 0 guard stops.
+- **The six misses** all rested 4.02–4.61 cm from the plate centre, outside the 4 cm radius.
+- **Qualifiers:**
+  - e9 was selected on the development seeds (50200–50295). Only the 32 gated seeds are
+    independent evidence for it.
+  - The sample is small.
+  - v2's friction values are the scene's declared ones, not measured apple data.
+
+**What this is not.** It is a scripted-expert result under privileged truth, not a learned one.
+**Learned Apple→Plate is still 0 successes.** R12 §5 names the next step: a task that trains the
+first learned policy on this expert's v2 demonstrations. That task is the owner's to open.
+
+**Evidence.**
+- [apple_to_plate_v2_expert.md](experiments/apple_to_plate_v2_expert.md) §4 (the development
+  log), §5 (the frozen gate) and §8 (the results, with SHA maps).
+- The report sha256 is `27543757…099f`.
+- [apple_to_plate_v2_feasibility.md](experiments/apple_to_plate_v2_feasibility.md) (TASK-069).
+
 ## Decision 2026-09-28 — TASK-068 closes on its development finding: under the frozen v1 task the privileged expert cannot rest the apple on the plate (TASK-068)
 
 **Decision.** Owner ruling R11 closes TASK-068 on its development finding, with no gated run.
