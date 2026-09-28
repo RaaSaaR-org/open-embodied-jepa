@@ -34,6 +34,14 @@ from embodied_jepa import resting_expert as rx  # noqa: E402
 # Every design tried, in order. Parameters are RestingPlaceExpert keyword arguments.
 DESIGNS: dict[str, dict] = {
     "e1": {"release_pitch_rad": 0.45},  # TASK-068's d12, the R12 starting point
+    # e1 on dev seeds: apples reach the far rim and rebound to ~3.3 cm (median). Aim: land
+    # slower (pitch), or further back (release_dx), so the roll ends nearer the centre.
+    "e2": {"release_pitch_rad": 0.55},
+    "e3": {"release_pitch_rad": 0.6},
+    "e4": {"release_pitch_rad": 0.45, "release_dx": -0.035},
+    "e5": {"release_pitch_rad": 0.45, "release_dx": -0.005},
+    "e6": {"release_pitch_rad": 0.45, "opening_ramp": 0.02},
+    "e7": {"release_pitch_rad": 0.5},
 }
 
 _W: dict = {}
