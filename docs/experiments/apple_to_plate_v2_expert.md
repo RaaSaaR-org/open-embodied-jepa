@@ -316,7 +316,7 @@ Both meet the bar of ≥ 28/32. The row is **PASS** (`gate_row`).
   - at 1.5 cm: seeds 50616, 50622, 50626 and 50627 (4.29–4.61 cm).
 - **The latched scorer is 32/32 at every level.** It counts the transient crossings that
   TASK-067 identified, so it again overstates the at-rest count at 1.0 and 1.5 cm.
-- **The gated numbers match the development record.** e9 had 89/96 at rest at 1.0 cm in
+- **The gated numbers are consistent with the development record.** e9 had 89/96 at rest at 1.0 cm in
   development, and 30/32 here.
 
 ### 8.4 What this does and does not show
@@ -339,10 +339,10 @@ expert's v2 demonstrations. **Learned Apple→Plate is still 0 successes.**
 ### 8.5 PR #92 SHA map
 
 PR #92 was rebase-merged, so its SHAs were rewritten. The tag `task070-prereg-pre-merge` (at
-`80d3309`) keeps the SHAs that §3–§6 cite reachable. Each pair below has the **identical git
+`80d3309`) keeps every pre-merge SHA of PR #92 reachable (§3–§6 cite five of them). Each pair below has the **identical git
 tree**, checked with `git log --format='%h %T'`.
 
-| cited in §3–§6 (pre-merge) | on `main` | tree |
+| pre-merge (tag) | on `main` | tree |
 |---|---|---|
 | `a008163` | `134265b` | `29497e10…` |
 | `8714750` | `38658d0` | `c8330739…` |
