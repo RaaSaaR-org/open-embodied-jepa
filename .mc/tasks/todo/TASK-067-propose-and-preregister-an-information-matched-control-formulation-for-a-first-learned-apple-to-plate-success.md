@@ -125,3 +125,14 @@ successes.**
   - The release-at-centre candidate scores 15/32 at the reference and 23/32 at 1.0 cm, below
     28/32.
   - Under R8 the work stops and goes back to the owner.
+- R9 step 2 (PR #87): landing diagnosis at `b664ff6`. The mechanism was identified from the
+  logs:
+  - the apple drops about 15.5 cm, bounces to the rim within about 0.8 s, and rolls to rest
+    against the rim at 4.52–4.60 cm, outside the 4 cm radius;
+  - the scorer's successes are mostly transient crossings: 32/32 and 21/32 at any step, against
+    4/32 and 1/32 at rest.
+- R9 step 3: place-then-open at the plate centre, declared at `9088236` before running, on seeds
+  46864–46895. **Row FAIL:** 25/32 with the plate exact and 20/32 at 1.0 cm, both below 28/32.
+  - The palm stalled at a median 0.113 m against a 0.035 m target.
+  - The apple still fell about 8 cm and reached the rim on 32/32.
+  - Under R9 the work stops; closing TASK-067 is the fallback.
