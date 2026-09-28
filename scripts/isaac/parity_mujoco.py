@@ -7,9 +7,12 @@ the host after ``parity_isaac.py``:
         --isaac outputs/<isaac-run>/run --output outputs/<isaac-run>/parity
 
 It replays exactly the joint targets recorded in ``isaac_trace.npz`` through
-``MuJoCoSimulation.send_joint_targets`` (same manifest, 112 px ``onboard_rgb``), with the
-apple and plate made invisible and non-colliding so both simulators hold robot + table only,
-and compares realised joint motion, tracking error, timing and onboard frames.
+``MuJoCoSimulation.send_joint_targets`` (same manifest, 112 px ``onboard_rgb``) and compares
+realised joint motion, tracking error, contacts, timing and onboard frames. Runs with the v2
+apple and plate (``isaac_parity.json`` ``objects: true``) use the v2 MuJoCo scene at the same
+seed-0 reset layout; older robot-only runs make the apple and plate invisible and
+non-colliding. Frames are scored with the declared metric of the committed camera manifest
+(``image_parity.py``).
 """
 
 from __future__ import annotations
@@ -22,6 +25,8 @@ from pathlib import Path
 
 import numpy as np
 
+from embodied_jepa.apple_to_plate_v2 import apply_v2_scene
+from embodied_jepa.isaac_scene import canonical_sha256
 from embodied_jepa.isaac_transport import (
     joint_manifest_from_mujoco,
     manifest_sha256,
@@ -30,6 +35,7 @@ from embodied_jepa.isaac_transport import (
 from embodied_jepa.simulation import MuJoCoSimulation
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import image_parity  # noqa: E402
 from compare_joints import group  # noqa: E402
 from parity_targets import trajectory  # noqa: E402
 
@@ -60,6 +66,35 @@ def robot_contacts(sim: MuJoCoSimulation) -> list[list[str]]:
             if bodies[i] in robot:
                 out.add((labels[1 - i], bodies[i]))
     return [list(p) for p in sorted(out)]
+
+
+def scene_contacts(sim: MuJoCoSimulation) -> list[dict]:
+    """Contacts between distinct bodies, labelled like the Isaac transport's contacts.
+
+    Labels: ``table``, ``floor``, ``apple``, ``plate`` or the robot body name. The force is the
+    normal-plus-friction contact force magnitude from ``mj_contactForce`` (N), summed per pair.
+    Robot self-contacts are listed too (flag ``self``); Isaac has self-collision off."""
+    import mujoco
+
+    model, data = sim.model, sim.data
+    pairs: dict[tuple[str, str], float] = {}
+    force = np.zeros(6)
+    for i, c in enumerate(data.contact[: data.ncon]):
+        labels = []
+        for g in (int(c.geom1), int(c.geom2)):
+            body = model.body(int(model.geom_bodyid[g])).name
+            name = model.geom(g).name
+            labels.append(name if name in ("table", "floor") else body)
+        if labels[0] == labels[1]:
+            continue
+        mujoco.mj_contactForce(model, data, i, force)
+        key = tuple(sorted(labels))
+        pairs[key] = pairs.get(key, 0.0) + float(np.linalg.norm(force[:3]))
+    scene = {"table", "floor", "apple", "plate"}
+    return [
+        {"bodies": list(k), "force_n": f, "self": not (set(k) & scene)}
+        for k, f in sorted(pairs.items())
+    ]
 
 
 def normalized_joints(manifest: dict) -> list[dict]:
@@ -99,9 +134,18 @@ def main() -> None:
     isaac_record = json.loads((args.isaac / "isaac_parity.json").read_text())
     names = [str(n) for n in trace["joint_names"]]
     targets = trace["targets"]
-    size = int(isaac_record["rgb_size"])
+    size = isaac_record["rgb_size"]
+    width, height = (size, size) if isinstance(size, int) else size
+    objects = bool(isaac_record.get("objects", False))
+    variant = isaac_record.get("trajectory", "table_contact_v0")
+    camera_manifest = json.loads((ROOT / "configs/isaac/onboard_camera_v1.json").read_text())
+    if "camera_manifest_sha256" in isaac_record and isaac_record[
+        "camera_manifest_sha256"
+    ] != canonical_sha256(camera_manifest):
+        raise SystemExit("the Isaac run used a camera manifest that is not the committed one")
 
-    sim = MuJoCoSimulation(width=size, height=size, render=True)
+    sim = MuJoCoSimulation(width=width, height=height, render=True)
+    v2_record = apply_v2_scene(sim.model)
     candidates = (
         [args.manifest]
         if args.manifest
@@ -125,20 +169,26 @@ def main() -> None:
         raise SystemExit("the run's joint manifest differs from the MuJoCo model")
     if list(sim.joint_names) != names:
         raise SystemExit("joint order differs")
-    hide_objects(sim)
-    # Objects far from the arms' reach and invisible/non-colliding: robot + table only.
-    sim.reset(0, object_xy=[0.63, 0.30], plate_xy=[0.60, -0.24])
+    if objects:
+        sim.reset(0)  # the seed-0 default layout, as IsaacTransport.reset(0)
+    else:
+        hide_objects(sim)
+        # Objects far from the arms' reach and invisible/non-colliding: robot + table only.
+        sim.reset(0, object_xy=[0.63, 0.30], plate_xy=[0.60, -0.24])
     sim.render()  # warm the renderer; the first MuJoCo render is discarded elsewhere too
     if not np.array_equal(reset_pose(committed), sim.data.qpos[sim.qadr]):
         raise SystemExit("manifest reset pose differs from MuJoCoSimulation.reset")
     regenerated_targets = trajectory(
-        names, reset_pose(committed), ROOT / "configs/g1_sim_action.json"
+        names, reset_pose(committed), ROOT / "configs/g1_sim_action.json", variant
     )
     targets_equal = bool(np.array_equal(regenerated_targets, targets))
 
     qpos, qvel, times, step_ms, render_ms = [], [], [], [], []
-    frames = {}
+    frames, classes, apple = {}, {}, []
     obs = sim.read()
+    classes[0] = image_parity.mujoco_classes(sim)
+    apple.append(sim.task_truth()["object_position"].tolist())
+    full_contacts = [scene_contacts(sim)]
     qpos.append(obs["qpos"])
     qvel.append(obs["qvel"])
     times.append(obs["timestamp"])
@@ -158,8 +208,11 @@ def main() -> None:
         qvel.append(obs["qvel"])
         times.append(obs["timestamp"])
         contacts.append(robot_contacts(sim))
+        full_contacts.append(scene_contacts(sim))
+        apple.append(sim.task_truth()["object_position"].tolist())
         if k in FRAMES:
             frames[k] = obs["rgb"]
+            classes[k] = image_parity.mujoco_classes(sim)
     sim.close()
     mq, mv, mt = np.array(qpos), np.array(qvel), np.array(times)
     iq, it = trace["qpos"][0], trace["time"][0]
@@ -209,19 +262,92 @@ def main() -> None:
     from PIL import Image
 
     args.output.mkdir(parents=True)
-    image_rows = {}
+    image_rows, repeat_rows = {}, {}
     for k, rgb in frames.items():
-        isaac_png = args.isaac / "frames" / f"isaac_{k:03d}.png"
+        prefix = (
+            "isaac_r0_" if (args.isaac / "frames" / f"isaac_r0_{k:03d}.png").exists() else "isaac_"
+        )
+        isaac_png = args.isaac / "frames" / f"{prefix}{k:03d}.png"
         isaac_rgb = np.asarray(Image.open(isaac_png).convert("RGB"))
-        d = np.abs(isaac_rgb.astype(int) - rgb.astype(int))
-        image_rows[k] = {"mean_abs_diff": float(d.mean()), "max_abs_diff": int(d.max())}
+        seg_path = args.isaac / "frames" / f"{prefix}{k:03d}_seg.npy"
+        isaac_cls = None
+        if seg_path.exists():
+            labels = json.loads(seg_path.with_suffix(".json").read_text())
+            isaac_cls = image_parity.isaac_classes(np.load(seg_path), labels)
+        image_rows[k] = image_parity.compare(isaac_rgb, rgb, isaac_cls, classes[k])
+        repeat = args.isaac / "frames" / f"isaac_r1_{k:03d}.png"
+        if repeat.exists():
+            r1 = np.asarray(Image.open(repeat).convert("RGB")).astype(int)
+            repeat_rows[k] = int(np.abs(r1 - isaac_rgb.astype(int)).max())
         Image.fromarray(np.concatenate([rgb, isaac_rgb], axis=1)).save(
             args.output / f"mujoco_left_isaac_right_{k:03d}.png"
         )
+        if isaac_cls is not None:
+            palette = np.array(
+                [[40, 40, 40], [230, 230, 230], [150, 110, 70], [220, 30, 20], [40, 90, 220]],
+                dtype=np.uint8,
+            )
+            Image.fromarray(np.concatenate([palette[classes[k]], palette[isaac_cls]], axis=1)).save(
+                args.output / f"classes_mujoco_left_isaac_right_{k:03d}.png"
+            )
+    image_verdict = image_parity.verdict(image_rows, camera_manifest["image_parity"])
+
+    # Contacts per read: robot link or apple against the scene, in both simulators.
+    def scene_pairs(rows):
+        return sorted(tuple(r["bodies"]) for r in rows if not r.get("self"))
+
+    isaac_last = isaac_record.get("isaac_contacts_last_step_per_read")
+    isaac_any = isaac_record.get("isaac_contacts_any_substep_per_read")
+    contact_rows = []
+    for k in range(len(full_contacts)):
+        row = {"read": k, "mujoco": scene_pairs(full_contacts[k])}
+        if isaac_last is not None:
+            row["isaac_last_step"] = scene_pairs(isaac_last[k])
+            row["isaac_any_substep"] = sorted(tuple(p) for p in isaac_any[k])
+        contact_rows.append(row)
+
+    def robot_scene(pairs):
+        return [
+            p
+            for p in pairs
+            if not ({"apple"} <= set(p) and ({"table"} <= set(p) or {"plate"} <= set(p)))
+        ]
+
+    contact_summary = {
+        "reads_with_robot_scene_contact_mujoco": [
+            r["read"] for r in contact_rows if robot_scene(r["mujoco"])
+        ],
+        "reads_with_robot_scene_contact_isaac_last_step": [
+            r["read"] for r in contact_rows if robot_scene(r.get("isaac_last_step", []))
+        ],
+        "reads_with_robot_scene_contact_isaac_any_substep": [
+            r["read"] for r in contact_rows if robot_scene(r.get("isaac_any_substep", []))
+        ],
+        "mujoco_robot_self_contact_reads": [
+            k for k, rows in enumerate(full_contacts) if any(r.get("self") for r in rows)
+        ],
+        "apple_pairs_mujoco_final": [p for p in contact_rows[-1]["mujoco"] if "apple" in p],
+        "apple_pairs_isaac_final": [
+            p for p in contact_rows[-1].get("isaac_last_step", []) if "apple" in p
+        ],
+    }
+    apple_m = np.array(apple, dtype=float)
+    apple_i = isaac_record.get("apple_position_per_read")
+    apple_rows = None
+    if objects and apple_i is not None:
+        apple_i = np.array(apple_i, dtype=float)
+        apple_rows = {
+            "mujoco_first_last": [apple_m[0].tolist(), apple_m[-1].tolist()],
+            "isaac_first_last": [apple_i[0].tolist(), apple_i[-1].tolist()],
+            "max_abs_diff_m": float(np.abs(apple_m - apple_i).max()),
+            "mujoco_max_displacement_m": float(np.abs(apple_m - apple_m[-1]).max()),
+            "isaac_max_displacement_m": float(np.abs(apple_i - apple_i[-1]).max()),
+        }
 
     report = {
         "question": "Does IsaacTransport on the converted USD realise the same joint motion "
-        "as MuJoCoSimulation for identical joint targets? (robot + table only)",
+        "as MuJoCoSimulation for identical joint targets? (robot, floor and table, plus the "
+        "v2 apple and plate when the run has objects)",
         "isaac_run": str(args.isaac),
         "manifest_sha256": manifest_sha256(committed),
         "targets_regenerated_equal": targets_equal,
@@ -243,12 +369,19 @@ def main() -> None:
             "isaac_send_joint_targets": isaac_record["send_joint_targets_ms"],
             "isaac_read_with_render": isaac_record["read_with_render_ms"],
         },
-        "images_mean_abs_diff_uint8": image_rows,
-        "isaac_staleness": isaac_record["staleness"],
+        "trajectory": variant,
+        "objects": objects,
+        "mujoco_v2_scene": v2_record,
+        "image_parity": image_rows,
+        "image_parity_verdict": image_verdict,
+        "isaac_image_repeat_max_abs_diff": repeat_rows,
+        "isaac_freshness": isaac_record.get("freshness", isaac_record.get("staleness")),
+        "contacts_per_read": contact_rows,
+        "contact_summary": contact_summary,
+        "apple_position": apple_rows,
         "isaac_rejections": isaac_record["rejections"],
         "isaac_after_close": isaac_record["after_close"],
         "mujoco_contacts_by_pair_read_indices": contact_reads,
-        "mujoco_contacts_per_read": contacts,
         "joints_over_0.01_rad": per_joint_worst,
         "isaac_joint_friction": isaac_record.get("joint_friction", "not recorded"),
         "caveats": [
@@ -263,7 +396,8 @@ def main() -> None:
             ),
             "MuJoCo self-collision is on, Isaac self-collision is off (importer default)",
             "different engines, integrators (implicitfast vs PhysX TGS) and renderers",
-            "robot + table only; no apple/plate; no contact parity; Isaac contacts not measured",
+            "contacts compared as body pairs at the end of each interval (MuJoCo) and at the "
+            "last physics step / any substep of the interval (Isaac); not contact parity",
         ],
     }
     np.savez_compressed(args.output / "mujoco_trace.npz", qpos=mq, qvel=mv, time=mt)
@@ -280,9 +414,11 @@ def main() -> None:
                     "final_pose_abs_diff_max_rad",
                     "isaac_repeat_max_abs_qpos_diff",
                     "timing_ms",
-                    "images_mean_abs_diff_uint8",
-                    "isaac_staleness",
-                    "mujoco_contacts_by_pair_read_indices",
+                    "image_parity_verdict",
+                    "isaac_image_repeat_max_abs_diff",
+                    "isaac_freshness",
+                    "contact_summary",
+                    "apple_position",
                     "joints_over_0.01_rad",
                 )
             },

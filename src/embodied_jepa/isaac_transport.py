@@ -7,9 +7,13 @@ container (Isaac Sim 6.0.0-rc.22, Isaac Lab 3.0.0) after the caller has started 
 ``uv.lock``. See ``docs/ISAAC_MJCF_TRANSPORT.md``.
 
 Scope, as in ``docs/ISAAC_PORT.md``: ``read`` / ``send_joint_targets`` / ``stop`` / ``reset``
-/ ``close`` over the robot only. The table is present; the apple and plate are not, so
-``reset`` rejects object/plate coordinates and there is no ``task_truth``. The robot is the
-USD converted from the project's pinned MJCF (``scripts/isaac/convert_mjcf_to_usd.py``).
+/ ``close``, plus the evaluator-only ``task_truth`` and ``contacts``. The robot is the USD
+converted from the project's pinned MJCF (``scripts/isaac/convert_mjcf_to_usd.py``). The floor
+and table always exist; with ``objects=True`` the ``apple-to-plate-v2`` apple and plate are
+added from ``configs/isaac/apple_to_plate_v2_scene_v1.json`` and ``reset(object_xy=...,
+plate_xy=...)`` places them by ``MuJoCoSimulation.reset``'s rules (``isaac_scene``). The
+onboard camera and the pinned render settings come from ``configs/isaac/onboard_camera_v1.json``.
+PhysX cannot express every MuJoCo contact parameter; see ``docs/ISAAC_V2_SCENE.md``.
 
 Control mirrors ``MuJoCoSimulation.send_joint_targets``: per physics substep, linearly
 interpolated targets, ``kp (q* - q) - kd qd + bias`` with the simulator's own gravity and
@@ -169,7 +173,15 @@ def onboard_camera_offset() -> tuple[tuple[float, float, float], tuple[float, ..
 
 
 class IsaacTransport:
-    """Fixed-pelvis G1 + Dex3 in Isaac Sim with the MuJoCo transport's control semantics."""
+    """Fixed-pelvis G1 + Dex3 in Isaac Sim with the MuJoCo transport's control semantics.
+
+    ``scene_manifest`` (``configs/isaac/apple_to_plate_v2_scene_v1.json``) gives the floor, the
+    table and, with ``objects=True``, the v2 apple and plate with their PhysX mapping.
+    ``camera_manifest`` (``configs/isaac/onboard_camera_v1.json``) gives ``onboard_rgb`` and the
+    pinned render settings; it is required when ``render=True``. ``read()`` never contains
+    object state; object and contact truth is only available from ``task_truth()`` and
+    ``contacts()``, which are evaluator-only.
+    """
 
     clock_domain = "isaac_episode_sim_time"
 
@@ -178,26 +190,36 @@ class IsaacTransport:
         *,
         usd_path: str,
         manifest: dict,
-        width: int = 96,
-        height: int = 96,
+        scene_manifest: dict,
+        camera_manifest: dict | None = None,
+        objects: bool = False,
         render: bool = True,
+        record_contacts: bool = False,
         device: str = "cuda:0",
-        warmup_renders: int = 3,
         joint_friction: str = "frictionloss",
     ):
+        from embodied_jepa import isaac_scene as scene
+
         self.manifest = validate_joint_manifest(manifest)
+        self.scene = scene.validate_scene_manifest(scene_manifest)
+        if render and camera_manifest is None:
+            raise ContractError("rendering needs a camera manifest")
+        self.camera_manifest = (
+            scene.validate_camera_manifest(camera_manifest) if camera_manifest else None
+        )
         if joint_friction not in ("frictionloss", "none"):
             raise ContractError("joint_friction must be 'frictionloss' or 'none'")
         self.joint_friction = joint_friction
-        if any(not isinstance(n, int) or isinstance(n, bool) or n < 1 for n in (width, height)):
-            raise ContractError("RGB dimensions must be positive integers")
+        self.objects = bool(objects)
+        # Object truth (hand contact) needs contact reports whenever objects exist.
+        self.record_contacts = bool(record_contacts or objects)
         import isaaclab.sim as sim_utils
         import torch
         import warp as wp
         from isaaclab.actuators import IdealPDActuatorCfg
         from isaaclab.assets import Articulation, ArticulationCfg
 
-        self._torch, self._wp = torch, wp
+        self._torch, self._wp, self._sim_utils = torch, wp, sim_utils
         joints = manifest["joints"]
         self.joint_names = tuple(j["name"] for j in joints)
         self.lower = np.array([j["lower"] for j in joints])
@@ -207,28 +229,35 @@ class IsaacTransport:
         self.physics_dt = float(manifest["physics_dt_s"])
         self.control_dt = float(manifest["control_dt_s"])
         self.substeps = round(self.control_dt / self.physics_dt)
-        self.width, self.height = width, height
         self.render_enabled = render
-        self.warmup_renders = int(warmup_renders)
         self.closed = False
         self.stopped_reason = ""
-
+        physx = self.scene["isaac_physx"]
+        default = physx["default_material"]
+        if self.camera_manifest is not None:
+            r = self.camera_manifest["isaac_render"]
+            self.width = int(self.camera_manifest["camera"]["width"])
+            self.height = int(self.camera_manifest["camera"]["height"])
+            self.warmup_renders = int(r["warmup_renders"])
+            self.renders_per_frame = int(r["renders_per_frame"])
         cfg = sim_utils.SimulationCfg(
             dt=self.physics_dt,
             device=device,
-            render=sim_utils.RenderCfg(antialiasing_mode="Off", enable_dlssg=False),
+            gravity=tuple(self.scene["mujoco_option"]["gravity"]),
+            physics_material=sim_utils.RigidBodyMaterialCfg(
+                static_friction=default["static_friction"],
+                dynamic_friction=default["dynamic_friction"],
+                restitution=default["restitution"],
+                friction_combine_mode=default["friction_combine_mode"],
+                restitution_combine_mode=default["restitution_combine_mode"],
+            ),
         )
         self.sim = sim_utils.SimulationContext(cfg)
-        ground = sim_utils.GroundPlaneCfg()
-        ground.func("/World/ground", ground)
-        light = sim_utils.DomeLightCfg(intensity=2500.0, color=(0.8, 0.8, 0.8))
-        light.func("/World/light", light)
-        table = sim_utils.CuboidCfg(  # MuJoCoSimulation: box pos .45 0 .70, half-size .32 .45 .04
-            size=(0.64, 0.90, 0.08),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.55, 0.4, 0.25)),
-        )
-        table.func("/World/table", table, translation=(0.45, 0.0, 0.70))
+        self.render_settings = self._apply_render_settings() if self.camera_manifest else {}
+        if self.record_contacts:
+            # Isaac Lab turns PhysX contact processing off unless a contact sensor asks for it.
+            self.sim.set_setting("/physics/disableContactProcessing", False)
+        self._spawn_static_scene()
         effort = {j["name"]: max(-j["ctrl_min"], j["ctrl_max"]) for j in joints}
         robot_cfg = ArticulationCfg(
             prim_path="/World/Robot",
@@ -245,43 +274,17 @@ class IsaacTransport:
             },
         )
         self.robot = Articulation(robot_cfg)
+        if self.record_contacts:
+            self._activate_link_contact_reports()
+        self.apple = self.plate = None
+        if self.objects:
+            self._spawn_objects()
         self.camera = None
         if render:
-            from isaaclab.sensors.camera import Camera, CameraCfg
-
-            torso = next(
-                (
-                    p.GetPath()
-                    for p in sim_utils.get_current_stage().Traverse()
-                    if p.GetName() == "torso_link" and str(p.GetPath()).startswith("/World/Robot")
-                ),
-                None,
-            )
-            if torso is None:
-                raise ContractError("converted USD has no torso_link for the onboard camera")
-            pos, rot = onboard_camera_offset()
-            aperture = 20.955
-            focal = aperture / (2.0 * np.tan(np.deg2rad(75.0) / 2.0))  # MuJoCo fovy 75, square
-            self.camera = Camera(
-                CameraCfg(
-                    prim_path=f"{torso}/onboard_rgb",
-                    update_period=0.0,
-                    height=height,
-                    width=width,
-                    data_types=["rgb"],
-                    spawn=sim_utils.PinholeCameraCfg(
-                        focal_length=float(focal),
-                        horizontal_aperture=aperture,
-                        vertical_aperture=aperture * height / width,
-                        clipping_range=(0.01, 10.0),
-                    ),
-                    offset=CameraCfg.OffsetCfg(pos=pos, rot=rot, convention="opengl"),
-                )
-            )
+            self._spawn_camera_and_lights()
         self.sim.reset()
         self.isaac_joint_names = tuple(self.robot.joint_names)
         self._idx = name_map(self.joint_names, list(self.isaac_joint_names))
-        self._idx_t = torch.as_tensor(self._idx, device=self.sim.device)
         lim = self._np(self.robot.data.joint_pos_limits)[0][self._idx]
         if np.abs(lim - np.stack([self.lower, self.upper], axis=1)).max() > 1e-4:
             raise ContractError("Isaac joint limits differ from the joint manifest")
@@ -297,7 +300,246 @@ class IsaacTransport:
         self._kd = np.array([j["kd"] for j in joints])
         self.targets = np.zeros(len(joints))
         self.time = 0.0
+        self._last_contacts: list[dict] = []
+        self._interval_pairs: set[tuple[str, str]] = set()
+        self.contact_api_error = None
+        self._contact_views = []
+        if self.record_contacts:
+            try:
+                self._make_contact_views()
+            except Exception as exc:  # noqa: BLE001 - recorded; contacts then unavailable
+                self.contact_api_error = f"{type(exc).__name__}: {exc}"
+        self.object_properties = self._read_object_properties() if self.objects else None
         self.reset()
+
+    # ------------------------------------------------------------------ scene construction
+    def _material(self, spec: dict):
+        return self._sim_utils.RigidBodyMaterialCfg(
+            static_friction=spec["static_friction"],
+            dynamic_friction=spec["dynamic_friction"],
+            restitution=spec["restitution"],
+            friction_combine_mode=spec["friction_combine_mode"],
+            restitution_combine_mode=spec["restitution_combine_mode"],
+        )
+
+    def _preview(self, rgba):
+        return self._sim_utils.PreviewSurfaceCfg(
+            diffuse_color=tuple(float(v) for v in rgba[:3]), roughness=0.5, metallic=0.0
+        )
+
+    def _spawn_static_scene(self) -> None:
+        """Floor (a thin box, top at z = 0) and the table as kinematic (immovable) bodies.
+
+        Kinematic rather than static so that PhysX contact views can name them as filters."""
+        su, physx = self._sim_utils, self.scene["isaac_physx"]
+        fixed = su.RigidBodyPropertiesCfg(kinematic_enabled=True, sleep_threshold=0.0)
+        floor, table = self.scene["floor"], self.scene["table"]
+        floor_cfg = su.CuboidCfg(
+            size=(4.0, 4.0, 0.02),
+            rigid_props=fixed,
+            collision_props=su.CollisionPropertiesCfg(),
+            physics_material=self._material(physx["floor_material"]),
+            visual_material=self._preview(floor["rgba"]),
+        )
+        floor_cfg.func("/World/floor", floor_cfg, translation=(0.0, 0.0, floor["z"] - 0.01))
+        table_cfg = su.CuboidCfg(
+            size=tuple(2.0 * float(v) for v in table["half_size"]),
+            rigid_props=fixed,
+            collision_props=su.CollisionPropertiesCfg(),
+            physics_material=self._material(physx["table_material"]),
+            visual_material=self._preview(table["rgba"]),
+        )
+        table_cfg.func("/World/table", table_cfg, translation=tuple(table["pos"]))
+
+    def _spawn_objects(self) -> None:
+        """The v2 apple (dynamic sphere) and plate (kinematic cylinder + 16 rim capsules)."""
+        su = self._sim_utils
+        from isaaclab.assets import RigidObject, RigidObjectCfg
+        from isaaclab.sim import schemas
+
+        physx, apple = self.scene["isaac_physx"], self.scene["apple"]
+        a = physx["apple"]
+        apple_cfg = su.SphereCfg(
+            radius=float(apple["radius"]),
+            rigid_props=su.RigidBodyPropertiesCfg(
+                linear_damping=a["linear_damping"],
+                angular_damping=a["angular_damping"],
+                sleep_threshold=a["sleep_threshold"],
+                max_depenetration_velocity=a["max_depenetration_velocity"],
+            ),
+            mass_props=su.MassPropertiesCfg(mass=float(apple["mass"])),
+            collision_props=su.CollisionPropertiesCfg(
+                torsional_patch_radius=a["torsional_patch_radius"],
+                min_torsional_patch_radius=a["min_torsional_patch_radius"],
+                rest_offset=a["rest_offset"],
+            ),
+            physics_material=self._material(a["material"]),
+            visual_material=self._preview(apple["rgba"]),
+            activate_contact_sensors=True,
+        )
+        self.apple = RigidObject(
+            RigidObjectCfg(
+                prim_path="/World/Apple",
+                spawn=apple_cfg,
+                init_state=RigidObjectCfg.InitialStateCfg(pos=(0.40, -0.26, 0.77)),
+            )
+        )
+        plate = self.scene["plate"]
+        p = physx["plate"]
+        stage = su.get_current_stage()
+        from pxr import UsdGeom
+
+        UsdGeom.Xform.Define(stage, "/World/Plate")
+        base = plate["base"]
+        base_cfg = su.CylinderCfg(
+            radius=float(base["radius"]),
+            height=2.0 * float(base["half_height"]),
+            collision_props=su.CollisionPropertiesCfg(),
+            physics_material=self._material(p["base_material"]),
+            visual_material=self._preview(base["rgba"]),
+        )
+        base_cfg.func("/World/Plate/base", base_cfg, translation=tuple(base["pos"]))
+        rim = plate["rim"]
+        rim_material = self._material(p["rim_material"])
+        for i, cap in enumerate(rim["capsules"]):
+            a0, a1 = np.asarray(cap["from"]), np.asarray(cap["to"])
+            d = a1 - a0
+            length = float(np.linalg.norm(d))
+            q = _quat_z_to(d / length)
+            cap_cfg = su.CapsuleCfg(
+                radius=float(cap["radius"]),
+                height=length,
+                axis="Z",
+                collision_props=su.CollisionPropertiesCfg(),
+                physics_material=rim_material,
+                visual_material=self._preview(rim["rgba"]),
+            )
+            cap_cfg.func(
+                f"/World/Plate/rim_{i:02d}",
+                cap_cfg,
+                translation=tuple(float(v) for v in (a0 + a1) / 2),
+                orientation=q,
+            )
+        schemas.define_rigid_body_properties(
+            "/World/Plate", su.RigidBodyPropertiesCfg(kinematic_enabled=True, sleep_threshold=0.0)
+        )
+        schemas.activate_contact_sensors("/World/Plate", threshold=0.0)
+        x, y = 0.48, -0.10
+        self.plate = RigidObject(
+            RigidObjectCfg(
+                prim_path="/World/Plate",
+                spawn=None,
+                init_state=RigidObjectCfg.InitialStateCfg(pos=(x, y, plate["body_z"])),
+            )
+        )
+
+    def _spawn_camera_and_lights(self) -> None:
+        from isaaclab.sensors.camera import Camera, CameraCfg
+        from pxr import Gf, UsdLux
+
+        from embodied_jepa import isaac_scene as scene
+
+        su = self._sim_utils
+        cm = self.camera_manifest
+        cam = cm["camera"]
+        stage = su.get_current_stage()
+        parent = next(
+            (
+                p.GetPath()
+                for p in stage.Traverse()
+                if p.GetName() == cam["parent_body"] and str(p.GetPath()).startswith("/World/Robot")
+            ),
+            None,
+        )
+        if parent is None:
+            raise ContractError(f"converted USD has no {cam['parent_body']} for the camera")
+        focal, h_ap, v_ap = scene.pinhole_from_fovy(cam["fovy_deg"], self.width, self.height)
+        self.camera_prim_path = f"{parent}/{cam['name']}"
+        self.camera = Camera(
+            CameraCfg(
+                prim_path=self.camera_prim_path,
+                update_period=0.0,
+                height=self.height,
+                width=self.width,
+                data_types=list(cm["isaac_render"]["data_types"]),
+                colorize_instance_id_segmentation=False,
+                spawn=su.PinholeCameraCfg(
+                    focal_length=focal,
+                    horizontal_aperture=h_ap,
+                    vertical_aperture=v_ap,
+                    clipping_range=(cam["znear_m"], cam["zfar_m"]),
+                ),
+                offset=CameraCfg.OffsetCfg(
+                    pos=tuple(cam["pos_m"]),
+                    rot=scene.camera_quat_xyzw(cm),
+                    convention="opengl",
+                ),
+            )
+        )
+        for light in cm["isaac_render"]["lights"]:
+            path = light["path"].replace("{camera}", self.camera_prim_path)
+            if light["type"] == "distant":
+                prim = UsdLux.DistantLight.Define(stage, path)
+                prim.CreateAngleAttr(float(light["angle_deg"]))
+            elif light["type"] == "dome":
+                prim = UsdLux.DomeLight.Define(stage, path)
+            else:
+                raise ContractError(f"unsupported light type {light['type']!r}")
+            prim.CreateIntensityAttr(float(light["intensity"]))
+            prim.CreateColorAttr(Gf.Vec3f(*[float(v) for v in light["color"]]))
+            UsdLux.ShadowAPI.Apply(prim.GetPrim()).CreateShadowEnableAttr(bool(light["shadow"]))
+            if "direction" in light:
+                _aim_distant_light(prim.GetPrim(), light["direction"])
+
+    def _apply_render_settings(self) -> dict:
+        """Set the manifest's renderer settings and read every one back."""
+        wanted = self.camera_manifest["isaac_render"]["carb_settings"]
+        got = {}
+        for key, value in wanted.items():
+            self.sim.set_setting(key, value)
+            got[key] = self.sim.get_setting(key)
+            if got[key] != value:
+                raise ContractError(f"render setting {key} read back {got[key]!r}, not {value!r}")
+        return got
+
+    def _activate_link_contact_reports(self) -> None:
+        """PhysX contact reports on every robot link.
+
+        Isaac Lab's ``activate_contact_sensors`` stops at the first rigid body it meets, and
+        the converted USD nests every link under its parent link, so it would only reach the
+        pelvis. Threshold 0: every contact is reported. Report-only; no physical effect."""
+        from pxr import PhysxSchema, UsdPhysics
+
+        stage = self._sim_utils.get_current_stage()
+        for prim in stage.Traverse():
+            if str(prim.GetPath()).startswith("/World/Robot/") and prim.HasAPI(
+                UsdPhysics.RigidBodyAPI
+            ):
+                PhysxSchema.PhysxContactReportAPI.Apply(prim).CreateThresholdAttr(0.0)
+
+    def _read_object_properties(self) -> dict:
+        """What PhysX actually holds for the apple and plate, read back after ``sim.reset``."""
+        view = self.apple.root_view
+        out = {
+            "apple_mass": self._np(view.get_masses()).ravel().tolist(),
+            "apple_inertia": self._np(view.get_inertias()).ravel().tolist(),
+        }
+        try:
+            mats = self._np(view.get_material_properties())
+            out["apple_material_static_dynamic_restitution"] = mats.reshape(-1).tolist()
+        except Exception as exc:  # noqa: BLE001 - diagnostic only
+            out["apple_material_error"] = f"{type(exc).__name__}: {exc}"
+        stage = self._sim_utils.get_current_stage()
+        attrs = {}
+        for path in ("/World/Apple", "/World/Apple/geometry/mesh", "/World/Plate"):
+            prim = stage.GetPrimAtPath(path)
+            attrs[path] = {
+                a.GetName(): _jsonable(a.Get())
+                for a in prim.GetAttributes()
+                if a.GetName().startswith(("physx", "physics:"))
+            }
+        out["usd_physics_attributes"] = attrs
+        return out
 
     # ------------------------------------------------------------------ helpers
     def _set_joint_friction(self, joints) -> None:
@@ -371,14 +613,95 @@ class IsaacTransport:
             ]
         )
 
+    def _make_contact_views(self) -> None:
+        """PhysX tensor contact views: robot links and the apple against the scene bodies.
+
+        Contacts are read as per-pair force matrices (N) after every physics step. Robot
+        self-contacts are not reported (Isaac self-collision is off)."""
+        from isaaclab_physx.physics import PhysxManager
+        from pxr import UsdPhysics
+
+        stage = self._sim_utils.get_current_stage()
+        links = [
+            str(p.GetPath())
+            for p in stage.Traverse()
+            if str(p.GetPath()).startswith("/World/Robot/") and p.HasAPI(UsdPhysics.RigidBodyAPI)
+        ]
+        self.contact_link_paths = links
+        scene = ["/World/table", "/World/floor"]
+        if self.objects:
+            scene += ["/World/Apple", "/World/Plate"]
+        view = PhysxManager.get_physics_sim_view()
+        self._contact_views.append(
+            (
+                view.create_rigid_contact_view(
+                    links, filter_patterns=[list(scene)] * len(links), max_contact_data_count=0
+                ),
+                links,
+                scene,
+            )
+        )
+        if self.objects:
+            apple_filters = ["/World/table", "/World/floor", "/World/Plate", *links]
+            self._contact_views.append(
+                (
+                    view.create_rigid_contact_view(
+                        "/World/Apple", filter_patterns=apple_filters, max_contact_data_count=0
+                    ),
+                    ["/World/Apple"],
+                    apple_filters,
+                )
+            )
+
+    def _collect_contacts(self) -> None:
+        """Body pairs in contact at the last physics step, with the pair force (N)."""
+        found: dict[tuple[str, str], float] = {}
+        for view, sensors, filters in self._contact_views:
+            matrix = self._np(view.get_contact_force_matrix(dt=self.physics_dt))
+            matrix = matrix.reshape(len(sensors), len(filters), 3)
+            force = np.linalg.norm(matrix, axis=-1)
+            for i, j in zip(*np.nonzero(force > 0.0), strict=True):
+                pair = tuple(sorted((_body_label(sensors[i]), _body_label(filters[j]))))
+                found[pair] = max(found.get(pair, 0.0), float(force[i, j]))
+        self._last_contacts = [
+            {"bodies": list(pair), "force_n": f} for pair, f in sorted(found.items())
+        ]
+        self._interval_pairs.update(found)
+
+    def _step_physics(self) -> None:
+        self.robot.write_data_to_sim()
+        self.sim.step(render=False)
+        self.robot.update(self.physics_dt)
+        for obj in (self.apple, self.plate):
+            if obj is not None:
+                obj.update(self.physics_dt)
+        self.time = round(self.time + self.physics_dt, 9)
+        if self._contact_views:
+            self._collect_contacts()
+
     # ------------------------------------------------------------------ transport API
-    def reset(self, seed=0, *, object_xy=None, plate_xy=None):
-        """Robot-only reset to MuJoCoSimulation's initial pose; the episode clock restarts."""
+    def reset(self, seed=0, *, object_xy=None, plate_xy=None, object_on_container=False):
+        """Reset to MuJoCoSimulation's initial pose and, with objects, its apple/plate layout.
+
+        Placement follows ``MuJoCoSimulation.reset`` (``isaac_scene.reset_layout``): the same
+        seeded default apple position, plate default, tabletop bounds and overlap checks. The
+        episode clock restarts. The return value carries no object state (see ``task_truth``).
+        """
         self._require_open()
-        if object_xy is not None or plate_xy is not None:
-            raise ContractError("the Isaac transport has no apple/plate yet")
-        del seed  # the robot reset is deterministic; no scene randomisation exists yet
+        if not self.objects and (object_xy is not None or plate_xy is not None):
+            raise ContractError("this Isaac transport was built without the apple and plate")
+        from embodied_jepa import isaac_scene as scene
+
         torch = self._torch
+        if self.objects:
+            apple_pos, plate_pos = scene.reset_layout(
+                seed,
+                object_xy=object_xy,
+                plate_xy=plate_xy,
+                object_on_container=object_on_container,
+            )
+            self._write_object(self.apple, apple_pos)
+            self._write_object(self.plate, plate_pos)
         q = reset_pose(self.manifest)
         isaac_q = np.zeros(len(self._idx))
         isaac_q[self._idx] = q
@@ -389,24 +712,83 @@ class IsaacTransport:
         self.robot.write_data_to_sim()
         self.robot.reset()
         self.robot.update(0.0)
+        for obj in (self.apple, self.plate):
+            if obj is not None:
+                obj.reset()
+                obj.update(0.0)
         self._check_joint_properties()  # robot.reset() must not undo damping/friction
         self.targets[:] = q
         self.time = 0.0
         self.stopped_reason = ""
+        self._last_contacts = []
+        self._interval_pairs = set()
         if self.camera is not None:
             for _ in range(self.warmup_renders):  # discard render-pipeline warm-up frames
-                self.sim.render()
-                self.camera.update(0.0, force_recompute=True)
+                self.render()
         return {"timestamp": self.time, "clock": self.clock_domain}
+
+    def _write_object(self, obj, pos, lin_vel=(0.0, 0.0, 0.0), ang_vel=(0.0, 0.0, 0.0)):
+        torch = self._torch
+        pose = torch.tensor(
+            [[*[float(v) for v in pos], 0.0, 0.0, 0.0, 1.0]], device=self.sim.device
+        )
+        obj.write_root_pose_to_sim_index(root_pose=pose)
+        vel = torch.tensor([[*lin_vel, *ang_vel]], dtype=torch.float32, device=self.sim.device)
+        obj.write_root_velocity_to_sim_index(root_velocity=vel)
+
+    def set_object_state(self, pos, lin_vel=(0.0, 0.0, 0.0), ang_vel=(0.0, 0.0, 0.0)) -> None:
+        """Scripted-check harness only: teleport the apple (drop tests). Not a controller API."""
+        self._require_open()
+        if not self.objects:
+            raise ContractError("no apple in this scene")
+        self._write_object(self.apple, pos, lin_vel, ang_vel)
+        self.apple.update(0.0)
+
+    def _pump_render(self) -> None:
+        """Render the current physics state ``renders_per_frame`` times.
+
+        Isaac Lab 3 renders at most once per physics step (``ensure_isaac_rtx_render_update``
+        dedups on the step count), so without this a render after ``reset()`` or a second
+        render of the same step returns the previous frame unchanged. This syncs physics to
+        Fabric, pumps Kit's update loop with physics stepping paused, and marks the step as
+        rendered so the camera does not pump again.
+
+        It relies on two private Isaac Lab 3 names (``rtx._last_render_update_key``,
+        ``sim._physics_step_count``) and asserts they exist. Unlike upstream it does not wait
+        for RTX texture streaming (``_wait_for_streaming_complete``); the scene has untextured
+        primitives and converted meshes only, so nothing streams."""
+        import omni.kit.app
+        from isaaclab_physx.renderers import isaac_rtx_renderer_utils as rtx
+
+        assert hasattr(rtx, "_last_render_update_key"), "Isaac Lab render-dedup key moved"
+        assert hasattr(self.sim, "_physics_step_count"), "Isaac Lab step counter moved"
+
+        self.sim.physics_manager.forward()
+        self.sim.set_setting("/app/player/playSimulations", False)
+        try:
+            for _ in range(self.renders_per_frame):
+                omni.kit.app.get_app().update()
+        finally:
+            self.sim.set_setting("/app/player/playSimulations", True)
+        rtx._last_render_update_key = (id(self.sim), self.sim._physics_step_count)
 
     def render(self) -> np.ndarray:
         self._require_open()
         if self.camera is None:
             raise RuntimeError("RGB rendering was explicitly disabled")
-        self.sim.render()
+        self._pump_render()
         self.camera.update(0.0, force_recompute=True)
         rgb = self.camera.data.output["rgb"][0, ..., :3]
         return self._np(rgb).astype(np.uint8)
+
+    def segmentation(self) -> tuple[np.ndarray, dict]:
+        """Instance-id segmentation of the last rendered frame and its id -> prim path map.
+
+        Diagnostic for the camera-geometry parity check only (no observation uses it)."""
+        self._require_open()
+        seg = self._np(self.camera.data.output["instance_id_segmentation_fast"])[0, ..., 0]
+        info = self.camera.data.info[0]["instance_id_segmentation_fast"]
+        return seg.astype(np.int64), {int(k): str(v) for k, v in info["idToLabels"].items()}
 
     def read(self) -> dict:
         self._require_open()
@@ -439,15 +821,13 @@ class IsaacTransport:
             raise ContractError("joint targets exceed MJCF limits")
         old = self.targets.copy()
         self.targets[:] = targets
+        self._interval_pairs = set()
         for k in range(self.substeps):
             interpolated = old + (targets - old) * ((k + 1) / self.substeps)
             q, qd = self._state()
             torque = self._kp * (interpolated - q) - self._kd * qd + self._bias()
             self._apply_effort(np.clip(torque, self.ctrl_min, self.ctrl_max))
-            self.robot.write_data_to_sim()
-            self.sim.step(render=False)
-            self.robot.update(self.physics_dt)
-            self.time = round(self.time + self.physics_dt, 9)
+            self._step_physics()
             if not np.isfinite(self._state()[0]).all():
                 self.stop("nonfinite state")
                 raise RuntimeError(self.stopped_reason)
@@ -462,11 +842,110 @@ class IsaacTransport:
         self._apply_effort(np.zeros(len(self._idx)))
         self.stopped_reason = str(reason)
 
+    # ------------------------------------------------------------------ evaluator-only truth
+    def contacts(self) -> dict:
+        """Evaluator/diagnostic only: PhysX contacts at the last physics step, and the body
+        pairs seen at any substep of the last control interval. Never an observation."""
+        self._require_open()
+        return {
+            "api_error": self.contact_api_error,
+            "last_step": [dict(c) for c in self._last_contacts],
+            "interval_pairs": [list(p) for p in sorted(self._interval_pairs)],
+        }
+
+    def task_truth(self) -> dict:
+        """Evaluator-only simulator truth, as ``MuJoCoSimulation.task_truth`` defines it.
+
+        Never part of ``read()``; it must not reach a model input, controller or planning cost.
+        """
+        self._require_open()
+        if not self.objects:
+            raise ContractError("no apple/plate in this scene")
+        from embodied_jepa import isaac_scene as scene
+
+        if self.contact_api_error is not None:
+            raise RuntimeError(f"contact reports unavailable: {self.contact_api_error}")
+        apple = self._np(self.apple.data.root_link_pose_w).reshape(-1)[:3]
+        vel = self._np(self.apple.data.root_com_vel_w).reshape(-1)[:3]
+        plate = self._np(self.plate.data.root_link_pose_w).reshape(-1)[:3]
+        root = self._np(self.robot.data.root_link_pose_w).reshape(-1)
+        hand = any(
+            "apple" in c["bodies"] and any(scene.is_hand_body(b) for b in c["bodies"])
+            for c in self._last_contacts
+        )
+        return scene.task_truth_from_state(
+            object_position=apple,
+            object_velocity=vel,
+            plate_position=plate,
+            hand_contact=hand,
+            base_position=root[:3],
+            base_rotation=_quat_xyzw_to_matrix(root[3:7]),
+            timestamp=self.time,
+        )
+
     def close(self):
         if self.closed:
             return
         self.camera = None
-        self.robot = None
+        self.robot = self.apple = self.plate = None
         self.sim.clear_instance()
         self.sim = None
         self.closed = True
+
+
+def _body_label(path: str) -> str:
+    """An actor prim path as a MuJoCo-comparable label: ``floor``, ``table``, ``apple``,
+    ``plate`` or the robot link name (the last path component under ``/World/Robot``)."""
+    for prefix, label in (
+        ("/World/floor", "floor"),
+        ("/World/table", "table"),
+        ("/World/Apple", "apple"),
+        ("/World/Plate", "plate"),
+    ):
+        if path == prefix or path.startswith(prefix + "/"):
+            return label
+    return path.rsplit("/", 1)[-1]
+
+
+def _quat_z_to(d) -> tuple[float, float, float, float]:
+    """(x, y, z, w) rotating +Z onto the unit vector ``d``."""
+    z = np.array([0.0, 0.0, 1.0])
+    d = np.asarray(d, dtype=float)
+    axis = np.cross(z, d)
+    s, c = np.linalg.norm(axis), float(np.dot(z, d))
+    if s < 1e-12:
+        return (0.0, 0.0, 0.0, 1.0) if c > 0 else (1.0, 0.0, 0.0, 0.0)
+    angle = np.arctan2(s, c)
+    axis = axis / s * np.sin(angle / 2)
+    return (float(axis[0]), float(axis[1]), float(axis[2]), float(np.cos(angle / 2)))
+
+
+def _quat_xyzw_to_matrix(q) -> np.ndarray:
+    x, y, z, w = (float(v) for v in q)
+    return np.array(
+        [
+            [1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
+            [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
+            [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)],
+        ]
+    )
+
+
+def _aim_distant_light(prim, direction) -> None:
+    """Orient a UsdLux distant light (which shines along its local -Z) along ``direction``."""
+    from pxr import Gf, UsdGeom
+
+    d = np.asarray(direction, dtype=float)
+    x, y, z, w = _quat_z_to(-d / np.linalg.norm(d))
+    xf = UsdGeom.Xformable(prim)
+    xf.ClearXformOpOrder()
+    xf.AddOrientOp(UsdGeom.XformOp.PrecisionDouble).Set(Gf.Quatd(w, x, y, z))
+
+
+def _jsonable(v):
+    if isinstance(v, (bool, int, float, str)) or v is None:
+        return v
+    try:
+        return [float(x) for x in v]
+    except TypeError:
+        return str(v)

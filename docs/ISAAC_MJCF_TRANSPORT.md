@@ -1,5 +1,7 @@
 # Isaac Sim on the project's own G1 + Dex3 model: USD conversion, model audit and a minimal transport (2026-09-28)
 
+> Follow-up (2026-09-29): [ISAAC_V2_SCENE.md](ISAAC_V2_SCENE.md) pins the rendering, measures contact-free joint parity and Isaac contacts, and adds the v2 apple and plate. It corrects the render-staleness statement below.
+
 A development step on the Linux PC after the [bring-up spike](ISAAC_BRINGUP_SPIKE.md). It is not a gated experiment. It is simulator infrastructure and joint-level parity only: not a manipulation, policy or contact-parity result, and it does not complete TASK-025. There is no apple or plate in the Isaac scene yet.
 
 ## What was done
@@ -102,7 +104,7 @@ The regenerated targets on the host were bit-identical to Isaac's (`targets_rege
 - **The first parity run (`isaac-parity-dev-2`) found the friction mismatch.** It ran with the converter's legacy friction coefficient still active. The arms crept far behind their targets (arm difference up to 0.22 rad, Isaac arm tracking error 0.25 rad against MuJoCo's 0.048), and the hands differed by up to 0.99 rad. The transport's friction handling above came from this run, and the run is kept as evidence.
 - **Determinism and state.** Two replays in one Isaac process gave bit-identical joint states (max diff 0.0). Episode time matches MuJoCo to 1e-9 s (Isaac rounds its clock to 1e-9 s; 0.05 s steps, 4.5 s at the end), is monotonic, and all states are finite.
 - **Rejections.** An expired deadline returns `rejected` with the reason `command deadline expired`. An out-of-limit target, the wrong joint order and `reset(object_xy=…)` each raise `ContractError`. `read` and `send` after `close` each raise `RuntimeError`.
-- **Render staleness.** A second render of the same moved state was identical to the first (max diff 0), so there is no one-frame lag in this path. Three warm-up renders are discarded at every reset.
+- **Render staleness (corrected 2026-09-29).** A second render of the same moved state was identical to the first (max diff 0). That check tested nothing: Isaac Lab 3 renders at most once per physics step, so the second call returned the same buffer without rendering, the "three warm-up renders" at reset did nothing, and a read right after `reset()` showed the last pre-reset frame. Fixed and re-checked in [ISAAC_V2_SCENE.md](ISAAC_V2_SCENE.md). The joint numbers here are unaffected.
 - **Images are not comparable yet.** The framing and arm poses match (see `…/parity/mujoco_left_isaac_right_*.png`), but the mean absolute pixel difference is about 90/255. With anti-aliasing and DLSS pinned off, the Isaac frame is grainy (RTX sampling noise without a denoiser or accumulation), and the table renders near-white under the 2 500-intensity dome light. Render settings and lighting have to be chosen and pinned before Isaac frames are used as observations.
 
 **Timing and memory.** Wall clock, one environment, CPU governor powersave. Isaac: n = 180 intervals (2 replays × 90). MuJoCo: n = 90.
