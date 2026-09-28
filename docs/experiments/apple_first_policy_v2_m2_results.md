@@ -7,7 +7,8 @@ C-3 at 12) and G1 (40 against open-loop replay B-replay at 28).
 
 The authorization record fixed before the run ([`apple_first_policy_v2_m2.md`](apple_first_policy_v2_m2.md)
 §3.2) says what to do in exactly this case: report the row and G3's declared reading side by
-side, and do not choose between them. **The owner decides.**
+side, and do not choose between them. **The owner has since ruled (§7):** M2-FAIL stays the
+recorded row, and G3's declared reading is adopted as the interpretation.
 
 | the frozen row (first match, TASK-071 §12) | G3's declared reading (TASK-071 §12, v1 §11) |
 |---|---|
@@ -22,8 +23,10 @@ side, and do not choose between them. **The owner decides.**
 - **The policy is not LeWM.** It is a behaviour-cloning/DAgger MLP on a frozen DINOv2 readout
   (TASK-072 run-1's P-3). No world model is in the loop.
 - **Pretrained vision shows no measurable contribution.** R-3 reads random-init DINOv2 tokens
-  through the same pipeline. It failed only one reset (45307), and it did so by a guard refusal
-  before any grasp. This matches D2, where R-3 tied P-3 in both earlier runs.
+  through the same pipeline. It failed only one reset (45307): there the robot's
+  measured-joint-velocity guard refused a command before any grasp. That is a counted failure
+  of the attempt, not a void of the run (§3). This matches D2, where R-3 tied P-3 in both
+  earlier runs.
 - **The image is used.** C-3 has the same pipeline but a constant estimate instead of the image.
   It reached 12/40, and P-3 beat it on 28 resets with none the other way (exact McNemar
   p = 7.5e-9).
@@ -50,9 +53,9 @@ evidence hashes disagree. This document does not amend the authorization record.
 | before starting | `nvidia-smi` and `ps` showed only the long-running GR00T server (about 6.6 GB). No Isaac container process was running. The run itself allocated no GPU memory |
 | machine | the Linux PC: Python 3.12.3, torch 2.14.0+cu130, MuJoCo 3.13.0, `MUJOCO_GL=egl`, 16 simulation workers. Rollouts and DINOv2 run on the CPU. The main process was in run-1's strict deterministic state at the start and the end |
 | started / ended | 2026-09-28T21:44:49Z to 21:47:39Z (UTC), **169 s** of the 7 200 s cap. `cohort_first_render_utc` is 21:45:30Z |
-| stage times | preflight 5 s, re-render 2 s, readout refit and G-repro 25 s, cohort frames and estimates 4 s, the seven arms 125 s |
+| stage times | preflight 5 s, re-render 2 s, readout refit and G-repro 25 s, cohort frames and estimates 3.5 s, the seven arms 125 s |
 | report | `outputs/task072-m2-cohort-c/run-1/report.json` in that worktree, sha256 `aa274cddbdb31a3641bc7bc55abc7a43e3ceb0162d60b573b7c68d8d2e301baa`. It is git-ignored, on the Linux PC. The log is `worktrees/task072-m2-run-1.log` (one line: report written, outcome M2-FAIL) |
-| guards | All passed: G-frozen; G-hash (43 pins, equal at the preflight and at the end); clean tree; G-platform; G-device (strict); G-weights; G-evidence (run-1's report, the P-3/C-3/R-3 checkpoints and the corpus manifest, all recomputed from the files again by the summarizer); G-cohort (digest `4f888154…533e`); G-seeds; G-look; G-frame; G-cap. `non_finite_fields` is empty. **`test_split_decoded` is false** (170 train episodes decoded) |
+| guards | All run guards passed (a V on any of them would have voided the run): G-frozen; G-hash (43 pins, equal at the preflight and at the end); clean tree; G-platform; G-device (strict); G-weights; G-evidence (run-1's report, the P-3/C-3/R-3 checkpoints and the corpus manifest, all recomputed from the files again by the summarizer); G-cohort (digest `4f888154…533e`); G-seeds; G-look; G-frame; G-cap. `non_finite_fields` is empty. **`test_split_decoded` is false** (170 train episodes decoded). These are distinct from the embodiment's per-command guard (the "guard" terminations in §3), which ends one attempt as a failure and never voids the run |
 | G-repro | **8/8 exact.** Both readout selections, the 426 fit rows, the 128 S0-P error pairs, C-3's constant, the 112-root B-replay library and the 16 D2 nearest roots all reproduce run-1 |
 | cohort | seeds 45300–45339 in order. The executed resets equal the stored `apple-policy-v1.json` values exactly (checked by the summarizer) |
 | void | none; one run |
@@ -93,8 +96,13 @@ distance at the end of the attempt, over all 40 attempts.
 - **Timing of the learned successes.** They latched grasp at steps 264–272 and place at steps
   609–638, all before the settle. P-3 was 265–269 and 611–635. No at-rest attempt went uncounted
   in any arm.
-- **R-3's one failure (45307).** The attempt ended with a guard refusal at step 223 of 740,
-  before any grasp. The apple ended 20.3 cm from the plate.
+- **R-3's one failure (45307).** The robot's measured-joint-velocity guard
+  (`GUARD_REFUSALS = ("measured joint velocity limit exceeded",)`,
+  `first_policy_runtime.py:30`) refused the command at step 223 of 740. Steps are 0-based, so
+  223 commands had been executed. This happened before any grasp; the only latched stage was
+  `reach`. `run_attempt` counts this as a failed attempt, not a void. The apple ended 20.3 cm
+  from the plate. The "guard" terminations of C-3 and B-replay in the table are the same
+  per-command guard.
 - **B-replay's 12 failures** were 45301, 45302, 45306, 45308, 45315, 45320, 45321, 45323, 45324,
   45326, 45336 and 45338. Its 40 resets were served by 31 distinct library roots.
 - **The readout on cohort C (descriptive, never gating).** The P readout's error against the
@@ -111,7 +119,8 @@ distance at the end of the attempt, over all 40 attempts.
    Apple→Plate on this cohort" is not made by the rule.** The only failing gate is G3.
    Preregistration attached a declared reading to exactly that failure: "a learned visuomotor
    policy works; encoder pretraining contributes nothing measurable". This document reports
-   both and does not choose between them (authorization record §3.2). The owner decides.
+   both and does not choose between them (authorization record §3.2). The owner has since ruled
+   (§7): the row stays, and G3's declared reading is adopted as the interpretation.
 2. **What the other gates show, as measured.**
    - The carried learned policy succeeded on every held-out reset.
    - It beat open-loop replay of the nearest expert demonstration (G1, 40 vs 28; 12 vs 0 paired).
@@ -148,7 +157,9 @@ distance at the end of the attempt, over all 40 attempts.
 - **Privileged elements.** The arms that read truth or replay demonstrations (B-oracle,
   B-replay) are not learned results. The DAgger labeller was privileged at training time only.
   The learned arms made zero privileged reads at run time.
-- **Cohort C is now spent** for this policy family and camera.
+- **Cohort C is no longer held out.** It has now been simulated. `apple_policy_v1.md`
+  (line 731) says cohort C is "never reused"; any reuse needs a new, disclosed protocol
+  and the owner's ruling.
 
 ## 6. Process
 
@@ -158,7 +169,22 @@ distance at the end of the attempt, over all 40 attempts.
   It was not void.
 - Nothing was re-thresholded, retrained or re-selected after the numbers were seen.
 
+## 7. Owner ruling (2026-09-28)
+
+After the row and G3's declared reading were reported side by side, the orchestrator recommended
+how to read them. The owner answered, on 2026-09-28, verbatim: **"yes, do your recommendations"**. That makes the
+recommendation the owner's ruling:
+
+- **M2-FAIL stays the recorded row.** The frozen rule is not rewritten.
+- **G3's declared reading is adopted as the interpretation.** On held-out `apple-to-plate-v2`
+  resets, a learned visuomotor policy (DINOv2 + BC/DAgger, trained on e9 demonstrations) works,
+  and encoder pretraining contributes nothing measurable.
+- **This does not change the v1 benchmark** (still 0/150), and **it is not a LeWM result**.
+
+The ruling interprets the recorded result. It does not change any count, gate or row above, and
+the caveats of §5 still apply to the adopted reading.
+
 **Learned Apple→Plate on the frozen benchmark is still 0 successes.** On cohort C of
 `apple-to-plate-v2`, the carried learned policy P-3 reached 40/40 and M2's row is **M2-FAIL** on
-G3 alone. The random-init floor reached 39/40. G3's declared reading is reported beside the row,
-and the owner decides.
+G3 alone. The random-init floor reached 39/40. G3's declared reading is reported beside the row;
+the owner's ruling (§7) keeps the row and adopts that reading as the interpretation.

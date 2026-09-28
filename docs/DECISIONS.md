@@ -80,14 +80,15 @@ orchestrator told the owner before the run started. It ran on the 40 stored coho
   - G4 pass (40 grasps).
   - G5 pass.
   - G6 pass.
-  - G7 pass (median 0.42 ms per command; the DINOv2 forward pass took 31 ms).
+  - G7 pass (median 0.42 ms per command; the DINOv2 forward pass plus readout had a median of
+    31 ms).
 
 **Two readings, reported side by side as fixed beforehand (authorization record §3.2).**
 - **The frozen row, M2-FAIL:** "the claim is not made; the owner decides".
 - **G3's declared reading:** "a learned visuomotor policy works; encoder pretraining contributes
   nothing measurable".
 
-This log does not choose between them. **The owner decides.**
+This log does not choose between them; the owner's ruling below does.
 
 **What it is.** The carried BC/DAgger policy on a frozen DINOv2 readout succeeded on every
 held-out reset. It beat the no-image control and open-loop replay of the expert on identical
@@ -98,8 +99,21 @@ reset, so pretrained vision shows no measurable contribution here.
 - **The official learned Apple→Plate count on the frozen v1 benchmark is still 0** (0/150 per
   model).
 - **Not LeWM:** no world model is in the loop.
-- **Small scale:** one run, one seed per arm, one camera (112 px onboard), a narrow reset
-  distribution, and a 40-reset cohort that is now spent for this line.
+- **Not free of privileged training data:** the policy was trained on the privileged scripted
+  expert e9's demonstrations, with a privileged DAgger labeller at training time. It made no
+  privileged read at run time.
+- **Small scale:** one run, one seed per arm, one camera (112 px onboard) and a narrow reset
+  distribution.
+- **Cohort C is no longer held out.** It has now been simulated. `apple_policy_v1.md` says it
+  is "never reused"; any reuse needs a new, disclosed protocol and the owner's ruling.
+
+**Owner ruling (2026-09-28).** The owner answered the orchestrator's recommendation verbatim:
+"yes, do your recommendations". The ruling:
+- **M2-FAIL stays the recorded row.** The frozen rule is not rewritten.
+- **G3's declared reading is adopted as the interpretation.** On held-out apple-to-plate-v2
+  resets, a learned visuomotor policy (DINOv2 + BC/DAgger, trained on e9 demonstrations) works,
+  and encoder pretraining contributes nothing measurable.
+- **This does not change the v1 benchmark** (still 0/150), and **it is not a LeWM result**.
 
 **Evidence.** [apple_first_policy_v2_m2_results.md](experiments/apple_first_policy_v2_m2_results.md);
 `benchmarks/manifests/apple-first-policy-v2-m2-results.json`; report sha256 `aa274cdd…01baa`.

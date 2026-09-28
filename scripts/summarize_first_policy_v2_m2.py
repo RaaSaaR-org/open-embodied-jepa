@@ -12,6 +12,8 @@ unless all of these hold:
   run at the merged revision;
 - the cohort is exactly the stored cohort-C values of ``apple-policy-v1.json``;
 - every arm's attempts are in cohort order and its counts equal its per-reset records;
+- the latched and at-rest-not-counted counts and each learned arm's ``privileged_ok`` are
+  recomputed from the attempts;
 - ``decide_m2``, recomputed from the per-reset records, equals the recorded decision, row and
   gates;
 - the carried checkpoints' sha256, recomputed from the files, equal the pinned evidence;
@@ -120,6 +122,22 @@ def summarize(report: dict, report_sha: str, evidence: Path, policy_v1: dict) ->
         for key in ("success", "grasp", "at_rest"):
             check(per[key] == [bool(a[key]) for a in attempts], f"{arm} {key} records disagree")
             check(m2["counts"][arm][key] == sum(per[key]), f"{arm} {key} count disagrees")
+        check(
+            m2["counts"][arm]["latched"] == sum(bool(a["latched_success"]) for a in attempts),
+            f"{arm} latched count disagrees",
+        )
+        check(
+            m2["counts"][arm]["at_rest_not_counted"]
+            == sum(bool(a["at_rest"]) and not bool(a["success"]) for a in attempts),
+            f"{arm} at_rest_not_counted disagrees",
+        )
+        if arm in fm.LEARNED:
+            reads_ok = all(
+                a["task_truth_in_controller"] == 0
+                and a["task_truth_total"] == a["scorer_evaluations"] + a["at_rest_records"]
+                for a in attempts
+            )
+            check(m2["privileged_ok"][arm] == reads_ok, f"{arm} privileged_ok disagrees")
         distances = [
             100 * a["final_score"]["object_plate_distance_m"]
             for a in attempts

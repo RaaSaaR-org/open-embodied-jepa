@@ -121,3 +121,11 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
   LeWM; the frozen v1 benchmark is still 0. Results:
   `docs/experiments/apple_first_policy_v2_m2_results.md`,
   `benchmarks/manifests/apple-first-policy-v2-m2-results.json`; branch `task072-m2-results`.
+- 2026-09-28: **Owner ruling (2026-09-28)** on M2, the owner's words verbatim: "yes, do your
+  recommendations". The ruling: M2-FAIL stays the recorded row, and the frozen rule is not
+  rewritten. G3's declared reading is adopted as the interpretation: on held-out
+  apple-to-plate-v2 resets, a learned visuomotor policy (DINOv2 + BC/DAgger, trained on e9
+  demonstrations) works, and encoder pretraining contributes nothing measurable. This does not
+  change the v1 benchmark (still 0/150), and it is not a LeWM result. Cohort C has now been
+  simulated and is no longer held out; any reuse needs a new, disclosed protocol and the
+  owner's ruling. Recorded in the results doc §7 and in DECISIONS (PR #104).
