@@ -1,0 +1,629 @@
+{
+  "protocol": "apple_first_policy_v2",
+  "task": "TASK-071",
+  "status": "preregistered; no gated run yet",
+  "document": "docs/experiments/apple_first_policy_v2.md",
+  "carried_from": {
+    "protocol": "apple_first_policy_v1",
+    "document": "docs/experiments/apple_first_policy_v1.md",
+    "manifest": "benchmarks/manifests/apple-first-policy-v1.json",
+    "owner_rulings": "R1-R7, carried as recorded verbatim in apple_first_policy_v1.md \u00a70 and apple_first_policy_v1_results.md \u00a70"
+  },
+  "owner_brief": {
+    "received": "2026-09-28, via the coordinator (TASK-071)",
+    "changes_required": [
+      "task: apple-to-plate-v2; success apple_at_rest_v0; latched v1 scorer reported beside",
+      "demonstrator and DAgger expert: e9, frozen",
+      "corpus: fresh e9 demonstrations under v2; hashes and splits by episode or session",
+      "perception bars from e9's measured plate-error tolerance (TASK-070), re-derived through a calibration stage following v1's logic; no looser bars",
+      "fresh seeds for everything, disjoint from every declared or spent range"
+    ],
+    "unchanged_unless_ruled": [
+      "the development milestone: >= 1/16 at rest on the development cohort",
+      "claims need cohort C against open-loop replay of the expert",
+      "the DAgger rounds",
+      "the budget, about 36000 s global on MPS",
+      "the render-determinism check at the gated worker count"
+    ]
+  },
+  "owner_rulings": {
+    "T71-R1": {
+      "received_utc": "2026-09-28",
+      "relayed_by": "the coordinator, for the task owner",
+      "summary": "rows 7, 9, 14, 16, 20, 21 and everything listed as unchanged accepted as written; row 19 accepted only tightened: a counted success is apple_at_rest_v0 AND a latched grasp before release; at rest without a grasp is reported per arm and counts toward nothing",
+      "verbatim_in": "docs/experiments/apple_first_policy_v2.md \u00a73"
+    },
+    "T71-R2": {
+      "received_utc": "2026-09-28",
+      "relayed_by": "the coordinator, for the task owner",
+      "summary": "tightens T71-R1: a counted success is apple_at_rest_v0 AND the latched grasp stage AND the latched place stage, both before the settle; at rest without both is reported per arm and counts toward nothing; precondition checked on the TASK-070 gated report (no expert success removed)",
+      "verbatim_in": "docs/experiments/apple_first_policy_v2.md \u00a73"
+    }
+  },
+  "t71_r2_precondition_check": {
+    "report": "outputs/task070-gate/run-1/report.json",
+    "report_sha256": "27543757f0f1d7d3a00b2f6b58a7e394d526342d14a407c018a0a27816ad099f",
+    "latched_place_before_settle_of_96": 96,
+    "max_first_place_step_per_level": {
+      "0.0": 643,
+      "1.0": 634,
+      "1.5": 638
+    },
+    "expert_commands": 725,
+    "counted_of_32_per_level": {
+      "0.0": 32,
+      "1.0": 30,
+      "1.5": 28
+    },
+    "at_rest_of_32_per_level": {
+      "0.0": 32,
+      "1.0": 30,
+      "1.5": 28
+    },
+    "result": "no expert success removed"
+  },
+  "deviations_from_v1": "docs/experiments/apple_first_policy_v2.md \u00a73 (21 rows)",
+  "seed_overlap_check": {
+    "performed_utc": "2026-09-28",
+    "revision": "fe696a0",
+    "command": "grep -rnoE '\\b5[12][0-9]{3}\\b' --include='*.py' --include='*.json' --include='*.md' --include='*.yaml' --include='*.yml' --include='*.sh' src scripts tests configs docs benchmarks .mc",
+    "hits_51000_51999": 0,
+    "hits_52000_52999": {
+      "docs/experiments/apple_world_model_v4.md": "52890 and 52780, cm x 1e5",
+      "docs/experiments/claim_audit_v1.md": "52780, cm x 1e5",
+      "benchmarks/manifests/apple-world-model-v4.json": "52780, cm x 1e5",
+      "benchmarks/manifests/clean-reproduction.json": "52242, candidates per second",
+      "benchmarks/manifests/apple-control-commitment-v1.json": "52512, a count"
+    },
+    "local_corpora_checked": "no data/*/meta/jepa_manifest.json records a reset seed in 51000-52999",
+    "result": "no overlap"
+  },
+  "frozen": {
+    "protocol": "apple_first_policy_v2",
+    "task": "TASK-071",
+    "carried_from": "apple_first_policy_v1",
+    "scene_version": "apple_to_plate_v2",
+    "apple_contact": {
+      "condim": 6,
+      "friction": [
+        1.0,
+        0.01,
+        0.001
+      ]
+    },
+    "success_metric": "apple_at_rest_v0",
+    "counted_success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted",
+    "reported_beside": "latched v1 scorer: AppleToPlateTask per-step success at any step",
+    "expert": {
+      "class": "resting_expert.RestingPlaceExpert",
+      "kwargs": {
+        "release_pitch_rad": 0.45,
+        "release_dx": 0.015
+      }
+    },
+    "expert_phases": [
+      "orient",
+      "descend",
+      "close",
+      "lift",
+      "transfer",
+      "lower",
+      "steady",
+      "open",
+      "clear",
+      "retreat"
+    ],
+    "expert_budgets": [
+      130,
+      80,
+      45,
+      150,
+      100,
+      50,
+      30,
+      50,
+      30,
+      60
+    ],
+    "expert_policy_steps": 725,
+    "max_policy_steps": 740,
+    "settle_steps": 60,
+    "attempt_steps": 800,
+    "task070_plate_at_rest": {
+      "0.0": 32,
+      "1.0": 30,
+      "1.5": 28
+    },
+    "task070_report_sha256": "27543757f0f1d7d3a00b2f6b58a7e394d526342d14a407c018a0a27816ad099f",
+    "task070_plate_ceiling_cm": 1.5,
+    "seed_ranges": {
+      "corpus": [
+        51000,
+        51199
+      ],
+      "perception_train": [
+        51200,
+        51455
+      ],
+      "perception_heldout": [
+        51456,
+        51583
+      ],
+      "calibration_C0": [
+        51584,
+        51615
+      ],
+      "dagger_1": [
+        51616,
+        51743
+      ],
+      "dagger_2": [
+        51744,
+        51871
+      ],
+      "dagger_3": [
+        51872,
+        51999
+      ]
+    },
+    "gated_block": [
+      51000,
+      51999
+    ],
+    "cohort_D2": [
+      52000,
+      52001,
+      52002,
+      52003,
+      52004,
+      52005,
+      52006,
+      52007,
+      52008,
+      52009,
+      52010,
+      52011,
+      52012,
+      52013,
+      52014,
+      52015
+    ],
+    "reserved_unused": [
+      52016,
+      52099
+    ],
+    "smoke_seeds": [
+      52100,
+      52199
+    ],
+    "task_block": [
+      51000,
+      52199
+    ],
+    "cohort_C": [
+      45300,
+      45301,
+      45302,
+      45303,
+      45304,
+      45305,
+      45306,
+      45307,
+      45308,
+      45309,
+      45310,
+      45311,
+      45312,
+      45313,
+      45314,
+      45315,
+      45316,
+      45317,
+      45318,
+      45319,
+      45320,
+      45321,
+      45322,
+      45323,
+      45324,
+      45325,
+      45326,
+      45327,
+      45328,
+      45329,
+      45330,
+      45331,
+      45332,
+      45333,
+      45334,
+      45335,
+      45336,
+      45337,
+      45338,
+      45339
+    ],
+    "forbidden_ranges": {
+      "mvp_frozen_resets": [
+        20000,
+        20049
+      ],
+      "mechanics_probes": [
+        41000,
+        41101
+      ],
+      "earlier_train_val_test": [
+        42000,
+        42031
+      ],
+      "narrow_development": [
+        43000,
+        43004
+      ],
+      "final_cohort": [
+        44000,
+        44019
+      ],
+      "cohort_D_and_prior_ceilings": [
+        45000,
+        45207
+      ],
+      "cohort_C": [
+        45300,
+        45339
+      ],
+      "apple_look_v1_corpus": [
+        47000,
+        47199
+      ],
+      "apple_look_pilots": [
+        47900,
+        47931
+      ],
+      "apple_wide_v1_corpus_and_pilots": [
+        48000,
+        48999
+      ],
+      "grasp_closure_probes": [
+        49000,
+        49199
+      ],
+      "task067_block": [
+        46000,
+        46999
+      ],
+      "task068_to_070_block": [
+        50000,
+        50999
+      ]
+    },
+    "seeds": {
+      "model": 7104,
+      "readout_folds": 7101,
+      "c0_directions": 7100,
+      "train_sampler": 7102,
+      "random_controller": 7103,
+      "corpus_split": 7105,
+      "corpus_plan_salt": 7106
+    },
+    "corpus": {
+      "name": "apple-look-v2",
+      "split_fractions": {
+        "val": 0.1,
+        "test": 0.05
+      },
+      "expected_splits": {
+        "train": 170,
+        "val": 20,
+        "test": 10
+      },
+      "read_splits": [
+        "train",
+        "val"
+      ],
+      "noise_levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "decision_frame": 0
+    },
+    "look_steps": 8,
+    "image_size": 112,
+    "camera": "onboard_rgb",
+    "free_indices": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      13
+    ],
+    "config_bounds": "configs/apple_wm_v4.yaml",
+    "clock_frequencies": 16,
+    "clock_scale": 725.0,
+    "policy_inputs": {
+      "estimates": 4,
+      "clock": 33,
+      "proprioception": 86,
+      "palm_pose": 9
+    },
+    "policy_head": {
+      "layers": "LayerNorm -> Linear(132, 512) -> SiLU -> Linear(512, 512) -> SiLU -> Linear(512, 512) -> SiLU -> Linear(512, 7)",
+      "loss": "mean squared error on the 7 free dimensions of the expert label (clipped to configured bounds), inputs standardised by train moments"
+    },
+    "training": {
+      "device": "mps",
+      "optimizer": "AdamW",
+      "learning_rate": 0.0003,
+      "final_learning_rate": 3e-05,
+      "weight_decay": 0.0001,
+      "grad_clip": 1.0,
+      "batch": 256,
+      "updates": 30000,
+      "selection_every": 1000,
+      "selection_min_output_std": 0.02
+    },
+    "dagger": {
+      "iterations": 3,
+      "resets_per_iteration": 128
+    },
+    "sim_workers": 8,
+    "worker_torch_threads": 1,
+    "readout": {
+      "feature": "tokens",
+      "family": "TASK-063 probe: linear and RBF kernel ridge, family and lambda by inner CV",
+      "folds": 10
+    },
+    "bc_mask": {
+      "phase_close": 2,
+      "displacement_limit_m": 0.01
+    },
+    "c0": {
+      "apple_levels_cm": [
+        0.5,
+        0.8,
+        1.0,
+        1.2
+      ],
+      "plate_levels_cm": [
+        1.0,
+        1.5,
+        2.0,
+        2.5
+      ],
+      "resets": 32,
+      "min_successes": 28,
+      "caps_cm": {
+        "apple_median": 0.75,
+        "apple_p90": 1.2,
+        "plate_median": 1.5,
+        "plate_p90": 2.5
+      },
+      "success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted"
+    },
+    "ladder": {
+      "L1": "learned policy",
+      "L2": "partially learned",
+      "L3": "learned perception, scripted control (not learned)",
+      "L4": "privileged, scripted, replayed or substituted (not learned)"
+    },
+    "ladder_allowances_L1": {
+      "a": "the fixed look prefix (reset-independent, non-privileged)",
+      "b": "the step counter (non-privileged)",
+      "c": "the palm pose by forward kinematics of the robot's own joint readings",
+      "d": "a perception readout trained on privileged reset labels; zero privileged reads at evaluation",
+      "e": "privileged-expert DAgger labels, at training time only",
+      "f": "the task's 60-step settle after the policy's commands (arm still, hands open): part of the apple_at_rest_v0 scoring procedure, identical for every arm, never learned"
+    },
+    "arms": {
+      "P-0": [
+        "L1",
+        "P after behaviour cloning only"
+      ],
+      "P-1": [
+        "L1",
+        "P after DAgger iteration 1"
+      ],
+      "P-2": [
+        "L1",
+        "P after DAgger iteration 2"
+      ],
+      "P-3": [
+        "L1",
+        "P after DAgger iteration 3"
+      ],
+      "C-3": [
+        "L1",
+        "no-image control: estimates fixed to the train mean; own DAgger x3"
+      ],
+      "R-3": [
+        "L1",
+        "random-init DINOv2 floor: same pipeline on seed-0 tokens; own DAgger x3"
+      ],
+      "F": [
+        "L2",
+        "fallback: per-phase heads, phase from e9's clock schedule"
+      ],
+      "A4-look": [
+        "L3",
+        "readout estimates -> scripted e9"
+      ],
+      "D-oracle-perc": [
+        "L4",
+        "P's carried head fed true apple and plate xy"
+      ],
+      "B-oracle": [
+        "L4",
+        "e9 from the reset truth (harness)"
+      ],
+      "B-hold": [
+        "L4",
+        "hold (harness)"
+      ],
+      "B-random": [
+        "L4",
+        "uniform random within configured bounds (harness)"
+      ],
+      "B-replay": [
+        "L4",
+        "open-loop replay of the nearest at-rest train root of apple-look-v2"
+      ]
+    },
+    "learned_arms": [
+      "P-0",
+      "P-1",
+      "P-2",
+      "P-3",
+      "C-3",
+      "R-3"
+    ],
+    "m1_arms": [
+      "P-0",
+      "P-1",
+      "P-2",
+      "P-3",
+      "C-3",
+      "R-3",
+      "A4-look",
+      "D-oracle-perc",
+      "B-oracle",
+      "B-hold",
+      "B-random",
+      "B-replay"
+    ],
+    "a4_threshold": {
+      "rule": "ceil(0.5 x 16 x mean predicted rate from C0 and S0-P), at least 1",
+      "fraction": 0.5,
+      "minimum": 1,
+      "rate_cap": 1.0
+    },
+    "input_std_floor": 0.001,
+    "oracle_min_successes": 14,
+    "rows": [
+      "V",
+      "INCONCLUSIVE",
+      "CAL-ESCALATE",
+      "S0-APPLE-FAIL",
+      "S0-PLATE-FAIL",
+      "M1-PASS",
+      "M1-MOTOR-F-PARTIAL",
+      "M1-MOTOR-F-NONE",
+      "M1-PERCEPTION"
+    ],
+    "intermediate_states": [
+      "M1-MOTOR"
+    ],
+    "declared_early_stops": [
+      "CAL-ESCALATE",
+      "S0-APPLE-FAIL",
+      "S0-PLATE-FAIL"
+    ],
+    "clause_rows": [
+      "M1-MOTOR-F-NONE",
+      "M1-PERCEPTION",
+      "S0-APPLE-FAIL"
+    ],
+    "void_rule": "a run that stops early other than at a declared early-stop row (CAL-ESCALATE, S0-APPLE-FAIL, S0-PLATE-FAIL) is V; exactly one from-scratch repeat with the same seeds, caps and device (a fresh corpus directory, collected again from the same plan); a second V closes TASK-071 as INCONCLUSIVE",
+    "no_eligible_checkpoint": "the arm scores 0/16 on D2, reported as no_eligible_checkpoint",
+    "m2": {
+      "G1_min_successes": 17,
+      "G2_min_difference_vs_C": 8,
+      "G3_min_difference_vs_R": 8,
+      "G4_min_grasps": 20,
+      "G5_harness": {
+        "B-hold_grasp": 0,
+        "B-random_grasp": 0,
+        "B-oracle_min_successes": 38
+      },
+      "G6_privileged_reads": 0,
+      "G7_max_median_control_seconds": 0.1,
+      "stop_rule": "the carried P-k does not run on C if it has 0/16 grasps on D2 (then M2 fails); the controls C-3, R-3, B-replay and the harness always run on C",
+      "exemption_spent_cited": "apple-policy-diagnostics-v1.json precedence_rule_D1_over_G_SUB.exemption_spent is false at preregistration and is not claimed",
+      "rows": {
+        "M2-PASS": "every gate passes: a learned policy with a DINOv2 encoder works on this cohort under apple-to-plate-v2 (not LeWM driving the robot)",
+        "M2-FAIL-VISION": "G1 and G4 pass, G2 fails: no evidence the image is used",
+        "M2-FAIL": "any other failing gate; the claim is not made; the owner decides",
+        "M2-VOID": "G5 or G6 fails: the run is invalid, not the arms"
+      },
+      "cohort_values": "stored in benchmarks/manifests/apple-policy-v1.json, never recomputed",
+      "success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted",
+      "G5_oracle": "e9 from the reset truth, counted success (T71-R1)"
+    },
+    "caps_seconds": {
+      "global": 36000.0,
+      "per_training": 1800.0,
+      "per_rollout_batch": 3600.0,
+      "c0": 3600.0,
+      "perception_collection": 1800.0,
+      "per_attempt": 300.0,
+      "corpus_collection": 3600.0
+    },
+    "devices": {
+      "features": "cpu",
+      "training": "mps",
+      "rollouts": "cpu"
+    },
+    "render_check": "before the pre-run GO, the pre-run reviewer confirms from scripts/check_first_policy_v2_render.py at the gated worker count (8) that the post-look re-render is bit-identical (verdict IDENTICAL); otherwise the run does not start and the issue goes to the owner"
+  },
+  "task070_gate": {
+    "manifest": "benchmarks/manifests/apple-to-plate-v2-expert-gate-v1.json",
+    "expert": {
+      "release_dx": 0.015,
+      "release_pitch_rad": 0.45
+    },
+    "report_sha256": "27543757f0f1d7d3a00b2f6b58a7e394d526342d14a407c018a0a27816ad099f",
+    "at_rest_of_32": {
+      "0.0": 32,
+      "1.0": 30,
+      "1.5": 28
+    }
+  },
+  "exemption_spent_cited": {
+    "field": "benchmarks/manifests/apple-policy-diagnostics-v1.json precedence_rule_D1_over_G_SUB.exemption_spent",
+    "value_at_preregistration": false,
+    "claimed_here": false
+  },
+  "calibration": null,
+  "results": null,
+  "amendments": [],
+  "encoder_digests": {
+    "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
+    "floor": "3d305f9c8280692af08d2ca5d1d14d040cc0a10ec5b2fb083c58d75f0957c9db"
+  },
+  "mujoco_version": "3.13.0",
+  "hashes": {
+    "docs/experiments/apple_first_policy_v2.md": "13b3470b70bfe8f791d1036e94f0e031847bec14d1c41874c30b34e2c2cea0d7",
+    "src/embodied_jepa/first_policy_v2.py": "c05385701481bb6463e096899df8a8c4945239954db73f29b42ea19117d7a460",
+    "src/embodied_jepa/first_policy_v2_runtime.py": "2caa50e70d04c3d4898896acb402bb7ccc95897cece3c6a5d119db5ec4a3169a",
+    "src/embodied_jepa/first_policy_v2_model.py": "5e29fc12f496b2299c1d2d5b4df8ea99660b838a896587b9b890f846312a1a45",
+    "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
+    "src/embodied_jepa/first_policy_runtime.py": "d6d672dc26912371cae78c2d32ba84583adfab4adcab393445a770f994a5f953",
+    "src/embodied_jepa/first_policy_model.py": "5ebd70e07d9c6eba38f0fa4c8980602205f0e24420d39f252935dc47673fb984",
+    "src/embodied_jepa/first_policy_perception.py": "d2ae40118a78646c13e89a089049f80cdc0389dfdd2106f5862a03ab134ed497",
+    "scripts/run_first_policy_v2.py": "67b425320667ffea87acb9ce07b098f3d3deb84a568bd7232af5a7702fdd8dd7",
+    "scripts/check_first_policy_v2_render.py": "ef448487015d7320770fc4df88ea98da75b0a6d4a20904c9bedf293c87493602",
+    "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
+    "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
+    "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+    "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+    "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
+    "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+    "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+    "src/embodied_jepa/policy_diagnostics.py": "3898e34588145c14696835e5f89e75b112bc35f1087f206d4c4525774cab9faa",
+    "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+    "src/embodied_jepa/resting_expert.py": "9f253b1d5025ff4c3176cdafe98ff59a50a51bdc9b90fe3a1f1d6fddc73bcd23",
+    "src/embodied_jepa/at_rest.py": "b5121cb600db6bfb3f92b4161ba46d4cdcb31f98e99de512b257f2519db00527",
+    "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
+    "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+    "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+    "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+    "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+    "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
+    "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+    "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
+    "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1"
+  },
+  "note": "Learned Apple->Plate is still 0 successes."
+}
