@@ -188,8 +188,9 @@ counter, and each row of `decide_m2` in both directions.
 
 ## 7. Budget
 
-Measured by the preflight and the smoke (§9). TASK-072 run-1's whole pipeline took 1 235 s on
-this PC; M2 is its perception refit plus 280 attempts (7 arms × 40) of 800 steps on 16 workers.
+The preflight took 40 s. smoke-a ran 28 full-length attempts on 4 workers in 28 s. At that
+rate the gated run's 280 attempts (7 arms × 40) on 16 workers take about 2 min, so the whole run
+should take about 3–5 min, far inside the 7 200 s cap.
 
 ## 8. Not done (declared)
 
@@ -199,7 +200,34 @@ this PC; M2 is its perception refit plus 280 attempts (7 arms × 40) of 800 step
 
 ## 9. Preflight readiness check and smoke (nothing in them is read)
 
-*To be recorded before the pre-run review.*
+Both ran on the Linux PC in a clean worktree at `052a0ed` (this document's code; after that
+revision only this section, §7 and the manifest's pin of this document changed), against the
+evidence in `worktrees/task072-run`. Their outputs are under `outputs/task072-m2-scratch/` in
+that worktree, git-ignored and never committed. **Neither simulated a cohort-C seed, and nothing
+in them is read.**
+
+| run | mode | wall (report `total_seconds`) | end | report sha256 |
+|---|---|---|---|---|
+| preflight-1 | `preflight` | 40 s | PREFLIGHT-READY | `23ace09f…e453` |
+| smoke-a | `smoke`, 4 stand-in seeds 52100–52103, 740 policy steps, 4 workers | 69 s | SMOKE-COMPLETE | `116c5ccc…a69e` |
+
+What they show about the mechanics:
+- **Preflight guards passed:** G-frozen; all 43 pins at the start and at the end; clean tree;
+  G-platform; strict determinism at the start and at the end (no CUDA memory was allocated;
+  the shared GPU's other service was unaffected); MuJoCo 3.13.0; G-weights.
+- **G-evidence passed:** run-1's report, P-3, C-3, R-3 and the corpus manifest match their pins;
+  the three checkpoints load.
+- **G-repro passed, all 8 checks exact:** both readout selections, the 426 fit rows, the 128
+  per-reset S0-P apple and plate errors, C-3's constant, the 112-root library and the 16 D2
+  nearest roots. The refit and its checks took about 25 s.
+- **Q-split:** 170 train episodes decoded; val and test not decoded.
+- **smoke-a** ran every arm at full length on the stand-ins: G-frame and G-look held on every
+  attempt, and G6's check found no privileged read in any learned attempt. The G7 measurement
+  worked: the per-command median was 0.21 ms over 2 960 commands, and the DINOv2 forward pass
+  plus readout took 34 ms per frame (median). Its counts are runner checks on stand-in seeds
+  and are not read.
+
+The pre-run reviewer re-runs the preflight from the merged revision.
 
 ## 10. Amendment log
 
