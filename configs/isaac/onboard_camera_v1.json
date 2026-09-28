@@ -1,0 +1,159 @@
+{
+  "version": "onboard_camera_manifest_v1",
+  "camera": {
+    "name": "onboard_rgb",
+    "parent_body": "torso_link",
+    "pos_m": [
+      0.08,
+      0.0,
+      0.35
+    ],
+    "quat_wxyz": [
+      0.6830115395490656,
+      0.1830170397608246,
+      -0.1830170397608246,
+      -0.6830115395490657
+    ],
+    "fovy_deg": 75.0,
+    "width": 112,
+    "height": 112,
+    "znear_m": 0.015722888392066734,
+    "zfar_m": 78.6144437175034,
+    "frame_convention": "looks along -Z, +Y up (MuJoCo and USD/OpenGL cameras agree)",
+    "output": "RGB uint8 HWC",
+    "mujoco_lighting": {
+      "lights": [
+        {
+          "directional": true,
+          "dir": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "diffuse": [
+            0.699999988079071,
+            0.699999988079071,
+            0.699999988079071
+          ],
+          "ambient": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "specular": [
+            0.30000001192092896,
+            0.30000001192092896,
+            0.30000001192092896
+          ],
+          "castshadow": true
+        }
+      ],
+      "headlight": {
+        "active": true,
+        "ambient": [
+          0.10000000149011612,
+          0.10000000149011612,
+          0.10000000149011612
+        ],
+        "diffuse": [
+          0.4000000059604645,
+          0.4000000059604645,
+          0.4000000059604645
+        ],
+        "specular": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "colour_pipeline": "fixed-function OpenGL: rgba * light, clamped, no tonemap/gamma"
+    }
+  },
+  "isaac_render": {
+    "status": "pinned",
+    "renderer": "RTX path tracer, 64 samples per pixel in one frame, OptiX denoiser",
+    "carb_settings": {
+      "/rtx/rendermode": "PathTracing",
+      "/rtx/pathtracing/spp": 64,
+      "/rtx/pathtracing/totalSpp": 64,
+      "/rtx/pathtracing/maxBounces": 3,
+      "/rtx/pathtracing/optixDenoiser/enabled": true,
+      "/rtx/post/tonemap/op": 6,
+      "/rtx/post/tonemap/enableSrgbToGamma": true,
+      "/rtx/post/histogram/enabled": false,
+      "/rtx-transient/dlssg/enabled": false
+    },
+    "warmup_renders": 1,
+    "renders_per_frame": 1,
+    "data_types": [
+      "rgb",
+      "instance_id_segmentation_fast"
+    ],
+    "lights": [
+      {
+        "type": "distant",
+        "path": "/World/light_top",
+        "intensity": 300.0,
+        "angle_deg": 0.0,
+        "color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "shadow": true,
+        "direction": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "mujoco": "light dir 0 0 -1, diffuse 0.7, castshadow"
+      },
+      {
+        "type": "distant",
+        "path": "{camera}/headlight",
+        "intensity": 171.42857142857144,
+        "angle_deg": 0.0,
+        "color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "shadow": false,
+        "mujoco": "headlight diffuse 0.4 (ambient 0.1 has no path-traced equivalent)"
+      }
+    ],
+    "floor": "a 4 m x 4 m x 2 cm box with its top at z = 0 (MuJoCo: plane), MuJoCo rgba",
+    "materials": "UsdPreviewSurface, MuJoCo rgb as diffuse, roughness 0.5, metallic 0"
+  },
+  "image_parity": {
+    "reference": "MuJoCoSimulation onboard_rgb at the same resolution and joint state, v2 scene",
+    "held_out_reads": [
+      30,
+      50,
+      70,
+      90
+    ],
+    "calibration_read": 0,
+    "metrics": {
+      "mad": "mean |isaac - mujoco| over all pixels and RGB channels, uint8 units",
+      "psnr_db": "10 log10(255^2 / mean squared difference)",
+      "ssim_luma": "SSIM of Rec.601 luma, 7x7 uniform window, K1 0.01, K2 0.03",
+      "mask_iou": "per-class IoU of segmentation masks: robot, table, apple, plate, floor_or_background",
+      "centroid_px": "apple and plate mask centroid distance, pixels"
+    },
+    "thresholds": {
+      "geometry": {
+        "robot_iou_min": 0.9,
+        "table_iou_min": 0.9,
+        "apple_iou_min": 0.8,
+        "plate_iou_min": 0.8,
+        "centroid_px_max": 1.0
+      },
+      "photometric": {
+        "mad_max": 15.0,
+        "ssim_luma_min": 0.8
+      }
+    },
+    "verdict_rule": "geometry PASS iff every held-out read meets every geometry bar; photometric PASS iff every held-out read meets both photometric bars"
+  }
+}

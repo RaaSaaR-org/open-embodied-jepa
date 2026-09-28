@@ -1,0 +1,462 @@
+{
+  "version": "apple_to_plate_v2_isaac_scene_v1",
+  "scene_version": "apple_to_plate_v2",
+  "units": "m, kg, s; world frame +X forward, +Y left, +Z up (MuJoCoSimulation world)",
+  "mujoco_option": {
+    "timestep_s": 0.002,
+    "gravity": [
+      0.0,
+      0.0,
+      -9.81
+    ],
+    "integrator": 3,
+    "cone": 0,
+    "impratio": 1.0,
+    "noslip_iterations": 0,
+    "contact_friction_combination": "per-component max of the two geoms; condim max"
+  },
+  "floor": {
+    "name": "floor",
+    "friction": [
+      1.0,
+      0.005,
+      0.0001
+    ],
+    "condim": 3,
+    "solref": [
+      0.02,
+      1.0
+    ],
+    "solimp": [
+      0.9,
+      0.95,
+      0.001,
+      0.5,
+      2.0
+    ],
+    "margin": 0.0,
+    "rgba": [
+      0.30000001192092896,
+      0.3499999940395355,
+      0.4000000059604645,
+      1.0
+    ],
+    "type": "plane",
+    "z": 0.0
+  },
+  "table": {
+    "name": "table",
+    "friction": [
+      1.0,
+      0.005,
+      0.0001
+    ],
+    "condim": 3,
+    "solref": [
+      0.02,
+      1.0
+    ],
+    "solimp": [
+      0.9,
+      0.95,
+      0.001,
+      0.5,
+      2.0
+    ],
+    "margin": 0.0,
+    "rgba": [
+      0.550000011920929,
+      0.4000000059604645,
+      0.25,
+      1.0
+    ],
+    "type": "box",
+    "pos": [
+      0.45,
+      0.0,
+      0.7
+    ],
+    "half_size": [
+      0.32,
+      0.45,
+      0.04
+    ]
+  },
+  "apple": {
+    "name": "apple_geom",
+    "friction": [
+      1.0,
+      0.01,
+      0.001
+    ],
+    "condim": 6,
+    "solref": [
+      0.02,
+      1.0
+    ],
+    "solimp": [
+      0.9,
+      0.95,
+      0.001,
+      0.5,
+      2.0
+    ],
+    "margin": 0.0,
+    "rgba": [
+      0.8500000238418579,
+      0.07000000029802322,
+      0.03999999910593033,
+      1.0
+    ],
+    "type": "sphere",
+    "radius": 0.027,
+    "mass": 0.08,
+    "inertia_diag": [
+      2.3327999999999998e-05,
+      2.3327999999999998e-05,
+      2.3327999999999998e-05
+    ],
+    "free_joint": "apple_free"
+  },
+  "plate": {
+    "body": "static (no joint); MuJoCoSimulation.reset moves model.body('plate').pos",
+    "body_z": 0.746,
+    "base": {
+      "name": "plate_base",
+      "friction": [
+        1.0,
+        0.01,
+        0.001
+      ],
+      "condim": 3,
+      "solref": [
+        0.02,
+        1.0
+      ],
+      "solimp": [
+        0.9,
+        0.95,
+        0.001,
+        0.5,
+        2.0
+      ],
+      "margin": 0.0,
+      "rgba": [
+        0.15000000596046448,
+        0.3499999940395355,
+        0.8500000238418579,
+        1.0
+      ],
+      "type": "cylinder",
+      "radius": 0.07,
+      "half_height": 0.006,
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "rim": {
+      "friction": [
+        1.0,
+        0.005,
+        0.0001
+      ],
+      "condim": 3,
+      "rgba": [
+        0.15000000596046448,
+        0.3499999940395355,
+        0.8500000238418579,
+        1.0
+      ],
+      "type": "capsule",
+      "capsules": [
+        {
+          "from": [
+            0.06189992867825622,
+            0.025639789968461016,
+            0.008999999999999996
+          ],
+          "to": [
+            0.067,
+            0.0,
+            0.009000000000000003
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            0.04737615433949869,
+            0.04737615433949868,
+            0.008999999999999996
+          ],
+          "to": [
+            0.061899928678256215,
+            0.025639789968461016,
+            0.009000000000000003
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            0.025639789968461023,
+            0.061899928678256215,
+            0.009
+          ],
+          "to": [
+            0.04737615433949869,
+            0.04737615433949869,
+            0.009
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            3.469446951953614e-18,
+            0.067,
+            0.008999999999999996
+          ],
+          "to": [
+            0.02563978996846102,
+            0.06189992867825622,
+            0.009000000000000003
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            -0.025639789968461012,
+            0.06189992867825622,
+            0.008999999999999996
+          ],
+          "to": [
+            3.469446951953614e-18,
+            0.067,
+            0.009000000000000003
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            -0.04737615433949868,
+            0.04737615433949869,
+            0.009
+          ],
+          "to": [
+            -0.025639789968461016,
+            0.061899928678256215,
+            0.009
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            -0.061899928678256215,
+            0.025639789968461023,
+            0.008999999999999994
+          ],
+          "to": [
+            -0.04737615433949869,
+            0.04737615433949869,
+            0.009000000000000005
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            -0.067,
+            6.938893903907228e-18,
+            0.008999999999999996
+          ],
+          "to": [
+            -0.06189992867825622,
+            0.025639789968461023,
+            0.009000000000000003
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            -0.06189992867825622,
+            -0.02563978996846101,
+            0.008999999999999994
+          ],
+          "to": [
+            -0.067,
+            6.938893903907228e-18,
+            0.009000000000000005
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            -0.0473761543394987,
+            -0.04737615433949868,
+            0.009
+          ],
+          "to": [
+            -0.06189992867825622,
+            -0.025639789968461005,
+            0.009
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            -0.025639789968461058,
+            -0.061899928678256194,
+            0.008999999999999996
+          ],
+          "to": [
+            -0.0473761543394987,
+            -0.04737615433949868,
+            0.009000000000000003
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            -1.5612511283791264e-17,
+            -0.067,
+            0.008999999999999994
+          ],
+          "to": [
+            -0.02563978996846105,
+            -0.061899928678256194,
+            0.009000000000000005
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            0.025639789968461033,
+            -0.061899928678256215,
+            0.008999999999999996
+          ],
+          "to": [
+            -1.3877787807814457e-17,
+            -0.067,
+            0.009000000000000003
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            0.047376154339498676,
+            -0.0473761543394987,
+            0.009
+          ],
+          "to": [
+            0.025639789968461037,
+            -0.06189992867825621,
+            0.009
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            0.0618999286782562,
+            -0.025639789968461058,
+            0.008999999999999996
+          ],
+          "to": [
+            0.047376154339498676,
+            -0.0473761543394987,
+            0.009000000000000003
+          ],
+          "radius": 0.004
+        },
+        {
+          "from": [
+            0.067,
+            -1.9081958235744878e-17,
+            0.008999999999999994
+          ],
+          "to": [
+            0.061899928678256194,
+            -0.025639789968461058,
+            0.009000000000000005
+          ],
+          "radius": 0.004
+        }
+      ]
+    }
+  },
+  "task_constants": {
+    "table_top_z": 0.74,
+    "apple_reset_z_on_table": 0.77,
+    "container_surface_z": 0.752,
+    "object_support_height": 0.027
+  },
+  "isaac_physx": {
+    "default_material": {
+      "static_friction": 1.0,
+      "dynamic_friction": 1.0,
+      "restitution": 0.0,
+      "friction_combine_mode": "max",
+      "restitution_combine_mode": "max"
+    },
+    "floor_material": {
+      "static_friction": 1.0,
+      "dynamic_friction": 1.0,
+      "restitution": 0.0,
+      "friction_combine_mode": "max",
+      "restitution_combine_mode": "max"
+    },
+    "table_material": {
+      "static_friction": 1.0,
+      "dynamic_friction": 1.0,
+      "restitution": 0.0,
+      "friction_combine_mode": "max",
+      "restitution_combine_mode": "max"
+    },
+    "apple": {
+      "material": {
+        "static_friction": 1.0,
+        "dynamic_friction": 1.0,
+        "restitution": 0.0,
+        "friction_combine_mode": "max",
+        "restitution_combine_mode": "max"
+      },
+      "torsional_patch_radius": 0.01,
+      "min_torsional_patch_radius": 0.01,
+      "rolling_friction": null,
+      "linear_damping": 0.0,
+      "angular_damping": 0.0,
+      "sleep_threshold": 0.0,
+      "max_depenetration_velocity": 1.0,
+      "rest_offset": 0.0,
+      "contact_offset": null
+    },
+    "plate": {
+      "body": "kinematic rigid body (MuJoCo: static body moved at reset)",
+      "base_material": {
+        "static_friction": 1.0,
+        "dynamic_friction": 1.0,
+        "restitution": 0.0,
+        "friction_combine_mode": "max",
+        "restitution_combine_mode": "max"
+      },
+      "rim_material": {
+        "static_friction": 1.0,
+        "dynamic_friction": 1.0,
+        "restitution": 0.0,
+        "friction_combine_mode": "max",
+        "restitution_combine_mode": "max"
+      },
+      "base_collision": "convex hull of the USD cylinder (Isaac Lab disables PhysX custom cylinder geometry)",
+      "rim_collision": "native PhysX capsules"
+    },
+    "solver": "PhysX TGS, GPU pipeline, dt 0.002 s, default 4 position / 1 velocity iterations"
+  },
+  "unmatched_in_physx": [
+    "rolling friction (MuJoCo condim 6, 0.001 m on the apple): PhysX rigid bodies have none; not substituted (angular damping would be viscous, not Coulomb, and act in free flight)",
+    "torsional friction: MuJoCo 0.01 m as a Coulomb torque bound 0.01 N; PhysX torsional patch radius 0.01 m (bound mu N r), nominally equal, different algorithm; the PhysX per-pair combination of patch radii is assumed to be max (set on the apple only)",
+    "contact softness: MuJoCo solref (0.02 s, 1) / solimp (0.9, 0.95, 0.001) soft contacts allow ~mm penetration; PhysX contacts are rigid with contact/rest offsets",
+    "friction cone: MuJoCo pyramidal (cone 0) with one coefficient; PhysX patch friction with static and dynamic coefficients (both set to 1)",
+    "plate base: MuJoCo analytic cylinder; PhysX convex hull of the USD cylinder",
+    "robot collision: MuJoCo self-collision on; Isaac self-collision off (importer default)",
+    "robot geoms: MuJoCo friction (1, 0.005, 0.0001), condim 3; PhysX friction from the converter's bindings or the scene default material (read back in the run record)",
+    "integrator: MuJoCo implicitfast vs PhysX TGS"
+  ]
+}
