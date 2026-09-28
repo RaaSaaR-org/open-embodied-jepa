@@ -60,6 +60,8 @@ def test_committed_pins_match_the_tree():
             continue
         if path in retired:
             assert retired[path]["sha256_before"] == want, path
+            head = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+            assert head == retired[path]["sha256_after"], f"{path} changed again; record it"
             continue
         assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == want, path
 

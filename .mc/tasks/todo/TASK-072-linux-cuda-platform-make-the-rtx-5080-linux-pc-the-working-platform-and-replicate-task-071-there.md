@@ -60,13 +60,14 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
 - 2026-09-28: card opened. Stage A branch `feat/task-072-cuda-support`.
 - 2026-09-28 Stage A findings: (1) the `base.py` edit changes every VisualModel implementation
   hash; E0 (TASK-054/056/057), TASK-065 and TASK-066 checkpoints now load only at 9e23ced.
-  Three guard tests said "revert, or retire deliberately"; the retirement is recorded in
+  `sensor.py` changed too (sensor_wm). Three guard tests said "revert, or retire
+  deliberately"; the retirement is recorded in
   `benchmarks/manifests/task072-checkpoint-compatibility.json` and needs the owner's ruling.
   (2) Strict `use_deterministic_algorithms(True)` makes `native_jepa` untrainable on CUDA
-  (`adaptive_avg_pool2d_backward_cuda` has no deterministic kernel), so the setup uses
-  `warn_only=True`; LeWM's memory-efficient attention backward is also flagged in that mode.
-  Forcing the math attention backend fails at sequence length 1 on torch 2.14 without a C
-  compiler (none on the PC). Same-seed bit-identity is checked by `scripts/cuda_smoke.py`.
+  (`adaptive_avg_pool2d_backward_cuda` has no deterministic kernel), so the default is
+  `warn_only=True`. LeWM's memory-efficient attention backward has a deterministic variant
+  that only strict mode selects; LeWM protocols set strict first, and it is never downgraded.
+  Same-seed bit-identity in warn-only mode is checked by `scripts/cuda_smoke.py`.
   (3) `policy.py` (ClonedPolicy) and the scripts pinned by the TASK-059/061 manifests stay
   cpu/mps; `first_policy*`, `latent_dynamics` keep their frozen MPS device.
   (4) Over ssh, rendering needs `MUJOCO_GL=egl`.

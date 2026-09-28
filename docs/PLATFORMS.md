@@ -8,8 +8,9 @@ What changes and what does not:
 
 - `cuda` is a supported device beside `cpu` and `mps` (`embodied_jepa.devices`); `auto` prefers cuda, then mps, then cpu.
 - The Mac stays supported. Protocols frozen on it (MPS training, Mac-measured frame and weight pins) are not silently re-run on Linux: a Linux run of such a protocol is a new, separately versioned protocol that names every platform deviation and pins its own measurements.
-- Cross-platform equality is not assumed. The bring-up found identical MuJoCo outcomes on x86-64 and arm64 (final distances within 2 µm), but rendered frames differ between Apple GL and NVIDIA EGL, and a random-init DINOv2 differs in its low-order bits.
-- Same-seed CUDA runs are made reproducible on this machine by the deterministic setup and checked with `scripts/cuda_smoke.py`; CUDA and MPS results are not expected to be bit-identical.
+- Cross-platform equality is not assumed. The bring-up (development evidence, `outputs/linux-bringup-1/` on the Linux PC, not committed) found identical MuJoCo task outcomes on x86-64 and arm64 on the replayed episodes (final distances within 2 µm), but rendered frames differ between Apple GL and NVIDIA EGL, and a random-init DINOv2 differs in its low-order bits.
+- Same-seed CUDA runs are made reproducible on this machine by the deterministic setup (strict for LeWM protocols; warn-only where `native_jepa` needs it) and checked with `scripts/cuda_smoke.py`; CUDA and MPS results are not expected to be bit-identical.
+- Closed historical runners that now accept `--device cuda` (`world_model_v2`–`v4`) keep their MPS default; a CUDA run of them is a new run, not comparable with the recorded ones.
 
 The rest of this document is the original Mac-first plan (TASK-001 onward), kept as written.
 

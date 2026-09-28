@@ -73,7 +73,20 @@ def main():
     if checkpoints.exists():
         raise SystemExit(f"refusing to overwrite {checkpoints}")
     output.mkdir(parents=True, exist_ok=False)
-    report = {"purpose": __doc__, "dataset": str(dataset), "commands": [], "complete": False}
+
+    def git(*arguments):
+        return subprocess.run(
+            ["git", *arguments], cwd=ROOT, capture_output=True, text=True, check=False
+        ).stdout.strip()
+
+    report = {
+        "purpose": __doc__,
+        "revision": git("rev-parse", "HEAD"),
+        "tracked_tree_dirty": bool(git("status", "--porcelain", "--untracked-files=no")),
+        "dataset": str(dataset),
+        "commands": [],
+        "complete": False,
+    }
 
     def save():
         (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")

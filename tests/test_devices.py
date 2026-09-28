@@ -5,6 +5,7 @@ are software checks: they make no learned-control claim.
 """
 
 import json
+import os
 import subprocess
 import sys
 
@@ -100,9 +101,8 @@ def test_configure_determinism_is_a_noop_off_cuda(restore_determinism):
 
 def test_configure_determinism_sets_every_flag(monkeypatch, restore_determinism):
     """The flags themselves need no GPU, so this runs everywhere."""
-    torch = pytest.importorskip("torch")
+    pytest.importorskip("torch")
     monkeypatch.delenv("CUBLAS_WORKSPACE_CONFIG", raising=False)
-    monkeypatch.setattr(torch.cuda, "is_initialized", lambda: False)
     state = devices.configure_determinism("cuda")
     state.pop("sdp_backends")  # recorded, not changed
     assert state == {
@@ -118,9 +118,8 @@ def test_configure_determinism_sets_every_flag(monkeypatch, restore_determinism)
 
 
 def test_strict_determinism_turns_warnings_into_errors(monkeypatch, restore_determinism):
-    torch = pytest.importorskip("torch")
+    pytest.importorskip("torch")
     monkeypatch.delenv("CUBLAS_WORKSPACE_CONFIG", raising=False)
-    monkeypatch.setattr(torch.cuda, "is_initialized", lambda: False)
     state = devices.configure_determinism("cuda", strict=True)
     assert state["deterministic_algorithms"] and not state["deterministic_algorithms_warn_only"]
 
@@ -131,12 +130,22 @@ def test_configure_determinism_refuses_a_different_cublas_setting(monkeypatch):
         devices.configure_determinism("cuda")
 
 
-def test_configure_determinism_refuses_after_cuda_initialized_without_the_variable(monkeypatch):
-    torch = pytest.importorskip("torch")
-    monkeypatch.delenv("CUBLAS_WORKSPACE_CONFIG", raising=False)
-    monkeypatch.setattr(torch.cuda, "is_initialized", lambda: True)
-    with pytest.raises(devices.DeviceError, match="before starting the process"):
-        devices.configure_determinism("cuda")
+def test_importing_devices_sets_the_cublas_variable():
+    code = (
+        "import os; os.environ.pop('CUBLAS_WORKSPACE_CONFIG', None); "
+        "import embodied_jepa.devices; "
+        "assert os.environ['CUBLAS_WORKSPACE_CONFIG'] == ':4096:8'"
+    )
+    env = {k: v for k, v in os.environ.items() if k != "CUBLAS_WORKSPACE_CONFIG"}
+    subprocess.run([sys.executable, "-c", code], check=True, env=env)
+
+
+def test_a_strict_process_is_not_downgraded(monkeypatch, restore_determinism):
+    """require() (called by every cuda model) must keep a strict process strict."""
+    pytest.importorskip("torch")
+    devices.configure_determinism("cuda", strict=True)
+    state = devices.configure_determinism("cuda")
+    assert state["deterministic_algorithms"] and not state["deterministic_algorithms_warn_only"]
 
 
 def test_cpu_memory_report_is_empty_and_cpu_sync_is_a_noop():

@@ -85,6 +85,31 @@ def test_cuda_same_seed_models_train_bit_identically(backend, batch, restore_det
 
 
 @needs_cuda
+def test_cuda_model_after_cpu_training_initialized_cuda(batch, restore_determinism):
+    """A CPU optimizer step initializes CUDA on torch 2.14; a cuda model must still build."""
+    from embodied_jepa.models import NativeJEPA
+
+    NativeJEPA(batch.state_schema, device="cpu", seed=1).train_step(batch)
+    model = NativeJEPA(batch.state_schema, device="cuda", seed=1)
+    assert np.isfinite(model.train_step(batch)["loss"])
+
+
+@needs_cuda
+def test_strict_lewm_trains_bit_identically_without_warnings(batch, restore_determinism):
+    """LeWM's attention backward has a deterministic variant; strict mode selects it."""
+    devices.configure_determinism("cuda", strict=True)
+    losses = []
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        for _ in range(2):
+            model = model_class("lewm")(batch.state_schema, device="cuda", seed=11)
+            assert not devices.determinism_state()["deterministic_algorithms_warn_only"]
+            losses.append([model.train_step(batch)["loss"] for _ in range(4)])
+    assert losses[0] == losses[1]
+    assert not [item for item in caught if "deterministic" in str(item.message)]
+
+
+@needs_cuda
 def test_cuda_rng_is_isolated_and_checkpointed(batch, tmp_path, restore_determinism):
     import torch
 

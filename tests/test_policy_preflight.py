@@ -60,9 +60,10 @@ def test_e0_checkpoint_loads_only_at_its_recorded_revision():
     protocol deliberately"). TASK-072 changed models/base.py for CUDA support; the retirement
     is recorded in benchmarks/manifests/task072-checkpoint-compatibility.json, and E0 loads
     only at that record's last_compatible_revision. This test keeps the record honest: E0 is
-    named there with its digest, HEAD no longer produces that digest, and base.py is the only
-    one of the four digested files that changed -- lewm.py, readout.py and readout_labels.py
-    still match their TASK-065 pins, so no other edit hides behind the retirement.
+    named there with its digest, HEAD no longer produces that digest, the recorded changed files
+    (base.py and sensor.py) are exactly what changed and still hold their recorded bytes, and
+    base.py is the only one of E0's four digested files that changed -- lewm.py, readout.py and
+    readout_labels.py still match their TASK-065 pins, so no other edit hides behind it.
     """
     record = json.loads(
         (ROOT / "benchmarks/manifests/task072-checkpoint-compatibility.json").read_text()
@@ -70,7 +71,13 @@ def test_e0_checkpoint_loads_only_at_its_recorded_revision():
     named = record["invalidated_at_head"]["named"]
     assert E0_IMPLEMENTATION_SHA256 in named["checkpoints/task054-wm-v4/leworldmodel_baseline.pt"]
     assert implementation_digest("lewm.py") != E0_IMPLEMENTATION_SHA256
-    assert set(record["changed_files"]) == {"src/embodied_jepa/models/base.py"}
+    assert set(record["changed_files"]) == {
+        "src/embodied_jepa/models/base.py",
+        "src/embodied_jepa/models/sensor.py",
+    }
+    for path, entry in record["changed_files"].items():
+        head = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+        assert head == entry["sha256_after"], f"{path} changed again; record it"
     pins = json.loads(
         (ROOT / "benchmarks" / "manifests" / "apple-latent-dynamics-v1.json").read_text()
     )["hashes"]

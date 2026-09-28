@@ -4,7 +4,7 @@ schema_version: 0
 mode: common
 seed: 0
 runtime:
-  device: auto  # Prefer verified MPS support; record any CPU fallback.
+  device: auto  # Resolves cuda, then mps, then cpu; record the resolved device.
 world_model:
   backend: native_jepa  # Sole backend override for the comparison: leworldmodel
 embodiment:

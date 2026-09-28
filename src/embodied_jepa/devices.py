@@ -6,26 +6,34 @@ current device). ``auto`` resolves to the first available of cuda, mps, cpu.
 Selecting ``cuda`` through :func:`require` (or :func:`configure_determinism` directly) applies
 the project's single deterministic CUDA setup, process-wide:
 
-- ``CUBLAS_WORKSPACE_CONFIG=:4096:8`` (set if absent; refused if set to anything else);
-- ``torch.use_deterministic_algorithms(True, warn_only=not strict)``;
+- ``CUBLAS_WORKSPACE_CONFIG=:4096:8`` (refused if set to anything else). PyTorch reads it when
+  it first creates a cuBLAS handle, so this module also sets it, if absent, when it is imported;
+  ``models.base``, ``config`` and ``training`` import it before any model runs a matmul;
+- ``torch.use_deterministic_algorithms(True, warn_only=not strict)``, never downgrading a
+  process that is already strict;
 - ``torch.backends.cudnn.deterministic = True`` and ``benchmark = False``;
 - TF32 off: ``torch.set_float32_matmul_precision("highest")`` and both ``allow_tf32`` flags.
 
 That selects the deterministic kernel of every operation that has one. It does not make CUDA
 results bit-identical to CPU or MPS results, or across machines, drivers or library versions.
 
-``strict`` decides what happens at an operation PyTorch has no deterministic CUDA kernel for. The
-default (``strict=False``) warns and runs it: ``native_jepa``'s ``AdaptiveAvgPool2d`` backward is
-such an operation (``adaptive_avg_pool2d_backward_cuda``), so strict mode would make that backend
-untrainable on CUDA. In the same mode PyTorch also warns that LeWM's causal attention backward
-(the memory-efficient scaled-dot-product kernel) "defaults to a non-deterministic algorithm";
-strict mode would select its deterministic variant. The attention backends are left as PyTorch
-chooses them: forcing the math backend fails at sequence length 1 on torch 2.14 without a C
-compiler (it JIT-builds a Triton helper), and the Linux PC has none. Same-seed reproducibility is
-therefore an empirical property here, checked by ``scripts/cuda_smoke.py`` and by any protocol
-that relies on it. A protocol whose operations all have deterministic kernels can pass
-``strict=True`` so that a nondeterministic one raises.
-``torch`` is imported lazily, so importing this module does not import torch.
+``strict`` decides what happens at an operation without a deterministic CUDA kernel. Strict mode
+raises there; warn-only mode (the default) warns and runs the nondeterministic kernel.
+
+- ``native_jepa`` is the only reason for the warn-only default: its ``AdaptiveAvgPool2d``
+  backward (``adaptive_avg_pool2d_backward_cuda``) has no deterministic CUDA kernel, so strict
+  mode makes that backend untrainable on CUDA. The kernel adds atomically; it is deterministic in
+  practice only where pooling bins do not overlap, as at the 64 px default (8x8 -> 4x4), not at
+  112 px (14x14 -> 4x4).
+- LeWM's causal attention backward (the memory-efficient scaled-dot-product kernel) has a
+  deterministic variant, which PyTorch selects only in strict mode; in warn-only mode it warns and
+  uses the nondeterministic one. A LeWM protocol should therefore make the process strict first:
+  ``configure_determinism("cuda", strict=True)``. Later ``require`` calls (every cuda model and
+  training run makes one) keep a strict process strict.
+
+Same-seed reproducibility in warn-only mode is an empirical property, checked by
+``scripts/cuda_smoke.py`` and by any protocol that relies on it. ``torch`` is imported lazily, so
+importing this module does not import torch.
 """
 
 from __future__ import annotations
@@ -35,6 +43,9 @@ import os
 SUPPORTED_DEVICES = ("cpu", "mps", "cuda")
 AUTO_ORDER = ("cuda", "mps", "cpu")
 CUBLAS_WORKSPACE_CONFIG = ":4096:8"
+# Before torch can create a cuBLAS handle in any code path that imports this module. It only sizes
+# the cuBLAS workspace; it changes nothing on cpu or mps.
+os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", CUBLAS_WORKSPACE_CONFIG)
 
 
 class DeviceError(ValueError):
@@ -89,28 +100,25 @@ def require(
 
 
 def configure_determinism(device: str, *, strict: bool = False) -> dict:
-    """Apply the deterministic CUDA setup (no-op for cpu/mps); return :func:`determinism_state`."""
+    """Apply the deterministic CUDA setup (no-op for cpu/mps); return :func:`determinism_state`.
+
+    ``strict=False`` never downgrades a process that is already strict.
+    """
     if device != "cuda":
         return determinism_state()
-    current = os.environ.get("CUBLAS_WORKSPACE_CONFIG")
-    if current is None:
-        import torch
-
-        if torch.cuda.is_initialized():
-            # PyTorch reads the variable once, when it first sizes the cuBLAS workspace.
-            raise DeviceError(
-                "CUDA was initialized before CUBLAS_WORKSPACE_CONFIG was set; export "
-                f"CUBLAS_WORKSPACE_CONFIG={CUBLAS_WORKSPACE_CONFIG} before starting the process"
-            )
-        os.environ["CUBLAS_WORKSPACE_CONFIG"] = CUBLAS_WORKSPACE_CONFIG
-    elif current != CUBLAS_WORKSPACE_CONFIG:
+    current = os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", CUBLAS_WORKSPACE_CONFIG)
+    if current != CUBLAS_WORKSPACE_CONFIG:
         raise DeviceError(
             f"CUBLAS_WORKSPACE_CONFIG is {current!r}; the deterministic setup requires "
             f"{CUBLAS_WORKSPACE_CONFIG!r}"
         )
     import torch
 
-    torch.use_deterministic_algorithms(True, warn_only=not strict)
+    already_strict = (
+        torch.are_deterministic_algorithms_enabled()
+        and not torch.is_deterministic_algorithms_warn_only_enabled()
+    )
+    torch.use_deterministic_algorithms(True, warn_only=not (strict or already_strict))
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.allow_tf32 = False

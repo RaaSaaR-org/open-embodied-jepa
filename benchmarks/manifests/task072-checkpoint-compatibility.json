@@ -5,7 +5,13 @@
   "changed_files": {
     "src/embodied_jepa/models/base.py": {
       "sha256_before": "939c83d66cadca640cedbc4574e4ba22b2ec75ad7bf962aa6a6daaee2dff66b5",
+      "sha256_after": "310a509d5f8043ad3cbdf85a0568d15bb4ed2e4faeddf6e10bed63abf8ee0549",
       "why_it_matters": "VisualModel.implementation_sha256 digests base.py; VisualModel.load refuses a checkpoint whose digest differs"
+    },
+    "src/embodied_jepa/models/sensor.py": {
+      "sha256_before": "9b3f032ca25e61731ba2afccc8181d750071661c0f5d0d131b8fc8884cc7842f",
+      "sha256_after": "3902e91bfbdd46a7c60f52fed61b18dd6ca8524d7c0bb2527331530321a868ec",
+      "why_it_matters": "SensorWorldModel's implementation_sha256 digests it (its backend module) and its source_revision is its sha256; sensor_wm checkpoints are already covered by the base.py rule"
     }
   },
   "invalidated_at_head": {
@@ -24,6 +30,15 @@
     "tests/test_latent_dynamics.py::test_committed_pins_match_the_tree",
     "tests/test_policy_preflight.py::test_e0_checkpoint_loads_only_at_its_recorded_revision"
   ],
-  "guard_tests_rule": "for base.py the tests now check that each protocol's pin equals sha256_before here (the bytes those checkpoints were written against), instead of the bytes at HEAD; every other pinned file is still compared at HEAD",
-  "owner_ruling": null
+  "guard_tests_rule": "for base.py the guard tests check that each protocol's pin equals sha256_before here (the bytes those checkpoints were written against), and that base.py at HEAD equals sha256_after, so the next edit to base.py fails them again and has to be recorded; every other pinned file is still compared at HEAD",
+  "owner_ruling": null,
+  "other_pinned_files_changed": {
+    "note": "changed by TASK-072 and pinned by closed protocols' manifests; not part of any checkpoint's implementation hash, and no guard test protects them. Those protocols re-run only at their recorded revisions.",
+    "src/embodied_jepa/config.py": "apple-aligned-cost-v1, apple-control-development-v1, apple-goal-alignment-v1, apple-wide-object-ceiling-v1 (their pins already differed before TASK-072)",
+    "src/embodied_jepa/training.py": "apple-aligned-cost-v1, apple-goal-alignment-v1, apple-wide-object-ceiling-v1",
+    "src/embodied_jepa/result_schema.py": "apple-aligned-cost-v1, apple-goal-alignment-v1, apple-wide-object-ceiling-v1",
+    "src/embodied_jepa/waypoint_planning.py": "apple-wide-object-ceiling-v1",
+    "src/embodied_jepa/world_model_v2.py": "apple-encoder-study-v1 (and its results), apple-pretrained-encoder-v1 (and its results)",
+    "historical_cli_note": "world_model_v2/v3/v4 now accept --device cuda (default still mps); a CUDA run of them is a new run, not comparable with the recorded MPS runs"
+  }
 }

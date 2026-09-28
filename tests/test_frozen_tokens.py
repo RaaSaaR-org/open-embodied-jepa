@@ -212,6 +212,8 @@ def test_no_existing_model_file_changes():
         "src/embodied_jepa/pretrained_encoder.py",
     ):
         if path in retired:
+            head = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+            assert head == retired[path]["sha256_after"], f"{path} changed again; record it"
             got = retired[path]["sha256_before"]
         else:
             got = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
