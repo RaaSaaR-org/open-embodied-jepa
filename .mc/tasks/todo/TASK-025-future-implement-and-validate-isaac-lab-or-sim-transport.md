@@ -17,7 +17,7 @@ depends_on:
 - "[[TASK-022]]"
 due_date: ''
 created: 2026-09-20
-updated: 2026-09-20
+updated: 2026-09-28
 ---
 
 # Future: implement and validate Isaac Lab or Sim transport
@@ -42,3 +42,7 @@ Execute this task only when suitable Isaac compute and assets are available. It 
 ## 2026-09-20 full-task request audit
 
 No supported Isaac compute/runtime is available on the current Mac; runtime parity and cross-simulator results require that external resource. Prepared contracts/runbooks remain available; acceptance is not complete. Continue all locally executable apple-MVP work independently.
+
+## 2026-09-28 Isaac Sim bring-up spike (development, not gated)
+
+The owner approved a development spike on the Linux PC (RTX 5080). It used the local `isaaclab_arena` image (Isaac Sim 6.0.0-rc.22, Isaac Lab 3.0.0, image `sha256:2588b526…`) and NVIDIA's G1 + Dex3 USD. The spike met all five of its criteria: headless GPU container; 43-joint articulation with the root fixed (0.0 m drift); named joint comparison against the MuJoCo model; one onboard-pose RGB frame; step time and VRAM. The 29 leg, waist and arm limits match. 10 of the 14 Dex3 limits in the USD are strict subsets of the MuJoCo ranges, and the joint order differs from MJCF, so joints must be mapped by name. Physics-only stepping took a median 2.73 ms per 0.002 s step with one environment, and the Isaac process's GPU memory peaked at 4 666 MiB (peak of host `nvidia-smi` samples about 1 s apart, a lower bound). Details, commands and caveats (unpinned staging-S3 asset, release-candidate simulator, no drive-model parity) are in `docs/ISAAC_BRINGUP_SPIKE.md`; scripts are in `scripts/isaac/`. This does not meet any acceptance criterion above: nothing is pinned by hash, no transport is implemented and no parity check has run. Status stays `backlog`.
