@@ -58,14 +58,25 @@ successes.**
 ## Acceptance Criteria
 - [x] v2 scene option in code, with tests. The v1 files are byte-identical to `main`.
 - [x] Development log of every design, with counts.
-- [ ] Preregistration PR merged on an independent reviewer's reported APPROVE.
-- [ ] Gated run started only on the pre-run reviewer's reported GO. Results PR merged on a
-      reported APPROVE. Failures are reported plainly.
+- [x] Preregistration PR merged on an independent reviewer's reported APPROVE (PR #92,
+      rebase-merged; `1ba0557` on `main`).
+- [x] Gated run started only on the pre-run reviewer's reported GO (reviewer's own worktree at
+      `1ba0557`). Outcome **PASS**: 32/32 and 30/32 at rest.
+- [ ] Results PR merged on a reported APPROVE.
 - [x] The PR #91 old→new SHA map is added (R12 §1), once #91 is merged.
 
 ## Notes
 - 2026-09-28: card opened under owner ruling R12 §4. v2 physics = R12 §3 (i), accepted by the
   owner. Development designs e1–e11 on 50200–50295 (protocol §4); e9 frozen. Preregistration
   PR opened with gated seeds 50600–50631. Learned Apple→Plate is still 0 successes.
+- 2026-09-28: PR #92 rebase-merged (`1ba0557`), and the pre-run reviewer reported GO. Run-1 ran
+  from a clean checkout of `main` at `1ba0557`: 96 attempts, 0 errors, 0 early stops.
+  - At rest: **32/32 at plate exact and 30/32 at 1.0 cm → PASS**; 28/32 at 1.5 cm (reported
+    only).
+  - Latched: 32/32 at every level.
+  - Report sha256 `27543757…`.
+  - Results in protocol §8.
+  - e9 was selected on the development seeds. This is a privileged scripted expert, not a
+    learned result. Learned Apple→Plate is still 0 successes.
 
 %% mc-links: [[TASK-069]] %%
