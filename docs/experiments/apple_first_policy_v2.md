@@ -504,34 +504,41 @@ noise targets for the readout and the policy labels. Their outputs are under
 |---|---|---|---|---|---|
 | smoke-a | `fe696a0` + uncommitted draft | 40 | 55 s | V (harness) | every stage end to end |
 | smoke-b | `8bda8c5`, clean at start | 740 | 369 s | V (G-hash at the end) | full-length attempts; the doc was edited during the run, and the end-of-run G-hash caught it, as designed |
-| **smoke-c** | **`be74726`, clean** | 40 | 55 s | V (harness) | every stage; report sha256 `d81e6c6b…8929` |
-| **smoke-d** | **`be74726`, clean** | 740 | 369 s | V (harness) | every stage at full length; report sha256 `a7a45509…f5a1` |
+| smoke-c | `be74726`, clean | 40 | 55 s | V (harness) | superseded by smoke-e (before T71-R1) |
+| smoke-d | `be74726`, clean | 740 | 369 s | V (harness) | superseded by smoke-f (before T71-R1) |
+| **smoke-e** | **`401403b`, clean** | 40 | 55 s | V (harness) | every stage; report sha256 `5bd20bb5…7ec4` |
+| **smoke-f** | **`401403b`, clean** | 740 | 370 s | V (harness) | every stage at full length; report sha256 `65459326…1cc9` |
 
-In every smoke the row is V because the harness condition needs B-oracle ≥ 14/16 and a smoke has
-two D2 stand-in resets (v1's smokes ended the same way). What smoke-c and smoke-d show about the
-mechanics, at `be74726`:
+`401403b` is the commit that implements owner ruling T71-R1 (§3, row 19). In every smoke the row
+is V because the harness condition needs B-oracle ≥ 14/16 and a smoke has two D2 stand-in resets
+(v1's smokes ended the same way). What smoke-e and smoke-f show about the mechanics, at
+`401403b`:
 - the corpus stage wrote, sealed and read back 6 roots; the reader decoded 4 train + 1 val
   episodes and `test_split_decoded` is false; every read root's frame 0 matched its post-look
   render;
-- at full length (smoke-d) e9 through the collector ran all 725 commands on all 6 roots; 4 of 6
-  ended at rest under noise levels 0–3; C0 was at rest on 2 of 2 in every condition, so the
-  bars came out at the caps with the TASK-070 plate ceiling applied (plate 1.5 / 1.5 cm);
-  B-oracle was at rest on 2 of 2 and B-replay on 1 of 2;
-- S0-D1: live and offline inputs identical, commands within 3e-8;
+- at full length (smoke-f) e9 through the collector ran all 725 commands on all 6 roots; 4 of 6
+  ended in a counted success (at rest after a latched grasp) under noise levels 0–3; C0 was a
+  counted success on 2 of 2 in every condition, so the bars came out at the caps with the
+  TASK-070 plate ceiling applied (plate 1.5 / 1.5 cm); B-oracle was a counted success on 2 of 2
+  and B-replay on 1 of 2; no arm had an at-rest attempt without a grasp;
+- S0-D1: live and offline inputs identical, commands within 2e-8;
 - G-privileged held on every learned attempt (controller reads 0; total = scorer evaluations +
   at-rest records); the end-of-run pins (30) and revision matched; no non-finite field.
 
 **Render check** (author's, not the pre-run reviewer's): `scripts/check_first_policy_v2_render.py`
-at `be74726`, 8 workers, clean tree: **IDENTICAL** — 32 of 32 seeds rendered on two or more
-workers, 8 distinct workers, 106 s; report sha256 `08133911…124b`
-(`outputs/task071-scratch/render-determinism-1`). The pre-run reviewer re-runs it (§15).
+at `401403b`, 8 workers, clean tree: **IDENTICAL** — 32 of 32 seeds rendered on two or more
+workers, 8 distinct workers, 106 s; report sha256 `0bf23fa4…4a9d`
+(`outputs/task071-scratch/render-determinism-2`). An earlier check at `be74726` was also
+IDENTICAL. The pre-run reviewer re-runs it (§15).
 
-**Tests.** `tests/test_first_policy_v2.py`; its two graphics tests
-(`JEPA_TEST_RENDER=1`) check that the v2 attempt loop reproduces TASK-070's harness for e9
-command for command and verdict for verdict, and that the collector at noise level 0 issues
-exactly e9's commands with frame 0 equal to the post-look frame.
+**Tests.** `tests/test_first_policy_v2.py`; its two graphics tests (`JEPA_TEST_RENDER=1`, both
+passed at `401403b`) check that the v2 attempt loop reproduces TASK-070's harness for e9 command
+for command and verdict for verdict, and that the collector at noise level 0 issues exactly e9's
+commands with frame 0 equal to the post-look frame. A stand-in-robot test checks that an attempt
+whose apple rests on the plate is counted only when the latched grasp is reached before the
+settle (T71-R1).
 
-After `be74726`, this document (this section and the review fixes to §3 and §5), the manifest's pins, and two strings of the frozen block (`NO_ELIGIBLE_CHECKPOINT` and M2's stop rule now name D2 rather than D) changed. No runner, runtime or model code changed.
+After `401403b` only this section and the manifest's pin of this document changed.
 
 ## 19. Amendment log
 
