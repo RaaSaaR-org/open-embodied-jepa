@@ -117,6 +117,21 @@ plate part has no feasible level, so CAL-ESCALATE is the row.
    0.8 cm, 28/32 at 1.0 cm and 20/32 at 1.2 cm. This fits the aim-offset evidence (1/36 successes
    at 1.5–3.0 cm, proposal §2.2). Apple perception on the order of TASK-064's 0.46–0.55 cm medians
    would have been within budget, subject to its tail.
+
+> **Erratum, 2026-09-28 (owner ruling R9).** The "releases 3.5 cm short" explanation in item 2
+> below is **contradicted** by the per-attempt landings of the R8 release-point probe
+> ([`apple_first_policy_v1_release_probe.md`](apple_first_policy_v1_release_probe.md)). That
+> probe's row is P-CANDIDATE-FAIL. Its declared rule counted the mechanism as confirmed, but the
+> per-attempt data contradict it:
+> - With the plate exact, the current collector lands a median 2.7 cm short of the centre, not
+>   3.5 cm. One seed (46800) lands forward, at +3.58 cm.
+> - A landing that short stays inside the 4 cm radius under a 1.0 cm plate error.
+> - All 11 of the probe's failures of the current collector at 1.0 cm land forward or sideways,
+>   at 4.53–4.62 cm from the centre, not short. That position is near the plate rim; this is
+>   inferred, since no contact was recorded.
+>
+> The cause of the failures is unidentified. The text below is kept as written.
+
 2. **The expert does not tolerate plate error: 1.0 cm already costs 11 of 32 successes.** A
    likely mechanism can be derived from the collector's code, but **it is not measured here**,
    because the report stores C0 counts, not per-attempt apple end positions:

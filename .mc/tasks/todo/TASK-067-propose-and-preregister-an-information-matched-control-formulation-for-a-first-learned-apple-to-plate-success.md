@@ -125,3 +125,10 @@ successes.**
   - The release-at-centre candidate scores 15/32 at the reference and 23/32 at 1.0 cm, below
     28/32.
   - Under R8 the work stops and goes back to the owner.
+- 2026-09-28T00:00Z, **owner ruling R9**, recorded verbatim in the release-probe document §6.
+  Its steps:
+  - an erratum to the results doc §4.2, with the TASK-067 status in AGENTS/CLAUDE/README updated
+    (this PR);
+  - a diagnosis of the current collector's post-grasp trajectory on the spent probe seeds;
+  - at most one redesign, and only if the diagnosis identifies a cause;
+  - everything else frozen.

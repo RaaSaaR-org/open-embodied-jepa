@@ -64,8 +64,15 @@ learned-policy control formulation
 **CAL-ESCALATE**: its gated run stopped at the C0 calibration, before any policy was trained or
 evaluated, because the privileged scripted expert's tolerance to plate error fell to 21/32 at
 the smallest preregistered plate level (1.0 cm), below the 28/32 bar, so no feasible plate bar
-exists. The abandonment clause does not fire; the owner has chosen a diagnostic probe of the
-collector's release point, to be followed by a v2 amendment if the probe supports it. Outcomes
+exists. The abandonment clause does not fire. The owner-ruled diagnostic probe of the
+collector's release point ([release probe](docs/experiments/apple_first_policy_v1_release_probe.md))
+ended **P-CANDIDATE-FAIL**: a collector releasing over the plate centre reached 23/32 at 1.0 cm
+plate error, below 28/32. The results document's "releases 3.5 cm short" explanation is
+contradicted by the probe's per-attempt landings (its declared rule counted the mechanism as
+confirmed): the probe's failures land forward or sideways, near the plate rim (inferred; no
+contact recorded), not short. The cause of the
+failures is still unidentified, and the owner has ruled a diagnosis of the current collector's
+post-grasp trajectory before any redesign. Outcomes
 and caveats are in the results
 documents under [docs/experiments/](docs/experiments/) and in [AGENTS.md](AGENTS.md).
 
