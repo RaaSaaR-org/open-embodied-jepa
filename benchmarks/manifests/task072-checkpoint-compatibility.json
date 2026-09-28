@@ -1,0 +1,29 @@
+{
+  "task": "TASK-072",
+  "change": "CUDA device support: models/base.py accepts cuda, isolates the CUDA RNG in rng_scope and checkpoints it as rng_cuda",
+  "last_compatible_revision": "9e23cedb1fc8a5012cd1fdf4661aa4537b9189fa",
+  "changed_files": {
+    "src/embodied_jepa/models/base.py": {
+      "sha256_before": "939c83d66cadca640cedbc4574e4ba22b2ec75ad7bf962aa6a6daaee2dff66b5",
+      "why_it_matters": "VisualModel.implementation_sha256 digests base.py; VisualModel.load refuses a checkpoint whose digest differs"
+    }
+  },
+  "invalidated_at_head": {
+    "rule": "every checkpoint loaded through VisualModel.load (native_jepa, leworldmodel, sensor_wm, jepa_wms, and the frozen-encoder and frozen-token variants), and every ClonedPolicy checkpoint whose feature source is such a model, written at or before last_compatible_revision",
+    "named": {
+      "checkpoints/task054-wm-v4/leworldmodel_baseline.pt": "TASK-054 E0 (implementation_sha256 4ad0a6856d847aaf724daba5e721c078ee599658d4733357ab8703eccbb15a92); the frozen feature source of TASK-056 and TASK-057",
+      "checkpoints/task056-policy-v1/": "TASK-056 ClonedPolicy arms built on E0",
+      "checkpoints/task065-latent-dynamics/run-2/": "TASK-065's twelve checkpoints",
+      "checkpoints/task066-token-dynamics/run-1/": "TASK-066's checkpoints"
+    },
+    "not_affected": "TASK-067 and TASK-071 policy checkpoints (first_policy_model.PolicyNet and first_policy_v2_model, plain torch modules that do not go through VisualModel.load), and every result already recorded in a results document or manifest"
+  },
+  "how_to_load_them": "check out last_compatible_revision (or the protocol's own recorded revision) and load there; a later source revision is never treated as checkpoint-compatible (docs/SETUP.md)",
+  "guard_tests_retargeted": [
+    "tests/test_frozen_tokens.py::test_no_existing_model_file_changes",
+    "tests/test_latent_dynamics.py::test_committed_pins_match_the_tree",
+    "tests/test_policy_preflight.py::test_e0_checkpoint_loads_only_at_its_recorded_revision"
+  ],
+  "guard_tests_rule": "for base.py the tests now check that each protocol's pin equals sha256_before here (the bytes those checkpoints were written against), instead of the bytes at HEAD; every other pinned file is still compared at HEAD",
+  "owner_ruling": null
+}

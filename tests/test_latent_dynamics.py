@@ -47,9 +47,19 @@ def test_manifest_matches_the_module():
 
 
 def test_committed_pins_match_the_tree():
-    """Every pinned file that is committed (not data/, third_party/) matches its pin."""
+    """Every pinned file that is committed (not data/, third_party/) matches its pin.
+
+    Except base.py, which TASK-072 changed (CUDA support): its pin must equal the bytes the
+    TASK-065 checkpoints were written with, recorded in task072-checkpoint-compatibility.json.
+    """
+    retired = json.loads(
+        (ROOT / "benchmarks/manifests/task072-checkpoint-compatibility.json").read_text()
+    )["changed_files"]
     for path, want in MANIFEST["hashes"].items():
         if path.startswith(("data/", "third_party/", "outputs/", "checkpoints/")):
+            continue
+        if path in retired:
+            assert retired[path]["sha256_before"] == want, path
             continue
         assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == want, path
 
