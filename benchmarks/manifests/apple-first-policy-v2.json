@@ -566,7 +566,7 @@
   },
   "mujoco_version": "3.13.0",
   "hashes": {
-    "docs/experiments/apple_first_policy_v2.md": "d9ac3dc540c142d48aad57dea8650753e9bc8dd6bfc48710cfd638fd49fdeb94",
+    "docs/experiments/apple_first_policy_v2.md": "cccff8c38dac86a49056fb45d4d239c83a4463b3886d05947245dc05e77bfe83",
     "src/embodied_jepa/first_policy_v2.py": "85f46d03475ed8cc82cbf629181282c33d5da9b2dbc54190139339f5dee00a4d",
     "src/embodied_jepa/first_policy_v2_runtime.py": "553cc0faa69821b359ed0ec67fa49d96db18144d6cb27a3145734d4745ddc54e",
     "src/embodied_jepa/first_policy_v2_model.py": "5e29fc12f496b2299c1d2d5b4df8ea99660b838a896587b9b890f846312a1a45",
