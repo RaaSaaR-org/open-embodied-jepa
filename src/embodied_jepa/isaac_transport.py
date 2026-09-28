@@ -165,8 +165,12 @@ class IsaacTransport:
         render: bool = True,
         device: str = "cuda:0",
         warmup_renders: int = 3,
+        joint_friction: str = "frictionloss",
     ):
         self.manifest = validate_joint_manifest(manifest)
+        if joint_friction not in ("frictionloss", "none"):
+            raise ContractError("joint_friction must be 'frictionloss' or 'none'")
+        self.joint_friction = joint_friction
         if any(not isinstance(n, int) or isinstance(n, bool) or n < 1 for n in (width, height)):
             raise ContractError("RGB dimensions must be positive integers")
         import isaaclab.sim as sim_utils
@@ -269,6 +273,10 @@ class IsaacTransport:
         self.robot.write_joint_damping_to_sim_index(
             damping=torch.as_tensor(damping, dtype=torch.float32, device=self.sim.device)[None]
         )
+        got = self._np(self.robot.root_view.get_dof_dampings())[0][self._idx]
+        if np.abs(got - [j["damping"] for j in joints]).max() > 1e-6:
+            raise ContractError("PhysX drive damping read-back differs from the manifest")
+        self._set_joint_friction(joints)
         self._kp = np.array([j["kp"] for j in joints])
         self._kd = np.array([j["kd"] for j in joints])
         self.targets = np.zeros(len(joints))
@@ -276,6 +284,40 @@ class IsaacTransport:
         self.reset()
 
     # ------------------------------------------------------------------ helpers
+    def _set_joint_friction(self, joints) -> None:
+        """Replace the converter's joint friction with MuJoCo's frictionloss (or nothing).
+
+        The importer copies MuJoCo ``frictionloss`` (a Coulomb torque in N m) into PhysX's
+        deprecated, load-proportional joint friction *coefficient*, a different model that
+        made the arms creep in development runs. That coefficient is zeroed. With
+        ``"frictionloss"`` PhysX's static and dynamic friction *efforts* (N m) are set to the
+        MuJoCo value and viscous friction to 0; with ``"none"`` all three are 0. Read back.
+        """
+        wp, view = self._wp, self.robot.root_view
+        n = len(self._idx)
+        coeff = view.get_dof_friction_coefficients()
+        props = view.get_dof_friction_properties()
+        fl = np.zeros(n)
+        if self.joint_friction == "frictionloss":
+            fl[self._idx] = [j.get("frictionloss_not_applied", 0.0) for j in joints]
+        new_props = np.stack([fl, fl, np.zeros(n)], axis=1)[None].astype(np.float32)
+        indices = wp.array(np.array([0], dtype=np.int32), dtype=wp.int32, device=coeff.device)
+        view.set_dof_friction_coefficients(
+            wp.array(np.zeros((1, n), dtype=np.float32), dtype=wp.float32, device=coeff.device),
+            indices,
+        )
+        view.set_dof_friction_properties(
+            wp.array(new_props, dtype=wp.float32, device=props.device), indices
+        )
+        got_coeff = self._np(view.get_dof_friction_coefficients())[0]
+        got_props = self._np(view.get_dof_friction_properties())[0]
+        if np.abs(got_coeff).max() > 0 or np.abs(got_props - new_props[0]).max() > 1e-6:
+            raise ContractError("PhysX joint friction read-back differs from what was set")
+        self.physx_joint_friction = {
+            "legacy_coefficient": got_coeff[self._idx].tolist(),
+            "static_dynamic_viscous": got_props[self._idx].tolist(),
+        }
+
     def _np(self, x) -> np.ndarray:
         t = x if isinstance(x, self._torch.Tensor) else self._wp.to_torch(x)
         return t.detach().cpu().numpy()

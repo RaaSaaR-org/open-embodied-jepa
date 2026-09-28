@@ -122,12 +122,16 @@ def main() -> None:
         "physx_stiffness_after_init": t(view.get_dof_stiffnesses())[0],
         "physx_damping_after_init": t(view.get_dof_dampings())[0],
         "physx_max_force_after_init": t(view.get_dof_max_forces())[0],
+        "physx_armature_after_init": t(view.get_dof_armatures())[0],
+        "physx_friction_coefficient_after_init": t(view.get_dof_friction_coefficients())[0],
     }
+    friction_props = t(view.get_dof_friction_properties())[0]  # [dofs, (static, dynamic, viscous)]
     joints = []
     for i, n in enumerate(names):
         row = {"index": i, "name": n, "lower": float(lim[i, 0]), "upper": float(lim[i, 1])}
         row.update({k: float(v[i]) for k, v in per_joint.items()})
         row.update({k: float(v[i]) for k, v in physx_gains.items()})
+        row["physx_friction_properties_after_init"] = [float(v) for v in friction_props[i]]
         row["usd"] = usd_joints.get(n)
         joints.append(row)
 

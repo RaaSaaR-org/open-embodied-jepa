@@ -36,6 +36,7 @@ parser.add_argument("--manifest", type=Path, required=True)
 parser.add_argument("--action_manifest", type=Path, required=True)
 parser.add_argument("--size", type=int, default=112, help="onboard RGB width = height")
 parser.add_argument("--repeats", type=int, default=2)
+parser.add_argument("--joint_friction", choices=("frictionloss", "none"), default="frictionloss")
 AppLauncher.add_app_launcher_args(parser)
 args = parser.parse_args()
 args.enable_cameras = True
@@ -114,7 +115,12 @@ def main() -> None:
     manifest = json.loads(args.manifest.read_text())
     t0 = time.perf_counter()
     tr = IsaacTransport(
-        usd_path=args.usd, manifest=manifest, width=args.size, height=args.size, render=True
+        usd_path=args.usd,
+        manifest=manifest,
+        width=args.size,
+        height=args.size,
+        render=True,
+        joint_friction=args.joint_friction,
     )
     build_s = time.perf_counter() - t0
     memory["after_transport_build_mib"] = gpu_used_mib()
@@ -132,6 +138,8 @@ def main() -> None:
         "app_launch_s": launch_s,
         "transport_build_s": build_s,
         "device": str(tr.sim.device),
+        "joint_friction": args.joint_friction,
+        "physx_joint_friction": tr.physx_joint_friction,
     }
     qpos, qvel, times, step_ms, render_ms = [], [], [], [], []
     for rep in range(args.repeats):
