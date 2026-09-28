@@ -3,7 +3,9 @@
 Engineering on a privileged scripted controller, not a learned result, and not a gated run.
 Each grid entry is ``RestingPlaceExpert`` keyword arguments plus an optional ``rpy``: a
 rotation (roll, pitch, yaw about the base axes, radians) applied before the collector's
-palm-down rotation during lower, steady, open and clear. One attempt per entry, plate exact,
+palm-down rotation during lower, steady, open and clear, and an optional ``believed_plate_xy``
+(world metres) that moves only the expert's release point, never the plate: a what-if release
+over the table. One attempt per entry, plate exact,
 on one development seed. It prints how the apple leaves the hand and lands; the protocol's §5
 logs the outputs.
 
@@ -53,8 +55,12 @@ def main() -> int:
     for entry in json.loads(args.grid):
         params = dict(entry)
         rpy = params.pop("rpy", None)
+        believed = params.pop("believed_plate_xy", None)
 
-        def factory(truth, params=params, rpy=rpy):
+        def factory(truth, params=params, rpy=rpy, believed=believed):
+            if believed is not None:  # a what-if release point, e.g. over the table
+                truth = dict(truth)
+                truth["plate_position"] = np.array([*believed, truth["plate_position"][2]])
             expert = RestingPlaceExpert(truth, **params)
             if rpy is not None:
                 expert.release_rotation = rotation_delta(rpy) @ expert.pick_rotation
@@ -84,6 +90,12 @@ def main() -> int:
                     else np.round(a["apple_ang"][after], 1).tolist(),
                     "landing_xy_minus_plate_cm": s.get("landing_xy_minus_plate_cm"),
                     "horizontal_speed_at_landing_m_s": s.get("horizontal_speed_at_landing_m_s"),
+                    "release_target_base": s.get("release_target_base"),
+                    "apple_final_speed_m_s": float(np.linalg.norm(a["apple_lin"][-1])),
+                    "apple_xy_travel_after_hand_cm": None
+                    if after is None
+                    else float(np.linalg.norm(a["apple_pos"][-1, :2] - a["apple_pos"][after, :2]))
+                    * 100,
                 }
             ),
             flush=True,
