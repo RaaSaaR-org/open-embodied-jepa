@@ -56,14 +56,16 @@ successes.**
 - **Gated seeds:** declared in the preregistration PR. They will be fresh and checked.
 
 ## Acceptance Criteria
-- [ ] v2 scene option in code, with tests. The v1 files are byte-identical to `main`.
-- [ ] Development log of every design, with counts.
+- [x] v2 scene option in code, with tests. The v1 files are byte-identical to `main`.
+- [x] Development log of every design, with counts.
 - [ ] Preregistration PR merged on an independent reviewer's reported APPROVE.
 - [ ] Gated run started only on the pre-run reviewer's reported GO. Results PR merged on a
       reported APPROVE. Failures are reported plainly.
-- [ ] The PR #91 old→new SHA map is added (R12 §1), once #91 is merged.
+- [x] The PR #91 old→new SHA map is added (R12 §1), once #91 is merged.
 
 ## Notes
-- 2026-09-28: card opened under owner ruling R12 §4.
+- 2026-09-28: card opened under owner ruling R12 §4. v2 physics = R12 §3 (i), accepted by the
+  owner. Development designs e1–e11 on 50200–50295 (protocol §4); e9 frozen. Preregistration
+  PR opened with gated seeds 50600–50631. Learned Apple→Plate is still 0 successes.
 
 %% mc-links: [[TASK-069]] %%

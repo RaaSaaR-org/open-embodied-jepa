@@ -51,3 +51,45 @@ def test_task070_development_seeds_are_disjoint():
     for seed in (50099, 50150, 46850, 47050):
         with pytest.raises(fp.GuardError):
             v2.check_seeds((seed,))
+
+
+def test_gate_is_frozen_on_fresh_seeds_with_the_declared_bar():
+    assert v2.GATE_SEEDS == tuple(range(50600, 50632))
+    v2.check_gate_seeds()
+    assert not set(v2.GATE_SEEDS) & set(v2.DEV_SEEDS)
+    assert v2.GATE_BAR == {"0.0": 28, "1.0": 28}
+    assert v2.GATE_LEVELS_CM == (0.0, 1.0, 1.5)
+    assert v2.GATE_EXPERT == {"release_pitch_rad": 0.45, "release_dx": 0.015}
+
+
+def _cells(exact=28, one=28, errors=0, attempts=32):
+    def cell(n):
+        return {"attempts": attempts, "errors": errors, "at_rest": n}
+
+    return {"0.0": cell(exact), "1.0": cell(one), "1.5": cell(0)}
+
+
+def test_gate_row_reads_both_gated_levels_and_ignores_1_5_cm():
+    assert v2.gate_row(_cells()) == "PASS"
+    assert v2.gate_row(_cells(exact=27)) == "FAIL"
+    assert v2.gate_row(_cells(one=27)) == "FAIL"
+    assert v2.gate_row(_cells(exact=32, one=32)) == "PASS"  # 1.5 cm at 0 does not matter
+    assert v2.gate_row(_cells(errors=1)) == "VOID"
+    assert v2.gate_row(_cells(attempts=31)) == "VOID"
+
+
+def test_manifest_pins_the_frozen_gate():
+    import hashlib
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    manifest = json.loads(
+        (root / "benchmarks/manifests/apple-to-plate-v2-expert-gate-v1.json").read_text()
+    )
+    assert manifest["expert"] == v2.GATE_EXPERT
+    assert manifest["seeds"] == list(v2.GATE_SEEDS)
+    assert manifest["direction_seed"] == v2.GATE_DIRECTION_SEED
+    assert manifest["bar"] == v2.GATE_BAR
+    for name, digest in manifest["source_sha256"].items():
+        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest, name

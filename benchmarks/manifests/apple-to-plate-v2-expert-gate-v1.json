@@ -1,0 +1,84 @@
+{
+  "apple_contact": {
+    "condim": 6,
+    "friction": [
+      1.0,
+      0.01,
+      0.001
+    ]
+  },
+  "bar": {
+    "0.0": 28,
+    "1.0": 28
+  },
+  "direction_seed": 6860,
+  "expert": {
+    "release_dx": 0.015,
+    "release_pitch_rad": 0.45
+  },
+  "levels_cm": [
+    0.0,
+    1.0,
+    1.5
+  ],
+  "metric": "apple_at_rest_v0",
+  "mujoco_version": "3.13.0",
+  "name": "apple-to-plate-v2-expert-gate-v1",
+  "note": "Privileged scripted expert gate; not a learned result. Learned Apple->Plate is still 0 successes.",
+  "protocol": "docs/experiments/apple_to_plate_v2_expert.md",
+  "scene": "apple_to_plate_v2",
+  "seeds": [
+    50600,
+    50601,
+    50602,
+    50603,
+    50604,
+    50605,
+    50606,
+    50607,
+    50608,
+    50609,
+    50610,
+    50611,
+    50612,
+    50613,
+    50614,
+    50615,
+    50616,
+    50617,
+    50618,
+    50619,
+    50620,
+    50621,
+    50622,
+    50623,
+    50624,
+    50625,
+    50626,
+    50627,
+    50628,
+    50629,
+    50630,
+    50631
+  ],
+  "source_sha256": {
+    "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+    "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
+    "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+    "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
+    "scripts/run_v2_expert_gate.py": "73c0cf12bb4ff9606af47cd2341620951426e05654d2b5b11ff15502740f4640",
+    "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
+    "src/embodied_jepa/at_rest.py": "b5121cb600db6bfb3f92b4161ba46d4cdcb31f98e99de512b257f2519db00527",
+    "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+    "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
+    "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+    "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
+    "src/embodied_jepa/first_policy_runtime.py": "d6d672dc26912371cae78c2d32ba84583adfab4adcab393445a770f994a5f953",
+    "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+    "src/embodied_jepa/resting_expert.py": "9f253b1d5025ff4c3176cdafe98ff59a50a51bdc9b90fe3a1f1d6fddc73bcd23",
+    "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+    "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+    "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c"
+  },
+  "task": "TASK-070"
+}
