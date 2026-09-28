@@ -74,8 +74,23 @@ apple crosses the disc and how slowly, so it changes whether a transient 0.15 s 
 occurs. The logs do not isolate this further.
 
 **A consequence for the record, not a finding about learning.** Scripted-collector "successes"
-under this scorer include transient crossings. That applies to this corpus's collection too
-(103/200 root successes in `apple-look-v1`). It was not measured there; this is an inference.
+under this scorer include transient crossings. Inference, not measured: the same may apply to this
+corpus's collection (103/200 root successes in `apple-look-v1`).
+
+> **Correction (2026-09-28, after independent review of PR #87; §A text above is kept as declared
+> at `9088236`).** Three statements in §A overstate what the logs show:
+> 1. **"Bounces to the rim" is wrong; the apple is carried and rolls to the rim.** After first
+>    contact with the plate base the apple rises at most 0.18–0.32 cm above its rest height. It
+>    reaches the rim about 3 steps later on horizontal velocity (median 0.20 m/s at first base
+>    contact, range 0.20–0.25). That velocity is acquired while the hand opens: with apple–hand
+>    contact still present the apple moves 2.7–2.8 cm in xy and leaves the hand at about
+>    0.12 m/s horizontally (seed 46801, steps 470–476).
+> 2. **Seed 46801 latches at step 500, not 502** (`first_success_step` in `report.json`).
+> 3. **"Comes to rest against the rim" should read "ends slowly rolling along the rim, with
+>    intermittent rim contact".** The failures end 0.1–0.9 mm inside the 4.61 cm contact ring at
+>    about 0.01 m/s. Rim contact is present at the final step on 1/28 and 3/31 non-successes, and
+>    within the last 60 steps on 28/28 and 31/31. The geometric statement that an apple resting
+>    against the rim always fails is unchanged.
 
 ## B. The one redesign (R9 step 3), declared before it runs
 
@@ -148,23 +163,40 @@ design without a new ruling. Closing TASK-067 is the fallback.
 | 1.5 cm (reported only) | 17 / 32 | 0 / 32 | 4.53 / 4.55 / 4.57 |
 
 **What the logs show (medians over the 32 attempts at each level).**
-- **The pre-declared risk happened: the palm could not reach the place pose.** During
+- **The palm did not reach the place pose within the 100-command budget.** During
   `lower_closed` its lowest point was 0.113 m (plate exact) and 0.111 m (1.0 cm) in the base
-  frame, against a target of 0.035 m.
+  frame, against a target of 0.035 m. It had not stalled: the commanded z stayed saturated at
+  −0.4 (6 mm per step requested) for all 100 steps, and over the last 20 steps the palm was still
+  descending at a median 0.44 mm/step (range 0.38–0.47) when the budget ran out.
+- **The pre-declared risk (the hand meets the plate) did not occur** at 0 or 1.0 cm. During
+  `lower_closed` there was zero hand–plate contact and zero other hand contact on all 64
+  attempts; the only contact was apple–hand.
 - **The held apple's lowest point was 8.1 cm above its resting height** (z 0.860 and 0.858 m,
   against 0.779 m). The hand therefore still let the apple fall about 8 cm, down from about
   15.5 cm with the current collector.
-- The apple's top speed from the opening onward was 0.82 m/s (range 0.37–0.84). It touched the rim
-  on 32/32 attempts at both levels.
-- Hand–plate contact occurred on 5 (plate exact) and 8 (1.0 cm) attempts.
-- The apple still came to rest against the rim, at 4.4–4.6 cm, outside the 4 cm radius.
+- The apple's top speed from the opening onward was 0.82 m/s (range 0.37–0.84 with the plate
+  exact, 0.35–0.84 at 1.0 cm). Its horizontal speed at landing had a median of 0.22 m/s, and it
+  reached the rim a median 3–4 steps later. It touched the rim on 32/32 attempts at both levels.
+- Hand–plate contact occurred on 5 (plate exact) and 8 (1.0 cm) attempts, all during the opening
+  (phase 6), after `lower_closed` had ended.
+- The apple still ended rolling slowly along the rim, at 4.4–4.6 cm, outside the 4 cm radius.
+- The report's `*_after_release` fields take "release" as the first phase ≥ 5, which for this
+  policy is the start of `lower_closed`, not the opening. The numbers in this section were
+  computed from the opening.
 
 **Reading (interpretation).**
-- Halving the drop did not stop the bounce and roll to the rim. The redesign did not achieve its
-  intended place: the hand stops about 8 cm short of setting the apple down.
-- Why the palm stalls (hand contact with the plate, the IK or joint limits, or the finger
-  geometry) is not separated by these logs. The hand–plate contact on only 5 and 8 attempts
-  suggests something other than contact on most attempts. That is an inference.
+- Halving the drop did not stop the apple being carried and rolled to the rim. The redesign's
+  intended place was never tested: within the fixed 100-command budget the hand was still about
+  8 cm above setting the apple down.
+- Contact is ruled out as the cause at the two gated levels. What remains is a slow descent
+  (about 0.44 mm/step against 6 mm/step commanded). Why the rate is that low (IK, joint limits or
+  the embodiment's step limits) is not identified by these logs.
+- The 25/32 at plate exact is confounded by the centre shift, which is part of this one change:
+  in the R8 probe, releasing at the centre alone scored 15/32 at plate exact, against 32/32 for
+  the current collector on the latch.
+- Success in this probe is counted over 805 steps, including the settle, while C0 caps at 800
+  policy steps. No first success fell at step 745 or later in either run (first successes at
+  steps 499–525 and 580–608), so no count changes.
 
 **Not done, per R9:** no second design, no change to the task, the plate geometry, the scorer
 radius or the 28/32 bar, and no v2 amendment. Learned Apple→Plate is still 0 successes.
