@@ -16,6 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
+from embodied_jepa import devices
 from embodied_jepa.config import MODELS
 from embodied_jepa.contracts import ContractError
 from embodied_jepa.data import DatasetStore, concatenate_batches
@@ -297,10 +298,8 @@ def train(
         raise ValueError("max_seconds must be positive and finite")
     if not np.isfinite(memory_limit_gib) or not 0 < memory_limit_gib <= 16:
         raise ValueError("memory_limit_gib must lie in (0,16]")
-    if device not in ("cpu", "mps"):
-        raise ValueError("device must be cpu or mps")
-    if device == "mps" and not torch.backends.mps.is_available():
-        raise ValueError("requested MPS unavailable")
+    # cuda also applies the deterministic CUDA setup before any CUDA work.
+    device = devices.require(device)
     if selection not in ("raw_mse", "noncollapsed_relative"):
         raise ValueError("selection must be raw_mse or noncollapsed_relative")
     MODELS.require(backend)
@@ -359,6 +358,8 @@ def train(
             "torch": torch.__version__,
             "numpy": np.__version__,
             "cpu_threads": torch.get_num_threads(),
+            "accelerator": devices.accelerator_info(device),
+            "determinism": devices.determinism_state(),
         },
         "validation": [],
         "test_samples_loaded": False,
@@ -378,8 +379,7 @@ def train(
     _write_json(paths["report"], report)
 
     def synchronize():
-        if device == "mps":
-            torch.mps.synchronize()
+        devices.synchronize(device)
 
     def check_budget():
         clock.check(max_seconds)
@@ -608,9 +608,7 @@ def train(
                 rss_scope="process-lifetime host RSS high-water mark",
                 sampler_rng=sampler.bit_generator.state,
             )
-            if device == "mps":
-                report["final_mps_allocated_bytes"] = torch.mps.current_allocated_memory()
-                report["final_mps_driver_bytes"] = torch.mps.driver_allocated_memory()
+            report.update(devices.memory_report(device))
             report["best_checkpoint_exists"] = paths["best"].exists()
             report["latest_checkpoint_exists"] = paths["latest"].exists()
             _write_json(paths["report"], report)
@@ -632,7 +630,7 @@ def main():
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--horizon", type=int, default=4)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--device", choices=("cpu", "mps"), default="cpu")
+    parser.add_argument("--device", choices=devices.SUPPORTED_DEVICES, default="cpu")
     parser.add_argument("--max-seconds", type=float, default=600)
     parser.add_argument("--validation-every", type=int, default=50)
     parser.add_argument("--validation-batches", type=int, default=4)

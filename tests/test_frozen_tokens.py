@@ -190,10 +190,18 @@ def test_frozen_tokens_refuse_what_they_do_not_support(backend, override, messag
 
 
 def test_no_existing_model_file_changes():
-    """TASK-054's E0 and TASK-065's twelve checkpoints enforce implementation hashes over these."""
+    """TASK-054's E0 and TASK-065's twelve checkpoints enforce implementation hashes over these.
+
+    TASK-072 changed base.py (CUDA support), so those checkpoints load only at their recorded
+    revision (benchmarks/manifests/task072-checkpoint-compatibility.json). For base.py the pin
+    is checked against the bytes they were written with; every other file still at HEAD.
+    """
     import json
 
     manifest = json.loads((ROOT / "benchmarks/manifests/apple-latent-dynamics-v1.json").read_text())
+    retired = json.loads(
+        (ROOT / "benchmarks/manifests/task072-checkpoint-compatibility.json").read_text()
+    )["changed_files"]
     for path in (
         "src/embodied_jepa/models/base.py",
         "src/embodied_jepa/models/lewm.py",
@@ -203,7 +211,12 @@ def test_no_existing_model_file_changes():
         "src/embodied_jepa/models/frozen_encoder.py",
         "src/embodied_jepa/pretrained_encoder.py",
     ):
-        got = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+        if path in retired:
+            head = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+            assert head == retired[path]["sha256_after"], f"{path} changed again; record it"
+            got = retired[path]["sha256_before"]
+        else:
+            got = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
         assert got == manifest["hashes"][path], path
 
 

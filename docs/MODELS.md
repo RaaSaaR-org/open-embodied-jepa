@@ -223,9 +223,10 @@ common benchmark metric. Validation never updates normalization or model weights
 Inference uses evaluation mode and no gradients, with candidate chunking inside
 the adapter. Latents are owned by one model instance and invalidated after a
 training update or checkpoint load. This prevents accidental cross-model or stale
-latent reuse. Keep CPU/MPS choice explicit and time MPS with synchronization in
-the runner. Backend construction/training preserves the process's Torch RNG;
-separate internal CPU/MPS states are maintained for reproducible resume.
+latent reuse. Keep the CPU/MPS/CUDA choice explicit and time accelerators with
+synchronization in the runner (`embodied_jepa.devices`). Backend construction/training
+preserves the process's Torch RNG; separate internal CPU/MPS/CUDA states are
+maintained for reproducible resume (`rng_cpu`, `rng_mps`, `rng_cuda` in the checkpoint).
 
 `save(path)` writes weights, optimizer, EMA/BatchNorm/variance buffers, configuration,
 ordered state/action schemas, seed, update count, backend RNG states, upstream

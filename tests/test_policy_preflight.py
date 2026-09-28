@@ -53,15 +53,40 @@ def implementation_digest(backend_module: str) -> str:
     return digest.hexdigest()
 
 
-def test_e0_checkpoint_stays_loadable():
-    """TASK-056's frozen feature source must not be invalidated by an edit.
+def test_e0_checkpoint_loads_only_at_its_recorded_revision():
+    """TASK-056's frozen feature source was retired at HEAD deliberately, by TASK-072.
 
-    If this fails, someone changed models/base.py, models/lewm.py, models/readout.py or
-    readout_labels.py. That is not a test to update: it means the v4 checkpoints can no
-    longer be loaded and TASK-056's preregistration rests on a checkpoint that no longer
-    exists. Revert the edit, or retire the protocol deliberately.
+    Until TASK-072 this test required the E0 digest at HEAD ("revert the edit, or retire the
+    protocol deliberately"). TASK-072 changed models/base.py for CUDA support; the retirement
+    is recorded in benchmarks/manifests/task072-checkpoint-compatibility.json, and E0 loads
+    only at that record's last_compatible_revision. This test keeps the record honest: E0 is
+    named there with its digest, HEAD no longer produces that digest, the recorded changed files
+    (base.py and sensor.py) are exactly what changed and still hold their recorded bytes, and
+    base.py is the only one of E0's four digested files that changed -- lewm.py, readout.py and
+    readout_labels.py still match their TASK-065 pins, so no other edit hides behind it.
     """
-    assert implementation_digest("lewm.py") == E0_IMPLEMENTATION_SHA256
+    record = json.loads(
+        (ROOT / "benchmarks/manifests/task072-checkpoint-compatibility.json").read_text()
+    )
+    named = record["invalidated_at_head"]["named"]
+    assert E0_IMPLEMENTATION_SHA256 in named["checkpoints/task054-wm-v4/leworldmodel_baseline.pt"]
+    assert implementation_digest("lewm.py") != E0_IMPLEMENTATION_SHA256
+    assert set(record["changed_files"]) == {
+        "src/embodied_jepa/models/base.py",
+        "src/embodied_jepa/models/sensor.py",
+    }
+    for path, entry in record["changed_files"].items():
+        head = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+        assert head == entry["sha256_after"], f"{path} changed again; record it"
+    pins = json.loads(
+        (ROOT / "benchmarks" / "manifests" / "apple-latent-dynamics-v1.json").read_text()
+    )["hashes"]
+    for path in (
+        "src/embodied_jepa/models/lewm.py",
+        "src/embodied_jepa/models/readout.py",
+        "src/embodied_jepa/readout_labels.py",
+    ):
+        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == pins[path], path
 
 
 def test_the_digest_is_sensitive_to_each_input_file():

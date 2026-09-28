@@ -297,6 +297,7 @@ class SensorWorldModel(VisualModel):
             "optimizer": self.optimizer.state_dict(),
             "rng_cpu": self._rng,
             "rng_mps": self._mps_rng,
+            "rng_cuda": self._cuda_rng,
             "source_revision": self.source_revision,
             "implementation_sha256": self.implementation_sha256,
             "preprocessing": self.preprocessing,

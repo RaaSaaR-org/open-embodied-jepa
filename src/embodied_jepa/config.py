@@ -158,15 +158,13 @@ class ExperimentConfig:
             raise ValueError("seed must be a nonnegative integer")
         runtime = _mapping(raw.get("runtime", {}), ("device",), "runtime")
         device = runtime.get("device", "cpu")
-        if device not in ("cpu", "mps", "auto"):
-            raise ValueError("local device must be cpu, mps or auto")
-        if device in ("auto", "mps"):
-            import torch
+        if device not in ("cpu", "mps", "cuda", "auto"):
+            raise ValueError("local device must be cpu, mps, cuda or auto")
+        if device != "cpu":
+            from embodied_jepa import devices
 
-            available = torch.backends.mps.is_available()
-            if device == "mps" and not available:
-                raise ValueError("requested MPS is unavailable")
-            device = "mps" if available else "cpu"
+            # auto prefers cuda, then mps, then cpu; an explicit device must be available.
+            device = devices.resolve(device)
         model = _mapping(
             raw.get("world_model", {}),
             ("backend", "checkpoints", "settings", "history"),

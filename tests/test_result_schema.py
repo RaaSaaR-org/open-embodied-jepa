@@ -112,7 +112,7 @@ def test_in_memory_dataclass_budget_and_archived_training_reference(records):
     "path,value",
     [
         (("environment",), "fixture"),
-        (("environment", "device"), "cuda"),
+        (("environment", "device"), "tpu"),
         (("planner",), "fixture"),
         (("planner", "samples"), True),
         (("planner", "elites"), 99),

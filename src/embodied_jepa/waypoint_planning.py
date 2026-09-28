@@ -189,7 +189,7 @@ class WaypointConfig:
             raise ContractError("action bounds are reversed")
         if self.ablation not in ("learned", "dynamics_shuffle", "persistence"):
             raise ContractError("unsupported dynamics ablation")
-        if self.device not in ("cpu", "mps"):
+        if self.device not in ("cpu", "mps", "cuda"):
             raise ContractError("unsupported model device")
         if self.goal_stall_limit is not None and (
             type(self.goal_stall_limit) is not int or self.goal_stall_limit < 1
