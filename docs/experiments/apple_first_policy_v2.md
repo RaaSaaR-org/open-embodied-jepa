@@ -536,41 +536,44 @@ noise targets for the readout and the policy labels. Their outputs are under
 | smoke-d | `be74726`, clean | 740 | 369 s | V (harness) | superseded by smoke-f (before T71-R1) |
 | smoke-e | `401403b`, clean | 40 | 55 s | V (harness) | superseded by smoke-g (frozen-block fix after re-review) |
 | smoke-f | `401403b`, clean | 740 | 370 s | V (harness) | superseded by smoke-h (frozen-block fix after re-review) |
-| **smoke-g** | **`82cb197`, clean** | 40 | 55 s | V (harness) | every stage; report sha256 `fed5eb93…b84a` |
-| **smoke-h** | **`82cb197`, clean** | 740 | 369 s | V (harness) | every stage at full length; report sha256 `323b745a…91d0` |
+| smoke-g | `82cb197`, clean | 40 | 55 s | V (harness) | superseded by smoke-i (before T71-R2) |
+| smoke-h | `82cb197`, clean | 740 | 369 s | V (harness) | superseded by smoke-j (before T71-R2) |
+| **smoke-i** | **`844f2c6`, clean** | 40 | 55 s | V (harness) | every stage; report sha256 `b9f6fbde…b69d` |
+| **smoke-j** | **`844f2c6`, clean** | 740 | 370 s | V (harness) | every stage at full length; report sha256 `b92c5f7d…2fbf` |
 
 `401403b` implements owner ruling T71-R1 (§3, row 19); `82cb197` makes the frozen block define
-C0's and M2's success as the counted success, after re-review. In every smoke the row is V
-because the harness condition needs B-oracle ≥ 14/16 and a smoke has two D2 stand-in resets
-(v1's smokes ended the same way). What smoke-g and smoke-h show about the mechanics, at
-`82cb197`:
+C0's and M2's success as the counted success, after re-review; `844f2c6` implements owner ruling
+T71-R2 (the latched `place` stage as well). In every smoke the row is V because the harness
+condition needs B-oracle ≥ 14/16 and a smoke has two D2 stand-in resets (v1's smokes ended the
+same way). What smoke-i and smoke-j show about the mechanics, at `844f2c6`:
 - the corpus stage wrote, sealed and read back 6 roots; the reader decoded 4 train + 1 val
   episodes and `test_split_decoded` is false; every read root's frame 0 matched its post-look
   render;
-- at full length (smoke-h) e9 through the collector ran all 725 commands on all 6 roots; 4 of 6
-  ended in a counted success (at rest after a latched grasp) under noise levels 0–3; C0 was a
+- at full length (smoke-j) e9 through the collector ran all 725 commands on all 6 roots; 4 of 6
+  ended in a counted success (at rest after latched grasp and place) under noise levels 0–3; C0 was a
   counted success on 2 of 2 in every condition (smoke counts are scaled to 32), so the bars came out at the caps with the
   TASK-070 plate ceiling applied (plate 1.5 / 1.5 cm); B-oracle was a counted success on 2 of 2
-  and B-replay on 1 of 2; no arm had an at-rest attempt without a grasp;
+  and B-replay on 1 of 2 (B-oracle's grasp latched at steps 265–267 and place at 613, before
+  the settle at 725); no arm had an at-rest attempt that was not counted;
 - S0-D1: live and offline inputs identical, commands within 3e-8;
 - G-privileged held on every learned attempt (controller reads 0; total = scorer evaluations +
   at-rest records); the end-of-run pins (30) and revision matched; no non-finite field.
 
 **Render check** (author's, not the pre-run reviewer's): `scripts/check_first_policy_v2_render.py`
-at `82cb197`, 8 workers, clean tree: **IDENTICAL** — 32 of 32 seeds rendered on two or more
-workers, 8 distinct workers, 106 s; report sha256 `08b32d89…7024`
-(`outputs/task071-scratch/render-determinism-3`). Earlier checks at `be74726` and `401403b` were
-also IDENTICAL. The pre-run reviewer re-runs it (§15).
+at `844f2c6`, 8 workers, clean tree: **IDENTICAL** — 32 of 32 seeds rendered on two or more
+workers, 8 distinct workers, 106 s; report sha256 `38d00117…92d7`
+(`outputs/task071-scratch/render-determinism-4`). Earlier checks at `be74726`, `401403b` and
+`82cb197` were also IDENTICAL. The pre-run reviewer re-runs it (§15).
 
 **Tests.** `tests/test_first_policy_v2.py`; its two graphics tests (`JEPA_TEST_RENDER=1`, both
-passed at `82cb197`) check that the v2 attempt loop reproduces TASK-070's harness for e9 command
+passed at `844f2c6`) check that the v2 attempt loop reproduces TASK-070's harness for e9 command
 for command and verdict for verdict, and that the collector at noise level 0 issues exactly e9's
 commands with frame 0 equal to the post-look frame. A stand-in-robot test checks that an attempt
-whose apple rests on the plate is counted only when the latched grasp is reached before the
-settle (T71-R1), and a runner test that `count()` counts only counted successes and reports
-at-rest attempts without a grasp separately.
+whose apple rests on the plate is counted only when both the latched grasp and place stages
+are reached before the settle (T71-R1/R2), and a runner test that `count()` counts only
+counted successes and reports at-rest attempts that are not counted separately.
 
-After `82cb197` only this section and the manifest's pin of this document changed.
+After `844f2c6` only this section and the manifest's pin of this document changed.
 
 ## 19. Amendment log
 
