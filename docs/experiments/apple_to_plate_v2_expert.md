@@ -223,9 +223,13 @@ The runner (`scripts/run_v2_expert_gate.py`) refuses to start on any of:
 - a gated-seed overlap.
 
 It records the revision at start and at end, the pins, the device, the worker count and the wall
-time. Its `--smoke` mode runs 2 development seeds (50298–50299) with no verdict. It was run once
-before this preregistration, to check the runner: 6 attempts, 0 errors, and no reading of any
-gated seed.
+time. Its `--smoke` mode runs 2 development seeds (50298–50299) with no verdict. It was run
+twice before this preregistration, to check the runner, and neither run read a gated seed:
+- with an earlier version of the runner, before the MuJoCo-version check was added;
+- at `48c2df3` on a clean tree: 6 attempts, 0 errors, and 2 / 2 / 0 at rest at 0 / 1.0 /
+  1.5 cm.
+
+Both runs' outputs are in the author's scratch directory, not under `outputs/`.
 
 **The pre-run reviewer checks, in their own worktree:**
 - that `main` holds this preregistration;
