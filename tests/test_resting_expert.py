@@ -133,3 +133,40 @@ def test_expert_opens_on_its_ramp_from_the_accepted_grasp():
     assert opening[:5] == pytest.approx([0.75, 0.5, 0.25, 0.0, -0.25])
     assert all(g == 1.0 for name, g in grasps if name in ("transfer", "lower", "steady"))
     assert grasps[-1] == ("retreat", -1.0)
+
+
+def test_release_events_read_open_last_hand_and_landing_at_known_steps():
+    steps = 12
+    names = ["transfer", "open", "clear"]
+    phase = np.array([0] * 4 + [1] * 4 + [2] * 4)
+    counts = np.zeros((steps, len(rx.PAIR_TYPES)), int)
+    hand = rx.PAIR_TYPES.index("apple_hand")
+    base_contact = rx.PAIR_TYPES.index("apple_plate_base")
+    rim = rx.PAIR_TYPES.index("apple_plate_rim")
+    counts[:6, hand] = 1  # hand contact until step 5
+    counts[8:, base_contact] = 1  # first plate-base contact at step 8
+    counts[10, rim] = 1
+    plate = np.array([0.49, -0.09, 0.746])
+    rest_z = 0.779
+    apple = np.tile([0.49, -0.09, rest_z], (steps, 1))
+    apple[:8, 2] = rest_z + 0.10  # 10 cm above rest while held and falling
+    apple[8:, 0] += 0.01
+    lin = np.zeros((steps, 3))
+    lin[6] = [0.2, 0.0, -1.0]  # just after the last hand contact
+    lin[8] = [0.03, 0.04, 0.0]  # at landing
+    arrays = {
+        "phase": phase,
+        "counts": counts,
+        "palm": np.tile([0.475, -0.09, 0.2], (steps, 1)),
+        "apple_pos": apple,
+        "apple_lin": lin,
+        "apple_ang": np.zeros((steps, 3)),
+    }
+    out = rx.release_events(arrays, names, plate, np.zeros(3), rest_z)
+    assert out["open_step"] == 4 and out["last_apple_hand_step"] == 5
+    assert out["apple_height_above_rest_at_open_cm"] == pytest.approx(10.0)
+    assert out["apple_horizontal_speed_after_hand_m_s"] == pytest.approx(0.2)
+    assert out["first_base_contact_step"] == 8
+    assert out["landing_xy_minus_plate_cm"] == pytest.approx([1.0, 0.0])
+    assert out["horizontal_speed_at_landing_m_s"] == pytest.approx(0.05)
+    assert out["rim_contact_after_open"] and out["hand_plate_contact_steps"] == 0

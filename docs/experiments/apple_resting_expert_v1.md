@@ -120,7 +120,9 @@ sha256 `31477e40…95ef`), which ran the same script before the code move below.
 - **Part 3.** The rolling check (§1).
 - **run-1 is superseded, not deleted.** run-1 (`2764656`, sha256 `1916e93c…`) compared float32
   joint targets with float64 measured joints at 1e-9. Its hold count (0) was therefore wrong by
-  construction. Its other fields match run-2 and run-3.
+  construction. Its other replay fields match run-2 and run-3 to the reported precision (palm
+  heights differ by about 2e-5 m); its reach section used an earlier forward-kinematics sample
+  in place of the position-only IK residual.
 
 **What the logs and code show (8/8 attempts):**
 
@@ -128,9 +130,9 @@ sha256 `31477e40…95ef`), which ran the same script before the code move below.
 |---|---|
 | place target's distance from the right shoulder (base frame, shoulder at (0.000, −0.100, 0.292) m) | 0.522–0.554 m |
 | smallest position-only IK residual to the place target, any palm orientation | **3.1–6.2 cm** |
-| lowest palm-down height reachable at palm xy (0.47–0.49, −0.09) m | 0.16–0.22 m (map: 0.16 at x 0.47, 0.18 at 0.48, 0.22 at 0.49) |
+| lowest palm-down height reachable at palm y −0.09 m | 0.16 m at x 0.47, 0.18 at 0.48, 0.22 at 0.49, 0.28 at 0.50; none at 0.51 |
 | steps (of 100) where the full `lower_closed` command was refused, and why | 85–96 "right IK failed"; 1–6 "right joint rate limit"; the rest accepted (0–14, all early in the phase) |
-| projection's accepted factor from step 11–21 of the phase onward | 1/8 of the command, on every remaining step (79–89 per attempt) |
+| projection's accepted factor from step 11–21 of the phase onward (0-based; the 12th–22nd command) | 1/8 of the command, on every remaining step (79–89 per attempt) |
 | accepted steps whose IK returned the seed (the measured joints) unchanged | **every step from step 11–21 onward** (79–89 per attempt); each such step is ≤ 1.30 mm, inside the IK's 1.5 mm position tolerance. Every accepted step that moved the joints was ≥ 1.72 mm |
 | palm descent over the last 20 steps | 0.38–0.44 mm/step (lowest palm z 0.084–0.119 m) |
 | smallest right-arm joint margin to a joint limit | 0.69–0.74 rad |
@@ -141,7 +143,7 @@ sha256 `31477e40…95ef`), which ran the same script before the code move below.
 1. **The place pose is out of the arm's reach.** No right-arm configuration within the joint
    limits puts the palm within 3.1 cm of any of the eight place targets, whatever the palm
    orientation. With the palm down, the lowest reachable palm over the plate's centre region is
-   0.16–0.22 m.
+   0.16–0.22 m at palm x 0.47–0.49 m, 0.28 m at x 0.50 m, and unreachable at x 0.51 m (y −0.09 m).
    - The pelvis is fixed: `simulation._scene` removes its free joint.
    - The IK uses the 7 arm joints only (`G1Embodiment.arm_ids`).
    - The waist and leg joints are actuated but not part of the `ee_delta_grasp_v0` action; they
@@ -170,8 +172,9 @@ sha256 `31477e40…95ef`), which ran the same script before the code move below.
 **The reach limit also applies to the gated conditions.** The plate centre ranges over x
 0.47–0.51 m, with a further ±1.5 cm of plate error. The held apple sits about 4.4 cm below the
 palm (TASK-067's logs) and about 1.1 cm ahead of it (d1's logs, at the opening). So the apple
-cannot be set down on the plate from any reachable palm-down pose. It must be released from at
-least about 8 cm above its resting height: 8.0–23.2 cm in the development runs (§5).
+cannot be set down on the plate from any reachable palm-down pose. When the hand starts to open,
+the held apple was 8.0–23.2 cm above its resting height in the development runs (§5; it leaves
+the hand somewhat lower, after rolling off the thumb).
 
 ## 5. Development log (every design, every count)
 
@@ -292,7 +295,10 @@ Every scan entry ended not at rest.
   plate does not move. The palm's floor is varied from 0.026 to 0.10 m.
 - **Palm floor 0.026–0.055 m** (apple 1.5–2.3 cm above its resting height when the hand
   opens):
-  - the apple leaves the hand at under 0.02 m/s;
+  - in the 4 entries where it was measured, the apple leaves the hand at under 0.02 m/s (the
+    ramp-1.0 entry has no after-hand measurement and ended with the apple at 0.094 m/s);
+  - floors 0.026 and 0.04 m gave identical outputs (apple 1.9 cm above rest), so the palm
+    probably did not reach the 0.026 m floor;
   - after its last hand contact it moves 0.1 cm in three of them and 2.5 cm in one (not
     measured in one);
   - **every one of these attempts ended on the joint-velocity guard after the opening
@@ -310,13 +316,13 @@ tried produced an at-rest success on development seeds: **0 of 269 complete atte
 attempts, 35 ended early on the guard) **across 15 design-by-level cells**, plus the scan. The
 logs point to three facts that compound:
 1. **Reach.** The fixed-pelvis right arm cannot bring the palm within 3 cm of a place pose over
-   the plate, so the apple is released 8–23 cm above its resting height.
+   the plate, so the apple is 8–23 cm above its resting height when the hand starts to open.
 2. **Release.** The Dex3 synergy rolls the apple off the thumb as it opens, at about
    0.15–0.25 m/s with forward spin. Orientation changes moved the velocity and the spin but
    did not bring any development cell's median landing speed below 0.08 m/s.
 3. **Physics.** The apple is a condim-3 sphere, so a rolling apple does not slow down on the
-   plate. Most attempts end rolling at or along the rim, 4.5–4.6 cm from the centre; a few
-   leave the plate (d4 and d7).
+   plate. Most grasped attempts end rolling at or along the rim, 4.5–4.6 cm from the centre; a
+   few leave the plate (d4 and d7). The 3 complete d10 attempts never grasped the apple.
 
 **Why a preregistration is not opened.** A 28/32 at-rest gate on a design that scores 0/32 in
 development would be a foregone failure. A preregistration needs a frozen design, and none is
@@ -352,9 +358,16 @@ uv run --no-sync python scripts/diagnose_resting_descent.py \
     --output outputs/task068-descent-diagnosis/<new>
 uv run --no-sync python scripts/develop_resting_expert.py --design d12 --count 32 --levels 0,1.0 \
     --output outputs/task068-dev/<new>
-uv run --no-sync python scripts/scan_resting_release.py --seed 50003 --grid '<json list>'
+uv run --no-sync python scripts/scan_resting_release.py --seed 50003 --grid "$(cat grid.json)" \
+    > outputs/task068-dev/<new>/scan.jsonl
 ```
 
-Each script refuses to overwrite an existing output directory. The attempts are deterministic:
+The diagnosis and development scripts refuse to overwrite an existing output directory; the
+scan prints to stdout, and its `scan.jsonl` files were written by shell redirection. The exact
+grids are in the first field (`entry`) of each `scan.jsonl` line, and are listed below. The attempts are deterministic:
 every run-3 count equals its run-2 and run-1 counts, and both scans reproduced their run-1
 values, which in turn matched the exploratory values.
+
+Scan grids used (seed 50003):
+- orientation scan: `[{"opening_ramp":0.04},{"opening_ramp":0.01},{"opening_ramp":0.04,"rpy":[0,-0.9,0]},{"opening_ramp":0.04,"rpy":[0,-0.6,0]},{"opening_ramp":0.04,"rpy":[0,0.45,0]},{"opening_ramp":0.04,"rpy":[0,0.6,0]},{"opening_ramp":0.04,"rpy":[0,0.75,0]},{"opening_ramp":0.04,"rpy":[0,0.9,0]},{"opening_ramp":0.04,"rpy":[0,1.1,0]},{"opening_ramp":0.01,"rpy":[0,0.75,0]},{"opening_ramp":1.0,"rpy":[0,0.6,0]},{"opening_ramp":1.0,"rpy":[0,0.9,0]},{"opening_ramp":0.04,"rpy":[0.5,0,0]},{"opening_ramp":0.04,"rpy":[-0.5,0,0]},{"opening_ramp":0.04,"rpy":[0,0,1.57]},{"opening_ramp":0.04,"rpy":[0,0,-1.57]}]`
+- what-if: `[{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.026},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.026,"opening_ramp":1.0},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.026,"release_pitch_rad":0.45},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.04},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.055},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.07},{"believed_plate_xy":[0.36,-0.10],"release_z_floor_m":0.10}]`
