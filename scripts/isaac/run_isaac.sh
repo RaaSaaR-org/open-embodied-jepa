@@ -3,11 +3,12 @@
 # Usage: scripts/isaac/run_isaac.sh <script.py> <out-dir> [extra script args]
 # <out-dir> must not exist yet (never overwritten); it is mounted writable at /oej/out and the
 # script gets `--output /oej/out/run`. Read-only mounts: scripts/isaac (/oej/scripts/isaac),
-# src (/oej/src, on PYTHONPATH), the pinned G1 MJCF directory (/oej/mjcf) and, if present,
-# assets/isaac (/oej/usd, converted USDs). Records image id, code revision/status and samples
-# GPU memory every ~1 s (gpu_apps.csv, gpu_device.csv; sampled peaks are lower bounds).
-# Refuses to start while a TASK-072 / first_policy process is running, so a development run
-# never overlaps a gated run on the shared GPU.
+# src (/oej/src), configs (/oej/configs), the pinned G1 MJCF directory (/oej/mjcf) and, if
+# present, assets/isaac (/oej/usd, converted USDs). Records the image id and code
+# revision/status, and samples GPU memory every ~1 s (gpu_apps.csv, gpu_device.csv; sampled
+# peaks are lower bounds). Refuses to start while any non-shell TASK-072 / first_policy
+# process (a run, its pytest, ...) is alive, so a development run does not overlap a gated
+# run on the shared GPU.
 # If your login shell predates your docker group membership, run it via `sg docker -c`.
 set -euo pipefail
 SCRIPT=${1:?usage: run_isaac.sh <script.py> <out-dir> [args]}
@@ -18,7 +19,7 @@ IMAGE=${ISAAC_IMAGE:-isaaclab_arena:latest}
 MJCF_DIR=${MJCF_DIR:-$REPO/third_party/unitree_mujoco/unitree_robots/g1}
 [ -f "$REPO/scripts/isaac/$SCRIPT" ] || { echo "no scripts/isaac/$SCRIPT" >&2; exit 1; }
 [ -e "$OUT" ] && { echo "refusing to overwrite $OUT" >&2; exit 1; }
-if ps -eo comm=,args= | awk '$1 ~ /^python/ && /first_policy|task072|TASK-072|task-072/' | grep -q .; then
+if ps -eo comm=,args= | awk '$1 !~ /^(bash|sh|sg|sleep|tail|grep|awk|ps|nohup)$/ && /first_policy|task072|TASK-072|task-072/' | grep -q .; then
   echo "a TASK-072/first_policy process is running; not starting Isaac" >&2
   exit 3
 fi
@@ -47,6 +48,7 @@ docker run --rm --name "oej-isaac-$(basename "$OUT")" \
   -e DOCKER_RUN_GROUP_ID="$(id -g)" -e DOCKER_RUN_GROUP_NAME="$(id -gn)" \
   -v "$REPO/scripts/isaac:/oej/scripts/isaac:ro" \
   -v "$REPO/src:/oej/src:ro" \
+  -v "$REPO/configs:/oej/configs:ro" \
   -v "$(cd -- "$MJCF_DIR" && pwd -P):/oej/mjcf:ro" \
   "${USD_MOUNT[@]}" \
   -v "$OUT:/oej/out" \
