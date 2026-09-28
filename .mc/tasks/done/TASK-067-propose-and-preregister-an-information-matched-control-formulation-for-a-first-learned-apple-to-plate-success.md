@@ -4,7 +4,7 @@ aliases:
 - TASK-067
 title: Preregister and run an information-matched learned policy for a first learned Apple->Plate success on the development cohort
 slug: propose-and-preregister-an-information-matched-control-formulation-for-a-first-learned-apple-to-plate-success
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -18,7 +18,7 @@ depends_on:
 - "[[TASK-064]]"
 due_date: ''
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 
@@ -61,15 +61,15 @@ DINOv2 encoder", never "LeWM driving the robot" (R4). **Learned Apple->Plate is 
 successes.**
 
 ## Acceptance Criteria
-- [ ] PR 1 (the protocol, the manifest, `first_policy.py`, its tests and this card) merges on an
+- [x] PR 1 (the protocol, the manifest, `first_policy.py`, its tests and this card) merges on an
       independent reviewer's reported APPROVE and green CI.
-- [ ] PR 2 (the runner, policy and training code, guard and row tests, pins) merges on a reported
+- [x] PR 2 (the runner, policy and training code, guard and row tests, pins) merges on a reported
       APPROVE and green CI.
-- [ ] The gated run starts only after TASK-066's run has finished and the coordinator has
+- [x] The gated run starts only after TASK-066's run has finished and the coordinator has
       released the GPU, on a fresh pre-run reviewer's reported GO, from a clean tree.
-- [ ] PR 3 states the row and every quantity. A reviewer checks every restated number against
+- [x] PR 3 states the row and every quantity. A reviewer checks every restated number against
       `report.json`. If the clause fires, PR 3 adds a DECISIONS entry.
-- [ ] The test split is never decoded. Cohort C is not opened. `exemption_spent` stays false.
+- [x] The test split is never decoded. Cohort C is not opened. `exemption_spent` stays false.
 
 ## Rulings and log (UTC)
 - 2026-09-27: PR #77 (proposal) merged as `f2e9f63`.
@@ -147,3 +147,32 @@ successes.**
     did not occur and the intended place was never tested.
   - The apple still fell about 8 cm and reached the rim on 32/32.
   - Under R9 the work stops; closing TASK-067 is the fallback.
+- 2026-09-28, **owner ruling R10**, recorded verbatim in the landing-diagnosis document §D:
+  - rebase PR #87 onto main;
+  - close TASK-067 under the R9 fallback in a separate closeout PR, with a DECISIONS entry on the
+    two findings;
+  - the follow-up task (the expert's placement and success at rest) goes to a new agent.
+
+## Results (2026-09-28, closed under the R9 fallback)
+
+**Outcome CAL-ESCALATE.**
+- **Gated run:** stopped at C0. The privileged scripted expert scored 21/32 at 1.0 cm plate
+  error, below 28/32. No policy was trained or evaluated.
+- **Release-point probe:** **P-CANDIDATE-FAIL**. Release at the centre scored 15/32 with the
+  plate exact and 23/32 at 1.0 cm.
+- **Landing diagnosis:** mechanism identified.
+  - The collector drops the apple about 15.5 cm. It is carried and rolls to the rim, and ends
+    outside 4 cm on most resets.
+  - At rest the counts are 4/32 with the plate exact and 1/32 at 1.0 cm, against 32/32 and 21/32
+    on the scorer's latch. The scorer latches transient crossings.
+- **Place redesign:** **FAIL, premise untested**. It scored 25/32 with the plate exact and 20/32
+  at 1.0 cm. The hand did not reach the place pose within its budget, and why is not identified.
+
+**Learned Apple->Plate is still 0 successes.**
+
+Results:
+- `docs/experiments/apple_first_policy_v1_results.md`
+- `docs/experiments/apple_first_policy_v1_release_probe.md`
+- `docs/experiments/apple_first_policy_v1_landing_diagnosis.md`
+
+Decision: `docs/DECISIONS.md`, 2026-09-28 (TASK-067). The follow-up task is not opened here (R10).

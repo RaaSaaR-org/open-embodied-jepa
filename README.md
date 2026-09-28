@@ -70,9 +70,16 @@ ended **P-CANDIDATE-FAIL**: a collector releasing over the plate centre reached 
 plate error, below 28/32. The results document's "releases 3.5 cm short" explanation is
 contradicted by the probe's per-attempt landings (its declared rule counted the mechanism as
 confirmed): the probe's failures land forward or sideways, near the plate rim (inferred; no
-contact recorded), not short. The cause of the
-failures is still unidentified, and the owner has ruled a diagnosis of the current collector's
-post-grasp trajectory before any redesign. Outcomes
+contact recorded), not short. The owner-ruled diagnosis of the current collector ([landing
+diagnosis](docs/experiments/apple_first_policy_v1_landing_diagnosis.md)) then identified the
+mechanism from its logs: the collector drops the apple about 15.5 cm, the apple rolls to the
+plate rim and ends outside the scorer's 4 cm radius on most resets (4/32 at rest with the plate
+exact), and the success scorer latches transient 0.15 s crossings of the disc. The one
+owner-allowed redesign, placing the apple at the plate centre before opening, failed (25/32 with the
+plate exact, 20/32 at 1.0 cm, below 28/32) with its premise untested, because the hand did not
+reach the place pose within its budget. TASK-067 is closed under the owner's fallback.
+Scripted-collector and privileged success numbers elsewhere were measured with this latching
+scorer; they are flagged, not rewritten. Outcomes
 and caveats are in the results
 documents under [docs/experiments/](docs/experiments/) and in [AGENTS.md](AGENTS.md).
 
