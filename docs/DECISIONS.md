@@ -63,6 +63,46 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-28 — a learned policy reaches its first successes on the development cohort of apple-to-plate-v2 (TASK-071)
+
+**Outcome: M1-PASS.** TASK-071's preregistered run (PR #96, `apple_first_policy_v2`) trained
+TASK-067's design (behaviour cloning plus 3 DAgger iterations, the frozen DINOv2 readout of the
+post-look frame, the step counter and proprioception) on a fresh corpus of the e9 expert's
+`apple-to-plate-v2` demonstrations. The run was made on the pre-run reviewer's reported GO, from
+`main` at `9e23ced`, on the Mac (MPS), 6 215 s.
+- **Counted success** (owner rulings T71-R1, T71-R2): `apple_at_rest_v0` and the latched grasp
+  and place stages before the settle.
+- **On the 16 development resets D2 (52000–52015):** P-0 4/16, P-1 9/16, P-2 15/16, **P-3 16/16**
+  (carried; a selection on D2). No at-rest attempt went uncounted.
+- **Controls on D2:** R-3 (random-init DINOv2 floor) 16/16, C-3 (no image) 3/16, B-replay 9/16;
+  D-oracle-perc, A4-look and B-oracle 16/16; B-hold and B-random 0/16.
+
+**What this is.** An existence result on the non-gating development cohort: the project's first
+learned (L1) Apple→Plate successes, a "learned policy with a DINOv2 encoder", not LeWM driving the
+robot. **The official learned Apple→Plate count on the frozen benchmark is still 0**; cohort C
+is untouched, and M2 needs a separate authorization.
+
+**What limits it.**
+- **R-3 = P-3 = 16/16:** on D2, encoder pretraining shows no measurable contribution. M2's G3 is
+  expected to fail if cohort C agrees.
+- **The oracle arms gain nothing over the readout** (16/16 each, the ceiling): perception is not
+  the binding constraint on this cohort. Only C-3 (3/16) shows that the per-reset estimates matter.
+- One run, one seed, 16 resets, one camera; v2 only.
+
+**Process note.** The pre-run GO reached the task agent as the reviewer's hand-back message and
+was not relayed to the coordinator before the run started. From now on the coordinator is told
+before any gated run starts.
+
+**Platform note.** The project has since moved to a Linux PC (RTX 5080). There the frozen v2
+runner refuses to start: the random-init floor digest differs in its last bits on x86
+(`546b9011…` vs the pinned `3d305f9c…`), non-smoke runs require MPS, and post-look frame hashes
+differ between Apple GL and NVIDIA EGL; physics outcomes match within 2 µm. A Linux replication
+needs a new, separately reviewed protocol version (a separate task). Evidence:
+`outputs/linux-bringup-1/` on the Linux PC, development-only.
+
+**Evidence.** [apple_first_policy_v2_results.md](experiments/apple_first_policy_v2_results.md);
+`benchmarks/manifests/apple-first-policy-v2-results.json`; report sha256 `77aae207…d90b`.
+
 ## Decision 2026-09-28 — apple-to-plate-v2 is defined, and its privileged expert passes the at-rest gate (TASK-069, TASK-070)
 
 **Decision.** `apple-to-plate-v2` is defined by owner ruling R12, which is recorded verbatim in
