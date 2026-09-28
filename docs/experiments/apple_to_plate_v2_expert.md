@@ -1,8 +1,11 @@
 # apple-to-plate-v2: the v2 scene and a preregistered at-rest expert gate (TASK-070)
 
-**Status (2026-09-28): preregistration.** Sections §1–§7 are frozen by the PR that merges this
-document. The gated run (§6) starts only on the pre-run reviewer's reported GO. Its results go in
-a separate results PR (§8, empty until then).
+**Status (2026-09-28): gated run complete. Outcome: PASS** (§8).
+- At rest: 32/32 at plate exact and 30/32 at 1.0 cm, on the fresh gated seeds 50600–50631.
+- Privileged scripted expert, under the v2 physics. The expert (e9) was selected on the
+  development seeds.
+
+§1–§7 are the preregistration, merged in PR #92 and unchanged since.
 
 **Scope.**
 - This is privileged scripted engineering: the expert reads simulator truth. It is not a learned
@@ -256,6 +259,100 @@ uv run --no-sync python scripts/develop_v2_expert.py --design e9 --count 32 --le
 
 ## 8. Results
 
-*Empty until the gated run. Filled by the results PR.*
+*§1–§7 above are unchanged since the preregistration merged.*
+
+### 8.1 Outcome: **PASS**
+
+On the 32 gated seeds, 50600–50631, the frozen expert e9 under the v2 physics left the apple at
+rest (`apple_at_rest_v0`) on:
+- **32/32 at plate exact**;
+- **30/32 at 1.0 cm plate error**.
+
+Both meet the bar of ≥ 28/32. The row is **PASS** (`gate_row`).
+
+**Read with these qualifiers:**
+- **e9 was selected on the development seeds** (§4). Only these 32 gated seeds are independent
+  evidence for it.
+- **This is a privileged scripted expert:** it reads the reset truth of the apple and plate,
+  perturbed by the plate error. It is not a learned result.
+- **It is v2, not v1.** v2 is the v1 task with the apple's contact at condim 6 (R12). The v1
+  task, and its 0/150 benchmark, are unchanged and separate.
+- **The sample is small.** The 1.0 cm level passed with 2 failures against a limit of 4.
+- **Learned Apple→Plate is still 0 successes.**
+
+### 8.2 Provenance
+
+- **Pre-run review.** The reviewer worked in its own temporary worktree at `1ba0557` and
+  reported **GO**. It had checked all 17 pins, MuJoCo 3.13.0, the physics and seed
+  disjointness, and that no gated seed had been run. It also ran its own smoke on development
+  seeds (6 attempts, 0 errors) and the tests. The run started only after that reported GO.
+- **The run.** `uv run --no-sync python scripts/run_v2_expert_gate.py --output
+  outputs/task070-gate/run-1`.
+  - It ran from a clean detached checkout of `main` at
+    **`1ba05578c8da883218d390d733b8ff396cd473d4`**. That is recorded as both `revision` and
+    `revision_at_end`, with `tracked_tree_dirty: false`.
+  - The runner's pin check passed, including MuJoCo 3.13.0.
+- **Environment.** CPU, 8 spawned workers, 301 s wall time. Python 3.12.13, numpy 2.5.3,
+  macOS-26.5.1-arm64.
+- **Report.** `outputs/task070-gate/run-1/report.json` (git-ignored), sha256
+  `27543757f0f1d7d3a00b2f6b58a7e394d526342d14a407c018a0a27816ad099f`. Per-attempt logs are in
+  `attempts/*.npz`.
+- **One run, no void.** Run-1 had 96 attempts, 0 errors, and 0 guard or other early stops. No
+  repeat was needed or made.
+
+### 8.3 Numbers
+
+| plate error | **at rest (gated)** | latched v1 scorer (reported) | guard / other early stops | final distance, cm (q10 / q50 / q90) | landing speed, m/s (q10 / q50 / q90) |
+|---|---|---|---|---|---|
+| 0 cm | **32 / 32** | 32 / 32 | 0 / 0 | 2.85 / 3.37 / 3.71 | 0.054 / 0.081 / 0.082 |
+| 1.0 cm | **30 / 32** | 32 / 32 | 0 / 0 | 2.43 / 3.11 / 3.80 | 0.060 / 0.078 / 0.085 |
+| 1.5 cm (reported only) | 28 / 32 | 32 / 32 | 0 / 0 | 2.61 / 3.30 / 4.26 | 0.059 / 0.076 / 0.087 |
+
+**What the logs show.**
+- **All 6 attempts that are not at rest fail on the 4 cm radius only.** In each, the apple is
+  still, supported and free of the hand in the final window, but it rests 4.02–4.61 cm from the
+  plate centre:
+  - at 1.0 cm: seeds 50619 (4.07 cm) and 50628 (4.02 cm);
+  - at 1.5 cm: seeds 50616, 50622, 50626 and 50627 (4.29–4.61 cm).
+- **The latched scorer is 32/32 at every level.** It counts the transient crossings that
+  TASK-067 identified, so it again overstates the at-rest count at 1.0 and 1.5 cm.
+- **The gated numbers match the development record.** e9 had 89/96 at rest at 1.0 cm in
+  development, and 30/32 here.
+
+### 8.4 What this does and does not show
+
+**It shows** that, under the owner-defined v2 physics, a privileged scripted expert can leave the
+apple at rest on the plate on at least 28 of 32 fresh resets, both at plate exact and with
+1.0 cm of plate-position error. That is the precondition R12 §5 set for training the first
+learned policy on its demonstrations.
+
+**It does not show:**
+- anything learned;
+- anything about v1;
+- robustness beyond 32 seeds and these plate-error levels;
+- physical validity of v2's friction values. They are the scene's declared values, not measured
+  apple data.
+
+**Next (the owner's call, R12 §5):** a task that trains the first learned policy on this
+expert's v2 demonstrations. **Learned Apple→Plate is still 0 successes.**
+
+### 8.5 PR #92 SHA map
+
+PR #92 was rebase-merged, so its SHAs were rewritten. The tag `task070-prereg-pre-merge` (at
+`80d3309`) keeps the SHAs that §3–§6 cite reachable. Each pair below has the **identical git
+tree**, checked with `git log --format='%h %T'`.
+
+| cited in §3–§6 (pre-merge) | on `main` | tree |
+|---|---|---|
+| `a008163` | `134265b` | `29497e10…` |
+| `8714750` | `38658d0` | `c8330739…` |
+| `daee1f0` | `4d04179` | `20f7eacc…` |
+| `8e1ca80` | `e3bd77a` | `b350c74b…` |
+| `48c2df3` | `5ebbb72` | `4b47a27c…` |
+| `f893cd2` | `8868221` | `be025833…` |
+| `80d3309` | `1ba0557` | `963b269f…` |
+
+The development runs recorded their revisions as the pre-merge SHAs. The gated run recorded
+`1ba0557`, which is on `main`.
 
 **Learned Apple→Plate is still 0 successes.**
