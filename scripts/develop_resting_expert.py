@@ -68,7 +68,8 @@ def worker_init() -> None:
 
 def make_factory(params: dict):
     def factory(truth):
-        from embodied_jepa.scripted import RestingPlaceExpert, apple_collector_policy
+        from embodied_jepa.resting_expert import RestingPlaceExpert
+        from embodied_jepa.scripted import apple_collector_policy
 
         if params.get("collector"):
             return apple_collector_policy(truth)

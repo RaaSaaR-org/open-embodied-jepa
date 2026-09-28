@@ -6,7 +6,7 @@ import pytest
 from embodied_jepa import first_policy as fp
 from embodied_jepa import resting_expert as rx
 from embodied_jepa.contracts import ContractError
-from embodied_jepa.scripted import RIGHT_SHOULDER_BASE, RestingPlaceExpert
+from embodied_jepa.resting_expert import RIGHT_SHOULDER_BASE, RestingPlaceExpert
 
 TRUTH = {
     "position_frame": "world",
