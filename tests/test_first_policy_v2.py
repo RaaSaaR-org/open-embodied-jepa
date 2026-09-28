@@ -219,30 +219,35 @@ def test_decide_m1_rows_in_both_directions():
         fp2.decide_m1(_counts(A4_look=(9, 3)), 3, f_counts={"grasp": 0, "success": 1})
 
 
-def test_counted_success_needs_at_rest_and_a_grasp_t71_r1():
-    assert fp2.counted_success(True, True)
-    assert not fp2.counted_success(True, False)  # a push onto the plate is not counted
-    assert not fp2.counted_success(False, True)
+def test_counted_success_needs_at_rest_grasp_and_place_t71_r2():
+    assert fp2.counted_success(True, True, True)
+    assert not fp2.counted_success(True, False, False)  # a push onto the plate is not counted
+    assert not fp2.counted_success(True, True, False)  # grasp, drop off, push back: not counted
+    assert not fp2.counted_success(False, True, True)
     frozen = fp2.frozen_block()
-    assert "T71-R1" in frozen["counted_success"]
+    assert "T71-R1" in frozen["counted_success"] and "T71-R2" in frozen["counted_success"]
     assert frozen["c0"]["success"] == frozen["m2"]["success"] == fp2.COUNTED_SUCCESS
 
 
 def test_runner_counts_only_counted_successes():
     runner = load_runner()
 
-    def record(at_rest, grasp_before_settle):
+    def record(at_rest, grasp, place):
         return {
-            "grasp": grasp_before_settle,
-            "grasp_before_settle": grasp_before_settle,
+            "grasp": grasp,
+            "grasp_before_settle": grasp,
+            "place_before_settle": place,
             "at_rest": at_rest,
-            "success": fp2.counted_success(at_rest, grasp_before_settle),
-            "latched_success": at_rest,
+            "success": fp2.counted_success(at_rest, grasp, place),
+            "latched_success": place,
         }
 
-    cell = runner.count([record(True, True), record(True, False), record(False, True)])
-    assert cell["success"] == 1 and cell["at_rest"] == 2
-    assert cell["at_rest_without_grasp"] == 1 and cell["grasp"] == 2
+    cell = runner.count(
+        [record(True, True, True), record(True, True, False), record(True, False, False)]
+        + [record(False, True, True)]
+    )
+    assert cell["success"] == 1 and cell["at_rest"] == 3
+    assert cell["at_rest_not_counted"] == 2 and cell["grasp"] == 3
 
 
 class _Truth:
@@ -282,13 +287,17 @@ class _Robot:
 
 
 class _Scorer:
-    def __init__(self, robot, grasp_from):
-        self.robot, self.calls, self.grasp_from = robot, 0, grasp_from
+    def __init__(self, robot, grasp_from, place_from):
+        self.robot, self.calls = robot, 0
+        self.grasp_from, self.place_from = grasp_from, place_from
 
     def evaluate(self):
         self.robot.sim.task_truth()
         self.calls += 1
-        return {"grasp": self.grasp_from is not None and self.calls > self.grasp_from}
+        return {
+            "grasp": self.grasp_from is not None and self.calls > self.grasp_from,
+            "place": self.place_from is not None and self.calls > self.place_from,
+        }
 
 
 class _Hold:
@@ -299,16 +308,25 @@ class _Hold:
         return None
 
 
-@pytest.mark.parametrize(("grasp_from", "counted"), [(2, True), (None, False), (12, False)])
-def test_attempt_counts_success_only_with_a_grasp_before_the_settle(grasp_from, counted):
+@pytest.mark.parametrize(
+    ("grasp_from", "place_from", "counted"),
+    [(2, 5, True), (None, None, False), (2, None, False), (2, 12, False), (12, 12, False)],
+)
+def test_attempt_counts_only_grasp_and_place_before_the_settle(grasp_from, place_from, counted):
     robot = _Robot()
     counter = rt2.PrivilegedReadCounter(robot.sim)
     record = rt2.run_attempt(
-        robot, _Scorer(robot, grasp_from), counter, _Hold(), bounds=BOUNDS, max_steps=10
+        robot,
+        _Scorer(robot, grasp_from, place_from),
+        counter,
+        _Hold(),
+        bounds=BOUNDS,
+        max_steps=10,
     )
     assert record["at_rest"]  # the stand-in apple rests on the plate in every case
-    assert record["success"] is counted
-    assert record["grasp_before_settle"] is counted  # 12 latches only inside the settle
+    assert record["success"] is counted  # 12 latches only inside the settle
+    assert record["grasp_before_settle"] is (grasp_from is not None and grasp_from < 10)
+    assert record["place_before_settle"] is (place_from is not None and place_from < 10)
     assert rt2.privileged_reads_ok(record) and record["settle_steps"] == 60
 
 
@@ -500,7 +518,9 @@ def test_v2_attempt_reproduces_task070s_harness_for_e9():
     assert record["at_rest_detail"] == summary["at_rest_detail"]
     assert record["latched_success"] == summary["latched_success"]
     assert record["executed_steps"] == 725 and record["settle_steps"] == 60
-    assert record["success"] == (summary["at_rest"] and record["grasp_before_settle"])
+    assert record["success"] == (
+        summary["at_rest"] and record["grasp_before_settle"] and record["place_before_settle"]
+    )
     assert rt2.privileged_reads_ok(record) and record["task_truth_total"] == 2 * 785
 
 
@@ -540,3 +560,4 @@ def test_collector_at_noise_zero_is_e9_and_frame0_is_post_look(tmp_path):
     assert out["at_rest"] == oracle["at_rest"] and out["termination"] == "policy_complete"
     assert out["success"] == oracle["success"]
     assert out["grasp_before_settle"] == oracle["grasp_before_settle"]
+    assert out["place_before_settle"] == oracle["place_before_settle"]

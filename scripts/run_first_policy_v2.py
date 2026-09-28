@@ -184,7 +184,7 @@ def collect_root(task: dict, truth, scorer, out: dict) -> dict:
     check = AppleAtRestCheck(robot)
     max_steps = int(task.get("max_steps", fp2.MAX_POLICY_STEPS))
     rows = {k: [] for k in rt2.EPISODE_ARRAYS}
-    grasp = {"before_settle": False}
+    grasp = {"before_settle": False, "place_before_settle": False}
 
     def observe_row(obs):
         now = robot.sim.task_truth()
@@ -217,6 +217,8 @@ def collect_root(task: dict, truth, scorer, out: dict) -> dict:
         rows["latched"].append(bool(score["success"]))
         if phase < fp2.SETTLE_PHASE and score.get("grasp", False):
             grasp["before_settle"] = True
+        if phase < fp2.SETTLE_PHASE and score.get("place", False):
+            grasp["place_before_settle"] = True
         observe_row(robot.observe())
         return None
 
@@ -269,8 +271,11 @@ def collect_root(task: dict, truth, scorer, out: dict) -> dict:
         "at_rest_detail": verdict,
         "latched_success": bool(arrays["latched"].any()),
         "grasp_before_settle": grasp["before_settle"],
+        "place_before_settle": grasp["place_before_settle"],
         "success": fp2.counted_success(
-            bool(verdict["at_rest"]) if verdict else False, grasp["before_settle"]
+            bool(verdict["at_rest"]) if verdict else False,
+            grasp["before_settle"],
+            grasp["place_before_settle"],
         ),
     }
     meta = {
@@ -419,16 +424,14 @@ def save_checkpoint(path: Path, trained: dict, standardiser, heads: int, meta: d
 
 
 def count(records) -> dict:
-    """``success`` is T71-R1's counted success (at rest AND a latched grasp before the settle);
-    ``at_rest`` and ``at_rest_without_grasp`` are reported, never counted; ``latched`` and
+    """``success`` is the counted success of T71-R1/R2 (at rest, grasp and place before settle);
+    ``at_rest`` and ``at_rest_not_counted`` are reported, never counted; ``latched`` and
     ``grasp`` are the v1 scorer's."""
     return {
         "grasp": sum(bool(r["grasp"]) for r in records),
         "success": sum(bool(r["success"]) for r in records),
         "at_rest": sum(bool(r["at_rest"]) for r in records),
-        "at_rest_without_grasp": sum(
-            bool(r["at_rest"]) and not bool(r["grasp_before_settle"]) for r in records
-        ),
+        "at_rest_not_counted": sum(bool(r["at_rest"]) and not bool(r["success"]) for r in records),
         "latched": sum(bool(r["latched_success"]) for r in records),
     }
 
@@ -443,6 +446,8 @@ def attempt_summary(records) -> list[dict]:
         "grasp",
         "first_grasp_step",
         "grasp_before_settle",
+        "first_place_step",
+        "place_before_settle",
         "success",
         "at_rest",
         "at_rest_detail",
@@ -808,6 +813,7 @@ def _run(report, output, checkpoints, corpus, clock, smoke, smoke_max_steps=None
                     "success",
                     "at_rest",
                     "grasp_before_settle",
+                    "place_before_settle",
                     "latched_success",
                 )
             }
@@ -1123,7 +1129,7 @@ def _run(report, output, checkpoints, corpus, clock, smoke, smoke_max_steps=None
         fp2.CAPS_SECONDS["per_rollout_batch"],
         "M1 B-replay",
     )
-    zero = {"grasp": 0, "success": 0, "at_rest": 0, "at_rest_without_grasp": 0, "latched": 0}
+    zero = {"grasp": 0, "success": 0, "at_rest": 0, "at_rest_not_counted": 0, "latched": 0}
     counts = {name: (count(r) if r is not None else dict(zero)) for name, r in arms.items()}
     decision = fp2.decide_m1(counts | {"D-oracle-perc": dict(zero)}, threshold)
     carried = decision.get("carried", "P-3")

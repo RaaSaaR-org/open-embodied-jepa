@@ -36,18 +36,19 @@ SCENE_VERSION = "apple_to_plate_v2"  # apple_to_plate_v2.SCENE_VERSION; a test p
 APPLE_CONTACT = {"condim": 6, "friction": (1.0, 0.01, 0.001)}
 SUCCESS_METRIC = "apple_at_rest_v0"  # at_rest.AtRestThresholds().version
 REPORTED_BESIDE = "latched v1 scorer: AppleToPlateTask per-step success at any step"
-# Owner ruling T71-R1 (2026-09-28): a counted success is at rest AND a latched grasp before
-# release. An at-rest attempt without one is recorded and reported per arm, never counted.
+# Owner rulings T71-R1 and T71-R2 (2026-09-28): a counted success is at rest AND the latched
+# scorer's grasp stage AND its latched place stage, both reached during the attempt's commands,
+# before the settle. An at-rest attempt without both is recorded and reported, never counted.
 COUNTED_SUCCESS = (
-    "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage reached during the "
-    "attempt's commands, before the settle (owner ruling T71-R1); at rest without that grasp is "
-    "reported per arm and never counted"
+    "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched "
+    "place stage, both reached during the attempt's commands, before the settle (owner rulings "
+    "T71-R1, T71-R2); at rest without both is reported per arm and never counted"
 )
 
 
-def counted_success(at_rest: bool, grasp_before_settle: bool) -> bool:
-    """T71-R1: the success every row, gate, milestone and claim counts."""
-    return bool(at_rest) and bool(grasp_before_settle)
+def counted_success(at_rest: bool, grasp_before_settle: bool, place_before_settle: bool) -> bool:
+    """T71-R1/R2: the success every row, gate, milestone and claim counts."""
+    return bool(at_rest) and bool(grasp_before_settle) and bool(place_before_settle)
 
 
 EXPERT = {"release_pitch_rad": 0.45, "release_dx": 0.015}  # e9 = apple_to_plate_v2.GATE_EXPERT

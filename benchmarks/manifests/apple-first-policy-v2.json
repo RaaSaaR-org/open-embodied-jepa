@@ -32,7 +32,35 @@
       "relayed_by": "the coordinator, for the task owner",
       "summary": "rows 7, 9, 14, 16, 20, 21 and everything listed as unchanged accepted as written; row 19 accepted only tightened: a counted success is apple_at_rest_v0 AND a latched grasp before release; at rest without a grasp is reported per arm and counts toward nothing",
       "verbatim_in": "docs/experiments/apple_first_policy_v2.md \u00a73"
+    },
+    "T71-R2": {
+      "received_utc": "2026-09-28",
+      "relayed_by": "the coordinator, for the task owner",
+      "summary": "tightens T71-R1: a counted success is apple_at_rest_v0 AND the latched grasp stage AND the latched place stage, both before the settle; at rest without both is reported per arm and counts toward nothing; precondition checked on the TASK-070 gated report (no expert success removed)",
+      "verbatim_in": "docs/experiments/apple_first_policy_v2.md \u00a73"
     }
+  },
+  "t71_r2_precondition_check": {
+    "report": "outputs/task070-gate/run-1/report.json",
+    "report_sha256": "27543757f0f1d7d3a00b2f6b58a7e394d526342d14a407c018a0a27816ad099f",
+    "latched_place_before_settle_of_96": 96,
+    "max_first_place_step_per_level": {
+      "0.0": 643,
+      "1.0": 634,
+      "1.5": 638
+    },
+    "expert_commands": 725,
+    "counted_of_32_per_level": {
+      "0.0": 32,
+      "1.0": 30,
+      "1.5": 28
+    },
+    "at_rest_of_32_per_level": {
+      "0.0": 32,
+      "1.0": 30,
+      "1.5": 28
+    },
+    "result": "no expert success removed"
   },
   "deviations_from_v1": "docs/experiments/apple_first_policy_v2.md \u00a73 (21 rows)",
   "seed_overlap_check": {
@@ -64,7 +92,7 @@
       ]
     },
     "success_metric": "apple_at_rest_v0",
-    "counted_success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage reached during the attempt's commands, before the settle (owner ruling T71-R1); at rest without that grasp is reported per arm and never counted",
+    "counted_success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted",
     "reported_beside": "latched v1 scorer: AppleToPlateTask per-step success at any step",
     "expert": {
       "class": "resting_expert.RestingPlaceExpert",
@@ -373,7 +401,7 @@
         "plate_median": 1.5,
         "plate_p90": 2.5
       },
-      "success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage reached during the attempt's commands, before the settle (owner ruling T71-R1); at rest without that grasp is reported per arm and never counted"
+      "success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted"
     },
     "ladder": {
       "L1": "learned policy",
@@ -520,7 +548,7 @@
         "M2-VOID": "G5 or G6 fails: the run is invalid, not the arms"
       },
       "cohort_values": "stored in benchmarks/manifests/apple-policy-v1.json, never recomputed",
-      "success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage reached during the attempt's commands, before the settle (owner ruling T71-R1); at rest without that grasp is reported per arm and never counted",
+      "success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted",
       "G5_oracle": "e9 from the reset truth, counted success (T71-R1)"
     },
     "caps_seconds": {
@@ -566,15 +594,15 @@
   },
   "mujoco_version": "3.13.0",
   "hashes": {
-    "docs/experiments/apple_first_policy_v2.md": "cccff8c38dac86a49056fb45d4d239c83a4463b3886d05947245dc05e77bfe83",
-    "src/embodied_jepa/first_policy_v2.py": "85f46d03475ed8cc82cbf629181282c33d5da9b2dbc54190139339f5dee00a4d",
-    "src/embodied_jepa/first_policy_v2_runtime.py": "553cc0faa69821b359ed0ec67fa49d96db18144d6cb27a3145734d4745ddc54e",
+    "docs/experiments/apple_first_policy_v2.md": "0f35aea52d858772a0ea436eff951668689283140e654b65c85416687b335ae2",
+    "src/embodied_jepa/first_policy_v2.py": "c05385701481bb6463e096899df8a8c4945239954db73f29b42ea19117d7a460",
+    "src/embodied_jepa/first_policy_v2_runtime.py": "2caa50e70d04c3d4898896acb402bb7ccc95897cece3c6a5d119db5ec4a3169a",
     "src/embodied_jepa/first_policy_v2_model.py": "5e29fc12f496b2299c1d2d5b4df8ea99660b838a896587b9b890f846312a1a45",
     "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
     "src/embodied_jepa/first_policy_runtime.py": "d6d672dc26912371cae78c2d32ba84583adfab4adcab393445a770f994a5f953",
     "src/embodied_jepa/first_policy_model.py": "5ebd70e07d9c6eba38f0fa4c8980602205f0e24420d39f252935dc47673fb984",
     "src/embodied_jepa/first_policy_perception.py": "d2ae40118a78646c13e89a089049f80cdc0389dfdd2106f5862a03ab134ed497",
-    "scripts/run_first_policy_v2.py": "6a779c0c8062cd22edd165dc41af2360daa0e084c9fef0fb8ac4608d8562fec4",
+    "scripts/run_first_policy_v2.py": "67b425320667ffea87acb9ce07b098f3d3deb84a568bd7232af5a7702fdd8dd7",
     "scripts/check_first_policy_v2_render.py": "ef448487015d7320770fc4df88ea98da75b0a6d4a20904c9bedf293c87493602",
     "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
     "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",

@@ -202,6 +202,7 @@ def run_attempt(
     latched_step = None
     grasp_seen = False
     first_grasp_step = None  # the latched grasp stage, during the commands (T71-R1)
+    first_place_step = None  # the latched place stage, during the commands (T71-R2)
     states, steps, labels, commands, stages = [], [], [], [], []
     started = time.monotonic()
 
@@ -261,6 +262,8 @@ def run_attempt(
             grasp_seen = grasp_seen or bool(score.get("grasp", False))
             if grasp_seen and first_grasp_step is None:
                 first_grasp_step = step
+            if score.get("place", False) and first_place_step is None:
+                first_place_step = step
             if score.get("success", False) and latched_step is None:
                 latched_step = step
             stages.append(_stage(score))
@@ -303,9 +306,13 @@ def run_attempt(
         "grasp": bool(grasp_seen),
         "first_grasp_step": first_grasp_step,
         "grasp_before_settle": first_grasp_step is not None,
-        # T71-R1: the counted success is at rest AND a latched grasp before the settle
+        "first_place_step": first_place_step,
+        "place_before_settle": first_place_step is not None,
+        # T71-R1/R2: at rest AND the latched grasp and place stages before the settle
         "success": fp2.counted_success(
-            bool(verdict["at_rest"]) if verdict else False, first_grasp_step is not None
+            bool(verdict["at_rest"]) if verdict else False,
+            first_grasp_step is not None,
+            first_place_step is not None,
         ),
         "final_score": {
             k: (bool(v) if isinstance(v, bool | np.bool_) else v) for k, v in score.items()

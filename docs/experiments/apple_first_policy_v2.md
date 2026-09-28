@@ -81,7 +81,7 @@ privileged:
 
 Train it by behaviour cloning on e9's `apple-to-plate-v2` demonstrations and three DAgger
 iterations labelled by e9. Does it pick the apple and leave it **at rest on the plate**
-(`apple_at_rest_v0` after a latched grasp; T71-R1)
+(`apple_at_rest_v0` after a carried placement: latched grasp and place; T71-R1/R2)
 on **at least one** of the 16 development resets D2?
 
 **Claim scope, fixed now.**
@@ -125,9 +125,9 @@ seeds, where v1's collector rested it on 4/32 (TASK-067 landing diagnosis).
 ## 3. Every deviation from v1 (for the owner's ruling)
 
 Rows 1–5 are the brief's required changes. Rows 6–21 are consequences of them that this
-preregistration had to fix, each with its reason. No row loosens a bar: with owner ruling
-T71-R1 on row 19, the counted success requires both at rest and a latched grasp, which is
-stricter than v1's latched success.
+preregistration had to fix, each with its reason. No row loosens a bar: with owner rulings
+T71-R1 and T71-R2 on row 19, the counted success requires at rest and the latched grasp and
+place stages, which is stricter than v1's latched success.
 
 **Owner ruling T71-R1 (verbatim, 2026-09-28 UTC, via the coordinator):**
 
@@ -140,21 +140,40 @@ stricter than v1's latched success.
 > - Reason: a push or nudge that leaves the apple on the plate is not the pick-and-place the product claims. This tightens v1's condition; it does not loosen it.
 > - With this change, the §3 preamble's "No row loosens a bar" becomes true. Make sure it reads correctly.
 
-**How T71-R1 is implemented.** "Before release" is read as: the latched grasp stage is reached
-at some step of the attempt's commands, before the task's settle (whose hands are open). The
-same counted success is used everywhere a success is counted: C0 and the bars, S0's A4
+**How T71-R1 was implemented (superseded by T71-R2 below).** "Before release" was read as:
+the latched grasp stage is reached at some step of the attempt's commands, before the task's
+settle (whose hands are open). The same counted success is used everywhere a success is counted: C0 and the bars, S0's A4
 threshold, the corpus's B-replay library, the harness condition, every M1 row and every M2 gate.
 Wherever this document says "at rest" for a count that decides something, it means this
 counted success; the plain at-rest count is reported beside it. The frozen block defines C0's
 and M2's success as this counted success (`COUNTED_SUCCESS`).
 
-**A case the literal reading admits, for the owner to confirm or tighten.** An attempt that
-grasps, drops the apple off the plate and then pushes it onto the plate would count: the grasp
-was latched before the settle and the apple ends at rest. The ruling's condition is met; its
-stated reason (a push is not pick-and-place) is only partly served. Requiring the latched
-`place` stage as well would exclude it. This protocol implements the ruling as written and
-reports, for every counted success, its first grasp step and latched stages, so such a case would
-be visible.
+**Owner ruling T71-R2 (verbatim, 2026-09-28 UTC, via the coordinator), which tightens T71-R1:**
+
+> - **Counted success:** `apple_at_rest_v0` AND the scorer's latched grasp stage AND the scorer's latched `place` stage, both reached during the attempt's commands, before the settle.
+> - **What it rules out:** grasp, drop off the plate, then push onto the plate. Anything that is not a carried placement is excluded.
+> - **Reporting:** at rest without both stages is still recorded and reported per arm, and counts toward nothing.
+> - **Precondition:** verify that e9 latches `place` in the TASK-070 gated attempts. The results reported 32/32 latched at every level. Show that the tightening removes no expert success there, and state the check in the doc.
+
+**How T71-R2 is implemented.** `first_policy_v2.counted_success(at_rest, grasp, place)`: the
+apple is at rest after the settle, and both the latched `grasp` stage and the latched `place`
+stage of `AppleToPlateTask` were reached at some step of the attempt's commands, before the
+settle. In the scorer, `place` latches only after `transport` (the apple lifted and carried over
+the plate in hand contact) and then 0.15 s released and supported on the plate, so it requires a
+carried placement. Every attempt records `first_grasp_step`, `first_place_step`,
+`grasp_before_settle` and `place_before_settle`; each arm reports `at_rest_not_counted` (at rest
+without both stages), which counts toward nothing. This replaces T71-R1's grasp-only condition
+everywhere a success is counted.
+
+**The T71-R2 precondition check** (2026-09-28, on TASK-070's gated report
+`outputs/task070-gate/run-1/report.json`, sha256 `27543757…099f`, 96 attempts, e9 with 725
+commands in every attempt). The latched success, and so the latched `place` stage (which the
+scorer sets at the same step), was reached in 96 of 96 attempts, at step 634–643 at the latest
+per level, always before the settle (step 725). The `grasp` stage precedes it by construction
+(`place` needs `transport`, which needs `grasp`). So every at-rest attempt there is also a
+counted success under T71-R2: 32/32 at plate exact, 30/32 at 1.0 cm and 28/32 at 1.5 cm, the
+same counts as TASK-070 reported. **The tightening removes no expert success in the TASK-070
+gate**, and the TASK-070 plate ceiling (§8.1) is unchanged.
 
 | # | item | v1 (TASK-067) | v2 (this protocol) | why |
 |---|---|---|---|---|
@@ -164,19 +183,19 @@ be visible.
 | 4 | corpus | `apple-look-v1` (TASK-064; manifest `81d760d1…`), 134 non-aim train roots | a fresh `apple-look-v2`, collected by the gated run itself (§5): e9 under v2 on 200 fresh resets, split 170 / 20 / 10 by reset, sealed with per-episode sha256; 170 train roots in BC-0 | brief 2.3 |
 | 5 | perception bars | C0 alone, caps apple 0.75 / 1.2 cm, plate 1.5 / 2.5 cm (median / p90) | C0 re-run with e9, at rest, on fresh seeds, with v1's rule and caps; **then the plate p90 bar is capped at 1.5 cm**, the level v1's rule gives on TASK-070's gated counts (30/32 at 1.0 cm, 28/32 at 1.5 cm); the plate median bar is at most the p90 bar (§8.1) | brief 2.4: e9's apple tolerance has never been measured, and TASK-070 measured the plate only up to 1.5 cm |
 | 6 | seeds | 46000–46999 block; C0 directions `default_rng(6700)`; readout folds 6701; sampler 6702; random controller 6703; model 0 | 51000–51999 for every gated role, D2 52000–52015, smoke 52100–52199; C0 directions 7100, folds 7101, sampler 7102, random controller 7103, model 7104, corpus split 7105, noise-seed salt 7106 (§4) | brief 2.5 |
-| 7 | development cohort | D = 45000–45007, 45100–45107 | **D2 = 52000–52015**, fresh | brief 2.5 ("fresh seeds for everything"): D was decoded by many arms in TASK-056/057 under v1 physics. **The milestone itself is unchanged** (≥ 1/16, now counted successes: at rest after a latched grasp, T71-R1). If the owner prefers v1's D, it is a small change before the gated run (the seed guard, which now forbids 45000–45207 as v1's did, the runner's whitelist and the frozen block), through a reviewed amendment. |
+| 7 | development cohort | D = 45000–45007, 45100–45107 | **D2 = 52000–52015**, fresh | brief 2.5 ("fresh seeds for everything"): D was decoded by many arms in TASK-056/057 under v1 physics. **The milestone itself is unchanged** (≥ 1/16, now counted successes: at rest after latched grasp and place, T71-R1/R2). If the owner prefers v1's D, it is a small change before the gated run (the seed guard, which now forbids 45000–45207 as v1's did, the runner's whitelist and the frozen block), through a reviewed amendment. |
 | 8 | cohort C (M2 only) | 45300–45339, stored values | **unchanged** | the brief keeps "cohort C against open-loop replay" |
 | 9 | policy step budget per attempt | 800 policy steps, expert budget 745 | at most **740** policy commands (`resting_expert.EXPERT_BUDGET`, the budget e9 was gated under), then the task's 60-step settle: 800 steps in all | the 740-command budget TASK-070 gated e9 under, plus its settle (e9 itself used 725 + 60 = 785 steps); the at-rest check needs the settle inside the attempt. As in v1 (745–799), the policy's last steps (725–739) lie beyond e9's clock and carry no DAgger label |
 | 10 | clock | t / 745 plus sin/cos at 16 periods | t / 725 plus the same sin/cos | e9's budget is 725 |
 | 11 | F (fallback) | one head per collector phase (8) | one head per e9 phase (10), chosen by e9's clock schedule; still rung L2 | e9's schedule |
-| 12 | B-replay library | successful non-aim train roots of `apple-look-v1` (latched) | train roots of `apple-look-v2` that ended in a **counted success** (T71-R1); replays their executed policy commands (no settle), then the task's settle | corpus and success change |
+| 12 | B-replay library | successful non-aim train roots of `apple-look-v1` (latched) | train roots of `apple-look-v2` that ended in a **counted success** (T71-R1/R2); replays their executed policy commands (no settle), then the task's settle | corpus and success change |
 | 13 | G-privileged (2) | total `task_truth` calls = the scorer's evaluations | total = the scorer's evaluations + the at-rest records (two harness reads per executed step); calls inside `act()` must still be 0 | the at-rest check reads truth once per step, outside the controller |
 | 14 | ladder | allowances (a)–(e) | adds **(f): the task's settle** (arm still, hands open, 60 steps) after the policy's commands. It is part of `apple_at_rest_v0`'s scoring procedure, identical for every arm including B-hold, and never learned | the settle is the task's, not the controller's |
 | 15 | caps | as v1 | as v1, plus a corpus-collection cap of 3 600 s | the corpus is collected inside the run |
 | 16 | the corpus's noise and plan | TASK-064: noise levels 0–3, aim offsets on every fifth root, 3 branches per root | noise levels 0–3 (root i gets level i mod 4; TASK-048's `Perturber`, loaded unchanged); **no aim offsets and no branches** | v1's BC-0 excluded aim-offset roots and branches, so they would add collection time and nothing that BC-0 reads |
-| 17 | D2 harness condition | B-oracle (collector) ≥ 14/16 latched successes | B-oracle (e9) ≥ 14/16 counted successes (T71-R1); B-hold, B-random 0 latched grasps | rows 2–3 |
-| 18 | M2 G5 | B-oracle ≥ 38/40 | B-oracle (e9) ≥ 38/40 counted successes (T71-R1) | rows 2–3 |
-| 19 | what counts as a success (owner ruling T71-R1, below) | a latched success, which implied the latched grasp stage; `0 ≤ success ≤ grasp ≤ 16` | a **counted success** is `apple_at_rest_v0` **and** the latched scorer's grasp stage reached during the attempt's commands, before the settle (`first_policy_v2.counted_success`). An at-rest attempt without that grasp is recorded and reported, with its count per arm (`at_rest_without_grasp`), and never counts. v1's `0 ≤ success ≤ grasp ≤ 16` check is kept | T71-R1: a push or nudge that leaves the apple on the plate is not the pick-and-place the product claims. This tightens v1's condition |
+| 17 | D2 harness condition | B-oracle (collector) ≥ 14/16 latched successes | B-oracle (e9) ≥ 14/16 counted successes (T71-R1/R2); B-hold, B-random 0 latched grasps | rows 2–3 |
+| 18 | M2 G5 | B-oracle ≥ 38/40 | B-oracle (e9) ≥ 38/40 counted successes (T71-R1/R2) | rows 2–3 |
+| 19 | what counts as a success (owner rulings T71-R1 and T71-R2, above) | a latched success, which implied the latched grasp stage; `0 ≤ success ≤ grasp ≤ 16` | a **counted success** is `apple_at_rest_v0` **and** the latched scorer's `grasp` **and** `place` stages, both reached during the attempt's commands, before the settle (`first_policy_v2.counted_success`). An at-rest attempt without both is recorded and reported, with its count per arm (`at_rest_not_counted`), and never counts. v1's `0 ≤ success ≤ grasp ≤ 16` check is kept | T71-R1/R2: a push or nudge, or a grasp-drop-push, that leaves the apple on the plate is not the pick-and-place the product claims. This tightens v1's condition |
 | 20 | DAgger grasp label in `open`, `clear`, `retreat` | the collector's release had no state-dependent ramp | e9's grasp label there is `max(−1, accepted_grasp − 0.04)`, where `accepted_grasp` is the **learner's** last applied grasp, because the labeller advances on the executed result (as v1's) | a consequence of row 3 and v1's labeller semantics, disclosed |
 | 21 | per-attempt wall cap for corpus roots | no corpus in the run | the corpus collector is covered by the corpus-stage cap (3 600 s) only; the 300 s per-attempt G-cap applies to the controller attempts (C0, DAgger, S0-D1, M1) | the collector is privileged data collection, not an evaluated attempt |
 
@@ -306,7 +325,7 @@ On the 32 C0 seeds, with the look, e9 is built from the reset truth plus an inje
 fixed size, one apple and one plate direction per seed from `default_rng(7100)`, with no action
 noise. Nine conditions × 32 attempts: the reference; apple error 0.5, 0.8, 1.0 and 1.2 cm with the
 plate exact; plate error 1.0, 1.5, 2.0 and 2.5 cm with the apple exact. **Success is the counted
-success (at rest after a latched grasp; T71-R1).** The plain at-rest count, the
+success (at rest after latched grasp and place; T71-R1/R2).** The plain at-rest count, the
 latched count and each attempt's final distance are reported beside it.
 
 **The rule** (`first_policy_v2.c0_bars`):
@@ -327,7 +346,7 @@ CAL-ESCALATE.
 
 ### 8.2 The A4-look threshold, S0-P and S0-D1
 
-As v1 §7.1a–§7.3, on C0's counted-success counts (T71-R1): T = ⌈0.5 × 16 × the mean predicted A4-look rate⌉,
+As v1 §7.1a–§7.3, on C0's counted-success counts (T71-R1/R2): T = ⌈0.5 × 16 × the mean predicted A4-look rate⌉,
 at least 1, with each per-reset rate capped at 1.0; S0-P passes when the median and p90 of the
 held-out apple and plate errors are each at or below their bars (apple fails → S0-APPLE-FAIL;
 apple passes and plate fails → S0-PLATE-FAIL); S0-D1 checks, on the first 8 held-out seeds, that
@@ -343,8 +362,8 @@ refused, cohort C first.
 
 ## 10. Pre-declared outcomes (first matching row; `first_policy_v2.decide_m1` for M1)
 
-`success` below is the **counted success** (at rest after a latched grasp before the settle;
-T71-R1); "grasps" are the latched scorer's grasp stage. At-rest attempts without a grasp are
+`success` below is the **counted success** (at rest after latched grasp and place before the
+settle; T71-R1/R2); "grasps" are the latched scorer's grasp stage. At-rest attempts without both are
 reported per arm and never counted.
 
 | row | condition | reading | next (a recommendation; the owner chooses) |
@@ -353,7 +372,7 @@ reported per arm and never counted.
 | **CAL-ESCALATE** | §8.1 | e9 is not as tolerant as assumed | stop; the owner decides; the clause does not fire |
 | **S0-APPLE-FAIL** | §8.2 | the post-look frame, through this readout, does not give the apple to e9's tolerance on fresh resets | **the clause fires** (§11) |
 | **S0-PLATE-FAIL** | §8.2 | the apple is read, the plate is not | stop; the owner decides; the clause does not fire |
-| **M1-PASS** | some P-k reaches a counted success (at rest after a latched grasp, T71-R1) on ≥ 1/16 of D2 | **the first learned (L1) Apple→Plate success, on the non-gating development cohort of apple-to-plate-v2: an existence result** (R3), a "learned policy with a DINOv2 encoder" (R4) | M2 on cohort C, under a separate authorization. The carried arm is the P-k with the most D2 successes, ties to the later k: a selection on D2, declared as one. |
+| **M1-PASS** | some P-k reaches a counted success (at rest after latched grasp and place, T71-R1/R2) on ≥ 1/16 of D2 | **the first learned (L1) Apple→Plate success, on the non-gating development cohort of apple-to-plate-v2: an existence result** (R3), a "learned policy with a DINOv2 encoder" (R4) | M2 on cohort C, under a separate authorization. The carried arm is the P-k with the most D2 successes, ties to the later k: a selection on D2, declared as one. |
 | **M1-MOTOR** → F | every P-k 0/16; A4-look ≥ T | perception is adequate in the loop; motor learning fails | F is trained and runs once on D2 |
 | **M1-MOTOR-F-PARTIAL** | as above, and F ≥ 1/16 | a **partially learned** (L2) success; never counted as learned | the owner decides |
 | **M1-MOTOR-F-NONE** | as above, and F 0/16 | neither the learned policy nor the phase-decomposed one succeeds | **the clause fires** |
@@ -382,7 +401,7 @@ final row. **A 0/16 on every P-k is reported as 0/16.**
 
 ## 12. M2: the gated test on cohort C (preregistered now; run only under a separate authorization)
 
-v1 §11, carried, with success the counted success of T71-R1 ("at rest" in the table means it):
+v1 §11, carried, with success the counted success of T71-R1/R2 ("at rest" in the table means it):
 the 40 cohort-C resets from
 `benchmarks/manifests/apple-policy-v1.json`'s stored values, never recomputed; arms the carried
 P-k, C-3, R-3, B-replay (nearest counted-success `apple-look-v2` train root), B-oracle (e9 from truth),
