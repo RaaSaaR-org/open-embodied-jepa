@@ -33,9 +33,11 @@ TASK-071 or TASK-072 is modified**, and all 37 TASK-072 pins still hold (a test 
 
 ## 0. The go-ahead
 
-The orchestrator relayed, on 2026-09-28: the owner gave explicit go-ahead for M2 on cohort C to
-proceed through normal pre-run review, for the carried policy P-3, using the P-3 checkpoint of
-TASK-072 gated run-1 (`checkpoints/task072-first-policy-v2-linux/run-1/`). TASK-072's own
+**The owner's go-ahead, as relayed by the orchestrator:** on 2026-09-28 the owner was asked
+whether M2 on cohort C should go ahead once the TASK-072 results PR (#100) had merged, through
+normal pre-run review, and chose **"Yes, after merge"**. #100 merged as `3dcc6ba`. The orchestrator's
+brief names the carried policy P-3 and the P-3 checkpoint of TASK-072 gated run-1
+(`checkpoints/task072-first-policy-v2-linux/run-1/`). TASK-072's own
 protocol ([`apple_first_policy_v2_linux.md`](apple_first_policy_v2_linux.md) §0.6, §9) kept M2
 out of its scope; this document is the separate authorization record that TASK-071 §12 requires.
 
@@ -127,8 +129,10 @@ not decoded).
    §12 says, a G6 failure is the row M2-VOID.
 6. **Arms not in §12** (A4-look, D-oracle-perc, F, P-0…P-2) do not run on cohort C.
 7. **The void rule** (§12 has none of its own): any guard, crash or cap is **V** and nothing is
-   read. A V before the first cohort-C frame is rendered may be repeated after a reviewed fix. A
-   V after that point is reported to the owner, and a repeat (`run-2`, cohort C simulated again)
+   read. The report records `cohort_first_render_utc` just before the first cohort-C frame is
+   rendered, which marks the boundary. A V before the first cohort-C frame is rendered may be repeated after a reviewed fix. A
+   V after that point is reported to the owner, with no arm count, per-reset result or row in
+   its report (the runner writes them only after `decide_m2` and the end checks have passed), and a repeat (`run-2`, cohort C simulated again)
    needs the owner's ruling; a second V closes M2 as INCONCLUSIVE. M2-VOID is an outcome, not a
    V, and is not repeated without the owner's ruling. Nothing is re-thresholded, retrained or
    re-selected.
@@ -142,14 +146,16 @@ not decoded).
 3. **Run-1's corpus, train split only** (170 roots, hashes verified; frame 0 is the post-look
    frame).
 4. **Re-render** the 256 + 128 perception frames and the 16 D2 frames (frame only).
-5. **Readouts and G-repro.** The `preflight` mode stops here.
+5. **Readouts and G-repro.** The `preflight` mode then runs G-cohort on the stored values (a JSON
+   read; nothing is rendered) and stops.
 6. **Cohort C frames:** the 40 post-look frames from the stored resets; the P and R estimates
    (DINOv2 tokens, batch size 1); C's constant; B-replay's nearest roots; the forward-pass
    timings.
 7. **The arms**, each on each reset once, every attempt's re-rendered post-look frame checked
    against the frame its estimates came from (G-frame), every attempt's post-look state against
    the first's (G-look).
-8. **`decide_m2`**, then G-hash and G-device again at the end.
+8. **`decide_m2`**, then G-hash and G-device again at the end. Only after both pass are the arm
+   counts, per-reset results and the row written to the report.
 
 ## 5. Guards (any failure is V)
 
@@ -172,7 +178,12 @@ counter, and each row of `decide_m2` in both directions.
    the card. It merges on an independent reviewer's reported APPROVE (posted on the PR) and
    green CI.
 2. **The gated run** starts from a clean checkout of the merged revision on the Linux PC, only
-   after a fresh pre-run reviewer's **reported** GO, and after the orchestrator has been told:
+   after a fresh pre-run reviewer's **reported** GO, and after the orchestrator has been told.
+   The GO includes the pre-run reviewer's own render-determinism check,
+   `scripts/check_first_policy_v2_linux_render.py` at **16 workers** on the smoke seeds, with
+   verdict **IDENTICAL** (TASK-071 §15; `apple_first_policy_v2_linux.md` §3 row 6). If it is not
+   identical, the run does not start and the issue goes to the owner. The GO also includes a
+   `preflight` from the merged revision, into a new output name, ending PREFLIGHT-READY:
 
    ```sh
    uv run --no-sync python scripts/run_first_policy_v2_m2.py run \

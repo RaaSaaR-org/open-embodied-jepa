@@ -11,6 +11,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import platform
 from pathlib import Path
 
 import numpy as np
@@ -128,10 +129,8 @@ def test_runner_cohort_stage_uses_the_stored_values_and_never_wide_reset():
         runner.cohort_tasks("preflight", forbidden)
 
 
-def test_runner_executes_the_stored_reset(monkeypatch):
-    """Behavioural: what reaches the robot's reset is the stored value, through run_task."""
-    runner = load_runner()
-    resets = fm.stored_cohort(POLICY_V1)
+def _reset_seen_by_the_robot(runner, monkeypatch, seed: int, reset: dict) -> dict:
+    """Run the runner's ``run_task`` up to the robot's reset and return what reached it."""
     seen = {}
 
     class Stop(Exception):
@@ -139,18 +138,41 @@ def test_runner_executes_the_stored_reset(monkeypatch):
 
     class Robot:
         def reset(self, seed, *, object_xy, plate_xy):
-            seen.update(seed=seed, object_xy=object_xy, plate_xy=plate_xy)
+            seen.update(seed=seed, object_xy=list(object_xy), plate_xy=list(plate_xy))
             raise Stop
 
     monkeypatch.setitem(runner.LIN._W, "robot", Robot())
-    task = {"seed": 45317, "reset": resets[45317], "kind": "frame"}
     with pytest.raises(Stop):
-        runner.run_task(task)
-    stored = POLICY_V1["cohorts"]["C_frozen_gating"]["resets"]["45317"]
-    assert seen == {
-        "seed": 45317,
-        "object_xy": stored["object_xy"],
-        "plate_xy": stored["plate_xy"],
+        runner.run_task({"seed": seed, "reset": reset, "kind": "frame"})
+    return seen
+
+
+def test_runner_executes_the_stored_reset(monkeypatch):
+    """Behavioural (task056_handover.md §7): what reaches the robot's reset, through run_task,
+    is the stored value for every cohort-C seed, and never a recomputation."""
+    runner = load_runner()
+    wide_reset = runner.LIN.load_wide_reset()
+    resets = fm.stored_cohort(POLICY_V1)
+    stored = POLICY_V1["cohorts"]["C_frozen_gating"]["resets"]
+    recompute_differs = []
+    for seed in fm.COHORT_C:
+        seen = _reset_seen_by_the_robot(runner, monkeypatch, seed, resets[seed])
+        want = {k: stored[str(seed)][k] for k in ("object_xy", "plate_xy")}
+        assert seen == {"seed": seed, **want}, seed
+        again = wide_reset(seed)
+        if [float(v) for v in again["object_xy"]] != want["object_xy"] or [
+            float(v) for v in again["plate_xy"]
+        ] != want["plate_xy"]:
+            recompute_differs.append(seed)
+    if platform.system() == "Linux" and platform.machine() == "x86_64":
+        # On the Linux PC recomputation differs from the stored decimals by 1 ULP on 6 seeds
+        # (45314 among them), so this test tells stored from recomputed values here.
+        assert 45314 in recompute_differs
+    # On every platform: a reset value that no generator produces must reach the robot as given.
+    marker = {"object_xy": [0.3125, -0.1875], "plate_xy": [0.5, -0.0625]}
+    assert _reset_seen_by_the_robot(runner, monkeypatch, 45314, marker) == {
+        "seed": 45314,
+        **marker,
     }
 
 
@@ -343,3 +365,134 @@ def test_reproduction_is_exact_or_void():
         changed = _recomputed() | {key: value}
         with pytest.raises(fp2.GuardError, match="G-repro"):
             runner.check_reproduction(changed, _run1_facts())
+
+
+# ----- a V report carries no verdict -----
+def _m2_stage():
+    success, grasp, ok = _inputs()
+    per_reset = {
+        a: {"success": success[a], "grasp": grasp[a], "at_rest": success[a]} for a in success
+    }
+    return {
+        "counts": {a: {"success": sum(v)} for a, v in success.items()},
+        "per_reset": per_reset,
+        "privileged_ok": ok,
+        "control_time": {"median_seconds": 0.001},
+    }
+
+
+@pytest.mark.parametrize("fails", ["end_checks", "decide_m2"])
+def test_finish_writes_nothing_when_a_check_or_the_decision_raises(monkeypatch, fails):
+    runner = load_runner()
+
+    def boom(*_args, **_kwargs):
+        raise fp2.GuardError("G-hash: forced")
+
+    if fails == "end_checks":
+        monkeypatch.setattr(runner, "end_checks", boom)
+    else:
+        monkeypatch.setattr(runner, "end_checks", lambda *a: None)
+        monkeypatch.setattr(fm, "decide_m2", boom)
+    report = {"outcome": None, "stages": {}}
+    with pytest.raises(fp2.GuardError):
+        runner.finish(report, {}, "run", _m2_stage())
+    assert "M2" not in report["stages"] and "decision" not in report
+    assert report["outcome"] is None
+
+
+def test_finish_writes_the_verdict_after_the_checks(monkeypatch):
+    runner = load_runner()
+    order = []
+    monkeypatch.setattr(
+        runner, "end_checks", lambda report, *a: order.append(copy.deepcopy(report))
+    )
+    report = {"outcome": None, "stages": {}}
+    runner.finish(report, {}, "run", _m2_stage())
+    assert "decision" not in order[0] and "M2" not in order[0]["stages"]
+    assert report["outcome"] == "M2-PASS" and report["stages"]["M2"]["counts"]
+
+
+def test_a_void_run_writes_no_verdict(monkeypatch, tmp_path):
+    runner = load_runner()
+
+    def leaky(report, *_args):
+        report["stages"]["M2"] = {"counts": {"P-3": {"success": 40}}}
+        report["decision"] = {"row": "M2-PASS"}
+        report["outcome"] = "M2-PASS"
+        raise fp2.GuardError("G-hash: the tracked tree changed during the run")
+
+    monkeypatch.setattr(runner, "_run", leaky)
+    runner.run(tmp_path / "out", tmp_path, "run")
+    written = json.loads((tmp_path / "out" / "report.json").read_text())
+    assert written["outcome"] == "V"
+    assert "decision" not in written and "M2" not in written["stages"]
+
+
+# ----- G-evidence -----
+def _fake_evidence(root: Path, monkeypatch, report: dict):
+    e = copy.deepcopy(fm.EVIDENCE)
+    (root / e["checkpoint_dir"]).mkdir(parents=True)
+    (root / e["corpus"]).mkdir(parents=True)
+    (root / e["report"]).parent.mkdir(parents=True)
+    (root / e["report"]).write_text(json.dumps(report))
+    e["report_sha256"] = hashlib.sha256((root / e["report"]).read_bytes()).hexdigest()
+    for arm in e["checkpoints"]:
+        path = root / e["checkpoint_dir"] / f"{arm}.pt"
+        path.write_bytes(arm.encode())
+        e["checkpoints"][arm] = hashlib.sha256(path.read_bytes()).hexdigest()
+    manifest = root / e["corpus"] / "manifest.json"
+    manifest.write_text("{}")
+    e["corpus_manifest_sha256"] = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    monkeypatch.setattr(fm, "EVIDENCE", e)
+    return e
+
+
+def _run1_report(**changes):
+    report = {
+        "revision": fm.EVIDENCE["revision"],
+        "outcome": "M1-PASS",
+        "decision": {"carried": "P-3"},
+        "test_split_decoded": False,
+        "tracked_tree_dirty": False,
+        "smoke": False,
+    }
+    return report | changes
+
+
+def test_check_evidence_accepts_the_pinned_files(monkeypatch, tmp_path):
+    runner = load_runner()
+    _fake_evidence(tmp_path, monkeypatch, _run1_report())
+    found = runner.check_evidence(tmp_path)
+    assert set(found["sha256"]) == {"report", "P-3", "C-3", "R-3", "corpus_manifest"}
+
+
+@pytest.mark.parametrize("tamper", ["P-3", "corpus", "report"])
+def test_check_evidence_refuses_a_changed_file(monkeypatch, tmp_path, tamper):
+    runner = load_runner()
+    e = _fake_evidence(tmp_path, monkeypatch, _run1_report())
+    path = {
+        "P-3": tmp_path / e["checkpoint_dir"] / "P-3.pt",
+        "corpus": tmp_path / e["corpus"] / "manifest.json",
+        "report": tmp_path / e["report"],
+    }[tamper]
+    path.write_bytes(path.read_bytes() + b" ")
+    with pytest.raises(fp2.GuardError, match="G-evidence"):
+        runner.check_evidence(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"outcome": "M1-PERCEPTION"},
+        {"smoke": True},
+        {"test_split_decoded": True},
+        {"tracked_tree_dirty": True},
+        {"revision": "0" * 40},
+        {"decision": {"carried": "P-2"}},
+    ],
+)
+def test_check_evidence_refuses_a_report_that_is_not_run1(monkeypatch, tmp_path, change):
+    runner = load_runner()
+    _fake_evidence(tmp_path, monkeypatch, _run1_report(**change))
+    with pytest.raises(fp2.GuardError, match="G-evidence"):
+        runner.check_evidence(tmp_path)

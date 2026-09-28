@@ -436,6 +436,12 @@ def _run(report, evidence: Path, clock, mode: str, smoke_max_steps: int | None):
     }
     del fit_feats
     if mode == "preflight":
+        # G-cohort on the stored values (a JSON read: nothing is rendered or simulated)
+        stored = fm.stored_cohort(json.loads(POLICY_V1_MANIFEST.read_text()))
+        report["stages"]["cohort_check"] = {
+            "seeds": list(fm.check_cohort_seeds(tuple(stored))),
+            "cohort_sha256": fm.COHORT_SOURCE["cohort_sha256"],
+        }
         report["outcome"] = "PREFLIGHT-READY"
         end_checks(report, manifest, mode)
         return
@@ -452,14 +458,16 @@ def _run(report, evidence: Path, clock, mode: str, smoke_max_steps: int | None):
         "resets": {str(s): resets[s] for s in seeds},
         "max_policy_steps": max_steps,
     }
+    # The void rule's boundary (§3.7): from here on, the cohort stage's seeds are simulated.
+    report["cohort_first_render_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     c_frames = pool.map(
         [{"seed": s, "reset": resets[s], "kind": "frame"} for s in seeds],
         fm.CAPS_SECONDS["per_rollout_batch"],
         "cohort frames",
     )
-    for s, f in zip(seeds, c_frames, strict=True):
-        if f["seed"] != s or f["reset"] != resets[s]:
-            raise fp2.GuardError("G-cohort: a rendered reset is not the stored one")
+    for s, f in zip(seeds, c_frames, strict=True):  # results come back in seed order
+        if f["seed"] != s:
+            raise fp2.GuardError("G-cohort: a rendered frame is not its seed's")
     c_list = [f["frame"] for f in c_frames]
     tokens, forward_seconds = {"P": [], "R": []}, []
     for frame in c_list:  # batch size 1, as featurise; the P forward + readout is timed (G7)
@@ -547,7 +555,7 @@ def _run(report, evidence: Path, clock, mode: str, smoke_max_steps: int | None):
         else {k: [bool(x[k]) for x in r] for k in ("success", "grasp", "at_rest")}
         for arm, r in arms.items()
     }
-    report["stages"]["M2"] = {
+    m2_stage = {
         "counts": counts,
         "per_reset": per_reset,
         "privileged_ok": privileged_ok,
@@ -555,18 +563,30 @@ def _run(report, evidence: Path, clock, mode: str, smoke_max_steps: int | None):
         "attempts": {arm: LIN.attempt_summary(r or []) for arm, r in arms.items()},
         "seconds": time.monotonic() - arms_started,
     }
+    finish(report, manifest, mode, m2_stage)
+
+
+def finish(report: dict, manifest: dict, mode: str, m2_stage: dict) -> None:
+    """Decide, run the end checks, and only then write the counts and the verdict.
+
+    Nothing that reveals the result reaches ``report`` before ``decide_m2`` and ``end_checks``
+    have both succeeded, so a V report carries no arm count, per-reset result or row."""
+    decision = None
     if mode == "run":
+        per_reset = m2_stage["per_reset"]
         decision = fm.decide_m2(
             {a: None if v is None else v["success"] for a, v in per_reset.items()},
             {a: None if v is None else v["grasp"] for a, v in per_reset.items()},
-            privileged_ok,
-            timing["median_seconds"],
+            m2_stage["privileged_ok"],
+            m2_stage["control_time"]["median_seconds"],
         )
+    end_checks(report, manifest, mode)
+    report["stages"]["M2"] = m2_stage
+    if decision is not None:
         report["decision"] = decision
         report["outcome"] = decision["row"]
     else:
         report["outcome"] = "SMOKE-COMPLETE"  # nothing in a smoke is read
-    end_checks(report, manifest, mode)
 
 
 def run(output: Path, evidence: Path, mode: str, smoke_max_steps: int | None = None) -> dict:
@@ -590,6 +610,8 @@ def run(output: Path, evidence: Path, mode: str, smoke_max_steps: int | None = N
         _run(report, evidence, clock, mode, smoke_max_steps)
     except Exception as error:  # noqa: BLE001 - every failure is V, and the report is written
         report["outcome"] = "V"
+        report.pop("decision", None)  # a V carries no verdict and no arm results
+        report["stages"].pop("M2", None)
         report["void_reason"] = f"{type(error).__name__}: {error}"
         report["traceback"] = traceback.format_exc()
         log(f"VOID: {report['void_reason']}")
