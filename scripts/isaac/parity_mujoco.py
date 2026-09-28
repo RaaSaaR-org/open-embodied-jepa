@@ -47,6 +47,32 @@ def hide_objects(sim: MuJoCoSimulation) -> None:
             model.geom_conaffinity[g] = 0
 
 
+def robot_contacts(sim: MuJoCoSimulation) -> list[list[str]]:
+    """MuJoCo contacts involving the robot: [other geom or body, robot body], sorted, unique."""
+    model, data = sim.model, sim.data
+    robot = {model.body(i).name for i in range(1, model.nbody)} - {"apple", "plate"}
+    out = set()
+    for c in data.contact[: data.ncon]:
+        g = (int(c.geom1), int(c.geom2))
+        bodies = [model.body(int(model.geom_bodyid[x])).name for x in g]
+        labels = [model.geom(x).name or b for x, b in zip(g, bodies, strict=True)]
+        for i in (0, 1):
+            if bodies[i] in robot:
+                out.add((labels[1 - i], bodies[i]))
+    return [list(p) for p in sorted(out)]
+
+
+def normalized_joints(manifest: dict) -> list[dict]:
+    """Joint rows with the v0 key ``frictionloss_not_applied`` renamed to ``frictionloss``."""
+    rows = []
+    for j in manifest["joints"]:
+        j = dict(j)
+        if "frictionloss_not_applied" in j:
+            j["frictionloss"] = j.pop("frictionloss_not_applied")
+        rows.append(j)
+    return rows
+
+
 def stats(x: np.ndarray) -> dict:
     return {
         "max": float(np.max(x)),
@@ -60,7 +86,11 @@ def main() -> None:
     parser.add_argument("--isaac", type=Path, required=True, help="parity_isaac.py output dir")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
-        "--manifest", type=Path, default=ROOT / "configs/isaac/g1_dex3_joint_manifest_v0.json"
+        "--manifest",
+        type=Path,
+        default=None,
+        help="joint manifest the Isaac run used (default: the committed v1 or legacy v0 file "
+        "whose hash the run recorded)",
     )
     args = parser.parse_args()
     if args.output.exists():
@@ -72,12 +102,27 @@ def main() -> None:
     size = int(isaac_record["rgb_size"])
 
     sim = MuJoCoSimulation(width=size, height=size, render=True)
-    committed = json.loads(args.manifest.read_text())
+    candidates = (
+        [args.manifest]
+        if args.manifest
+        else [ROOT / f"configs/isaac/g1_dex3_joint_manifest_v{v}.json" for v in (1, 0)]
+    )
+    used = next(
+        (
+            p
+            for p in candidates
+            if manifest_sha256(json.loads(p.read_text())) == isaac_record["manifest_sha256"]
+        ),
+        None,
+    )
+    if used is None:
+        raise SystemExit("Isaac run used a joint manifest that is not committed")
+    committed = json.loads(used.read_text())
     regenerated = joint_manifest_from_mujoco(sim)
-    if manifest_sha256(committed) != manifest_sha256(regenerated):
-        raise SystemExit("committed joint manifest differs from the MuJoCo model")
-    if manifest_sha256(committed) != isaac_record["manifest_sha256"]:
-        raise SystemExit("Isaac run used a different joint manifest")
+    if normalized_joints(committed) != normalized_joints(regenerated) or any(
+        committed[k] != regenerated[k] for k in regenerated if k not in ("joints", "version")
+    ):
+        raise SystemExit("the run's joint manifest differs from the MuJoCo model")
     if list(sim.joint_names) != names:
         raise SystemExit("joint order differs")
     hide_objects(sim)
@@ -98,6 +143,7 @@ def main() -> None:
     qvel.append(obs["qvel"])
     times.append(obs["timestamp"])
     frames[0] = obs["rgb"]
+    contacts = [robot_contacts(sim)]
     for k, target in enumerate(targets, start=1):
         a = time.perf_counter()
         ack = sim.send_joint_targets(target, joint_names=names, deadline=sim.data.time + 0.05)
@@ -111,6 +157,7 @@ def main() -> None:
         qpos.append(obs["qpos"])
         qvel.append(obs["qvel"])
         times.append(obs["timestamp"])
+        contacts.append(robot_contacts(sim))
         if k in FRAMES:
             frames[k] = obs["rgb"]
     sim.close()
@@ -133,6 +180,23 @@ def main() -> None:
         for g in groups
     }
     worst = np.unravel_index(np.argmax(diff), diff.shape)
+    # MuJoCo robot contacts per read (Isaac contacts are not measured).
+    contact_reads: dict[str, list[int]] = {}
+    for k, pairs in enumerate(contacts):
+        for other, body in pairs:
+            contact_reads.setdefault(f"{body}|{other}", []).append(k)
+    link = {n: n.replace("_joint", "_link") for n in names}
+    per_joint_worst = {
+        n: {
+            "max_abs_diff_rad": float(diff[:, i].max()),
+            "read_index": int(np.argmax(diff[:, i])),
+            "mujoco_contact_on_own_link_at_that_read": any(
+                body == link[n] for _, body in contacts[int(np.argmax(diff[:, i]))]
+            ),
+        }
+        for i, n in enumerate(names)
+        if diff[:, i].max() > 0.01
+    }
     phases = {
         "hold 0-10": (0, 11),
         "arms 10-50": (11, 51),
@@ -183,11 +247,23 @@ def main() -> None:
         "isaac_staleness": isaac_record["staleness"],
         "isaac_rejections": isaac_record["rejections"],
         "isaac_after_close": isaac_record["after_close"],
+        "mujoco_contacts_by_pair_read_indices": contact_reads,
+        "mujoco_contacts_per_read": contacts,
+        "joints_over_0.01_rad": per_joint_worst,
+        "isaac_joint_friction": isaac_record.get("joint_friction", "not recorded"),
         "caveats": [
-            "MuJoCo frictionloss (0.1-0.2 N m) is not applied in Isaac (no equivalent)",
+            {
+                "frictionloss": "MuJoCo frictionloss applied in Isaac as PhysX static/dynamic "
+                "friction effort (closest model, not the same algorithm)",
+                "none": "MuJoCo frictionloss (0.1-0.2 N m) not applied in Isaac (run option)",
+            }.get(
+                isaac_record.get("joint_friction"),
+                "Isaac joint friction mode not recorded; this run predates the friction fix "
+                "and had PhysX's load-proportional legacy coefficient active",
+            ),
             "MuJoCo self-collision is on, Isaac self-collision is off (importer default)",
             "different engines, integrators (implicitfast vs PhysX TGS) and renderers",
-            "robot + table only; no apple/plate; no contact parity",
+            "robot + table only; no apple/plate; no contact parity; Isaac contacts not measured",
         ],
     }
     np.savez_compressed(args.output / "mujoco_trace.npz", qpos=mq, qvel=mv, time=mt)
@@ -206,6 +282,8 @@ def main() -> None:
                     "timing_ms",
                     "images_mean_abs_diff_uint8",
                     "isaac_staleness",
+                    "mujoco_contacts_by_pair_read_indices",
+                    "joints_over_0.01_rad",
                 )
             },
             indent=2,

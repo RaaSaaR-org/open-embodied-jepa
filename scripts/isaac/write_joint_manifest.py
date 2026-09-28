@@ -5,7 +5,7 @@ is derived from ``MuJoCoSimulation`` (pinned MJCF + the transport's PD gains), s
 the single authority for joint order, limits, torque ranges, gains and passive damping:
 
     uv run --no-sync python scripts/isaac/write_joint_manifest.py \\
-        --output configs/isaac/g1_dex3_joint_manifest_v0.json
+        --output configs/isaac/g1_dex3_joint_manifest_v1.json
 """
 
 from __future__ import annotations

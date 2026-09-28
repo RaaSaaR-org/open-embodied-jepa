@@ -3,7 +3,7 @@
 The transport itself only runs inside the Isaac container; these tests cover the pieces that
 must hold everywhere: the module stays out of the core import path, the committed joint
 manifest is exactly what the MuJoCo model yields, name mapping rejects mismatches, and the
-camera quaternion matches the bring-up spike's.
+camera quaternion is a proper rotation onto MuJoCo's ``onboard_rgb`` axes.
 """
 
 from __future__ import annotations
@@ -27,7 +27,8 @@ from embodied_jepa.isaac_transport import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ROOT / "configs/isaac/g1_dex3_joint_manifest_v0.json"
+MANIFEST = ROOT / "configs/isaac/g1_dex3_joint_manifest_v1.json"
+LEGACY_V0 = ROOT / "configs/isaac/g1_dex3_joint_manifest_v0.json"
 
 
 def committed() -> dict:
@@ -75,6 +76,9 @@ def test_committed_manifest_matches_mujoco_model():
         lambda m: m["joints"][0].update(lower=5.0),
         lambda m: m["joints"][0].update(ctrl_min=1.0),
         lambda m: m.update(control_dt_s=0.051),
+        lambda m: m["joints"][0].pop("frictionloss"),
+        lambda m: m["joints"][0].update(frictionloss=-0.1),
+        lambda m: m.pop("reset_elbow_rad"),
     ],
 )
 def test_manifest_validation_rejects(mutate):
@@ -82,6 +86,15 @@ def test_manifest_validation_rejects(mutate):
     mutate(manifest)
     with pytest.raises(ContractError):
         validate_joint_manifest(manifest)
+
+
+def test_legacy_v0_manifest_is_rejected_but_matches_v1_values():
+    legacy = json.loads(LEGACY_V0.read_text())
+    with pytest.raises(ContractError):
+        validate_joint_manifest(legacy)
+    for old, new in zip(legacy["joints"], committed()["joints"], strict=True):
+        assert old.pop("frictionloss_not_applied") == new.pop("frictionloss")
+        assert old == new
 
 
 def test_name_map_is_by_name_and_strict():

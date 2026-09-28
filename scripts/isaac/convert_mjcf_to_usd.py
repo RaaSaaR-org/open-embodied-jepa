@@ -1,14 +1,15 @@
 """Convert the project's pinned G1 + Dex3 MJCF to USD with the Isaac Sim MJCF importer.
 
 Development tooling (not a gated experiment). Runs INSIDE the ``isaaclab_arena`` container
-with Isaac Sim's Python, started by ``scripts/isaac/run_convert.sh``; it is not part of the
+with Isaac Sim's Python, started by ``scripts/isaac/run_isaac.sh``; it is not part of the
 ``embodied_jepa`` package and adds nothing to ``uv.lock``.
 
 The input is the unmodified, sha-pinned ``g1_29dof_with_hand.xml`` from
 ``assets/manifest.json`` (mounted read-only). The importer is ``isaacsim.asset.importer.mjcf``
 (``MJCFImporter``, which wraps ``mujoco-usd-converter``). Options are fixed below and written
-to ``conversion.json`` together with the importer/converter versions and the sha256 of every
-output file, so a rerun can be checked for byte identity.
+to ``conversion.json`` together with the importer/converter versions, the raw sha256 of every
+output file and the canonical hashes of ``hash_usd.py``. Reruns are not byte-identical (the
+importer embeds a random temp-dir name); compare ``canonical_tree_sha256`` instead.
 """
 
 from __future__ import annotations

@@ -15,9 +15,13 @@ Control mirrors ``MuJoCoSimulation.send_joint_targets``: per physics substep, li
 interpolated targets, ``kp (q* - q) - kd qd + bias`` with the simulator's own gravity and
 Coriolis compensation, clipped to the MJCF actuator ``ctrlrange``, applied as joint efforts.
 MuJoCo's passive joint damping is applied as a zero-stiffness PhysX drive. MuJoCo's
-``frictionloss`` (a Coulomb torque) has no equivalent here and is left out, which is a
-known, reported difference. Joints are mapped by name; the canonical order is the MJCF
-actuator order that ``MuJoCoSimulation.joint_names`` uses.
+``frictionloss`` (a Coulomb torque in N m) is applied by default
+(``joint_friction="frictionloss"``) as PhysX's static and dynamic joint friction *efforts*,
+the closest available PhysX model but not the same algorithm; ``joint_friction="none"``
+leaves joint friction out. Either way the converter's load-proportional PhysX friction
+coefficient is zeroed. Damping and friction are read back after every reset. Joints are
+mapped by name; the canonical order is the MJCF actuator order that
+``MuJoCoSimulation.joint_names`` uses.
 """
 
 from __future__ import annotations
@@ -30,16 +34,30 @@ import numpy as np
 
 from embodied_jepa.contracts import ContractError
 
-JOINT_MANIFEST_VERSION = "g1_dex3_joint_manifest_v0"
+# v1 renamed the per-joint key ``frictionloss_not_applied`` (v0, a misnomer: the default mode
+# applies it) to ``frictionloss`` and made it required. The v0 file stays committed because
+# the recorded parity runs of 2026-09-28 reference its hash.
+JOINT_MANIFEST_VERSION = "g1_dex3_joint_manifest_v1"
 _MANIFEST_KEYS = (
     "version",
     "source_mjcf_sha256",
     "physics_dt_s",
     "control_dt_s",
     "pelvis_pos_m",
+    "reset_elbow_rad",
     "joints",
 )
-_JOINT_KEYS = ("name", "lower", "upper", "ctrl_min", "ctrl_max", "kp", "kd", "damping")
+_JOINT_KEYS = (
+    "name",
+    "lower",
+    "upper",
+    "ctrl_min",
+    "ctrl_max",
+    "kp",
+    "kd",
+    "damping",
+    "frictionloss",
+)
 _RESET_ELBOW_RAD = 0.08  # MuJoCoSimulation.reset: slight elbow flexion
 
 
@@ -60,9 +78,7 @@ def joint_manifest_from_mujoco(sim) -> dict:
                 "kp": float(sim.kp[a]),
                 "kd": float(sim.kd[a]),
                 "damping": float(model.dof_damping[int(model.jnt_dofadr[jid])]),
-                "frictionloss_not_applied": float(
-                    model.dof_frictionloss[int(model.jnt_dofadr[jid])]
-                ),
+                "frictionloss": float(model.dof_frictionloss[int(model.jnt_dofadr[jid])]),
             }
         )
     return {
@@ -81,7 +97,7 @@ def reset_pose(manifest: dict) -> np.ndarray:
     names = [j["name"] for j in manifest["joints"]]
     q = np.zeros(len(names))
     for side in ("left", "right"):
-        q[names.index(f"{side}_elbow_joint")] = manifest.get("reset_elbow_rad", _RESET_ELBOW_RAD)
+        q[names.index(f"{side}_elbow_joint")] = manifest["reset_elbow_rad"]
     return q
 
 
@@ -107,8 +123,10 @@ def validate_joint_manifest(manifest: dict) -> dict:
             raise ContractError(f"joint {j['name']!r} has non-finite values")
         if not (j["lower"] < j["upper"] and j["ctrl_min"] < 0 < j["ctrl_max"]):
             raise ContractError(f"joint {j['name']!r} has inconsistent limits")
-        if j["kp"] < 0 or j["kd"] < 0 or j["damping"] < 0:
+        if j["kp"] < 0 or j["kd"] < 0 or j["damping"] < 0 or j["frictionloss"] < 0:
             raise ContractError(f"joint {j['name']!r} has negative gains")
+    if not np.isfinite(float(manifest["reset_elbow_rad"])):
+        raise ContractError("reset_elbow_rad must be finite")
     dt, control = float(manifest["physics_dt_s"]), float(manifest["control_dt_s"])
     substeps = round(control / dt)
     if dt <= 0 or substeps < 1 or not np.isclose(substeps * dt, control):
@@ -268,14 +286,12 @@ class IsaacTransport:
         if np.abs(lim - np.stack([self.lower, self.upper], axis=1)).max() > 1e-4:
             raise ContractError("Isaac joint limits differ from the joint manifest")
         # MuJoCo passive damping as a zero-stiffness PhysX drive (implicit, like MuJoCo's).
+        self._damping = np.array([j["damping"] for j in joints])
         damping = np.zeros(len(self._idx))
-        damping[self._idx] = [j["damping"] for j in joints]
+        damping[self._idx] = self._damping
         self.robot.write_joint_damping_to_sim_index(
             damping=torch.as_tensor(damping, dtype=torch.float32, device=self.sim.device)[None]
         )
-        got = self._np(self.robot.root_view.get_dof_dampings())[0][self._idx]
-        if np.abs(got - [j["damping"] for j in joints]).max() > 1e-6:
-            raise ContractError("PhysX drive damping read-back differs from the manifest")
         self._set_joint_friction(joints)
         self._kp = np.array([j["kp"] for j in joints])
         self._kd = np.array([j["kd"] for j in joints])
@@ -299,8 +315,9 @@ class IsaacTransport:
         props = view.get_dof_friction_properties()
         fl = np.zeros(n)
         if self.joint_friction == "frictionloss":
-            fl[self._idx] = [j.get("frictionloss_not_applied", 0.0) for j in joints]
+            fl[self._idx] = [j["frictionloss"] for j in joints]
         new_props = np.stack([fl, fl, np.zeros(n)], axis=1)[None].astype(np.float32)
+        self._friction_props = new_props[0]
         indices = wp.array(np.array([0], dtype=np.int32), dtype=wp.int32, device=coeff.device)
         view.set_dof_friction_coefficients(
             wp.array(np.zeros((1, n), dtype=np.float32), dtype=wp.float32, device=coeff.device),
@@ -309,9 +326,17 @@ class IsaacTransport:
         view.set_dof_friction_properties(
             wp.array(new_props, dtype=wp.float32, device=props.device), indices
         )
+        self._check_joint_properties()
+
+    def _check_joint_properties(self) -> None:
+        """Read PhysX damping and friction back; raise if they differ from what was set."""
+        view = self.robot.root_view
+        got_damping = self._np(view.get_dof_dampings())[0][self._idx]
+        if np.abs(got_damping - self._damping).max() > 1e-6:
+            raise ContractError("PhysX drive damping read-back differs from the manifest")
         got_coeff = self._np(view.get_dof_friction_coefficients())[0]
         got_props = self._np(view.get_dof_friction_properties())[0]
-        if np.abs(got_coeff).max() > 0 or np.abs(got_props - new_props[0]).max() > 1e-6:
+        if np.abs(got_coeff).max() > 0 or np.abs(got_props - self._friction_props).max() > 1e-6:
             raise ContractError("PhysX joint friction read-back differs from what was set")
         self.physx_joint_friction = {
             "legacy_coefficient": got_coeff[self._idx].tolist(),
@@ -364,6 +389,7 @@ class IsaacTransport:
         self.robot.write_data_to_sim()
         self.robot.reset()
         self.robot.update(0.0)
+        self._check_joint_properties()  # robot.reset() must not undo damping/friction
         self.targets[:] = q
         self.time = 0.0
         self.stopped_reason = ""
