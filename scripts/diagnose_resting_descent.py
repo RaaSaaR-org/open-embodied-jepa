@@ -13,7 +13,8 @@ test split. Three parts, all written to one ``report.json``:
    and hand contacts other than with the apple.
 2. **Reach map**: the lowest palm-down height the embodiment's own IK (``solve_ik``, the
    collector's palm-down rotation) reaches on a grid of palm xy, with fixed random restarts; and
-   the right shoulder position. Position-only reach is sampled by forward kinematics.
+   the right shoulder position; and, for each replayed place target, the smallest residual a
+   position-only IK (any palm orientation, the 7 arm joints within their limits) reaches.
 3. **Rolling check**: an apple placed on the plate with a small rolling velocity, the robot
    holding still; its speed is logged for 10 s (the apple is a condim-3 sphere).
 
@@ -40,11 +41,11 @@ sys.path.insert(0, str(ROOT / "src"))
 from embodied_jepa import first_policy_runtime as rt  # noqa: E402
 from embodied_jepa import resting_expert as rx  # noqa: E402
 from embodied_jepa.contracts import ContractError  # noqa: E402
+from embodied_jepa.embodiment import rotation_delta  # noqa: E402
 
 IK_RESTART_SEED = 6831
 IK_RESTARTS = 20
 IK_ITERATIONS = 300  # for the reach map only; the replay uses the manifest's 80
-FK_SAMPLES = 150_000
 REACH_X = tuple(round(0.40 + 0.01 * i, 2) for i in range(13))
 REACH_Y = (-0.11, -0.09, -0.07)
 REACH_Z = tuple(round(0.30 - 0.01 * i, 2) for i in range(31))
@@ -98,11 +99,18 @@ def replay(robot, bounds, seed: int, reset: dict, place_module) -> dict:
                 (f for f in FACTORS if np.allclose(applied[6:12], requested * f, atol=1e-7)),
                 None,
             )
-            hold_targets = robot.sim.targets.copy()
-            robot._prepare_side(applied.copy(), hold_targets, 1, "right", data=data)
-            arm = np.array([robot.actuator_for_joint[int(i)] for i in ids])
-            dq = float(np.abs(hold_targets[arm] - measured).max())
-            position, _ = robot.ee_pose("right")
+            # The embodiment's IK for the accepted step, from the same snapshot: does it return
+            # its (limit-clamped) seed, the measured joints, unchanged?
+            position, rotation = robot.ee_pose("right", data=data)
+            scales = robot.scales[6:12]
+            solution = robot.solve_ik(
+                "right",
+                position + applied[6:9] * scales[:3],
+                rotation_delta(applied[9:12] * scales[3:]) @ rotation,
+                data=data,
+            )
+            seed_q = np.clip(measured, *robot._command_limits[ids].astype(np.float64).T)
+            dq = None if solution is None else float(np.abs(solution - seed_q).max())
             margin = float(np.min(np.minimum(measured - limits[:, 0], limits[:, 1] - measured)))
         result = robot.execute(applied)
         policy.advance(result)
@@ -119,7 +127,8 @@ def replay(robot, bounds, seed: int, reset: dict, place_module) -> dict:
                     "command_xyz": command[6:9].round(3).tolist(),
                     "factor": factor,
                     "full_command": refusal,
-                    "accepted_ik_equals_measured": dq < 1e-9,
+                    "accepted_ik_equals_measured": dq == 0.0,
+                    "accepted_ik_max_joint_change_rad": dq,
                     "accepted_step_norm_mm": float(np.linalg.norm(applied[6:9]) * 15.0),
                     "joint_limit_margin_rad": margin,
                     "hand_contacts_not_apple": other_hand,
@@ -169,9 +178,7 @@ def rx_shoulder(robot) -> np.ndarray:
 
 
 # ----- part 2 -----------------------------------------------------------------------------------
-def reach_map(robot) -> dict:
-    from embodied_jepa.embodiment import rotation_delta
-
+def reach_map(robot, targets) -> dict:
     robot.reset(0)
     model = robot.model
     ids = robot.arm_ids["right"]
@@ -206,22 +213,40 @@ def reach_map(robot) -> dict:
                 lowest[f"{x:.2f},{y:.2f}"] = found
     finally:
         robot.manifest["ik_iterations"] = saved
-    # position-only reach, sampled by forward kinematics over the joint box
-    distances = np.empty(FK_SAMPLES)
-    for i in range(FK_SAMPLES):
-        data.qpos[qadr] = rng.uniform(limits[:, 0], limits[:, 1])
-        robot.mj.mj_kinematics(model, data)
-        position, _ = robot.ee_pose("right", data=data)
-        distances[i] = np.linalg.norm(position - shoulder)
+    # Position only, any palm orientation: damped least squares on the 7 arm joints within
+    # their limits, from fixed random restarts; the smallest residual to each place target.
+    site = model.site("right_ee").id
+    vadr = model.jnt_dofadr[ids]
+    jacp, jacr = np.zeros((3, model.nv)), np.zeros((3, model.nv))
+    gaps = {}
+    for target in targets:
+        best = np.inf
+        for _ in range(IK_RESTARTS):
+            data.qpos[:] = robot.sim.data.qpos
+            data.qpos[qadr] = rng.uniform(limits[:, 0], limits[:, 1])
+            for _ in range(IK_ITERATIONS):
+                robot._forward_kinematics(data)
+                pelvis = data.body("pelvis")
+                goal = pelvis.xpos + pelvis.xmat.reshape(3, 3) @ np.asarray(target)
+                error = goal - data.site_xpos[site]
+                robot.mj.mj_jacSite(model, data, jacp, jacr, site)
+                jac = jacp[:, vadr]
+                step = jac.T @ np.linalg.solve(jac @ jac.T + 1e-4 * np.eye(3), error)
+                data.qpos[qadr] = np.clip(
+                    data.qpos[qadr] + np.clip(step, -0.1, 0.1), limits[:, 0], limits[:, 1]
+                )
+            robot._forward_kinematics(data)
+            pelvis = data.body("pelvis")
+            goal = pelvis.xpos + pelvis.xmat.reshape(3, 3) @ np.asarray(target)
+            best = min(best, float(np.linalg.norm(goal - data.site_xpos[site])))
+        gaps[",".join(f"{v:.4f}" for v in target)] = best
     return {
         "shoulder_base": shoulder.round(4).tolist(),
         "lowest_palm_down_z_by_xy": lowest,
-        "position_only_max_sampled_distance_m": float(distances.max()),
-        "position_only_q999_distance_m": float(np.quantile(distances, 0.999)),
+        "position_only_residual_to_place_target_m": gaps,
         "ik_restarts": IK_RESTARTS,
         "ik_iterations": IK_ITERATIONS,
         "restart_seed": IK_RESTART_SEED,
-        "fk_samples": FK_SAMPLES,
     }
 
 
@@ -279,7 +304,7 @@ def main() -> int:
         "revision": git("rev-parse", "HEAD"),
         "tracked_tree_dirty": bool(git("status", "--porcelain", "--untracked-files=no")),
         "replay": attempts,
-        "reach": reach_map(robot),
+        "reach": reach_map(robot, [a["place_target_base"] for a in attempts]),
         "rolling": rolling_check(robot),
     }
     report["seconds"] = time.monotonic() - started
