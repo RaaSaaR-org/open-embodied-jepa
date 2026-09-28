@@ -5395,7 +5395,7 @@
   "benchmarks/manifests/apple-token-dynamics-v1.json": "2191d57e869810aeb0601cdc85308d94dcd750782bac9596f0a78b0ea2fbdc38",
   "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
-  "docs/experiments/apple_wm_critic_v2.md": "18dc99e600ccc539c25d632128eb27173f660ef0378cc73c36d86fd4ac2541af",
+  "docs/experiments/apple_wm_critic_v2.md": "e75f36893b4776a5bd530b47e1de2a22cb50d942d4559cbf0c086e811323f16d",
   "scripts/collect_apple_shift_v2.py": "b2a9e17f7becc01d9e78682d8e634a5d9c109f213f5628213187b4b62c3ebde0",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
   "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",

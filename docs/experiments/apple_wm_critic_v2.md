@@ -457,7 +457,11 @@ the worker thread count, unexplained (hence D-18).
   decisions; no privileged read), above G7's 0.25 s.
 - **Latency probe** (scratch, same smoke seeds and smoke model, all attempts concurrent): 4 workers
   × 4 threads median **0.230 s** (p90 0.244 s); 8 × 1, 0.310 s. Hence D-19. The bar is unchanged.
-- **smoke-4** at the final revision: _in the PR description_.
+- **smoke-4** at `86d2da8` (the code of this PR; only this section and the manifest's pin of this
+  document changed after it), clean tree, report `1a5f1166…1bae`, 142 s: G-repro 8/8; render
+  check IDENTICAL; proposal generator 0.203; anchor 2.8e-5; W training BIT-IDENTICAL; decision
+  latency with 4 concurrent H-LeWM attempts on 4 workers × 4 threads, the GPU's resident service
+  running: **median 0.230 s**, p90 0.331 s, max 0.643 s (72 decisions; no privileged read).
 
 ### 9.4 O2's blind baselines (stored data, no simulation)
 
