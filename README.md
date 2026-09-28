@@ -80,7 +80,7 @@ plate exact, 20/32 at 1.0 cm, below 28/32) with its premise untested, because th
 reach the place pose within its budget. TASK-067 is closed under the owner's fallback.
 Scripted-collector and privileged success numbers elsewhere that were scored with this latching
 scorer are flagged, not rewritten.
-TASK-068 ([docs/experiments/apple_resting_expert_v1.md](docs/experiments/apple_resting_expert_v1.md)) closed on its development finding, with no gated run: under the frozen v1 task no privileged scripted expert design tried rested the apple on the plate (0 at rest in 269 completed development attempts), because the place pose is beyond the fixed-pelvis arm's reach and the apple, a sphere with no rolling resistance in this scene, keeps rolling; TASK-069 is a development-only feasibility scan toward an `apple-to-plate-v2` task definition. Learned Apple→Plate is still 0 successes. Outcomes
+TASK-068 ([docs/experiments/apple_resting_expert_v1.md](docs/experiments/apple_resting_expert_v1.md)) closed on its development finding, with no gated run: under the frozen v1 task no privileged scripted expert design tried rested the apple on the plate (0 at rest in 269 completed development attempts), because the place pose is beyond the fixed-pelvis arm's reach and the apple, a sphere with no rolling resistance in this scene, keeps rolling; TASK-069, a development-only feasibility scan, led to the owner-defined `apple-to-plate-v2` task (`src/embodied_jepa/apple_to_plate_v2.py`): v1 plus the apple's contact at condim 6 with the scene's own declared friction, a benchmark separate from v1. TASK-070 ([docs/experiments/apple_to_plate_v2_expert.md](docs/experiments/apple_to_plate_v2_expert.md)) passed its preregistered gate on v2: the privileged scripted expert e9, selected on development seeds, left the apple at rest (`apple_at_rest_v0`) on 32/32 fresh gated seeds with the plate exact and 30/32 at 1.0 cm plate error (bar 28/32). That is a scripted-expert result, not a learned one; v1 and its 0/150 benchmark are unchanged. Learned Apple→Plate is still 0 successes. Outcomes
 and caveats are in the results
 documents under [docs/experiments/](docs/experiments/) and in [AGENTS.md](AGENTS.md).
 
@@ -226,7 +226,7 @@ and summaries provide their hashes and reproduction commands.
 - [SDK2 hardware preparation](docs/HARDWARE.md), [Isaac port](docs/ISAAC_PORT.md), [Mac resources](docs/RESOURCES.md), [dependency provenance](docs/DEPENDENCIES.md).
 - [Contributing](CONTRIBUTING.md), [AGENTS.md](AGENTS.md), and [Codex project skills](docs/SKILLS.md) define the commit → PR → review → merge workflow.
 
-The executable package is in `src/embodied_jepa/`, tests in `tests/`, and reproducible commands in `scripts/`. Top-level model, robot, planner, data and deployment directories document their architecture responsibilities.
+The executable package is in `src/embodied_jepa/`, tests in `tests/`, and reproducible commands in `scripts/`. The `apple-to-plate-v2` task is `src/embodied_jepa/apple_to_plate_v2.py`, and its expert gate runner is `scripts/run_v2_expert_gate.py` (TASK-070). Top-level model, robot, planner, data and deployment directories document their architecture responsibilities.
 
 ## Task tracking
 
