@@ -141,10 +141,11 @@ TOL = {
 }
 
 PARAM_NOTES = {
-    "friction": "MuJoCo frictionloss [N m] vs PhysX joint friction coefficient [-] after "
-    "Isaac Lab actuator init; different semantics",
-    "usd_joint_friction_attr": "MuJoCo frictionloss [N m] vs USD physxJoint:jointFriction "
-    "(a PhysX coefficient [-]); the number is copied, the semantics differ",
+    "friction_isaaclab_buffer": "MuJoCo frictionloss [N m] vs Isaac Lab's joint_friction_coeff "
+    "buffer, which reads 0 although PhysX applies the legacy coefficient",
+    "friction_physx_legacy_coefficient": "MuJoCo frictionloss [N m] vs the PhysX legacy joint "
+    "friction coefficient [-] read from PhysX (USD physxJoint:jointFriction): the number is "
+    "copied but it scales friction with joint load, a different model",
     "passive_damping": "MuJoCo dof_damping [N m s/rad] vs PhysX drive damping",
     "effort_limit": "MuJoCo actuator ctrlrange [N m] vs PhysX max joint force",
     "position_gain_in_model": "MuJoCo motor (no servo) vs USD drive stiffness",
@@ -198,10 +199,10 @@ def compare_joint(model, name: str, ij: dict, ctrl: dict, out: Mismatches) -> di
     params = {
         "armature": (float(model.dof_armature[dof]), ij["armature"]),
         "passive_damping": (float(model.dof_damping[dof]), ij["physx_damping_after_init"]),
-        "friction": (float(model.dof_frictionloss[dof]), ij["friction_coeff"]),
-        "usd_joint_friction_attr": (
+        "friction_isaaclab_buffer": (float(model.dof_frictionloss[dof]), ij["friction_coeff"]),
+        "friction_physx_legacy_coefficient": (
             float(model.dof_frictionloss[dof]),
-            usd["usd_physx_joint_friction"],
+            ij.get("physx_friction_coefficient_after_init"),
         ),
         "effort_limit": (float(max(abs(v) for v in ctrl[name])), ij["effort_limit"]),
         "position_gain_in_model": (0.0, usd["usd_drive_stiffness"]),
@@ -209,7 +210,13 @@ def compare_joint(model, name: str, ij: dict, ctrl: dict, out: Mismatches) -> di
     }
     row["params"] = {k: {"mujoco": a, "isaac": b} for k, (a, b) in params.items()}
     for k, (a, b) in params.items():
-        if b is None or not math.isfinite(b) or abs(a - b) > TOL["param_abs"] * max(1, abs(a)):
+        semantic = k == "friction_physx_legacy_coefficient" and a > 0
+        if (
+            semantic
+            or b is None
+            or not math.isfinite(b)
+            or abs(a - b) > TOL["param_abs"] * max(1, abs(a))
+        ):
             out.flag(f"joint_{k}", name, a, b, PARAM_NOTES.get(k, ""))
     return row
 
