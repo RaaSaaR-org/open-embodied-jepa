@@ -4,7 +4,7 @@ aliases:
 - TASK-072
 title: 'Linux CUDA platform: make the RTX 5080 Linux PC the working platform, and replicate TASK-071 there'
 slug: linux-cuda-platform-make-the-rtx-5080-linux-pc-the-working-platform-and-replicate-task-071-there
-status: in-progress
+status: review
 priority: 1
 owner: ''
 projects: []
@@ -49,12 +49,15 @@ Learned Apple→Plate is still 0 successes on the frozen benchmark. A developmen
 from this task would be one run on D2, not LeWM, and not the frozen benchmark.
 
 ## Acceptance Criteria
-- [ ] Stage A PR merged by the owner on an independent reviewer's reported APPROVE, with the
+- [x] Stage A PR merged by the owner on an independent reviewer's reported APPROVE, with the
       Linux validation evidence in the PR.
-- [ ] Stage B protocol and manifest merged by the owner on an independent reviewer's APPROVE.
-- [ ] Pre-run reviewer's reported GO, and the owner told, before the gated run.
-- [ ] Gated run from a clean checkout of the merged revision on Linux, to completion.
-- [ ] Results PR, reviewed, merged by the owner.
+- [x] Stage B protocol and manifest merged by the owner on an independent reviewer's APPROVE.
+- [x] Pre-run reviewer's reported GO, and the owner told, before the gated run (GO posted on
+      PR #99, comment 5871360006; render check IDENTICAL at 16 workers, report sha256
+      `52bf2188…4aa8`; the orchestrator was told before the run started).
+- [x] Gated run from a clean checkout of the merged revision on Linux, to completion (run-1 from
+      `db65816`, 13:56:57Z–14:17:31Z, 1 235 s, no void).
+- [ ] Results PR, reviewed, merged by the owner (branch `task072-results`).
 
 ## Notes
 - 2026-09-28: card opened. Stage A branch `feat/task-072-cuda-support`.
@@ -76,3 +79,19 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
   (docs/experiments/apple_first_policy_v2_linux.md, manifest
   benchmarks/manifests/apple-first-policy-v2-linux.json); strict CUDA; 16 workers; floor digest
   re-pinned from a Linux measurement (546b9011…); reading REPLICATED iff M1-PASS and P-3 >= 14/16.
+- 2026-09-28: Stage B merged as #99 (`db65816`). Pre-run reviewer reported GO (PR #99 comment
+  5871360006), with two non-blocking items: stale TASK-071 wording in the frozen `void_rule` and
+  `REPLICATION_RULE["V"]` (§14 vs §6), and flash/mem-efficient attention backends enabled but
+  unused. Both are recorded in the results doc §7 and are not amended.
+- 2026-09-28: run-1 from `db65816` on the Linux PC (strict CUDA, 16 workers), 13:56:57Z–14:17:31Z,
+  1 235 s, report sha256 `87745284…ec78`. **Replication row REPLICATED; outcome M1-PASS**, carried
+  P-3. Counted successes on D2 (of 16; Mac run-1 in brackets where different): P-0 2 (4), P-1 11 (9),
+  P-2 15, **P-3 16**, C-3 7 (3), **R-3 16**, A4-look 16, D-oracle-perc 16, B-oracle 16,
+  B-replay 10 (9), B-hold 0, B-random 0. P-3 succeeded on the same 16 resets as run-1. The corpus
+  (129/200) and C0 match run-1 outcome by outcome. An existence result on the development cohort
+  only. R-3 ties P-3, so there is no evidence that pretrained vision helps. The policy is not
+  LeWM. The official learned Apple→Plate count on the frozen benchmark is still 0. Cohort C is
+  untouched, and M2 needs a separate owner go-ahead. Results:
+  `docs/experiments/apple_first_policy_v2_linux_results.md`,
+  `benchmarks/manifests/apple-first-policy-v2-linux-results.json`; results PR branch
+  `task072-results`.
