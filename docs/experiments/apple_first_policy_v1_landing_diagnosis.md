@@ -130,4 +130,41 @@ expert in command. Output goes to `outputs/task067-place-probe/run-1/report.json
 
 ## C. Redesign result
 
-*Filled in after the run. Nothing below §B is written before it.*
+*§A and §B were committed at `9088236` (draft PR #87) before this run.*
+
+**Row: FAIL.** The redesign reaches **25/32** with the plate exact and **20/32** at 1.0 cm. Both
+are below the 28/32 bar. **Under R9 the work stops and is reported back.** There is no second
+design without a new ruling. Closing TASK-067 is the fallback.
+
+**Provenance.**
+- run-1 at `9088236`, clean tree, 312 s, 8 CPU workers. 96 attempts, 0 errors, every attempt
+  complete (no guard stop).
+- `outputs/task067-place-probe/run-1/report.json`, sha256 `a5af156c…acb9`.
+
+| plate error | successes (scorer latch; gated) | successes at rest after the settle (reported) | final distance, cm (q10 / q50 / q90) |
+|---|---|---|---|
+| 0 | **25** / 32 | 2 / 32 | 4.41 / 4.55 / 4.60 |
+| 1.0 cm | **20** / 32 | 0 / 32 | 4.53 / 4.55 / 4.60 |
+| 1.5 cm (reported only) | 17 / 32 | 0 / 32 | 4.53 / 4.55 / 4.57 |
+
+**What the logs show (medians over the 32 attempts at each level).**
+- **The pre-declared risk happened: the palm could not reach the place pose.** During
+  `lower_closed` its lowest point was 0.113 m (plate exact) and 0.111 m (1.0 cm) in the base
+  frame, against a target of 0.035 m.
+- **The held apple's lowest point was 8.1 cm above its resting height** (z 0.860 and 0.858 m,
+  against 0.779 m). The hand therefore still let the apple fall about 8 cm, down from about
+  15.5 cm with the current collector.
+- The apple's top speed from the opening onward was 0.82 m/s (range 0.37–0.84). It touched the rim
+  on 32/32 attempts at both levels.
+- Hand–plate contact occurred on 5 (plate exact) and 8 (1.0 cm) attempts.
+- The apple still came to rest against the rim, at 4.4–4.6 cm, outside the 4 cm radius.
+
+**Reading (interpretation).**
+- Halving the drop did not stop the bounce and roll to the rim. The redesign did not achieve its
+  intended place: the hand stops about 8 cm short of setting the apple down.
+- Why the palm stalls (hand contact with the plate, the IK or joint limits, or the finger
+  geometry) is not separated by these logs. The hand–plate contact on only 5 and 8 attempts
+  suggests something other than contact on most attempts. That is an inference.
+
+**Not done, per R9:** no second design, no change to the task, the plate geometry, the scorer
+radius or the 28/32 bar, and no v2 amendment. Learned Apple→Plate is still 0 successes.
