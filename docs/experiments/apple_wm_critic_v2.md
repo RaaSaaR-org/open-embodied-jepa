@@ -342,8 +342,8 @@ median command norm; the median over decisions ≤ 0.25. Its distribution is rep
 
 G1–G4: H-LeWM minus P-reread / H-shuf / H-N / H-rand ≥ +10 of 64, each with one-sided exact
 McNemar p < 0.01. G5: H-LeWM − P-stale ≥ +16. G6 (U): H-LeWM ≥ P-stale(U) − 2 of 32. G7: the
-median decision latency (the decision's wall time inside `act()`, in the gated run's workers, 8
-workers × 2 torch threads) ≤ 250 ms with the GPU's resident service running. Secondary, not
+median decision latency (the decision's wall time inside `act()`, in the gated run's workers, 4
+workers × 4 torch threads) ≤ 250 ms with the GPU's resident service running. Secondary, not
 changing the row: H-LeWM-s1 and -s2 show the same sign against P-reread, H-shuf and H-N.
 
 ### 6.7 Blind baselines against every bar (checked before freezing)
@@ -389,8 +389,8 @@ preregistration, with its own condition and floors; this protocol does not desig
 
 The Linux PC as in TASK-072: G-platform (Linux, x86-64, `MUJOCO_GL=egl`), MuJoCo 3.13.0, the main
 process in strict CUDA determinism (`devices.require("cuda", strict=True)`). Simulation on the CPU
-with 16 workers (1 torch thread each); arms that make world-model decisions on 8 workers × 2 torch
-threads; closed-loop encoding and W rollouts on the CPU in the worker; corpus featurisation and
+with 16 workers (1 torch thread each); arms that make world-model decisions (and H-sim) on 4 workers × 4
+torch threads; closed-loop encoding and W rollouts on the CPU in the worker; corpus featurisation and
 W/N training on CUDA. The GPU is shared with a resident service (about 6.6 GB) and short Isaac
 containers: before a GPU stage the operator checks `nvidia-smi` and waits if memory is short; a
 CUDA allocation failure is a V, never a smaller batch. Caps: 43 200 s global, 300 s per attempt,
@@ -438,9 +438,26 @@ decisions take about 3.3 s (25 × 16 branch commands); H-N chose the incumbent a
 (p90 0.243 s), but H-N's was 0.395 s and H-shuf's 0.638 s, with the machine's load average above
 the worker thread count, unexplained (hence D-18).
 
-### 9.3 smoke-2 (at the committed revision)
+### 9.3 Runs at the committed revisions
 
-_Added after the run; see the PR description._
+- **smoke-2** at `114d8b8`: **V on G-repro** before anything else ran (the P and R readout
+  selections, the S0-P errors and C-3's constant did not reproduce run-1's). It started just after
+  the full test suite, with the machine's 5-minute load average near 13. An immediate
+  **preflight-1** at the same revision (report `94bf03fe…cd39`) passed G-repro 8/8, and so did every
+  other refit (smoke-1, smoke-3 and the four stage smokes: 7 of 8). The refit is CPU numerics in
+  PyTorch (MKL, dynamic threading by default) and NumPy (OpenBLAS); a load-sensitive thread count
+  is the likely cause, not established. **G-repro is checked before any cohort frame is rendered**,
+  so such a V costs nothing; the runner's record of it stays, and an operator starts a stage only
+  on a quiet machine (no other CPU-heavy job; the GPU's resident service may run).
+- **smoke-3** at `114d8b8`, clean tree (report `5e6c0750…aa75a`, 146 s): G-repro 8/8; render check
+  IDENTICAL (128 renders, 32 seeds, 16 workers); proposal generator median relative chunk error
+  0.203 over 72 decisions (the same as smoke-1); feature anchor 2.8e-5; W training twice on strict
+  CUDA **BIT-IDENTICAL** (`f211460e…`, 21.9 s and 22.6 s); decision latency with 8 concurrent
+  H-LeWM attempts on 8 workers × 2 threads **median 0.295 s**, p90 0.340 s, max 0.699 s (144
+  decisions; no privileged read), above G7's 0.25 s.
+- **Latency probe** (scratch, same smoke seeds and smoke model, all attempts concurrent): 4 workers
+  × 4 threads median **0.230 s** (p90 0.244 s); 8 × 1, 0.310 s. Hence D-19. The bar is unchanged.
+- **smoke-4** at the final revision: _in the PR description_.
 
 ### 9.4 O2's blind baselines (stored data, no simulation)
 
@@ -477,12 +494,13 @@ regret 0.79 cm: the prior is strong exactly when perception is good.)
 | D-7 | O2 (i) against persistence only | adds (iii), W against the clock prior o*(t + 16) ≤ 0.8 | the clock prior passes (i) by itself (0.40–0.43) |
 | D-8 | "if any blind ranker passes 0.5, the gate is void" | voiding rankers are copy-last, N and L-shuf; prior-distance enters through the margin | prior-distance ranks by the incumbent, which is informative by design when R-mid is good; §9.5 |
 | D-9 | O5 on "16 D3-style development P-truth attempts" | on K0's chosen cell's P-truth attempts (32) | the same controller and condition, available before any world model, without extra seeds |
-| D-10 | "`R_off`, `R-mid` ridge readouts" | R_off primal on the 6144-d pooled latent; R-mid dual on the full 98 304-d tokens; λ relative to the mean linear-kernel diagonal in both | the closed loop evaluates both per decision; kernel readouts with 4 000+ reference rows would not fit in 8 workers' memory |
+| D-10 | "`R_off`, `R-mid` ridge readouts" | R_off primal on the 6144-d pooled latent; R-mid dual on the full 98 304-d tokens; λ relative to the mean linear-kernel diagonal in both | the closed loop evaluates both per decision; kernel readouts with 4 000+ reference rows would not fit in the workers' memory |
 | D-11 | "`R-mid` on train frames at the decision steps" | the same, on the corpus's train roots, full tokens through the closed loop's CPU path | the P readout's feature and path |
 | D-12 | L-shuf's start latent "from reset (i + 1) mod n" | in the closed loop, P-reread's recorded latent of reset (i + 1) mod n at the same decision step (P-reread runs first) | the other reset's latent must exist when the decision is made |
 | D-13 | featurise "about 390 k frames" | frames 240–660 of every root (about 190 k) | every decision window lies inside; the full table would need ~10 GB of disk |
 | D-14 | module list | adds `wm_critic_v2_runtime.py` and `wm_critic_v2_offline.py` | spawned workers need an importable module; the offline statistics are testable apart from the script |
-| D-15 | decision latency "with GR00T resident" | measured in the gated workers (8 × 2 threads) inside `act()` | the arm's own configuration is what G7 bounds |
+| D-15 | decision latency "with GR00T resident" | measured in the gated workers inside `act()`, all attempts concurrent | the arm's own configuration is what G7 bounds |
+| D-19 | worker layout unspecified | world-model arms on 4 workers × 4 torch threads | at 8 × 2 the concurrent median was 0.295 s (smoke-3), above the 0.25 s bar; at 4 × 4, 0.230 s (a latency probe on the same smoke seeds and smoke model); a layout, not a threshold, and the margin stays thin (§9.3) |
 | D-16 | O2 (ii) void → unspecified | a void O2 or O3 is its own row (WMC-O2-VOID, WMC-O3-VOID) that escalates to the owner | "void, not passed" needs a row |
 | D-17 | O3/O4 directly after O2 | O0 first: the incumbent's median true regret on cohort R ≥ 0.5 cm, else **R-NO-HEADROOM**, proposed to count with the D7 fallback rows | on smoke seeds with the incumbent at the true plate its regret is 0.03 cm and prior-distance reaches ρ 0.63: without O0, a headroom finding would read as WMC-NO-RANK and fire the abandonment clause. **The owner's confirmation that R-NO-HEADROOM belongs to the D7 fallback rows is requested (open question)** |
 | D-18 | a G7 failure falls to HYB-NO-GAIN and fires the abandonment clause | a row HYB-SLOW when G1–G6 pass and only G7 fails; no abandonment | a latency overrun on a shared machine is not evidence that the critic does not help; the smokes put the median at 0.21–0.22 s against 0.25 s, with other arms at 0.4–0.6 s under unexplained load (§9) |

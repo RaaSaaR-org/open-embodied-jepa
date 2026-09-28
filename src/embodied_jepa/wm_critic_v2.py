@@ -943,8 +943,8 @@ def abandonment_fires(row: str) -> bool:
 # ----- platform, devices, caps, void rule ---------------------------------------------------------
 PLATFORM = fm.PLATFORM
 SIM_WORKERS = 16
-H_WORKERS = 8  # workers for arms that make world-model decisions
-H_WORKER_TORCH_THREADS = 2
+H_WORKERS = 4  # workers for arms that make world-model decisions (G7; protocol §9.3)
+H_WORKER_TORCH_THREADS = 4
 DEVICES = {
     "simulation": "cpu",
     "closed_loop_encoding": "cpu (batch size 1, in the worker)",

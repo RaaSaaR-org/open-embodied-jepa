@@ -768,8 +768,8 @@
    "mujoco_gl": "egl"
   },
   "sim_workers": 16,
-  "h_workers": 8,
-  "h_worker_torch_threads": 2,
+  "h_workers": 4,
+  "h_worker_torch_threads": 4,
   "devices": {
    "simulation": "cpu",
    "closed_loop_encoding": "cpu (batch size 1, in the worker)",
@@ -795,7 +795,7 @@
    "date": "2026-09-29"
   }
  },
- "frozen_sha256": "1f24c6b948db45a652e6daf172b6d848ff3aa07fce81becdf1c9bed364457b7c",
+ "frozen_sha256": "810d0a561787c422ecdd9b2f56421eedc3bdf733a6571a783597dba40c351719",
  "cohorts": {
   "K0": {
    "seeds": [
@@ -5395,14 +5395,14 @@
   "benchmarks/manifests/apple-token-dynamics-v1.json": "2191d57e869810aeb0601cdc85308d94dcd750782bac9596f0a78b0ea2fbdc38",
   "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
-  "docs/experiments/apple_wm_critic_v2.md": "866bd181b08843e6d5c950e236a4d5f4a7a78636e273160752ae4e90417b20fa",
+  "docs/experiments/apple_wm_critic_v2.md": "18dc99e600ccc539c25d632128eb27173f660ef0378cc73c36d86fd4ac2541af",
   "scripts/collect_apple_shift_v2.py": "b2a9e17f7becc01d9e78682d8e634a5d9c109f213f5628213187b4b62c3ebde0",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
   "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
   "scripts/rank_wm_critic_v2.py": "e0d882f3252ffb5c1216fe37b9c18bfa3bbea4679550ff15fee82ad8612a34ed",
   "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
-  "scripts/run_wm_critic_v2.py": "17a96416e5275f81b571e7635fea4879a97a4d41bc7b00ba38559d29104ba19d",
+  "scripts/run_wm_critic_v2.py": "20bcf8ce85b62696edea01b2a27238d2d47f93d25c6e5eb49021f5955076ea33",
   "scripts/summarize_wm_critic_v2.py": "ee2f305c660352396b26660d526a025cbeff651821db582ea4e5c17788cfc94b",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
   "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
@@ -5441,7 +5441,7 @@
   "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
   "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
   "src/embodied_jepa/token_dynamics.py": "b80ec3506ff359c0e159b1f89e3bc234fcdecbdeccaa38e2ead455c438e34672",
-  "src/embodied_jepa/wm_critic_v2.py": "4f8dfa7f9634e1d4a752116292d5682f1245e162a8a4e31e96b48d3187f2288b",
+  "src/embodied_jepa/wm_critic_v2.py": "00176bcdb769796c17df167093c900ab5e95d067140c1c4887849be6556234d2",
   "src/embodied_jepa/wm_critic_v2_offline.py": "4bfedaef39e65c4db61c5b29d50aaf853235a8f90b187d1313487288d82e8ae1",
   "src/embodied_jepa/wm_critic_v2_runtime.py": "592895bc84d23442fdc7f224ea0349f9a5317de8a3ecb0888e47e29e84e0cffb",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"

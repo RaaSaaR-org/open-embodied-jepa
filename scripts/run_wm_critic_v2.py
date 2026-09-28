@@ -711,7 +711,7 @@ SMOKE = {
     "corpus_seeds": 8,
     "train_updates": 500,
     "train_select_every": 250,
-    "latency_seeds": 8,
+    "latency_seeds": 4,  # one attempt per H worker, all concurrent
     "shift_step": 300,
     "shift_cm": 4,
 }
@@ -916,7 +916,7 @@ def stage_smoke(report, manifest, evidence, clock, args):
         "determinism": devices.determinism_state(),
         "cuda_memory": devices.memory_report("cuda"),
     }
-    # (4) decision latency with the GPU's other resident service, H-LeWM on 8 workers x 2 threads
+    # (4) decision latency with the GPU's other resident service, H-LeWM on the H-arm layout
     snapshot_before = gpu_snapshot()
     critic_files = {
         "r_off": str(out_dir / "r_off.npz"),
