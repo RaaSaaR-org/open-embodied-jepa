@@ -321,6 +321,7 @@
   },
   "document": "docs/experiments/apple_first_policy_v2_linux_results.md",
   "f_counts": null,
+  "generator": "scripts/summarize_first_policy_v2_linux.py",
   "m1_b_replay_library_roots": 112,
   "m1_b_replay_nearest": [
     "look2-51024",
@@ -344,6 +345,7 @@
     "A4-look": {
       "agreement_with_run1": {
         "both": 16,
+        "exact_mcnemar_two_sided_p": 1.0,
         "only_linux": [],
         "only_run1": [],
         "resets_agreeing": 16
@@ -404,13 +406,14 @@
         "policy_complete": 16
       },
       "wilson95": [
-        0.8064,
+        0.806392,
         1.0
       ]
     },
     "B-hold": {
       "agreement_with_run1": {
         "both": 0,
+        "exact_mcnemar_two_sided_p": 1.0,
         "only_linux": [],
         "only_run1": [],
         "resets_agreeing": 16
@@ -438,12 +441,13 @@
       },
       "wilson95": [
         0.0,
-        0.1936
+        0.193608
       ]
     },
     "B-oracle": {
       "agreement_with_run1": {
         "both": 16,
+        "exact_mcnemar_two_sided_p": 1.0,
         "only_linux": [],
         "only_run1": [],
         "resets_agreeing": 16
@@ -504,13 +508,14 @@
         "policy_complete": 16
       },
       "wilson95": [
-        0.8064,
+        0.806392,
         1.0
       ]
     },
     "B-random": {
       "agreement_with_run1": {
         "both": 0,
+        "exact_mcnemar_two_sided_p": 1.0,
         "only_linux": [],
         "only_run1": [],
         "resets_agreeing": 16
@@ -538,12 +543,13 @@
       },
       "wilson95": [
         0.0,
-        0.1936
+        0.193608
       ]
     },
     "B-replay": {
       "agreement_with_run1": {
         "both": 8,
+        "exact_mcnemar_two_sided_p": 1.0,
         "only_linux": [
           52003,
           52005
@@ -597,13 +603,14 @@
         "policy_complete": 12
       },
       "wilson95": [
-        0.3864,
-        0.8152
+        0.38641,
+        0.815188
       ]
     },
     "C-3": {
       "agreement_with_run1": {
         "both": 3,
+        "exact_mcnemar_two_sided_p": 0.125,
         "only_linux": [
           52002,
           52003,
@@ -648,13 +655,14 @@
         "step_limit": 8
       },
       "wilson95": [
-        0.231,
-        0.6682
+        0.230987,
+        0.668214
       ]
     },
     "D-oracle-perc": {
       "agreement_with_run1": {
         "both": 16,
+        "exact_mcnemar_two_sided_p": 1.0,
         "only_linux": [],
         "only_run1": [],
         "resets_agreeing": 16
@@ -715,13 +723,14 @@
         "step_limit": 16
       },
       "wilson95": [
-        0.8064,
+        0.806392,
         1.0
       ]
     },
     "P-0": {
       "agreement_with_run1": {
         "both": 0,
+        "exact_mcnemar_two_sided_p": 0.6875,
         "only_linux": [
           52008,
           52011
@@ -764,13 +773,14 @@
         "step_limit": 16
       },
       "wilson95": [
-        0.035,
-        0.3602
+        0.034977,
+        0.360228
       ]
     },
     "P-1": {
       "agreement_with_run1": {
         "both": 6,
+        "exact_mcnemar_two_sided_p": 0.726562,
         "only_linux": [
           52002,
           52003,
@@ -829,13 +839,14 @@
         "step_limit": 16
       },
       "wilson95": [
-        0.444,
-        0.8584
+        0.444044,
+        0.858354
       ]
     },
     "P-2": {
       "agreement_with_run1": {
         "both": 14,
+        "exact_mcnemar_two_sided_p": 1.0,
         "only_linux": [
           52003
         ],
@@ -899,13 +910,14 @@
         "step_limit": 15
       },
       "wilson95": [
-        0.7167,
-        0.9889
+        0.716713,
+        0.988881
       ]
     },
     "P-3": {
       "agreement_with_run1": {
         "both": 16,
+        "exact_mcnemar_two_sided_p": 1.0,
         "only_linux": [],
         "only_run1": [],
         "resets_agreeing": 16
@@ -966,13 +978,14 @@
         "step_limit": 16
       },
       "wilson95": [
-        0.8064,
+        0.806392,
         1.0
       ]
     },
     "R-3": {
       "agreement_with_run1": {
         "both": 16,
+        "exact_mcnemar_two_sided_p": 1.0,
         "only_linux": [],
         "only_run1": [],
         "resets_agreeing": 16
@@ -1033,7 +1046,7 @@
         "step_limit": 16
       },
       "wilson95": [
-        0.8064,
+        0.806392,
         1.0
       ]
     }
@@ -1072,7 +1085,7 @@
   "prerun": {
     "non_blocking_items": [
       "frozen block void_rule is inherited from TASK-071 and says 'closes TASK-071 as INCONCLUSIVE'; REPLICATION_RULE['V'] cites 'protocol §14' (TASK-071's section), while this protocol's void rule is §6. Neither changes behaviour; both are frozen, so any correction goes through the amendment log. Not amended; the run was not void.",
-      "determinism sdp_backends report flash and mem_efficient attention enabled (also at the end of the run). Unused here: the policy is an MLP and the DINOv2 features run on the CPU; strict mode would raise rather than fall back."
+      "determinism sdp_backends report flash and mem_efficient attention enabled (also at the end of the run). Unused here: the policy is an MLP and the DINOv2 features run on the CPU; strict mode would raise rather than fall back (inferred, not tested)."
     ],
     "render_check": "IDENTICAL at 16 workers (16 distinct workers; 32/32 seeds on >= 2 workers; negative control raised G-frame at seed 52132)",
     "render_report": "in the pre-run reviewer's own temporary worktree at db65816, since removed; the sha256 is as posted in the GO comment",
@@ -1121,6 +1134,7 @@
     "p3_min": 14,
     "p3_per_reset_agreement_with_run1": {
       "both": 16,
+      "exact_mcnemar_two_sided_p": 1.0,
       "only_linux": [],
       "only_run1": [],
       "resets_agreeing": 16

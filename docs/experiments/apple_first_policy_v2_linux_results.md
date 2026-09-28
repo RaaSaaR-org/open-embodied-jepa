@@ -28,8 +28,9 @@ workers).
 Protocol: [`apple_first_policy_v2_linux.md`](apple_first_policy_v2_linux.md), merged in PR #99 as
 `db65816`. It replicates TASK-071 ([`apple_first_policy_v2.md`](apple_first_policy_v2.md);
 results in [`apple_first_policy_v2_results.md`](apple_first_policy_v2_results.md)). The results
-manifest is `benchmarks/manifests/apple-first-policy-v2-linux-results.json`; it was generated from
-`report.json` and checked against it. This document does not amend the frozen protocol.
+manifest is `benchmarks/manifests/apple-first-policy-v2-linux-results.json`. It was generated
+from `report.json` by `scripts/summarize_first_policy_v2_linux.py`, which checks the hashes and
+refuses to write on a mismatch. This document does not amend the frozen protocol.
 
 ---
 
@@ -128,7 +129,7 @@ success or failure matches run-1's.
 
 | arm | rung | counted success (run-1) | 95 % CI | agree with run-1 | at rest, not counted | latched grasp | latched v1 success | terminations | final distance, cm, all 16 attempts (q10 / q50 / q90) |
 |---|---|---|---|---|---|---|---|---|---|
-| P-0 | L1 | **2/16** (4) | 0.04–0.36 | 10 | 0 | 16 | 5 | step limit 16 | 3.68 / 98.4 / 159.4 |
+| P-0 | L1 | **2/16** (4) | 0.03–0.36 | 10 | 0 | 16 | 5 | step limit 16 | 3.68 / 98.4 / 159.4 |
 | P-1 | L1 | **11/16** (9) | 0.44–0.86 | 8 | 0 | 16 | 15 | step limit 16 | 2.61 / 3.39 / 4.12 |
 | P-2 | L1 | **15/16** (15) | 0.72–0.99 | 14 | 0 | 15 | 15 | step limit 15, guard 1 | 2.71 / 3.19 / 3.73 |
 | **P-3 (carried)** | L1 | **16/16** (16) | 0.81–1.00 | **16** | 0 | 16 | 16 | step limit 16 | 2.34 / 2.84 / 3.09 |
@@ -167,20 +168,21 @@ success or failure matches run-1's.
 1. **The development result replicates across platforms.** The whole pipeline ran again on a
    different CPU architecture, renderer and training device: corpus, readouts, BC, three DAgger
    iterations and M1. The carried policy again left the apple at rest on the plate, after a
-   latched grasp and place, on all 16 D2 resets, the same 16 as on the Mac. So run-1's P-3 16/16
-   was not a Mac, Apple GL or MPS artefact. It remains **an existence result on a non-gating
-   cohort that both runs have now used**, with P-3 selected on it. It is not evidence that "a
+   latched grasp and place, on all 16 D2 resets, the same 16 as on the Mac. So, in the protocol's
+   words, the development result does not depend on the Mac, its renderer or MPS. It remains
+   **an existence result on a non-gating cohort that both runs have now used**, with P-3
+   selected on it. It is not evidence that "a
    learned policy works". Only M2 on cohort C can make that claim, and M2 has not been run.
 2. **Still no evidence that pretrained vision helps.** R-3, which reads random-init DINOv2
    tokens, again succeeded on exactly P-3's 16 resets. Its DAgger rollouts were comparable to
    P's (15 vs 15, 122 vs 107 and 121 vs 123 of 128). The oracle arms are again at the ceiling, so
    perception is not the binding constraint on D2, and D2 cannot rank these arms above P-3. The
    TASK-071 reading carries over: if cohort C agrees, M2's G3 (P − R-3 ≥ +8) would fail.
-3. **The no-image control is less stable than the learned arms.** C-3 went from 3/16 to 7/16. C's
-   DAgger iteration-2 rollouts went from 1 to 26 of 128. C-3 is still clearly below P-3 on the same
-   resets (9 vs 0), so the per-reset estimates still matter. But the C arm's level moves a lot
-   between two runs of the same design. That is a reason to treat any single C-3 number, on D2 or
-   on C, as having wide run-to-run spread beyond its Wilson interval.
+3. **The no-image control moved.** C-3 went from 3/16 to 7/16. Paired on the same resets, 4
+   succeed only here and 0 only in run-1 (exact McNemar p = 0.125). C's DAgger iteration-2
+   rollouts went from 1 to 26 of 128. C-3 is still clearly below P-3 on the same resets (9 vs 0),
+   so the per-reset estimates still matter. Two runs cannot measure the C arm's run-to-run
+   spread, but any single C-3 number, on D2 or on C, should be read with this move in mind.
 4. **Early DAgger iterations vary; the final one did not.** P-0 (2 vs 4) and P-1 (11 vs 9) agree
    with run-1 on only 10 and 8 of 16 resets, and P-2 differs on 2 resets. By P-3 both runs are at
    16/16. The corpus, C0 and BC-0 inputs are identical outcome by outcome. What differs is the
@@ -234,7 +236,8 @@ success or failure matches run-1's.
 2. **Flash and memory-efficient attention backends are enabled but unused.** `determinism`
    reports `sdp_backends` with `flash` and `mem_efficient` true, both at the preflight and at the
    end. They did not matter here: the policy is an MLP, the DINOv2 features run on the CPU, and
-   strict mode raises rather than falling back to a nondeterministic kernel. A future protocol
+   strict mode should raise rather than fall back to a nondeterministic kernel (inferred from
+   the strict setting; not tested for these backends). A future protocol
    that runs attention on CUDA should state its backends explicitly.
 
 **Learned Apple→Plate on the frozen benchmark is still 0 successes.** On the non-gating

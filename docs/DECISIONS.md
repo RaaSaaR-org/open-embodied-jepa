@@ -80,16 +80,17 @@ strict-deterministic CUDA training, NVIDIA EGL rendering and 16 simulation worke
   by root and attempt by attempt.
 
 **What this is.** A cross-platform replication of an existence result on the non-gating
-development cohort, which run-1 had already used. It shows that run-1's result is not a Mac,
-Apple GL or MPS artefact. **The official learned Apple→Plate count on the frozen benchmark is
-still 0.** Cohort C is untouched, and M2 needs a separate owner go-ahead. The policy is a
+development cohort, which run-1 had already used. In the protocol's words, the result does
+not depend on the Mac, its renderer or MPS. **The official learned Apple→Plate count on the
+frozen benchmark is still 0.** Cohort C is untouched, and M2 needs a separate owner go-ahead. The policy is a
 BC/DAgger MLP on a frozen DINOv2 readout, not LeWM.
 
 **What limits it.**
 - **R-3 = P-3 = 16/16 again**, on identical success sets. There is no evidence that pretrained
   vision helps.
 - **The oracle arms are at the ceiling again.**
-- **C-3 moved from 3 to 7**, so the no-image control's level has wide run-to-run spread.
+- **C-3 moved from 3 to 7** (paired on the same resets 4 vs 0, exact McNemar p = 0.125). Two runs
+  cannot measure its spread, but any single C-3 number should be read with that in mind.
 - One run, one seed per arm, 16 reused resets.
 
 **Recorded, not amended.** The pre-run reviewer raised two non-blocking items:
