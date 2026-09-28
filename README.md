@@ -189,7 +189,7 @@ uv run --no-sync ruff format --check src tests scripts
 JEPA_TEST_RENDER=1 LEROBOT_SOURCE=third_party/lerobot uv run --no-sync pytest
 ```
 
-Core CI runs on Linux and macOS. A separate macOS integration job executes actual model, data-reader and physics checks; hosted graphics/MPS availability skips are explicit. No CUDA, Isaac or robot connection is required.
+Core CI runs on Linux and macOS. A separate macOS integration job executes actual model, data-reader and physics checks; hosted graphics/MPS/CUDA availability skips are explicit. CUDA is optional: the Linux PC with an RTX 5080 is the working platform since TASK-072 ([Linux setup](docs/SETUP.md#linux-with-cuda-working-platform-since-task-072)). No Isaac or robot connection is required.
 
 ## How the pieces fit
 

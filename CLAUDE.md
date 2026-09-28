@@ -20,6 +20,8 @@ uv run --no-sync pytest
 uv run --no-sync pytest tests/test_training.py::test_name   # single test
 ```
 
+On the Linux PC (the working platform since TASK-072) add `--extra jepa-wms` to the sync, and set `MUJOCO_GL=egl` for anything that renders over ssh; see `docs/SETUP.md` (Linux with CUDA).
+
 Always pass `--no-sync` after the initial sync: a bare `uv sync --locked` reinstalls core+dev only and drops the optional extras.
 
 One-time pinned upstream fetches (into ignored `third_party/`, `assets/`):
@@ -32,7 +34,7 @@ uv run --no-sync python scripts/fetch_dinov2.py   # pinned DINOv2 ViT-S/14 weigh
 JEPA_TEST_RENDER=1 LEROBOT_SOURCE=third_party/lerobot uv run --no-sync pytest
 ```
 
-`JEPA_TEST_RENDER=1` opts into graphics tests; `LEROBOT_SOURCE` points the official-reader test at the fetched checkout. Only "graphics opt-in" and "MPS unavailable" skips are tolerated by the integration CI job (`.github/workflows/integration.yml`); any other skip fails the build.
+`JEPA_TEST_RENDER=1` opts into graphics tests; `LEROBOT_SOURCE` points the official-reader test at the fetched checkout. Only "graphics opt-in", "MPS unavailable" and "CUDA unavailable" skips are tolerated by the integration CI job (`.github/workflows/integration.yml`); any other skip fails the build.
 
 End-to-end software smoke (collect → train both backends → reload → backend-only config swap → MuJoCo MPC):
 
@@ -40,7 +42,7 @@ End-to-end software smoke (collect → train both backends → reload → backen
 uv run --no-sync python scripts/reproduce_smoke.py --name clean-smoke
 ```
 
-It refuses to overwrite an existing `outputs/<name>`; use a new `--name` for another attempt. Never overwrite prior evidence under `data/`, `checkpoints/`, `outputs/` (all git-ignored).
+It refuses to overwrite an existing `outputs/<name>`; use a new `--name` for another attempt. On CUDA, `scripts/cuda_smoke.py --dataset data/<name> --name <new>` trains both backends twice with one seed on the smoke's dataset and requires bit-identical runs. Never overwrite prior evidence under `data/`, `checkpoints/`, `outputs/` (all git-ignored).
 
 ## Executable entry points
 
@@ -60,7 +62,7 @@ The single package is `src/embodied_jepa/`. The central invariant: **swapping th
 
 - `contracts.py` — versioned NumPy-only boundary types: frozen `ee_delta_grasp_v0` 14D action schema, `RobotState`/`StateSchema`, `SequenceBatch`, `Capabilities`. Arrays are validated, never coerced or clipped; value objects take read-only copies. `LatentState` is deliberately `Any` — planners must never inspect a latent.
 - `registry.py` + `config.py` — `MODELS`/`EMBODIMENTS`/`PLANNERS`/`TASKS` registries hold `"module:attr"` strings so optional runtimes import lazily. All registrations live at the top of `config.py`. Configs are strict YAML with `extends:` inheritance; relative paths resolve against the file that declares them, and unknown keys are rejected.
-- `models/base.py` — `VisualModel` owns preprocessing, latents, prediction, loss, goal distance and the checkpoint envelope; `models/native.py` (native JEPA) and `models/lewm.py` (adapter over pinned upstream) are the two backends. `models/frozen_encoder.py` (frozen DINOv2 CLS, TASK-065) and `models/frozen_tokens.py` (frozen DINOv2 patch tokens, TASK-066) put an opt-in frozen-encoder latent in front of either backend; they are off unless a run selects them and are not in `VisualModel.defaults`. Devices are restricted to `cpu`/`mps`; each model keeps isolated RNG state (`rng_scope`) so comparing backends cannot perturb the other. `VisualModel.defaults` also carries the shared backend-agnostic research options (`state_fusion`, `readout_heads`, `cameras`, the readout-shaping weights, `action_chunk`, `predictor_step_embedding`, `multistep_tail_weight`); **all are off by default**, none has been shown to help, and enabling one needs its own preregistration (see `docs/MODELS.md`).
+- `models/base.py` — `VisualModel` owns preprocessing, latents, prediction, loss, goal distance and the checkpoint envelope; `models/native.py` (native JEPA) and `models/lewm.py` (adapter over pinned upstream) are the two backends. `models/frozen_encoder.py` (frozen DINOv2 CLS, TASK-065) and `models/frozen_tokens.py` (frozen DINOv2 patch tokens, TASK-066) put an opt-in frozen-encoder latent in front of either backend; they are off unless a run selects them and are not in `VisualModel.defaults`. Devices are `cpu`, `mps` and `cuda` (`devices.py`: availability, `auto` = cuda > mps > cpu, the one deterministic CUDA setup, sync and memory reporting); each model keeps isolated RNG state (`rng_scope`, including the CUDA generator) so comparing backends cannot perturb the other. The TASK-072 edit to `base.py` changed every model's implementation hash: checkpoints written at or before `9e23ced` (E0, TASK-056, TASK-065, TASK-066) load only at their recorded revision (`benchmarks/manifests/task072-checkpoint-compatibility.json`). `VisualModel.defaults` also carries the shared backend-agnostic research options (`state_fusion`, `readout_heads`, `cameras`, the readout-shaping weights, `action_chunk`, `predictor_step_embedding`, `multistep_tail_weight`); **all are off by default**, none has been shown to help, and enabling one needs its own preregistration (see `docs/MODELS.md`).
 - `planning.py` — CEM/MPC over normalized actions only, with no backend branches. Still implemented and tested, but since TASK-054 **no longer the primary control line**, and since TASK-057 there is no primary control line — see `docs/DECISIONS.md`.
 - `embodiment.py` + `simulation.py` — G1/dual-Dex3 adapter owning IK, hand synergies, frames, limits and the MuJoCo transport; `simulation.py` imports `mujoco` lazily so it is importable without it. Physical scales/limits live in `configs/g1_sim_action.json`.
 - `data.py` — local LeRobot v3 storage profile (PNG-in-Parquet) plus a JEPA manifest for schemas, provenance and splits. Single-writer; opening verifies every recorded hash. T actions require T+1 observations; the final row carries `action_valid=False` and is never sampled as a transition. Sequence windows never cross episode boundaries.
