@@ -35,7 +35,8 @@ away, in a fixed direction per seed.
 **The attempt.** The TASK-068 harness (`resting_expert.run_attempt`) runs, in order:
 1. the reset;
 2. the look;
-3. the expert (at most 740 commands, or 745 for the collector);
+3. the expert (at most 740 commands, or 745 for the collector, whose attempts therefore run 5
+   steps past v1's 800-step cap);
 4. a 60-step settle.
 
 **Measures reported per cell.**
@@ -52,7 +53,7 @@ away, in a fixed direction per seed.
 |---|---|---|
 | **b3a** | apple contact **condim 6**, keeping the scene's own declared friction `1 .01 .001`: torsional 0.01 m, rolling 0.001 m | `v2_feasibility.apply_apple_friction`, run-time edit of the apple geom. The v1 scene declares these coefficients on the apple and plate base but leaves `condim` at MuJoCo's default 3, where only sliding friction acts. MuJoCo uses the larger condim of the two geoms in a contact. |
 | **b3b** | condim 6 with torsional 0.02 m and rolling **0.003 m** | as b3a |
-| **b2** | plate centre uniform in x 0.30–0.37 m, y −0.25 to −0.04 m (base frame), redrawn until it clears the apple by the reset contract's 0.103 m. The apple draw is v1's. | `v2_feasibility.setdown_reset`. The box is chosen from the reach map (§3): every palm set-down point for it is reachable. |
+| **b2** | plate centre uniform in x 0.30–0.37 m, y −0.25 to −0.04 m (base frame), redrawn until it clears the apple by the reset contract's 0.103 m. The apple draw is v1's. | `v2_feasibility.setdown_reset`. The box is chosen from the reach map (§3): on the map's 2 cm grid, every palm set-down point for it is reachable. |
 | **b1** | the waist in the IK | feasibility from code and models only (§4), as R11 asks |
 | b4 | per-finger hand control | excluded by R11 (new action contract) |
 
@@ -87,8 +88,9 @@ Nothing is reachable at x ≥ 0.40 at that height, or at y ≥ −0.02. At 1.0 c
 adds y −0.16 to −0.12.
 
 **The b2 box.** It puts the palm at x 0.285–0.355 and y −0.25 to −0.04. Every 2 cm grid point in
-that range is reachable (checked). The v1 plate region (x 0.47–0.51) is **≥ 9 cm beyond** the
-set-down region along x.
+that range is reachable (checked on the grid only). The v1 palm set-down points (palm x ≥ 0.455
+for plate x ≥ 0.47) are **about 7.5 cm beyond** the last reachable grid column (palm x 0.38); with
+the 2 cm grid, the gap is 5.5–7.5 cm.
 
 ## 4. (b1) The waist: feasibility from code and models only
 
@@ -126,7 +128,8 @@ TASK-068's eight place targets, plus the v1 plate region's corners and centre, l
 | + all three waist joints | 0.0 on all 17 | 0.0 | 0.9–61.4 cm |
 
 - **With the waist pitch, the v1 plate region comes within set-down reach kinematically**, but
-  with little margin: 7 of 17 solutions put the pitch at 0.513–0.52 rad against the 0.52 limit.
+  with little margin: 6 of 17 solutions put the pitch at 0.513–0.52 rad, 5 of them at the 0.52
+  limit.
 - **Not modelled:** balance (the pelvis is fixed in the scene), waist torque (50 N·m limit),
   collisions of the leaning torso, and the camera's changed view.
 - **Position only**, with any palm orientation: the arm alone misses by 2.88–8.14 cm.
@@ -138,7 +141,10 @@ TASK-068's eight place targets, plus the v1 plate region's corners and centre, l
   CPU, 8 workers. Report `outputs/task069-scan/run-1/report.json`, sha256 `7bf82da7…`.
   - Its `revision` field says `13dcef8`. The script read HEAD at the end, and two commits landed
     during the run. Both touched only `scripts/measure_v2_reach.py`, which the scan does not
-    import (`git diff --stat a0f922b 13dcef8`). So the scan ran on exactly the code at `13dcef8`.
+    import (`git diff --stat a0f922b 13dcef8`). The run's output directory was created after
+    `a0f922b` was committed. So the code the scan imports is identical at `a0f922b` and
+    `13dcef8`, and the tracked tree was clean at the end. Uncommitted edits made and reverted
+    during the run cannot be excluded, because the script then read `dirty` only at the end.
   - The script now records the revision at the start (`1fbd43d`).
 - **run-2:** `--cells v1-d12,b3a-d12,b3b-d12 --start 32 --count 32` on seeds 50132–50163, at
   `1fbd43d` (clean tree, 602 s). sha256 `5929edd4…`.
@@ -167,8 +173,11 @@ contact, in m/s.
 
 - There were no errors in either run.
 - Every early stop was the joint-velocity guard, and every guard stop was in a b2 cell.
-- In some b2 cells at 1.0 cm, only 27 of 32 attempts had a landing speed. The rest stopped before
-  the apple touched the plate base.
+- Some cells have fewer landing-speed measurements than attempts: 27 of 32 in the b2 cells at
+  1.0 cm, and 31 of 32 in b3a-d1 at 1.0 cm. In the b2 cells the missing attempts stopped on the
+  guard before the apple touched the plate base. In b3a-d1 (seed 50126) the attempt completed,
+  but the apple never touched the plate base after the opening and ended 115 cm from the plate.
+  The quantiles are over the measured attempts.
 
 **What the logs show directly.**
 1. **b3 alone, with the d12 release, gives at-rest counts at or near 32/32.** The v1 plates, v1
@@ -176,12 +185,18 @@ contact, in m/s.
    - **b3b-d12:** 64/64 at plate exact and 64/64 at 1.0 cm, over two blocks of 32 seeds.
    - **b3a-d12:** 64/64 at plate exact, and 55/64 at 1.0 cm (26 and 29).
    - **The rolling persists without b3.** The same expert and seeds without b3 (v1-d12) rest
-     0/128. The landing speed changes little: a median 0.089–0.091 m/s under v1, 0.069–0.076 m/s
-     with b3a, and 0.047–0.049 m/s with b3b. With b3 the apple then stops rolling. Its highest
-     speed in the final window is ≤ 3.5e-4 m/s under b3a and about 3e-11 m/s under b3b.
+     0/128. The median landing speed falls from 0.088–0.091 m/s under v1 to 0.069–0.076 m/s
+     with b3a and 0.047–0.049 m/s with b3b, about half. It stays about 50× above the at-rest
+     bar. The verdict flips because, with b3, the apple then stops rolling: its highest speed in
+     the final window is ≤ 6.5e-4 m/s under b3a (cell medians 2.9–3.5e-4 m/s) and about 3e-11
+     m/s under b3b.
+   - The 9 b3a attempts that are not at rest all fail the 4 cm radius, not the speed bar.
+   - condim 6 also changes the apple's contacts with the fingers during the release. The scan
+     does not separate that from the rolling resistance after landing.
 2. **b3 does not rescue the other experts.** The collector gets 8/32 and 8/32; d1 gets 15/32 and
-   13/32. Both release higher or with more speed (the collector drops about 15.5 cm; d1's landing
-   speed median is 0.16–0.18 m/s).
+   13/32. Both release higher or with more speed. d1's landing-speed median is 0.16–0.18 m/s.
+   The collector drops the apple about 15.5 cm (measured in TASK-067's landing diagnosis, not in
+   this scan; the collector has no `open` phase for this scan's release fields).
 3. **b2 alone gives 0 at rest.** With the set-down expert, guard stops end 7–32 of 32 attempts
    per cell. Without the pitch, the landing speeds are high (a median 0.16–0.28 m/s), even though
    the apple is low when the hand opens.
@@ -196,9 +211,14 @@ contact, in m/s.
 **What is not shown.**
 - Whether the b3 values are physically right for an apple. This is inference, not measured.
   MuJoCo's rolling coefficient is a lever arm in metres. 0.001–0.003 m on a 2.7 cm radius sphere
-  corresponds to a dimensionless rolling-resistance coefficient of about 0.04–0.11. That is
-  plausible for a soft, irregular fruit on a ceramic plate, but it was not measured, and a real
-  apple is not a sphere.
+  corresponds to a dimensionless rolling-resistance coefficient of about 0.04–0.11. Whether that
+  suits an apple on a plate is an unsourced assumption, not a measurement, and a real apple is
+  not a sphere.
+- **The torsional value.** b3b doubles the torsional coefficient to 0.02 m, as large as a 2 cm
+  contact patch on a 2.7 cm-radius sphere. That doubling is not justified, and the scan did not
+  separate its effect from the rolling increase.
+- **b3b may be more forgiving than a real apple.** Under b3b the apple is effectively stuck once
+  it lands: about 3e-11 m/s in the final window, in every attempt.
 - Robustness to other seeds, levels (1.5 cm was not run) or experts, beyond the 64 attempts per
   level above.
 - Anything learned. A scripted expert that rests the apple is a prerequisite for demonstrations,
