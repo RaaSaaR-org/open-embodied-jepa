@@ -211,16 +211,20 @@ should take about 3–5 min, far inside the 7 200 s cap.
 
 ## 9. Preflight readiness check and smoke (nothing in them is read)
 
-Both ran on the Linux PC in a clean worktree at `052a0ed` (this document's code; after that
-revision only this section, §7 and the manifest's pin of this document changed), against the
+All ran on the Linux PC in a clean worktree, against the
 evidence in `worktrees/task072-run`. Their outputs are under `outputs/task072-m2-scratch/` in
 that worktree, git-ignored and never committed. **Neither simulated a cohort-C seed, and nothing
 in them is read.**
 
 | run | mode | wall (report `total_seconds`) | end | report sha256 |
 |---|---|---|---|---|
-| preflight-1 | `preflight` | 40 s | PREFLIGHT-READY | `23ace09f…e453` |
-| smoke-a | `smoke`, 4 stand-in seeds 52100–52103, 740 policy steps, 4 workers | 69 s | SMOKE-COMPLETE | `116c5ccc…a69e` |
+| preflight-1 | `preflight`, at `052a0ed` | 40 s | PREFLIGHT-READY | `23ace09f…e453` |
+| smoke-a | `smoke`, at `052a0ed`: 4 stand-in seeds 52100–52103, 740 policy steps, 4 workers | 69 s | SMOKE-COMPLETE | `116c5ccc…a69e` |
+| **preflight-2** | `preflight`, at `3350f3d` (after the review fixes), with G-cohort on the stored values | 40 s | PREFLIGHT-READY | `3d4d21fe…06e3` |
+| **smoke-b** | `smoke`, at `3350f3d`, as smoke-a | 68 s | SMOKE-COMPLETE | `6a030b48…57a0` |
+
+`3350f3d` is the code the gated run uses. After it, only this section and the manifest's pin of
+this document changed. The results below hold for both pairs of runs.
 
 What they show about the mechanics:
 - **Preflight guards passed:** G-frozen; all 43 pins at the start and at the end; clean tree;
@@ -232,6 +236,10 @@ What they show about the mechanics:
   per-reset S0-P apple and plate errors, C-3's constant, the 112-root library and the 16 D2
   nearest roots. The refit and its checks took about 25 s.
 - **Q-split:** 170 train episodes decoded; val and test not decoded.
+- **G-cohort (preflight-2):** the stored cohort-C values matched their digest `4f888154…533e`
+  and the whitelist of exactly 45300–45339. Nothing was rendered.
+- **smoke-b** recorded `cohort_first_render_utc` before its first stand-in render, and wrote
+  its counts only after the end checks had passed.
 - **smoke-a** ran every arm at full length on the stand-ins: G-frame and G-look held on every
   attempt, and G6's check found no privileged read in any learned attempt. The G7 measurement
   worked: the per-command median was 0.21 ms over 2 960 commands, and the DINOv2 forward pass

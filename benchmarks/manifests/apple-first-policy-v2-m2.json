@@ -189,7 +189,7 @@
     "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
     "docs/experiments/apple_first_policy_v2.md": "13b3470b70bfe8f791d1036e94f0e031847bec14d1c41874c30b34e2c2cea0d7",
     "docs/experiments/apple_first_policy_v2_linux.md": "e7be29f88e52940c870fc51d6b122c63ecb027f478dace4e2bb9da792989028c",
-    "docs/experiments/apple_first_policy_v2_m2.md": "1bd40c749bc95db289b591da954a5c7845f61a103ff74ab9f3f83ebad45795d4",
+    "docs/experiments/apple_first_policy_v2_m2.md": "0dca1ffd2895bf24453e0709641b254a053c027e2a8431582f51b3677fa4e843",
     "scripts/check_first_policy_v2_linux_render.py": "70bb6e79c47243d6cdee56df72d99ca7251f14f8d6b713f83c2c1ff70937fd75",
     "scripts/check_first_policy_v2_render.py": "ef448487015d7320770fc4df88ea98da75b0a6d4a20904c9bedf293c87493602",
     "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
