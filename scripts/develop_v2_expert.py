@@ -42,6 +42,10 @@ DESIGNS: dict[str, dict] = {
     "e5": {"release_pitch_rad": 0.45, "release_dx": -0.005},
     "e6": {"release_pitch_rad": 0.45, "opening_ramp": 0.02},
     "e7": {"release_pitch_rad": 0.5},
+    # e2-e7: slower landings (e2, e3, e6, e7) end nearer the rim; releasing 1 cm further
+    # forward (e5) was best. Continue that direction.
+    "e8": {"release_pitch_rad": 0.45, "release_dx": 0.005},
+    "e9": {"release_pitch_rad": 0.45, "release_dx": 0.015},
 }
 
 _W: dict = {}
