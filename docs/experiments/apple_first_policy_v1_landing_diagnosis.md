@@ -200,3 +200,42 @@ design without a new ruling. Closing TASK-067 is the fallback.
 
 **Not done, per R9:** no second design, no change to the task, the plate geometry, the scorer
 radius or the 28/32 bar, and no v2 amendment. Learned Apple→Plate is still 0 successes.
+
+## D. Owner ruling R10 and closeout (2026-09-28)
+
+Owner ruling R10, 2026-09-28 UTC, received via the coordinator and recorded verbatim:
+
+> TASK-067: #86 is merged as 5250db2. PR #87 now conflicts with main, almost certainly on the task card. Owner ruling R10, 2026-09-28 UTC, is below; record it verbatim in the closeout PR.
+>
+> 1. **Rebase #87 onto main.**
+>    - Resolve the card conflict with no change to content.
+>    - Get a re-review from a reviewer in its own temporary worktree. The reviewer confirms that the diff-of-diffs against the approved 9cab87f is limited to the conflict resolution.
+>    - Send me the new head SHA and the reviewer's reported verdict. I merge.
+>
+> 2. **Then close TASK-067 under the R9 fallback, in a separate closeout PR.**
+>    - Card to done, outcome CAL-ESCALATE, with the probe (P-CANDIDATE-FAIL) and the place redesign (FAIL, premise untested) recorded.
+>    - A docs/DECISIONS.md entry that states the two findings that matter beyond this task:
+>      - (i) The scripted collector does not rest the apple on the plate. It drops it from about 15.5 cm; the apple rolls to the rim and comes to rest outside the 4 cm radius on most resets. At rest the count is 4/32 with the plate exact.
+>      - (ii) The success scorer latches on transient crossings. Scripted-collector success counts measured with it therefore overstate how often the apple actually ends on the plate.
+>      - Past results are not rewritten. The entry flags that scripted and privileged success numbers were measured with the latching scorer.
+>    - Update the TASK-067 sentences in AGENTS.md, CLAUDE.md and README.md to match.
+>    - Get it reviewed. I merge.
+>
+> 3. **After the closeout, TASK-067 is done for you.**
+>    - A new task, the expert's placement and success at rest, goes to a new agent.
+>    - Do not open that card yourself.
+>
+> Rules, verbatim:
+> 1. "A gated run starts only on the pre-run reviewer's REPORTED verdict, delivered as a message — never on a review file read from disk. Same rule for merging: only on the reviewer's reported APPROVE."
+> 2. "One task, one agent. Do not launch a closeout/follow-up agent while the original task agent can still resume."
+> 3. Reviewers use their own temporary worktree, never yours.
+>
+> Do not merge.
+
+**Closeout.** TASK-067 is closed under the R9 fallback, with outcome **CAL-ESCALATE**.
+- The release-point probe ended **P-CANDIDATE-FAIL**.
+- The one place redesign ended **FAIL**, with its premise untested: the hand never reached the place pose.
+
+The two findings that matter beyond this task are recorded in `docs/DECISIONS.md` (decision of 2026-09-28, TASK-067). No past result is rewritten.
+
+The follow-up task covers the expert's placement and success at rest. It is not opened here; R10 assigns it to a new agent.

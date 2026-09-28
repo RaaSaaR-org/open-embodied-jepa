@@ -63,6 +63,71 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-28 — TASK-067 closes as CAL-ESCALATE; the scripted expert does not rest the apple on the plate, and the scorer latches transient crossings (TASK-067)
+
+**Decision.** Owner ruling R10 closes TASK-067 under the R9 fallback, with outcome
+**CAL-ESCALATE**:
+- **The gated run** stopped at the C0 calibration before any policy was trained. The privileged
+  scripted expert scored 21/32 at 1.0 cm plate error, below the 28/32 bar.
+- **The release-point probe** ended **P-CANDIDATE-FAIL**.
+- **The one place redesign** ended **FAIL, with its premise untested**. The hand never reached
+  the place pose within its 100-command budget. It was still descending at about 0.44 mm/step
+  with the command saturated, and it made no hand–plate contact during `lower_closed`. Why the descent is so slow is
+  not identified.
+- **No abandonment clause fires.** The task, the plate geometry, the scorer radius and the 28/32
+  bar were not changed.
+- **Next:** the follow-up task, the expert's placement and success at rest, goes to a new agent.
+- **Not abandoned:** the LeWM backend, the encoder as a component and the product goal.
+- **Learned Apple→Plate is still 0 successes.**
+
+**Two findings that matter beyond this task.**
+
+1. **The scripted collector does not rest the apple on the plate.**
+   - It opens the hand at the transfer height, so the apple falls about 15.5 cm and lands at
+     about 1.28 m/s.
+   - The apple picks up horizontal velocity while the hand opens. It is carried and rolls to the
+     rim, touching it on 32/32 attempts.
+   - After a 60-step settle it is outside the 4 cm radius, slowly rolling along the rim at
+     4.52–4.60 cm from the centre, on most resets.
+   - **At rest the count is 4/32 with the plate exact, and 1/32 at 1.0 cm plate error.** This is
+     measured on the 32 spent probe seeds 46800–46831.
+   - A rim-supported apple sits about 4.6 cm from the centre, so by geometry it always fails the
+     4 cm radius.
+2. **The success scorer latches on transient crossings.**
+   - How `AppleToPlateTask` (thresholds `tabletop_proxy_v0`) counts success:
+     - its per-step `success` needs 0.15 s inside 4 cm, supported, at ≤ 0.1 m/s and with no hand
+       contact;
+     - its `place` and `release` stages latch the first such window;
+     - runners that stop at the first success, such as C0 and the probes, count the same way.
+   - A slowly rolling apple that crosses the disc for 0.15 s therefore counts as a success.
+   - On the same attempts, success at any step was 32/32 and 21/32, against 4/32 and 1/32 at
+     rest.
+   - **Scripted-collector success counts measured with this scorer therefore overstate how often
+     the apple actually ends on the plate.**
+
+**Past results are not rewritten.**
+- **Flag:** scripted-collector and privileged success numbers elsewhere in this repository,
+  where they were scored with `AppleToPlateTask`, were measured with this latching scorer. An
+  example is the 103/200 root successes in `apple-look-v1`, which were. Read such numbers as
+  "reached the plate under the latch", not "rested on the plate".
+- **Not audited or re-measured here:**
+  - which past numbers were scored with `AppleToPlateTask`;
+  - which of those include transient crossings.
+- **Learned counts are unaffected.** A latch can only over-count, and the learned count is 0.
+
+**Evidence.**
+- [apple_first_policy_v1_results.md](experiments/apple_first_policy_v1_results.md): C0 and
+  CAL-ESCALATE, with the dated erratum in §4.2.
+- [apple_first_policy_v1_release_probe.md](experiments/apple_first_policy_v1_release_probe.md):
+  P-CANDIDATE-FAIL, with R8 and R9 verbatim.
+- [apple_first_policy_v1_landing_diagnosis.md](experiments/apple_first_policy_v1_landing_diagnosis.md):
+  - §A, the diagnosis, with its dated correction;
+  - §B–§C, the redesign and its FAIL row;
+  - §D, R10 verbatim.
+- Artifact report sha256:
+  - `outputs/task067-landing-diagnosis/run-1`: `d9966669…1f46`;
+  - `outputs/task067-place-probe/run-1`: `a5af156c…acb9`.
+
 ## Decision 2026-09-28 — the patch-token predictor passes its world-model gates on the train split (TASK-066)
 
 **Decision.** `apple_token_dynamics_v1.md` §11 row **WM-TOK-DYNAMICS** matched: every seed passes
