@@ -4,7 +4,7 @@ Development spike helper (not a gated experiment). Run on the host with the proj
 environment; it reads the JSON written by ``bringup_g1_dex3.py`` inside the container:
 
     uv run --no-sync python scripts/isaac/compare_joints.py \
-        --isaac outputs/isaac-bringup-spike-<n>/isaac_joints.json \
+        --isaac outputs/isaac-bringup-spike-<n>/run/isaac_joints.json \
         --output outputs/isaac-bringup-spike-<n>/joint_comparison.json
 """
 
