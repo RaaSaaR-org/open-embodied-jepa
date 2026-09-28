@@ -8,7 +8,9 @@
 # revision/status, and samples GPU memory every ~1 s (gpu_apps.csv, gpu_device.csv; sampled
 # peaks are lower bounds). Refuses to start while any non-shell TASK-072 / first_policy
 # process (a run, its pytest, ...) is alive, so a development run does not overlap a gated
-# run on the shared GPU.
+# run on the shared GPU. Limits: it matches those names only (a gated task under another name
+# is not caught) and checks once at start (a gated run started while the container is up is
+# not detected). It is a courtesy check, not a lock.
 # If your login shell predates your docker group membership, run it via `sg docker -c`.
 set -euo pipefail
 SCRIPT=${1:?usage: run_isaac.sh <script.py> <out-dir> [args]}
