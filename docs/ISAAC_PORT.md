@@ -1,6 +1,6 @@
 # Future Isaac transport specification
 
-Status 2026-09-28: a development conversion of the pinned MJCF to USD, a field-by-field model audit and a minimal robot-only `IsaacTransport` with a joint-level MuJoCo parity check exist; see [ISAAC_MJCF_TRANSPORT.md](ISAAC_MJCF_TRANSPORT.md). They do not meet the admission evidence below.
+Status 2026-09-28: a development conversion of the pinned MJCF to USD, a field-by-field model audit and a minimal robot-only `IsaacTransport` with a joint-level MuJoCo parity check exist; see [ISAAC_MJCF_TRANSPORT.md](ISAAC_MJCF_TRANSPORT.md). They do not meet the admission evidence below. On 2026-09-29 the rendering was pinned with a camera manifest and an image-parity check (geometry passes, photometry fails its declared bars), contact-free joint parity was measured with contacts in both simulators, and the v2 apple and plate were added with an evaluator-only `task_truth`; PhysX has no rolling friction, so v2 cannot yet be matched. See [ISAAC_V2_SCENE.md](ISAAC_V2_SCENE.md).
 
 TASK-022 specifies this port; TASK-025 implements and validates it on a suitable host. MuJoCo on the Mac remains the implemented simulation. No Isaac/CUDA dependency is added to the Mac core, and no Isaac runtime or parity test is claimed.
 
