@@ -17,7 +17,8 @@ mkdir -p "$OUT/home_cache"
 docker image inspect "$IMAGE" --format '{{.Id}} {{json .RepoDigests}}' > "$OUT/image.txt"
 git -C "$REPO" rev-parse HEAD > "$OUT/code_revision.txt"
 git -C "$REPO" status --porcelain > "$OUT/code_status.txt"
-EXTRA=$(printf ' %q' "$@")
+EXTRA=""
+[ $# -gt 0 ] && EXTRA=$(printf ' %q' "$@")
 
 nvidia-smi --query-compute-apps=timestamp,pid,process_name,used_memory \
   --format=csv,noheader -lms 1000 > "$OUT/gpu_apps.csv" &
