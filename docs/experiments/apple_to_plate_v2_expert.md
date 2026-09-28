@@ -126,7 +126,8 @@ PR #91 (TASK-069) was rebased onto `main` and then rebase-merged. Its SHAs were 
 - CPU, 8 workers. Every run had a clean tracked tree and 0 errors.
 - Artifacts are in `outputs/task070-dev/<design>-run-<n>/report.json` (git-ignored).
 
-"Final" is the q10 / q50 / q90 distance from the plate centre at the end, in cm. "Land v" is
+"Final" is the q10 / q50 / q90 distance from the plate centre at the end, in cm. "Land v" (the
+plate-exact cell's value) is
 the median horizontal speed at first plate-base contact, in m/s.
 
 | design | parameters (vs. RestingPlaceExpert defaults) | revision | seeds | at rest: exact / 1.0 cm / 1.5 cm | latched: exact / 1.0 / 1.5 | final at 1.0 cm | land v | sha256 |
@@ -157,6 +158,7 @@ There were no guard stops in any TASK-070 development run.
 **What the development logs show.**
 - **Where the apple ends.** Under v2 the released apple lands near the plate centre. In every e1
   attempt it touches the rim after the opening, then ends at a median 3.2–3.4 cm from the centre
+  at plate exact and 1.0 cm (3.5–3.6 cm at 1.5 cm)
   (development cells of e1, e5, e8, e9).
 - **Slower landings did not help.** e2, e3, e6 and e7 land slower, but end nearer the rim and
   rest less often.
@@ -195,7 +197,7 @@ There were no guard stops in any TASK-070 development run.
 | **gate** | **at rest ≥ 28/32 at plate exact AND ≥ 28/32 at 1.0 cm → PASS; otherwise FAIL** |
 | reported, not gated | at rest at 1.5 cm; the latched v1 scorer (per-step `AppleToPlateTask` success at any step) at each level; guard stops; landing speed; final distance |
 | device | CPU, 8 spawned workers; MuJoCo 3.13.0 (recorded in the manifest) |
-| guard stops | a joint-velocity guard stop ends that attempt as not at rest; it is a failure, not a void |
+| guard and other stops | a joint-velocity stop (refused at projection or rejected at execution), an infeasible command or any other early stop ends that attempt as not at rest; it is a failure, not a void |
 
 **Rows** (`apple_to_plate_v2.gate_row`, tested):
 - **VOID** if any attempt raised an exception, or a gated cell does not have 32 attempts.
@@ -206,6 +208,11 @@ There were no guard stops in any TASK-070 development run.
 **Void rule.** A first VOID allows one from-scratch repeat, with the same seeds, the same caps
 and the same device, into a new output directory. A second VOID makes the result
 **INCONCLUSIVE**.
+- **A run that ends without a `report.json`** (a crash outside an attempt, or a hang stopped by
+  hand) is a VOID.
+- **A known risk, stated before the run.** The simulation is deterministic, so an exception that
+  the expert itself raises would recur in the repeat and give INCONCLUSIVE, not FAIL. There were
+  0 exceptions in 1088 development attempts. The rule is not changed here.
 
 **No second chance.** No expert or physics change and no seed change follow a FAIL within
 TASK-070. A FAIL is reported plainly, and the next step is the owner's.

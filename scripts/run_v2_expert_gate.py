@@ -45,6 +45,24 @@ def git(*args) -> str:
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True).stdout.strip()
 
 
+def is_guard(stop_reason: str) -> bool:
+    """A joint-velocity stop, whether refused at projection or rejected at execution."""
+    return stop_reason.startswith("guard") or "measured joint velocity" in stop_reason
+
+
+def software() -> dict:
+    import platform
+
+    import mujoco
+
+    return {
+        "python": platform.python_version(),
+        "numpy": np.__version__,
+        "mujoco": mujoco.__version__,
+        "platform": platform.platform(),
+    }
+
+
 def check_pins() -> dict:
     manifest = json.loads(MANIFEST.read_text())
     found = {name: sha256(ROOT / name) for name in manifest["source_sha256"]}
@@ -99,6 +117,8 @@ def main() -> int:
     if args.output.exists():
         raise SystemExit(f"refusing to overwrite {args.output}")
     revision = git("rev-parse", "HEAD")
+    if not revision:
+        raise SystemExit("refusing to run without a git revision")
     dirty = bool(git("status", "--porcelain", "--untracked-files=no"))
     if dirty and not args.smoke:
         raise SystemExit("refusing a gated run on a dirty tracked tree")
@@ -145,10 +165,8 @@ def main() -> int:
         cells[str(level)] = {
             "attempts": len(cell),
             "errors": len(cell) - len(ok),
-            "guard_stops": sum(r["stop_reason"].startswith("guard") for r in ok),
-            "other_stops": sum(
-                (not r["complete"]) and not r["stop_reason"].startswith("guard") for r in ok
-            ),
+            "guard_stops": sum(is_guard(r["stop_reason"]) for r in ok),
+            "other_stops": sum((not r["complete"]) and not is_guard(r["stop_reason"]) for r in ok),
             "at_rest": sum(r["at_rest"] for r in ok),
             "latched": sum(r["latched_success"] for r in ok),
             "final_distance_cm_q10_q50_q90": np.quantile(
@@ -177,6 +195,7 @@ def main() -> int:
         "revision_at_end": git("rev-parse", "HEAD"),
         "source_sha256": pins,
         "device": "cpu",
+        "software": software(),
         "workers": args.workers,
         "seconds": time.monotonic() - started,
         "cells": cells,
