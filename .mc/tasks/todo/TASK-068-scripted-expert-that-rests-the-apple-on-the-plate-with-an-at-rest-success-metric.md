@@ -80,8 +80,9 @@ Protocol and log: `docs/experiments/apple_resting_expert_v1.md`.
   development designs d1–d12 and the collector baseline run (final runs at `a8a579c`).
   **0 at rest in 269 complete development attempts across 15 design-by-level cells** (protocol
   §5). Descent diagnosis: the place pose is 3.1–6.2 cm beyond the arm's reach, whatever the
-  palm orientation; from step 11–21 of the lowering phase the IK refuses the full step, and
-  the backtracked 1/8 step lies inside the IK tolerance and is a hold (protocol §4). Blocker reported to the owner before any
-  preregistration (protocol §6). No gated seeds declared or spent.
+  palm orientation; from step 11–21 (0-based) of the lowering phase the IK refuses the full
+  step, and the backtracked 1/8 step lies inside the IK tolerance and is a hold (protocol §4).
+  Blocker reported to the owner before any preregistration (protocol §6). No gated seeds
+  declared or spent.
 
 %% mc-links: [[TASK-067]] %%
