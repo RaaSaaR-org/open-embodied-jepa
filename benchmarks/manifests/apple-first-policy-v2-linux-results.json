@@ -1,0 +1,1437 @@
+{
+  "a4_threshold": 8,
+  "bc0": {
+    "C_mean_definition": "mean over the train roots of the cross-fitted P estimates (per root)",
+    "C_mean_estimates": [
+      0.33890170577990625,
+      -0.1815415010971372,
+      0.4891525108970396,
+      -0.09036015133263757
+    ],
+    "mask_accounting": {
+      "train": {
+        "dropped": 1936,
+        "kept": 116449,
+        "policy_steps": 118790,
+        "post_displacement_pre_grasp": 405
+      },
+      "val": {
+        "dropped": 7,
+        "kept": 13479,
+        "policy_steps": 13486,
+        "post_displacement_pre_grasp": 0
+      }
+    },
+    "roots": 170,
+    "rows": 116449,
+    "val_roots": 20,
+    "val_rows": 13479
+  },
+  "c0": {
+    "at_rest_of_32": {
+      "apple_0.5": 32,
+      "apple_0.8": 32,
+      "apple_1.0": 31,
+      "apple_1.2": 31,
+      "plate_1.0": 29,
+      "plate_1.5": 30,
+      "plate_2.0": 23,
+      "plate_2.5": 21,
+      "reference": 32
+    },
+    "attempts_differing_from_run1": 0,
+    "bars": {
+      "apple_median_cm": 0.75,
+      "apple_p90_cm": 1.2,
+      "plate_median_cm": 1.5,
+      "plate_p90_cm": 1.5,
+      "task070_plate_ceiling_cm": 1.5
+    },
+    "counted_success_of_32": {
+      "apple_0.5": 32,
+      "apple_0.8": 32,
+      "apple_1.0": 31,
+      "apple_1.2": 31,
+      "plate_1.0": 29,
+      "plate_1.5": 30,
+      "plate_2.0": 23,
+      "plate_2.5": 21,
+      "reference": 32
+    },
+    "latched_of_32": {
+      "apple_0.5": 32,
+      "apple_0.8": 32,
+      "apple_1.0": 31,
+      "apple_1.2": 31,
+      "plate_1.0": 32,
+      "plate_1.5": 32,
+      "plate_2.0": 31,
+      "plate_2.5": 31,
+      "reference": 32
+    },
+    "seconds": 129.4
+  },
+  "checkpoints": {
+    "C-0": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/C-0.pt",
+      "sha256": "3c38f94d5214f34217ba0f690a0fe4a1a7b54e99072796bc5a63d7a5c38e5cdf"
+    },
+    "C-1": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/C-1.pt",
+      "sha256": "f20f073f7880629cbec8c3840321ede2342660ea09b590a9f817b0e6e5bcf1ae"
+    },
+    "C-2": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/C-2.pt",
+      "sha256": "84d0a567668c64c30ff6ef8dea9532d1f57c6d9552410509d50295cffc8f6f95"
+    },
+    "C-3": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/C-3.pt",
+      "sha256": "d1820db4a1af3a63f02ed96c9a7c51d8b92d56ea7a23cf762940925f586b1289"
+    },
+    "P-0": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/P-0.pt",
+      "sha256": "34cafc36d04dbdc9144f707ab967575d62b2fd356893463a7a6080e3f3941e42"
+    },
+    "P-1": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/P-1.pt",
+      "sha256": "e3ece47d43aefa3e356594def9dad59c5f878d7165cad0c9cd145e0ec2a010bf"
+    },
+    "P-2": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/P-2.pt",
+      "sha256": "ef4ce7972b641e1adaf8750c097a4cff286517492c8cf7dff64dda1a5f31f8ef"
+    },
+    "P-3": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/P-3.pt",
+      "sha256": "7988162df0b6106db5d007e322b824a3725b74cb103ba5a8de9f552912060be8"
+    },
+    "R-0": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/R-0.pt",
+      "sha256": "f2d20b4d0113f290d16852ebdd5f252a6b38097607d01874acde8d7e128efe3c"
+    },
+    "R-1": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/R-1.pt",
+      "sha256": "5188790b268507baa3d8ab695865f6cede1a81742cdc247781e8593c1c64a46a"
+    },
+    "R-2": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/R-2.pt",
+      "sha256": "cf3feec1b9850c57fee69f6b2356b876a24dd2b3b43f5214f9ccc336f5ece346"
+    },
+    "R-3": {
+      "path": "checkpoints/task072-first-policy-v2-linux/run-1/R-3.pt",
+      "sha256": "bea0d422b951287fcad66630aa8ea837a59df441d7a6c1793e2423048e2c0fd3"
+    }
+  },
+  "claim_scope": "replication of TASK-071's development result on the Linux PC; an existence result on the non-gating development cohort D2 of apple-to-plate-v2; a learned policy with a DINOv2 encoder (BC/DAgger), not LeWM; the random-init floor R-3 ties P-3, so no evidence that pretrained vision helps; the official learned Apple->Plate count on the frozen benchmark is still 0; cohort C untouched; M2 not run",
+  "clause_fires": false,
+  "corpus": {
+    "all": {
+      "at_rest": 129,
+      "by_noise_level": {
+        "0": {
+          "at_rest": 50,
+          "complete": 50,
+          "latched": 50,
+          "roots": 50,
+          "success": 50
+        },
+        "1": {
+          "at_rest": 34,
+          "complete": 47,
+          "latched": 45,
+          "roots": 50,
+          "success": 34
+        },
+        "2": {
+          "at_rest": 28,
+          "complete": 45,
+          "latched": 38,
+          "roots": 50,
+          "success": 28
+        },
+        "3": {
+          "at_rest": 17,
+          "complete": 47,
+          "latched": 26,
+          "roots": 50,
+          "success": 17
+        }
+      },
+      "latched": 159,
+      "roots": 200,
+      "success": 129,
+      "terminations": {
+        "guard_refusal": 11,
+        "policy_complete": 189
+      }
+    },
+    "manifest_sha256": "67c342f6d37f3bd1910af16139096c109fa0bf6647d87286ca26b0899c9b4f54",
+    "path": "data/apple-look-v2-linux/run-1",
+    "roots_differing_from_run1_in_outcome_split_termination_or_steps": [],
+    "run1_all_success": 129,
+    "seconds": 96.5,
+    "splits": {
+      "test": 10,
+      "train": 170,
+      "val": 20
+    },
+    "train": {
+      "at_rest": 112,
+      "by_noise_level": {
+        "0": {
+          "at_rest": 45,
+          "complete": 45,
+          "latched": 45,
+          "roots": 45,
+          "success": 45
+        },
+        "1": {
+          "at_rest": 28,
+          "complete": 39,
+          "latched": 37,
+          "roots": 42,
+          "success": 28
+        },
+        "2": {
+          "at_rest": 24,
+          "complete": 38,
+          "latched": 32,
+          "roots": 41,
+          "success": 24
+        },
+        "3": {
+          "at_rest": 15,
+          "complete": 39,
+          "latched": 20,
+          "roots": 42,
+          "success": 15
+        }
+      },
+      "latched": 134,
+      "roots": 170,
+      "success": 112,
+      "terminations": {
+        "guard_refusal": 9,
+        "policy_complete": 161
+      }
+    }
+  },
+  "counted_success": "apple_at_rest_v0 AND latched grasp AND latched place before the settle (owner rulings T71-R1, T71-R2)",
+  "dagger_rollouts": {
+    "dagger_1": {
+      "C": {
+        "at_rest": 0,
+        "at_rest_not_counted": 0,
+        "grasp": 52,
+        "latched": 5,
+        "rows_added": 58543,
+        "rows_total": 174992,
+        "run1_success": 0,
+        "success": 0
+      },
+      "P": {
+        "at_rest": 15,
+        "at_rest_not_counted": 0,
+        "grasp": 128,
+        "latched": 42,
+        "rows_added": 92800,
+        "rows_total": 209249,
+        "run1_success": 23,
+        "success": 15
+      },
+      "R": {
+        "at_rest": 15,
+        "at_rest_not_counted": 0,
+        "grasp": 128,
+        "latched": 44,
+        "rows_added": 92800,
+        "rows_total": 209249,
+        "run1_success": 22,
+        "success": 15
+      }
+    },
+    "dagger_2": {
+      "C": {
+        "at_rest": 26,
+        "at_rest_not_counted": 0,
+        "grasp": 39,
+        "latched": 33,
+        "rows_added": 50964,
+        "rows_total": 225956,
+        "run1_success": 1,
+        "success": 26
+      },
+      "P": {
+        "at_rest": 107,
+        "at_rest_not_counted": 0,
+        "grasp": 126,
+        "latched": 120,
+        "rows_added": 91807,
+        "rows_total": 301056,
+        "run1_success": 91,
+        "success": 107
+      },
+      "R": {
+        "at_rest": 122,
+        "at_rest_not_counted": 0,
+        "grasp": 126,
+        "latched": 126,
+        "rows_added": 91839,
+        "rows_total": 301088,
+        "run1_success": 96,
+        "success": 122
+      }
+    },
+    "dagger_3": {
+      "C": {
+        "at_rest": 34,
+        "at_rest_not_counted": 0,
+        "grasp": 59,
+        "latched": 54,
+        "rows_added": 62383,
+        "rows_total": 288339,
+        "run1_success": 33,
+        "success": 34
+      },
+      "P": {
+        "at_rest": 123,
+        "at_rest_not_counted": 0,
+        "grasp": 125,
+        "latched": 125,
+        "rows_added": 91313,
+        "rows_total": 392369,
+        "run1_success": 124,
+        "success": 123
+      },
+      "R": {
+        "at_rest": 121,
+        "at_rest_not_counted": 0,
+        "grasp": 126,
+        "latched": 126,
+        "rows_added": 91797,
+        "rows_total": 392885,
+        "run1_success": 124,
+        "success": 121
+      }
+    }
+  },
+  "decision": {
+    "carried": "P-3",
+    "clause_fires": false,
+    "row": "M1-PASS"
+  },
+  "document": "docs/experiments/apple_first_policy_v2_linux_results.md",
+  "f_counts": null,
+  "generator": "scripts/summarize_first_policy_v2_linux.py",
+  "m1_b_replay_library_roots": 112,
+  "m1_b_replay_nearest": [
+    "look2-51024",
+    "look2-51116",
+    "look2-51170",
+    "look2-51141",
+    "look2-51004",
+    "look2-51149",
+    "look2-51022",
+    "look2-51087",
+    "look2-51093",
+    "look2-51025",
+    "look2-51124",
+    "look2-51025",
+    "look2-51096",
+    "look2-51197",
+    "look2-51087",
+    "look2-51165"
+  ],
+  "m1_d2": {
+    "A4-look": {
+      "agreement_with_run1": {
+        "both": 16,
+        "exact_mcnemar_two_sided_p": 1.0,
+        "only_linux": [],
+        "only_run1": [],
+        "resets_agreeing": 16
+      },
+      "counts": {
+        "at_rest": 16,
+        "at_rest_not_counted": 0,
+        "grasp": 16,
+        "latched": 16,
+        "success": 16
+      },
+      "final_distance_cm_q10_q50_q90": [
+        3.16,
+        3.39,
+        3.89
+      ],
+      "run1": {
+        "success": 16,
+        "success_seeds": [
+          52000,
+          52001,
+          52002,
+          52003,
+          52004,
+          52005,
+          52006,
+          52007,
+          52008,
+          52009,
+          52010,
+          52011,
+          52012,
+          52013,
+          52014,
+          52015
+        ]
+      },
+      "success_seeds": [
+        52000,
+        52001,
+        52002,
+        52003,
+        52004,
+        52005,
+        52006,
+        52007,
+        52008,
+        52009,
+        52010,
+        52011,
+        52012,
+        52013,
+        52014,
+        52015
+      ],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "policy_complete": 16
+      },
+      "wilson95": [
+        0.806392,
+        1.0
+      ]
+    },
+    "B-hold": {
+      "agreement_with_run1": {
+        "both": 0,
+        "exact_mcnemar_two_sided_p": 1.0,
+        "only_linux": [],
+        "only_run1": [],
+        "resets_agreeing": 16
+      },
+      "counts": {
+        "at_rest": 0,
+        "at_rest_not_counted": 0,
+        "grasp": 0,
+        "latched": 0,
+        "success": 0
+      },
+      "final_distance_cm_q10_q50_q90": [
+        15.07,
+        18.25,
+        21.19
+      ],
+      "run1": {
+        "success": 0,
+        "success_seeds": []
+      },
+      "success_seeds": [],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "step_limit": 16
+      },
+      "wilson95": [
+        0.0,
+        0.193608
+      ]
+    },
+    "B-oracle": {
+      "agreement_with_run1": {
+        "both": 16,
+        "exact_mcnemar_two_sided_p": 1.0,
+        "only_linux": [],
+        "only_run1": [],
+        "resets_agreeing": 16
+      },
+      "counts": {
+        "at_rest": 16,
+        "at_rest_not_counted": 0,
+        "grasp": 16,
+        "latched": 16,
+        "success": 16
+      },
+      "final_distance_cm_q10_q50_q90": [
+        3.27,
+        3.47,
+        3.88
+      ],
+      "run1": {
+        "success": 16,
+        "success_seeds": [
+          52000,
+          52001,
+          52002,
+          52003,
+          52004,
+          52005,
+          52006,
+          52007,
+          52008,
+          52009,
+          52010,
+          52011,
+          52012,
+          52013,
+          52014,
+          52015
+        ]
+      },
+      "success_seeds": [
+        52000,
+        52001,
+        52002,
+        52003,
+        52004,
+        52005,
+        52006,
+        52007,
+        52008,
+        52009,
+        52010,
+        52011,
+        52012,
+        52013,
+        52014,
+        52015
+      ],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "policy_complete": 16
+      },
+      "wilson95": [
+        0.806392,
+        1.0
+      ]
+    },
+    "B-random": {
+      "agreement_with_run1": {
+        "both": 0,
+        "exact_mcnemar_two_sided_p": 1.0,
+        "only_linux": [],
+        "only_run1": [],
+        "resets_agreeing": 16
+      },
+      "counts": {
+        "at_rest": 0,
+        "at_rest_not_counted": 0,
+        "grasp": 0,
+        "latched": 0,
+        "success": 0
+      },
+      "final_distance_cm_q10_q50_q90": [
+        15.07,
+        18.25,
+        21.19
+      ],
+      "run1": {
+        "success": 0,
+        "success_seeds": []
+      },
+      "success_seeds": [],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "step_limit": 16
+      },
+      "wilson95": [
+        0.0,
+        0.193608
+      ]
+    },
+    "B-replay": {
+      "agreement_with_run1": {
+        "both": 8,
+        "exact_mcnemar_two_sided_p": 1.0,
+        "only_linux": [
+          52003,
+          52005
+        ],
+        "only_run1": [
+          52007
+        ],
+        "resets_agreeing": 13
+      },
+      "counts": {
+        "at_rest": 10,
+        "at_rest_not_counted": 0,
+        "grasp": 11,
+        "latched": 11,
+        "success": 10
+      },
+      "final_distance_cm_q10_q50_q90": [
+        2.45,
+        3.36,
+        20.15
+      ],
+      "run1": {
+        "success": 9,
+        "success_seeds": [
+          52001,
+          52002,
+          52004,
+          52006,
+          52007,
+          52009,
+          52010,
+          52012,
+          52015
+        ]
+      },
+      "success_seeds": [
+        52001,
+        52002,
+        52003,
+        52004,
+        52005,
+        52006,
+        52009,
+        52010,
+        52012,
+        52015
+      ],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "guard_refusal": 4,
+        "policy_complete": 12
+      },
+      "wilson95": [
+        0.38641,
+        0.815188
+      ]
+    },
+    "C-3": {
+      "agreement_with_run1": {
+        "both": 3,
+        "exact_mcnemar_two_sided_p": 0.125,
+        "only_linux": [
+          52002,
+          52003,
+          52004,
+          52012
+        ],
+        "only_run1": [],
+        "resets_agreeing": 12
+      },
+      "counts": {
+        "at_rest": 7,
+        "at_rest_not_counted": 0,
+        "grasp": 7,
+        "latched": 7,
+        "success": 7
+      },
+      "final_distance_cm_q10_q50_q90": [
+        3.05,
+        17.97,
+        24.65
+      ],
+      "run1": {
+        "success": 3,
+        "success_seeds": [
+          52006,
+          52014,
+          52015
+        ]
+      },
+      "success_seeds": [
+        52002,
+        52003,
+        52004,
+        52006,
+        52012,
+        52014,
+        52015
+      ],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "guard_refusal": 8,
+        "step_limit": 8
+      },
+      "wilson95": [
+        0.230987,
+        0.668214
+      ]
+    },
+    "D-oracle-perc": {
+      "agreement_with_run1": {
+        "both": 16,
+        "exact_mcnemar_two_sided_p": 1.0,
+        "only_linux": [],
+        "only_run1": [],
+        "resets_agreeing": 16
+      },
+      "counts": {
+        "at_rest": 16,
+        "at_rest_not_counted": 0,
+        "grasp": 16,
+        "latched": 16,
+        "success": 16
+      },
+      "final_distance_cm_q10_q50_q90": [
+        2.31,
+        2.86,
+        3.3
+      ],
+      "run1": {
+        "success": 16,
+        "success_seeds": [
+          52000,
+          52001,
+          52002,
+          52003,
+          52004,
+          52005,
+          52006,
+          52007,
+          52008,
+          52009,
+          52010,
+          52011,
+          52012,
+          52013,
+          52014,
+          52015
+        ]
+      },
+      "success_seeds": [
+        52000,
+        52001,
+        52002,
+        52003,
+        52004,
+        52005,
+        52006,
+        52007,
+        52008,
+        52009,
+        52010,
+        52011,
+        52012,
+        52013,
+        52014,
+        52015
+      ],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "step_limit": 16
+      },
+      "wilson95": [
+        0.806392,
+        1.0
+      ]
+    },
+    "P-0": {
+      "agreement_with_run1": {
+        "both": 0,
+        "exact_mcnemar_two_sided_p": 0.6875,
+        "only_linux": [
+          52008,
+          52011
+        ],
+        "only_run1": [
+          52000,
+          52003,
+          52005,
+          52013
+        ],
+        "resets_agreeing": 10
+      },
+      "counts": {
+        "at_rest": 2,
+        "at_rest_not_counted": 0,
+        "grasp": 16,
+        "latched": 5,
+        "success": 2
+      },
+      "final_distance_cm_q10_q50_q90": [
+        3.68,
+        98.36,
+        159.43
+      ],
+      "run1": {
+        "success": 4,
+        "success_seeds": [
+          52000,
+          52003,
+          52005,
+          52013
+        ]
+      },
+      "success_seeds": [
+        52008,
+        52011
+      ],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "step_limit": 16
+      },
+      "wilson95": [
+        0.034977,
+        0.360228
+      ]
+    },
+    "P-1": {
+      "agreement_with_run1": {
+        "both": 6,
+        "exact_mcnemar_two_sided_p": 0.726562,
+        "only_linux": [
+          52002,
+          52003,
+          52005,
+          52007,
+          52013
+        ],
+        "only_run1": [
+          52001,
+          52004,
+          52009
+        ],
+        "resets_agreeing": 8
+      },
+      "counts": {
+        "at_rest": 11,
+        "at_rest_not_counted": 0,
+        "grasp": 16,
+        "latched": 15,
+        "success": 11
+      },
+      "final_distance_cm_q10_q50_q90": [
+        2.61,
+        3.39,
+        4.12
+      ],
+      "run1": {
+        "success": 9,
+        "success_seeds": [
+          52000,
+          52001,
+          52004,
+          52006,
+          52008,
+          52009,
+          52010,
+          52012,
+          52015
+        ]
+      },
+      "success_seeds": [
+        52000,
+        52002,
+        52003,
+        52005,
+        52006,
+        52007,
+        52008,
+        52010,
+        52012,
+        52013,
+        52015
+      ],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "step_limit": 16
+      },
+      "wilson95": [
+        0.444044,
+        0.858354
+      ]
+    },
+    "P-2": {
+      "agreement_with_run1": {
+        "both": 14,
+        "exact_mcnemar_two_sided_p": 1.0,
+        "only_linux": [
+          52003
+        ],
+        "only_run1": [
+          52008
+        ],
+        "resets_agreeing": 14
+      },
+      "counts": {
+        "at_rest": 15,
+        "at_rest_not_counted": 0,
+        "grasp": 15,
+        "latched": 15,
+        "success": 15
+      },
+      "final_distance_cm_q10_q50_q90": [
+        2.71,
+        3.19,
+        3.73
+      ],
+      "run1": {
+        "success": 15,
+        "success_seeds": [
+          52000,
+          52001,
+          52002,
+          52004,
+          52005,
+          52006,
+          52007,
+          52008,
+          52009,
+          52010,
+          52011,
+          52012,
+          52013,
+          52014,
+          52015
+        ]
+      },
+      "success_seeds": [
+        52000,
+        52001,
+        52002,
+        52003,
+        52004,
+        52005,
+        52006,
+        52007,
+        52009,
+        52010,
+        52011,
+        52012,
+        52013,
+        52014,
+        52015
+      ],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "guard_refusal": 1,
+        "step_limit": 15
+      },
+      "wilson95": [
+        0.716713,
+        0.988881
+      ]
+    },
+    "P-3": {
+      "agreement_with_run1": {
+        "both": 16,
+        "exact_mcnemar_two_sided_p": 1.0,
+        "only_linux": [],
+        "only_run1": [],
+        "resets_agreeing": 16
+      },
+      "counts": {
+        "at_rest": 16,
+        "at_rest_not_counted": 0,
+        "grasp": 16,
+        "latched": 16,
+        "success": 16
+      },
+      "final_distance_cm_q10_q50_q90": [
+        2.34,
+        2.84,
+        3.09
+      ],
+      "run1": {
+        "success": 16,
+        "success_seeds": [
+          52000,
+          52001,
+          52002,
+          52003,
+          52004,
+          52005,
+          52006,
+          52007,
+          52008,
+          52009,
+          52010,
+          52011,
+          52012,
+          52013,
+          52014,
+          52015
+        ]
+      },
+      "success_seeds": [
+        52000,
+        52001,
+        52002,
+        52003,
+        52004,
+        52005,
+        52006,
+        52007,
+        52008,
+        52009,
+        52010,
+        52011,
+        52012,
+        52013,
+        52014,
+        52015
+      ],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "step_limit": 16
+      },
+      "wilson95": [
+        0.806392,
+        1.0
+      ]
+    },
+    "R-3": {
+      "agreement_with_run1": {
+        "both": 16,
+        "exact_mcnemar_two_sided_p": 1.0,
+        "only_linux": [],
+        "only_run1": [],
+        "resets_agreeing": 16
+      },
+      "counts": {
+        "at_rest": 16,
+        "at_rest_not_counted": 0,
+        "grasp": 16,
+        "latched": 16,
+        "success": 16
+      },
+      "final_distance_cm_q10_q50_q90": [
+        2.36,
+        2.85,
+        3.21
+      ],
+      "run1": {
+        "success": 16,
+        "success_seeds": [
+          52000,
+          52001,
+          52002,
+          52003,
+          52004,
+          52005,
+          52006,
+          52007,
+          52008,
+          52009,
+          52010,
+          52011,
+          52012,
+          52013,
+          52014,
+          52015
+        ]
+      },
+      "success_seeds": [
+        52000,
+        52001,
+        52002,
+        52003,
+        52004,
+        52005,
+        52006,
+        52007,
+        52008,
+        52009,
+        52010,
+        52011,
+        52012,
+        52013,
+        52014,
+        52015
+      ],
+      "task_truth_in_controller": 0,
+      "terminations": {
+        "step_limit": 16
+      },
+      "wilson95": [
+        0.806392,
+        1.0
+      ]
+    }
+  },
+  "m1_learned_success_step_ranges": {
+    "first_grasp": [
+      263,
+      270
+    ],
+    "first_place": [
+      610,
+      666
+    ]
+  },
+  "m1_paired_linux": {
+    "P-3 vs B-replay": {
+      "exact_mcnemar_two_sided_p": 0.03125,
+      "only_first": 6,
+      "only_second": 0
+    },
+    "P-3 vs C-3": {
+      "exact_mcnemar_two_sided_p": 0.003906,
+      "only_first": 9,
+      "only_second": 0
+    },
+    "P-3 vs R-3": {
+      "exact_mcnemar_two_sided_p": 1.0,
+      "only_first": 0,
+      "only_second": 0
+    }
+  },
+  "name": "apple-first-policy-v2-linux-results",
+  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes.",
+  "outcome": "M1-PASS",
+  "preregistration_manifest": "benchmarks/manifests/apple-first-policy-v2-linux.json",
+  "prerun": {
+    "non_blocking_items": [
+      "frozen block void_rule is inherited from TASK-071 and says 'closes TASK-071 as INCONCLUSIVE'; REPLICATION_RULE['V'] cites 'protocol §14' (TASK-071's section), while this protocol's void rule is §6. Neither changes behaviour; both are frozen, so any correction goes through the amendment log. Not amended; the run was not void.",
+      "determinism sdp_backends report flash and mem_efficient attention enabled (also at the end of the run). Unused here: the policy is an MLP and the DINOv2 features run on the CPU; strict mode would raise rather than fall back (inferred, not tested)."
+    ],
+    "render_check": "IDENTICAL at 16 workers (16 distinct workers; 32/32 seeds on >= 2 workers; negative control raised G-frame at seed 52132)",
+    "render_report": "in the pre-run reviewer's own temporary worktree at db65816, since removed; the sha256 is as posted in the GO comment",
+    "render_report_sha256": "52bf2188a7e5b81e8d647e456c2470a072c144f647d13b1d00a8248c546e4aa8",
+    "verdict": "PRE-RUN: GO (reported by the fresh pre-run reviewer; posted on PR #99 as comment 5871360006; the orchestrator was told before the run started)"
+  },
+  "protocol": "apple_first_policy_v2_linux",
+  "readouts": {
+    "P": {
+      "family": "linear",
+      "inner_mse": 1.6032550188334492e-05,
+      "lam_rel": 0.001
+    },
+    "R": {
+      "family": "linear",
+      "inner_mse": 2.384296447568217e-05,
+      "lam_rel": 0.01
+    },
+    "fit_rows": 426
+  },
+  "replication": {
+    "comparison_target": {
+      "manifest": "benchmarks/manifests/apple-first-policy-v2-results.json",
+      "report": "outputs/task071-first-policy-v2/run-1/report.json (Mac run-1, copied to the Linux PC)",
+      "report_sha256": "77aae2077f5e1070f9cdc63b9f228f32515713e869b999b5303a5134c101d90b"
+    },
+    "descriptive": {
+      "c3_at_least_8_below_p3": true,
+      "r3_within_2_of_p3": true
+    },
+    "difference_vs_run1": {
+      "A4-look": 0,
+      "B-hold": 0,
+      "B-oracle": 0,
+      "B-random": 0,
+      "B-replay": 1,
+      "C-3": 4,
+      "D-oracle-perc": 0,
+      "P-0": -2,
+      "P-1": 2,
+      "P-2": 0,
+      "P-3": 0,
+      "R-3": 0
+    },
+    "outcome": "M1-PASS",
+    "p3_min": 14,
+    "p3_per_reset_agreement_with_run1": {
+      "both": 16,
+      "exact_mcnemar_two_sided_p": 1.0,
+      "only_linux": [],
+      "only_run1": [],
+      "resets_agreeing": 16
+    },
+    "p3_success_of_16": 16,
+    "row": "REPLICATED",
+    "rule": "REPLICATED iff outcome M1-PASS and P-3 >= 14/16 counted successes (protocol §5, fixed before the run)"
+  },
+  "run": {
+    "cohort_C_simulated": false,
+    "command": "uv run --no-sync python scripts/run_first_policy_v2_linux.py run --output outputs/task072-first-policy-v2-linux/run-1 --checkpoints checkpoints/task072-first-policy-v2-linux/run-1 --corpus data/apple-look-v2-linux/run-1",
+    "decoded_episodes": 190,
+    "determinism_at_end": {
+      "cublas_workspace_config": ":4096:8",
+      "cuda_matmul_allow_tf32": false,
+      "cudnn_allow_tf32": false,
+      "cudnn_benchmark": false,
+      "cudnn_deterministic": true,
+      "deterministic_algorithms": true,
+      "deterministic_algorithms_warn_only": false,
+      "float32_matmul_precision": "highest",
+      "sdp_backends": {
+        "cudnn": true,
+        "flash": true,
+        "math": true,
+        "mem_efficient": true
+      }
+    },
+    "encoder_digests": {
+      "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2",
+      "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27"
+    },
+    "ended_utc": "2026-09-28T14:17:31Z",
+    "environment": {
+      "accelerator": {
+        "cuda_capability": [
+          12,
+          0
+        ],
+        "cuda_device_name": "NVIDIA GeForce RTX 5080",
+        "cuda_runtime": "13.0",
+        "cuda_total_memory_bytes": 16587751424,
+        "cudnn": 92400
+      },
+      "determinism": {
+        "cublas_workspace_config": ":4096:8",
+        "cuda_matmul_allow_tf32": false,
+        "cudnn_allow_tf32": false,
+        "cudnn_benchmark": false,
+        "cudnn_deterministic": true,
+        "deterministic_algorithms": true,
+        "deterministic_algorithms_warn_only": false,
+        "float32_matmul_precision": "highest",
+        "sdp_backends": {
+          "cudnn": true,
+          "flash": true,
+          "math": true,
+          "mem_efficient": true
+        }
+      },
+      "mujoco": "3.13.0",
+      "numpy": "2.5.3",
+      "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+      "python": "3.12.3",
+      "torch": "2.14.0+cu130",
+      "train_device": "cuda"
+    },
+    "global_cap_seconds": 36000,
+    "log": "/home/huhn/develop/emai/worktrees/task072-run-1.log (one line: report written, outcome M1-PASS)",
+    "log_sha256": "6c10a9404e2624d0bbf5d6e13b008a32ed6571f992746f2a35b55df4536d3bc0",
+    "non_finite_fields": [],
+    "paths": {
+      "checkpoints": "checkpoints/task072-first-policy-v2-linux/run-1",
+      "corpus": "data/apple-look-v2-linux/run-1",
+      "output": "outputs/task072-first-policy-v2-linux/run-1"
+    },
+    "pins_at_end": 37,
+    "pins_at_preflight": 37,
+    "pins_unchanged": true,
+    "platform": {
+      "machine": "x86_64",
+      "mujoco_gl": "egl",
+      "system": "Linux"
+    },
+    "report": "outputs/task072-first-policy-v2-linux/run-1/report.json",
+    "report_sha256": "877452840d0d03520ec8644321ef32f6b19877caa679e77d173e3d2509edec78",
+    "revision": "db65816eb56dadb73664f08978cadeb6e881b35f",
+    "revision_at_end": "db65816eb56dadb73664f08978cadeb6e881b35f",
+    "rng_seeds": {
+      "c0_directions": 7100,
+      "corpus_plan_salt": 7106,
+      "corpus_split": 7105,
+      "model": 7104,
+      "random_controller": 7103,
+      "readout_folds": 7101,
+      "train_sampler": 7102
+    },
+    "seeds_simulated": {
+      "D": [
+        52000,
+        52015
+      ],
+      "calibration_C0": [
+        51584,
+        51615
+      ],
+      "corpus": [
+        51000,
+        51199
+      ],
+      "dagger_1": [
+        51616,
+        51743
+      ],
+      "dagger_2": [
+        51744,
+        51871
+      ],
+      "dagger_3": [
+        51872,
+        51999
+      ],
+      "perception_heldout": [
+        51456,
+        51583
+      ],
+      "perception_train": [
+        51200,
+        51455
+      ]
+    },
+    "sim_workers": 16,
+    "smoke": false,
+    "started_utc": "2026-09-28T13:56:57Z",
+    "test_split_decoded": false,
+    "total_seconds": 1235.0,
+    "tracked_tree_dirty": false,
+    "void": false,
+    "worktree": "/home/huhn/develop/emai/worktrees/task072-run (clean checkout of db65816, own .venv)"
+  },
+  "s0_d1": {
+    "arm": "P-0",
+    "frames_identical": true,
+    "max_abs_act_difference": 2.384185791015625e-07,
+    "max_abs_input_difference": 0.0,
+    "seeds": 8,
+    "tolerance": 0.0001
+  },
+  "s0_p": {
+    "apple_median_cm": 0.24955707530983956,
+    "apple_p90_cm": 0.5388995631958922,
+    "apple_passes": true,
+    "plate_median_cm": 0.056158516445332304,
+    "plate_p90_cm": 0.09856492880736051,
+    "plate_passes": true,
+    "run1": {
+      "apple_median_cm": 0.2695823768472578,
+      "apple_p90_cm": 0.5435256946129,
+      "apple_passes": true,
+      "plate_median_cm": 0.07179103873050077,
+      "plate_p90_cm": 0.1270667301074415,
+      "plate_passes": true
+    }
+  },
+  "task": "TASK-072",
+  "trainings": {
+    "C-0": {
+      "rows": 116449,
+      "run1_selected_update": 28000,
+      "seconds": 24.0,
+      "selected": {
+        "update": 28000,
+        "val_mse": 0.0022122070658951998
+      },
+      "sha256": "3c38f94d5214f34217ba0f690a0fe4a1a7b54e99072796bc5a63d7a5c38e5cdf",
+      "updates": 30000
+    },
+    "C-1": {
+      "rows": 174992,
+      "run1_selected_update": 21000,
+      "seconds": 26.0,
+      "selected": {
+        "update": 21000,
+        "val_mse": 0.0031779841519892216
+      },
+      "sha256": "f20f073f7880629cbec8c3840321ede2342660ea09b590a9f817b0e6e5bcf1ae",
+      "updates": 30000
+    },
+    "C-2": {
+      "rows": 225956,
+      "run1_selected_update": 29000,
+      "seconds": 26.1,
+      "selected": {
+        "update": 28000,
+        "val_mse": 0.0035552887711673975
+      },
+      "sha256": "84d0a567668c64c30ff6ef8dea9532d1f57c6d9552410509d50295cffc8f6f95",
+      "updates": 30000
+    },
+    "C-3": {
+      "rows": 288339,
+      "run1_selected_update": 29000,
+      "seconds": 26.3,
+      "selected": {
+        "update": 30000,
+        "val_mse": 0.0038262943271547556
+      },
+      "sha256": "d1820db4a1af3a63f02ed96c9a7c51d8b92d56ea7a23cf762940925f586b1289",
+      "updates": 30000
+    },
+    "P-0": {
+      "rows": 116449,
+      "run1_selected_update": 28000,
+      "seconds": 25.4,
+      "selected": {
+        "update": 26000,
+        "val_mse": 0.0017346328822895885
+      },
+      "sha256": "34cafc36d04dbdc9144f707ab967575d62b2fd356893463a7a6080e3f3941e42",
+      "updates": 30000
+    },
+    "P-1": {
+      "rows": 209249,
+      "run1_selected_update": 14000,
+      "seconds": 26.3,
+      "selected": {
+        "update": 15000,
+        "val_mse": 0.0028500875923782587
+      },
+      "sha256": "e3ece47d43aefa3e356594def9dad59c5f878d7165cad0c9cd145e0ec2a010bf",
+      "updates": 30000
+    },
+    "P-2": {
+      "rows": 301056,
+      "run1_selected_update": 22000,
+      "seconds": 26.1,
+      "selected": {
+        "update": 27000,
+        "val_mse": 0.003437651786953211
+      },
+      "sha256": "ef4ce7972b641e1adaf8750c097a4cff286517492c8cf7dff64dda1a5f31f8ef",
+      "updates": 30000
+    },
+    "P-3": {
+      "rows": 392369,
+      "run1_selected_update": 30000,
+      "seconds": 26.3,
+      "selected": {
+        "update": 26000,
+        "val_mse": 0.0041628251783549786
+      },
+      "sha256": "7988162df0b6106db5d007e322b824a3725b74cb103ba5a8de9f552912060be8",
+      "updates": 30000
+    },
+    "R-0": {
+      "rows": 116449,
+      "run1_selected_update": 26000,
+      "seconds": 25.4,
+      "selected": {
+        "update": 26000,
+        "val_mse": 0.0015631343703716993
+      },
+      "sha256": "f2d20b4d0113f290d16852ebdd5f252a6b38097607d01874acde8d7e128efe3c",
+      "updates": 30000
+    },
+    "R-1": {
+      "rows": 209249,
+      "run1_selected_update": 14000,
+      "seconds": 26.0,
+      "selected": {
+        "update": 12000,
+        "val_mse": 0.002994198352098465
+      },
+      "sha256": "5188790b268507baa3d8ab695865f6cede1a81742cdc247781e8593c1c64a46a",
+      "updates": 30000
+    },
+    "R-2": {
+      "rows": 301088,
+      "run1_selected_update": 29000,
+      "seconds": 25.3,
+      "selected": {
+        "update": 20000,
+        "val_mse": 0.003109538462013006
+      },
+      "sha256": "cf3feec1b9850c57fee69f6b2356b876a24dd2b3b43f5214f9ccc336f5ece346",
+      "updates": 30000
+    },
+    "R-3": {
+      "rows": 392885,
+      "run1_selected_update": 23000,
+      "seconds": 26.1,
+      "selected": {
+        "update": 22000,
+        "val_mse": 0.0030731488950550556
+      },
+      "sha256": "bea0d422b951287fcad66630aa8ea837a59df441d7a6c1793e2423048e2c0fd3",
+      "updates": 30000
+    }
+  }
+}

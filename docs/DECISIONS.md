@@ -63,6 +63,44 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-28 — TASK-071's development result replicates on the Linux PC (TASK-072)
+
+**Outcome: REPLICATED (M1-PASS, P-3 16/16).** TASK-072's preregistered run (PR #99,
+`apple_first_policy_v2_linux`) re-ran TASK-071's whole pipeline on the Linux PC, from `main` at
+`db65816`, on the pre-run reviewer's reported GO. The orchestrator was told before the run
+started. The pipeline was corpus, readouts, BC, three DAgger iterations and M1 on D2. The run used
+strict-deterministic CUDA training, NVIDIA EGL rendering and 16 simulation workers, and took
+1 235 s.
+- **The declared reading** (fixed before the run) was REPLICATED iff M1-PASS and P-3 ≥ 14/16.
+- **Counted successes on D2 (of 16; Mac run-1 in brackets where different):** P-0 2 (4),
+  P-1 11 (9), P-2 15, **P-3 16**, R-3 16, C-3 7 (3), B-replay 10 (9); A4-look, D-oracle-perc and
+  B-oracle 16; B-hold and B-random 0.
+- **P-3 succeeded on the same 16 resets** as run-1.
+- **The scripted stages match run-1 outcome by outcome.** The corpus (129/200) and C0 agree root
+  by root and attempt by attempt.
+
+**What this is.** A cross-platform replication of an existence result on the non-gating
+development cohort, which run-1 had already used. In the protocol's words, the result does
+not depend on the Mac, its renderer or MPS. **The official learned Apple→Plate count on the
+frozen benchmark is still 0.** Cohort C is untouched, and M2 needs a separate owner go-ahead. The policy is a
+BC/DAgger MLP on a frozen DINOv2 readout, not LeWM.
+
+**What limits it.**
+- **R-3 = P-3 = 16/16 again**, on identical success sets. There is no evidence that pretrained
+  vision helps.
+- **The oracle arms are at the ceiling again.**
+- **C-3 moved from 3 to 7** (paired on the same resets 4 vs 0, exact McNemar p = 0.125). Two runs
+  cannot measure its spread, but any single C-3 number should be read with that in mind.
+- One run, one seed per arm, 16 reused resets.
+
+**Recorded, not amended.** The pre-run reviewer raised two non-blocking items:
+- Stale TASK-071 wording in the frozen `void_rule` ("closes TASK-071") and in
+  `REPLICATION_RULE["V"]` ("§14", where this protocol's section is §6).
+- The flash and memory-efficient attention backends are enabled but unused.
+
+**Evidence.** [apple_first_policy_v2_linux_results.md](experiments/apple_first_policy_v2_linux_results.md);
+`benchmarks/manifests/apple-first-policy-v2-linux-results.json`; report sha256 `87745284…ec78`.
+
 ## Decision 2026-09-28 — a learned policy reaches its first successes on the development cohort of apple-to-plate-v2 (TASK-071)
 
 **Outcome: M1-PASS.** TASK-071's preregistered run (PR #96, `apple_first_policy_v2`) trained
