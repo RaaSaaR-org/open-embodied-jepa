@@ -86,8 +86,8 @@ rule allowed a plate p90 of 1.5 cm (2.0 cm fails at 23/32), and the TASK-070 cei
 The A4-look threshold T was **8** of 16.
 
 **BC-0.** 116 449 training rows from the 170 train roots and 13 479 val rows from the 20 val
-roots. The mask dropped 1 936 rows (apple dropped) and 405 rows (apple drift above 1 cm before
-`close`). **S0-D1 passed:** live and offline inputs identical, commands within 5.4e-7 on 8
+roots. The mask dropped 1 936 train rows (apple dropped) and 405 (apple drift above 1 cm before
+`close`), and 7 val rows (apple dropped). **S0-D1 passed:** live and offline inputs identical, commands within 5.4e-7 on 8
 seeds, frames identical.
 
 **Trainings** (MPS, about 70 s each). Every training selected an eligible checkpoint; val MSE
@@ -110,25 +110,28 @@ A **counted success** is `apple_at_rest_v0` after the 60-step settle **and** the
 `grasp` and `place` stages reached during the attempt's commands (T71-R1, T71-R2). 95 %
 intervals are Wilson intervals for k of 16.
 
-| arm | rung | counted success | 95 % CI | at rest, not counted | latched grasp | latched v1 success | terminations | final distance, cm (q10 / q50 / q90) |
+| arm | rung | counted success | 95 % CI | at rest, not counted | latched grasp | latched v1 success | terminations | final distance, cm, all 16 attempts (q10 / q50 / q90) |
 |---|---|---|---|---|---|---|---|---|
-| P-0 | L1 | **4/16** | 0.10–0.50 | 0 | 16 | 8 | step limit 16 | 2.65 / 46.5 / 164.5 |
-| P-1 | L1 | **9/16** | 0.33–0.77 | 0 | 15 | 14 | step limit 15, guard 1 | 2.97 / 3.60 / 4.34 |
+| P-0 | L1 | **4/16** | 0.10–0.49 | 0 | 16 | 8 | step limit 16 | 2.65 / 46.5 / 164.5 |
+| P-1 | L1 | **9/16** | 0.33–0.77 | 0 | 15 | 14 | step limit 15, guard 1 | 2.98 / 3.63 / 4.41 |
 | P-2 | L1 | **15/16** | 0.72–0.99 | 0 | 16 | 15 | step limit 16 | 1.86 / 3.03 / 3.49 |
 | **P-3 (carried)** | L1 | **16/16** | 0.81–1.00 | 0 | 16 | 16 | step limit 16 | 2.22 / 2.89 / 3.22 |
-| C-3 (no-image control) | L1 | 3/16 | 0.07–0.43 | 0 | 5 | 5 | guard 11, step limit 5 | 2.86 / 3.78 / 4.28 |
+| C-3 (no-image control) | L1 | 3/16 | 0.07–0.43 | 0 | 5 | 5 | guard 11, step limit 5 | 3.69 / 17.2 / 24.2 |
 | R-3 (random-init floor) | L1 | 16/16 | 0.81–1.00 | 0 | 16 | 16 | step limit 16 | 2.10 / 3.01 / 3.46 |
 | A4-look (readout → e9) | L3, not learned | 16/16 | 0.81–1.00 | 0 | 16 | 16 | policy complete 16 | 3.11 / 3.39 / 3.58 |
 | D-oracle-perc (P-3 fed true xy) | L4 | 16/16 | 0.81–1.00 | 0 | 16 | 16 | step limit 16 | 2.43 / 2.80 / 3.22 |
 | B-oracle (e9 from truth) | L4 | 16/16 | 0.81–1.00 | 0 | 16 | 16 | policy complete 16 | 3.27 / 3.47 / 3.88 |
-| B-replay (nearest corpus root) | L4 | 9/16 | 0.33–0.77 | 0 | 11 | 11 | policy complete 12, guard 4 | 2.43 / 3.22 / 4.42 |
+| B-replay (nearest corpus root) | L4 | 9/16 | 0.33–0.77 | 0 | 11 | 11 | policy complete 12, guard 4 | 2.45 / 3.61 / 20.8 |
 | B-hold | L4 | 0/16 | 0.00–0.19 | 0 | 0 | 0 | step limit 16 | 15.1 / 18.3 / 21.2 |
 | B-random | L4 | 0/16 | 0.00–0.19 | 0 | 0 | 0 | step limit 16 | 15.1 / 18.3 / 21.2 |
 
 - **The harness is valid:** B-oracle 16/16 ≥ 14, and B-hold and B-random 0 grasps.
+- **Final distances** are the latched scorer's apple–plate distance at each attempt's last
+  step, over all 16 attempts, including those that ended on a guard refusal.
 - **No at-rest attempt went uncounted** in any arm: every at-rest attempt also latched grasp and
   place before the settle. Every learned counted success latched grasp at steps 264–286 and
-  place at steps 606–677, before the settle at step 725.
+  place at steps 606–677, before the settle (which starts after the policy's 740 commands;
+  e9's own clock ends at 725).
 - **`decide_m1` gave M1-PASS**, carried arm P-3 (the most D2 successes; ties go to the later k).
   F was not trained or run (it runs only on M1-MOTOR).
 - **Paired, on the same 16 resets** (descriptive only; M2's gates are for cohort C):
@@ -158,7 +161,7 @@ intervals are Wilson intervals for k of 16.
    are far inside e9's measured tolerance, so perception is not the binding constraint on this
    cohort. The ceiling also means D2 cannot rank these arms above P-3.
 4. **The per-reset estimates do matter.** The no-image control C-3, with the estimates fixed to
-   the train mean, reached 3/16 and ended 11 of 16 attempts on a guard refusal. The resets vary
+   the train mean, reached 3/16, ended 11 of 16 attempts on a guard refusal and left the apple a median 17.2 cm from the plate centre. The resets vary
    by up to ±3 cm (apple) and ±2 cm (plate), more than e9's plate tolerance, so a blind policy
    mostly fails. What D2 does not show is whether pretrained features are needed to read the
    positions: random-init features were enough.
@@ -190,8 +193,9 @@ starts.**
 
 After run-1 the project moved to a Linux PC (RTX 5080). There the frozen v2 runner refuses to
 start, as designed:
-- **G-weights:** the random-init floor encoder's digest differs in its last bits on x86
-  (`546b9011…` on Linux, against the pinned `3d305f9c…`).
+- **G-weights:** the random-init floor encoder's weight digest differs on x86 (`546b9011…` on
+  Linux, against the pinned `3d305f9c…`); the seed-0 initialisation differs in low-order float
+  bits there.
 - **G-device:** non-smoke runs require MPS.
 - **G-frame:** post-look frame hashes differ between Apple GL and NVIDIA EGL.
 

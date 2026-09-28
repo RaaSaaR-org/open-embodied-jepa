@@ -94,7 +94,7 @@ was not relayed to the coordinator before the run started. From now on the coord
 before any gated run starts.
 
 **Platform note.** The project has since moved to a Linux PC (RTX 5080). There the frozen v2
-runner refuses to start: the random-init floor digest differs in its last bits on x86
+runner refuses to start: the random-init floor encoder's weight digest differs on x86
 (`546b9011…` vs the pinned `3d305f9c…`), non-smoke runs require MPS, and post-look frame hashes
 differ between Apple GL and NVIDIA EGL; physics outcomes match within 2 µm. A Linux replication
 needs a new, separately reviewed protocol version (a separate task). Evidence:
