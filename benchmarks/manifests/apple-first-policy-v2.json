@@ -26,6 +26,14 @@
       "the render-determinism check at the gated worker count"
     ]
   },
+  "owner_rulings": {
+    "T71-R1": {
+      "received_utc": "2026-09-28",
+      "relayed_by": "the coordinator, for the task owner",
+      "summary": "rows 7, 9, 14, 16, 20, 21 and everything listed as unchanged accepted as written; row 19 accepted only tightened: a counted success is apple_at_rest_v0 AND a latched grasp before release; at rest without a grasp is reported per arm and counts toward nothing",
+      "verbatim_in": "docs/experiments/apple_first_policy_v2.md \u00a73"
+    }
+  },
   "deviations_from_v1": "docs/experiments/apple_first_policy_v2.md \u00a73 (21 rows)",
   "seed_overlap_check": {
     "performed_utc": "2026-09-28",
@@ -56,6 +64,7 @@
       ]
     },
     "success_metric": "apple_at_rest_v0",
+    "counted_success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage reached during the attempt's commands, before the settle (owner ruling T71-R1); at rest without that grasp is reported per arm and never counted",
     "reported_beside": "latched v1 scorer: AppleToPlateTask per-step success at any step",
     "expert": {
       "class": "resting_expert.RestingPlaceExpert",
@@ -557,15 +566,15 @@
   },
   "mujoco_version": "3.13.0",
   "hashes": {
-    "docs/experiments/apple_first_policy_v2.md": "e2115560e127c8a1bc9a8ace7ba190c3cb0ebd1b0f461351eb67d3228dc0a3b8",
-    "src/embodied_jepa/first_policy_v2.py": "035a98285cecc1d62b153c4ac0770bab82ad38ecc104fe2e3c8410ab53d0ed91",
-    "src/embodied_jepa/first_policy_v2_runtime.py": "72a1da6334380b26439f3746421055a442059b1088b57b77525f82fafb241152",
+    "docs/experiments/apple_first_policy_v2.md": "841044bb92f22bebef0c748d322e4da87c8cbd508ef0f55bc35c8a40aeda8d43",
+    "src/embodied_jepa/first_policy_v2.py": "a9b9296e1f1dc544a0dbcc0f53819f67043a99cf62c367467d0de0e403cf0871",
+    "src/embodied_jepa/first_policy_v2_runtime.py": "553cc0faa69821b359ed0ec67fa49d96db18144d6cb27a3145734d4745ddc54e",
     "src/embodied_jepa/first_policy_v2_model.py": "5e29fc12f496b2299c1d2d5b4df8ea99660b838a896587b9b890f846312a1a45",
     "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
     "src/embodied_jepa/first_policy_runtime.py": "d6d672dc26912371cae78c2d32ba84583adfab4adcab393445a770f994a5f953",
     "src/embodied_jepa/first_policy_model.py": "5ebd70e07d9c6eba38f0fa4c8980602205f0e24420d39f252935dc47673fb984",
     "src/embodied_jepa/first_policy_perception.py": "d2ae40118a78646c13e89a089049f80cdc0389dfdd2106f5862a03ab134ed497",
-    "scripts/run_first_policy_v2.py": "457a89a8e8271908cb94703c9549a09b479f94a16e6bee0e7ea315eb01901419",
+    "scripts/run_first_policy_v2.py": "5bcba8c51c089ed162d11ebfcfc86a5b42db0b0c4426360c62c7d1ff466b3ef7",
     "scripts/check_first_policy_v2_render.py": "ef448487015d7320770fc4df88ea98da75b0a6d4a20904c9bedf293c87493602",
     "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
     "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",

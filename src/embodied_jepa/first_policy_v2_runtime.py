@@ -201,6 +201,7 @@ def run_attempt(
     executed = evaluations = records = 0
     latched_step = None
     grasp_seen = False
+    first_grasp_step = None  # the latched grasp stage, during the commands (T71-R1)
     states, steps, labels, commands, stages = [], [], [], [], []
     started = time.monotonic()
 
@@ -258,6 +259,8 @@ def run_attempt(
             check.record()
             records += 1
             grasp_seen = grasp_seen or bool(score.get("grasp", False))
+            if grasp_seen and first_grasp_step is None:
+                first_grasp_step = step
             if score.get("success", False) and latched_step is None:
                 latched_step = step
             stages.append(_stage(score))
@@ -298,7 +301,12 @@ def run_attempt(
         "latched_success": latched_step is not None,
         "first_latched_step": latched_step,
         "grasp": bool(grasp_seen),
-        "success": bool(verdict["at_rest"]) if verdict else False,  # the gated metric
+        "first_grasp_step": first_grasp_step,
+        "grasp_before_settle": first_grasp_step is not None,
+        # T71-R1: the counted success is at rest AND a latched grasp before the settle
+        "success": fp2.counted_success(
+            bool(verdict["at_rest"]) if verdict else False, first_grasp_step is not None
+        ),
         "final_score": {
             k: (bool(v) if isinstance(v, bool | np.bool_) else v) for k, v in score.items()
         },

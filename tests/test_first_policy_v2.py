@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -211,8 +212,85 @@ def test_decide_m1_rows_in_both_directions():
         fp2.decide_m1(_counts(A4_look=(9, 2)), 0)
     with pytest.raises(ContractError):
         fp2.decide_m1(_counts(P_0=(17, 0)), 3)
-    # at rest is not required to imply the latched grasp stage (separate count checks)
-    assert fp2.decide_m1(_counts(P_0=(0, 1)), 3)["row"] == "M1-PASS"
+    # T71-R1: a counted success needs the latched grasp, so success <= grasp is checked (v1's)
+    with pytest.raises(ContractError):
+        fp2.decide_m1(_counts(P_0=(0, 1)), 3)
+    with pytest.raises(ContractError):
+        fp2.decide_m1(_counts(A4_look=(9, 3)), 3, f_counts={"grasp": 0, "success": 1})
+
+
+def test_counted_success_needs_at_rest_and_a_grasp_t71_r1():
+    assert fp2.counted_success(True, True)
+    assert not fp2.counted_success(True, False)  # a push onto the plate is not counted
+    assert not fp2.counted_success(False, True)
+    assert "T71-R1" in fp2.frozen_block()["counted_success"]
+
+
+class _Truth:
+    def __init__(self):
+        self.t = 0.0
+
+    def __call__(self):
+        self.t += 0.05
+        return {
+            "timestamp": self.t,
+            "container_surface_z": 0.748,
+            "object_support_height": 0.027,
+            "object_position": np.array([0.5, -0.1, 0.775]),
+            "plate_position": np.array([0.5, -0.1, 0.746]),
+            "object_velocity": np.zeros(3),
+            "hand_contact": False,
+        }
+
+
+class _Robot:
+    """A stand-in robot whose apple always rests on the plate centre."""
+
+    def __init__(self):
+        self.sim = SimpleNamespace(task_truth=_Truth())
+
+    def observe(self):
+        return SimpleNamespace(state=SimpleNamespace(values=np.zeros((1, 86))))
+
+    def project_candidates(self, command):
+        return SimpleNamespace(feasible=np.ones((1, 1), bool), actions=command)
+
+    def execute(self, action):
+        return SimpleNamespace(applied_action=np.asarray(action), reason="", status="applied")
+
+    def stop(self, reason):
+        self.stopped = reason
+
+
+class _Scorer:
+    def __init__(self, robot, grasp_from):
+        self.robot, self.calls, self.grasp_from = robot, 0, grasp_from
+
+    def evaluate(self):
+        self.robot.sim.task_truth()
+        self.calls += 1
+        return {"grasp": self.grasp_from is not None and self.calls > self.grasp_from}
+
+
+class _Hold:
+    def act(self, observation, step):
+        return np.zeros(14, np.float32)
+
+    def advance(self, result):
+        return None
+
+
+@pytest.mark.parametrize(("grasp_from", "counted"), [(2, True), (None, False), (12, False)])
+def test_attempt_counts_success_only_with_a_grasp_before_the_settle(grasp_from, counted):
+    robot = _Robot()
+    counter = rt2.PrivilegedReadCounter(robot.sim)
+    record = rt2.run_attempt(
+        robot, _Scorer(robot, grasp_from), counter, _Hold(), bounds=BOUNDS, max_steps=10
+    )
+    assert record["at_rest"]  # the stand-in apple rests on the plate in every case
+    assert record["success"] is counted
+    assert record["grasp_before_settle"] is counted  # 12 latches only inside the settle
+    assert rt2.privileged_reads_ok(record) and record["settle_steps"] == 60
 
 
 def test_ladder_labels_the_settle_and_keeps_v1s_allowances():
@@ -403,6 +481,7 @@ def test_v2_attempt_reproduces_task070s_harness_for_e9():
     assert record["at_rest_detail"] == summary["at_rest_detail"]
     assert record["latched_success"] == summary["latched_success"]
     assert record["executed_steps"] == 725 and record["settle_steps"] == 60
+    assert record["success"] == (summary["at_rest"] and record["grasp_before_settle"])
     assert rt2.privileged_reads_ok(record) and record["task_truth_total"] == 2 * 785
 
 

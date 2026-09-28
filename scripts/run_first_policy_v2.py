@@ -184,6 +184,7 @@ def collect_root(task: dict, truth, scorer, out: dict) -> dict:
     check = AppleAtRestCheck(robot)
     max_steps = int(task.get("max_steps", fp2.MAX_POLICY_STEPS))
     rows = {k: [] for k in rt2.EPISODE_ARRAYS}
+    grasp = {"before_settle": False}
 
     def observe_row(obs):
         now = robot.sim.task_truth()
@@ -214,6 +215,8 @@ def collect_root(task: dict, truth, scorer, out: dict) -> dict:
         rows["applied"].append(np.asarray(result.applied_action, np.float32))
         rows["phase"].append(phase)
         rows["latched"].append(bool(score["success"]))
+        if phase < fp2.SETTLE_PHASE and score.get("grasp", False):
+            grasp["before_settle"] = True
         observe_row(robot.observe())
         return None
 
@@ -265,6 +268,10 @@ def collect_root(task: dict, truth, scorer, out: dict) -> dict:
         "at_rest": bool(verdict["at_rest"]) if verdict else False,
         "at_rest_detail": verdict,
         "latched_success": bool(arrays["latched"].any()),
+        "grasp_before_settle": grasp["before_settle"],
+        "success": fp2.counted_success(
+            bool(verdict["at_rest"]) if verdict else False, grasp["before_settle"]
+        ),
     }
     meta = {
         "seed": task["seed"],
@@ -412,10 +419,16 @@ def save_checkpoint(path: Path, trained: dict, standardiser, heads: int, meta: d
 
 
 def count(records) -> dict:
-    """``success`` is at rest (the gated metric); ``latched`` and ``grasp`` are the v1 scorer's."""
+    """``success`` is T71-R1's counted success (at rest AND a latched grasp before the settle);
+    ``at_rest`` and ``at_rest_without_grasp`` are reported, never counted; ``latched`` and
+    ``grasp`` are the v1 scorer's."""
     return {
         "grasp": sum(bool(r["grasp"]) for r in records),
-        "success": sum(bool(r["at_rest"]) for r in records),
+        "success": sum(bool(r["success"]) for r in records),
+        "at_rest": sum(bool(r["at_rest"]) for r in records),
+        "at_rest_without_grasp": sum(
+            bool(r["at_rest"]) and not bool(r["grasp_before_settle"]) for r in records
+        ),
         "latched": sum(bool(r["latched_success"]) for r in records),
     }
 
@@ -428,6 +441,9 @@ def attempt_summary(records) -> list[dict]:
         "executed_steps",
         "settle_steps",
         "grasp",
+        "first_grasp_step",
+        "grasp_before_settle",
+        "success",
         "at_rest",
         "at_rest_detail",
         "latched_success",
@@ -459,12 +475,14 @@ def corpus_summary(records: list[dict]) -> dict:
         rows = [r for r in records if r["noise_level"] == level]
         by_level[str(level)] = {
             "roots": len(rows),
+            "success": sum(r["success"] for r in rows),
             "at_rest": sum(r["at_rest"] for r in rows),
             "latched": sum(r["latched_success"] for r in rows),
             "complete": sum(r["complete"] for r in rows),
         }
     return {
         "roots": len(records),
+        "success": sum(r["success"] for r in records),
         "at_rest": sum(r["at_rest"] for r in records),
         "latched": sum(r["latched_success"] for r in records),
         "terminations": {
@@ -655,7 +673,7 @@ def _run(report, output, checkpoints, corpus, clock, smoke, smoke_max_steps=None
             for k in ("train", "val", "test")
         },
         "attempts": [
-            {k: r[k] for k in ("seed", "split", "noise_level", "termination", "at_rest")}
+            {k: r[k] for k in ("seed", "split", "noise_level", "termination", "success", "at_rest")}
             | {"latched": r["latched_success"], "steps": r["transitions"]}
             for r in collected
         ],
@@ -669,7 +687,7 @@ def _run(report, output, checkpoints, corpus, clock, smoke, smoke_max_steps=None
                 {
                     "episode_id": root["episode_id"],
                     "seed": root["seed"],
-                    "at_rest": bool(meta["at_rest"]),
+                    "success": bool(meta["success"]),
                     "frame0": arrays["frame0"],
                     "frame_sha": meta["post_look_frame_sha256"],
                     "xy": meta["truth_xy"],
@@ -758,9 +776,12 @@ def _run(report, output, checkpoints, corpus, clock, smoke, smoke_max_steps=None
                 }
             )
     c0_records = pool.map(c0_tasks, fp2.CAPS_SECONDS["c0"], "C0")
-    c0, c0_latched = {}, {}
+    c0, c0_latched, c0_at_rest = {}, {}, {}
     for task, record in zip(c0_tasks, c0_records, strict=True):
-        c0[task["condition"]] = c0.get(task["condition"], 0) + int(record["at_rest"])
+        c0[task["condition"]] = c0.get(task["condition"], 0) + int(record["success"])
+        c0_at_rest[task["condition"]] = c0_at_rest.get(task["condition"], 0) + int(
+            record["at_rest"]
+        )
         c0_latched[task["condition"]] = c0_latched.get(task["condition"], 0) + int(
             record["latched_success"]
         )
@@ -770,13 +791,23 @@ def _run(report, output, checkpoints, corpus, clock, smoke, smoke_max_steps=None
     plate_c0 = {p: c0[f"plate_{p}"] for p in fp2.C0_PLATE_LEVELS_CM}
     bars = fp2.c0_bars(c0["reference"], apple_c0, plate_c0)
     report["stages"]["C0"] = {
-        "at_rest_of_32": c0,
+        "counted_success_of_32": c0,
+        "at_rest_of_32": c0_at_rest,
         "latched_of_32": c0_latched,
         "bars": bars,
         "seconds": time.monotonic() - started,
         "attempts": [
             {"condition": t["condition"], "seed": t["seed"]}
-            | {k: r.get(k) for k in ("termination_reason", "at_rest", "latched_success")}
+            | {
+                k: r.get(k)
+                for k in (
+                    "termination_reason",
+                    "success",
+                    "at_rest",
+                    "grasp_before_settle",
+                    "latched_success",
+                )
+            }
             | {
                 "final_distance_cm": None
                 if not r.get("at_rest_detail")
@@ -1039,7 +1070,7 @@ def _run(report, output, checkpoints, corpus, clock, smoke, smoke_max_steps=None
         "R": readouts["R"].predict(tokens(floor, d_frame_list)),
     }
     d_truth = np.asarray([f["truth_xy"] for f in d_frames])
-    library = [r for r in roots["train"] if r["at_rest"]]
+    library = [r for r in roots["train"] if r["success"]]  # counted successes (T71-R1)
     if not library and smoke:
         library = roots["train"]  # smoke only: a tiny, truncated corpus holds no at-rest root
     if not library:
@@ -1089,7 +1120,7 @@ def _run(report, output, checkpoints, corpus, clock, smoke, smoke_max_steps=None
         fp2.CAPS_SECONDS["per_rollout_batch"],
         "M1 B-replay",
     )
-    zero = {"grasp": 0, "success": 0, "latched": 0}
+    zero = {"grasp": 0, "success": 0, "at_rest": 0, "at_rest_without_grasp": 0, "latched": 0}
     counts = {name: (count(r) if r is not None else dict(zero)) for name, r in arms.items()}
     decision = fp2.decide_m1(counts | {"D-oracle-perc": dict(zero)}, threshold)
     carried = decision.get("carried", "P-3")
