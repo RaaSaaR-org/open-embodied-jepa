@@ -6,7 +6,7 @@ All four items of the brief were delivered: (1) pinned rendering, a camera manif
 
 ## Runs and environment
 
-Image, Isaac Sim/Lab, importer, USD (`g1_29dof_with_hand-ref`, canonical tree sha256 `cd1fdb27…2fa8`) and joint manifest v1 are those of [ISAAC_MJCF_TRANSPORT.md](ISAAC_MJCF_TRANSPORT.md). The runs below record only the USD **path**, not its hash; the hash comes from that directory's `conversion.json`. From the review fixes onward, `parity_isaac.py` and `scripted_checks_isaac.py` also record `usd_canonical_tree_sha256`. PhysX GPU pipeline, dt 0.002 s, 25 substeps per 0.05 s interval, one environment. Host MuJoCo 3.13.0.
+Image, Isaac Sim/Lab, importer, USD (`g1_29dof_with_hand-ref`, canonical tree sha256 `cd1fdb27…2fa8`) and joint manifest v1 are those of [ISAAC_MJCF_TRANSPORT.md](ISAAC_MJCF_TRANSPORT.md). The runs below record only the USD **path**, not its hash; the hash comes from that directory's `conversion.json`. From the review fixes onward, `parity_isaac.py` and `scripted_checks_isaac.py` also record `usd_canonical_tree_sha256`. A `usd_canonical_tree_sha256` of `None` in a run record means that no `conversion.json` was found above the USD: the USD's provenance is missing, and the run can be tied to a converted USD only by its recorded path. PhysX GPU pipeline, dt 0.002 s, 25 substeps per 0.05 s interval, one environment. Host MuJoCo 3.13.0.
 
 | Run (`outputs/`, git-ignored) | Code | What |
 | --- | --- | --- |
@@ -243,6 +243,6 @@ Caveats:
 
 ## Next step
 
-1. Decide the rolling-friction route (a–d above). Option (a) is worth a one-day spike, because it would also remove the soft/rigid contact and friction-cone mismatches.
+1. Decide the rolling-friction route (a–d above). *Update 2026-09-29: option (a) was spiked in [ISAAC_NEWTON_SPIKE.md](ISAAC_NEWTON_SPIKE.md); in that development spike (one clean run each of five scripted cases and one free-space trajectory), Newton/MuJoCo-Warp reproduced MuJoCo's roll, rim-drop and press outcomes; it is available as `IsaacTransport(physics="newton")`.* Option (a) is worth a one-day spike, because it would also remove the soft/rigid contact and friction-cone mismatches.
 2. With that route, rerun the scripted roll, rim and press checks, then put the embodiment's IK (MuJoCo kinematics provider) over `IsaacTransport`. Replay e9 on development seeds as a separately labelled cross-simulator check.
 3. If Isaac frames are to be used as observations, decide whether shading must match (for example an unlit/albedo-plus-shadow path, or a colour transform fitted on training frames only) or whether the distribution shift is accepted and measured.

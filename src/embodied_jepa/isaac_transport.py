@@ -15,6 +15,15 @@ plate_xy=...)`` places them by ``MuJoCoSimulation.reset``'s rules (``isaac_scene
 onboard camera and the pinned render settings come from ``configs/isaac/onboard_camera_v1.json``.
 PhysX cannot express every MuJoCo contact parameter; see ``docs/ISAAC_V2_SCENE.md``.
 
+Physics backend: ``physics="physx"`` (the default) or the opt-in ``physics="newton"``, Isaac
+Lab 3's Newton backend with its MuJoCo-Warp solver (``docs/ISAAC_NEWTON_SPIKE.md``). With
+Newton the transport builds the Newton model itself (the Isaac Lab default builder does not
+register the MuJoCo geom attributes, so ``condim`` would silently stay 3), writes MuJoCo's geom
+friction triples, condim, solref and solimp (``isaac_scene.newton_contact_params``) and the
+joints' passive damping and frictionloss into it, reads the compiled MuJoCo model back
+(``newton_model``), takes the bias forces from MuJoCo-Warp's ``qfrc_bias`` and the contacts from
+its contact list. The control law is unchanged.
+
 Control mirrors ``MuJoCoSimulation.send_joint_targets``: per physics substep, linearly
 interpolated targets, ``kp (q* - q) - kd qd + bias`` with the simulator's own gravity and
 Coriolis compensation, clipped to the MJCF actuator ``ctrlrange``, applied as joint efforts.
@@ -63,6 +72,11 @@ _JOINT_KEYS = (
     "frictionloss",
 )
 _RESET_ELBOW_RAD = 0.08  # MuJoCoSimulation.reset: slight elbow flexion
+
+
+# MuJoCo-Warp data that carries state from one episode into the next and that
+# ``mj_resetData`` clears on the host; zeroed on every Newton reset.
+NEWTON_HISTORY_FIELDS = ("qacc_warmstart", "qacc", "qfrc_applied", "xfrc_applied", "act", "ctrl")
 
 
 def joint_manifest_from_mujoco(sim) -> dict:
@@ -197,8 +211,15 @@ class IsaacTransport:
         record_contacts: bool = False,
         device: str = "cuda:0",
         joint_friction: str = "frictionloss",
+        physics: str = "physx",
     ):
         from embodied_jepa import isaac_scene as scene
+
+        if physics not in scene.PHYSICS_BACKENDS:
+            raise ContractError(f"physics must be one of {scene.PHYSICS_BACKENDS}")
+        self.physics = physics
+        self.newton = physics == "newton"
+        self.newton_model: dict | None = None
 
         self.manifest = validate_joint_manifest(manifest)
         self.scene = scene.validate_scene_manifest(scene_manifest)
@@ -251,10 +272,11 @@ class IsaacTransport:
                 friction_combine_mode=default["friction_combine_mode"],
                 restitution_combine_mode=default["restitution_combine_mode"],
             ),
+            physics=self._newton_cfg() if self.newton else None,
         )
         self.sim = sim_utils.SimulationContext(cfg)
         self.render_settings = self._apply_render_settings() if self.camera_manifest else {}
-        if self.record_contacts:
+        if self.record_contacts and not self.newton:
             # Isaac Lab turns PhysX contact processing off unless a contact sensor asks for it.
             self.sim.set_setting("/physics/disableContactProcessing", False)
         self._spawn_static_scene()
@@ -274,7 +296,7 @@ class IsaacTransport:
             },
         )
         self.robot = Articulation(robot_cfg)
-        if self.record_contacts:
+        if self.record_contacts and not self.newton:
             self._activate_link_contact_reports()
         self.apple = self.plate = None
         if self.objects:
@@ -282,20 +304,31 @@ class IsaacTransport:
         self.camera = None
         if render:
             self._spawn_camera_and_lights()
+        if self.newton:
+            self._install_newton_builder()
         self.sim.reset()
         self.isaac_joint_names = tuple(self.robot.joint_names)
         self._idx = name_map(self.joint_names, list(self.isaac_joint_names))
         lim = self._np(self.robot.data.joint_pos_limits)[0][self._idx]
         if np.abs(lim - np.stack([self.lower, self.upper], axis=1)).max() > 1e-4:
             raise ContractError("Isaac joint limits differ from the joint manifest")
-        # MuJoCo passive damping as a zero-stiffness PhysX drive (implicit, like MuJoCo's).
         self._damping = np.array([j["damping"] for j in joints])
-        damping = np.zeros(len(self._idx))
-        damping[self._idx] = self._damping
-        self.robot.write_joint_damping_to_sim_index(
-            damping=torch.as_tensor(damping, dtype=torch.float32, device=self.sim.device)[None]
+        self._frictionloss = np.array(
+            [j["frictionloss"] if joint_friction == "frictionloss" else 0.0 for j in joints]
         )
-        self._set_joint_friction(joints)
+        self.physx_joint_friction = None
+        if self.newton:
+            # Passive damping and frictionloss went into the Newton model as MuJoCo's own
+            # joint damping and frictionloss (``_install_newton_builder``); bind and read back.
+            self._bind_newton()
+        else:
+            # MuJoCo passive damping as a zero-stiffness PhysX drive (implicit, like MuJoCo's).
+            damping = np.zeros(len(self._idx))
+            damping[self._idx] = self._damping
+            self.robot.write_joint_damping_to_sim_index(
+                damping=torch.as_tensor(damping, dtype=torch.float32, device=self.sim.device)[None]
+            )
+            self._set_joint_friction(joints)
         self._kp = np.array([j["kp"] for j in joints])
         self._kd = np.array([j["kd"] for j in joints])
         self.targets = np.zeros(len(joints))
@@ -304,12 +337,18 @@ class IsaacTransport:
         self._interval_pairs: set[tuple[str, str]] = set()
         self.contact_api_error = None
         self._contact_views = []
-        if self.record_contacts:
+        self._bias_after_reset = None
+        if self.record_contacts and not self.newton:
             try:
                 self._make_contact_views()
             except Exception as exc:  # noqa: BLE001 - recorded; contacts then unavailable
                 self.contact_api_error = f"{type(exc).__name__}: {exc}"
-        self.object_properties = self._read_object_properties() if self.objects else None
+        if self.objects:
+            self.object_properties = (
+                self._newton_object_properties() if self.newton else self._read_object_properties()
+            )
+        else:
+            self.object_properties = None
         self.reset()
 
     # ------------------------------------------------------------------ scene construction
@@ -330,9 +369,15 @@ class IsaacTransport:
     def _spawn_static_scene(self) -> None:
         """Floor (a thin box, top at z = 0) and the table as kinematic (immovable) bodies.
 
-        Kinematic rather than static so that PhysX contact views can name them as filters."""
+        Kinematic rather than static under PhysX so that PhysX contact views can name them as
+        filters; static under Newton."""
         su, physx = self._sim_utils, self.scene["isaac_physx"]
-        fixed = su.RigidBodyPropertiesCfg(kinematic_enabled=True, sleep_threshold=0.0)
+        # Newton: static colliders, like MuJoCo's world geoms (no contact views to feed).
+        fixed = (
+            None
+            if self.newton
+            else su.RigidBodyPropertiesCfg(kinematic_enabled=True, sleep_threshold=0.0)
+        )
         floor, table = self.scene["floor"], self.scene["table"]
         floor_cfg = su.CuboidCfg(
             size=(4.0, 4.0, 0.02),
@@ -541,6 +586,321 @@ class IsaacTransport:
         out["usd_physics_attributes"] = attrs
         return out
 
+    # ------------------------------------------------------------------ Newton backend
+    def _newton_cfg(self):
+        """Isaac Lab's ``NewtonCfg`` with the MuJoCo-Warp solver set from the scene manifest."""
+        from isaaclab_newton.physics import MJWarpSolverCfg, NewtonCfg
+
+        from embodied_jepa import isaac_scene as scene
+
+        opt = scene.newton_solver_options(self.scene)
+        if abs(opt["timestep_s"] - self.physics_dt) > 1e-12:
+            raise ContractError("scene and joint manifests disagree on the physics timestep")
+        self.newton_solver_options = opt
+        return NewtonCfg(
+            num_substeps=opt["num_substeps"],
+            use_cuda_graph=opt["use_cuda_graph"],
+            solver_cfg=MJWarpSolverCfg(
+                solver=opt["solver"],
+                integrator=opt["integrator"],
+                cone=opt["cone"],
+                impratio=opt["impratio"],
+                iterations=opt["iterations"],
+                ls_iterations=opt["ls_iterations"],
+                njmax=opt["njmax"],
+                nconmax=opt["nconmax"],
+                use_mujoco_contacts=opt["use_mujoco_contacts"],
+            ),
+        )
+
+    def _install_newton_builder(self) -> None:
+        """Build the Newton model from the stage with MuJoCo's geom and joint parameters.
+
+        Isaac Lab's ``NewtonManager.instantiate_builder_from_stage`` does the same ``add_usd``
+        but without ``SolverMuJoCo.register_custom_attributes``, so the MuJoCo-only geom
+        attributes (condim, solimp) and passive joint damping do not exist and every geom
+        compiles with condim 3. This builder registers them, then writes per shape role
+        (``isaac_scene.shape_role``) the MuJoCo friction triple, condim, solref (as Newton's
+        ke/kd), solimp and margin, and per robot joint the passive damping, frictionloss, zero
+        drive gains and MuJoCo's default limit solref. Everything is read back after
+        ``sim.reset`` (``_bind_newton``)."""
+        from isaaclab_newton.physics import NewtonManager
+        from newton import ModelBuilder
+        from newton._src.usd.schemas import SchemaResolverNewton, SchemaResolverPhysx
+        from newton.solvers import SolverMuJoCo
+
+        from embodied_jepa import isaac_scene as scene
+
+        stage = self._sim_utils.get_current_stage()
+        builder = ModelBuilder(up_axis="Z")
+        SolverMuJoCo.register_custom_attributes(builder)
+        builder.add_usd(stage, schema_resolvers=[SchemaResolverNewton(), SchemaResolverPhysx()])
+        params = scene.newton_contact_params(self.scene)
+        attrs = builder.custom_attributes
+        condim, solimp = attrs["mujoco:condim"], attrs["mujoco:geom_solimp"]
+        passive_damping = attrs["mujoco:dof_passive_damping"]
+        for attr in (condim, solimp, passive_damping):
+            if attr.values is None:
+                attr.values = {}
+        self._newton_shape_roles = {}
+        for i, label in enumerate(builder.shape_label):
+            role = scene.shape_role(label)
+            p = params[role]
+            (
+                builder.shape_material_mu[i],
+                builder.shape_material_mu_torsional[i],
+                builder.shape_material_mu_rolling[i],
+            ) = p["friction"]
+            builder.shape_material_ke[i] = p["ke"]
+            builder.shape_material_kd[i] = p["kd"]
+            builder.shape_margin[i] = p["margin"]
+            condim.values[i] = p["condim"]
+            solimp.values[i] = tuple(p["solimp"])
+            self._newton_shape_roles[label] = role
+        by_name: dict[str, list[int]] = {}
+        for j, label in enumerate(builder.joint_label):
+            by_name.setdefault(label.rsplit("/", 1)[-1], []).append(j)
+        joints = self.manifest["joints"]
+        for j in joints:
+            found = by_name.get(j["name"], [])
+            if len(found) != 1:
+                raise ContractError(f"Newton model has {len(found)} joints named {j['name']}")
+            dof = builder.joint_qd_start[found[0]]
+            builder.joint_friction[dof] = (
+                j["frictionloss"] if self.joint_friction == "frictionloss" else 0.0
+            )
+            passive_damping.values[dof] = j["damping"]
+            builder.joint_target_ke[dof] = 0.0
+            builder.joint_target_kd[dof] = 0.0
+            builder.joint_limit_ke[dof] = 0.0  # 0: MuJoCo's default limit solref (0.02, 1)
+        NewtonManager.set_builder(builder)
+
+    def _bind_newton(self) -> None:
+        """Map canonical joints and MuJoCo geoms after ``sim.reset``; read the model back."""
+        import mujoco
+        from isaaclab_newton.physics import NewtonManager
+
+        solver, model = NewtonManager._solver, NewtonManager._model
+        if solver is None or not hasattr(solver, "mjw_model"):
+            raise ContractError("Newton did not build a MuJoCo-Warp solver")
+        self._nt_solver, self._nt_model, self._mujoco = solver, model, mujoco
+        mjm = solver.mj_model
+        self._mjd_cpu = mujoco.MjData(mjm)
+        qd_start = model.joint_qd_start.numpy()
+        dof_label = {int(qd_start[j]): label for j, label in enumerate(model.joint_label)}
+        name_to_dof = {}
+        for mj_dof, nt_dof in enumerate(solver.mjc_dof_to_newton_dof.numpy()[0]):
+            label = dof_label.get(int(nt_dof))
+            if label is not None:
+                name_to_dof[label.rsplit("/", 1)[-1]] = mj_dof
+        missing = [n for n in self.joint_names if n not in name_to_dof]
+        if missing:
+            raise ContractError(f"MuJoCo-Warp model lacks joints {missing}")
+        self._mj_dof = np.array([name_to_dof[n] for n in self.joint_names])
+        self._mj_qpos = mjm.jnt_qposadr[mjm.dof_jntid[self._mj_dof]]
+        shape_body = model.shape_body.numpy()
+        labels = []
+        for shape in solver.mjc_geom_to_newton_shape.numpy()[0]:
+            shape = int(shape)
+            if shape < 0:
+                labels.append("?")
+            elif shape_body[shape] < 0:
+                labels.append(_body_label(model.shape_label[shape]))
+            else:
+                labels.append(_body_label(model.body_label[int(shape_body[shape])]))
+        self._geom_label = labels
+        self.newton_model = self._read_newton_model()
+        self._check_newton_joint_properties()
+
+    def _read_newton_model(self) -> dict:
+        """What the compiled MuJoCo-Warp model holds: options, geoms, joints and bodies."""
+        from embodied_jepa import isaac_scene as scene
+
+        mjm, mjw = self._nt_solver.mj_model, self._nt_solver.mjw_model
+        opt = mjw.opt
+
+        def world0(a):
+            x = a.numpy()
+            return x[0] if x.ndim >= 2 and x.shape[0] == 1 else x
+
+        friction, condim = world0(mjw.geom_friction), mjw.geom_condim.numpy()
+        solref, solimp = world0(mjw.geom_solref), world0(mjw.geom_solimp)
+        margin, gap = world0(mjw.geom_margin), world0(mjw.geom_gap)
+        shapes = self._nt_solver.mjc_geom_to_newton_shape.numpy()[0]
+        geoms = []
+        for g in range(mjm.ngeom):
+            shape = int(shapes[g])
+            label = self._nt_model.shape_label[shape] if shape >= 0 else None
+            geoms.append(
+                {
+                    "shape_label": label,
+                    "role": scene.shape_role(label) if label else None,
+                    "body": self._geom_label[g],
+                    "type": int(mjm.geom_type[g]),
+                    "size": [float(v) for v in mjm.geom_size[g]],
+                    "contype": int(mjm.geom_contype[g]),
+                    "conaffinity": int(mjm.geom_conaffinity[g]),
+                    "friction": [float(v) for v in friction[g]],
+                    "condim": int(condim[g]),
+                    "solref": [float(v) for v in solref[g]],
+                    "solimp": [float(v) for v in solimp[g]],
+                    "margin": float(margin[g]),
+                    "gap": float(gap[g]),
+                    "priority": int(mjm.geom_priority[g]),
+                }
+            )
+        dof_damping, armature = world0(mjw.dof_damping), world0(mjw.dof_armature)
+        frictionloss = world0(mjw.dof_frictionloss)
+        jnt_solref, jnt_solimp = world0(mjw.jnt_solref), world0(mjw.jnt_solimp)
+        joints = {}
+        for name, dof in zip(self.joint_names, self._mj_dof, strict=True):
+            jnt = int(mjm.dof_jntid[dof])
+            joints[name] = {
+                "damping": float(dof_damping[dof]),
+                "armature": float(armature[dof]),
+                "frictionloss": float(frictionloss[dof]),
+                "range": [float(v) for v in mjm.jnt_range[jnt]],
+                "limited": bool(mjm.jnt_limited[jnt]),
+                "solref_limit": [float(v) for v in jnt_solref[jnt]],
+                "solimp_limit": [float(v) for v in jnt_solimp[jnt]],
+            }
+        body_mass, body_inertia = world0(mjw.body_mass), world0(mjw.body_inertia)
+        bodies = {}
+        for b in range(mjm.nbody):
+            nt = int(self._nt_solver.mjc_body_to_newton.numpy()[0][b])
+            label = _body_label(self._nt_model.body_label[nt]) if nt >= 0 else "world"
+            bodies[label] = {
+                "mass": float(body_mass[b]),
+                "inertia": [float(v) for v in body_inertia[b]],
+                "mocap": bool(mjm.body_mocapid[b] >= 0),
+                "dofs": int(mjm.body_dofnum[b]),
+            }
+        scalar = {}
+        for key in (
+            "timestep",
+            "integrator",
+            "cone",
+            "solver",
+            "iterations",
+            "ls_iterations",
+            "tolerance",
+            "ls_tolerance",
+            "impratio",
+            "disableflags",
+            "enableflags",
+        ):
+            v = getattr(opt, key, None)
+            if v is None:
+                continue
+            v = v.numpy().ravel()[0] if hasattr(v, "numpy") else v
+            scalar[key] = float(v) if not isinstance(v, (bool, int)) else v
+        scalar["gravity"] = [float(v) for v in world0(opt.gravity).ravel()]
+        invsqrt = getattr(opt, "impratio_invsqrt", None)
+        if invsqrt is not None:  # MuJoCo-Warp stores 1 / sqrt(impratio)
+            scalar["impratio"] = float(invsqrt.numpy().ravel()[0]) ** -2
+        return {
+            "mujoco_warp_version": _version("mujoco_warp"),
+            "newton_version": _version("newton"),
+            "mujoco_version": _version("mujoco"),
+            "nq": int(mjm.nq),
+            "nv": int(mjm.nv),
+            "nu": int(mjm.nu),
+            "ngeom": int(mjm.ngeom),
+            "nbody": int(mjm.nbody),
+            "nexclude": int(mjm.nexclude),
+            "npair": int(mjm.npair),
+            "opt": scalar,
+            "solver_options": self.newton_solver_options,
+            "geoms": geoms,
+            "joints": joints,
+            "bodies": bodies,
+        }
+
+    def _check_newton_joint_properties(self) -> None:
+        """Read MuJoCo-Warp's damping and frictionloss back; raise if they differ."""
+        mjw = self._nt_solver.mjw_model
+
+        def world0(a):
+            x = a.numpy()
+            return x[0] if x.ndim >= 2 else x
+
+        damping = world0(mjw.dof_damping)[self._mj_dof]
+        frictionloss = world0(mjw.dof_frictionloss)[self._mj_dof]
+        if np.abs(damping - self._damping).max() > 1e-6:
+            raise ContractError("MuJoCo-Warp joint damping read-back differs from the manifest")
+        if np.abs(frictionloss - self._frictionloss).max() > 1e-6:
+            raise ContractError("MuJoCo-Warp frictionloss read-back differs from what was set")
+
+    def _clear_newton_history(self) -> None:
+        """Zero MuJoCo-Warp's history-carrying data, as ``mj_resetData`` does on the host.
+
+        Newton's reset writes joint and body state but leaves e.g. the solver warm start
+        (``qacc_warmstart``) of the previous episode in ``mjw_data``. The list is manual:
+        ``mujoco_warp.reset_data`` would also overwrite ``qpos``/``qvel`` (and the pose the
+        reset just wrote), so it cannot be used here. ``NEWTON_HISTORY_FIELDS`` names it and
+        ``tests/test_isaac_transport.py`` pins it."""
+        d = self._nt_solver.mjw_data
+        for name in NEWTON_HISTORY_FIELDS:
+            arr = getattr(d, name, None)
+            if arr is not None and getattr(arr, "size", 0):
+                arr.zero_()
+
+    def _newton_reset_bias(self, q: np.ndarray) -> np.ndarray:
+        """``qfrc_bias`` at the reset pose at rest, from the CPU copy of the compiled model.
+
+        The robot is fixed-base, so its bias forces depend on its own joints only."""
+        mj, mjm, d = self._mujoco, self._nt_solver.mj_model, self._mjd_cpu
+        mj.mj_resetData(mjm, d)
+        d.qpos[self._mj_qpos] = q
+        mj.mj_forward(mjm, d)
+        return d.qfrc_bias[self._mj_dof].astype(float)
+
+    def _collect_newton_pairs(self) -> None:
+        """Body pairs in MuJoCo-Warp's contact list after this physics step (no forces)."""
+        d = self._nt_solver.mjw_data
+        n = int(d.nacon.numpy()[0])
+        if n == 0:
+            return
+        for g0, g1 in d.contact.geom.numpy()[:n]:
+            a, b = self._geom_label[int(g0)], self._geom_label[int(g1)]
+            if a != b:
+                self._interval_pairs.add(tuple(sorted((a, b))))
+
+    def _collect_newton_contacts(self) -> None:
+        """Contacts at the last physics step with ``mj_contactForce`` magnitudes (N), per body
+        pair, labelled and summed like ``parity_mujoco.scene_contacts`` does on the host."""
+        import mujoco_warp
+
+        mj, mjm, d = self._mujoco, self._nt_solver.mj_model, self._mjd_cpu
+        mujoco_warp.get_data_into(d, mjm, self._nt_solver.mjw_data)
+        pairs: dict[tuple[str, str], float] = {}
+        force = np.zeros(6)
+        for i in range(d.ncon):
+            g0, g1 = (int(g) for g in d.contact.geom[i])
+            if not (0 <= g0 < len(self._geom_label) and 0 <= g1 < len(self._geom_label)):
+                raise RuntimeError(f"MuJoCo-Warp contact {i} names geoms {g0}, {g1}")
+            a, b = self._geom_label[g0], self._geom_label[g1]
+            if a == b:
+                continue
+            mj.mj_contactForce(mjm, d, i, force)
+            key = tuple(sorted((a, b)))
+            pairs[key] = pairs.get(key, 0.0) + float(np.linalg.norm(force[:3]))
+        scene_bodies = {"table", "floor", "apple", "plate"}
+        self._last_contacts = [
+            {"bodies": list(k), "force_n": f, "self": not (set(k) & scene_bodies)}
+            for k, f in sorted(pairs.items())
+        ]
+
+    def _newton_object_properties(self) -> dict:
+        """The apple and plate as MuJoCo-Warp holds them (from ``newton_model``)."""
+        m = self.newton_model
+        return {
+            "backend": "newton",
+            "apple_body": m["bodies"].get("apple"),
+            "plate_body": m["bodies"].get("plate"),
+            "geoms": [g for g in m["geoms"] if g["role"] in ("apple", "plate_base", "plate_rim")],
+        }
+
     # ------------------------------------------------------------------ helpers
     def _set_joint_friction(self, joints) -> None:
         """Replace the converter's joint friction with MuJoCo's frictionloss (or nothing).
@@ -599,6 +959,14 @@ class IsaacTransport:
         return q, qd
 
     def _bias(self) -> np.ndarray:
+        if self.newton:
+            # MuJoCo's semantics: qfrc_bias of the last forward pass (the state before the
+            # last step), except right after a reset, when it is the reset state's
+            # (MuJoCoSimulation.reset calls mj_forward).
+            if self._bias_after_reset is not None:
+                bias, self._bias_after_reset = self._bias_after_reset, None
+                return bias
+            return self._nt_solver.mjw_data.qfrc_bias.numpy()[0][self._mj_dof].astype(float)
         view = self.robot.root_view
         g = self._np(view.get_gravity_compensation_forces())[0]
         c = self._np(view.get_coriolis_and_centrifugal_compensation_forces())[0]
@@ -676,7 +1044,10 @@ class IsaacTransport:
             if obj is not None:
                 obj.update(self.physics_dt)
         self.time = round(self.time + self.physics_dt, 9)
-        if self._contact_views:
+        if self.newton:
+            if self.record_contacts:
+                self._collect_newton_pairs()
+        elif self._contact_views:
             self._collect_contacts()
 
     # ------------------------------------------------------------------ transport API
@@ -716,7 +1087,13 @@ class IsaacTransport:
             if obj is not None:
                 obj.reset()
                 obj.update(0.0)
-        self._check_joint_properties()  # robot.reset() must not undo damping/friction
+        # robot.reset() must not undo damping/friction
+        if self.newton:
+            self._check_newton_joint_properties()
+            self._clear_newton_history()
+            self._bias_after_reset = self._newton_reset_bias(q)
+        else:
+            self._check_joint_properties()
         self.targets[:] = q
         self.time = 0.0
         self.stopped_reason = ""
@@ -764,6 +1141,13 @@ class IsaacTransport:
         assert hasattr(self.sim, "_physics_step_count"), "Isaac Lab step counter moved"
 
         self.sim.physics_manager.forward()
+        if self.newton:
+            # Newton syncs body poses to Fabric only when marked dirty (by a step); reset and
+            # teleports write state without stepping.
+            from isaaclab_newton.physics import NewtonManager
+
+            NewtonManager._mark_transforms_dirty()
+            NewtonManager.pre_render()
         self.sim.set_setting("/app/player/playSimulations", False)
         try:
             for _ in range(self.renders_per_frame):
@@ -828,6 +1212,8 @@ class IsaacTransport:
             torque = self._kp * (interpolated - q) - self._kd * qd + self._bias()
             self._apply_effort(np.clip(torque, self.ctrl_min, self.ctrl_max))
             self._step_physics()
+            if self.newton and self.record_contacts and k == self.substeps - 1:
+                self._collect_newton_contacts()
             if not np.isfinite(self._state()[0]).all():
                 self.stop("nonfinite state")
                 raise RuntimeError(self.stopped_reason)
@@ -844,7 +1230,7 @@ class IsaacTransport:
 
     # ------------------------------------------------------------------ evaluator-only truth
     def contacts(self) -> dict:
-        """Evaluator/diagnostic only: PhysX contacts at the last physics step, and the body
+        """Evaluator/diagnostic only: contacts at the last physics step, and the body
         pairs seen at any substep of the last control interval. Never an observation."""
         self._require_open()
         return {
@@ -940,6 +1326,17 @@ def _aim_distant_light(prim, direction) -> None:
     xf = UsdGeom.Xformable(prim)
     xf.ClearXformOpOrder()
     xf.AddOrientOp(UsdGeom.XformOp.PrecisionDouble).Set(Gf.Quatd(w, x, y, z))
+
+
+def _version(module: str) -> str | None:
+    from importlib import metadata
+
+    for dist in (module, module.replace("_", "-")):
+        try:
+            return metadata.version(dist)
+        except metadata.PackageNotFoundError:
+            continue
+    return None
 
 
 def _jsonable(v):

@@ -242,3 +242,64 @@ def test_read_and_reset_carry_no_object_state():
         "sensor_valid",
     }
     assert _returned_dict_keys("reset") == {"timestamp", "clock"}
+
+
+# ----- the opt-in Newton (MuJoCo-Warp) mapping -------------------------------------------------
+def test_newton_solver_options_follow_the_scene_manifest():
+    opt = scene.newton_solver_options(load(SCENE))
+    assert opt["integrator"] == "implicitfast" and opt["cone"] == "pyramidal"
+    assert opt["impratio"] == 1.0 and opt["timestep_s"] == 0.002
+    assert (opt["iterations"], opt["ls_iterations"]) == (100, 50)
+    assert opt["use_mujoco_contacts"] and opt["solver"] == "newton"
+    bad = copy.deepcopy(load(SCENE))
+    bad["mujoco_option"]["integrator"] = 2  # implicit: MuJoCo-Warp has no such integrator
+    with pytest.raises(ContractError):
+        scene.newton_solver_options(bad)
+
+
+def test_solref_round_trips_through_newtons_ke_kd():
+    # Newton's convert_solref(ke, kd, 1, 1): timeconst = 2 / kd, dampratio = kd / 2 sqrt(1 / ke).
+    for solref in ([0.02, 1.0], [0.005, 0.7], [0.1, 2.0]):
+        ke, kd = scene.solref_to_newton_ke_kd(solref)
+        assert np.allclose([2.0 / kd, kd / 2.0 * np.sqrt(1.0 / ke)], solref)
+    # MuJoCo's default solref is Newton's default shape ke / kd.
+    assert np.allclose(scene.solref_to_newton_ke_kd([0.02, 1.0]), [2500.0, 100.0])
+    with pytest.raises(ContractError):
+        scene.solref_to_newton_ke_kd([-100.0, -10.0])
+
+
+def test_newton_contact_params_carry_the_v2_values(v2_sim):
+    params = scene.newton_contact_params(load(SCENE))
+    assert set(params) == set(scene.SHAPE_ROLES)
+    assert params["apple"]["condim"] == 6
+    assert params["apple"]["friction"] == [1.0, 0.01, 0.001]
+    model = v2_sim.model
+    for role, geom in (("apple", "apple_geom"), ("table", "table"), ("plate_base", "plate_base")):
+        g = model.geom(geom).id
+        assert np.allclose(params[role]["friction"], model.geom_friction[g])
+        assert params[role]["condim"] == model.geom_condim[g]
+        assert np.allclose(params[role]["solref"], model.geom_solref[g])
+        assert np.allclose(params[role]["solimp"], model.geom_solimp[g])
+    rim = model.geom("plate_rim_0").id
+    assert np.allclose(params["plate_rim"]["friction"], model.geom_friction[rim])
+    assert np.allclose(params["plate_rim"]["solref"], model.geom_solref[rim])
+    robot = [
+        g
+        for g in range(model.ngeom)
+        if model.body(int(model.geom_bodyid[g])).name not in ("world", "apple", "plate")
+    ]
+    for key in ("friction", "condim", "solref", "solimp", "margin"):
+        values = np.unique(np.atleast_2d(getattr(model, f"geom_{key}")[robot]).T, axis=1)
+        assert np.allclose(values.ravel(), params["robot"][key])
+
+
+def test_shape_role_by_prim_path():
+    assert scene.shape_role("/World/Apple/geometry/mesh") == "apple"
+    assert scene.shape_role("/World/Plate/base/geometry/mesh") == "plate_base"
+    assert scene.shape_role("/World/Plate/rim_07/geometry/mesh") == "plate_rim"
+    assert scene.shape_role("/World/table/geometry/mesh") == "table"
+    assert scene.shape_role("/World/floor/geometry/mesh") == "floor"
+    assert scene.shape_role("/World/Robot/pelvis/torso_link/collisions/mesh_0") == "robot"
+    for bad in ("/World/Apples/x", "/World/tablecloth", "/World/Camera"):
+        with pytest.raises(ContractError):
+            scene.shape_role(bad)
