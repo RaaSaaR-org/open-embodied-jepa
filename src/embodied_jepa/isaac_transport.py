@@ -826,6 +826,17 @@ class IsaacTransport:
         if np.abs(frictionloss - self._frictionloss).max() > 1e-6:
             raise ContractError("MuJoCo-Warp frictionloss read-back differs from what was set")
 
+    def _clear_newton_history(self) -> None:
+        """Zero MuJoCo-Warp's history-carrying data, as ``mj_resetData`` does on the host.
+
+        Newton's reset writes joint and body state but leaves e.g. the solver warm start
+        (``qacc_warmstart``) of the previous episode in ``mjw_data``."""
+        d = self._nt_solver.mjw_data
+        for name in ("qacc_warmstart", "qacc", "qfrc_applied", "xfrc_applied", "act", "ctrl"):
+            arr = getattr(d, name, None)
+            if arr is not None and getattr(arr, "size", 0):
+                arr.zero_()
+
     def _newton_reset_bias(self, q: np.ndarray) -> np.ndarray:
         """``qfrc_bias`` at the reset pose at rest, from the CPU copy of the compiled model.
 
@@ -1071,6 +1082,7 @@ class IsaacTransport:
         # robot.reset() must not undo damping/friction
         if self.newton:
             self._check_newton_joint_properties()
+            self._clear_newton_history()
             self._bias_after_reset = self._newton_reset_bias(q)
         else:
             self._check_joint_properties()
