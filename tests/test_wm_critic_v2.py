@@ -785,18 +785,20 @@ def test_memory_fields_and_worker_counts_are_frozen():
     assert frozen["sim_workers"] == 6
 
 
-linux_only = pytest.mark.skipif(
-    not Path("/proc/self/status").exists(), reason="the memory guard reads /proc (Linux only)"
-)
+HAS_PROC = Path("/proc/self/status").exists()  # the memory guard is Linux-only, like the runs
 
 
-@linux_only
 def test_process_tree_rss_counts_children():
     pytest.importorskip("torch")
     import subprocess
     import sys
 
     runner = _load_script("_run_wm_critic_v2_rss", "scripts/run_wm_critic_v2.py")
+    if not HAS_PROC:  # macOS CI: no /proc; the runs themselves are Linux-only (G-platform)
+        assert runner.process_tree_rss_bytes() == 0
+        with pytest.raises(OSError):
+            runner.mem_available_bytes()
+        return
     alone = runner.process_tree_rss_bytes()
     child = subprocess.Popen(
         [sys.executable, "-c", "import time; x = bytearray(200 * 2**20); time.sleep(20)"]
@@ -824,8 +826,8 @@ spec = importlib.util.spec_from_file_location(
 )
 runner = importlib.util.module_from_spec(spec); spec.loader.exec_module(runner)
 out = Path(sys.argv[2])
-if sys.argv[3] == "memory":
-    runner.wc.MEMORY["ceiling_gib"] = 1e-3  # any process exceeds it: the guard must fire
+if sys.argv[3] == "memory":  # any tree exceeds this: the guard must fire (on any platform)
+    runner.process_tree_rss_bytes = lambda root=None, per=None: 10**13
 def slow_preflight(report, kind, evidence):
     (out.parent / "ready").write_text("1")
     time.sleep(60)
@@ -837,9 +839,7 @@ sys.exit(0 if report["outcome"] != "V" else 3)
 """
 
 
-@pytest.mark.parametrize(
-    "how", ["SIGTERM", "SIGINT", "SIGHUP", pytest.param("memory", marks=linux_only)]
-)
+@pytest.mark.parametrize("how", ["SIGTERM", "SIGINT", "SIGHUP", "memory"])
 def test_a_stop_signal_or_the_memory_ceiling_writes_the_v_report(tmp_path, how):
     pytest.importorskip("torch")
     import signal
@@ -868,7 +868,7 @@ def test_a_stop_signal_or_the_memory_ceiling_writes_the_v_report(tmp_path, how):
     else:
         assert f"received {how}" in report["void_reason"]
     assert report["interrupted_utc"].endswith("Z")
-    if Path("/proc/self/status").exists():
+    if HAS_PROC or how == "memory":
         assert report["memory"]["peak_tree_rss_gib"] > 0
 
 
