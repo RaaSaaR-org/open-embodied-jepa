@@ -81,7 +81,9 @@ def main() -> None:
     isaac = json.loads((args.isaac / "isaac_scripted.json").read_text())
     scene = json.loads(args.scene.read_text())
     if isaac["scene_manifest_sha256"] != canonical_sha256(scene):
-        raise SystemExit("the Isaac run used a scene manifest that is not the committed one")
+        raise SystemExit(
+            f"the Isaac run's scene manifest differs from the one given by --scene ({args.scene})"
+        )
     sim = MuJoCoSimulation(render=False)
     v2 = apply_v2_scene(sim.model)
     manifest = joint_manifest_from_mujoco(sim)
@@ -89,16 +91,25 @@ def main() -> None:
     if not manifest_sha256(committed) == manifest_sha256(manifest) == isaac["manifest_sha256"]:
         raise SystemExit("the Isaac run's joint manifest differs from the committed/MuJoCo one")
     reset_q = reset_pose(committed)
+    backend = isaac.get("physics_backend", "physx")  # runs before the Newton spike: PhysX
     report = {
-        "question": "Do the v2 apple and plate behave alike in Isaac (PhysX) and MuJoCo under "
-        "identical scripted starts and joint targets? (no learned policy)",
+        "question": f"Do the v2 apple and plate behave alike in Isaac ({backend}) and MuJoCo "
+        "under identical scripted starts and joint targets? (no learned policy)",
         "isaac_run": str(args.isaac),
+        "physics_backend": backend,
         "mujoco_v2_scene": v2,
-        "unmatched_in_physx": scene["unmatched_in_physx"],
         "cases": {},
     }
+    if backend == "physx":
+        report["unmatched_in_physx"] = scene["unmatched_in_physx"]
+    else:
+        from embodied_jepa.isaac_scene import UNMATCHED_IN_NEWTON
+
+        report["unmatched_in_newton"] = UNMATCHED_IN_NEWTON
     traces = {}
     for case, spec in CASES.items():
+        if case not in isaac["cases"]:
+            continue
         m = run_case(sim, case, spec, reset_q)
         i = isaac["cases"][case]
         traces[case] = {"mujoco": m, "isaac": i}
@@ -116,6 +127,11 @@ def main() -> None:
             else si["settle_time_s"] - sm["settle_time_s"],
             "max_joint_diff_rad": float(np.abs(np.array(m["qpos"]) - np.array(i["qpos"])).max()),
         }
+        if i.get("plate_pos"):  # the MuJoCo plate is a static body; Isaac's must not drift
+            plate = np.asarray(i["plate_pos"], dtype=float)
+            row["isaac_plate_max_displacement_m"] = float(
+                np.linalg.norm(plate - plate[0], axis=1).max()
+            )
         report["cases"][case] = row
         print(
             f"{case:22s} final xy diff {row['final_xy_diff_m'] * 1e3:7.2f} mm, z diff "

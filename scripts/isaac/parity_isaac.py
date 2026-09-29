@@ -47,6 +47,7 @@ parser.add_argument("--trajectory", default="free_space_v1")
 parser.add_argument("--no_objects", action="store_true", help="robot, floor and table only")
 parser.add_argument("--repeats", type=int, default=2)
 parser.add_argument("--joint_friction", choices=("frictionloss", "none"), default="frictionloss")
+parser.add_argument("--physics", choices=("physx", "newton"), default="physx")
 AppLauncher.add_app_launcher_args(parser)
 args = parser.parse_args()
 args.enable_cameras = True
@@ -150,6 +151,7 @@ def main() -> None:
         render=True,
         record_contacts=True,
         joint_friction=args.joint_friction,
+        physics=args.physics,
     )
     build_s = time.perf_counter() - t0
     memory["after_transport_build_mib"] = gpu_used_mib()
@@ -157,6 +159,8 @@ def main() -> None:
     targets = trajectory(names, reset_pose(manifest), args.action_manifest, args.trajectory)
     record: dict = {
         "isaac_sim_version": Path("/isaac-sim/VERSION").read_text().strip(),
+        "physics_backend": tr.physics,
+        "newton_model": tr.newton_model,
         "usd": args.usd,
         "manifest_sha256": manifest_sha256(manifest),
         "scene_manifest_sha256": canonical_sha256(scene),
@@ -329,5 +333,12 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
+    except BaseException:
+        # Kit's app.close() can end the process before Python prints the traceback.
+        import traceback
+
+        traceback.print_exc()
+        sys.stderr.flush()
+        raise
     finally:
         app.close()

@@ -123,3 +123,11 @@ def test_onboard_camera_quaternion_is_a_proper_rotation_of_mujoco_axes():
     np.testing.assert_allclose(r[:, 0], [0.0, -1.0, 0.0], atol=1e-9)
     np.testing.assert_allclose(r[:, 1], cam_y, atol=1e-9)
     np.testing.assert_allclose(np.linalg.det(r), 1.0, atol=1e-9)
+
+
+def test_unknown_physics_backend_is_rejected_before_any_isaac_import():
+    from embodied_jepa.isaac_transport import IsaacTransport
+
+    with pytest.raises(ContractError, match="physics"):
+        IsaacTransport(usd_path="x.usda", manifest=committed(), scene_manifest={}, physics="ode")
+    assert "isaaclab" not in sys.modules

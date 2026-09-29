@@ -344,6 +344,16 @@ def main() -> None:
             "isaac_max_displacement_m": float(np.abs(apple_i - apple_i[-1]).max()),
         }
 
+    backend = isaac_record.get("physics_backend", "physx")  # older runs: PhysX
+    newton_caveats = [
+        "Newton backend: MuJoCo-Warp compiles its own MuJoCo model from the USD; its "
+        "parameters are audited separately (audit_newton_model.py)",
+        f"joint friction mode {isaac_record.get('joint_friction')!r}: MuJoCo frictionloss as "
+        "MuJoCo-Warp's own frictionloss (same algorithm)",
+        "different engines (MuJoCo-Warp on GPU, float32, vs MuJoCo on CPU, float64) and renderers",
+        "contacts compared as body pairs at the end of each interval (MuJoCo) and at the "
+        "last physics step / any substep of the interval (Isaac); not contact parity",
+    ]
     report = {
         "question": "Does IsaacTransport on the converted USD realise the same joint motion "
         "as MuJoCoSimulation for identical joint targets? (robot, floor and table, plus the "
@@ -384,7 +394,10 @@ def main() -> None:
         "mujoco_contacts_by_pair_read_indices": contact_reads,
         "joints_over_0.01_rad": per_joint_worst,
         "isaac_joint_friction": isaac_record.get("joint_friction", "not recorded"),
-        "caveats": [
+        "physics_backend": backend,
+        "caveats": newton_caveats
+        if backend == "newton"
+        else [
             {
                 "frictionloss": "MuJoCo frictionloss applied in Isaac as PhysX static/dynamic "
                 "friction effort (closest model, not the same algorithm)",

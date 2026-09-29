@@ -49,7 +49,11 @@ def canonical_sha256(manifest: dict) -> str:
 
 def usd_canonical_hash(usd_path: str) -> str | None:
     """Canonical tree sha256 of a converted USD, from the ``conversion.json`` that
-    ``convert_mjcf_to_usd.py`` wrote beside it (None if no record is found)."""
+    ``convert_mjcf_to_usd.py`` wrote beside it.
+
+    None means no ``conversion.json`` was found above ``usd_path``: the USD's provenance is
+    missing, not "no hash needed". A run record whose ``usd_canonical_tree_sha256`` is None
+    cannot be tied to a converted USD by hash, only by its recorded path."""
     from pathlib import Path
 
     for parent in Path(usd_path).parents:
@@ -544,3 +548,137 @@ def build_camera_manifest(sim) -> dict:
             "image_parity": IMAGE_PARITY,
         }
     )
+
+
+# ----- Isaac Lab 3's Newton backend (MuJoCo-Warp solver), opt-in (TASK-025 Newton spike) -------
+# PhysX stays the default. ``IsaacTransport(physics="newton")`` builds the same stage and hands
+# it to Newton's ``SolverMuJoCo`` (``mujoco_warp``), which compiles a MuJoCo model from it. The
+# values below are what the transport writes into that model; the transport reads the compiled
+# model back and records it, and ``scripts/isaac/audit_newton_model.py`` compares the record
+# with the host MuJoCo model.
+PHYSICS_BACKENDS = ("physx", "newton")
+_MJ_INTEGRATORS = {0: "euler", 1: "rk4", 2: "implicit", 3: "implicitfast"}
+_MJ_CONES = {0: "pyramidal", 1: "elliptic"}
+# Solver settings that the scene manifest does not carry. iterations / ls_iterations are the
+# host model's (MuJoCo defaults 100 / 50); njmax / nconmax are buffer sizes for one world.
+NEWTON_SOLVER = {
+    "solver_type": "mujoco_warp",
+    "solver": "newton",
+    "iterations": 100,
+    "ls_iterations": 50,
+    "njmax": 1000,
+    "nconmax": 200,
+    "num_substeps": 1,
+    "use_mujoco_contacts": True,
+    "use_cuda_graph": True,
+}
+# MuJoCo's geom defaults, which the G1 MJCF's robot geoms use (checked against the host model
+# by ``audit_newton_model.py``).
+MUJOCO_DEFAULT_CONTACT = {
+    "friction": [1.0, 0.005, 0.0001],
+    "condim": 3,
+    "solref": [0.02, 1.0],
+    "solimp": [0.9, 0.95, 0.001, 0.5, 2.0],
+    "margin": 0.0,
+}
+SHAPE_ROLES = ("floor", "table", "apple", "plate_base", "plate_rim", "robot")
+
+
+def newton_solver_options(scene: dict) -> dict:
+    """``MJWarpSolverCfg`` / ``NewtonCfg`` values: the scene's MuJoCo options plus NEWTON_SOLVER."""
+    opt = scene["mujoco_option"]
+    integrator = _MJ_INTEGRATORS.get(int(opt["integrator"]))
+    if integrator not in ("euler", "rk4", "implicitfast"):
+        raise ContractError(f"MuJoCo-Warp has no integrator {opt['integrator']!r}")
+    if int(opt.get("noslip_iterations", 0)) != 0:
+        raise ContractError("the Newton mapping assumes no noslip iterations")
+    return {
+        **NEWTON_SOLVER,
+        "integrator": integrator,
+        "cone": _MJ_CONES[int(opt["cone"])],
+        "impratio": float(opt["impratio"]),
+        "timestep_s": float(opt["timestep_s"]),
+    }
+
+
+def solref_to_newton_ke_kd(solref) -> tuple[float, float]:
+    """The shape (ke, kd) that Newton's ``SolverMuJoCo`` turns back into ``solref``.
+
+    Newton sets a geom's solref from the shape's contact stiffness and damping with
+    ``convert_solref(ke, kd, 1, 1)``: timeconst = 2 / kd, dampratio = kd / 2 * sqrt(1 / ke).
+    This is its inverse for MuJoCo's standard (positive) solref."""
+    timeconst, dampratio = (float(v) for v in solref)
+    if timeconst <= 0 or dampratio <= 0:
+        raise ContractError("only the standard (positive) solref form is mapped")
+    return 1.0 / (timeconst * dampratio) ** 2, 2.0 / timeconst
+
+
+def newton_contact_params(scene: dict) -> dict[str, dict]:
+    """Per shape role: MuJoCo geom friction, condim, solref, solimp, margin and Newton ke/kd."""
+    rim = scene["plate"]["rim"]
+    src = {
+        "floor": scene["floor"],
+        "table": scene["table"],
+        "apple": scene["apple"],
+        "plate_base": scene["plate"]["base"],
+        # The manifest records the rim's friction and condim; its solref/solimp are defaults.
+        "plate_rim": {**MUJOCO_DEFAULT_CONTACT, **{k: rim[k] for k in ("friction", "condim")}},
+        "robot": MUJOCO_DEFAULT_CONTACT,
+    }
+    out = {}
+    for role, geom in src.items():
+        ke, kd = solref_to_newton_ke_kd(geom["solref"])
+        out[role] = {
+            "friction": [float(v) for v in geom["friction"]],
+            "condim": int(geom["condim"]),
+            "solref": [float(v) for v in geom["solref"]],
+            "solimp": [float(v) for v in geom["solimp"]],
+            "margin": float(geom["margin"]),
+            "ke": ke,
+            "kd": kd,
+        }
+    return out
+
+
+def shape_role(label: str) -> str:
+    """The contact role of a stage prim path (a Newton shape label)."""
+    for prefix, role in (
+        ("/World/floor", "floor"),
+        ("/World/table", "table"),
+        ("/World/Apple", "apple"),
+        ("/World/Plate/base", "plate_base"),
+        ("/World/Plate/rim_", "plate_rim"),
+        ("/World/Robot/", "robot"),
+    ):
+        if label == prefix or label.startswith(
+            prefix if prefix.endswith(("/", "_")) else prefix + "/"
+        ):
+            return role
+    raise ContractError(f"no contact role for shape {label!r}")
+
+
+# What the Newton / MuJoCo-Warp mapping does not reproduce of the host MuJoCo v2 model; filled
+# from the parameter audit (scripts/isaac/audit_newton_model.py) and docs/ISAAC_NEWTON_SPIKE.md.
+UNMATCHED_IN_NEWTON: list[str] = [
+    "solver tolerance: MuJoCo-Warp raises opt.tolerance to at least 1e-6 for float32 "
+    "(mujoco_warp/_src/io.py); the host uses MuJoCo's 1e-8. Iterations (100), line-search "
+    "iterations (50) and ls_tolerance (0.01) match",
+    "precision: MuJoCo-Warp runs in float32 on the GPU; the host runs MuJoCo in float64",
+    "engine versions: the container's MuJoCo-Warp / MuJoCo (recorded in newton_model) are "
+    "not the host's MuJoCo; collision detection is MuJoCo-Warp's GPU implementation",
+    "robot self-collision: off (Newton's contype/conaffinity colouring plus exclude pairs); "
+    "on in the host MJCF. Same choice as the PhysX runs; not changed in this spike",
+    "plate: Newton exports the kinematic plate as a free body (6 dofs, armature 1e10) whose "
+    "pose is written at reset; MuJoCo's plate is a static body moved at reset (nv 55 vs 49)",
+    "floor: a 4 m x 4 m x 2 cm box with its top at z = 0 in both Isaac backends; MuJoCo an "
+    "infinite plane",
+    "robot mesh collision shapes: MuJoCo-Warp builds convex hulls from the converted USD "
+    "meshes; the host from the MJCF meshes. Geom counts and types match; hulls were not "
+    "compared vertex by vertex",
+    "actuation: the host drives 43 motor actuators (gain 1) with the clipped PD + bias "
+    "torque; the Newton model has no actuators and receives the same clipped torque as "
+    "applied joint force (qfrc_applied). Equivalent for motors under implicitfast (inferred)",
+    "bias forces right after reset: from a CPU mj_forward on Newton's compiled model "
+    "(MuJoCo's reset also runs mj_forward); afterwards MuJoCo-Warp's qfrc_bias, one step "
+    "stale exactly as MuJoCo's qfrc_bias is in MuJoCoSimulation",
+]
