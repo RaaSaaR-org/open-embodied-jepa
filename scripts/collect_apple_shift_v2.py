@@ -17,6 +17,19 @@ Privileged scripted collector by design; nothing here is a learned result.
 
 from __future__ import annotations
 
+import os
+
+# Owner ruling 2026-09-29: pin BLAS/MKL threading before NumPy or torch is imported (they read
+# these at load time); preflight's G-threads checks they equal wm_critic_v2.THREAD_ENV.
+os.environ.update(
+    {
+        "MKL_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "6",
+        "MKL_NUM_THREADS": "6",
+        "OPENBLAS_NUM_THREADS": "16",
+    }
+)
+
 import argparse
 import importlib.util
 import json

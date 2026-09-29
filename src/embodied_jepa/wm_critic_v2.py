@@ -790,16 +790,36 @@ GATED = {
     "g5_min_vs_p_stale": 16,
     "g6_u_tolerance": 2,
     "g7_median_decision_seconds_max": 0.250,
+    # G7's scope (frozen now, reviewer finding 3): H-LeWM only (the primary W seed), every decision
+    # of all 64 S attempts, each decision's wall time inside act() (hybrid_selection's
+    # decision record "seconds"), in the gated run's H workers; the median over those decisions.
+    "g7_arm": "H-LeWM",
+    "g7_cohort": "S",
+    "g7_statistic": "median over every decision record of the arm's 64 S attempts",
+    # The determinism re-run: the first 4 S seeds, arms H-LeWM and P-reread, run again after
+    # the gated arms in the same run; it "differs" if any attempt's executed command array is
+    # not bitwise equal, or its counted success, termination reason or chosen-aim sequence
+    # differs, from the first run of that (arm, seed).
     "determinism_rerun_resets": 4,
+    "determinism_rerun_seeds": (53800, 53801, 53802, 53803),
+    "determinism_rerun_arms": ("H-LeWM", "P-reread"),
+    "determinism_differs": "any executed command array not bitwise equal, or a different counted "
+    "success, termination reason or chosen-aim sequence",
 }
+AUTHORISATION_SCOPE = (
+    "the owner's authorisation PR for the gated stage may add the gated harness (the runner's "
+    "stage_gated and its tests), the authorisation record and the manifest's gated_authorization "
+    "block; it may not change wm_critic_v2.py, the frozen block, frozen_sha256 or the stored "
+    "cohort values (tests/test_wm_critic_v2.py pins the frozen hash as a literal)"
+)
 GATED_ROWS = (
     "VOID",
     "S-VOID-CONDITION",
     "H-NO-HEADROOM",
     "HYB-PASS",
+    "HYB-HARM",
     "HYB-SLOW",
     "HYB-SCENE-BLIND",
-    "HYB-HARM",
     "HYB-NO-GAIN",
 )
 
@@ -876,12 +896,12 @@ def decide_gated(s: dict, u: dict, harness: dict) -> dict:
         row = "H-NO-HEADROOM"
     elif all(gates.values()):
         row = "HYB-PASS"
+    elif not gates["G6"]:
+        row = "HYB-HARM"  # owner ruling 2026-09-29: harm is checked first and closes the line
     elif all(v for k, v in gates.items() if k != "G7"):
         row = "HYB-SLOW"  # every outcome gate passes; only the latency bound fails
     elif gates["G1"] and gates["G3"] and not gates["G2"]:
         row = "HYB-SCENE-BLIND"
-    elif not gates["G6"]:
-        row = "HYB-HARM"
     else:
         row = "HYB-NO-GAIN"
     secondary = {
@@ -908,7 +928,7 @@ def decide_gated(s: dict, u: dict, harness: dict) -> dict:
 
 
 # ----- abandonment clause and the owner's fallback (D7) -------------------------------------------
-CLAUSE_ROWS = ("WMC-G2A", "WMC-NO-RANK", "HYB-NO-GAIN")
+CLAUSE_ROWS = ("WMC-G2A", "WMC-NO-RANK", "HYB-HARM", "HYB-NO-GAIN")
 CLAUSE_SCOPE = (
     "P-3 proposals plus LeWM frozen-DINOv2-token critic selection on apple-to-plate-v2 at 112 px: "
     "no further critic, K, horizon or cost variant is preregistered on apple-shift-v2 or "
@@ -918,9 +938,9 @@ CLAUSE_SCOPE = (
 FALLBACK_ROWS = ("S-NO-CONDITION", "R-NO-HEADROOM", "NO-HEADROOM", "H-NO-HEADROOM")
 FALLBACK = (
     "owner D7 (2026-09-29): TASK-074, the LeWM-only planner (lewm-planner), is pre-authorised as "
-    "the fallback if TASK-073 ends S-NO-CONDITION, H-NO-HEADROOM or NO-HEADROOM; R-NO-HEADROOM "
-    "(added here, the offline form of NO-HEADROOM) is proposed to count with them, pending the "
-    "owner's confirmation; TASK-074 needs its own preregistration, which TASK-073 does not design"
+    "the fallback if TASK-073 ends S-NO-CONDITION, H-NO-HEADROOM or NO-HEADROOM; owner ruling "
+    "2026-09-29: R-NO-HEADROOM (the offline form of NO-HEADROOM) counts with them; TASK-074 "
+    "needs its own preregistration, which TASK-073 does not design"
 )
 ALL_ROWS = (
     "K0-PASS",
@@ -932,6 +952,37 @@ ALL_ROWS = (
     *GATED_ROWS,
     "INCONCLUSIVE",
 )
+
+
+# Every terminal row's consequence (reviewer N5): clause = the abandonment clause fires; fallback
+# = the D7 fallback (TASK-074) is authorised; escalate = the owner decides before anything else;
+# next = the next stage (after its own reported GO); close = TASK-073 ends without a clause.
+ROW_CONSEQUENCES = {
+    "K0-PASS": "next: the corpus",
+    "S-NO-CONDITION": "fallback",
+    "OFFLINE-PASS": "next: D3",
+    "WMC-NO-DYNAMICS": "escalate: the world model fails the dynamics gates; no closed loop runs",
+    "WMC-G2A": "clause",
+    "WMC-O2-VOID": "escalate",
+    "R-NO-HEADROOM": "fallback",
+    "WMC-NO-RANK": "clause",
+    "WMC-O3-VOID": "escalate",
+    "WMC-PROPOSAL": "escalate: the proposal harness is inadequate; no closed loop runs",
+    "NO-HEADROOM": "fallback",
+    "WMC-DEV-STOP": "escalate: the gated stage is not proposed; the owner decides",
+    "D3-GO": "next: the owner's authorisation record for the gated stage",
+    "VOID": "escalate (the void rule)",
+    "S-VOID-CONDITION": "escalate: the condition did not hold on S",
+    "H-NO-HEADROOM": "fallback",
+    "HYB-PASS": "close: report the claim with its labels",
+    "HYB-HARM": "clause",
+    "HYB-SLOW": "close: outcome gates pass, latency fails; no clause; the owner decides",
+    "HYB-SCENE-BLIND": "close: no clause; reported as a scene-blind gain",
+    "HYB-NO-GAIN": "clause",
+    "INCONCLUSIVE": "close",
+    "ESCALATE-BUDGET": "escalate: no freeze of the training budget",
+    "ESCALATE-BUDGET-LAST-TWO": "escalate: no freeze of the training budget",
+}
 
 
 def abandonment_fires(row: str) -> bool:
@@ -960,12 +1011,31 @@ CAPS_SECONDS = {
 }
 VOID_RULE = (
     "a guard, a crash, a cap or a CUDA allocation failure makes the stage V and nothing in it is "
-    "read; batches are never shrunk to fit. A V before the first render of a gated (S or U) seed "
-    "may be repeated after a reviewed fix; a V after it goes to the owner; a second V closes "
-    "TASK-073 as INCONCLUSIVE. Development stages (K0, corpus, training, offline, D3) may be "
-    "repeated once from scratch after a reviewed fix. Nothing is re-thresholded, retrained or "
-    "re-selected after its numbers are seen"
+    "read; batches are never shrunk to fit. A V before a stage's first cohort render "
+    "(cohort_first_render_utc; e.g. G-repro, G-quiet, a preflight guard) is not a spent attempt: "
+    "it may be repeated as-is, recorded, without a fix (owner ruling 2026-09-29). After the "
+    "first render: a gated (S or U) V goes to the owner and a second V closes TASK-073 as "
+    "INCONCLUSIVE; a development stage (K0, corpus, training, ranking, D3) may be repeated once "
+    "from scratch after a reviewed fix. Nothing is re-thresholded, retrained or re-selected "
+    "after its numbers are seen"
 )
+# Owner ruling 2026-09-29: pin the main process's BLAS/MKL threading, and start a stage only on
+# a quiet machine. The pins equal the thread counts every passing G-repro used (torch 6 threads
+# in the main process; OpenBLAS's default of one thread per logical CPU), with MKL's dynamic
+# thread reduction switched off. The quiet rule is checked by the runner (G-quiet).
+THREAD_ENV = {
+    "MKL_DYNAMIC": "FALSE",
+    "OMP_NUM_THREADS": "6",
+    "MKL_NUM_THREADS": "6",
+    "OPENBLAS_NUM_THREADS": "16",
+}
+QUIET_MACHINE = {
+    "max_load_average_1min": 2.0,
+    "max_load_average_5min": 2.0,
+    "rule": "os.getloadavg() at the stage's start: the 1- and 5-minute load averages are both at "
+    "most 2.0 (the idle machine with the GPU's resident service measures about 0.1-0.4); "
+    "otherwise G-quiet makes the stage V before any render",
+}
 OWNER_DECISIONS = {
     "D7": "Critic first, planner fallback",
     "D1_D2": "Accept, diagnostic only",
@@ -973,7 +1043,41 @@ OWNER_DECISIONS = {
     "D5": "moot: PR #104 merged as 70f1358; every M2 number cited is checked against "
     "benchmarks/manifests/apple-first-policy-v2-m2-results.json",
     "date": "2026-09-29",
+    "R-NO-HEADROOM": "Yes, same as fallback rows (Recommended)",
+    "G7": "Keep bar, failure = HYB-SLOW only (Recommended)",
+    "G-repro under load": "Pin threading + quiet machine (Recommended)",
+    "post-smoke D-17/D-8 and D-19": "Accept both (Recommended)",
+    "harm rule": "Harm also closes the line (Recommended)",
 }
+
+
+def shuf_latents(latents: list[dict], index: int, steps=DECISION_STEPS) -> tuple[dict, list]:
+    """H-shuf's foreign start latents for the reset at ``index`` (cohort order), preregistered.
+
+    ``latents[j]`` maps a decision step to P-reread's pooled latent on reset j (only the steps
+    that attempt reached). For each step: reset (index + 1) mod n's latent at that step; if that
+    attempt ended earlier, its latest latent before the step; if it reached no decision at all,
+    the next reset in cohort order (index + 2, ...) that has a latent at or before the step;
+    never the reset's own. Every substitution is returned."""
+    n = len(latents)
+    out, substitutions = {}, []
+    for step in steps:
+        chosen = None
+        for k in range(1, n):
+            j = (index + k) % n
+            earlier = [t for t in latents[j] if int(t) <= int(step)]
+            if earlier:
+                t = max(earlier, key=int)
+                chosen = latents[j][t]
+                if k != 1 or int(t) != int(step):
+                    substitutions.append(
+                        {"step": int(step), "reset_index": j, "latent_step": int(t)}
+                    )
+                break
+        if chosen is None:
+            raise GuardError("H-shuf: no other reset reached any decision step")
+        out[int(step)] = chosen
+    return out, substitutions
 
 
 def frozen_block() -> dict:
@@ -1054,6 +1158,11 @@ def frozen_block() -> dict:
             "offline_rows": OFFLINE_ROWS,
             "d3": {"resets": D3_RESETS, "bars": D3_BARS},
             "gated": GATED,
+            "authorisation_scope": AUTHORISATION_SCOPE,
+            "row_consequences": ROW_CONSEQUENCES,
+            "thread_env": THREAD_ENV,
+            "quiet_machine": QUIET_MACHINE,
+            "shuf_fallback": shuf_latents.__doc__,
             "gated_rows": GATED_ROWS,
             "clause_rows": CLAUSE_ROWS,
             "clause_scope": CLAUSE_SCOPE,

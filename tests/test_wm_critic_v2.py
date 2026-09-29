@@ -41,6 +41,15 @@ def _load_script(name: str, relative: str):
 
 
 # ----- the frozen block, the pins and the stored cohorts ------------------------------------------
+# A literal: the gated-stage authorisation PR may not change it (AUTHORISATION_SCOPE).
+FROZEN_SHA256 = "f476eb9a6a3fe965d9a8ef012d13c28d83758201242586bd57747b8e5fc01b5e"
+
+
+def test_frozen_hash_is_the_preregistered_literal():
+    assert wc.frozen_sha256() == FROZEN_SHA256 == MANIFEST["frozen_sha256"]
+    assert "may not change wm_critic_v2.py" in wc.AUTHORISATION_SCOPE
+
+
 def test_manifest_frozen_block_equals_the_module():
     assert MANIFEST["frozen"] == wc.frozen_block()
     assert MANIFEST["frozen_sha256"] == wc.frozen_sha256()
@@ -67,13 +76,36 @@ def test_model_files_behind_the_implementation_hash_are_the_m2_pins():
 
 
 def test_stored_cohorts_are_the_generated_values_and_their_digest():
+    """Exact regeneration is Linux-only (macOS differs in the last ulp of a few resets), so the
+    floats are compared with a tolerance, the chosen shift directions exactly (whole degrees),
+    and the digest exactly against the stored JSON. The runners never regenerate: they read the
+    stored values."""
     for role in wc.COHORT_ROLES:
         node = MANIFEST["cohorts"][role]
-        assert node["values"] == json.loads(json.dumps(wc.cohort_values(role)))
         assert node["sha256"] == wc.cohort_digest(node["values"])
+        generated = wc.cohort_values(role)
+        assert set(generated) == set(node["values"])
+        for seed, entry in node["values"].items():
+            mine = generated[seed]
+            for key in ("object_xy", "plate_xy"):
+                assert np.allclose(mine[key], entry[key], rtol=0, atol=1e-12)
+            if role == "U":
+                assert "shift_m" not in entry
+                continue
+            for cm, vector in entry["shift_m"].items():
+                stored = round(np.degrees(np.arctan2(vector[1], vector[0]))) % 360
+                again = round(np.degrees(np.arctan2(*mine["shift_m"][cm][::-1]))) % 360
+                assert stored == again, (role, seed, cm)
+                assert np.allclose(mine["shift_m"][cm], vector, rtol=0, atol=1e-12)
         stored = wc.stored_cohort(MANIFEST, role)
         assert tuple(stored) == wc.seeds_of(role)
-        assert ("shift_m" in stored[wc.seeds_of(role)[0]]) == (role != "U")
+
+
+def test_the_cohort_comparison_still_discriminates():
+    node = MANIFEST["cohorts"]["S"]["values"]
+    seed = str(wc.seeds_of("S")[0])
+    moved = wc.cohort_values("S")[seed]["plate_xy"][0] + 1e-9
+    assert not np.isclose(moved, node[seed]["plate_xy"][0], rtol=0, atol=1e-12)
 
 
 def test_a_tampered_cohort_is_refused():
@@ -402,7 +434,7 @@ def test_gated_rows_first_match_and_one_sided_mcnemar():
 
 
 def test_abandonment_and_fallback_rows():
-    assert wc.CLAUSE_ROWS == ("WMC-G2A", "WMC-NO-RANK", "HYB-NO-GAIN")
+    assert wc.CLAUSE_ROWS == ("WMC-G2A", "WMC-NO-RANK", "HYB-HARM", "HYB-NO-GAIN")
     assert set(wc.FALLBACK_ROWS) == {
         "S-NO-CONDITION",
         "R-NO-HEADROOM",
@@ -411,7 +443,7 @@ def test_abandonment_and_fallback_rows():
     }
     for row in wc.CLAUSE_ROWS:
         assert wc.abandonment_fires(row)
-    for row in (*wc.FALLBACK_ROWS, "HYB-SCENE-BLIND", "HYB-HARM", "VOID", "WMC-DEV-STOP"):
+    for row in (*wc.FALLBACK_ROWS, "HYB-SCENE-BLIND", "HYB-SLOW", "VOID", "WMC-DEV-STOP"):
         assert not wc.abandonment_fires(row)
     with pytest.raises(ContractError):
         wc.abandonment_fires("NOT-A-ROW")
@@ -647,3 +679,98 @@ def test_o2_moving_cohort_is_task054s():
 
     assert wc.O2["moving_threshold_m"] == wm2.MOVING_THRESHOLD_M == 0.01
     assert wc.O2["first_step"] == 416 and wc.O0["median_incumbent_regret_min_cm"] == 0.5
+
+
+def test_harm_is_checked_first_and_closes_the_line():
+    n = {
+        "B-oracle-shift": 60,
+        "P-stale": 10,
+        "P-reread": 20,
+        "H-LeWM": 40,
+        "H-N": 20,
+        "H-shuf": 20,
+        "H-rand": 20,
+        "H-sim": 45,
+        "H-LeWM-s1": 38,
+        "H-LeWM-s2": 36,
+    }
+    harm_u = {a: np.ones(32, bool) for a in wc.U_ARMS}
+    harm_u["H-LeWM"] = np.r_[np.ones(29, bool), np.zeros(3, bool)]
+    # no gain + harm
+    no_gain = wc.decide_gated(_gated(n | {"H-LeWM": 21}), harm_u, _harness())
+    assert no_gain["row"] == "HYB-HARM" and no_gain["abandonment_clause_fires"]
+    # scene-blind + harm
+    blind = wc.decide_gated(_gated(n | {"H-shuf": 38}), harm_u, _harness())
+    assert blind["row"] == "HYB-HARM" and blind["abandonment_clause_fires"]
+    # slow + harm
+    slow = wc.decide_gated(_gated(n), harm_u, _harness(median_decision_seconds=0.3))
+    assert slow["row"] == "HYB-HARM"
+
+
+def test_every_row_has_a_consequence_and_the_owner_rulings_hold():
+    assert set(wc.ALL_ROWS) <= set(wc.ROW_CONSEQUENCES)
+    for row in wc.ALL_ROWS:
+        consequence = wc.ROW_CONSEQUENCES[row]
+        assert (consequence == "clause") == wc.abandonment_fires(row), row
+        assert (consequence == "fallback") == (row in wc.FALLBACK_ROWS), row
+    assert "R-NO-HEADROOM" in wc.FALLBACK_ROWS and not wc.abandonment_fires("HYB-SLOW")
+    assert wc.OWNER_DECISIONS["harm rule"] == "Harm also closes the line (Recommended)"
+    assert wc.GATED["g7_arm"] == "H-LeWM"
+    assert wc.GATED["determinism_rerun_seeds"] == wc.seeds_of("S")[:4]
+
+
+def test_scripts_pin_the_frozen_thread_environment():
+    for name in ("run_wm_critic_v2.py", "collect_apple_shift_v2.py", "rank_wm_critic_v2.py"):
+        text = (ROOT / "scripts" / name).read_text()
+        pinned = text.index("os.environ.update(")
+        assert pinned < text.index("import numpy") if "import numpy" in text else True
+        for key, value in wc.THREAD_ENV.items():
+            assert f'"{key}": "{value}"' in text, (name, key)
+
+
+def test_h_shuf_foreign_latents_have_a_preregistered_fallback():
+    full = {t: np.full(3, t, np.float32) for t in wc.DECISION_STEPS}
+    early = {t: np.full(3, -t, np.float32) for t in wc.DECISION_STEPS if t <= 400}
+    latents = [full, early, {}, full]
+    out, subs = wc.shuf_latents(latents, 0)  # the next reset (1) ended after step 400
+    assert set(out) == set(wc.DECISION_STEPS)
+    assert np.array_equal(out[400], early[400])
+    assert np.array_equal(out[576], early[400])  # its latest latent before the step
+    assert {s["step"] for s in subs} == {t for t in wc.DECISION_STEPS if t > 400}
+    out, subs = wc.shuf_latents(latents, 1)  # reset 2 reached nothing: reset 3 serves
+    assert np.array_equal(out[304], full[304]) and all(s["reset_index"] == 3 for s in subs)
+    out, subs = wc.shuf_latents(latents, 3)  # wraps to reset 0, never its own
+    assert np.array_equal(out[576], full[576]) and subs == []
+    with pytest.raises(wc.GuardError):
+        wc.shuf_latents([full, {}], 0)
+
+
+def test_o4_chooses_on_stand_in_feasibility_only():
+    from embodied_jepa import wm_critic_v2_offline as off
+
+    class Fixed:
+        def __init__(self, costs):
+            self.c = np.asarray(costs, float)
+
+        def costs(self, latent, chunks, target):
+            return self.c
+
+    true = np.linspace(0.0, 2.4, 25)
+    true[3] = np.nan  # this branch stopped: its truth is unknown to the closed loop
+    group = {
+        "seed": 1,
+        "point_index": 0,
+        "step": 480,
+        "latent": np.zeros(3),
+        "chunks": np.zeros((25, 16, 14)),
+        "feasible": np.ones(25, bool),
+        "true_costs_cm": true,
+    }
+    critic_costs = np.full(25, 5.0)
+    critic_costs[3] = 0.0  # W prefers the stopped branch
+    stats = off.rank_statistics(
+        [group, group | {"seed": 2}],
+        {"W0": Fixed(critic_costs), "N": Fixed(np.ones(25)), "copy": Fixed(np.ones(25))},
+    )
+    worst = np.nanmax(true) - np.nanmin(true)
+    assert stats["W0"]["O4"]["regret_w"]["median"] == pytest.approx(worst)

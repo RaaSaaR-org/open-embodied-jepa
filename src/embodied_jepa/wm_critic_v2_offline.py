@@ -417,7 +417,15 @@ def rank_statistics(groups: list[dict], critics: dict) -> dict:
     keep = [
         np.isfinite(t) & np.asarray(g["feasible"], bool) for t, g in zip(true, groups, strict=True)
     ]
+    feasible = [np.asarray(g["feasible"], bool) for g in groups]  # the stand-in's, as live
     clusters = np.asarray([g["seed"] for g in groups])
+
+    def regret_of(i, index):
+        """True regret of a choice; a choice whose true outcome is not finite (the branch
+        stopped) counts as the group's worst finite outcome (reviewer N3)."""
+        finite = true[i][np.isfinite(true[i])]
+        value = true[i][index] if np.isfinite(true[i][index]) else finite.max()
+        return float(value - finite.min())
 
     def score(critic, latent_of):
         return [
@@ -437,9 +445,7 @@ def rank_statistics(groups: list[dict], critics: dict) -> dict:
         blind["copy-last"] = rhos(score(critics["copy"], own))
     if "N" in critics:
         blind["N"] = rhos(score(critics["N"], own))
-    regret_inc = np.asarray(
-        [true[i][wc.INCUMBENT_INDEX] - np.min(true[i][keep[i]]) for i in range(len(groups))]
-    )
+    regret_inc = np.asarray([regret_of(i, wc.INCUMBENT_INDEX) for i in range(len(groups))])
     out = {
         "blind": {k: wc.cluster_median_ci(v, clusters) for k, v in blind.items()},
         "regret_incumbent": wc.cluster_median_ci(regret_inc, clusters),
@@ -451,10 +457,9 @@ def rank_statistics(groups: list[dict], critics: dict) -> dict:
         shuf = rhos(score(critics[name], other))
         seed_blind = blind | {"L-shuf": shuf}
         best_blind = np.max(np.stack(list(seed_blind.values())), axis=0)
-        chosen = [wc.choose(np.where(keep[i], scores[i], np.inf)) for i in range(len(groups))]
-        regret = np.asarray(
-            [true[i][chosen[i]] - np.min(true[i][keep[i]]) for i in range(len(groups))]
-        )
+        # the choice uses only what the closed loop has: the costs and the stand-in's feasibility
+        chosen = [wc.choose(np.where(feasible[i], scores[i], np.inf)) for i in range(len(groups))]
+        regret = np.asarray([regret_of(i, chosen[i]) for i in range(len(groups))])
         o3 = {
             "rho_w": wc.cluster_median_ci(rho, clusters),
             "blind": {k: wc.cluster_median_ci(v, clusters) for k, v in seed_blind.items()},

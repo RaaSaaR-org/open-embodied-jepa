@@ -2,7 +2,10 @@
 
 **Status: preregistration (Stage 0).** No TASK-073 seed outside the smoke range 53950–53999 has
 been simulated. Only the smokes and the blind-baseline checks of §9 have run; §9 says exactly what
-they read.
+they read. As in M2, every `preflight`, `smoke` and stage run re-renders (frame only, nothing
+scored) the post-look frames of TASK-072 run-1's perception seeds (51200–51583) and D2
+(52000–52015) to refit run-1's readouts and reproduce its facts (G-repro); that is M2's accepted
+precedent (`apple_first_policy_v2_m2.md` §2), not a use of those seeds.
 
 **Status lines.**
 - **Learned Apple→Plate on the frozen benchmark is still 0 successes** (the v1 MVP benchmark,
@@ -45,6 +48,17 @@ owner answered its open decisions as follows; the answers are quoted as relayed.
 | **D3/D4/D6**, defaults | **"Use the defaults"** | the |d| grid 3–6 cm; shift steps 300 and 480; the four K0 bars; G1–G4 at +10/64 with p < 0.01; the O3 ρ bar of 0.5; the HYB-SCENE-BLIND row; DINOv2 featurisation on the GPU with a CPU anchor check |
 | **D5**, PR #104 | moot | #104 merged as `70f1358` before this protocol. Every M2 number cited here was checked against `benchmarks/manifests/apple-first-policy-v2-m2-results.json` (§12) |
 
+**Owner rulings on the pre-registration review (2026-09-29, relayed by the orchestrator; the
+questions abbreviated, the answers verbatim).**
+
+| question | the owner's answer | what it fixes here |
+|---|---|---|
+| "R-NO-HEADROOM … trigger the pre-authorized LeWM-planner fallback like the other no-headroom / no-condition rows?" | **"Yes, same as fallback rows (Recommended)"** | R-NO-HEADROOM is in `FALLBACK_ROWS` (D-17) |
+| "Decision-latency gate G7 …" | **"Keep bar, failure = HYB-SLOW only (Recommended)"** | G7 stays at 0.25 s; a G7-only failure is HYB-SLOW, which does not fire the clause (D-18) |
+| "G-repro voids under load" | **"Pin threading + quiet machine (Recommended)"** | the runners pin `MKL_DYNAMIC=FALSE`, `OMP_NUM_THREADS=6`, `MKL_NUM_THREADS=6`, `OPENBLAS_NUM_THREADS=16` before NumPy or torch loads (G-threads), and refuse to start on a busy machine (G-quiet, §13.2); a V before a stage's first cohort render may be repeated as-is and does not use up the one development repeat (§7.1) |
+| "Post-smoke D-17/D-8 and D-19" | **"Accept both (Recommended)"** | D-8, D-17 and D-19 stay; they were set after smoke data (smoke seeds only; §9.3, §9.5), and §10 says so |
+| "Harm rule" | **"Harm also closes the line (Recommended)"** | HYB-HARM is checked before HYB-SLOW, HYB-SCENE-BLIND and HYB-NO-GAIN, and fires the abandonment clause (§6.6, §7.2) |
+
 ## 1. The question and the claim
 
 **Question.** On `apple-to-plate-v2`, with the plate moved a few cm after the grasp latches, does a
@@ -68,7 +82,9 @@ another camera, or another policy.
 ## 2. Why this is not a rerun of an abandoned line
 
 - **TASK-054 (CEM over the world-model cost).** There is no sampling optimiser over 14-D actions:
-  the world model makes a 1-of-25 choice among proposals from a policy that already works, the
+  the world model makes a 1-of-25 choice among proposals from a policy that succeeds on unshifted
+  v2 resets (P-3 40/40 on cohort C, in an M2 run whose row was M2-FAIL, where the random-init
+  floor R-3 reached 39/40), the
   critic role `DECISIONS.md` left open ("behaviour cloning with the world model as a critic").
   The latent is frozen external DINOv2 tokens, not the in-corpus encoder; the corpus and task are
   new (v2). TASK-054's primary criterion G2a is re-measured head-on as O2 (i), on TASK-054's own
@@ -104,14 +120,19 @@ uses the post-shift plate (tested). A move that leaves the plate touching anythi
 table is refused (a void).
 
 **The direction rule (a correction to the outline).** The outline asked for shifts "over the arc
-where `release_pose` does not clamp". Checked in code, that arc is **empty**: e9's release pose is
-pulled back to its reach sphere (x ≈ 0.48 m) on every v2 reset (plate x 0.47–0.51 m plus
-release_dx 1.5 cm), so a shift along x moves the plate but not the release. The stored rule
+where `release_pose` does not clamp". Checked in code, e9's release pose **at the reset** is pulled
+back to its reach sphere (x ≈ 0.48 m) on every v2 reset (1000/1000 in 53000–53999; plate x
+0.47–0.51 m plus release_dx 1.5 cm). Shift directions that leave the *moved* plate's release
+unclamped do exist (towards the robot; for 3683 of the 4000 reset × |d| pairs in 53000–53999),
+but on those the release point moves relative to the plate, which changes the plate-relative
+release geometry that e9 was validated with, and a shift along +x moves the plate but not the
+release. The stored rule
 instead keeps e9's release geometry **relative to the plate**: a direction θ (whole degrees) is
 eligible for a reset and a |d| when e9's release point relative to the shifted plate is within
 0.5 cm of its value at the reset, the shifted plate stays on the tabletop, and it keeps the reset
-rule's plate-apple clearance from the apple's reset position. In practice this is a narrow arc
-around ±y (sideways). One uniform draw per reset (`default_rng(SeedSequence([7303, seed]))`)
+rule's plate-apple clearance from the apple's reset position. In practice the eligible directions
+are mostly near ±y, but not exactly sideways: the eligible sets reach 111–196 of 360 directions
+on some resets, and 4 of the 64 stored S shifts at 4 cm point at 132–135° or 219–231°. One uniform draw per reset (`default_rng(SeedSequence([7303, seed]))`)
 picks from the eligible set at every |d|. Every shift vector of every cohort and every |d| is
 stored in the manifest.
 
@@ -194,7 +215,9 @@ The repository search of 2026-09-29 found no seed use in 53000–53999 (src, scr
 benchmarks, tests, configs, `.mc`), and no use of 7300–7313 as a seed constant. Every range lies
 in 53000–53999, is disjoint from every other and from every forbidden range (TASK-067's list,
 51000–52199 including D2, and cohort C, which M2 has now simulated). The runner's G-seeds refuses
-anything else before a reset, including cohort C, D2 and string seeds.
+anything else as a TASK-073 attempt seed, including cohort C, D2 and string seeds. The frame-only
+re-render of run-1's perception and D2 seeds for G-repro (status lines) is the one exception, and
+it goes through M2's own whitelist (`check_rerender_seeds`).
 
 | seeds | cohort | use |
 |---|---|---|
@@ -214,7 +237,10 @@ mis-aim, 7305 corpus split, 7306 corpus plan salt, 7307 H-rand, 7308 B-random, 7
 `scripts/evaluate_apple.wide_reset`) and, for K0, R, D3 and S, the shift vector at every |d| of
 the grid are stored in the manifest with a sha256 digest (`cohorts.<role>.sha256` over the
 sorted-key compact JSON). Runners read the stored values and check the digest and the whitelist
-(G-cohort); they never recompute them.
+(G-cohort); they never recompute them. Exact regeneration of the stored floats is Linux-only: on
+macOS a few `object_xy` values differ in the last ulp (seeds 53007, 53026, 53028, 53030), so the
+test compares the floats within 1e-12, the chosen shift directions exactly (whole degrees) and the
+digest exactly against the stored JSON.
 
 ## 5. Stages and stop rules
 
@@ -246,7 +272,10 @@ pre-run reviewer's GO is reported, and the orchestrator is told before each stag
    - **Blind baselines are computed and written before any W number exists**: the persistence
      critic, the clock prior o*(t + 16) and the encoded readout on O2's windows
      (`baselines.json`); in the ranking stage the copy-last, N and prior-distance rankers are
-     written (`blind.json`) before any W ranker is scored.
+     written (`blind.json`) before any W ranker is scored. **Limitation:** both happen inside one
+     process with no external checkpoint, so this is a record of order, not a pre-commitment
+     anyone outside the process can verify; the numbers are fully determined by frozen code and
+     data, so they cannot be steered by the W numbers either way.
    - Budget: calibration runs W-7300 and N-7300 for 60 000 updates with the val criterion every
      1 000; `u_sat` by `token_dynamics.saturation_update`; U = clamp(5 000 · ⌈2 · max u_sat / 5 000⌉,
      10 000, 60 000), escalating (no freeze) above the cap. W and N × 3 seeds at U, selection at
@@ -315,7 +344,8 @@ incumbent's true regret (its true cost minus the group's best) must be at least 
 row is R-NO-HEADROOM. Without it, an accurate R-mid makes O3's margin and O4's paired bar
 impossible for any critic, and the abandonment clause would fire on what is a headroom finding.
 0.5 cm is about 40 % of the median spread of true costs across the 25 aims measured on smoke
-seeds (1.27 cm, §9.5), and about the margin between e9's typical final distance (3.2–3.5 cm) and
+seeds (1.27 cm, §9.5), and about the margin between e9's final distance on cohort C in M2
+(B-oracle q10/q50/q90 3.01/3.46/3.83 cm, M2 results manifest) and
 the 4 cm at-rest radius.
 
 ### 6.4 O4, regret; 6.5 O5, the proposal harness
@@ -335,15 +365,22 @@ median command norm; the median over decisions ≤ 0.25. Its distribution is rep
 | **S-VOID-CONDITION** | P-stale > 24/64 |
 | **H-NO-HEADROOM** | H-sim − P-reread < +12/64 (the world model is neither credited nor blamed) |
 | **HYB-PASS** | all of G1–G7 |
-| **HYB-SLOW** | G1–G6 pass, G7 fails (added, D-18; the clause does not fire) |
+| **HYB-HARM** | G6 fails (checked before the rows below; fires the clause; owner ruling) |
+| **HYB-SLOW** | G1–G6 pass, G7 fails (added, D-18; the clause does not fire; owner ruling) |
 | **HYB-SCENE-BLIND** | G1 and G3 pass, G2 fails |
-| **HYB-HARM** | G6 fails |
 | **HYB-NO-GAIN** | otherwise |
 
 G1–G4: H-LeWM minus P-reread / H-shuf / H-N / H-rand ≥ +10 of 64, each with one-sided exact
 McNemar p < 0.01. G5: H-LeWM − P-stale ≥ +16. G6 (U): H-LeWM ≥ P-stale(U) − 2 of 32. G7: the
-median decision latency (the decision's wall time inside `act()`, in the gated run's workers, 4
-workers × 4 torch threads) ≤ 250 ms with the GPU's resident service running. Secondary, not
+median decision latency ≤ 250 ms with the GPU's resident service running. **G7's scope, frozen
+(`GATED`):** H-LeWM only (the primary W seed); every decision record of its 64 S attempts; each
+record's wall time of the decision inside `act()` (encoding, R-mid, the stand-in chunks, the W
+rollout and the choice), in the gated run's H workers (4 workers × 4 torch threads, all attempts
+concurrent); the median over those records. **The determinism re-run, frozen:** after the gated
+arms, H-LeWM and P-reread run again on the first four S seeds (53800–53803) in the same run; it
+"differs" if any attempt's executed command array is not bitwise equal, or its counted success,
+termination reason or chosen-aim sequence differs from the first run of that arm and seed.
+Secondary, not
 changing the row: H-LeWM-s1 and -s2 show the same sign against P-reread, H-shuf and H-N.
 
 ### 6.7 Blind baselines against every bar (checked before freezing)
@@ -363,25 +400,39 @@ changing the row: H-LeWM-s1 and -s2 show the same sign against P-reread, H-shuf 
 
 ## 7. Void rule, abandonment clause, fallback
 
+### 7.0 Every terminal row's consequence (`ROW_CONSEQUENCES`, frozen)
+
+| consequence | rows |
+|---|---|
+| the abandonment clause fires | WMC-G2A, WMC-NO-RANK, HYB-HARM, HYB-NO-GAIN |
+| the D7 fallback (TASK-074) is authorised | S-NO-CONDITION, R-NO-HEADROOM, NO-HEADROOM, H-NO-HEADROOM |
+| escalate to the owner | WMC-NO-DYNAMICS (no closed loop runs), WMC-O2-VOID, WMC-O3-VOID, WMC-PROPOSAL (no closed loop runs), WMC-DEV-STOP (no gated stage is proposed), VOID, S-VOID-CONDITION, ESCALATE-BUDGET, ESCALATE-BUDGET-LAST-TWO |
+| next stage (after its own reported GO) | K0-PASS → corpus; OFFLINE-PASS → D3; D3-GO → the owner's authorisation record |
+| close without the clause | HYB-PASS (the claim, with its labels), HYB-SLOW (the owner decides), HYB-SCENE-BLIND (reported as a scene-blind gain), INCONCLUSIVE |
+
 ### 7.1 Void rule
 
-A guard, a crash, a cap or a CUDA allocation failure makes the stage V and nothing in it is read.
-A V before the first render of a gated (S or U) seed may be repeated after a reviewed fix; a V after
-it goes to the owner; a second V closes TASK-073 as INCONCLUSIVE. Development stages (K0, corpus,
-training, offline, D3) may be repeated once from scratch after a reviewed fix. Nothing is
-re-thresholded, retrained or re-selected after its numbers are seen.
+A guard, a crash, a cap or a CUDA allocation failure makes the stage V and nothing in it is read;
+batches are never shrunk to fit. **A V before a stage's first cohort render**
+(`cohort_first_render_utc`; for example G-repro, G-quiet, G-threads or any preflight guard) **is not
+a spent attempt**: it may be repeated as-is, with the V report kept, and needs no fix (owner
+ruling). After the first render: a gated (S or U) V goes to the owner and a second V closes
+TASK-073 as INCONCLUSIVE; a development stage (K0, corpus, training, ranking, D3) may be repeated
+once from scratch after a reviewed fix. Nothing is re-thresholded, retrained or re-selected after
+its numbers are seen.
 
 ### 7.2 Abandonment clause (fixed now)
 
-It fires on **WMC-G2A**, **WMC-NO-RANK** or **HYB-NO-GAIN** (HYB-NO-GAIN is reached only with
-headroom present). It closes "P-3 proposals plus LeWM frozen-DINOv2-token critic selection on
+It fires on **WMC-G2A**, **WMC-NO-RANK**, **HYB-HARM** (owner ruling) or **HYB-NO-GAIN**
+(HYB-NO-GAIN and HYB-HARM are reached only with headroom present). It closes "P-3 proposals plus LeWM frozen-DINOv2-token critic selection on
 `apple-to-plate-v2` at 112 px": no further critic, K, horizon or cost variant is preregistered on
 `apple-shift-v2` or `apple-look-v2-linux` without new evidence of a different kind. The LeWM
 backend, the token latent, the v2 task and the planner fallback stay open.
 
 ### 7.3 The owner's fallback (D7)
 
-If TASK-073 ends **S-NO-CONDITION**, **H-NO-HEADROOM** or **NO-HEADROOM**, TASK-074, the
+If TASK-073 ends **S-NO-CONDITION**, **R-NO-HEADROOM** (owner ruling 2026-09-29),
+**H-NO-HEADROOM** or **NO-HEADROOM**, TASK-074, the
 LeWM-only planner (`lewm-planner`), is pre-authorised as the next task. It needs its own
 preregistration, with its own condition and floors; this protocol does not design it.
 
@@ -398,7 +449,8 @@ CUDA allocation failure is a V, never a smaller batch. Caps: 43 200 s global, 30
 240–660 only), inside the 10 GB free-space floor. Guards: G-frozen, G-hash (every pin, clean
 tree), G-platform, G-device, G-weights, G-evidence (TASK-072 run-1's report, P-3/C-3/R-3, corpus
 manifest), G-repro, G-cohort, G-seeds, G-look, G-frame, G-shift, G-anchor, G-finite, G-cap,
-Q-split, G-authorisation.
+Q-split (asserted again at the end of the train stage), G-authorisation, G-threads (the pinned
+thread environment, §0) and G-quiet (§13.2).
 
 ## 9. Stage-0 smokes and blind-baseline checks
 
@@ -457,6 +509,12 @@ the worker thread count, unexplained (hence D-18).
   decisions; no privileged read), above G7's 0.25 s.
 - **Latency probe** (scratch, same smoke seeds and smoke model, all attempts concurrent): 4 workers
   × 4 threads median **0.230 s** (p90 0.244 s); 8 × 1, 0.310 s. Hence D-19. The bar is unchanged.
+- **Thread pins (owner ruling, after the review):** no simulation. On the 170 stored train roots'
+  post-look frames of `apple-look-v2-linux` run-1 (the train split only), the DINOv2 features, the
+  P readout's selection and its predictions are bitwise identical with and without the pinned
+  environment (§0). The full G-repro under the pins is first checked by the GO's fresh preflight
+  (§13.2); the pins and G-quiet were not exercised by a smoke, because the orchestrator restricted
+  this round to smoke seeds and a preflight re-renders run-1's perception and D2 seeds.
 - **smoke-4** at `86d2da8` (the code of this PR; only this section and the manifest's pin of this
   document changed after it), clean tree, report `1a5f1166…1bae`, 142 s: G-repro 8/8; render
   check IDENTICAL; proposal generator 0.203; anchor 2.8e-5; W training BIT-IDENTICAL; decision
@@ -489,25 +547,27 @@ regret 0.79 cm: the prior is strong exactly when perception is good.)
 
 | # | outline | here | why |
 |---|---|---|---|
-| D-1 | shift directions "over the arc where `release_pose` does not clamp" | directions that keep e9's release point relative to the plate within 0.5 cm (§3.2) | the non-clamping arc is empty on the v2 reset distribution (checked in code and tested) |
+| D-1 | shift directions "over the arc where `release_pose` does not clamp" | directions that keep e9's release point relative to the plate within 0.5 cm (§3.2) | e9's release is clamped at every v2 reset (tested); directions that unclamp the moved plate's release exist (3683 of 4000 reset × |d| pairs) but change the plate-relative release geometry |
 | D-2 | the stand-in's previous targets implicit | measured arm joints; hands on the synergy of the controller's own last executed grasp | measured closed-hand joints lie off the synergy, and every chunk was infeasible in the first mechanics check |
 | D-3 | o* from the new corpus's train split | o* frozen now from `apple-look-v2-linux`'s 112 counted-success train roots | K0's H-sim needs o* before the corpus exists; freezing it removes a degree of freedom |
 | D-4 | "PR #104 is still open"; P-3's q50/q90 from the proposal | #104 merged (`70f1358`); q10/q50/q90 2.28 / 2.82 / 3.27 cm verified in the M2 results manifest | fact check |
 | D-5 | H-sim candidates around R-mid's incumbent | in K0 around the true post-shift plate | R-mid does not exist before the corpus |
 | D-6 | O2 on "post-shift windows" | TASK-054's moving cohort (≥ 1 cm true offset motion over 16 commands), t ≥ max(416, s) | on all windows the steady phase dominates and persistence is near-perfect (median 0.50–0.65 cm); G2a was defined on moving windows |
 | D-7 | O2 (i) against persistence only | adds (iii), W against the clock prior o*(t + 16) ≤ 0.8 | the clock prior passes (i) by itself (0.40–0.43) |
-| D-8 | "if any blind ranker passes 0.5, the gate is void" | voiding rankers are copy-last, N and L-shuf; prior-distance enters through the margin | prior-distance ranks by the incumbent, which is informative by design when R-mid is good; §9.5 |
+| D-8 | "if any blind ranker passes 0.5, the gate is void" | voiding rankers are copy-last, N and L-shuf; prior-distance enters through the margin | prior-distance ranks by the incumbent, which is informative by design when R-mid is good; **set after smoke data** (§9.5, smoke seeds only); accepted by the owner |
 | D-9 | O5 on "16 D3-style development P-truth attempts" | on K0's chosen cell's P-truth attempts (32) | the same controller and condition, available before any world model, without extra seeds |
 | D-10 | "`R_off`, `R-mid` ridge readouts" | R_off primal on the 6144-d pooled latent; R-mid dual on the full 98 304-d tokens; λ relative to the mean linear-kernel diagonal in both | the closed loop evaluates both per decision; kernel readouts with 4 000+ reference rows would not fit in the workers' memory |
 | D-11 | "`R-mid` on train frames at the decision steps" | the same, on the corpus's train roots, full tokens through the closed loop's CPU path | the P readout's feature and path |
-| D-12 | L-shuf's start latent "from reset (i + 1) mod n" | in the closed loop, P-reread's recorded latent of reset (i + 1) mod n at the same decision step (P-reread runs first) | the other reset's latent must exist when the decision is made |
+| D-12 | L-shuf's start latent "from reset (i + 1) mod n" | in the closed loop, P-reread's recorded latent of reset (i + 1) mod n at the same decision step (P-reread runs first). **Fallback, preregistered (`shuf_latents`):** if that attempt ended before the step, its latest latent before the step; if it reached no decision step, the next reset in cohort order that did; never the reset's own; every substitution is recorded in the stage report | the other reset's latent must exist when the decision is made, and a P-reread attempt that ends early (a guard stop) must not void the stage |
 | D-13 | featurise "about 390 k frames" | frames 240–660 of every root (about 190 k) | every decision window lies inside; the full table would need ~10 GB of disk |
 | D-14 | module list | adds `wm_critic_v2_runtime.py` and `wm_critic_v2_offline.py` | spawned workers need an importable module; the offline statistics are testable apart from the script |
 | D-15 | decision latency "with GR00T resident" | measured in the gated workers inside `act()`, all attempts concurrent | the arm's own configuration is what G7 bounds |
 | D-19 | worker layout unspecified | world-model arms on 4 workers × 4 torch threads | at 8 × 2 the concurrent median was 0.295 s (smoke-3), above the 0.25 s bar; at 4 × 4, 0.230 s (a latency probe on the same smoke seeds and smoke model); a layout, not a threshold, and the margin stays thin (§9.3) |
 | D-16 | O2 (ii) void → unspecified | a void O2 or O3 is its own row (WMC-O2-VOID, WMC-O3-VOID) that escalates to the owner | "void, not passed" needs a row |
-| D-17 | O3/O4 directly after O2 | O0 first: the incumbent's median true regret on cohort R ≥ 0.5 cm, else **R-NO-HEADROOM**, proposed to count with the D7 fallback rows | on smoke seeds with the incumbent at the true plate its regret is 0.03 cm and prior-distance reaches ρ 0.63: without O0, a headroom finding would read as WMC-NO-RANK and fire the abandonment clause. **The owner's confirmation that R-NO-HEADROOM belongs to the D7 fallback rows is requested (open question)** |
-| D-18 | a G7 failure falls to HYB-NO-GAIN and fires the abandonment clause | a row HYB-SLOW when G1–G6 pass and only G7 fails; no abandonment | a latency overrun on a shared machine is not evidence that the critic does not help; the smokes put the median at 0.21–0.22 s against 0.25 s, with other arms at 0.4–0.6 s under unexplained load (§9) |
+| D-17 | O3/O4 directly after O2 | O0 first: the incumbent's median true regret on cohort R ≥ 0.5 cm, else **R-NO-HEADROOM**, a D7 fallback row (owner ruling) | on smoke seeds with the incumbent at the true plate its regret is 0.03 cm and prior-distance reaches ρ 0.63: without O0, a headroom finding would read as WMC-NO-RANK and fire the abandonment clause. **Set after smoke data** (smoke seeds only); accepted by the owner |
+| D-18 | a G7 failure falls to HYB-NO-GAIN and fires the abandonment clause | a row HYB-SLOW when G1–G6 pass and only G7 fails; no abandonment (owner ruling) | a latency overrun is not evidence that the critic does not help. The smokes put H-LeWM's median at 0.214–0.295 s depending on layout and load: 0.214 s (smoke-1, 4 attempts on 8 × 2), 0.217 s (D3 stage smoke), **0.295 s** (smoke-3, 8 concurrent on 8 × 2) and 0.230 s at the chosen 4 × 4 layout (smoke-4: p90 0.331 s, max 0.643 s); H-N and H-shuf measured 0.395 s and 0.638 s in the D3 stage smoke under unexplained load (§9) |
+| D-20 | O4 unspecified in how W's top-1 is chosen | W chooses among the candidates the stand-in found feasible (what the closed loop knows); a chosen candidate whose true branch stopped counts as the group's worst finite outcome | the earlier code filtered W's choice with the privileged truth (reviewer N3) |
+| D-21 | — | a frozen `ROW_CONSEQUENCES` table (§7.0), G7's scope and the determinism re-run (§6.6), and the authorisation PR's scope (§13.3) | reviewer findings 3 and N5 |
 
 ## 11. Risks and caveats
 
@@ -522,7 +582,7 @@ regret 0.79 cm: the prior is strong exactly when perception is good.)
    H-sim vs H-LeWM gap mixes world-model error with stand-in error.
 4. **Readability of an in-hand, moving apple through prediction is unproven.** TASK-066 showed a
    static apple only; O2 gates it. G2a has never passed in this project (0.83–0.90).
-5. **The condition is artificial** and the direction rule makes it sideways only.
+5. **The condition is artificial**, and the direction rule makes it mostly sideways (§3.2).
 6. **Power.** n = 64 at a +10 bar can miss a true +8 effect.
 7. **Pretrained vs random-init tokens** stays untested here (TASK-072 found no measurable
    contribution of pretraining for P-3's readout).
@@ -548,13 +608,43 @@ regret 0.79 cm: the prior is strong exactly when perception is good.)
 
 ## 13. Process
 
-1. **This PR** (Stage 0) merges on an independent reviewer's reported APPROVE, posted on the PR,
-   and green CI.
-2. **Each later stage** starts from a clean checkout of the merged revision, only after a fresh
-   pre-run reviewer's **reported** GO (delivered as a message, never read from a file), and after
-   the orchestrator has been told. K0 and every later stage count as gated for this purpose.
-3. **The gated stage** additionally needs the owner's authorisation record (a reviewed PR that
-   pins it in the manifest).
+### 13.1 This PR
+
+Stage 0 merges on an independent reviewer's reported APPROVE, posted on the PR, and green CI.
+
+### 13.2 The GO procedure (every stage from K0 on)
+
+Each later stage (K0, corpus, train, rank, offline, D3, gated) starts from a clean worktree of the
+merged revision on the Linux PC, and only after all of the following:
+
+1. **The orchestrator is told before the stage starts.** K0 and every later stage count as gated
+   for this purpose.
+2. **A fresh pre-run reviewer's reported GO**, delivered as a message and posted on the PR, never
+   read from a file. The GO includes:
+   - the pre-run reviewer's own render-determinism check at **16 workers** on smoke seeds
+     (`run_wm_critic_v2.py smoke`, its `render_check`), with verdict **IDENTICAL**; if it is not
+     identical, the stage does not start and the issue goes to the owner;
+   - a fresh `run_wm_critic_v2.py preflight` from the merged revision into a new output name,
+     ending **PREFLIGHT-READY** (G-repro 8/8, G-threads, G-quiet, G-cohort, every pin).
+3. **The quiet-machine rule (`QUIET_MACHINE`, checked by the runner as G-quiet):** at the stage's
+   start, `os.getloadavg()`'s 1- and 5-minute load averages are both at most 2.0; the idle machine
+   with the GPU's resident service measures about 0.1–0.4. No other CPU-heavy job may be started
+   during the stage. A G-quiet V is pre-render and may be repeated as-is.
+4. **For a GPU stage (train; the smoke's training part):** `nvidia-smi` is checked immediately
+   before the start and the stage waits while less than 4 GB of GPU memory is free (the smokes'
+   peak allocation was 1.7 GB; the resident service holds about 6.6 GB). A CUDA allocation failure
+   is a V, never a smaller batch.
+5. The stage runs under `nohup` and writes its report; the author reports the outcome to the
+   orchestrator, and nothing is read or decided beyond the frozen rules.
+
+### 13.3 The gated stage
+
+It additionally needs the owner's authorisation record, a reviewed PR that pins it in the
+manifest's `gated_authorization`. **Its scope is frozen (`AUTHORISATION_SCOPE`):** it may add the
+gated harness (the runner's `stage_gated` and its tests), the record and that manifest block; it
+may not change `wm_critic_v2.py`, the frozen block, `frozen_sha256` or the stored cohort values.
+`tests/test_wm_critic_v2.py` pins the frozen hash as a literal and is itself pinned in the
+manifest.
 
 ## 14. Amendment log
 

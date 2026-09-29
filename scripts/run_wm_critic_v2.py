@@ -23,6 +23,19 @@ guard, crash or cap):
 
 from __future__ import annotations
 
+import os
+
+# Owner ruling 2026-09-29: pin BLAS/MKL threading before NumPy or torch is imported (they read
+# these at load time); preflight's G-threads checks they equal wm_critic_v2.THREAD_ENV.
+os.environ.update(
+    {
+        "MKL_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "6",
+        "MKL_NUM_THREADS": "6",
+        "OPENBLAS_NUM_THREADS": "16",
+    }
+)
+
 import argparse
 import importlib.util
 import json
@@ -103,6 +116,18 @@ def preflight(report: dict, mode: str, evidence: Path) -> dict:
     if mode != "smoke":
         R65.check_clean(dirty)
     report["platform"] = fpl.check_platform()
+    report["thread_env"] = {k: os.environ.get(k) for k in wc.THREAD_ENV}
+    if report["thread_env"] != wc.THREAD_ENV:  # G-threads
+        raise wc.GuardError(f"G-threads: {report['thread_env']} is not {wc.THREAD_ENV}")
+    load = os.getloadavg()
+    report["load_average_at_start"] = list(load)
+    quiet = (
+        load[0] <= wc.QUIET_MACHINE["max_load_average_1min"]
+        and load[1] <= wc.QUIET_MACHINE["max_load_average_5min"]
+    )
+    report["quiet_machine"] = bool(quiet)
+    if not quiet and mode != "smoke":  # G-quiet: before any render, so a repeat is free
+        raise wc.GuardError(f"G-quiet: load averages {load[:2]} exceed the quiet-machine rule")
     if not devices.available("cuda"):
         raise wc.GuardError("G-device: CUDA is not available")
     device = devices.require("cuda", strict=True)
@@ -584,6 +609,8 @@ def stage_train(report, manifest, evidence, clock, args):
             start_min=shift_step,
         ),
     }
+    if reader.test_split_decoded:  # belt and braces: Q-split already refuses test ids
+        raise wc.GuardError("Q-split: a test root was decoded")
     o1 = off.o1_statistics(w, n, table, windows, scale, basis)
     o2 = off.o2_statistics(w, n, r_off, table, o2_starts, o2_owners)
     return {
@@ -654,9 +681,11 @@ def closed_loop(
         extra = {}
         if arm == "H-shuf":
             latents = [r["latents"] for r in records["P-reread"]]
-            extra["per_seed"] = lambda s, lat=latents: {
-                "foreign": dict(lat[(seeds.index(s) + 1) % len(seeds)])
-            }
+            foreign = {s: wc.shuf_latents(latents, i) for i, s in enumerate(seeds)}
+            report["stages"].setdefault("h_shuf_substitutions", {}).update(
+                {str(s): v[1] for s, v in foreign.items() if v[1]}
+            )
+            extra["per_seed"] = lambda s, f=foreign: {"foreign": f[s][0]}
         records[arm] = pool.map(
             arm_tasks(arm, seeds, resets, est, shift_of, **extra), 7200.0, f"{role} {arm}"
         )

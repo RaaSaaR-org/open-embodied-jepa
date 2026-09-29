@@ -8,7 +8,12 @@
   "D1_D2": "Accept, diagnostic only",
   "D3_D4_D6": "Use the defaults",
   "D5": "moot: PR #104 merged as 70f1358; every M2 number cited is checked against benchmarks/manifests/apple-first-policy-v2-m2-results.json",
-  "date": "2026-09-29"
+  "date": "2026-09-29",
+  "R-NO-HEADROOM": "Yes, same as fallback rows (Recommended)",
+  "G7": "Keep bar, failure = HYB-SLOW only (Recommended)",
+  "G-repro under load": "Pin threading + quiet machine (Recommended)",
+  "post-smoke D-17/D-8 and D-19": "Accept both (Recommended)",
+  "harm rule": "Harm also closes the line (Recommended)"
  },
  "frozen": {
   "protocol": "apple_wm_critic_v2",
@@ -737,21 +742,75 @@
    "g5_min_vs_p_stale": 16,
    "g6_u_tolerance": 2,
    "g7_median_decision_seconds_max": 0.25,
-   "determinism_rerun_resets": 4
+   "g7_arm": "H-LeWM",
+   "g7_cohort": "S",
+   "g7_statistic": "median over every decision record of the arm's 64 S attempts",
+   "determinism_rerun_resets": 4,
+   "determinism_rerun_seeds": [
+    53800,
+    53801,
+    53802,
+    53803
+   ],
+   "determinism_rerun_arms": [
+    "H-LeWM",
+    "P-reread"
+   ],
+   "determinism_differs": "any executed command array not bitwise equal, or a different counted success, termination reason or chosen-aim sequence"
   },
+  "authorisation_scope": "the owner's authorisation PR for the gated stage may add the gated harness (the runner's stage_gated and its tests), the authorisation record and the manifest's gated_authorization block; it may not change wm_critic_v2.py, the frozen block, frozen_sha256 or the stored cohort values (tests/test_wm_critic_v2.py pins the frozen hash as a literal)",
+  "row_consequences": {
+   "K0-PASS": "next: the corpus",
+   "S-NO-CONDITION": "fallback",
+   "OFFLINE-PASS": "next: D3",
+   "WMC-NO-DYNAMICS": "escalate: the world model fails the dynamics gates; no closed loop runs",
+   "WMC-G2A": "clause",
+   "WMC-O2-VOID": "escalate",
+   "R-NO-HEADROOM": "fallback",
+   "WMC-NO-RANK": "clause",
+   "WMC-O3-VOID": "escalate",
+   "WMC-PROPOSAL": "escalate: the proposal harness is inadequate; no closed loop runs",
+   "NO-HEADROOM": "fallback",
+   "WMC-DEV-STOP": "escalate: the gated stage is not proposed; the owner decides",
+   "D3-GO": "next: the owner's authorisation record for the gated stage",
+   "VOID": "escalate (the void rule)",
+   "S-VOID-CONDITION": "escalate: the condition did not hold on S",
+   "H-NO-HEADROOM": "fallback",
+   "HYB-PASS": "close: report the claim with its labels",
+   "HYB-HARM": "clause",
+   "HYB-SLOW": "close: outcome gates pass, latency fails; no clause; the owner decides",
+   "HYB-SCENE-BLIND": "close: no clause; reported as a scene-blind gain",
+   "HYB-NO-GAIN": "clause",
+   "INCONCLUSIVE": "close",
+   "ESCALATE-BUDGET": "escalate: no freeze of the training budget",
+   "ESCALATE-BUDGET-LAST-TWO": "escalate: no freeze of the training budget"
+  },
+  "thread_env": {
+   "MKL_DYNAMIC": "FALSE",
+   "OMP_NUM_THREADS": "6",
+   "MKL_NUM_THREADS": "6",
+   "OPENBLAS_NUM_THREADS": "16"
+  },
+  "quiet_machine": {
+   "max_load_average_1min": 2.0,
+   "max_load_average_5min": 2.0,
+   "rule": "os.getloadavg() at the stage's start: the 1- and 5-minute load averages are both at most 2.0 (the idle machine with the GPU's resident service measures about 0.1-0.4); otherwise G-quiet makes the stage V before any render"
+  },
+  "shuf_fallback": "H-shuf's foreign start latents for the reset at ``index`` (cohort order), preregistered.\n\n    ``latents[j]`` maps a decision step to P-reread's pooled latent on reset j (only the steps\n    that attempt reached). For each step: reset (index + 1) mod n's latent at that step; if that\n    attempt ended earlier, its latest latent before the step; if it reached no decision at all,\n    the next reset in cohort order (index + 2, ...) that has a latent at or before the step;\n    never the reset's own. Every substitution is returned.",
   "gated_rows": [
    "VOID",
    "S-VOID-CONDITION",
    "H-NO-HEADROOM",
    "HYB-PASS",
+   "HYB-HARM",
    "HYB-SLOW",
    "HYB-SCENE-BLIND",
-   "HYB-HARM",
    "HYB-NO-GAIN"
   ],
   "clause_rows": [
    "WMC-G2A",
    "WMC-NO-RANK",
+   "HYB-HARM",
    "HYB-NO-GAIN"
   ],
   "clause_scope": "P-3 proposals plus LeWM frozen-DINOv2-token critic selection on apple-to-plate-v2 at 112 px: no further critic, K, horizon or cost variant is preregistered on apple-shift-v2 or apple-look-v2-linux without new evidence of a different kind. The LeWM backend, the token latent, the v2 task and the planner fallback stay open",
@@ -761,7 +820,7 @@
    "NO-HEADROOM",
    "H-NO-HEADROOM"
   ],
-  "fallback": "owner D7 (2026-09-29): TASK-074, the LeWM-only planner (lewm-planner), is pre-authorised as the fallback if TASK-073 ends S-NO-CONDITION, H-NO-HEADROOM or NO-HEADROOM; R-NO-HEADROOM (added here, the offline form of NO-HEADROOM) is proposed to count with them, pending the owner's confirmation; TASK-074 needs its own preregistration, which TASK-073 does not design",
+  "fallback": "owner D7 (2026-09-29): TASK-074, the LeWM-only planner (lewm-planner), is pre-authorised as the fallback if TASK-073 ends S-NO-CONDITION, H-NO-HEADROOM or NO-HEADROOM; owner ruling 2026-09-29: R-NO-HEADROOM (the offline form of NO-HEADROOM) counts with them; TASK-074 needs its own preregistration, which TASK-073 does not design",
   "platform": {
    "system": "Linux",
    "machine": "x86_64",
@@ -786,16 +845,21 @@
    "per_attempt": 300.0,
    "per_model": 5400.0
   },
-  "void_rule": "a guard, a crash, a cap or a CUDA allocation failure makes the stage V and nothing in it is read; batches are never shrunk to fit. A V before the first render of a gated (S or U) seed may be repeated after a reviewed fix; a V after it goes to the owner; a second V closes TASK-073 as INCONCLUSIVE. Development stages (K0, corpus, training, offline, D3) may be repeated once from scratch after a reviewed fix. Nothing is re-thresholded, retrained or re-selected after its numbers are seen",
+  "void_rule": "a guard, a crash, a cap or a CUDA allocation failure makes the stage V and nothing in it is read; batches are never shrunk to fit. A V before a stage's first cohort render (cohort_first_render_utc; e.g. G-repro, G-quiet, a preflight guard) is not a spent attempt: it may be repeated as-is, recorded, without a fix (owner ruling 2026-09-29). After the first render: a gated (S or U) V goes to the owner and a second V closes TASK-073 as INCONCLUSIVE; a development stage (K0, corpus, training, ranking, D3) may be repeated once from scratch after a reviewed fix. Nothing is re-thresholded, retrained or re-selected after its numbers are seen",
   "owner_decisions": {
    "D7": "Critic first, planner fallback",
    "D1_D2": "Accept, diagnostic only",
    "D3_D4_D6": "Use the defaults",
    "D5": "moot: PR #104 merged as 70f1358; every M2 number cited is checked against benchmarks/manifests/apple-first-policy-v2-m2-results.json",
-   "date": "2026-09-29"
+   "date": "2026-09-29",
+   "R-NO-HEADROOM": "Yes, same as fallback rows (Recommended)",
+   "G7": "Keep bar, failure = HYB-SLOW only (Recommended)",
+   "G-repro under load": "Pin threading + quiet machine (Recommended)",
+   "post-smoke D-17/D-8 and D-19": "Accept both (Recommended)",
+   "harm rule": "Harm also closes the line (Recommended)"
   }
  },
- "frozen_sha256": "810d0a561787c422ecdd9b2f56421eedc3bdf733a6571a783597dba40c351719",
+ "frozen_sha256": "f476eb9a6a3fe965d9a8ef012d13c28d83758201242586bd57747b8e5fc01b5e",
  "cohorts": {
   "K0": {
    "seeds": [
@@ -5395,15 +5459,15 @@
   "benchmarks/manifests/apple-token-dynamics-v1.json": "2191d57e869810aeb0601cdc85308d94dcd750782bac9596f0a78b0ea2fbdc38",
   "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
-  "docs/experiments/apple_wm_critic_v2.md": "e75f36893b4776a5bd530b47e1de2a22cb50d942d4559cbf0c086e811323f16d",
-  "scripts/collect_apple_shift_v2.py": "b2a9e17f7becc01d9e78682d8e634a5d9c109f213f5628213187b4b62c3ebde0",
+  "docs/experiments/apple_wm_critic_v2.md": "7103ad4975ec1f8334f8946f512b05c51fa3b60a8a160e87bf100f234108a63e",
+  "scripts/collect_apple_shift_v2.py": "3670dd9d34805429b453eecde6d57358238880ffe67cd9e8ea5dc810f098cba4",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
   "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
-  "scripts/rank_wm_critic_v2.py": "e0d882f3252ffb5c1216fe37b9c18bfa3bbea4679550ff15fee82ad8612a34ed",
+  "scripts/rank_wm_critic_v2.py": "d0ef94185b8cc84939fffe592cf387b4a3c03b785cd23f095f118baf0df87767",
   "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
-  "scripts/run_wm_critic_v2.py": "20bcf8ce85b62696edea01b2a27238d2d47f93d25c6e5eb49021f5955076ea33",
-  "scripts/summarize_wm_critic_v2.py": "ee2f305c660352396b26660d526a025cbeff651821db582ea4e5c17788cfc94b",
+  "scripts/run_wm_critic_v2.py": "6b3bd9beba81967560b5c6c719fa34b2f18c4de4237694e0579f01dc7a9fcc1d",
+  "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
   "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
   "src/embodied_jepa/at_rest.py": "b5121cb600db6bfb3f92b4161ba46d4cdcb31f98e99de512b257f2519db00527",
@@ -5441,9 +5505,10 @@
   "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
   "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
   "src/embodied_jepa/token_dynamics.py": "b80ec3506ff359c0e159b1f89e3bc234fcdecbdeccaa38e2ead455c438e34672",
-  "src/embodied_jepa/wm_critic_v2.py": "00176bcdb769796c17df167093c900ab5e95d067140c1c4887849be6556234d2",
-  "src/embodied_jepa/wm_critic_v2_offline.py": "4bfedaef39e65c4db61c5b29d50aaf853235a8f90b187d1313487288d82e8ae1",
+  "src/embodied_jepa/wm_critic_v2.py": "330f18893b4182b4c23ab906914cb48fcaef88178ab510cdadfa8870d563038a",
+  "src/embodied_jepa/wm_critic_v2_offline.py": "92f9c78a30f1114791a108db04a2c9be52eec825632008b1c2a645a336e83f18",
   "src/embodied_jepa/wm_critic_v2_runtime.py": "592895bc84d23442fdc7f224ea0349f9a5317de8a3ecb0888e47e29e84e0cffb",
+  "tests/test_wm_critic_v2.py": "821d4408fab8f819bc3693506d2ef8e2176da4753a602ccad5b2c4107915017e",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. The plate shift is a simulation-only diagnostic condition (owner D1). P-3 is a BC/DAgger MLP on a frozen DINOv2 readout trained on privileged e9 labels; an H-LeWM success would be a learned policy trained on privileged expert labels plus a LeWM critic (owner D2), not LeWM driving the robot."

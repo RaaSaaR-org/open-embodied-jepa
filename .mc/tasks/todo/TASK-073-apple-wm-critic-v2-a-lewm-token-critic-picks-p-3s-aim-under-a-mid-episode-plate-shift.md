@@ -73,3 +73,8 @@ and not the v1 benchmark. No control line is primary.
   cohort plus a clock-prior ratio (the clock prior passes G2a's ratio by itself); O0 headroom
   precondition before the ranking gates (on smoke seeds with the true plate as incumbent the
   prior-distance ranker reaches median ρ 0.63 and the incumbent's regret is 0.03 cm).
+- 2026-09-29: PR #106 REQUEST CHANGES at c8ea8a5 (macOS CI red on an exact-float cohort test; H-shuf
+  stage void risk; G7/determinism scope; GO procedure; N1-N9). Owner rulings the same day:
+  R-NO-HEADROOM is a fallback row; G7 bar kept, G7-only failure = HYB-SLOW; pin threading + quiet
+  machine, a pre-render V is repeatable as-is; D-8/D-17/D-19 accepted as set after smoke data;
+  HYB-HARM checked first and fires the clause. All implemented in the follow-up commit.

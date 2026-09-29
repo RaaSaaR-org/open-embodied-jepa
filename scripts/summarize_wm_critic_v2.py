@@ -49,14 +49,28 @@ def offline_decision(k0: dict, train: dict, rank: dict) -> dict:
     seeds = {}
     for i, s in enumerate(order):
         name = f"W{i}"
-        seeds[s] = {
-            "O1": {"passes": t["o1"][str(s)]["passes"]},
-            "O2": t["o2"][str(s)]["gate"],
-            "O3": {"passes": r[name]["O3"]["passes"], "void": r[name]["O3"]["void"]},
-            "O4": {"passes": r[name]["O4"]["passes"]},
+        # the gate functions are re-applied to the stored statistics (reviewer N4)
+        stats1 = {
+            (k.split("@h")[0], int(k.split("@h")[1])): v
+            for k, v in t["o1"][str(s)]["statistics"].items()
         }
+        o1 = wc.o1_seed_passes(stats1)
+        o2 = wc.o2_passes(t["o2"][str(s)]["statistics"])
+        o3 = wc.o3_passes(r[name]["O3"])
+        o4 = wc.o4_passes(r[name]["O4"])
+        stored = (
+            t["o1"][str(s)]["passes"],
+            t["o2"][str(s)]["gate"],
+            {"passes": r[name]["O3"]["passes"], "void": r[name]["O3"]["void"]},
+            r[name]["O4"]["passes"],
+        )
+        if stored != (o1["passes"], o2, o3, o4["passes"]):
+            raise wc.GuardError(f"W seed {s}: a stored gate flag differs from its recomputation")
+        seeds[s] = {"O1": {"passes": o1["passes"]}, "O2": o2, "O3": o3, "O4": o4}
     o5 = k0["stages"]["k0"]["o5"]
     o0 = wc.o0_passes(r["regret_incumbent"])
+    if o5 != o5 | wc.o5_passes(o5["values"]):
+        raise wc.GuardError("O5's stored flag differs from its recomputation")
     decision = wc.decide_offline(seeds, o5, o0)
     selection = k0["stages"]["k0"]["selection"]
     return decision | {
