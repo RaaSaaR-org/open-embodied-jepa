@@ -26,6 +26,7 @@ compares.
 from __future__ import annotations
 
 import argparse
+import faulthandler
 import json
 import struct
 import subprocess
@@ -35,6 +36,10 @@ import zlib
 from pathlib import Path
 
 from isaaclab.app import AppLauncher
+
+# Development diagnostic: two of ten Newton runs hung (one CPU core busy, nothing logged)
+# before the model was built. Dump every thread's Python stack every 5 min to the log.
+faulthandler.dump_traceback_later(300, repeat=True)
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--output", type=Path, required=True)
