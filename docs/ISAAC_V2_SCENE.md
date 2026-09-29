@@ -243,6 +243,6 @@ Caveats:
 
 ## Next step
 
-1. Decide the rolling-friction route (a–d above). *Update 2026-09-29: option (a) was spiked in [ISAAC_NEWTON_SPIKE.md](ISAAC_NEWTON_SPIKE.md); Newton/MuJoCo-Warp reproduces MuJoCo's roll, rim-drop and press outcomes, and is available as `IsaacTransport(physics="newton")`.* Option (a) is worth a one-day spike, because it would also remove the soft/rigid contact and friction-cone mismatches.
+1. Decide the rolling-friction route (a–d above). *Update 2026-09-29: option (a) was spiked in [ISAAC_NEWTON_SPIKE.md](ISAAC_NEWTON_SPIKE.md); in that development spike (one clean run each of five scripted cases and one free-space trajectory), Newton/MuJoCo-Warp reproduced MuJoCo's roll, rim-drop and press outcomes; it is available as `IsaacTransport(physics="newton")`.* Option (a) is worth a one-day spike, because it would also remove the soft/rigid contact and friction-cone mismatches.
 2. With that route, rerun the scripted roll, rim and press checks, then put the embodiment's IK (MuJoCo kinematics provider) over `IsaacTransport`. Replay e9 on development seeds as a separately labelled cross-simulator check.
 3. If Isaac frames are to be used as observations, decide whether shading must match (for example an unlit/albedo-plus-shadow path, or a colour transform fitted on training frames only) or whether the distribution shift is accepted and measured.

@@ -29,7 +29,9 @@ parser.add_argument("--usd", required=True)
 parser.add_argument("--manifest", type=Path, required=True)
 parser.add_argument("--scene", type=Path, required=True)
 parser.add_argument("--physics", choices=("physx", "newton"), default="physx")
-parser.add_argument("--cases", nargs="*", default=None, help="subset of cases (development)")
+parser.add_argument(
+    "--cases", nargs="*", default=None, help="subset of cases (development; recorded)"
+)
 AppLauncher.add_app_launcher_args(parser)
 args = parser.parse_args()
 args.headless = True
@@ -71,6 +73,8 @@ def main() -> None:
         "usd_canonical_tree_sha256": usd_canonical_hash(args.usd),
         "object_properties": tr.object_properties,
         "contact_api_error": tr.contact_api_error,
+        # None: every case in scripted_cases.CASES; otherwise a development subset.
+        "cases_requested": list(args.cases) if args.cases else None,
         "cases": {},
     }
     for case, spec in CASES.items():

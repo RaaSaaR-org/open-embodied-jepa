@@ -11,8 +11,11 @@ per geom, joint and body, what the compiled model holds (read back from ``mjw_mo
 ``sim.reset``). This script compares that record with ``MuJoCoSimulation`` switched to v2
 (``apply_v2_scene``): solver options, per-role geom contact parameters (friction triple,
 condim, solref, solimp, margin), collision filtering, per-joint damping / armature /
-frictionloss / range / limit solref and solimp, and body masses and inertias. It is a
-parameter audit, not a behaviour check, and nothing here is a learned or task result.
+frictionloss / range / limit solref and solimp, and body masses and inertias, with a
+pass/fail flag per item and bodies checked to exist on both sides. Not compared: geom sizes
+and poses, priority, solmix, gap, CCD settings and mesh hulls (listed in the report as
+``not_compared``). It is a parameter audit, not a behaviour check, and nothing here is a
+learned or task result.
 """
 
 from __future__ import annotations
@@ -142,16 +145,22 @@ def _scale(rows: dict, key: str) -> float:
     )
 
 
+# Body tolerances. Masses are compared absolutely. Principal inertias are compared relative to
+# the body's largest one: MuJoCo-Warp holds them in float32 after its own eigendecomposition,
+# and the recorded worst case in the spike runs was 1.37e-6, above float32's ~1.2e-7 epsilon but
+# well inside 1e-5 (about 100 float32 ulps), which is the declared bar.
+BODY_MASS_ABS_TOL_KG = 1e-6
+BODY_INERTIA_REL_TOL = 1e-5
+
+
 def compare_bodies(model, newton: dict) -> dict:
     rows, mass_diff, inertia_rel = {}, 0.0, 0.0
+    host = {model.body(b).name for b in range(model.nbody)} - {"world"}
+    newton_labels = set(newton["bodies"]) - {"world", "table", "floor"}
     for label, nt in newton["bodies"].items():
-        if label in ("world", "table", "floor"):
+        if label not in newton_labels or label not in host:
             continue
-        try:
-            b = model.body(label)
-        except KeyError:
-            rows[label] = {"newton": nt, "mujoco": None}
-            continue
+        b = model.body(label)
         h_mass, h_inertia = float(model.body_mass[b.id]), model.body_inertia[b.id]
         dm = abs(h_mass - nt["mass"])
         # Principal inertias; the order of the principal axes can differ between compilers.
@@ -165,7 +174,24 @@ def compare_bodies(model, newton: dict) -> dict:
             "mass_abs_diff": dm,
             "inertia_rel_diff": di,
         }
-    return {"max_mass_abs_diff_kg": mass_diff, "max_inertia_rel_diff": inertia_rel, "rows": rows}
+    only_host, only_newton = sorted(host - newton_labels), sorted(newton_labels - host)
+    return {
+        "bodies_compared": len(rows),
+        "only_in_mujoco": only_host,
+        "only_in_newton": only_newton,
+        "max_mass_abs_diff_kg": mass_diff,
+        "max_inertia_rel_diff": inertia_rel,
+        "tolerances": {
+            "mass_abs_kg": BODY_MASS_ABS_TOL_KG,
+            "inertia_rel": BODY_INERTIA_REL_TOL,
+            "note": "principal inertias relative to the body's largest; float32 in MuJoCo-Warp",
+        },
+        "match": not only_host
+        and not only_newton
+        and mass_diff <= BODY_MASS_ABS_TOL_KG
+        and inertia_rel <= BODY_INERTIA_REL_TOL,
+        "rows": rows,
+    }
 
 
 def main() -> None:
@@ -239,6 +265,15 @@ def main() -> None:
         "geoms": compare_geoms(model, newton),
         "joints": compare_joints(sim, newton),
         "bodies": compare_bodies(model, newton),
+        "not_compared": [
+            "geom sizes and poses (spot-checked by hand in the #107 review: apple radius, plate "
+            "base, rim capsule radius and table half-extents agree)",
+            "geom priority, solmix and gap values (Newton writes gap 0; reported, not compared)",
+            "CCD settings (ccd_iterations, ccd_tolerance): not read back",
+            "per-geom values inside a role: geoms are compared per role as sets of unique "
+            "rounded rows, which would not catch values swapped between geoms of one role",
+            "mesh hull vertices",
+        ],
     }
     sim.close()
     args.output.mkdir(parents=True)
@@ -252,7 +287,12 @@ def main() -> None:
         )
     print("joints max abs diff:", report["joints"]["max_abs_diff"])
     b = report["bodies"]
-    print("bodies:", b["max_mass_abs_diff_kg"], b["max_inertia_rel_diff"])
+    print(
+        "bodies:",
+        {k: b[k] for k in ("match", "bodies_compared", "only_in_mujoco", "only_in_newton")},
+        b["max_mass_abs_diff_kg"],
+        b["max_inertia_rel_diff"],
+    )
 
 
 if __name__ == "__main__":

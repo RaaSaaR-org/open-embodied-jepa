@@ -681,4 +681,10 @@ UNMATCHED_IN_NEWTON: list[str] = [
     "bias forces right after reset: from a CPU mj_forward on Newton's compiled model "
     "(MuJoCo's reset also runs mj_forward); afterwards MuJoCo-Warp's qfrc_bias, one step "
     "stale exactly as MuJoCo's qfrc_bias is in MuJoCoSimulation",
+    "CCD: the host uses ccd_iterations 35 (MuJoCo's default); MJWarpSolverCfg.ccd_iterations "
+    "is left at its default and not read back; sphere-box/cylinder contacts go through "
+    "convex collision. Not verified to be equal",
+    "collision groups: Newton's contype/conaffinity colouring puts floor and table in one "
+    "group and plate base and rims in another; those pairs never collide (static/kinematic; "
+    "MuJoCo filters them as static too), but the masks differ from the host's",
 ]

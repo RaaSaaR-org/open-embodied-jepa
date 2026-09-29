@@ -75,10 +75,23 @@ def main() -> None:
         help="scene manifest the Isaac run used (e.g. `git show 45e4d55:<path>` for runs "
         "made before its descriptive strings were corrected)",
     )
+    parser.add_argument(
+        "--allow_partial",
+        action="store_true",
+        help="compare a run that lacks some cases (development subsets); the report is "
+        "then flagged partial",
+    )
     args = parser.parse_args()
     if args.output.exists():
         raise SystemExit(f"refusing to overwrite {args.output}")
     isaac = json.loads((args.isaac / "isaac_scripted.json").read_text())
+    missing = [case for case in CASES if case not in isaac["cases"]]
+    if missing and not args.allow_partial:
+        raise SystemExit(
+            f"the Isaac run lacks cases {missing} (requested: "
+            f"{isaac.get('cases_requested', 'not recorded')}); pass --allow_partial to compare "
+            "the rest"
+        )
     scene = json.loads(args.scene.read_text())
     if isaac["scene_manifest_sha256"] != canonical_sha256(scene):
         raise SystemExit(
@@ -97,6 +110,9 @@ def main() -> None:
         "under identical scripted starts and joint targets? (no learned policy)",
         "isaac_run": str(args.isaac),
         "physics_backend": backend,
+        "cases_requested": isaac.get("cases_requested"),
+        "cases_missing": missing,
+        "partial": bool(missing),
         "mujoco_v2_scene": v2,
         "cases": {},
     }

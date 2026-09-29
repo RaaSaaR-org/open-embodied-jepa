@@ -74,6 +74,11 @@ _JOINT_KEYS = (
 _RESET_ELBOW_RAD = 0.08  # MuJoCoSimulation.reset: slight elbow flexion
 
 
+# MuJoCo-Warp data that carries state from one episode into the next and that
+# ``mj_resetData`` clears on the host; zeroed on every Newton reset.
+NEWTON_HISTORY_FIELDS = ("qacc_warmstart", "qacc", "qfrc_applied", "xfrc_applied", "act", "ctrl")
+
+
 def joint_manifest_from_mujoco(sim) -> dict:
     """Name-addressed joint manifest from a ``MuJoCoSimulation`` (the single authority)."""
     model = sim.model
@@ -830,9 +835,12 @@ class IsaacTransport:
         """Zero MuJoCo-Warp's history-carrying data, as ``mj_resetData`` does on the host.
 
         Newton's reset writes joint and body state but leaves e.g. the solver warm start
-        (``qacc_warmstart``) of the previous episode in ``mjw_data``."""
+        (``qacc_warmstart``) of the previous episode in ``mjw_data``. The list is manual:
+        ``mujoco_warp.reset_data`` would also overwrite ``qpos``/``qvel`` (and the pose the
+        reset just wrote), so it cannot be used here. ``NEWTON_HISTORY_FIELDS`` names it and
+        ``tests/test_isaac_transport.py`` pins it."""
         d = self._nt_solver.mjw_data
-        for name in ("qacc_warmstart", "qacc", "qfrc_applied", "xfrc_applied", "act", "ctrl"):
+        for name in NEWTON_HISTORY_FIELDS:
             arr = getattr(d, name, None)
             if arr is not None and getattr(arr, "size", 0):
                 arr.zero_()

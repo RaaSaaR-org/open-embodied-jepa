@@ -131,3 +131,107 @@ def test_unknown_physics_backend_is_rejected_before_any_isaac_import():
     with pytest.raises(ContractError, match="physics"):
         IsaacTransport(usd_path="x.usda", manifest=committed(), scene_manifest={}, physics="ode")
     assert "isaaclab" not in sys.modules
+
+
+class _FakeWarpArray:
+    """Stands in for a ``wp.array``: ``size`` and ``zero_()`` are all the reset uses."""
+
+    def __init__(self, n: int):
+        self.values = np.full(n, 7.0)
+        self.size = n
+
+    def zero_(self):
+        self.values[:] = 0.0
+
+
+def _fake_newton_transport(monkeypatch, history_fields):
+    """An ``IsaacTransport`` on the Newton path with every Isaac object replaced by a fake."""
+    from types import SimpleNamespace
+
+    from embodied_jepa.isaac_transport import IsaacTransport
+
+    manifest = committed()
+    n = len(manifest["joints"])
+    tr = object.__new__(IsaacTransport)
+    written = {}
+
+    class Robot:
+        def write_joint_position_to_sim_index(self, position):
+            written["position"] = np.asarray(position)
+
+        def write_joint_velocity_to_sim_index(self, velocity):
+            written["velocity"] = np.asarray(velocity)
+
+        def write_data_to_sim(self):
+            pass
+
+        def reset(self):
+            pass
+
+        def update(self, dt):
+            pass
+
+    fake_torch = SimpleNamespace(
+        float32=np.float32,
+        as_tensor=lambda x, dtype=None, device=None: np.asarray(x, dtype=dtype),
+        zeros_like=np.zeros_like,
+    )
+    tr.__dict__.update(
+        closed=False,
+        objects=False,
+        newton=True,
+        manifest=manifest,
+        _idx=np.arange(n),
+        _torch=fake_torch,
+        sim=SimpleNamespace(device="cpu"),
+        robot=Robot(),
+        apple=None,
+        plate=None,
+        camera=None,
+        targets=np.zeros(n),
+        _nt_solver=SimpleNamespace(mjw_data=SimpleNamespace(**history_fields)),
+        _bias_after_reset=None,
+    )
+    calls = []
+    monkeypatch.setattr(tr, "_apply_effort", lambda effort: calls.append("effort"), raising=False)
+    monkeypatch.setattr(
+        tr, "_check_newton_joint_properties", lambda: calls.append("check"), raising=False
+    )
+    monkeypatch.setattr(
+        tr, "_check_joint_properties", lambda: calls.append("physx_check"), raising=False
+    )
+    monkeypatch.setattr(tr, "_newton_reset_bias", lambda q: np.full(len(q), 0.5), raising=False)
+    return tr, calls, written
+
+
+def test_newton_reset_clears_mujoco_warp_history_and_sets_the_reset_bias(monkeypatch):
+    from embodied_jepa.isaac_transport import NEWTON_HISTORY_FIELDS
+
+    assert set(NEWTON_HISTORY_FIELDS) == {
+        "qacc_warmstart",
+        "qacc",
+        "qfrc_applied",
+        "xfrc_applied",
+        "act",
+        "ctrl",
+    }
+    fields = {name: _FakeWarpArray(5) for name in NEWTON_HISTORY_FIELDS}
+    fields["qpos"] = _FakeWarpArray(5)  # state the reset just wrote: must not be cleared
+    tr, calls, written = _fake_newton_transport(monkeypatch, fields)
+    out = tr.reset(0)
+    assert out["timestamp"] == 0.0
+    for name in NEWTON_HISTORY_FIELDS:
+        assert not fields[name].values.any(), name
+    assert (fields["qpos"].values == 7.0).all()
+    assert "check" in calls and "physx_check" not in calls
+    q = reset_pose(committed())
+    assert np.allclose(written["position"][0], q) and not written["velocity"].any()
+    # The first control substep after reset uses the reset-state bias, exactly once.
+    assert np.allclose(tr._bias(), 0.5) and tr._bias_after_reset is None
+
+
+def test_newton_history_clear_skips_absent_or_empty_fields(monkeypatch):
+    fields = {"qacc_warmstart": _FakeWarpArray(3), "act": _FakeWarpArray(0)}
+    tr, _, _ = _fake_newton_transport(monkeypatch, fields)
+    tr.reset(0)
+    assert not fields["qacc_warmstart"].values.any()

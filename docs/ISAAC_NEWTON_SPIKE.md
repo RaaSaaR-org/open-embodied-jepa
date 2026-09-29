@@ -4,7 +4,7 @@ A development spike on the Linux PC (RTX 5080) after [ISAAC_V2_SCENE.md](ISAAC_V
 
 **The question.** Under PhysX, the v2 apple rolls off the table and off the plate rim where MuJoCo stops it, and a finger press pins it where MuJoCo squeezes it out ([ISAAC_V2_SCENE.md §4](ISAAC_V2_SCENE.md)). Does the `isaaclab_newton` backend in the pinned image reproduce MuJoCo's contact behaviour?
 
-**Answer.** Yes, for all four scripted cases, provided the transport builds the Newton model itself. Isaac Lab's own Newton model builder does not register the MuJoCo geom attributes, so every geom would compile with condim 3 and rolling friction would silently be ignored. With the transport's own builder:
+**Answer.** Yes, for all five scripted cases (two straight drops, the rim drop, the roll and the press), in a development spike with one clean run each, provided the transport builds the Newton model itself. Isaac Lab's own Newton model builder does not register the MuJoCo geom attributes, so every geom would compile with condim 3 and rolling friction would silently be ignored. With the transport's own builder:
 
 - the roll case matches MuJoCo to 0.24 mm after 3 s;
 - the rim drop stays on the plate, as in MuJoCo;
@@ -52,7 +52,7 @@ Code: `src/embodied_jepa/isaac_transport.py` (`physics="newton"`) and `src/embod
 - **Control.** The control law is unchanged: `kp (q* − q) − kd qd + bias`, clipped to `ctrlrange` and applied as joint effort.
   - The bias is MuJoCo-Warp's `qfrc_bias`. Like `MuJoCoSimulation`'s, it comes from the forward pass of the previous step.
   - Right after a reset, the bias is `qfrc_bias` from a CPU `mj_forward` of the compiled model at the reset pose; `MuJoCoSimulation.reset` also runs `mj_forward`.
-- **Reset.** Reset zeroes MuJoCo-Warp's history-carrying data (`qacc_warmstart`, `qacc`, `qfrc_applied`, `xfrc_applied`, `act`, `ctrl`), as `mj_resetData` does. Without this, a second replay in the same process differed from the first by up to 0.0065 rad (`isaac-newton-parity-1-free`, commit `c5f0136`). With it, three replays agree to 4e-6 rad (`isaac-newton-parity-dev-2`). Which of the zeroed arrays mattered was not isolated; the warm start is the likely one (*inferred*).
+- **Reset.** Reset zeroes MuJoCo-Warp's history-carrying data (`qacc_warmstart`, `qacc`, `qfrc_applied`, `xfrc_applied`, `act`, `ctrl`), as `mj_resetData` does. Without this, a second replay in the same process differed from the first by up to 0.0065 rad (`isaac-newton-parity-1-free`, commit `c5f0136`). With it, three replays agree to 4e-6 rad (`isaac-newton-parity-dev-2`). Which of the zeroed arrays mattered was not isolated; the warm start is the likely one (*inferred*). The list is manual (`NEWTON_HISTORY_FIELDS`) because `mujoco_warp.reset_data` would also overwrite the pose the reset just wrote; a fake-solver unit test in `tests/test_isaac_transport.py` pins it.
 - **Contacts.** Contacts are read from MuJoCo-Warp's contact list: body pairs at every physics step, and at the last step of each interval `mj_contactForce` magnitudes summed per pair. Labels follow the host's `parity_mujoco.scene_contacts`, and robot self-contacts are flagged.
 - **Recording.** Every run record carries `physics_backend`. `scripted_checks_mujoco.py` and `parity_mujoco.py` report it. Records made before this spike have no such key and are PhysX runs.
 - **Provenance.** A `usd_canonical_tree_sha256` of `None` in any run record means that no `conversion.json` was found above the USD, so the USD's provenance is **missing**. It does not mean "no hash needed" (`isaac_scene.usd_canonical_hash`).
@@ -69,6 +69,8 @@ Image `isaaclab_arena:latest` `sha256:2588b52605d77552d4480196501c4b8b61774ef6d7
 | `isaac-newton-scripted-2` | `df9b363`, clean tree | hung before the model was built. Stopped, no record (§6) |
 | **`isaac-newton-parity-2-free`** | **`df9b363`, clean tree** | **free-space joint parity and image parity (reported below)** |
 | **`isaac-newton-scripted-3`** | **`77b53d8`, clean tree** | **the scripted checks (reported below)**. `77b53d8` differs from `df9b363` only by the diagnostic stack dump in the run scripts |
+
+Review follow-ups of #107 came after these runs and were **not** rerun in Isaac: the history field list became the constant `NEWTON_HISTORY_FIELDS` (same six fields), `scripted_checks_isaac.py` records `cases_requested`, `scripted_checks_mujoco.py` refuses a run with missing cases unless `--allow_partial` (then flags it `partial`), and `audit_newton_model.py` gained the body flag and existence check; the host-side scripts were re-applied to the recorded runs.
 
 Reproduce (host, then container, then host):
 
@@ -94,9 +96,10 @@ uv run --no-sync python scripts/isaac/parity_mujoco.py --isaac outputs/<new2>/ru
 The compiled MuJoCo-Warp model was compared with the host MuJoCo v2 model:
 
 - **Solver options.** timestep, integrator, cone, solver, iterations, line-search iterations, `ls_tolerance`, impratio and gravity match. Tolerance differs: 1e-6 against 1e-8.
-- **Contact parameters.** For every role (floor, table, apple, plate base, 16 rim capsules, 53 colliding robot geoms), the counts, geom types, friction triple, condim, solref, solimp and margin all match, within float32 rounding. The apple is condim 6, friction (1, 0.01, 0.001).
+- **Contact parameters.** For every role (floor, table, apple, plate base, 16 rim capsules, 53 colliding robot geoms), the counts, geom types, friction triple, condim, solref, solimp and margin all match within float32 rounding, except the floor's geom type (plane in MuJoCo, box in Newton; §5 item 6). The apple is condim 6, friction (1, 0.01, 0.001).
 - **Joints.** For all 43 canonical joints, damping, armature, frictionloss, range, limit solref and limit solimp match to at most 3.4e-7 (the range, float32).
-- **Bodies.** Every body mass matches to within 4.3e-7 kg, and principal inertias to within a relative 1.4e-6.
+- **Bodies.** All 46 bodies exist on both sides. Every body mass matches to within 4.3e-7 kg (bar 1e-6 kg), and principal inertias to within a relative 1.37e-6 (bar 1e-5, about 100 float32 ulps, stated in the script): PASS. The body flag and the existence check were added after the runs (review of #107) and applied to the same records.
+- **Not compared.** Geom sizes and poses, priority, solmix, gap, CCD settings and mesh hull vertices; geoms are compared per role as sets of values, not geom by geom (the report lists these under `not_compared`).
 - **Sizes.** nv is 55 against 49, because the plate is a 6-dof kinematic body. nu is 0 against 43, because efforts are applied directly. nexclude is 950 against 0.
 - **Self-collision.** Robot self-collision is off in Newton (by contype/conaffinity) and on in the host.
 
@@ -108,9 +111,9 @@ The PhysX column restates `isaac-v2-scripted-1` from [ISAAC_V2_SCENE.md](ISAAC_V
 | --- | --- | --- | --- | --- |
 | Drop 10 cm onto the table | rests at z 0.766831, settles 0.35 s | rests at z 0.766831, settles 0.35 s | xy 0.00 mm, z −0.0004 mm, settle 0.00 s. Max mid-fall position gap 1.96 mm (read 2) | z +0.17 mm, settles 0.20 s earlier |
 | Drop 10 cm onto the plate centre | z 0.778831, 0.35 s | z 0.778831, 0.35 s | xy 0.00 mm, z −0.0003 mm, settle 0.00 s. Max mid-fall gap 1.96 mm | z +0.17 mm, 0.20 s earlier |
-| Drop 5 cm off the plate centre | stays on the plate. Ends 3.4 cm from the centre, still creeping at 6.7 mm/s at 3 s | **stays on the plate**. Ends 0.73 cm from the centre, still creeping at 9.1 mm/s | same outcome, different path. Final xy 41.1 mm apart, max gap 72.5 mm, path 0.209 against 0.139 m. Neither leaves the 5 cm circle | rolls off the plate and wedges against the robot hip |
+| Drop 5 cm off the plate centre | stays on the plate. Ends 3.4 cm from the centre, still creeping at 6.7 mm/s at 3 s | **stays on the plate**. Ends 0.72 cm from the centre, still creeping at 9.1 mm/s | same outcome, different path. Final xy 41.1 mm apart, max gap 72.5 mm, path 0.209 against 0.139 m. Neither leaves the 5 cm circle | rolls off the plate and wedges against the robot hip |
 | Roll on the table, 0.2 m/s with matching spin | 0.2 → 0.1357 → 0.0852 → 0.0528 m/s at 0/1/2/3 s. 0.3431 m travelled | 0.2 → 0.1356 → 0.0851 → 0.0526 m/s. 0.3429 m | final xy 0.24 mm, max gap 0.39 mm | does not slow; leaves the table at ~2.8 s |
-| Right middle finger pressed onto the resting apple | contact from read 47 (`middle_1` max 5.83 N, `middle_0` from read 54, 6.97 N). Apple squeezed out 7.1 cm | contact from read 47 (`middle_1` 6.33 N, `middle_0` from read 55, 6.93 N). **Squeezed out** 6.8 cm | final xy 2.8 mm. Joint difference up to 0.0028 rad | pinned (4 mm), joint difference up to 0.031 rad |
+| Right middle finger pressed onto the resting apple | contact from read 47 (`middle_1` max 5.83 N, `middle_0` from read 54, 6.97 N). Apple squeezed out: net xy displacement 6.7 cm (xy path length 7.1 cm) | contact from read 47 (`middle_1` 6.33 N, `middle_0` from read 55, 6.93 N). **Squeezed out**: net xy displacement 6.4 cm (xy path length 6.8 cm) | final xy 2.8 mm. Joint difference up to 0.0028 rad | pinned (4 mm), joint difference up to 0.031 rad |
 
 - The plate did not move in any Newton case (max displacement 0).
 - **Drops.** The mid-fall gap of 1.96 mm at read 2 is about one physics step of fall at that speed. The cause is not identified; the rest positions and settle times agree.
@@ -154,12 +157,12 @@ The renderer is the pinned RTX path tracer. Physics does not change it, so photo
 | Measure | Newton | PhysX (#105) |
 | --- | --- | --- |
 | `send_joint_targets` per 0.05 s interval (25 steps) | median 25.4 ms, p95 26.4 ms | median 173 ms |
-| First interval (includes the CUDA-graph capture) | 81 s | — |
+| First interval of the parity run (includes the CUDA-graph capture) | 81 s | — |
 | `read()` with the 112 px path-traced render | median 19.1 ms, p95 26.7 ms | median 20.6 ms |
 | App launch / transport build | 84 s / 44 s | 83 s / 6.9 s |
 | Isaac process GPU memory (peak of ~1 s samples) | 2 899 MiB (parity, rendering) | 5 029 MiB (parity) |
 
-In the scripted run (no rendering), the solver initialisation took 13 s and the CUDA-graph capture 81 s.
+In the scripted run (no rendering), the solver initialisation took 13 s and the CUDA-graph capture 82 s (`CUDA graph took: 82.36 s` in `scripted-3/log.txt`), a separate measurement from the parity run's 81 s first interval.
 
 ## 5. Parameters Newton does not match (`isaac_scene.UNMATCHED_IN_NEWTON`)
 
@@ -172,6 +175,8 @@ In the scripted run (no rendering), the solver initialisation took 13 s and the 
 7. **Robot mesh hulls.** MuJoCo-Warp builds hulls from the converted USD meshes, the host from the MJCF meshes. The counts and types match; the hulls were not compared vertex by vertex.
 8. **Actuation.** The host uses 43 gain-1 motor actuators; Newton applies the same clipped torque as `qfrc_applied`. These are equivalent for motors under implicitfast (*inferred*).
 9. **Bias right after reset.** Newton uses a CPU `mj_forward` of the compiled model; afterwards it uses MuJoCo-Warp's `qfrc_bias`, with the host's one-step staleness.
+10. **CCD settings.** The host uses `ccd_iterations` 35 (MuJoCo's default); `MJWarpSolverCfg.ccd_iterations` was left at its default and neither set nor read back, and the apple's sphere-box and sphere-cylinder contacts go through convex collision. Not verified to be equal.
+11. **Collision groups.** Newton's contype/conaffinity colouring puts floor and table in one group (8) and the plate base and rims in another (16), so those pairs never collide; in the host they are all static geoms that MuJoCo does not collide either. Harmless here (static or kinematic bodies), but the masks differ.
 
 ## 6. Defects, caveats and open issues
 
@@ -184,7 +189,7 @@ In the scripted run (no rendering), the solver initialisation took 13 s and the 
 
 ## 7. Recommendation
 
-- **Use Newton/MuJoCo-Warp, not PhysX, for any Isaac run that involves the v2 apple, and keep PhysX as the default.** The fallbacks listed in #105 are not needed for the cases tested:
+- **For the tested cases (five scripted apple cases and one free-space trajectory, one clean run each), use Newton/MuJoCo-Warp rather than PhysX when an Isaac run involves the v2 apple, and keep PhysX as the default.** Other contact situations (grasps, lifts, the e9 expert) are untested. For the tested cases the fallbacks listed in #105 are not needed:
   - (b) an explicit rolling-resistance torque;
   - (c) angular damping;
   - (d) accepting an engine factor.
