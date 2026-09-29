@@ -5514,7 +5514,7 @@
   "src/embodied_jepa/wm_critic_v2.py": "5fc53f1cffa1d961c1127c7d2ae46e7e26873d9f5d1dd038efac7b43702d3faf",
   "src/embodied_jepa/wm_critic_v2_offline.py": "0843a7d930c0ad7bbf4d604a248ce115584bbf9f25f236507e7fc0693fadb3a0",
   "src/embodied_jepa/wm_critic_v2_runtime.py": "d39f9006da8d02f60397d3c73b37a713881e5da2b74fe64f7cc7c939bb5bffd1",
-  "tests/test_wm_critic_v2.py": "8032ae6df97f6e7b189fbfe76b6eb25636b4f0598683a9fa85a4831cb6b7c3ce",
+  "tests/test_wm_critic_v2.py": "55ad74f173a2ff93046f11bed0c104e64496bf65c22682e07abe4b42ad3bbd15",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. The plate shift is a simulation-only diagnostic condition (owner D1). P-3 is a BC/DAgger MLP on a frozen DINOv2 readout trained on privileged e9 labels; an H-LeWM success would be a learned policy trained on privileged expert labels plus a LeWM critic (owner D2), not LeWM driving the robot."

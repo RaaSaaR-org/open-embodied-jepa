@@ -785,6 +785,12 @@ def test_memory_fields_and_worker_counts_are_frozen():
     assert frozen["sim_workers"] == 6
 
 
+linux_only = pytest.mark.skipif(
+    not Path("/proc/self/status").exists(), reason="the memory guard reads /proc (Linux only)"
+)
+
+
+@linux_only
 def test_process_tree_rss_counts_children():
     pytest.importorskip("torch")
     import subprocess
@@ -831,7 +837,9 @@ sys.exit(0 if report["outcome"] != "V" else 3)
 """
 
 
-@pytest.mark.parametrize("how", ["SIGTERM", "SIGINT", "SIGHUP", "memory"])
+@pytest.mark.parametrize(
+    "how", ["SIGTERM", "SIGINT", "SIGHUP", pytest.param("memory", marks=linux_only)]
+)
 def test_a_stop_signal_or_the_memory_ceiling_writes_the_v_report(tmp_path, how):
     pytest.importorskip("torch")
     import signal
@@ -860,7 +868,8 @@ def test_a_stop_signal_or_the_memory_ceiling_writes_the_v_report(tmp_path, how):
     else:
         assert f"received {how}" in report["void_reason"]
     assert report["interrupted_utc"].endswith("Z")
-    assert report["memory"]["peak_tree_rss_gib"] > 0
+    if Path("/proc/self/status").exists():
+        assert report["memory"]["peak_tree_rss_gib"] > 0
 
 
 class _FakeRenderer:
