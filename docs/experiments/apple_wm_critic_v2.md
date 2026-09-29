@@ -838,6 +838,55 @@ asked for owner rulings on the renderer mitigations. **Owner rulings (verbatim):
 
 ### 15.6 Measurements of the review round
 
-_Filled in from the verification at this PR's code (see the PR comment)._
+All on smoke seeds 53950–53999 (the G-repro re-render of run-1's perception and D2 seeds aside,
+as in every stage), from a clean worktree at **`49a5eb4`** (every report records that revision and
+`tracked_tree_dirty: false`; the commits after it change only this document and the manifest's pin
+of it). Reports: `outputs/task073-fix/verify-3/` in the worktree, git-ignored.
+
+**Memory, peak of the whole process tree (GiB): summed PSS, with summed RSS beside it.**
+
+| stage | workers | PSS | RSS | main | largest child | report sha256 |
+|---|---|---|---|---|---|---|
+| smoke (render check, proposals, 2 × W training, latency) | 6, then 4 × 4 | 9.64 / 9.63 | 11.05 / 11.06 | 3.62 | 1.67 | `37cca4c5…`, `765c8147…` |
+| K0 (all four arms) | 6 | 8.16 | 9.84 | 1.53 | 1.21 | `ce1e8eeb…` |
+| corpus (12 roots) | 6 | 7.39 | 9.00 | 0.78 | 1.15 | `cc87eec8…` |
+| train (smoke scale) | main only | 7.47 | 7.49 | 7.47 | — | `5c623304…` |
+| ranking (4 seeds × 5 points) | 4 | 7.64 | 9.05 | 1.87 | 1.45 | `4319a44e…` |
+| D3 (8 arms) | 4 × 4 | 8.28 | 9.70 | 1.69 | 1.78 | `7159d6b3…` |
+| **train at full size, synthetic data** | main only | **10.75** | 10.76 | 10.75 | — | scratch probe (below) |
+
+**Full-size train, measured on synthetic data** (no seed of any cohort): a probe ran the train
+stage's memory-heavy steps at full size with random data — R-mid's dual fit on 4 320 + 540
+full-token rows, a 460-root × 421-frame feature table (193 660 frames), R_off, six W/N models on
+CUDA, the projection basis and O1 on the val windows — under the runner's `MemoryWatch`. It first
+peaked at 11.70 GiB, because joining the table's parts held two copies and O1's 1 024-window
+evaluation batches were large. The train stage now writes the features straight into one lazily
+committed array (`Table(capacity=…)`) and evaluates in batches of 256 windows (`EVAL_CHUNK`); the
+probe then peaked at **10.75 GiB (PSS; 10.76 RSS)**, 7.3 GiB of it steady (table, CUDA runtime,
+models) and the rest O1's transients. The real stage also decodes stored frames root by root; its
+peak is expected close to this, under the 12 GiB ceiling, but it has not been measured on the real
+corpus. **Choice: PSS, ceiling unchanged at 12 GiB.** PSS counts shared library pages once per
+tree, as the pane's cgroup does (its MemoryHigh is 14 GiB), while summed RSS counts them once per
+worker (+1.4–1.6 GiB at 6 workers); every stage's PSS peak is at most 10.75 GiB. The train
+stage's margin is the thinnest (about 1.25 GiB); a ceiling V there after `first_outcome_utc`
+would use its one repeat.
+
+**Worker-count equivalence (same code, same smoke seeds).**
+- **K0, 6 vs 2 workers:** all 16 attempts identical, the executed command array (sha256) included
+  (third round; the first two in §15.4).
+- **Ranking, 4 vs 2 workers:** the complete statistics — every group's true costs, every
+  ranker's ρ, the regrets, O3 and O4 — are identical.
+- **D3, 4 vs 2 workers:** 28 of 32 attempts identical including commands. The 4 that differ are
+  image-reading: H-rand on 53960 (commands, final distance and place step differ; it passes
+  `rerun_matches`) and **H-sim on 53958, 53959 and 53961**. H-sim reads images too in D3 and S
+  (its candidates are centred on R-mid's reading of the frame), and on 53959 its counted success
+  differed between the two runs. H-sim is a privileged ceiling (L4) and not in the determinism
+  re-run, but it feeds the H-NO-HEADROOM and NO-HEADROOM rows, so a renderer difference can move
+  its count by a reset. This is recorded here, not changed.
+- **Renderer events in this round:** four frame disagreements, all resolved by the guarded
+  majority (states equal, one level in 4 pixels each); no G-frame retry was needed; both render
+  checks IDENTICAL; W training BIT-IDENTICAL twice; H-LeWM decision-latency median 0.228 / 0.221 s.
+- **The train boundary** is recorded (`first_outcome_utc`), and the corpus's
+  `cohort_first_render_utc`.
 
 **Learned Apple→Plate on the frozen benchmark is still 0 successes.**
