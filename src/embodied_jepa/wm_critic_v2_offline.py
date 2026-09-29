@@ -26,7 +26,7 @@ from embodied_jepa import token_dynamics as td
 from embodied_jepa import wm_critic_v2 as wc
 from embodied_jepa.contracts import ContractError
 
-EVAL_CHUNK = 1024
+EVAL_CHUNK = 256  # memory: the O1 and val-criterion evaluation batch (protocol §15.6)
 FEATURE_BATCH = 128
 
 
@@ -56,10 +56,15 @@ def pooled_features(encoder, frames, *, device: str = "cpu", batch: int = FEATUR
 
 def full_tokens_cpu(encoder, frames) -> np.ndarray:
     """The P readout's feature path (``first_policy_perception.featurise``: CPU, batch size 1):
-    full tokens float64 [N, 98304]. R-mid is fitted on it and reads it in the closed loop."""
+    full tokens [N, 98304], stored as float32 (memory; protocol §15). R-mid is fitted on them
+    and reads the same path in the closed loop."""
     from embodied_jepa import first_policy_perception as fpp
 
-    return fpp.featurise(encoder, np.asarray(frames))
+    frames = np.asarray(frames)
+    out = np.empty((len(frames), 256 * 384), np.float32)
+    for i in range(len(frames)):
+        out[i] = fpp.featurise(encoder, frames[i : i + 1])[0]
+    return out
 
 
 def anchor_check(encoder, frames, gpu_pooled) -> dict:
@@ -83,16 +88,24 @@ class Table:
     ``step``; ``roots`` lists dicts with ``id``, ``split``, ``source``, ``first``, ``length``,
     ``shift_step``."""
 
-    def __init__(self):
+    def __init__(self, capacity: int | None = None, width: int = 6144):
+        """With ``capacity`` (frames), the feature rows are written straight into one lazily
+        committed array (memory; protocol §15.6): no part list and no second copy at ``seal``."""
         self.parts: dict[str, list] = {k: [] for k in ("features", "actions", "offset", "plate")}
         self.roots: list[dict] = []
         self.size = 0
+        self._features = None if capacity is None else np.empty((int(capacity), width), np.float32)
 
     def add(self, root: dict, features, actions, apple, plate, first_step: int) -> None:
         n = len(features)
         if not (len(actions) == len(apple) == len(plate) == n):
             raise ContractError("a root's band arrays disagree in length")
-        self.parts["features"].append(np.asarray(features, np.float32))
+        if self._features is not None:
+            if self.size + n > len(self._features):
+                raise ContractError("the table's capacity is exceeded")
+            self._features[self.size : self.size + n] = features
+        else:
+            self.parts["features"].append(np.asarray(features, np.float32))
         self.parts["actions"].append(np.asarray(actions, np.float32))
         self.parts["offset"].append(
             np.asarray(apple, np.float64)[:, :2] - np.asarray(plate, np.float64)[:, :2]
@@ -102,8 +115,22 @@ class Table:
         self.size += n
 
     def seal(self) -> None:
-        for key, value in list(self.parts.items()):
-            setattr(self, key, np.concatenate(value))
+        """Join the parts without holding two copies (memory; protocol §15.6): the output is
+        allocated lazily and each part is released as soon as it is copied."""
+        if self._features is not None:
+            self.features = self._features[: self.size]  # a view: untouched rows stay uncommitted
+            self._features = None
+            self.parts.pop("features")
+        for key in list(self.parts):
+            parts = self.parts[key]
+            out = np.empty((sum(len(p) for p in parts), *parts[0].shape[1:]), parts[0].dtype)
+            at = 0
+            while parts:
+                part = parts.pop(0)
+                out[at : at + len(part)] = part
+                at += len(part)
+                del part
+            setattr(self, key, out)
         self.parts = {}
 
     def windows(self, root_indices, *, horizon=16, stride=1, start_min=None, start_steps=None):
@@ -296,21 +323,22 @@ def o1_statistics(models: dict, n_models: dict, table: Table, windows: dict, sca
                         a = np.zeros_like(a)
                     elif mode == "wrong":
                         a = table.gather(starts[perms[name][sl]])[1]
-                    chunks.append(m.predict_features(f[:, 0], np.ascontiguousarray(a, np.float32)))
+                    p = m.predict_features(f[:, 0], np.ascontiguousarray(a, np.float32))
+                    chunks.append(p[:, [h - 1 for h in wc.O1["horizons"]]])  # memory: 2 of 16
                 preds[mode] = np.concatenate(chunks)
-            f_all = np.concatenate(
-                [
-                    table.gather(starts[lo : lo + EVAL_CHUNK])[0]
-                    for lo in range(0, len(starts), EVAL_CHUNK)
-                ]
-            )
+            keep = [0, *wc.O1["horizons"]]  # the start frame and the gated targets only
+            sel = np.empty((len(starts), len(keep), table.features.shape[1]), np.float32)
+            for lo in range(0, len(starts), EVAL_CHUNK):
+                sel[lo : lo + EVAL_CHUNK] = table.gather(starts[lo : lo + EVAL_CHUNK])[0][:, keep]
+            f_all = {t: sel[:, i] for i, t in enumerate(keep)}
+            hi = {h: i for i, h in enumerate(wc.O1["horizons"])}
             for h in wc.O1["horizons"]:
-                target = f_all[:, h]
+                target = f_all[h]
                 err = {
-                    k: ld.normalized_sq_error(v[:, h - 1], target, scale) for k, v in preds.items()
+                    k: ld.normalized_sq_error(v[:, hi[h]], target, scale) for k, v in preds.items()
                 }
-                copy = ld.normalized_sq_error(f_all[:, 0], target, scale)
-                pred_n = preds["true"][:, h - 1] / scale
+                copy = ld.normalized_sq_error(f_all[0], target, scale)
+                pred_n = preds["true"][:, hi[h]] / scale
                 enc_n = target / scale
                 collapse = ld.collapse_statistics(pred_n, enc_n)
                 trunc = {}
@@ -330,7 +358,7 @@ def o1_statistics(models: dict, n_models: dict, table: Table, windows: dict, sca
                 shift = np.zeros(pred_n.shape[1])
                 w_sm, n_sm, e_sm = (td.SessionMoments(shift, basis) for _ in range(3))
                 w_sm.add(pred_n, clusters)
-                n_sm.add(preds["n"][:, h - 1] / scale, clusters)
+                n_sm.add(preds["n"][:, hi[h]] / scale, clusters)
                 e_sm.add(enc_n, clusters)
                 comparative = td.comparative_rank(
                     w_sm, n_sm, e_sm, seed=wc.SEEDS["comparative_rank"]

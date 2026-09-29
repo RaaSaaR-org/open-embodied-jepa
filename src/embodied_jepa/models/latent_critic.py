@@ -70,32 +70,91 @@ class RidgeReadout:
         scale = float(np.trace(cov)) / len(x)  # the mean kernel diagonal, as in the dual form
         return np.linalg.solve(cov + lam_rel * scale * np.eye(len(cov)), x.T @ y)
 
+    BLOCK = 8192
+
+    @classmethod
+    def _kernel(cls, x):
+        """Column moments (float64) and ``z z^T`` of the standardised rows, in column blocks."""
+        n, d = x.shape
+        mean, sq = np.zeros(d), np.zeros(d)
+        for lo in range(0, d, cls.BLOCK):
+            b = np.asarray(x[:, lo : lo + cls.BLOCK], np.float64)
+            if not np.isfinite(b).all():
+                raise ContractError("a ridge readout needs finite, aligned rows")
+            mean[lo : lo + cls.BLOCK] = b.mean(0)
+            sq[lo : lo + cls.BLOCK] = b.std(0)
+        std = np.maximum(sq, STD_FLOOR)
+        gram = np.zeros((n, n))
+        for lo in range(0, d, cls.BLOCK):
+            b = np.asarray(x[:, lo : lo + cls.BLOCK], np.float64) - mean[lo : lo + cls.BLOCK]
+            b /= std[lo : lo + cls.BLOCK]
+            gram += b @ b.T
+        return mean, std, gram
+
+    @classmethod
+    def _weights(cls, x, mean, std, alpha):
+        d = x.shape[1]
+        w = np.zeros((d, alpha.shape[1]))
+        for lo in range(0, d, cls.BLOCK):
+            b = np.asarray(x[:, lo : lo + cls.BLOCK], np.float64) - mean[lo : lo + cls.BLOCK]
+            b /= std[lo : lo + cls.BLOCK]
+            w[lo : lo + cls.BLOCK] = b.T @ alpha
+        return w
+
     @classmethod
     def fit(cls, x, y, groups, *, lambdas, folds: int, seed: int, dual: bool = False):
         """Standardise on all rows, pick lambda by grouped inner CV (MSE; ties to the smaller
-        lambda), refit on all rows."""
-        x = np.asarray(x, np.float64)
+        lambda), refit on all rows.
+
+        The dual form works from the linear kernel ``z z^T`` alone, built in column blocks
+        without materialising the standardised copy (memory; TASK-073 protocol §15): each fold's
+        fit and held-out predictions are the kernel's sub-blocks, which is the same estimator as
+        solving on ``z[fit]`` and predicting ``z[held] @ w``."""
         y = np.asarray(y, np.float64)
         if y.ndim == 1:
             y = y[:, None]
-        if len(x) != len(y) or len(x) != len(groups) or not np.isfinite(x).all():
+        if len(x) != len(y) or len(x) != len(groups):
             raise ContractError("a ridge readout needs finite, aligned rows")
-        mean = x.mean(0)
-        std = np.maximum(x.std(0), STD_FLOOR)
-        z = (x - mean) / std
         fold = grouped_folds(groups, folds, seed)
         sse = {float(lam): 0.0 for lam in lambdas}
-        for k in range(folds):
-            fit, held = fold != k, fold == k
-            if not held.any() or not fit.any():
-                raise ContractError("an inner fold is empty")
-            y_mean = y[fit].mean(0)
-            for lam in lambdas:
-                w = cls._solve(z[fit], y[fit] - y_mean, float(lam), dual=dual)
-                sse[float(lam)] += float(((z[held] @ w + y_mean - y[held]) ** 2).sum())
-        best = min(sse, key=lambda lam: (sse[lam], lam))
-        y_mean = y.mean(0)
-        w = cls._solve(z, y - y_mean, best, dual=dual)
+        if dual:
+            x = np.asarray(x)
+            mean, std, gram = cls._kernel(x)
+            for k in range(folds):
+                fit, held = fold != k, fold == k
+                if not held.any() or not fit.any():
+                    raise ContractError("an inner fold is empty")
+                y_mean = y[fit].mean(0)
+                g_ff, g_hf = gram[np.ix_(fit, fit)], gram[np.ix_(held, fit)]
+                scale = float(np.mean(np.diag(g_ff)))
+                for lam in lambdas:
+                    alpha = np.linalg.solve(
+                        g_ff + float(lam) * scale * np.eye(len(g_ff)), y[fit] - y_mean
+                    )
+                    sse[float(lam)] += float(((g_hf @ alpha + y_mean - y[held]) ** 2).sum())
+            best = min(sse, key=lambda lam: (sse[lam], lam))
+            y_mean = y.mean(0)
+            scale = float(np.mean(np.diag(gram)))
+            alpha = np.linalg.solve(gram + best * scale * np.eye(len(gram)), y - y_mean)
+            w = cls._weights(x, mean, std, alpha)
+        else:
+            x = np.asarray(x, np.float64)
+            if not np.isfinite(x).all():
+                raise ContractError("a ridge readout needs finite, aligned rows")
+            mean = x.mean(0)
+            std = np.maximum(x.std(0), STD_FLOOR)
+            z = (x - mean) / std
+            for k in range(folds):
+                fit, held = fold != k, fold == k
+                if not held.any() or not fit.any():
+                    raise ContractError("an inner fold is empty")
+                y_mean = y[fit].mean(0)
+                for lam in lambdas:
+                    w = cls._solve(z[fit], y[fit] - y_mean, float(lam), dual=False)
+                    sse[float(lam)] += float(((z[held] @ w + y_mean - y[held]) ** 2).sum())
+            best = min(sse, key=lambda lam: (sse[lam], lam))
+            y_mean = y.mean(0)
+            w = cls._solve(z, y - y_mean, best, dual=False)
         selection = {
             "lam_rel": best,
             "inner_mse": sse[best] / len(y),

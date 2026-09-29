@@ -78,3 +78,10 @@ and not the v1 benchmark. No control line is primary.
   R-NO-HEADROOM is a fallback row; G7 bar kept, G7-only failure = HYB-SLOW; pin threading + quiet
   machine, a pre-render V is repeatable as-is; D-8/D-17/D-19 accepted as set after smoke data;
   HYB-HARM checked first and fires the clause. All implemented in the follow-up commit.
+- 2026-09-29: PR #106 merged (`b4df3f0`); pre-run GO reported. **K0 run-1 V**: an external host agent
+  SIGTERMed the run after memory pressure (16 workers, cgroup peak 25.9 GiB), after the first cohort
+  render; no report was written. Owner: "Fix PR, then repeat (Recommended)"; "I'll tell Hank to leave
+  gated runs alone". Fix PR `fix/task-073-memory`: 6 simulation workers, a 12 GiB process-tree
+  ceiling with G-memory and a runtime guard, V reports on SIGTERM/SIGINT/SIGHUP, the corpus's
+  first-render boundary, and render-only retries/majority for the renderer's rare one-level pixel
+  differences (protocol §15).

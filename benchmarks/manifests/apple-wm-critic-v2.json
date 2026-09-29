@@ -756,7 +756,7 @@
     "H-LeWM",
     "P-reread"
    ],
-   "determinism_differs": "any executed command array not bitwise equal, or a different counted success, termination reason or chosen-aim sequence"
+   "determinism_differs": "a non-image arm differs if any executed command array is not bitwise equal, or its counted success, termination reason or chosen-aim sequence differs; an image-reading arm differs if rerun_matches fails (RERUN_IMAGE_ARMS; owner ruling 2026-09-29); every difference is logged"
   },
   "authorisation_scope": "the owner's authorisation PR for the gated stage may add the gated harness (the runner's stage_gated and its tests), the authorisation record and the manifest's gated_authorization block; it may not change wm_critic_v2.py, the frozen block, frozen_sha256 or the stored cohort values (tests/test_wm_critic_v2.py pins the frozen hash as a literal)",
   "row_consequences": {
@@ -826,8 +826,51 @@
    "machine": "x86_64",
    "mujoco_gl": "egl"
   },
-  "sim_workers": 16,
+  "sim_workers": 6,
   "h_workers": 4,
+  "memory": {
+   "ceiling_gib": 12.0,
+   "headroom_gib": 4.0,
+   "sample_seconds": 0.5,
+   "measure": "summed PSS (/proc/<pid>/smaps_rollup) of the runner and all its descendants, sampled every 0.5 s; summed VmRSS is recorded beside it",
+   "measure_key": "pss"
+  },
+  "render": {
+   "max_level_difference": 1,
+   "max_pixels": 16,
+   "retries": 2,
+   "state": "sha256 of qpos, qvel, act, ctrl and time (the whole MjData simulation state)"
+  },
+  "image_reading_arms": [
+   "P-reread",
+   "H-LeWM",
+   "H-LeWM-s1",
+   "H-LeWM-s2",
+   "H-N",
+   "H-shuf",
+   "H-rand"
+  ],
+  "rerun_image_arms": {
+   "exact": [
+    "success",
+    "grasp",
+    "at_rest",
+    "termination_reason",
+    "executed_steps",
+    "chosen_sequence"
+   ],
+   "tolerances": {
+    "final_distance_cm": 1.0,
+    "first_grasp_step": 40,
+    "first_place_step": 40,
+    "incumbent_cm_per_decision": 1.0
+   },
+   "logged": [
+    "commands_sha256",
+    "max_abs_command_difference",
+    "every field above"
+   ]
+  },
   "h_worker_torch_threads": 4,
   "devices": {
    "simulation": "cpu",
@@ -859,7 +902,7 @@
    "harm rule": "Harm also closes the line (Recommended)"
   }
  },
- "frozen_sha256": "f476eb9a6a3fe965d9a8ef012d13c28d83758201242586bd57747b8e5fc01b5e",
+ "frozen_sha256": "c7a3eb215270669f0e51796aa824e15fac5a88c7afaad84282b9c1eec8ae0023",
  "cohorts": {
   "K0": {
    "seeds": [
@@ -5459,14 +5502,14 @@
   "benchmarks/manifests/apple-token-dynamics-v1.json": "2191d57e869810aeb0601cdc85308d94dcd750782bac9596f0a78b0ea2fbdc38",
   "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
-  "docs/experiments/apple_wm_critic_v2.md": "7103ad4975ec1f8334f8946f512b05c51fa3b60a8a160e87bf100f234108a63e",
-  "scripts/collect_apple_shift_v2.py": "3670dd9d34805429b453eecde6d57358238880ffe67cd9e8ea5dc810f098cba4",
+  "docs/experiments/apple_wm_critic_v2.md": "161f9ed37939421f9f5e4f56ea38c8110d6b8da2dbc808dcead816fd2d81a39b",
+  "scripts/collect_apple_shift_v2.py": "584ed2386dc6ab99abb60a22922b9781ebbcd13f08ac3198fff93d8394ab93e5",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
   "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
-  "scripts/rank_wm_critic_v2.py": "d0ef94185b8cc84939fffe592cf387b4a3c03b785cd23f095f118baf0df87767",
+  "scripts/rank_wm_critic_v2.py": "6d4cdc9017369f9c4ae95184c153b8bed5c6db84cc02a6cd9c4b84a243861d64",
   "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
-  "scripts/run_wm_critic_v2.py": "6b3bd9beba81967560b5c6c719fa34b2f18c4de4237694e0579f01dc7a9fcc1d",
+  "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
   "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
   "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
@@ -5490,7 +5533,7 @@
   "src/embodied_jepa/models/base.py": "310a509d5f8043ad3cbdf85a0568d15bb4ed2e4faeddf6e10bed63abf8ee0549",
   "src/embodied_jepa/models/frozen_encoder.py": "c1a4622a0765e44fc060c5313a85e4f727f51dc361acd5de50cb6990845e6011",
   "src/embodied_jepa/models/frozen_tokens.py": "33e8e819ad557d4fec6167482f91b5aa0c5da5a1169e7f8e6e8f050390c9a3a2",
-  "src/embodied_jepa/models/latent_critic.py": "fa6cb2b46757bd4d9949b6296a22df020ee5b51b25edd1748b37946498aea45a",
+  "src/embodied_jepa/models/latent_critic.py": "5af41f3fdc0767e76b9c6d4f833b267e33d90a7d420e712fc1f0a6d402140eeb",
   "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
   "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
   "src/embodied_jepa/plate_shift.py": "5ae0f016dd6ee628c60c3a6901f170d9bd1643df8e508e53fabbbc6e89650b39",
@@ -5505,10 +5548,10 @@
   "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
   "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
   "src/embodied_jepa/token_dynamics.py": "b80ec3506ff359c0e159b1f89e3bc234fcdecbdeccaa38e2ead455c438e34672",
-  "src/embodied_jepa/wm_critic_v2.py": "330f18893b4182b4c23ab906914cb48fcaef88178ab510cdadfa8870d563038a",
-  "src/embodied_jepa/wm_critic_v2_offline.py": "92f9c78a30f1114791a108db04a2c9be52eec825632008b1c2a645a336e83f18",
-  "src/embodied_jepa/wm_critic_v2_runtime.py": "592895bc84d23442fdc7f224ea0349f9a5317de8a3ecb0888e47e29e84e0cffb",
-  "tests/test_wm_critic_v2.py": "821d4408fab8f819bc3693506d2ef8e2176da4753a602ccad5b2c4107915017e",
+  "src/embodied_jepa/wm_critic_v2.py": "125b6f64d3acb9341f243fe123d1c646a433104471924790c79112678c0efc85",
+  "src/embodied_jepa/wm_critic_v2_offline.py": "7c2cd7bc39d1b87e46b4c4e92ab55bbe4a357ccc1dfccbf16e7a066a3f9c1cfa",
+  "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
+  "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. The plate shift is a simulation-only diagnostic condition (owner D1). P-3 is a BC/DAgger MLP on a frozen DINOv2 readout trained on privileged e9 labels; an H-LeWM success would be a learned policy trained on privileged expert labels plus a LeWM critic (owner D2), not LeWM driving the robot."

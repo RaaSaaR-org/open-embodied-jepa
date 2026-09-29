@@ -32,7 +32,6 @@ import argparse
 import importlib.util
 import sys
 import time
-import traceback
 from pathlib import Path
 
 import numpy as np
@@ -94,7 +93,17 @@ def main(argv=None) -> int:
         action="store_true",
         help="cohort R stand-ins on smoke seeds; mechanics only, nothing is read",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="smoke only: override the worker count (the equivalence check)",
+    )
     args = parser.parse_args(argv)
+    if args.workers is not None:
+        if not args.smoke or not 1 <= args.workers <= 6:
+            parser.error("--workers is for smoke runs only, from 1 to 6")
+        RUN.WORKERS_OVERRIDE.update({"sim": args.workers, "h": args.workers})
     out = Path(args.output)
     if out.exists():
         raise FileExistsError(f"refusing to overwrite {out}")
@@ -105,11 +114,13 @@ def main(argv=None) -> int:
         "task": wc.TASK,
         "mode": "rank",
         "smoke": bool(args.smoke),
+        "workers": RUN.h_workers(),
         "outcome": None,
         "stages": {},
         "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     clock = R65.Clock(wc.CAPS_SECONDS["global"])
+    watch = RUN.install_guards()
     try:
         kind = "smoke" if args.smoke else "rank"
         manifest = RUN.preflight(report, kind, evidence)
@@ -122,7 +133,7 @@ def main(argv=None) -> int:
         resets, seeds = RUN.cohort(manifest, "R", args.smoke)
         critic_files = train["critic"]
         pool = RUN.Pool(
-            wc.SIM_WORKERS,
+            RUN.h_workers(),  # memory: rank workers load the encoder (§15)
             {
                 "p3_checkpoint": RUN.p3_checkpoint(evidence),
                 "torch_threads": 1,
@@ -133,6 +144,7 @@ def main(argv=None) -> int:
         readout, encoder = RUN.refit_p_readout(report, pool, evidence, report["_run1"])
         report["cohort_first_render_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         est = RUN.cohort_estimates(pool, readout, encoder, seeds, resets, 1800.0)
+        report["stages"]["render_disagreements"] = est.pop("_render_disagreements", {})
         points = wc.R_POINTS[step]
         tasks = [
             {
@@ -141,6 +153,8 @@ def main(argv=None) -> int:
                 "reset": {k: resets[s][k] for k in ("object_xy", "plate_xy")},
                 "shift": {"step": step, "vector": resets[s]["shift_m"][str(cm)]},
                 "estimates": est[s]["estimates"],
+                "expected_frame_sha256": est[s]["frame_sha256"],
+                "expected_state_sha256": est[s]["state_sha256"],
                 "points": points,
             }
             for s in seeds
@@ -148,8 +162,11 @@ def main(argv=None) -> int:
         results = pool.map(tasks, 7200.0, "rank")
         groups = []
         for r in results:
-            if r["post_look_frame_sha256"] != est[r["seed"]]["frame_sha256"]:
-                raise wc.GuardError(f"G-frame: seed {r['seed']} post-look frame differs")
+            # G-frame is enforced in the worker, with the render-only retry (protocol §15)
+            if r["render_retries"]:
+                report["stages"].setdefault("render_retries", {})[str(r["seed"])] = r[
+                    "render_retries"
+                ]
             for g in r["groups"]:
                 groups.append(g | {"seed": r["seed"], "point_index": points.index(g["step"])})
         complete = {int(p): sum(g["step"] == p for g in groups) for p in points}
@@ -174,15 +191,10 @@ def main(argv=None) -> int:
             "statistics": stats,
         }
         report["outcome"] = "RANK-COMPLETE"
-    except Exception as error:  # noqa: BLE001 - every failure is V
-        report["outcome"] = "V"
-        report["void_reason"] = f"{type(error).__name__}: {error}"
-        report["traceback"] = traceback.format_exc()
-        RUN.log(f"VOID: {report['void_reason']}")
+    except BaseException as error:  # noqa: BLE001 - every failure, signal included, is V
+        RUN.void(report, error)
     finally:
-        pool = report.pop("_pool", None)
-        if pool is not None:
-            pool.close()
+        RUN.finish_guards(report, watch, report.pop("_pool", None))
         report.pop("_run1", None)
         report["ended_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         report["total_seconds"] = clock.elapsed()

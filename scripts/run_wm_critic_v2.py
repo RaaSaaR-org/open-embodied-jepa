@@ -41,7 +41,9 @@ import importlib.util
 import json
 import multiprocessing as mp
 import platform
+import signal
 import sys
+import threading
 import time
 import traceback
 from pathlib import Path
@@ -78,25 +80,275 @@ log = R65.log
 
 # ----- pool ---------------------------------------------------------------------------------------
 class Pool:
-    def __init__(self, workers: int, config: dict):
+    """A spawn pool that voids at once when a worker dies (reviewer N1) and always closes within a
+    bound (reviewer B1): terminate, join each worker with a timeout, then SIGKILL survivors."""
+
+    POLL_SECONDS = 1.0
+    JOIN_SECONDS = 10.0
+
+    def __init__(self, workers: int, config: dict, *, func=None, initializer=None):
         self.pool = mp.get_context("spawn").Pool(
-            workers, initializer=rtm.worker_init, initargs=(config,)
+            workers, initializer=initializer or rtm.worker_init, initargs=(config,)
         )
+        self.func = func or rtm.run_task
         self.look_reference = None
+        self.pids = self._pids()
+
+    def _pids(self) -> set:
+        return {p.pid for p in list(self.pool._pool)}
 
     def map(self, tasks: list[dict], cap: float, what: str) -> list[dict]:
         started = time.monotonic()
-        result = self.pool.map_async(rtm.run_task, tasks, chunksize=1)
-        try:
-            out = result.get(timeout=max(cap - (time.monotonic() - started), 1.0))
-        except mp.TimeoutError as error:
-            raise wc.GuardError(f"G-cap: {what} exceeded its {cap} s cap") from error
+        result = self.pool.map_async(self.func, tasks, chunksize=1)
+        while True:
+            remaining = cap - (time.monotonic() - started)
+            if remaining <= 0:
+                raise wc.GuardError(f"G-cap: {what} exceeded its {cap} s cap")
+            try:
+                out = result.get(timeout=min(self.POLL_SECONDS, max(remaining, 0.01)))
+                break
+            except mp.TimeoutError:
+                pass
+            dead = [p for p in list(self.pool._pool) if p.exitcode is not None]
+            now = self._pids()
+            if dead or not now <= self.pids or len(now) < len(self.pids):
+                detail = [(p.pid, p.exitcode) for p in dead] or sorted(now ^ self.pids)
+                raise wc.GuardError(f"G-worker: a worker died during {what}: {detail}")
         self.look_reference = LIN.check_look_states(out, self.look_reference)
         return out
 
     def close(self):
-        self.pool.terminate()
-        self.pool.join()
+        workers = list(self.pool._pool)
+        try:
+            self.pool.terminate()
+        except Exception:  # noqa: BLE001 - the bounded join below still runs
+            pass
+        for p in workers + list(self.pool._pool):
+            p.join(timeout=self.JOIN_SECONDS)
+            if p.exitcode is None:
+                p.kill()
+                p.join(timeout=self.JOIN_SECONDS)
+
+
+# ----- memory and signals (TASK-073 K0 run-1 V; protocol §15) ------------------------------------
+GIB = 2**30
+STOP_SIGNALS = (signal.SIGTERM, signal.SIGINT, signal.SIGHUP)
+WORKERS_OVERRIDE: dict = {}  # smoke only (--workers): the worker-count equivalence check
+
+
+def sim_workers() -> int:
+    return int(WORKERS_OVERRIDE.get("sim", wc.SIM_WORKERS))
+
+
+def h_workers() -> int:
+    return int(WORKERS_OVERRIDE.get("h", wc.H_WORKERS))
+
+
+class StageInterrupted(BaseException):
+    """A stop signal or the memory ceiling ended the stage: it is V, and the report is written."""
+
+    def __init__(self, reason: str, utc: str):
+        super().__init__(reason)
+        self.reason, self.utc = reason, utc
+
+
+MEASURE_KEY = wc.MEMORY["measure_key"]  # "rss" or "pss"
+MEASURE_INDEX = {"rss": 0, "pss": 1}[MEASURE_KEY]
+
+
+def _pss_bytes(pid: int) -> int:
+    try:
+        with open(f"/proc/{pid}/smaps_rollup") as rollup:
+            for line in rollup:
+                if line.startswith("Pss:"):
+                    return int(line.split()[1]) * 1024
+    except (FileNotFoundError, ProcessLookupError, PermissionError):
+        pass
+    return 0
+
+
+def process_tree_memory(root: int | None = None, per: dict | None = None) -> dict:
+    """Summed VmRSS and PSS of a process and all its descendants, from /proc (Linux). RSS counts a
+    shared page once per process; PSS divides it among the processes sharing it. ``per`` collects
+    each pid's (rss, pss). Each pid is read on its own, so one exiting thread or process drops only
+    itself from a sample (reviewer N2)."""
+    root = os.getpid() if root is None else int(root)
+    seen, stack = set(), [root]
+    rss_total = pss_total = 0
+    while stack:
+        pid = stack.pop()
+        if pid in seen:
+            continue
+        seen.add(pid)
+        rss = 0
+        try:
+            with open(f"/proc/{pid}/status") as status:
+                for line in status:
+                    if line.startswith("VmRSS:"):
+                        rss = int(line.split()[1]) * 1024
+                        break
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            continue
+        pss = _pss_bytes(pid)
+        rss_total, pss_total = rss_total + rss, pss_total + pss
+        if per is not None:
+            per[pid] = (rss, pss)
+        try:
+            tasks = os.listdir(f"/proc/{pid}/task")
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            continue
+        for task in tasks:
+            try:
+                with open(f"/proc/{pid}/task/{task}/children") as children:
+                    stack.extend(int(c) for c in children.read().split())
+            except (FileNotFoundError, ProcessLookupError, PermissionError):
+                continue
+    return {"rss": rss_total, "pss": pss_total}
+
+
+def process_tree_rss_bytes(root: int | None = None, per: dict | None = None) -> int:
+    """The measure the ceiling is checked on (``wc.MEMORY["measure"]``), in bytes."""
+    both: dict = {}
+    total = process_tree_memory(root, both)
+    if per is not None:
+        per.update({k: v[MEASURE_INDEX] for k, v in both.items()})
+    return total[MEASURE_KEY]
+
+
+def mem_available_bytes() -> int:
+    with open("/proc/meminfo") as meminfo:
+        for line in meminfo:
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) * 1024
+    raise wc.GuardError("G-memory: /proc/meminfo has no MemAvailable")
+
+
+class MemoryWatch(threading.Thread):
+    """Samples the process tree's memory (both RSS and PSS are recorded; the ceiling is checked on
+    ``wc.MEMORY["measure"]``); above the ceiling it records why and sends SIGUSR1 to the main
+    process once, whose handler ends the stage as V (the report is still written)."""
+
+    def __init__(self, ceiling_bytes: int, interval: float):
+        super().__init__(daemon=True)
+        self.ceiling, self.interval = int(ceiling_bytes), float(interval)
+        self.peak, self.samples, self.reason = 0, 0, None
+        self.peak_rss = self.peak_pss = 0
+        self.peak_main = self.peak_child = self.peak_processes = 0
+        self._stop = threading.Event()
+
+    def run(self):
+        while not self._stop.wait(self.interval):
+            per: dict = {}
+            both = process_tree_memory(per=per)
+            measured = both[MEASURE_KEY]
+            self.peak = max(self.peak, measured)
+            self.peak_rss, self.peak_pss = (
+                max(self.peak_rss, both["rss"]),
+                max(self.peak_pss, both["pss"]),
+            )
+            self.samples += 1
+            me = os.getpid()
+            self.peak_main = max(self.peak_main, per.get(me, (0, 0))[MEASURE_INDEX])
+            self.peak_child = max(
+                [self.peak_child, *(v[MEASURE_INDEX] for k, v in per.items() if k != me)]
+            )
+            self.peak_processes = max(self.peak_processes, len(per))
+            if measured > self.ceiling and self.reason is None:
+                self.reason = (
+                    f"G-memory: process-tree {MEASURE_KEY.upper()} {measured / GIB:.2f} GiB > "
+                    f"{self.ceiling / GIB:.2f} GiB"
+                )
+                os.kill(os.getpid(), signal.SIGUSR1)
+
+    def stop(self):
+        self._stop.set()
+
+    def summary(self) -> dict:
+        return {
+            "measure": MEASURE_KEY,
+            "ceiling_gib": self.ceiling / GIB,
+            "peak_tree_gib": self.peak / GIB,
+            "peak_tree_rss_gib": self.peak_rss / GIB,
+            "peak_tree_pss_gib": self.peak_pss / GIB,
+            "peak_main_gib": self.peak_main / GIB,
+            "peak_single_child_gib": self.peak_child / GIB,
+            "peak_processes": self.peak_processes,
+            "samples": self.samples,
+            "interval_seconds": self.interval,
+        }
+
+
+GUARD = {"stopping": False, "late_signals": []}
+
+
+def stop_handling() -> None:
+    """Called first in every except/finally (reviewer B2): from here on a stop signal is recorded,
+    not raised, so the cleanup and the report write always complete."""
+    GUARD["stopping"] = True
+
+
+def install_guards() -> MemoryWatch:
+    """Stop signals and the memory ceiling end the stage as V with a written report. Re-entry is
+    guarded by a flag, never by SIG_IGN (an ignored disposition would reach respawned workers and
+    make pool.terminate() hang; reviewer B1)."""
+    watch = MemoryWatch(wc.MEMORY["ceiling_gib"] * GIB, wc.MEMORY["sample_seconds"])
+    GUARD["stopping"] = False
+    GUARD["late_signals"] = []
+
+    def handler(signum, _frame):
+        utc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        name = signal.Signals(signum).name
+        if GUARD["stopping"]:
+            GUARD["late_signals"].append({"signal": name, "utc": utc})
+            return
+        GUARD["stopping"] = True
+        reason = watch.reason if signum == signal.SIGUSR1 else f"received {name}"
+        raise StageInterrupted(f"{reason} ({name})", utc)
+
+    for s in (*STOP_SIGNALS, signal.SIGUSR1):
+        signal.signal(s, handler)
+    watch.start()
+    return watch
+
+
+def void(report: dict, error: BaseException) -> None:
+    """Record a V: the reason, the traceback and, for a signal, its time."""
+    stop_handling()
+    report["outcome"] = "V"
+    if isinstance(error, StageInterrupted):
+        report["void_reason"] = f"StageInterrupted: {error.reason}"
+        report["interrupted_utc"] = error.utc
+    else:
+        report["void_reason"] = f"{type(error).__name__}: {error}"
+    report["traceback"] = traceback.format_exc()
+    log(f"VOID: {report['void_reason']}")
+
+
+def finish_guards(report: dict, watch: MemoryWatch, pool) -> None:
+    """The first statements of every runner's ``finally`` (reviewer B2): stop raising on signals,
+    record a signal that interrupted the except clause itself, close the pool within its bound and
+    record the memory summary and any late signals."""
+    stop_handling()
+    error = sys.exc_info()[1]
+    if isinstance(error, StageInterrupted) and report.get("outcome") != "V":
+        void(report, error)
+    if pool is not None:
+        pool.close()
+    watch.stop()
+    report["memory"] = watch.summary()
+    if GUARD["late_signals"]:
+        report["signals_during_cleanup"] = list(GUARD["late_signals"])
+
+
+def check_memory_available(report: dict, kind: str) -> None:
+    """G-memory at the start (the GO rule): MemAvailable >= ceiling + headroom."""
+    available = mem_available_bytes()
+    report["mem_available_at_start_gib"] = available / GIB
+    need = (wc.MEMORY["ceiling_gib"] + wc.MEMORY["headroom_gib"]) * GIB
+    if available < need and kind != "smoke":
+        raise wc.GuardError(
+            f"G-memory: MemAvailable {available / GIB:.1f} GiB < {need / GIB:.0f} GiB at start"
+        )
 
 
 # ----- preflight ----------------------------------------------------------------------------------
@@ -126,6 +378,7 @@ def preflight(report: dict, mode: str, evidence: Path) -> dict:
         and load[1] <= wc.QUIET_MACHINE["max_load_average_5min"]
     )
     report["quiet_machine"] = bool(quiet)
+    check_memory_available(report, mode)
     if not quiet and mode != "smoke":  # G-quiet: before any render, so a repeat is free
         raise wc.GuardError(f"G-quiet: load averages {load[:2]} exceed the quiet-machine rule")
     if not devices.available("cuda"):
@@ -208,7 +461,8 @@ def refit_p_readout(report: dict, pool: Pool, evidence: Path, run1: dict):
                 "plate_xy": list(map(float, r["plate_xy"])),
             }
             frame_tasks.append({"kind": "frame", "seed": seed, "reset": reset, "role": role})
-    rendered = pool.map(frame_tasks, 1800.0, "re-render")
+    rendered, disagreements = render_majority(pool, frame_tasks, 1800.0, "re-render")
+    report["stages"]["rerender_disagreements"] = disagreements
     frames = {role: [] for role in ("perception_train", "perception_heldout", "D")}
     for task, out in zip(frame_tasks, rendered, strict=True):
         frames[task["role"]].append(out)
@@ -252,26 +506,77 @@ def refit_p_readout(report: dict, pool: Pool, evidence: Path, run1: dict):
     return readouts["P"], pretrained
 
 
+def render_majority(pool: Pool, tasks: list[dict], cap: float, what: str):
+    """Every frame task rendered twice, in separate tasks; where the two differ (the renderer's
+    rare one-level pixel differences, protocol §15) a third render decides by majority. A vote is
+    allowed only when (a) the whole simulation state of the three renders is bitwise equal and
+    (b) every odd frame differs from the majority frame by at most one level in at most
+    ``wc.RENDER["max_pixels"]`` pixels (owner ruling 2026-09-29); otherwise, or with no majority,
+    it is a V. Returns the chosen outputs in task order and every disagreement with its pixel
+    differences."""
+    rendered = pool.map(tasks + tasks, cap, f"{what} (two renders each)")
+    first, second = rendered[: len(tasks)], rendered[len(tasks) :]
+    chosen, disagreements = [], {}
+    for task, a, b in zip(tasks, first, second, strict=True):
+        if a["post_look_frame_sha256"] == b["post_look_frame_sha256"]:
+            if a["state_sha256"] != b["state_sha256"]:
+                raise wc.GuardError(f"G-frame: seed {task['seed']} same frame, different state")
+            chosen.append(a)
+            continue
+        c = pool.map([task], cap, f"{what} (third render)")[0]
+        trio = (a, b, c)
+        shas = [f["post_look_frame_sha256"] for f in trio]
+        states = {f["state_sha256"] for f in trio}
+        winner = next((f for f in trio if shas.count(f["post_look_frame_sha256"]) >= 2), None)
+        record = {"frames": shas, "states_equal": len(states) == 1}
+        if winner is not None:
+            record["odd"] = [
+                wc.frame_difference(f["frame"], winner["frame"])
+                for f in trio
+                if f["post_look_frame_sha256"] != winner["post_look_frame_sha256"]
+            ]
+        disagreements[str(task["seed"])] = record
+        if len(states) != 1:
+            raise wc.GuardError(
+                f"G-frame: seed {task['seed']} renders disagree and the state differs: {record}"
+            )
+        if winner is None:
+            raise wc.GuardError(f"G-frame: seed {task['seed']} has no majority: {record}")
+        if not all(wc.render_difference_allowed(d) for d in record["odd"]):
+            raise wc.GuardError(
+                f"G-frame: seed {task['seed']} odd render beyond the characterised effect: {record}"
+            )
+        chosen.append(winner)
+    return chosen, disagreements
+
+
 def cohort_estimates(pool: Pool, readout, encoder, seeds, resets, cap: float) -> dict:
-    """Post-look frames of a cohort (stored resets) and P-3's post-look estimates from them."""
+    """Post-look frames of a cohort (stored resets) and P-3's post-look estimates from them.
+
+    Each frame is rendered twice, in separate tasks; if the two disagree (the renderer's rare
+    one-level pixel differences, protocol §15), a third render decides by majority, and no
+    majority is a V. The disagreements are recorded (``_render_disagreements``)."""
     from embodied_jepa import first_policy_perception as fpp
 
-    frames = pool.map(
-        [{"kind": "frame", "seed": s, "reset": resets[s]} for s in seeds], cap, "cohort frames"
-    )
+    tasks = [{"kind": "frame", "seed": s, "reset": resets[s]} for s in seeds]
+    frames, disagreements = render_majority(pool, tasks, cap, "cohort frames")
     for s, f in zip(seeds, frames, strict=True):
         if f["seed"] != s:
             raise wc.GuardError("G-cohort: a rendered frame is not its seed's")
     tokens = np.concatenate([fpp.featurise(encoder, f["frame"][None]) for f in frames])
     estimates = readout.predict(tokens)
-    return {
+    out = {
         s: {
             "estimates": estimates[i].tolist(),
             "frame_sha256": frames[i]["post_look_frame_sha256"],
+            "state_sha256": frames[i]["state_sha256"],
             "truth_xy": frames[i]["truth_xy"],
         }
         for i, s in enumerate(seeds)
     }
+    if disagreements:
+        out["_render_disagreements"] = disagreements
+    return out
 
 
 def arm_tasks(arm: str, seeds, resets, estimates, shift_of, **extra) -> list[dict]:
@@ -284,6 +589,7 @@ def arm_tasks(arm: str, seeds, resets, estimates, shift_of, **extra) -> list[dic
             "shift": shift_of(s),
             "estimates": estimates[s]["estimates"],
             "expected_frame_sha256": estimates[s]["frame_sha256"],
+            "expected_state_sha256": estimates[s]["state_sha256"],
         }
         | (extra.get("per_seed", lambda s: {})(s))
         | {k: v for k, v in extra.items() if k != "per_seed"}
@@ -292,9 +598,15 @@ def arm_tasks(arm: str, seeds, resets, estimates, shift_of, **extra) -> list[dic
 
 
 def strip(records: list[dict]) -> list[dict]:
-    """Per-attempt facts for the report (commands, latents and timings summarised)."""
+    """Per-attempt facts for the report (commands hashed; latents and timings summarised)."""
     out = []
     for r in records:
+        if "commands" in r:
+            r = r | {
+                "commands_sha256": R65.sha256_bytes(
+                    np.ascontiguousarray(np.asarray(r["commands"], np.float32)).tobytes()
+                )
+            }
         item = {
             k: v
             for k, v in r.items()
@@ -355,11 +667,12 @@ def successes(records) -> list[bool]:
 # ----- K0 -----------------------------------------------------------------------------------------
 def stage_k0(report, manifest, evidence, clock, smoke=False):
     resets, seeds = cohort(manifest, "K0", smoke)
-    pool = Pool(wc.SIM_WORKERS, {"p3_checkpoint": p3_checkpoint(evidence), "torch_threads": 1})
+    pool = Pool(sim_workers(), {"p3_checkpoint": p3_checkpoint(evidence), "torch_threads": 1})
     report["_pool"] = pool
     readout, encoder = refit_p_readout(report, pool, evidence, report["_run1"])
     report["cohort_first_render_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     est = cohort_estimates(pool, readout, encoder, seeds, resets, 1800.0)
+    report["stages"]["render_disagreements"] = est.pop("_render_disagreements", {})
     cells = {}
     chosen = None
     o5 = None
@@ -436,7 +749,11 @@ def stage_train(report, manifest, evidence, clock, args):
     device = "cuda"
     encoder = pe.load_pretrained()
     band = wc.FEATURE_BAND
-    table = off.Table()
+    n_roots = sum(
+        len(rd.manifest["splits"][sp])
+        for rd, sp in ((reader, "train"), (reader, "val"), (look, "train"), (look, "val"))
+    )
+    table = off.Table(capacity=n_roots * (band[1] - band[0] + 1))
     rmid_rows = {"train": [], "val": []}
     anchor_frames, anchor_rows = [], []
     started = time.monotonic()
@@ -499,6 +816,11 @@ def stage_train(report, manifest, evidence, clock, args):
         np.stack([r[2] for r in rmid_rows["train"]]),
         [r[0] for r in rmid_rows["train"]],
     )
+    # The train stage's outcome boundary (reviewer N3; protocol §15.3): everything before this
+    # point is fitted on train data only; from here on, numbers on the val roots are computed
+    # (R-mid's val error, the blind baselines, the budget curves, O1, O2). A V before it may be
+    # repeated as-is; a V after it uses the stage's one repeat.
+    report["first_outcome_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     val_err = 100 * np.linalg.norm(
         r_mid.predict(tok["val"]) - np.stack([r[2] for r in rmid_rows["val"]]), axis=1
     )
@@ -668,6 +990,7 @@ def closed_loop(
     readout, encoder = refit_p_readout(report, pool, evidence, report["_run1"])
     report["cohort_first_render_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     est = cohort_estimates(pool, readout, encoder, seeds, resets, 1800.0)
+    report["stages"]["render_disagreements"] = est.pop("_render_disagreements", {})
 
     def shift_of(s):
         if shift is None:
@@ -712,7 +1035,7 @@ def stage_d3(report, manifest, evidence, clock, args):
         wc.D3_ARMS,
         offline["critic"],
         shift,
-        wc.H_WORKERS,
+        h_workers(),
         smoke=args.smoke,
     )
     counts = {arm: sum(successes(r)) for arm, r in records.items()}
@@ -762,6 +1085,47 @@ def gpu_snapshot() -> str:
         return f"unavailable: {error}"
 
 
+def render_check_verdict(tasks: list[dict], rendered: list[dict]) -> dict:
+    """The GO render check (owner ruling 2026-09-29, "Yes, count it as a pass"): IDENTICAL when
+    every seed's renders agree; MAJORITY-PASS when every seed has a majority frame and every odd
+    render has the same simulation state and differs from it by at most one level in at most
+    ``wc.RENDER["max_pixels"]`` pixels (these count as a pass, and are listed in the GO comment);
+    DIFFERENT otherwise (the owner decides)."""
+    by_seed: dict = {}
+    for t, o in zip(tasks, rendered, strict=True):
+        by_seed.setdefault(t["seed"], []).append(o)
+    odd, failing = {}, []
+    for seed, outs in by_seed.items():
+        shas = [o["post_look_frame_sha256"] for o in outs]
+        top = max(set(shas), key=shas.count)
+        if len(set(shas)) == 1:
+            continue
+        ref = next(o for o in outs if o["post_look_frame_sha256"] == top)
+        entries = [
+            {
+                "sha256": o["post_look_frame_sha256"],
+                "same_state": o["state_sha256"] == ref["state_sha256"],
+            }
+            | wc.frame_difference(o["frame"], ref["frame"])
+            for o in outs
+            if o["post_look_frame_sha256"] != top
+        ]
+        odd[str(seed)] = entries
+        if shas.count(top) <= len(shas) // 2 or not all(
+            e["same_state"] and wc.render_difference_allowed(e) for e in entries
+        ):
+            failing.append(seed)
+    verdict = "IDENTICAL" if not odd else "DIFFERENT" if failing else "MAJORITY-PASS"
+    return {
+        "verdict": verdict,
+        "passes_go": verdict in ("IDENTICAL", "MAJORITY-PASS"),
+        "seeds_with_differing_renders": len(odd),
+        "odd_renders": sum(len(v) for v in odd.values()),
+        "odd": odd,
+        "failing_seeds": failing,
+    }
+
+
 def stage_smoke(report, manifest, evidence, clock, args):
     """Render check at 16 workers, the proposal generator, a small smoke corpus, two identical
     W trainings on strict CUDA, and decision latency with GR00T resident; smoke seeds only."""
@@ -775,7 +1139,7 @@ def stage_smoke(report, manifest, evidence, clock, args):
     for s in all_seeds:
         resets[s]["shift_m"] = {str(m): wc.shift_vector(s, resets[s], m) for m in wc.SHIFT_GRID_CM}
     config = {"p3_checkpoint": p3_checkpoint(evidence), "torch_threads": 1}
-    pool = Pool(wc.SIM_WORKERS, config)
+    pool = Pool(sim_workers(), config)
     report["_pool"] = pool
     readout, encoder = refit_p_readout(report, pool, evidence, report["_run1"])
 
@@ -790,14 +1154,10 @@ def stage_smoke(report, manifest, evidence, clock, args):
         for s in seeds
     ]
     rendered = pool.map(tasks, 1800.0, "render check")
-    shas: dict = {}
-    for t, o in zip(tasks, rendered, strict=True):
-        shas.setdefault(t["seed"], set()).add(o["post_look_frame_sha256"])
-    report["stages"]["render_check"] = {
-        "workers": wc.SIM_WORKERS,
+    report["stages"]["render_check"] = render_check_verdict(tasks, rendered) | {
+        "workers": sim_workers(),
         "renders": len(tasks),
         "seeds": len(seeds),
-        "verdict": "IDENTICAL" if all(len(v) == 1 for v in shas.values()) else "DIFFERENT",
     }
     # (2) the proposal generator on P-truth attempts with the shift
     p_seeds = all_seeds[: SMOKE["proposal_seeds"]]
@@ -945,6 +1305,10 @@ def stage_smoke(report, manifest, evidence, clock, args):
         "determinism": devices.determinism_state(),
         "cuda_memory": devices.memory_report("cuda"),
     }
+    del ctx, table  # memory: the smoke's feature table is not needed for the latency part
+    import gc
+
+    gc.collect()
     # (4) decision latency with the GPU's other resident service, H-LeWM on the H-arm layout
     snapshot_before = gpu_snapshot()
     critic_files = {
@@ -953,7 +1317,7 @@ def stage_smoke(report, manifest, evidence, clock, args):
         "models": {"W0": runs[0]["checkpoint"], "N": runs[0]["checkpoint"]},
     }
     lpool = Pool(
-        wc.H_WORKERS,
+        h_workers(),
         {"p3_checkpoint": p3_checkpoint(evidence), "torch_threads": wc.H_WORKER_TORCH_THREADS}
         | critic_files,
     )
@@ -965,7 +1329,7 @@ def stage_smoke(report, manifest, evidence, clock, args):
     )
     seconds = [d["seconds"] for r in lrecs for d in r["decisions"]]
     report["stages"]["latency"] = {
-        "workers": wc.H_WORKERS,
+        "workers": h_workers(),
         "torch_threads": wc.H_WORKER_TORCH_THREADS,
         "decisions": len(seconds),
         "median_seconds": float(np.median(seconds)) if seconds else None,
@@ -992,17 +1356,19 @@ def run(args) -> dict:
         "mode": args.mode,
         "smoke": bool(args.smoke or args.mode == "smoke"),
         "outcome": None,
+        "workers": {"sim": sim_workers(), "h": h_workers()},
         "stages": {},
         "paths": {"output": str(output), "evidence": str(evidence)},
         "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     clock = R65.Clock(wc.CAPS_SECONDS["global"])
+    watch = install_guards()
     try:
         kind = "smoke" if report["smoke"] else args.mode  # a stage smoke may run on a dirty tree
         manifest = preflight(report, kind, evidence)
         if args.mode == "preflight":
             pool = Pool(
-                wc.SIM_WORKERS, {"p3_checkpoint": p3_checkpoint(evidence), "torch_threads": 1}
+                sim_workers(), {"p3_checkpoint": p3_checkpoint(evidence), "torch_threads": 1}
             )
             report["_pool"] = pool
             refit_p_readout(report, pool, evidence, report["_run1"])
@@ -1027,15 +1393,10 @@ def run(args) -> dict:
                 report["outcome"] = value
             else:
                 report["stages"][key] = value
-    except Exception as error:  # noqa: BLE001 - every failure is V, and the report is written
-        report["outcome"] = "V"
-        report["void_reason"] = f"{type(error).__name__}: {error}"
-        report["traceback"] = traceback.format_exc()
-        log(f"VOID: {report['void_reason']}")
+    except BaseException as error:  # noqa: BLE001 - every failure, signal included, is V
+        void(report, error)
     finally:
-        pool = report.pop("_pool", None)
-        if pool is not None:
-            pool.close()
+        finish_guards(report, watch, report.pop("_pool", None))
         reader = report.pop("_reader", None)
         if reader is not None:
             report["decoded_episodes"] = len(reader.decoded)
@@ -1069,7 +1430,17 @@ def main(argv=None) -> int:
         action="store_true",
         help="k0 / train / d3 on smoke seeds with tiny budgets (mechanics only; nothing is read)",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="smoke only: override every pool's worker count (the equivalence check)",
+    )
     args = parser.parse_args(argv)
+    if args.workers is not None:
+        if not (args.smoke or args.mode == "smoke") or not 1 <= args.workers <= 6:
+            parser.error("--workers is for smoke runs only, from 1 to 6")
+        WORKERS_OVERRIDE.update({"sim": args.workers, "h": args.workers})
     if args.smoke and args.mode not in ("k0", "train", "d3"):
         parser.error("--smoke is for the k0, train and d3 stages (the smoke mode is its own)")
     need = {

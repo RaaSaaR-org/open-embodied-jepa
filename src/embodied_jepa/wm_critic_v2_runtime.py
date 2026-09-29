@@ -17,6 +17,7 @@ NumPy at import; MuJoCo and torch are imported by ``worker_init``.
 from __future__ import annotations
 
 import hashlib
+import os
 import time
 from pathlib import Path
 
@@ -55,6 +56,24 @@ def frame_sha(frame) -> str:
     return hashlib.sha256(np.ascontiguousarray(frame, np.uint8).tobytes()).hexdigest()
 
 
+def state_sha(robot) -> str:
+    """sha256 of the whole simulation state: qpos, qvel, act, ctrl and time (RENDER["state"])."""
+    d = robot.sim.data
+    digest = hashlib.sha256()
+    for part in (d.qpos, d.qvel, d.act, d.ctrl, np.asarray([d.time])):
+        digest.update(np.ascontiguousarray(part, np.float64).tobytes())
+    return digest.hexdigest()
+
+
+def reset_worker_signals() -> None:
+    """Workers take the default signal dispositions (reviewer B1): an ignored disposition set in
+    the parent must never reach a respawned worker, or pool.terminate() cannot stop it."""
+    import signal
+
+    for s in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGUSR1):
+        signal.signal(s, signal.SIG_DFL)
+
+
 def truth_xy(truth) -> list[float]:
     return [float(v) for v in (*truth["object_position"][:2], *truth["plate_position"][:2])]
 
@@ -65,8 +84,8 @@ def worker_init(config: dict) -> None:
     import torch
 
     from embodied_jepa import first_policy_v2_model as fm2
-    from embodied_jepa import pretrained_encoder as pe
 
+    reset_worker_signals()
     torch.set_num_threads(int(config.get("torch_threads", fp2.WORKER_TORCH_THREADS)))
     _W["config"] = dict(config)
     _W["robot"] = rt2.make_robot()
@@ -77,8 +96,8 @@ def worker_init(config: dict) -> None:
     _W["p3"] = (model, rt2.Standardiser(saved["mean"].numpy(), saved["std"].numpy()))
     _W["predict"] = fm2.predictor(model)
     _W["policy"] = hs.P3Policy(model, _W["p3"][1], _W["fk"])
-    _W["encoder"] = pe.load_pretrained()
-    _W["standin"] = hs.KinematicStandIn(_W["bounds"])
+    # The frozen DINOv2 encoder and the kinematic stand-in are loaded on first use (memory: a
+    # K0 or corpus worker needs neither; TASK-073 K0 run-1 V, protocol §15).
     _W["perturber"] = load_perturber()
     _W["cache"] = {}
 
@@ -92,6 +111,20 @@ def load_perturber():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.Perturber
+
+
+def encoder():
+    from embodied_jepa import pretrained_encoder as pe
+
+    if "encoder" not in _W:
+        _W["encoder"] = pe.load_pretrained()
+    return _W["encoder"]
+
+
+def standin():
+    if "standin" not in _W:
+        _W["standin"] = hs.KinematicStandIn(_W["bounds"])
+    return _W["standin"]
 
 
 def _readout(name: str):
@@ -160,7 +193,7 @@ def _controller(task: dict, truth: dict):
         return rt2.LearnedController(*common)
     if arm == "P-reread":
         return hs.HybridController(
-            *common, variant="reread", encoder=_W["encoder"], r_mid=_readout("r_mid")
+            *common, variant="reread", encoder=encoder(), r_mid=_readout("r_mid")
         )
     if arm in CRITIC_ARMS:
         variant = "shuf" if arm == "H-shuf" else "critic"
@@ -171,10 +204,10 @@ def _controller(task: dict, truth: dict):
             *common,
             variant=variant,
             policy=_W["policy"],
-            encoder=_W["encoder"],
+            encoder=encoder(),
             r_mid=_readout("r_mid"),
             critic=critic(CRITIC_ARMS[arm]),
-            standin=_W["standin"],
+            standin=standin(),
             foreign_latents=foreign,
         )
     if arm == "H-rand":
@@ -182,7 +215,7 @@ def _controller(task: dict, truth: dict):
         return hs.HybridController(
             *common,
             variant="rand",
-            encoder=_W["encoder"],
+            encoder=encoder(),
             r_mid=_readout("r_mid"),
             rng_seed=int(seed.generate_state(1)[0]),
         )
@@ -192,7 +225,7 @@ def _controller(task: dict, truth: dict):
             *common,
             switch_step=int(shift["step"]) if shift else 0,
             plate_xy=plate_at(10**9),
-            standin=_W["standin"] if log else None,
+            standin=standin() if log else None,
             policy=_W["policy"] if log else None,
         )
     if arm == "H-sim":
@@ -204,7 +237,7 @@ def _controller(task: dict, truth: dict):
         else:
 
             def centre(observation, step):  # noqa: ARG001
-                tokens, _ = hs.encode_frame(_W["encoder"], observation.images[fp2.CAMERA][0])
+                tokens, _ = hs.encode_frame(encoder(), observation.images[fp2.CAMERA][0])
                 return _readout("r_mid").predict(tokens)
 
         return ss.SimSelector(*common, robot=robot, centre=centre, plate_at=plate_at)
@@ -250,12 +283,12 @@ def run_attempt_task(task: dict) -> dict:
             float(v) for v in (*truth["object_position"][:2], *truth["plate_position"][:2])
         ],
     }
-    if task.get("expected_frame_sha256") and (
-        out["post_look_frame_sha256"] != task["expected_frame_sha256"]
-    ):
+    try:
+        out["render_retries"] = check_post_look_frame(robot, task, facts["post_look_frame"])
+    except wc.GuardError:
         counter.remove()
         robot.stop("frame_mismatch")
-        raise wc.GuardError(f"G-frame: seed {task['seed']} post-look frame differs")
+        raise
     shift = task.get("shift")
     hook = ps.PlateShift(robot, int(shift["step"]), shift["vector"]) if shift else None
     try:
@@ -312,15 +345,59 @@ def run_attempt_task(task: dict) -> dict:
     return out
 
 
+RENDER_RETRIES = wc.RENDER["retries"]
+
+
+def check_post_look_frame(robot, task: dict, observed_frame) -> dict:
+    """G-frame, with the render-only retry (protocol §15; owner ruling 2026-09-29): the attempt's
+    post-look frame must be bitwise the frame its estimates came from. On a mismatch the same state
+    is rendered again, at most ``RENDER["retries"]`` times, and the attempt proceeds only if (a) the
+    whole simulation state equals the state the cohort frame was rendered from (and is unchanged by
+    the re-renders), (b) a re-render matches bitwise, and (c) the odd frame differs from it by at
+    most one level in at most ``RENDER["max_pixels"]`` pixels. Returns the record (empty when
+    there was no mismatch); anything else is a V with the differences in its message."""
+    expected = task.get("expected_frame_sha256")
+    observed = frame_sha(observed_frame)
+    if not expected or observed == expected:
+        return {}
+    before = state_sha(robot)
+    record = {"odd_sha256": observed, "state_sha256": before, "re_renders": []}
+    if task.get("expected_state_sha256") and before != task["expected_state_sha256"]:
+        raise wc.GuardError(
+            f"G-frame: seed {task['seed']} post-look frame differs and so does the simulation "
+            f"state ({before[:12]} != {task['expected_state_sha256'][:12]})"
+        )
+    for _ in range(RENDER_RETRIES):
+        frame = robot.sim.render()
+        sha = frame_sha(frame)
+        diff = wc.frame_difference(observed_frame, frame)
+        record["re_renders"].append({"sha256": sha, **diff})
+        if sha == expected:
+            if state_sha(robot) != before:
+                raise wc.GuardError("G-frame: the simulation state changed while re-rendering")
+            if not wc.render_difference_allowed(diff):
+                raise wc.GuardError(
+                    f"G-frame: seed {task['seed']} odd frame differs by {diff} (beyond the "
+                    f"renderer's characterised effect)"
+                )
+            return record
+    raise wc.GuardError(
+        f"G-frame: seed {task['seed']} post-look frame differs after {RENDER_RETRIES} re-renders "
+        f"({record}, expected {expected[:12]}, worker {os.getpid()})"
+    )
+
+
 def run_frame_task(task: dict) -> dict:
     robot = _W["robot"]
     truth, _scorer, counter, _obs, facts = rt2.reset_and_look(robot, task["seed"], task["reset"])
     counter.remove()
+    post_look_state_sha = state_sha(robot)  # before stop(), which zeroes ctrl
     robot.stop("frame_only")
     return {
         "seed": task["seed"],
         "frame": facts["post_look_frame"],
         "post_look_frame_sha256": frame_sha(facts["post_look_frame"]),
+        "state_sha256": post_look_state_sha,
         "post_look_state": facts["post_look_state"].tolist(),
         "truth_xy": [
             float(v) for v in (*truth["object_position"][:2], *truth["plate_position"][:2])
@@ -494,6 +571,7 @@ def run_rank_task(task: dict) -> dict:
     robot = _W["robot"]
     truth, scorer, counter, _obs, facts = rt2.reset_and_look(robot, task["seed"], task["reset"])
     counter.remove()  # the branches read truth for scoring by design; no controller is scored
+    render_retries = check_post_look_frame(robot, task, facts["post_look_frame"])
     shift = task["shift"]
     plate_at = plate_schedule(task["reset"], shift)
     hook = ps.PlateShift(robot, int(shift["step"]), shift["vector"])
@@ -505,7 +583,7 @@ def run_rank_task(task: dict) -> dict:
         _W["fk"],
         _W["bounds"],
         variant="reread",
-        encoder=_W["encoder"],
+        encoder=encoder(),
         r_mid=_readout("r_mid"),
     )
     brancher = ss.Brancher(robot)
@@ -516,13 +594,13 @@ def run_rank_task(task: dict) -> dict:
         for step in range(max(points) + 1):
             observation = robot.observe()
             if step in points:
-                tokens, pooled = hs.encode_frame(_W["encoder"], observation.images[fp2.CAMERA][0])
+                tokens, pooled = hs.encode_frame(encoder(), observation.images[fp2.CAMERA][0])
                 incumbent = np.asarray(_readout("r_mid").predict(tokens), np.float64)
                 aims = wc.candidate_aims(incumbent)
                 estimates = np.concatenate(
                     (np.repeat(main.estimates[None, :2], wc.K, axis=0), aims), axis=1
                 )
-                _req, applied, feasible = _W["standin"].chunks(
+                _req, applied, feasible = standin().chunks(
                     _W["policy"],
                     rt2.state_of(observation),
                     step,
@@ -567,9 +645,22 @@ def run_rank_task(task: dict) -> dict:
     return {
         "seed": task["seed"],
         "post_look_frame_sha256": frame_sha(facts["post_look_frame"]),
+        "render_retries": render_retries,
         "groups": groups,
         "shift_applied": hook.applied,
     }
+
+
+def probe_init(config: dict) -> None:
+    """A light worker initializer for the harness's signal and worker-death tests: the same signal
+    reset as ``worker_init``, nothing else."""
+    reset_worker_signals()
+
+
+def probe_task(task: dict) -> dict:
+    """Sleeps (harness tests only); never used by a stage."""
+    time.sleep(float(task.get("seconds", 1.0)))
+    return {"seed": task.get("seed"), "pid": os.getpid()}
 
 
 def run_task(task: dict) -> dict:
