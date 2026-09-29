@@ -42,7 +42,7 @@ def _load_script(name: str, relative: str):
 
 # ----- the frozen block, the pins and the stored cohorts ------------------------------------------
 # A literal: the gated-stage authorisation PR may not change it (AUTHORISATION_SCOPE).
-FROZEN_SHA256 = "f476eb9a6a3fe965d9a8ef012d13c28d83758201242586bd57747b8e5fc01b5e"
+FROZEN_SHA256 = "cd9e8723f8afa71c9db73f8b326b20099763743798e95f3ba3369fbfa7344f83"
 
 
 def test_frozen_hash_is_the_preregistered_literal():
@@ -774,3 +774,140 @@ def test_o4_chooses_on_stand_in_feasibility_only():
     )
     worst = np.nanmax(true) - np.nanmin(true)
     assert stats["W0"]["O4"]["regret_w"]["median"] == pytest.approx(worst)
+
+
+# ----- memory and signals (K0 run-1 V, protocol §15) ----------------------------------------------
+def test_memory_fields_and_worker_counts_are_frozen():
+    assert wc.MEMORY["ceiling_gib"] == 12.0 and wc.MEMORY["headroom_gib"] == 4.0
+    assert wc.SIM_WORKERS == 6 and wc.H_WORKERS == 4 and wc.H_WORKER_TORCH_THREADS == 4
+    frozen = wc.frozen_block()
+    assert frozen["memory"] == json.loads(json.dumps(wc.MEMORY))
+    assert frozen["sim_workers"] == 6
+
+
+def test_process_tree_rss_counts_children():
+    pytest.importorskip("torch")
+    import subprocess
+    import sys
+
+    runner = _load_script("_run_wm_critic_v2_rss", "scripts/run_wm_critic_v2.py")
+    alone = runner.process_tree_rss_bytes()
+    child = subprocess.Popen(
+        [sys.executable, "-c", "import time; x = bytearray(200 * 2**20); time.sleep(20)"]
+    )
+    try:
+        import time
+
+        for _ in range(100):
+            time.sleep(0.1)
+            per: dict = {}
+            total = runner.process_tree_rss_bytes(per=per)
+            if per.get(child.pid, 0) > 150 * 2**20:
+                break
+        assert child.pid in per and total > alone + 150 * 2**20
+    finally:
+        child.kill()
+    assert runner.mem_available_bytes() > 0
+
+
+_SIGNAL_CHILD = """
+import importlib.util, json, sys, time, types
+from pathlib import Path
+spec = importlib.util.spec_from_file_location(
+    "_r", Path(sys.argv[1]) / "scripts/run_wm_critic_v2.py"
+)
+runner = importlib.util.module_from_spec(spec); spec.loader.exec_module(runner)
+out = Path(sys.argv[2])
+if sys.argv[3] == "memory":
+    runner.wc.MEMORY["ceiling_gib"] = 1e-3  # any process exceeds it: the guard must fire
+def slow_preflight(report, kind, evidence):
+    (out.parent / "ready").write_text("1")
+    time.sleep(60)
+runner.preflight = slow_preflight
+args = types.SimpleNamespace(output=str(out), evidence=".", mode="preflight", smoke=False,
+                             workers=None)
+report = runner.run(args)
+sys.exit(0 if report["outcome"] != "V" else 3)
+"""
+
+
+@pytest.mark.parametrize("how", ["SIGTERM", "SIGINT", "SIGHUP", "memory"])
+def test_a_stop_signal_or_the_memory_ceiling_writes_the_v_report(tmp_path, how):
+    pytest.importorskip("torch")
+    import signal
+    import subprocess
+    import sys
+    import time
+
+    out = tmp_path / "run"
+    child = subprocess.Popen([sys.executable, "-c", _SIGNAL_CHILD, str(ROOT), str(out), how])
+    try:
+        for _ in range(600):
+            if (tmp_path / "ready").exists() or child.poll() is not None:
+                break
+            time.sleep(0.1)
+        if how != "memory":
+            time.sleep(1.5)  # let the memory watch take a few samples first
+            child.send_signal(getattr(signal, how))
+        assert child.wait(timeout=60) == 3
+    finally:
+        if child.poll() is None:
+            child.kill()
+    report = json.loads((out / "report.json").read_text())
+    assert report["outcome"] == "V"
+    if how == "memory":
+        assert "G-memory" in report["void_reason"] and "SIGUSR1" in report["void_reason"]
+    else:
+        assert f"received {how}" in report["void_reason"]
+    assert report["interrupted_utc"].endswith("Z")
+    assert report["memory"]["peak_tree_rss_gib"] > 0
+
+
+class _FakeRenderer:
+    """A robot whose sim.render returns queued frames (for the render-only retry)."""
+
+    def __init__(self, frames):
+        self.frames = list(frames)
+        self.sim = self
+
+    def render(self):
+        return self.frames.pop(0)
+
+
+def test_g_frame_retries_the_render_only_and_refuses_a_persistent_mismatch():
+    from embodied_jepa import wm_critic_v2_runtime as rtm
+
+    good = np.zeros((112, 112, 3), np.uint8)
+    glitch = good.copy()
+    glitch[5, 5, 0] = 1  # the renderer's one-level difference
+    task = {"seed": 53999, "expected_frame_sha256": rtm.frame_sha(good)}
+    assert rtm.check_post_look_frame(_FakeRenderer([]), task, rtm.frame_sha(good)) == []
+    retries = rtm.check_post_look_frame(_FakeRenderer([good]), task, rtm.frame_sha(glitch))
+    assert retries == [rtm.frame_sha(glitch), rtm.frame_sha(good)]
+    with pytest.raises(wc.GuardError, match="after 2 re-renders"):
+        rtm.check_post_look_frame(_FakeRenderer([glitch, glitch]), task, rtm.frame_sha(glitch))
+
+
+def test_render_majority_resolves_a_single_odd_render_and_refuses_three_different():
+    pytest.importorskip("torch")
+    runner = _load_script("_run_wm_critic_v2_major", "scripts/run_wm_critic_v2.py")
+
+    class FakePool:
+        def __init__(self, shas):
+            self.shas = list(shas)
+
+        def map(self, tasks, cap, what):
+            return [{"seed": t["seed"], "post_look_frame_sha256": self.shas.pop(0)} for t in tasks]
+
+    tasks = [{"kind": "frame", "seed": 53998}, {"kind": "frame", "seed": 53999}]
+    chosen, odd = runner.render_majority(FakePool(["a", "b", "a", "c", "b"]), tasks, 1, "x")
+    assert [c["post_look_frame_sha256"] for c in chosen] == ["a", "b"]
+    assert odd == {"53999": ["b", "c", "b"]}
+    with pytest.raises(wc.GuardError, match="no majority"):
+        runner.render_majority(FakePool(["a", "b", "c"]), tasks[:1], 1, "x")
+
+
+def test_the_corpus_stage_records_its_first_render_and_rank_uses_the_h_layout():
+    text = (ROOT / "scripts" / "collect_apple_shift_v2.py").read_text()
+    assert text.index('report["cohort_first_render_utc"]') < text.index("records = pool.map(tasks")
+    assert "RUN.h_workers()" in (ROOT / "scripts" / "rank_wm_critic_v2.py").read_text()

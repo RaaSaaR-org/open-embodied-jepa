@@ -826,8 +826,14 @@
    "machine": "x86_64",
    "mujoco_gl": "egl"
   },
-  "sim_workers": 16,
+  "sim_workers": 6,
   "h_workers": 4,
+  "memory": {
+   "ceiling_gib": 12.0,
+   "headroom_gib": 4.0,
+   "sample_seconds": 0.5,
+   "measure": "summed VmRSS of the runner and all its descendants (/proc), sampled every 0.5 s"
+  },
   "h_worker_torch_threads": 4,
   "devices": {
    "simulation": "cpu",
@@ -859,7 +865,7 @@
    "harm rule": "Harm also closes the line (Recommended)"
   }
  },
- "frozen_sha256": "f476eb9a6a3fe965d9a8ef012d13c28d83758201242586bd57747b8e5fc01b5e",
+ "frozen_sha256": "cd9e8723f8afa71c9db73f8b326b20099763743798e95f3ba3369fbfa7344f83",
  "cohorts": {
   "K0": {
    "seeds": [
@@ -5459,14 +5465,14 @@
   "benchmarks/manifests/apple-token-dynamics-v1.json": "2191d57e869810aeb0601cdc85308d94dcd750782bac9596f0a78b0ea2fbdc38",
   "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
-  "docs/experiments/apple_wm_critic_v2.md": "7103ad4975ec1f8334f8946f512b05c51fa3b60a8a160e87bf100f234108a63e",
-  "scripts/collect_apple_shift_v2.py": "3670dd9d34805429b453eecde6d57358238880ffe67cd9e8ea5dc810f098cba4",
+  "docs/experiments/apple_wm_critic_v2.md": "68e2da07d03f37e66abe29a3e2abbde9c3c8eb0834bba534c9b4cf751b82e8d5",
+  "scripts/collect_apple_shift_v2.py": "8b3654d341e45f4174624ee4af872e682d805d4255c389291662662b67fbdd8b",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
   "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
-  "scripts/rank_wm_critic_v2.py": "d0ef94185b8cc84939fffe592cf387b4a3c03b785cd23f095f118baf0df87767",
+  "scripts/rank_wm_critic_v2.py": "e3d5c34a966cfd4d08460c3d3be34bd77baf892e67b42bcc59d543c5099bb627",
   "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
-  "scripts/run_wm_critic_v2.py": "6b3bd9beba81967560b5c6c719fa34b2f18c4de4237694e0579f01dc7a9fcc1d",
+  "scripts/run_wm_critic_v2.py": "0cf629884372af5ff05ae15de30565aa8fd960d55b9b8943cebc0de6cd2f1a2c",
   "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
   "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
@@ -5490,7 +5496,7 @@
   "src/embodied_jepa/models/base.py": "310a509d5f8043ad3cbdf85a0568d15bb4ed2e4faeddf6e10bed63abf8ee0549",
   "src/embodied_jepa/models/frozen_encoder.py": "c1a4622a0765e44fc060c5313a85e4f727f51dc361acd5de50cb6990845e6011",
   "src/embodied_jepa/models/frozen_tokens.py": "33e8e819ad557d4fec6167482f91b5aa0c5da5a1169e7f8e6e8f050390c9a3a2",
-  "src/embodied_jepa/models/latent_critic.py": "fa6cb2b46757bd4d9949b6296a22df020ee5b51b25edd1748b37946498aea45a",
+  "src/embodied_jepa/models/latent_critic.py": "5af41f3fdc0767e76b9c6d4f833b267e33d90a7d420e712fc1f0a6d402140eeb",
   "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
   "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
   "src/embodied_jepa/plate_shift.py": "5ae0f016dd6ee628c60c3a6901f170d9bd1643df8e508e53fabbbc6e89650b39",
@@ -5505,10 +5511,10 @@
   "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
   "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
   "src/embodied_jepa/token_dynamics.py": "b80ec3506ff359c0e159b1f89e3bc234fcdecbdeccaa38e2ead455c438e34672",
-  "src/embodied_jepa/wm_critic_v2.py": "330f18893b4182b4c23ab906914cb48fcaef88178ab510cdadfa8870d563038a",
-  "src/embodied_jepa/wm_critic_v2_offline.py": "92f9c78a30f1114791a108db04a2c9be52eec825632008b1c2a645a336e83f18",
-  "src/embodied_jepa/wm_critic_v2_runtime.py": "592895bc84d23442fdc7f224ea0349f9a5317de8a3ecb0888e47e29e84e0cffb",
-  "tests/test_wm_critic_v2.py": "821d4408fab8f819bc3693506d2ef8e2176da4753a602ccad5b2c4107915017e",
+  "src/embodied_jepa/wm_critic_v2.py": "5fc53f1cffa1d961c1127c7d2ae46e7e26873d9f5d1dd038efac7b43702d3faf",
+  "src/embodied_jepa/wm_critic_v2_offline.py": "0843a7d930c0ad7bbf4d604a248ce115584bbf9f25f236507e7fc0693fadb3a0",
+  "src/embodied_jepa/wm_critic_v2_runtime.py": "d39f9006da8d02f60397d3c73b37a713881e5da2b74fe64f7cc7c939bb5bffd1",
+  "tests/test_wm_critic_v2.py": "8032ae6df97f6e7b189fbfe76b6eb25636b4f0598683a9fa85a4831cb6b7c3ce",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. The plate shift is a simulation-only diagnostic condition (owner D1). P-3 is a BC/DAgger MLP on a frozen DINOv2 readout trained on privileged e9 labels; an H-LeWM success would be a learned policy trained on privileged expert labels plus a LeWM critic (owner D2), not LeWM driving the robot."

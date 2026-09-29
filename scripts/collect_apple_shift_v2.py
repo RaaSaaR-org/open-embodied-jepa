@@ -35,7 +35,6 @@ import importlib.util
 import json
 import sys
 import time
-import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -167,6 +166,7 @@ def main(argv=None) -> int:
         "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     clock = R65.Clock(wc.CAPS_SECONDS["global"])
+    watch = RUN.install_guards()
     pool = None
     try:
         kind = "smoke" if args.smoke else "corpus"
@@ -177,12 +177,14 @@ def main(argv=None) -> int:
         wc.check_role_seeds("corpus", tuple(r["seed"] for r in plan), smoke=args.smoke)
         (corpus / "episodes").mkdir(parents=True)
         pool = RUN.Pool(
-            wc.SIM_WORKERS,
+            RUN.sim_workers(),
             {"p3_checkpoint": RUN.p3_checkpoint(Path(args.evidence).resolve()), "torch_threads": 1},
         )
         tasks = collect_tasks(
             plan, corpus / "episodes", selection["shift_step"], selection["shift_cm"]
         )
+        # N-d: the corpus stage's pre-render boundary (protocol §7.1, §15)
+        report["cohort_first_render_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         records = pool.map(tasks, 3 * 3600.0, "corpus")
         episodes = {
             r["episode_id"]: {"npz_sha256": r["npz_sha256"], "meta_sha256": r["meta_sha256"]}
@@ -207,14 +209,13 @@ def main(argv=None) -> int:
             "path": str(corpus),
         }
         report["outcome"] = "CORPUS-SEALED"
-    except Exception as error:  # noqa: BLE001 - every failure is V
-        report["outcome"] = "V"
-        report["void_reason"] = f"{type(error).__name__}: {error}"
-        report["traceback"] = traceback.format_exc()
-        log(f"VOID: {report['void_reason']}")
+    except BaseException as error:  # noqa: BLE001 - every failure, signal included, is V
+        RUN.void(report, error)
     finally:
         if pool is not None:
             pool.close()
+        watch.stop()
+        report["memory"] = watch.summary()
         report.pop("_run1", None)
         report["ended_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         report["total_seconds"] = clock.elapsed()

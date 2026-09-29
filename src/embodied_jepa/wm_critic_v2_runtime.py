@@ -17,6 +17,7 @@ NumPy at import; MuJoCo and torch are imported by ``worker_init``.
 from __future__ import annotations
 
 import hashlib
+import os
 import time
 from pathlib import Path
 
@@ -65,7 +66,6 @@ def worker_init(config: dict) -> None:
     import torch
 
     from embodied_jepa import first_policy_v2_model as fm2
-    from embodied_jepa import pretrained_encoder as pe
 
     torch.set_num_threads(int(config.get("torch_threads", fp2.WORKER_TORCH_THREADS)))
     _W["config"] = dict(config)
@@ -77,8 +77,8 @@ def worker_init(config: dict) -> None:
     _W["p3"] = (model, rt2.Standardiser(saved["mean"].numpy(), saved["std"].numpy()))
     _W["predict"] = fm2.predictor(model)
     _W["policy"] = hs.P3Policy(model, _W["p3"][1], _W["fk"])
-    _W["encoder"] = pe.load_pretrained()
-    _W["standin"] = hs.KinematicStandIn(_W["bounds"])
+    # The frozen DINOv2 encoder and the kinematic stand-in are loaded on first use (memory: a
+    # K0 or corpus worker needs neither; TASK-073 K0 run-1 V, protocol §15).
     _W["perturber"] = load_perturber()
     _W["cache"] = {}
 
@@ -92,6 +92,20 @@ def load_perturber():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.Perturber
+
+
+def encoder():
+    from embodied_jepa import pretrained_encoder as pe
+
+    if "encoder" not in _W:
+        _W["encoder"] = pe.load_pretrained()
+    return _W["encoder"]
+
+
+def standin():
+    if "standin" not in _W:
+        _W["standin"] = hs.KinematicStandIn(_W["bounds"])
+    return _W["standin"]
 
 
 def _readout(name: str):
@@ -160,7 +174,7 @@ def _controller(task: dict, truth: dict):
         return rt2.LearnedController(*common)
     if arm == "P-reread":
         return hs.HybridController(
-            *common, variant="reread", encoder=_W["encoder"], r_mid=_readout("r_mid")
+            *common, variant="reread", encoder=encoder(), r_mid=_readout("r_mid")
         )
     if arm in CRITIC_ARMS:
         variant = "shuf" if arm == "H-shuf" else "critic"
@@ -171,10 +185,10 @@ def _controller(task: dict, truth: dict):
             *common,
             variant=variant,
             policy=_W["policy"],
-            encoder=_W["encoder"],
+            encoder=encoder(),
             r_mid=_readout("r_mid"),
             critic=critic(CRITIC_ARMS[arm]),
-            standin=_W["standin"],
+            standin=standin(),
             foreign_latents=foreign,
         )
     if arm == "H-rand":
@@ -182,7 +196,7 @@ def _controller(task: dict, truth: dict):
         return hs.HybridController(
             *common,
             variant="rand",
-            encoder=_W["encoder"],
+            encoder=encoder(),
             r_mid=_readout("r_mid"),
             rng_seed=int(seed.generate_state(1)[0]),
         )
@@ -192,7 +206,7 @@ def _controller(task: dict, truth: dict):
             *common,
             switch_step=int(shift["step"]) if shift else 0,
             plate_xy=plate_at(10**9),
-            standin=_W["standin"] if log else None,
+            standin=standin() if log else None,
             policy=_W["policy"] if log else None,
         )
     if arm == "H-sim":
@@ -204,7 +218,7 @@ def _controller(task: dict, truth: dict):
         else:
 
             def centre(observation, step):  # noqa: ARG001
-                tokens, _ = hs.encode_frame(_W["encoder"], observation.images[fp2.CAMERA][0])
+                tokens, _ = hs.encode_frame(encoder(), observation.images[fp2.CAMERA][0])
                 return _readout("r_mid").predict(tokens)
 
         return ss.SimSelector(*common, robot=robot, centre=centre, plate_at=plate_at)
@@ -250,12 +264,12 @@ def run_attempt_task(task: dict) -> dict:
             float(v) for v in (*truth["object_position"][:2], *truth["plate_position"][:2])
         ],
     }
-    if task.get("expected_frame_sha256") and (
-        out["post_look_frame_sha256"] != task["expected_frame_sha256"]
-    ):
+    try:
+        out["render_retries"] = check_post_look_frame(robot, task, out["post_look_frame_sha256"])
+    except wc.GuardError:
         counter.remove()
         robot.stop("frame_mismatch")
-        raise wc.GuardError(f"G-frame: seed {task['seed']} post-look frame differs")
+        raise
     shift = task.get("shift")
     hook = ps.PlateShift(robot, int(shift["step"]), shift["vector"]) if shift else None
     try:
@@ -310,6 +324,31 @@ def run_attempt_task(task: dict) -> dict:
     if isinstance(inner, hs.ScheduledTruth) and inner.chunks:
         out["o5_relative_errors"] = hs.relative_chunk_errors(inner.chunks, record["commands"])
     return out
+
+
+RENDER_RETRIES = 2
+
+
+def check_post_look_frame(robot, task: dict, observed_sha: str) -> list[str]:
+    """G-frame, with the render-only retry (protocol §15): the attempt's post-look frame must be
+    bitwise the frame its estimates came from. The EGL renderer occasionally returns a frame
+    that differs by one intensity level in a few pixels for an identical simulator state, so on
+    a mismatch the same state is rendered again, at most twice; the attempt proceeds only if a
+    re-render matches exactly. Every re-render's hash is returned (recorded in the report); the
+    simulator state is not touched."""
+    expected = task.get("expected_frame_sha256")
+    if not expected or observed_sha == expected:
+        return []
+    retries = [observed_sha]
+    for _ in range(RENDER_RETRIES):
+        sha = frame_sha(robot.sim.render())
+        retries.append(sha)
+        if sha == expected:
+            return retries
+    raise wc.GuardError(
+        f"G-frame: seed {task['seed']} post-look frame differs after {RENDER_RETRIES} re-renders "
+        f"({[h[:12] for h in retries]} != {expected[:12]}, worker {os.getpid()})"
+    )
 
 
 def run_frame_task(task: dict) -> dict:
@@ -494,6 +533,7 @@ def run_rank_task(task: dict) -> dict:
     robot = _W["robot"]
     truth, scorer, counter, _obs, facts = rt2.reset_and_look(robot, task["seed"], task["reset"])
     counter.remove()  # the branches read truth for scoring by design; no controller is scored
+    render_retries = check_post_look_frame(robot, task, frame_sha(facts["post_look_frame"]))
     shift = task["shift"]
     plate_at = plate_schedule(task["reset"], shift)
     hook = ps.PlateShift(robot, int(shift["step"]), shift["vector"])
@@ -505,7 +545,7 @@ def run_rank_task(task: dict) -> dict:
         _W["fk"],
         _W["bounds"],
         variant="reread",
-        encoder=_W["encoder"],
+        encoder=encoder(),
         r_mid=_readout("r_mid"),
     )
     brancher = ss.Brancher(robot)
@@ -516,13 +556,13 @@ def run_rank_task(task: dict) -> dict:
         for step in range(max(points) + 1):
             observation = robot.observe()
             if step in points:
-                tokens, pooled = hs.encode_frame(_W["encoder"], observation.images[fp2.CAMERA][0])
+                tokens, pooled = hs.encode_frame(encoder(), observation.images[fp2.CAMERA][0])
                 incumbent = np.asarray(_readout("r_mid").predict(tokens), np.float64)
                 aims = wc.candidate_aims(incumbent)
                 estimates = np.concatenate(
                     (np.repeat(main.estimates[None, :2], wc.K, axis=0), aims), axis=1
                 )
-                _req, applied, feasible = _W["standin"].chunks(
+                _req, applied, feasible = standin().chunks(
                     _W["policy"],
                     rt2.state_of(observation),
                     step,
@@ -567,6 +607,7 @@ def run_rank_task(task: dict) -> dict:
     return {
         "seed": task["seed"],
         "post_look_frame_sha256": frame_sha(facts["post_look_frame"]),
+        "render_retries": render_retries,
         "groups": groups,
         "shift_applied": hook.applied,
     }

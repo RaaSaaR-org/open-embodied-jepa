@@ -993,7 +993,7 @@ def abandonment_fires(row: str) -> bool:
 
 # ----- platform, devices, caps, void rule ---------------------------------------------------------
 PLATFORM = fm.PLATFORM
-SIM_WORKERS = 16
+SIM_WORKERS = 6  # was 16; K0 run-1 V (protocol §15): the tree must stay under MEMORY's ceiling
 H_WORKERS = 4  # workers for arms that make world-model decisions (G7; protocol §9.3)
 H_WORKER_TORCH_THREADS = 4
 DEVICES = {
@@ -1002,6 +1002,15 @@ DEVICES = {
     "closed_loop_world_model": "cpu (in the worker)",
     "corpus_featurisation": "cuda, with a CPU anchor check (owner D6)",
     "training": "cuda, strict determinism (devices.require('cuda', strict=True))",
+}
+# Memory (owner ruling 2026-09-29, K0 run-1 V): the whole process tree's summed RSS stays at or
+# below the ceiling (a runtime guard voids the stage cleanly above it), and a stage starts only
+# with MemAvailable >= ceiling + headroom (G-memory).
+MEMORY = {
+    "ceiling_gib": 12.0,
+    "headroom_gib": 4.0,
+    "sample_seconds": 0.5,
+    "measure": "summed VmRSS of the runner and all its descendants (/proc), sampled every 0.5 s",
 }
 FEATURE_ANCHOR = {"frames": 256, "max_abs_pooled_difference": 1e-3}
 CAPS_SECONDS = {
@@ -1171,6 +1180,7 @@ def frozen_block() -> dict:
             "platform": PLATFORM,
             "sim_workers": SIM_WORKERS,
             "h_workers": H_WORKERS,
+            "memory": MEMORY,
             "h_worker_torch_threads": H_WORKER_TORCH_THREADS,
             "devices": DEVICES,
             "feature_anchor": FEATURE_ANCHOR,
