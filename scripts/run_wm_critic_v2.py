@@ -749,7 +749,11 @@ def stage_train(report, manifest, evidence, clock, args):
     device = "cuda"
     encoder = pe.load_pretrained()
     band = wc.FEATURE_BAND
-    table = off.Table()
+    n_roots = sum(
+        len(rd.manifest["splits"][sp])
+        for rd, sp in ((reader, "train"), (reader, "val"), (look, "train"), (look, "val"))
+    )
+    table = off.Table(capacity=n_roots * (band[1] - band[0] + 1))
     rmid_rows = {"train": [], "val": []}
     anchor_frames, anchor_rows = [], []
     started = time.monotonic()

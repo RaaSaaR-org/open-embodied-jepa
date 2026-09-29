@@ -26,7 +26,7 @@ from embodied_jepa import token_dynamics as td
 from embodied_jepa import wm_critic_v2 as wc
 from embodied_jepa.contracts import ContractError
 
-EVAL_CHUNK = 1024
+EVAL_CHUNK = 256  # memory: the O1 and val-criterion evaluation batch (protocol §15.6)
 FEATURE_BATCH = 128
 
 
@@ -88,16 +88,24 @@ class Table:
     ``step``; ``roots`` lists dicts with ``id``, ``split``, ``source``, ``first``, ``length``,
     ``shift_step``."""
 
-    def __init__(self):
+    def __init__(self, capacity: int | None = None, width: int = 6144):
+        """With ``capacity`` (frames), the feature rows are written straight into one lazily
+        committed array (memory; protocol §15.6): no part list and no second copy at ``seal``."""
         self.parts: dict[str, list] = {k: [] for k in ("features", "actions", "offset", "plate")}
         self.roots: list[dict] = []
         self.size = 0
+        self._features = None if capacity is None else np.empty((int(capacity), width), np.float32)
 
     def add(self, root: dict, features, actions, apple, plate, first_step: int) -> None:
         n = len(features)
         if not (len(actions) == len(apple) == len(plate) == n):
             raise ContractError("a root's band arrays disagree in length")
-        self.parts["features"].append(np.asarray(features, np.float32))
+        if self._features is not None:
+            if self.size + n > len(self._features):
+                raise ContractError("the table's capacity is exceeded")
+            self._features[self.size : self.size + n] = features
+        else:
+            self.parts["features"].append(np.asarray(features, np.float32))
         self.parts["actions"].append(np.asarray(actions, np.float32))
         self.parts["offset"].append(
             np.asarray(apple, np.float64)[:, :2] - np.asarray(plate, np.float64)[:, :2]
@@ -107,8 +115,22 @@ class Table:
         self.size += n
 
     def seal(self) -> None:
-        for key, value in list(self.parts.items()):
-            setattr(self, key, np.concatenate(value))
+        """Join the parts without holding two copies (memory; protocol §15.6): the output is
+        allocated lazily and each part is released as soon as it is copied."""
+        if self._features is not None:
+            self.features = self._features[: self.size]  # a view: untouched rows stay uncommitted
+            self._features = None
+            self.parts.pop("features")
+        for key in list(self.parts):
+            parts = self.parts[key]
+            out = np.empty((sum(len(p) for p in parts), *parts[0].shape[1:]), parts[0].dtype)
+            at = 0
+            while parts:
+                part = parts.pop(0)
+                out[at : at + len(part)] = part
+                at += len(part)
+                del part
+            setattr(self, key, out)
         self.parts = {}
 
     def windows(self, root_indices, *, horizon=16, stride=1, start_min=None, start_steps=None):
