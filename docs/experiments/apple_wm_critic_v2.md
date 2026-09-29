@@ -377,9 +377,12 @@ median decision latency ≤ 250 ms with the GPU's resident service running. **G7
 record's wall time of the decision inside `act()` (encoding, R-mid, the stand-in chunks, the W
 rollout and the choice), in the gated run's H workers (4 workers × 4 torch threads, all attempts
 concurrent); the median over those records. **The determinism re-run, frozen:** after the gated
-arms, H-LeWM and P-reread run again on the first four S seeds (53800–53803) in the same run; it
-"differs" if any attempt's executed command array is not bitwise equal, or its counted success,
-termination reason or chosen-aim sequence differs from the first run of that arm and seed.
+arms, H-LeWM and P-reread run again on the first four S seeds (53800–53803) in the same run. A
+non-image arm "differs" if any attempt's executed command array is not bitwise equal, or its
+counted success, termination reason or chosen-aim sequence differs from the first run of that arm
+and seed. **Image-reading arms (owner ruling of 2026-09-29, §15.5):** they "differ" when
+`rerun_matches` fails — the fields and tolerances of `RERUN_IMAGE_ARMS`; every difference is
+logged. Both re-run arms read images.
 Secondary, not
 changing the row: H-LeWM-s1 and -s2 show the same sign against P-reread, H-shuf and H-N.
 
@@ -622,8 +625,11 @@ merged revision on the Linux PC, and only after all of the following:
 2. **A fresh pre-run reviewer's reported GO**, delivered as a message and posted on the PR, never
    read from a file. The GO includes:
    - the pre-run reviewer's own render-determinism check at the **frozen worker count (6)** on smoke seeds
-     (`run_wm_critic_v2.py smoke`, its `render_check`), with verdict **IDENTICAL**; if it is not
-     identical, the stage does not start and the issue goes to the owner;
+     (`run_wm_critic_v2.py smoke`, its `render_check`), with verdict **IDENTICAL** or, by the
+     owner's ruling of 2026-09-29 (§15.5), **MAJORITY-PASS** (every seed has a majority frame and
+     every odd render has the same simulation state and differs by at most one level in at most
+     16 pixels; the odd renders are listed in the GO comment); any other verdict means the stage
+     does not start and the issue goes to the owner;
    - a fresh `run_wm_critic_v2.py preflight` from the merged revision into a new output name,
      ending **PREFLIGHT-READY** (G-repro 8/8, G-threads, G-quiet, G-cohort, every pin).
 3. **The quiet-machine rule (`QUIET_MACHINE`, checked by the runner as G-quiet):** at the stage's
@@ -682,7 +688,8 @@ The one K0 repeat follows this PR's merge, a new reported GO and the owner's not
 ### 15.3 Fixes (this PR)
 
 1. **Memory.** The frozen block changes in exactly two fields: `sim_workers` 16 → **6**, and a new
-   `memory` block (`MEMORY`: a 12 GiB ceiling on the summed RSS of the runner's process tree,
+   `memory` block (`MEMORY`: a 12 GiB ceiling on the runner's process tree — summed RSS in the
+   first version of this PR, summed PSS since the review (§15.5) —
    4 GiB headroom, sampled every 0.5 s). `h_workers` (4 × 4 threads) is unchanged; the ranking
    stage now uses it instead of `sim_workers`, because its workers load the encoder.
    `frozen_sha256` is now `cd9e8723…44f83` (was `f476eb9a…01b5e`); the pins and the test's literal
@@ -760,5 +767,77 @@ times slower than before (OpenBLAS threads oversubscribed); the G-quiet rule pre
   intensity level (item 4).
 - smoke render check: IDENTICAL (smoke) and DIFFERENT with one odd render and a majority for every
   seed (smoke-b); W training BIT-IDENTICAL in both; decision latency median 0.232 / 0.228 s.
+
+### 15.5 The review of #108 and the owner's rulings on it (2026-09-29)
+
+The independent review of this PR (REQUEST CHANGES at `787ffac`) found two blocking defects and
+asked for owner rulings on the renderer mitigations. **Owner rulings (verbatim):**
+
+| question | the owner's answer |
+|---|---|
+| the renderer mitigations (majority of three for G-repro and cohort frames; the G-frame re-render) | **"Accept, record every retry (Recommended)"** |
+| may a DIFFERENT GO render check count as a pass? | **"Yes, count it as a pass (Recommended)"** |
+| the determinism re-run for image-reading arms | **"Match decisions and results (Recommended)"** |
+
+**How each ruling is made operational (frozen: `RENDER`, `IMAGE_READING_ARMS`,
+`RERUN_IMAGE_ARMS`).**
+- **Renderer votes and retries** (`render_majority`, `check_post_look_frame`) are allowed only when
+  (a) the whole simulation state — `qpos`, `qvel`, `act`, `ctrl` and `time`, hashed
+  (`state_sha256`) — is bitwise equal across the disagreeing renders (for G-frame: equal to the
+  state the cohort frame was rendered from, and unchanged by the re-renders), and (b) every odd
+  frame differs from the reference frame by at most **1 intensity level in at most 16 pixels**
+  (`RENDER`; the largest odd frame seen was 7 pixels in this PR's smokes, 4 in the reviewer's
+  10 100-render probe). Anything else is a V, with the pixel differences in the report. Every
+  disagreement and re-render is recorded with its pixel count and largest level
+  (`render_disagreements`, `rerender_disagreements`, `render_retries`).
+- **The GO render check** (`render_check_verdict`): IDENTICAL; or **MAJORITY-PASS** — every seed
+  has a majority frame and every odd render passes (a) and (b) — which counts as a pass and whose
+  odd renders are listed in the GO comment; otherwise DIFFERENT, and the owner decides.
+- **The determinism re-run** (§6.6): non-image arms stay bitwise. For image-reading arms
+  (`IMAGE_READING_ARMS`: P-reread and every H arm except H-sim) `rerun_matches` requires, on each
+  re-run seed: **exactly equal** counted success, grasp, at-rest verdict, termination reason,
+  executed steps and the chosen-aim index at every decision; and **within tolerance** the final
+  apple-to-plate distance (±1.0 cm), the first grasp and first place steps (±40 steps each) and
+  R-mid's incumbent at each decision (±1.0 cm). The executed commands are not required to match;
+  their hash and every other difference are logged. The tolerances cover, with margin, the
+  largest differences seen between re-runs of image-reading arms on smoke seeds (verify-1 D3,
+  three attempts: final distance 0.41 cm, place step 25, incumbent 0.45 cm; one of the three,
+  H-shuf on 53959, also chose a different aim at one decision, which this rule counts as a
+  difference). Gates, thresholds, cohorts, arms and rows are otherwise unchanged.
+
+**Blocking fixes.**
+- **B1 (a process-group SIGTERM could hang the runner).** The handler used `SIG_IGN` against
+  re-entry; respawned pool workers inherited the ignored SIGTERM, so `pool.terminate()` +
+  `join()` could block forever. Now: re-entry is a module flag (a second signal is recorded, not
+  raised); `worker_init` resets SIGTERM/SIGINT/SIGHUP/SIGUSR1 to `SIG_DFL`; `Pool.close` terminates,
+  joins each worker with a 10 s timeout and then SIGKILLs any survivor it owns. Tested with a live
+  spawn pool and `killpg` (three trials per run; 12 of 12 local trials wrote the V report).
+- **B2 (a first signal in except/finally lost the report).** `finish_guards` is the first call of
+  every runner's `finally` (run, collect, rank), and `void` sets the flag first: from there on
+  signals are recorded (`signals_during_cleanup`), and the report is always written; a signal that
+  interrupts the except clause itself is still turned into the V. Tested with a signal delivered
+  during a slow pool close.
+
+**Non-blocking findings.**
+1. **A dead worker** (killed alone) now voids `map` within about a second (`G-worker`, the pid and
+   exit code) instead of waiting for the stage cap. Tested.
+2. **Memory measure.** The guard now uses the summed **PSS** of the process tree
+   (`/proc/<pid>/smaps_rollup`), which divides shared pages among the processes sharing them; summed
+   RSS, which counts each shared library once per worker, is recorded beside it. The 12 GiB ceiling
+   is unchanged, and PSS tracks the physical memory the pane's cgroup limit (MemoryHigh 14 GiB)
+   actually meters. Both are measured below (§15.6). The per-pid walk no longer drops a pid's
+   children when one of its threads exits mid-sample. The guard remains a sampled check (a long
+   NumPy call in the main thread delays its signal), not a hard limit.
+3. **The train boundary.** The train stage records `first_outcome_utc` immediately before the
+   first number computed on val roots (R-mid's val error, then the blind baselines, the budget
+   curves, O1 and O2). A train V before it may be repeated as-is; a V after it uses the stage's one
+   repeat (§7.1). The corpus stage's boundary is `cohort_first_render_utc` (item 3 of §15.3).
+4. **Ranking equivalence** at 4 vs 2 workers is in §15.6. **A sealed corpus is not bitwise
+   reproducible across collections**: its frames are not voted, so a re-collection can differ in a
+   few frames by one intensity level; the sealed corpus's hashes are what later stages pin.
+
+### 15.6 Measurements of the review round
+
+_Filled in from the verification at this PR's code (see the PR comment)._
 
 **Learned Apple→Plate on the frozen benchmark is still 0 successes.**
