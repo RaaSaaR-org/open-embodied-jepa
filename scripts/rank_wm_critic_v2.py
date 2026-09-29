@@ -93,7 +93,17 @@ def main(argv=None) -> int:
         action="store_true",
         help="cohort R stand-ins on smoke seeds; mechanics only, nothing is read",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="smoke only: override the worker count (the equivalence check)",
+    )
     args = parser.parse_args(argv)
+    if args.workers is not None:
+        if not args.smoke or not 1 <= args.workers <= 6:
+            parser.error("--workers is for smoke runs only, from 1 to 6")
+        RUN.WORKERS_OVERRIDE.update({"sim": args.workers, "h": args.workers})
     out = Path(args.output)
     if out.exists():
         raise FileExistsError(f"refusing to overwrite {out}")
@@ -104,6 +114,7 @@ def main(argv=None) -> int:
         "task": wc.TASK,
         "mode": "rank",
         "smoke": bool(args.smoke),
+        "workers": RUN.h_workers(),
         "outcome": None,
         "stages": {},
         "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -143,6 +154,7 @@ def main(argv=None) -> int:
                 "shift": {"step": step, "vector": resets[s]["shift_m"][str(cm)]},
                 "estimates": est[s]["estimates"],
                 "expected_frame_sha256": est[s]["frame_sha256"],
+                "expected_state_sha256": est[s]["state_sha256"],
                 "points": points,
             }
             for s in seeds
@@ -182,11 +194,7 @@ def main(argv=None) -> int:
     except BaseException as error:  # noqa: BLE001 - every failure, signal included, is V
         RUN.void(report, error)
     finally:
-        pool = report.pop("_pool", None)
-        if pool is not None:
-            pool.close()
-        watch.stop()
-        report["memory"] = watch.summary()
+        RUN.finish_guards(report, watch, report.pop("_pool", None))
         report.pop("_run1", None)
         report["ended_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         report["total_seconds"] = clock.elapsed()

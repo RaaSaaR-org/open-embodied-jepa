@@ -42,7 +42,7 @@ def _load_script(name: str, relative: str):
 
 # ----- the frozen block, the pins and the stored cohorts ------------------------------------------
 # A literal: the gated-stage authorisation PR may not change it (AUTHORISATION_SCOPE).
-FROZEN_SHA256 = "cd9e8723f8afa71c9db73f8b326b20099763743798e95f3ba3369fbfa7344f83"
+FROZEN_SHA256 = "c7a3eb215270669f0e51796aa824e15fac5a88c7afaad84282b9c1eec8ae0023"
 
 
 def test_frozen_hash_is_the_preregistered_literal():
@@ -788,7 +788,7 @@ def test_memory_fields_and_worker_counts_are_frozen():
 HAS_PROC = Path("/proc/self/status").exists()  # the memory guard is Linux-only, like the runs
 
 
-def test_process_tree_rss_counts_children():
+def test_process_tree_memory_counts_children_in_rss_and_pss():
     pytest.importorskip("torch")
     import subprocess
     import sys
@@ -827,7 +827,7 @@ spec = importlib.util.spec_from_file_location(
 runner = importlib.util.module_from_spec(spec); spec.loader.exec_module(runner)
 out = Path(sys.argv[2])
 if sys.argv[3] == "memory":  # any tree exceeds this: the guard must fire (on any platform)
-    runner.process_tree_rss_bytes = lambda root=None, per=None: 10**13
+    runner.process_tree_memory = lambda root=None, per=None: {"rss": 10**13, "pss": 10**13}
 def slow_preflight(report, kind, evidence):
     (out.parent / "ready").write_text("1")
     time.sleep(60)
@@ -872,51 +872,279 @@ def test_a_stop_signal_or_the_memory_ceiling_writes_the_v_report(tmp_path, how):
         assert report["memory"]["peak_tree_rss_gib"] > 0
 
 
+class _FakeSimData:
+    def __init__(self, t=0.0):
+        self.qpos, self.qvel = np.arange(4.0), np.zeros(4)
+        self.act, self.ctrl, self.time = np.zeros(0), np.zeros(2), t
+
+
 class _FakeRenderer:
     """A robot whose sim.render returns queued frames (for the render-only retry)."""
 
-    def __init__(self, frames):
+    def __init__(self, frames, t=0.0):
         self.frames = list(frames)
         self.sim = self
+        self.data = _FakeSimData(t)
 
     def render(self):
         return self.frames.pop(0)
 
 
-def test_g_frame_retries_the_render_only_and_refuses_a_persistent_mismatch():
-    from embodied_jepa import wm_critic_v2_runtime as rtm
-
+def _frames():
     good = np.zeros((112, 112, 3), np.uint8)
     glitch = good.copy()
     glitch[5, 5, 0] = 1  # the renderer's one-level difference
-    task = {"seed": 53999, "expected_frame_sha256": rtm.frame_sha(good)}
-    assert rtm.check_post_look_frame(_FakeRenderer([]), task, rtm.frame_sha(good)) == []
-    retries = rtm.check_post_look_frame(_FakeRenderer([good]), task, rtm.frame_sha(glitch))
-    assert retries == [rtm.frame_sha(glitch), rtm.frame_sha(good)]
+    big = good.copy()
+    big[:5, :5, :] = 1  # 25 pixels: beyond RENDER["max_pixels"]
+    return good, glitch, big
+
+
+def test_g_frame_retries_the_render_only_within_the_characterised_effect():
+    from embodied_jepa import wm_critic_v2_runtime as rtm
+
+    good, glitch, big = _frames()
+    robot = _FakeRenderer([])
+    task = {
+        "seed": 53999,
+        "expected_frame_sha256": rtm.frame_sha(good),
+        "expected_state_sha256": rtm.state_sha(robot),
+    }
+    assert rtm.check_post_look_frame(_FakeRenderer([]), task, good) == {}
+    record = rtm.check_post_look_frame(_FakeRenderer([good]), task, glitch)
+    assert record["re_renders"][0] == {"sha256": rtm.frame_sha(good), "max_level": 1, "pixels": 1}
     with pytest.raises(wc.GuardError, match="after 2 re-renders"):
-        rtm.check_post_look_frame(_FakeRenderer([glitch, glitch]), task, rtm.frame_sha(glitch))
+        rtm.check_post_look_frame(_FakeRenderer([glitch, glitch]), task, glitch)
+    with pytest.raises(wc.GuardError, match="beyond the renderer"):
+        rtm.check_post_look_frame(_FakeRenderer([good]), task, big)
+    with pytest.raises(wc.GuardError, match="simulation state"):  # (a): the state must match
+        rtm.check_post_look_frame(_FakeRenderer([good], t=1.0), task, glitch)
 
 
-def test_render_majority_resolves_a_single_odd_render_and_refuses_three_different():
+class _FramePool:
+    def __init__(self, outs):
+        self.outs = list(outs)
+
+    def map(self, tasks, cap, what):
+        return [self.outs.pop(0) | {"seed": t["seed"]} for t in tasks]
+
+
+def _out(frame, state="s0"):
+    from embodied_jepa import wm_critic_v2_runtime as rtm
+
+    return {"frame": frame, "post_look_frame_sha256": rtm.frame_sha(frame), "state_sha256": state}
+
+
+def test_render_majority_votes_only_on_equal_state_and_a_small_difference():
     pytest.importorskip("torch")
     runner = _load_script("_run_wm_critic_v2_major", "scripts/run_wm_critic_v2.py")
-
-    class FakePool:
-        def __init__(self, shas):
-            self.shas = list(shas)
-
-        def map(self, tasks, cap, what):
-            return [{"seed": t["seed"], "post_look_frame_sha256": self.shas.pop(0)} for t in tasks]
-
+    good, glitch, big = _frames()
     tasks = [{"kind": "frame", "seed": 53998}, {"kind": "frame", "seed": 53999}]
-    chosen, odd = runner.render_majority(FakePool(["a", "b", "a", "c", "b"]), tasks, 1, "x")
-    assert [c["post_look_frame_sha256"] for c in chosen] == ["a", "b"]
-    assert odd == {"53999": ["b", "c", "b"]}
+    pool = _FramePool([_out(good), _out(good), _out(good), _out(glitch), _out(good)])
+    chosen, odd = runner.render_majority(pool, tasks, 1, "x")
+    assert [c["post_look_frame_sha256"] for c in chosen] == [
+        _out(good)["post_look_frame_sha256"]
+    ] * 2
+    assert odd["53999"]["states_equal"] and odd["53999"]["odd"] == [{"max_level": 1, "pixels": 1}]
+    with pytest.raises(wc.GuardError, match="state differs"):  # a physics divergence is a V
+        runner.render_majority(
+            _FramePool([_out(good), _out(glitch, "s1"), _out(good)]), tasks[:1], 1, "x"
+        )
+    with pytest.raises(wc.GuardError, match="beyond the characterised"):
+        runner.render_majority(_FramePool([_out(good), _out(big), _out(good)]), tasks[:1], 1, "x")
+    third = good.copy()
+    third[9, 9, 1] = 1
     with pytest.raises(wc.GuardError, match="no majority"):
-        runner.render_majority(FakePool(["a", "b", "c"]), tasks[:1], 1, "x")
+        runner.render_majority(
+            _FramePool([_out(good), _out(glitch), _out(third)]), tasks[:1], 1, "x"
+        )
+
+
+def test_the_go_render_check_counts_a_characterised_majority_as_a_pass():
+    pytest.importorskip("torch")
+    runner = _load_script("_run_wm_critic_v2_rc", "scripts/run_wm_critic_v2.py")
+    good, glitch, big = _frames()
+    tasks = [{"seed": 1}] * 4 + [{"seed": 2}] * 4
+    same = runner.render_check_verdict(tasks, [_out(good)] * 8)
+    assert same["verdict"] == "IDENTICAL" and same["passes_go"]
+    one_odd = runner.render_check_verdict(tasks, [_out(good)] * 7 + [_out(glitch)])
+    assert one_odd["verdict"] == "MAJORITY-PASS" and one_odd["passes_go"]
+    assert one_odd["odd"]["2"][0]["pixels"] == 1
+    too_big = runner.render_check_verdict(tasks, [_out(good)] * 7 + [_out(big)])
+    assert too_big["verdict"] == "DIFFERENT" and not too_big["passes_go"]
+    state = runner.render_check_verdict(tasks, [_out(good)] * 7 + [_out(glitch, "other")])
+    assert state["verdict"] == "DIFFERENT"
+
+
+def test_rerun_matching_for_image_and_non_image_arms():
+    base = {
+        "success": True,
+        "grasp": True,
+        "at_rest": True,
+        "termination_reason": "step_limit",
+        "executed_steps": 740,
+        "commands_sha256": "a",
+        "final_distance_cm": 3.0,
+        "first_grasp_step": 266,
+        "first_place_step": 620,
+        "decisions": [{"chosen": 12, "incumbent": [0.5, -0.1]}],
+    }
+    near = base | {
+        "commands_sha256": "b",
+        "final_distance_cm": 3.4,
+        "first_place_step": 645,
+        "decisions": [{"chosen": 12, "incumbent": [0.5045, -0.1]}],
+    }
+    image = wc.rerun_matches(base, near, image_reading=True)
+    assert image["matches"] and set(image["differences"]) >= {
+        "commands_sha256",
+        "final_distance_cm",
+    }
+    assert not wc.rerun_matches(base, near, image_reading=False)["matches"]
+    assert wc.rerun_matches(base, dict(base), image_reading=False)["matches"]
+    other_aim = near | {"decisions": [{"chosen": 3, "incumbent": [0.5, -0.1]}]}
+    assert not wc.rerun_matches(base, other_aim, image_reading=True)["matches"]
+    far = near | {"final_distance_cm": 4.5}
+    assert not wc.rerun_matches(base, far, image_reading=True)["matches"]
+    assert not wc.rerun_matches(base, near | {"success": False}, image_reading=True)["matches"]
+    assert set(wc.IMAGE_READING_ARMS) <= set(wc.L1_ARMS)
+
+
+def test_frame_difference_and_render_bounds_are_frozen():
+    good, glitch, big = _frames()
+    assert wc.frame_difference(good, glitch) == {"max_level": 1, "pixels": 1}
+    assert wc.render_difference_allowed({"max_level": 1, "pixels": 16})
+    assert not wc.render_difference_allowed({"max_level": 1, "pixels": 17})
+    assert not wc.render_difference_allowed({"max_level": 2, "pixels": 1})
+    assert wc.frozen_block()["render"] == {
+        k: (list(v) if isinstance(v, tuple) else v) for k, v in wc.RENDER.items()
+    }
+
+
+def test_a_dead_worker_voids_the_map_at_once():
+    pytest.importorskip("torch")
+    import signal
+    import time
+
+    runner = _load_script("_run_wm_critic_v2_dead", "scripts/run_wm_critic_v2.py")
+    from embodied_jepa import wm_critic_v2_runtime as rtm
+
+    pool = runner.Pool(2, {}, func=rtm.probe_task, initializer=rtm.probe_init)
+    try:
+        victim = next(iter(pool.pids))
+        started = time.monotonic()
+        import threading
+
+        threading.Timer(1.5, lambda: os.kill(victim, signal.SIGKILL)).start()
+        with pytest.raises(wc.GuardError, match="G-worker"):
+            pool.map([{"seconds": 30, "seed": i} for i in range(4)], 600.0, "probe")
+        assert time.monotonic() - started < 20
+    finally:
+        pool.close()
 
 
 def test_the_corpus_stage_records_its_first_render_and_rank_uses_the_h_layout():
     text = (ROOT / "scripts" / "collect_apple_shift_v2.py").read_text()
     assert text.index('report["cohort_first_render_utc"]') < text.index("records = pool.map(tasks")
     assert "RUN.h_workers()" in (ROOT / "scripts" / "rank_wm_critic_v2.py").read_text()
+
+
+_POOL_CHILD = """
+import importlib.util, sys, time, types
+from pathlib import Path
+spec = importlib.util.spec_from_file_location(
+    "_r", Path(sys.argv[1]) / "scripts/run_wm_critic_v2.py"
+)
+runner = importlib.util.module_from_spec(spec); spec.loader.exec_module(runner)
+rtm = runner.rtm
+out = Path(sys.argv[2])
+mode = sys.argv[3]
+
+def preflight(report, kind, evidence):
+    pool = runner.Pool(3, {}, func=rtm.probe_task, initializer=rtm.probe_init)
+    report["_pool"] = pool
+    if mode == "cleanup":
+        real_close = pool.close
+        def slow_close():
+            (out.parent / "ready").write_text("1")
+            time.sleep(3)
+            real_close()
+        pool.close = slow_close
+        return {}
+    (out.parent / "ready").write_text("1")
+    pool.map([{"seconds": 60, "seed": i} for i in range(6)], 600.0, "probe")
+
+runner.preflight = preflight
+args = types.SimpleNamespace(output=str(out), evidence=".", mode="gated", smoke=False,
+                             workers=None)  # gated: refused at once, so cleanup follows
+report = runner.run(args)
+sys.exit(0 if report["outcome"] != "V" else 3)
+"""
+
+
+def _run_pool_child(tmp_path, mode):
+    import subprocess
+    import sys
+    import time
+
+    out = tmp_path / "run"
+    child = subprocess.Popen(
+        [sys.executable, "-c", _POOL_CHILD, str(ROOT), str(out), mode], start_new_session=True
+    )
+    for _ in range(600):
+        if (tmp_path / "ready").exists() or child.poll() is not None:
+            break
+        time.sleep(0.1)
+    return child, out
+
+
+@pytest.mark.parametrize("trial", range(3))
+def test_a_process_group_sigterm_with_a_live_pool_writes_the_v_report(tmp_path, trial):
+    """Reviewer B1: killpg reaches the parent and every worker; the respawned workers must not
+    inherit an ignored SIGTERM, and the bounded close must return."""
+    pytest.importorskip("torch")
+    import signal
+    import time
+
+    child, out = _run_pool_child(tmp_path, "map")
+    try:
+        time.sleep(1.0 + 0.5 * trial)
+        os.killpg(child.pid, signal.SIGTERM)
+        assert child.wait(timeout=90) == 3
+    finally:
+        if child.poll() is None:
+            os.killpg(child.pid, signal.SIGKILL)
+    report = json.loads((out / "report.json").read_text())
+    assert report["outcome"] == "V" and "received SIGTERM" in report["void_reason"]
+
+
+def test_a_signal_during_cleanup_still_writes_the_report(tmp_path):
+    """Reviewer B2: a first signal that arrives in finally is recorded, not raised."""
+    pytest.importorskip("torch")
+    import signal
+
+    child, out = _run_pool_child(tmp_path, "cleanup")
+    try:
+        import time
+
+        time.sleep(0.5)
+        os.kill(child.pid, signal.SIGTERM)
+        child.wait(timeout=90)
+    finally:
+        if child.poll() is None:
+            os.killpg(child.pid, signal.SIGKILL)
+    report = json.loads((out / "report.json").read_text())
+    late = report.get("signals_during_cleanup", [])
+    assert late and late[0]["signal"] == "SIGTERM"
+
+
+def test_g_memory_refuses_a_short_machine_before_any_pool(monkeypatch):
+    pytest.importorskip("torch")
+    runner = _load_script("_run_wm_critic_v2_mem", "scripts/run_wm_critic_v2.py")
+    monkeypatch.setattr(runner, "mem_available_bytes", lambda: 8 * 2**30)
+    report: dict = {}
+    with pytest.raises(wc.GuardError, match="G-memory"):
+        runner.check_memory_available(report, "k0")
+    runner.check_memory_available(report, "smoke")  # recorded only in a smoke
+    source = (ROOT / "scripts" / "run_wm_critic_v2.py").read_text()
+    body = source[source.index("def preflight(") : source.index("def end_checks(")]
+    assert "check_memory_available(report, mode)" in body and "Pool(" not in body

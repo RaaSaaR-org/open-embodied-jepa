@@ -212,10 +212,7 @@ def main(argv=None) -> int:
     except BaseException as error:  # noqa: BLE001 - every failure, signal included, is V
         RUN.void(report, error)
     finally:
-        if pool is not None:
-            pool.close()
-        watch.stop()
-        report["memory"] = watch.summary()
+        RUN.finish_guards(report, watch, pool)
         report.pop("_run1", None)
         report["ended_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         report["total_seconds"] = clock.elapsed()

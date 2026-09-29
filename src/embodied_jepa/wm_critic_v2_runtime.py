@@ -56,6 +56,24 @@ def frame_sha(frame) -> str:
     return hashlib.sha256(np.ascontiguousarray(frame, np.uint8).tobytes()).hexdigest()
 
 
+def state_sha(robot) -> str:
+    """sha256 of the whole simulation state: qpos, qvel, act, ctrl and time (RENDER["state"])."""
+    d = robot.sim.data
+    digest = hashlib.sha256()
+    for part in (d.qpos, d.qvel, d.act, d.ctrl, np.asarray([d.time])):
+        digest.update(np.ascontiguousarray(part, np.float64).tobytes())
+    return digest.hexdigest()
+
+
+def reset_worker_signals() -> None:
+    """Workers take the default signal dispositions (reviewer B1): an ignored disposition set in
+    the parent must never reach a respawned worker, or pool.terminate() cannot stop it."""
+    import signal
+
+    for s in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGUSR1):
+        signal.signal(s, signal.SIG_DFL)
+
+
 def truth_xy(truth) -> list[float]:
     return [float(v) for v in (*truth["object_position"][:2], *truth["plate_position"][:2])]
 
@@ -67,6 +85,7 @@ def worker_init(config: dict) -> None:
 
     from embodied_jepa import first_policy_v2_model as fm2
 
+    reset_worker_signals()
     torch.set_num_threads(int(config.get("torch_threads", fp2.WORKER_TORCH_THREADS)))
     _W["config"] = dict(config)
     _W["robot"] = rt2.make_robot()
@@ -265,7 +284,7 @@ def run_attempt_task(task: dict) -> dict:
         ],
     }
     try:
-        out["render_retries"] = check_post_look_frame(robot, task, out["post_look_frame_sha256"])
+        out["render_retries"] = check_post_look_frame(robot, task, facts["post_look_frame"])
     except wc.GuardError:
         counter.remove()
         robot.stop("frame_mismatch")
@@ -326,28 +345,45 @@ def run_attempt_task(task: dict) -> dict:
     return out
 
 
-RENDER_RETRIES = 2
+RENDER_RETRIES = wc.RENDER["retries"]
 
 
-def check_post_look_frame(robot, task: dict, observed_sha: str) -> list[str]:
-    """G-frame, with the render-only retry (protocol §15): the attempt's post-look frame must be
-    bitwise the frame its estimates came from. The EGL renderer occasionally returns a frame
-    that differs by one intensity level in a few pixels for an identical simulator state, so on
-    a mismatch the same state is rendered again, at most twice; the attempt proceeds only if a
-    re-render matches exactly. Every re-render's hash is returned (recorded in the report); the
-    simulator state is not touched."""
+def check_post_look_frame(robot, task: dict, observed_frame) -> dict:
+    """G-frame, with the render-only retry (protocol §15; owner ruling 2026-09-29): the attempt's
+    post-look frame must be bitwise the frame its estimates came from. On a mismatch the same state
+    is rendered again, at most ``RENDER["retries"]`` times, and the attempt proceeds only if (a) the
+    whole simulation state equals the state the cohort frame was rendered from (and is unchanged by
+    the re-renders), (b) a re-render matches bitwise, and (c) the odd frame differs from it by at
+    most one level in at most ``RENDER["max_pixels"]`` pixels. Returns the record (empty when
+    there was no mismatch); anything else is a V with the differences in its message."""
     expected = task.get("expected_frame_sha256")
-    if not expected or observed_sha == expected:
-        return []
-    retries = [observed_sha]
+    observed = frame_sha(observed_frame)
+    if not expected or observed == expected:
+        return {}
+    before = state_sha(robot)
+    record = {"odd_sha256": observed, "state_sha256": before, "re_renders": []}
+    if task.get("expected_state_sha256") and before != task["expected_state_sha256"]:
+        raise wc.GuardError(
+            f"G-frame: seed {task['seed']} post-look frame differs and so does the simulation "
+            f"state ({before[:12]} != {task['expected_state_sha256'][:12]})"
+        )
     for _ in range(RENDER_RETRIES):
-        sha = frame_sha(robot.sim.render())
-        retries.append(sha)
+        frame = robot.sim.render()
+        sha = frame_sha(frame)
+        diff = wc.frame_difference(observed_frame, frame)
+        record["re_renders"].append({"sha256": sha, **diff})
         if sha == expected:
-            return retries
+            if state_sha(robot) != before:
+                raise wc.GuardError("G-frame: the simulation state changed while re-rendering")
+            if not wc.render_difference_allowed(diff):
+                raise wc.GuardError(
+                    f"G-frame: seed {task['seed']} odd frame differs by {diff} (beyond the "
+                    f"renderer's characterised effect)"
+                )
+            return record
     raise wc.GuardError(
         f"G-frame: seed {task['seed']} post-look frame differs after {RENDER_RETRIES} re-renders "
-        f"({[h[:12] for h in retries]} != {expected[:12]}, worker {os.getpid()})"
+        f"({record}, expected {expected[:12]}, worker {os.getpid()})"
     )
 
 
@@ -355,11 +391,13 @@ def run_frame_task(task: dict) -> dict:
     robot = _W["robot"]
     truth, _scorer, counter, _obs, facts = rt2.reset_and_look(robot, task["seed"], task["reset"])
     counter.remove()
+    post_look_state_sha = state_sha(robot)  # before stop(), which zeroes ctrl
     robot.stop("frame_only")
     return {
         "seed": task["seed"],
         "frame": facts["post_look_frame"],
         "post_look_frame_sha256": frame_sha(facts["post_look_frame"]),
+        "state_sha256": post_look_state_sha,
         "post_look_state": facts["post_look_state"].tolist(),
         "truth_xy": [
             float(v) for v in (*truth["object_position"][:2], *truth["plate_position"][:2])
@@ -533,7 +571,7 @@ def run_rank_task(task: dict) -> dict:
     robot = _W["robot"]
     truth, scorer, counter, _obs, facts = rt2.reset_and_look(robot, task["seed"], task["reset"])
     counter.remove()  # the branches read truth for scoring by design; no controller is scored
-    render_retries = check_post_look_frame(robot, task, frame_sha(facts["post_look_frame"]))
+    render_retries = check_post_look_frame(robot, task, facts["post_look_frame"])
     shift = task["shift"]
     plate_at = plate_schedule(task["reset"], shift)
     hook = ps.PlateShift(robot, int(shift["step"]), shift["vector"])
@@ -611,6 +649,18 @@ def run_rank_task(task: dict) -> dict:
         "groups": groups,
         "shift_applied": hook.applied,
     }
+
+
+def probe_init(config: dict) -> None:
+    """A light worker initializer for the harness's signal and worker-death tests: the same signal
+    reset as ``worker_init``, nothing else."""
+    reset_worker_signals()
+
+
+def probe_task(task: dict) -> dict:
+    """Sleeps (harness tests only); never used by a stage."""
+    time.sleep(float(task.get("seconds", 1.0)))
+    return {"seed": task.get("seed"), "pid": os.getpid()}
 
 
 def run_task(task: dict) -> dict:

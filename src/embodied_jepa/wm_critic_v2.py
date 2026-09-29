@@ -803,9 +803,111 @@ GATED = {
     "determinism_rerun_resets": 4,
     "determinism_rerun_seeds": (53800, 53801, 53802, 53803),
     "determinism_rerun_arms": ("H-LeWM", "P-reread"),
-    "determinism_differs": "any executed command array not bitwise equal, or a different counted "
-    "success, termination reason or chosen-aim sequence",
+    "determinism_differs": "a non-image arm differs if any executed command array is not bitwise "
+    "equal, or its counted success, termination reason or chosen-aim sequence differs; an "
+    "image-reading arm differs if rerun_matches fails (RERUN_IMAGE_ARMS; owner ruling "
+    "2026-09-29); every difference is logged",
 }
+# Owner ruling 2026-09-29 on the re-run ("Match decisions and results (Recommended)"): arms that
+# read images at decision steps are compared by RERUN_IMAGE_ARMS' fields and tolerances instead of
+# bitwise commands (the renderer's rare one-level pixel differences reach them); non-image arms stay
+# bitwise. The tolerances cover the largest differences measured between re-runs on smoke seeds
+# (protocol §15.5: final distance 0.41 cm, place step 25, incumbent 0.45 cm) with margin.
+IMAGE_READING_ARMS = ("P-reread", "H-LeWM", "H-LeWM-s1", "H-LeWM-s2", "H-N", "H-shuf", "H-rand")
+RERUN_IMAGE_ARMS = {
+    "exact": (
+        "success",
+        "grasp",
+        "at_rest",
+        "termination_reason",
+        "executed_steps",
+        "chosen_sequence",
+    ),
+    "tolerances": {
+        "final_distance_cm": 1.0,
+        "first_grasp_step": 40,
+        "first_place_step": 40,
+        "incumbent_cm_per_decision": 1.0,
+    },
+    "logged": ("commands_sha256", "max_abs_command_difference", "every field above"),
+}
+
+
+def rerun_matches(first: dict, second: dict, image_reading: bool) -> dict:
+    """The determinism re-run's comparison of one (arm, seed): bitwise commands and results for a
+    non-image arm; for an image-reading arm the exact fields and tolerances of RERUN_IMAGE_ARMS.
+    Every difference is returned (logged), whether or not it is within tolerance."""
+    diffs = {}
+    for key in (
+        "success",
+        "grasp",
+        "at_rest",
+        "termination_reason",
+        "executed_steps",
+        "commands_sha256",
+        "final_distance_cm",
+        "first_grasp_step",
+        "first_place_step",
+    ):
+        if first.get(key) != second.get(key):
+            diffs[key] = [first.get(key), second.get(key)]
+    choose_a = [d.get("chosen") for d in first.get("decisions", [])]
+    choose_b = [d.get("chosen") for d in second.get("decisions", [])]
+    if choose_a != choose_b:
+        diffs["chosen_sequence"] = [choose_a, choose_b]
+    inc = [
+        100.0 * float(np.linalg.norm(np.subtract(a["incumbent"], b["incumbent"])))
+        for a, b in zip(first.get("decisions", []), second.get("decisions", []), strict=False)
+        if "incumbent" in a and "incumbent" in b
+    ]
+    if inc and max(inc) > 0:
+        diffs["incumbent_cm_max"] = max(inc)
+    if not image_reading:
+        return {"matches": not diffs, "differences": diffs}
+    exact = set(RERUN_IMAGE_ARMS["exact"])
+    tol = RERUN_IMAGE_ARMS["tolerances"]
+    ok = not (exact & set(diffs))
+
+    def within(key, limit):
+        if key not in diffs:
+            return True
+        a, b = diffs[key]
+        return a is not None and b is not None and abs(float(a) - float(b)) <= limit
+
+    ok = ok and within("final_distance_cm", tol["final_distance_cm"])
+    ok = ok and within("first_grasp_step", tol["first_grasp_step"])
+    ok = ok and within("first_place_step", tol["first_place_step"])
+    ok = ok and diffs.get("incumbent_cm_max", 0.0) <= tol["incumbent_cm_per_decision"]
+    return {"matches": bool(ok), "differences": diffs}
+
+
+# Owner ruling 2026-09-29 on the renderer ("Accept, record every retry (Recommended)"; the GO
+# render check: "Yes, count it as a pass (Recommended)"). A vote or re-render may resolve a frame
+# disagreement only when the full simulator state (qpos, qvel, act, ctrl, time) of the disagreeing
+# renders is bitwise equal and the frames differ by at most one intensity level in at most
+# ``max_pixels`` pixels (largest seen: 7); anything else is a V with the pixel differences recorded.
+RENDER = {
+    "max_level_difference": 1,
+    "max_pixels": 16,
+    "retries": 2,
+    "state": "sha256 of qpos, qvel, act, ctrl and time (the whole MjData simulation state)",
+}
+
+
+def frame_difference(a, b) -> dict:
+    """Pixel difference of two uint8 frames: the largest level difference and the count of
+    pixels (any channel) that differ."""
+    d = np.abs(np.asarray(a, np.int16) - np.asarray(b, np.int16))
+    return {"max_level": int(d.max()) if d.size else 0, "pixels": int((d.max(-1) > 0).sum())}
+
+
+def render_difference_allowed(diff: dict) -> bool:
+    return (
+        diff["max_level"] <= RENDER["max_level_difference"]
+        and diff["pixels"] <= RENDER["max_pixels"]
+    )
+
+
 AUTHORISATION_SCOPE = (
     "the owner's authorisation PR for the gated stage may add the gated harness (the runner's "
     "stage_gated and its tests), the authorisation record and the manifest's gated_authorization "
@@ -1010,7 +1112,9 @@ MEMORY = {
     "ceiling_gib": 12.0,
     "headroom_gib": 4.0,
     "sample_seconds": 0.5,
-    "measure": "summed VmRSS of the runner and all its descendants (/proc), sampled every 0.5 s",
+    "measure": "summed PSS (/proc/<pid>/smaps_rollup) of the runner and all its descendants, "
+    "sampled every 0.5 s; summed VmRSS is recorded beside it",
+    "measure_key": "pss",
 }
 FEATURE_ANCHOR = {"frames": 256, "max_abs_pooled_difference": 1e-3}
 CAPS_SECONDS = {
@@ -1181,6 +1285,9 @@ def frozen_block() -> dict:
             "sim_workers": SIM_WORKERS,
             "h_workers": H_WORKERS,
             "memory": MEMORY,
+            "render": RENDER,
+            "image_reading_arms": IMAGE_READING_ARMS,
+            "rerun_image_arms": RERUN_IMAGE_ARMS,
             "h_worker_torch_threads": H_WORKER_TORCH_THREADS,
             "devices": DEVICES,
             "feature_anchor": FEATURE_ANCHOR,
