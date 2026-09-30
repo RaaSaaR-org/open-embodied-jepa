@@ -313,16 +313,28 @@ def cmd_isaac(args) -> int:
 # ----- MuJoCo sensitivity ------------------------------------------------------------------
 def _sensitivity_one(task: dict) -> dict:
     """MuJoCo open-loop replay of the reference commands with the apple's reset xy moved by
-    ``offset_m`` (a calibration of how much a tiny state difference changes the outcome)."""
+    ``offset_m`` and, optionally, seeded noise on the joint targets (a calibration of how much a
+    small difference changes the outcome in MuJoCo itself)."""
     ref = np.load(Path(task["reference"]) / f"closed_{task['key']}.npz")
     reset = dict(task["reset"])
     reset["object_xy"] = (np.asarray(reset["object_xy"]) + task["offset_m"]).tolist()
+    targets = np.asarray(ref["rec_targets"], float).copy()
+    if task["noise_rad"] > 0:
+        # seeded Gaussian noise on every non-leg joint target after the look, inside limits
+        sim = _W["robot"].sim
+        rng = np.random.default_rng(task["noise_seed"])
+        look = task["closed"]["look_steps"]
+        legs = np.array([any(k in n for k in ("hip", "knee", "ankle")) for n in sim.joint_names])
+        noise = rng.normal(0.0, task["noise_rad"], targets[look:].shape)
+        noise[:, legs] = 0.0
+        limits = sim.model.jnt_range[sim.joint_ids]
+        targets[look:] = np.clip(targets[look:] + noise, limits[:, 0], limits[:, 1])
     summary, arrays = ie.replay_open_loop(
         _W["robot"],
         seed=task["seed"],
         reset=reset,
         initial_q=ref["rec_initial_q"],
-        targets=ref["rec_targets"],
+        targets=targets,
         look_steps=task["closed"]["look_steps"],
     )
     rq = _W["recorder"].arrays()["rec_q"]
@@ -330,6 +342,8 @@ def _sensitivity_one(task: dict) -> dict:
     return {
         "key": task["key"],
         "offset_m": task["offset_m"],
+        "noise_rad": task["noise_rad"],
+        "noise_seed": task["noise_seed"],
         "at_rest": summary["at_rest"],
         "reference_at_rest": task["closed"]["at_rest"],
         "final_distance_cm": summary["final_distance_cm"],
@@ -351,7 +365,15 @@ def cmd_sensitivity(args) -> int:
         for angle in args.angles_deg:
             a = np.deg2rad(angle)
             offset = args.offset_mm / 1000 * np.array([np.cos(a), np.sin(a)])
-            tasks.append({**r, "reference": str(args.reference), "offset_m": offset.tolist()})
+            tasks.append(
+                {
+                    **r,
+                    "reference": str(args.reference),
+                    "offset_m": offset.tolist(),
+                    "noise_rad": args.target_noise_rad,
+                    "noise_seed": int(args.noise_seed + len(tasks)),
+                }
+            )
     args.output.mkdir(parents=True)
     pool = mp.get_context("spawn").Pool(args.workers, initializer=_mujoco_init)
     try:
@@ -367,6 +389,8 @@ def cmd_sensitivity(args) -> int:
         **provenance(),
         "reference": str(args.reference),
         "offset_mm": args.offset_mm,
+        "target_noise_rad": args.target_noise_rad,
+        "noise_seed": args.noise_seed,
         "angles_deg": list(args.angles_deg),
         "replays": len(rows),
         "at_rest": sum(r["at_rest"] for r in rows),
@@ -588,6 +612,8 @@ def main() -> int:
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--offset_mm", type=float, default=0.1)
     p.add_argument("--angles_deg", type=float, nargs="+", default=[0.0, 90.0, 180.0, 270.0])
+    p.add_argument("--target_noise_rad", type=float, default=0.0)
+    p.add_argument("--noise_seed", type=int, default=9025)
     p.add_argument("--workers", type=int, default=4)
     p = sub.add_parser("compare")
     p.add_argument("--reference", type=Path, required=True)
