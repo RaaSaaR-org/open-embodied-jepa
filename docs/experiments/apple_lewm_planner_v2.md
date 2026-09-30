@@ -28,6 +28,8 @@ TASK-072 run-1's perception seeds and D2. It refits run-1's readouts and reprodu
   would not show that LeWM is necessary: the design probes predict that the readout twin does
   about as well (§2). The limitations are in §9b.
 
+**Addendum A1 (2026-10-01, at the end of this document).** The train stage's run-1 ended V on G-memory after its boundary. A1 records the V, the memory fix (no computed number changes; the frozen block and its sha are unchanged), the full-scale smoke, and the finding that O2's encoded-readout bar (1.0 cm) is above this corpus's readout ceiling (about 2.9 cm), which is not a code bug.
+
 Manifest: `benchmarks/manifests/apple-lewm-planner-v2.json` (the frozen block, the stored cohort
 values and digests, the corpus plan's digest, the pins, the smoke record).
 - **Design:** `src/embodied_jepa/lewm_planner_v2.py`.
@@ -870,3 +872,173 @@ On the Linux PC, with 6 simulation workers and the GPU shared with the resident 
 | X-3 | resets as TASK-047's | the re-draw rule (§3.2) | 1–2 % of resets have no −y direction (delegated) |
 | X-4 | decisions 405–485 "every 16" | exactly 405, 421, 437, 453, 469, 485 | fixed in code |
 | X-5 | the P-far "recipe" | §3.5, with the plate's run-time re-read and the BC rows' true plate at the latest decision step | a run-time plate input under the move (delegated) |
+
+## Addendum A1 (2026-10-01): the train run-1 V, its memory fix and O2's encoded readout
+
+This addendum is an amendment after the train stage's boundary. It changes **no computed number,
+no threshold, no fit, no selection and no batch**. The frozen block is unchanged (frozen sha
+`2cf80f5a…e36a`); only the pins of `scripts/run_lewm_planner_v2.py` and
+`tests/test_lewm_planner_v2.py` change. The frozen block stays as it was, so K1's K1-PASS report
+and the sealed `apple-far-shift-v2` corpus, both recorded under `2cf80f5a…`, remain valid
+upstream evidence (`read_stage_report` refuses a report from another frozen block).
+
+### A1.1 The V, verbatim
+
+Stage 3 (`train`) ran once under the GO, at `9d9b03c` in the run worktree `task074-run`, and ended
+**V**. The runner's log, verbatim (local time, CEST = UTC+2):
+
+```
+[00:09:00] VOID: StageInterrupted: G-memory: process-tree PSS 12.04 GiB > 12.00 GiB (SIGUSR1)
+[00:09:00] report written: outcome V
+```
+
+- report `outputs/task074-train/run-1/report.json`, sha256
+  `78137de0c28211833be458f956f7e1f03c2b5c58f75998fb8d42fa2f45ce80df`;
+- `started_utc` 2026-09-30T22:00:02Z, `first_outcome_utc` 22:04:01Z, `interrupted_utc` and
+  `ended_utc` 22:09:00Z (538 s);
+- `memory`: peak tree PSS 12.036 GiB (RSS 12.057 GiB), 935 samples, **1 process** (no pool worker
+  was alive), no RSS fallback;
+- the stages written: `features` (76 464 frames, 432 roots, 155 s), `readouts` and
+  `blind_baselines` (`baselines.json`, sha256 `ff3a2e7b…d07e`, see A1.5); no checkpoint;
+- the traceback ends in `train_model` → `val_criterion` → `normalized_sq_error`: the first
+  calibration model (W-7410), at a val-criterion evaluation, about 3.5 minutes into calibration.
+
+**The V came after the boundary** (`first_outcome_utc` had been written). Under §7 the train stage
+may be repeated **once, from scratch, after a reviewed fix**. This addendum is that fix. Nothing
+in the V is read as an outcome.
+
+### A1.2 Diagnosis (measured)
+
+A scratch harness ran `stage_train`'s code, step for step and with a labelled PSS timeline
+(every 0.25 s), on the frozen-code smoke corpus (`68499d90…`, 14 read episodes) presented at the
+real split sizes (240 train + 30 val slots, each slot decoded afresh) plus the real
+`apple-look-v2-linux` train and val roots (190). It never opened `apple-far-shift-v2`. The only
+things read from that corpus were the uncompressed sizes of its `frames.npy` members, from the
+zip headers: 26.96 MiB per episode on average over its 300 episodes.
+
+| phase (pre-fix code, `outputs/task074-fix-diag-1`) | PSS at the phase's end | phase peak |
+|---|---|---|
+| featurisation of 430 roots (76 110 frames) | **10.18 GiB** | 10.24 |
+| R-plate fit / R_off fit | 10.68 / 10.23 | 10.97 / 11.30 |
+| blind baselines, train context | 9.78 / 9.79 | 11.24 |
+| calibration W-7410, 6 000 updates | 10.92 (steady 10.96–11.03) | **11.56**, at each val criterion |
+
+- **Root cause.** R-plate's rows were collected as `frames[t]`, a NumPy **view** into the
+  episode's whole decoded `frames` array. Each far episode's view kept its full array alive after
+  the loop moved on: 270 far episodes × about 27 MiB ≈ **7.1 GiB** held for the whole stage. The
+  anchor frames (`frames[sl][:take]`, the first 16 far episodes) did the same.
+- **No leak in training.** Calibration PSS is flat over 6 000 updates. Each val-criterion call
+  (1 148 windows in chunks of 256, float64 differences) adds a transient of about 0.55 GiB, and
+  that is where the real run crossed 12 GiB, from a baseline already at about 11 GiB.
+- **The other candidates were measured and ruled out.** The feature table is about 1.8 GiB
+  (76 110 × 6 144 float32). The R-plate token matrix is freed after its fit. The pool workers were
+  not alive (1 process). The float64 promotions in the val criterion are transient.
+- **Why the pre-freeze probe missed it** (8.77 GiB against 12). `train_scale_probe` decoded the
+  14 smoke episodes **once**, held them in a cache (about 0.39 GiB of frames), and cycled their
+  pooled features into the full-size table. So the per-episode term scaled with 14 episodes, not
+  270. It also ran its own copy of the featurisation loop, not the stage's.
+- The harness reproduces the real run's peak to within about 0.5 GiB (11.56 against 12.04 GiB).
+  Its smoke episodes are 786 frames long, and the real run's machine state differed.
+
+### A1.3 The fix, and the proof that no number changes
+
+The code change is in `scripts/run_lewm_planner_v2.py` only:
+- **`featurise_sources`.** The stage's featurisation loop moves, unchanged, into one function that
+  copies what it keeps from an episode: `frames[t].copy()` and `arrays["plate"][t, :2].copy()`
+  for R-plate's rows, and a copy of each anchor frame. It then deletes the episode's arrays. The
+  copies hold the same bytes, so every array downstream is equal.
+- **`train_scale_probe`** now calls the same `featurise_sources`. `CycledReader` presents the
+  smoke corpus at the real split sizes (240 + 30) and decodes each slot afresh, and the real
+  `apple-look-v2-linux` train and val roots (170 + 20) are read, as the real stage reads them.
+  Then the probe runs, in the real stage's order: R-plate on the train decision frames' tokens,
+  R_off, the val tokens, the blind baselines, the train context, W and N × 3 (100 updates, each
+  with one val criterion, the V's site) and O1/O2.
+- **The margin check.** The smoke fails (**G-memory-margin**) unless the stage's peak is at least
+  `TRAIN_SCALE_MARGIN_GIB` = **2.0 GiB** below the 12 GiB ceiling. This is a smoke-only guard in
+  the runner, not a frozen-block change.
+- **Tests** (`tests/test_lewm_planner_v2.py`): every kept frame and plate row owns its bytes and
+  equals the decoded source; the stage and the probe share the featurisation; the probe decodes
+  every slot at the real split sizes, never the test split; the margin is at least 2 GiB.
+
+**No number changes.**
+- **The train smoke at the fix commit** (`e9da1cc`, clean tree, frozen sha `2cf80f5a…`, report
+  `c0044bb6…a532`) ran on the frozen-code smoke's own inputs (K1 smoke report `6c38f56b…`, corpus
+  `68499d90…`). It reproduced the frozen-code train smoke (§10.1, `ac6158aa…`, at `755ec60`,
+  whose TASK-074 code is byte-identical to `9d9b03c`) exactly:
+  - **all 998 computed leaf values** in `stages` are identical: features and the anchor,
+    readouts, blind baselines, calibration curves and the budget rule, the W/N records, O1, O2
+    and the primary seed. Only run paths and seconds differ;
+  - `baselines.json`, `r_off.npz` and `r_plate.npz` are byte-identical;
+  - every W/N checkpoint sha256 is identical.
+- **At full scale,** the harness with the fixed featurisation (`outputs/task074-fix-diag-2`)
+  gives calibration val-criterion values at 1 000, 2 000 and 3 000 updates that are bit-identical
+  to the pre-fix harness's: 0.41906400043324543, 0.34922501589278376 and 0.31230354847989067.
+
+### A1.4 The new memory measurements at full scale
+
+| measurement | pre-fix | post-fix |
+|---|---|---|
+| scratch harness, the stage's path at real sizes: PSS after featurisation | 10.18 GiB | **3.47 GiB** |
+| scratch harness: peak over featurisation, readouts, baselines and calibration | 11.56 GiB | **5.01 GiB** |
+| the train smoke's `train-scale` probe (the stage's own function, real sizes): stage peak | 8.77 GiB (under-measured, A1.2) | **7.82 GiB**, 4.18 GiB below the ceiling (margin 2.0 GiB: passes) |
+
+- **The probe record.** 430 roots, 76 110 frames. R-plate was fitted on 1 338 rows; the real run
+  had 1 350, because the smoke's slots cycle 14 episodes. The train set has 64 722 windows and the
+  val criterion 1 148. The probe took 709 s, and the whole smoke 1 263 s.
+- **Why the probe's peak is above the harness's.** The probe runs after the smoke's own stage, in
+  the same process: its PSS before the probe was already 3.20 GiB.
+- **The start load.** The smoke started at loads 0.50 / 1.24 (1 and 5 min). Another user's job
+  later raised the load to about 13. That affects time, not PSS.
+
+### A1.5 O2's encoded readout: checked against the text, not a bug
+
+The V's `baselines.json` shows `encoded_median_cm` **2.87** (persistence 4.35, clock prior 3.12;
+90 moving windows on 22 val roots). O2 requires R_off on encoded latents at t + 16 to have a
+median ≤ 1.0 cm (§6.2). That statistic does not depend on W, so as frozen, O2 fails on every seed.
+**This number was seen before any fix and before this check.** For that reason the check below
+changes nothing: no code, no bar, no window.
+
+`o2_statistics` and `fit_r_off` were read against §5, §6.2 and `READOUTS`, and match them:
+- **Windows.** `table.windows(val roots, start_steps=DECISION_STEPS)` gives the windows at 405,
+  421, …, 485 on every `apple-far-shift-v2` val root, with rows that never cross a root. The
+  moving cohort is ‖offset[t + 16] − offset[t]‖ ≥ 0.01 m (`O2["moving_threshold_m"]`), with
+  `wc.CHUNK` = 16 commands.
+- **Alignment.** The collector appends `frames`, `apple` and `plate` together in one
+  `observe_row`, after reset and after every executed command (`wm_critic_v2_runtime.
+  run_collect_task`). So row t is the observation after t commands, and `applied[t]` leaves
+  frame t. The table's row `first + k` is step `first_step + k` = 384 + k.
+- **The statistic.** It is `R_off.predict(f[:, 16])` against `100 · offset[t + 16]`: metres to
+  centimetres, a Euclidean distance, the median over windows. `wc.o2_passes` compares it with
+  1.0 cm.
+- **R_off.** A primal ridge (with intercept, train-standardised) from the pooled 4 × 4 DINOv2 patch
+  tokens (6 144-d, `pool_tokens` of the final patch tokens) to the apple-minus-plate offset xy in
+  m. It is fitted on the `apple-far-shift-v2` **train** roots only, at every 8th band frame from
+  384 (5 175 rows, 225 groups), with λ by 5-fold inner CV grouped by root. That is `READOUTS`
+  verbatim. It never sees a val root.
+
+**Finding.** The code computes what the text says. The readout ceiling of this R_off on this
+corpus is about 2.9 cm, above the frozen 1.0 cm bar. The re-run is deterministic, and the fix
+changes no number. So **the re-run's O2 is already known to fail its encoded-readout bar on every
+seed**, and its offline decision will be L-NO-DYNAMICS, L-O2-VOID or L-G2A (§5 item 7, first
+match), never OFFLINE-PASS. That is recorded here, before the re-run, and is not changed.
+Whether to spend the one repeat on a train stage whose offline row is already decided is for the
+coordinator or the owner.
+
+**How the 1.0 cm bar was set.**
+- It was carried verbatim from TASK-073 (`wm_critic_v2.O2["encoded_median_max_cm"]`, §6.2 of
+  `apple_wm_critic_v2.md`). No calibration of it is recorded in either protocol.
+- TASK-073's O2 baselines (its §9.4) used **the true offset standing in for a perfect readout**.
+  So the encoded readout's own error was never measured before either freeze. TASK-073 closed at
+  K0 (S-NO-CONDITION) before any train stage ran.
+- TASK-074's design probes (§2) measured a different readout: Probe C, a kernel-ridge **plate**
+  readout on full tokens, 0.55–0.69 cm median. They did not measure R_off on pooled latents.
+- **What the smokes showed, before #113 merged.** In each case the smoke readout was fitted on a
+  handful of smoke roots and labelled "nothing is read":
+  - TASK-074's frozen-code train smoke: `encoded_median_cm` 3.21 cm (12 windows, 3 roots);
+  - TASK-073's development smokes (`task073-fix` chain-1 and verify-3): 2.31 cm (9 windows,
+    2 roots).
+
+  Both were above 1.0 cm.
+- The closest earlier project figure is TASK-054's encoded-target readout error of 2.47–2.59 cm.
+  It was measured on moving windows at h = 8, with a different encoder and a different quantity
+  (palm–apple); it alone exceeded that protocol's 1.5 cm rollout bar (G1).
