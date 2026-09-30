@@ -4722,7 +4722,7 @@
   }
  },
  "corpus_plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
- "protocol_document_sha256": "6ac238a9b536d8d6192438d5205f5884edc358969448b53df83e95928f6000cf",
+ "protocol_document_sha256": "3ce31021eae15746f0943fa4ffe3ce6834eee40b4d2ed0a7a487d8cf36b69442",
  "encoder_digests": {
   "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
   "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
@@ -4925,6 +4925,326 @@
    "status": "historical: ran on an uncommitted working tree; not the record for the GO (protocol \u00a710.2)"
   },
   "frozen_code": {
+   "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+   "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+   "seeds": "54650-54699 only; mechanics; nothing is read",
+   "machine": "every stage, decide included, started on a quiet machine (1- and 5-minute load <= 2.0 by os.getloadavg, MemAvailable >= 16 GiB)",
+   "reports": {
+    "render": {
+     "outcome": "SMOKE-COMPLETE",
+     "sha256": "e751917be435d94a646ef7e318b34c7899e78be12b7a53a3922e1c24305b6ce1",
+     "seconds": 42.8,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 8.308,
+     "load_average_at_start": [
+      0.5029296875,
+      0.7626953125,
+      1.88134765625
+     ],
+     "quiet_machine": true,
+     "upstream": {},
+     "path": "outputs/task074-scratch/frozen2/render/report.json"
+    },
+    "k1": {
+     "outcome": "K1-PASS",
+     "sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787",
+     "seconds": 58.2,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 8.153,
+     "load_average_at_start": [
+      1.833984375,
+      1.23388671875,
+      1.96533203125
+     ],
+     "quiet_machine": true,
+     "upstream": {},
+     "path": "outputs/task074-scratch/frozen2/k1/report.json"
+    },
+    "corpus": {
+     "outcome": "CORPUS-SEALED",
+     "sha256": "f99e6d43a0520934729bdbf8083a3ae5b9acb7ab2f3f121434e12b6cddcedadb",
+     "seconds": 21.6,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 7.465,
+     "load_average_at_start": [
+      1.82373046875,
+      1.671875,
+      2.06298828125
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "K1-PASS": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/k1/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/corpus/report.json"
+    },
+    "train": {
+     "outcome": "TRAIN-COMPLETE",
+     "sha256": "ac6158aab445ef37cfedca4529a3158ee0d84c67469c94c3060edd942c6db169",
+     "seconds": 1124.1,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 8.767,
+     "load_average_at_start": [
+      1.91796875,
+      1.73486328125,
+      2.06982421875
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "K1-PASS": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/k1/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787"
+      },
+      "corpus": {
+       "k1_report_sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787",
+       "manifest_sha256": "68499d90c4ee4e0c4cf76b861ed1eafc657df1bcee26f6913d803c4015d11c46",
+       "path": "outputs/task074-scratch/frozen2/far-corpus"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/train/report.json"
+    },
+    "pfar": {
+     "outcome": "PFAR-COMPLETE",
+     "sha256": "232add71bd8dfb164962ac642ab4428d12eeaac94d849296454e41c24197ea9e",
+     "seconds": 59.5,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 9.436,
+     "load_average_at_start": [
+      0.013671875,
+      1.99560546875,
+      5.2177734375
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "TRAIN-COMPLETE": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/train/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "ac6158aab445ef37cfedca4529a3158ee0d84c67469c94c3060edd942c6db169"
+      },
+      "corpus": {
+       "k1_report_sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787",
+       "manifest_sha256": "68499d90c4ee4e0c4cf76b861ed1eafc657df1bcee26f6913d803c4015d11c46",
+       "path": "outputs/task074-scratch/frozen2/far-corpus"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/pfar/report.json"
+    },
+    "rank": {
+     "outcome": "RANK-COMPLETE",
+     "sha256": "369d9b5386978e06806fef618bfb885cb40b11bc1660108f1404ea1d7b6551ea",
+     "seconds": 96.8,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 7.34,
+     "load_average_at_start": [
+      0.94384765625,
+      1.97998046875,
+      4.83984375
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "K1-PASS": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/k1/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787"
+      },
+      "TRAIN-COMPLETE": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/train/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "ac6158aab445ef37cfedca4529a3158ee0d84c67469c94c3060edd942c6db169"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/rank/report.json"
+    },
+    "decide": {
+     "outcome": "L-NO-DYNAMICS",
+     "sha256": "6b4cf57650740c390828257c953e07ccad59e763a5c208a09313e4a48304a799",
+     "seconds": 2.0,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 0.767,
+     "load_average_at_start": [
+      0.833984375,
+      1.90478515625,
+      4.3251953125
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "K1-PASS": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/k1/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787"
+      },
+      "RANK-COMPLETE": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/rank/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "369d9b5386978e06806fef618bfb885cb40b11bc1660108f1404ea1d7b6551ea"
+      },
+      "TRAIN-COMPLETE": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/train/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "ac6158aab445ef37cfedca4529a3158ee0d84c67469c94c3060edd942c6db169"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/decide/report.json"
+    },
+    "d3": {
+     "outcome": "D3-SMOKE",
+     "sha256": "35361b9fdff0768237000ac3ecad80447a14aefb97cd5ad65f75f2dd54fb646b",
+     "seconds": 110.2,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 8.324,
+     "load_average_at_start": [
+      0.84765625,
+      1.8896484375,
+      4.30712890625
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "PFAR-COMPLETE": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/pfar/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "232add71bd8dfb164962ac642ab4428d12eeaac94d849296454e41c24197ea9e"
+      },
+      "decision": {
+       "path": "outputs/task074-scratch/frozen2/decide/decision.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "f2e5d3fb9579466adb0c102ca25b1a93637c392a5e792ad342f42cb0c8c61a97"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/d3/report.json"
+    }
+   },
+   "corpus_manifest_sha256": "68499d90c4ee4e0c4cf76b861ed1eafc657df1bcee26f6913d803c4015d11c46",
+   "facts": {
+    "render_check": "IDENTICAL",
+    "g_repro": "8/8",
+    "o5_median_smoke": 0.21042679325542019,
+    "corpus_summary": {
+     "at_rest": 5,
+     "complete": 14,
+     "counted_success": 5,
+     "grasp": 12,
+     "off_plate": 8,
+     "roots": 16,
+     "shift_applied": 12,
+     "shift_blocked": 2
+    },
+    "train_scale": {
+     "ceiling_gib": 12.0,
+     "frames": 81420,
+     "note": "smoke data cycled to the real stage's sizes; memory only, nothing is read",
+     "o1_windows": {
+      "overall": 1230
+     },
+     "r_plate_lambda": 1000.0,
+     "r_plate_rows": 1440,
+     "roots": 460,
+     "seconds": 574.1553945030319,
+     "stage_peak_tree_pss_gib_so_far": 8.76701831817627,
+     "tree_pss_gib_after": 6.152588844299316,
+     "tree_pss_gib_before": 3.577866554260254
+    },
+    "feature_anchor": {
+     "bound": 0.001,
+     "frames": 208,
+     "max_abs_difference": 4.414469003677368e-05
+    },
+    "pfar_scale": {
+     "ceiling_gib": 12.0,
+     "note": "smoke rows tiled to the real stage's size; memory only, nothing is read",
+     "rows": 195750,
+     "seconds": 0.9493565689772367,
+     "stage_peak_tree_pss_gib_so_far": 9.435932159423828,
+     "tree_pss_gib_after": 9.423240661621094,
+     "tree_pss_gib_before": 9.236404418945312
+    },
+    "latency": {
+     "decisions": 24,
+     "median_seconds": 0.5431814239709638,
+     "p90_seconds": 0.5734896988375112,
+     "max_seconds": 0.5848809940507635
+    },
+    "rerun": {
+     "H-twin": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ],
+     "L-plan": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ]
+    },
+    "shift_blocked_d3": {
+     "B-oracle-shift": 0,
+     "H-handover": 0,
+     "H-twin": 0,
+     "L-N": 0,
+     "L-plan": 0,
+     "L-rand": 0,
+     "L-shuf": 0,
+     "P-far": 0,
+     "P-stale": 0,
+     "P-truth": 0
+    }
+   }
+  },
+  "superseded_510347a": {
    "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
    "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
    "seeds": "54650-54699 only; mechanics; nothing is read",
@@ -5132,7 +5452,8 @@
      "P-stale": 0,
      "P-truth": 0
     }
-   }
+   },
+   "status": "superseded: the re-review changed the frozen block (protocol \u00a710.2)"
   }
  },
  "hashes": {

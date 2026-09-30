@@ -720,7 +720,40 @@ recorded.
 
 ### 10.1 The frozen-code smokes (the record for the GO)
 
-FROZEN_SMOKE_SECTION
+After the re-review of #113, the final code was committed first, as `755ec60`. Then **eight
+smokes** ran at that exact commit and frozen sha `2cf80f5a…e36a`, on a clean tree
+(`tracked_tree_dirty: false`) and smoke seeds only: render, k1, corpus, train, pfar, rank, decide
+and d3.
+- **A new corpus smoke** was collected at this code, and train, pfar, rank and d3 consumed it and
+  each other's reports.
+- **Every stage, decide included,** waited for a quiet machine: 1- and 5-minute load ≤ 2.0 by
+  Python's `os.getloadavg`, and MemAvailable ≥ 16 GiB.
+- **The manifest's `smoke.frozen_code` block records:**
+  - the revision and the frozen sha;
+  - every report's sha256 and its unrounded start loads;
+  - the upstream reports and the corpus each stage consumed (`upstream`).
+- **The smoked code is the frozen code.** After the smokes, only this document and the manifest
+  changed; neither is pinned. The manifest also records this document's final sha256
+  (`protocol_document_sha256`).
+
+| smoke (report sha256) | start load (1, 5 min) | upstream checked | result |
+|---|---|---|---|
+| render (`e751917b…`) | 0.503, 0.763 | — | G-repro 8/8; **IDENTICAL** (128 renders, 0 odd); 43 s; peak PSS 8.31 GiB |
+| k1 (`6c38f56b…`) | 1.834, 1.234 | — | every K1 arm ran on 4 seeds at 9 cm; O5 median 0.210 (bar 0.25; read by nothing); 58 s; peak PSS 8.15 GiB |
+| corpus (`f99e6d43…`, corpus manifest `68499d90…`) | 1.824, 1.672 | K1 report | 16 roots sealed; 14 complete; **2 moves blocked** (re-collected unshifted, flagged); 22 s; peak PSS 7.47 GiB |
+| train (`ac6158aa…`) | 1.918, 1.735 | K1 report; corpus (kind, K1 link) | anchor 4.4e-5 (bound 1e-3); **train-scale: 81 420 frames, 460 roots, R-plate on 1 440 × 98 304 rows, O1 on 1 230 val windows: peak tree PSS 8.77 GiB against 12**; the probe took 574 s; the whole smoke took 1 124 s |
+| pfar (`232add71…`) | 0.014, 1.996 | train report; corpus (the same one as train's); R-plate sha256 | complete; **pfar-scale** (195 750 rows, workers alive): **peak tree PSS 9.44 GiB against 12** |
+| rank (`369d9b53…`) | 0.944, 1.980 | K1 and train reports; artefact sha256s | 36 groups; blind rankers written first; 97 s; peak PSS 7.34 GiB |
+| decide (`6b4cf576…`) | 0.834, 1.905 | K1, train and rank reports | a row is computed (meaningless with smoke models) |
+| d3 (`35361b9f…`) | 0.848, 1.890 | the decision (frozen sha checked); the P-far report; the artefact sha256s | all 10 arms ran, with no fallback, no blocked move and no privileged read; **L-plan decision latency (4 workers × 4 threads, GPU service running): median 0.543 s, p90 0.573 s, max 0.585 s over 24 decisions (G6 0.8 s)**; **re-run of L-plan and H-twin on 2 seeds: every field identical**; 110 s; peak PSS 8.32 GiB |
+
+**Margins, stated plainly:**
+- **Start loads.** Several 5-minute loads were just under the bar: pfar 1.996, rank 1.980, and
+  train, decide and d3 around 1.9. Their 15-minute loads were 4–5, because the earlier stages of
+  the chain had just run. They comply, but only just.
+- **The d3 latency** (median 0.543 s against 0.8 s) was measured in that state.
+- **P-far memory** (9.44 of 12 GiB) was probed with the rows at full size, but not the val rows
+  at full size and not a full-length training (§8.2).
 
 ### 10.2 Superseded frozen-code smokes (at `510347a`, frozen sha `32c2d748…2393`)
 
