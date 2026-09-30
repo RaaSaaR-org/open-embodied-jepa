@@ -90,7 +90,7 @@ def usd_threads() -> dict:
 
     return {
         "usd_version": ".".join(str(v) for v in Usd.GetVersion()),
-        "pxr_path": str(Path(pxr.__file__).parent),
+        "pxr_path": [str(p) for p in getattr(pxr, "__path__", [])],
         "env_PXR_WORK_THREAD_LIMIT": os.environ.get("PXR_WORK_THREAD_LIMIT"),
         "work_concurrency_limit": int(Work.GetConcurrencyLimit()),
         "work_physical_concurrency_limit": int(Work.GetPhysicalConcurrencyLimit()),
