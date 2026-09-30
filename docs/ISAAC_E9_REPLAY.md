@@ -16,7 +16,7 @@ This is a development step on the Linux PC (RTX 5080), following [ISAAC_NEWTON_S
 - **The at-rest outcome does not match seed by seed.**
   - At rest in MuJoCo: 31/32.
   - At rest in Isaac: 24–26/32 in each of four Isaac cells (closed and open loop, two runs each).
-  - Every Isaac failure is the same kind of failure: the apple rests supported and still on the plate, with no hand contact, but its centre is 4.0–4.6 cm from the plate centre, just outside the 4 cm radius.
+  - Every Isaac failure is the same kind of failure: the apple rests supported and still on the plate, with no hand contact, but its centre is just outside the 4 cm radius. It ends 3.99–4.60 cm from the plate centre, and every failure exceeds 4 cm within the 20-step at-rest window. Two failures end just below 4 cm (3.994 and 3.999 cm), and their windows reach 4.006 and 4.009 cm.
 - **The mismatch is about as large as Isaac's own run-to-run variation.**
   - Two Isaac runs of the same attempts disagree on the at-rest outcome in 10 of 32 attempts in each mode. Their final apple positions differ by a median of 1.9–2.4 cm.
   - This is about the same as the Isaac–MuJoCo gap: a median of 1.4–2.3 cm per cell.
@@ -30,8 +30,8 @@ Code:
 - `src/embodied_jepa/isaac_e9.py` (NumPy only at import);
 - `scripts/isaac/e9_replay.py` (host side);
 - `scripts/isaac/e9_server_isaac.py` (container side);
-- `scripts/isaac/startup_probe.sh`;
-- tests in `tests/test_isaac_e9.py` and `tests/test_isaac_transport.py`.
+- `scripts/isaac/startup_probe.sh` and `scripts/isaac/serve_with_watchdog.sh` (§4);
+- tests in `tests/test_isaac_e9.py`, `tests/test_isaac_transport.py` and `tests/test_isaac_watchdog.py`.
 
 - **MuJoCo reference.** `e9_replay.py mujoco` runs TASK-070's own harness, `resting_expert.run_attempt`, unchanged, on `v2.make_v2_robot()`. The harness is: wide-jitter reset, the look, e9 (`RestingPlaceExpert(release_pitch_rad=0.45, release_dx=0.015)`) and the 60-step settle, followed by `apple_at_rest_v0`.
   - Attempts: 16 seeds × plate error 0 and 1.0 cm = 32.
@@ -40,7 +40,7 @@ Code:
   - Each joint-target command goes over a Unix socket to an `IsaacTransport(physics="newton", objects=True, render=False)` in the container.
   - The reply carries Isaac's state: joints, apple pose and velocity, plate, Isaac's own contact list and its apple–hand flag. The mirror writes this state into its local `MjData`.
   - So everything that reads `sim.data` reads Isaac's state: the embodiment's IK, `ee_pose`, e9's phase logic, the scorer and the at-rest check.
-  - `task_truth()` uses Isaac's apple–hand contact. The mirror's own geometric flag agreed with it on ≥ 99.75 % of steps in every attempt.
+  - `task_truth()` uses Isaac's apple–hand contact. The mirror's own geometric flag agreed with it on ≥ 99.7 % of steps in every attempt (minimum 99.748 %). §6 lists the one-substep offset between the two.
   - The privileged expert reads exactly what it reads in MuJoCo, now from Isaac.
 - **Isaac, open loop.** MuJoCo's recorded joint-target arrays are replayed unchanged after the same reset, and scored the same way (`isaac_e9.replay_open_loop`).
 - **mj_step layout.** After `mj_step`, MuJoCo's `MjData` has the new `qpos` but body and site poses and contacts of the state *before* the last physics step, and TASK-070's harness reads them that way.
@@ -77,6 +77,8 @@ Host MuJoCo is 3.13.0.
 | `e9-mujoco-sens-noise0.001-1`, `…0.005-1` | `dfa8e46`, clean | MuJoCo, 1 and 5 mrad target noise | `0e6188d5`, `c99ecbf3` |
 | `isaac-e9-repeat-1-3` | `cbb12cb` | run 1 against run 3 | `309aa656` |
 | `isaac-e9-startup-{1..8}` | `cbb12cb`, clean | start-up probes (§4) | `isaac-e9-startup-summary.tsv` |
+| `isaac-e9-newton-{1,3}/compare-selfcontact` | `dfa6707` plus the review changes (uncommitted when run; committed unchanged in this PR) | runs 1 and 3 re-compared with the per-run self-contact summary (§5) | `4c05cb86`, `87022ef1` |
+| `isaac-e9-watchdog-smoke-1` | `dfa6707` plus the review changes (as above) | one start through the watchdog, `--startup_only` (§4) | `isaac-e9-watchdog-smoke-1-watchdog.log` |
 
 Note on run 3:
 - Its client and server started at `56f09cb` with a clean tree.
@@ -111,10 +113,12 @@ uv run --no-sync python scripts/isaac/e9_replay.py compare --reference outputs/<
 | Isaac closed loop, run 3 | 12 | 12 | 2.79 / 3.65 / 4.17 | 2.63 / 3.61 / 4.21 |
 | Isaac open loop, run 1 | 12 | 13 | 3.13 / 3.55 / 4.27 | 3.04 / 3.56 / 4.22 |
 | Isaac open loop, run 3 | 13 | 12 | 2.62 / 3.08 / 4.18 | 2.97 / 3.56 / 4.26 |
-| MuJoCo + 1 mrad target noise (2 draws per attempt, of 32) | 31 | 26 | 2.55 / 3.29 / 3.77 (both levels) | 2.74 / 3.43 / 4.34 |
+
+For the noisy-MuJoCo row, the final distance pooled over both plate levels (64 replays) is 2.67 / 3.36 / 3.99 cm.
+| MuJoCo + 1 mrad target noise (2 draws per attempt, of 32) | 31 | 26 | 2.55 / 3.29 / 3.77 | 2.74 / 3.43 / 4.34 |
 
 - **Every Isaac attempt completed**: 128 of 128, with no guard stop, rejection or error. The latched scorer (`AppleToPlateTask`, reported beside the at-rest check) succeeded in all 64 closed-loop Isaac attempts, as in all 32 MuJoCo attempts. The open-loop replay does not run the latched scorer.
-- **Every at-rest failure fails on "inside" only**, in Isaac and in MuJoCo's one failure (1.0 cm, 50206: 4.08 cm). The apple ends supported on the plate, still (≤ 0.001 m/s) and out of hand contact, 4.0–4.6 cm from the centre. The apple never left the plate.
+- **Every at-rest failure fails on "inside" only**, in Isaac and in MuJoCo's one failure (1.0 cm, 50206: 4.08 cm). The apple ends supported on the plate, still (≤ 0.001 m/s) and out of hand contact. It ends 3.99–4.60 cm from the centre, and every failure exceeds 4 cm within the 20-step at-rest window. Two Isaac failures end just below 4 cm: closed run 1, 0.0 cm, 50209 at 3.994 cm (window maximum 4.006 cm), and open run 3, 0.0 cm, 50214 at 3.999 cm (window maximum 4.009 cm). The apple never left the plate.
 - **The MuJoCo reference is consistent with TASK-070.** It gives 16/16 and 15/16 on these seeds. TASK-070's development block 50200–50231 gave 32/32 and 30/32 on the Mac. The Mac per-attempt records are not on this machine, so a seed-by-seed check was not possible.
 
 ### Per attempt
@@ -181,7 +185,7 @@ The table gives Isaac − MuJoCo, per attempt, as min / median / max over the 32
 | --- | --- | --- | --- | --- | --- |
 | grasp | 221 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
 | lift | 245 | −4 / −1 / +1 | −4 / −1 / +1 | −2 / −1 / +1 | −3 / −1 / +1 |
-| lifted | 266 | +1 / +3 / +5 | +1 / +3 / +4 | −1 / −0.5 / 0 | −1 / 0 / 0 |
+| lifted | 265.5 | +1 / +3 / +5 | +1 / +3 / +4 | −1 / −0.5 / 0 | −1 / 0 / 0 |
 | release | 605 | −2 / 0 / +1 | −1 / 0 / +1 | −2 / 0 / +1 | −1 / 0 / +1 |
 | landing | 609 | −1 / 0 / 0 | −1 / 0 / 0 | −1 / 0 / 0 | −1 / 0 / 0 |
 | settle | 719 | −47 / −12.5 / +34 | −47 / −6.5 / +22 | −54 / −10.5 / +31 | −42 / −6.5 / +24 |
@@ -199,12 +203,13 @@ The table gives Isaac − MuJoCo, per attempt, as min / median / max over the 32
 | Arms | 0.118 / 0.065–0.070 | 0.017 / 0.013–0.014 |
 | Dex3 | 0.43 / 0.29–0.30 | 0.43 / 0.28–0.30 |
 
-The ranges combine runs 1 and 3.
+The ranges combine runs 1 and 3. Command indices count all 793 commands, including the 8 of the look, so the grasp (step 221 after the look) is command 229.
 
 - **Dex3.** The worst joint is `right_hand_thumb_1_joint` in every attempt.
-  - It passes 0.01 rad at command 150–152, while the hand descends with no apple contact. It passes 0.1 rad at commands 253–257, while the hand closes around the apple.
-  - In one open-loop attempt (0.0 cm, 50200) the thumb peaks at 0.155 rad apart at command 260, while it is being driven by apple contact. It is 0.018 rad apart while holding, and 0.000 rad after the hand has opened.
-  - The left hand, which never touches anything, agrees to 1.7e-5 rad.
+  - **When the Dex3 group first passes 0.01 rad.** In most attempts this happens at commands 220–222, as the hand closes on the apple. In 2 of 32 attempts per closed-loop cell and 6–7 of 32 per open-loop cell, it happens earlier, at commands 150–152. That earlier crossing is on `right_hand_thumb_2_joint`, while the hand descends with no apple–hand contact in either simulator. There the finger is displaced from its unchanged target in both simulators, by slightly different amounts.
+  - **The worst joint.** `right_hand_thumb_1_joint` itself passes 0.01 rad at commands 220–224 and 0.1 rad at commands 253–265, while the hand closes around the apple. In run 3 it never passes 0.1 rad in 2 closed-loop attempts and 1 open-loop attempt.
+  - **One open-loop attempt (0.0 cm, 50200).** The thumb difference peaks at 0.364 rad at command 263 in run 1 (0.381 rad at command 263 in run 3), while apple contact drives the thumb. It is 0.155 rad at command 260. The median is 0.018 rad while holding (commands 400–579), and it is 0.000 rad after the hand has opened.
+  - The left hand, which never touches anything, agrees to 1.7e-5 rad in that attempt and to at most 2.1e-5 rad over all attempts.
 - **Arms.** In closed loop the arm differences (≤ 0.12 rad) are the IK responding to the different hand and apple state. In open loop the arms follow the same targets and differ by ≤ 0.017 rad, compared with 3.7e-6 rad in the contact-free free-space parity of the spike.
 - **So the divergence is contact-driven,** as the spike's table-contact trajectory suggested for PhysX.
 
@@ -220,8 +225,13 @@ The ranges combine runs 1 and 3.
 | MuJoCo, 1 mrad target noise | 9 of 64 | 1.45 / 2.81 / 4.16 | 0.069 |
 | MuJoCo, 5 mrad target noise | 12 of 64 | 1.55 / 3.19 / 5.12 | 0.52 |
 
-- **Isaac/Newton is not repeatable once there is contact.** Two runs of the same open-loop commands agree to 1e-5 rad for the first ~220 commands in most attempts. They separate at the grasp (median first step over 1e-3 rad: 229; over 1e-2 rad: 244). The final apple positions then differ by centimetres.
-- **Consistent with the spike.** The spike found GPU MuJoCo-Warp repeatable to ~3e-6 rad without contact. Contact amplifies that.
+- **Isaac/Newton is not repeatable once there is contact, and it is not exactly repeatable before contact either.** Open loop, run 1 against run 3 (the largest difference over all 43 joints at each command):
+  - **Before the grasp.** 18 of 32 attempts stay within 1e-5 rad over commands 0–219 (17 of 32 through command 220). Two attempts (0.0 and 1.0 cm, 50202) pass 1e-5 rad at command 8. Twelve more pass it at commands 117–150, while the robot touches nothing.
+  - **Mostly at the grasp.** The first command over 1e-3 rad has a median of 229, which is the first apple–hand contact; the median over 1e-2 rad is 244. In closed loop the medians are 242 and 260.
+  - **In 5 of the 64 attempt-and-mode pairs, about 1e-3 rad earlier.** These pairs pass 1e-3 rad at commands 117–146, on `right_wrist_roll_joint`, before any hand contact. Isaac's only contact then is apple–table. The pairs are open 0.0 cm/50201 (command 146), open 0.0 cm/50210 (117), open 1.0 cm/50210 (117), closed 0.0 cm/50203 (117) and closed 1.0 cm/50203 (117).
+  - **The other 59 pairs** pass 1e-3 rad at commands 223–262, from 6 commands before the first apple–hand contact (as the hand closes) onwards.
+  - After that, the final apple positions differ by centimetres.
+- **Mostly consistent with the spike.** The spike found GPU MuJoCo-Warp repeatable to ~3e-6 rad on a trajectory with no contact at all. Here the apple rests on the table from the start, and runs can already differ by 1e-5 rad (in 14 of 32 open-loop attempts) and occasionally by 1e-3 rad (the 5 pairs above) before any robot contact. Robot contact then amplifies the differences to centimetres. Why the right wrist roll separates early without robot contact is not known. One candidate is the GPU solver's float32, non-deterministic reductions over a system that includes the apple–table contact (*inferred, untested*).
 - **Isaac vs MuJoCo is about as large as Isaac vs Isaac,** and about as large as MuJoCo with 1 mrad of target noise.
 - **A small reset difference does not matter.** A 0.1 mm apple reset difference is erased by the grasp.
 
@@ -230,8 +240,11 @@ The ranges combine runs 1 and 3.
 - **For using Newton for e9.**
   - Newton reproduces e9's manipulation sequence: reach, grasp, carry, release and landing, with the same timing to a few steps.
   - It does not reproduce e9's per-seed at-rest verdicts, and it cannot: it does not reproduce its own verdicts across two processes.
-  - Any Isaac at-rest figure for e9 therefore has to be read as a rate over attempts and repeats, not as a per-seed replica of MuJoCo.
   - These runs cannot say whether Newton's rate is lower. Every Isaac cell is at 24–26/32, against MuJoCo's 31/32 and noisy MuJoCo's 26–31/32 per cell. More seeds and repeats would be needed.
+- **Ruling: how Isaac results may be used** (2026-09-30, decided under owner delegation; it applies to every later Isaac comparison, not to TASK-070 or TASK-073):
+  - **Per seed, Isaac is compared with MuJoCo only on event timing:** grasp, lift, release and landing (§2, "Grasp, lift and release timing"). No per-seed at-rest verdict, final distance or success is compared between the simulators.
+  - **An Isaac at-rest success rate must come from repeated runs over more seeds than these 16, and must be reported with its uncertainty.** A single run per seed is not enough.
+  - The reason is that neither simulator is repeatable at this bar. Newton on the GPU is not repeatable once there is contact: 10 of 32 at-rest verdicts flip between two runs in each mode. MuJoCo is similarly sensitive: 1 mrad of target noise flips 9 of 64.
 - **For the benchmark itself (*inferred*).** e9's at-rest success depends on the apple ending inside 4 cm after rolling toward the rim; it typically ends 2.4–3.7 cm out. Small physics differences move a quarter of attempts across the bar. This is a property of the expert and the task, and it would affect any simulator or hardware transfer. It is recorded here and not acted on.
 - **Not shown.** This does not show whether Isaac is a suitable data source for learned policies. Images were not rendered, and the photometric mismatch of [ISAAC_V2_SCENE.md](ISAAC_V2_SCENE.md) §1 is unchanged.
 
@@ -283,12 +296,21 @@ Start-up probes (`startup_probe.sh`, `--startup_only`, limit 420 s, one containe
 - **Where:** every hang recorded with a stack dump is at the same line. The spike's two hangs were at the same log position.
 - **After a successful build** there were no hangs: the 3 probe steps took 0.2–0.3 s, and the two full servers ran 50 752 steps each.
 
-**Mitigations** (not implemented; owner or next task to choose):
-- **(a) A start-up watchdog with retry.** It is safe because the hang happens before any episode. The probe script already detects the hang (no "transport built" within the limit) and stops only its own container.
-- **(b) Parse a detached copy.** Run `add_usd` on a detached, flattened copy of the stage (`stage.Flatten()` into an anonymous in-memory stage) instead of the live Kit stage. This tests the race hypothesis, and it needs about 20+ probes per arm to be informative at this hang rate.
-- **(c) Report upstream** to Newton / Isaac Lab, with the stack.
+**Ruling** (2026-09-30, decided under owner delegation): (a) and (c) now; (b) is not run.
+- **(a) A start-up watchdog with retry: implemented.**
+  - What it does. `scripts/isaac/serve_with_watchdog.sh <out-prefix> <limit-s> <tries> [server args]` starts `e9_server_isaac.py` through `run_isaac.sh`, as try `<out-prefix>-t<k>`.
+  - Hang detection. If the try has not logged `transport built` within the limit, the watchdog stops only that try's own container (`oej-isaac-<try>`). It then stops the launcher process it started itself, if that is still running, and starts the next try.
+  - Limits and records. The number of tries is bounded. Every try, hang and retry is written to `<out-prefix>-watchdog.log`. The socket of the try that built is written to `<out-prefix>-ready`, for `e9_replay.py isaac --socket`.
+  - Other failures. A start that exits before building is a different failure, so it is not retried.
+  - The limit. The recommended limit is 300 s. Healthy starts built in 124.9–151.6 s (10 starts), so 300 s is about twice the slowest. The recommended number of tries is 3: at about 1 hang in 5 starts, three hangs in a row would happen about 1 time in 100, if starts are independent (*inferred*).
+  - Why a restart is safe. The hang happens before any episode.
+  - Tests. `tests/test_isaac_watchdog.py` checks, with a fake launcher: retry after a hang; giving up after the bounded number of tries (exit 4); no retry after a crash; and that only the hung try's container is stopped.
+  - Real check. One real start went through the watchdog (`isaac-e9-watchdog-smoke-1`, `--startup_only`). It built at 125.9 s by the server's clock, which the watchdog saw at 128 s. It did not hang, so the retry path has been exercised only with the fake launcher.
+  - Still manual. `startup_probe.sh` still records hangs without retrying, because counting them is its purpose.
+- **(b) Parse a detached copy: not run.** The idea is to run `add_usd` on a detached, flattened copy of the stage (`stage.Flatten()` into an anonymous in-memory stage) instead of the live Kit stage. This would test the race hypothesis. At this hang rate it needs about 20 or more probes per arm to be informative. It stays open as an option.
+- **(c) Report upstream: drafted, not posted.** The draft is [isaac/newton_usd_hang_report.md](isaac/newton_usd_hang_report.md). It includes versions, repro steps, frequency and stack excerpts. The project owner posts it after checking.
 
-## 5. Robot self-collision: evidence and options (not decided)
+## 5. Robot self-collision: ruling, evidence and options
 
 **Current state.**
 - The converted USD authors `newton:selfCollisionEnabled = 0` and `physxArticulation:enabledSelfCollisions = 0` (`payloads/Physics/*.usda`). This comes from `convert_mjcf_to_usd.py` `allow_self_collision: False`, the importer default.
@@ -302,11 +324,20 @@ Start-up probes (`startup_probe.sh`, `--startup_only`, limit 420 s, one containe
 - **The spike's free-space trajectory** had no MuJoCo self-contacts ([ISAAC_NEWTON_SPIKE.md](ISAAC_NEWTON_SPIKE.md) §4).
 
 **Options.**
-- **(A) Keep it off.** No change. It is harmless for every trajectory measured so far (e9, the free-space parity trajectory), by the evidence above. The e9 comparison tooling now flags any MuJoCo self-contact per attempt, so a future trajectory that needs self-collision would show up.
+- **(A) Keep it off.** No change. It is harmless for every trajectory measured so far (e9, the free-space parity trajectory), by the evidence above. The e9 tooling flags any self-contact per run, so a future trajectory that needs self-collision would show up.
 - **(B) Turn it on in Newton only.** The transport would override the resolved attribute when it builds the Newton model, with MuJoCo's parent–child filter and the MJCF's contype/conaffinity. This matches the host, but it needs a new parameter audit: the exclude list, and Newton's collision-group colouring against MuJoCo's bitmasks. PhysX would stay off.
 - **(C) Reconvert the USD with `allow_self_collision: True`.** This turns it on for both backends. It changes the USD hash and every recorded Isaac provenance, and PhysX's filtering then also needs an audit.
 
-**Recommendation: (A) now.** Revisit with (B) if a trajectory of interest shows MuJoCo self-contacts: for example a two-handed task, or a learned policy's rollouts, which are less tidy than a scripted expert. The recommendation rests on 32 scripted e9 attempts and one free-space trajectory. It does not cover other motions.
+**Ruling (2026-09-30, decided under owner delegation): (A). Self-collision stays off in both Isaac backends, and every run reports any robot self-contact.**
+- **Why off.**
+  - It is harmless for every trajectory measured: 0 self-contacts in 32 MuJoCo e9 attempts, in 128 Isaac attempts under MuJoCo's collision rules, and on the spike's free-space trajectory.
+  - (B) and (C) each need a new parameter audit. (C) would also change the USD hash and every recorded Isaac provenance.
+- **Why flagged.** With self-collision off, Isaac's own contact list cannot report a self-contact. So the check that matters is the mirror's: MuJoCo collision detection, with self-collision on as in the host MJCF, applied to Isaac's poses. A self-contact found there means Isaac let two links interpenetrate where MuJoCo would have pushed them apart.
+- **The flag.**
+  - `isaac_e9.self_contact_summary` counts, per source, the steps and attempts with a robot self-contact. The sources are MuJoCo's own state, the mirror on Isaac's state, and Isaac's own contact list.
+  - `e9_replay.py` writes the summary into every `mujoco` and `isaac` report and every `compare` result (`self_contact`), and prints `SELF-CONTACT FLAG` on stderr if any count is non-zero.
+  - Re-comparing runs 1 and 3 with it (`compare-selfcontact`) gives 0 steps in every source for 32 attempts each: MuJoCo, closed-loop mirror, closed-loop Isaac, open-loop mirror and open-loop Isaac. The flag is false.
+- **When to revisit.** Revisit with (B) if a run raises the flag, or if a trajectory of interest shows MuJoCo self-contacts, for example a two-handed task or a learned policy's rollouts, which are less tidy than a scripted expert. The evidence rests on 32 scripted e9 attempts and one free-space trajectory. It does not cover other motions.
 
 ## 6. Caveats
 
@@ -316,6 +347,10 @@ Start-up probes (`startup_probe.sh`, `--startup_only`, limit 420 s, one containe
   - The kinematics are MuJoCo's (the host MJCF). Newton's compiled model matches it on joints and bodies ([ISAAC_NEWTON_SPIKE.md](ISAAC_NEWTON_SPIKE.md) §4), but geom hulls were not compared vertex by vertex.
   - The contact counts in the events table (plate base or rim) are the mirror's geometric contacts on Isaac's state. Apple–hand contact is Isaac's own.
 - **Float32 transfer.** Isaac's joint and apple state is float32 on the GPU, and the MuJoCo reference is float64 on the CPU.
+- **Known limitations of the mirror** (from the independent review; none changes a result here):
+  - **One-substep offset in hand contact.** Isaac's apple–hand flag comes from `task_truth()` after the interval's last physics substep. The mirror's own contacts, which include the plate base or rim counts, the landing and `rim_contact_after_open`, come from the state at the *start* of that substep, which is MuJoCo's `mj_step` layout. The two can disagree on the one substep where contact starts or ends. This fits the ≥ 99.7 % agreement (minimum 99.748 %).
+  - **Velocities are written before the kinematics pass.** `MirrorSimulation._apply` writes the new `qvel` and then runs `mj_forward` at the pre-step pose. So derived velocity quantities in `MjData` (`cvel` and the like) combine the new velocities with the old pose. Nothing on the e9 path reads them: the harness reads `qpos`, `qvel`, body and site poses, and contacts. They must not be relied on if the mirror is reused for anything that reads them.
+  - **The `placed` rule is a copy.** The mirror's `task_truth` evaluates `MuJoCoSimulation.task_truth`'s `placed` rule with Isaac's hand flag (`isaac_e9.placed_rule`). The rule is inline in `simulation.py`, and that file is byte-pinned by the benchmark manifests' source hashes. It is therefore not factored out there, and a copy was the simple option. `test_placed_rule_matches_mujoco_task_truth` pins the copy to the original on placed and not-placed states, so a change to the base rule fails the test instead of drifting silently.
 - **Open loop is not closed loop.** The open-loop replay feeds MuJoCo's commands to Isaac, so it tests physics under identical commands. It is not how e9 would run in Isaac.
 - **No rendering.** The server runs with `render=False`, and the expert does not read pixels. Photometry is unchanged and still fails its bar.
 - **Versions.** Newton's MuJoCo-Warp is 3.5.0.2 / MuJoCo 3.5.0 in the image; the host is 3.13.0. The known unmatched parameters of [ISAAC_NEWTON_SPIKE.md](ISAAC_NEWTON_SPIKE.md) §5 apply, including solver tolerance 1e-6 against 1e-8 and float32.
@@ -325,11 +360,11 @@ Start-up probes (`startup_probe.sh`, `--startup_only`, limit 420 s, one containe
   - Start-up is about 130 s, including about 83 s of Warp kernel compilation into an empty per-run cache.
   - Peak device memory sampled during run 1 was 8 511 MiB, including GR00T's 6 626 MiB.
 
-## 7. Owner decisions needed
+## 7. Rulings (2026-09-30, decided under owner delegation) and the open question
 
-1. **Self-collision.** Accept (A), keep it off with the per-attempt MuJoCo self-contact flag, or ask for (B) or (C) (§5).
-2. **Start-up hang.** Choose a mitigation (§4): (a) a watchdog with retry, (b) a detached-stage parse experiment, (c) an upstream report, or a combination. Until then, unattended Newton runs need a start-up timeout.
-3. **How to use Isaac for at-rest outcomes.** If Isaac/Newton is to report e9-style at-rest outcomes, do they need repeats per attempt (Isaac is not repeatable under contact) and a larger seed set? Or should the per-seed Isaac–MuJoCo comparison be limited to the manipulation events, which do match? This affects any later Isaac benchmark design, not TASK-070 or TASK-073.
-4. **Margin of the at-rest verdict** (*inferred*). Whether the at-rest verdict's sensitivity near the 4 cm bar (e9 ends 2.4–3.7 cm out, q10–q90 in MuJoCo) matters for the v2 expert's demonstrations is a separate question. Nothing is changed here.
+1. **Self-collision: (A).** It stays off, and each run reports any robot self-contact. The count is 0 today (§5).
+2. **Start-up hang: (a) and (c).** A start-up watchdog with a bounded retry is implemented, and an upstream report is drafted but not posted (§4). (b) is not run.
+3. **Use of Isaac results.** Per seed, Isaac is compared with MuJoCo only on event timing: grasp, lift, release and landing. An Isaac at-rest success rate must come from repeated runs over more seeds, with its uncertainty reported (§3).
+4. **Still open: the margin of the at-rest verdict** (*inferred*). The at-rest verdict is sensitive near the 4 cm bar: in MuJoCo, e9 ends 2.4–3.7 cm out (q10–q90). Whether that matters for the v2 expert's demonstrations is a separate question. Nothing is changed here.
 
 Learned Apple→Plate is still 0 successes.
