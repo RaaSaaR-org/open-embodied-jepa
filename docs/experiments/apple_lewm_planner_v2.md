@@ -40,9 +40,13 @@ values and digests, the corpus plan's digest, the pins, the smoke record).
 - **Runner:** `scripts/run_lewm_planner_v2.py`, with the modes `preflight`, `smoke`, `k1`,
   `corpus`, `train`, `pfar`, `rank`, `decide`, `d3` and `gated`.
 - **Tests:** `tests/test_lewm_planner_v2.py`.
-- **Not pinned:** this document and the manifest are not among the pinned files. The smoke record
-  is added to them after the smokes, and the smoked code must stay the frozen code (§10). The
-  frozen block and every code file are pinned.
+- **Pinned:** the frozen block, every code file of this task and its test file
+  (`tests/test_lewm_planner_v2.py`).
+- **Not pinned:** this document and the manifest. The smoke record is added to them after the
+  smokes, so that the smoked code stays the frozen code (§10).
+  - The manifest records this document's sha256 at merge (`protocol_document_sha256`), and a test
+    checks it.
+  - `AUTHORISATION_SCOPE` forbids the authorisation PR from editing this document.
 - **No existing file is modified.** Every file behind an existing implementation hash, an M2 pin
   or a TASK-073 pin keeps its bytes; a test compares all of TASK-073's pins. The run guards come
   from `src/embodied_jepa/run_guards.py` (#111).
@@ -60,9 +64,22 @@ values and digests, the corpus plan's digest, the pins, the smoke record).
 | D3+D4, condition and scope | **"Right-side move, place only (Recommended)"** | the plate moves to the robot's right (−y, §3.2) at step 300, by 9 or 12 cm chosen by K1. P-3 does the pick, and LeWM plans the place |
 | D5, the BC control | **"Yes, add it (Recommended)"** | the 300-root corpus plus P-far, a retrained BC policy, as a reported control (§3.5) |
 
-**Owner delegation (2026-09-30).** The owner delegated every remaining ruling. Each choice below
-is the option the design would mark (Recommended), and is labelled **"decided by Claude under
-owner delegation, 2026-09-30"** (`lewm_planner_v2.DELEGATED_CHOICES`):
+**Owner delegation (2026-09-30), verbatim** (`OWNER_DECISIONS["owner_delegation_verbatim"]`):
+
+> "do the work without me - if you have decidions, choose your recommandation. do the work in
+> subagents, use this chat just for updates. use subagents and workflows. goal is to continue
+> working and try to get a real LeWM for the Unitree G1 without my help"
+
+**What this delegation covers:**
+- **Every remaining design ruling.** Each choice below is the option the design would mark
+  (Recommended), and is labelled **"decided by Claude under owner delegation, 2026-09-30"**
+  (`lewm_planner_v2.DELEGATED_CHOICES`).
+- **The gated authorisation** (§5, stage 7). The gated stage runs on an authorisation record
+  signed either by the task owner or by Claude under this delegation. Either way, it runs only
+  after a pre-run reviewer's reported GO, and the main session posts a notice in chat before each
+  gated run.
+
+**The delegated choices:**
 
 - **The cost.** J(g) = ‖R_off(ẑ_{t+16}) − o_f‖, where o_f = o*(501), e9's median release offset.
   TASK-073 used a per-step o*(t + 16). That is an unshifted-trajectory prior, and under a 9–12 cm
@@ -80,7 +97,9 @@ owner delegation, 2026-09-30"** (`lewm_planner_v2.DELEGATED_CHOICES`):
   made, and the attempt counts as a failure.
 - **The rows.** D1 is read literally: only L-PASS makes the claim. L-TWIN-BETTER, L-SLOW,
   L-SCENE-BLIND and L-NO-GAIN make no claim and fire the clause, and L-SCENE-BLIND also needs G4
-  (§6.4, §7). This is the review's ruling under owner delegation.
+  (§6.4, §7). **The author chose this; the review only offered options.** As a result, L-SLOW,
+  L-SCENE-BLIND and L-TWIN-BETTER now fire the abandonment clause as well. So a failure on
+  latency alone (L-SLOW) closes the planner line.
 - **The gated authorisation record's schema** (§5, stage 7).
 - **The bars.** K1's, D3's and the gated bars in §6.
 - **The P-far recipe** (§3.5) and **the re-run rule** (§8.3).
@@ -158,8 +177,9 @@ on other seeds of the same probe cohort.
 
 **The reading that shaped D1.** The room over P-3 is large (+12/32 and +25/32 over P-truth), but
 a readout trained on data that covers the condition leaves at most +1 to +2 of 32 for a world
-model. The claim is therefore superiority over P-3 and the blind twins, and non-inferiority to
-the readout twin.
+model. The claim is therefore superiority over P-3 and the blind twins, and a point bar against
+the readout twin: L-plan must not be observed more than 6/64 below it. That point bar is not a
+statistical non-inferiority test.
 
 ## 3. The design
 
@@ -411,18 +431,27 @@ reviewer's GO is reported. The coordinator is told before each stage starts.
    - **L-DEV-STOP** if L-plan − max(L-N, L-shuf, L-rand) < +3/16 (escalate).
    - **Reported, never bars:** L-plan − H-twin and L-plan − H-handover.
    - Nothing on D3 is refitted.
-9. **Stage 7, gated.** It runs only under a separate authorisation record pinned in the manifest
-   (`gated_authorization`). The runner refuses the stage until then, and the authorisation PR
-   writes `stage_gated`.
+9. **Stage 7, gated.** It runs only under a separate **owner or delegated** authorisation record,
+   recorded in the manifest's `gated_authorization` block. The record is signed by the task owner,
+   or by Claude under the owner's delegation of 2026-09-30 (§0). It is issued only after a pre-run
+   reviewer's reported GO, and the main session posts a notice in chat before each gated run. The
+   runner refuses the stage until then, and the authorisation PR writes `stage_gated`.
    - **The record has a frozen schema** (`AUTHORISATION_SCHEMA`), validated by
      `check_authorisation`, which the runner calls. It has exactly these fields:
      - `frozen_sha256`: this module's frozen sha;
-     - `go_comment_url`: the pre-run reviewer's GO comment, a PR comment URL on this repository;
+     - `go_comment_url`: the pre-run reviewer's GO comment, which must be a **comment on PR #113**
+       (frozen as `AUTHORISATION_PR`);
      - `stage`: "gated";
-     - `authorised_utc`: an ISO-8601 UTC time;
-     - `authorised_by`: exactly "authorised by Claude under owner delegation".
-   - **The authorisation PR may not change** the design, the planner, the workers, the offline
-     module, the rest of the runner, the frozen block or the cohorts (`AUTHORISATION_SCOPE`).
+     - `authorised_utc`: an ISO-8601 UTC time, not before 2026-10-01T00:00:00Z (after this PR's
+       frozen-code smokes) and not in the future;
+     - `authorised_by`: either "authorised by the task owner" or "authorised by Claude under
+       owner delegation".
+   - **The authorisation PR may not change:**
+     - the design, the planner, the workers or the offline module;
+     - the rest of the runner;
+     - this document;
+     - the frozen block or the cohorts (`AUTHORISATION_SCOPE`).
+   - **Its `stage_gated` must call `check_authorisation` before any render.**
    - **Its `stage_gated` must judge the determinism re-run** with `place_planner.rerun_verdict`:
      a V above a tolerance, and a report above half of one (§8.3).
    - Cohorts S (64) and U (32), each arm once per reset, paired.
@@ -506,7 +535,8 @@ The gates:
   - This is a point bar, and it stays the rule.
   - A pass reads "not observed more than 6/64 below H-twin", **not statistical non-inferiority**.
   - The paired difference is reported beside it, with a reset-bootstrap 95 % interval and the
-    discordant counts (`t_reported`). G5's difference is reported the same way (`g5_reported`).
+    discordant counts (`t_reported`). G5's difference is reported the same way, with its
+    discordant counts (`g5_reported`).
 
 Secondary, not changing the row:
 - L-plan-s1 and -s2 show the same sign against P-truth, L-shuf and L-N.
@@ -602,6 +632,11 @@ As TASK-073:
 - **P-far's memory at full scale** is measured in the P-far smoke's `pfar-scale` probe (§10). It
   tiles the BC and DAgger rows to the real stage's size (about 196 000 rows) and runs one CUDA
   training while the pool's workers are alive.
+  - **Margin:** the probe did not tile the val rows to full size, and it ran 200 updates, not the
+    full recipe. Its peak, about 9.5 of 12 GiB, is the highest of any smoke.
+  - The rows are the only part of P-far that scales with the corpus; the pool, the encoder and
+    the readout do not. So a full-length training is expected to raise the peak only by what the
+    optimiser holds on the GPU. That has not been measured.
 
 ### 8.3 The determinism re-run and its margin
 
@@ -685,16 +720,19 @@ recorded.
 
 ### 10.1 The frozen-code smokes (the record for the GO)
 
-After the review of #113, the final code was committed first. The render smoke, `k1 --smoke`,
-`pfar --smoke` (with its `pfar-scale` memory probe) and `d3 --smoke` then ran **at that exact
-commit and frozen sha**, each started on a quiet machine: 1- and 5-minute load ≤ 2.0, checked in
-Python with the C locale. The manifest's `smoke.frozen_code` block records their revision,
-`frozen_sha256` and report sha256s. The smoked code is the frozen code. Only this document and the
-manifest's smoke record, neither of them pinned, changed afterwards.
+FROZEN_SMOKE_SECTION
 
-**Revision `510347a`, frozen sha `32c2d748…2393`,** a clean tree
-(`tracked_tree_dirty: false`), smoke seeds only. The 1- and 5-minute loads at the start are
-unrounded.
+### 10.2 Superseded frozen-code smokes (at `510347a`, frozen sha `32c2d748…2393`)
+
+After the first review, the code was committed as `510347a` and seven smokes ran at that commit:
+render, k1, train, pfar, rank, decide and d3. The re-review then changed the frozen block, so
+**they are superseded by §10.1** and are kept here as history.
+
+**How the earlier write-up of these smokes was wrong** (the re-review's four points):
+- it named four smokes, but seven ran;
+- it said every smoke started on a quiet machine, but decide started at load 4.0, 2.72;
+- it said the corpus code was unchanged, which could be checked for the worker only;
+- it called the authorisation record "pinned" in the manifest, but the manifest is not pinned.
 
 | smoke (report sha256) | start load | what it checked | result |
 |---|---|---|---|
@@ -706,12 +744,8 @@ unrounded.
 | `decide --smoke` (`c7515d9a…`) | 4.0, 2.72 (**not quiet**: a JSON read with no simulation, started without waiting) | the offline decision's code path | a row is computed (meaningless with smoke models) |
 | `d3 --smoke` (`38df51ac…`) | 0.811, 1.934 | all 10 D3 arms, H-twin first, the artefact checks, latency, the descriptive comparisons, **the re-run** | every arm ran, with no fallback, no blocked move and no privileged read; **L-plan decision latency, 4 workers × 4 threads with the GPU's resident service running: median 0.544 s, p90 0.583 s, max 0.587 s over 24 decisions (G6 0.8 s)**; **re-run of L-plan and H-twin on 2 seeds: every field identical**; 110 s; peak PSS 8.36 GiB |
 
-The train, pfar, rank and d3 smokes read the development corpus smoke
-(`far-corpus-smoke-2`, manifest `964a882e…`) as their input. The corpus stage's own code is
-unchanged since that corpus was collected, except for the plan-digest check, which is skipped
-in a smoke.
 
-### 10.2 The earlier development smokes (historical; not the record for the GO)
+### 10.3 The earlier development smokes (historical; not the record for the GO)
 
 These ran while this PR was being written, on an **uncommitted** working tree over `main` at
 `9a8b0c0`. The files were untracked then, so the reports show `tracked_tree_dirty: false`. **The

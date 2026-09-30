@@ -15,6 +15,9 @@
    "D3_D4": "a -y (right-side) plate move at step 300, 9 or 12 cm chosen by K1; P-3 does the pick and LeWM plans the place",
    "D5": "the 300-root corpus plus a retrained BC policy (P-far) as a reported control"
   },
+  "owner_delegation_verbatim": "do the work without me - if you have decidions, choose your recommandation. do the work in subagents, use this chat just for updates. use subagents and workflows. goal is to continue working and try to get a real LeWM for the Unitree G1 without my help",
+  "owner_delegation_date": "2026-09-30",
+  "gated_authorisation": "the gated stage runs on an authorisation record signed by the task owner, or by Claude under that delegation, and only after a pre-run reviewer's reported GO; the main session posts a notice in chat before each gated run",
   "delegation": "the owner delegated every remaining ruling (2026-09-30); each such choice is the option the design would mark (Recommended) and is labelled DELEGATED"
  },
  "frozen": {
@@ -37,6 +40,9 @@
     "D3_D4": "a -y (right-side) plate move at step 300, 9 or 12 cm chosen by K1; P-3 does the pick and LeWM plans the place",
     "D5": "the 300-root corpus plus a retrained BC policy (P-far) as a reported control"
    },
+   "owner_delegation_verbatim": "do the work without me - if you have decidions, choose your recommandation. do the work in subagents, use this chat just for updates. use subagents and workflows. goal is to continue working and try to get a real LeWM for the Unitree G1 without my help",
+   "owner_delegation_date": "2026-09-30",
+   "gated_authorisation": "the gated stage runs on an authorisation record signed by the task owner, or by Claude under that delegation, and only after a pre-run reviewer's reported GO; the main session posts a notice in chat before each gated run",
    "delegation": "the owner delegated every remaining ruling (2026-09-30); each such choice is the option the design would mark (Recommended) and is labelled DELEGATED"
   },
   "delegated": "decided by Claude under owner delegation, 2026-09-30",
@@ -1033,14 +1039,20 @@
   "claim_rows": [
    "L-PASS"
   ],
-  "authorisation_scope": "the gated stage's authorisation PR may add the gated harness (the runner's stage_gated and its tests), the authorisation record and the manifest's gated_authorization block; it may not change lewm_planner_v2.py, place_planner.py, lewm_planner_v2_runtime.py, lewm_planner_v2_offline.py, any other part of the runner, the frozen block, frozen_sha256 or the stored cohort values. Its stage_gated must compare the determinism re-run with place_planner.rerun_verdict (a V above a tolerance; a report above half of one)",
+  "authorisation_scope": "the gated stage's authorisation PR may add the gated harness (the runner's stage_gated and its tests), the authorisation record and the manifest's gated_authorization block; it may not change lewm_planner_v2.py, place_planner.py, lewm_planner_v2_runtime.py, lewm_planner_v2_offline.py, any other part of the runner, the frozen block, frozen_sha256 or the stored cohort values. Its stage_gated must compare the determinism re-run with place_planner.rerun_verdict (a V above a tolerance; a report above half of one), and it must call check_authorisation on the manifest's record before any render. It may not edit docs/experiments/apple_lewm_planner_v2.md, whose sha256 at merge the manifest records (protocol_document_sha256)",
   "authorisation_schema": {
    "frozen_sha256": "this protocol's frozen_sha256 (64 hex digits), equal to the module's",
-   "go_comment_url": "the pre-run reviewer's GO comment: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/<n>#issuecomment-<id>",
+   "go_comment_url": "the pre-run reviewer's GO comment on PR #113: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/113#issuecomment-<id>",
    "stage": "gated",
-   "authorised_utc": "an ISO-8601 UTC time, YYYY-MM-DDTHH:MM:SSZ",
-   "authorised_by": "authorised by Claude under owner delegation"
+   "authorised_utc": "an ISO-8601 UTC time, YYYY-MM-DDTHH:MM:SSZ, not before 2026-10-01T00:00:00Z and not in the future",
+   "authorised_by": "one of AUTHORISED_BY_VALUES: the task owner, or Claude under the owner's delegation"
   },
+  "authorised_by_values": [
+   "authorised by the task owner",
+   "authorised by Claude under owner delegation"
+  ],
+  "authorisation_pr": 113,
+  "authorisation_not_before_utc": "2026-10-01T00:00:00Z",
   "clause_rows": [
    "L-G2A",
    "L-NO-RANK",
@@ -1129,7 +1141,7 @@
   },
   "void_rule": "a guard, a crash, a cap or a CUDA allocation failure makes the stage V and nothing in it is read; batches are never shrunk to fit. A V before a stage's boundary is not a spent attempt: it may be repeated as-is, recorded, without a fix. The boundary is cohort_first_render_utc for a simulating stage (K1, corpus, ranking, D3, gated), first_outcome_utc for the train stage (the first number computed on val roots) and, for P-far, first_outcome_utc written before its first val-selected fit. After the boundary: a gated (S or U) V goes to the owner and a second V closes TASK-074 as INCONCLUSIVE; a development stage (K1, corpus, training, P-far, ranking, D3) may be repeated once from scratch after a reviewed fix. Nothing is re-thresholded, retrained or re-selected after its numbers are seen"
  },
- "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+ "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
  "cohorts": {
   "K1": {
    "values": {
@@ -4710,6 +4722,7 @@
   }
  },
  "corpus_plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
+ "protocol_document_sha256": "6ac238a9b536d8d6192438d5205f5884edc358969448b53df83e95928f6000cf",
  "encoder_digests": {
   "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
   "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
@@ -5140,7 +5153,7 @@
   "scripts/rank_wm_critic_v2.py": "6d4cdc9017369f9c4ae95184c153b8bed5c6db84cc02a6cd9c4b84a243861d64",
   "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
-  "scripts/run_lewm_planner_v2.py": "13c5c5ca79397d2153a895d319a33c31a8f64d639fd93624655590ddf2175754",
+  "scripts/run_lewm_planner_v2.py": "cad3ef35be5d737152663f997fdca9cdc06968b9ab00d18a6c2f8cf7e87876e1",
   "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
   "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
@@ -5163,7 +5176,7 @@
   "src/embodied_jepa/hybrid_selection.py": "b96ae08098da94202ec74f1cab9ff0fe025ced7f65bf505bbb21ca557a298d4a",
   "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
   "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
-  "src/embodied_jepa/lewm_planner_v2.py": "9c86dfaa39173a119b3f8b2ddfaa7bb10ef5ca0cebb65c3c36c1b08fb77ea3d5",
+  "src/embodied_jepa/lewm_planner_v2.py": "b7a375c79d9ee4d782389fe8dc5a715827c676ad6efc98149ac3e86c76a5113b",
   "src/embodied_jepa/lewm_planner_v2_offline.py": "84ae5ee71829443665163941aab100c7219453962678a037fc27e8cbaf11d3a7",
   "src/embodied_jepa/lewm_planner_v2_runtime.py": "ccfac04c1f2e8cc62039186c3388d971a002e7ebe5b08f70f6e97e257c3cb170",
   "src/embodied_jepa/look_corpus.py": "41a05027d30375884f9e562a4887814db65bf5111fc7bc8fe2ddcf38e206d84b",
@@ -5191,6 +5204,7 @@
   "src/embodied_jepa/wm_critic_v2.py": "125b6f64d3acb9341f243fe123d1c646a433104471924790c79112678c0efc85",
   "src/embodied_jepa/wm_critic_v2_offline.py": "7c2cd7bc39d1b87e46b4c4e92ab55bbe4a357ccc1dfccbf16e7a066a3f9c1cfa",
   "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
+  "tests/test_lewm_planner_v2.py": "d7bf80c0139aa08dfdd6847517da4d6e860b82f138bb8564c5d83e982ff9f5a9",
   "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },

@@ -291,15 +291,43 @@ def mark_first_render(report: dict) -> None:
     report["cohort_first_render_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-def read_stage_report(path, sha, outcome, smoke: bool) -> dict:
+def read_stage_report(path, sha, outcome, smoke: bool, into: dict | None = None) -> dict:
+    """G-evidence for an upstream report: its sha256, this protocol, its outcome and kind, this
+    frozen block, and a clean tree. ``into`` (the consuming report) records what was consumed."""
     if R65.sha256_file(path) != sha:
         raise lp.GuardError(f"G-evidence: {path} differs from its sha256")
-    report = json.loads(Path(path).read_text())
-    if report.get("protocol") != lp.PROTOCOL:
+    upstream = json.loads(Path(path).read_text())
+    if upstream.get("protocol") != lp.PROTOCOL:
         raise lp.GuardError(f"G-evidence: {path} is not a TASK-074 report")
-    if report.get("outcome") != outcome or bool(report.get("smoke")) != bool(smoke):
+    if upstream.get("outcome") != outcome or bool(upstream.get("smoke")) != bool(smoke):
         raise lp.GuardError(f"G-evidence: {path} is not a recorded {outcome} run of this kind")
-    return report
+    if upstream.get("frozen_sha256") != lp.frozen_sha256():
+        raise lp.GuardError(f"G-evidence: {path} ran under another frozen block")
+    if upstream.get("tracked_tree_dirty") is not False:
+        raise lp.GuardError(f"G-evidence: {path} did not run on a clean tree")
+    if into is not None:
+        into.setdefault("upstream", {})[outcome] = {
+            "path": str(path),
+            "sha256": sha,
+            "revision": upstream.get("revision"),
+            "frozen_sha256": upstream.get("frozen_sha256"),
+        }
+    return upstream
+
+
+def check_corpus_provenance(report, reader, manifest, smoke: bool, k1_sha: str | None) -> None:
+    """G-evidence for a corpus: its plan is the frozen plan (a real run), and it was collected
+    after the K1 report this stage consumed. The consumed corpus is recorded."""
+    provenance = reader.manifest.get("provenance", {})
+    if not smoke and lp.plan_digest(reader.manifest["plan"]) != manifest["corpus_plan_sha256"]:
+        raise lp.GuardError("G-evidence: the corpus plan differs from the manifest's digest")
+    if k1_sha is not None and provenance.get("k1_report_sha256") != k1_sha:
+        raise lp.GuardError("G-evidence: the corpus was not collected after this K1 report")
+    report.setdefault("upstream", {})["corpus"] = {
+        "path": str(reader.corpus),
+        "manifest_sha256": R65.sha256_file(reader.corpus / "manifest.json"),
+        "k1_report_sha256": provenance.get("k1_report_sha256"),
+    }
 
 
 # ----- cohorts ------------------------------------------------------------------------------------
@@ -508,7 +536,7 @@ def corpus_summary(records: list[dict]) -> dict:
 
 
 def stage_corpus(report, manifest, evidence, clock, args):
-    read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke)
+    read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke, report)
     corpus = Path(args.corpus)
     if corpus.exists():
         raise FileExistsError(f"refusing to overwrite {corpus}")
@@ -636,10 +664,11 @@ def stage_train(report, manifest, evidence, clock, args):
     from embodied_jepa import pretrained_encoder as pe
     from embodied_jepa import token_dynamics as td
 
-    read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke)
+    read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke, report)
     reader = rt2.CorpusReader(Path(args.corpus), args.corpus_sha256, splits=lp.READ_SPLITS)
     report["_reader"] = reader
     check_corpus_kind(reader, args.smoke)
+    check_corpus_provenance(report, reader, manifest, args.smoke, args.k1_sha256)
     look = rt2.CorpusReader(
         evidence / fm.EVIDENCE["corpus"],
         fm.EVIDENCE["corpus_manifest_sha256"],
@@ -787,6 +816,7 @@ def stage_train(report, manifest, evidence, clock, args):
     }
     result = {
         "outcome": "TRAIN-COMPLETE",
+        "corpus_manifest_sha256": args.corpus_sha256,
         "primary_w_seed": primary,
         "w_order": order,
         "o1": {
@@ -958,11 +988,16 @@ def stage_pfar(report, manifest, evidence, clock, args):
     from embodied_jepa import first_policy_v2_model as fm2
     from embodied_jepa import first_policy_v2_runtime as rt2
 
-    train = read_stage_report(args.train_report, args.train_sha256, "TRAIN-COMPLETE", args.smoke)
+    train = read_stage_report(
+        args.train_report, args.train_sha256, "TRAIN-COMPLETE", args.smoke, report
+    )
     critic = train["stages"]["critic"]
     reader = rt2.CorpusReader(Path(args.corpus), args.corpus_sha256, splits=lp.READ_SPLITS)
     report["_reader"] = reader
     check_corpus_kind(reader, args.smoke)
+    check_corpus_provenance(report, reader, manifest, args.smoke, None)
+    if args.corpus_sha256 != train["stages"]["corpus_manifest_sha256"]:
+        raise lp.GuardError("G-evidence: P-far's corpus is not the one the train stage used")
     verify_artifacts({critic["r_plate"]: critic["sha256"]["r_plate"]}, "train")
     plan = reader.manifest["plan"]
     plan_by_id = {r["episode_id"]: r for r in plan}
@@ -1026,7 +1061,7 @@ def stage_pfar(report, manifest, evidence, clock, args):
         if args.smoke:
             lp.check_role_seeds("corpus", seeds, smoke=True)
         elif not set(seeds) <= set(lp.seeds_of("corpus")):
-            raise lp.GuardError("G-seeds: a DAgger rollout seed is not a corpus train seed")
+            raise lp.GuardError("G-seeds: a DAgger rollout seed is not a corpus seed")
         resets = {
             r["seed"]: {k2: r["reset"][k2] for k2 in ("object_xy", "plate_xy")} for r in roots
         }
@@ -1149,8 +1184,10 @@ def stage_rank(report, manifest, evidence, clock, args):
     from embodied_jepa import lewm_planner_v2_offline as off
     from embodied_jepa.first_policy_v2_runtime import make_robot
 
-    train = read_stage_report(args.train_report, args.train_sha256, "TRAIN-COMPLETE", args.smoke)
-    k1 = read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke)
+    train = read_stage_report(
+        args.train_report, args.train_sha256, "TRAIN-COMPLETE", args.smoke, report
+    )
+    k1 = read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke, report)
     cm = int(k1["stages"]["k1"]["selection"]["shift_cm"])
     critic_files = train["stages"]["critic"]
     verify_artifacts(critic_shas(critic_files), "train")
@@ -1210,9 +1247,13 @@ def stage_rank(report, manifest, evidence, clock, args):
 
 # ----- the offline decision -----------------------------------------------------------------------
 def stage_decide(report, manifest, evidence, clock, args):
-    train = read_stage_report(args.train_report, args.train_sha256, "TRAIN-COMPLETE", args.smoke)
-    rank = read_stage_report(args.rank_report, args.rank_sha256, "RANK-COMPLETE", args.smoke)
-    k1 = read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke)
+    train = read_stage_report(
+        args.train_report, args.train_sha256, "TRAIN-COMPLETE", args.smoke, report
+    )
+    rank = read_stage_report(
+        args.rank_report, args.rank_sha256, "RANK-COMPLETE", args.smoke, report
+    )
+    k1 = read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke, report)
     t = train["stages"]
     order = [int(s) for s in t["w_order"]]
     stats = rank["stages"]["rank"]["statistics"]
@@ -1231,6 +1272,8 @@ def stage_decide(report, manifest, evidence, clock, args):
         "row": decision["row"],
         "abandonment_clause_fires": decision["abandonment_clause_fires"],
         "smoke": bool(args.smoke),
+        "frozen_sha256": lp.frozen_sha256(),
+        "revision": report["revision"],
         "shift_step": lp.SHIFT_STEP,
         "shift_cm": int(k1["stages"]["k1"]["selection"]["shift_cm"]),
         "critic": t["critic"],
@@ -1283,9 +1326,18 @@ def stage_d3(report, manifest, evidence, clock, args):
         args.smoke
     ):
         raise lp.GuardError("G-evidence: the offline decision differs from its sha256 or kind")
+    if decision.get("frozen_sha256") != lp.frozen_sha256():
+        raise lp.GuardError("G-evidence: the offline decision ran under another frozen block")
+    report.setdefault("upstream", {})["decision"] = {
+        "path": str(args.offline),
+        "sha256": args.offline_sha256,
+        "revision": decision.get("revision"),
+    }
     if decision["row"] != "OFFLINE-PASS" and not args.smoke:
         raise lp.GuardError("G-evidence: the offline decision is not OFFLINE-PASS")
-    pfar = read_stage_report(args.pfar_report, args.pfar_sha256, "PFAR-COMPLETE", args.smoke)
+    pfar = read_stage_report(
+        args.pfar_report, args.pfar_sha256, "PFAR-COMPLETE", args.smoke, report
+    )
     verify_artifacts(critic_shas(decision["critic"]), "train")
     verify_artifacts(
         {pfar["stages"]["p_far"]["checkpoint"]: pfar["stages"]["p_far"]["checkpoint_sha256"]},
@@ -1365,7 +1417,7 @@ def stage_gated(report, manifest, evidence, clock, args):
     record = manifest.get("gated_authorization")
     if not record:
         raise lp.GuardError(
-            "G-authorisation: no owner authorisation record is pinned for the gated stage"
+            "G-authorisation: no owner or delegated authorisation record is in the manifest"
         )
     report["gated_authorization"] = lp.check_authorisation(record)
     raise lp.GuardError("G-authorisation: the gated stage is written by its authorisation PR")

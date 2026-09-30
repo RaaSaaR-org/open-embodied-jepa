@@ -78,6 +78,14 @@ OWNER_DECISIONS = {
         "pick and LeWM plans the place",
         "D5": "the 300-root corpus plus a retrained BC policy (P-far) as a reported control",
     },
+    "owner_delegation_verbatim": "do the work without me - if you have decidions, choose your "
+    "recommandation. do the work in subagents, use this chat just for updates. use subagents and "
+    "workflows. goal is to continue working and try to get a real LeWM for the Unitree G1 without "
+    "my help",
+    "owner_delegation_date": "2026-09-30",
+    "gated_authorisation": "the gated stage runs on an authorisation record signed by the task "
+    "owner, or by Claude under that delegation, and only after a pre-run reviewer's reported "
+    "GO; the main session posts a notice in chat before each gated run",
     "delegation": "the owner delegated every remaining ruling (2026-09-30); each such choice is "
     "the option the design would mark (Recommended) and is labelled DELEGATED",
 }
@@ -905,42 +913,59 @@ AUTHORISATION_SCOPE = (
     "not change lewm_planner_v2.py, place_planner.py, lewm_planner_v2_runtime.py, "
     "lewm_planner_v2_offline.py, any other part of the runner, the frozen block, frozen_sha256 "
     "or the stored cohort values. Its stage_gated must compare the determinism re-run with "
-    "place_planner.rerun_verdict (a V above a tolerance; a report above half of one)"
+    "place_planner.rerun_verdict (a V above a tolerance; a report above half of one), and it "
+    "must call check_authorisation on the manifest's record before any render. It may not edit "
+    "docs/experiments/apple_lewm_planner_v2.md, whose sha256 at merge the manifest records "
+    "(protocol_document_sha256)"
 )
-AUTHORISED_BY = "authorised by Claude under owner delegation"
+AUTHORISED_BY_VALUES = (
+    "authorised by the task owner",
+    "authorised by Claude under owner delegation",
+)
+AUTHORISATION_PR = 113  # the GO comment is a comment on this preregistration PR
+AUTHORISATION_NOT_BEFORE_UTC = "2026-10-01T00:00:00Z"  # after this PR's frozen-code smokes
 AUTHORISATION_SCHEMA = {
     "frozen_sha256": "this protocol's frozen_sha256 (64 hex digits), equal to the module's",
-    "go_comment_url": "the pre-run reviewer's GO comment: https://github.com/RaaSaaR-org/"
-    "open-embodied-jepa/pull/<n>#issuecomment-<id>",
+    "go_comment_url": "the pre-run reviewer's GO comment on PR #113: https://github.com/"
+    "RaaSaaR-org/open-embodied-jepa/pull/113#issuecomment-<id>",
     "stage": "gated",
-    "authorised_utc": "an ISO-8601 UTC time, YYYY-MM-DDTHH:MM:SSZ",
-    "authorised_by": AUTHORISED_BY,
+    "authorised_utc": "an ISO-8601 UTC time, YYYY-MM-DDTHH:MM:SSZ, not before "
+    "2026-10-01T00:00:00Z and not in the future",
+    "authorised_by": "one of AUTHORISED_BY_VALUES: the task owner, or Claude under the owner's "
+    "delegation",
 }
 
 
-def check_authorisation(record) -> dict:
+def check_authorisation(record, now=None) -> dict:
     """The gated stage's authorisation record, validated against ``AUTHORISATION_SCHEMA``: exactly
-    its keys, this module's frozen sha, a GO comment URL on this repository, the stage 'gated',
-    a UTC time and the delegation label. Raises GuardError otherwise."""
+    its keys, this module's frozen sha, a GO comment on PR #113, the stage 'gated', a UTC time
+    not before AUTHORISATION_NOT_BEFORE_UTC and not after ``now``, and an owner or delegated
+    label. Raises GuardError otherwise."""
     import re
-    from datetime import datetime
+    from datetime import UTC, datetime
 
     if not isinstance(record, dict) or set(record) != set(AUTHORISATION_SCHEMA):
         raise GuardError("G-authorisation: the record does not have the frozen schema's keys")
     if record["frozen_sha256"] != frozen_sha256():
         raise GuardError("G-authorisation: the record authorises another frozen block")
     url = re.fullmatch(
-        r"https://github\.com/RaaSaaR-org/open-embodied-jepa/pull/\d+#issuecomment-\d+",
+        rf"https://github\.com/RaaSaaR-org/open-embodied-jepa/pull/{AUTHORISATION_PR}"
+        r"#issuecomment-\d+",
         str(record["go_comment_url"]),
     )
     if url is None:
-        raise GuardError("G-authorisation: the GO comment URL is not a PR comment here")
-    if record["stage"] != "gated" or record["authorised_by"] != AUTHORISED_BY:
+        raise GuardError("G-authorisation: the GO comment URL is not a comment on PR #113")
+    if record["stage"] != "gated" or record["authorised_by"] not in AUTHORISED_BY_VALUES:
         raise GuardError("G-authorisation: wrong stage or authorisation label")
+    fmt = "%Y-%m-%dT%H:%M:%SZ"
     try:
-        datetime.strptime(str(record["authorised_utc"]), "%Y-%m-%dT%H:%M:%SZ")
+        when = datetime.strptime(str(record["authorised_utc"]), fmt).replace(tzinfo=UTC)
     except ValueError as error:
         raise GuardError("G-authorisation: authorised_utc is not a UTC time") from error
+    earliest = datetime.strptime(AUTHORISATION_NOT_BEFORE_UTC, fmt).replace(tzinfo=UTC)
+    now = now or datetime.now(UTC)
+    if when < earliest or when > now:
+        raise GuardError("G-authorisation: authorised_utc is before the smokes or in the future")
     return dict(record)
 
 
@@ -952,13 +977,19 @@ def paired_difference_ci(first, second, *, resamples: int = 10_000) -> dict:
     rng = np.random.default_rng(SEEDS["bootstrap"])
     boot = np.array([d[rng.integers(0, len(d), len(d))].sum() for _ in range(resamples)])
     lo, hi = np.percentile(boot, [2.5, 97.5])
-    return {"difference": int(d.sum()), "ci95": [float(lo), float(hi)], "n": int(len(d))}
+    return {
+        "difference": int(d.sum()),
+        "ci95": [float(lo), float(hi)],
+        "n": int(len(d)),
+        "only_first": int((a & ~b).sum()),
+        "only_second": int((~a & b).sum()),
+    }
 
 
 paired_one_sided = wc.paired_one_sided
 
 
-def decide_gated(s: dict, u: dict, harness: dict) -> dict:
+def decide_gated(s: dict, u: dict, harness: dict, *, report_resamples: int = 10_000) -> dict:
     """First-matching gated row. ``s[arm]`` / ``u[arm]``: per-reset counted successes (64 / 32).
     ``harness``: ``b_hold_grasps``, ``b_random_grasps``, ``privileged_ok`` {L1 arm: bool},
     ``determinism_ok``, ``cuda_allocation_failed``, ``median_decision_seconds``, and optionally
@@ -1046,14 +1077,14 @@ def decide_gated(s: dict, u: dict, harness: dict) -> dict:
         "claim": row in CLAIM_ROWS,
         "gates": gates,
         "twin_non_inferior_point": bool(twin_ok),
-        "t_reported": paired_difference_ci(s["L-plan"], s["H-twin"])
+        "t_reported": paired_difference_ci(s["L-plan"], s["H-twin"], resamples=report_resamples)
         | {
             "reading": "not observed more than 6/64 below H-twin"
             if twin_ok
             else "observed more than 6/64 below H-twin",
             "note": "a point bar, not statistical non-inferiority",
         },
-        "g5_reported": paired_difference_ci(u["L-plan"], u["P-stale"]),
+        "g5_reported": paired_difference_ci(u["L-plan"], u["P-stale"], resamples=report_resamples),
         "counts_of_64": n,
         "u_counts_of_32": {a: int(np.asarray(u[a], bool).sum()) for a in U_ARMS},
         "paired": pairs,
@@ -1289,6 +1320,9 @@ def frozen_block() -> dict:
             "claim_rows": CLAIM_ROWS,
             "authorisation_scope": AUTHORISATION_SCOPE,
             "authorisation_schema": AUTHORISATION_SCHEMA,
+            "authorised_by_values": AUTHORISED_BY_VALUES,
+            "authorisation_pr": AUTHORISATION_PR,
+            "authorisation_not_before_utc": AUTHORISATION_NOT_BEFORE_UTC,
             "clause_rows": CLAUSE_ROWS,
             "clause_scope": CLAUSE_SCOPE,
             "row_consequences": ROW_CONSEQUENCES,

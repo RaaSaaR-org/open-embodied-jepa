@@ -52,8 +52,17 @@ P-far, a retrained BC policy, is a reported control.
 - D3+D4 "Right-side move, place only (Recommended)";
 - D5 "Yes, add it (Recommended)".
 
-Every other ruling was delegated and is labelled "decided by Claude under owner delegation,
-2026-09-30".
+**The owner's explicit delegation of 2026-09-30, verbatim:** "do the work without me - if you
+have decidions, choose your recommandation. do the work in subagents, use this chat just for
+updates. use subagents and workflows. goal is to continue working and try to get a real LeWM for
+the Unitree G1 without my help".
+
+Every other ruling is therefore delegated, and is labelled "decided by Claude under owner
+delegation, 2026-09-30". This includes the gated authorisation:
+- the gated stage may run on an authorisation record signed by the task owner, or by Claude under
+  this delegation;
+- either way, only after a pre-run reviewer's reported GO;
+- the main session posts a notice in chat before each gated run.
 
 **The design probes** used development seeds 54700–54999, which are now spent. The bars were set
 after seeing them, and the protocol discloses this.
@@ -64,7 +73,8 @@ after seeing them, and the protocol discloses this.
 3. the `apple-far-shift-v2` corpus;
 4. W/N training, P-far, ranking and the offline decision (O1–O5);
 5. the D3 development closed loop;
-6. gated S/U, only on a separate owner authorisation record;
+6. gated S/U, only on a separate owner or delegated authorisation record, after a reported
+   reviewer GO, with a chat notice before each gated run;
 7. the results PR.
 
 Learned Apple→Plate on the frozen benchmark is still 0 successes. An L-plan success would be
@@ -83,5 +93,6 @@ apple", not LeWM driving the whole episode, and not the v1 benchmark. No control
 - [ ] K1 on a fresh pre-run reviewer's reported GO, with the coordinator told first.
 - [ ] Corpus, training, P-far, ranking and the offline decision, each on its own reported GO.
 - [ ] D3, on its own reported GO.
-- [ ] Gated S/U only after the owner authorisation record is pinned.
+- [ ] Gated S/U only after the owner or delegated authorisation record is in the manifest,
+      validated by `check_authorisation`, after a reported reviewer GO and a chat notice.
 - [ ] The results PR, reviewed with every restated number checked.

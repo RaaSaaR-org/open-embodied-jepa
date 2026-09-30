@@ -26,7 +26,7 @@ MANIFEST = json.loads(
 )
 render = pytest.mark.skipif(os.environ.get("JEPA_TEST_RENDER") != "1", reason="graphics opt-in")
 # A literal: the gated-stage authorisation PR may not change it (AUTHORISATION_SCOPE).
-FROZEN_SHA256 = "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393"
+FROZEN_SHA256 = "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a"
 
 
 def _load_script(name: str, relative: str):
@@ -59,6 +59,16 @@ def test_pinned_files_match():
         "scripts/run_wm_critic_v2.py",
     ):
         assert own in MANIFEST["hashes"]
+
+
+def test_the_protocol_document_sha_is_recorded():
+    """The document is not pinned (the smoke record is added after the smokes), but its sha256
+    at merge is recorded in the manifest, and the authorisation PR may not edit it."""
+    doc = ROOT / "docs" / "experiments" / "apple_lewm_planner_v2.md"
+    assert hashlib.sha256(doc.read_bytes()).hexdigest() == MANIFEST["protocol_document_sha256"]
+    assert "apple_lewm_planner_v2.md" in lp.AUTHORISATION_SCOPE
+    assert "check_authorisation" in lp.AUTHORISATION_SCOPE
+    assert "tests/test_lewm_planner_v2.py" in MANIFEST["hashes"]
 
 
 def test_task073_files_are_unchanged_by_this_task():
@@ -334,21 +344,33 @@ def test_gated_rows_first_match():
 
 
 def test_no_claim_row_fires_with_t_failed():
-    """Owner D1 read literally: only L-PASS makes the claim, and never with T failed."""
+    """Owner D1 read literally: only L-PASS makes the claim, and never with T failed. The draws
+    keep the headroom and the blind twins fixed and put L-plan and H-twin around the 6/64
+    margin, so L-TWIN-BETTER and L-PASS are both reached (dropping T from L-PASS fails this)."""
     assert lp.CLAIM_ROWS == ("L-PASS",)
     rng = np.random.default_rng(1)
-    for _ in range(400):
-        counts = {a: int(rng.integers(0, 65)) for a in lp.S_ARMS}
-        counts |= {"B-oracle-shift": 64, "P-stale": int(rng.integers(0, 9))}
-        u = _u(**{"L-plan": int(rng.integers(26, 33)), "P-stale": 30})
+    rows = []
+    for _ in range(300):
+        plan = int(rng.integers(40, 65))
+        counts = BASE | {
+            "L-plan": plan,
+            "H-twin": int(np.clip(plan + rng.integers(-3, 11), 0, 64)),
+            "P-truth": 20,
+            "H-handover": 64,
+            "L-shuf": int(rng.choice([0, 5, 58])),
+        }
+        u = _u(**{"L-plan": int(rng.integers(27, 33)), "P-stale": 30})
         harness = HARNESS | {"median_decision_seconds": float(rng.choice([0.5, 1.2]))}
-        out = lp.decide_gated(_s(**counts), u, harness)
+        out = lp.decide_gated(_s(**counts), u, harness, report_resamples=50)
+        rows.append(out["row"])
         if not out["gates"]["T"]:
             assert not out["claim"] and out["row"] != "L-PASS"
         if out["claim"]:
             assert all(out["gates"].values())
         if out["row"] in lp.GATED_ROWS[3:]:  # every outcome row
             assert out["claim"] or out["abandonment_clause_fires"]
+    for row in ("L-PASS", "L-TWIN-BETTER", "L-SLOW", "L-HARM"):
+        assert row in rows, row
 
 
 def test_t_and_g5_are_reported_with_intervals_and_blocked_resets_split_p_far():
@@ -356,6 +378,14 @@ def test_t_and_g5_are_reported_with_intervals_and_blocked_resets_split_p_far():
     blocked["P-far"][:10] = True
     out = lp.decide_gated(_s(**BASE | {"P-far": 30}), _u(), HARNESS | {"blocked": blocked})
     t = out["t_reported"]
+    assert t["only_first"] == 0 and t["only_second"] == 2
+    assert {"only_first", "only_second"} <= set(out["g5_reported"])
+    # the keep mask drops the resets on which either arm's move was blocked
+    clean = out["p_far_reported_excluding_blocked"]
+    keep = ~blocked["P-far"]
+    s = _s(**BASE | {"P-far": 30})
+    want = lp.paired_one_sided(np.asarray(s["L-plan"])[keep], np.asarray(s["P-far"])[keep])
+    assert clean == want and clean["difference"] == (60 - 10) - (30 - 10)
     assert t["difference"] == -2 and t["ci95"][0] <= -2 <= t["ci95"][1]
     assert "not statistical non-inferiority" in t["note"]
     assert out["g5_reported"]["n"] == lp.U_RESETS
@@ -395,25 +425,34 @@ def _record(**over):
         "#issuecomment-123",
         "stage": "gated",
         "authorised_utc": "2026-10-01T12:00:00Z",
-        "authorised_by": lp.AUTHORISED_BY,
+        "authorised_by": lp.AUTHORISED_BY_VALUES[1],
     }
     return base | over
 
 
+NOW = __import__("datetime").datetime(2026, 10, 2, tzinfo=__import__("datetime").UTC)
+
+
 def test_the_authorisation_record_is_validated_against_its_schema():
-    assert lp.check_authorisation(_record())["stage"] == "gated"
+    assert lp.check_authorisation(_record(), now=NOW)["stage"] == "gated"
+    owner = _record(authorised_by="authorised by the task owner")
+    assert lp.check_authorisation(owner, now=NOW)["authorised_by"].endswith("task owner")
     assert set(lp.AUTHORISATION_SCHEMA) == set(_record())
+    other_pr = "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/114#issuecomment-1"
     for bad in (
         _record(frozen_sha256="0" * 64),
         _record(go_comment_url="https://example.com/x"),
+        _record(go_comment_url=other_pr),
         _record(stage="d3"),
         _record(authorised_utc="yesterday"),
+        _record(authorised_utc="2026-09-30T23:59:59Z"),  # before the frozen-code smokes
+        _record(authorised_utc="2026-10-03T00:00:00Z"),  # in the future
         _record(authorised_by="someone"),
         _record() | {"extra": 1},
         {"ok": True},
     ):
         with pytest.raises(lp.GuardError, match="G-authorisation"):
-            lp.check_authorisation(bad)
+            lp.check_authorisation(bad, now=NOW)
 
 
 def test_budget_rule():
@@ -506,11 +545,16 @@ def test_the_runner_uses_run_guards_and_pins_threads():
     assert lp.MEMORY["measure_key"] == "pss" and "VmRSS" in lp.MEMORY["measure"]
 
 
-def test_gated_stage_is_refused_without_an_authorisation_record(tmp_path):
+def test_gated_stage_is_refused_without_an_authorisation_record(tmp_path, monkeypatch):
     pytest.importorskip("torch")
     pytest.importorskip("mujoco")
+    import functools
+
     runner = _load_script("_run_lewm_planner_v2", "scripts/run_lewm_planner_v2.py")
-    with pytest.raises(lp.GuardError, match="no owner authorisation"):
+    monkeypatch.setattr(
+        lp, "check_authorisation", functools.partial(lp.check_authorisation, now=NOW)
+    )
+    with pytest.raises(lp.GuardError, match="no owner or delegated"):
         runner.stage_gated({}, {"gated_authorization": None}, tmp_path, None, None)
     with pytest.raises(lp.GuardError, match="schema"):
         runner.stage_gated({}, {"gated_authorization": {"x": 1}}, tmp_path, None, None)
@@ -600,3 +644,166 @@ def test_place_primitive_keeps_e9s_clock_and_refuses_unreachable_targets():
     assert not pp.reachable(fk, [0.34, -0.18], [0.49, -0.80])
     with pytest.raises(ContractError):
         pp.PlacePrimitive(fk, [0.34, -0.18]).retarget([0.49, -0.2], 300)
+
+
+# ----- behavioural tests added after the re-review of #113 --------------------------------------
+def test_the_runtime_turns_a_blocked_move_into_a_counted_failure(monkeypatch):
+    """The SHIFT_BLOCKED except path of run_attempt_task, with the simulator stubbed out."""
+    from embodied_jepa import lewm_planner_v2_runtime as lrt
+    from embodied_jepa import plate_shift as ps
+
+    class Robot:
+        def stop(self, reason):
+            self.stopped = reason
+
+    class Counter:
+        def remove(self):
+            pass
+
+    class Hook:
+        def __init__(self, *args):
+            self.removed = False
+
+        def remove(self):
+            self.removed = True
+
+    def blocked_run(*args, **kwargs):
+        raise ps.GuardError(lp.SHIFT_BLOCKED_PREFIX + " ['apple_geom']")
+
+    def other_run(*args, **kwargs):
+        raise ps.GuardError("the plate is not at its reset height")
+
+    truth = {"object_position": [0.34, -0.18, 0.8], "plate_position": [0.49, -0.09, 0.75]}
+    facts = {"post_look_frame": np.zeros((2, 2, 3), np.uint8), "post_look_state": np.zeros(3)}
+    monkeypatch.setitem(lrt.rtm._W, "robot", Robot())
+    monkeypatch.setitem(lrt.rtm._W, "bounds", (np.zeros(14), np.ones(14)))
+    monkeypatch.setattr(lrt.rt2, "reset_and_look", lambda *a: (truth, None, Counter(), None, facts))
+    monkeypatch.setattr(lrt.rtm, "check_post_look_frame", lambda *a: {})
+    monkeypatch.setattr(lrt.ps, "PlateShift", Hook)
+    monkeypatch.setattr(lrt, "_controller", lambda task, truth: object())
+    task = {
+        "seed": 54650,
+        "arm": "L-plan",
+        "reset": {"object_xy": [0.34, -0.18], "plate_xy": [0.49, -0.09]},
+        "shift": {"step": 300, "vector": [0.0, -0.09]},
+    }
+    monkeypatch.setattr(lrt.rt2, "run_attempt", blocked_run)
+    out = lrt.run_attempt_task(task)
+    assert out["termination_reason"] == "shift_blocked" and out["success"] is False
+    assert out["privileged_ok"] is True and out["shift_blocked"].startswith(lp.SHIFT_BLOCKED_PREFIX)
+    assert out["executed_steps"] == 300 and out["post_look_state"] == [0.0, 0.0, 0.0]
+    monkeypatch.setattr(lrt.rt2, "run_attempt", other_run)  # any other guard stays a V
+    with pytest.raises(ps.GuardError, match="reset height"):
+        lrt.run_attempt_task(task)
+
+
+def test_p_far_writes_its_first_outcome_before_its_first_fit():
+    source = (ROOT / "scripts" / "run_lewm_planner_v2.py").read_text()
+    start = source.index("def stage_pfar(")
+    body = source[start : source.index("\ndef ", start + 10)]
+    assert body.index('report["first_outcome_utc"]') < body.index('current = fit("P-far-0")')
+    assert body.index('current = fit("P-far-0")') < body.index("mark_first_render(report)")
+
+
+def _runner(name):
+    pytest.importorskip("torch")
+    pytest.importorskip("mujoco")
+    return _load_script(name, "scripts/run_lewm_planner_v2.py")
+
+
+def test_evidence_guards_refuse_mismatched_corpora_reports_and_artefacts(tmp_path):
+    runner = _runner("_run_lewm_planner_v2_guards")
+
+    class Reader:
+        def __init__(self, manifest, corpus):
+            self.manifest, self.corpus = manifest, corpus
+
+    corpus = tmp_path / "corpus"
+    corpus.mkdir()
+    (corpus / "manifest.json").write_text("{}")
+    plan = lp.corpus_plan()
+    good = {
+        "protocol": lp.PROTOCOL,
+        "plan": plan,
+        "provenance": {"smoke": False, "k1_report_sha256": "k"},
+    }
+    # check_corpus_kind
+    runner.check_corpus_kind(Reader(good, corpus), False)
+    with pytest.raises(lp.GuardError, match="smoke flag"):
+        runner.check_corpus_kind(Reader(good, corpus), True)
+    with pytest.raises(lp.GuardError, match="not TASK-074"):
+        runner.check_corpus_kind(Reader(good | {"protocol": "x"}, corpus), False)
+    # the plan digest and the K1 link
+    report: dict = {}
+    runner.check_corpus_provenance(report, Reader(good, corpus), MANIFEST, False, "k")
+    assert report["upstream"]["corpus"]["k1_report_sha256"] == "k"
+    bad_plan = good | {"plan": plan[:-1]}
+    with pytest.raises(lp.GuardError, match="plan differs"):
+        runner.check_corpus_provenance({}, Reader(bad_plan, corpus), MANIFEST, False, "k")
+    with pytest.raises(lp.GuardError, match="after this K1"):
+        runner.check_corpus_provenance({}, Reader(good, corpus), MANIFEST, False, "other")
+    # the corpus stage's own plan-digest check uses the same digest
+    assert lp.plan_digest(plan) == MANIFEST["corpus_plan_sha256"]
+    # verify_artifacts
+    f = tmp_path / "a.npz"
+    f.write_bytes(b"abc")
+    runner.verify_artifacts({str(f): hashlib.sha256(b"abc").hexdigest()}, "t")
+    with pytest.raises(lp.GuardError, match="differs from its sha256"):
+        runner.verify_artifacts({str(f): "0" * 64}, "t")
+    # read_stage_report: frozen block, clean tree, outcome, kind; records what was consumed
+    up = {
+        "protocol": lp.PROTOCOL,
+        "outcome": "K1-PASS",
+        "smoke": True,
+        "frozen_sha256": lp.frozen_sha256(),
+        "tracked_tree_dirty": False,
+        "revision": "abc",
+    }
+
+    def write(d):
+        p = tmp_path / "r.json"
+        p.write_text(json.dumps(d))
+        return p, hashlib.sha256(p.read_bytes()).hexdigest()
+
+    p, sha = write(up)
+    into: dict = {}
+    runner.read_stage_report(p, sha, "K1-PASS", True, into)
+    assert into["upstream"]["K1-PASS"]["revision"] == "abc"
+    for bad, match in (
+        (up | {"frozen_sha256": "0" * 64}, "another frozen block"),
+        (up | {"tracked_tree_dirty": True}, "clean tree"),
+        (up | {"outcome": "L-NO-CONDITION"}, "recorded K1-PASS"),
+        (up | {"smoke": False}, "recorded K1-PASS"),
+    ):
+        p, sha = write(bad)
+        with pytest.raises(lp.GuardError, match=match):
+            runner.read_stage_report(p, sha, "K1-PASS", True)
+    with pytest.raises(lp.GuardError, match="differs from its sha256"):
+        runner.read_stage_report(p, "0" * 64, "K1-PASS", True)
+
+
+def test_rerun_verdict_on_every_toleranced_field():
+    from embodied_jepa import place_planner as pp
+
+    cases = {
+        "first_grasp_step": (_attempt(first_grasp_step=290), _attempt(first_grasp_step=310)),
+        "first_place_step": (_attempt(first_place_step=640), _attempt(first_place_step=660)),
+        "target_cm_max": (
+            _attempt(decisions=[{"chosen": [24, 12], "target": [0.496, -0.2]}]),
+            _attempt(decisions=[{"chosen": [24, 12], "target": [0.511, -0.2]}]),
+        ),
+    }
+    for field, (above_half, void) in cases.items():
+        out = pp.rerun_verdict(_attempt(), above_half)
+        assert not out["void"], field
+        assert field in [a["field"] for a in out["above_half_tolerance"]], field
+        assert pp.rerun_verdict(_attempt(), void)["void"], field
+    cmd = np.zeros((725, 7), np.float32)
+    cmd[10, 0] = 0.5
+    out = pp.rerun_verdict(_attempt(), _attempt(commands=cmd))
+    assert not out["void"] and out["above_half_tolerance"][0]["field"] == (
+        "max_abs_command_difference"
+    )
+    cmd[10, 0] = 0.9
+    assert pp.rerun_verdict(_attempt(), _attempt(commands=cmd))["void"]
+    assert pp.rerun_verdict(_attempt(), _attempt(executed_steps=700))["void"]  # exact field
