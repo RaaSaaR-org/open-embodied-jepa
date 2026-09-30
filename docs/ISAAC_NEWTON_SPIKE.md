@@ -194,7 +194,7 @@ In the scripted run (no rendering), the solver initialisation took 13 s and the 
   - (c) angular damping;
   - (d) accepting an engine factor.
 - **Next steps:**
-  1. Replay the TASK-070 expert e9 on development seeds as a separately labelled cross-simulator check, with the embodiment's IK (MuJoCo kinematics provider) over `IsaacTransport(physics="newton")`.
+  1. Replay the TASK-070 expert e9 on development seeds as a separately labelled cross-simulator check, with the embodiment's IK (MuJoCo kinematics provider) over `IsaacTransport(physics="newton")`. *Update 2026-09-30: done in [ISAAC_E9_REPLAY.md](ISAAC_E9_REPLAY.md) (development). The grasp, lift, release and landing match to a few control steps. The per-seed at-rest verdicts do not match, and Newton does not reproduce them across two of its own runs either. The start-up hang recurred and was located in `UsdPhysics.LoadUsdPhysicsFromRange`.*
   2. Decide whether to enable robot self-collision.
   3. Watch the start-up hang with the stack dumps before relying on Newton in unattended runs.
 - **Images.** The photometric gap is a renderer issue and is unchanged by the physics backend.

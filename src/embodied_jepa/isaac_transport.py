@@ -119,6 +119,25 @@ def reset_pose(manifest: dict) -> np.ndarray:
     return q
 
 
+def initial_joint_pose(manifest: dict, joint_positions=None) -> np.ndarray:
+    """The reset pose, or ``joint_positions`` (canonical order) checked against the manifest.
+
+    ``G1Embodiment.reset`` opens the Dex3 hands after ``MuJoCoSimulation.reset`` by writing
+    ``qpos`` directly; a cross-simulator replay passes that pose here so both engines start
+    from the same joint state. Values must be finite and inside the manifest's joint limits."""
+    if joint_positions is None:
+        return reset_pose(manifest)
+    q = np.asarray(joint_positions, dtype=float)
+    joints = manifest["joints"]
+    lower = np.array([j["lower"] for j in joints])
+    upper = np.array([j["upper"] for j in joints])
+    if q.shape != lower.shape or not np.isfinite(q).all():
+        raise ContractError(f"joint_positions must be {lower.shape[0]} finite values")
+    if np.any(q < lower) or np.any(q > upper):
+        raise ContractError("joint_positions exceed the manifest's joint limits")
+    return q
+
+
 def manifest_sha256(manifest: dict) -> str:
     return hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest()
 
@@ -338,6 +357,7 @@ class IsaacTransport:
         self.contact_api_error = None
         self._contact_views = []
         self._bias_after_reset = None
+        self.last_substep_start: dict | None = None
         if self.record_contacts and not self.newton:
             try:
                 self._make_contact_views()
@@ -1051,18 +1071,29 @@ class IsaacTransport:
             self._collect_contacts()
 
     # ------------------------------------------------------------------ transport API
-    def reset(self, seed=0, *, object_xy=None, plate_xy=None, object_on_container=False):
+    def reset(
+        self,
+        seed=0,
+        *,
+        object_xy=None,
+        plate_xy=None,
+        object_on_container=False,
+        joint_positions=None,
+    ):
         """Reset to MuJoCoSimulation's initial pose and, with objects, its apple/plate layout.
 
         Placement follows ``MuJoCoSimulation.reset`` (``isaac_scene.reset_layout``): the same
         seeded default apple position, plate default, tabletop bounds and overlap checks. The
         episode clock restarts. The return value carries no object state (see ``task_truth``).
+        ``joint_positions`` (canonical order, optional) replaces the reset pose, e.g. with
+        ``G1Embodiment.reset``'s open hands (``initial_joint_pose``); velocities start at zero.
         """
         self._require_open()
         if not self.objects and (object_xy is not None or plate_xy is not None):
             raise ContractError("this Isaac transport was built without the apple and plate")
         from embodied_jepa import isaac_scene as scene
 
+        q = initial_joint_pose(self.manifest, joint_positions)
         torch = self._torch
         if self.objects:
             apple_pos, plate_pos = scene.reset_layout(
@@ -1073,7 +1104,6 @@ class IsaacTransport:
             )
             self._write_object(self.apple, apple_pos)
             self._write_object(self.plate, plate_pos)
-        q = reset_pose(self.manifest)
         isaac_q = np.zeros(len(self._idx))
         isaac_q[self._idx] = q
         qt = torch.as_tensor(isaac_q, dtype=torch.float32, device=self.sim.device)[None]
@@ -1096,6 +1126,7 @@ class IsaacTransport:
             self._check_joint_properties()
         self.targets[:] = q
         self.time = 0.0
+        self.last_substep_start = None
         self.stopped_reason = ""
         self._last_contacts = []
         self._interval_pairs = set()
@@ -1209,6 +1240,8 @@ class IsaacTransport:
         for k in range(self.substeps):
             interpolated = old + (targets - old) * ((k + 1) / self.substeps)
             q, qd = self._state()
+            if k == self.substeps - 1:
+                self.last_substep_start = self._substep_snapshot(q)
             torque = self._kp * (interpolated - q) - self._kd * qd + self._bias()
             self._apply_effort(np.clip(torque, self.ctrl_min, self.ctrl_max))
             self._step_physics()
@@ -1219,6 +1252,18 @@ class IsaacTransport:
                 raise RuntimeError(self.stopped_reason)
         self.stopped_reason = ""
         return {"status": "applied", "timestamp": self.time, "targets": self.targets.copy()}
+
+    def _substep_snapshot(self, q: np.ndarray) -> dict:
+        """Robot joints and apple pose at the start of an interval's last physics step.
+
+        After ``mj_step`` a MuJoCo ``MjData`` holds the new ``qpos`` but body and site poses
+        and contacts of the state *before* that step; a host mirror of this transport
+        (``isaac_e9.MirrorSimulation``) needs this state to reproduce that layout."""
+        snap = {"q": np.asarray(q, float).copy()}
+        if self.apple is not None:
+            pose = self._np(self.apple.data.root_link_pose_w).reshape(-1)[:7]
+            snap["apple_pose_xyzw"] = pose.astype(float).copy()
+        return snap
 
     def stop(self, reason):
         """Hold the current (limit-clipped) pose as target and zero the effort command."""

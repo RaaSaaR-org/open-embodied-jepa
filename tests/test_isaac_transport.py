@@ -19,6 +19,7 @@ import pytest
 
 from embodied_jepa.contracts import ContractError
 from embodied_jepa.isaac_transport import (
+    initial_joint_pose,
     manifest_sha256,
     name_map,
     onboard_camera_offset,
@@ -235,3 +236,109 @@ def test_newton_history_clear_skips_absent_or_empty_fields(monkeypatch):
     tr, _, _ = _fake_newton_transport(monkeypatch, fields)
     tr.reset(0)
     assert not fields["qacc_warmstart"].values.any()
+
+
+def test_initial_joint_pose_defaults_to_the_reset_pose_and_checks_overrides():
+    manifest = committed()
+    assert np.array_equal(initial_joint_pose(manifest), reset_pose(manifest))
+    names = [j["name"] for j in manifest["joints"]]
+    q = reset_pose(manifest)
+    q[names.index("right_hand_index_0_joint")] = manifest["joints"][
+        names.index("right_hand_index_0_joint")
+    ]["lower"]
+    assert np.array_equal(initial_joint_pose(manifest, q.tolist()), q)
+    with pytest.raises(ContractError, match="finite"):
+        initial_joint_pose(manifest, q[:-1])
+    bad = q.copy()
+    bad[0] = np.nan
+    with pytest.raises(ContractError, match="finite"):
+        initial_joint_pose(manifest, bad)
+    bad = q.copy()
+    bad[0] = manifest["joints"][0]["upper"] + 0.01
+    with pytest.raises(ContractError, match="limits"):
+        initial_joint_pose(manifest, bad)
+
+
+def test_reset_starts_from_given_joint_positions_and_clears_the_substep_snapshot(monkeypatch):
+    tr, _, written = _fake_newton_transport(monkeypatch, {})
+    biases = []
+    monkeypatch.setattr(tr, "_newton_reset_bias", lambda q: biases.append(q.copy()) or q * 0)
+    manifest = committed()
+    names = [j["name"] for j in manifest["joints"]]
+    q = reset_pose(manifest)
+    k = names.index("right_hand_index_0_joint")
+    q[k] = manifest["joints"][k]["lower"]
+    tr.last_substep_start = {"q": np.ones(len(q))}
+    tr.reset(0, joint_positions=q.tolist())
+    assert np.allclose(written["position"][0], q) and not written["velocity"].any()
+    assert np.array_equal(tr.targets, q) and np.array_equal(biases[-1], q)
+    assert tr.last_substep_start is None
+    # None keeps the manifest's reset pose; an out-of-limit pose is refused before any write.
+    tr.reset(0, joint_positions=None)
+    assert np.allclose(written["position"][0], reset_pose(manifest))
+    bad = q.copy()
+    bad[0] = manifest["joints"][0]["upper"] + 0.01
+    written.clear()
+    with pytest.raises(ContractError, match="limits"):
+        tr.reset(0, joint_positions=bad)
+    assert not written
+
+
+def test_substep_snapshot_copies_joints_and_the_apple_root_pose(monkeypatch):
+    from types import SimpleNamespace
+
+    tr, _, _ = _fake_newton_transport(monkeypatch, {})
+    q = np.arange(3.0)
+    assert set(tr._substep_snapshot(q)) == {"q"}  # no apple in this scene
+    pose = np.array([[0.4, -0.2, 0.78, 0.0, 0.0, 0.0, 1.0]], np.float32)
+    tr.apple = SimpleNamespace(data=SimpleNamespace(root_link_pose_w=pose))
+    monkeypatch.setattr(tr, "_np", lambda x: np.asarray(x), raising=False)
+    snap = tr._substep_snapshot(q)
+    q[0] = 9.0
+    pose[0, 0] = 9.0
+    assert snap["q"].tolist() == [0.0, 1.0, 2.0]  # copies, not views
+    assert snap["apple_pose_xyzw"].dtype == float
+    assert np.allclose(snap["apple_pose_xyzw"], [0.4, -0.2, 0.78, 0, 0, 0, 1])
+
+
+def test_step_loop_snapshots_the_start_of_the_last_substep(monkeypatch):
+    tr, _, _ = _fake_newton_transport(monkeypatch, {})
+    n = len(tr.targets)
+    manifest = committed()
+    joints = manifest["joints"]
+    tr.__dict__.update(
+        joint_names=tuple(j["name"] for j in joints),
+        lower=np.array([j["lower"] for j in joints]),
+        upper=np.array([j["upper"] for j in joints]),
+        ctrl_min=np.full(n, -1e9),
+        ctrl_max=np.full(n, 1e9),
+        _kp=np.zeros(n),
+        _kd=np.zeros(n),
+        substeps=4,
+        record_contacts=False,
+        time=0.0,
+        stopped_reason="",
+    )
+    tr.reset(0)
+    assert tr.last_substep_start is None
+    physics = {"steps": 0}
+
+    def state():  # joint 0 records how many physics steps have run
+        q = np.zeros(n)
+        q[0] = physics["steps"]
+        return q, np.zeros(n)
+
+    def step_physics():
+        physics["steps"] += 1
+        tr.time = round(tr.time + 0.0125, 9)
+
+    monkeypatch.setattr(tr, "_state", state, raising=False)
+    monkeypatch.setattr(tr, "_step_physics", step_physics, raising=False)
+    monkeypatch.setattr(tr, "_bias", lambda: np.zeros(n), raising=False)
+    ack = tr.send_joint_targets(tr.targets.copy(), joint_names=tr.joint_names, deadline=0.05)
+    assert ack["status"] == "applied" and physics["steps"] == 4
+    assert tr.last_substep_start["q"][0] == 3  # before the 4th (last) physics step
+    ack = tr.send_joint_targets(tr.targets.copy(), joint_names=tr.joint_names, deadline=0.1)
+    assert tr.last_substep_start["q"][0] == 7
+    tr.reset(0)
+    assert tr.last_substep_start is None
