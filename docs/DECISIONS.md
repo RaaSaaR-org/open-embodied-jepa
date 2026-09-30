@@ -63,6 +63,32 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-09-30 — TASK-073 ends at K0 with S-NO-CONDITION; the D7 fallback (TASK-074) is authorised
+
+**Outcome: S-NO-CONDITION** (`apple_wm_critic_v2`). K0, the preregistered condition calibration
+(simulator only, no world model, 32 development resets per cell), found no mid-episode plate-shift
+condition on `apple-to-plate-v2` that passes all four bars. In every cell where P-truth ran, P-3
+given the true post-shift plate reached 26–29/32. Privileged 16-command look-ahead among the 25
+nearby aims (H-sim) added at most +3/32 over that, against a bar of +4. The margins (+2 and +3
+at best) are within a few resets on 32 resets and one run, so a larger cohort could land on
+either side of the bar. At step 480 with a 5–6 cm
+shift, the unaided policy still succeeded too often (18–20/32 against ≤ 8). In the protocol's
+words, "BC plus perception leaves no measurable room for a world-model critic under this
+disturbance on v2".
+
+- **The LeWM critic was never trained or run.** This is a headroom finding under privileged
+  look-ahead. It is not a test of LeWM and says nothing about how well LeWM predicts or ranks.
+- **The abandonment clause does not fire.** The owner's D7 fallback applies: TASK-074, the
+  LeWM-only planner, is authorised and needs its own preregistration.
+- **Process:** K0 run-1 was a V: an external SIGTERM after memory pressure, with 16 workers
+  reaching 25.9 GiB. It was fixed in #108 under the owner's rulings. K0 run-2 ran once, from
+  `35772e5`, on a reported GO, with no void and no render event.
+- **Learned Apple→Plate on the frozen benchmark is still 0 successes.** No control line is
+  primary.
+
+**Evidence.** [apple_wm_critic_v2_results.md](experiments/apple_wm_critic_v2_results.md); report
+sha256 `f760af40…27f2`.
+
 ## Decision 2026-09-28 — M2 on cohort C: P-3 40/40, R-3 39/40; row M2-FAIL on G3 alone (TASK-072)
 
 **Outcome: M2-FAIL. The only failing gate is G3.** M2 was preregistered by TASK-071 §12. It was
