@@ -310,6 +310,79 @@ def cmd_isaac(args) -> int:
     return 0
 
 
+# ----- MuJoCo sensitivity ------------------------------------------------------------------
+def _sensitivity_one(task: dict) -> dict:
+    """MuJoCo open-loop replay of the reference commands with the apple's reset xy moved by
+    ``offset_m`` (a calibration of how much a tiny state difference changes the outcome)."""
+    ref = np.load(Path(task["reference"]) / f"closed_{task['key']}.npz")
+    reset = dict(task["reset"])
+    reset["object_xy"] = (np.asarray(reset["object_xy"]) + task["offset_m"]).tolist()
+    summary, arrays = ie.replay_open_loop(
+        _W["robot"],
+        seed=task["seed"],
+        reset=reset,
+        initial_q=ref["rec_initial_q"],
+        targets=ref["rec_targets"],
+        look_steps=task["closed"]["look_steps"],
+    )
+    rq = _W["recorder"].arrays()["rec_q"]
+    n = min(len(rq), len(ref["rec_q"]))
+    return {
+        "key": task["key"],
+        "offset_m": task["offset_m"],
+        "at_rest": summary["at_rest"],
+        "reference_at_rest": task["closed"]["at_rest"],
+        "final_distance_cm": summary["final_distance_cm"],
+        "final_xy_gap_cm": float(
+            np.linalg.norm(arrays["apple_pos"][-1][:2] - ref["apple_pos"][-1][:2]) * 100
+        ),
+        "max_joint_diff": float(np.abs(rq[:n] - ref["rec_q"][:n]).max()),
+    }
+
+
+def cmd_sensitivity(args) -> int:
+    if args.output.exists():
+        raise SystemExit(f"refusing to overwrite {args.output}")
+    ref = json.loads((args.reference / "report.json").read_text())
+    tasks = []
+    for r in ref["attempts"]:
+        if not r["ok"]:
+            continue
+        for angle in args.angles_deg:
+            a = np.deg2rad(angle)
+            offset = args.offset_mm / 1000 * np.array([np.cos(a), np.sin(a)])
+            tasks.append({**r, "reference": str(args.reference), "offset_m": offset.tolist()})
+    args.output.mkdir(parents=True)
+    pool = mp.get_context("spawn").Pool(args.workers, initializer=_mujoco_init)
+    try:
+        rows = pool.map(_sensitivity_one, tasks, chunksize=1)
+    finally:
+        pool.terminate()
+        pool.join()
+    flips = sum(r["at_rest"] != r["reference_at_rest"] for r in rows)
+    gaps = [r["final_xy_gap_cm"] for r in rows]
+    report = {
+        "what": "MuJoCo open-loop sensitivity of e9's outcome to a tiny apple reset offset "
+        "(development; not a gated run; not a learned result)",
+        **provenance(),
+        "reference": str(args.reference),
+        "offset_mm": args.offset_mm,
+        "angles_deg": list(args.angles_deg),
+        "replays": len(rows),
+        "at_rest": sum(r["at_rest"] for r in rows),
+        "outcome_flips": flips,
+        "final_xy_gap_cm_q50_q90_max": [
+            float(np.median(gaps)),
+            float(np.quantile(gaps, 0.9)),
+            float(np.max(gaps)),
+        ],
+        "rows": rows,
+    }
+    write_report(args.output / "report.json", report)
+    print(json.dumps({k: v for k, v in report.items() if k != "rows"}, indent=1))
+    return 0
+
+
 # ----- comparison -----------------------------------------------------------------------------
 def attempt_events(arrays, summary, *, isaac: bool) -> dict:
     """Events after the look. Hand contact: Isaac's own list for an Isaac run (the truth the
@@ -510,6 +583,12 @@ def main() -> int:
     p.add_argument("--only", nargs="*", help="attempt keys, e.g. 0.0-50200 (development)")
     p.add_argument("--connect_timeout", type=float, default=1800.0)
     p.add_argument("--keep_server", action="store_true")
+    p = sub.add_parser("sensitivity")
+    p.add_argument("--reference", type=Path, required=True)
+    p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--offset_mm", type=float, default=0.1)
+    p.add_argument("--angles_deg", type=float, nargs="+", default=[0.0, 90.0, 180.0, 270.0])
+    p.add_argument("--workers", type=int, default=4)
     p = sub.add_parser("compare")
     p.add_argument("--reference", type=Path, required=True)
     p.add_argument("--isaac", type=Path, required=True)
@@ -517,7 +596,12 @@ def main() -> int:
     args = parser.parse_args()
     if args.cmd == "isaac" and not args.sham and args.socket is None:
         parser.error("isaac needs --socket or --sham")
-    return {"mujoco": cmd_mujoco, "isaac": cmd_isaac, "compare": cmd_compare}[args.cmd](args)
+    return {
+        "mujoco": cmd_mujoco,
+        "isaac": cmd_isaac,
+        "sensitivity": cmd_sensitivity,
+        "compare": cmd_compare,
+    }[args.cmd](args)
 
 
 if __name__ == "__main__":
