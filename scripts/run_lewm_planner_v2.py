@@ -514,6 +514,8 @@ def stage_corpus(report, manifest, evidence, clock, args):
         raise FileExistsError(f"refusing to overwrite {corpus}")
     plan = lp.corpus_plan() if not args.smoke else smoke_plan()
     lp.check_role_seeds("corpus", tuple(r["seed"] for r in plan), smoke=args.smoke)
+    if not args.smoke and lp.plan_digest(plan) != manifest["corpus_plan_sha256"]:
+        raise lp.GuardError("G-cohort: the corpus plan differs from the manifest's digest")
     (corpus / "episodes").mkdir(parents=True)
     pool = Pool(sim_workers(), {"p3_checkpoint": p3_checkpoint(evidence), "torch_threads": 1})
     report["_pool"] = pool
@@ -540,6 +542,32 @@ def stage_corpus(report, manifest, evidence, clock, args):
         "outcome": "CORPUS-SEALED",
         "corpus": {"manifest_sha256": sha, "path": str(corpus), "summary": corpus_summary(records)},
     }
+
+
+def check_corpus_kind(reader, smoke: bool) -> None:
+    """G-evidence: a smoke stage reads a smoke corpus, a real stage a real one."""
+    if bool(reader.manifest.get("provenance", {}).get("smoke")) != bool(smoke):
+        raise lp.GuardError("G-evidence: the corpus's smoke flag does not match this stage")
+    if reader.manifest.get("protocol") != lp.PROTOCOL:
+        raise lp.GuardError("G-evidence: the corpus is not TASK-074's")
+
+
+def file_sha(path) -> str:
+    return R65.sha256_file(path)
+
+
+def verify_artifacts(files: dict, what: str) -> None:
+    """G-evidence: every artefact a worker will load matches the sha256 its stage recorded."""
+    for path, want in files.items():
+        if file_sha(path) != want:
+            raise lp.GuardError(f"G-evidence: {what} artefact {path} differs from its sha256")
+
+
+def critic_shas(critic: dict) -> dict:
+    return {
+        critic["r_off"]: critic["sha256"]["r_off"],
+        critic["r_plate"]: critic["sha256"]["r_plate"],
+    } | {path: critic["sha256"]["models"][name] for name, path in critic["models"].items()}
 
 
 # ----- train (and the full-scale memory probe) ----------------------------------------------------
@@ -611,6 +639,7 @@ def stage_train(report, manifest, evidence, clock, args):
     read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke)
     reader = rt2.CorpusReader(Path(args.corpus), args.corpus_sha256, splits=lp.READ_SPLITS)
     report["_reader"] = reader
+    check_corpus_kind(reader, args.smoke)
     look = rt2.CorpusReader(
         evidence / fm.EVIDENCE["corpus"],
         fm.EVIDENCE["corpus_manifest_sha256"],
@@ -753,6 +782,9 @@ def stage_train(report, manifest, evidence, clock, args):
         raise lp.GuardError("Q-split: a test root was decoded")
     gates = offline_gates(ctx, table, idx, w, n, r_off)
     order = [primary, *[x for x in lp.MODEL_SEEDS if x != primary]]
+    model_paths = {f"W{i}": records[f"W-{s}"]["checkpoint"] for i, s in enumerate(order)} | {
+        "N": records[f"N-{primary}"]["checkpoint"]
+    }
     result = {
         "outcome": "TRAIN-COMPLETE",
         "primary_w_seed": primary,
@@ -767,8 +799,12 @@ def stage_train(report, manifest, evidence, clock, args):
         "critic": {
             "r_off": str(out_dir / "r_off.npz"),
             "r_plate": str(out_dir / "r_plate.npz"),
-            "models": {f"W{i}": records[f"W-{s}"]["checkpoint"] for i, s in enumerate(order)}
-            | {"N": records[f"N-{primary}"]["checkpoint"]},
+            "models": model_paths,
+            "sha256": {
+                "r_off": file_sha(out_dir / "r_off.npz"),
+                "r_plate": file_sha(out_dir / "r_plate.npz"),
+                "models": {name: file_sha(path) for name, path in model_paths.items()},
+            },
         },
     }
     if args.smoke:
@@ -926,6 +962,8 @@ def stage_pfar(report, manifest, evidence, clock, args):
     critic = train["stages"]["critic"]
     reader = rt2.CorpusReader(Path(args.corpus), args.corpus_sha256, splits=lp.READ_SPLITS)
     report["_reader"] = reader
+    check_corpus_kind(reader, args.smoke)
+    verify_artifacts({critic["r_plate"]: critic["sha256"]["r_plate"]}, "train")
     plan = reader.manifest["plan"]
     plan_by_id = {r["episode_id"]: r for r in plan}
     pool = Pool(
@@ -973,6 +1011,8 @@ def stage_pfar(report, manifest, evidence, clock, args):
         trainings[name] = record
         return str(path)
 
+    # P-far's void boundary: the first val-selected fit is its first outcome (VOID_RULE)
+    report["first_outcome_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     current = fit("P-far-0")
     train_roots = [r for r in plan if r["split"] == "train"]
     sizes = b.get("dagger_rollouts", lp.P_FAR["dagger_rollouts"])
@@ -983,6 +1023,10 @@ def stage_pfar(report, manifest, evidence, clock, args):
         roots = train_roots[offset : offset + size]
         offset += size
         seeds = tuple(r["seed"] for r in roots)
+        if args.smoke:
+            lp.check_role_seeds("corpus", seeds, smoke=True)
+        elif not set(seeds) <= set(lp.seeds_of("corpus")):
+            raise lp.GuardError("G-seeds: a DAgger rollout seed is not a corpus train seed")
         resets = {
             r["seed"]: {k2: r["reset"][k2] for k2 in ("object_xy", "plate_xy")} for r in roots
         }
@@ -1017,6 +1061,8 @@ def stage_pfar(report, manifest, evidence, clock, args):
         }
         current = fit(f"P-far-{k}")
     report["stages"]["dagger"] = dagger
+    if args.smoke:
+        report["stages"]["pfar_scale"] = pfar_scale_probe(report, data, val, standardiser, b)
     return {
         "outcome": "PFAR-COMPLETE",
         "p_far": {
@@ -1025,6 +1071,46 @@ def stage_pfar(report, manifest, evidence, clock, args):
             "bc_roots": data_roots(plan, reader),
             "val_rows": int(len(val["x"])),
         },
+    }
+
+
+def pfar_scale_probe(report, data, val, standardiser, b) -> dict:
+    """P-far's memory at full scale, on smoke rows (MEMORY; DELEGATED_CHOICES['memory']): the BC
+    and DAgger rows tiled to the real stage's size (the non-mis-aimed train roots, about 120, plus
+    40 + 50 + 60 rollouts, at about 725 rows each), one CUDA training, with the pool's workers
+    alive. Memory only; nothing is read."""
+    from embodied_jepa import first_policy_v2_model as fm2
+
+    started = time.monotonic()
+    watch = report["_watch"]
+    before = watch.sample()
+    rows = int((120 + sum(lp.P_FAR["dagger_rollouts"])) * 725)
+    reps = int(np.ceil(rows / len(data["x"])))
+    x = np.concatenate([data["x"]] * reps)[:rows]
+    y = np.concatenate([data["y"]] * reps)[:rows]
+    steps = np.concatenate([data["steps"]] * reps)[:rows]
+    fm2.train(
+        standardiser(x),
+        y,
+        steps,
+        standardiser(val["x"]),
+        val["y"],
+        val["steps"],
+        device=lp.P_FAR["device"],
+        seed=lp.SEEDS["p_far_sampler"],
+        updates=b.get("p_far_updates"),
+        select_every=b.get("p_far_select_every"),
+        min_output_std=0.0,
+    )
+    after = watch.sample()
+    return {
+        "rows": rows,
+        "tree_pss_gib_before": before["pss"] / GIB,
+        "tree_pss_gib_after": after["pss"] / GIB,
+        "stage_peak_tree_pss_gib_so_far": watch.peak_pss / GIB,
+        "ceiling_gib": lp.MEMORY["ceiling_gib"],
+        "seconds": time.monotonic() - started,
+        "note": "smoke rows tiled to the real stage's size; memory only, nothing is read",
     }
 
 
@@ -1067,6 +1153,7 @@ def stage_rank(report, manifest, evidence, clock, args):
     k1 = read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke)
     cm = int(k1["stages"]["k1"]["selection"]["shift_cm"])
     critic_files = train["stages"]["critic"]
+    verify_artifacts(critic_shas(critic_files), "train")
     resets, seeds = cohort(manifest, "R", args.smoke)
     pool = Pool(
         h_workers(),
@@ -1199,7 +1286,12 @@ def stage_d3(report, manifest, evidence, clock, args):
     if decision["row"] != "OFFLINE-PASS" and not args.smoke:
         raise lp.GuardError("G-evidence: the offline decision is not OFFLINE-PASS")
     pfar = read_stage_report(args.pfar_report, args.pfar_sha256, "PFAR-COMPLETE", args.smoke)
-    config = decision["critic"] | {
+    verify_artifacts(critic_shas(decision["critic"]), "train")
+    verify_artifacts(
+        {pfar["stages"]["p_far"]["checkpoint"]: pfar["stages"]["p_far"]["checkpoint_sha256"]},
+        "P-far",
+    )
+    config = {k: v for k, v in decision["critic"].items() if k != "sha256"} | {
         "p_far": pfar["stages"]["p_far"]["checkpoint"],
         "torch_threads": lp.H_WORKER_TORCH_THREADS,
     }
@@ -1270,10 +1362,12 @@ def rerun_measurement(report, pool, seeds, resets, est, shift_of, records) -> di
 
 
 def stage_gated(report, manifest, evidence, clock, args):
-    if not manifest.get("gated_authorization"):
+    record = manifest.get("gated_authorization")
+    if not record:
         raise lp.GuardError(
             "G-authorisation: no owner authorisation record is pinned for the gated stage"
         )
+    report["gated_authorization"] = lp.check_authorisation(record)
     raise lp.GuardError("G-authorisation: the gated stage is written by its authorisation PR")
 
 
@@ -1328,9 +1422,10 @@ def run(args) -> dict:
         "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     clock = R65.Clock(lp.CAPS_SECONDS["global"])
-    watch = install_guards()
-    report["_watch"] = watch
+    watch = None
     try:
+        watch = install_guards()  # inside the try: a signal from here on writes the V report
+        report["_watch"] = watch
         kind = "smoke" if report["smoke"] else args.mode
         manifest = preflight(report, kind, evidence)
         if args.mode == "preflight":
@@ -1353,7 +1448,12 @@ def run(args) -> dict:
     except BaseException as error:  # noqa: BLE001 - every failure, signal included, is V
         RUN.void(report, error)
     finally:
-        finish_guards(report, watch, report.pop("_pool", None))
+        RUN.stop_handling()  # first: from here on a signal is recorded, not raised
+        pool = report.pop("_pool", None)
+        if watch is not None:
+            finish_guards(report, watch, pool)
+        elif pool is not None:
+            report["pool_close"] = pool.close()
         report.pop("_watch", None)
         reader = report.pop("_reader", None)
         if reader is not None:

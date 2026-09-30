@@ -98,12 +98,22 @@ DELEGATED_CHOICES = {
     "under the condition, with the plate re-read by R-plate at the decision steps",
     "rerun": "L-plan and H-twin on the first four S seeds, compared by run_guards.RerunRule",
     "memory": "the train stage's memory is measured at full corpus scale in the smoke "
-    "(stage-smoke 'train-scale'); the gated GO reads that measurement",
+    "(stage-smoke 'train-scale'), and P-far's in its smoke ('pfar-scale'); the gated GO reads "
+    "those measurements",
+    "arc": "the right-side move is the 225-315 degree arc of TASK-073's direction rule",
+    "reset_redraw": "REDRAW_RULE: a reset on which the plate cannot move right is re-drawn",
+    "shift_blocked": "SHIFT_BLOCKED: a blocked move is not made; the attempt is a counted "
+    "failure, a corpus root is re-collected unshifted",
+    "rows": "D1 read literally: only L-PASS makes the claim; every other outcome row, "
+    "L-TWIN-BETTER and L-SLOW included, makes no claim and fires the clause",
+    "scene_blind": "L-SCENE-BLIND needs G1, G3 and G4, with G2 failing",
+    "authorisation": "the gated authorisation record has a frozen schema "
+    "(AUTHORISATION_SCHEMA) and is validated by the runner",
 }
 
 # ----- seeds --------------------------------------------------------------------------------------
 # The repository search of 2026-09-30 (protocol §4) found no use of 54000-54999 before this task's
-# design, and none of 7410-7424 as a seed constant. The design probes (protocol §2) used
+# design, and none of 7410-7425 as a seed constant. The design probes (protocol §2) used
 # 54700-54999 and the direction salt 7401; they are spent and never used again.
 SEED_RANGES = {
     "K1": (54000, 54031),  # the condition gate, development
@@ -195,9 +205,10 @@ SIGN_CONVENTION = (
     "world frame = the fixed pelvis's base frame: +x points forward from the pelvis, +y to the "
     "robot's left, +z up. The right shoulder sits at y = -0.10 m (resting_expert."
     "RIGHT_SHOULDER_BASE) and the reset plate centre at y = -0.09 +- 0.02 m, so -y is the robot's "
-    "right, away from the midline y = 0. 'Right-side move' (owner D3+D4) = a shift whose "
-    "direction lies in 225-315 degrees (measured from +x towards +y), i.e. with a negative y "
-    "component of at least |d| cos(45 deg)"
+    "right, away from the midline y = 0. The owner ruled 'Right-side move' (D3+D4); its "
+    "operationalisation as a shift whose direction lies in 225-315 degrees (measured from +x "
+    "towards +y), i.e. with a negative y component of at least |d| cos(45 deg), was "
+    "decided by Claude under owner delegation, 2026-09-30"
 )
 SHIFT_STEP = 300
 SHIFT_GRID_CM = (9, 12)  # K1 tries 9 first, then 12
@@ -317,6 +328,12 @@ FINE_OFFSETS_M = tuple((dx / 100.0, dy / 100.0) for dx in FINE_STEPS_CM for dy i
 FINE_CENTRE = FINE_OFFSETS_M.index((0.0, 0.0))  # the coarse choice itself
 CANDIDATES_PER_DECISION = len(COARSE_OFFSETS_M) + len(FINE_OFFSETS_M)  # 74
 TIE_TOLERANCE_CM = 1e-6
+TIE_RULE = (
+    "the incumbent wins every tie within TIE_TOLERANCE_CM; among other candidates tied at the "
+    "minimum the lowest index wins (np.argmin): for the coarse grid that is the (-x, -y) corner "
+    "first. Stand-in chunks often tie (per-axis clipping and the reach clamp make many targets "
+    "issue the same 16 commands), so this rule decides many early choices"
+)
 # o*(t): the median apple-minus-plate offset (cm, world xy) at post-look step t over the 112
 # counted-success train roots of apple-look-v2-linux run-1 (e9, unshifted), TASK-073's source and
 # statistic, recomputed at this protocol's steps (it reproduces TASK-073's frozen values at 416,
@@ -428,7 +445,9 @@ IMAGE_READING_ARMS = ("L-plan", "L-plan-s1", "L-plan-s2", "L-N", "L-shuf", "H-tw
 LEARNED_LABEL = (
     "P-3's learned pick (BC/DAgger on privileged e9 labels) followed by a LeWM planner that "
     "chooses where e9's scripted place primitive puts the apple; not LeWM driving the whole "
-    "episode, not a real-world disturbance, not the frozen v1 benchmark"
+    "episode, not a real-world disturbance, not the frozen v1 benchmark. An L-plan success is "
+    "hybrid (a learned pick, a LeWM-chosen put-down spot, a scripted place) and is NOT a learned "
+    "Apple->Plate success"
 )
 
 # ----- K1: the condition gate (simulator only, no world model) ------------------------------------
@@ -653,9 +672,14 @@ O3 = {
 O4 = {
     "median_regret_max_cm": 1.0,
     "paired_regret_difference_upper_lt": 0.0,
-    "regret": "the true cost of the chosen target (coarse then fine, as in the closed loop) minus "
-    "the best true cost among the 74 candidates; paired against the incumbent's (the coarse "
-    "(0, 0), the stale estimate)",
+    "regret": "per group, as the ranking stage builds the groups: in each coarse group (the 49 "
+    "targets around the post-look estimate) the true cost of W's choice (tie: the coarse "
+    "(0, 0)) minus the group's best true cost; in each fine group (the 25 targets around the "
+    "coarse target with the lowest TRUE cost, not W's coarse choice) the true cost of W's "
+    "choice (tie: the fine centre) minus that group's best; each paired against its own "
+    "group's incumbent (coarse (0, 0), the stale estimate; fine centre). A choice whose branch "
+    "stopped counts as the group's worst finite outcome. O3/O4 validate the planner's 16-command "
+    "proxy, not placement success",
 }
 O5 = {"median_relative_chunk_error_max": 0.25}
 OFFLINE_ROWS = (
@@ -769,6 +793,7 @@ def decide_offline(seeds: dict, o5: dict) -> dict:
 # ----- D3: the development closed loop (non-gating) -----------------------------------------------
 D3_RESETS = 16
 D3_BARS = {"H-handover_minus_P-truth_min": 4, "L-plan_minus_best_blind_min": 3}
+D3_DESCRIPTIVE = "L-plan - H-twin and L-plan - H-handover are reported beside the row, never bars"
 
 
 def decide_d3(counts: dict) -> dict:
@@ -781,7 +806,13 @@ def decide_d3(counts: dict) -> dict:
         row = "L-DEV-STOP"
     else:
         row = "D3-GO"
-    return {"row": row}
+    return {
+        "row": row,
+        "descriptive": {  # reported, never a bar
+            "L-plan_minus_H-twin": counts["L-plan"] - counts["H-twin"],
+            "L-plan_minus_H-handover": counts["L-plan"] - counts["H-handover"],
+        },
+    }
 
 
 # ----- the gated rows on S (64) and U (32) --------------------------------------------------------
@@ -862,23 +893,80 @@ GATED_ROWS = (
     "L-NO-HEADROOM",
     "L-HARM",
     "L-PASS",
-    "L-PASS-TWIN-BETTER",
+    "L-TWIN-BETTER",
     "L-SLOW",
     "L-SCENE-BLIND",
     "L-NO-GAIN",
 )
+CLAIM_ROWS = ("L-PASS",)  # owner D1 read literally: the only row that makes the claim
 AUTHORISATION_SCOPE = (
     "the gated stage's authorisation PR may add the gated harness (the runner's stage_gated and "
     "its tests), the authorisation record and the manifest's gated_authorization block; it may "
-    "not change lewm_planner_v2.py, the frozen block, frozen_sha256 or the stored cohort values"
+    "not change lewm_planner_v2.py, place_planner.py, lewm_planner_v2_runtime.py, "
+    "lewm_planner_v2_offline.py, any other part of the runner, the frozen block, frozen_sha256 "
+    "or the stored cohort values. Its stage_gated must compare the determinism re-run with "
+    "place_planner.rerun_verdict (a V above a tolerance; a report above half of one)"
 )
+AUTHORISED_BY = "authorised by Claude under owner delegation"
+AUTHORISATION_SCHEMA = {
+    "frozen_sha256": "this protocol's frozen_sha256 (64 hex digits), equal to the module's",
+    "go_comment_url": "the pre-run reviewer's GO comment: https://github.com/RaaSaaR-org/"
+    "open-embodied-jepa/pull/<n>#issuecomment-<id>",
+    "stage": "gated",
+    "authorised_utc": "an ISO-8601 UTC time, YYYY-MM-DDTHH:MM:SSZ",
+    "authorised_by": AUTHORISED_BY,
+}
+
+
+def check_authorisation(record) -> dict:
+    """The gated stage's authorisation record, validated against ``AUTHORISATION_SCHEMA``: exactly
+    its keys, this module's frozen sha, a GO comment URL on this repository, the stage 'gated',
+    a UTC time and the delegation label. Raises GuardError otherwise."""
+    import re
+    from datetime import datetime
+
+    if not isinstance(record, dict) or set(record) != set(AUTHORISATION_SCHEMA):
+        raise GuardError("G-authorisation: the record does not have the frozen schema's keys")
+    if record["frozen_sha256"] != frozen_sha256():
+        raise GuardError("G-authorisation: the record authorises another frozen block")
+    url = re.fullmatch(
+        r"https://github\.com/RaaSaaR-org/open-embodied-jepa/pull/\d+#issuecomment-\d+",
+        str(record["go_comment_url"]),
+    )
+    if url is None:
+        raise GuardError("G-authorisation: the GO comment URL is not a PR comment here")
+    if record["stage"] != "gated" or record["authorised_by"] != AUTHORISED_BY:
+        raise GuardError("G-authorisation: wrong stage or authorisation label")
+    try:
+        datetime.strptime(str(record["authorised_utc"]), "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError as error:
+        raise GuardError("G-authorisation: authorised_utc is not a UTC time") from error
+    return dict(record)
+
+
+def paired_difference_ci(first, second, *, resamples: int = 10_000) -> dict:
+    """The paired difference in successes (first - second) with a reset-bootstrap 95 % percentile
+    interval (seed SEEDS['bootstrap']); reported beside T and G5, never used as a bar."""
+    a, b = np.asarray(first, bool), np.asarray(second, bool)
+    d = a.astype(int) - b.astype(int)
+    rng = np.random.default_rng(SEEDS["bootstrap"])
+    boot = np.array([d[rng.integers(0, len(d), len(d))].sum() for _ in range(resamples)])
+    lo, hi = np.percentile(boot, [2.5, 97.5])
+    return {"difference": int(d.sum()), "ci95": [float(lo), float(hi)], "n": int(len(d))}
+
+
 paired_one_sided = wc.paired_one_sided
 
 
 def decide_gated(s: dict, u: dict, harness: dict) -> dict:
     """First-matching gated row. ``s[arm]`` / ``u[arm]``: per-reset counted successes (64 / 32).
     ``harness``: ``b_hold_grasps``, ``b_random_grasps``, ``privileged_ok`` {L1 arm: bool},
-    ``determinism_ok``, ``cuda_allocation_failed``, ``median_decision_seconds``."""
+    ``determinism_ok``, ``cuda_allocation_failed``, ``median_decision_seconds``, and optionally
+    ``blocked`` {arm: per-S-reset bool} (SHIFT_BLOCKED; reported, never a gate).
+
+    Owner D1 read literally ("Beat P-3, tie readout"): only L-PASS makes the claim, and it needs
+    T. L-TWIN-BETTER (G1-G5 pass, T fails) is a descriptive note, not a claim. L-SLOW needs T and
+    fails only G6. Every outcome row except L-PASS fires the abandonment clause."""
     t = GATED
     for arm in S_ARMS:
         if np.asarray(s[arm]).shape != (S_RESETS,):
@@ -917,6 +1005,7 @@ def decide_gated(s: dict, u: dict, harness: dict) -> dict:
         and lat <= t["g6_median_decision_seconds_max"],
     }
     twin_ok = pairs["H-twin"]["difference"] >= -t["t_twin_margin"]
+    gates["T"] = bool(twin_ok)
     outcome = all(gates[g] for g in ("G1", "G2", "G3", "G4", "G5"))
     if void:
         row = "VOID"
@@ -928,11 +1017,11 @@ def decide_gated(s: dict, u: dict, harness: dict) -> dict:
         row = "L-HARM"
     elif outcome and gates["G6"] and twin_ok:
         row = "L-PASS"
-    elif outcome and gates["G6"]:
-        row = "L-PASS-TWIN-BETTER"
+    elif outcome and not twin_ok:
+        row = "L-TWIN-BETTER"
     elif outcome:
         row = "L-SLOW"
-    elif gates["G1"] and gates["G3"] and not gates["G2"]:
+    elif gates["G1"] and gates["G3"] and gates["G4"] and not gates["G2"]:
         row = "L-SCENE-BLIND"
     else:
         row = "L-NO-GAIN"
@@ -947,14 +1036,30 @@ def decide_gated(s: dict, u: dict, harness: dict) -> dict:
         other: len({int(np.sign(secondary[a][other])) for a in secondary}) == 1
         for other in ("P-truth", "L-shuf", "L-N")
     }
+    blocked = {a: np.asarray(v, bool) for a, v in (harness.get("blocked") or {}).items()}
+    p_far_clean = None
+    if "P-far" in blocked and "L-plan" in blocked:
+        keep = ~(blocked["P-far"] | blocked["L-plan"])
+        p_far_clean = paired_one_sided(np.asarray(s["L-plan"])[keep], np.asarray(s["P-far"])[keep])
     return {
         "row": row,
+        "claim": row in CLAIM_ROWS,
         "gates": gates,
-        "twin_non_inferior": bool(twin_ok),
+        "twin_non_inferior_point": bool(twin_ok),
+        "t_reported": paired_difference_ci(s["L-plan"], s["H-twin"])
+        | {
+            "reading": "not observed more than 6/64 below H-twin"
+            if twin_ok
+            else "observed more than 6/64 below H-twin",
+            "note": "a point bar, not statistical non-inferiority",
+        },
+        "g5_reported": paired_difference_ci(u["L-plan"], u["P-stale"]),
         "counts_of_64": n,
         "u_counts_of_32": {a: int(np.asarray(u[a], bool).sum()) for a in U_ARMS},
         "paired": pairs,
         "p_far_reported": pairs["P-far"],
+        "p_far_reported_excluding_blocked": p_far_clean,
+        "shift_blocked_per_arm": {a: int(v.sum()) for a, v in blocked.items()},
         "secondary_sign_agreement": {"differences": secondary, "same_sign": signs},
         "abandonment_clause_fires": abandonment_fires(row),
     }
@@ -969,7 +1074,15 @@ SHUF_RULE = (
 
 
 # ----- abandonment clause, rows and consequences --------------------------------------------------
-CLAUSE_ROWS = ("L-G2A", "L-NO-RANK", "L-HARM", "L-NO-GAIN")
+CLAUSE_ROWS = (
+    "L-G2A",
+    "L-NO-RANK",
+    "L-HARM",
+    "L-TWIN-BETTER",
+    "L-SLOW",
+    "L-SCENE-BLIND",
+    "L-NO-GAIN",
+)
 CLAUSE_SCOPE = (
     "a LeWM frozen-DINOv2-token planner choosing the place target of e9's place primitive after "
     "P-3's pick, on apple-to-plate-v2 at 112 px: no further grid, cost, horizon or proposal "
@@ -1003,10 +1116,10 @@ ROW_CONSEQUENCES = {
     "S-VOID-CONDITION": "escalate: the condition did not hold on S",
     "L-HARM": "clause",
     "L-PASS": "close: report the claim with its labels",
-    "L-PASS-TWIN-BETTER": "close: the claim with the label that the readout twin beat LeWM "
-    "by more than the margin",
-    "L-SLOW": "close: outcome gates pass, latency fails; no clause",
-    "L-SCENE-BLIND": "close: no clause; reported as a scene-blind gain",
+    "L-TWIN-BETTER": "clause; no claim: reported only as the descriptive note that LeWM beat "
+    "P-3 and the blind twins but a readout without a world model beat LeWM by more than 6/64",
+    "L-SLOW": "clause; no claim: the outcome gates and T pass, the latency bar fails",
+    "L-SCENE-BLIND": "clause; no claim: reported descriptively as a scene-blind gain",
     "L-NO-GAIN": "clause",
     "INCONCLUSIVE": "close",
     "ESCALATE-BUDGET": "escalate: no freeze of the training budget",
@@ -1047,8 +1160,9 @@ VOID_RULE = (
     "a guard, a crash, a cap or a CUDA allocation failure makes the stage V and nothing in it is "
     "read; batches are never shrunk to fit. A V before a stage's boundary is not a spent "
     "attempt: it may be repeated as-is, recorded, without a fix. The boundary is "
-    "cohort_first_render_utc for a simulating stage (K1, corpus, ranking, D3, P-far, gated) and "
-    "first_outcome_utc for the train stage (the first number computed on val roots). After "
+    "cohort_first_render_utc for a simulating stage (K1, corpus, ranking, D3, gated), "
+    "first_outcome_utc for the train stage (the first number computed on val roots) and, for "
+    "P-far, first_outcome_utc written before its first val-selected fit. After "
     "the boundary: a gated (S or U) V goes to the owner and a second V closes TASK-074 as "
     "INCONCLUSIVE; a development stage (K1, corpus, training, P-far, ranking, D3) may be "
     "repeated once from scratch after a reviewed fix. Nothing is re-thresholded, retrained or "
@@ -1121,6 +1235,7 @@ def frozen_block() -> dict:
                 "fine_centre": FINE_CENTRE,
                 "candidates_per_decision": CANDIDATES_PER_DECISION,
                 "tie_tolerance_cm": TIE_TOLERANCE_CM,
+                "tie_rule": TIE_RULE,
                 "o_star_cm": {str(k): v for k, v in O_STAR_CM.items()},
                 "o_final_step": O_FINAL_STEP,
                 "o_star_source": O_STAR_SOURCE,
@@ -1162,7 +1277,7 @@ def frozen_block() -> dict:
             "o4": O4,
             "o5": O5,
             "offline_rows": OFFLINE_ROWS,
-            "d3": {"resets": D3_RESETS, "bars": D3_BARS},
+            "d3": {"resets": D3_RESETS, "bars": D3_BARS, "descriptive": D3_DESCRIPTIVE},
             "gated": GATED,
             "rerun": {
                 "fields": RERUN_FIELDS,
@@ -1171,7 +1286,9 @@ def frozen_block() -> dict:
                 "margin_rule": RERUN_MARGIN_RULE,
             },
             "gated_rows": GATED_ROWS,
+            "claim_rows": CLAIM_ROWS,
             "authorisation_scope": AUTHORISATION_SCOPE,
+            "authorisation_schema": AUTHORISATION_SCHEMA,
             "clause_rows": CLAUSE_ROWS,
             "clause_scope": CLAUSE_SCOPE,
             "row_consequences": ROW_CONSEQUENCES,

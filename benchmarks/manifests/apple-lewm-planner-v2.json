@@ -48,7 +48,13 @@
    "gated_bars": "G1 vs P-truth, G2-G4 vs the blind twins at +10/64 and p < 0.01; T at 6/64; L-NO-HEADROOM at +16/64; G5 no-harm at 2/32; G6 latency 0.8 s",
    "p_far": "BC on the complete, non-mis-aimed corpus train roots plus 3 DAgger iterations under the condition, with the plate re-read by R-plate at the decision steps",
    "rerun": "L-plan and H-twin on the first four S seeds, compared by run_guards.RerunRule",
-   "memory": "the train stage's memory is measured at full corpus scale in the smoke (stage-smoke 'train-scale'); the gated GO reads that measurement"
+   "memory": "the train stage's memory is measured at full corpus scale in the smoke (stage-smoke 'train-scale'), and P-far's in its smoke ('pfar-scale'); the gated GO reads those measurements",
+   "arc": "the right-side move is the 225-315 degree arc of TASK-073's direction rule",
+   "reset_redraw": "REDRAW_RULE: a reset on which the plate cannot move right is re-drawn",
+   "shift_blocked": "SHIFT_BLOCKED: a blocked move is not made; the attempt is a counted failure, a corpus root is re-collected unshifted",
+   "rows": "D1 read literally: only L-PASS makes the claim; every other outcome row, L-TWIN-BETTER and L-SLOW included, makes no claim and fires the clause",
+   "scene_blind": "L-SCENE-BLIND needs G1, G3 and G4, with G2 failing",
+   "authorisation": "the gated authorisation record has a frozen schema (AUTHORISATION_SCHEMA) and is validated by the runner"
   },
   "scene_version": "apple_to_plate_v2",
   "counted_success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted",
@@ -258,7 +264,7 @@
    "redraw_rule": "the reset of every TASK-074 seed (every role, the corpus and U included, so all cohorts share one reset distribution) is TASK-047's wide-jitter reset of the seed if the plate can move to the right (-y rule) by every |d| in (3, 6, 9, 12) cm; otherwise the same distribution is re-drawn from default_rng(SeedSequence([seed, 7425, k])) for k = 1, 2, ... until it can (about 1-2 % of seeds: the apple's reset position blocks every -y direction); 'redraw' stores k (0 = the plain reset). decided by Claude under owner delegation, 2026-09-30"
   },
   "condition": {
-   "sign_convention": "world frame = the fixed pelvis's base frame: +x points forward from the pelvis, +y to the robot's left, +z up. The right shoulder sits at y = -0.10 m (resting_expert.RIGHT_SHOULDER_BASE) and the reset plate centre at y = -0.09 +- 0.02 m, so -y is the robot's right, away from the midline y = 0. 'Right-side move' (owner D3+D4) = a shift whose direction lies in 225-315 degrees (measured from +x towards +y), i.e. with a negative y component of at least |d| cos(45 deg)",
+   "sign_convention": "world frame = the fixed pelvis's base frame: +x points forward from the pelvis, +y to the robot's left, +z up. The right shoulder sits at y = -0.10 m (resting_expert.RIGHT_SHOULDER_BASE) and the reset plate centre at y = -0.09 +- 0.02 m, so -y is the robot's right, away from the midline y = 0. The owner ruled 'Right-side move' (D3+D4); its operationalisation as a shift whose direction lies in 225-315 degrees (measured from +x towards +y), i.e. with a negative y component of at least |d| cos(45 deg), was decided by Claude under owner delegation, 2026-09-30",
    "shift_step": 300,
    "grid_cm": [
     9,
@@ -603,6 +609,7 @@
    "fine_centre": 12,
    "candidates_per_decision": 74,
    "tie_tolerance_cm": 1e-06,
+   "tie_rule": "the incumbent wins every tie within TIE_TOLERANCE_CM; among other candidates tied at the minimum the lowest index wins (np.argmin): for the coarse grid that is the (-x, -y) corner first. Stand-in chunks often tie (per-axis clipping and the reach clamp make many targets issue the same 16 commands), so this rule decides many early choices",
    "o_star_cm": {
     "421": [
      -11.3019,
@@ -766,7 +773,7 @@
    "H-twin",
    "P-far"
   ],
-  "learned_label": "P-3's learned pick (BC/DAgger on privileged e9 labels) followed by a LeWM planner that chooses where e9's scripted place primitive puts the apple; not LeWM driving the whole episode, not a real-world disturbance, not the frozen v1 benchmark",
+  "learned_label": "P-3's learned pick (BC/DAgger on privileged e9 labels) followed by a LeWM planner that chooses where e9's scripted place primitive puts the apple; not LeWM driving the whole episode, not a real-world disturbance, not the frozen v1 benchmark. An L-plan success is hybrid (a learned pick, a LeWM-chosen put-down spot, a scripted place) and is NOT a learned Apple->Plate success",
   "k1": {
    "resets": 32,
    "bars": {
@@ -939,7 +946,7 @@
   "o4": {
    "median_regret_max_cm": 1.0,
    "paired_regret_difference_upper_lt": 0.0,
-   "regret": "the true cost of the chosen target (coarse then fine, as in the closed loop) minus the best true cost among the 74 candidates; paired against the incumbent's (the coarse (0, 0), the stale estimate)"
+   "regret": "per group, as the ranking stage builds the groups: in each coarse group (the 49 targets around the post-look estimate) the true cost of W's choice (tie: the coarse (0, 0)) minus the group's best true cost; in each fine group (the 25 targets around the coarse target with the lowest TRUE cost, not W's coarse choice) the true cost of W's choice (tie: the fine centre) minus that group's best; each paired against its own group's incumbent (coarse (0, 0), the stale estimate; fine centre). A choice whose branch stopped counts as the group's worst finite outcome. O3/O4 validate the planner's 16-command proxy, not placement success"
   },
   "o5": {
    "median_relative_chunk_error_max": 0.25
@@ -958,7 +965,8 @@
    "bars": {
     "H-handover_minus_P-truth_min": 4,
     "L-plan_minus_best_blind_min": 3
-   }
+   },
+   "descriptive": "L-plan - H-twin and L-plan - H-handover are reported beside the row, never bars"
   },
   "gated": {
    "void_b_oracle_shift_min": 60,
@@ -1017,16 +1025,29 @@
    "L-NO-HEADROOM",
    "L-HARM",
    "L-PASS",
-   "L-PASS-TWIN-BETTER",
+   "L-TWIN-BETTER",
    "L-SLOW",
    "L-SCENE-BLIND",
    "L-NO-GAIN"
   ],
-  "authorisation_scope": "the gated stage's authorisation PR may add the gated harness (the runner's stage_gated and its tests), the authorisation record and the manifest's gated_authorization block; it may not change lewm_planner_v2.py, the frozen block, frozen_sha256 or the stored cohort values",
+  "claim_rows": [
+   "L-PASS"
+  ],
+  "authorisation_scope": "the gated stage's authorisation PR may add the gated harness (the runner's stage_gated and its tests), the authorisation record and the manifest's gated_authorization block; it may not change lewm_planner_v2.py, place_planner.py, lewm_planner_v2_runtime.py, lewm_planner_v2_offline.py, any other part of the runner, the frozen block, frozen_sha256 or the stored cohort values. Its stage_gated must compare the determinism re-run with place_planner.rerun_verdict (a V above a tolerance; a report above half of one)",
+  "authorisation_schema": {
+   "frozen_sha256": "this protocol's frozen_sha256 (64 hex digits), equal to the module's",
+   "go_comment_url": "the pre-run reviewer's GO comment: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/<n>#issuecomment-<id>",
+   "stage": "gated",
+   "authorised_utc": "an ISO-8601 UTC time, YYYY-MM-DDTHH:MM:SSZ",
+   "authorised_by": "authorised by Claude under owner delegation"
+  },
   "clause_rows": [
    "L-G2A",
    "L-NO-RANK",
    "L-HARM",
+   "L-TWIN-BETTER",
+   "L-SLOW",
+   "L-SCENE-BLIND",
    "L-NO-GAIN"
   ],
   "clause_scope": "a LeWM frozen-DINOv2-token planner choosing the place target of e9's place primitive after P-3's pick, on apple-to-plate-v2 at 112 px: no further grid, cost, horizon or proposal variant is preregistered on apple-far-shift-v2 without new evidence of a different kind. The LeWM backend, the token latent, the v2 task and the product goal stay open; the next step is the task owner's choice of a data or hardware change, not another planner variant",
@@ -1047,9 +1068,9 @@
    "S-VOID-CONDITION": "escalate: the condition did not hold on S",
    "L-HARM": "clause",
    "L-PASS": "close: report the claim with its labels",
-   "L-PASS-TWIN-BETTER": "close: the claim with the label that the readout twin beat LeWM by more than the margin",
-   "L-SLOW": "close: outcome gates pass, latency fails; no clause",
-   "L-SCENE-BLIND": "close: no clause; reported as a scene-blind gain",
+   "L-TWIN-BETTER": "clause; no claim: reported only as the descriptive note that LeWM beat P-3 and the blind twins but a readout without a world model beat LeWM by more than 6/64",
+   "L-SLOW": "clause; no claim: the outcome gates and T pass, the latency bar fails",
+   "L-SCENE-BLIND": "clause; no claim: reported descriptively as a scene-blind gain",
    "L-NO-GAIN": "clause",
    "INCONCLUSIVE": "close",
    "ESCALATE-BUDGET": "escalate: no freeze of the training budget",
@@ -1106,9 +1127,9 @@
    "per_attempt": 300.0,
    "per_model": 5400.0
   },
-  "void_rule": "a guard, a crash, a cap or a CUDA allocation failure makes the stage V and nothing in it is read; batches are never shrunk to fit. A V before a stage's boundary is not a spent attempt: it may be repeated as-is, recorded, without a fix. The boundary is cohort_first_render_utc for a simulating stage (K1, corpus, ranking, D3, P-far, gated) and first_outcome_utc for the train stage (the first number computed on val roots). After the boundary: a gated (S or U) V goes to the owner and a second V closes TASK-074 as INCONCLUSIVE; a development stage (K1, corpus, training, P-far, ranking, D3) may be repeated once from scratch after a reviewed fix. Nothing is re-thresholded, retrained or re-selected after its numbers are seen"
+  "void_rule": "a guard, a crash, a cap or a CUDA allocation failure makes the stage V and nothing in it is read; batches are never shrunk to fit. A V before a stage's boundary is not a spent attempt: it may be repeated as-is, recorded, without a fix. The boundary is cohort_first_render_utc for a simulating stage (K1, corpus, ranking, D3, gated), first_outcome_utc for the train stage (the first number computed on val roots) and, for P-far, first_outcome_utc written before its first val-selected fit. After the boundary: a gated (S or U) V goes to the owner and a second V closes TASK-074 as INCONCLUSIVE; a development stage (K1, corpus, training, P-far, ranking, D3) may be repeated once from scratch after a reviewed fix. Nothing is re-thresholded, retrained or re-selected after its numbers are seen"
  },
- "frozen_sha256": "e647b2e9fbdbeda9e8c1ef981a9f5aff5044553beeb3fb58cba1b3dc515c7b71",
+ "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
  "cohorts": {
   "K1": {
    "values": {
@@ -4724,169 +4745,173 @@
   "note": "scratch code, not committed; one run of 32 resets per cell; see protocol \u00a72"
  },
  "smoke": {
-  "seeds": "54650-54699 only; mechanics; nothing is read",
-  "platform": "Linux PC (RTX 5080), MUJOCO_GL=egl",
-  "base_revision": "9a8b0c0 (main) plus this PR's working tree; file hashes in each report",
-  "reports": {
-   "smoke-render": {
-    "outcome": "SMOKE-COMPLETE",
-    "sha256": "d7d9ed8c68898e253b3d1efa91684371394e537d4c6baa68261240fb04784e38",
-    "seconds": 42.6,
-    "peak_tree_pss_gib": 8.006,
-    "load_average_at_start": [
-     0.8,
-     1.99,
-     6.81
-    ]
-   },
-   "k1-smoke-2": {
-    "outcome": "K1-PASS",
-    "sha256": "85f16bdfa132412d2d5f49308c2d33610dac4ce8fa304f417cefa3da1d446b0a",
-    "seconds": 59.6,
-    "peak_tree_pss_gib": 8.145,
-    "load_average_at_start": [
-     0.31,
-     1.9,
-     6.56
-    ]
-   },
-   "corpus-smoke-2": {
-    "outcome": "CORPUS-SEALED",
-    "sha256": "f7e2948759e4a972c5bed07ac6f111f89ce1de88c7a4ed3fdadf45f71d51dddc",
-    "seconds": 21.7,
-    "peak_tree_pss_gib": 7.48,
-    "load_average_at_start": [
-     0.5,
-     1.92,
-     5.3
-    ]
-   },
-   "train-smoke": {
-    "outcome": "TRAIN-COMPLETE",
-    "sha256": "02b5bedf96753587e2acb83d9e5af793b8a7921d53a28b97bfecc3cbfb94e3a5",
-    "seconds": 3035.1,
-    "peak_tree_pss_gib": 8.768,
-    "load_average_at_start": [
-     1.38,
-     1.99,
-     5.15
-    ]
-   },
-   "pfar-smoke": {
-    "outcome": "PFAR-COMPLETE",
-    "sha256": "778c87b4b9e76096d464ba10c34c718357e5e7c5d5581c756a831fee96fed503",
-    "seconds": 59.6,
-    "peak_tree_pss_gib": 9.219,
-    "load_average_at_start": [
-     0.1,
-     1.9,
-     9.91
-    ]
-   },
-   "rank-smoke": {
-    "outcome": "RANK-COMPLETE",
-    "sha256": "c04d02a2d7aeca2c05c3c545666f290c897fda1413178056d76aad57d49e7b9c",
-    "seconds": 96.8,
-    "peak_tree_pss_gib": 7.314,
-    "load_average_at_start": [
-     1.36,
-     1.99,
-     9.24
-    ]
-   },
-   "decide-smoke": {
-    "outcome": "L-NO-DYNAMICS",
-    "sha256": "db3421ea90ea1e7491992ed43cf0e336930d2c97ffd6336921f271f7739b336e",
-    "seconds": 2.0,
-    "peak_tree_pss_gib": 0.767,
-    "load_average_at_start": [
-     3.36,
-     2.66,
-     8.71
-    ]
-   },
-   "d3-smoke": {
-    "outcome": "D3-SMOKE",
-    "sha256": "e5e70019faec7a01d2b881b4c47bb7dc93805548b298ca7aa5ad7f0b16eec177",
-    "seconds": 110.7,
-    "peak_tree_pss_gib": 8.743,
-    "load_average_at_start": [
-     0.82,
-     2.0,
-     7.92
-    ]
-   }
-  },
-  "facts": {
-   "train_scale": {
-    "ceiling_gib": 12.0,
-    "frames": 81420,
-    "note": "smoke data cycled to the real stage's sizes; memory only, nothing is read",
-    "o1_windows": {
-     "overall": 1230
+  "development": {
+   "seeds": "54650-54699 only; mechanics; nothing is read",
+   "platform": "Linux PC (RTX 5080), MUJOCO_GL=egl",
+   "base_revision": "9a8b0c0 (main) plus this PR's working tree; file hashes in each report",
+   "reports": {
+    "smoke-render": {
+     "outcome": "SMOKE-COMPLETE",
+     "sha256": "d7d9ed8c68898e253b3d1efa91684371394e537d4c6baa68261240fb04784e38",
+     "seconds": 42.6,
+     "peak_tree_pss_gib": 8.006,
+     "load_average_at_start": [
+      0.8,
+      1.99,
+      6.81
+     ]
     },
-    "r_plate_lambda": 1000.0,
-    "r_plate_rows": 1440,
-    "roots": 460,
-    "seconds": 627.2882150399964,
-    "stage_peak_tree_pss_gib_so_far": 8.767566680908203,
-    "tree_pss_gib_after": 5.913543701171875,
-    "tree_pss_gib_before": 3.5780029296875
+    "k1-smoke-2": {
+     "outcome": "K1-PASS",
+     "sha256": "85f16bdfa132412d2d5f49308c2d33610dac4ce8fa304f417cefa3da1d446b0a",
+     "seconds": 59.6,
+     "peak_tree_pss_gib": 8.145,
+     "load_average_at_start": [
+      0.31,
+      1.9,
+      6.56
+     ]
+    },
+    "corpus-smoke-2": {
+     "outcome": "CORPUS-SEALED",
+     "sha256": "f7e2948759e4a972c5bed07ac6f111f89ce1de88c7a4ed3fdadf45f71d51dddc",
+     "seconds": 21.7,
+     "peak_tree_pss_gib": 7.48,
+     "load_average_at_start": [
+      0.5,
+      1.92,
+      5.3
+     ]
+    },
+    "train-smoke": {
+     "outcome": "TRAIN-COMPLETE",
+     "sha256": "02b5bedf96753587e2acb83d9e5af793b8a7921d53a28b97bfecc3cbfb94e3a5",
+     "seconds": 3035.1,
+     "peak_tree_pss_gib": 8.768,
+     "load_average_at_start": [
+      1.38,
+      1.99,
+      5.15
+     ]
+    },
+    "pfar-smoke": {
+     "outcome": "PFAR-COMPLETE",
+     "sha256": "778c87b4b9e76096d464ba10c34c718357e5e7c5d5581c756a831fee96fed503",
+     "seconds": 59.6,
+     "peak_tree_pss_gib": 9.219,
+     "load_average_at_start": [
+      0.1,
+      1.9,
+      9.91
+     ]
+    },
+    "rank-smoke": {
+     "outcome": "RANK-COMPLETE",
+     "sha256": "c04d02a2d7aeca2c05c3c545666f290c897fda1413178056d76aad57d49e7b9c",
+     "seconds": 96.8,
+     "peak_tree_pss_gib": 7.314,
+     "load_average_at_start": [
+      1.36,
+      1.99,
+      9.24
+     ]
+    },
+    "decide-smoke": {
+     "outcome": "L-NO-DYNAMICS",
+     "sha256": "db3421ea90ea1e7491992ed43cf0e336930d2c97ffd6336921f271f7739b336e",
+     "seconds": 2.0,
+     "peak_tree_pss_gib": 0.767,
+     "load_average_at_start": [
+      3.36,
+      2.66,
+      8.71
+     ]
+    },
+    "d3-smoke": {
+     "outcome": "D3-SMOKE",
+     "sha256": "e5e70019faec7a01d2b881b4c47bb7dc93805548b298ca7aa5ad7f0b16eec177",
+     "seconds": 110.7,
+     "peak_tree_pss_gib": 8.743,
+     "load_average_at_start": [
+      0.82,
+      2.0,
+      7.92
+     ]
+    }
    },
-   "feature_anchor": {
-    "bound": 0.001,
-    "frames": 208,
-    "max_abs_difference": 4.414469003677368e-05
-   },
-   "o5_median_smoke": 0.21042679325542019,
-   "latency": {
-    "decisions": 24,
-    "median_seconds": 0.5182861780049279,
-    "p90_seconds": 0.5579890563269145,
-    "max_seconds": 0.6020292979665101
-   },
-   "rerun": {
-    "H-twin": [
-     {
-      "differences": {},
-      "matches": true,
-      "max_abs_command_difference": 0.0,
-      "missing": [],
-      "seed": 54657,
-      "target_cm_max": 0.0
+   "facts": {
+    "train_scale": {
+     "ceiling_gib": 12.0,
+     "frames": 81420,
+     "note": "smoke data cycled to the real stage's sizes; memory only, nothing is read",
+     "o1_windows": {
+      "overall": 1230
      },
-     {
-      "differences": {},
-      "matches": true,
-      "max_abs_command_difference": 0.0,
-      "missing": [],
-      "seed": 54658,
-      "target_cm_max": 0.0
-     }
-    ],
-    "L-plan": [
-     {
-      "differences": {},
-      "matches": true,
-      "max_abs_command_difference": 0.0,
-      "missing": [],
-      "seed": 54657,
-      "target_cm_max": 0.0
-     },
-     {
-      "differences": {},
-      "matches": true,
-      "max_abs_command_difference": 0.0,
-      "missing": [],
-      "seed": 54658,
-      "target_cm_max": 0.0
-     }
-    ]
+     "r_plate_lambda": 1000.0,
+     "r_plate_rows": 1440,
+     "roots": 460,
+     "seconds": 627.2882150399964,
+     "stage_peak_tree_pss_gib_so_far": 8.767566680908203,
+     "tree_pss_gib_after": 5.913543701171875,
+     "tree_pss_gib_before": 3.5780029296875
+    },
+    "feature_anchor": {
+     "bound": 0.001,
+     "frames": 208,
+     "max_abs_difference": 4.414469003677368e-05
+    },
+    "o5_median_smoke": 0.21042679325542019,
+    "latency": {
+     "decisions": 24,
+     "median_seconds": 0.5182861780049279,
+     "p90_seconds": 0.5579890563269145,
+     "max_seconds": 0.6020292979665101
+    },
+    "rerun": {
+     "H-twin": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ],
+     "L-plan": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ]
+    },
+    "render_check": "IDENTICAL",
+    "corpus_shift_blocked": 2,
+    "k1_smoke_before_shift_blocked": true
    },
-   "render_check": "IDENTICAL",
-   "corpus_shift_blocked": 2,
-   "k1_smoke_before_shift_blocked": true
-  }
+   "status": "historical: ran on an uncommitted working tree; not the record for the GO (protocol \u00a710.2)"
+  },
+  "frozen_code": null
  },
  "hashes": {
   "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
@@ -4899,7 +4924,6 @@
   "benchmarks/manifests/apple-token-dynamics-v1.json": "2191d57e869810aeb0601cdc85308d94dcd750782bac9596f0a78b0ea2fbdc38",
   "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
-  "docs/experiments/apple_lewm_planner_v2.md": "7ddd2c2d51525c4d72318413cf792283c43eabcddfda9f5ea193e390c500f806",
   "docs/experiments/apple_wm_critic_v2.md": "161f9ed37939421f9f5e4f56ea38c8110d6b8da2dbc808dcead816fd2d81a39b",
   "scripts/collect_apple_shift_v2.py": "584ed2386dc6ab99abb60a22922b9781ebbcd13f08ac3198fff93d8394ab93e5",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
@@ -4907,10 +4931,11 @@
   "scripts/rank_wm_critic_v2.py": "6d4cdc9017369f9c4ae95184c153b8bed5c6db84cc02a6cd9c4b84a243861d64",
   "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
-  "scripts/run_lewm_planner_v2.py": "f34612631ba807092d197f08ceae8b71eccb26fd5bde738fc387eea9fc8a12eb",
+  "scripts/run_lewm_planner_v2.py": "13c5c5ca79397d2153a895d319a33c31a8f64d639fd93624655590ddf2175754",
   "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
   "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
+  "src/embodied_jepa/__init__.py": "a0043e95cb31add021475ec8877d7a7b28189696ddf5ab2486d73537c84aec41",
   "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
   "src/embodied_jepa/at_rest.py": "b5121cb600db6bfb3f92b4161ba46d4cdcb31f98e99de512b257f2519db00527",
   "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
@@ -4929,9 +4954,11 @@
   "src/embodied_jepa/hybrid_selection.py": "b96ae08098da94202ec74f1cab9ff0fe025ced7f65bf505bbb21ca557a298d4a",
   "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
   "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
-  "src/embodied_jepa/lewm_planner_v2.py": "79edc2cae46f37a9fc587bccc6b09deed48b99e3d081c3295e7dffdc43148eed",
+  "src/embodied_jepa/lewm_planner_v2.py": "9c86dfaa39173a119b3f8b2ddfaa7bb10ef5ca0cebb65c3c36c1b08fb77ea3d5",
   "src/embodied_jepa/lewm_planner_v2_offline.py": "84ae5ee71829443665163941aab100c7219453962678a037fc27e8cbaf11d3a7",
   "src/embodied_jepa/lewm_planner_v2_runtime.py": "ccfac04c1f2e8cc62039186c3388d971a002e7ebe5b08f70f6e97e257c3cb170",
+  "src/embodied_jepa/look_corpus.py": "41a05027d30375884f9e562a4887814db65bf5111fc7bc8fe2ddcf38e206d84b",
+  "src/embodied_jepa/models/__init__.py": "694622858ffd8a892d6746c65f162c2cea19e9ead1aa5c566ab4edc6fb962f94",
   "src/embodied_jepa/models/base.py": "310a509d5f8043ad3cbdf85a0568d15bb4ed2e4faeddf6e10bed63abf8ee0549",
   "src/embodied_jepa/models/frozen_encoder.py": "c1a4622a0765e44fc060c5313a85e4f727f51dc361acd5de50cb6990845e6011",
   "src/embodied_jepa/models/frozen_tokens.py": "33e8e819ad557d4fec6167482f91b5aa0c5da5a1169e7f8e6e8f050390c9a3a2",
@@ -4940,7 +4967,7 @@
   "src/embodied_jepa/models/native.py": "95e112e13b0bf4d587fd5c35008e99b1e0a3759fb4f458c24bdd20304d0fadf3",
   "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
   "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
-  "src/embodied_jepa/place_planner.py": "d1b26d1b303f567bd959967a0be9d12c923347501b57a877746ab77e2c76178c",
+  "src/embodied_jepa/place_planner.py": "1842d3e0ca31bfbe6c0568ab5a8d9c75c513e8b5a784ae7200c43101d270c846",
   "src/embodied_jepa/plate_shift.py": "5ae0f016dd6ee628c60c3a6901f170d9bd1643df8e508e53fabbbc6e89650b39",
   "src/embodied_jepa/policy_diagnostics.py": "3898e34588145c14696835e5f89e75b112bc35f1087f206d4c4525774cab9faa",
   "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
@@ -4958,5 +4985,6 @@
   "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
+ "pins_note": "the protocol document and this manifest are not pinned: the smoke record is added after the frozen-code smokes, so that the smoked code stays the frozen code",
  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. The plate shift is a simulation-only diagnostic condition on apple-to-plate-v2."
 }

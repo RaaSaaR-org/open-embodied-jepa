@@ -26,7 +26,7 @@ MANIFEST = json.loads(
 )
 render = pytest.mark.skipif(os.environ.get("JEPA_TEST_RENDER") != "1", reason="graphics opt-in")
 # A literal: the gated-stage authorisation PR may not change it (AUTHORISATION_SCOPE).
-FROZEN_SHA256 = "e647b2e9fbdbeda9e8c1ef981a9f5aff5044553beeb3fb58cba1b3dc515c7b71"
+FROZEN_SHA256 = "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393"
 
 
 def _load_script(name: str, relative: str):
@@ -293,25 +293,30 @@ HARNESS = {
 }
 
 
+BASE = {
+    "B-oracle-shift": 64,
+    "H-handover": 64,
+    "P-truth": 20,
+    "P-stale": 0,
+    "L-plan": 60,
+    "L-plan-s1": 58,
+    "L-plan-s2": 59,
+    "H-twin": 62,
+}
+
+
 def test_gated_rows_first_match():
-    base = {
-        "B-oracle-shift": 64,
-        "H-handover": 64,
-        "P-truth": 20,
-        "P-stale": 0,
-        "L-plan": 60,
-        "L-plan-s1": 58,
-        "L-plan-s2": 59,
-        "H-twin": 62,
-    }
-    assert lp.decide_gated(_s(**base), _u(), HARNESS)["row"] == "L-PASS"
-    assert (
-        lp.decide_gated(_s(**base | {"H-twin": 64, "L-plan": 57}), _u(), HARNESS)["row"]
-        == "L-PASS-TWIN-BETTER"
-    )
+    base = BASE
+    out = lp.decide_gated(_s(**base), _u(), HARNESS)
+    assert out["row"] == "L-PASS" and out["claim"] and out["gates"]["T"]
+    twin = lp.decide_gated(_s(**base | {"H-twin": 64, "L-plan": 57}), _u(), HARNESS)
+    assert twin["row"] == "L-TWIN-BETTER" and not twin["claim"]
+    assert twin["abandonment_clause_fires"]
     assert lp.decide_gated(_s(**base), _u(**{"L-plan": 27}), HARNESS)["row"] == "L-HARM"
     slow = HARNESS | {"median_decision_seconds": 1.2}
     assert lp.decide_gated(_s(**base), _u(), slow)["row"] == "L-SLOW"
+    slow_twin = lp.decide_gated(_s(**base | {"H-twin": 64, "L-plan": 57}), _u(), slow)
+    assert slow_twin["row"] == "L-TWIN-BETTER"  # L-SLOW needs T
     assert lp.decide_gated(_s(**base | {"B-oracle-shift": 59}), _u(), HARNESS)["row"] == "VOID"
     assert lp.decide_gated(_s(**base | {"P-stale": 9}), _u(), HARNESS)["row"] == (
         "S-VOID-CONDITION"
@@ -321,19 +326,94 @@ def test_gated_rows_first_match():
     )
     blind = base | {"L-shuf": 58}
     assert lp.decide_gated(_s(**blind), _u(), HARNESS)["row"] == "L-SCENE-BLIND"
+    blind_rand = blind | {"L-rand": 58}  # L-SCENE-BLIND needs G4
+    assert lp.decide_gated(_s(**blind_rand), _u(), HARNESS)["row"] == "L-NO-GAIN"
     assert lp.decide_gated(_s(**base | {"L-plan": 25}), _u(), HARNESS)["row"] == "L-NO-GAIN"
     bad = HARNESS | {"determinism_ok": False}
     assert lp.decide_gated(_s(**base), _u(), bad)["row"] == "VOID"
 
 
+def test_no_claim_row_fires_with_t_failed():
+    """Owner D1 read literally: only L-PASS makes the claim, and never with T failed."""
+    assert lp.CLAIM_ROWS == ("L-PASS",)
+    rng = np.random.default_rng(1)
+    for _ in range(400):
+        counts = {a: int(rng.integers(0, 65)) for a in lp.S_ARMS}
+        counts |= {"B-oracle-shift": 64, "P-stale": int(rng.integers(0, 9))}
+        u = _u(**{"L-plan": int(rng.integers(26, 33)), "P-stale": 30})
+        harness = HARNESS | {"median_decision_seconds": float(rng.choice([0.5, 1.2]))}
+        out = lp.decide_gated(_s(**counts), u, harness)
+        if not out["gates"]["T"]:
+            assert not out["claim"] and out["row"] != "L-PASS"
+        if out["claim"]:
+            assert all(out["gates"].values())
+        if out["row"] in lp.GATED_ROWS[3:]:  # every outcome row
+            assert out["claim"] or out["abandonment_clause_fires"]
+
+
+def test_t_and_g5_are_reported_with_intervals_and_blocked_resets_split_p_far():
+    blocked = {a: np.zeros(lp.S_RESETS, bool) for a in ("L-plan", "P-far")}
+    blocked["P-far"][:10] = True
+    out = lp.decide_gated(_s(**BASE | {"P-far": 30}), _u(), HARNESS | {"blocked": blocked})
+    t = out["t_reported"]
+    assert t["difference"] == -2 and t["ci95"][0] <= -2 <= t["ci95"][1]
+    assert "not statistical non-inferiority" in t["note"]
+    assert out["g5_reported"]["n"] == lp.U_RESETS
+    assert out["shift_blocked_per_arm"] == {"L-plan": 0, "P-far": 10}
+    assert out["p_far_reported_excluding_blocked"] is not None
+
+
 def test_every_row_has_a_consequence_and_the_clause_rows():
     assert set(lp.ALL_ROWS) <= set(lp.ROW_CONSEQUENCES)
-    assert set(lp.CLAUSE_ROWS) == {"L-G2A", "L-NO-RANK", "L-HARM", "L-NO-GAIN"}
+    assert set(lp.CLAUSE_ROWS) == {
+        "L-G2A",
+        "L-NO-RANK",
+        "L-HARM",
+        "L-TWIN-BETTER",
+        "L-SLOW",
+        "L-SCENE-BLIND",
+        "L-NO-GAIN",
+    }
     for row in lp.CLAUSE_ROWS:
-        assert lp.ROW_CONSEQUENCES[row] == "clause" and lp.abandonment_fires(row)
+        assert lp.ROW_CONSEQUENCES[row].startswith("clause") and lp.abandonment_fires(row)
+    assert set(lp.GATED_ROWS[3:]) - set(lp.CLAIM_ROWS) <= set(lp.CLAUSE_ROWS)
     assert not lp.abandonment_fires("L-NO-HEADROOM")
     with pytest.raises(ContractError):
         lp.abandonment_fires("HYB-PASS")
+
+
+def test_d3_reports_the_twin_and_ceiling_comparisons():
+    counts = {a: 0 for a in lp.D3_ARMS} | {"H-handover": 16, "L-plan": 12, "H-twin": 15}
+    out = lp.decide_d3(counts)
+    assert out["descriptive"] == {"L-plan_minus_H-twin": -3, "L-plan_minus_H-handover": -4}
+
+
+def _record(**over):
+    base = {
+        "frozen_sha256": lp.frozen_sha256(),
+        "go_comment_url": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/113"
+        "#issuecomment-123",
+        "stage": "gated",
+        "authorised_utc": "2026-10-01T12:00:00Z",
+        "authorised_by": lp.AUTHORISED_BY,
+    }
+    return base | over
+
+
+def test_the_authorisation_record_is_validated_against_its_schema():
+    assert lp.check_authorisation(_record())["stage"] == "gated"
+    assert set(lp.AUTHORISATION_SCHEMA) == set(_record())
+    for bad in (
+        _record(frozen_sha256="0" * 64),
+        _record(go_comment_url="https://example.com/x"),
+        _record(stage="d3"),
+        _record(authorised_utc="yesterday"),
+        _record(authorised_by="someone"),
+        _record() | {"extra": 1},
+        {"ok": True},
+    ):
+        with pytest.raises(lp.GuardError, match="G-authorisation"):
+            lp.check_authorisation(bad)
 
 
 def test_budget_rule():
@@ -357,6 +437,17 @@ def _attempt(**over):
         "decisions": [{"chosen": [24, 12], "target": [0.49, -0.2]}],
     }
     return base | over
+
+
+def test_rerun_verdict_voids_above_a_tolerance_and_reports_above_half():
+    from embodied_jepa import place_planner as pp
+
+    same = pp.rerun_verdict(_attempt(), _attempt())
+    assert not same["void"] and same["above_half_tolerance"] == []
+    half = pp.rerun_verdict(_attempt(), _attempt(final_distance_cm=3.7))
+    assert not half["void"]
+    assert [a["field"] for a in half["above_half_tolerance"]] == ["final_distance_cm"]
+    assert pp.rerun_verdict(_attempt(), _attempt(final_distance_cm=4.5))["void"]
 
 
 def test_rerun_rule_is_valid_and_covers_every_field():
@@ -419,10 +510,31 @@ def test_gated_stage_is_refused_without_an_authorisation_record(tmp_path):
     pytest.importorskip("torch")
     pytest.importorskip("mujoco")
     runner = _load_script("_run_lewm_planner_v2", "scripts/run_lewm_planner_v2.py")
-    with pytest.raises(lp.GuardError, match="G-authorisation"):
+    with pytest.raises(lp.GuardError, match="no owner authorisation"):
         runner.stage_gated({}, {"gated_authorization": None}, tmp_path, None, None)
-    with pytest.raises(lp.GuardError, match="G-authorisation"):
+    with pytest.raises(lp.GuardError, match="schema"):
         runner.stage_gated({}, {"gated_authorization": {"x": 1}}, tmp_path, None, None)
+    report = {}
+    with pytest.raises(lp.GuardError, match="written by its authorisation PR"):
+        runner.stage_gated(report, {"gated_authorization": _record()}, tmp_path, None, None)
+    assert report["gated_authorization"]["stage"] == "gated"
+
+
+def test_a_blocked_shift_is_a_counted_failure_through_the_runner(tmp_path):
+    pytest.importorskip("torch")
+    pytest.importorskip("mujoco")
+    from embodied_jepa import lewm_planner_v2_runtime as lrt
+
+    runner = _load_script("_run_lewm_planner_v2_b", "scripts/run_lewm_planner_v2.py")
+    task = {"shift": {"step": 300, "vector": [0.0, -0.09]}}
+    record = {"seed": 54650, "arm": "L-plan", "post_look_state": [0.0]} | lrt.blocked_record(
+        task, lp.SHIFT_BLOCKED_PREFIX + " ['apple_geom']", None
+    )
+    assert record["termination_reason"] == "shift_blocked" and not record["success"]
+    assert runner.successes([record]) == [False]
+    assert runner.blocked({"L-plan": [record]}) == {"L-plan": 1}
+    stripped = runner.strip([record])[0]
+    assert stripped["termination_reason"] == "shift_blocked" and "commands_sha256" in stripped
 
 
 def test_offline_ranking_statistics_on_a_toy_group():

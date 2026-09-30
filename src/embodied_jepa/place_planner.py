@@ -385,3 +385,28 @@ def rerun_compare(first: dict, second: dict) -> dict:
         dict(second) | {"target_cm_max": d},
         lp.rerun_rule(),
     )
+
+
+def rerun_verdict(first: dict, second: dict) -> dict:
+    """The gated determinism re-run's verdict for one (arm, seed) (AUTHORISATION_SCOPE,
+    RERUN_MARGIN_RULE): ``void`` when ``rerun_compare`` fails (a difference above a tolerance, a
+    missing field or a NaN); ``above_half_tolerance`` lists every field whose difference exceeds
+    half its tolerance (reported in the results even when the re-run matches)."""
+    comparison = rerun_compare(first, second)
+    rule = lp.rerun_rule()
+    above = []
+    for key, tolerance in rule.tolerances.items():
+        value = comparison["differences"].get(key)
+        if value is None:
+            continue
+        if key == "max_abs_command_difference":
+            d = float(value)
+        else:
+            a, b = value
+            try:
+                d = abs(float(a) - float(b))
+            except (TypeError, ValueError):
+                d = float("inf")
+        if not d <= tolerance / 2:
+            above.append({"field": key, "difference": d, "tolerance": float(tolerance)})
+    return comparison | {"void": not comparison["matches"], "above_half_tolerance": above}
