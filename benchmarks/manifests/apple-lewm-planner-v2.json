@@ -4722,7 +4722,7 @@
   }
  },
  "corpus_plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
- "protocol_document_sha256": "3ce31021eae15746f0943fa4ffe3ce6834eee40b4d2ed0a7a487d8cf36b69442",
+ "protocol_document_sha256": "28b5837a89e2c3aa93958f1104295cd3913f822ae2f3ce9b1f26245d978b3941",
  "encoder_digests": {
   "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
   "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
@@ -5474,7 +5474,7 @@
   "scripts/rank_wm_critic_v2.py": "6d4cdc9017369f9c4ae95184c153b8bed5c6db84cc02a6cd9c4b84a243861d64",
   "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
-  "scripts/run_lewm_planner_v2.py": "cad3ef35be5d737152663f997fdca9cdc06968b9ab00d18a6c2f8cf7e87876e1",
+  "scripts/run_lewm_planner_v2.py": "46c364b8a511b9046d6b9d7df7f978088e1254010acdc8338e13fdea356832a5",
   "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
   "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
@@ -5525,10 +5525,205 @@
   "src/embodied_jepa/wm_critic_v2.py": "125b6f64d3acb9341f243fe123d1c646a433104471924790c79112678c0efc85",
   "src/embodied_jepa/wm_critic_v2_offline.py": "7c2cd7bc39d1b87e46b4c4e92ab55bbe4a357ccc1dfccbf16e7a066a3f9c1cfa",
   "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
-  "tests/test_lewm_planner_v2.py": "d7bf80c0139aa08dfdd6847517da4d6e860b82f138bb8564c5d83e982ff9f5a9",
+  "tests/test_lewm_planner_v2.py": "6a261cc5f94ca226ae0356c48101c1b641dc2e2472a5ab953c4bcc3ca7cb71df",
   "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "pins_note": "the protocol document and this manifest are not pinned: the smoke record is added after the frozen-code smokes, so that the smoked code stays the frozen code",
- "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. The plate shift is a simulation-only diagnostic condition on apple-to-plate-v2."
+ "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. The plate shift is a simulation-only diagnostic condition on apple-to-plate-v2.",
+ "addendum_a1": {
+  "date": "2026-10-01",
+  "section": "docs/experiments/apple_lewm_planner_v2.md, Addendum A1",
+  "frozen_sha256_unchanged": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+  "train_run_1_void": {
+   "revision": "9d9b03cff44848f0b43b63f9d1f560a378c672ba",
+   "report": "outputs/task074-train/run-1/report.json (worktree task074-run)",
+   "report_sha256": "78137de0c28211833be458f956f7e1f03c2b5c58f75998fb8d42fa2f45ce80df",
+   "baselines_sha256": "ff3a2e7bc5b5b9d4e625c1a969643b79c62269b6c2ce3dbc7484b2ce5ff4d07e",
+   "log_verbatim": [
+    "[00:09:00] VOID: StageInterrupted: G-memory: process-tree PSS 12.04 GiB > 12.00 GiB (SIGUSR1)",
+    "[00:09:00] report written: outcome V"
+   ],
+   "started_utc": "2026-09-30T22:00:02Z",
+   "first_outcome_utc": "2026-09-30T22:04:01Z",
+   "interrupted_utc": "2026-09-30T22:09:00Z",
+   "peak_tree_pss_gib": 12.03593635559082,
+   "peak_processes": 1,
+   "site": "calibration W-7410, train_model -> val_criterion -> normalized_sq_error",
+   "after_boundary": true,
+   "rule": "a development stage may be repeated once from scratch after a reviewed fix (\u00a77)"
+  },
+  "root_cause": "R-plate's decision frames kept as views frames[t], each pinning its episode's whole decoded frames array (270 far episodes x ~27 MiB = ~7.1 GiB); the anchor frames likewise. The pre-freeze train-scale probe held 14 decoded smoke episodes and cycled their features, so it did not scale that term",
+  "fix": "scripts/run_lewm_planner_v2.py: featurise_sources copies kept frames/plate rows and frees each episode; train_scale_probe uses the same function with every slot decoded afresh at the real split sizes, and fails the smoke unless its peak is >= 2.0 GiB below the ceiling (G-memory-margin)",
+  "pins_changed": {
+   "scripts/run_lewm_planner_v2.py": [
+    "cad3ef35be5d737152663f997fdca9cdc06968b9ab00d18a6c2f8cf7e87876e1",
+    "46c364b8a511b9046d6b9d7df7f978088e1254010acdc8338e13fdea356832a5"
+   ],
+   "tests/test_lewm_planner_v2.py": [
+    "d7bf80c0139aa08dfdd6847517da4d6e860b82f138bb8564c5d83e982ff9f5a9",
+    "6a261cc5f94ca226ae0356c48101c1b641dc2e2472a5ab953c4bcc3ca7cb71df"
+   ]
+  },
+  "unchanged_numbers": {
+   "train_smoke_before": {
+    "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+    "report_sha256_prefix": "ac6158aa"
+   },
+   "train_smoke_after": {
+    "revision": "e9da1cc632de24d6c791fbaf42a11324ad7bde83",
+    "report_sha256": "c0044bb67e32345b0379a584c9c24ea0d60ea9659cc5bb74bb7a5568ef92a532",
+    "inputs": {
+     "k1_report_sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787",
+     "corpus_manifest_sha256": "68499d90c4ee4e0c4cf76b861ed1eafc657df1bcee26f6913d803c4015d11c46"
+    }
+   },
+   "byte_identical": [
+    "baselines.json",
+    "r_off.npz",
+    "r_plate.npz",
+    "every W/N checkpoint sha256"
+   ],
+   "full_scale_val_criterion_bit_identical": [
+    0.41906400043324543,
+    0.34922501589278376,
+    0.31230354847989067
+   ],
+   "stage_leaf_values": {
+    "compared": 998,
+    "identical_computed_values": 976,
+    "differing": 22,
+    "differing_fields": "timing and path fields only: 10 seconds, 12 run paths (6 models_u200 checkpoint paths, 4 critic.models paths, critic.r_off, critic.r_plate)",
+    "note": "the #114 review counted 10 path fields / 978 identical; a recount of the same two reports finds 12 / 976"
+   }
+  },
+  "memory_full_scale": {
+   "harness_phase_end_and_peak_gib": {
+    "pre_fix_diag_1": {
+     "features": [
+      10.18,
+      10.24
+     ],
+     "sealed": [
+      10.68,
+      10.68
+     ],
+     "r_plate_fit": [
+      10.23,
+      10.97
+     ],
+     "r_off_fit": [
+      9.77,
+      11.3
+     ],
+     "val_tokens": [
+      9.78,
+      9.84
+     ],
+     "baselines": [
+      9.78,
+      9.78
+     ],
+     "train_context": [
+      10.72,
+      11.24
+     ],
+     "calibration": [
+      10.96,
+      11.56
+     ]
+    },
+    "post_fix_diag_2": {
+     "features": [
+      3.34,
+      3.47
+     ],
+     "sealed": [
+      3.84,
+      3.89
+     ],
+     "r_plate_fit": [
+      3.4,
+      4.06
+     ],
+     "r_off_fit": [
+      3.42,
+      4.92
+     ],
+     "val_tokens": [
+      3.42,
+      3.48
+     ],
+     "baselines": [
+      3.42,
+      3.42
+     ],
+     "train_context": [
+      3.89,
+      5.01
+     ],
+     "calibration": [
+      4.54,
+      4.92
+     ]
+    },
+    "pairs": "[end, peak] per phase, from each run's timeline.json"
+   },
+   "after_featurisation_end_to_end_gib": [
+    10.18,
+    3.34
+   ],
+   "after_featurisation_peak_to_peak_gib": [
+    10.24,
+    3.47
+   ],
+   "harness_peak_gib": [
+    11.56,
+    5.01
+   ],
+   "train_scale_probe_post_fix": {
+    "stage_peak_tree_pss_gib": 7.821043968200684,
+    "ceiling_gib": 12.0,
+    "margin_gib": 2.0,
+    "within_margin": true,
+    "roots": 430,
+    "frames": 76110,
+    "r_plate_rows": 1338,
+    "val_criterion_windows": 1148,
+    "seconds": 708.7,
+    "load_average_at_start": [
+     0.5,
+     1.240234375,
+     1.705078125
+    ]
+   }
+  },
+  "o2_encoded_finding": {
+   "is_bug": false,
+   "seen_before_check": true,
+   "value_cm": 2.8722625765232763,
+   "bar_cm": 1.0,
+   "consequence": "the re-run's O2 fails its encoded bar on every seed; the offline row is L-NO-DYNAMICS, L-O2-VOID or L-G2A, never OFFLINE-PASS. L-G2A is in CLAUSE_ROWS (abandonment_fires is true): if O1 passes on all seeds and O2 is not void, the re-run fires the section-7 abandonment clause because the uncalibrated 1.0 cm bar sits below this corpus's readout error (~2.9 cm), not because of anything W does. The bar is unchanged",
+   "bar_history": "carried verbatim from TASK-073 (wm_critic_v2.O2); TASK-073's O2 baselines used the true offset as a perfect readout; pre-merge smokes showed 3.21 cm (TASK-074) and 2.31 cm (TASK-073), on smoke readouts, not read",
+   "ruling": {
+    "by": "decided by Claude under owner delegation, 2026-10-01",
+    "repeat": "the one allowed repeat of the train stage is spent as frozen",
+    "if_clause_fires_on_L_G2A": "the results document records that the O2 encoded bar was uncalibrated and sat below the readout ceiling, and records O2's W-dependent components per W seed (predicted median, ratio vs persistence (i), ratio vs clock prior (iii), N ratio vs persistence (ii)) for the next task",
+    "clause_scope": "unchanged, exactly as written in section 7"
+   }
+  },
+  "harness": {
+   "path": "docs/experiments/apple_lewm_planner_v2_a1/",
+   "pinned": false,
+   "sha256": {
+    "diag.py": "8ca2be642319d58e8ad92507aa9299799e692b48da1bf06fb0b0d8e270837401",
+    "diag2.py": "1729a1719f66083ff25fe5444838bb8543c65555bd2cb41315da0a7b25af510f"
+   },
+   "runs": {
+    "diag.py": "OUT=outputs/task074-fix-diag-1 UPDATES=6000 (pre-fix loop, inline copy of 9d9b03c)",
+    "diag2.py": "OUT=outputs/task074-fix-diag-2 UPDATES=3000 (fixed featurise_sources)"
+   },
+   "revision": "e9da1cc632de24d6c791fbaf42a11324ad7bde83 (task074-memfix worktree), MUJOCO_GL=egl, PYTHONPATH=src"
+  }
+ }
 }
