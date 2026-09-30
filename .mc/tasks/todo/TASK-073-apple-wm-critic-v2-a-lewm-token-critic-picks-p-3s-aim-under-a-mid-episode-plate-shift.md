@@ -4,7 +4,7 @@ aliases:
 - TASK-073
 title: 'Apple WM critic v2: a LeWM token critic picks P-3''s aim under a mid-episode plate shift'
 slug: apple-wm-critic-v2-a-lewm-token-critic-picks-p-3s-aim-under-a-mid-episode-plate-shift
-status: in-progress
+status: review
 priority: 1
 owner: ''
 projects: []
@@ -20,7 +20,7 @@ depends_on:
 - "[[TASK-072]]"
 due_date: ''
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-09-30
 ---
 
 
@@ -50,15 +50,15 @@ learned policy trained on privileged expert labels plus a LeWM critic, not LeWM 
 and not the v1 benchmark. No control line is primary.
 
 ## Acceptance Criteria
-- [ ] Stage 0: protocol `docs/experiments/apple_wm_critic_v2.md`, manifest
+- [x] Stage 0: protocol `docs/experiments/apple_wm_critic_v2.md`, manifest
       `benchmarks/manifests/apple-wm-critic-v2.json` (frozen block, stored cohort values and
       digests, pins), modules, scripts and tests; smokes on 53950-53999 only; merged on an
       independent reviewer's reported APPROVE.
-- [ ] K0 on a fresh pre-run reviewer's reported GO, orchestrator told first; report reviewed.
-- [ ] Corpus, training, ranking and the offline decision, each after a reported GO.
-- [ ] D3 (if OFFLINE-PASS), after a reported GO.
-- [ ] Gated S/U only after the owner's authorisation record is merged and a reported GO.
-- [ ] Results PR with every arm, reviewed; every restated number checked.
+- [x] K0 on a fresh pre-run reviewer's reported GO, orchestrator told first (run-1 V; run-2 after
+      the #108 fix): **S-NO-CONDITION**; results PR pending review.
+- [x] Corpus, training, ranking, offline decision, D3, gated S/U: **not run by rule** (TASK-073
+      ends at K0 with S-NO-CONDITION; the D7 fallback TASK-074 is authorised).
+- [ ] Results PR, reviewed; every restated number checked.
 
 ## Notes
 - 2026-09-29: card opened; branch `feat/task-073-wm-critic-v2` from `70f1358` (main after #104).
@@ -85,3 +85,9 @@ and not the v1 benchmark. No control line is primary.
   ceiling with G-memory and a runtime guard, V reports on SIGTERM/SIGINT/SIGHUP, the corpus's
   first-render boundary, and render-only retries/majority for the renderer's rare one-level pixel
   differences (protocol §15).
+- 2026-09-30: #106 merged as `b4df3f0`, #108 as `35772e5`. **K0 run-2** from `35772e5` (GO: #108 comment
+  5901205401), 2 015 s, report sha256 `f760af40…27f2`: **S-NO-CONDITION**. Best cells: 300/4 cm
+  B-oracle-shift 32, P-stale 4, P-truth 28, H-sim 31 (+3 < +4). The abandonment clause does not fire;
+  the D7 fallback (TASK-074, LeWM-only planner) is authorised. The LeWM critic never ran. Results:
+  `docs/experiments/apple_wm_critic_v2_results.md` (branch `docs/task-073-results`). `mc` is not
+  installed; MC validation was not run.
