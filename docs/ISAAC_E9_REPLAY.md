@@ -79,6 +79,12 @@ Host MuJoCo is 3.13.0.
 | `isaac-e9-startup-{1..8}` | `cbb12cb`, clean | start-up probes (§4) | `isaac-e9-startup-summary.tsv` |
 | `isaac-e9-newton-{1,3}/compare-selfcontact` | `dfa6707` plus the review changes (uncommitted when run; committed unchanged in this PR) | runs 1 and 3 re-compared with the per-run self-contact summary (§5) | `4c05cb86`, `87022ef1` |
 | `isaac-e9-watchdog-smoke-1` | `dfa6707` plus the review changes (as above) | one start through the watchdog, `--startup_only` (§4) | `isaac-e9-watchdog-smoke-1-watchdog.log` |
+| `isaac-usd-threads-1-s1` | `9482ba5`, clean | **excluded**: one start that exited before building, on a bug in the new logging (`Path(pxr.__file__)` with `pxr.__file__` None), fixed in `906b7e3` | `isaac-usd-threads-1-s1-t1/log.txt` |
+| `isaac-usd-threads-2-s1` | `906b7e3`, clean | **excluded** from the counts: one start with `PXR_WORK_THREAD_LIMIT=1` passed from outside: Kit reset it to 16 (§4); built, no hang | `isaac-usd-threads-2-s1-t1/log.txt` |
+| `isaac-usd-threads-wprobe/` | probe scripts copied into that directory (not in git) | **excluded**: two throwaway Kit containers testing the work limit (§4) | `wprobe-3-unpinned.txt`, `wprobe-4-pinned.txt` |
+| `isaac-usd-threads-3-s{1..24}` | `e27e78f`, clean | 24 start-up-only starts with the thread-limit pin (§4) | `isaac-usd-threads-3-summary.tsv` `f80bf2c3` |
+| `isaac-usd-threads-4-ctrl-s{1..4}` | `e27e78f`, clean | 4 unpinned start-up-only starts, timing control (§4) | `isaac-usd-threads-4-ctrl-summary.tsv` `d19fec5d` |
+| `isaac-usd-threads-5-replay-pin1-b`, `isaac-usd-threads-6-replay-nopin` | `e27e78f`, clean | 2-seed closed-loop step-time check, pinned and unpinned (§4) | `report.json` |
 
 Note on run 3:
 - Its client and server started at `56f09cb` with a clean tree.
@@ -277,6 +283,7 @@ embodied_jepa/isaac_transport.py, line 657, in _install_newton_builder
 **Cause: unknown.**
 - The same USD, code and image hang only sometimes.
 - One candidate is a race between the parse and Kit's background threads touching the same stage (*inferred, untested*).
+- Update (2026-09-30): the leading candidate is now the known OpenUSD thread-safety bug in this function. Pinning USD's work pool to one thread gave 0 hangs in 24 starts (below).
 
 Start-up probes (`startup_probe.sh`, `--startup_only`, limit 420 s, one container at a time):
 
@@ -302,13 +309,62 @@ Start-up probes (`startup_probe.sh`, `--startup_only`, limit 420 s, one containe
   - Hang detection. If the try has not logged `transport built` within the limit, the watchdog stops only that try's own container (`oej-isaac-<try>`). It then stops the launcher process it started itself, if that is still running, and starts the next try.
   - Limits and records. The number of tries is bounded. Every try, hang and retry is written to `<out-prefix>-watchdog.log`. The socket of the try that built is written to `<out-prefix>-ready`, for `e9_replay.py isaac --socket`.
   - Other failures. A start that exits before building is a different failure, so it is not retried. If stopping the hung try's own container fails, the watchdog logs the failure and the stop command's output, starts nothing more, and exits 6. The hung container may still hold GPU memory, so it needs a person.
-  - The limit. The recommended limit is 300 s. Healthy starts built in 124.9–151.6 s by the server's clock (the 10 healthy starts of this task), so 300 s is about twice the slowest. The recommended number of tries is 3: at about 1 hang in 5 starts, three hangs in a row would happen about 1 time in 100, if starts are independent (*inferred*).
+  - The limit. **Now 480 s**, because the thread-limit pin (below) makes healthy starts take 172–228 s. *(Historical, before the pin: the recommendation was 300 s, about twice the slowest of the 10 healthy starts of this task, 124.9–151.6 s.)* The recommended number of tries is 3: at about 1 hang in 5 starts, three hangs in a row would happen about 1 time in 100, if starts are independent (*inferred*).
   - Why a restart is safe. The hang happens before any episode.
   - Tests. `tests/test_isaac_watchdog.py` checks, with a fake launcher: retry after a hang; giving up after the bounded number of tries (exit 4); no retry after a crash; no retry after a failed container stop (exit 6); and that only the hung try's container is stopped.
   - Real check. One real start went through the watchdog (`isaac-e9-watchdog-smoke-1`, `--startup_only`). It built at 125.9 s by the server's clock, which the watchdog saw at 128 s. It did not hang, so the retry path has been exercised only with the fake launcher.
   - Still manual. `startup_probe.sh` still records hangs without retrying, because counting them is its purpose.
 - **(b) Parse a detached copy: not run.** The idea is to run `add_usd` on a detached, flattened copy of the stage (`stage.Flatten()` into an anonymous in-memory stage) instead of the live Kit stage. This would test the race hypothesis. At this hang rate it needs about 20 or more probes per arm to be informative. It stays open as an option.
 - **(c) Report upstream: drafted, not posted.** The draft is [isaac/newton_usd_hang_report.md](isaac/newton_usd_hang_report.md). It includes versions, repro steps, frequency and stack excerpts. The project owner posts it after checking.
+
+### The OpenUSD thread limit (`PXR_WORK_THREAD_LIMIT=1`), 2026-09-30
+
+**Why.** Newton documents a known OpenUSD thread-safety bug in this same function: `UsdPhysics.LoadUsdPhysicsFromRange` can crash when many mesh colliders sit under one rigid body ([newton#1743](https://github.com/newton-physics/newton/issues/1743), [#2216](https://github.com/newton-physics/newton/issues/2216); Newton's `docs/concepts/usd_parsing.rst`, "Limitations"). The documented workaround is `PXR_WORK_THREAD_LIMIT=1`. The fix is OpenUSD commit `ed857d77` (PR 4002), first in v26.05-rc1; Newton's current docs say "fixed in OpenUSD 26.08".
+
+**This image does not have the fix.**
+- In the running Kit process, `pxr.Usd.GetVersion()` is 0.25.11, loaded from `omni.usd.libs-1.0.1` (the image also carries `usd_core` 25.8 and `usd_exchange` 3.0.0 in site-packages).
+- `ed857d77` is not in stock v25.11 (GitHub compare: the commit is 597 commits ahead of the v25.11 tag), and `UsdPhysics.LoadStageFromPrimRange`, the name OpenUSD 26.05 introduced with the fix, does not exist. Whether NVIDIA's build carries a backport was not checked.
+
+**Setting the variable from outside does not work in Kit.**
+- USD reads `PXR_WORK_THREAD_LIMIT` once, when its env settings initialise, and the variable then overrides `pxr.Work.SetConcurrencyLimit`.
+- Kit overwrites the variable before USD reads it, unconditionally: `SimulationApp` sets min(cores, `limit_cpu_threads`), and the `omni.usd.config` extension sets `"16"` (its comment: OMPE-59303).
+- Measured: with `-e PXR_WORK_THREAD_LIMIT=1` on `docker run`, the process reported `PXR_WORK_THREAD_LIMIT=16` and `Work.GetConcurrencyLimit() == 16` after the app launched (`isaac-usd-threads-2-s1`), and a throwaway probe container showed that `Work.SetConcurrencyLimit` cannot change it afterwards (below). **So every earlier start ran USD's work pool with 16 threads** (measured in this image; inferred for the spike's starts, which used the same image and code path).
+- **Throwaway probes** (excluded from all counts; outputs copied to `outputs/isaac-usd-threads-wprobe/`, image as above). A minimal script launches the headless app through `AppLauncher` and prints the variable and `Work.GetConcurrencyLimit()`, then calls `Work.SetConcurrencyLimit(1)`, `(4)` and `(0)`.
+  - **Unpinned** (`wprobe-3-unpinned.txt`, 10:16:48–10:16:50Z log stamps; `docker run -e PXR_WORK_THREAD_LIMIT=1`): the variable went from 1 to 16, the limit was 16, and it stayed 16 after each `SetConcurrencyLimit` call. Its script was later edited in place into the pinned one, so `wprobe_unpinned_reconstructed.py` is the pinned script with the pin block removed (reconstructed, not the file as run).
+  - **Pinned** (`wprobe-4-pinned.txt`, script `wprobe_pinned.py`, 10:17:14–10:17:16Z log stamps): with the variable pinned in `os.environ` before the app starts, the limit was 1 and stayed 1 after each `SetConcurrencyLimit` call.
+  - Two earlier attempts printed nothing useful: one had no output captured, and one (`wprobe-2.txt`) stopped at the image's user set-up (`chown: cannot access '/home/huhn'`).
+- What works: `e9_server_isaac.py` now pins the variable in `os.environ` before the app starts, so later writes of that one key keep the pinned value. **The limit in effect is verified; the mechanism is inferred.** Which Kit write the pin replaces was not logged: in the pinned probe, the only intercepted write printed was the probe's own, perhaps because Kit redirects Python output during start-up. The account of how Kit sets the variable comes from reading Kit's Python sources. The server now logs each replaced write to fd 2, and it rejects a negative `--pxr_work_thread_limit` or a non-integer inherited value. The server logs `pxr.Work.GetConcurrencyLimit()` after the app launches and again right before `add_usd`; it was 1 in all 24 pinned starts below.
+
+**Series** (`isaac-usd-threads-3-s{1..24}`, revision `e27e78f`, clean; these runs are under `outputs/` of the `fix/isaac-usd-thread-limit` worktree): 24 starts through `serve_with_watchdog.sh` (limit 600 s, 1 try each), `--startup_only`, pin 1. No seed was simulated. The series ran one container at a time, with one exception near its start. The throwaway probe containers above ran from about 10:16:40Z to just after 10:17:17Z, while the excluded start `isaac-usd-threads-2-s1` (10:15:29–10:17:36Z) was running, and ended shortly before series start 1 (10:17:52Z). Start 1 may have overlapped the last probe container's shutdown.
+
+| Arm | Starts | Hung | Work limit | `transport built`, s (min / median / max) | `add_usd`, s (min / median / max) |
+| --- | --- | --- | --- | --- | --- |
+| Earlier starts (spike + this task, §4 above) | 22 | 4 | 16 (inferred: same image and code path) | 124.9 / – / 151.6 (the 10 healthy starts with a timing) | not measured |
+| **Pinned to 1** (`-3-s1..24`) | **24** | **0** | 1 | 171.6 / 174.1 / 227.5 | 11.27 / 11.64 / 16.33 |
+| Unpinned control, timing only (`-4-ctrl-s1..4`) | 4 | 0 | 16 | 125.1 / 125.7 / 126.1 | 9.10 / 9.36 / 9.39 |
+
+- **Hangs: 0 of 24 against 4 of 22.** One-sided Fisher exact test p = 0.045 (the two-sided p is also 0.045). With the pin, the hang rate is at most 12 % (one-sided 95 % Clopper–Pearson bound, 0 of 24; the two-sided 95 % interval is 0–14 %); the base rate is 18 % (4 of 22, 95 % interval 5–40 %). This is suggestive, not proof: the base-rate starts are historical, not a concurrent randomised arm, and a hang rate of 5–10 % with the pin is not excluded.
+- **The mechanism fits, but is inferred.** Newton's issue describes a crash from a data race on a `std::vector` in the multithreaded collider parse; what we saw is a main thread spinning at 100 % in the same function. A corrupted container can loop as well as crash. We have no native stack to confirm it.
+- **Start-up is about 48 s slower with the pin** (median 174.1 s against 125.7 s for the 4 unpinned controls on the same host, same day). The parse itself is only about 2.3 s slower (11.6 s against 9.4 s). The rest is in solver set-up and kernel compilation: `Initialize solver` 19.9 s against 13.4 s, and `CUDA graph took` about 112 s against 82 s. The likely reason is that the USD work limit also caps the process's shared TBB pool, which other start-up work uses (*inferred*).
+- Starts 3 and 4 (223.6 s and 227.5 s) were slower; the cause was not recorded (the load-average log starts at 10:29:51Z, after start 3). Starts 5–24 took 171.6–176.1 s.
+
+**Stepping is slower too** (non-gated development replay, closed loop, seeds 50200 and 50201 at plate error 0, one server each, both at `e27e78f`):
+
+| Server | Work limit | Server step time, ms (median / p95, 1 586 steps) | Seconds per attempt | At rest (50200, 50201) | Final distance, cm |
+| --- | --- | --- | --- | --- | --- |
+| `isaac-usd-threads-5-replay-pin1` (`-srv-t1`, report `-pin1-b`) | 1 | 32.0 / 33.5 | 27.6, 27.1 | yes, no | 3.54, 4.16 |
+| `isaac-usd-threads-6-replay-nopin` | 16 | 27.2 / 27.8 | 23.3, 23.1 | yes, yes | 3.88, 2.34 |
+| Runs 1 and 3 (§2, all 50 752 steps) | 16 | 26.7 / 35.7 and 26.5 / 33.6 | about 22.5 | yes, yes (both runs) | 3.89, 3.14 and 2.60, 3.65 |
+
+- The pin makes each step about 18 % slower (32.0 against 27.2 ms median), so a full 32-attempt closed- plus open-loop run takes about 4.5 minutes longer (64 attempts × about 4.2 s).
+- The one verdict difference (50201 not at rest with the pin, at 4.16 cm) is within Isaac's own run-to-run variation (10 of 32 at-rest verdicts flip between runs 1 and 3, §2); two attempts cannot show an effect of the pin on the physics.
+- The first pinned replay attempt failed to connect: the absolute socket path was longer than the 108-byte AF_UNIX limit. The same server was then used with a relative socket path (`-pin1-b`).
+
+**Decision (development).**
+- **The Newton path now defaults to the pin (`PXR_WORK_THREAD_LIMIT=1`).** It removed the hang in 24 of 24 starts, and a start that cannot hang is worth more than the 48 s it costs: an unpinned hang costs the watchdog limit plus a new start.
+- **The watchdog stays as the backstop**, because 0 of 24 does not prove the hang is gone. With the pin, healthy starts take 172–228 s, so a 300 s limit leaves too little margin on a loaded host; use **480 s**.
+- `--pxr_work_thread_limit 0` restores Kit's 16 threads (for timing-sensitive work or to reproduce the base rate); `--pxr_work_thread_limit N` pins N. A value passed in the environment (`run_isaac.sh` passes `PXR_WORK_THREAD_LIMIT` through) is pinned as given. PhysX starts are not pinned by default.
+- Remove the pin once the image's USD contains the fix, after a new start-up series without it. The fix commit is in OpenUSD v26.05 (and 26.08), and Newton's current `usd_parsing.rst` names 26.08 as the fixed version. A practical check is `hasattr(pxr.UsdPhysics, "LoadStageFromPrimRange")` (the 26.05 rename), which the server logs.
 
 ## 5. Robot self-collision: ruling, evidence and options
 

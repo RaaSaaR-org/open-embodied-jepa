@@ -6,6 +6,8 @@
 # run_isaac.sh (so the usual guard and records apply). A run that has not logged
 # "transport built" within <limit-seconds> (default 480) is recorded as a hang, its last
 # stack dump is kept in its log, and only that run's container (oej-isaac-<name>) is stopped.
+# The server pins PXR_WORK_THREAD_LIMIT=1 for Newton by default; add --pxr_work_thread_limit 0
+# after --physics newton for Kit's 16 threads (the setting of the original hang rate).
 # Writes <out-prefix>-summary.tsv: run, outcome, seconds to "transport built", last stage.
 set -euo pipefail
 PREFIX=${1:?usage: startup_probe.sh <out-prefix> <count> [limit-seconds] [--physics ...]}

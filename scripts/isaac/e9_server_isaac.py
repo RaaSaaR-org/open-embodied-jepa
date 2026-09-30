@@ -12,6 +12,22 @@ Every start-up stage is logged with its elapsed time, and every thread's stack i
 ``--dump_every`` seconds (``faulthandler``), to diagnose the intermittent start-up hang of
 ``docs/ISAAC_NEWTON_SPIKE.md`` §6. ``--startup_only`` builds the transport, runs one reset and
 three steps, and exits (a start-up probe).
+
+``PXR_WORK_THREAD_LIMIT`` (OpenUSD's work-pool thread limit): the Newton path runs with 1, the
+workaround Newton documents for the OpenUSD thread-safety bug in
+``UsdPhysics.LoadUsdPhysicsFromRange`` (newton#1743, #2216; fixed in OpenUSD 26.05, newer than
+this image's USD 0.25.11). USD reads the variable once, when its env settings initialise, and
+Kit overwrites it before that: ``SimulationApp`` sets min(cores, limit_cpu_threads) and the
+``omni.usd.config`` extension sets 16, both unconditionally. So a value passed in from outside
+never takes effect, and neither does ``pxr.Work.SetConcurrencyLimit`` later (the variable
+overrides it). This script therefore pins the variable in ``os.environ`` before the app starts:
+later writes of that one key are replaced by the pinned value, and each replaced write is
+logged to stderr (which Kit write this blocks is inferred from Kit's sources; the limit in
+effect is verified by the log). ``--pxr_work_thread_limit N`` pins N (0: no pin, Kit's default
+of 16; negative values are rejected); without the flag an inherited positive integer is
+pinned (an inherited 0 means no pin), else 1 for Newton and nothing for PhysX. The limit in
+effect (``pxr.Work.GetConcurrencyLimit()``) and the USD version are logged after the app
+launches and again right before ``add_usd`` (docs/ISAAC_E9_REPLAY.md §4).
 """
 
 from __future__ import annotations
@@ -42,7 +58,43 @@ parser.add_argument("--physics", choices=("physx", "newton"), default="newton")
 parser.add_argument("--startup_only", action="store_true")
 parser.add_argument("--dump_every", type=float, default=120.0, help="stack dump period, s")
 parser.add_argument("--idle_timeout", type=float, default=1800.0, help="exit after idle, s")
+parser.add_argument(
+    "--pxr_work_thread_limit",
+    type=int,
+    default=None,
+    help="pin PXR_WORK_THREAD_LIMIT to N before the app starts (0: no pin, Kit's 16; default: "
+    "inherited value, else 1 for newton)",
+)
 stage("parsing arguments")
+# Before AppLauncher (and pxr) load; see the module docstring for why a plain assignment is not
+# enough.
+_early, _ = parser.parse_known_args()
+if _early.pxr_work_thread_limit is not None:
+    if _early.pxr_work_thread_limit < 0:
+        parser.error("--pxr_work_thread_limit must be >= 0")
+    PXR_PIN = str(_early.pxr_work_thread_limit) if _early.pxr_work_thread_limit > 0 else None
+elif "PXR_WORK_THREAD_LIMIT" in os.environ:
+    _inherited = os.environ["PXR_WORK_THREAD_LIMIT"].strip()
+    if not _inherited.isdigit():
+        parser.error(f"inherited PXR_WORK_THREAD_LIMIT={_inherited!r} is not an integer >= 0")
+    PXR_PIN = _inherited if int(_inherited) > 0 else None
+else:
+    PXR_PIN = "1" if _early.physics == "newton" else None
+if PXR_PIN is not None:
+
+    class _PinnedEnviron(type(os.environ)):
+        """``os.environ`` whose PXR_WORK_THREAD_LIMIT stays at the pinned value."""
+
+        def __setitem__(self, key, value):
+            if key == "PXR_WORK_THREAD_LIMIT" and value != PXR_PIN:
+                # fd 2 directly: Kit may redirect Python's sys.stderr during start-up.
+                os.write(2, f"[e9-server] replaced write {key}={value!r} by {PXR_PIN}\n".encode())
+                value = PXR_PIN
+            super().__setitem__(key, value)
+
+    os.environ.__class__ = _PinnedEnviron
+    os.environ["PXR_WORK_THREAD_LIMIT"] = PXR_PIN
+stage(f"PXR_WORK_THREAD_LIMIT pinned to {PXR_PIN or '<no pin: Kit default>'}")
 from isaaclab.app import AppLauncher  # noqa: E402
 
 AppLauncher.add_app_launcher_args(parser)
@@ -57,6 +109,26 @@ stage("launching the app")
 app = AppLauncher(args).app
 stage("app launched")
 
+
+def usd_threads() -> dict:
+    """The USD build and work-pool limit actually in effect in this process."""
+    import pxr
+    from pxr import Usd, UsdPhysics, Work
+
+    return {
+        "usd_version": ".".join(str(v) for v in Usd.GetVersion()),
+        "pxr_path": [str(p) for p in getattr(pxr, "__path__", [])],
+        "env_PXR_WORK_THREAD_LIMIT": os.environ.get("PXR_WORK_THREAD_LIMIT"),
+        "work_concurrency_limit": int(Work.GetConcurrencyLimit()),
+        "work_physical_concurrency_limit": int(Work.GetPhysicalConcurrencyLimit()),
+        # OpenUSD 26.05 renamed the parser along with the thread-safety fix (OpenUSD PR 4002).
+        "has_LoadStageFromPrimRange": hasattr(UsdPhysics, "LoadStageFromPrimRange"),
+    }
+
+
+USD_THREADS = usd_threads()
+stage(f"usd threads: {json.dumps(USD_THREADS)}")
+
 import numpy as np  # noqa: E402
 
 sys.path.insert(0, "/oej/src")
@@ -64,6 +136,23 @@ from embodied_jepa.isaac_scene import canonical_sha256, usd_canonical_hash  # no
 from embodied_jepa.isaac_transport import IsaacTransport, manifest_sha256  # noqa: E402
 
 stage("imports done")
+
+if args.physics == "newton":
+    from newton import ModelBuilder
+
+    _add_usd = ModelBuilder.add_usd
+    ADD_USD_SECONDS: list[float] = []
+
+    def _timed_add_usd(self, *a, **k):
+        """Time ``add_usd`` (where the start-up hang sits) and log the limit in effect."""
+        stage(f"add_usd: start (work concurrency limit {usd_threads()['work_concurrency_limit']})")
+        started = time.monotonic()
+        result = _add_usd(self, *a, **k)
+        ADD_USD_SECONDS.append(time.monotonic() - started)
+        stage(f"add_usd: done in {ADD_USD_SECONDS[-1]:.2f} s")
+        return result
+
+    ModelBuilder.add_usd = _timed_add_usd
 
 
 def state(tr, *, after_step: bool = False) -> dict:
@@ -130,6 +219,9 @@ def main() -> None:
         "object_properties": tr.object_properties,
         "joint_names": list(tr.joint_names),
         "startup_seconds": time.monotonic() - T0,
+        "pxr_work_thread_limit_pin": PXR_PIN,
+        "usd_threads": USD_THREADS,
+        "add_usd_seconds": ADD_USD_SECONDS if args.physics == "newton" else None,
     }
     (args.output / "server.json").write_text(json.dumps(record, default=str))
     names = list(tr.joint_names)

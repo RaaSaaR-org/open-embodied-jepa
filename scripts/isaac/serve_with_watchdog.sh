@@ -2,20 +2,22 @@
 # Start the e9 Isaac server with a start-up watchdog and a bounded retry (development, TASK-025).
 # Usage (via `sg docker -c` if needed):
 #   scripts/isaac/serve_with_watchdog.sh <out-prefix> <limit-seconds> <tries> [server args...]
-# e.g. scripts/isaac/serve_with_watchdog.sh outputs/isaac-e9-server-4 300 3 --usd "$U" \
+# e.g. scripts/isaac/serve_with_watchdog.sh outputs/isaac-e9-server-4 480 3 --usd "$U" \
 #        --manifest /oej/configs/isaac/g1_dex3_joint_manifest_v1.json \
 #        --scene /oej/configs/isaac/apple_to_plate_v2_scene_v1.json --physics newton
 #
-# Why: Newton start-up hangs intermittently inside UsdPhysics.LoadUsdPhysicsFromRange (about 1 in
-# 5 starts; docs/ISAAC_E9_REPLAY.md §4). The hang happens before any episode, so a restart is
-# safe. Try k runs `run_isaac.sh e9_server_isaac.py <out-prefix>-t<k> [server args...]` (so the
-# usual guard and records apply). If its log has no "transport built" within <limit-seconds>
-# (healthy starts: 124.9-151.6 s; 300 s is about twice the slowest), the watchdog stops only
-# that try's own container (oej-isaac-<basename of the try dir>), then the launcher process it
-# started itself, and starts try k+1, up to <tries> tries. A try that exits before building is
-# not retried (that is a different failure). Every try, hang and retry is logged to
-# <out-prefix>-watchdog.log. If stopping a hung try's own container fails, nothing more is
-# started: the failure is logged and the watchdog exits 6. When a try has built, <out-prefix>-ready holds its socket path
+# Why: Newton start-up hangs intermittently inside UsdPhysics.LoadUsdPhysicsFromRange (4 of 22
+# starts with USD's 16 work threads; 0 of 24 since e9_server_isaac.py pins PXR_WORK_THREAD_LIMIT=1
+# by default, docs/ISAAC_E9_REPLAY.md §4). The watchdog stays as the backstop. The hang
+# happens before any episode, so a restart is safe. Try k runs `run_isaac.sh e9_server_isaac.py
+# <out-prefix>-t<k> [server args...]` (so the usual guard and records apply). If its log has
+# no "transport built" within <limit-seconds> (healthy starts with the pin: 171.6-227.5 s,
+# so use 480 s; unpinned 124.9-151.6 s), the watchdog stops only that try's own container
+# (oej-isaac-<basename of the try dir>), then the launcher process it started itself, and
+# starts try k+1, up to <tries> tries. A try that exits before building is not retried (that is
+# a different failure). Every try, hang and retry is logged to <out-prefix>-watchdog.log. If
+# stopping a hung try's own container fails, nothing more is started: the failure is logged
+# and the watchdog exits 6. When a try has built, <out-prefix>-ready holds its socket path
 # (<try dir>/run/e9.sock, for `e9_replay.py isaac --socket`) and the watchdog waits for that
 # server to exit and returns its status. Exit 4: every try hung.
 # Test hooks (tests/test_isaac_watchdog.py): ISAAC_WATCHDOG_RUN (launcher), ISAAC_WATCHDOG_STOP
