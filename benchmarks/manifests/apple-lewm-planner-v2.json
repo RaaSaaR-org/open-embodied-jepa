@@ -1,0 +1,5534 @@
+{
+ "protocol": "apple_lewm_planner_v2",
+ "task": "TASK-074",
+ "status": "preregistration (Stage 0): no TASK-074 cohort seed has been simulated; smokes on 54650-54699 only; design probes on 54700-54999 (spent)",
+ "document": "docs/experiments/apple_lewm_planner_v2.md",
+ "owner_decisions": {
+  "date": "2026-09-30",
+  "D1": "Beat P-3, tie readout (Recommended)",
+  "D2": "Put-down spots (Recommended)",
+  "D3_D4": "Right-side move, place only (Recommended)",
+  "D5": "Yes, add it (Recommended)",
+  "meaning": {
+   "D1": "beat P-3 even with the true plate; beat the action-blind, scene-blind and random twins; stay no worse than the readout arm (H-twin) within 6/64",
+   "D2": "a global grid of put-down (release) targets, executed by e9's place phases",
+   "D3_D4": "a -y (right-side) plate move at step 300, 9 or 12 cm chosen by K1; P-3 does the pick and LeWM plans the place",
+   "D5": "the 300-root corpus plus a retrained BC policy (P-far) as a reported control"
+  },
+  "owner_delegation_verbatim": "do the work without me - if you have decidions, choose your recommandation. do the work in subagents, use this chat just for updates. use subagents and workflows. goal is to continue working and try to get a real LeWM for the Unitree G1 without my help",
+  "owner_delegation_date": "2026-09-30",
+  "gated_authorisation": "the gated stage runs on an authorisation record signed by the task owner, or by Claude under that delegation, and only after a pre-run reviewer's reported GO; the main session posts a notice in chat before each gated run",
+  "delegation": "the owner delegated every remaining ruling (2026-09-30); each such choice is the option the design would mark (Recommended) and is labelled DELEGATED"
+ },
+ "frozen": {
+  "protocol": "apple_lewm_planner_v2",
+  "task": "TASK-074",
+  "carried_from": [
+   "apple_first_policy_v2",
+   "apple_first_policy_v2_m2",
+   "apple_wm_critic_v2"
+  ],
+  "owner_decisions": {
+   "date": "2026-09-30",
+   "D1": "Beat P-3, tie readout (Recommended)",
+   "D2": "Put-down spots (Recommended)",
+   "D3_D4": "Right-side move, place only (Recommended)",
+   "D5": "Yes, add it (Recommended)",
+   "meaning": {
+    "D1": "beat P-3 even with the true plate; beat the action-blind, scene-blind and random twins; stay no worse than the readout arm (H-twin) within 6/64",
+    "D2": "a global grid of put-down (release) targets, executed by e9's place phases",
+    "D3_D4": "a -y (right-side) plate move at step 300, 9 or 12 cm chosen by K1; P-3 does the pick and LeWM plans the place",
+    "D5": "the 300-root corpus plus a retrained BC policy (P-far) as a reported control"
+   },
+   "owner_delegation_verbatim": "do the work without me - if you have decidions, choose your recommandation. do the work in subagents, use this chat just for updates. use subagents and workflows. goal is to continue working and try to get a real LeWM for the Unitree G1 without my help",
+   "owner_delegation_date": "2026-09-30",
+   "gated_authorisation": "the gated stage runs on an authorisation record signed by the task owner, or by Claude under that delegation, and only after a pre-run reviewer's reported GO; the main session posts a notice in chat before each gated run",
+   "delegation": "the owner delegated every remaining ruling (2026-09-30); each such choice is the option the design would mark (Recommended) and is labelled DELEGATED"
+  },
+  "delegated": "decided by Claude under owner delegation, 2026-09-30",
+  "delegated_choices": {
+   "cost": "J(g) = || R_off(z_hat_{t+16}) - o_f ||, o_f = o*(501), the terminal release offset (not TASK-073's per-step o*(t+16), whose unshifted trajectory prior misleads under a 9-12 cm shift; TASK-073 K0's H-sim fell below P-truth at 6 cm with it)",
+   "grid": "coarse 7 x 7 at 3 cm (dx -9..9, dy -15..3 cm around the post-look plate estimate) then fine 5 x 5 at 0.75 cm around the coarse choice: 74 candidates per decision (the design's 2 cm coarse grid did not cover the far shifts)",
+   "decisions": "every 16 commands from the handover, 405-485 (6); frozen from 505 (lower)",
+   "k1_bars": "B-oracle-shift >= 30, H-handover >= 30, P-stale <= 4, H-handover - P-truth >= +8 (of 32)",
+   "gated_bars": "G1 vs P-truth, G2-G4 vs the blind twins at +10/64 and p < 0.01; T at 6/64; L-NO-HEADROOM at +16/64; G5 no-harm at 2/32; G6 latency 0.8 s",
+   "p_far": "BC on the complete, non-mis-aimed corpus train roots plus 3 DAgger iterations under the condition, with the plate re-read by R-plate at the decision steps",
+   "rerun": "L-plan and H-twin on the first four S seeds, compared by run_guards.RerunRule",
+   "memory": "the train stage's memory is measured at full corpus scale in the smoke (stage-smoke 'train-scale'), and P-far's in its smoke ('pfar-scale'); the gated GO reads those measurements",
+   "arc": "the right-side move is the 225-315 degree arc of TASK-073's direction rule",
+   "reset_redraw": "REDRAW_RULE: a reset on which the plate cannot move right is re-drawn",
+   "shift_blocked": "SHIFT_BLOCKED: a blocked move is not made; the attempt is a counted failure, a corpus root is re-collected unshifted",
+   "rows": "D1 read literally: only L-PASS makes the claim; every other outcome row, L-TWIN-BETTER and L-SLOW included, makes no claim and fires the clause",
+   "scene_blind": "L-SCENE-BLIND needs G1, G3 and G4, with G2 failing",
+   "authorisation": "the gated authorisation record has a frozen schema (AUTHORISATION_SCHEMA) and is validated by the runner"
+  },
+  "scene_version": "apple_to_plate_v2",
+  "counted_success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted",
+  "expert": {
+   "kwargs": {
+    "release_pitch_rad": 0.45,
+    "release_dx": 0.015
+   },
+   "phases": [
+    "orient",
+    "descend",
+    "close",
+    "lift",
+    "transfer",
+    "lower",
+    "steady",
+    "open",
+    "clear",
+    "retreat"
+   ],
+   "budgets": [
+    130,
+    80,
+    45,
+    150,
+    100,
+    50,
+    30,
+    50,
+    30,
+    60
+   ]
+  },
+  "pick_phases": 4,
+  "transfer_start": 405,
+  "lower_start": 505,
+  "place_end": 725,
+  "max_policy_steps": 740,
+  "settle_steps": 60,
+  "carried": "P-3",
+  "evidence": {
+   "results_manifest": "benchmarks/manifests/apple-first-policy-v2-linux-results.json",
+   "report": "outputs/task072-first-policy-v2-linux/run-1/report.json",
+   "report_sha256": "877452840d0d03520ec8644321ef32f6b19877caa679e77d173e3d2509edec78",
+   "revision": "db65816eb56dadb73664f08978cadeb6e881b35f",
+   "outcome": "M1-PASS",
+   "carried": "P-3",
+   "checkpoints": {
+    "P-3": "7988162df0b6106db5d007e322b824a3725b74cb103ba5a8de9f552912060be8",
+    "C-3": "d1820db4a1af3a63f02ed96c9a7c51d8b92d56ea7a23cf762940925f586b1289",
+    "R-3": "bea0d422b951287fcad66630aa8ea837a59df441d7a6c1793e2423048e2c0fd3"
+   },
+   "checkpoint_dir": "checkpoints/task072-first-policy-v2-linux/run-1",
+   "corpus": "data/apple-look-v2-linux/run-1",
+   "corpus_manifest_sha256": "67c342f6d37f3bd1910af16139096c109fa0bf6647d87286ca26b0899c9b4f54",
+   "b_replay_library_roots": 112
+  },
+  "seed_ranges": {
+   "K1": [
+    54000,
+    54031
+   ],
+   "R": [
+    54040,
+    54071
+   ],
+   "D3": [
+    54100,
+    54115
+   ],
+   "corpus": [
+    54200,
+    54499
+   ],
+   "S": [
+    54500,
+    54563
+   ],
+   "U": [
+    54600,
+    54631
+   ]
+  },
+  "smoke_seeds": [
+   54650,
+   54699
+  ],
+  "design_probes": {
+   "seeds": [
+    54700,
+    54999
+   ],
+   "direction_salt": 7401,
+   "disclosure": "the K1, D3 and gated bars and the -y restriction were set after the design probes (protocol \u00a72) had been seen: development seeds 54700-54999, now spent. On them, after a -y shift at step 300: e9 32/32 at 9 and 12 cm; P-3 given the true plate 20/32 and 7/32; P-3 pick then e9 place to the true plate 32/32 and 32/32; the same aimed at a direct plate readout trained with far data 31/32 and 30/32. One run of 32 resets per cell, no interval"
+  },
+  "task_block": [
+   54000,
+   54999
+  ],
+  "forbidden_ranges": {
+   "mvp_frozen_resets": [
+    20000,
+    20049
+   ],
+   "mechanics_probes": [
+    41000,
+    41101
+   ],
+   "earlier_train_val_test": [
+    42000,
+    42031
+   ],
+   "narrow_development": [
+    43000,
+    43004
+   ],
+   "final_cohort": [
+    44000,
+    44019
+   ],
+   "cohort_D_and_prior_ceilings": [
+    45000,
+    45207
+   ],
+   "cohort_C": [
+    45300,
+    45339
+   ],
+   "apple_look_v1_corpus": [
+    47000,
+    47199
+   ],
+   "apple_look_pilots": [
+    47900,
+    47931
+   ],
+   "apple_wide_v1_corpus_and_pilots": [
+    48000,
+    48999
+   ],
+   "grasp_closure_probes": [
+    49000,
+    49199
+   ],
+   "task067_block": [
+    46000,
+    46999
+   ],
+   "task068_to_070_block": [
+    50000,
+    50999
+   ],
+   "task071_072_block": [
+    51000,
+    52199
+   ],
+   "task073_block": [
+    53000,
+    53999
+   ],
+   "task074_design_probes": [
+    54700,
+    54999
+   ]
+  },
+  "model_seeds": [
+   7410,
+   7411,
+   7412
+  ],
+  "seeds": {
+   "shift_direction": 7413,
+   "misaim": 7414,
+   "corpus_split": 7415,
+   "corpus_plan_salt": 7416,
+   "l_rand": 7417,
+   "random_controller": 7418,
+   "bootstrap": 7419,
+   "readout_folds": 7420,
+   "sampler_salt": 7421,
+   "wrong_actions": 7422,
+   "comparative_rank": 7423,
+   "p_far_sampler": 7424,
+   "reset_redraw": 7425
+  },
+  "reset": {
+   "centers": {
+    "object_xy": [
+     0.34,
+     -0.18
+    ],
+    "plate_xy": [
+     0.49,
+     -0.09
+    ]
+   },
+   "jitter_m": {
+    "object_xy": 0.03,
+    "plate_xy": 0.02
+   },
+   "redraw_cm": [
+    3,
+    6,
+    9,
+    12
+   ],
+   "redraw_rule": "the reset of every TASK-074 seed (every role, the corpus and U included, so all cohorts share one reset distribution) is TASK-047's wide-jitter reset of the seed if the plate can move to the right (-y rule) by every |d| in (3, 6, 9, 12) cm; otherwise the same distribution is re-drawn from default_rng(SeedSequence([seed, 7425, k])) for k = 1, 2, ... until it can (about 1-2 % of seeds: the apple's reset position blocks every -y direction); 'redraw' stores k (0 = the plain reset). decided by Claude under owner delegation, 2026-09-30"
+  },
+  "condition": {
+   "sign_convention": "world frame = the fixed pelvis's base frame: +x points forward from the pelvis, +y to the robot's left, +z up. The right shoulder sits at y = -0.10 m (resting_expert.RIGHT_SHOULDER_BASE) and the reset plate centre at y = -0.09 +- 0.02 m, so -y is the robot's right, away from the midline y = 0. The owner ruled 'Right-side move' (D3+D4); its operationalisation as a shift whose direction lies in 225-315 degrees (measured from +x towards +y), i.e. with a negative y component of at least |d| cos(45 deg), was decided by Claude under owner delegation, 2026-09-30",
+   "shift_step": 300,
+   "grid_cm": [
+    9,
+    12
+   ],
+   "direction_arc_deg": [
+    225,
+    315
+   ],
+   "direction_rule": "TASK-073's direction rule (e9's plate-relative release kept within 0.5 cm, the plate on the\n    tabletop, the apple clearance kept), restricted to the -y arc of ``DIRECTION_ARC_DEG``.",
+   "arc_tolerance_m": 0.005,
+   "tabletop": {
+    "x": [
+     0.18,
+     0.65
+    ],
+    "y": [
+     -0.32,
+     0.32
+    ]
+   },
+   "plate_apple_clearance_m": 0.103,
+   "e9_release": {
+    "release_dx": 0.015,
+    "reach_radius_m": 0.485,
+    "floor": 0.1,
+    "ceiling": 0.26
+   },
+   "shift_blocked": "if the move at step 300 would leave the plate touching anything other than the table (plate_shift's guard: the apple not yet lifted clear, or the hand), the plate is not moved; an evaluated attempt then ends as a counted failure (termination 'shift_blocked'), not a V; a corpus root is collected again without the move and flagged 'shift_blocked'. Every blocked move is reported per arm. decided by Claude under owner delegation, 2026-09-30"
+  },
+  "planner": {
+   "decision_steps": [
+    405,
+    421,
+    437,
+    453,
+    469,
+    485
+   ],
+   "chunk": 16,
+   "coarse_offsets_m": [
+    [
+     -0.09,
+     -0.15
+    ],
+    [
+     -0.09,
+     -0.12
+    ],
+    [
+     -0.09,
+     -0.09
+    ],
+    [
+     -0.09,
+     -0.06
+    ],
+    [
+     -0.09,
+     -0.03
+    ],
+    [
+     -0.09,
+     0.0
+    ],
+    [
+     -0.09,
+     0.03
+    ],
+    [
+     -0.06,
+     -0.15
+    ],
+    [
+     -0.06,
+     -0.12
+    ],
+    [
+     -0.06,
+     -0.09
+    ],
+    [
+     -0.06,
+     -0.06
+    ],
+    [
+     -0.06,
+     -0.03
+    ],
+    [
+     -0.06,
+     0.0
+    ],
+    [
+     -0.06,
+     0.03
+    ],
+    [
+     -0.03,
+     -0.15
+    ],
+    [
+     -0.03,
+     -0.12
+    ],
+    [
+     -0.03,
+     -0.09
+    ],
+    [
+     -0.03,
+     -0.06
+    ],
+    [
+     -0.03,
+     -0.03
+    ],
+    [
+     -0.03,
+     0.0
+    ],
+    [
+     -0.03,
+     0.03
+    ],
+    [
+     0.0,
+     -0.15
+    ],
+    [
+     0.0,
+     -0.12
+    ],
+    [
+     0.0,
+     -0.09
+    ],
+    [
+     0.0,
+     -0.06
+    ],
+    [
+     0.0,
+     -0.03
+    ],
+    [
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.03
+    ],
+    [
+     0.03,
+     -0.15
+    ],
+    [
+     0.03,
+     -0.12
+    ],
+    [
+     0.03,
+     -0.09
+    ],
+    [
+     0.03,
+     -0.06
+    ],
+    [
+     0.03,
+     -0.03
+    ],
+    [
+     0.03,
+     0.0
+    ],
+    [
+     0.03,
+     0.03
+    ],
+    [
+     0.06,
+     -0.15
+    ],
+    [
+     0.06,
+     -0.12
+    ],
+    [
+     0.06,
+     -0.09
+    ],
+    [
+     0.06,
+     -0.06
+    ],
+    [
+     0.06,
+     -0.03
+    ],
+    [
+     0.06,
+     0.0
+    ],
+    [
+     0.06,
+     0.03
+    ],
+    [
+     0.09,
+     -0.15
+    ],
+    [
+     0.09,
+     -0.12
+    ],
+    [
+     0.09,
+     -0.09
+    ],
+    [
+     0.09,
+     -0.06
+    ],
+    [
+     0.09,
+     -0.03
+    ],
+    [
+     0.09,
+     0.0
+    ],
+    [
+     0.09,
+     0.03
+    ]
+   ],
+   "coarse_incumbent": 26,
+   "fine_offsets_m": [
+    [
+     -0.015,
+     -0.015
+    ],
+    [
+     -0.015,
+     -0.0075
+    ],
+    [
+     -0.015,
+     0.0
+    ],
+    [
+     -0.015,
+     0.0075
+    ],
+    [
+     -0.015,
+     0.015
+    ],
+    [
+     -0.0075,
+     -0.015
+    ],
+    [
+     -0.0075,
+     -0.0075
+    ],
+    [
+     -0.0075,
+     0.0
+    ],
+    [
+     -0.0075,
+     0.0075
+    ],
+    [
+     -0.0075,
+     0.015
+    ],
+    [
+     0.0,
+     -0.015
+    ],
+    [
+     0.0,
+     -0.0075
+    ],
+    [
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0075
+    ],
+    [
+     0.0,
+     0.015
+    ],
+    [
+     0.0075,
+     -0.015
+    ],
+    [
+     0.0075,
+     -0.0075
+    ],
+    [
+     0.0075,
+     0.0
+    ],
+    [
+     0.0075,
+     0.0075
+    ],
+    [
+     0.0075,
+     0.015
+    ],
+    [
+     0.015,
+     -0.015
+    ],
+    [
+     0.015,
+     -0.0075
+    ],
+    [
+     0.015,
+     0.0
+    ],
+    [
+     0.015,
+     0.0075
+    ],
+    [
+     0.015,
+     0.015
+    ]
+   ],
+   "fine_centre": 12,
+   "candidates_per_decision": 74,
+   "tie_tolerance_cm": 1e-06,
+   "tie_rule": "the incumbent wins every tie within TIE_TOLERANCE_CM; among other candidates tied at the minimum the lowest index wins (np.argmin): for the coarse grid that is the (-x, -y) corner first. Stand-in chunks often tie (per-axis clipping and the reach clamp make many targets issue the same 16 commands), so this rule decides many early choices",
+   "o_star_cm": {
+    "421": [
+     -11.3019,
+     -5.2637
+    ],
+    "437": [
+     -7.1518,
+     -1.1956
+    ],
+    "453": [
+     -3.0801,
+     -0.1662
+    ],
+    "469": [
+     -0.1101,
+     -0.1824
+    ],
+    "485": [
+     0.387,
+     -0.1358
+    ],
+    "501": [
+     0.5731,
+     -0.1121
+    ]
+   },
+   "o_final_step": 501,
+   "o_star_source": {
+    "corpus": "data/apple-look-v2-linux/run-1",
+    "corpus_manifest_sha256": "67c342f6d37f3bd1910af16139096c109fa0bf6647d87286ca26b0899c9b4f54",
+    "roots": "the 112 train roots with a counted success (run-1's B-replay library)",
+    "statistic": "per-step median of apple xy (the stored privileged label) minus the reset plate xy, in cm, at steps t + 16 for every decision step t"
+   },
+   "cost": "J(g) = || R_off(z_hat_{t+16}(g)) - o_f || in cm: R_off (ridge, pooled latent -> apple-minus-plate offset) read on W's h = 16 prediction for the chunk of target g, against o_f = o*(501) = (0.5731, -0.1121) cm, e9's median release offset. decided by Claude under owner delegation, 2026-09-30",
+   "fallback": {
+    "decision_wall_seconds": 0.8,
+    "rule": "if every candidate is infeasible (stand-in refusal or an unreachable release pose), the planner keeps its previous target (at 405: the coarse (0, 0), the post-look plate estimate); a decision is never skipped for time (G6 measures latency instead); every fallback is logged; no fallback to P-3 after the handover"
+   }
+  },
+  "arms": {
+   "L-plan": [
+    "L1",
+    "P-3 pick; from 405 W (val-selected seed) chooses e9's place target"
+   ],
+   "L-plan-s1": [
+    "L1",
+    "L-plan with the second W seed (secondary: sign agreement)"
+   ],
+   "L-plan-s2": [
+    "L1",
+    "L-plan with the third W seed (secondary: sign agreement)"
+   ],
+   "L-N": [
+    "L1",
+    "as L-plan with the no-action model N (action-blind; ties keep the incumbent)"
+   ],
+   "L-shuf": [
+    "L1",
+    "as L-plan from H-twin's latent of reset (i + 1) mod n (scene-blind)"
+   ],
+   "L-rand": [
+    "L1",
+    "a seeded uniform coarse then fine choice among the same 74 targets"
+   ],
+   "H-twin": [
+    "L1",
+    "the perception twin: e9's place aimed at R-plate's reading of the frame"
+   ],
+   "P-stale": [
+    "L1",
+    "P-3 unchanged: the post-look estimates for the whole attempt"
+   ],
+   "P-far": [
+    "L1",
+    "reported control: P-3's recipe retrained on apple-far-shift-v2 (BC + 3 DAgger), plate re-read by R-plate at the decision steps"
+   ],
+   "P-truth": [
+    "L4",
+    "P-3 given the true post-shift plate at the shift step"
+   ],
+   "H-handover": [
+    "L4",
+    "P-3 pick, then e9's place aimed at the true plate: the family ceiling"
+   ],
+   "B-oracle-shift": [
+    "L4",
+    "e9 built from the post-shift truth (harness)"
+   ],
+   "B-hold": [
+    "L4",
+    "hold (harness)"
+   ],
+   "B-random": [
+    "L4",
+    "uniform random within the configured bounds (harness)"
+   ]
+  },
+  "l1_arms": [
+   "L-plan",
+   "L-plan-s1",
+   "L-plan-s2",
+   "L-N",
+   "L-shuf",
+   "L-rand",
+   "H-twin",
+   "P-stale",
+   "P-far"
+  ],
+  "s_arms": [
+   "L-plan",
+   "L-plan-s1",
+   "L-plan-s2",
+   "L-N",
+   "L-shuf",
+   "L-rand",
+   "H-twin",
+   "P-stale",
+   "P-far",
+   "P-truth",
+   "H-handover",
+   "B-oracle-shift",
+   "B-hold",
+   "B-random"
+  ],
+  "u_arms": [
+   "P-stale",
+   "H-twin",
+   "L-plan"
+  ],
+  "k1_arms": [
+   "B-oracle-shift",
+   "H-handover",
+   "P-stale",
+   "P-truth"
+  ],
+  "d3_arms": [
+   "H-twin",
+   "L-plan",
+   "L-N",
+   "L-shuf",
+   "L-rand",
+   "P-stale",
+   "P-truth",
+   "H-handover",
+   "B-oracle-shift",
+   "P-far"
+  ],
+  "critic_arms": {
+   "L-plan": "W0",
+   "L-plan-s1": "W1",
+   "L-plan-s2": "W2",
+   "L-N": "N",
+   "L-shuf": "W0"
+  },
+  "image_reading_arms": [
+   "L-plan",
+   "L-plan-s1",
+   "L-plan-s2",
+   "L-N",
+   "L-shuf",
+   "H-twin",
+   "P-far"
+  ],
+  "learned_label": "P-3's learned pick (BC/DAgger on privileged e9 labels) followed by a LeWM planner that chooses where e9's scripted place primitive puts the apple; not LeWM driving the whole episode, not a real-world disturbance, not the frozen v1 benchmark. An L-plan success is hybrid (a learned pick, a LeWM-chosen put-down spot, a scripted place) and is NOT a learned Apple->Plate success",
+  "k1": {
+   "resets": 32,
+   "bars": {
+    "B-oracle-shift_min": 30,
+    "H-handover_min": 30,
+    "P-stale_max": 4,
+    "H-handover_minus_P-truth_min": 8
+   }
+  },
+  "corpus": {
+   "name": "apple-far-shift-v2",
+   "splits": {
+    "train": 240,
+    "val": 30,
+    "test": 30
+   },
+   "read_splits": [
+    "train",
+    "val"
+   ],
+   "unshifted_fraction": 0.25,
+   "shift_cm": [
+    3,
+    6,
+    9,
+    12
+   ],
+   "misaim_fraction": 0.5,
+   "misaim_radius_m": 0.04,
+   "noise_levels": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "extra_episode_arrays": [
+    "plate"
+   ],
+   "w_extra_corpus": {
+    "corpus": "data/apple-look-v2-linux/run-1",
+    "manifest_sha256": "67c342f6d37f3bd1910af16139096c109fa0bf6647d87286ca26b0899c9b4f54",
+    "splits": [
+     "train",
+     "val"
+    ]
+   },
+   "feature_band": [
+    384,
+    560
+   ]
+  },
+  "w_model": {
+   "backend": "leworldmodel",
+   "latent": "frozen DINOv2 ViT-S/14 final patch tokens pooled to 4 x 4 (TASK-066), 6144-d",
+   "config": "token_dynamics.MODEL_CONFIG with the adapter defaults (TASK-066), unchanged",
+   "train_horizon": 16,
+   "batch_size": 64,
+   "arms": [
+    "W",
+    "N"
+   ]
+  },
+  "budget": {
+   "calibration_runs": [
+    [
+     "W",
+     7410
+    ],
+    [
+     "N",
+     7410
+    ]
+   ],
+   "calibration_updates": 60000,
+   "calibration_select_every": 1000,
+   "saturation_tolerance": 0.01,
+   "factor": 2.0,
+   "step": 5000,
+   "min": 10000,
+   "cap": 60000,
+   "selection_points": 20,
+   "last_two_rule": "if any W or N model selects one of its last two selection points, U is raised once to min(2U, 60 000) and all six are retrained; if that still happens at the cap, the run escalates to the owner and nothing is frozen"
+  },
+  "readouts": {
+   "R_off": "linear ridge (primal, intercept) from the raw pooled token latent (6144-d, train-standardised) to the apple-minus-plate offset xy; rows: apple-far-shift-v2 train roots, every 8th band frame from 384",
+   "R_plate": "linear ridge (dual, intercept) from the full DINOv2 tokens (256 x 384, the P readout's feature, train-standardised) to the plate xy; rows: apple-far-shift-v2 train roots at the decision steps; the perception twin's readout and P-far's re-read",
+   "lambda_grid_relative": [
+    0.001,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+   ],
+   "inner_folds": 5,
+   "fold_seed": 7420,
+   "fold_unit": "root (session)",
+   "r_off_stride": 8
+  },
+  "w_seed_selection": "the primary W seed is the one with the lowest val criterion at its selected checkpoint among the three; fixed before any closed-loop run",
+  "p_far": {
+   "recipe": "first_policy_v2_model.train with first_policy_v2.TRAINING (P-3's network, optimiser, loss, selection and model-init seed); the sampler seed is SEEDS['p_far_sampler']",
+   "bc_roots": "apple-far-shift-v2 train roots that are complete and not mis-aimed",
+   "labels": "e9's clean command (the corpus 'base' array), first_policy_v2_runtime.bc_rows' mask",
+   "inputs": "the 132-d input; apple = TASK-072 run-1's P readout of the root's post-look frame; plate = that readout's post-look plate before 405, then the true plate at the latest decision step (BC rows) or R-plate's reading there (DAgger rows, as run)",
+   "dagger_iterations": 3,
+   "dagger_rollouts": [
+    40,
+    50,
+    60
+   ],
+   "dagger_labeller": "e9 built from the post-shift truth, advanced on the executed results (TASK-072's shadow expert); privileged, training time only",
+   "run_time": "P-3's controller with the plate re-read by R-plate at the decision steps (hybrid_selection.HybridController, variant 'reread')",
+   "device": "cuda",
+   "label": "a data-matched BC control, reported beside L-plan; it gates nothing"
+  },
+  "bootstrap_resamples": 10000,
+  "o1": {
+   "horizons": [
+    8,
+    16
+   ],
+   "window_sets": [
+    "overall",
+    "shifted"
+   ],
+   "rank_ratio_min": 0.16,
+   "std_ratio_min": 0.39,
+   "collapsed_fraction_max": 0.05,
+   "comparative_rank_lower_gt": 0.0,
+   "truncation_controls_must_fail": [
+    1,
+    2,
+    4
+   ],
+   "copy_last_ratio_upper_max": 0.8,
+   "n_ratio_upper_lt": 1.0,
+   "wrong_action_ratio_lower_min": 1.1
+  },
+  "o2": {
+   "windows": "every val root of apple-far-shift-v2; windows starting at the decision steps whose true apple-minus-plate offset moves by at least 1 cm over the 16 commands (TASK-054's moving cohort)",
+   "moving_threshold_m": 0.01,
+   "encoded_median_max_cm": 1.0,
+   "predicted_median_max_cm": 1.5,
+   "ratio_vs_persistence_upper_max": 0.8,
+   "n_ratio_vs_persistence_upper_min": 0.8,
+   "ratio_vs_clock_prior_upper_max": 0.8
+  },
+  "o3": {
+   "groups": "at every decision step of each cohort-R attempt (H-twin runs the attempt): the 49 coarse targets, and the 25 fine targets around the coarse target with the lowest true cost",
+   "rho_lower_min": 0.5,
+   "margin_lower_min": 0.3,
+   "blind_rankers": [
+    "copy-last",
+    "N",
+    "L-shuf",
+    "prior-distance"
+   ],
+   "void_if_blind_rho_at_least": 0.5,
+   "void_rankers": [
+    "copy-last",
+    "N",
+    "L-shuf"
+   ],
+   "reported_rankers": [
+    "twin-distance"
+   ]
+  },
+  "o4": {
+   "median_regret_max_cm": 1.0,
+   "paired_regret_difference_upper_lt": 0.0,
+   "regret": "per group, as the ranking stage builds the groups: in each coarse group (the 49 targets around the post-look estimate) the true cost of W's choice (tie: the coarse (0, 0)) minus the group's best true cost; in each fine group (the 25 targets around the coarse target with the lowest TRUE cost, not W's coarse choice) the true cost of W's choice (tie: the fine centre) minus that group's best; each paired against its own group's incumbent (coarse (0, 0), the stale estimate; fine centre). A choice whose branch stopped counts as the group's worst finite outcome. O3/O4 validate the planner's 16-command proxy, not placement success"
+  },
+  "o5": {
+   "median_relative_chunk_error_max": 0.25
+  },
+  "offline_rows": [
+   "OFFLINE-PASS",
+   "L-NO-DYNAMICS",
+   "L-O2-VOID",
+   "L-G2A",
+   "L-O3-VOID",
+   "L-NO-RANK",
+   "L-PROPOSAL"
+  ],
+  "d3": {
+   "resets": 16,
+   "bars": {
+    "H-handover_minus_P-truth_min": 4,
+    "L-plan_minus_best_blind_min": 3
+   },
+   "descriptive": "L-plan - H-twin and L-plan - H-handover are reported beside the row, never bars"
+  },
+  "gated": {
+   "void_b_oracle_shift_min": 60,
+   "s_void_condition_p_stale_max": 8,
+   "l_no_headroom_min": 16,
+   "difference_min": 10,
+   "p_max_exclusive": 0.01,
+   "g5_u_tolerance": 2,
+   "g6_median_decision_seconds_max": 0.8,
+   "t_twin_margin": 6,
+   "g6_arm": "L-plan",
+   "g6_statistic": "median over every decision record of L-plan's 64 S attempts (the wall time inside act(): encoding, 74 stand-in chunks, the W rollouts and the choice), in the gated run's H workers",
+   "determinism_rerun_seeds": [
+    54500,
+    54501,
+    54502,
+    54503
+   ],
+   "determinism_rerun_arms": [
+    "L-plan",
+    "H-twin"
+   ]
+  },
+  "rerun": {
+   "fields": [
+    "success",
+    "grasp",
+    "at_rest",
+    "termination_reason",
+    "executed_steps",
+    "final_distance_cm",
+    "first_grasp_step",
+    "first_place_step",
+    "target_cm_max"
+   ],
+   "exact": [
+    "success",
+    "grasp",
+    "at_rest",
+    "termination_reason",
+    "executed_steps",
+    "chosen_sequence"
+   ],
+   "tolerances": {
+    "final_distance_cm": 1.0,
+    "first_grasp_step": 40,
+    "first_place_step": 40,
+    "target_cm_max": 1.0,
+    "max_abs_command_difference": 0.8
+   },
+   "margin_rule": "each tolerance is at least twice the largest difference of that field measured between two runs of the same arm and smoke seed (smoke stage 'rerun'); a gated re-run difference above half a tolerance is reported in the results; a difference above it is a V"
+  },
+  "gated_rows": [
+   "VOID",
+   "S-VOID-CONDITION",
+   "L-NO-HEADROOM",
+   "L-HARM",
+   "L-PASS",
+   "L-TWIN-BETTER",
+   "L-SLOW",
+   "L-SCENE-BLIND",
+   "L-NO-GAIN"
+  ],
+  "claim_rows": [
+   "L-PASS"
+  ],
+  "authorisation_scope": "the gated stage's authorisation PR may add the gated harness (the runner's stage_gated and its tests), the authorisation record and the manifest's gated_authorization block; it may not change lewm_planner_v2.py, place_planner.py, lewm_planner_v2_runtime.py, lewm_planner_v2_offline.py, any other part of the runner, the frozen block, frozen_sha256 or the stored cohort values. Its stage_gated must compare the determinism re-run with place_planner.rerun_verdict (a V above a tolerance; a report above half of one), and it must call check_authorisation on the manifest's record before any render. It may not edit docs/experiments/apple_lewm_planner_v2.md, whose sha256 at merge the manifest records (protocol_document_sha256)",
+  "authorisation_schema": {
+   "frozen_sha256": "this protocol's frozen_sha256 (64 hex digits), equal to the module's",
+   "go_comment_url": "the pre-run reviewer's GO comment on PR #113: https://github.com/RaaSaaR-org/open-embodied-jepa/pull/113#issuecomment-<id>",
+   "stage": "gated",
+   "authorised_utc": "an ISO-8601 UTC time, YYYY-MM-DDTHH:MM:SSZ, not before 2026-10-01T00:00:00Z and not in the future",
+   "authorised_by": "one of AUTHORISED_BY_VALUES: the task owner, or Claude under the owner's delegation"
+  },
+  "authorised_by_values": [
+   "authorised by the task owner",
+   "authorised by Claude under owner delegation"
+  ],
+  "authorisation_pr": 113,
+  "authorisation_not_before_utc": "2026-10-01T00:00:00Z",
+  "clause_rows": [
+   "L-G2A",
+   "L-NO-RANK",
+   "L-HARM",
+   "L-TWIN-BETTER",
+   "L-SLOW",
+   "L-SCENE-BLIND",
+   "L-NO-GAIN"
+  ],
+  "clause_scope": "a LeWM frozen-DINOv2-token planner choosing the place target of e9's place primitive after P-3's pick, on apple-to-plate-v2 at 112 px: no further grid, cost, horizon or proposal variant is preregistered on apple-far-shift-v2 without new evidence of a different kind. The LeWM backend, the token latent, the v2 task and the product goal stay open; the next step is the task owner's choice of a data or hardware change, not another planner variant",
+  "row_consequences": {
+   "K1-PASS": "next: the corpus",
+   "L-NO-CONDITION": "escalate: no far-shift condition leaves room over P-3; nothing is trained",
+   "OFFLINE-PASS": "next: D3",
+   "L-NO-DYNAMICS": "escalate: the world model fails the dynamics gates; no closed loop runs",
+   "L-O2-VOID": "escalate",
+   "L-G2A": "clause",
+   "L-O3-VOID": "escalate",
+   "L-NO-RANK": "clause",
+   "L-PROPOSAL": "escalate: the stand-in does not reproduce the place primitive's chunks",
+   "L-NO-HEADROOM": "escalate: the family ceiling does not clear P-truth; no clause",
+   "L-DEV-STOP": "escalate: the gated stage is not proposed",
+   "D3-GO": "next: the gated stage's authorisation record",
+   "VOID": "escalate (the void rule)",
+   "S-VOID-CONDITION": "escalate: the condition did not hold on S",
+   "L-HARM": "clause",
+   "L-PASS": "close: report the claim with its labels",
+   "L-TWIN-BETTER": "clause; no claim: reported only as the descriptive note that LeWM beat P-3 and the blind twins but a readout without a world model beat LeWM by more than 6/64",
+   "L-SLOW": "clause; no claim: the outcome gates and T pass, the latency bar fails",
+   "L-SCENE-BLIND": "clause; no claim: reported descriptively as a scene-blind gain",
+   "L-NO-GAIN": "clause",
+   "INCONCLUSIVE": "close",
+   "ESCALATE-BUDGET": "escalate: no freeze of the training budget",
+   "ESCALATE-BUDGET-LAST-TWO": "escalate: no freeze of the training budget"
+  },
+  "shuf_rule": "L-shuf's start latent at decision step t on reset i is H-twin's pooled latent at t on reset (i + 1) mod n (cohort order); if that attempt ended earlier, its latest latent before t; if it reached no decision, the next reset in order that has one; never the reset's own (wm_critic_v2.shuf_latents with this protocol's decision steps); every substitution logged",
+  "platform": {
+   "system": "Linux",
+   "machine": "x86_64",
+   "mujoco_gl": "egl"
+  },
+  "sim_workers": 6,
+  "h_workers": 4,
+  "h_worker_torch_threads": 4,
+  "devices": {
+   "simulation": "cpu",
+   "closed_loop_encoding": "cpu (batch size 1, in the worker)",
+   "closed_loop_world_model": "cpu (in the worker)",
+   "corpus_featurisation": "cuda, with a CPU anchor check (owner D6)",
+   "training": "cuda, strict determinism (devices.require('cuda', strict=True))",
+   "p_far_training": "cuda"
+  },
+  "render": {
+   "max_level_difference": 1,
+   "max_pixels": 16,
+   "retries": 2,
+   "state": "sha256 of qpos, qvel, act, ctrl and time (the whole MjData simulation state)"
+  },
+  "thread_env": {
+   "MKL_DYNAMIC": "FALSE",
+   "OMP_NUM_THREADS": "6",
+   "MKL_NUM_THREADS": "6",
+   "OPENBLAS_NUM_THREADS": "16"
+  },
+  "quiet_machine": {
+   "max_load_average_1min": 2.0,
+   "max_load_average_5min": 2.0,
+   "rule": "os.getloadavg() at the stage's start: the 1- and 5-minute load averages are both at most 2.0 (the idle machine with the GPU's resident service measures about 0.1-0.4); otherwise G-quiet makes the stage V before any render"
+  },
+  "feature_anchor": {
+   "frames": 256,
+   "max_abs_pooled_difference": 0.001
+  },
+  "memory": {
+   "ceiling_gib": 12.0,
+   "headroom_gib": 4.0,
+   "sample_seconds": 0.5,
+   "measure": "summed PSS of the runner and all its descendants (run_guards.process_tree_memory: smaps_rollup, falling back to VmRSS for a process whose PSS cannot be read, counted in pss_fallback_processes), sampled every 0.5 s; summed VmRSS beside it",
+   "measure_key": "pss",
+   "train_scale_rule": "the smoke's 'train-scale' stage builds the train stage's feature table at full corpus scale (270 + 190 read roots x the band) and runs the train stage's code path; its peak must be within the ceiling before any GO"
+  },
+  "caps_seconds": {
+   "global": 43200.0,
+   "per_attempt": 300.0,
+   "per_model": 5400.0
+  },
+  "void_rule": "a guard, a crash, a cap or a CUDA allocation failure makes the stage V and nothing in it is read; batches are never shrunk to fit. A V before a stage's boundary is not a spent attempt: it may be repeated as-is, recorded, without a fix. The boundary is cohort_first_render_utc for a simulating stage (K1, corpus, ranking, D3, gated), first_outcome_utc for the train stage (the first number computed on val roots) and, for P-far, first_outcome_utc written before its first val-selected fit. After the boundary: a gated (S or U) V goes to the owner and a second V closes TASK-074 as INCONCLUSIVE; a development stage (K1, corpus, training, P-far, ranking, D3) may be repeated once from scratch after a reviewed fix. Nothing is re-thresholded, retrained or re-selected after its numbers are seen"
+ },
+ "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+ "cohorts": {
+  "K1": {
+   "values": {
+    "54000": {
+     "seed": 54000,
+     "object_xy": [
+      0.32996461384838793,
+      -0.15721989025720762
+     ],
+     "plate_xy": [
+      0.5024535647196674,
+      -0.07676420947688764
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54001": {
+     "seed": 54001,
+     "object_xy": [
+      0.3491707868980073,
+      -0.19929229435835624
+     ],
+     "plate_xy": [
+      0.4882465824363584,
+      -0.0848914492395214
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54002": {
+     "seed": 54002,
+     "object_xy": [
+      0.362285131126469,
+      -0.20226698393859543
+     ],
+     "plate_xy": [
+      0.4901460303393021,
+      -0.08106925088781528
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54003": {
+     "seed": 54003,
+     "object_xy": [
+      0.32568139006161445,
+      -0.1630383219778221
+     ],
+     "plate_xy": [
+      0.5040236279751652,
+      -0.0725746227567809
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       0.0015707165793554816,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.004187939604300091,
+       -0.11992689924229148
+      ]
+     }
+    },
+    "54004": {
+     "seed": 54004,
+     "object_xy": [
+      0.3539035977776482,
+      -0.20199515643996602
+     ],
+     "plate_xy": [
+      0.47913782040340597,
+      -0.10785073779038779
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54005": {
+     "seed": 54005,
+     "object_xy": [
+      0.3332286673127447,
+      -0.17336763268993954
+     ],
+     "plate_xy": [
+      0.5007550380874235,
+      -0.07957104592296144
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54006": {
+     "seed": 54006,
+     "object_xy": [
+      0.36976286037175116,
+      -0.16247781922718826
+     ],
+     "plate_xy": [
+      0.48304522412507567,
+      -0.08209397879303652
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54007": {
+     "seed": 54007,
+     "object_xy": [
+      0.3473005236444185,
+      -0.1568478162261293
+     ],
+     "plate_xy": [
+      0.5065181829866581,
+      -0.10765795328728286
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54008": {
+     "seed": 54008,
+     "object_xy": [
+      0.34713904599884066,
+      -0.20506345212912264
+     ],
+     "plate_xy": [
+      0.4735511695819733,
+      -0.09347547976158264
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54009": {
+     "seed": 54009,
+     "object_xy": [
+      0.3127767892616022,
+      -0.16946953344212987
+     ],
+     "plate_xy": [
+      0.4735518721479712,
+      -0.08317799149253974
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.02781152949374528,
+       -0.08559508646656382
+      ],
+      "12": [
+       -0.029030627471960134,
+       -0.11643548715311958
+      ]
+     }
+    },
+    "54010": {
+     "seed": 54010,
+     "object_xy": [
+      0.34812618557762187,
+      -0.19644761165516383
+     ],
+     "plate_xy": [
+      0.4889863186510386,
+      -0.07951516159092419
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54011": {
+     "seed": 54011,
+     "object_xy": [
+      0.31190172708364095,
+      -0.20690767155741477
+     ],
+     "plate_xy": [
+      0.4735743635561101,
+      -0.08329377539811525
+     ],
+     "redraw": 1,
+     "shift_m": {
+      "9": [
+       -0.0337145934074321,
+       -0.08344654691101086
+      ],
+      "12": [
+       -0.033076482698039866,
+       -0.11535140351259827
+      ]
+     }
+    },
+    "54012": {
+     "seed": 54012,
+     "object_xy": [
+      0.3132616530209412,
+      -0.16416235369690307
+     ],
+     "plate_xy": [
+      0.4744217365987385,
+      -0.09862315449242176
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54013": {
+     "seed": 54013,
+     "object_xy": [
+      0.34823606559614956,
+      -0.19983540967104732
+     ],
+     "plate_xy": [
+      0.4917404298537662,
+      -0.08691299866638885
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54014": {
+     "seed": 54014,
+     "object_xy": [
+      0.3131959840656941,
+      -0.19760685195523384
+     ],
+     "plate_xy": [
+      0.48642977689178046,
+      -0.09303884084285297
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54015": {
+     "seed": 54015,
+     "object_xy": [
+      0.3688399925482624,
+      -0.19547162245898866
+     ],
+     "plate_xy": [
+      0.4802443657657201,
+      -0.07236209578927684
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54016": {
+     "seed": 54016,
+     "object_xy": [
+      0.34995330674821956,
+      -0.2092704952353465
+     ],
+     "plate_xy": [
+      0.47491096738409555,
+      -0.09303139821488854
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54017": {
+     "seed": 54017,
+     "object_xy": [
+      0.32848989606518614,
+      -0.17009866289211362
+     ],
+     "plate_xy": [
+      0.4778602568781722,
+      -0.07278296584292447
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54018": {
+     "seed": 54018,
+     "object_xy": [
+      0.3476466663865061,
+      -0.153675137937592
+     ],
+     "plate_xy": [
+      0.48507839225527805,
+      -0.07032885676960743
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54019": {
+     "seed": 54019,
+     "object_xy": [
+      0.317008287902886,
+      -0.17343287338938768
+     ],
+     "plate_xy": [
+      0.48564759747956115,
+      -0.1020705763996268
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54020": {
+     "seed": 54020,
+     "object_xy": [
+      0.3536866667877119,
+      -0.1713535765430455
+     ],
+     "plate_xy": [
+      0.4880101072390969,
+      -0.10933429811605042
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54021": {
+     "seed": 54021,
+     "object_xy": [
+      0.369352882747651,
+      -0.1983488214949778
+     ],
+     "plate_xy": [
+      0.4854313018809565,
+      -0.07828445767831367
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54022": {
+     "seed": 54022,
+     "object_xy": [
+      0.3610505124195179,
+      -0.18066186302364162
+     ],
+     "plate_xy": [
+      0.5063378870166642,
+      -0.07767165058604471
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54023": {
+     "seed": 54023,
+     "object_xy": [
+      0.3264505271060311,
+      -0.18777822327533467
+     ],
+     "plate_xy": [
+      0.4783351978055584,
+      -0.10406249857165346
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54024": {
+     "seed": 54024,
+     "object_xy": [
+      0.338805298432951,
+      -0.1855366894924818
+     ],
+     "plate_xy": [
+      0.5023683708902645,
+      -0.07236660880154419
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54025": {
+     "seed": 54025,
+     "object_xy": [
+      0.3226263350057071,
+      -0.1582113009947636
+     ],
+     "plate_xy": [
+      0.49161215234729155,
+      -0.09239053158331142
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54026": {
+     "seed": 54026,
+     "object_xy": [
+      0.3532615590785244,
+      -0.16241014249266317
+     ],
+     "plate_xy": [
+      0.5090227735218988,
+      -0.07710802245280686
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54027": {
+     "seed": 54027,
+     "object_xy": [
+      0.36322253381554515,
+      -0.18986238814818826
+     ],
+     "plate_xy": [
+      0.47716721189330324,
+      -0.08393479928057984
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54028": {
+     "seed": 54028,
+     "object_xy": [
+      0.3227015597577681,
+      -0.1556714348683207
+     ],
+     "plate_xy": [
+      0.4786007116492034,
+      -0.08582573614787539
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54029": {
+     "seed": 54029,
+     "object_xy": [
+      0.31209937994063874,
+      -0.18986878528588885
+     ],
+     "plate_xy": [
+      0.4963920663436751,
+      -0.09866144200803662
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54030": {
+     "seed": 54030,
+     "object_xy": [
+      0.36170868588755745,
+      -0.19346772987246097
+     ],
+     "plate_xy": [
+      0.4781092685244232,
+      -0.09838506960541629
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54031": {
+     "seed": 54031,
+     "object_xy": [
+      0.32675295787783054,
+      -0.1738934352586169
+     ],
+     "plate_xy": [
+      0.4738179185550474,
+      -0.07043779264139509
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    }
+   },
+   "sha256": "09d73003bd6e8d3443a1f89a4982f4ccb8d77db1e7060940fe4b370219c51394"
+  },
+  "R": {
+   "values": {
+    "54040": {
+     "seed": 54040,
+     "object_xy": [
+      0.32586002624655364,
+      -0.16218599732894193
+     ],
+     "plate_xy": [
+      0.48540986374874123,
+      -0.08837091332044136
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54041": {
+     "seed": 54041,
+     "object_xy": [
+      0.3573795693459958,
+      -0.20510604956426196
+     ],
+     "plate_xy": [
+      0.5063748167634845,
+      -0.07682658004448063
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54042": {
+     "seed": 54042,
+     "object_xy": [
+      0.3398963570574761,
+      -0.15812935670959746
+     ],
+     "plate_xy": [
+      0.4880674052506305,
+      -0.08508524396119296
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54043": {
+     "seed": 54043,
+     "object_xy": [
+      0.34278911627978714,
+      -0.158398283861592
+     ],
+     "plate_xy": [
+      0.47380101949063985,
+      -0.08479623506773215
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54044": {
+     "seed": 54044,
+     "object_xy": [
+      0.31860584258568125,
+      -0.17943492030058067
+     ],
+     "plate_xy": [
+      0.477065226544417,
+      -0.08557360045105127
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54045": {
+     "seed": 54045,
+     "object_xy": [
+      0.3515441060975237,
+      -0.18057773774095046
+     ],
+     "plate_xy": [
+      0.47753005783806995,
+      -0.10627079002741908
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54046": {
+     "seed": 54046,
+     "object_xy": [
+      0.3361485651887455,
+      -0.1706243199310184
+     ],
+     "plate_xy": [
+      0.5077923710127716,
+      -0.10894623836543654
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.012525579086405924,
+       -0.08912412618674131
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54047": {
+     "seed": 54047,
+     "object_xy": [
+      0.32734661752631716,
+      -0.2040750383395452
+     ],
+     "plate_xy": [
+      0.4934628228881883,
+      -0.09021155259304504
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54048": {
+     "seed": 54048,
+     "object_xy": [
+      0.3177290192953366,
+      -0.19214444103096348
+     ],
+     "plate_xy": [
+      0.49266748977654456,
+      -0.07506179048709365
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54049": {
+     "seed": 54049,
+     "object_xy": [
+      0.36066566393838867,
+      -0.2061659826206546
+     ],
+     "plate_xy": [
+      0.4819507560754158,
+      -0.0958389433558672
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54050": {
+     "seed": 54050,
+     "object_xy": [
+      0.32518270971096974,
+      -0.18407088459409748
+     ],
+     "plate_xy": [
+      0.48765320929800327,
+      -0.1074662204714986
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54051": {
+     "seed": 54051,
+     "object_xy": [
+      0.3692230240774088,
+      -0.1703417656190841
+     ],
+     "plate_xy": [
+      0.47413292200025403,
+      -0.08258014156286114
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54052": {
+     "seed": 54052,
+     "object_xy": [
+      0.3552790244639923,
+      -0.19437501677224284
+     ],
+     "plate_xy": [
+      0.49043230347277283,
+      -0.0940179299437825
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54053": {
+     "seed": 54053,
+     "object_xy": [
+      0.33082091603244834,
+      -0.20888379817614813
+     ],
+     "plate_xy": [
+      0.504016056166039,
+      -0.09317830966891538
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54054": {
+     "seed": 54054,
+     "object_xy": [
+      0.32200588384764606,
+      -0.1888879700462385
+     ],
+     "plate_xy": [
+      0.4860944853992255,
+      -0.10268737808859624
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54055": {
+     "seed": 54055,
+     "object_xy": [
+      0.31210055987288565,
+      -0.19233754281141502
+     ],
+     "plate_xy": [
+      0.47347856520869785,
+      -0.10055954443719624
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.029301133901144097,
+       -0.08509667180393851
+      ],
+      "12": [
+       -0.031058285412302475,
+       -0.1159110991546882
+      ]
+     }
+    },
+    "54056": {
+     "seed": 54056,
+     "object_xy": [
+      0.3518912810369851,
+      -0.17074281217894566
+     ],
+     "plate_xy": [
+      0.49453078455065436,
+      -0.09621620569674613
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.012525579086405924,
+       -0.08912412618674131
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54057": {
+     "seed": 54057,
+     "object_xy": [
+      0.348730729267075,
+      -0.20494935063638847
+     ],
+     "plate_xy": [
+      0.4947413827189534,
+      -0.08080804968420657
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54058": {
+     "seed": 54058,
+     "object_xy": [
+      0.3410289221744951,
+      -0.19428866537613687
+     ],
+     "plate_xy": [
+      0.49326212555666227,
+      -0.10988619038900228
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54059": {
+     "seed": 54059,
+     "object_xy": [
+      0.3383083865651312,
+      -0.19377249544257427
+     ],
+     "plate_xy": [
+      0.47117791034159545,
+      -0.08984393339721393
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.01562833599002373,
+       -0.08863269777109872
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54060": {
+     "seed": 54060,
+     "object_xy": [
+      0.36376606679371715,
+      -0.2081371128692652
+     ],
+     "plate_xy": [
+      0.47972652998945414,
+      -0.07984246238250892
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -1.6532731788489266e-17,
+       -0.09
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54061": {
+     "seed": 54061,
+     "object_xy": [
+      0.3529890733454118,
+      -0.2022264768961595
+     ],
+     "plate_xy": [
+      0.49652355884847676,
+      -0.07271578349550681
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54062": {
+     "seed": 54062,
+     "object_xy": [
+      0.32633449431412714,
+      -0.1839514408827474
+     ],
+     "plate_xy": [
+      0.4795287631959828,
+      -0.0744554615344517
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54063": {
+     "seed": 54063,
+     "object_xy": [
+      0.3173946016891631,
+      -0.15526403610741163
+     ],
+     "plate_xy": [
+      0.49279491270498904,
+      -0.10618329423876516
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54064": {
+     "seed": 54064,
+     "object_xy": [
+      0.31446166978324486,
+      -0.20583606715693847
+     ],
+     "plate_xy": [
+      0.5050115668007931,
+      -0.10699571064397084
+     ],
+     "redraw": 1,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54065": {
+     "seed": 54065,
+     "object_xy": [
+      0.32924436059288265,
+      -0.19058755898147614
+     ],
+     "plate_xy": [
+      0.49444601022595625,
+      -0.08614305264047875
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54066": {
+     "seed": 54066,
+     "object_xy": [
+      0.31791423982827344,
+      -0.2035099663117932
+     ],
+     "plate_xy": [
+      0.5029165186342102,
+      -0.09087828218987949
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54067": {
+     "seed": 54067,
+     "object_xy": [
+      0.3313743642877565,
+      -0.1789641019456351
+     ],
+     "plate_xy": [
+      0.49761840364854504,
+      -0.10230191340800125
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54068": {
+     "seed": 54068,
+     "object_xy": [
+      0.33634131337658124,
+      -0.17347017517282065
+     ],
+     "plate_xy": [
+      0.48563542390354286,
+      -0.0915605228668716
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54069": {
+     "seed": 54069,
+     "object_xy": [
+      0.35725831510486966,
+      -0.1539662771777407
+     ],
+     "plate_xy": [
+      0.49883582793274606,
+      -0.07574924799870425
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54070": {
+     "seed": 54070,
+     "object_xy": [
+      0.35130890492152217,
+      -0.16459740843152143
+     ],
+     "plate_xy": [
+      0.5001962550373247,
+      -0.08013725798352428
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54071": {
+     "seed": 54071,
+     "object_xy": [
+      0.3658450182366278,
+      -0.18456765566343653
+     ],
+     "plate_xy": [
+      0.4882995788959519,
+      -0.1023423758034103
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.012525579086405924,
+       -0.08912412618674131
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    }
+   },
+   "sha256": "396c72b3b5f3b53095fa45814a21bb9e1311b607580511483c8326c942e8857b"
+  },
+  "D3": {
+   "values": {
+    "54100": {
+     "seed": 54100,
+     "object_xy": [
+      0.32581531614906584,
+      -0.1943464177454663
+     ],
+     "plate_xy": [
+      0.4903320853000079,
+      -0.07682649798886035
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -1.6532731788489266e-17,
+       -0.09
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54101": {
+     "seed": 54101,
+     "object_xy": [
+      0.314379252907116,
+      -0.18523431298909324
+     ],
+     "plate_xy": [
+      0.47767033667315945,
+      -0.09650953988601005
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54102": {
+     "seed": 54102,
+     "object_xy": [
+      0.33659353222835975,
+      -0.1664117755641536
+     ],
+     "plate_xy": [
+      0.4871541556060427,
+      -0.09383265197230603
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54103": {
+     "seed": 54103,
+     "object_xy": [
+      0.34139508745248404,
+      -0.19279963124037994
+     ],
+     "plate_xy": [
+      0.500938794393817,
+      -0.09256522609864719
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54104": {
+     "seed": 54104,
+     "object_xy": [
+      0.34666437940658407,
+      -0.20930235837745753
+     ],
+     "plate_xy": [
+      0.48873682570992866,
+      -0.07323424918460875
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54105": {
+     "seed": 54105,
+     "object_xy": [
+      0.32484375672881083,
+      -0.17217447011447246
+     ],
+     "plate_xy": [
+      0.48307588519755496,
+      -0.0869866667481562
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54106": {
+     "seed": 54106,
+     "object_xy": [
+      0.319121710533914,
+      -0.17247201063518977
+     ],
+     "plate_xy": [
+      0.494424602738598,
+      -0.10454178199389143
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.012525579086405924,
+       -0.08912412618674131
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54107": {
+     "seed": 54107,
+     "object_xy": [
+      0.328911228597236,
+      -0.15191095122143272
+     ],
+     "plate_xy": [
+      0.4706785783451034,
+      -0.0788248704747508
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0248073620235299,
+       -0.08651355263444871
+      ],
+      "12": [
+       -0.031058285412302475,
+       -0.1159110991546882
+      ]
+     }
+    },
+    "54108": {
+     "seed": 54108,
+     "object_xy": [
+      0.33835454788068453,
+      -0.15728961294676816
+     ],
+     "plate_xy": [
+      0.5015393455654436,
+      -0.09228501308602483
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54109": {
+     "seed": 54109,
+     "object_xy": [
+      0.3264007709837678,
+      -0.17412121676765482
+     ],
+     "plate_xy": [
+      0.47159341619574635,
+      -0.08241787034806267
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.017172809583889014,
+       -0.08834644651028975
+      ],
+      "12": [
+       -0.02083778132003164,
+       -0.11817693036146495
+      ]
+     }
+    },
+    "54110": {
+     "seed": 54110,
+     "object_xy": [
+      0.3121262931621269,
+      -0.16699006963352558
+     ],
+     "plate_xy": [
+      0.5031048276475438,
+      -0.07955612586299345
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54111": {
+     "seed": 54111,
+     "object_xy": [
+      0.352599841325392,
+      -0.20771126428527317
+     ],
+     "plate_xy": [
+      0.47577371360086534,
+      -0.08400168750735815
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54112": {
+     "seed": 54112,
+     "object_xy": [
+      0.35594153974173764,
+      -0.19686325591721254
+     ],
+     "plate_xy": [
+      0.47115965394127224,
+      -0.0864480760953355
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54113": {
+     "seed": 54113,
+     "object_xy": [
+      0.33607079952407315,
+      -0.2007517040666641
+     ],
+     "plate_xy": [
+      0.4808183682854079,
+      -0.08025942389852461
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54114": {
+     "seed": 54114,
+     "object_xy": [
+      0.3232818847687706,
+      -0.15639887494565044
+     ],
+     "plate_xy": [
+      0.4745982495304528,
+      -0.08452003353153825
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54115": {
+     "seed": 54115,
+     "object_xy": [
+      0.36848857785235306,
+      -0.1837816860250304
+     ],
+     "plate_xy": [
+      0.47651081718302113,
+      -0.0754857914499608
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.004187939604300091,
+       -0.11992689924229148
+      ]
+     }
+    }
+   },
+   "sha256": "1c6e266d7802bfcd9c06bfb90b29a9637469e0a94ef95461cba710173615c8d4"
+  },
+  "S": {
+   "values": {
+    "54500": {
+     "seed": 54500,
+     "object_xy": [
+      0.36793801402368786,
+      -0.20916878223788052
+     ],
+     "plate_xy": [
+      0.49658615143495105,
+      -0.08828956882146165
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54501": {
+     "seed": 54501,
+     "object_xy": [
+      0.36604891000753853,
+      -0.18479308023377233
+     ],
+     "plate_xy": [
+      0.4802593471728498,
+      -0.07257355252660644
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54502": {
+     "seed": 54502,
+     "object_xy": [
+      0.339231122613323,
+      -0.17148223305326024
+     ],
+     "plate_xy": [
+      0.4961346678120842,
+      -0.0775934618036704
+     ],
+     "redraw": 1,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54503": {
+     "seed": 54503,
+     "object_xy": [
+      0.33942093453051103,
+      -0.20194860907131112
+     ],
+     "plate_xy": [
+      0.4877201363872976,
+      -0.08096002438594158
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54504": {
+     "seed": 54504,
+     "object_xy": [
+      0.33329477344109165,
+      -0.20375730052344765
+     ],
+     "plate_xy": [
+      0.49311382086531413,
+      -0.07634559687483364
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54505": {
+     "seed": 54505,
+     "object_xy": [
+      0.3502432307370978,
+      -0.17069663146097
+     ],
+     "plate_xy": [
+      0.5036508827052608,
+      -0.10847852757728488
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.012525579086405924,
+       -0.08912412618674131
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54506": {
+     "seed": 54506,
+     "object_xy": [
+      0.3587312753964608,
+      -0.18199477934634614
+     ],
+     "plate_xy": [
+      0.5083248413107874,
+      -0.08919102087717402
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54507": {
+     "seed": 54507,
+     "object_xy": [
+      0.3497900623463281,
+      -0.15291291568703114
+     ],
+     "plate_xy": [
+      0.49056108624225037,
+      -0.09985782738942904
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54508": {
+     "seed": 54508,
+     "object_xy": [
+      0.35141893393503126,
+      -0.18195469532071945
+     ],
+     "plate_xy": [
+      0.4932651927249118,
+      -0.0767411925127088
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54509": {
+     "seed": 54509,
+     "object_xy": [
+      0.33021795963704415,
+      -0.1624221866254078
+     ],
+     "plate_xy": [
+      0.48406104718658605,
+      -0.07547010429789139
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -1.6532731788489266e-17,
+       -0.09
+      ],
+      "12": [
+       -0.004187939604300091,
+       -0.11992689924229148
+      ]
+     }
+    },
+    "54510": {
+     "seed": 54510,
+     "object_xy": [
+      0.36573870022977595,
+      -0.18958781437340458
+     ],
+     "plate_xy": [
+      0.49243547880501104,
+      -0.08754635510938236
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54511": {
+     "seed": 54511,
+     "object_xy": [
+      0.3475054139125361,
+      -0.1662364786467429
+     ],
+     "plate_xy": [
+      0.48345393878065906,
+      -0.08948502290138682
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54512": {
+     "seed": 54512,
+     "object_xy": [
+      0.3343792834694771,
+      -0.1977733997797837
+     ],
+     "plate_xy": [
+      0.5099031596891417,
+      -0.10184383762402255
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54513": {
+     "seed": 54513,
+     "object_xy": [
+      0.34107268845936267,
+      -0.2044807877384099
+     ],
+     "plate_xy": [
+      0.5079798746751516,
+      -0.08327571556466133
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54514": {
+     "seed": 54514,
+     "object_xy": [
+      0.3400131946973675,
+      -0.19917476946995635
+     ],
+     "plate_xy": [
+      0.5076875893302207,
+      -0.08014721676942646
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54515": {
+     "seed": 54515,
+     "object_xy": [
+      0.35440926098837333,
+      -0.20335352289875455
+     ],
+     "plate_xy": [
+      0.5074143156822722,
+      -0.08333029804155763
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54516": {
+     "seed": 54516,
+     "object_xy": [
+      0.341406130221003,
+      -0.18890874584703526
+     ],
+     "plate_xy": [
+      0.48288002348962006,
+      -0.10983006978931925
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.014079101853620792,
+       -0.08889195065356238
+      ],
+      "12": [
+       -0.02083778132003164,
+       -0.11817693036146495
+      ]
+     }
+    },
+    "54517": {
+     "seed": 54517,
+     "object_xy": [
+      0.34814722840307705,
+      -0.16563936732990966
+     ],
+     "plate_xy": [
+      0.4964413085245977,
+      -0.086156040491522
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54518": {
+     "seed": 54518,
+     "object_xy": [
+      0.3334285156106822,
+      -0.20936278789111076
+     ],
+     "plate_xy": [
+      0.5033825512865092,
+      -0.07709913804833803
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54519": {
+     "seed": 54519,
+     "object_xy": [
+      0.3548720197796656,
+      -0.19795794923389592
+     ],
+     "plate_xy": [
+      0.47978771391098557,
+      -0.08757206571151618
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54520": {
+     "seed": 54520,
+     "object_xy": [
+      0.3498312312259986,
+      -0.18075210078395593
+     ],
+     "plate_xy": [
+      0.5041253407377342,
+      -0.10815964412315421
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54521": {
+     "seed": 54521,
+     "object_xy": [
+      0.36664052113628676,
+      -0.17397273044633152
+     ],
+     "plate_xy": [
+      0.5036451495981569,
+      -0.07102618241641995
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54522": {
+     "seed": 54522,
+     "object_xy": [
+      0.31830041847650326,
+      -0.20760543968431006
+     ],
+     "plate_xy": [
+      0.49492088464766887,
+      -0.08923500736713724
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54523": {
+     "seed": 54523,
+     "object_xy": [
+      0.3174545582449592,
+      -0.1922858014682464
+     ],
+     "plate_xy": [
+      0.4773075261707791,
+      -0.0878734998205728
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54524": {
+     "seed": 54524,
+     "object_xy": [
+      0.32112041124093454,
+      -0.16762538518978232
+     ],
+     "plate_xy": [
+      0.4859030374917955,
+      -0.09632162653151556
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54525": {
+     "seed": 54525,
+     "object_xy": [
+      0.3208461050850737,
+      -0.20121110927667116
+     ],
+     "plate_xy": [
+      0.47295504685737466,
+      -0.0850532635665739
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.03225311545907706,
+       -0.08402223838474815
+      ],
+      "12": [
+       -0.02699412652126383,
+       -0.11692440777422822
+      ]
+     }
+    },
+    "54526": {
+     "seed": 54526,
+     "object_xy": [
+      0.3481450586943832,
+      -0.17505446084888773
+     ],
+     "plate_xy": [
+      0.48220871311776364,
+      -0.08865519759758451
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54527": {
+     "seed": 54527,
+     "object_xy": [
+      0.3254568820660791,
+      -0.18283230084111463
+     ],
+     "plate_xy": [
+      0.5086540143456136,
+      -0.08144466182204217
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54528": {
+     "seed": 54528,
+     "object_xy": [
+      0.3235481329381141,
+      -0.1737244033331099
+     ],
+     "plate_xy": [
+      0.47435850447150807,
+      -0.07098037471684829
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54529": {
+     "seed": 54529,
+     "object_xy": [
+      0.3385986111694874,
+      -0.1824514444318655
+     ],
+     "plate_xy": [
+      0.4929681517848734,
+      -0.08394353738009865
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54530": {
+     "seed": 54530,
+     "object_xy": [
+      0.3419859547821813,
+      -0.1541113649769466
+     ],
+     "plate_xy": [
+      0.5045201398582982,
+      -0.08943219633190104
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54531": {
+     "seed": 54531,
+     "object_xy": [
+      0.32424370573526673,
+      -0.15130187220399854
+     ],
+     "plate_xy": [
+      0.492033584631231,
+      -0.105455700236242
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54532": {
+     "seed": 54532,
+     "object_xy": [
+      0.31607275006646174,
+      -0.15606814889033266
+     ],
+     "plate_xy": [
+      0.48364298736664146,
+      -0.10821129417748715
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54533": {
+     "seed": 54533,
+     "object_xy": [
+      0.32415382460014536,
+      -0.16548355098804915
+     ],
+     "plate_xy": [
+      0.4818374267226919,
+      -0.0751282694710606
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.007844016847289243,
+       -0.08965752282825709
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54534": {
+     "seed": 54534,
+     "object_xy": [
+      0.353143596891596,
+      -0.1524576864048361
+     ],
+     "plate_xy": [
+      0.5020908648948638,
+      -0.10200284560046816
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    },
+    "54535": {
+     "seed": 54535,
+     "object_xy": [
+      0.32815996988593016,
+      -0.20785530008100692
+     ],
+     "plate_xy": [
+      0.4794222434448584,
+      -0.10227389948189332
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54536": {
+     "seed": 54536,
+     "object_xy": [
+      0.36341585186299397,
+      -0.17463864653108283
+     ],
+     "plate_xy": [
+      0.4835305487472618,
+      -0.08666143188169477
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0047102360618649875,
+       -0.08987665812791164
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54537": {
+     "seed": 54537,
+     "object_xy": [
+      0.3361344992804899,
+      -0.20266343721145205
+     ],
+     "plate_xy": [
+      0.505799088094365,
+      -0.08402162330777731
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.01045868912971899,
+       -0.11954336377100946
+      ]
+     }
+    },
+    "54538": {
+     "seed": 54538,
+     "object_xy": [
+      0.32583313856504026,
+      -0.19971374126881214
+     ],
+     "plate_xy": [
+      0.5013072483135477,
+      -0.07069864165435416
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54539": {
+     "seed": 54539,
+     "object_xy": [
+      0.33351217178858406,
+      -0.1836959788467244
+     ],
+     "plate_xy": [
+      0.49437176284956835,
+      -0.10951713219399072
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54540": {
+     "seed": 54540,
+     "object_xy": [
+      0.3575556592657137,
+      -0.18214546811944188
+     ],
+     "plate_xy": [
+      0.47960742987282845,
+      -0.1080168780985519
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.014079101853620792,
+       -0.08889195065356238
+      ],
+      "12": [
+       -0.02083778132003164,
+       -0.11817693036146495
+      ]
+     }
+    },
+    "54541": {
+     "seed": 54541,
+     "object_xy": [
+      0.32527811995774747,
+      -0.1656188624710419
+     ],
+     "plate_xy": [
+      0.48671225145596786,
+      -0.08014358164769203
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54542": {
+     "seed": 54542,
+     "object_xy": [
+      0.3488361992028343,
+      -0.1535755538293004
+     ],
+     "plate_xy": [
+      0.4846741441361415,
+      -0.08956431764942345
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54543": {
+     "seed": 54543,
+     "object_xy": [
+      0.3696618255737067,
+      -0.19826846091206674
+     ],
+     "plate_xy": [
+      0.4924366764202078,
+      -0.08942065247741657
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.01462432120861766,
+       -0.11910553819695864
+      ]
+     }
+    },
+    "54544": {
+     "seed": 54544,
+     "object_xy": [
+      0.3675288887760971,
+      -0.20534575520212567
+     ],
+     "plate_xy": [
+      0.47736177324618595,
+      -0.07746031308081276
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54545": {
+     "seed": 54545,
+     "object_xy": [
+      0.3650036438961166,
+      -0.17684272749816626
+     ],
+     "plate_xy": [
+      0.5065844821514707,
+      -0.0917769112007436
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54546": {
+     "seed": 54546,
+     "object_xy": [
+      0.34388119864809213,
+      -0.19995170542433072
+     ],
+     "plate_xy": [
+      0.47215221638376326,
+      -0.10310126700797251
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.01871205217359838,
+       -0.0880332840660425
+      ],
+      "12": [
+       -0.02289707944518535,
+       -0.11779526201371968
+      ]
+     }
+    },
+    "54547": {
+     "seed": 54547,
+     "object_xy": [
+      0.3453017824797274,
+      -0.19906646937926367
+     ],
+     "plate_xy": [
+      0.4775970144780399,
+      -0.07207537840229433
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       0.0015707165793554816,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.004187939604300091,
+       -0.11992689924229148
+      ]
+     }
+    },
+    "54548": {
+     "seed": 54548,
+     "object_xy": [
+      0.3426172117007173,
+      -0.20295990376644796
+     ],
+     "plate_xy": [
+      0.47252576161480964,
+      -0.08611493496774514
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54549": {
+     "seed": 54549,
+     "object_xy": [
+      0.3136198154835593,
+      -0.1991821198885067
+     ],
+     "plate_xy": [
+      0.4732460762171977,
+      -0.07233094832620698
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54550": {
+     "seed": 54550,
+     "object_xy": [
+      0.3485685518756404,
+      -0.19544649577806172
+     ],
+     "plate_xy": [
+      0.4875569751315707,
+      -0.07898291719629136
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54551": {
+     "seed": 54551,
+     "object_xy": [
+      0.34543847126102223,
+      -0.19866844427790467
+     ],
+     "plate_xy": [
+      0.5041807481109313,
+      -0.1031926421658554
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54552": {
+     "seed": 54552,
+     "object_xy": [
+      0.3409553197121224,
+      -0.19825797391380764
+     ],
+     "plate_xy": [
+      0.5006563781758899,
+      -0.07992123666658102
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0031409547032250685,
+       -0.08994517443171862
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54553": {
+     "seed": 54553,
+     "object_xy": [
+      0.3414713118417454,
+      -0.19981577878934398
+     ],
+     "plate_xy": [
+      0.47275220089929215,
+      -0.10605771407491837
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.01871205217359838,
+       -0.0880332840660425
+      ],
+      "12": [
+       -0.02289707944518535,
+       -0.11779526201371968
+      ]
+     }
+    },
+    "54554": {
+     "seed": 54554,
+     "object_xy": [
+      0.3510422777345702,
+      -0.19438890438388273
+     ],
+     "plate_xy": [
+      0.479918500682897,
+      -0.07079983535657607
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -1.6532731788489266e-17,
+       -0.09
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54555": {
+     "seed": 54555,
+     "object_xy": [
+      0.31874491748593425,
+      -0.17756790930559085
+     ],
+     "plate_xy": [
+      0.4746774077035048,
+      -0.10364448924381325
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54556": {
+     "seed": 54556,
+     "object_xy": [
+      0.3581834249271254,
+      -0.20495957929481387
+     ],
+     "plate_xy": [
+      0.49993226476854463,
+      -0.07236537145855393
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.006280314749153316,
+       -0.11983554417054885
+      ]
+     }
+    },
+    "54557": {
+     "seed": 54557,
+     "object_xy": [
+      0.34472062039390317,
+      -0.1608231435855349
+     ],
+     "plate_xy": [
+      0.47627528918887435,
+      -0.10933118791624818
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.014079101853620792,
+       -0.08889195065356238
+      ],
+      "12": [
+       -0.02083778132003164,
+       -0.11817693036146495
+      ]
+     }
+    },
+    "54558": {
+     "seed": 54558,
+     "object_xy": [
+      0.3662277547655761,
+      -0.16704235694641295
+     ],
+     "plate_xy": [
+      0.4971677732437954,
+      -0.10619692042256872
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.010968240906463245,
+       -0.08932915364771898
+      ],
+      "12": [
+       -0.018772135804827724,
+       -0.11852260087141651
+      ]
+     }
+    },
+    "54559": {
+     "seed": 54559,
+     "object_xy": [
+      0.32322540657244064,
+      -0.20141341429297752
+     ],
+     "plate_xy": [
+      0.5007040702250545,
+      -0.07620856884779532
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.004187939604300091,
+       -0.11992689924229148
+      ]
+     }
+    },
+    "54560": {
+     "seed": 54560,
+     "object_xy": [
+      0.3471104072260671,
+      -0.1800523170417863
+     ],
+     "plate_xy": [
+      0.4795048043999021,
+      -0.10935941213473764
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54561": {
+     "seed": 54561,
+     "object_xy": [
+      0.33363730860957563,
+      -0.15406791741523268
+     ],
+     "plate_xy": [
+      0.4905258990054829,
+      -0.07917955012038731
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.0015707165793555147,
+       -0.08998629256407521
+      ],
+      "12": [
+       -0.00837077684929507,
+       -0.1197076860311789
+      ]
+     }
+    },
+    "54562": {
+     "seed": 54562,
+     "object_xy": [
+      0.35598691840064073,
+      -0.1805758063908484
+     ],
+     "plate_xy": [
+      0.5029094393597643,
+      -0.08879158433582325
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.009407561694088802,
+       -0.08950697058314461
+      ],
+      "12": [
+       -0.016700772115207898,
+       -0.11883216824898843
+      ]
+     }
+    },
+    "54563": {
+     "seed": 54563,
+     "object_xy": [
+      0.32992333121941175,
+      -0.17151870249794487
+     ],
+     "plate_xy": [
+      0.5028759139969626,
+      -0.08919751766816066
+     ],
+     "redraw": 0,
+     "shift_m": {
+      "9": [
+       -0.006278082636971302,
+       -0.08978076452338417
+      ],
+      "12": [
+       -0.012543415592118403,
+       -0.1193426274441928
+      ]
+     }
+    }
+   },
+   "sha256": "aeb62d298c55b057da53d27b766bb31d11dc049d568b16255268b2bab57b7e29"
+  },
+  "U": {
+   "values": {
+    "54600": {
+     "seed": 54600,
+     "object_xy": [
+      0.35360428645965974,
+      -0.18559569988125144
+     ],
+     "plate_xy": [
+      0.5072047194393574,
+      -0.10507921637039605
+     ],
+     "redraw": 0
+    },
+    "54601": {
+     "seed": 54601,
+     "object_xy": [
+      0.3427296231701916,
+      -0.1597319059195597
+     ],
+     "plate_xy": [
+      0.49176887934163394,
+      -0.10263469542529144
+     ],
+     "redraw": 0
+    },
+    "54602": {
+     "seed": 54602,
+     "object_xy": [
+      0.32303538814431587,
+      -0.18488304511853487
+     ],
+     "plate_xy": [
+      0.4900143561940877,
+      -0.08323791601099864
+     ],
+     "redraw": 0
+    },
+    "54603": {
+     "seed": 54603,
+     "object_xy": [
+      0.328044591855352,
+      -0.17672763745700315
+     ],
+     "plate_xy": [
+      0.48797692384452124,
+      -0.09182217758796737
+     ],
+     "redraw": 0
+    },
+    "54604": {
+     "seed": 54604,
+     "object_xy": [
+      0.35143793053631295,
+      -0.1987731550279077
+     ],
+     "plate_xy": [
+      0.47814359977160487,
+      -0.07916057804933686
+     ],
+     "redraw": 0
+    },
+    "54605": {
+     "seed": 54605,
+     "object_xy": [
+      0.31843009357679586,
+      -0.18184545159871493
+     ],
+     "plate_xy": [
+      0.483790031792624,
+      -0.10018644843974339
+     ],
+     "redraw": 0
+    },
+    "54606": {
+     "seed": 54606,
+     "object_xy": [
+      0.316849022752362,
+      -0.2082695955320626
+     ],
+     "plate_xy": [
+      0.49196057784252445,
+      -0.0827295582311873
+     ],
+     "redraw": 0
+    },
+    "54607": {
+     "seed": 54607,
+     "object_xy": [
+      0.3185441769850965,
+      -0.15844665124261853
+     ],
+     "plate_xy": [
+      0.49359339246376316,
+      -0.08292575948096373
+     ],
+     "redraw": 0
+    },
+    "54608": {
+     "seed": 54608,
+     "object_xy": [
+      0.34839090252516786,
+      -0.2009896214421673
+     ],
+     "plate_xy": [
+      0.47487977725493125,
+      -0.10815886008896299
+     ],
+     "redraw": 0
+    },
+    "54609": {
+     "seed": 54609,
+     "object_xy": [
+      0.3317388575732511,
+      -0.18921721996523075
+     ],
+     "plate_xy": [
+      0.5035377911892425,
+      -0.10862332897323627
+     ],
+     "redraw": 0
+    },
+    "54610": {
+     "seed": 54610,
+     "object_xy": [
+      0.3649692008084119,
+      -0.18412731488381837
+     ],
+     "plate_xy": [
+      0.4861219527271365,
+      -0.07408542820187435
+     ],
+     "redraw": 0
+    },
+    "54611": {
+     "seed": 54611,
+     "object_xy": [
+      0.32578565182504166,
+      -0.19870633506824478
+     ],
+     "plate_xy": [
+      0.4954030530352154,
+      -0.07107262384286746
+     ],
+     "redraw": 0
+    },
+    "54612": {
+     "seed": 54612,
+     "object_xy": [
+      0.340909413239254,
+      -0.1819478181891059
+     ],
+     "plate_xy": [
+      0.4979717097096325,
+      -0.07044811514497226
+     ],
+     "redraw": 0
+    },
+    "54613": {
+     "seed": 54613,
+     "object_xy": [
+      0.3406026089015275,
+      -0.19410529316574832
+     ],
+     "plate_xy": [
+      0.49576819118988275,
+      -0.08985060954050154
+     ],
+     "redraw": 0
+    },
+    "54614": {
+     "seed": 54614,
+     "object_xy": [
+      0.3480069273778443,
+      -0.1579662849937618
+     ],
+     "plate_xy": [
+      0.473889846706705,
+      -0.0779006879226615
+     ],
+     "redraw": 0
+    },
+    "54615": {
+     "seed": 54615,
+     "object_xy": [
+      0.34532719688299335,
+      -0.19641146608782212
+     ],
+     "plate_xy": [
+      0.4749426051946529,
+      -0.07150180738663092
+     ],
+     "redraw": 0
+    },
+    "54616": {
+     "seed": 54616,
+     "object_xy": [
+      0.3658362013513117,
+      -0.199095583370164
+     ],
+     "plate_xy": [
+      0.4896411730148858,
+      -0.07122236137084377
+     ],
+     "redraw": 0
+    },
+    "54617": {
+     "seed": 54617,
+     "object_xy": [
+      0.3507740415591221,
+      -0.18060057149959266
+     ],
+     "plate_xy": [
+      0.4709073719880785,
+      -0.09118271153415675
+     ],
+     "redraw": 0
+    },
+    "54618": {
+     "seed": 54618,
+     "object_xy": [
+      0.3657824732182158,
+      -0.16141613235112293
+     ],
+     "plate_xy": [
+      0.49988012259834624,
+      -0.08985774174582328
+     ],
+     "redraw": 0
+    },
+    "54619": {
+     "seed": 54619,
+     "object_xy": [
+      0.32412981372801664,
+      -0.18025615018065988
+     ],
+     "plate_xy": [
+      0.4877605117234773,
+      -0.09259766530341865
+     ],
+     "redraw": 0
+    },
+    "54620": {
+     "seed": 54620,
+     "object_xy": [
+      0.33394806297059426,
+      -0.19628399685727194
+     ],
+     "plate_xy": [
+      0.4956328495704196,
+      -0.09111785494644853
+     ],
+     "redraw": 0
+    },
+    "54621": {
+     "seed": 54621,
+     "object_xy": [
+      0.3686373216783956,
+      -0.2036062090542321
+     ],
+     "plate_xy": [
+      0.4914280300804295,
+      -0.09651716950426178
+     ],
+     "redraw": 0
+    },
+    "54622": {
+     "seed": 54622,
+     "object_xy": [
+      0.32053859413432245,
+      -0.18315578364089338
+     ],
+     "plate_xy": [
+      0.4921736002200337,
+      -0.08841253286061687
+     ],
+     "redraw": 0
+    },
+    "54623": {
+     "seed": 54623,
+     "object_xy": [
+      0.3301924944907443,
+      -0.17166636330633342
+     ],
+     "plate_xy": [
+      0.4762839290404525,
+      -0.10718636247922253
+     ],
+     "redraw": 0
+    },
+    "54624": {
+     "seed": 54624,
+     "object_xy": [
+      0.340928579966973,
+      -0.1560090728445712
+     ],
+     "plate_xy": [
+      0.4707623878747241,
+      -0.07070127505019604
+     ],
+     "redraw": 0
+    },
+    "54625": {
+     "seed": 54625,
+     "object_xy": [
+      0.3443055415036546,
+      -0.2050029076811638
+     ],
+     "plate_xy": [
+      0.5053360404755002,
+      -0.08877817958719492
+     ],
+     "redraw": 0
+    },
+    "54626": {
+     "seed": 54626,
+     "object_xy": [
+      0.35013620813295077,
+      -0.15378414576369287
+     ],
+     "plate_xy": [
+      0.4712420707901886,
+      -0.09988547979467803
+     ],
+     "redraw": 0
+    },
+    "54627": {
+     "seed": 54627,
+     "object_xy": [
+      0.3117360636784392,
+      -0.15527943127264157
+     ],
+     "plate_xy": [
+      0.4930143092315855,
+      -0.07771311422711052
+     ],
+     "redraw": 0
+    },
+    "54628": {
+     "seed": 54628,
+     "object_xy": [
+      0.35554751465697315,
+      -0.17207740717177655
+     ],
+     "plate_xy": [
+      0.49919859798947924,
+      -0.09689066785645115
+     ],
+     "redraw": 0
+    },
+    "54629": {
+     "seed": 54629,
+     "object_xy": [
+      0.3363736159062932,
+      -0.19602836336541213
+     ],
+     "plate_xy": [
+      0.5039911271429218,
+      -0.08312737730753177
+     ],
+     "redraw": 0
+    },
+    "54630": {
+     "seed": 54630,
+     "object_xy": [
+      0.35949626493125286,
+      -0.1803381917584751
+     ],
+     "plate_xy": [
+      0.4719344595493828,
+      -0.09529399959341592
+     ],
+     "redraw": 0
+    },
+    "54631": {
+     "seed": 54631,
+     "object_xy": [
+      0.359492854548304,
+      -0.20334452896219798
+     ],
+     "plate_xy": [
+      0.48922220109776765,
+      -0.10584786684744568
+     ],
+     "redraw": 0
+    }
+   },
+   "sha256": "8cde2c85ca52d4eef400e7d62322d5a8e797a3de37ea3791b61ffdfa15f529f4"
+  }
+ },
+ "corpus_plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
+ "protocol_document_sha256": "3ce31021eae15746f0943fa4ffe3ce6834eee40b4d2ed0a7a487d8cf36b69442",
+ "encoder_digests": {
+  "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
+  "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
+ },
+ "mujoco_version": "3.13.0",
+ "gated_authorization": null,
+ "design_probes": {
+  "seeds": "54700-54999 (spent)",
+  "salt": 7401,
+  "probe_B": {
+   "shift300_9cm": {
+    "B-oracle": 32,
+    "P-stale": 0,
+    "P-truth": 20,
+    "H-handover": 32
+   },
+   "shift300_12cm": {
+    "B-oracle": 32,
+    "P-stale": 0,
+    "P-truth": 7,
+    "H-handover": 32
+   }
+  },
+  "probe_C_twin": {
+   "9cm": 31,
+   "12cm": 30,
+   "readout_error_cm_median_p90_max": [
+    0.666,
+    1.592,
+    2.267
+   ]
+  },
+  "note": "scratch code, not committed; one run of 32 resets per cell; see protocol \u00a72"
+ },
+ "smoke": {
+  "development": {
+   "seeds": "54650-54699 only; mechanics; nothing is read",
+   "platform": "Linux PC (RTX 5080), MUJOCO_GL=egl",
+   "base_revision": "9a8b0c0 (main) plus this PR's working tree; file hashes in each report",
+   "reports": {
+    "smoke-render": {
+     "outcome": "SMOKE-COMPLETE",
+     "sha256": "d7d9ed8c68898e253b3d1efa91684371394e537d4c6baa68261240fb04784e38",
+     "seconds": 42.6,
+     "peak_tree_pss_gib": 8.006,
+     "load_average_at_start": [
+      0.8,
+      1.99,
+      6.81
+     ]
+    },
+    "k1-smoke-2": {
+     "outcome": "K1-PASS",
+     "sha256": "85f16bdfa132412d2d5f49308c2d33610dac4ce8fa304f417cefa3da1d446b0a",
+     "seconds": 59.6,
+     "peak_tree_pss_gib": 8.145,
+     "load_average_at_start": [
+      0.31,
+      1.9,
+      6.56
+     ]
+    },
+    "corpus-smoke-2": {
+     "outcome": "CORPUS-SEALED",
+     "sha256": "f7e2948759e4a972c5bed07ac6f111f89ce1de88c7a4ed3fdadf45f71d51dddc",
+     "seconds": 21.7,
+     "peak_tree_pss_gib": 7.48,
+     "load_average_at_start": [
+      0.5,
+      1.92,
+      5.3
+     ]
+    },
+    "train-smoke": {
+     "outcome": "TRAIN-COMPLETE",
+     "sha256": "02b5bedf96753587e2acb83d9e5af793b8a7921d53a28b97bfecc3cbfb94e3a5",
+     "seconds": 3035.1,
+     "peak_tree_pss_gib": 8.768,
+     "load_average_at_start": [
+      1.38,
+      1.99,
+      5.15
+     ]
+    },
+    "pfar-smoke": {
+     "outcome": "PFAR-COMPLETE",
+     "sha256": "778c87b4b9e76096d464ba10c34c718357e5e7c5d5581c756a831fee96fed503",
+     "seconds": 59.6,
+     "peak_tree_pss_gib": 9.219,
+     "load_average_at_start": [
+      0.1,
+      1.9,
+      9.91
+     ]
+    },
+    "rank-smoke": {
+     "outcome": "RANK-COMPLETE",
+     "sha256": "c04d02a2d7aeca2c05c3c545666f290c897fda1413178056d76aad57d49e7b9c",
+     "seconds": 96.8,
+     "peak_tree_pss_gib": 7.314,
+     "load_average_at_start": [
+      1.36,
+      1.99,
+      9.24
+     ]
+    },
+    "decide-smoke": {
+     "outcome": "L-NO-DYNAMICS",
+     "sha256": "db3421ea90ea1e7491992ed43cf0e336930d2c97ffd6336921f271f7739b336e",
+     "seconds": 2.0,
+     "peak_tree_pss_gib": 0.767,
+     "load_average_at_start": [
+      3.36,
+      2.66,
+      8.71
+     ]
+    },
+    "d3-smoke": {
+     "outcome": "D3-SMOKE",
+     "sha256": "e5e70019faec7a01d2b881b4c47bb7dc93805548b298ca7aa5ad7f0b16eec177",
+     "seconds": 110.7,
+     "peak_tree_pss_gib": 8.743,
+     "load_average_at_start": [
+      0.82,
+      2.0,
+      7.92
+     ]
+    }
+   },
+   "facts": {
+    "train_scale": {
+     "ceiling_gib": 12.0,
+     "frames": 81420,
+     "note": "smoke data cycled to the real stage's sizes; memory only, nothing is read",
+     "o1_windows": {
+      "overall": 1230
+     },
+     "r_plate_lambda": 1000.0,
+     "r_plate_rows": 1440,
+     "roots": 460,
+     "seconds": 627.2882150399964,
+     "stage_peak_tree_pss_gib_so_far": 8.767566680908203,
+     "tree_pss_gib_after": 5.913543701171875,
+     "tree_pss_gib_before": 3.5780029296875
+    },
+    "feature_anchor": {
+     "bound": 0.001,
+     "frames": 208,
+     "max_abs_difference": 4.414469003677368e-05
+    },
+    "o5_median_smoke": 0.21042679325542019,
+    "latency": {
+     "decisions": 24,
+     "median_seconds": 0.5182861780049279,
+     "p90_seconds": 0.5579890563269145,
+     "max_seconds": 0.6020292979665101
+    },
+    "rerun": {
+     "H-twin": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ],
+     "L-plan": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ]
+    },
+    "render_check": "IDENTICAL",
+    "corpus_shift_blocked": 2,
+    "k1_smoke_before_shift_blocked": true
+   },
+   "status": "historical: ran on an uncommitted working tree; not the record for the GO (protocol \u00a710.2)"
+  },
+  "frozen_code": {
+   "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+   "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+   "seeds": "54650-54699 only; mechanics; nothing is read",
+   "machine": "every stage, decide included, started on a quiet machine (1- and 5-minute load <= 2.0 by os.getloadavg, MemAvailable >= 16 GiB)",
+   "reports": {
+    "render": {
+     "outcome": "SMOKE-COMPLETE",
+     "sha256": "e751917be435d94a646ef7e318b34c7899e78be12b7a53a3922e1c24305b6ce1",
+     "seconds": 42.8,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 8.308,
+     "load_average_at_start": [
+      0.5029296875,
+      0.7626953125,
+      1.88134765625
+     ],
+     "quiet_machine": true,
+     "upstream": {},
+     "path": "outputs/task074-scratch/frozen2/render/report.json"
+    },
+    "k1": {
+     "outcome": "K1-PASS",
+     "sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787",
+     "seconds": 58.2,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 8.153,
+     "load_average_at_start": [
+      1.833984375,
+      1.23388671875,
+      1.96533203125
+     ],
+     "quiet_machine": true,
+     "upstream": {},
+     "path": "outputs/task074-scratch/frozen2/k1/report.json"
+    },
+    "corpus": {
+     "outcome": "CORPUS-SEALED",
+     "sha256": "f99e6d43a0520934729bdbf8083a3ae5b9acb7ab2f3f121434e12b6cddcedadb",
+     "seconds": 21.6,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 7.465,
+     "load_average_at_start": [
+      1.82373046875,
+      1.671875,
+      2.06298828125
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "K1-PASS": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/k1/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/corpus/report.json"
+    },
+    "train": {
+     "outcome": "TRAIN-COMPLETE",
+     "sha256": "ac6158aab445ef37cfedca4529a3158ee0d84c67469c94c3060edd942c6db169",
+     "seconds": 1124.1,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 8.767,
+     "load_average_at_start": [
+      1.91796875,
+      1.73486328125,
+      2.06982421875
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "K1-PASS": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/k1/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787"
+      },
+      "corpus": {
+       "k1_report_sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787",
+       "manifest_sha256": "68499d90c4ee4e0c4cf76b861ed1eafc657df1bcee26f6913d803c4015d11c46",
+       "path": "outputs/task074-scratch/frozen2/far-corpus"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/train/report.json"
+    },
+    "pfar": {
+     "outcome": "PFAR-COMPLETE",
+     "sha256": "232add71bd8dfb164962ac642ab4428d12eeaac94d849296454e41c24197ea9e",
+     "seconds": 59.5,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 9.436,
+     "load_average_at_start": [
+      0.013671875,
+      1.99560546875,
+      5.2177734375
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "TRAIN-COMPLETE": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/train/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "ac6158aab445ef37cfedca4529a3158ee0d84c67469c94c3060edd942c6db169"
+      },
+      "corpus": {
+       "k1_report_sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787",
+       "manifest_sha256": "68499d90c4ee4e0c4cf76b861ed1eafc657df1bcee26f6913d803c4015d11c46",
+       "path": "outputs/task074-scratch/frozen2/far-corpus"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/pfar/report.json"
+    },
+    "rank": {
+     "outcome": "RANK-COMPLETE",
+     "sha256": "369d9b5386978e06806fef618bfb885cb40b11bc1660108f1404ea1d7b6551ea",
+     "seconds": 96.8,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 7.34,
+     "load_average_at_start": [
+      0.94384765625,
+      1.97998046875,
+      4.83984375
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "K1-PASS": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/k1/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787"
+      },
+      "TRAIN-COMPLETE": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/train/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "ac6158aab445ef37cfedca4529a3158ee0d84c67469c94c3060edd942c6db169"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/rank/report.json"
+    },
+    "decide": {
+     "outcome": "L-NO-DYNAMICS",
+     "sha256": "6b4cf57650740c390828257c953e07ccad59e763a5c208a09313e4a48304a799",
+     "seconds": 2.0,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 0.767,
+     "load_average_at_start": [
+      0.833984375,
+      1.90478515625,
+      4.3251953125
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "K1-PASS": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/k1/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787"
+      },
+      "RANK-COMPLETE": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/rank/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "369d9b5386978e06806fef618bfb885cb40b11bc1660108f1404ea1d7b6551ea"
+      },
+      "TRAIN-COMPLETE": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/train/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "ac6158aab445ef37cfedca4529a3158ee0d84c67469c94c3060edd942c6db169"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/decide/report.json"
+    },
+    "d3": {
+     "outcome": "D3-SMOKE",
+     "sha256": "35361b9fdff0768237000ac3ecad80447a14aefb97cd5ad65f75f2dd54fb646b",
+     "seconds": 110.2,
+     "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+     "peak_tree_pss_gib": 8.324,
+     "load_average_at_start": [
+      0.84765625,
+      1.8896484375,
+      4.30712890625
+     ],
+     "quiet_machine": true,
+     "upstream": {
+      "PFAR-COMPLETE": {
+       "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+       "path": "outputs/task074-scratch/frozen2/pfar/report.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "232add71bd8dfb164962ac642ab4428d12eeaac94d849296454e41c24197ea9e"
+      },
+      "decision": {
+       "path": "outputs/task074-scratch/frozen2/decide/decision.json",
+       "revision": "755ec60305d9fc7c594e2f7a0b59440ea37b6b98",
+       "sha256": "f2e5d3fb9579466adb0c102ca25b1a93637c392a5e792ad342f42cb0c8c61a97"
+      }
+     },
+     "path": "outputs/task074-scratch/frozen2/d3/report.json"
+    }
+   },
+   "corpus_manifest_sha256": "68499d90c4ee4e0c4cf76b861ed1eafc657df1bcee26f6913d803c4015d11c46",
+   "facts": {
+    "render_check": "IDENTICAL",
+    "g_repro": "8/8",
+    "o5_median_smoke": 0.21042679325542019,
+    "corpus_summary": {
+     "at_rest": 5,
+     "complete": 14,
+     "counted_success": 5,
+     "grasp": 12,
+     "off_plate": 8,
+     "roots": 16,
+     "shift_applied": 12,
+     "shift_blocked": 2
+    },
+    "train_scale": {
+     "ceiling_gib": 12.0,
+     "frames": 81420,
+     "note": "smoke data cycled to the real stage's sizes; memory only, nothing is read",
+     "o1_windows": {
+      "overall": 1230
+     },
+     "r_plate_lambda": 1000.0,
+     "r_plate_rows": 1440,
+     "roots": 460,
+     "seconds": 574.1553945030319,
+     "stage_peak_tree_pss_gib_so_far": 8.76701831817627,
+     "tree_pss_gib_after": 6.152588844299316,
+     "tree_pss_gib_before": 3.577866554260254
+    },
+    "feature_anchor": {
+     "bound": 0.001,
+     "frames": 208,
+     "max_abs_difference": 4.414469003677368e-05
+    },
+    "pfar_scale": {
+     "ceiling_gib": 12.0,
+     "note": "smoke rows tiled to the real stage's size; memory only, nothing is read",
+     "rows": 195750,
+     "seconds": 0.9493565689772367,
+     "stage_peak_tree_pss_gib_so_far": 9.435932159423828,
+     "tree_pss_gib_after": 9.423240661621094,
+     "tree_pss_gib_before": 9.236404418945312
+    },
+    "latency": {
+     "decisions": 24,
+     "median_seconds": 0.5431814239709638,
+     "p90_seconds": 0.5734896988375112,
+     "max_seconds": 0.5848809940507635
+    },
+    "rerun": {
+     "H-twin": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ],
+     "L-plan": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ]
+    },
+    "shift_blocked_d3": {
+     "B-oracle-shift": 0,
+     "H-handover": 0,
+     "H-twin": 0,
+     "L-N": 0,
+     "L-plan": 0,
+     "L-rand": 0,
+     "L-shuf": 0,
+     "P-far": 0,
+     "P-stale": 0,
+     "P-truth": 0
+    }
+   }
+  },
+  "superseded_510347a": {
+   "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+   "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+   "seeds": "54650-54699 only; mechanics; nothing is read",
+   "machine": "quiet start (1- and 5-minute load <= 2.0, Python os.getloadavg) for every simulating stage; decide (a JSON read, no simulation) started at load 4.0",
+   "reports": {
+    "render": {
+     "outcome": "SMOKE-COMPLETE",
+     "sha256": "88ebb87b393aa003c076549f375ea715e7896b67e8ffded88f3b0368096c72ec",
+     "seconds": 42.8,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 8.003,
+     "load_average_at_start": [
+      0.65234375,
+      0.5205078125,
+      0.65380859375
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/render/report.json"
+    },
+    "k1": {
+     "outcome": "K1-PASS",
+     "sha256": "02efb1c116614b2dfe5b67b1a802b3adb3b68ac17350b1be62cc3803a219828b",
+     "seconds": 58.6,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 8.134,
+     "load_average_at_start": [
+      1.55859375,
+      1.03564453125,
+      0.8349609375
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/k1/report.json"
+    },
+    "train": {
+     "outcome": "TRAIN-COMPLETE",
+     "sha256": "8d9a45371fa44742166187a2edb7d3e97053b81dd9f5583704f1f80bb18e830a",
+     "seconds": 1125.4,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 8.767,
+     "load_average_at_start": [
+      1.74609375,
+      1.779296875,
+      1.1689453125
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/train/report.json"
+    },
+    "pfar": {
+     "outcome": "PFAR-COMPLETE",
+     "sha256": "34d54f50701dbdf140f9bfd3ceec454e28dfdb0829ca2c0d7e6998d1d3181b77",
+     "seconds": 59.6,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 9.531,
+     "load_average_at_start": [
+      0.0390625,
+      1.970703125,
+      5.00244140625
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/pfar/report.json"
+    },
+    "rank": {
+     "outcome": "RANK-COMPLETE",
+     "sha256": "cff196c156243ecaa6fb6e042133fc54f80f2d37c0ddf03592964f57d35d40a4",
+     "seconds": 96.9,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 7.333,
+     "load_average_at_start": [
+      0.96337890625,
+      1.95654296875,
+      4.64697265625
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/rank/report.json"
+    },
+    "decide": {
+     "outcome": "L-NO-DYNAMICS",
+     "sha256": "c7515d9a9da78c2aa785e7203cb173f7508d358b4d2b709722aa970fcff86d97",
+     "seconds": 2.0,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 0.777,
+     "load_average_at_start": [
+      3.99951171875,
+      2.72021484375,
+      4.65478515625
+     ],
+     "quiet_machine": false,
+     "path": "outputs/task074-scratch/frozen/decide/report.json"
+    },
+    "d3": {
+     "outcome": "D3-SMOKE",
+     "sha256": "38df51ac569cf0a2fea83b8c06d84ebebc0c01bd43ed4f1995d925926b8928a9",
+     "seconds": 109.8,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 8.362,
+     "load_average_at_start": [
+      0.810546875,
+      1.93408203125,
+      4.14990234375
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/d3/report.json"
+    }
+   },
+   "facts": {
+    "render_check": "IDENTICAL",
+    "g_repro": "8/8",
+    "o5_median_smoke": 0.21042679325542019,
+    "train_scale": {
+     "ceiling_gib": 12.0,
+     "frames": 81420,
+     "note": "smoke data cycled to the real stage's sizes; memory only, nothing is read",
+     "o1_windows": {
+      "overall": 1230
+     },
+     "r_plate_lambda": 1000.0,
+     "r_plate_rows": 1440,
+     "roots": 460,
+     "seconds": 575.7499837799696,
+     "stage_peak_tree_pss_gib_so_far": 8.767104148864746,
+     "tree_pss_gib_after": 6.155043601989746,
+     "tree_pss_gib_before": 3.57840633392334
+    },
+    "feature_anchor": {
+     "bound": 0.001,
+     "frames": 208,
+     "max_abs_difference": 4.414469003677368e-05
+    },
+    "pfar_scale": {
+     "ceiling_gib": 12.0,
+     "note": "smoke rows tiled to the real stage's size; memory only, nothing is read",
+     "rows": 195750,
+     "seconds": 0.8600120289484039,
+     "stage_peak_tree_pss_gib_so_far": 9.530776977539062,
+     "tree_pss_gib_after": 9.419292449951172,
+     "tree_pss_gib_before": 9.234989166259766
+    },
+    "latency": {
+     "decisions": 24,
+     "median_seconds": 0.5439385770587251,
+     "p90_seconds": 0.583453874848783,
+     "max_seconds": 0.5865258689736947
+    },
+    "rerun": {
+     "H-twin": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ],
+     "L-plan": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ]
+    },
+    "shift_blocked": {
+     "B-oracle-shift": 0,
+     "H-handover": 0,
+     "H-twin": 0,
+     "L-N": 0,
+     "L-plan": 0,
+     "L-rand": 0,
+     "L-shuf": 0,
+     "P-far": 0,
+     "P-stale": 0,
+     "P-truth": 0
+    }
+   },
+   "status": "superseded: the re-review changed the frozen block (protocol \u00a710.2)"
+  }
+ },
+ "hashes": {
+  "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+  "benchmarks/manifests/apple-first-policy-v2-linux-results.json": "b97258bc14875e1c1de03e721e318b41fa582b216d1f1414637d0a56d1f159b9",
+  "benchmarks/manifests/apple-first-policy-v2-linux.json": "29f2c98302adfe2b214a68a85de769b5ea8cf4f4dddf1622f90970a9c5efb9ba",
+  "benchmarks/manifests/apple-first-policy-v2-m2-results.json": "e84f0d51ba02eb02a997bf1fc7923cb7d8beca0bc34259fc82bb4b8b5fb424b2",
+  "benchmarks/manifests/apple-first-policy-v2-m2.json": "74b1a5814542727f90b8cc152b0e89dc1c7a4dabf6add36a8fa9ec3220fa9be0",
+  "benchmarks/manifests/apple-first-policy-v2.json": "cab7c7c8cfd8ac9aac2d4bbddccea5402d806c32df12396557013f60a5ed6e37",
+  "benchmarks/manifests/apple-policy-v1.json": "749c6f0e38c802b3b20aa7d0de2e089335126455a93e8ddc02369d6b5807a8ba",
+  "benchmarks/manifests/apple-token-dynamics-v1.json": "2191d57e869810aeb0601cdc85308d94dcd750782bac9596f0a78b0ea2fbdc38",
+  "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
+  "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+  "docs/experiments/apple_wm_critic_v2.md": "161f9ed37939421f9f5e4f56ea38c8110d6b8da2dbc808dcead816fd2d81a39b",
+  "scripts/collect_apple_shift_v2.py": "584ed2386dc6ab99abb60a22922b9781ebbcd13f08ac3198fff93d8394ab93e5",
+  "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+  "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
+  "scripts/rank_wm_critic_v2.py": "6d4cdc9017369f9c4ae95184c153b8bed5c6db84cc02a6cd9c4b84a243861d64",
+  "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
+  "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
+  "scripts/run_lewm_planner_v2.py": "cad3ef35be5d737152663f997fdca9cdc06968b9ab00d18a6c2f8cf7e87876e1",
+  "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
+  "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
+  "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
+  "src/embodied_jepa/__init__.py": "a0043e95cb31add021475ec8877d7a7b28189696ddf5ab2486d73537c84aec41",
+  "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
+  "src/embodied_jepa/at_rest.py": "b5121cb600db6bfb3f92b4161ba46d4cdcb31f98e99de512b257f2519db00527",
+  "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+  "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
+  "src/embodied_jepa/devices.py": "0976ccc0fb6d3c64d8128dbc152dcb2ebd3aee2211bc3ab5e25a772518e2fb72",
+  "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+  "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
+  "src/embodied_jepa/first_policy_model.py": "5ebd70e07d9c6eba38f0fa4c8980602205f0e24420d39f252935dc47673fb984",
+  "src/embodied_jepa/first_policy_perception.py": "d2ae40118a78646c13e89a089049f80cdc0389dfdd2106f5862a03ab134ed497",
+  "src/embodied_jepa/first_policy_runtime.py": "d6d672dc26912371cae78c2d32ba84583adfab4adcab393445a770f994a5f953",
+  "src/embodied_jepa/first_policy_v2.py": "c05385701481bb6463e096899df8a8c4945239954db73f29b42ea19117d7a460",
+  "src/embodied_jepa/first_policy_v2_linux.py": "2ff753d1ae3c8db18d4b8f4dd79e1738a12ccedebc2014977d5c35f541e53ad7",
+  "src/embodied_jepa/first_policy_v2_m2.py": "39beb69a65c31b7b4491dafd092d2e2c98ad19ee6e70aa4514a48d948c86b4ea",
+  "src/embodied_jepa/first_policy_v2_model.py": "5e29fc12f496b2299c1d2d5b4df8ea99660b838a896587b9b890f846312a1a45",
+  "src/embodied_jepa/first_policy_v2_runtime.py": "2caa50e70d04c3d4898896acb402bb7ccc95897cece3c6a5d119db5ec4a3169a",
+  "src/embodied_jepa/hybrid_selection.py": "b96ae08098da94202ec74f1cab9ff0fe025ced7f65bf505bbb21ca557a298d4a",
+  "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+  "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
+  "src/embodied_jepa/lewm_planner_v2.py": "b7a375c79d9ee4d782389fe8dc5a715827c676ad6efc98149ac3e86c76a5113b",
+  "src/embodied_jepa/lewm_planner_v2_offline.py": "84ae5ee71829443665163941aab100c7219453962678a037fc27e8cbaf11d3a7",
+  "src/embodied_jepa/lewm_planner_v2_runtime.py": "ccfac04c1f2e8cc62039186c3388d971a002e7ebe5b08f70f6e97e257c3cb170",
+  "src/embodied_jepa/look_corpus.py": "41a05027d30375884f9e562a4887814db65bf5111fc7bc8fe2ddcf38e206d84b",
+  "src/embodied_jepa/models/__init__.py": "694622858ffd8a892d6746c65f162c2cea19e9ead1aa5c566ab4edc6fb962f94",
+  "src/embodied_jepa/models/base.py": "310a509d5f8043ad3cbdf85a0568d15bb4ed2e4faeddf6e10bed63abf8ee0549",
+  "src/embodied_jepa/models/frozen_encoder.py": "c1a4622a0765e44fc060c5313a85e4f727f51dc361acd5de50cb6990845e6011",
+  "src/embodied_jepa/models/frozen_tokens.py": "33e8e819ad557d4fec6167482f91b5aa0c5da5a1169e7f8e6e8f050390c9a3a2",
+  "src/embodied_jepa/models/latent_critic.py": "5af41f3fdc0767e76b9c6d4f833b267e33d90a7d420e712fc1f0a6d402140eeb",
+  "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
+  "src/embodied_jepa/models/native.py": "95e112e13b0bf4d587fd5c35008e99b1e0a3759fb4f458c24bdd20304d0fadf3",
+  "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
+  "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+  "src/embodied_jepa/place_planner.py": "1842d3e0ca31bfbe6c0568ab5a8d9c75c513e8b5a784ae7200c43101d270c846",
+  "src/embodied_jepa/plate_shift.py": "5ae0f016dd6ee628c60c3a6901f170d9bd1643df8e508e53fabbbc6e89650b39",
+  "src/embodied_jepa/policy_diagnostics.py": "3898e34588145c14696835e5f89e75b112bc35f1087f206d4c4525774cab9faa",
+  "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+  "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
+  "src/embodied_jepa/resting_expert.py": "9f253b1d5025ff4c3176cdafe98ff59a50a51bdc9b90fe3a1f1d6fddc73bcd23",
+  "src/embodied_jepa/run_guards.py": "bad5bbfc71b9f5656e2cbadb933bd92e7152ac4aa6bf45ea00515886ec473cc3",
+  "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+  "src/embodied_jepa/sim_selector.py": "2861dc0aa7323222cbbd58030b575ea75fe01310f113a39cd6e994ffb98c259f",
+  "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+  "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+  "src/embodied_jepa/token_dynamics.py": "b80ec3506ff359c0e159b1f89e3bc234fcdecbdeccaa38e2ead455c438e34672",
+  "src/embodied_jepa/wm_critic_v2.py": "125b6f64d3acb9341f243fe123d1c646a433104471924790c79112678c0efc85",
+  "src/embodied_jepa/wm_critic_v2_offline.py": "7c2cd7bc39d1b87e46b4c4e92ab55bbe4a357ccc1dfccbf16e7a066a3f9c1cfa",
+  "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
+  "tests/test_lewm_planner_v2.py": "d7bf80c0139aa08dfdd6847517da4d6e860b82f138bb8564c5d83e982ff9f5a9",
+  "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
+  "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
+ },
+ "pins_note": "the protocol document and this manifest are not pinned: the smoke record is added after the frozen-code smokes, so that the smoked code stays the frozen code",
+ "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. The plate shift is a simulation-only diagnostic condition on apple-to-plate-v2."
+}
