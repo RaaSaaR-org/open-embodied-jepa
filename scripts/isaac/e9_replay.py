@@ -138,6 +138,7 @@ def _mujoco_one(task: dict) -> dict:
 def cmd_mujoco(args) -> int:
     if args.output.exists():
         raise SystemExit(f"refusing to overwrite {args.output}")
+    prov = provenance()  # at the start: the code that runs
     seeds = ie.check_seeds(args.seeds or ie.SEEDS)
     plan = attempt_plan(seeds, args.levels)
     args.output.mkdir(parents=True)
@@ -153,7 +154,7 @@ def cmd_mujoco(args) -> int:
     report = {
         "what": "e9 MuJoCo reference for the Isaac replay (development; privileged scripted "
         "expert; not a gated run; not a learned result)",
-        **provenance(),
+        **prov,
         "seeds": list(seeds),
         "levels_cm": list(args.levels),
         "seconds": time.monotonic() - started,
@@ -227,6 +228,7 @@ def cmd_isaac(args) -> int:
 
     if args.output.exists():
         raise SystemExit(f"refusing to overwrite {args.output}")
+    prov = provenance()  # at the start: the code that runs
     ref = json.loads((args.reference / "report.json").read_text())
     tasks = [r for r in ref["attempts"] if r["ok"]]
     if args.only:
@@ -296,7 +298,7 @@ def cmd_isaac(args) -> int:
     report = {
         "what": "e9 in Isaac through the mirror harness (development; privileged scripted "
         "expert; not a gated run; not a learned result)",
-        **provenance(),
+        **prov,
         **backend,
         "reference": str(args.reference),
         "reference_revision": ref["revision"],
@@ -357,6 +359,7 @@ def _sensitivity_one(task: dict) -> dict:
 def cmd_sensitivity(args) -> int:
     if args.output.exists():
         raise SystemExit(f"refusing to overwrite {args.output}")
+    prov = provenance()  # at the start: the code that runs
     ref = json.loads((args.reference / "report.json").read_text())
     tasks = []
     for r in ref["attempts"]:
@@ -386,7 +389,7 @@ def cmd_sensitivity(args) -> int:
     report = {
         "what": "MuJoCo open-loop sensitivity of e9's outcome to a tiny apple reset offset "
         "(development; not a gated run; not a learned result)",
-        **provenance(),
+        **prov,
         "reference": str(args.reference),
         "offset_mm": args.offset_mm,
         "target_noise_rad": args.target_noise_rad,
@@ -512,6 +515,69 @@ def cmd_compare(args) -> int:
     return 0
 
 
+def cmd_repeat(args) -> int:
+    """Two Isaac runs of the same attempts (separate processes): how repeatable is Isaac?"""
+    a = json.loads((args.a / "report.json").read_text())
+    b = json.loads((args.b / "report.json").read_text())
+    rows_b = {r["key"]: r for r in b["attempts"]}
+    out = []
+    for ra in a["attempts"]:
+        rb = rows_b.get(ra["key"])
+        if rb is None:
+            continue
+        for mode in sorted(set(a["modes"]) & set(b["modes"])):
+            sa, sb = ra.get(mode, {}), rb.get(mode, {})
+            if not (sa.get("ok") and sb.get("ok")):
+                continue
+            xa = np.load(args.a / f"{mode}_{ra['key']}.npz")
+            xb = np.load(args.b / f"{mode}_{ra['key']}.npz")
+            n = min(len(xa["rec_q"]), len(xb["rec_q"]))
+            out.append(
+                {
+                    "key": ra["key"],
+                    "mode": mode,
+                    "at_rest_a": sa["at_rest"],
+                    "at_rest_b": sb["at_rest"],
+                    "final_distance_cm_a": sa["final_distance_cm"],
+                    "final_distance_cm_b": sb["final_distance_cm"],
+                    "final_xy_gap_cm": float(
+                        np.linalg.norm(xa["apple_pos"][-1][:2] - xb["apple_pos"][-1][:2]) * 100
+                    ),
+                    "max_joint_diff": float(np.abs(xa["rec_q"][:n] - xb["rec_q"][:n]).max()),
+                }
+            )
+    summary = {}
+    for mode in sorted({r["mode"] for r in out}):
+        rows = [r for r in out if r["mode"] == mode]
+        gaps = [r["final_xy_gap_cm"] for r in rows]
+        summary[mode] = {
+            "attempts": len(rows),
+            "at_rest_a": sum(r["at_rest_a"] for r in rows),
+            "at_rest_b": sum(r["at_rest_b"] for r in rows),
+            "outcome_flips": sum(r["at_rest_a"] != r["at_rest_b"] for r in rows),
+            "final_xy_gap_cm_q50_q90_max": [
+                float(np.median(gaps)),
+                float(np.quantile(gaps, 0.9)),
+                float(np.max(gaps)),
+            ],
+            "max_joint_diff": max(r["max_joint_diff"] for r in rows),
+        }
+    args.output.mkdir(parents=True, exist_ok=False)
+    write_report(
+        args.output / "repeat.json",
+        {
+            "what": "Isaac run-to-run repeatability of e9 (development; not a gated run)",
+            "a": str(args.a),
+            "b": str(args.b),
+            "revision": git("rev-parse", "HEAD"),
+            "summary": summary,
+            "rows": out,
+        },
+    )
+    print(json.dumps(summary, indent=1))
+    return 0
+
+
 def totals(table, modes) -> dict:
     out = {}
     for level in sorted({r["plate_cm"] for r in table}):
@@ -615,6 +681,10 @@ def main() -> int:
     p.add_argument("--target_noise_rad", type=float, default=0.0)
     p.add_argument("--noise_seed", type=int, default=9025)
     p.add_argument("--workers", type=int, default=4)
+    p = sub.add_parser("repeat")
+    p.add_argument("--a", type=Path, required=True)
+    p.add_argument("--b", type=Path, required=True)
+    p.add_argument("--output", type=Path, required=True)
     p = sub.add_parser("compare")
     p.add_argument("--reference", type=Path, required=True)
     p.add_argument("--isaac", type=Path, required=True)
@@ -626,6 +696,7 @@ def main() -> int:
         "mujoco": cmd_mujoco,
         "isaac": cmd_isaac,
         "sensitivity": cmd_sensitivity,
+        "repeat": cmd_repeat,
         "compare": cmd_compare,
     }[args.cmd](args)
 
