@@ -199,6 +199,24 @@ their pinned hashes after the fact:
 If the runner or the re-run rule is reused for a gated run, for example by TASK-074, these need
 fixing and review first. The gated harness (`stage_gated`) was never written.
 
+**Addendum (2026-09-30, TASK-074 follow-up fix PR).**
+- **Where the fixes are.** Three of the follow-ups above are fixed in a new module,
+  `src/embodied_jepa/run_guards.py`, with tests in `tests/test_run_guards.py`:
+  - `rerun_matches` now fails a field that is missing from both records, requires the commands,
+    and computes `max_abs_command_difference`;
+  - `BoundedPool.close` is bounded;
+  - `pss_bytes` falls back to RSS.
+
+  TASK-074 and later runners import that module.
+- **TASK-073's pinned code is unchanged.** `wm_critic_v2.py`, `scripts/run_wm_critic_v2.py` and
+  every other file in `apple-wm-critic-v2.json`'s `hashes` keep the bytes K0 run-2 ran at
+  `35772e5`, and a test checks the two central ones. The fixed code is therefore not what K0
+  run-2 ran, and TASK-073's record, frozen hash and G-hash stay reproducible as recorded.
+- **Two follow-ups are not in that module:**
+  - `first_outcome_utc` in `VOID_RULE` belongs to each protocol's frozen text, so TASK-074
+    writes it into its own `VOID_RULE` from the start;
+  - the train-stage memory on a real corpus is measured in TASK-074's preregistration.
+
 ## 9. Process
 
 - #106 (protocol) merged on an independent APPROVE. K0 run-1 started on a reported GO, became a V,
