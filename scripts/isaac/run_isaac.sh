@@ -11,6 +11,8 @@
 # run on the shared GPU. Limits: it matches those names only (a gated task under another name
 # is not caught) and checks once at start (a gated run started while the container is up is
 # not detected). It is a courtesy check, not a lock.
+# PXR_WORK_THREAD_LIMIT, if set on the host, is passed into the container (OpenUSD's work-pool
+# thread limit; e9_server_isaac.py otherwise sets it to 1 for Newton, docs/ISAAC_E9_REPLAY.md §4).
 # If your login shell predates your docker group membership, run it via `sg docker -c`.
 set -euo pipefail
 SCRIPT=${1:?usage: run_isaac.sh <script.py> <out-dir> [args]}
@@ -32,6 +34,9 @@ git -C "$REPO" rev-parse HEAD > "$OUT/code_revision.txt"
 git -C "$REPO" status --porcelain > "$OUT/code_status.txt"
 EXTRA=""
 [ $# -gt 0 ] && EXTRA=$(printf ' %q' "$@")
+ENV_PASS=()
+[ -n "${PXR_WORK_THREAD_LIMIT+x}" ] && ENV_PASS+=(-e "PXR_WORK_THREAD_LIMIT=$PXR_WORK_THREAD_LIMIT")
+echo "${PXR_WORK_THREAD_LIMIT-<unset>}" > "$OUT/pxr_work_thread_limit_host.txt"
 USD_MOUNT=()
 [ -d "$REPO/assets/isaac" ] && USD_MOUNT=(-v "$(cd -- "$REPO/assets/isaac" && pwd -P):/oej/usd:ro")
 
@@ -48,6 +53,7 @@ docker run --rm --name "oej-isaac-$(basename "$OUT")" \
   -e ACCEPT_EULA=Y -e PRIVACY_CONSENT=Y -e PYTHONPATH=/oej/src \
   -e DOCKER_RUN_USER_ID="$(id -u)" -e DOCKER_RUN_USER_NAME="$(id -un)" \
   -e DOCKER_RUN_GROUP_ID="$(id -g)" -e DOCKER_RUN_GROUP_NAME="$(id -gn)" \
+  "${ENV_PASS[@]}" \
   -v "$REPO/scripts/isaac:/oej/scripts/isaac:ro" \
   -v "$REPO/src:/oej/src:ro" \
   -v "$REPO/configs:/oej/configs:ro" \
