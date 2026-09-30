@@ -36,8 +36,14 @@ def _record(**over):
     return base | over
 
 
+IMAGE = rg.RerunRule(
+    image_reading=True, exact=EXACT, tolerances=TOL | {"max_abs_command_difference": 0.3}
+)
+BITWISE = rg.RerunRule(image_reading=False)
+
+
 def _cmp(a, b, image_reading):
-    return rg.rerun_matches(a, b, image_reading=image_reading, exact=EXACT, tolerances=TOL)
+    return rg.rerun_matches(a, b, IMAGE if image_reading else BITWISE)
 
 
 # ----- rerun_matches ------------------------------------------------------------------------------
@@ -72,29 +78,49 @@ def test_missing_commands_fail_and_one_sided_fields_differ():
     assert not out["matches"] and "grasp" in out["differences"]
 
 
-def test_command_difference_is_computed_and_fails_a_non_image_arm():
+def test_command_difference_is_computed_and_checked():
     b_cmd = np.zeros((740, 14), np.float32)
     b_cmd[100, 3] = 0.25
     out = _cmp(_record(), _record(commands=b_cmd), False)
     assert not out["matches"]
     assert out["max_abs_command_difference"] == pytest.approx(0.25)
-    # an image-reading arm only logs it (no tolerance given) ...
-    out = _cmp(_record(), _record(commands=b_cmd), True)
+    out = _cmp(_record(), _record(commands=b_cmd), True)  # within the 0.3 tolerance
     assert out["matches"] and out["differences"]["max_abs_command_difference"] == 0.25
-    # ... unless a command tolerance is declared
-    tight = rg.rerun_matches(
-        _record(),
-        _record(commands=b_cmd),
-        image_reading=True,
-        exact=EXACT,
-        tolerances=TOL | {"max_abs_command_difference": 0.1},
+    b_cmd[100, 3] = 0.5
+    assert not _cmp(_record(), _record(commands=b_cmd), True)["matches"]
+
+
+@pytest.mark.parametrize("image", [False, True])
+@pytest.mark.parametrize("which", ["first", "second", "both"])
+def test_a_nan_command_fails_every_arm(image, which):
+    """Reviewer B1 of #111: NaN must never read as "no difference"."""
+    bad = np.zeros((740, 14), np.float32)
+    bad[5, 2] = np.nan
+    a = _record(commands=bad.copy() if which in ("first", "both") else np.zeros((740, 14)))
+    b = _record(commands=bad.copy() if which in ("second", "both") else np.zeros((740, 14)))
+    out = _cmp(a, b, image)
+    assert not out["matches"]
+    assert out["max_abs_command_difference"] == float("inf")
+
+
+def test_nan_and_inf_differences_are_infinite():
+    assert rg.max_abs_command_difference([np.inf], [np.inf]) == float("inf")
+    assert rg.max_abs_command_difference([1.0, np.nan], [1.0, 2.0]) == float("inf")
+    assert rg.max_abs_command_difference([[1.0]], [1.0]) == float("inf")
+    assert rg.max_abs_command_difference([1.0, 2.0], [1.0, 2.5]) == 0.5
+
+
+def test_a_nan_result_field_fails():
+    out = _cmp(
+        _record(final_distance_cm=float("nan")), _record(final_distance_cm=float("nan")), True
     )
-    assert not tight["matches"]
+    assert not out["matches"]
+    assert not _cmp(_record(final_distance_cm=float("nan")), _record(), False)["matches"]
 
 
 def test_different_command_lengths_are_an_infinite_difference():
     out = _cmp(_record(), _record(commands=np.zeros((700, 14))), True)
-    assert out["max_abs_command_difference"] == float("inf")
+    assert out["max_abs_command_difference"] == float("inf") and not out["matches"]
 
 
 def test_image_arm_tolerances_and_exact_fields():
@@ -104,6 +130,40 @@ def test_image_arm_tolerances_and_exact_fields():
     assert not _cmp(_record(), _record(success=False), True)["matches"]
     assert not _cmp(_record(), _record(decisions=[{"chosen": 12}, {"chosen": 4}]), True)["matches"]
     assert not _cmp(_record(), _record(final_distance_cm=3.2), False)["matches"]
+
+
+def test_rerun_rules_that_leave_anything_uncovered_are_rejected():
+    """Reviewer N1 of #111: every compared quantity of an image arm is exact or toleranced."""
+    with pytest.raises(ValueError, match="command tolerance"):
+        rg.RerunRule(image_reading=True, exact=EXACT, tolerances=TOL)
+    with pytest.raises(ValueError, match="not covered"):
+        rg.RerunRule(
+            image_reading=True,
+            exact=("success",),
+            tolerances={"max_abs_command_difference": 0.3},
+        )
+    with pytest.raises(ValueError, match="never compared"):
+        rg.RerunRule(
+            image_reading=True,
+            exact=(*EXACT, "colour"),
+            tolerances=TOL | {"max_abs_command_difference": 0.3},
+        )
+    with pytest.raises(ValueError, match="both exact and toleranced"):
+        rg.RerunRule(
+            image_reading=True,
+            exact=(*EXACT, "final_distance_cm"),
+            tolerances=TOL | {"max_abs_command_difference": 0.3},
+        )
+    with pytest.raises(ValueError, match="finite"):
+        rg.RerunRule(
+            image_reading=True,
+            exact=EXACT,
+            tolerances=TOL | {"max_abs_command_difference": float("inf")},
+        )
+    with pytest.raises(ValueError, match="bitwise"):
+        rg.RerunRule(image_reading=False, exact=("success",))
+    with pytest.raises(TypeError):
+        rg.rerun_matches(_record(), _record(), {"image_reading": True})
 
 
 # ----- pss_bytes: the RSS fallback -------------------------------------------------------------
@@ -182,10 +242,39 @@ def test_close_is_bounded_with_workers_that_ignore_sigterm_mid_map(tmp_path):
     elapsed = time.monotonic() - started
     assert elapsed < 20.0, record
     assert set(record["killed"]) >= pids, (record, pids)
+    assert record["kill_errors"] == {}
     assert record["unkillable"] == []
     for pid in pids:
         with pytest.raises(ProcessLookupError):
             os.kill(pid, 0)
+
+
+def test_kill_errors_are_returned_not_raised(monkeypatch):
+    """Reviewer N2 of #111: close() must always return its record."""
+
+    class _P:
+        pid = 424242
+        exitcode = None
+
+    def denied(*_args):
+        raise PermissionError("not ours")
+
+    monkeypatch.setattr(rg.os, "kill", denied)
+    assert "PermissionError" in rg._kill(_P(), None)
+    if hasattr(rg.signal, "pidfd_send_signal"):
+        monkeypatch.setattr(rg.signal, "pidfd_send_signal", denied)
+        assert "PermissionError" in rg._kill(_P(), 99)
+
+
+def test_close_uses_pidfds_on_linux():
+    pool = rg.BoundedPool(2, rg.probe_task, initializer=rg.probe_init, join_seconds=5.0)
+    fds = [fd for fd in pool._pidfds.values() if fd is not None]
+    record = pool.close()
+    assert record["pidfd"] is sys.platform.startswith("linux")
+    assert record["kill_errors"] == {} and pool._pidfds == {}
+    for fd in fds:  # closed by close()
+        with pytest.raises(OSError):
+            os.fstat(fd)
 
 
 def test_a_dead_worker_raises_at_once():

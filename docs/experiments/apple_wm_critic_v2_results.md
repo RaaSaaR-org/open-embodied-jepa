@@ -212,10 +212,14 @@ fixing and review first. The gated harness (`stage_gated`) was never written.
   every other file in `apple-wm-critic-v2.json`'s `hashes` keep the bytes K0 run-2 ran at
   `35772e5`, and a test checks the two central ones. The fixed code is therefore not what K0
   run-2 ran, and TASK-073's record, frozen hash and G-hash stay reproducible as recorded.
-- **Two follow-ups are not in that module:**
+- **Three follow-ups are not in that module; each moves to TASK-074's preregistration:**
   - `first_outcome_utc` in `VOID_RULE` belongs to each protocol's frozen text, so TASK-074
     writes it into its own `VOID_RULE` from the start;
-  - the train-stage memory on a real corpus is measured in TASK-074's preregistration.
+  - the train-stage memory on a real corpus is measured in TASK-074's preregistration;
+  - the thin re-run margin. The reviewer measured 0.87 cm for H-rand (53960, verify-3) against
+    the 1.0 cm incumbent tolerance, which the protocol does not record. TASK-074 records its own
+    re-run tolerances with the largest difference measured on its smoke seeds and that margin.
+    `RerunRule` now also requires a command tolerance for every image-reading arm.
 
 ## 9. Process
 
