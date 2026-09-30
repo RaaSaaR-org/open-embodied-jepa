@@ -10,9 +10,14 @@ Two ways of running e9 in Isaac, both driven from the host:
 * **closed loop**: the unchanged harness (``resting_expert.run_attempt``, the embodiment's IK,
   the look, the scorer and ``apple_at_rest_v0``) runs on a ``MirrorSimulation``. Its physics
   is remote (an ``IsaacTransport`` in the container, reached through an *endpoint*); after
-  every command the Isaac state (robot joints, apple pose and velocity, plate, Isaac's own
-  apple-hand contact) is written into a local MuJoCo ``MjData`` and ``mj_forward`` is run, so
-  everything that reads ``sim.data`` (IK, ``ee_pose``, contact counts) reads Isaac's state;
+  every command the Isaac state (robot joints and velocities, apple pose and velocity, plate,
+  Isaac's own apple-hand contact) is written into a local MuJoCo ``MjData`` with
+  ``mj_step``'s layout (``MirrorSimulation._apply``): kinematics and collision are computed
+  at the state at the start of the interval's last physics step (the transport's
+  ``last_substep_start``), and the new ``qpos``/``qvel`` are then written without a forward
+  pass. Everything that reads ``sim.data`` (IK, ``ee_pose``, contact counts) reads Isaac's
+  state; only the apple-hand flag of ``task_truth`` is Isaac's own contact, every other
+  contact is MuJoCo collision detection on Isaac's poses;
 * **open loop**: the joint-target arrays that e9 sent in MuJoCo are replayed unchanged.
 
 ``MuJoCoEndpoint`` is the same endpoint backed by a host MuJoCo v2 scene; with it the mirror
@@ -181,6 +186,54 @@ def apple_hand_contact(sim) -> bool:
     return False
 
 
+def placed_rule(truth: dict, *, hand_contact: bool) -> bool:
+    """``MuJoCoSimulation.task_truth``'s ``placed`` rule, evaluated with ``hand_contact``.
+
+    A copy, not a call: the rule is inline in ``MuJoCoSimulation.task_truth`` and
+    ``simulation.py`` is byte-pinned by the benchmark manifests (``src/embodied_jepa/
+    simulation.py`` hashes), so it is not factored out there. The mirror needs it with Isaac's
+    apple-hand flag in place of its own geometric one.
+    ``test_placed_rule_matches_mujoco_task_truth`` pins this copy to the original."""
+    apple = np.asarray(truth["object_position"], float)
+    plate = np.asarray(truth["plate_position"], float)
+    return bool(
+        np.linalg.norm(apple[:2] - plate[:2]) < 0.04
+        and abs(apple[2] - (truth["container_surface_z"] + truth["object_support_height"])) < 0.012
+        and np.linalg.norm(truth["object_velocity"]) < 0.1
+        and not hand_contact
+    )
+
+
+def self_contact_summary(rows, sources) -> dict:
+    """Robot self-contact seen in a run or comparison: steps and attempts per source; a flag.
+
+    ``rows`` are per-attempt dicts with a ``key`` and, per source in ``sources`` (``mujoco``,
+    ``closed``, ``open``), a summary carrying ``self_contact_steps`` (MuJoCo collision detection
+    on the state in ``sim.data``: MuJoCo's own state, or Isaac's in the mirror) and/or
+    ``remote_self_contact_steps`` (Isaac's own contact list). Both Isaac backends run without
+    robot self-collision (ruling in ``docs/ISAAC_E9_REPLAY.md`` §5), so Isaac's own list cannot
+    show one; the mirror's MuJoCo check, with self-collision on as in the host MJCF, is the
+    check that matters. ``flag`` is True if any source saw a self-contact: that run needs
+    review, because Isaac let links interpenetrate that MuJoCo would have pushed apart."""
+    out: dict = {}
+    for source in sources:
+        entries = [
+            (r["key"], r[source])
+            for r in rows
+            if isinstance(r.get(source), dict) and r[source].get("ok", True)
+        ]
+        for field in ("self_contact_steps", "remote_self_contact_steps"):
+            values = [(key, int(s[field])) for key, s in entries if s.get(field) is not None]
+            if values:
+                out[f"{source}_{field}"] = {
+                    "steps": sum(v for _, v in values),
+                    "attempts_with_contact": sorted(k for k, v in values if v > 0),
+                    "attempts_checked": len(values),
+                }
+    out["flag"] = any(v["steps"] > 0 for v in out.values())
+    return out
+
+
 class MirrorSimulation(MuJoCoSimulation):
     """A ``MuJoCoSimulation`` whose physics runs behind ``endpoint``; ``data`` mirrors it.
 
@@ -347,14 +400,8 @@ class MirrorSimulation(MuJoCoSimulation):
         if self._remote is None:
             return truth
         hand = bool(self._remote["hand_contact"])
-        apple, plate = truth["object_position"], truth["plate_position"]
         truth["hand_contact"] = hand
-        truth["placed"] = bool(
-            np.linalg.norm(apple[:2] - plate[:2]) < 0.04
-            and abs(apple[2] - (self.container_surface_z + self.object_support_height)) < 0.012
-            and np.linalg.norm(truth["object_velocity"]) < 0.1
-            and not hand
-        )
+        truth["placed"] = placed_rule(truth, hand_contact=hand)
         return truth
 
 

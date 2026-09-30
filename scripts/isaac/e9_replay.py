@@ -93,8 +93,25 @@ def closed_loop(robot, recorder, bounds, task) -> tuple[dict, dict]:
     )
     rec = recorder.arrays()
     summary["look_steps"] = int(len(rec["rec_time"]) - summary["steps"])
-    summary["self_contact_pairs"] = dict(recorder.self_pairs)
+    summary.update(self_contact_fields(recorder, rec))
     return summary, {**arrays, **rec}
+
+
+def self_contact_fields(recorder, rec) -> dict:
+    """Per-attempt robot self-contact (see ``isaac_e9.self_contact_summary``)."""
+    return {
+        "self_contact_pairs": dict(recorder.self_pairs),
+        "self_contact_steps": int(np.sum(np.asarray(rec["rec_self_count"]) > 0)),
+        "remote_self_contact_steps": int(
+            np.sum(np.asarray(rec["rec_isaac_counts"])[:, IPAIR["robot_self"]] > 0)
+        ),
+    }
+
+
+def warn_self_contact(summary: dict) -> None:
+    if summary["flag"]:
+        hits = {k: v["attempts_with_contact"] for k, v in summary.items() if k != "flag"}
+        print(f"SELF-CONTACT FLAG: robot self-contact seen: {hits}", file=sys.stderr, flush=True)
 
 
 # ----- MuJoCo reference ----------------------------------------------------------------------
@@ -159,8 +176,10 @@ def cmd_mujoco(args) -> int:
         "levels_cm": list(args.levels),
         "seconds": time.monotonic() - started,
         "attempts": rows,
+        "self_contact": ie.self_contact_summary([r for r in rows if r["ok"]], ["closed"]),
     }
     write_report(args.output / "report.json", report)
+    warn_self_contact(report["self_contact"])
     ok = [r for r in rows if r["ok"]]
     print(
         json.dumps(
@@ -272,8 +291,9 @@ def cmd_isaac(args) -> int:
                             look_steps=look,
                         )
                         summary["look_steps"] = look
-                        summary["self_contact_pairs"] = dict(recorder.self_pairs)
-                        arrays = {**arrays, **recorder.arrays()}
+                        rec = recorder.arrays()
+                        summary.update(self_contact_fields(recorder, rec))
+                        arrays = {**arrays, **rec}
                     summary["seconds"] = time.monotonic() - t0
                     np.savez_compressed(args.output / f"{mode}_{task['key']}.npz", **arrays)
                     row[mode] = {"ok": True, **summary}
@@ -307,8 +327,10 @@ def cmd_isaac(args) -> int:
         "server_timing": timing,
         "seconds": time.monotonic() - started,
         "attempts": rows,
+        "self_contact": ie.self_contact_summary(rows, args.modes),
     }
     write_report(args.output / "report.json", report)
+    warn_self_contact(report["self_contact"])
     return 0
 
 
@@ -486,6 +508,7 @@ def cmd_compare(args) -> int:
                     np.linalg.norm(arr["apple_pos"][-1][:2] - m_arr["apple_pos"][-1][:2]) * 100
                 ),
                 "divergence": ie.divergence(m_arr["rec_q"], rec_q, names),
+                "self_contact_steps": int(np.sum(arr["rec_self_count"] > 0)),
                 "mirror_self_contact_steps": int(np.sum(arr["rec_self_count"] > 0)),
                 "mirror_self_min_dist_m": float(np.nanmin(arr["rec_self_min_dist"]))
                 if np.any(arr["rec_self_count"] > 0)
@@ -496,6 +519,7 @@ def cmd_compare(args) -> int:
                     np.sum(np.asarray(arr["rec_isaac_counts"])[:, IPAIR["robot_self"]] > 0)
                 ),
             }
+            out[mode]["remote_self_contact_steps"] = out[mode]["isaac_self_contact_steps"]
         table.append(out)
     args.output.mkdir(parents=True, exist_ok=False)
     result = {
@@ -508,10 +532,13 @@ def cmd_compare(args) -> int:
         "compare_revision": git("rev-parse", "HEAD"),
         "attempts": table,
         "totals": totals(table, isa["modes"]),
+        "self_contact": ie.self_contact_summary(table, ["mujoco", *isa["modes"]]),
     }
     write_report(args.output / "compare.json", result)
     (args.output / "compare.md").write_text(markdown(table, isa["modes"]))
     print(json.dumps(result["totals"], indent=1))
+    print(json.dumps({"self_contact": result["self_contact"]}, indent=1))
+    warn_self_contact(result["self_contact"])
     return 0
 
 

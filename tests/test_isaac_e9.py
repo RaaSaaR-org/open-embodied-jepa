@@ -198,3 +198,63 @@ def test_mirror_over_mujoco_reproduces_a_plain_mujoco_e9_attempt():
     assert replay["at_rest"] == s0["at_rest"]
     assert np.array_equal(arrays["apple_pos"], a0["apple_pos"])
     endpoint.close()
+
+
+def test_self_contact_summary_flags_any_source():
+    rows = [
+        {
+            "key": "0.0-50200",
+            "mujoco": {"self_contact_steps": 0},
+            "closed": {"ok": True, "self_contact_steps": 0, "remote_self_contact_steps": 0},
+            "open": {"ok": False},
+        },
+        {
+            "key": "0.0-50201",
+            "mujoco": {"self_contact_steps": 0},
+            "closed": {"ok": True, "self_contact_steps": 0, "remote_self_contact_steps": 0},
+            "open": {"ok": True, "self_contact_steps": 0},
+        },
+    ]
+    clean = ie.self_contact_summary(rows, ["mujoco", "closed", "open"])
+    assert clean["flag"] is False
+    assert clean["closed_self_contact_steps"] == {
+        "steps": 0,
+        "attempts_with_contact": [],
+        "attempts_checked": 2,
+    }
+    assert clean["open_self_contact_steps"]["attempts_checked"] == 1  # failed attempt skipped
+    rows[1]["open"]["self_contact_steps"] = 3
+    hit = ie.self_contact_summary(rows, ["mujoco", "closed", "open"])
+    assert hit["flag"] is True
+    assert hit["open_self_contact_steps"]["attempts_with_contact"] == ["0.0-50201"]
+
+
+def test_placed_rule_matches_mujoco_task_truth():
+    """The mirror's copy of ``MuJoCoSimulation.task_truth``'s ``placed`` rule must not drift."""
+    pytest.importorskip("mujoco")
+    from embodied_jepa.simulation import MuJoCoSimulation
+
+    sim = MuJoCoSimulation(render=False, object_kind="apple", container_kind="plate")
+    v2.apply_v2_scene(sim.model)
+    try:
+        sim.reset(50200)
+        joint = sim.data.joint("apple_free")
+        plate = sim.data.body("plate").xpos.copy()
+        rest_z = sim.container_surface_z + sim.object_support_height
+        rng = np.random.default_rng(0)
+        seen = set()
+        cases = [(0.0, 0.0, 0.0), (0.039, 0.011, 0.0), (0.041, 0.0, 0.0), (0.0, 0.013, 0.0)]
+        cases += [(0.0, 0.0, 0.2)] + [tuple(rng.uniform(-0.05, 0.05, 3)) for _ in range(40)]
+        for dx, dz, speed in cases:
+            joint.qpos[:3] = [plate[0] + dx, plate[1], rest_z + dz]
+            joint.qvel[:] = 0.0
+            joint.qvel[0] = abs(speed)
+            sim.mj.mj_forward(sim.model, sim.data)
+            truth = sim.task_truth()
+            got = ie.placed_rule(truth, hand_contact=truth["hand_contact"])
+            assert got == truth["placed"], (dx, dz, speed)
+            seen.add(got)
+            assert ie.placed_rule(truth, hand_contact=True) is False
+        assert seen == {True, False}
+    finally:
+        sim.close()
