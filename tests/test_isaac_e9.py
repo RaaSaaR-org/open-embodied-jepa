@@ -258,3 +258,10 @@ def test_placed_rule_matches_mujoco_task_truth():
         assert seen == {True, False}
     finally:
         sim.close()
+
+
+def test_self_contact_summary_reads_the_compare_field_names():
+    rows = [{"key": "k", "open": {"ok": True, "mirror_self_contact_steps": 2}}]
+    out = ie.self_contact_summary(rows, ["open"])
+    assert out["flag"] is True and out["open_self_contact_steps"]["steps"] == 2
+    assert "open_remote_self_contact_steps" not in out

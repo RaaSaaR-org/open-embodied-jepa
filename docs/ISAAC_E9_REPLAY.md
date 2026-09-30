@@ -113,9 +113,9 @@ uv run --no-sync python scripts/isaac/e9_replay.py compare --reference outputs/<
 | Isaac closed loop, run 3 | 12 | 12 | 2.79 / 3.65 / 4.17 | 2.63 / 3.61 / 4.21 |
 | Isaac open loop, run 1 | 12 | 13 | 3.13 / 3.55 / 4.27 | 3.04 / 3.56 / 4.22 |
 | Isaac open loop, run 3 | 13 | 12 | 2.62 / 3.08 / 4.18 | 2.97 / 3.56 / 4.26 |
+| MuJoCo + 1 mrad target noise (2 draws per attempt, of 32) | 31 | 26 | 2.55 / 3.29 / 3.77 | 2.74 / 3.43 / 4.34 |
 
 For the noisy-MuJoCo row, the final distance pooled over both plate levels (64 replays) is 2.67 / 3.36 / 3.99 cm.
-| MuJoCo + 1 mrad target noise (2 draws per attempt, of 32) | 31 | 26 | 2.55 / 3.29 / 3.77 | 2.74 / 3.43 / 4.34 |
 
 - **Every Isaac attempt completed**: 128 of 128, with no guard stop, rejection or error. The latched scorer (`AppleToPlateTask`, reported beside the at-rest check) succeeded in all 64 closed-loop Isaac attempts, as in all 32 MuJoCo attempts. The open-loop replay does not run the latched scorer.
 - **Every at-rest failure fails on "inside" only**, in Isaac and in MuJoCo's one failure (1.0 cm, 50206: 4.08 cm). The apple ends supported on the plate, still (≤ 0.001 m/s) and out of hand contact. It ends 3.99–4.60 cm from the centre, and every failure exceeds 4 cm within the 20-step at-rest window. Two Isaac failures end just below 4 cm: closed run 1, 0.0 cm, 50209 at 3.994 cm (window maximum 4.006 cm), and open run 3, 0.0 cm, 50214 at 3.999 cm (window maximum 4.009 cm). The apple never left the plate.
@@ -208,7 +208,7 @@ The ranges combine runs 1 and 3. Command indices count all 793 commands, includi
 - **Dex3.** The worst joint is `right_hand_thumb_1_joint` in every attempt.
   - **When the Dex3 group first passes 0.01 rad.** In most attempts this happens at commands 220–222, as the hand closes on the apple. In 2 of 32 attempts per closed-loop cell and 6–7 of 32 per open-loop cell, it happens earlier, at commands 150–152. That earlier crossing is on `right_hand_thumb_2_joint`, while the hand descends with no apple–hand contact in either simulator. There the finger is displaced from its unchanged target in both simulators, by slightly different amounts.
   - **The worst joint.** `right_hand_thumb_1_joint` itself passes 0.01 rad at commands 220–224 and 0.1 rad at commands 253–265, while the hand closes around the apple. In run 3 it never passes 0.1 rad in 2 closed-loop attempts and 1 open-loop attempt.
-  - **One open-loop attempt (0.0 cm, 50200).** The thumb difference peaks at 0.364 rad at command 263 in run 1 (0.381 rad at command 263 in run 3), while apple contact drives the thumb. It is 0.155 rad at command 260. The median is 0.018 rad while holding (commands 400–579), and it is 0.000 rad after the hand has opened.
+  - **One open-loop attempt (0.0 cm, 50200).** The thumb difference peaks at 0.364 rad at command 263 in run 1 (0.381 rad at command 263 in run 3), while apple contact drives the thumb. It is 0.155 rad at command 260. The median is 0.017 rad while holding (commands 400–579), and it is 0.000 rad after the hand has opened.
   - The left hand, which never touches anything, agrees to 1.7e-5 rad in that attempt and to at most 2.1e-5 rad over all attempts.
 - **Arms.** In closed loop the arm differences (≤ 0.12 rad) are the IK responding to the different hand and apple state. In open loop the arms follow the same targets and differ by ≤ 0.017 rad, compared with 3.7e-6 rad in the contact-free free-space parity of the spike.
 - **So the divergence is contact-driven,** as the spike's table-contact trajectory suggested for PhysX.
@@ -250,7 +250,7 @@ The ranges combine runs 1 and 3. Command indices count all 793 commands, includi
 
 ## 4. The start-up hang
 
-**Recurrence.** In this task, 1 of the 3 full server starts hung (`isaac-e9-server-2`), and 1 of the 8 start-up probes hung (probe 4).
+**Recurrence.** In this task, 1 of the 3 full server starts hung (`isaac-e9-server-2`), 1 of the 8 start-up probes hung (probe 4), and the one start through the watchdog (`isaac-e9-watchdog-smoke-1`) did not hang.
 
 **Where it hangs.**
 - `e9_server_isaac.py` dumps all Python stacks every 120 s during start-up.
@@ -291,8 +291,8 @@ Start-up probes (`startup_probe.sh`, `--startup_only`, limit 420 s, one containe
 | 7 | built | 124.9 |
 | 8 | built | 125.5 |
 
-- **In this task:** 2 hangs in 11 starts (3 servers, 8 probes). Both hangs were at the same line.
-- **With the spike:** 4 in 21 Newton starts, about 1 in 5.
+- **In this task:** 2 hangs in 12 starts (3 servers, 8 probes, 1 watchdog start), so 10 healthy. Both hangs were at the same line.
+- **With the spike:** 4 in 22 Newton starts, about 1 in 5.
 - **Where:** every hang recorded with a stack dump is at the same line. The spike's two hangs were at the same log position.
 - **After a successful build** there were no hangs: the 3 probe steps took 0.2–0.3 s, and the two full servers ran 50 752 steps each.
 
@@ -301,10 +301,10 @@ Start-up probes (`startup_probe.sh`, `--startup_only`, limit 420 s, one containe
   - What it does. `scripts/isaac/serve_with_watchdog.sh <out-prefix> <limit-s> <tries> [server args]` starts `e9_server_isaac.py` through `run_isaac.sh`, as try `<out-prefix>-t<k>`.
   - Hang detection. If the try has not logged `transport built` within the limit, the watchdog stops only that try's own container (`oej-isaac-<try>`). It then stops the launcher process it started itself, if that is still running, and starts the next try.
   - Limits and records. The number of tries is bounded. Every try, hang and retry is written to `<out-prefix>-watchdog.log`. The socket of the try that built is written to `<out-prefix>-ready`, for `e9_replay.py isaac --socket`.
-  - Other failures. A start that exits before building is a different failure, so it is not retried.
-  - The limit. The recommended limit is 300 s. Healthy starts built in 124.9–151.6 s (10 starts), so 300 s is about twice the slowest. The recommended number of tries is 3: at about 1 hang in 5 starts, three hangs in a row would happen about 1 time in 100, if starts are independent (*inferred*).
+  - Other failures. A start that exits before building is a different failure, so it is not retried. If stopping the hung try's own container fails, the watchdog logs the failure and the stop command's output, starts nothing more, and exits 6. The hung container may still hold GPU memory, so it needs a person.
+  - The limit. The recommended limit is 300 s. Healthy starts built in 124.9–151.6 s by the server's clock (the 10 healthy starts of this task), so 300 s is about twice the slowest. The recommended number of tries is 3: at about 1 hang in 5 starts, three hangs in a row would happen about 1 time in 100, if starts are independent (*inferred*).
   - Why a restart is safe. The hang happens before any episode.
-  - Tests. `tests/test_isaac_watchdog.py` checks, with a fake launcher: retry after a hang; giving up after the bounded number of tries (exit 4); no retry after a crash; and that only the hung try's container is stopped.
+  - Tests. `tests/test_isaac_watchdog.py` checks, with a fake launcher: retry after a hang; giving up after the bounded number of tries (exit 4); no retry after a crash; no retry after a failed container stop (exit 6); and that only the hung try's container is stopped.
   - Real check. One real start went through the watchdog (`isaac-e9-watchdog-smoke-1`, `--startup_only`). It built at 125.9 s by the server's clock, which the watchdog saw at 128 s. It did not hang, so the retry path has been exercised only with the fake launcher.
   - Still manual. `startup_probe.sh` still records hangs without retrying, because counting them is its purpose.
 - **(b) Parse a detached copy: not run.** The idea is to run `add_usd` on a detached, flattened copy of the stage (`stage.Flatten()` into an anonymous in-memory stage) instead of the live Kit stage. This would test the race hypothesis. At this hang rate it needs about 20 or more probes per arm to be informative. It stays open as an option.

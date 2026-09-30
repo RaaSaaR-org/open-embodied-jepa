@@ -14,7 +14,8 @@
 # that try's own container (oej-isaac-<basename of the try dir>), then the launcher process it
 # started itself, and starts try k+1, up to <tries> tries. A try that exits before building is
 # not retried (that is a different failure). Every try, hang and retry is logged to
-# <out-prefix>-watchdog.log. When a try has built, <out-prefix>-ready holds its socket path
+# <out-prefix>-watchdog.log. If stopping a hung try's own container fails, nothing more is
+# started: the failure is logged and the watchdog exits 6. When a try has built, <out-prefix>-ready holds its socket path
 # (<try dir>/run/e9.sock, for `e9_replay.py isaac --socket`) and the watchdog waits for that
 # server to exit and returns its status. Exit 4: every try hung.
 # Test hooks (tests/test_isaac_watchdog.py): ISAAC_WATCHDOG_RUN (launcher), ISAAC_WATCHDOG_STOP
@@ -68,8 +69,16 @@ for k in $(seq 1 "$TRIES"); do
     exit "$STATUS"
   fi
   log "try $k/$TRIES: HANG: no 'transport built' after ${LIMIT} s; stopping own container $NAME"
+  STOP_STATUS=0
   # shellcheck disable=SC2086
-  $STOP "$NAME" > /dev/null 2>&1 || true
+  STOP_OUT=$($STOP "$NAME" 2>&1) || STOP_STATUS=$?
+  if [ "$STOP_STATUS" -ne 0 ]; then
+    log "try $k/$TRIES: STOP FAILED for own container $NAME (status $STOP_STATUS): $STOP_OUT"
+    log "not retrying: the hung container may still hold the GPU; launcher $PID left running" \
+      "for inspection; stop $NAME by hand"
+    exit 6
+  fi
+  log "try $k/$TRIES: stopped own container $NAME"
   WAITED=0
   while kill -0 "$PID" 2>/dev/null && [ "$WAITED" -lt "$GRACE" ]; do
     sleep 1

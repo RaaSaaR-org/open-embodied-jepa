@@ -508,7 +508,6 @@ def cmd_compare(args) -> int:
                     np.linalg.norm(arr["apple_pos"][-1][:2] - m_arr["apple_pos"][-1][:2]) * 100
                 ),
                 "divergence": ie.divergence(m_arr["rec_q"], rec_q, names),
-                "self_contact_steps": int(np.sum(arr["rec_self_count"] > 0)),
                 "mirror_self_contact_steps": int(np.sum(arr["rec_self_count"] > 0)),
                 "mirror_self_min_dist_m": float(np.nanmin(arr["rec_self_min_dist"]))
                 if np.any(arr["rec_self_count"] > 0)
@@ -519,7 +518,6 @@ def cmd_compare(args) -> int:
                     np.sum(np.asarray(arr["rec_isaac_counts"])[:, IPAIR["robot_self"]] > 0)
                 ),
             }
-            out[mode]["remote_self_contact_steps"] = out[mode]["isaac_self_contact_steps"]
         table.append(out)
     args.output.mkdir(parents=True, exist_ok=False)
     result = {

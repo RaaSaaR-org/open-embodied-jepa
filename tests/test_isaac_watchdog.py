@@ -28,19 +28,22 @@ echo "$*" >> "$STATE/args"
 what=$(echo "$PLAN" | cut -d' ' -f"$n")
 echo "[e9-server +   3.0s] building IsaacTransport (physics=newton)" > "$OUT/log.txt"
 case "$what" in
-  hang) exec sleep 600 ;;
+  hang) echo $$ >> "$STATE/hung_pids"; exec sleep 600 ;;
   ok) echo "[e9-server + 130.0s] transport built" >> "$OUT/log.txt"; sleep 0.5; exit 0 ;;
   crash) exit 7 ;;
 esac
 """
 
 
-def _run(tmp_path, plan: str, tries: int = 3):
+def _run(tmp_path, plan: str, tries: int = 3, stop_status: int = 0):
     fake = tmp_path / "fake_run_isaac.sh"
     fake.write_text(FAKE)
     fake.chmod(0o755)
     stop = tmp_path / "fake_stop.sh"
-    stop.write_text('#!/usr/bin/env bash\necho "$@" >> "$STATE/stopped"\n')
+    stop.write_text(
+        '#!/usr/bin/env bash\necho "$@" >> "$STATE/stopped"\n'
+        f'[ {stop_status} -eq 0 ] || {{ echo "permission denied" >&2; exit {stop_status}; }}\n'
+    )
     stop.chmod(0o755)
     state = tmp_path / "state"
     state.mkdir()
@@ -99,3 +102,17 @@ def test_watchdog_refuses_to_overwrite(tmp_path):
     (tmp_path / "out" / "srv-watchdog.log").write_text("earlier")
     proc, _, read = _run(tmp_path, "ok")
     assert proc.returncode == 1 and read("calls") == ""
+
+
+def test_watchdog_stops_without_retry_when_its_container_stop_fails(tmp_path):
+    proc, prefix, read = _run(tmp_path, "hang ok", stop_status=1)
+    try:
+        assert proc.returncode == 6
+        log = Path(f"{prefix}-watchdog.log").read_text()
+        assert "STOP FAILED for own container oej-isaac-srv-t1 (status 1)" in log
+        assert "permission denied" in log and "not retrying" in log
+        assert read("calls").strip() == "1"  # no second try was started
+        assert not Path(f"{prefix}-ready").exists()
+    finally:
+        for pid in read("hung_pids").split():  # the fake hung launcher this test started
+            subprocess.run(["kill", pid], check=False, capture_output=True)

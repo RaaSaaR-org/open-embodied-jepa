@@ -204,13 +204,28 @@ def placed_rule(truth: dict, *, hand_contact: bool) -> bool:
     )
 
 
+SELF_CONTACT_FIELDS = {
+    "self_contact_steps": "mirror_self_contact_steps",
+    "remote_self_contact_steps": "isaac_self_contact_steps",
+}
+
+
+def _steps(summary: dict, field: str) -> int | None:
+    for name in (field, SELF_CONTACT_FIELDS[field]):
+        if summary.get(name) is not None:
+            return int(summary[name])
+    return None
+
+
 def self_contact_summary(rows, sources) -> dict:
     """Robot self-contact seen in a run or comparison: steps and attempts per source; a flag.
 
     ``rows`` are per-attempt dicts with a ``key`` and, per source in ``sources`` (``mujoco``,
     ``closed``, ``open``), a summary carrying ``self_contact_steps`` (MuJoCo collision detection
     on the state in ``sim.data``: MuJoCo's own state, or Isaac's in the mirror) and/or
-    ``remote_self_contact_steps`` (Isaac's own contact list). Both Isaac backends run without
+    ``remote_self_contact_steps`` (Isaac's own contact list). ``e9_replay.py compare`` names
+    them ``mirror_self_contact_steps`` and ``isaac_self_contact_steps``; both spellings are
+    read (``SELF_CONTACT_FIELDS``). Both Isaac backends run without
     robot self-collision (ruling in ``docs/ISAAC_E9_REPLAY.md`` §5), so Isaac's own list cannot
     show one; the mirror's MuJoCo check, with self-collision on as in the host MJCF, is the
     check that matters. ``flag`` is True if any source saw a self-contact: that run needs
@@ -222,8 +237,8 @@ def self_contact_summary(rows, sources) -> dict:
             for r in rows
             if isinstance(r.get(source), dict) and r[source].get("ok", True)
         ]
-        for field in ("self_contact_steps", "remote_self_contact_steps"):
-            values = [(key, int(s[field])) for key, s in entries if s.get(field) is not None]
+        for field in SELF_CONTACT_FIELDS:
+            values = [(key, v) for key, s in entries if (v := _steps(s, field)) is not None]
             if values:
                 out[f"{source}_{field}"] = {
                     "steps": sum(v for _, v in values),

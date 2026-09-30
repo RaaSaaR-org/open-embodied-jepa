@@ -1,16 +1,16 @@
 # Draft upstream report: intermittent hang in `UsdPhysics.LoadUsdPhysicsFromRange` during Newton `add_usd` (Isaac Lab 3 / Isaac Sim 6.0.0-rc.22)
 
-**Status: draft, not posted.** It was written for the Newton and Isaac Lab issue trackers. The project owner posts it after checking it. Evidence and context are in [ISAAC_E9_REPLAY.md](../ISAAC_E9_REPLAY.md) §4 and [ISAAC_NEWTON_SPIKE.md](../ISAAC_NEWTON_SPIKE.md) §6. Before posting, remove the project-internal paths, or replace them with a public minimal repro if one is made.
+**Status: internal record, not posted.** A version edited for upstream, without project paths, is prepared separately for the owner to post. It was written for the Newton and Isaac Lab issue trackers. The project owner posts it after checking it. Evidence and context are in [ISAAC_E9_REPLAY.md](../ISAAC_E9_REPLAY.md) §4 and [ISAAC_NEWTON_SPIKE.md](../ISAAC_NEWTON_SPIKE.md) §6. Before posting, remove the project-internal paths, or replace them with a public minimal repro if one is made.
 
 ---
 
 ## Summary
 
-Building a Newton model from the live Isaac Lab stage with `newton.ModelBuilder.add_usd(stage, ...)` sometimes never returns. It hangs in about 1 of 5 process starts: 4 of 21 in our runs. Every stack dump taken during a hang shows the main thread inside `UsdPhysics.LoadUsdPhysicsFromRange`, called from `newton/_src/utils/import_usd.py:317` (`parse_usd`). The inputs were the same on every start: the same USD, code and container image. A start that gets past this point never hung later.
+Building a Newton model from the live Isaac Lab stage with `newton.ModelBuilder.add_usd(stage, ...)` sometimes never returns. It hangs in about 1 of 5 process starts: 4 of 22 in our runs. Every stack dump taken during a hang shows the main thread inside `UsdPhysics.LoadUsdPhysicsFromRange`, called from `newton/_src/utils/import_usd.py:317` (`parse_usd`). The inputs were the same on every start: the same USD, code and container image. A start that gets past this point never hung later.
 
 ## Environment
 
-- Container image: `isaaclab_arena:latest`, `sha256:2588b52605d77552d4480196501c4b8b61774ef6d70d9b3d59291622d6856d9c`.
+- Container image: `isaaclab_arena:latest`, `sha256:2588b52605d77552d4480196501c4b8b61774ef6d70d9b3d59291622d6856d9c`. It was built locally, apparently from the `isaac-sim/IsaacLab-Arena` checkout on this host: commit `8b4a3a47…`, `docker/Dockerfile.isaaclab_arena`, `INSTALL_GROOT=false`, IsaacLab submodule `e57379c6…`. The image was created on 2026-09-23. That the image came from this exact checkout is inferred from the image layers and has not been verified.
 - Isaac Sim `6.0.0-rc.22+release.33481.407f3ea1.gl` (`/isaac-sim/VERSION`).
 - Isaac Lab 3.0.0 and `isaaclab_newton` 0.5.9.
 - `newton` 1.1.0.dev0, `mujoco_warp` 3.5.0.2, `mujoco` 3.5.0 and `warp` 1.12.0. These are the image's installed packages under `/isaac-sim/kit/python/lib/python3.12/site-packages/`.
@@ -51,11 +51,11 @@ We have **not** made a minimal standalone repro (just the robot USD, without our
 | Series | Newton starts | Hung |
 | --- | --- | --- |
 | Earlier spike (full runs) | 10 | 2 |
-| This series: 3 full server starts and 8 start-up-only probes, one container at a time | 11 | 2 |
-| Total | 21 | 4 |
+| This series: 3 full server starts, 8 start-up-only probes and 1 start-up-only start through our watchdog, one container at a time | 12 | 2 |
+| Total | 22 | 4 |
 
 - Every start used the same USD, code, image and command.
-- Healthy starts reached `transport built` in 124.9–151.6 s (10 starts). Most of that time is Warp kernel compilation and CUDA graph capture (`CUDA graph took: 83 s`) into an empty per-container kernel cache.
+- Healthy starts reached `transport built` in 124.9–151.6 s (the 10 healthy starts of this series). Most of that time is Warp kernel compilation and CUDA graph capture (`CUDA graph took: 83 s`) into an empty per-container kernel cache.
 - Hung starts were stopped after 7 to 20+ minutes with nothing further logged.
 - After a successful build we saw no hang: two servers ran 50 752 control steps each.
 - We did not test whether PhysX starts can hang in the same way.
