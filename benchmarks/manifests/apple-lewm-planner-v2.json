@@ -4911,7 +4911,216 @@
    },
    "status": "historical: ran on an uncommitted working tree; not the record for the GO (protocol \u00a710.2)"
   },
-  "frozen_code": null
+  "frozen_code": {
+   "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+   "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+   "seeds": "54650-54699 only; mechanics; nothing is read",
+   "machine": "quiet start (1- and 5-minute load <= 2.0, Python os.getloadavg) for every simulating stage; decide (a JSON read, no simulation) started at load 4.0",
+   "reports": {
+    "render": {
+     "outcome": "SMOKE-COMPLETE",
+     "sha256": "88ebb87b393aa003c076549f375ea715e7896b67e8ffded88f3b0368096c72ec",
+     "seconds": 42.8,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 8.003,
+     "load_average_at_start": [
+      0.65234375,
+      0.5205078125,
+      0.65380859375
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/render/report.json"
+    },
+    "k1": {
+     "outcome": "K1-PASS",
+     "sha256": "02efb1c116614b2dfe5b67b1a802b3adb3b68ac17350b1be62cc3803a219828b",
+     "seconds": 58.6,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 8.134,
+     "load_average_at_start": [
+      1.55859375,
+      1.03564453125,
+      0.8349609375
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/k1/report.json"
+    },
+    "train": {
+     "outcome": "TRAIN-COMPLETE",
+     "sha256": "8d9a45371fa44742166187a2edb7d3e97053b81dd9f5583704f1f80bb18e830a",
+     "seconds": 1125.4,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 8.767,
+     "load_average_at_start": [
+      1.74609375,
+      1.779296875,
+      1.1689453125
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/train/report.json"
+    },
+    "pfar": {
+     "outcome": "PFAR-COMPLETE",
+     "sha256": "34d54f50701dbdf140f9bfd3ceec454e28dfdb0829ca2c0d7e6998d1d3181b77",
+     "seconds": 59.6,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 9.531,
+     "load_average_at_start": [
+      0.0390625,
+      1.970703125,
+      5.00244140625
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/pfar/report.json"
+    },
+    "rank": {
+     "outcome": "RANK-COMPLETE",
+     "sha256": "cff196c156243ecaa6fb6e042133fc54f80f2d37c0ddf03592964f57d35d40a4",
+     "seconds": 96.9,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 7.333,
+     "load_average_at_start": [
+      0.96337890625,
+      1.95654296875,
+      4.64697265625
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/rank/report.json"
+    },
+    "decide": {
+     "outcome": "L-NO-DYNAMICS",
+     "sha256": "c7515d9a9da78c2aa785e7203cb173f7508d358b4d2b709722aa970fcff86d97",
+     "seconds": 2.0,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 0.777,
+     "load_average_at_start": [
+      3.99951171875,
+      2.72021484375,
+      4.65478515625
+     ],
+     "quiet_machine": false,
+     "path": "outputs/task074-scratch/frozen/decide/report.json"
+    },
+    "d3": {
+     "outcome": "D3-SMOKE",
+     "sha256": "38df51ac569cf0a2fea83b8c06d84ebebc0c01bd43ed4f1995d925926b8928a9",
+     "seconds": 109.8,
+     "revision": "510347a5a912dcb4e7ed65aac893f3dce4f24dcf",
+     "tracked_tree_dirty": false,
+     "frozen_sha256": "32c2d7487b54eaa04de1546c406db113b8ee8dfa18bad3da5ccc4b5ba7fb2393",
+     "peak_tree_pss_gib": 8.362,
+     "load_average_at_start": [
+      0.810546875,
+      1.93408203125,
+      4.14990234375
+     ],
+     "quiet_machine": true,
+     "path": "outputs/task074-scratch/frozen/d3/report.json"
+    }
+   },
+   "facts": {
+    "render_check": "IDENTICAL",
+    "g_repro": "8/8",
+    "o5_median_smoke": 0.21042679325542019,
+    "train_scale": {
+     "ceiling_gib": 12.0,
+     "frames": 81420,
+     "note": "smoke data cycled to the real stage's sizes; memory only, nothing is read",
+     "o1_windows": {
+      "overall": 1230
+     },
+     "r_plate_lambda": 1000.0,
+     "r_plate_rows": 1440,
+     "roots": 460,
+     "seconds": 575.7499837799696,
+     "stage_peak_tree_pss_gib_so_far": 8.767104148864746,
+     "tree_pss_gib_after": 6.155043601989746,
+     "tree_pss_gib_before": 3.57840633392334
+    },
+    "feature_anchor": {
+     "bound": 0.001,
+     "frames": 208,
+     "max_abs_difference": 4.414469003677368e-05
+    },
+    "pfar_scale": {
+     "ceiling_gib": 12.0,
+     "note": "smoke rows tiled to the real stage's size; memory only, nothing is read",
+     "rows": 195750,
+     "seconds": 0.8600120289484039,
+     "stage_peak_tree_pss_gib_so_far": 9.530776977539062,
+     "tree_pss_gib_after": 9.419292449951172,
+     "tree_pss_gib_before": 9.234989166259766
+    },
+    "latency": {
+     "decisions": 24,
+     "median_seconds": 0.5439385770587251,
+     "p90_seconds": 0.583453874848783,
+     "max_seconds": 0.5865258689736947
+    },
+    "rerun": {
+     "H-twin": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ],
+     "L-plan": [
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54657,
+       "target_cm_max": 0.0
+      },
+      {
+       "differences": {},
+       "matches": true,
+       "max_abs_command_difference": 0.0,
+       "missing": [],
+       "seed": 54658,
+       "target_cm_max": 0.0
+      }
+     ]
+    },
+    "shift_blocked": {
+     "B-oracle-shift": 0,
+     "H-handover": 0,
+     "H-twin": 0,
+     "L-N": 0,
+     "L-plan": 0,
+     "L-rand": 0,
+     "L-shuf": 0,
+     "P-far": 0,
+     "P-stale": 0,
+     "P-truth": 0
+    }
+   }
+  }
  },
  "hashes": {
   "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",

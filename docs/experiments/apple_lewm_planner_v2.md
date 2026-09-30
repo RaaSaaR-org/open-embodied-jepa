@@ -692,7 +692,24 @@ Python with the C locale. The manifest's `smoke.frozen_code` block records their
 `frozen_sha256` and report sha256s. The smoked code is the frozen code. Only this document and the
 manifest's smoke record, neither of them pinned, changed afterwards.
 
-FROZEN_SMOKE_TABLE
+**Revision `510347a`, frozen sha `32c2d748…2393`,** a clean tree
+(`tracked_tree_dirty: false`), smoke seeds only. The 1- and 5-minute loads at the start are
+unrounded.
+
+| smoke (report sha256) | start load | what it checked | result |
+|---|---|---|---|
+| `smoke` (render; `88ebb87b…`) | 0.652, 0.521 | G-repro; the GO's render check, 32 seeds × 4 renders on 6 workers | G-repro 8/8; **IDENTICAL** (128 renders, 0 odd); 43 s; peak PSS 8.00 GiB |
+| `k1 --smoke` (`02efb1c1…`) | 1.559, 1.036 | K1's four arms on 4 seeds at 9 cm; H-handover with chunk logging; `SHIFT_BLOCKED` in the path | every arm ran; O5 median 0.210 (bar 0.25; read by nothing); 59 s; peak PSS 8.13 GiB |
+| `train --smoke` (`8d9a4537…`) | 1.746, 1.779 | features, anchor, readouts, `first_outcome_utc`, budget code, W/N × 3, O1, O2, artefact sha256s, then **`train-scale`** | anchor 4.4e-5 (bound 1e-3); **train-scale: 81 420 frames (460 roots × 177), R-plate on 1 440 × 98 304 rows, O1 on 1 230 val windows: peak tree PSS 8.77 GiB against 12**; the probe took 576 s; the whole smoke took 1 125 s |
+| `pfar --smoke` (`34d54f50…`) | 0.039, 1.971 | BC on 6 roots, 3 DAgger iterations, the artefact check, then **`pfar-scale`** (195 750 rows, one CUDA training, workers alive) | complete; **peak tree PSS 9.53 GiB against 12**; `pfar-scale` added 0.2 GiB |
+| `rank --smoke` (`cff196c1…`) | 0.963, 1.957 | 3 R stand-in seeds, the artefact check, coarse and fine groups, blind rankers first | 36 groups; 97 s; peak PSS 7.33 GiB |
+| `decide --smoke` (`c7515d9a…`) | 4.0, 2.72 (**not quiet**: a JSON read with no simulation, started without waiting) | the offline decision's code path | a row is computed (meaningless with smoke models) |
+| `d3 --smoke` (`38df51ac…`) | 0.811, 1.934 | all 10 D3 arms, H-twin first, the artefact checks, latency, the descriptive comparisons, **the re-run** | every arm ran, with no fallback, no blocked move and no privileged read; **L-plan decision latency, 4 workers × 4 threads with the GPU's resident service running: median 0.544 s, p90 0.583 s, max 0.587 s over 24 decisions (G6 0.8 s)**; **re-run of L-plan and H-twin on 2 seeds: every field identical**; 110 s; peak PSS 8.36 GiB |
+
+The train, pfar, rank and d3 smokes read the development corpus smoke
+(`far-corpus-smoke-2`, manifest `964a882e…`) as their input. The corpus stage's own code is
+unchanged since that corpus was collected, except for the plan-digest check, which is skipped
+in a smoke.
 
 ### 10.2 The earlier development smokes (historical; not the record for the GO)
 
