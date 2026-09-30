@@ -4688,7 +4688,7 @@
    "sha256": "8cde2c85ca52d4eef400e7d62322d5a8e797a3de37ea3791b61ffdfa15f529f4"
   }
  },
- "corpus_plan_sha256": "076176a98614ea52c1d5a645550bd51c04a6e3dea76d47e1670e0d3b081f6121",
+ "corpus_plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
  "encoder_digests": {
   "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
   "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
@@ -4899,7 +4899,7 @@
   "benchmarks/manifests/apple-token-dynamics-v1.json": "2191d57e869810aeb0601cdc85308d94dcd750782bac9596f0a78b0ea2fbdc38",
   "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
   "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
-  "docs/experiments/apple_lewm_planner_v2.md": "fb6fb250a30ff2a4cd28322a854adc6c6ce162713db00d14943bc55800bca055",
+  "docs/experiments/apple_lewm_planner_v2.md": "7ddd2c2d51525c4d72318413cf792283c43eabcddfda9f5ea193e390c500f806",
   "docs/experiments/apple_wm_critic_v2.md": "161f9ed37939421f9f5e4f56ea38c8110d6b8da2dbc808dcead816fd2d81a39b",
   "scripts/collect_apple_shift_v2.py": "584ed2386dc6ab99abb60a22922b9781ebbcd13f08ac3198fff93d8394ab93e5",
   "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
@@ -4929,7 +4929,7 @@
   "src/embodied_jepa/hybrid_selection.py": "b96ae08098da94202ec74f1cab9ff0fe025ced7f65bf505bbb21ca557a298d4a",
   "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
   "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
-  "src/embodied_jepa/lewm_planner_v2.py": "f5cdc3a1786fccc411681d2e15a1b4e0a20b35543f4279e54eaa1825ae46647c",
+  "src/embodied_jepa/lewm_planner_v2.py": "79edc2cae46f37a9fc587bccc6b09deed48b99e3d081c3295e7dffdc43148eed",
   "src/embodied_jepa/lewm_planner_v2_offline.py": "84ae5ee71829443665163941aab100c7219453962678a037fc27e8cbaf11d3a7",
   "src/embodied_jepa/lewm_planner_v2_runtime.py": "ccfac04c1f2e8cc62039186c3388d971a002e7ebe5b08f70f6e97e257c3cb170",
   "src/embodied_jepa/models/base.py": "310a509d5f8043ad3cbdf85a0568d15bb4ed2e4faeddf6e10bed63abf8ee0549",

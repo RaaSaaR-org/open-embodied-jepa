@@ -586,7 +586,9 @@ As TASK-073:
   final code, with one exception: after them, a root count in two texts was corrected, from
   "300 + 190" to "270 + 190" read roots. The texts are `MEMORY["train_scale_rule"]` (so the
   frozen hash changed) and the runner's `train_scale_probe` docstring. No code path changed.
-  Otherwise only this document, the tests and the manifest's smoke block changed after the
+  The helper `plan_digest` was also added after the smokes: it is a platform-independent digest
+  of the corpus plan, needed because the last ulp differs on macOS, as TASK-073 found. It is used
+  by no stage. Otherwise only this document, the tests and the manifest changed after the
   smokes.
 - Every smoke started with the 1- and 5-minute load at or below 2.0 and MemAvailable ≥ 25 GiB,
   except the `decide` smoke (a JSON read with no simulation).

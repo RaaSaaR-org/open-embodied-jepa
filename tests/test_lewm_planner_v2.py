@@ -185,10 +185,7 @@ def test_corpus_plan_is_fixed_and_has_the_declared_shape():
         if r["shift"]:
             assert r["shift"]["step"] == lp.SHIFT_STEP
             assert r["shift"]["vector"][1] < 0
-    digest = hashlib.sha256(
-        json.dumps(plan, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
-    assert digest == MANIFEST["corpus_plan_sha256"]
+    assert lp.plan_digest(plan) == MANIFEST["corpus_plan_sha256"]
 
 
 # ----- the planner --------------------------------------------------------------------------------

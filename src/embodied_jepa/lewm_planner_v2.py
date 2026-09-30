@@ -542,6 +542,24 @@ def corpus_plan() -> list[dict]:
     return plan
 
 
+def plan_digest(plan: list[dict]) -> str:
+    """sha256 of the plan's compact sorted-key JSON with every float rounded to 10 decimals
+    (exact regeneration of the last ulp is Linux-only, as TASK-073 found; the rounded digest is
+    platform-independent)."""
+
+    def rounded(value):
+        if isinstance(value, float):
+            return round(value, 10)
+        if isinstance(value, dict):
+            return {k: rounded(v) for k, v in value.items()}
+        if isinstance(value, list | tuple):
+            return [rounded(v) for v in value]
+        return value
+
+    text = json.dumps(rounded(plan), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
 # ----- models, readouts, budget -------------------------------------------------------------------
 W_TOKEN_GRID = wc.W_TOKEN_GRID  # 4
 W_MODEL = wc.W_MODEL  # TASK-066's configuration, the LeWM backend, batch 64; N: zero actions
