@@ -13,13 +13,19 @@ Every start-up stage is logged with its elapsed time, and every thread's stack i
 ``docs/ISAAC_NEWTON_SPIKE.md`` §6. ``--startup_only`` builds the transport, runs one reset and
 three steps, and exits (a start-up probe).
 
-``PXR_WORK_THREAD_LIMIT``: OpenUSD's work pool reads it once, when it starts, so it is set here,
-before the app (and with it ``pxr``) is loaded. ``--pxr_work_thread_limit N`` sets it to N
-(0 leaves it unset); without the flag an inherited value is kept, and the Newton path defaults
-to 1, the workaround Newton documents for the OpenUSD thread-safety bug in
+``PXR_WORK_THREAD_LIMIT`` (OpenUSD's work-pool thread limit): the Newton path runs with 1, the
+workaround Newton documents for the OpenUSD thread-safety bug in
 ``UsdPhysics.LoadUsdPhysicsFromRange`` (newton#1743, #2216; fixed in OpenUSD 26.05, newer than
-this image's USD). The value in effect, ``pxr.Work.GetConcurrencyLimit()`` and the USD version
-are logged after the app launches and again right before ``add_usd``.
+this image's USD 0.25.11). USD reads the variable once, when its env settings initialise, and
+Kit overwrites it before that: ``SimulationApp`` sets min(cores, limit_cpu_threads) and the
+``omni.usd.config`` extension sets 16, both unconditionally. So a value passed in from outside
+never takes effect, and neither does ``pxr.Work.SetConcurrencyLimit`` later (the variable
+overrides it). This script therefore pins the variable in ``os.environ`` before the app starts:
+later writes of that one key are replaced by the pinned value. ``--pxr_work_thread_limit N``
+pins N (0: no pin, Kit's default of 16); without the flag an inherited value is pinned, else 1
+for Newton and nothing for PhysX. The limit in effect (``pxr.Work.GetConcurrencyLimit()``) and
+the USD version are logged after the app launches and again right before ``add_usd``
+(docs/ISAAC_E9_REPLAY.md §4).
 """
 
 from __future__ import annotations
@@ -54,20 +60,30 @@ parser.add_argument(
     "--pxr_work_thread_limit",
     type=int,
     default=None,
-    help="PXR_WORK_THREAD_LIMIT to set before pxr loads (0: unset; default: inherited, else 1 "
-    "for newton)",
+    help="pin PXR_WORK_THREAD_LIMIT to N before the app starts (0: no pin, Kit's 16; default: "
+    "inherited value, else 1 for newton)",
 )
 stage("parsing arguments")
-# Before AppLauncher (and pxr) load: the work pool reads PXR_WORK_THREAD_LIMIT when it starts.
+# Before AppLauncher (and pxr) load; see the module docstring for why a plain assignment is not
+# enough.
 _early, _ = parser.parse_known_args()
 if _early.pxr_work_thread_limit is not None:
-    if _early.pxr_work_thread_limit > 0:
-        os.environ["PXR_WORK_THREAD_LIMIT"] = str(_early.pxr_work_thread_limit)
-    else:
-        os.environ.pop("PXR_WORK_THREAD_LIMIT", None)
-elif "PXR_WORK_THREAD_LIMIT" not in os.environ and _early.physics == "newton":
-    os.environ["PXR_WORK_THREAD_LIMIT"] = "1"
-stage(f"PXR_WORK_THREAD_LIMIT={os.environ.get('PXR_WORK_THREAD_LIMIT', '<unset>')}")
+    PXR_PIN = str(_early.pxr_work_thread_limit) if _early.pxr_work_thread_limit > 0 else None
+elif "PXR_WORK_THREAD_LIMIT" in os.environ:
+    PXR_PIN = os.environ["PXR_WORK_THREAD_LIMIT"]
+else:
+    PXR_PIN = "1" if _early.physics == "newton" else None
+if PXR_PIN is not None:
+
+    class _PinnedEnviron(type(os.environ)):
+        """``os.environ`` whose PXR_WORK_THREAD_LIMIT stays at the pinned value."""
+
+        def __setitem__(self, key, value):
+            super().__setitem__(key, PXR_PIN if key == "PXR_WORK_THREAD_LIMIT" else value)
+
+    os.environ.__class__ = _PinnedEnviron
+    os.environ["PXR_WORK_THREAD_LIMIT"] = PXR_PIN
+stage(f"PXR_WORK_THREAD_LIMIT pinned to {PXR_PIN or '<no pin: Kit default>'}")
 from isaaclab.app import AppLauncher  # noqa: E402
 
 AppLauncher.add_app_launcher_args(parser)
@@ -192,6 +208,7 @@ def main() -> None:
         "object_properties": tr.object_properties,
         "joint_names": list(tr.joint_names),
         "startup_seconds": time.monotonic() - T0,
+        "pxr_work_thread_limit_pin": PXR_PIN,
         "usd_threads": USD_THREADS,
         "add_usd_seconds": ADD_USD_SECONDS if args.physics == "newton" else None,
     }

@@ -12,7 +12,8 @@
 # is not caught) and checks once at start (a gated run started while the container is up is
 # not detected). It is a courtesy check, not a lock.
 # PXR_WORK_THREAD_LIMIT, if set on the host, is passed into the container (OpenUSD's work-pool
-# thread limit; e9_server_isaac.py otherwise sets it to 1 for Newton, docs/ISAAC_E9_REPLAY.md §4).
+# thread limit). Kit overwrites it at start-up, so on its own it has no effect; e9_server_isaac.py
+# pins it (default 1 for Newton; docs/ISAAC_E9_REPLAY.md §4).
 # If your login shell predates your docker group membership, run it via `sg docker -c`.
 set -euo pipefail
 SCRIPT=${1:?usage: run_isaac.sh <script.py> <out-dir> [args]}
