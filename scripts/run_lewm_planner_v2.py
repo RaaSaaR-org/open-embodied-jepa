@@ -609,6 +609,64 @@ def band_root(table, root: dict, arrays: dict, pooled, plate) -> None:
     table.add(root, pooled, actions, arrays["apple"][sl], plate, band[0])
 
 
+def featurise_sources(sources, encoder, clock):
+    """The train stage's featurisation: the band frames of every root of ``sources`` (``(kind,
+    reader, split)``) into one ``Table``, plus the far roots' decision frames (R-plate's rows) and
+    the anchor frames.
+
+    Memory (the TASK-074 train run-1 V, protocol addendum A1): a decoded episode's arrays are
+    freed when the next episode is read, so nothing kept from an episode may be a view into them.
+    ``frames[t]`` is a view that keeps the whole decoded ``frames`` array (about 27 MiB) alive, so
+    the decision frames, their plate xy and the anchor frames are copied. The copies hold the same
+    bytes, so no computed number changes. ``train_scale_probe`` calls this same function."""
+    from embodied_jepa import first_policy_v2_runtime as rt2
+    from embodied_jepa import lewm_planner_v2_offline as off
+
+    band = lp.FEATURE_BAND
+    band_len = band[1] - band[0] + 1
+    n_roots = sum(len(rd.manifest["splits"][sp]) for _k, rd, sp in sources)
+    table = off.Table(capacity=n_roots * band_len)
+    plate_rows = {"train": [], "val": []}
+    anchor_frames, anchor_rows = [], []
+    keys = (*rt2.EPISODE_ARRAYS, *lp.EXTRA_EPISODE_ARRAYS)
+    for source, rd, split in sources:
+        for episode_id in rd.manifest["splits"][split]:
+            clock.check("features")
+            arrays, meta = rd.episode(
+                episode_id, keys=keys if source == "far" else rt2.EPISODE_ARRAYS
+            )
+            frames = arrays["frames"]
+            hi = min(band[1], len(frames) - 1)
+            if hi <= band[0] + lp.CHUNK:
+                continue
+            sl = slice(band[0], hi + 1)
+            if source == "far":
+                plate = arrays["plate"][sl]
+            else:
+                plate = np.repeat(np.asarray([[*meta["truth_xy"][2:], 0.746]]), hi + 1 - band[0], 0)
+            pooled = off.pooled_features(encoder, frames[sl], device="cuda")
+            root = {
+                "id": episode_id,
+                "split": split if source == "far" else f"look-{split}",
+                "source": source,
+                "shift_step": (meta.get("shift") or {}).get("step") if source == "far" else None,
+            }
+            band_root(table, root, arrays, pooled, plate)
+            if source == "far" and len(anchor_frames) < lp.FEATURE_ANCHOR["frames"]:
+                take = min(16, lp.FEATURE_ANCHOR["frames"] - len(anchor_frames))
+                anchor_frames.extend(f.copy() for f in frames[sl][:take])  # memory: copies
+                anchor_rows.extend(range(table.size - len(pooled), table.size - len(pooled) + take))
+            if source == "far":
+                for t in lp.DECISION_STEPS:
+                    if t < len(frames):
+                        plate_rows[split].append(
+                            (episode_id, frames[t].copy(), arrays["plate"][t, :2].copy())
+                        )  # memory: copies, not views that keep the episode alive
+            del arrays, frames, pooled, plate
+    table.seal()
+    return table, plate_rows, anchor_frames, anchor_rows
+
+
 def train_context(table, idx: dict, schema, metadata: dict) -> dict:
     train_roots = idx["train"] + idx["look-train"] + idx["look-val"]
     train_starts, _ = table.windows(train_roots)
@@ -675,50 +733,12 @@ def stage_train(report, manifest, evidence, clock, args):
         splits=("train", "val"),
     )
     encoder = pe.load_pretrained()
-    band = lp.FEATURE_BAND
-    band_len = band[1] - band[0] + 1
     look_splits = ("train", "val") if not args.smoke else ("val",)
     sources = [("far", reader, s) for s in lp.READ_SPLITS] + [
         ("look", look, s) for s in look_splits
     ]
-    n_roots = sum(len(rd.manifest["splits"][sp]) for _k, rd, sp in sources)
-    table = off.Table(capacity=n_roots * band_len)
-    plate_rows = {"train": [], "val": []}
-    anchor_frames, anchor_rows = [], []
     started = time.monotonic()
-    keys = (*rt2.EPISODE_ARRAYS, *lp.EXTRA_EPISODE_ARRAYS)
-    for source, rd, split in sources:
-        for episode_id in rd.manifest["splits"][split]:
-            clock.check("features")
-            arrays, meta = rd.episode(
-                episode_id, keys=keys if source == "far" else rt2.EPISODE_ARRAYS
-            )
-            frames = arrays["frames"]
-            hi = min(band[1], len(frames) - 1)
-            if hi <= band[0] + lp.CHUNK:
-                continue
-            sl = slice(band[0], hi + 1)
-            if source == "far":
-                plate = arrays["plate"][sl]
-            else:
-                plate = np.repeat(np.asarray([[*meta["truth_xy"][2:], 0.746]]), hi + 1 - band[0], 0)
-            pooled = off.pooled_features(encoder, frames[sl], device="cuda")
-            root = {
-                "id": episode_id,
-                "split": split if source == "far" else f"look-{split}",
-                "source": source,
-                "shift_step": (meta.get("shift") or {}).get("step") if source == "far" else None,
-            }
-            band_root(table, root, arrays, pooled, plate)
-            if source == "far" and len(anchor_frames) < lp.FEATURE_ANCHOR["frames"]:
-                take = min(16, lp.FEATURE_ANCHOR["frames"] - len(anchor_frames))
-                anchor_frames.extend(frames[sl][:take])
-                anchor_rows.extend(range(table.size - len(pooled), table.size - len(pooled) + take))
-            if source == "far":
-                for t in lp.DECISION_STEPS:
-                    if t < len(frames):
-                        plate_rows[split].append((episode_id, frames[t], arrays["plate"][t, :2]))
-    table.seal()
+    table, plate_rows, anchor_frames, anchor_rows = featurise_sources(sources, encoder, clock)
     report["stages"]["features"] = {
         "frames": int(table.size),
         "roots": len(table.roots),
@@ -843,68 +863,76 @@ def stage_train(report, manifest, evidence, clock, args):
         import gc
 
         gc.collect()
-        result["train_scale"] = train_scale_probe(report, reader, encoder, clock)
+        result["train_scale"] = train_scale_probe(report, reader, look, encoder, clock)
     return result
 
 
-def train_scale_probe(report, reader, encoder, clock) -> dict:
+TRAIN_SCALE_ROOTS = {s: lp.CORPUS_SPLITS[s] for s in lp.READ_SPLITS}  # 240 train, 30 val
+TRAIN_SCALE_MARGIN_GIB = 2.0  # the probe's peak must stay this far below the ceiling (addendum A1)
+
+
+class CycledReader:
+    """A smoke corpus reader presented at the real corpus's split sizes: slot ``j`` of a split
+    is served by a smoke episode, decoded afresh on every read exactly as ``CorpusReader`` does,
+    so the featurisation holds and frees the same arrays as on the real corpus."""
+
+    def __init__(self, reader, counts: dict):
+        self.reader = reader
+        pool = [e for s in lp.READ_SPLITS for e in reader.manifest["splits"][s]]
+        self.source, splits, k = {}, {}, 0
+        for split, count in counts.items():
+            splits[split] = []
+            for j in range(count):
+                slot = f"scale-{split}-{j}"
+                self.source[slot] = pool[k % len(pool)]
+                splits[split].append(slot)
+                k += 1
+        self.manifest = {"splits": splits}
+
+    def episode(self, episode_id: str, keys):
+        return self.reader.episode(self.source[episode_id], keys=keys)
+
+
+def train_scale_probe(report, reader, look, encoder, clock) -> dict:
     """The train stage's memory at full corpus scale (``MEMORY['train_scale_rule']``), on smoke
-    data. The feature table is built at the real stage's size: 270 + 190 read roots x the band, with
-    the smoke roots' features cycled. R_plate is fitted on the real stage's row count (240 train
-    roots x 6 decisions, cycled smoke tokens). Then W and N train briefly, and O1/O2 are computed
-    on the real stage's val window count. The peak comes from the stage's MemoryWatch samples
-    taken during the probe."""
+    data, through the train stage's own code path (addendum A1: the pre-A1 probe cycled 14
+    decoded smoke episodes held in memory, so it missed what the real featurisation kept per
+    episode, and under-measured the real peak by more than 3 GiB).
+
+    ``featurise_sources`` runs on 270 far roots (240 train + 30 val slots, each a smoke episode
+    decoded afresh) and on ``apple-look-v2-linux``'s 170 train + 20 val roots, as the real stage
+    reads them. Then, in the real stage's order: R-plate on the train decision frames' full
+    tokens, R_off, the val tokens, the blind baselines, the train context, W and N x 3 briefly
+    (each with one val-criterion evaluation, the real run-1 V's site), and O1/O2 on the real val
+    window count. The peak is the stage's MemoryWatch peak; it must be at least
+    ``TRAIN_SCALE_MARGIN_GIB`` below the ceiling, or the smoke fails (G-memory-margin)."""
     from embodied_jepa import first_policy_v2_runtime as rt2
     from embodied_jepa import lewm_planner_v2_offline as off
 
     started = time.monotonic()
     watch = report["_watch"]
     before = watch.sample()
-    band = lp.FEATURE_BAND
-    band_len = band[1] - band[0] + 1
-    far_ids = [e for s in lp.READ_SPLITS for e in reader.manifest["splits"][s]]
-    cache = []
-    keys = (*rt2.EPISODE_ARRAYS, *lp.EXTRA_EPISODE_ARRAYS)
-    for episode_id in far_ids:
-        arrays, meta = reader.episode(episode_id, keys=keys)
-        hi = min(band[1], len(arrays["frames"]) - 1)
-        if hi <= band[0] + lp.CHUNK:
-            continue
-        sl = slice(band[0], hi + 1)
-        pooled = off.pooled_features(encoder, arrays["frames"][sl], device="cuda")
-        decision_frames = [
-            arrays["frames"][t] for t in lp.DECISION_STEPS if t < len(arrays["frames"])
-        ]
-        cache.append((arrays, meta, pooled, arrays["plate"][sl], decision_frames))
-    full = {"train": 240, "val": 30, "look-train": 170, "look-val": 20}
-    table = off.Table(capacity=sum(full.values()) * band_len)
-    k = 0
-    for split, count in full.items():
-        for j in range(count):
-            arrays, meta, pooled, plate, _f = cache[k % len(cache)]
-            k += 1
-            root = {
-                "id": f"scale-{split}-{j}",
-                "split": split,
-                "source": "scale",
-                "shift_step": lp.SHIFT_STEP if split in ("train", "val") else None,
-            }
-            band_root(table, root, arrays, pooled, plate)
-    table.seal()
+    sources = [("far", CycledReader(reader, TRAIN_SCALE_ROOTS), s) for s in lp.READ_SPLITS] + [
+        ("look", look, s) for s in ("train", "val")
+    ]
+    table, plate_rows, _anchor_frames, _anchor_rows = featurise_sources(sources, encoder, clock)
+    after_features = watch.sample()
     clock.check("train-scale")
-    tokens = off.full_tokens_cpu(encoder, np.stack([f for c in cache for f in c[4]]))
-    reps = int(np.ceil(full["train"] * len(lp.DECISION_STEPS) / len(tokens)))
-    rows = np.concatenate([tokens] * reps)[: full["train"] * len(lp.DECISION_STEPS)]
-    del tokens
-    plate_xy = np.random.default_rng(0).normal(0, 0.05, (len(rows), 2))
-    groups = [f"g{i // len(lp.DECISION_STEPS)}" for i in range(len(rows))]
-    r_plate = off.fit_r_plate(rows, plate_xy, groups)
-    del rows
+    tok_train = off.full_tokens_cpu(encoder, np.stack([r[1] for r in plate_rows["train"]]))
+    plate_xy = np.random.default_rng(0).normal(0, 0.05, (len(tok_train), 2))
+    r_plate = off.fit_r_plate(tok_train, plate_xy, [r[0] for r in plate_rows["train"]])
+    r_plate_rows = int(len(tok_train))
+    del tok_train
     idx = {
         s: [i for i, r in enumerate(table.roots) if r["split"] == s]
         for s in ("train", "val", "look-train", "look-val")
     }
     r_off, _rows = off.fit_r_off(table, idx["train"])
+    tok_val = off.full_tokens_cpu(encoder, np.stack([r[1] for r in plate_rows["val"]]))
+    r_plate.predict(tok_val)
+    del tok_val
+    o2_starts, o2_owners = table.windows(idx["val"], start_steps=set(lp.DECISION_STEPS))
+    off.o2_statistics({}, {}, r_off, table, o2_starts, o2_owners)
     schema = rt2.make_robot().state_schema
     ctx = train_context(table, idx, schema, {"train_scale_probe": True})
     w, n = {}, {}
@@ -913,21 +941,37 @@ def train_scale_probe(report, reader, encoder, clock) -> dict:
         n[seed], _ = off.train_model(ctx, "N", seed, 100, 100)
     offline_gates(ctx, table, idx, w, n, r_off)
     after = watch.sample()
-    return {
+    peak = watch.peak_pss / GIB
+    limit = lp.MEMORY["ceiling_gib"] - TRAIN_SCALE_MARGIN_GIB
+    record = {
         "frames": int(table.size),
         "roots": len(table.roots),
-        "r_plate_rows": int(full["train"] * len(lp.DECISION_STEPS)),
+        "far_slots": TRAIN_SCALE_ROOTS,
+        "decoded_per_slot": True,
+        "r_plate_rows": r_plate_rows,
         "r_plate_lambda": r_plate.lam_rel,
+        "train_windows": int(len(ctx["train_starts"])),
+        "val_criterion_windows": int(len(ctx["val_starts"])),
         "o1_windows": {
             "overall": int(len(table.windows(idx["val"], stride=4)[0])),
         },
         "tree_pss_gib_before": before["pss"] / GIB,
+        "tree_pss_gib_after_features": after_features["pss"] / GIB,
         "tree_pss_gib_after": after["pss"] / GIB,
-        "stage_peak_tree_pss_gib_so_far": watch.peak_pss / GIB,
+        "stage_peak_tree_pss_gib_so_far": peak,
         "ceiling_gib": lp.MEMORY["ceiling_gib"],
+        "margin_gib": TRAIN_SCALE_MARGIN_GIB,
+        "within_margin": bool(peak <= limit),
         "seconds": time.monotonic() - started,
-        "note": "smoke data cycled to the real stage's sizes; memory only, nothing is read",
+        "note": "smoke data at the real stage's sizes, decoded per slot; memory only, nothing is "
+        "read",
     }
+    if not record["within_margin"]:
+        raise lp.GuardError(
+            f"G-memory-margin: the train-scale peak {peak:.2f} GiB is above "
+            f"{limit:.2f} GiB (the ceiling less {TRAIN_SCALE_MARGIN_GIB} GiB)"
+        )
+    return record
 
 
 # ----- P-far (the data-matched BC control) --------------------------------------------------------

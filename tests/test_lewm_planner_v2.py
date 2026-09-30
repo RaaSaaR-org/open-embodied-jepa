@@ -807,3 +807,94 @@ def test_rerun_verdict_on_every_toleranced_field():
     cmd[10, 0] = 0.9
     assert pp.rerun_verdict(_attempt(), _attempt(commands=cmd))["void"]
     assert pp.rerun_verdict(_attempt(), _attempt(executed_steps=700))["void"]  # exact field
+
+
+# ----- addendum A1: the train stage's memory (the run-1 V) ---------------------------------------
+class _FakeReader:
+    """Episodes shaped like the corpus's (frames, applied, apple, plate), with ids per split."""
+
+    def __init__(self, splits: dict, length: int = 600):
+        self.manifest = {"splits": splits}
+        self.length, self.reads = length, []
+
+    def episode(self, episode_id, keys):
+        self.reads.append(episode_id)
+        rng = np.random.default_rng(abs(hash(episode_id)) % 2**32)
+        n = self.length
+        arrays = {
+            "frames": rng.integers(0, 255, (n, 112, 112, 3), dtype=np.uint8),
+            "applied": rng.normal(0, 0.1, (n - 1, 14)).astype(np.float32),
+            "apple": rng.normal(0, 0.1, (n, 3)).astype(np.float32),
+            "plate": rng.normal(0, 0.1, (n, 3)).astype(np.float32),
+        }
+        return arrays, {"shift": {"step": lp.SHIFT_STEP}, "truth_xy": [0.0, 0.0, 0.3, -0.2]}
+
+
+class _Clock:
+    def check(self, _what):
+        return None
+
+
+def test_featurisation_keeps_no_view_into_a_decoded_episode(monkeypatch):
+    """The run-1 V (addendum A1): ``frames[t]`` kept each far episode's whole decoded frame array
+    alive (270 x about 27 MiB). Every kept frame and plate row must own its bytes, with the same
+    values, and the table must match what the stage computed before the fix."""
+    runner = _runner("_run_lewm_planner_v2_a1")
+    from embodied_jepa import lewm_planner_v2_offline as off
+
+    monkeypatch.setattr(
+        off,
+        "pooled_features",
+        lambda _enc, frames, device="cpu": frames.reshape(len(frames), -1)[:, :6144].astype(
+            np.float32
+        ),
+    )
+    far = _FakeReader({"train": ["a", "b"], "val": ["c"]})
+    look = _FakeReader({"train": ["l1"], "val": ["l2"]})
+    sources = [("far", far, s) for s in lp.READ_SPLITS] + [
+        ("look", look, s) for s in ("train", "val")
+    ]
+    table, plate_rows, anchor_frames, anchor_rows = runner.featurise_sources(
+        sources, None, _Clock()
+    )
+    assert len(table.roots) == 5 and far.reads == ["a", "b", "c"]
+    kept = [r[1] for rows in plate_rows.values() for r in rows]
+    kept += [r[2] for rows in plate_rows.values() for r in rows]
+    assert len(plate_rows["train"]) == 2 * len(lp.DECISION_STEPS)
+    for array in [*kept, *anchor_frames]:
+        assert array.base is None and array.flags.owndata
+    # the same bytes as the decoded episode (re-decoded: the fake is deterministic per id)
+    arrays, _ = far.episode("a", None)
+    for (eid, frame, plate), t in zip(plate_rows["train"][:6], lp.DECISION_STEPS, strict=True):
+        assert eid == "a"
+        assert np.array_equal(frame, arrays["frames"][t])
+        assert np.array_equal(plate, arrays["plate"][t, :2])
+    first = lp.FEATURE_BAND[0]
+    assert np.array_equal(np.stack(anchor_frames[:16]), arrays["frames"][first : first + 16])
+    assert anchor_rows[:16] == list(range(16))
+
+
+def test_the_train_stage_and_its_scale_probe_share_the_featurisation():
+    source = (ROOT / "scripts" / "run_lewm_planner_v2.py").read_text()
+    for name in ("def stage_train(", "def train_scale_probe("):
+        start = source.index(name)
+        body = source[start : source.index("\n\n\n", start)]
+        assert "featurise_sources(sources, encoder, clock)" in body, name
+        assert "rd.episode(" not in body and "reader.episode(" not in body, name
+    start = source.index("def train_scale_probe(")
+    body = source[start : source.index("\n\n\n", start)]
+    assert body.index("off.train_model(") < body.index("offline_gates(")
+    assert "G-memory-margin" in body
+
+
+def test_the_scale_probe_decodes_every_slot_at_the_real_split_sizes():
+    runner = _runner("_run_lewm_planner_v2_a1b")
+    assert runner.TRAIN_SCALE_ROOTS == {"train": 240, "val": 30}
+    assert runner.TRAIN_SCALE_ROOTS == {s: lp.CORPUS_SPLITS[s] for s in lp.READ_SPLITS}
+    assert runner.TRAIN_SCALE_MARGIN_GIB >= 2.0 and lp.MEMORY["ceiling_gib"] == 12.0
+    smoke = _FakeReader({"train": ["s1", "s2"], "val": ["s3"], "test": ["x"]}, length=20)
+    cyc = runner.CycledReader(smoke, runner.TRAIN_SCALE_ROOTS)
+    assert [len(cyc.manifest["splits"][s]) for s in ("train", "val")] == [240, 30]
+    for slot in cyc.manifest["splits"]["val"][:4]:
+        cyc.episode(slot, None)
+    assert smoke.reads == ["s1", "s2", "s3", "s1"]  # decoded afresh per slot; never the test split
