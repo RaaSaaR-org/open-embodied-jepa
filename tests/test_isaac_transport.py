@@ -19,6 +19,7 @@ import pytest
 
 from embodied_jepa.contracts import ContractError
 from embodied_jepa.isaac_transport import (
+    initial_joint_pose,
     manifest_sha256,
     name_map,
     onboard_camera_offset,
@@ -235,3 +236,24 @@ def test_newton_history_clear_skips_absent_or_empty_fields(monkeypatch):
     tr, _, _ = _fake_newton_transport(monkeypatch, fields)
     tr.reset(0)
     assert not fields["qacc_warmstart"].values.any()
+
+
+def test_initial_joint_pose_defaults_to_the_reset_pose_and_checks_overrides():
+    manifest = committed()
+    assert np.array_equal(initial_joint_pose(manifest), reset_pose(manifest))
+    names = [j["name"] for j in manifest["joints"]]
+    q = reset_pose(manifest)
+    q[names.index("right_hand_index_0_joint")] = manifest["joints"][
+        names.index("right_hand_index_0_joint")
+    ]["lower"]
+    assert np.array_equal(initial_joint_pose(manifest, q.tolist()), q)
+    with pytest.raises(ContractError, match="finite"):
+        initial_joint_pose(manifest, q[:-1])
+    bad = q.copy()
+    bad[0] = np.nan
+    with pytest.raises(ContractError, match="finite"):
+        initial_joint_pose(manifest, bad)
+    bad = q.copy()
+    bad[0] = manifest["joints"][0]["upper"] + 0.01
+    with pytest.raises(ContractError, match="limits"):
+        initial_joint_pose(manifest, bad)
