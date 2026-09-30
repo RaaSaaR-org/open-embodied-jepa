@@ -21,11 +21,13 @@ Kit overwrites it before that: ``SimulationApp`` sets min(cores, limit_cpu_threa
 ``omni.usd.config`` extension sets 16, both unconditionally. So a value passed in from outside
 never takes effect, and neither does ``pxr.Work.SetConcurrencyLimit`` later (the variable
 overrides it). This script therefore pins the variable in ``os.environ`` before the app starts:
-later writes of that one key are replaced by the pinned value. ``--pxr_work_thread_limit N``
-pins N (0: no pin, Kit's default of 16); without the flag an inherited value is pinned, else 1
-for Newton and nothing for PhysX. The limit in effect (``pxr.Work.GetConcurrencyLimit()``) and
-the USD version are logged after the app launches and again right before ``add_usd``
-(docs/ISAAC_E9_REPLAY.md §4).
+later writes of that one key are replaced by the pinned value, and each replaced write is
+logged to stderr (which Kit write this blocks is inferred from Kit's sources; the limit in
+effect is verified by the log). ``--pxr_work_thread_limit N`` pins N (0: no pin, Kit's default
+of 16; negative values are rejected); without the flag an inherited positive integer is
+pinned (an inherited 0 means no pin), else 1 for Newton and nothing for PhysX. The limit in
+effect (``pxr.Work.GetConcurrencyLimit()``) and the USD version are logged after the app
+launches and again right before ``add_usd`` (docs/ISAAC_E9_REPLAY.md §4).
 """
 
 from __future__ import annotations
@@ -68,9 +70,14 @@ stage("parsing arguments")
 # enough.
 _early, _ = parser.parse_known_args()
 if _early.pxr_work_thread_limit is not None:
+    if _early.pxr_work_thread_limit < 0:
+        parser.error("--pxr_work_thread_limit must be >= 0")
     PXR_PIN = str(_early.pxr_work_thread_limit) if _early.pxr_work_thread_limit > 0 else None
 elif "PXR_WORK_THREAD_LIMIT" in os.environ:
-    PXR_PIN = os.environ["PXR_WORK_THREAD_LIMIT"]
+    _inherited = os.environ["PXR_WORK_THREAD_LIMIT"].strip()
+    if not _inherited.isdigit():
+        parser.error(f"inherited PXR_WORK_THREAD_LIMIT={_inherited!r} is not an integer >= 0")
+    PXR_PIN = _inherited if int(_inherited) > 0 else None
 else:
     PXR_PIN = "1" if _early.physics == "newton" else None
 if PXR_PIN is not None:
@@ -79,7 +86,11 @@ if PXR_PIN is not None:
         """``os.environ`` whose PXR_WORK_THREAD_LIMIT stays at the pinned value."""
 
         def __setitem__(self, key, value):
-            super().__setitem__(key, PXR_PIN if key == "PXR_WORK_THREAD_LIMIT" else value)
+            if key == "PXR_WORK_THREAD_LIMIT" and value != PXR_PIN:
+                # fd 2 directly: Kit may redirect Python's sys.stderr during start-up.
+                os.write(2, f"[e9-server] replaced write {key}={value!r} by {PXR_PIN}\n".encode())
+                value = PXR_PIN
+            super().__setitem__(key, value)
 
     os.environ.__class__ = _PinnedEnviron
     os.environ["PXR_WORK_THREAD_LIMIT"] = PXR_PIN

@@ -8,15 +8,16 @@
 #
 # Why: Newton start-up hangs intermittently inside UsdPhysics.LoadUsdPhysicsFromRange (4 of 22
 # starts with USD's 16 work threads; 0 of 24 since e9_server_isaac.py pins PXR_WORK_THREAD_LIMIT=1
-# by default, docs/ISAAC_E9_REPLAY.md §4). The watchdog stays as the backstop. The hang happens
-# before any episode, so a restart is safe. Try k runs `run_isaac.sh e9_server_isaac.py <out-prefix>-t<k> [server args...]` (so the
-# usual guard and records apply). If its log has no "transport built" within <limit-seconds>
-# (healthy starts with the pin: 171.6-227.5 s, so use 480 s; unpinned 124.9-151.6 s), the watchdog stops only
-# that try's own container (oej-isaac-<basename of the try dir>), then the launcher process it
-# started itself, and starts try k+1, up to <tries> tries. A try that exits before building is
-# not retried (that is a different failure). Every try, hang and retry is logged to
-# <out-prefix>-watchdog.log. If stopping a hung try's own container fails, nothing more is
-# started: the failure is logged and the watchdog exits 6. When a try has built, <out-prefix>-ready holds its socket path
+# by default, docs/ISAAC_E9_REPLAY.md §4). The watchdog stays as the backstop. The hang
+# happens before any episode, so a restart is safe. Try k runs `run_isaac.sh e9_server_isaac.py
+# <out-prefix>-t<k> [server args...]` (so the usual guard and records apply). If its log has
+# no "transport built" within <limit-seconds> (healthy starts with the pin: 171.6-227.5 s,
+# so use 480 s; unpinned 124.9-151.6 s), the watchdog stops only that try's own container
+# (oej-isaac-<basename of the try dir>), then the launcher process it started itself, and
+# starts try k+1, up to <tries> tries. A try that exits before building is not retried (that is
+# a different failure). Every try, hang and retry is logged to <out-prefix>-watchdog.log. If
+# stopping a hung try's own container fails, nothing more is started: the failure is logged
+# and the watchdog exits 6. When a try has built, <out-prefix>-ready holds its socket path
 # (<try dir>/run/e9.sock, for `e9_replay.py isaac --socket`) and the watchdog waits for that
 # server to exit and returns its status. Exit 4: every try hung.
 # Test hooks (tests/test_isaac_watchdog.py): ISAAC_WATCHDOG_RUN (launcher), ISAAC_WATCHDOG_STOP
