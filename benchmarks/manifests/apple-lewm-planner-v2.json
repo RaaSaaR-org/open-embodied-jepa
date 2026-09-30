@@ -4722,7 +4722,7 @@
   }
  },
  "corpus_plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
- "protocol_document_sha256": "ae2497117afd7ebcf7fae81c755ed9df71c5ab9b72bbf45da4d542547a5685be",
+ "protocol_document_sha256": "28b5837a89e2c3aa93958f1104295cd3913f822ae2f3ce9b1f26245d978b3941",
  "encoder_digests": {
   "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
   "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
@@ -5578,8 +5578,6 @@
      "corpus_manifest_sha256": "68499d90c4ee4e0c4cf76b861ed1eafc657df1bcee26f6913d803c4015d11c46"
     }
    },
-   "stage_leaf_values_compared": 998,
-   "differences": 0,
    "byte_identical": [
     "baselines.json",
     "r_off.npz",
@@ -5590,17 +5588,99 @@
     0.41906400043324543,
     0.34922501589278376,
     0.31230354847989067
-   ]
+   ],
+   "stage_leaf_values": {
+    "compared": 998,
+    "identical_computed_values": 976,
+    "differing": 22,
+    "differing_fields": "timing and path fields only: 10 seconds, 12 run paths (6 models_u200 checkpoint paths, 4 critic.models paths, critic.r_off, critic.r_plate)",
+    "note": "the #114 review counted 10 path fields / 978 identical; a recount of the same two reports finds 12 / 976"
+   }
   },
   "memory_full_scale": {
-   "harness_pre_fix": {
-    "after_features_gib": 10.18,
-    "peak_gib": 11.56
+   "harness_phase_end_and_peak_gib": {
+    "pre_fix_diag_1": {
+     "features": [
+      10.18,
+      10.24
+     ],
+     "sealed": [
+      10.68,
+      10.68
+     ],
+     "r_plate_fit": [
+      10.23,
+      10.97
+     ],
+     "r_off_fit": [
+      9.77,
+      11.3
+     ],
+     "val_tokens": [
+      9.78,
+      9.84
+     ],
+     "baselines": [
+      9.78,
+      9.78
+     ],
+     "train_context": [
+      10.72,
+      11.24
+     ],
+     "calibration": [
+      10.96,
+      11.56
+     ]
+    },
+    "post_fix_diag_2": {
+     "features": [
+      3.34,
+      3.47
+     ],
+     "sealed": [
+      3.84,
+      3.89
+     ],
+     "r_plate_fit": [
+      3.4,
+      4.06
+     ],
+     "r_off_fit": [
+      3.42,
+      4.92
+     ],
+     "val_tokens": [
+      3.42,
+      3.48
+     ],
+     "baselines": [
+      3.42,
+      3.42
+     ],
+     "train_context": [
+      3.89,
+      5.01
+     ],
+     "calibration": [
+      4.54,
+      4.92
+     ]
+    },
+    "pairs": "[end, peak] per phase, from each run's timeline.json"
    },
-   "harness_post_fix": {
-    "after_features_gib": 3.47,
-    "peak_gib": 5.01
-   },
+   "after_featurisation_end_to_end_gib": [
+    10.18,
+    3.34
+   ],
+   "after_featurisation_peak_to_peak_gib": [
+    10.24,
+    3.47
+   ],
+   "harness_peak_gib": [
+    11.56,
+    5.01
+   ],
    "train_scale_probe_post_fix": {
     "stage_peak_tree_pss_gib": 7.821043968200684,
     "ceiling_gib": 12.0,
@@ -5623,8 +5703,27 @@
    "seen_before_check": true,
    "value_cm": 2.8722625765232763,
    "bar_cm": 1.0,
-   "consequence": "the re-run's O2 fails its encoded bar on every seed; the offline row is L-NO-DYNAMICS, L-O2-VOID or L-G2A, never OFFLINE-PASS; nothing is changed",
-   "bar_history": "carried verbatim from TASK-073 (wm_critic_v2.O2); TASK-073's O2 baselines used the true offset as a perfect readout; pre-merge smokes showed 3.21 cm (TASK-074) and 2.31 cm (TASK-073), on smoke readouts, not read"
+   "consequence": "the re-run's O2 fails its encoded bar on every seed; the offline row is L-NO-DYNAMICS, L-O2-VOID or L-G2A, never OFFLINE-PASS. L-G2A is in CLAUSE_ROWS (abandonment_fires is true): if O1 passes on all seeds and O2 is not void, the re-run fires the section-7 abandonment clause because the uncalibrated 1.0 cm bar sits below this corpus's readout error (~2.9 cm), not because of anything W does. The bar is unchanged",
+   "bar_history": "carried verbatim from TASK-073 (wm_critic_v2.O2); TASK-073's O2 baselines used the true offset as a perfect readout; pre-merge smokes showed 3.21 cm (TASK-074) and 2.31 cm (TASK-073), on smoke readouts, not read",
+   "ruling": {
+    "by": "decided by Claude under owner delegation, 2026-10-01",
+    "repeat": "the one allowed repeat of the train stage is spent as frozen",
+    "if_clause_fires_on_L_G2A": "the results document records that the O2 encoded bar was uncalibrated and sat below the readout ceiling, and records O2's W-dependent components per W seed (predicted median, ratio vs persistence (i), ratio vs clock prior (iii), N ratio vs persistence (ii)) for the next task",
+    "clause_scope": "unchanged, exactly as written in section 7"
+   }
+  },
+  "harness": {
+   "path": "docs/experiments/apple_lewm_planner_v2_a1/",
+   "pinned": false,
+   "sha256": {
+    "diag.py": "8ca2be642319d58e8ad92507aa9299799e692b48da1bf06fb0b0d8e270837401",
+    "diag2.py": "1729a1719f66083ff25fe5444838bb8543c65555bd2cb41315da0a7b25af510f"
+   },
+   "runs": {
+    "diag.py": "OUT=outputs/task074-fix-diag-1 UPDATES=6000 (pre-fix loop, inline copy of 9d9b03c)",
+    "diag2.py": "OUT=outputs/task074-fix-diag-2 UPDATES=3000 (fixed featurise_sources)"
+   },
+   "revision": "e9da1cc632de24d6c791fbaf42a11324ad7bde83 (task074-memfix worktree), MUJOCO_GL=egl, PYTHONPATH=src"
   }
  }
 }

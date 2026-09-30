@@ -909,19 +909,40 @@ in the V is read as an outcome.
 
 ### A1.2 Diagnosis (measured)
 
-A scratch harness ran `stage_train`'s code, step for step and with a labelled PSS timeline
+A harness ran `stage_train`'s code, step for step and with a labelled PSS timeline
 (every 0.25 s), on the frozen-code smoke corpus (`68499d90…`, 14 read episodes) presented at the
 real split sizes (240 train + 30 val slots, each slot decoded afresh) plus the real
 `apple-look-v2-linux` train and val roots (190). It never opened `apple-far-shift-v2`. The only
 things read from that corpus were the uncompressed sizes of its `frames.npy` members, from the
 zip headers: 26.96 MiB per episode on average over its 300 episodes.
 
-| phase (pre-fix code, `outputs/task074-fix-diag-1`) | PSS at the phase's end | phase peak |
-|---|---|---|
-| featurisation of 430 roots (76 110 frames) | **10.18 GiB** | 10.24 |
-| R-plate fit / R_off fit | 10.68 / 10.23 | 10.97 / 11.30 |
-| blind baselines, train context | 9.78 / 9.79 | 11.24 |
-| calibration W-7410, 6 000 updates | 10.92 (steady 10.96–11.03) | **11.56**, at each val criterion |
+**The harness's source** is committed verbatim, as it ran, under
+`docs/experiments/apple_lewm_planner_v2_a1/`. It is not pinned and is not part of the runner.
+- **`diag.py`**, sha256 `8ca2be642319d58e8ad92507aa9299799e692b48da1bf06fb0b0d8e270837401`: the
+  pre-fix featurisation loop, copied inline from `9d9b03c`'s `stage_train`. Its run was
+  `OUT=outputs/task074-fix-diag-1 UPDATES=6000`.
+- **`diag2.py`**, sha256 `1729a1719f66083ff25fe5444838bb8543c65555bd2cb41315da0a7b25af510f`: the
+  same harness calling the fixed `featurise_sources`. Its run was
+  `OUT=outputs/task074-fix-diag-2 UPDATES=3000`.
+- **How both ran:** from the `task074-memfix` worktree at `e9da1cc`, with `MUJOCO_GL=egl` and
+  `PYTHONPATH=src`. Everything else they import (`band_root`, `train_context`, the offline
+  module) is unchanged by this addendum.
+
+The harness's labelled phases, with the last sample of each phase ("end") and its highest sample
+("peak"), read from `timeline.json`:
+
+| harness phase | what it covers | pre-fix end / peak (`task074-fix-diag-1`) | post-fix end / peak (`task074-fix-diag-2`) |
+|---|---|---|---|
+| `features` | featurisation of 430 roots (76 110 frames) | **10.18** / 10.24 | 3.34 / 3.47 |
+| `sealed` | the sealed table; R-plate's train tokens | 10.68 / 10.68 | 3.84 / 3.89 |
+| `r_plate_fit` | the R-plate fit | 10.23 / 10.97 | 3.40 / 4.06 |
+| `r_off_fit` | the R_off fit | 9.77 / 11.30 | 3.42 / 4.92 |
+| `val_tokens` | the val tokens and R-plate's val error | 9.78 / 9.84 | 3.42 / 3.48 |
+| `baselines` | the blind baselines | 9.78 / 9.78 | 3.42 / 3.42 |
+| `train_context` | the train context (feature moments over the train rows) | 10.72 / 11.24 | 3.89 / 5.01 |
+| `calibration` | W-7410: 6 000 updates before the fix, 3 000 after | 10.96 / **11.56**, at each val criterion | 4.54 / 4.92 |
+
+All values are GiB.
 
 - **Root cause.** R-plate's rows were collected as `frames[t]`, a NumPy **view** into the
   episode's whole decoded `frames` array. Each far episode's view kept its full array alive after
@@ -965,9 +986,13 @@ The code change is in `scripts/run_lewm_planner_v2.py` only:
   `c0044bb6…a532`) ran on the frozen-code smoke's own inputs (K1 smoke report `6c38f56b…`, corpus
   `68499d90…`). It reproduced the frozen-code train smoke (§10.1, `ac6158aa…`, at `755ec60`,
   whose TASK-074 code is byte-identical to `9d9b03c`) exactly:
-  - **all 998 computed leaf values** in `stages` are identical: features and the anchor,
-    readouts, blind baselines, calibration curves and the budget rule, the W/N records, O1, O2
-    and the primary seed. Only run paths and seconds differ;
+  - of the 998 leaf values in `stages` (`train_scale` excluded), **976 computed values are
+    identical**: features and the anchor, readouts, blind baselines, calibration curves and the
+    budget rule, the W/N records, O1, O2 and the primary seed. **22 differ, and all of them are
+    timing and path fields:** 10 `seconds` fields and 12 run paths. The 12 paths are the 6
+    checkpoint paths in `models_u200`, the 4 in `critic.models`, and `critic.r_off` and
+    `critic.r_plate`. The review of #114 counted 10 path fields and 978 identical values; this
+    recount of the same two reports finds 12 and 976;
   - `baselines.json`, `r_off.npz` and `r_plate.npz` are byte-identical;
   - every W/N checkpoint sha256 is identical.
 - **At full scale,** the harness with the fixed featurisation (`outputs/task074-fix-diag-2`)
@@ -978,7 +1003,8 @@ The code change is in `scripts/run_lewm_planner_v2.py` only:
 
 | measurement | pre-fix | post-fix |
 |---|---|---|
-| scratch harness, the stage's path at real sizes: PSS after featurisation | 10.18 GiB | **3.47 GiB** |
+| scratch harness, the stage's path at real sizes: PSS at the end of featurisation (end to end) | 10.18 GiB | **3.34 GiB** |
+| scratch harness: peak of the featurisation phase (peak to peak) | 10.24 GiB | **3.47 GiB** |
 | scratch harness: peak over featurisation, readouts, baselines and calibration | 11.56 GiB | **5.01 GiB** |
 | the train smoke's `train-scale` probe (the stage's own function, real sizes): stage peak | 8.77 GiB (under-measured, A1.2) | **7.82 GiB**, 4.18 GiB below the ceiling (margin 2.0 GiB: passes) |
 
@@ -1021,8 +1047,26 @@ corpus is about 2.9 cm, above the frozen 1.0 cm bar. The re-run is deterministic
 changes no number. So **the re-run's O2 is already known to fail its encoded-readout bar on every
 seed**, and its offline decision will be L-NO-DYNAMICS, L-O2-VOID or L-G2A (§5 item 7, first
 match), never OFFLINE-PASS. That is recorded here, before the re-run, and is not changed.
-Whether to spend the one repeat on a train stage whose offline row is already decided is for the
-coordinator or the owner.
+
+**The consequence: the re-run can fire the abandonment clause on the bar alone.**
+- L-G2A is in `CLAUSE_ROWS`, so `abandonment_fires("L-G2A")` is true.
+- If O1 passes on all three W seeds and O2 is not void (N fails (i)), the re-run's row is L-G2A,
+  and **the §7 abandonment clause fires**.
+- It would fire because the encoded-readout bar of 1.0 cm sits below this corpus's own readout
+  error of about 2.9 cm, **not because of anything W does**: that O2 component does not depend
+  on W.
+- The bar is not changed.
+
+**Ruling (decided by Claude under owner delegation, 2026-10-01).**
+- The one allowed repeat of the train stage is spent **as frozen**: this code, these bars, no
+  re-thresholding.
+- If the clause fires on L-G2A, the results document must record two things:
+  1. that the O2 encoded-readout bar was uncalibrated and sat below the readout ceiling, as this
+     addendum finds;
+  2. O2's W-dependent components for every W seed, so that the next task can use them: the
+     predicted median (R_off on W's h = 16 predictions), the ratio against persistence (i), the
+     ratio against the clock prior (iii), and N's ratio against persistence (ii).
+- The clause's scope stays exactly as written in §7.
 
 **How the 1.0 cm bar was set.**
 - It was carried verbatim from TASK-073 (`wm_critic_v2.O2["encoded_median_max_cm"]`, §6.2 of
