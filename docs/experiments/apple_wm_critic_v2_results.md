@@ -78,7 +78,10 @@ These are interpretation, not measurement. Each count is one run of 32 resets.
    margin.
 4. **So the question the critic was meant to answer does not arise here.** Even a perfect
    16-command outcome predictor, choosing among these aims, gains less than the +4/32 bar over the
-   perception ceiling. A LeWM critic could at best match that ceiling.
+   perception ceiling. A LeWM critic using the same cost J (the distance to e9's median offset
+   o*), the same 25 candidates and the same 16-command horizon could at best match H-sim. It
+   could not match an arbitrary selector. H-sim optimises that proxy, not success, and it can do
+   worse than simply aiming at the true plate: 20 against P-truth's 26 at 300 / 6 cm.
 
 ## 4. Caveats (read these before citing the row)
 
@@ -96,6 +99,10 @@ These are interpretation, not measurement. Each count is one run of 32 resets.
 - **H-sim's counts carry renderer noise when H-sim reads images.** That applies in D3 and S only;
   in K0, H-sim is centred on the true plate and reads no image. The owner's ruling on this is in
   §6.
+- **One K0 reset caps the P-3 arms at 31/32.** On reset 53018, every P-3 attempt (P-stale,
+  P-truth and H-sim, in every cell) ended at step 231 with the embodiment's joint-velocity guard
+  refusing a command (`guard_refusal`). That is before the shift at step 300 or 480, so it is
+  independent of the condition. B-oracle-shift succeeded there in every cell.
 - **The privileged elements are not learned results.** These are B-oracle-shift, P-truth, H-sim,
   e9 and P-3's privileged training labels. P-3 is a behaviour-cloning/DAgger policy trained on e9's
   demonstrations. It is not LeWM.
@@ -132,8 +139,8 @@ K0 run-1 ran on 2026-09-29 from a clean worktree at `b4df3f0`, after the pre-run
 | command | `nohup env MUJOCO_GL=egl UV_PROJECT_ENVIRONMENT=…/.venv uv run --no-sync python scripts/run_wm_critic_v2.py k0 --output outputs/task073-k0/run-2 --evidence /home/huhn/develop/emai/worktrees/task072-run` |
 | report | `outputs/task073-k0/run-2/report.json` in that worktree (git-ignored, on the Linux PC), sha256 `f760af401cd92b974f7c99f74f7a0bce3d6deaf00ca9000173e92e3f860a27f2` |
 | time | started 03:13:46 local (`uptime`); first cohort render 2026-09-30T01:14:28Z; 2 015 s |
-| machine | load 0.23 / 0.08 / 0.02 at the start (G-quiet: ≤ 2.0) and 4.60 / 5.23 / 4.78 at the end (the run's own); MemAvailable 25.4 GiB at the start (G-memory: ≥ 16 GiB); no other heavy job; the GPU's resident service untouched |
-| guards | every guard passed: G-frozen, G-hash (61 pins), G-platform, G-threads, G-quiet, G-memory, G-device (strict), G-weights, G-evidence, G-cohort (stored values), G-seeds, G-look, G-frame, G-shift, G-cap; G-repro 8/8 |
+| machine | load 0.23 / 0.08 / 0.02 at the start (G-quiet: ≤ 2.0; `load_average_at_start` in the report); 4.60 / 5.23 / 4.78 at the end (the run's own), **from the operator's `uptime` at 03:47:34, not in `report.json`**; MemAvailable 25.4 GiB at the start (G-memory: ≥ 16 GiB, in the report); no other heavy job; the GPU's resident service untouched |
+| guards | every guard passed (the run ended without a V; this list of guard names is the protocol's §8, not a field of `report.json`): G-frozen, G-hash (61 pins), G-platform, G-threads, G-quiet, G-memory, G-device (strict), G-weights, G-evidence, G-cohort (stored values), G-seeds, G-look, G-frame, G-shift, G-cap; G-repro 8/8 |
 | memory | peak of the whole process tree: **PSS 8.42 GiB** (the guarded measure; ceiling 12), RSS 10.08 GiB; main process 2.00 GiB, largest worker 1.21 GiB; 6 workers |
 | render events | none: no disagreement in G-repro's re-render or the cohort frames, no G-frame retry in any attempt, no signal during cleanup |
 | void | none |
@@ -175,6 +182,19 @@ TASK-073 ends at K0:
 - `Pool.close` is not fully bounded: `pool.terminate()` itself joins without a timeout, so a worker
   stuck in uninterruptible sleep could still block it;
 - the memory watch has no RSS fallback when PSS cannot be read.
+
+- `first_outcome_utc`, the train stage's boundary, is described in protocol §15.5 but is not in
+  the frozen `VOID_RULE` text;
+- the train stage's memory on the real corpus has never been measured. The full-size figure
+  (10.75 GiB PSS) comes from a synthetic probe.
+
+**Known inconsistencies, left in place because the files are pinned.** Editing them would change
+their pinned hashes after the fact:
+- protocol §14 and §15.3 still give the frozen hash as `cd9e8723…` (the value after the first
+  #108 commit); the manifest's `frozen_sha256`, which the runner checks, is `c7a3eb21…0023`;
+- the `k0_select` docstring in `wm_critic_v2.py` says S-NO-CONDITION "escalates to the owner
+  under D7", while `ROW_CONSEQUENCES` and protocol §7.0/§7.3 give "fallback". The code path that
+  decided this run is the frozen `ROW_CONSEQUENCES` and `FALLBACK_ROWS`.
 
 If the runner or the re-run rule is reused for a gated run, for example by TASK-074, these need
 fixing and review first. The gated harness (`stage_gated`) was never written.

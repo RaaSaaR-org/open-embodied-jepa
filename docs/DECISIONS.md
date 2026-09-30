@@ -69,7 +69,9 @@ is kept as written.
 (simulator only, no world model, 32 development resets per cell), found no mid-episode plate-shift
 condition on `apple-to-plate-v2` that passes all four bars. In every cell where P-truth ran, P-3
 given the true post-shift plate reached 26–29/32. Privileged 16-command look-ahead among the 25
-nearby aims (H-sim) added at most +3/32 over that, against a bar of +4. At step 480 with a 5–6 cm
+nearby aims (H-sim) added at most +3/32 over that, against a bar of +4. The margins (+2 and +3
+at best) are within a few resets on 32 resets and one run, so a larger cohort could land on
+either side of the bar. At step 480 with a 5–6 cm
 shift, the unaided policy still succeeded too often (18–20/32 against ≤ 8). In the protocol's
 words, "BC plus perception leaves no measurable room for a world-model critic under this
 disturbance on v2".

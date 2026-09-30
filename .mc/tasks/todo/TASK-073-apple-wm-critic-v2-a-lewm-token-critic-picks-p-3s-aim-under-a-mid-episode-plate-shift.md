@@ -86,7 +86,7 @@ and not the v1 benchmark. No control line is primary.
   first-render boundary, and render-only retries/majority for the renderer's rare one-level pixel
   differences (protocol §15).
 - 2026-09-30: #106 merged as `b4df3f0`, #108 as `35772e5`. **K0 run-2** from `35772e5` (GO: #108 comment
-  5901205401), 2 015 s, report sha256 `f760af40…27f2`: **S-NO-CONDITION**. Best cells: 300/4 cm
+  5901205401), 2 015 s, report sha256 `f760af40…27f2`: **S-NO-CONDITION**. Best cell: 300/4 cm
   B-oracle-shift 32, P-stale 4, P-truth 28, H-sim 31 (+3 < +4). The abandonment clause does not fire;
   the D7 fallback (TASK-074, LeWM-only planner) is authorised. The LeWM critic never ran. Results:
   `docs/experiments/apple_wm_critic_v2_results.md` (branch `docs/task-073-results`). `mc` is not
