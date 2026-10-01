@@ -14,6 +14,10 @@
 # PXR_WORK_THREAD_LIMIT, if set on the host, is passed into the container (OpenUSD's work-pool
 # thread limit). Kit overwrites it at start-up, so on its own it has no effect; e9_server_isaac.py
 # pins it (default 1 for Newton; docs/ISAAC_E9_REPLAY.md §4).
+# ISAAC_MODELS_DIR, if set, is mounted read-only at /models/<its basename>, e.g.
+# ~/models/isaaclab_arena -> /models/isaaclab_arena (the GR00T tutorial's /models layout; its
+# client config asserts the model path exists but loads no weights). Not /models itself: the
+# image's entrypoint chowns /models under `set -e`.
 # If your login shell predates your docker group membership, run it via `sg docker -c`.
 set -euo pipefail
 SCRIPT=${1:?usage: run_isaac.sh <script.py> <out-dir> [args]}
@@ -40,6 +44,7 @@ ENV_PASS=()
 echo "${PXR_WORK_THREAD_LIMIT-<unset>}" > "$OUT/pxr_work_thread_limit_host.txt"
 USD_MOUNT=()
 [ -d "$REPO/assets/isaac" ] && USD_MOUNT=(-v "$(cd -- "$REPO/assets/isaac" && pwd -P):/oej/usd:ro")
+[ -n "${ISAAC_MODELS_DIR:-}" ] && USD_MOUNT+=(-v "$(cd -- "$ISAAC_MODELS_DIR" && pwd -P):/models/$(basename -- "$ISAAC_MODELS_DIR"):ro")
 
 nvidia-smi --query-compute-apps=timestamp,pid,process_name,used_memory \
   --format=csv,noheader -lms 1000 > "$OUT/gpu_apps.csv" &
