@@ -415,7 +415,9 @@ class ArenaScene:
         Robot joints in the articulation's own order (``joint_names``), the root (pelvis) pose
         and velocity, the apple's link pose, centre-of-mass pose and velocity, the plate's pose
         and velocity, the apple-plate force (the success term's sensor) and, if the scene has
-        ``oej_apple_hand_contact``, the apple-hand force. ``bodies`` adds every robot link's
+        ``oej_apple_hand_contact``, the apple-hand force and, if it has
+        ``oej_right_hand_net_contact``, the largest net contact force on a right-hand link
+        (any contact partner). ``bodies`` adds every robot link's
         pose (``robot.data.body_names`` order)."""
         origin = self.np(self.unwrapped.scene.env_origins)[0]
         r = self.robot.data
@@ -448,6 +450,10 @@ class ArenaScene:
             hand = self.unwrapped.scene["oej_apple_hand_contact"]
             force = np.linalg.norm(self.np(hand.data.force_matrix_w).reshape(-1, 3), axis=-1)
             out["apple_hand_force_n"] = float(force.max())
+        if "oej_right_hand_net_contact" in self.unwrapped.scene.keys():
+            net = self.unwrapped.scene["oej_right_hand_net_contact"]
+            force = np.linalg.norm(self.np(net.data.net_forces_w).reshape(-1, 3), axis=-1)
+            out["right_hand_net_force_n"] = float(force.max())
         if bodies:
             out["body_pose"] = local(self.np(r.body_link_pose_w)[0])
         return out
