@@ -425,14 +425,24 @@ def main(argv: list[str]) -> None:
         sys.exit("GROOT_DEPS_DIR is set: refusing (a re-exec would bypass the client guard)")
 
     rec = _Recorder(args.output, args.mode, args.frame_episodes)
-    from gr00t.policy import server_client
-
-    guard_client(server_client.PolicyClient, rec.latencies)
+    # The runner's own top-level imports; gr00t (which loads pxr) only after Kit has started,
+    # exactly when the runner itself would import the policy class.
     import gymnasium as gym
     import isaaclab_arena.evaluation.policy_runner as pr
-    from isaaclab_arena.policy.policy_base import PolicyBase
 
-    PolicyBase.shutdown_remote = lambda self, kill_server=False: None  # never kill
+    orig_get_policy_cls = pr.get_policy_cls
+
+    def get_policy_cls(policy_type):
+        if policy_type != POLICY_TYPE:
+            raise SystemExit(f"refusing policy type {policy_type!r}")
+        from gr00t.policy import server_client
+
+        guard_client(server_client.PolicyClient, rec.latencies)
+        cls = orig_get_policy_cls(policy_type)
+        cls.shutdown_remote = lambda self, kill_server=False: None  # never kill
+        return cls
+
+    pr.get_policy_cls = get_policy_cls
 
     class Recorded(gym.Wrapper):
         def __init__(self, env):
