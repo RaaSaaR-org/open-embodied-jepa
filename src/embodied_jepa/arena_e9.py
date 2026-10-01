@@ -735,6 +735,26 @@ LEG_JOINT_KEYS = ("hip_", "knee_", "ankle_")  # the WBC's leg joints (AGILE driv
 E9_PICK_DX = -0.015  # e9: the collector's -0.03 plus palm_x_offset 0.015 (pelvis x)
 E9_ORIENT_DZ = 0.13
 E9_LIFT_DZ = 0.21
+# Measured in Arena by the shelf-press probe (docs/ARENA.md §8.1, arena-shelf-probe-1)
+ARENA_FINGER_DROP_M = 0.1182  # palm site to the lowest right-hand collision point, open
+ARENA_APPLE_COM_ABOVE_SHELF_M = 0.0263  # resting apple centre above the shelf top
+
+
+def declared_variant(name: str, clearance_m: float, close_mode: str, close_ramp=None) -> dict:
+    """An e9-arena tuning variant of docs/ARENA.md §8.2 (h_stop from the measured geometry)."""
+    return {
+        "name": name,
+        "stop_height_m": stop_height(
+            finger_drop_m=ARENA_FINGER_DROP_M,
+            apple_com_above_shelf_m=ARENA_APPLE_COM_ABOVE_SHELF_M,
+            clearance_m=clearance_m,
+        ),
+        "shelf_clearance_m": float(clearance_m),
+        "close_mode": close_mode,
+        "close_ramp": close_ramp,
+    }
+
+
 E9_REACH = {"reach_radius_m": 0.485, "release_z_floor_m": 0.10, "release_z_ceiling_m": 0.26}
 PHASE_NAMES = (
     "orient",

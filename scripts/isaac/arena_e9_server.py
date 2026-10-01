@@ -95,7 +95,9 @@ def collision_points(body_path: str) -> dict:
     if not body.IsValid():
         raise ValueError(f"no prim at {body_path}")
     cache = UsdGeom.XformCache(Usd.TimeCode.Default())
-    to_body = cache.GetLocalToWorldTransform(body).GetInverse()
+    # The simulator's body pose is rigid; a scale authored on the body prim itself (the apple's
+    # 0.009) belongs to the points, so the body frame here is its rigid part only.
+    to_body = cache.GetLocalToWorldTransform(body).RemoveScaleShear().GetInverse()
     points, kinds = [], {}
     it = iter(Usd.PrimRange(body, Usd.TraverseInstanceProxies()))
     for prim in it:

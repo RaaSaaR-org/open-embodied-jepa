@@ -300,7 +300,13 @@ def cmd_arena(args) -> int:
     if args.expert == ae.E9_ARENA:
         if not args.variant:
             raise SystemExit("e9-arena needs at least one --variant (docs/ARENA.md §8)")
-        variants = [json.loads(v) for v in args.variant]
+        variants = []
+        for v in map(json.loads, args.variant):
+            if "clearance_m" in v:  # docs/ARENA.md §8.2: h_stop from the measured geometry
+                v = ae.declared_variant(
+                    v["name"], v["clearance_m"], v["close_mode"], v.get("close_ramp")
+                )
+            variants.append(v)
         for v in variants:
             if "name" not in v:
                 raise SystemExit("every --variant needs a name")
