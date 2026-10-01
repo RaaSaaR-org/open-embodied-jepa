@@ -468,6 +468,47 @@ def records_from_arrays(d) -> list[dict]:
     return out
 
 
+PHASES = (
+    "orient",
+    "descend",
+    "close",
+    "lift",
+    "transfer",
+    "lower",
+    "steady",
+    "open",
+    "clear",
+    "retreat",
+    "settle",
+)
+
+
+def attempt_diagnostics(d) -> dict:
+    """What happened in Arena's world frame: base drift, apple motion, contacts, grasp."""
+    pel = d["arena_pelvis_pose"][:, :2]
+    apple = d["arena_apple_com_pose"][:, :3]
+    cmd = d["arena_command"]
+    look = int(len(d["rec_time"]) - len(d["phase"]))
+    drift = np.linalg.norm(pel - pel[0], axis=1)
+    out = {
+        "pelvis_drift_max_m": float(drift.max()),
+        "pelvis_drift_end_m": float(drift[-1]),
+        "apple_world_disp_max_m": float(np.linalg.norm(apple - apple[0], axis=1).max()),
+        "apple_rise_max_m": float(apple[:, 2].max() - apple[0, 2]),
+        "arena_apple_hand_contact_steps": int(np.nansum(d["arena_apple_hand_force_n"] > 0)),
+        "mirror_apple_hand_contact_steps": int(np.sum(d["rec_mirror_hand"])),
+    }
+    phase_drift = {}
+    for i, name in enumerate(PHASES):
+        steps = np.flatnonzero(d["phase"] == i) + look
+        mask = np.isin(cmd, steps)
+        if mask.any():
+            k = np.flatnonzero(mask)
+            phase_drift[name] = float(np.linalg.norm(pel[k[-1]] - pel[k[0]]))
+    out["pelvis_drift_per_phase_m"] = phase_drift
+    return out
+
+
 def cmd_rescore(args) -> int:
     """Recompute the Arena-side verdicts of a finished run with the current ``arena_verdicts``
     (the run's report keeps the verdicts of the code that ran it)."""
@@ -504,6 +545,7 @@ def cmd_rescore(args) -> int:
                     )
                 },
                 "at_rest_arena_detail": v["at_rest_arena_detail"],
+                **attempt_diagnostics(d),
             }
         )
     ok = [r for r in rows if r["ok"]]
@@ -518,6 +560,9 @@ def cmd_rescore(args) -> int:
             "complete",
         )
     }
+    counts["apple_lifted_2cm"] = sum(r["apple_rise_max_m"] > 0.02 for r in ok)
+    counts["arena_hand_contact_any"] = sum(r["arena_apple_hand_contact_steps"] > 0 for r in ok)
+    counts["pelvis_drift_over_5cm"] = sum(r["pelvis_drift_max_m"] > 0.05 for r in ok)
     counts["attempts"] = len(rows)
     write_report(out, {**provenance(), "run": str(args.run), "counts": counts, "attempts": rows})
     print(json.dumps(counts, indent=1))
