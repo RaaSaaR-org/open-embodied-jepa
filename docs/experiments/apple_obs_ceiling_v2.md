@@ -138,11 +138,33 @@ constant planted error is the simplest model of that: the target is frozen at 50
 decision's reading, so a readout error at the last decision acts as a constant target error.
 A per-frame readout error that varies between decisions is not modelled (§9b).
 
-**Result** (run `tau` at ⟨TBD-tau-revision⟩, report sha256 ⟨TBD-tau-sha⟩; start load ⟨TBD⟩):
+**Result.** The calibration ran once, as `run_obs_ceiling_v2.py tau`, at `26c64d9` on a clean
+tree (frozen sha `de3218c7…` before the record below was added), on the Linux PC:
+- report `outputs/task075-tau/run-1/report.json` in the `task075-prereg` worktree, sha256
+  `08a152f14e63902e7e045f8890a000c0eedd0d7ac751af6bd879e6e512c519d3`;
+- 2026-10-01T12:35:57Z → 12:40:22Z (265 s), start load 0.05 / 1.43 (1 / 5 min), MemAvailable
+  checked, peak tree PSS 7.94 GiB (8 processes);
+- G-repro: every TASK-072 run-1 reproduction check passed; no render disagreement;
+- G-planted: every decision aimed at the true plate plus e (largest difference 0.0 m), with no
+  fallback and no blocked move at any level.
 
-⟨TBD-tau-table⟩
+| planted error \|e\| (cm) | 0 | 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 4 | 5 |
+|---|---|---|---|---|---|---|---|---|---|
+| counted successes (of 32) | 31 | 31 | **28** | 22 | 23 | 21 | 15 | 11 | 8 |
+| at rest (of 32) | 31 | 31 | 28 | 22 | 23 | 21 | 15 | 11 | 13 |
+| ≥ 28? | yes | yes | yes | **no** | no | no | no | no | no |
 
-**τ = ⟨TBD-tau⟩ cm** (`TAU_MEASURED`, frozen).
+**τ = 1.0 cm** (`TAU_MEASURED`, frozen; the seeds are spent).
+- The one level-0 failure is seed 55028, where P-3's grasp failed (no latched grasp).
+- **τ sits exactly on the bar** (28/32 at 1.0 cm). One run per level, no interval (§9b).
+- For comparison only (other conditions): TASK-070's e9 rested 30/32 at 1.0 cm plate error on its
+  gated seeds and 59/64 (1.0 cm) and 57/64 (1.5 cm) on development seeds
+  (`apple_to_plate_v2_expert.md`:3–5, 150–158); TASK-074's Probe A gave 6/32 for e9 aimed at a
+  readout with a 3.5 cm median plate error (`apple_lewm_planner_v2.md`:154–156).
+- **What τ = 1.0 cm implies for the reference view, before anything is run:** TASK-074's
+  reference readout reads 2.872 cm on its val windows (§1). Unless cross-fitting lowers it by
+  more than a factor of 2.5, the reference view will not be admitted. This was visible when τ
+  was frozen; τ was not chosen, it was measured, and the rule (§2) was fixed before the run.
 
 ## 3. The views and the corpus
 
