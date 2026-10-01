@@ -1,0 +1,605 @@
+{
+ "protocol": "apple_obs_ceiling_v2",
+ "task": "TASK-075",
+ "status": "preregistration (Stage 0); tau calibrated on development seeds",
+ "document": "docs/experiments/apple_obs_ceiling_v2.md",
+ "owner_decisions": {
+  "owner_delegation_verbatim": "do the work without me - if you have decidions, choose your recommandation. do the work in subagents, use this chat just for updates. use subagents and workflows. goal is to continue working and try to get a real LeWM for the Unitree G1 without my help",
+  "owner_delegation_date": "2026-09-30",
+  "next_task_choice": "candidate (d) of the design proposal: measure the observation and readout ceilings first; views onboard 112 (reference), onboard native 224, the palm-centred hand crop and overview 224; candidate (c)'s learning curve as one factor; real-robot pretraining (b) deferred",
+  "next_task_choice_by": "decided by Claude under owner delegation (2026-09-30), ruled 2026-10-01",
+  "lesson_carried": "TASK-074 (results \u00a75): a bar on a readout must be calibrated from that readout's measured ceiling before the freeze; every bar here is a measured quantity"
+ },
+ "frozen": {
+  "protocol": "apple_obs_ceiling_v2",
+  "task": "TASK-075",
+  "carried_from": [
+   "apple_lewm_planner_v2"
+  ],
+  "owner_decisions": {
+   "owner_delegation_verbatim": "do the work without me - if you have decidions, choose your recommandation. do the work in subagents, use this chat just for updates. use subagents and workflows. goal is to continue working and try to get a real LeWM for the Unitree G1 without my help",
+   "owner_delegation_date": "2026-09-30",
+   "next_task_choice": "candidate (d) of the design proposal: measure the observation and readout ceilings first; views onboard 112 (reference), onboard native 224, the palm-centred hand crop and overview 224; candidate (c)'s learning curve as one factor; real-robot pretraining (b) deferred",
+   "next_task_choice_by": "decided by Claude under owner delegation (2026-09-30), ruled 2026-10-01",
+   "lesson_carried": "TASK-074 (results \u00a75): a bar on a readout must be calibrated from that readout's measured ceiling before the freeze; every bar here is a measured quantity"
+  },
+  "delegated": "decided by Claude under owner delegation (2026-09-30), ruled 2026-10-01",
+  "delegated_choices": {
+   "tau_condition": "tau is measured under TASK-074's condition (a -y move of 9 cm at step 300, K1-PASS) with K1's H-handover arm (P-3's pick, e9's place primitive aimed at the true moved plate) displaced by a planted error",
+   "tau_levels": "planted errors 0, 0.5, 1, 1.5, 2, 2.5, 3, 4 and 5 cm on 32 development resets; one direction per reset, the same at every level",
+   "tau_rule": "tau is the largest level L such that every level <= L reaches >= 28/32 counted successes (the TASK-070/K1 bar family)",
+   "corpus_reuse": "the reference view is apple-far-shift-v2's stored 112 px frames; the new views are rendered by re-simulating its 240 train and 30 val roots, checked against the stored arrays; the 30 test roots are excluded",
+   "cross_fitting": "every readout is cross-fitted over the 270 read roots (5 outer folds by root), so c_V rests on about 200 roots instead of TASK-074's 22 val roots",
+   "admission_floor_and_prior": "beating the random-init floor and the clock prior means the upper 95 % bound of the paired cluster-median error ratio is below 1.0 (strict superiority, no tuned margin); the proposal's 'margin calibrated from the reference view's development spread' is not used, so that no view's readout is seen before the freeze (deviation X-2)",
+   "clock_prior": "the clock prior is the per-step median offset of the outer-training roots (cross-fitted, reads no image); TASK-074's o*(t+16) prior is reported beside it",
+   "spurious_check": "the plate-hidden check gates: R(V) on the t+16 frame re-rendered with the plate hidden must NOT read the offset within tau (lower 95 % bound of its median error > tau); the apple-hidden check is reported only, because in the carry phase the apple sits in the hand, whose pose is a legitimate kinematic cue",
+   "representation_row": "OBS-REPRESENTATION needs a view that passes with the full-token or raw-pixel readout (c <= tau, beats the clock prior, clean plate-hidden check) while no view is admitted with R_off",
+   "view_order": "views are ordered by the size of the change to the robot: onboard 112 (none), onboard 224 (resolution), hand crop (resolution and a kinematic crop), overview 224 (an external camera); the first admitted onboard view is chosen",
+   "wrist_view": "no wrist view: the scene defines none, and a scene change needs its own review",
+   "learning_curve": "R_off at 25, 50 and 100 % of each outer fold's training roots; 'still falling' if the lower 95 % bound of median(e_50) - median(e_100) is > 0; it informs only the next step under OBS-NONE"
+  },
+  "seed_ranges": {
+   "tau": [
+    55000,
+    55031
+   ]
+  },
+  "smoke_seeds": [
+   55050,
+   55099
+  ],
+  "task_block": [
+   55000,
+   55999
+  ],
+  "forbidden_ranges": {
+   "mvp_frozen_resets": [
+    20000,
+    20049
+   ],
+   "mechanics_probes": [
+    41000,
+    41101
+   ],
+   "earlier_train_val_test": [
+    42000,
+    42031
+   ],
+   "narrow_development": [
+    43000,
+    43004
+   ],
+   "final_cohort": [
+    44000,
+    44019
+   ],
+   "cohort_D_and_prior_ceilings": [
+    45000,
+    45207
+   ],
+   "cohort_C": [
+    45300,
+    45339
+   ],
+   "apple_look_v1_corpus": [
+    47000,
+    47199
+   ],
+   "apple_look_pilots": [
+    47900,
+    47931
+   ],
+   "apple_wide_v1_corpus_and_pilots": [
+    48000,
+    48999
+   ],
+   "grasp_closure_probes": [
+    49000,
+    49199
+   ],
+   "task067_block": [
+    46000,
+    46999
+   ],
+   "task068_to_070_block": [
+    50000,
+    50999
+   ],
+   "task071_072_block": [
+    51000,
+    52199
+   ],
+   "task073_block": [
+    53000,
+    53999
+   ],
+   "task074_design_probes": [
+    54700,
+    54999
+   ],
+   "task074_block": [
+    54000,
+    54999
+   ]
+  },
+  "seeds": {
+   "tau_direction": 7501,
+   "outer_folds": 7502,
+   "inner_folds": 7503,
+   "learning_curve": 7504,
+   "bootstrap": 7505
+  },
+  "scene_version": "apple_to_plate_v2",
+  "counted_success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted",
+  "expert": {
+   "release_pitch_rad": 0.45,
+   "release_dx": 0.015
+  },
+  "carried": "P-3",
+  "evidence": {
+   "results_manifest": "benchmarks/manifests/apple-first-policy-v2-linux-results.json",
+   "report": "outputs/task072-first-policy-v2-linux/run-1/report.json",
+   "report_sha256": "877452840d0d03520ec8644321ef32f6b19877caa679e77d173e3d2509edec78",
+   "revision": "db65816eb56dadb73664f08978cadeb6e881b35f",
+   "outcome": "M1-PASS",
+   "carried": "P-3",
+   "checkpoints": {
+    "P-3": "7988162df0b6106db5d007e322b824a3725b74cb103ba5a8de9f552912060be8",
+    "C-3": "d1820db4a1af3a63f02ed96c9a7c51d8b92d56ea7a23cf762940925f586b1289",
+    "R-3": "bea0d422b951287fcad66630aa8ea837a59df441d7a6c1793e2423048e2c0fd3"
+   },
+   "checkpoint_dir": "checkpoints/task072-first-policy-v2-linux/run-1",
+   "corpus": "data/apple-look-v2-linux/run-1",
+   "corpus_manifest_sha256": "67c342f6d37f3bd1910af16139096c109fa0bf6647d87286ca26b0899c9b4f54",
+   "b_replay_library_roots": 112
+  },
+  "condition": {
+   "shift_step": 300,
+   "shift_cm": 9,
+   "direction_arc_deg": [
+    225,
+    315
+   ],
+   "reset": "lewm_planner_v2.condition_reset (the reset re-draw rule)",
+   "shift_vector": "lewm_planner_v2.shift_vector(seed, reset, 9)",
+   "k1_report_sha256": "25701293c54fd585274d7734018de7485d65f92915060ed7aa034439db8aad88"
+  },
+  "source_corpus": {
+   "name": "apple-far-shift-v2",
+   "manifest_sha256": "fe7ab9150216887f5759521dcc7fe7c7f54d2e5e8c36fecf6ed713a000b134bd",
+   "plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
+   "protocol": "apple_lewm_planner_v2",
+   "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+   "revision": "9d9b03cff44848f0b43b63f9d1f560a378c672ba",
+   "read_splits": [
+    "train",
+    "val"
+   ],
+   "split_sizes": {
+    "train": 240,
+    "val": 30,
+    "test": 30
+   },
+   "excluded_split": "test",
+   "excluded_test_ids_sha256": "4fa7512c06a85b72fe1fe82e2538398e3c2cf55c0e9497c2116f9728304357bf",
+   "excluded_rule": "the 30 test roots are never simulated, rendered or decoded (CorpusReader refuses them; the digest is sha256 of the sorted id list's JSON)"
+  },
+  "task074_reference": {
+   "encoded_median_cm": 2.8722625765232763,
+   "persistence_median_cm": 4.350821813169937,
+   "clock_prior_median_cm": 3.1225649505050876,
+   "windows": 90,
+   "roots": 22,
+   "r_off_readout_sha256": "260af3f7567aadd03391edc96bd71132ce8b1fa4f791906cf6f596bbfd803157",
+   "r_off_rows": 5175,
+   "r_off_groups": 225,
+   "baselines_json_sha256": "ff3a2e7bc5b5b9d4e625c1a969643b79c62269b6c2ce3dbc7484b2ce5ff4d07e",
+   "run": "task074-run3/outputs/task074-train/run-3 (5e53ef3)"
+  },
+  "views": [
+   "onboard112",
+   "onboard224",
+   "handcrop",
+   "overview224"
+  ],
+  "view_specs": {
+   "onboard112": {
+    "camera": "onboard_rgb",
+    "render_px": 112,
+    "frame_px": 112,
+    "class": "onboard",
+    "change": "none: apple-far-shift-v2's stored frames (the reference)"
+   },
+   "onboard224": {
+    "camera": "onboard_rgb",
+    "render_px": 224,
+    "frame_px": 224,
+    "class": "onboard",
+    "change": "resolution: the same head camera rendered natively at 224 px"
+   },
+   "handcrop": {
+    "camera": "onboard_rgb",
+    "render_px": 320,
+    "frame_px": 112,
+    "class": "onboard",
+    "change": "resolution and a crop: a 112 px window of a 320 px onboard render, centred on the projected right palm from robot kinematics only (hand_crop.HandCrop, TASK-048)"
+   },
+   "overview224": {
+    "camera": "overview",
+    "render_px": 224,
+    "frame_px": 224,
+    "class": "extra",
+    "change": "an external camera (a hardware change; PRD.md:208)"
+   }
+  },
+  "reference_view": "onboard112",
+  "hidden_kinds": [
+   "apple_hidden",
+   "plate_hidden"
+  ],
+  "hidden_group": 5,
+  "render_rule": {
+   "warm_up": "every extra renderer renders once, discarded, at the start of every root (apple_observation_reprobe_v1_results.md:271-272)",
+   "hidden": "a hidden render moves every geom of the hidden body to HIDDEN_GROUP and turns that group off (not drawn, no shadow), then restores the groups; physics is untouched",
+   "reference_check": "the re-simulated root's states, apple, plate, applied, base and phase arrays must equal the stored ones exactly, and its 112 px frames at the rendered steps must equal the stored frames or differ by at most one level in at most 16 pixels (lewm_planner_v2.RENDER); anything else is a V (G-repro-render)",
+   "max_level_difference": 1,
+   "max_pixels": 16
+  },
+  "steps": {
+   "train": [
+    384,
+    392,
+    400,
+    408,
+    416,
+    424,
+    432,
+    440,
+    448,
+    456,
+    464,
+    472,
+    480,
+    488,
+    496,
+    504,
+    512,
+    520,
+    528,
+    536,
+    544,
+    552,
+    560
+   ],
+   "decision": [
+    405,
+    421,
+    437,
+    453,
+    469,
+    485
+   ],
+   "eval": [
+    421,
+    437,
+    453,
+    469,
+    485,
+    501
+   ],
+   "render": [
+    384,
+    392,
+    400,
+    405,
+    408,
+    416,
+    421,
+    424,
+    432,
+    437,
+    440,
+    448,
+    453,
+    456,
+    464,
+    469,
+    472,
+    480,
+    485,
+    488,
+    496,
+    501,
+    504,
+    512,
+    520,
+    528,
+    536,
+    544,
+    552,
+    560
+   ],
+   "hidden": [
+    421,
+    437,
+    453,
+    469,
+    485,
+    501
+   ],
+   "chunk": 16,
+   "band": [
+    384,
+    560
+   ],
+   "moving_threshold_m": 0.01,
+   "root_min_length": 401
+  },
+  "tau": {
+   "seeds": [
+    55000,
+    55031
+   ],
+   "resets": 32,
+   "levels_cm": [
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "bar": 28,
+   "arm": "H-handover with a planted error: P-3's pick, then e9's place primitive (place_planner.PlannerController, mode 'truth') aimed at the true moved plate plus e, at every decision step (lewm_planner_v2_runtime's H-handover path, unchanged)",
+   "condition": "TASK-074's: the plate moves 9 cm to the robot's right (-y) at step 300",
+   "direction": "one angle per reset, uniform on [0, 2 pi): default_rng(SeedSequence([SEEDS['tau_direction'], seed])); the same angle at every level",
+   "count": "counted success (T71-R1/R2: at rest after a latched grasp and place)",
+   "rule": "tau = the largest level L such that every level <= L reaches >= 28/32 counted successes; if level 0 fails, TAU-NONE (the place itself is the constraint)",
+   "when": "Stage 0, before the freeze, on development seeds that are then spent"
+  },
+  "tau_measured": null,
+  "readouts": {
+   "R_off": "RidgeReadout (latent_critic.py:42) from the pooled 4 x 4 pretrained DINOv2 patch tokens (6144-d, standardised on the fit rows) to the apple-minus-plate offset xy (m); lambda from lewm_planner_v2.READOUTS' grid by grouped inner CV; solved in the dual form, which RidgeReadout defines to give the same readout as the primal (latent_critic.py:43-45). The admission readout",
+   "R_floor": "R_off on the seed-0 random-init DINOv2's pooled tokens (pretrained_encoder.random_init): the floor",
+   "R_full": "kernel ridge (info_ceiling's family: linear or RBF on the raw Gram, centred on the fit rows, lambda in 1e-4..1e4) on the full pretrained tokens (98 304-d); family and lambda by grouped inner CV",
+   "R_pix": "the same kernel ridge on the raw uint8 pixels of the view (the information ceiling, TASK-061's family)",
+   "R_proprio": "RidgeReadout (primal) from the robot state (the stored 'states' row) to the offset: reported only, a kinematic baseline",
+   "clock_prior": "the per-step median offset of the outer-training roots at t + 16 (reads no image); TASK-074's o*(t + 16) is reported beside it",
+   "persistence": "R_off on the frame at t, against the offset at t + 16 (reported)",
+   "targets": "the offset (gating); plate xy and apple xy through R_off's estimator (reported)",
+   "fit_rows": "the outer-training roots' frames at TRAIN_STEPS (every 8th band frame from 384, as TASK-074's R_off)",
+   "eval_windows": "every read root's windows at the decision steps t whose true offset moves by >= 1 cm over the 16 commands (O2's moving cohort); the readout reads frame t + 16",
+   "outer_folds": "5, by root: a seeded permutation of the read roots in plan order, position mod 5 (SEEDS['outer_folds'])",
+   "inner_folds": "5, grouped by root (latent_critic.grouped_folds, SEEDS['inner_folds'])",
+   "lambda_grid_relative": [
+    0.001,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+   ],
+   "kernel_lambdas": [
+    0.0001,
+    0.001,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0,
+    10000.0
+   ],
+   "kernel_families": [
+    "linear",
+    "rbf"
+   ],
+   "learning_curve": "R_off at 25 and 50 % of each outer fold's training roots (a seeded subsample, SEEDS['learning_curve']) beside 100 %",
+   "device": "DINOv2 on CUDA (strict determinism), batch 64, with a CPU anchor check per view; the fits on the CPU"
+  },
+  "outer_folds": 5,
+  "inner_folds": 5,
+  "learning_curve": [
+   0.25,
+   0.5,
+   1.0
+  ],
+  "bootstrap_resamples": 10000,
+  "admission": {
+   "A1_precision": "c_V = the upper 95 % bound of the root-clustered median error of R_off(V) on the moving windows <= tau",
+   "A2_floor": "the upper 95 % bound of median(e_R_off) / median(e_R_floor) < 1.0",
+   "A3_clock_prior": "the upper 95 % bound of median(e_R_off) / median(e_clock) < 1.0",
+   "A4_plate_hidden": "the lower 95 % bound of R_off(V)'s median error on the plate-hidden t + 16 frames > tau (without the plate, the view does not read the offset within tau)",
+   "reported": "the apple-hidden error, persistence, TASK-074's o* prior, R_proprio, the plate and apple targets, the learning curve, R_full and R_pix"
+  },
+  "representation_pass": {
+   "B1_precision": "the upper 95 % bound of the median error of R_full(V) or R_pix(V) <= tau",
+   "B3_clock_prior": "its upper 95 % ratio bound against the clock prior < 1.0",
+   "B4_plate_hidden": "its plate-hidden lower 95 % bound > tau"
+  },
+  "ratio_bar": 1.0,
+  "rows": [
+   "V",
+   "TAU-NONE",
+   "OBS-ONBOARD",
+   "OBS-EXTRA",
+   "OBS-REPRESENTATION",
+   "OBS-NONE"
+  ],
+  "clause_rows": [
+   "OBS-NONE"
+  ],
+  "clause_scope": "a LeWM world-model task (planner or critic) for the place phase of apple-to-plate-v2 under TASK-074's condition, built on any of these four views (onboard 112, onboard 224, the hand crop, overview 224) with frozen DINOv2 features: none is preregistered without new evidence of a different kind (a new view, a new readout family or a task or condition change). The LeWM backend, the v2 task and the product goal stay open",
+  "row_consequences": {
+   "V": "the void rule",
+   "TAU-NONE": "escalate: the place itself fails at zero planted error; nothing is rendered (found before the freeze, so the protocol is not frozen)",
+   "OBS-ONBOARD": "close: the next task preregisters the LeWM place planner or critic on the chosen onboard view, with an O2-type encoded-readout bar B, c_V <= B <= tau, and a predicted-latent bar <= tau with any allowance above c_V calibrated before its freeze",
+   "OBS-EXTRA": "escalate: only overview 224 is admitted; a hardware change against PRD.md:208 ('Do not require additional cameras for MVP') needs the owner's ruling",
+   "OBS-REPRESENTATION": "escalate: the binding factor is the pooled latent or its linear readout, not the data; a representation change for the next world model is a design question for the owner, not a silent reopening of a closed line",
+   "OBS-NONE": "clause: no view reads the offset within tau, even raw pixels; if the learning curve is still falling the next step is a larger corpus (candidate (c)), otherwise a task or condition change"
+  },
+  "platform": {
+   "system": "Linux",
+   "machine": "x86_64",
+   "mujoco_gl": "egl"
+  },
+  "sim_workers": 6,
+  "thread_env": {
+   "MKL_DYNAMIC": "FALSE",
+   "OMP_NUM_THREADS": "6",
+   "MKL_NUM_THREADS": "6",
+   "OPENBLAS_NUM_THREADS": "16"
+  },
+  "quiet_machine": {
+   "max_load_average_1min": 2.0,
+   "max_load_average_5min": 2.0,
+   "rule": "os.getloadavg() at the stage's start: the 1- and 5-minute load averages are both at most 2.0 (the idle machine with the GPU's resident service measures about 0.1-0.4); otherwise G-quiet makes the stage V before any render"
+  },
+  "memory": {
+   "ceiling_gib": 12.0,
+   "headroom_gib": 4.0,
+   "sample_seconds": 0.5,
+   "measure": "summed PSS of the runner and all its descendants (run_guards.process_tree_memory: smaps_rollup, falling back to VmRSS for a process whose PSS cannot be read, counted in pss_fallback_processes), sampled every 0.5 s; summed VmRSS beside it",
+   "measure_key": "pss",
+   "train_scale_rule": "the smoke's 'train-scale' stage builds the train stage's feature table at full corpus scale (270 + 190 read roots x the band) and runs the train stage's code path; its peak must be within the ceiling before any GO",
+   "scale_rule": "the readouts smoke's 'scale' probe runs the readouts stage's own function on smoke data presented at the real sizes (240 train + 30 val slots, each slot's source episode and views file decoded afresh); its peak must be at least SCALE_MARGIN_GIB below the ceiling before any GO (TASK-074 addendum A1's lesson)"
+  },
+  "scale_margin_gib": 2.0,
+  "gpu": {
+   "min_free_gib_after": 4.0,
+   "process_cap_gib": 3.0,
+   "rule": "the GPU is shared with a resident service (about 6.6 GB, never touched); a GPU stage starts only if free memory >= 4.0 GiB + the process cap, and the process is capped with torch.cuda.set_per_process_memory_fraction at 3.0 GiB, so at least 4 GiB stays free; an allocation failure is a V"
+  },
+  "disk": {
+   "min_free_gib": 10.0,
+   "rule": "the render stage starts only if the disk holding its output has >= 10 GiB free plus the projected store (the smoke's measured bytes per root x 270 x 1.5), and a watch voids the stage if free space falls below 10 GiB"
+  },
+  "caps_seconds": {
+   "global": 43200.0,
+   "per_root": 300.0,
+   "per_attempt": 300.0
+  },
+  "void_rule": "a guard, a crash, a cap, a CUDA allocation failure or a failed reproduction makes the stage V and nothing in it is read; batches are never shrunk to fit. A V before a stage's boundary is not a spent attempt and may be repeated as-is, recorded. The boundary is cohort_first_render_utc for the render stage and first_outcome_utc for the readouts stage (written after G-repro-off and the featurisation, before the first out-of-fold error of any view). After the boundary a stage may be repeated once from scratch after a reviewed fix; a second V closes TASK-075 as INCONCLUSIVE. Nothing is re-thresholded, refitted or re-selected after its numbers are seen",
+  "stages": [
+   "tau (Stage 0, before the freeze)",
+   "render",
+   "readouts",
+   "results"
+  ]
+ },
+ "frozen_sha256": "de3218c787c7162069e7252dfde8ca13c59a2ef9c2f3d539fe2c47cc156caf42",
+ "encoder_digests": {
+  "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
+  "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
+ },
+ "mujoco_version": "3.13.0",
+ "source_corpus": {
+  "name": "apple-far-shift-v2",
+  "manifest_sha256": "fe7ab9150216887f5759521dcc7fe7c7f54d2e5e8c36fecf6ed713a000b134bd",
+  "plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
+  "protocol": "apple_lewm_planner_v2",
+  "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+  "revision": "9d9b03cff44848f0b43b63f9d1f560a378c672ba",
+  "read_splits": [
+   "train",
+   "val"
+  ],
+  "split_sizes": {
+   "train": 240,
+   "val": 30,
+   "test": 30
+  },
+  "excluded_split": "test",
+  "excluded_test_ids_sha256": "4fa7512c06a85b72fe1fe82e2538398e3c2cf55c0e9497c2116f9728304357bf",
+  "excluded_rule": "the 30 test roots are never simulated, rendered or decoded (CorpusReader refuses them; the digest is sha256 of the sorted id list's JSON)"
+ },
+ "tau_calibration": null,
+ "render_smoke": {},
+ "smoke": {},
+ "hashes": {
+  "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+  "benchmarks/manifests/apple-first-policy-v2-linux-results.json": "b97258bc14875e1c1de03e721e318b41fa582b216d1f1414637d0a56d1f159b9",
+  "benchmarks/manifests/apple-first-policy-v2-linux.json": "29f2c98302adfe2b214a68a85de769b5ea8cf4f4dddf1622f90970a9c5efb9ba",
+  "benchmarks/manifests/apple-first-policy-v2-m2-results.json": "e84f0d51ba02eb02a997bf1fc7923cb7d8beca0bc34259fc82bb4b8b5fb424b2",
+  "benchmarks/manifests/apple-first-policy-v2-m2.json": "74b1a5814542727f90b8cc152b0e89dc1c7a4dabf6add36a8fa9ec3220fa9be0",
+  "benchmarks/manifests/apple-first-policy-v2.json": "cab7c7c8cfd8ac9aac2d4bbddccea5402d806c32df12396557013f60a5ed6e37",
+  "benchmarks/manifests/apple-policy-v1.json": "749c6f0e38c802b3b20aa7d0de2e089335126455a93e8ddc02369d6b5807a8ba",
+  "benchmarks/manifests/apple-token-dynamics-v1.json": "2191d57e869810aeb0601cdc85308d94dcd750782bac9596f0a78b0ea2fbdc38",
+  "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
+  "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+  "docs/experiments/apple_wm_critic_v2.md": "161f9ed37939421f9f5e4f56ea38c8110d6b8da2dbc808dcead816fd2d81a39b",
+  "scripts/collect_apple_shift_v2.py": "584ed2386dc6ab99abb60a22922b9781ebbcd13f08ac3198fff93d8394ab93e5",
+  "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+  "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
+  "scripts/rank_wm_critic_v2.py": "6d4cdc9017369f9c4ae95184c153b8bed5c6db84cc02a6cd9c4b84a243861d64",
+  "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
+  "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
+  "scripts/run_lewm_planner_v2.py": "2d229a95b219b531eb18d84381c36c8db2294f4b2771e3bb0a75945ea087b94a",
+  "scripts/run_obs_ceiling_v2.py": "05351e336bce7bba92c37334994abb5c1520223e850f311293b95a296ab7274b",
+  "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
+  "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
+  "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
+  "src/embodied_jepa/__init__.py": "a0043e95cb31add021475ec8877d7a7b28189696ddf5ab2486d73537c84aec41",
+  "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
+  "src/embodied_jepa/at_rest.py": "b5121cb600db6bfb3f92b4161ba46d4cdcb31f98e99de512b257f2519db00527",
+  "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+  "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
+  "src/embodied_jepa/devices.py": "0976ccc0fb6d3c64d8128dbc152dcb2ebd3aee2211bc3ab5e25a772518e2fb72",
+  "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+  "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
+  "src/embodied_jepa/first_policy_model.py": "5ebd70e07d9c6eba38f0fa4c8980602205f0e24420d39f252935dc47673fb984",
+  "src/embodied_jepa/first_policy_perception.py": "d2ae40118a78646c13e89a089049f80cdc0389dfdd2106f5862a03ab134ed497",
+  "src/embodied_jepa/first_policy_runtime.py": "d6d672dc26912371cae78c2d32ba84583adfab4adcab393445a770f994a5f953",
+  "src/embodied_jepa/first_policy_v2.py": "c05385701481bb6463e096899df8a8c4945239954db73f29b42ea19117d7a460",
+  "src/embodied_jepa/first_policy_v2_linux.py": "2ff753d1ae3c8db18d4b8f4dd79e1738a12ccedebc2014977d5c35f541e53ad7",
+  "src/embodied_jepa/first_policy_v2_m2.py": "39beb69a65c31b7b4491dafd092d2e2c98ad19ee6e70aa4514a48d948c86b4ea",
+  "src/embodied_jepa/first_policy_v2_model.py": "5e29fc12f496b2299c1d2d5b4df8ea99660b838a896587b9b890f846312a1a45",
+  "src/embodied_jepa/first_policy_v2_runtime.py": "2caa50e70d04c3d4898896acb402bb7ccc95897cece3c6a5d119db5ec4a3169a",
+  "src/embodied_jepa/hand_crop.py": "4aec02912654ba151ad92f7b39242ae3f60f60ba64da103bc9696ae55953cfb7",
+  "src/embodied_jepa/hybrid_selection.py": "b96ae08098da94202ec74f1cab9ff0fe025ced7f65bf505bbb21ca557a298d4a",
+  "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+  "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
+  "src/embodied_jepa/lewm_planner_v2.py": "f097d179479fe1f48b21594c594d2fc99565522a3347fb8514743d94c295d737",
+  "src/embodied_jepa/lewm_planner_v2_offline.py": "84ae5ee71829443665163941aab100c7219453962678a037fc27e8cbaf11d3a7",
+  "src/embodied_jepa/lewm_planner_v2_runtime.py": "ccfac04c1f2e8cc62039186c3388d971a002e7ebe5b08f70f6e97e257c3cb170",
+  "src/embodied_jepa/look_corpus.py": "41a05027d30375884f9e562a4887814db65bf5111fc7bc8fe2ddcf38e206d84b",
+  "src/embodied_jepa/models/__init__.py": "694622858ffd8a892d6746c65f162c2cea19e9ead1aa5c566ab4edc6fb962f94",
+  "src/embodied_jepa/models/base.py": "310a509d5f8043ad3cbdf85a0568d15bb4ed2e4faeddf6e10bed63abf8ee0549",
+  "src/embodied_jepa/models/frozen_encoder.py": "c1a4622a0765e44fc060c5313a85e4f727f51dc361acd5de50cb6990845e6011",
+  "src/embodied_jepa/models/frozen_tokens.py": "33e8e819ad557d4fec6167482f91b5aa0c5da5a1169e7f8e6e8f050390c9a3a2",
+  "src/embodied_jepa/models/latent_critic.py": "5af41f3fdc0767e76b9c6d4f833b267e33d90a7d420e712fc1f0a6d402140eeb",
+  "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
+  "src/embodied_jepa/models/native.py": "95e112e13b0bf4d587fd5c35008e99b1e0a3759fb4f458c24bdd20304d0fadf3",
+  "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
+  "src/embodied_jepa/obs_ceiling_v2.py": "ff2513a71cf76a5438f1fdd07375f2a6ae29be3a6ce19dbc3bbce77922784f81",
+  "src/embodied_jepa/obs_ceiling_v2_offline.py": "fc2744ab6f84bcb4fddad7882c3c02edfa8dc756764ee01737d2e0498eb43c0e",
+  "src/embodied_jepa/obs_ceiling_v2_runtime.py": "85383d4e4228cda0b258590b3774e16db2a10727cdaa06dd483d90dc342fd836",
+  "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+  "src/embodied_jepa/place_planner.py": "1842d3e0ca31bfbe6c0568ab5a8d9c75c513e8b5a784ae7200c43101d270c846",
+  "src/embodied_jepa/plate_shift.py": "5ae0f016dd6ee628c60c3a6901f170d9bd1643df8e508e53fabbbc6e89650b39",
+  "src/embodied_jepa/policy_diagnostics.py": "3898e34588145c14696835e5f89e75b112bc35f1087f206d4c4525774cab9faa",
+  "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+  "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
+  "src/embodied_jepa/resting_expert.py": "9f253b1d5025ff4c3176cdafe98ff59a50a51bdc9b90fe3a1f1d6fddc73bcd23",
+  "src/embodied_jepa/run_guards.py": "bad5bbfc71b9f5656e2cbadb933bd92e7152ac4aa6bf45ea00515886ec473cc3",
+  "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+  "src/embodied_jepa/sim_selector.py": "2861dc0aa7323222cbbd58030b575ea75fe01310f113a39cd6e994ffb98c259f",
+  "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+  "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+  "src/embodied_jepa/token_dynamics.py": "b80ec3506ff359c0e159b1f89e3bc234fcdecbdeccaa38e2ead455c438e34672",
+  "src/embodied_jepa/wm_critic_v2.py": "125b6f64d3acb9341f243fe123d1c646a433104471924790c79112678c0efc85",
+  "src/embodied_jepa/wm_critic_v2_offline.py": "7c2cd7bc39d1b87e46b4c4e92ab55bbe4a357ccc1dfccbf16e7a066a3f9c1cfa",
+  "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
+  "tests/test_lewm_planner_v2.py": "6392fe6e38e88bb6356dbfcae3f095402817cc08f869f9547d2046ca89e8ec1c",
+  "tests/test_obs_ceiling_v2.py": "abebdf5cfcf47c06333b20202ed7a18fa74cb737e9bd1b0a5151f3ec06239b7f",
+  "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
+  "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
+ },
+ "pins_note": "the protocol document and this manifest are not pinned: the smoke record is added after the frozen-code smokes, so that the smoked code stays the frozen code; TASK-074's pins are carried and every one of them is unchanged",
+ "protocol_document_sha256": "f558ee1d6179973aede6f444f30fca6946191ab7cafbcaa23760a38e14368dae",
+ "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. TASK-075 is a measurement study and makes no control claim."
+}
