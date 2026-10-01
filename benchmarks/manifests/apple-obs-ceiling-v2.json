@@ -778,6 +778,6 @@
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "pins_note": "the protocol document and this manifest are not pinned: the smoke record is added after the frozen-code smokes, so that the smoked code stays the frozen code; TASK-074's pins are carried and every one of them is unchanged",
- "protocol_document_sha256": "63ebadf8186137ee4c95f5973024aad33087654bbad71590efb2ee3e1a579eaa",
+ "protocol_document_sha256": "60066b074b15e3012964d8ce0a4c7151907dd15157fcd023ca67d348a147ee11",
  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. TASK-075 is a measurement study and makes no control claim."
 }

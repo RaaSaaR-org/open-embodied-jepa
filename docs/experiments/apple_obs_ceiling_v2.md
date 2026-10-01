@@ -461,6 +461,23 @@ manifest's pins were refreshed. The `ad667d9` chain was stopped by its operator 
 whole chain was repeated on a clean tree (§10.1). The first full-scale probe (`readouts-scale-1`,
 working tree before `26c64d9`) peaked at 8.47 GiB and took 1 396 s.
 
+### 10.3 A development check of G-repro-off on the real reference frames (before the freeze)
+
+G-repro-off is exact equality, so a numerical drift in it would void the readouts stage before its
+boundary on every repeat. It was therefore checked before the freeze, on the sealed
+`apple-far-shift-v2` frames, through the runner's own `repro_off` under the stage's GPU cap
+(`gpu_guard`, 3.0 GiB) and strict determinism. This reads only what TASK-074 already read and
+published (§1, §4.4); it fits no readout of any new view.
+- The script, as it ran (not pinned, not part of the runner):
+  [`apple_obs_ceiling_v2_dev/repro_check.py`](apple_obs_ceiling_v2_dev/repro_check.py), sha256
+  `2775a384b804992428add5b641b978cbfed2bfd8a6a40552bafb112af9d5b9fc`; run at `9e44657` (clean tracked tree), 2026-10-01 15:26 CEST, start load
+  0.16 / 1.77.
+- **Every TASK-074 number is reproduced exactly:** encoded 2.8722625765232763 cm, persistence
+  4.350821813169937 cm, clock prior 3.1225649505050876 cm, 90 windows, 22 roots, R_off readout
+  sha256 `260af3f7…803157`, 5 175 rows, 225 groups.
+- 270 train and val roots decoded, no test root; 44 781 band frames in 111 s; GPU peak reserved
+  0.95 GiB (8.51 GiB free at the start).
+
 ## 11. Compute estimate (measured where marked)
 
 | stage | measured or estimated | basis |
