@@ -63,6 +63,36 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-01 — TASK-074 closes INCONCLUSIVE after two budget escalations; the next task measures the observation first
+
+**Outcome: INCONCLUSIVE ("close without the clause")** (`apple_lewm_planner_v2`). K1 passed at
+9 cm and the `apple-far-shift-v2` corpus was sealed. The train stage then escalated twice on its
+budget rules: run-2 ESCALATE-BUDGET (the frozen rule wanted 80 000 updates, above the 60 000 cap),
+and run-3, under Addendum A2's 80 000 cap, ESCALATE-BUDGET-LAST-TWO (N-7412 selected its last
+point). The stage returned before O1 and O2.
+
+- **Ruling (decided by Claude under owner delegation, 2026-10-01):** no further budget raise and
+  no further train run. OFFLINE-PASS was already unreachable, because O2's encoded-readout bar
+  (≤ 1.0 cm) sits below the measured readout error of 2.87 cm, whatever W does; another raise
+  would cost about 9 h or more to reach, at best, L-G2A, which the rules already make
+  uninformative about W; the binding constraint is the observation and readout, not the
+  predictor.
+  - *Note (factual, added after the descriptive diagnostic; the ruling is unchanged):* "at best,
+    L-G2A" names the furthest row the rules permit. The diagnostic later found that the frozen
+    `o2_passes` marks W seeds 7411 and 7412 void (N / persistence upper bounds 0.756 and 0.699,
+    < 0.8). In `decide_offline`'s first-match order that void row comes before L-G2A, so, read
+    as gates, these models would not have reached L-G2A. No row is read from the diagnostic.
+- **The abandonment clause does not fire.** Its scope is not refuted and not closed.
+- **No LeWM controller ran in closed loop.** Ranking, D3 and the gated stages never ran.
+- **Lesson:** readout bars must be calibrated from measured ceilings before a freeze. O2's bar
+  was carried from TASK-073 and never calibrated.
+- **Next:** a measurement-first observation-ceiling study, to be preregistered separately.
+- **Learned Apple→Plate on the frozen benchmark is still 0 successes.** No control line is
+  primary.
+
+**Evidence.** [apple_lewm_planner_v2_results.md](experiments/apple_lewm_planner_v2_results.md);
+run-3 report sha256 `25cb1bf3…562c`.
+
 ## Decision 2026-09-30 — TASK-073 ends at K0 with S-NO-CONDITION; the D7 fallback (TASK-074) is authorised
 
 **Outcome: S-NO-CONDITION** (`apple_wm_critic_v2`). K0, the preregistered condition calibration

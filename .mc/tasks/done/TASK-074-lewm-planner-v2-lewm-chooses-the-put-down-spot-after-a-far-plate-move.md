@@ -4,7 +4,7 @@ aliases:
 - TASK-074
 title: 'LeWM planner v2: LeWM chooses the put-down spot after a far plate move'
 slug: lewm-planner-v2-lewm-chooses-the-put-down-spot-after-a-far-plate-move
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -14,6 +14,7 @@ tags:
 - lewm
 - planner
 - preregistration
+- inconclusive
 sprint: ''
 depends_on:
 - "[[TASK-066]]"
@@ -21,7 +22,7 @@ depends_on:
 - "[[TASK-073]]"
 due_date: ''
 created: 2026-09-30
-updated: 2026-09-30
+updated: 2026-10-01
 ---
 
 
@@ -82,17 +83,38 @@ Learned Apple→Plate on the frozen benchmark is still 0 successes. An L-plan su
 apple", not LeWM driving the whole episode, and not the v1 benchmark. No control line is primary.
 
 ## Acceptance Criteria
-- [ ] Stage 0: protocol `docs/experiments/apple_lewm_planner_v2.md` and manifest
+- [x] Stage 0: protocol `docs/experiments/apple_lewm_planner_v2.md` and manifest
       `benchmarks/manifests/apple-lewm-planner-v2.json`, with the frozen block, the stored cohort
       values and digests, the corpus plan digest and the pins.
-- [ ] Stage 0 code: the modules, the runner and the tests. The #108 follow-ups are fixed first
+- [x] Stage 0 code: the modules, the runner and the tests. The #108 follow-ups are fixed first
       (#111) and used through `run_guards`.
-- [ ] Stage 0 smokes on 54650–54699 only, with the train stage's memory measured at full corpus
+- [x] Stage 0 smokes on 54650–54699 only, with the train stage's memory measured at full corpus
       scale.
-- [ ] Stage 0 merged on an independent reviewer's reported APPROVE.
-- [ ] K1 on a fresh pre-run reviewer's reported GO, with the coordinator told first.
+      Qualified: Addendum A1 found that the pre-freeze train-scale probe did not scale the
+      per-episode term (it cycled 14 decoded smoke episodes); the full-scale probe was added in A1.
+- [x] Stage 0 merged on an independent reviewer's reported APPROVE.
+- [x] K1 on a fresh pre-run reviewer's reported GO, with the coordinator told first.
 - [ ] Corpus, training, P-far, ranking and the offline decision, each on its own reported GO.
-- [ ] D3, on its own reported GO.
+      Corpus done (CORPUS-SEALED); training escalated twice (run-3 ESCALATE-BUDGET-LAST-TWO);
+      P-far, ranking and the offline decision never ran (TASK-074 closed INCONCLUSIVE).
+- [ ] D3, on its own reported GO. Not run (closed INCONCLUSIVE before it).
 - [ ] Gated S/U only after the owner or delegated authorisation record is in the manifest,
-      validated by `check_authorisation`, after a reported reviewer GO and a chat notice.
+      validated by `check_authorisation`, after a reported reviewer GO and a chat notice. Not run.
 - [ ] The results PR, reviewed with every restated number checked.
+
+## Notes
+- 2026-09-30: #113 (preregistration) merged as `9d9b03c`. K1 ran on its GO: **K1-PASS** at
+  9 cm (B-oracle-shift 32, H-handover 32, P-stale 0, P-truth 19), report `25701293…`. The
+  corpus ran on its GO: **CORPUS-SEALED**, manifest `fe7ab915…`, report `16e6417e…`.
+- 2026-09-30: train run-1 ended **V** on G-memory (12.04 > 12.00 GiB) after its boundary,
+  report `78137de0…`. Fix and O2 encoded-readout finding in Addendum A1 (#114, `f52c905`).
+- 2026-10-01: train run-2 ended **ESCALATE-BUDGET** (wanted 80 000 > cap 60 000), report
+  `f5974cd2…`. Addendum A2 (#115, `5e53ef3`) raised the train cap to 80 000.
+- 2026-10-01: train run-3 ended **ESCALATE-BUDGET-LAST-TWO** (N-7412 selected 80 000), report
+  `25cb1bf3…`. Ruling (decided by Claude under owner delegation, 2026-10-01): no further raise
+  or train run; TASK-074 closes **INCONCLUSIVE** ("close without the clause"). The §7 clause
+  does not fire; its scope is not refuted and not closed. The binding constraint is the
+  observation/readout (encoded readout 2.872 cm against O2's uncalibrated 1.0 cm bar).
+  Results: `docs/experiments/apple_lewm_planner_v2_results.md`. No LeWM controller ran in
+  closed loop. Learned Apple→Plate is still 0 successes. The next task is a measurement-first
+  observation-ceiling study, to be preregistered separately.
