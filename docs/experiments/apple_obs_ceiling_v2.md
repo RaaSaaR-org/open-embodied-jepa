@@ -478,25 +478,31 @@ placeholder τ of 2.0 cm on 13 smoke roots). Only mechanics, memory, time and di
 
 ### 10.1 The frozen-code smokes (the record for the GO)
 
-Four smokes ran at `63c55086`, frozen sha `f6ed707c…d8a5`, on a clean tree
-(`tracked_tree_dirty: false`), on smoke seeds only, each started after the 1- and 5-minute load
-averages were ≤ 1.8. After them only this document and the manifest changed; neither is pinned.
+After the #117 review's fixes (`79172c7`), the four smokes ran again at `79172c7c`, frozen sha
+`a64b5833…ee24`, on a clean tree (`tracked_tree_dirty: false`), on smoke seeds only, each started
+after the 1- and 5-minute load averages were ≤ 1.8, in `outputs/task075-smoke-3`. After them only
+this document and the manifest changed; neither is pinned.
 
 | smoke (report sha256) | start load (1, 5 min) | result |
 |---|---|---|
-| `tau --smoke` (`56765ab4…`) | 1.162, 1.685 | 4 smoke seeds × levels 0 and 3 cm; G-repro passed; G-planted clean; 50 s; peak tree PSS 7.95 GiB |
-| `source --smoke` (`49f74f91…`; corpus manifest `aafd09bb…`) | 1.285, 1.792 | TASK-074's collector on 16 smoke roots (10 / 4 / 2), sealed with TASK-074's seal; 22 s; peak PSS 7.53 GiB |
-| `render --smoke` (`d3d7c0ac…`) | 1.258, 1.739 | 14 train + val roots re-simulated (the 2 test roots excluded); **every array equal on 14/14 roots; 390/390 reference frames identical** (0 within the rule, 0 outside); 4.5 s per root (median, 6 workers); **1.85 MB per root** (largest); 18 s; peak PSS 7.92 GiB |
-| `readouts --smoke --scale` (`3c353747…`) | 1.382, 1.748 | the smoke stage (13 read roots, every view, every readout, the row code path), then **the full-scale probe**: 240 + 30 slots decoded afresh, 251 read roots, 10 542 frames per view, G-repro-off's band featurisation at 270 slots; **peak tree PSS 8.51 GiB** (ceiling 12, margin 2.0: passes); GPU peak reserved 0.95 GiB (cap 3.0), 8.51 GiB free at start; anchor ≤ 5.5e-5 (bound 1e-3); the probe took 1 414 s, the smoke 1 474 s |
+| `tau --smoke` (`271cf0a1…`) | 0.720, 1.194 | 4 smoke seeds × levels 0 and 3 cm (4/4, 3/4, as before); G-repro passed; G-planted clean; 50 s; peak tree PSS 8.22 GiB |
+| `source --smoke` (`153c8b40…`; corpus manifest `84df9423…`) | 1.614, 1.620 | TASK-074's collector on 16 smoke roots (10 / 4 / 2), sealed with TASK-074's seal; 22 s; peak PSS 7.47 GiB |
+| `render --smoke` (`235c84c3…`) | 1.455, 1.623 | 14 train + val roots re-simulated (the 2 test roots excluded); **every array equal on 14/14 roots; 389/390 reference frames identical, 1 within the render rule** (one level in 8 pixels), 0 outside; 4.5 s per root (median, 6 workers); **1.85 MB per root** (largest); 17 s; peak PSS 7.91 GiB |
+| `readouts --smoke --scale` (`93d561b1…`) | 1.604, 1.668 | the smoke stage (13 read roots, every view, every readout, the reported statistics of §6.4 and the sensitivity row, the row code path), then **the full-scale probe**: 240 + 30 slots decoded afresh, 251 read roots, G-repro-off's band featurisation at 270 slots; **peak tree PSS 8.45 GiB** (ceiling 12, margin 2.0: passes); GPU peak reserved 0.95 GiB (cap 3.0), 8.51 GiB free at start; the probe took 1 478 s, the smoke 1 539 s |
+
+The previous record (§10.4) ran at `63c55086` under frozen sha `f6ed707c…`; the review's fixes
+changed the frozen block (the reported statistics, `TAU_REMEASURE`) and the readouts code, so the
+chain was repeated.
 
 **Margins, stated plainly.**
-- The readouts peak (8.51 GiB) is 1.49 GiB inside the 10 GiB margin line. It was measured on
+- The readouts peak (8.45 GiB; 8.51 GiB in the earlier chain) is about 1.5 GiB inside the 10 GiB
+  margin line. It was measured on
   cycled smoke episodes (786 frames each, like the real roots); the real stage reads about the
   same number of roots (TASK-074's train-stage rule kept 225 of 240 train roots).
 - The scale probe's start load was 1.75 (5 minutes), under the 2.0 rule.
-- One reference frame differed from the stored one by one level in 8 pixels in a development
-  render smoke (`render-smoke-3`, on the working tree before `26c64d9`; not the record); the
-  frozen-code render smoke saw none. The render rule tolerates it.
+- One reference frame differed from the stored one by one level in 8 pixels in the record's
+  render smoke (and in a development render smoke); the earlier frozen-code chain saw none. The
+  render rule tolerates it; it is the renderer's known rare one-level effect.
 
 ### 10.2 Development smokes (historical; not the record)
 
@@ -532,14 +538,22 @@ published (§1, §4.4); it fits no readout of any new view.
 - 270 train and val roots decoded, no test root; 44 781 band frames in 111 s; GPU peak reserved
   0.95 GiB (8.51 GiB free at the start).
 
+### 10.4 Superseded frozen-code smokes (at `63c55086`, frozen sha `f6ed707c…d8a5`)
+
+Before the #117 review, the same four smokes ran at `63c55086` on a clean tree
+(`outputs/task075-smoke-2`): tau (`56765ab4…`, load 1.162 / 1.685, 50 s, 7.95 GiB), source
+(`49f74f91…`, corpus `aafd09bb…`), render (`d3d7c0ac…`: 14/14 arrays equal, 390/390 frames
+identical, 1.85 MB per root) and readouts with the scale probe (`3c353747…`: peak tree PSS
+8.51 GiB, GPU peak 0.95 GiB, probe 1 414 s). They are superseded by §10.1 and kept as history.
+
 ## 11. Compute estimate (measured where marked)
 
 | stage | measured or estimated | basis |
 |---|---|---|
 | Stage 0, τ | **265 s** (measured) | 288 attempts + the G-repro refit on 6 workers |
 | Stage 1, render | about 4–6 min wall; store about 0.5 GB | 4.5 s per root (smoke median) × 270 / 6 workers; 1.85 MB per root |
-| Stage 2, readouts | about 25–30 min wall | the full-scale probe: 1 414 s at 251 read roots, 4 views (per view: featurisation and the full-token Gram 63–86 s, the pixel Gram 8–39 s, the cross-fit 209–214 s) |
-| memory | peak tree PSS 8.51 GiB (readouts), 7.92 GiB (render) | §10.1 |
+| Stage 2, readouts | about 25–30 min wall | the full-scale probe: 1 478 s (1 414 s before the review's additions) at 251 read roots, 4 views (per view: featurisation and the full-token Gram 63–86 s, the pixel Gram 8–39 s, the cross-fit 209–214 s) |
+| memory | peak tree PSS 8.45 GiB (readouts), 7.91 GiB (render) | §10.1 |
 | GPU | peak reserved 0.95 GiB; cap 3.0 GiB; ≥ 4 GiB stays free | §10.1; the resident service (about 6.6–6.8 GB) is never touched |
 | disk | about 33 GB free at the smokes; the stage needs ≥ 10 GiB + 0.75 GB | `render_smoke.bytes_per_root_max` × 270 × 1.5 |
 | **total** | **under 1 h of machine time** after the GOs | no world-model training |
