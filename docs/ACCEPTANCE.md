@@ -3,9 +3,11 @@
 > **This is a dated snapshot, not the current status.** It audits the local engineering
 > MVP as of 2026-09-20 and is not rewritten. For where the project is now — including the
 > TASK-054 decision to abandon CEM over the world-model cost as the primary control line —
-> see the [README status section](../README.md#status--2026-09-24) and
+> see the [README status section](../README.md#status--2026-10-02) and
 > [DECISIONS.md](DECISIONS.md). Nothing below has been superseded in the direction of a
-> better outcome: **learned Apple→Plate is still 0 successes.**
+> better outcome on this benchmark: **learned Apple→Plate on the frozen v1 MVP benchmark is still
+> 0/150 per backend.** The later learned v2 result (TASK-071/072, a behaviour-cloning policy, not
+> a world model) is a separate benchmark; see the README status section.
 
 Evidence date: 2026-09-20. **The local engineering MVP and its preregistered
 evaluation are complete; learned Apple→Plate manipulation failed.** All eight

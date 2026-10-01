@@ -5,12 +5,12 @@
 | Decision | Rationale | Revisit when |
 | --- | --- | --- |
 | Embedded MissionControl at `.mc/` | Keep plans with the project and preserve `tasks/` for robot tasks | Repository workflow changes |
-| MuJoCo-first on the available Mac, stabilized G1 tabletop | Explicit user constraint; local simulation and training before other platforms | Future Isaac/hardware access |
+| MuJoCo-first on the available Mac, stabilized G1 tabletop | Explicit user constraint; local simulation and training before other platforms | Future Isaac/hardware access. **Revisited 2026-10-02**: the Linux PC (RTX 5080) is the working platform since TASK-072 (2026-09-28) and the Mac is the archive; MuJoCo stays the reference simulator, and Isaac/Arena exist only as development cross-sim checks (TASK-025) |
 | Native JEPA + LeWM first | Native reference plus one external backend meets MVP scope | TASK-002 finds a compatibility blocker |
 | JEPA-WMs optional research follow-up | Keep restrictive upstream components out of required core | Separate license/usage review |
 | Image goals and shared CEM/MPC | Direct implementation of the PRD comparison contract | **Revisited 2026-09-24**: CEM over the world-model cost is no longer the primary control line — see the pivot below |
 | One grasp synergy per hand initially | Limit action complexity while preserving both hands in the API | Grasp coverage proves insufficient |
-| Local planning before environment installation | Mac is confirmed; dataset, exact assets, MPS operator support, and future robot access need validation | M0 readiness inventory |
+| Local planning before environment installation | Mac is confirmed; dataset, exact assets, MPS operator support, and future robot access need validation | M0 readiness inventory. **Revisited 2026-10-02**: the working platform is now the Linux PC with CUDA (TASK-072); the Mac remains supported |
 
 A candidate starting point for `native_jepa` is a compact RGB encoder, robot-state/action conditioning, latent dynamics predictor, an EMA target encoder, and explicit variance/covariance regularization. This is a project proposal, not an assertion about LeWM's loss. TASK-011 must test collapse prevention and recursive rollout behavior. No pixel decoder is required.
 
@@ -25,10 +25,10 @@ the record shows what was assumed before each was resolved.
 | Actual G1 EDU4 joint/hand/camera configuration | Dual Dex3 as specified, precise calibration pending | TASK-001, 008 | **Simulation only** — MJCF verified in [MUJOCO_SPIKE.md](MUJOCO_SPIKE.md); physical calibration still unset |
 | Existing demonstrations and rights | No usable dataset assumed yet | TASK-001, 010 | **Resolved by collection** — all corpora are locally collected simulation data; no external demonstrations |
 | Python/framework versions | Choose macOS arm64 compatible pins after MuJoCo and LeWM spike | TASK-002, 003, 005 | **Resolved** — pinned in `uv.lock` |
-| External checkpoint suitability | Train on G1 canonical data; no transferable checkpoint assumed | TASK-002, 015 | **Resolved as assumed** — no upstream pretrained weights are used |
+| External checkpoint suitability | Train on G1 canonical data; no transferable checkpoint assumed | TASK-002, 015 | **Resolved as assumed** — no upstream pretrained weights are used. **Revisited 2026-10-02**: frozen, externally pretrained DINOv2 ViT-S/14 weights are used since TASK-063 (`scripts/fetch_dinov2.py`); GR00T N1.7 is used only as an external reference baseline in Arena (#121), never as a project model |
 | Action frequency/scales and IK implementation | Unset until tested in simulation | TASK-004, 008 | **Resolved for simulation** — `configs/g1_sim_action.json`; hardware values remain unset |
 | Owners, staffing, delivery date | Unassigned; effort ranges only | Assign when execution starts | Still open |
-| Isaac and physical execution | Future ports; local preparation now, commissioning when resources exist | TASK-022, 025, 026 | Still open — TASK-025/026 are in the backlog |
+| Isaac and physical execution | Future ports; local preparation now, commissioning when resources exist | TASK-022, 025, 026 | Still open — TASK-025/026 are in the backlog. **Revisited 2026-10-02**: Isaac (PhysX and Newton) and Isaac Lab-Arena run as development cross-sim checks under TASK-025, not admitted as benchmarks; physical execution is still open (TASK-026, `hardware.py` mock-only) |
 
 ## Risk register
 
@@ -62,6 +62,78 @@ preregistered five-point gate (a 4.30-point gain) and stopped before physical co
 line this investigation belongs to — image-goal costs consumed by a sampling planner — was
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
+
+## Decision 2026-10-02 — after TASK-075: the plate-readout perception twin is next (TASK-076); what counts as a task change; one canonical status sentence
+
+Six rulings, each **decided by Claude under owner delegation (2026-09-30)**. They follow the
+TASK-075 clause (decision 2026-10-01 below), whose next step is "a task or condition change", and
+the four options in §7 of [apple_obs_ceiling_v2_results.md](experiments/apple_obs_ceiling_v2_results.md).
+No run was made for them.
+
+- **R1 — the next task is Option 1, the plate-readout perception twin (TASK-076).** The place
+  reads the plate position from the image, not the apple-minus-plate offset. The reported-only
+  plate readout is 0.49–0.68 cm against τ = 1.0 cm, and the offset error comes from the apple
+  term (2.2–3.1 cm). The closed loop (P-3's pick plus e9's place aimed at the frozen-DINOv2 plate
+  readout, beside a true-plate ceiling and an image-free clock-prior control) runs no world model,
+  so the TASK-075 clause does not close it. TASK-076 needs its own preregistration and review
+  before any run; the preregistration is pending. It uses fresh development seeds, not cohort C.
+  Option 3 (a larger plate or other τ relaxation) is not taken: a larger τ alone admits nothing
+  under the frozen admission, and the image-free clock prior would then succeed too.
+- **R2 — a later LeWM task on a plate target counts as a task change only if it is paired with a
+  condition where the target must be predicted**, for example a plate that keeps moving during
+  the place or one that leaves the view during the carry. With a static, visible plate a world
+  model is not needed for the place (TASK-074 protocol §9b), so a LeWM plate-target task without
+  such a condition is not admissible under the clause. Any such task must declare itself as a
+  task change in its preregistration; it must not be presented as a silent reopening.
+- **R3 — a new place primitive (Option 2) is a task change if it is declared as one.** Developing
+  and measuring the primitive (with its own τ curve) is not a LeWM task and is not closed by the
+  clause. A later LeWM task built on it must declare the change, and must use targets that an
+  image-free prior cannot guess (the clock prior already reads 2.35 cm).
+- **R4 — Option 4 (a trained readout head on the offset) is deferred.** It sits close to the
+  closed TASK-062 in-corpus encoder-training line, and RBF kernel ridge, already nonlinear, reached
+  only 2.30–2.52 cm. It is not preregistered now.
+- **R6 — merged remote branches are not deleted.** Squash merges leave the run-provenance commits
+  (run worktrees, pre-run review revisions, uncommitted-then-committed diagnostics) reachable only
+  from those branches, and results documents cite them. Local topic branches may still be removed.
+  This replaces "remove the merged topic branch when safe" in AGENTS.md for remote branches.
+- **R7 — one canonical status sentence replaces "Learned Apple→Plate is 0 successes" repo-wide**
+  in the entry documents (README, AGENTS.md, CLAUDE.md and the docs that restate the status).
+  Frozen protocols and results documents are not rewritten. The sentence, checked against
+  [apple_first_policy_v2_m2_results.md](experiments/apple_first_policy_v2_m2_results.md) and
+  [mvp_results.md](experiments/mvp_results.md):
+
+  > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
+  > (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (a
+  > frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a
+  > world model) scored 40/40 on the held-out cohort C against 39/40 for its random-init encoder
+  > control R-3, so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing
+  > measurable), and cohort C is no longer held out. No LeWM-driven controller has run in closed
+  > loop on v2 yet; LeWM's only closed-loop runs are on v1, with 0 successes. Scripted-expert,
+  > privileged-ceiling, oracle and GR00T successes are not project-learned results.
+
+(R5, any reuse of cohort C, is unchanged: it needs a new, disclosed protocol and a ruling, as
+the 2026-09-28 M2 decision says.)
+
+## Development record 2026-10-01/02 — Arena cross-simulator checks, a GR00T reference baseline and the white plate (not gated)
+
+Development only: no preregistration, no gate, and nothing here is a project-learned result.
+
+- **Arena e9 (#120, TASK-025).** In Isaac Lab-Arena's GR00T-tutorial scene, the arm kinematics of
+  NVIDIA's G1 USD agree with our MJCF (wrist within 0.8 mm), but the Dex3 fingertips differ by up
+  to 3.1 cm. The MuJoCo-tuned scripted expert e9 left the apple at rest on **0/16** development
+  seeds (16/16 in MuJoCo on the same seeds): it never grasps, because the arms stall without a
+  gravity offset and, with one, the floating base steps back during the close. A scripted expert
+  does not transfer as is. See [ARENA.md](ARENA.md) §7.
+- **GR00T reference baseline (#121, TASK-025).** NVIDIA's GR00T N1.7, run client-only against the
+  owner's server in that scene: **16/30** and **10/30** under Arena's loose contact-and-speed rule
+  in two processes, and **0/30** under our stricter `apple_at_rest_arena_v0`. The strict check
+  used PhysX's reported apple velocity, which is stale for a resting apple (inferred); a post-hoc
+  position-based diagnostic gives 6/30. This is GR00T's result, an external reference, not ours.
+  See [ARENA.md](ARENA.md) §8.
+- **White plate (#122).** An opt-in white plate (`plate_color.py`) does not change TASK-075's
+  readouts: the paired white/blue ratios of the offset's median error lie within about 0.90–1.11,
+  and the apple term is unchanged. The plate's colour is not what limits the readout. See
+  [apple_white_plate_dev.md](experiments/apple_white_plate_dev.md).
 
 ## Decision 2026-10-01 — TASK-075 ends OBS-NONE: no view reads the place offset within τ; the clause fires; the next step is a task or condition change
 

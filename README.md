@@ -2,11 +2,13 @@
 
 One robot stack. One benchmark. Many world models.
 
-A Mac-first research framework for action-conditioned visual world models on a simulated Unitree G1 with dual Dex3 hands. Native JEPA and the pinned upstream LeWM implementation share canonical LeRobot data, robot actions, one planner implementation and one evaluator.
+A research framework for action-conditioned visual world models on a simulated Unitree G1 with dual Dex3 hands (working platform: Linux with CUDA since TASK-072; macOS supported). Native JEPA and the pinned upstream LeWM implementation share canonical LeRobot data, robot actions, one planner implementation and one evaluator.
 
-## Status — 2026-09-24
+## Status — 2026-10-02
 
-**Learned Apple→Plate on the frozen benchmark: 0 successes.** (The first learned successes exist only on the non-gating development cohort of `apple-to-plate-v2`; see TASK-071 below.) The frozen unseen-pair
+**Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world model) scored 40/40 on the held-out cohort C against 39/40 for its random-init encoder control R-3, so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. No LeWM-driven controller has run in closed loop on v2 yet; LeWM's only closed-loop runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results.** (This is the canonical status sentence, [decision 2026-10-02, R7](docs/DECISIONS.md).)
+
+On v1, the frozen unseen-pair
 benchmark recorded 0/50 on each of three training seeds for both backends — **0/150 per
 model**, 400 attempts including hold and random controls. The same 50 resets were reused
 across seeds, and every learned episode ended on a joint-rate guard stop, typically within
@@ -44,7 +46,7 @@ per configuration and deterministic simulation.
 - **The two grasps:** on the two attempts that grasped, the hand held the apple on every step
   afterwards and never carried it to the plate.
 
-Learned Apple→Plate is still 0 successes.
+At that point learned Apple→Plate was still 0 successes.
 
 **Since TASK-057 (as of 2026-09-27).** The research tasks since are offline perception, data
 and world-model tests, not controllers: readability probes (TASK-059, TASK-061–TASK-063; at
@@ -80,12 +82,45 @@ plate exact, 20/32 at 1.0 cm, below 28/32) with its premise untested, because th
 reach the place pose within its budget. TASK-067 is closed under the owner's fallback.
 Scripted-collector and privileged success numbers elsewhere that were scored with this latching
 scorer are flagged, not rewritten.
-TASK-068 ([docs/experiments/apple_resting_expert_v1.md](docs/experiments/apple_resting_expert_v1.md)) closed on its development finding, with no gated run: under the frozen v1 task no privileged scripted expert design tried rested the apple on the plate (0 at rest in 269 completed development attempts), because the place pose is beyond the fixed-pelvis arm's reach and the apple, a sphere with no rolling resistance in this scene, keeps rolling; TASK-069, a development-only feasibility scan, led to the owner-defined `apple-to-plate-v2` task (`src/embodied_jepa/apple_to_plate_v2.py`): v1 plus the apple's contact at condim 6 with the scene's own declared friction, a benchmark separate from v1. TASK-070 ([docs/experiments/apple_to_plate_v2_expert.md](docs/experiments/apple_to_plate_v2_expert.md)) passed its preregistered gate on v2: the privileged scripted expert e9, selected on development seeds, left the apple at rest (`apple_at_rest_v0`) on 32/32 fresh gated seeds with the plate exact and 30/32 at 1.0 cm plate error (bar 28/32). That is a scripted-expert result, not a learned one; v1 and its 0/150 benchmark are unchanged. TASK-071 ([docs/experiments/apple_first_policy_v2_results.md](docs/experiments/apple_first_policy_v2_results.md)) ended M1-PASS: on the non-gating development cohort of apple-to-plate-v2, a behaviour-cloning/DAgger policy on a frozen DINOv2 readout, trained on e9's demonstrations, reached counted successes (at rest after a latched grasp and place) on 16/16 resets for the carried arm P-3 (P-0 4, P-1 9, P-2 15). That is an existence result only, a learned policy with a DINOv2 encoder, not LeWM; the random-init encoder floor R-3 also reached 16/16, so encoder pretraining shows no measurable contribution there, and the no-image control reached 3/16. The official learned Apple→Plate count on the frozen benchmark is still 0, and cohort C is untouched. TASK-072 ([docs/experiments/apple_first_policy_v2_linux_results.md](docs/experiments/apple_first_policy_v2_linux_results.md)) re-ran that whole pipeline on the Linux PC (strict-deterministic CUDA training, NVIDIA EGL rendering) and ended REPLICATED: M1-PASS, with P-3 at 16/16 on the same 16 development resets as the Mac run. R-3 again tied it at 16/16, so there is still no evidence that pretrained vision helps, and the no-image control reached 7/16. This replicates the development-cohort existence result only; it is not LeWM, and learned Apple→Plate on the frozen benchmark is still 0. M2, the held-out test on cohort C ([docs/experiments/apple_first_policy_v2_m2_results.md](docs/experiments/apple_first_policy_v2_m2_results.md)), ended **M2-FAIL on G3 alone**: P-3 reached 40/40 counted successes and beat the no-image control (12/40) and open-loop replay (28/40), but the random-init encoder floor reached 39/40. The claim is not made by the rule. By owner ruling (2026-09-28), M2-FAIL stays the recorded row, and G3's declared reading is adopted as the interpretation: on held-out apple-to-plate-v2 resets, a learned visuomotor policy (DINOv2 + BC/DAgger, trained on e9 demonstrations) works, and encoder pretraining contributes nothing measurable. This is one run, one training seed per arm, one camera (112 px onboard), a narrow reset distribution and a corpus of privileged scripted-expert (e9) demonstrations. Cohort C has now been simulated and is no longer held out. It is not LeWM, and the v1 benchmark is still 0/150. Outcomes
-and caveats are in the results
-documents under [docs/experiments/](docs/experiments/) and in [AGENTS.md](AGENTS.md).
+TASK-068 ([docs/experiments/apple_resting_expert_v1.md](docs/experiments/apple_resting_expert_v1.md)) closed on its development finding, with no gated run: under the frozen v1 task no privileged scripted expert design tried rested the apple on the plate (0 at rest in 269 completed development attempts), because the place pose is beyond the fixed-pelvis arm's reach and the apple, a sphere with no rolling resistance in this scene, keeps rolling; TASK-069, a development-only feasibility scan, led to the owner-defined `apple-to-plate-v2` task (`src/embodied_jepa/apple_to_plate_v2.py`): v1 plus the apple's contact at condim 6 with the scene's own declared friction, a benchmark separate from v1. TASK-070 ([docs/experiments/apple_to_plate_v2_expert.md](docs/experiments/apple_to_plate_v2_expert.md)) passed its preregistered gate on v2: the privileged scripted expert e9, selected on development seeds, left the apple at rest (`apple_at_rest_v0`) on 32/32 fresh gated seeds with the plate exact and 30/32 at 1.0 cm plate error (bar 28/32). That is a scripted-expert result, not a learned one; v1 and its 0/150 benchmark are unchanged. TASK-071 ([docs/experiments/apple_first_policy_v2_results.md](docs/experiments/apple_first_policy_v2_results.md)) ended M1-PASS: on the non-gating development cohort of apple-to-plate-v2, a behaviour-cloning/DAgger policy on a frozen DINOv2 readout, trained on e9's demonstrations, reached counted successes (at rest after a latched grasp and place) on 16/16 resets for the carried arm P-3 (P-0 4, P-1 9, P-2 15). That is an existence result only, a learned policy with a DINOv2 encoder, not LeWM; the random-init encoder floor R-3 also reached 16/16, so encoder pretraining shows no measurable contribution there, and the no-image control reached 3/16. The official learned Apple→Plate count on the frozen benchmark stayed 0, and cohort C was untouched until M2 (below). TASK-072 ([docs/experiments/apple_first_policy_v2_linux_results.md](docs/experiments/apple_first_policy_v2_linux_results.md)) re-ran that whole pipeline on the Linux PC (strict-deterministic CUDA training, NVIDIA EGL rendering) and ended REPLICATED: M1-PASS, with P-3 at 16/16 on the same 16 development resets as the Mac run. R-3 again tied it at 16/16, so there is still no evidence that pretrained vision helps, and the no-image control reached 7/16. This replicates the development-cohort existence result only; it is not LeWM, and learned Apple→Plate on the frozen benchmark is still 0. M2, the held-out test on cohort C ([docs/experiments/apple_first_policy_v2_m2_results.md](docs/experiments/apple_first_policy_v2_m2_results.md)), ended **M2-FAIL on G3 alone**: P-3 reached 40/40 counted successes and beat the no-image control (12/40) and open-loop replay (28/40), but the random-init encoder floor reached 39/40. The claim is not made by the rule. By owner ruling (2026-09-28), M2-FAIL stays the recorded row, and G3's declared reading is adopted as the interpretation: on held-out apple-to-plate-v2 resets, a learned visuomotor policy (DINOv2 + BC/DAgger, trained on e9 demonstrations) works, and encoder pretraining contributes nothing measurable. This is one run, one training seed per arm, one camera (112 px onboard), a narrow reset distribution and a corpus of privileged scripted-expert (e9) demonstrations. Cohort C has now been simulated and is no longer held out. It is not LeWM, and the v1 benchmark is still 0/150.
+
+**Since M2 (as of 2026-10-02).** Three LeWM-oriented tasks on v2 followed; none ran LeWM in closed
+loop.
+
+- **TASK-073** ([results](docs/experiments/apple_wm_critic_v2_results.md)), a LeWM token critic
+  to pick P-3's aim under a simulation-only mid-episode plate shift, ended at its K0 calibration
+  with row **S-NO-CONDITION**: P-3 given the true plate already reached 26–29/32, and privileged
+  look-ahead added at most +3/32 (bar +4), so there was no measurable room for a critic. The
+  critic was never trained or run, and the clause did not fire.
+- **TASK-074** ([results](docs/experiments/apple_lewm_planner_v2_results.md)), a LeWM token
+  planner choosing where e9's place primitive puts the apple after a 9 cm plate move, closed
+  **INCONCLUSIVE** without the clause after two budget escalations of its train stage. Its
+  offline bar was unreachable anyway: the encoded readout's error (2.872 cm) sits above the
+  uncalibrated 1.0 cm bar.
+- **TASK-075** ([results](docs/experiments/apple_obs_ceiling_v2_results.md)), an
+  observation-ceiling study, ended **OBS-NONE** and its clause fired: against τ = 1.0 cm, no view
+  (onboard 112 and 224 px, the hand crop, overview 224 px) reads the apple-minus-plate offset with
+  frozen DINOv2 features (upper bounds 2.66–3.44 cm), and no pooled-token readout beats a clock
+  prior that reads no image. That closes a LeWM planner or critic for the place phase under
+  TASK-074's condition on these views with frozen DINOv2 features, without new evidence of a
+  different kind. Reported only: the plate is read to 0.49–0.68 cm, the apple to 2.2–3.1 cm.
+- **Next: TASK-076**, the plate-readout perception twin (the place aims at the plate read from the
+  image; no world model), with its preregistration pending. This and what counts as a later "task
+  change" for LeWM were decided by Claude under owner delegation
+  ([decision 2026-10-02](docs/DECISIONS.md), R1–R4).
+- **Development only, not gated:** an opt-in white plate does not change TASK-075's readouts
+  ([white plate](docs/experiments/apple_white_plate_dev.md)). In Isaac Lab-Arena (TASK-025,
+  [ARENA.md](docs/ARENA.md)), e9 left the apple at rest on 0/16 development seeds (16/16 in
+  MuJoCo), and NVIDIA's GR00T N1.7, run client-only as an external reference, scored 16/30 and
+  10/30 under Arena's loose rule and 0/30 under our strict at-rest rule, whose check used PhysX's
+  reported velocity (a post-hoc position check gives 6/30). Neither is a project-learned result.
+
+Outcomes and caveats are in the [experiment index](docs/experiments/README.md), the results
+documents under [docs/experiments/](docs/experiments/) and [AGENTS.md](AGENTS.md).
 
 **What is demonstrated.** These are software properties and offline properties of
-checkpoints on recorded validation data — none of them is a manipulation result.
+checkpoints on recorded validation data — none of the items in this list is a manipulation
+result. (TASK-071/072's P-3, above, is a learned v2 manipulation result; it is not a world model.)
 
 - **The backend-swap invariant.** `configs/mvp_lewm.yaml` is `extends: mvp_common.yaml`
   plus `world_model.backend`; both backends run the same data, actions, planner, task and
@@ -93,7 +128,10 @@ checkpoints on recorded validation data — none of them is a manipulation resul
 - **Infrastructure:** a real MuJoCo G1 + dual-Dex3 runtime, LeRobot-v3-compatible storage
   with verified hashes, two trainable model adapters, checkpoints that enforce their
   provenance, frozen goal/reset manifests, a validated result schema, and mock-only SDK2
-  preparation. Isaac and physical robot execution remain future work.
+  preparation. Isaac (PhysX and Newton) and Isaac Lab-Arena exist as development cross-sim
+  checks under TASK-025 (e9 replay, Arena e9 0/16, the GR00T reference baseline); they are not
+  admitted as benchmarks. Physical robot execution remains future work (`hardware.py` is
+  mock-only).
 - **The encoder is the component that works.** A directly encoded observation reads the palm–apple
   offset to a median of **2.35–2.40 cm** on the start frame and **2.54–2.59 cm** on the target
   frame, on the three v4 arms whose encoder was intact. Four qualifiers apply:
@@ -150,7 +188,7 @@ intermediate milestone, not established superiority and not the full task.
 **Open, not decided.** Whether the prediction step can be fixed at all: v4 tested three
 specific designs at one seed and one budget. The test split has still never been decoded,
 so one unbiased check remains available. The fresh 20-reset final apple cohort
-(TASK-034) remains unexecuted.
+(TASK-034) was never executed; TASK-034 was closed as superseded on 2026-10-02.
 
 **Corrected 2026-09-25 (TASK-058).** The audit
 [claim_audit_v1.md](docs/experiments/claim_audit_v1.md) corrected four statements in this
@@ -169,10 +207,11 @@ coverage and no manipulation-performance claim.
 
 ## Run a small end-to-end example
 
-On a Mac with Python 3.12 and `uv`, from this repository:
+With Python 3.12 and `uv`, from this repository (on the Linux PC add `--extra jepa-wms` and set
+`MUJOCO_GL=egl` for headless rendering; see [Setup](docs/SETUP.md)):
 
 ```sh
-uv sync --locked --extra learning --extra sim --extra lewm --extra data --extra compatibility
+uv sync --locked --extra learning --extra sim --extra lewm --extra data --extra compatibility --extra pretrained
 uv run --no-sync python scripts/fetch_assets.py
 uv run --no-sync python scripts/fetch_lewm.py
 uv run --no-sync python scripts/fetch_lerobot.py
@@ -221,16 +260,16 @@ and summaries provide their hashes and reproduction commands.
 
 - [Setup](docs/SETUP.md), [models](docs/MODELS.md), [training](docs/TRAINING.md), [data format](docs/DATA_FORMAT.md), [simulation](docs/SIMULATION.md).
 - [Measured MVP results](docs/experiments/mvp_results.md), [final training protocol](docs/experiments/mvp_final.md), [frozen evaluation protocol](docs/experiments/mvp_evaluation.md), [evaluation semantics](docs/EVALUATION.md).
-- Latest experimental record: [world model v4 results](docs/experiments/apple_world_model_v4_results.md) (the abandonment of CEM over this cost), [v3 results](docs/experiments/apple_world_model_v3_results.md), [v2 results](docs/experiments/apple_world_model_v2_results.md).
+- Experiment index: [docs/experiments/README.md](docs/experiments/README.md), every protocol with its results and outcome (newest: TASK-075, OBS-NONE). The CEM abandonment is in the [world model v4 results](docs/experiments/apple_world_model_v4_results.md).
 - [Original PRD](PRD.md), [MVP plan](docs/MVP_PLAN.md), [architecture](docs/ARCHITECTURE.md), [decisions](docs/DECISIONS.md).
-- [SDK2 hardware preparation](docs/HARDWARE.md), [Isaac port](docs/ISAAC_PORT.md), [Mac resources](docs/RESOURCES.md), [dependency provenance](docs/DEPENDENCIES.md).
+- [SDK2 hardware preparation](docs/HARDWARE.md), [Isaac port](docs/ISAAC_PORT.md), [Isaac Lab-Arena](docs/ARENA.md), [Mac resources](docs/RESOURCES.md), [dependency provenance](docs/DEPENDENCIES.md).
 - [Contributing](CONTRIBUTING.md), [AGENTS.md](AGENTS.md), and [Codex project skills](docs/SKILLS.md) define the commit → PR → review → merge workflow.
 
 The executable package is in `src/embodied_jepa/`, tests in `tests/`, and reproducible commands in `scripts/`. The `apple-to-plate-v2` task is `src/embodied_jepa/apple_to_plate_v2.py`, and its expert gate runner is `scripts/run_v2_expert_gate.py` (TASK-070). Top-level model, robot, planner, data and deployment directories document their architecture responsibilities.
 
 ## Task tracking
 
-MissionControl task Markdown in `.mc/` is the source of truth for acceptance and follow-up work:
+MissionControl task Markdown in `.mc/` is the source of truth for acceptance and follow-up work. The `mc` CLI install (release v0.1.14 with a sha256 check) is in [Setup](docs/SETUP.md#missioncontrol):
 
 ```sh
 mc task board
@@ -240,4 +279,4 @@ mc validate
 mc index
 ```
 
-Original contributions use [Apache-2.0](LICENSE). Fetched upstream source, robot assets and dependencies retain their own terms; see the [inventory](docs/DEPENDENCIES.md). No upstream pretrained weights are required.
+Original contributions use [Apache-2.0](LICENSE). Fetched upstream source, robot assets and dependencies retain their own terms; see the [inventory](docs/DEPENDENCIES.md). No upstream pretrained weights are required for the smoke run; the TASK-063+ protocols use frozen DINOv2 ViT-S/14 weights fetched by `scripts/fetch_dinov2.py`.

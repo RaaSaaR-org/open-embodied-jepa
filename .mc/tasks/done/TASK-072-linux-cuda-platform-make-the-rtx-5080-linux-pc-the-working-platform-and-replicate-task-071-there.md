@@ -4,7 +4,7 @@ aliases:
 - TASK-072
 title: 'Linux CUDA platform: make the RTX 5080 Linux PC the working platform, and replicate TASK-071 there'
 slug: linux-cuda-platform-make-the-rtx-5080-linux-pc-the-working-platform-and-replicate-task-071-there
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -19,7 +19,7 @@ depends_on:
 - "[[TASK-071]]"
 due_date: ''
 created: 2026-09-28
-updated: 2026-09-28
+updated: 2026-10-02
 ---
 
 
@@ -62,7 +62,7 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
       `23e2593`).
 - [x] M2: fresh pre-run reviewer's reported GO (PR #102 comment 5879303699; render check
       IDENTICAL), owner told, one gated run on cohort C from a clean merged checkout.
-- [ ] M2 results PR, reviewed, merged (branch `task072-m2-results`).
+- [x] M2 results PR, reviewed, merged (#104, `70f1358`, branch `task072-m2-results`).
 
 ## Notes
 - 2026-09-28: card opened. Stage A branch `feat/task-072-cuda-support`.
@@ -129,3 +129,7 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
   change the v1 benchmark (still 0/150), and it is not a LeWM result. Cohort C has now been
   simulated and is no longer held out; any reuse needs a new, disclosed protocol and the
   owner's ruling. Recorded in the results doc §7 and in DECISIONS (PR #104).
+- 2026-10-02: closed as done. M2 results merged in #104 (`70f1358`), with the owner's ruling
+  recorded in `docs/DECISIONS.md` (2026-09-28). Cohort C is no longer held out; any reuse needs
+  a new, disclosed protocol and a ruling. `mc validate` passed with mc 0.1.14.
+%% mc-links: [[TASK-071]] %%

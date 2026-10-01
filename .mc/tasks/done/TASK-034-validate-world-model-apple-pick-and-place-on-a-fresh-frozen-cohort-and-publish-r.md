@@ -4,7 +4,7 @@ aliases:
 - TASK-034
 title: Validate world-model apple pick-and-place on a fresh frozen cohort and publish replay
 slug: validate-world-model-apple-pick-and-place-on-a-fresh-frozen-cohort-and-publish-r
-status: backlog
+status: cancelled
 priority: 1
 owner: ''
 projects: []
@@ -17,8 +17,9 @@ depends_on:
 - "[[TASK-033]]"
 due_date: ''
 created: 2026-09-20
-updated: 2026-09-20
+updated: 2026-10-02
 ---
+
 
 # Measure working apple pick-and-place and deliver evidence
 
@@ -33,3 +34,12 @@ updated: 2026-09-20
 ## Authorization and workflow
 
 User requested completion toward a working world-model apple pick-and-place MVP on 2026-09-20, with subagents and end-to-end delivery. Coordinator owns Git and task state. Experiments are bounded and recorded before execution.
+
+## 2026-10-02 closed as superseded
+
+Closed as `cancelled` (superseded), never executed. It depended on TASK-033's closed-loop
+development gate, which was never met, and that line was abandoned at TASK-054 (`docs/DECISIONS.md`,
+2026-09-24) and TASK-057 (2026-09-25). The fresh 20-reset final apple cohort was never simulated or
+decoded, so it remains unspent. Any later final evaluation needs its own task and protocol.
+`mc validate` passed with mc 0.1.14.
+%% mc-links: [[TASK-033]] %%

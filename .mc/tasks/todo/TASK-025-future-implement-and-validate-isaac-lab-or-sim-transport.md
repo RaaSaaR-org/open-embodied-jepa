@@ -4,7 +4,7 @@ aliases:
 - TASK-025
 title: 'Future: implement and validate Isaac Lab or Sim transport'
 slug: future-implement-and-validate-isaac-lab-or-sim-transport
-status: backlog
+status: in-progress
 priority: 4
 owner: ''
 projects: []
@@ -17,7 +17,7 @@ depends_on:
 - "[[TASK-022]]"
 due_date: ''
 created: 2026-09-20
-updated: 2026-09-29
+updated: 2026-10-02
 ---
 
 # Future: implement and validate Isaac Lab or Sim transport
@@ -63,3 +63,44 @@ Simulator infrastructure and physics parity only. No learned policy was run; scr
 - **Scripted checks.** Straight drops onto the table or plate centre agree to 0.17 mm in rest height; Isaac settles 0.2 s sooner. The rolling case, the rim case and the finger press differ qualitatively: in Isaac the apple rolls off the table and off the plate, and the pressed apple is pinned rather than squeezed out.
 
 The next step is to decide the rolling-friction route; see the options in the doc. No acceptance criterion is met, and status stays `backlog`. `mc` is not installed on this host, so `mc validate` and `mc index` were not run.
+
+## 2026-09-29 to 2026-10-02 Newton backend, e9 replay, Arena scene and GR00T reference (development, not gated)
+
+Development cross-simulator work on the Linux PC (RTX 5080). None of it is a gated run, a
+preregistered comparison or a project-learned result; e9 is a privileged scripted expert, and
+GR00T is NVIDIA's policy, not ours. MuJoCo stays the reference simulator, and no acceptance
+criterion above is met yet. Status set to `in-progress` because work is active (#123 open).
+
+- **#107 (`75a481e`), Newton backend.** Isaac Lab 3's opt-in Newton (MuJoCo-Warp) backend, with
+  the transport building the Newton model itself, reproduces MuJoCo's contact behaviour on all
+  five scripted cases (roll within 0.24 mm, rim drop stays, press squeezes out); contact-free joint
+  parity 1.4e-5 rad. PhysX stays the default. `docs/ISAAC_NEWTON_SPIKE.md`.
+- **#110 (`57f3ae4`), e9 replay in Isaac/Newton.** On 16 development seeds × 2 plate errors, e9's
+  actions match MuJoCo (grasp on the same step, the apple lands on the plate every time), but the
+  at-rest outcome does not match seed by seed: 24–26/32 per Isaac cell against 31/32 in MuJoCo, a
+  gap about as large as Isaac's own run-to-run variation. `docs/ISAAC_E9_REPLAY.md`.
+- **#112 (`8e96d5e`), start-up hang fix.** `PXR_WORK_THREAD_LIMIT=1` for Newton start-up: 0 of 24
+  starts hung. Upstream newton#4390 is still open, so the workaround stays.
+- **#119 (`29eac7b`), Arena scene.** The GR00T tutorial's `galileo_g1_static_pick_and_place` scene
+  runs headless in the local Arena container exactly as the tutorial configures it; scene facts
+  (50-D absolute joint actions, floating WBC-balanced base, one 640 × 480 head camera, a loose
+  contact-and-speed success rule) are in `docs/ARENA.md` §1–§6.
+- **#120 (`0d9f16c`), Arena cross-sim checks.** The arm kinematics agree (wrist within 0.8 mm);
+  the Dex3 fingertips differ by up to 3.1 cm. e9 left the apple at rest on 0/16 development seeds
+  in Arena (16/16 in MuJoCo): it never grasps, because the arms stall without a gravity offset
+  and, with one, the floating base steps back during the close. `docs/ARENA.md` §7.
+- **#121 (`a1b67f4`), GR00T reference baseline.** GR00T N1.7, client-only against the owner's
+  server: 16/30 and 10/30 under Arena's rule in two processes, 0/30 under the strict
+  `apple_at_rest_arena_v0`, whose check used PhysX's reported velocity (stale for a resting apple,
+  inferred); a post-hoc position-based diagnostic gives 6/30. An external reference only.
+  `docs/ARENA.md` §8.
+- **#122 (`c16fb04`), white plate.** Not Isaac work, but the same plate question: an opt-in white
+  plate for the MuJoCo v2 scene does not change TASK-075's readouts.
+  `docs/experiments/apple_white_plate_dev.md`.
+- **#123 (open, `feat/arena-e9-adapted`), e9-arena.** An Arena-adapted e9 and a shelf-press probe,
+  with its declaration (`docs/ARENA.md` §9.0–9.2) committed before any Arena run of e9-arena. Tuning
+  run 1: T2 (`shelf_servo`) reached 4/8 `apple_at_rest_v0` on seeds 50200–50207. T3, T4 and the
+  fresh-seed evaluation wait for the GPU. Not reviewed or merged yet.
+
+`mc validate` passed with mc 0.1.14 (installed 2026-10-02 from the v0.1.14 release asset, sha256
+checked).

@@ -36,7 +36,7 @@ The aim is a third simulator setup next to MuJoCo v2 ([SIMULATION.md](SIMULATION
 | Network assets fetched at run time (unpinned) | robot `…/Isaac/6.0/Isaac/Samples/Groot/Robots/g1_29dof_with_hand_rev_1_0.usd`, background `…/IsaacLab/Arena/assets/background_library/galileo_locomanip/galileo_locomanip.usd`, apple `…/object_library/srl_robolab_assets/objects/objaverse/apple_01.usd`, plate `…/objects/hot3d/clay_plates.usd` (all on `omniverse-content-staging.s3-us-west-2.amazonaws.com`); AGILE ONNX `unitree_g1_velocity_height_recurrent_student.onnx` from `github.com/nvidia-isaac/WBC-AGILE` at commit `7259792c` |
 | GR00T | not used. The tutorial pins Isaac-GR00T `4b1dca9d88d2a0b9ea5a65aa61c82ff89f5c4f0e` for its server; nothing here imports or contacts it. |
 
-### Runs (`outputs/`, git-ignored, in the spike worktree)
+### Runs (`outputs/`, git-ignored, in the spike worktree `arena-spike`; archived, see docs/STORAGE.md)
 
 | Run | Code | What | Result |
 | --- | --- | --- | --- |
@@ -235,7 +235,7 @@ These are development runs under TASK-025 on the Linux PC. None of them is a gat
     - The remaining difference is the known `mj_step` layout effect of docs/ISAAC_E9_REPLAY.md §1.
     - The Arena adapter sends no `pre` state, because PhysX gives none.
 
-### Runs (`outputs/`, git-ignored, in the worktree)
+### Runs (`outputs/`, git-ignored, in the worktree `arena-e9`; archived, see docs/STORAGE.md)
 
 | Run | Code | What | Report sha256 |
 | --- | --- | --- | --- |

@@ -178,6 +178,32 @@ has a result: outcome WM-TOK-DYNAMICS on the train split, with four caveats
   inference differs slightly between batch sizes (TASK-065 run-1). A run that caches features
   must check its own cache path for determinism, partial batches included.
 
+## Non-world-model learned policy and the LeWM-on-v2 modules (TASK-071 to TASK-075)
+
+These modules sit beside the two world-model adapters, not inside them, and none is in
+`VisualModel.defaults` or the registries.
+
+- **The v2 policy (TASK-071/072), not a world model.** `first_policy_v2_model.py` is a
+  behaviour-cloning/DAgger MLP with one head per e9 phase (10, chosen by a scripted phase switch),
+  reading apple and plate xy estimates from a frozen DINOv2 readout of the post-look frame
+  (`first_policy_perception.py`, TASK-063's ridge probe), fixed per attempt, plus a clock,
+  proprioception and the palm pose by forward kinematics; it reuses TASK-067's
+  head and recipe (`first_policy_model.py`). Outcome: P-3 16/16 on the development cohort, and in
+  M2 40/40 on cohort C against 39/40 for the random-init encoder floor R-3, row M2-FAIL on G3
+  ([results](experiments/apple_first_policy_v2_m2_results.md)). Encoder pretraining contributed
+  nothing measurable, and the policy is not LeWM.
+- **The LeWM token critic (TASK-073).** `wm_critic_v2{,_offline,_runtime}.py` and
+  `hybrid_selection.py`: P-3 proposes aims, a LeWM critic over frozen DINOv2 token latents would
+  pick one. Outcome S-NO-CONDITION at the K0 calibration; the critic was never trained or run
+  ([results](experiments/apple_wm_critic_v2_results.md)).
+- **The LeWM place planner (TASK-074).** `lewm_planner_v2{,_offline,_runtime}.py` and
+  `place_planner.py`: a LeWM token planner chooses where e9's place primitive puts the apple.
+  Outcome INCONCLUSIVE after two budget escalations; no LeWM controller ran in closed loop
+  ([results](experiments/apple_lewm_planner_v2_results.md)).
+- **The observation ceiling (TASK-075).** `obs_ceiling_v2{,_offline,_runtime}.py`: readouts of the
+  apple-minus-plate offset from four views on frozen DINOv2 features. Outcome OBS-NONE; the clause
+  fired ([results](experiments/apple_obs_ceiling_v2_results.md)).
+
 ## Optional LeWM source
 
 ```sh

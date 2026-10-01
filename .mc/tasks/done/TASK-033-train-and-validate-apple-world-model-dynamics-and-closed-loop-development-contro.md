@@ -4,7 +4,7 @@ aliases:
 - TASK-033
 title: Train and validate apple world-model dynamics and closed-loop development control
 slug: train-and-validate-apple-world-model-dynamics-and-closed-loop-development-contro
-status: in-progress
+status: cancelled
 priority: 1
 owner: ''
 projects: []
@@ -19,7 +19,7 @@ depends_on:
 - "[[TASK-032]]"
 due_date: ''
 created: 2026-09-20
-updated: 2026-09-24
+updated: 2026-10-02
 ---
 
 
@@ -36,8 +36,6 @@ updated: 2026-09-24
 ## Authorization and workflow
 
 User requested completion toward a working world-model apple pick-and-place MVP on 2026-09-20, with subagents and end-to-end delivery. Coordinator owns Git and task state. Experiments are bounded and recorded before execution.
-%% mc-links: [[TASK-030]] [[TASK-031]] [[TASK-032]] %%
-
 ## Execution evidence
 
 Initial training protocol and supervised runner committed before execution. Planned3000updates,B16,H8,seed0,CPU4,1800s totalwall. Data/source/protocol hashes mandatory. Physical learned ApplePlate remains unproven; all negative results retained.
@@ -71,3 +69,14 @@ TASK-052 world model v3 (four arms, source e2f8227, same corpus/splits/hashes as
 TASK-054 world model v4 (four arms, one-factor isolation on the prediction step, trained at 46d62eb/c9cf9a6, same corpus/splits/hashes): ALL FOUR ARMS FAILED the 14-gate preregistered set - no arm passed every gate; E0 control passed 10/14, E1 action-chunk 9/14, E2 tail-weighting 9/14, E3 step-embedding 9/14, so THE UNTOUCHED CONTROL PASSED MORE GATES THAN EVERY INTERVENTION. Primary gate G2a 0.8763 / 0.8814 / 0.8635 / 0.9036 against <=0.8; no arm passed and none came close. E0 was verified as a bit-for-bit control (all 170 weight tensors torch.equal against v3 arm B), so the three new config keys are provably inert at their defaults and any arm difference is attributable to the one option each changed, NOT to the revision. Episode-clustered paired bootstrap (20,000 resamples, seed 20540) against E0 on the rollout term: E1 +0.010 cm [-0.407, +0.367] and E2 -0.173 cm [-0.804, +0.132] both cross zero; E3 +0.761 cm [+0.155, +1.199] excludes zero. E3's encoder damage is the separate encoded-target contrast, +1.023 cm [+0.485, +1.435]. This makes five failed attempts on the rollout gap (second camera, motion-weighted readouts, action chunking, tail weighting, non-shared predictor step). The protocol's pre-declared Outcome B therefore fired and was not deferred again: CEM OVER THIS WORLD-MODEL COST IS ABANDONED as the primary control line, and no further predictor-architecture protocol is preregistered. What carries forward: the encoder (palm-apple offset read to 2.35-2.59 cm, still improving), apple_held AUROC 0.9992-0.9997 on the lift cohort (weak evidence - the shuffled-action AUROC on the same cohort is 0.714-0.812), no collapse (effective rank 6.74-8.23), and the corpus/splits/hashes, with test still never decoded. LIMITS, as the results document records them: ONE SEED PER ARM, so every arm difference is a single-run difference; E0 is a revision control at arm B's seed, not a replication, and cannot distinguish "the intervention did nothing" from "this seed is unlucky"; the bootstrap intervals bound cohort sampling for fixed checkpoints and say nothing about run-to-run variation; selection and the gates both used val; and no interval is available for the rollout-excess (G9) contrast. Offline evaluation only; no closed loop was run and learned Apple->Plate remains at 0 successes. Evidence: docs/experiments/apple_world_model_v4_results.md, benchmarks/manifests/apple-world-model-v4.json.
 
 This task's physical acceptance criteria remain UNMET and are unchanged: no final-cohort evaluation has run, and learned Apple->Plate is still 0 successes. The task stays open and the final cohort stays untouched. The control formulation for the next attempt changed at TASK-054; whether this umbrella task closes is a decision for the user.
+
+## 2026-10-02 closed as superseded
+
+Closed as `cancelled` (superseded), with its acceptance criteria not met. The line it belongs to,
+world-model dynamics driving closed-loop apple control through a sampling planner, was abandoned
+as the primary control line at TASK-054 (`docs/DECISIONS.md`, 2026-09-24), and the behaviour-cloning
+line that replaced it stopped at TASK-057 (2026-09-25). No learned closed-loop success was reached
+under this task, and none is claimed. Later work runs under its own tasks (TASK-059 onward; the
+current status sentence is in `docs/DECISIONS.md`, decision 2026-10-02, R7). The sealed final cohort
+of TASK-034 was never evaluated. `mc validate` passed with mc 0.1.14.
+%% mc-links: [[TASK-030]] [[TASK-031]] [[TASK-032]] %%

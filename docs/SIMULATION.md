@@ -113,6 +113,30 @@ lets CEM score rate-feasible arm and grasp targets with
 Isaac and physical transports need their own validated preview adapters. It does
 not relax execution guards or establish collision-free motion.
 
+## The `apple-to-plate-v2` scene
+
+`apple-to-plate-v2` (TASK-070, `src/embodied_jepa/apple_to_plate_v2.py`) is applied at run time to
+one simulator instance's compiled v1 model by `apply_v2_scene`, which first checks that the model
+is the v1 scene it expects. The only change is the apple's contact at condim 6, so the v1 scene's
+declared apple friction `1 .01 .001` (sliding, torsional, rolling) acts and the apple stops
+rolling. `simulation.py`, `task.py` and `scripted.py` are untouched. Success is
+`at_rest.apple_at_rest` (`apple_at_rest_v0`), with the latched v1 scorer reported beside it; see
+[EVALUATION.md](EVALUATION.md). The privileged scripted expert e9 (`resting_expert.py`) is the
+scene's demonstrator ([apple_to_plate_v2_expert.md](experiments/apple_to_plate_v2_expert.md)).
+
+- **Opt-in plate colour (development).** `plate_color.apply_plate_rgba(model, rgba=None)` recolours
+  the 17 plate geoms in place; the default `None` is a no-op, so v2 renders and hashes are
+  unchanged, and `WHITE_PLATE_RGBA` is an off-white. Physics and trajectories are identical. The
+  colour did not change TASK-075's readouts
+  ([apple_white_plate_dev.md](experiments/apple_white_plate_dev.md)).
+- **Simulation-only plate move.** `plate_shift.py` moves the static plate once at a declared
+  post-look step (TASK-073/074 conditions); it runs in the harness, outside every controller.
+- **The same scene in Isaac.** [ISAAC_V2_SCENE.md](ISAAC_V2_SCENE.md) adds the v2 apple and plate
+  under PhysX, and [ISAAC_NEWTON_SPIKE.md](ISAAC_NEWTON_SPIKE.md) runs them under the opt-in
+  Newton backend; both are development cross-sim checks.
+
+## Isaac Lab-Arena (development)
+
 A third simulator setup, NVIDIA's GR00T-tutorial Isaac Lab-Arena scene
 (`galileo_g1_static_pick_and_place`, floating-base G1 on a whole-body controller, 50-D joint
 actions, 640 × 480 head camera), is documented as a development spike in [ARENA.md](ARENA.md).
