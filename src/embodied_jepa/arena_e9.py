@@ -155,7 +155,7 @@ def shelf_height_match(*, arena_pelvis_z: float, shelf_top_z: float = ARENA_SHEL
     """How far (m) the robot must stand higher so the shelf top is as far below its pelvis as
     our table top is below ours (5.3 cm); positive: raise the robot."""
     ours = OUR_PELVIS_POS[2] - OUR_TABLE_TOP_Z
-    return float(arena_pelvis_z - shelf_top_z + ours)
+    return float(ours - (arena_pelvis_z - shelf_top_z))
 
 
 # ----- joints -------------------------------------------------------------------------------
@@ -300,7 +300,10 @@ class ArenaEndpoint:
             raise ContractError("the Arena layout places the apple on the shelf")
         hold = np.asarray(joint_positions, float)
         action = command_action(hold, self.mirror_names, self.arena_names)
-        settled = self.call("settle", action=action.tolist(), steps=self.settle_steps)
+        by_name = dict(zip(self.mirror_names, hold.tolist(), strict=True))  # recorded
+        settled = self.call(
+            "settle", action=action.tolist(), steps=self.settle_steps, joint_positions=by_name
+        )
         raw = settled["raw"]
         offset = np.asarray(raw["apple_com_pose"][:2]) - np.asarray(raw["apple_pose"][:2])
         layout = layout_in_arena(
@@ -312,6 +315,7 @@ class ArenaEndpoint:
             plate=layout["plate"],
             action=action.tolist(),
             steps=self.place_steps,
+            joint_positions=by_name,
         )
         self.commands, self.time, self.records = 0, 0.0, []
         self._hold = action
@@ -513,3 +517,100 @@ def mujoco_fk(model, data, qadr, mirror_names, q_by_name: dict, bodies) -> dict:
 def pose_difference(a, b) -> tuple[float, float]:
     """(position difference in m, rotation difference in rad) between two (p, R) poses."""
     return float(np.linalg.norm(a[0] - b[0])), rotation_angle(a[1].T @ b[1])
+
+
+# ----- plumbing check -----------------------------------------------------------------------
+class MuJoCoArenaSham:
+    """The Arena server protocol over a host MuJoCo v2 scene, in a displaced "Arena" frame.
+
+    A plumbing check of ``ArenaEndpoint`` + ``ArenaMirrorSimulation`` (frames, joint order,
+    layout): the scene's pelvis is reported at ``pelvis_pose`` (an Arena-like settled pose with
+    a yaw), joints in reversed MJCF order, the plate origin at its bottom. Each command steps
+    MuJoCo once (one 0.05 s control interval) however many Arena steps it asks for, so the
+    mirror must reproduce a plain MuJoCo run up to the float32 rounding of Arena's action."""
+
+    def __init__(self, pelvis_pose=(0.262, 0.074, -0.045, 0.0, 0.0, 0.0499792, 0.9987503)):
+        self.endpoint = ie.MuJoCoEndpoint()
+        self.sim = self.endpoint.sim
+        self.mirror_names = list(self.sim.joint_names)
+        self.joint_names = list(reversed(self.mirror_names))
+        self.pelvis_pose = np.asarray(pelvis_pose, float)
+        self.frame = FrameMap(self.pelvis_pose)
+
+    def _to_arena(self, p):
+        return self.frame.inverse_point(p)
+
+    def _targets(self, action):
+        return reorder(
+            np.asarray(action, float)[: at.G1_NUM_JOINTS], self.joint_names, self.mirror_names
+        )
+
+    def raw(self) -> dict:
+        sim, d = self.sim, self.sim.data
+        joint = d.joint("apple_free")
+        w, x, y, z = joint.qpos[3:7]
+        r_apple = self.frame.r_arena @ at.quat_xyzw_to_matrix([x, y, z, w])
+        apple = self._to_arena(joint.qpos[:3])
+        q_apple = matrix_to_quat_xyzw(r_apple)
+        r_world = at.quat_xyzw_to_matrix([x, y, z, w])
+        plate = self._to_arena(sim.model.body("plate").pos - [0, 0, OUR_PLATE_BASE_HALF])
+        return {
+            "q": reorder(d.qpos[sim.qadr], self.mirror_names, self.joint_names),
+            "qd": reorder(d.qvel[sim.vadr], self.mirror_names, self.joint_names),
+            "pelvis_pose": self.pelvis_pose.copy(),
+            "apple_pose": np.r_[apple, q_apple],
+            "apple_com_pose": np.r_[apple, q_apple],
+            "apple_com_vel": np.r_[
+                self.frame.r_arena @ joint.qvel[:3],
+                self.frame.r_arena @ (r_world @ joint.qvel[3:6]),
+            ],
+            "plate_pose": np.r_[plate, 0.0, 0.0, 0.0, 1.0],
+            "apple_plate_force_n": 0.0,
+            "apple_hand_force_n": 1.0 if sim.task_truth()["hand_contact"] else 0.0,
+        }
+
+    def _record(self):
+        raw = self.raw()
+        return {
+            "success": False,
+            "object_dropped": False,
+            "success_inputs": None,
+            **{
+                k: np.asarray(raw[k]).tolist()
+                for k in ("pelvis_pose", "apple_com_pose", "apple_com_vel", "plate_pose")
+            },
+            "apple_plate_force_n": 0.0,
+            "apple_hand_force_n": raw["apple_hand_force_n"],
+        }
+
+    def call(self, cmd, **kw) -> dict:
+        sim = self.sim
+        if cmd == "hello":
+            return {"joint_names": self.joint_names, "physics": "mujoco (sham)"}
+        if cmd == "settle":
+            self._hold = self._targets(kw["action"])
+            return {"raw": self.raw()}
+        if cmd == "place":
+            ours = []
+            for key in ("apple", "plate"):
+                p = self.frame.point([kw[key][0], kw[key][1], self.pelvis_pose[2]])
+                ours.append(p[:2].tolist())
+            sim.reset(0, object_xy=ours[0], plate_xy=ours[1])
+            q = kw["joint_positions"]  # float64; the action is float32-rounded
+            sim.data.qpos[sim.qadr] = [q[n] for n in self.mirror_names]
+            sim.mj.mj_forward(sim.model, sim.data)
+            sim.targets[:] = sim.data.qpos[sim.qadr]
+            return {"raw": self.raw(), "records": [self._record()]}
+        if cmd == "step":
+            sim.send_joint_targets(
+                self._targets(kw["action"]),
+                joint_names=sim.joint_names,
+                deadline=float(sim.data.time + sim.control_dt),
+            )
+            rec = self._record()
+            return {"raw": self.raw(), "records": [rec] * int(kw["steps"])}
+        if cmd == "read":
+            return {"raw": self.raw()}
+        if cmd in ("info", "close"):
+            return {}
+        raise ContractError(f"unknown command {cmd!r}")
