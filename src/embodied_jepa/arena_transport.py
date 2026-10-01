@@ -51,11 +51,15 @@ def pin_pxr_work_thread_limit(value: str | None = None, environ=None) -> str | N
     Kit overwrites the variable during start-up, so a value passed in from outside has no effect
     on its own (docs/ISAAC_E9_REPLAY.md §4). As in ``scripts/isaac/e9_server_isaac.py``, later
     writes of that one key are replaced by the pinned value. ``value`` defaults to an inherited
-    positive integer, else ``"1"``; ``"0"`` means no pin. Returns the pinned value or None.
+    positive integer, else ``"1"``; ``"0"`` means no pin (it does not undo an earlier pin).
+    Returns the pinned value or None. ``environ`` must be ``os.environ`` or another
+    ``os._Environ`` (the pin swaps its class); anything else, e.g. a plain dict, is refused.
     """
     import os
 
     env = os.environ if environ is None else environ
+    if not isinstance(env, os._Environ):
+        raise ContractError("environ must be os.environ (an os._Environ), not a plain mapping")
     if value is None:
         value = env.get("PXR_WORK_THREAD_LIMIT", "").strip() or "1"
     if not value.isdigit():
@@ -177,6 +181,11 @@ def horizontal_fov_deg(focal_length: float, horizontal_aperture: float) -> float
     return float(np.degrees(2.0 * np.arctan(0.5 * horizontal_aperture / focal_length)))
 
 
+def is_blank(image: np.ndarray, max_level: int = 2) -> bool:
+    """True for an all-black (or near-black) frame, e.g. a camera that has not rendered yet."""
+    return int(np.asarray(image).max(initial=0)) <= max_level
+
+
 def patch_mean_rgb(image: np.ndarray, u: float, v: float, half: int = 2) -> list[float] | None:
     """Mean RGB of a (2*half+1)^2 patch around pixel (u, v); None if it leaves the image."""
     img = np.asarray(image)
@@ -227,6 +236,43 @@ class ArenaScene:
         self.apple = self.unwrapped.scene[self.arena_env.task.pick_up_object.name]
         self.plate = self.unwrapped.scene[self.arena_env.task.destination_location.name]
         self.joint_names = list(self.robot.data.joint_names)
+        self.success_inputs: dict = {}
+        self._wrap_success_term()
+
+    def _wrap_success_term(self) -> None:
+        """Record the success term's own inputs when it is evaluated, before any auto-reset.
+
+        Isaac Lab resets a terminated env inside ``step()``, so state read after ``step()`` on a
+        terminating step is the next episode's. The wrapper stores the apple-plate force and the
+        apple speed exactly as ``object_on_destination`` saw them (env 0); report-only.
+        """
+        tm = self.unwrapped.termination_manager
+        if "success" not in tm.active_terms:
+            return
+        cfg = tm.get_term_cfg("success")
+        inner = cfg.func
+
+        def recorded(env, **params):
+            value = inner(env, **params)
+            try:
+                sensor = env.unwrapped.scene[params["contact_sensor_cfg"].name]
+                obj = env.unwrapped.scene[params["object_cfg"].name]
+                force = self.np(sensor.data.force_matrix_w).reshape(env.unwrapped.num_envs, -1, 3)
+                vel = self.np(obj.data.root_lin_vel_w)
+                self.success_inputs = {
+                    "value": bool(self.np(value)[0]),
+                    "apple_plate_force_n": float(np.linalg.norm(force[0], axis=-1).max()),
+                    "apple_speed_m_s": float(np.linalg.norm(vel[0])),
+                    "apple_pos_local": (
+                        self.np(obj.data.root_pos_w)[0]
+                        - self.np(env.unwrapped.scene.env_origins)[0]
+                    ).tolist(),
+                }
+            except Exception as exc:  # noqa: BLE001 - report-only
+                self.success_inputs = {"error": f"{type(exc).__name__}: {exc}"}
+            return value
+
+        cfg.func = recorded
 
     # ---------------------------------------------------------------- helpers
     def np(self, x) -> np.ndarray:
@@ -266,6 +312,7 @@ class ArenaScene:
             "terminated": bool(self.np(terminated)[0]),
             "truncated": bool(self.np(truncated)[0]),
             "terms": terms,
+            "success_inputs": dict(self.success_inputs),  # pre-reset, from the success term
             "obs": obs,
         }
 
@@ -276,6 +323,17 @@ class ArenaScene:
             if rgb is not None:
                 out[name] = self.np(rgb)[0][..., :3].astype(np.uint8)
         return out
+
+    def camera_pose(self, name: str) -> dict:
+        """Live camera pose (env-local position, ROS xyzw quaternion) and intrinsics."""
+        cam = self.cameras()[name]
+        origin = self.np(self.unwrapped.scene.env_origins)[0]
+        return {
+            "pos_w": self.np(cam.data.pos_w)[0].tolist(),
+            "pos_local": (self.np(cam.data.pos_w)[0] - origin).tolist(),
+            "quat_w_ros_xyzw": self.np(cam.data.quat_w_ros)[0].tolist(),
+            "intrinsics": self.np(cam.data.intrinsic_matrices)[0].tolist(),
+        }
 
     def teleport_apple(self, xyz_local, quat_xyzw=(0.0, 0.0, 0.0, 1.0)) -> None:
         """Scripted-check harness only (the success-path check). Not a controller API."""

@@ -103,3 +103,36 @@ def test_pxr_pin_survives_later_writes():
     subprocess.run([sys.executable, "-c", code], check=True, env=dict(os.environ))
     with pytest.raises(ContractError):
         at.pin_pxr_work_thread_limit("x", environ={})
+    with pytest.raises(ContractError):  # a plain mapping cannot be pinned (no class swap)
+        at.pin_pxr_work_thread_limit("1", environ={})
+    with pytest.raises(ContractError):
+        at.pin_pxr_work_thread_limit(None, environ={"PXR_WORK_THREAD_LIMIT": "4"})
+
+
+def test_is_blank():
+    assert at.is_blank(np.zeros((4, 4, 3), np.uint8))
+    img = np.zeros((4, 4, 3), np.uint8)
+    img[0, 0, 0] = 30
+    assert not at.is_blank(img)
+
+
+def test_runner_wrapper_allows_local_policies_only():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts/isaac/arena_policy_runner.py"
+    spec = importlib.util.spec_from_file_location("arena_policy_runner", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.strip_output(["--output", "x", "--a", "--output=y", "b"]) == ["--a", "b"]
+    mod.check_args(["--policy_type", "zero_action", "--num_steps", "600"])
+    mod.check_args(["--policy_type=replay"])
+    for bad in (
+        [],
+        ["--policy_type", "pkg.mod.Policy"],
+        ["--policy_type", "zero_action", "--remote_host", "localhost"],
+        ["--policy_type", "zero_action", "--port", "5555"],
+        ["--policy_type", "isaaclab_arena_gr00t.policy.X"],
+    ):
+        with pytest.raises(SystemExit):
+            mod.check_args(bad)

@@ -413,10 +413,16 @@ def main() -> int:
     section(facts, "task_and_events", task_and_events)
     section(facts, "background", background)
 
+    facts["frames"] = {}
+
     def write_frames(tag):
         fr = scene.frames()
         for name, img in fr.items():
             save_png(os.path.join(out, "frames", f"{name}_{tag}.png"), img)
+            blank = at.is_blank(img)
+            facts["frames"][f"{name}_{tag}"] = {"blank": blank, "mean": float(img.mean())}
+            if blank:
+                print(f"[arena_probe] BLANK frame {name}_{tag}", flush=True)
         return fr
 
     # ------------------------------------------------------------ episode A: hold
@@ -436,14 +442,17 @@ def main() -> int:
                 "terminated": res["terminated"],
                 "truncated": res["truncated"],
                 "terms": res["terms"],
-                **tr,
+                "success_inputs_pre_reset": res["success_inputs"],
+                "truth_after_step": tr,  # post-reset (next episode) on a terminating step
             }
         )
-        if k == 0:
-            fr = write_frames("hold_step000")
-            section(facts, "plate_colour", lambda fr=fr: plate_colour(scene, fr, facts))
-        if k in (100, 200):
-            write_frames(f"hold_step{k:03d}")
+        if k in (0, 100, 200):
+            # The first frame after the scene is built can be all black (seen in a review
+            # re-run), so the colour is sampled at step 100, with the live camera pose; step 0
+            # is sampled too and flagged if blank.
+            fr = write_frames(f"hold_step{k:03d}")
+            if k in (0, 100):
+                section(facts, f"plate_colour_step{k:03d}", lambda fr=fr: plate_colour(scene, fr))
         if res["terminated"] or res["truncated"]:
             first = k
             # The env auto-resets inside step(); this frame is the post-reset one.
@@ -480,7 +489,8 @@ def main() -> int:
                 "terminated": res["terminated"],
                 "truncated": res["truncated"],
                 "terms": res["terms"],
-                **scene.truth(),
+                "success_inputs_pre_reset": res["success_inputs"],
+                "truth_after_step": scene.truth(),  # post-reset on a terminating step
             }
         )
         if k in (0, 10, 25):
@@ -497,6 +507,8 @@ def main() -> int:
         "log": log,
     }
     print(f"[arena_probe] episode B ended at step {fired}", flush=True)
+    if log:
+        print(f"[arena_probe] success inputs (pre-reset) {log[-1]['success_inputs_pre_reset']}")
     try:
         episodes["metrics"] = jsonable(scene.metrics())
     except Exception as exc:  # noqa: BLE001
@@ -513,22 +525,21 @@ def main() -> int:
     os._exit(0)  # Kit shutdown can hang (Arena force-exits its test subprocesses the same way)
 
 
-def plate_colour(scene, frames, facts):
-    """Sample rendered colour at the projected plate centre, a ring inside it, and the apple."""
+def plate_colour(scene, frames):
+    """Rendered colour at the projected plate centre and a ring inside it (and the apple top).
+
+    Uses the live camera pose and the live USD bounds, so it is valid after the pelvis settles.
+    """
     out = {}
-    plate = facts.get("objects", {}).get("plate", {})
-    apple = facts.get("objects", {}).get("apple", {})
-    origin = scene.np(scene.unwrapped.scene.env_origins)[0]
-    for name, cam in facts.get("cameras", {}).items():
-        if name.startswith("_") or name not in frames or "intrinsics" not in cam:
-            continue
-        img = frames[name]
-        pos_w = np.asarray(cam["pos_local"]) + origin
-        res = {}
-        for role, d in (("plate", plate), ("apple", apple)):
-            usd = d.get("usd", {})
-            if "world_aabb_min" not in usd:
-                continue
+    paths = {
+        "plate": scene.plate.cfg.prim_path.replace("env_.*", "env_0"),
+        "apple": scene.apple.cfg.prim_path.replace("env_.*", "env_0"),
+    }
+    for name, img in frames.items():
+        cam = scene.camera_pose(name)
+        res = {"blank": at.is_blank(img), "camera": cam}
+        for role, path in paths.items():
+            usd = usd_facts(path, 1)
             lo, hi = np.asarray(usd["world_aabb_min"]), np.asarray(usd["world_aabb_max"])
             c = (lo + hi) / 2
             top = np.array(
@@ -539,9 +550,15 @@ def plate_colour(scene, frames, facts):
                 top + r * np.array([np.cos(a), np.sin(a), 0.0])
                 for a in np.linspace(0, 2 * np.pi, 8, endpoint=False)
             ]
-            uv = at.project_points_ros(pts, pos_w, cam["quat_w_ros_xyzw"], cam["intrinsics"])
+            uv = at.project_points_ros(pts, cam["pos_w"], cam["quat_w_ros_xyzw"], cam["intrinsics"])
             samples = [at.patch_mean_rgb(img, x, y) for x, y, _ in uv]
-            res[role] = {"pixels_uvz": uv.tolist(), "rgb_samples": samples}
+            ok = [v for v in samples if v is not None]
+            res[role] = {
+                "pixels_uvz": uv.tolist(),
+                "centre_patch_rgb": samples[0],
+                "ring_rgb": samples[1:],
+                "mean_of_all_9": np.mean(ok, axis=0).tolist() if ok else None,
+            }
         out[name] = res
     return out
 

@@ -14,6 +14,21 @@ import runpy
 import sys
 
 RUNNER = "/workspaces/isaaclab_arena/isaaclab_arena/evaluation/policy_runner.py"
+# Arena's registered local policies (release/0.2.1). A dotted --policy_type path could import
+# arbitrary code, so only these names are accepted.
+ALLOWED_POLICIES = ("zero_action", "replay", "rsl_rl")
+
+
+def check_args(args: list[str]) -> None:
+    """Refuse anything that could reach a policy server (GR00T listens on 5555)."""
+    for a in args:
+        low = a.lower()
+        if "remote" in low or "gr00t" in low or "5555" in low:
+            sys.exit(f"refusing {a!r}: this wrapper runs local policies only (no GR00T server)")
+    types = [args[i + 1] for i, a in enumerate(args[:-1]) if a == "--policy_type"]
+    types += [a.split("=", 1)[1] for a in args if a.startswith("--policy_type=")]
+    if not types or any(t not in ALLOWED_POLICIES for t in types):
+        sys.exit(f"refusing --policy_type {types}: allowed {ALLOWED_POLICIES}")
 
 
 def strip_output(argv: list[str]) -> list[str]:
@@ -37,8 +52,7 @@ if __name__ == "__main__":
 
     print(f"[arena] PXR_WORK_THREAD_LIMIT pinned to {pin_pxr_work_thread_limit()}", flush=True)
     args = strip_output(sys.argv[1:])
-    if any("remote" in a.lower() or "gr00t" in a.lower() for a in args):
-        sys.exit("refusing: this wrapper runs local policies only (no GR00T server)")
+    check_args(args)
     os.chdir("/workspaces/isaaclab_arena")
     # stdout is a pipe (tee): line-buffer it, or the runner's per-episode and final "Metrics"
     # prints are lost when Kit exits without flushing (seen in arena-runner-zero-1).
