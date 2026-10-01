@@ -63,6 +63,45 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-01 — TASK-075 ends OBS-NONE: no view reads the place offset within τ; the clause fires; the next step is a task or condition change
+
+**Outcome: OBS-NONE** (`apple_obs_ceiling_v2`). τ, the place tolerance, was measured before the
+freeze at 1.0 cm: the largest planted target error at which P-3's pick plus e9's place still
+rests ≥ 28/32 under TASK-074's condition. The render stage sealed the four views on
+`apple-far-shift-v2`'s 270 train + val roots (VIEWS-SEALED). The readouts stage reproduced
+TASK-074's reference numbers exactly (G-repro-off), then read 915 moving windows on 218 roots per
+view.
+
+- **No view is admitted.** The R_off c_upper values are: hand crop 2.655, onboard 112 3.394,
+  onboard 224 3.321 and overview 224 3.438 cm, against τ = 1.0 cm.
+- **A3 fails on every view.** No pooled-token readout beats a clock prior that reads no image
+  (2.350 cm; in median, and detectably on three of four views). So, for the frozen R_off as
+  fitted, no τ would admit a view under the frozen rule, and nothing is admitted at 0.5 or
+  1.5 cm.
+- **The representation checks fail too.** R_full and R_pix fail B on every view. The best value
+  is R_pix on overview 224, at c_upper 2.022 cm.
+- **The learning curve is not still falling** on any view; on three views the 100 % fit is worse
+  than the 50 % fit.
+- **The §7 abandonment clause fires.** It closes preregistering a LeWM planner or critic for the
+  place phase under TASK-074's condition on these four views with frozen DINOv2 features,
+  without new evidence of a different kind (a new view, a new readout family, or a task or
+  condition change). The LeWM backend, the v2 task and the product goal stay open.
+- **Scope.** Only linear and kernel-ridge readouts of single frames on frozen features were
+  tested. Trained detectors, fine-tuned features, temporal aggregation and other sensors were not.
+- **Reported only, not gated.** The same pooled-token ridge reads the plate position to
+  0.49–0.68 cm and the apple position to 2.2–3.1 cm. The offset error tracks the apple term.
+- **Next:** "a task or condition change" (§7). The results document lists four options. It
+  recommends a gated perception-twin closed loop first: the place aimed at the frozen-DINOv2
+  *plate* readout, with no world model. The choice is made by the owner,
+  or Claude under the owner's delegation of 2026-09-30. Whether a later LeWM task on a plate
+  target (or on a new place primitive) counts as a "task change" under the
+  clause needs an explicit ruling by them.
+- **Learned Apple→Plate on the frozen benchmark is still 0 successes.** No control line is
+  primary.
+
+**Evidence.** [apple_obs_ceiling_v2_results.md](experiments/apple_obs_ceiling_v2_results.md);
+readouts report sha256 `96ab76b2…7b3f`, render report `753e05f2…a58c`.
+
 ## Decision 2026-10-01 — TASK-074 closes INCONCLUSIVE after two budget escalations; the next task measures the observation first
 
 **Outcome: INCONCLUSIVE ("close without the clause")** (`apple_lewm_planner_v2`). K1 passed at
