@@ -1234,4 +1234,22 @@ and N's ratio against persistence (ii).
 
 ### A2.8 The smoke at this addendum's code
 
-SMOKE_RECORD_PLACEHOLDER
+A train smoke ran at the A2 code commit `cb26c08` (clean tree, frozen sha `2cf80f5a…`), on the
+frozen-code smoke's own inputs (K1 smoke report `6c38f56b…`, smoke corpus `68499d90…`), into
+`outputs/task074-a2-smoke-1/train` (report sha256 `cb4fddf7…0ca5`). Later commits on this branch
+change only this document and the manifest, which are not pinned.
+- **Outcome TRAIN-COMPLETE**, 1 494 s; start loads 0.76 / 0.75.
+- **The A2 record is written:** top-level `addendum_a2` (`cap` 80 000, `frozen_cap` 60 000,
+  addendum `A2`, stage `train`); `stages.budget.rule` carries `cap`, `frozen_cap` and
+  `addendum`; `stages.budget.addendum_a2` records the reproduction check. Its value is
+  `reproduces_run_2: false` because the smoke's 200-update calibration saturates at 200. A smoke
+  does not apply that check, or the escalation.
+- **No computed number changes.** Against the A1 fix smoke (`c0044bb6…a532`, at `e9da1cc`, same
+  inputs), all 998 of its `stages` leaf values (`train_scale` excluded) are present.
+  - **976 are identical.** The 22 that differ are the same timing and path fields as in A1.3: 10
+    `seconds` and 12 run paths.
+  - The 9 new leaves are the A2 record.
+  - `baselines.json`, `r_off.npz`, `r_plate.npz` and all 6 W/N checkpoint sha256s are
+    byte-identical.
+- **Train-scale probe:** stage peak tree PSS **7.82 GiB** (ceiling 12, margin 2.0: passes); the
+  probe took 730 s.

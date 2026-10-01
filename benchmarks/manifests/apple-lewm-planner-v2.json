@@ -4722,7 +4722,7 @@
   }
  },
  "corpus_plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
- "protocol_document_sha256": "f8f2a6db566bd9ac5c6b30ecd7813ed7f20cccc2eb6fab80c343a143066cebe6",
+ "protocol_document_sha256": "b3192cd48593b0797fee9f5a7385b28e62398385dcf9c89e1e5b5da799ae9085",
  "encoder_digests": {
   "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
   "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
@@ -5814,6 +5814,21 @@
     "6392fe6e38e88bb6356dbfcae3f095402817cc08f869f9547d2046ca89e8ec1c"
    ]
   },
-  "smoke": null
+  "smoke": {
+   "revision": "cb26c0863b35d309a3b0fcde7575d230d074d432",
+   "tracked_tree_dirty": false,
+   "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+   "output": "outputs/task074-a2-smoke-1/train",
+   "report_sha256": "cb4fddf7ffa8a9ae488bbf1a2c6abc574a38f47810c60fd8231bb806d9d10ca5",
+   "inputs": {
+    "k1_report_sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787",
+    "corpus_manifest_sha256": "68499d90c4ee4e0c4cf76b861ed1eafc657df1bcee26f6913d803c4015d11c46"
+   },
+   "outcome": "TRAIN-COMPLETE",
+   "total_seconds": 1494.4,
+   "train_scale_peak_tree_pss_gib": 7.817322731018066,
+   "within_margin": true,
+   "compared_with": "A1 fix smoke c0044bb6c... (e9da1cc): 998 leaves, 976 identical, 22 timing/path fields differ, 9 new A2 leaves; baselines.json, r_off.npz, r_plate.npz and 6 checkpoint sha256s byte-identical"
+  }
  }
 }
