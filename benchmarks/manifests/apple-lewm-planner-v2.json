@@ -1,7 +1,7 @@
 {
  "protocol": "apple_lewm_planner_v2",
  "task": "TASK-074",
- "status": "preregistration (Stage 0): no TASK-074 cohort seed has been simulated; smokes on 54650-54699 only; design probes on 54700-54999 (spent)",
+ "status": "closed: INCONCLUSIVE (close without the clause) after the train stage's ESCALATE-BUDGET-LAST-TWO (run-3); see results",
  "document": "docs/experiments/apple_lewm_planner_v2.md",
  "owner_decisions": {
   "date": "2026-09-30",
@@ -5830,5 +5830,228 @@
    "within_margin": true,
    "compared_with": "A1 fix smoke c0044bb6c... (e9da1cc): 998 leaves, 976 identical, 22 timing/path fields differ, 9 new A2 leaves; baselines.json, r_off.npz, r_plate.npz and 6 checkpoint sha256s byte-identical"
   }
+ },
+ "outcome": "INCONCLUSIVE",
+ "results": {
+  "document": "docs/experiments/apple_lewm_planner_v2_results.md",
+  "outcome": "INCONCLUSIVE",
+  "consequence": "close without the clause (protocol \u00a77); the abandonment clause does not fire; its scope is not refuted and not closed",
+  "ruled_by": "decided by Claude under owner delegation, 2026-10-01",
+  "ruling": [
+   "No further budget raise and no further train run. TASK-074 closes INCONCLUSIVE (\"close without the clause\").",
+   "OFFLINE-PASS was already unreachable, because O2's encoded-readout bar (<= 1.0 cm) sits below the measured readout error of 2.87 cm, whatever W does (A1.5, A2.7).",
+   "Another raise would cost about 9 h or more to reach, at best, L-G2A. The rules already make that outcome uninformative about W.",
+   "The binding constraint is the observation and readout, not the predictor. The next task is therefore a measurement-first observation study, which is a data/hardware-side change.",
+   "The \u00a77 abandonment clause does not fire. Its scope stays open and must be stated as not refuted and not closed."
+  ],
+  "stages": [
+   {
+    "stage": "k1",
+    "attempt": "run-1",
+    "revision": "9d9b03cff44848f0b43b63f9d1f560a378c672ba",
+    "worktree": "task074-run",
+    "report": "outputs/task074-k1/run-1/report.json",
+    "report_sha256": "25701293c54fd585274d7734018de7485d65f92915060ed7aa034439db8aad88",
+    "started_utc": "2026-09-30T21:31:11Z",
+    "ended_utc": "2026-09-30T21:33:35Z",
+    "outcome": "K1-PASS",
+    "shift_cm": 9,
+    "counts": {
+     "B-oracle-shift": 32,
+     "H-handover": 32,
+     "P-stale": 0,
+     "P-truth": 19
+    },
+    "o5_median": 0.2087967197824132
+   },
+   {
+    "stage": "corpus",
+    "attempt": "run-1",
+    "revision": "9d9b03cff44848f0b43b63f9d1f560a378c672ba",
+    "worktree": "task074-run",
+    "report": "outputs/task074-corpus/run-1/report.json",
+    "report_sha256": "16e6417eee7596e9553cf65f02afc4c3784224406782f685067cb83ddda702ac",
+    "started_utc": "2026-09-30T21:41:56Z",
+    "ended_utc": "2026-09-30T21:45:48Z",
+    "outcome": "CORPUS-SEALED",
+    "corpus_manifest_sha256": "fe7ab9150216887f5759521dcc7fe7c7f54d2e5e8c36fecf6ed713a000b134bd"
+   },
+   {
+    "stage": "train",
+    "attempt": "run-1",
+    "revision": "9d9b03cff44848f0b43b63f9d1f560a378c672ba",
+    "worktree": "task074-run",
+    "report": "outputs/task074-train/run-1/report.json",
+    "report_sha256": "78137de0c28211833be458f956f7e1f03c2b5c58f75998fb8d42fa2f45ce80df",
+    "started_utc": "2026-09-30T22:00:02Z",
+    "ended_utc": "2026-09-30T22:09:00Z",
+    "outcome": "V",
+    "cause": "G-memory: process-tree PSS 12.04 GiB > 12.00 GiB, after the boundary; fixed by addendum A1 (#114)"
+   },
+   {
+    "stage": "train",
+    "attempt": "run-2",
+    "revision": "f52c905a423a0f50b4a95ec46466aa758983178d",
+    "worktree": "task074-run2",
+    "report": "outputs/task074-train/run-2/report.json",
+    "report_sha256": "f5974cd290f739e7cc20944e68fe8a9dfe485f46cf400d7c89960fa608f20638",
+    "started_utc": "2026-09-30T23:58:15Z",
+    "ended_utc": "2026-10-01T01:30:22Z",
+    "outcome": "ESCALATE-BUDGET",
+    "cause": "budget rule wanted 80 000 > cap 60 000; addendum A2 (#115) raised the train cap to 80 000"
+   },
+   {
+    "stage": "train",
+    "attempt": "run-3",
+    "revision": "5e53ef37e74993bc5a883bf7e81144c933396068",
+    "worktree": "task074-run3",
+    "report": "outputs/task074-train/run-3/report.json",
+    "report_sha256": "25cb1bf3bbcbe89d300fb3a702da0f0c56b20bafc24dff896a48ee5d184b562c",
+    "started_utc": "2026-10-01T03:05:50Z",
+    "ended_utc": "2026-10-01T10:30:26Z",
+    "outcome": "ESCALATE-BUDGET-LAST-TWO",
+    "updates": 80000,
+    "selected_updates": {
+     "W-7410": 32000,
+     "W-7411": 48000,
+     "W-7412": 48000,
+     "N-7410": 72000,
+     "N-7411": 72000,
+     "N-7412": 80000
+    },
+    "selected_in_last_two_points": [
+     "N-7412"
+    ],
+    "checkpoint_sha256": {
+     "W-7410": "678a5f31a8a087ca47d56985ed431d58aa52c214aec21be38155374c101cd10e",
+     "W-7411": "cf58c80763bc1c32ceb3c093b676f69d87c7e168b86e4c4b45879e352b7e81a9",
+     "W-7412": "49c94c4d6586f64cfd827fcadccbf952516fa132a4e058da6fb9bccf7bd07f22",
+     "N-7410": "9c0ee697a1f71dfb9c962292ff84e433230859c6c4336a495dfe4e9d26d46c15",
+     "N-7411": "f33f0bebf2da24573850f2d8be5475e91b0c474052af70b17768ff083b2cd505",
+     "N-7412": "8e679609e03f2a0824e276d6025c7684527a3f81690571476b5a1231803a8dbf"
+    },
+    "o1_o2_computed": false
+   }
+  ],
+  "blind_baselines_cm": {
+   "encoded_median": 2.8722625765232763,
+   "persistence_median": 4.350821813169937,
+   "clock_prior_median": 3.1225649505050876,
+   "windows": 90,
+   "roots": 22
+  },
+  "o2_encoded_bar": {
+   "bar_cm": 1.0,
+   "measured_cm": 2.8722625765232763,
+   "calibrated": false,
+   "origin": "carried verbatim from TASK-073 (wm_critic_v2.O2[\"encoded_median_max_cm\"]); no calibration recorded in either protocol",
+   "lesson": "readout bars must be calibrated from measured readout ceilings on representative data before the freeze"
+  },
+  "descriptive_diagnostic": {
+   "label": "descriptive, not a gate, N-7412 unsaturated; no row is read from these numbers",
+   "output": "task074-run3/outputs/task074-train/run-3-descriptive/descriptive.json",
+   "output_sha256": "7c75d02392a23d17e5d11f6dfc7602289cda260a4aa0ace0242908174629b324",
+   "revision": "5e53ef37e74993bc5a883bf7e81144c933396068",
+   "code_paths": "scripts/run_lewm_planner_v2.py featurise_sources, train_context, offline_gates (lewm_planner_v2_offline.o1_statistics, o2_statistics), on run-3's checkpoints at their selected updates and run-3's r_off.npz",
+   "checks": "checkpoint and r_off sha256 match run-3; 432 roots / 76 464 frames; blind baselines identical; all six val criteria equal run-3's selected values bit for bit",
+   "o1_frozen_passes": {
+    "7410": true,
+    "7411": true,
+    "7412": true
+   },
+   "o2": {
+    "7410": {
+     "predicted_median_cm": 2.541776274986562,
+     "ratio_vs_persistence": [
+      0.5842060153538362,
+      [
+       0.3986874740452432,
+       0.8260335944596033
+      ]
+     ],
+     "ratio_vs_clock_prior": [
+      0.8140026917856166,
+      [
+       0.5754534403621333,
+       1.0242198553045987
+      ]
+     ],
+     "n_ratio_vs_persistence": [
+      0.5650570102400473,
+      [
+       0.42895565805976726,
+       0.8312316552281714
+      ]
+     ],
+     "passes": false,
+     "void": false
+    },
+    "7411": {
+     "predicted_median_cm": 2.4733705681038614,
+     "ratio_vs_persistence": [
+      0.5684835358269485,
+      [
+       0.4052582524070287,
+       0.7997145821048635
+      ]
+     ],
+     "ratio_vs_clock_prior": [
+      0.7920957953825055,
+      [
+       0.5741131064910515,
+       0.9823586111035819
+      ]
+     ],
+     "n_ratio_vs_persistence": [
+      0.6095207314025125,
+      [
+       0.5192456353928571,
+       0.7560669648770468
+      ]
+     ],
+     "passes": false,
+     "void": true
+    },
+    "7412": {
+     "predicted_median_cm": 2.6227796942249686,
+     "ratio_vs_persistence": [
+      0.6028239736883305,
+      [
+       0.47991230717520955,
+       0.757069930005791
+      ]
+     ],
+     "ratio_vs_clock_prior": [
+      0.8399439998199952,
+      [
+       0.6724784898057641,
+       0.965398224102848
+      ]
+     ],
+     "n_ratio_vs_persistence": [
+      0.5722900757179313,
+      [
+       0.47159202864196464,
+       0.6992070700959951
+      ]
+     ],
+     "passes": false,
+     "void": true
+    }
+   },
+   "script": "docs/experiments/apple_lewm_planner_v2_results/descriptive_o1o2.py",
+   "script_sha256": "37f02f6e816bfd200e46f93130284f21b14b58561f454bdc2866d3c9b9ff0deb"
+  },
+  "not_run": [
+   "pfar",
+   "rank (O3/O4)",
+   "decide",
+   "d3",
+   "gated S/U"
+  ],
+  "closed_loop_lewm_controller_run": false,
+  "abandonment_clause_fires": false,
+  "learned_apple_to_plate": "still 0 successes on the frozen benchmark (0/150 per model); unchanged",
+  "next": "a measurement-first observation-ceiling study, to be preregistered separately"
  }
 }
