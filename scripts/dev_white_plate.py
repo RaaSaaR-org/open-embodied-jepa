@@ -59,7 +59,7 @@ from embodied_jepa import plate_color as pc  # noqa: E402
 from embodied_jepa import white_plate_dev_runtime as wdr  # noqa: E402
 
 PLATES = {"blue": None, "white": pc.WHITE_PLATE_RGBA}
-DEV = {"plate": None}
+DEV = {"plate": None, "reference_from_views": None}
 NOTE = (
     "development diagnostic (owner request 2026-10-01): plate colour only; not a gated run, "
     "not a preregistered gate; docs/experiments/apple_white_plate_dev.md"
@@ -77,6 +77,7 @@ def _tag_reports():
             "plate_rgba": None if PLATES.get(DEV["plate"]) is None else list(PLATES[DEV["plate"]]),
             "default_plate_rgba": list(pc.V2_PLATE_RGBA),
             "harness": "scripts/dev_white_plate.py",
+            "reference_from_views": DEV["reference_from_views"],
         }
         return original(path, report)
 
@@ -342,6 +343,48 @@ def compare(args) -> int:
     return 0
 
 
+PAIRED_KEYS = ("r_off", "r_full", "r_pix", "plate_target", "apple_target")
+
+
+def paired(args) -> int:
+    """``paired-white-over-blue.json``: per view and readout, ``oc.cluster_median_ratio(white,
+    blue, clusters)`` over the same windows, from the two readouts runs' error files (each
+    checked against its report's recorded sha256)."""
+    folders = {"blue": Path(args.blue).parent, "white": Path(args.white).parent}
+    shas = {
+        k: json.loads(Path(v).read_text())["stages"]["errors_sha256"]
+        for k, v in (("blue", args.blue), ("white", args.white))
+    }
+    out = {}
+    for view in oc.VIEWS:
+        data = {}
+        for name, folder in folders.items():
+            path = folder / f"errors_{view}.npz"
+            if R65.sha256_file(path) != shas[name][view]:
+                raise lp.GuardError(f"{path} differs from its recorded sha256")
+            with np.load(path) as d:
+                data[name] = {k: d[k] for k in d.files}
+        b, w = data["blue"], data["white"]
+        if not (
+            np.array_equal(b["clusters"], w["clusters"])
+            and np.array_equal(b["windows"], w["windows"])
+        ):
+            raise lp.GuardError(f"{view}: the two runs' windows differ")
+        for key in PAIRED_KEYS:
+            r = oc.cluster_median_ratio(w["e__" + key], b["e__" + key], b["clusters"])
+            out[f"{view}/{key}"] = r
+            print(
+                f"{view:12} {key:13} white/blue {r['ratio']:.4f} "
+                f"[{r['ci95'][0]:.5f}, {r['ci95'][1]:.5f}]"
+            )
+    path = Path(args.output)
+    if path.exists():
+        raise FileExistsError(f"refusing to overwrite {path}")
+    path.write_text(json.dumps(out, indent=1))
+    print("written", path, R65.sha256_file(path))
+    return 0
+
+
 def sheet(args) -> int:
     from PIL import Image, ImageDraw
 
@@ -392,6 +435,9 @@ def main(argv=None) -> int:
             p.add_argument("--render-report", required=True)
             p.add_argument("--render-sha256", required=True)
             p.add_argument("--reference-from-views", action="store_true")
+    p = sub.add_parser("paired")
+    for name in ("blue", "white", "output"):
+        p.add_argument(f"--{name}", required=True)
     p = sub.add_parser("compare")
     for name in ("blue", "white", "output"):
         p.add_argument(f"--{name}", required=True)
@@ -401,11 +447,14 @@ def main(argv=None) -> int:
         p.add_argument(f"--{name}", required=True)
     p.add_argument("--step", type=int, required=True)
     args = parser.parse_args(argv)
+    if args.mode == "paired":
+        return paired(args)
     if args.mode == "compare":
         return compare(args)
     if args.mode == "sheet":
         return sheet(args)
     DEV["plate"] = args.plate
+    DEV["reference_from_views"] = bool(getattr(args, "reference_from_views", False))
     _tag_reports()
     R.Pool = DevPool
     R.STAGES["render"] = dev_render

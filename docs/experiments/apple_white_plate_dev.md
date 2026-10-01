@@ -39,6 +39,12 @@ R_off / R_full / R_pix, statistics and τ = 1.0 cm. The harness changes only thr
   the blue sealed corpus.
 - The white readouts read their reference view from that store.
 
+`--reference-from-views` (the reference view's frames read from the harness's own store) was
+used by the white readouts and by the blue re-render control readouts. It was not used by the
+blue reproduction, which reads TASK-075's sealed frames. The reports of these runs predate the
+flag being recorded. The harness now writes it into each report's `development` block
+(`reference_from_views`) for any later run; the existing reports were not rewritten.
+
 All runs were at `8d1ac15` on a clean tree, each under the shared heavy lock. Each started with
 1- and 5-minute load ≤ 2.0, and at least 7 GiB of the GPU was free. Peak process-tree PSS was
 8.6 GiB.
@@ -56,10 +62,17 @@ The comparison files are `compare-white.json` (`9da27d353622b8cb14baf316cf219ae8
 (`0930f544377977bf5e1a787dc892cffc41e3ce27447f11533a224376c0ba2899`) and `paired-white-over-blue.json` (`a2fe2f2978705d5c74b8b09d311d2dbad3fd41bbfeb21f25120ee4d0ddb50f2a`). Run outputs are under
 `outputs/white-plate-dev/` and the stores under `data/white-plate-dev/`, both git-ignored.
 
+The paired ratios are produced by `scripts/dev_white_plate.py paired --blue <TASK-075 readouts
+report> --white <white readouts report> --output <file>`. Each entry is
+`obs_ceiling_v2.cluster_median_ratio(white_errors, blue_errors, clusters)` over the same 915
+windows. The blue errors are TASK-075's own error files, each checked against its report's
+sha256. Re-running that mode wrote `paired-white-over-blue-harness.json`, which is byte-identical
+(same sha256) to the file above.
+
 **The blue column is TASK-075's report.** The harness re-ran blue on TASK-075's own views and
 reproduced every statistic exactly. A full blue re-render then moved no number by more than
-0.01 cm. That bounds the renderer's ±1–2-level pixel noise, so differences much larger than that
-come from the colour.
+0.01 cm. Its own paired ratio is 1.000 [1.000, 1.000]. That bounds the renderer's ±1–2-level pixel
+noise, so differences much larger than that come from the colour.
 
 ## Results (development; 270 roots, 915 windows, cross-fitted)
 
@@ -86,7 +99,7 @@ All errors are in cm. τ = 1.0 cm.
 | handcrop | R_pix | 2.94 | 3.02 | 5.35 | 5.34 | 17.4 | 17.3 | 1.282 | 1.309 | 1.02 [0.99, 1.06] |
 | overview224 | R_off | 3.44 | 3.34 | 6.63 | 6.70 | 16.2 | 16.4 | 1.486 | 1.453 | 0.98 [0.90, 1.05] |
 | overview224 | R_full | 2.73 | 2.66 | 5.67 | 5.31 | 18.5 | 18.7 | 1.174 | 1.145 | 0.98 [0.91, 1.06] |
-| overview224 | R_pix | 2.02 | 2.08 | 4.35 | 4.41 | 21.0 | 20.9 | 0.867 | 0.897 | 1.05 [1.00, 1.09] |
+| overview224 | R_pix | 2.02 | 2.08 | 4.35 | 4.41 | 21.0 | 20.9 | 0.867 | 0.897 | **1.045 [1.00015, 1.093]**, excludes 1.0 |
 
 **The plate's and the apple's own position.** These are TASK-075's reported-only pooled-token
 readouts: the same features as R_off, but each regresses one object's world xy. They show
@@ -106,17 +119,47 @@ whether colour changes plate legibility, which is the only part a plate colour c
 The row stays OBS-NONE with a white plate: no view, readout or colour reads the offset within
 τ = 1.0 cm.
 
+**The plate-hidden check (TASK-075's A4/B4) moves with the colour.** The plate-hidden frames are
+the same pixels in both colours: the plate is not drawn, and they differ by at most 1 level. The
+readouts are refitted on each colour's visible frames, though, so their plate-hidden error
+changes. The table gives the median plate-hidden error in cm, blue → white. The blue re-render
+control reproduces the blue column to within 0.01 cm.
+
+| view | R_off | R_full | R_pix |
+|---|---|---|---|
+| onboard112 | 7.14 → 6.07 | 7.06 → 6.08 | 4.35 → 4.36 |
+| onboard224 | 7.23 → 6.26 | 5.65 → 5.80 | 4.18 → 4.17 |
+| handcrop | 3.81 → 3.77 | 3.51 → 3.54 | 5.17 → 4.99 |
+| overview224 | 7.86 → 4.26 | 5.28 → 4.44 | 3.75 → 3.93 |
+
+Read this as a distribution effect of the readout, not a change in what the frames show. Removing
+a saturated blue plate from a light table is further out of the training distribution than
+removing an off-white one. A4 and B4 still pass for every view and readout in both colours: they ask only
+that the plate-hidden error's lower 95 % bound exceed τ = 1.0 cm. With white, though, the
+plate-hidden error of overview224 R_off (4.26 cm) is not far above its visible-frame median
+(3.15 cm). It is nonetheless a real colour effect on a
+gating check.
+
 ## Reading (development)
 
 **On this evidence, the plate's colour is not what limits the readout.**
 
-- Every paired white/blue interval on the offset includes 1.0. The largest shift in a median
-  upper bound is 0.12 cm, against a gap to τ of 1.0–2.4 cm.
+- The paired intervals bound any colour effect on the offset's median error to roughly
+  0.90–1.11 (−10 % to +11 %). This is a bound, not a finding of no difference. The largest shift
+  in a median upper bound is 0.12 cm, against a gap to τ of 1.0–2.4 cm.
+- 1 of the 12 offset intervals excludes 1.0: overview224 R_pix, 1.045 [1.00015, 1.093]. There,
+  white is about 4.5 % worse. The exclusion is marginal and there is no multiplicity correction;
+  with 12 intervals, about one such exclusion is expected by chance. The renderer noise does not
+  explain it (the control's ratio is 1.000). It does not change OBS-NONE.
 - White is nominally better on the plate's own position in the onboard views (−6 to −7 % in the
-  median). Those intervals also reach 1.0. In either colour the plate is already read to about
-  0.5 cm, at or below τ.
-- The offset error is the apple's: its position is read to 2.2–3.1 cm in both colours. That is the
-  TASK-075 results finding, and the plate colour does not touch it.
+  median); those intervals reach 1.0. In either colour, the reported-only plate readout's median
+  error is 0.46–0.68 cm, at or below τ. That holds for the medians only: the plate's p87.5 reaches
+  1.35–1.36 cm on the hand crop (and 1.05–1.07 cm on overview224), above τ.
+- The offset error is mostly the apple's: its position is read to 2.2–3.1 cm in both colours.
+  That is the TASK-075 results finding, and the plate colour does not move the apple readout
+  (every apple interval includes 1.0). The colour does move the plate-hidden check (above),
+  which is about how the refitted readout extrapolates, not about how precisely the offset is
+  read.
 
 ## Caveats
 
