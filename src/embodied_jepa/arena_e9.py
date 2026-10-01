@@ -433,7 +433,11 @@ def arena_verdicts(records, *, rest_height_m: float, window_steps: int = 20) -> 
       (one record per command: its last Arena step), the apple's centre of mass within 4 cm of
       the plate origin in xy, within 1.2 cm of ``plate_z + rest_height_m`` in z (the resting
       height calibrated by a drop on the plate in the same run), speed <= 0.001 m/s, and no
-      apple-hand force. World (env-local) frame, not pelvis-relative."""
+      apple-hand force. World (env-local) frame, not pelvis-relative. The speed is the
+      centre of mass's displacement over each command interval (2 or 3 Arena steps) divided by
+      its duration: PhysX reports a non-zero velocity for an apple whose pose does not change
+      (about 5-10 mm/s at rest on the plate in the calibration drops), so the reported
+      velocity is used only for a second, labelled reading (``at_rest_arena_reported_vel``)."""
     from embodied_jepa.at_rest import apple_at_rest
 
     if not records:
@@ -447,19 +451,19 @@ def arena_verdicts(records, *, rest_height_m: float, window_steps: int = 20) -> 
     obj = np.array([r["apple_com_pose"][:3] for r in last], float)
     plate = np.array([r["plate_pose"][:3] for r in last], float)
     vel = np.array([r["apple_com_vel"][:3] for r in last], float)
+    commands = sorted(by_command)
+    dt = np.array([arena_steps(k) * ARENA_DT for k in commands])
+    fd = np.zeros_like(obj)
+    fd[1:] = np.diff(obj, axis=0) / dt[1:, None]
     hand = np.array(
         [float(r.get("apple_hand_force_n") or 0.0) > HAND_FORCE_CONTACT_N for r in last]
     )
     expected_z = plate[:, 2] + float(rest_height_m)
     flat_plate = plate.copy()
     flat_plate[:, 2] = 0.0
-    at_rest = apple_at_rest(
-        obj - np.c_[np.zeros((len(obj), 2)), expected_z],  # height error measured from 0
-        flat_plate,
-        vel,
-        hand,
-        expected_z=0.0,
-    )
+    shifted = obj - np.c_[np.zeros((len(obj), 2)), expected_z]  # height error from 0
+    at_rest = apple_at_rest(shifted, flat_plate, fd, hand, expected_z=0.0)
+    reported = apple_at_rest(shifted, flat_plate, vel, hand, expected_z=0.0)
     return {
         "arena_success": bool(success.any()),
         "arena_first_success_step": first,
@@ -470,6 +474,8 @@ def arena_verdicts(records, *, rest_height_m: float, window_steps: int = 20) -> 
         "arena_success_inputs": None if first is None else records[first].get("success_inputs"),
         "at_rest_arena": bool(at_rest["at_rest"]),
         "at_rest_arena_detail": at_rest,
+        "at_rest_arena_reported_vel": bool(reported["at_rest"]),
+        "at_rest_arena_reported_vel_detail": reported,
         "final_distance_arena_cm": float(np.linalg.norm(obj[-1, :2] - plate[-1, :2]) * 100),
         "dropped": bool(any(r.get("object_dropped") for r in records)),
         "window_steps": window_steps,

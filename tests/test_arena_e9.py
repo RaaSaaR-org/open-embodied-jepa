@@ -111,8 +111,12 @@ def test_arena_verdicts():
     assert v["arena_success"] and v["arena_first_success_step"] == 5
     assert v["arena_success_with_hand_contact"] and v["at_rest_arena"]
     # moving, off-centre, too high or touched in the window: not at rest
+    # a reported (PhysX) velocity on a still apple fails only the labelled second reading
+    noisy = records[:-1] + [_record(29, apple=on, plate=plate, vel=(0.005, 0, 0))]
+    v = ae.arena_verdicts(noisy, rest_height_m=rest)
+    assert v["at_rest_arena"] and not v["at_rest_arena_reported_vel"]
     for bad in (
-        {"vel": (0.002, 0, 0)},
+        {"apple": (0.6105, 0.0, -0.03 + rest)},  # moved 0.5 mm in one 0.06 s command
         {"apple": (0.65, 0.0, -0.03 + rest)},
         {"apple": (0.6, 0.0, -0.03 + rest + 0.02)},
         {"hand": 1.0},

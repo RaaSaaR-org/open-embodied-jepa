@@ -446,6 +446,84 @@ def cmd_arena(args) -> int:
     return 0
 
 
+def records_from_arrays(d) -> list[dict]:
+    """Inverse of ``records_arrays`` (enough for ``arena_e9.arena_verdicts``)."""
+    out = []
+    for k in range(len(d["arena_command"])):
+        hand = float(d["arena_apple_hand_force_n"][k])
+        out.append(
+            {
+                "command": int(d["arena_command"][k]),
+                "success": bool(d["arena_success"][k]),
+                "object_dropped": bool(d["arena_object_dropped"][k]),
+                "success_inputs": None,
+                "apple_com_pose": d["arena_apple_com_pose"][k].tolist(),
+                "apple_com_vel": d["arena_apple_com_vel"][k].tolist(),
+                "plate_pose": d["arena_plate_pose"][k].tolist(),
+                "pelvis_pose": d["arena_pelvis_pose"][k].tolist(),
+                "apple_plate_force_n": float(d["arena_apple_plate_force_n"][k]),
+                "apple_hand_force_n": None if np.isnan(hand) else hand,
+            }
+        )
+    return out
+
+
+def cmd_rescore(args) -> int:
+    """Recompute the Arena-side verdicts of a finished run with the current ``arena_verdicts``
+    (the run's report keeps the verdicts of the code that ran it)."""
+    out = args.run / "rescore.json"
+    if out.exists():
+        raise SystemExit(f"refusing to overwrite {out}")
+    report = json.loads((args.run / "report.json").read_text())
+    rest = report["calibration"]["rest_height_m"]
+    rows = []
+    for a in report["attempts"]:
+        if not a["arena"].get("ok"):
+            rows.append({"key": a["key"], "ok": False})
+            continue
+        d = np.load(args.run / f"arena_{a['key']}.npz")
+        v = ae.arena_verdicts(records_from_arrays(d), rest_height_m=rest)
+        rows.append(
+            {
+                "key": a["key"],
+                "ok": True,
+                "complete": a["arena"]["complete"],
+                "stop_reason": a["arena"]["stop_reason"],
+                "mujoco_at_rest": a["mujoco"]["at_rest"],
+                "at_rest_mirror": a["arena"]["at_rest"],
+                **{
+                    k: v[k]
+                    for k in (
+                        "arena_success",
+                        "arena_first_success_command",
+                        "arena_success_with_hand_contact",
+                        "at_rest_arena",
+                        "at_rest_arena_reported_vel",
+                        "final_distance_arena_cm",
+                        "dropped",
+                    )
+                },
+                "at_rest_arena_detail": v["at_rest_arena_detail"],
+            }
+        )
+    ok = [r for r in rows if r["ok"]]
+    counts = {
+        k: sum(bool(r[k]) for r in ok)
+        for k in (
+            "mujoco_at_rest",
+            "arena_success",
+            "at_rest_arena",
+            "at_rest_arena_reported_vel",
+            "at_rest_mirror",
+            "complete",
+        )
+    }
+    counts["attempts"] = len(rows)
+    write_report(out, {**provenance(), "run": str(args.run), "counts": counts, "attempts": rows})
+    print(json.dumps(counts, indent=1))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -469,8 +547,12 @@ def main() -> int:
         action="store_true",
         help="add qfrc_bias / kp_arena to each arm and hand target (arena_e9.gravity_offset)",
     )
+    p = sub.add_parser("rescore")
+    p.add_argument("--run", type=Path, required=True)
     args = parser.parse_args()
-    return {"kinematics": cmd_kinematics, "arena": cmd_arena}[args.cmd](args)
+    return {"kinematics": cmd_kinematics, "arena": cmd_arena, "rescore": cmd_rescore}[args.cmd](
+        args
+    )
 
 
 if __name__ == "__main__":
