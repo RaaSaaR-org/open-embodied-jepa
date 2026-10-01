@@ -1,8 +1,28 @@
 """Shared fixtures. Only opt-in helpers live here; nothing is autouse."""
 
+import os
+from pathlib import Path
+
 import pytest
 
+import embodied_jepa
 from embodied_jepa import devices
+
+# Git worktrees share one .venv whose editable install points at a single checkout's src.
+# pyproject.toml puts this checkout's src first on sys.path; refuse to run if the package
+# still resolves elsewhere, because the tests would then exercise another revision's code.
+_SRC = Path(__file__).resolve().parents[1] / "src"
+_IMPORTED = Path(embodied_jepa.__file__).resolve()
+if not _IMPORTED.is_relative_to(_SRC):
+    raise pytest.UsageError(
+        f"embodied_jepa was imported from {_IMPORTED}, not from this checkout's {_SRC}. "
+        "Run pytest from the repository root so its pythonpath setting applies."
+    )
+# Subprocesses that tests start (python -m embodied_jepa..., scripts/*.py) inherit the
+# environment, not sys.path: give them the same src first.
+os.environ["PYTHONPATH"] = os.pathsep.join(
+    [str(_SRC), *filter(None, os.environ.get("PYTHONPATH", "").split(os.pathsep))]
+)
 
 
 @pytest.fixture

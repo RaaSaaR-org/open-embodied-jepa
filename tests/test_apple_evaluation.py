@@ -3,6 +3,7 @@
 import importlib.util
 import json
 import sys
+import time
 from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
@@ -856,6 +857,10 @@ def state_worker_fixture(tmp_path, monkeypatch, controller_decisions):
     from embodied_jepa.constraints import CandidateProjection
     from embodied_jepa.contracts import ExecutionResult
 
+    # attempt_worker measures its budget from the module-level ENTRY_CLOCK, which is set
+    # when this file imports scripts/evaluate_apple.py. Restart it here, just before each
+    # attempt_worker call, so the budgets below measure the attempt, not the test session.
+    monkeypatch.setattr(module, "ENTRY_CLOCK", (time.time(), time.monotonic()))
     calls, predictions = [], []
     store = SimpleNamespace(state_schema=STATE_SCHEMA, manifest={"action_manifest": {"f": 1}})
     model = StateMetricModel()
