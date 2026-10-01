@@ -401,6 +401,7 @@ class _Recorder:
                 if lat.size
                 else None
             ),
+            "gr00t_latencies_s": lat.tolist(),
             "wall_s": time.time() - self.t0,
         }
         (self.out / "summary.json").write_text(json.dumps(summary, indent=2, default=str))
@@ -482,9 +483,17 @@ def main(argv: list[str]) -> None:
     result = {}
 
     def rollout_policy(env, policy, num_steps, num_episodes, language_instruction=None):
-        metrics = orig(Recorded(env), policy, num_steps, num_episodes, language_instruction)
-        result["metrics"] = metrics
-        return metrics
+        # Kit ends the process when the runner's app context closes, before any outer
+        # ``finally`` runs, so the summary is written here.
+        from isaaclab_arena.metrics.metrics_logger import metrics_to_plain_python_types
+
+        try:
+            metrics = orig(Recorded(env), policy, num_steps, num_episodes, language_instruction)
+            result["metrics"] = metrics
+            return metrics
+        finally:
+            m = result.get("metrics")
+            rec.close(metrics_to_plain_python_types(m) if m is not None else None)
 
     pr.rollout_policy = rollout_policy
     sys.argv = [RUNNER, *rargv]
@@ -493,10 +502,6 @@ def main(argv: list[str]) -> None:
     try:
         pr.main()
     finally:
-        from isaaclab_arena.metrics.metrics_logger import metrics_to_plain_python_types
-
-        m = result.get("metrics")
-        rec.close(metrics_to_plain_python_types(m) if m is not None else None)
         print("[gr00t-baseline] policy_runner returned", flush=True)
 
 
