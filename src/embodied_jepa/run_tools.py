@@ -223,6 +223,7 @@ class MemoryWatch(threading.Thread):
         self.min_disk_free = min_disk_free_bytes
         self.reason: str | None = None
         self.peak_rss = self.peak_pss = self.samples = self.peak_processes = 0
+        self.window_peak = 0  # the peak on ``measure`` since the last reset_window()
         self.min_disk_free_seen: int | None = None
         self._stop_event = threading.Event()
         self._lock = threading.Lock()
@@ -234,6 +235,7 @@ class MemoryWatch(threading.Thread):
             self.peak_rss = max(self.peak_rss, both["rss"])
             self.peak_pss = max(self.peak_pss, both["pss"])
             self.peak_processes = max(self.peak_processes, len(per))
+            self.window_peak = max(self.window_peak, both[self.measure])
             self.samples += 1
         if both[self.measure] > self.ceiling:
             self._trip(
@@ -252,6 +254,11 @@ class MemoryWatch(threading.Thread):
         if self.reason is None:
             self.reason = reason
             os.kill(os.getpid(), signal.SIGUSR1)
+
+    def reset_window(self) -> None:
+        """Start a new window for ``window_peak`` (a scale probe's own peak)."""
+        with self._lock:
+            self.window_peak = 0
 
     @property
     def peak(self) -> int:
@@ -484,12 +491,19 @@ def scale_probe(
     **kwargs,
 ) -> dict:
     """Run the stage's own function, ``stage_core(*args, probe=True, **kwargs)``, and require
-    the watch's peak to stay ``margin_gib`` below ``ceiling_gib`` (G-memory-margin).
+    the probe's memory peak to stay ``margin_gib`` below ``ceiling_gib`` (G-memory-margin).
 
     The probe must be the stage's code path at the stage's sizes (pass a :class:`CycledReader`
     in ``args``); a probe with its own copy of the stage steps drifts from the stage (TASK-074
-    A1). ``stage_core`` must accept a ``probe`` keyword. ``watch`` needs ``peak`` (bytes) and may
-    have ``sample()``. Returns the record; ``result`` is what ``stage_core`` returned."""
+    A1). Only the signature is checked (``stage_core`` must accept a ``probe`` keyword); that it
+    is the stage's own function is the caller's convention, which the runner's tests should pin.
+
+    The peak judged is the probe's own: with a watch that has ``reset_window()`` and
+    ``window_peak`` (:class:`MemoryWatch`), the window is reset before the call and read after it
+    (``peak_scope == "probe"``). A watch with only ``peak`` gives its cumulative peak since it
+    started (``peak_scope == "cumulative"``), which is an upper bound on the probe's. ``watch``
+    may have ``sample()``, which is called before and after. Returns the record; ``result`` is
+    what ``stage_core`` returned."""
     if "probe" in kwargs:
         raise TypeError("scale_probe passes probe=True itself")
     try:
@@ -502,16 +516,21 @@ def scale_probe(
         raise TypeError(f"{stage_core!r} has no probe keyword; it is not a stage core")
     started = time.monotonic()
     before = watch.sample() if hasattr(watch, "sample") else None
+    windowed = hasattr(watch, "reset_window") and hasattr(watch, "window_peak")
+    if windowed:
+        watch.reset_window()
     result = stage_core(*args, probe=True, **kwargs)
     if hasattr(watch, "sample"):
         watch.sample()
-    peak = watch.peak / GIB
+    peak = (watch.window_peak if windowed else watch.peak) / GIB
     limit = float(ceiling_gib) - float(margin_gib)
     record = {
         "stage_core": f"{getattr(stage_core, '__module__', '?')}."
         f"{getattr(stage_core, '__qualname__', repr(stage_core))}",
         "tree_gib_before": None if before is None else before.get(watch_measure(watch)) / GIB,
-        "stage_peak_tree_gib_so_far": peak,
+        "probe_peak_tree_gib": peak,
+        "peak_scope": "probe" if windowed else "cumulative",
+        "cumulative_peak_tree_gib": watch.peak / GIB,
         "ceiling_gib": float(ceiling_gib),
         "margin_gib": float(margin_gib),
         "within_margin": bool(peak <= limit),

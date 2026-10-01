@@ -335,3 +335,18 @@ def test_run_tools_imports_without_torch_or_mujoco():
     )
     env = os.environ | {"PYTHONPATH": str(ROOT / "src")}
     subprocess.run([sys.executable, "-c", code], check=True, env=env)
+
+
+def test_the_scale_probe_judges_its_own_peak_not_the_watchs_history():
+    """An earlier 13 GiB peak (before the probe) must not fail a probe that peaks at 9 GiB."""
+    values = [(13 * GIB, 13 * GIB), (GIB, GIB), (9 * GIB, 9 * GIB), (2 * GIB, 2 * GIB)]
+    watch = rt.MemoryWatch(20 * GIB, 60.0, sampler=_Sampler(values))
+    watch.sample()  # the history: 13 GiB
+
+    def core(reader, probe=False):
+        watch.sample()  # the probe's own peak: 9 GiB
+        return "ran"
+
+    record = rt.scale_probe(core, None, watch=watch, ceiling_gib=14, margin_gib=2)
+    assert record["peak_scope"] == "probe" and record["probe_peak_tree_gib"] == 9.0
+    assert record["cumulative_peak_tree_gib"] == 13.0 and record["within_margin"]

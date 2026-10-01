@@ -37,6 +37,8 @@ PINNED_EDGES = {
     "scripts/run_wm_critic_v2.py": {"run_first_policy_v2_m2.py"},
 }
 LOADERS = {"spec_from_file_location", "SourceFileLoader", "run_path", "run_module"}
+# import by name: a constant naming a script module is a load; a computed name cannot be checked
+NAME_IMPORTERS = {"import_module", "__import__"}
 
 
 def _script_names() -> set[str]:
@@ -69,11 +71,27 @@ def script_loads(path: Path) -> tuple[set[str], list[str]]:
             head = node.module.split(".")[0]
             if head in stems or head == "scripts":
                 loaded.add(f"{node.module.split('.')[-1]}.py")
+        elif isinstance(node, ast.Call) and _callee(node) in NAME_IMPORTERS:
+            arg = node.args[0] if node.args else None
+            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                parts = arg.value.split(".")
+                if parts[0] in stems or parts[0] == "scripts":
+                    loaded.add(f"{parts[-1]}.py")
+            else:
+                loaders.append(_callee(node))
         elif isinstance(node, ast.Attribute) and node.attr in LOADERS:
             loaders.append(node.attr)
         elif isinstance(node, ast.Name) and node.id in LOADERS:
             loaders.append(node.id)
     return loaded, loaders
+
+
+def _callee(call: ast.Call) -> str | None:
+    if isinstance(call.func, ast.Attribute):
+        return call.func.attr
+    if isinstance(call.func, ast.Name):
+        return call.func.id
+    return None
 
 
 def _runners() -> list[Path]:
@@ -120,6 +138,10 @@ def test_the_detector_catches_each_form(tmp_path, monkeypatch):
         "import run_old\n": ({"run_old.py"}, False),
         "from helper import thing\n": ({"helper.py"}, False),
         "import runpy\nrunpy.run_path(p)\n": (set(), True),
+        'import importlib\nm = importlib.import_module("run_old")\n': ({"run_old.py"}, False),
+        'm = __import__("helper")\n': ({"helper.py"}, False),
+        "m = importlib.import_module(name)\n": (set(), True),
+        'm = importlib.import_module("torch")\n': (set(), False),
         "from embodied_jepa import run_tools\n": (set(), False),
         '"""Unlike run_old.py, this runner loads nothing."""\n': (set(), False),
     }

@@ -22,4 +22,5 @@ dist/
 /third_party
 /third_party/
 /configs/local*.yaml
+/assets/isaac
 /assets/isaac/

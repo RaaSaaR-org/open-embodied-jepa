@@ -7,7 +7,7 @@
 # present, assets/isaac (/oej/usd, converted USDs). Records the image id and code
 # revision/status, and samples GPU memory every ~1 s (gpu_apps.csv, gpu_device.csv; sampled
 # peaks are lower bounds). GPU coordination is the machine-wide lock (audit F13): run it as
-# `scripts/gpu_run.sh [checks] -- scripts/isaac/run_isaac.sh ...` (or inside
+# `scripts/gpu_run.sh [checks] --container oej-isaac- -- scripts/isaac/run_isaac.sh ...` (or inside
 # `flock ~/.local/state/gpu/lock ...`). It does not take the lock itself, since a caller's
 # `flock` already holds it; started outside gpu_run.sh it prints a reminder. (Before 2026-10-02
 # it refused while a TASK-072 process name was running, which missed every gated run under

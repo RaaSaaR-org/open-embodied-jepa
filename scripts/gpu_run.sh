@@ -16,14 +16,32 @@
 #   --board            write the BOARD.md "Holder" section while the command runs
 #   --request TEXT     with --wait: add "- NAME: TEXT" under the BOARD.md "Requests" section
 #                      while waiting; the line is removed once the lock is taken or on exit
+#   --grace S          after forwarding a stop signal, SIGKILL the command's process group
+#                      when it is still alive S seconds later (default 30)
+#   --container P      after the command's group is gone, keep the lock until no running docker
+#                      container's name starts with P; after a stop signal, `docker stop` them
+#                      (use `--container oej-isaac-` for scripts/isaac/run_isaac.sh)
 #
 # It takes the machine-wide lock with flock on ~/.local/state/gpu/lock (the convention in
 # ~/.local/state/gpu/BOARD.md, shared with other projects' sessions), then, inside the lock,
 # checks free VRAM, GPU utilisation and optionally CPU load, logs the GPU's compute apps, and runs
 # the command with GPU_RUN_LOCKED=1 in its environment (run_tools.gpu_guard(require_lock=True)
-# checks it). The lock is held until the command exits. SIGTERM/SIGINT/SIGHUP to this script are
-# forwarded to the command as SIGTERM. BOARD.md is never written unless --board or --request is
-# given.
+# checks it).
+#
+# Process group and lock: the command runs in its own process group, without the lock's file
+# descriptor, so the lock is held by this script alone and is released when it exits. The script
+# exits only after every process in that group is gone (a background grandchild included), and
+# only then logs "end" and restores the board. SIGTERM/SIGINT/SIGHUP to this script are sent to
+# the whole group as SIGTERM, followed by SIGKILL after --grace seconds. Limits: a descendant
+# that leaves the group (setsid, a daemon) is neither waited for nor signalled, and a docker
+# container is not a descendant at all. `docker run` without a TTY proxies the TERM to the
+# container, but a SIGKILLed docker client leaves its container running on the GPU; --container
+# covers that (it waits, and after a stop signal runs `docker stop`). If gpu_run itself is
+# SIGKILLed, the lock is released at once while the group may still run, and any board lines it
+# wrote stay behind; they carry the tag "[gpu_run pid N]", so a stale line is recognisable.
+#
+# BOARD.md is never written unless --board or --request is given; every edit holds
+# BOARD.md.lock (a separate flock, not the GPU lock) and replaces the file atomically.
 #
 # Exit status: the command's; 75 when the lock is busy (or the wait timed out); 76 when a GPU or
 # load check refused; 2 for a usage error.
@@ -37,7 +55,8 @@ STATE=${GPU_STATE_DIR:-$HOME/.local/state/gpu}
 SMI=${NVIDIA_SMI:-nvidia-smi}
 LOCK=$STATE/lock BOARD=$STATE/BOARD.md
 MIN_FREE=4 MAX_UTIL=30 MAX_LOAD="" SAMPLES=3 GPU=0 WAIT=0 WAIT_TIMEOUT="" BOARD_HOLDER=0
-REQUEST="" WHO="oej:$(basename -- "$PWD")" LOG=""
+REQUEST="" WHO="oej:$(basename -- "$PWD")" LOG="" GRACE=30 CONTAINER=""
+DOCKER=${DOCKER:-docker}
 while [ $# -gt 0 ]; do
   case "$1" in
     --min-free-gib) MIN_FREE=${2:?}; shift 2 ;;
@@ -51,6 +70,8 @@ while [ $# -gt 0 ]; do
     --log) LOG=${2:?}; shift 2 ;;
     --board) BOARD_HOLDER=1; shift ;;
     --request) REQUEST=${2:?}; shift 2 ;;
+    --grace) GRACE=${2:?}; shift 2 ;;
+    --container) CONTAINER=${2:?}; shift 2 ;;
     --) shift; break ;;
     -h|--help) usage ;;
     *) echo "unknown option $1 (the command goes after --)" >&2; usage ;;
@@ -58,7 +79,7 @@ while [ $# -gt 0 ]; do
 done
 [ $# -gt 0 ] || { echo "no command given" >&2; usage; }
 [ -z "$REQUEST" ] || [ "$WAIT" = 1 ] || { echo "--request needs --wait" >&2; exit 2; }
-for n in "$MIN_FREE" "$MAX_UTIL" "$SAMPLES" "$GPU" ${MAX_LOAD:+"$MAX_LOAD"} ${WAIT_TIMEOUT:+"$WAIT_TIMEOUT"}; do
+for n in "$MIN_FREE" "$MAX_UTIL" "$SAMPLES" "$GPU" "$GRACE" ${MAX_LOAD:+"$MAX_LOAD"} ${WAIT_TIMEOUT:+"$WAIT_TIMEOUT"}; do
   [[ "$n" =~ ^[0-9]+([.][0-9]+)?$ ]] || { echo "not a number: $n" >&2; exit 2; }
 done
 LOG=${LOG:-$STATE/oej-gpu_run.log}
@@ -73,10 +94,13 @@ TAG="[gpu_run pid $$]"
 board_rewrite() {  # board_rewrite <awk program>: atomic rewrite of BOARD.md; values via B_* env
   local prog=$1
   [ -f "$BOARD" ] || { echo "no $BOARD; board not updated" >&2; return 0; }
-  local tmp
-  tmp=$(mktemp "$BOARD.XXXXXX")
-  chmod --reference="$BOARD" -- "$tmp" 2>/dev/null || true
-  awk "$prog" "$BOARD" > "$tmp" && mv -f -- "$tmp" "$BOARD" || rm -f -- "$tmp"
+  {
+    flock -w 10 8 || { echo "BOARD.md.lock busy; board not updated" >&2; return 0; }
+    local tmp
+    tmp=$(mktemp "$BOARD.XXXXXX")
+    chmod --reference="$BOARD" -- "$tmp" 2>/dev/null || true
+    awk "$prog" "$BOARD" > "$tmp" && mv -f -- "$tmp" "$BOARD" || rm -f -- "$tmp"
+  } 8>> "$BOARD.lock"
 }
 SECTION_SET='
   /^## / { if (insec) { printf "%s", ENVIRON["B_BODY"]; insec = 0 }
@@ -171,14 +195,52 @@ if [ "$BOARD_HOLDER" = 1 ]; then
   holder_set "- holder: $WHO $TAG"$'\n'"- job:$CMD"$'\n'"- start: $(now)"$'\n'"- log: $LOG"$'\n\n'
   HOLDER_ON=1
 fi
-forward() { [ -z "$CHILD" ] || kill -TERM "$CHILD" 2>/dev/null || true; }
+group_alive() { kill -0 -- "-$CHILD" 2>/dev/null; }
+STOPPED="" KILLER=""
+forward() {
+  STOPPED=${STOPPED:-$(date +%s)}
+  [ -n "$CHILD" ] || return 0
+  kill -TERM -- "-$CHILD" 2>/dev/null || true
+  if [ -z "$KILLER" ]; then  # SIGKILL the group if it outlives the grace
+    (
+      trap - TERM INT HUP
+      sleep "$GRACE"
+      if kill -0 -- "-$CHILD" 2>/dev/null; then
+        log "killed: $WHO group $CHILD still alive ${GRACE} s after the stop signal"
+        kill -KILL -- "-$CHILD" 2>/dev/null || true
+      fi
+    ) 9>&- &
+    KILLER=$!
+  fi
+}
 trap forward TERM INT HUP
-GPU_RUN_LOCKED=1 GPU_RUN_LOCK=$LOCK "$@" &
+set -m  # the command gets its own process group (its pgid is its pid)
+GPU_RUN_LOCKED=1 GPU_RUN_LOCK=$LOCK "$@" 9>&- &
 CHILD=$!
+set +m
+[ -z "$STOPPED" ] || forward  # a signal that arrived before the command started
 status=0
 while :; do
   wait "$CHILD" && status=0 || status=$?
   kill -0 "$CHILD" 2>/dev/null || break  # a forwarded signal interrupted wait; keep waiting
 done
+# the leader is gone; wait for the rest of its group (a background grandchild, a sampler, ...)
+while group_alive; do sleep 0.2; done
+if [ -n "$KILLER" ]; then kill "$KILLER" 2>/dev/null || true; wait "$KILLER" 2>/dev/null || true; fi
+if [ -n "$CONTAINER" ]; then
+  containers() { "$DOCKER" ps -q --filter "name=^$CONTAINER" 2>/dev/null; }
+  if ! "$DOCKER" ps -q > /dev/null 2>&1; then
+    log "warning: cannot run '$DOCKER ps'; containers named $CONTAINER* not verified"
+    echo "warning: cannot verify that containers named $CONTAINER* have stopped" >&2
+  else
+    while [ -n "$(containers)" ]; do
+      if [ -n "$STOPPED" ]; then
+        log "stopping containers: $(containers | tr '\n' ' ')"
+        containers | xargs "$DOCKER" stop -t 10 > /dev/null 2>&1 || true
+      fi
+      sleep 1
+    done
+  fi
+fi
 log "end: $WHO pid $$ status $status after $(( $(date +%s) - START )) s"
 exit "$status"

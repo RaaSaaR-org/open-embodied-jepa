@@ -205,6 +205,154 @@ def test_gpu_run_forwards_sigterm_to_the_command(gpu_env):
     assert "status 143" in log.read_text()
 
 
+def _lock_free(gpu_env) -> bool:
+    code = (
+        "import fcntl, sys; f = open(sys.argv[1], 'a')\n"
+        "try:\n fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)\nexcept BlockingIOError:\n"
+        " sys.exit(1)"
+    )
+    return (
+        subprocess.run([sys.executable, "-c", code, str(gpu_env["state"] / "lock")]).returncode == 0
+    )
+
+
+def _alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    try:  # a zombie is gone for our purposes
+        return Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0] != "Z"
+    except FileNotFoundError:
+        return True
+
+
+def _wait_file(path: Path, seconds: float = 20) -> str:
+    deadline = time.monotonic() + seconds
+    while not (path.exists() and path.read_text().strip()):
+        assert time.monotonic() < deadline, f"{path} never appeared"
+        time.sleep(0.05)
+    return path.read_text()
+
+
+def test_a_grandchild_that_outlives_its_parent_keeps_gpu_run_and_the_lock(gpu_env):
+    """Review B1: ``sh -c 'sleep & echo'`` must not leave the lock held after gpu_run exits."""
+    marker = gpu_env["tmp"] / "grandchild-done"
+    started = time.monotonic()
+    out = _gpu_run(gpu_env, "--", "sh", "-c", f"(sleep 1.5; touch '{marker}') & echo started")
+    assert out.returncode == 0, out.stderr
+    assert time.monotonic() - started >= 1.4 and marker.exists()  # waited for the grandchild
+    assert _lock_free(gpu_env)  # released the moment gpu_run exited
+    log = (gpu_env["state"] / "oej-gpu_run.log").read_text()
+    assert log.index("end:") > log.index("start:")
+
+
+RUN_ISAAC_SHAPE = """#!/usr/bin/env bash
+# shaped like scripts/isaac/run_isaac.sh: background samplers, a foreground "docker run"
+set -euo pipefail
+sleep 300 & SAMPLE_APPS=$!
+sleep 300 & SAMPLE_DEV=$!
+trap 'kill "$SAMPLE_APPS" "$SAMPLE_DEV" 2>/dev/null || true' EXIT
+echo "$SAMPLE_APPS $SAMPLE_DEV" > "$1/samplers"
+bash -c 'echo $$ > "$0/client"; exec sleep 300' "$1"
+"""
+
+
+def test_sigterm_reaches_a_run_isaac_shaped_wrapper_and_its_foreground_child(gpu_env):
+    wrapper = gpu_env["tmp"] / "fake_run_isaac.sh"
+    wrapper.write_text(RUN_ISAAC_SHAPE)
+    wrapper.chmod(0o755)
+    proc = subprocess.Popen(
+        [BASH, str(GPU_RUN), "--samples", "1", "--", str(wrapper), str(gpu_env["tmp"])],
+        env=gpu_env["env"],
+        cwd=gpu_env["tmp"],
+    )
+    client = int(_wait_file(gpu_env["tmp"] / "client"))
+    samplers = [int(p) for p in _wait_file(gpu_env["tmp"] / "samplers").split()]
+    assert not _lock_free(gpu_env)
+    proc.terminate()
+    assert proc.wait(timeout=30) != 0
+    for pid in (client, *samplers):
+        assert not _alive(pid), pid  # the whole group got the TERM, none is orphaned
+    assert _lock_free(gpu_env)
+    assert "end:" in (gpu_env["state"] / "oej-gpu_run.log").read_text()
+
+
+def test_a_child_that_ignores_sigterm_is_killed_after_the_grace(gpu_env):
+    pidfile = gpu_env["tmp"] / "stubborn"
+    script = f"trap '' TERM; echo $$ > '{pidfile}'; while :; do sleep 0.1; done"
+    proc = subprocess.Popen(
+        [BASH, str(GPU_RUN), "--samples", "1", "--grace", "1", "--", BASH, "-c", script],
+        env=gpu_env["env"],
+        cwd=gpu_env["tmp"],
+    )
+    pid = int(_wait_file(pidfile))
+    proc.terminate()
+    assert proc.wait(timeout=30) != 0
+    assert not _alive(pid) and _lock_free(gpu_env)
+    assert "killed:" in (gpu_env["state"] / "oej-gpu_run.log").read_text()
+
+
+FAKE_DOCKER = """#!/bin/sh
+# stand-in docker: a container "runs" while $STATE/container exists; stop removes it
+case "$1" in
+  ps) [ -f "$FAKE_DOCKER_STATE/container" ] && [ "$2" = "-q" ] && [ "$#" -gt 2 ] \
+        && echo abc123; exit 0 ;;
+  stop) echo "$@" >> "$FAKE_DOCKER_STATE/stopped"; rm -f "$FAKE_DOCKER_STATE/container" ;;
+esac
+"""
+
+
+def test_a_surviving_container_keeps_the_lock_and_is_stopped_after_a_signal(gpu_env):
+    docker = gpu_env["tmp"] / "bin" / "docker"
+    docker.write_text(FAKE_DOCKER)
+    docker.chmod(0o755)
+    (gpu_env["tmp"] / "container").write_text("running")
+    env = {"DOCKER": str(docker), "FAKE_DOCKER_STATE": str(gpu_env["tmp"])}
+    proc = subprocess.Popen(
+        [BASH, str(GPU_RUN), "--samples", "1", "--container", "oej-isaac-", "--"]
+        + [BASH, "-c", "sleep 300"],
+        env=gpu_env["env"] | env,
+        cwd=gpu_env["tmp"],
+    )
+    log = gpu_env["state"] / "oej-gpu_run.log"
+    deadline = time.monotonic() + 20
+    while not (log.exists() and "start:" in log.read_text()):
+        assert time.monotonic() < deadline
+        time.sleep(0.05)
+    proc.terminate()  # the client dies at once, the "container" does not
+    assert proc.wait(timeout=30) != 0
+    assert "stop -t 10 abc123" in (gpu_env["tmp"] / "stopped").read_text()
+    assert _lock_free(gpu_env)
+    text = log.read_text()
+    assert text.index("stopping containers") < text.index("end:")
+
+
+def test_concurrent_request_lines_are_not_lost(gpu_env):
+    """Review N2: two waiters edit BOARD.md under BOARD.md.lock; both lines appear."""
+    board = gpu_env["state"] / "BOARD.md"
+    holder = _hold_lock(gpu_env)
+    procs = [
+        subprocess.Popen(
+            [BASH, str(GPU_RUN), "--samples", "1", "--wait", "--who", f"w{i}"]
+            + ["--request", "test", "--", "true"],
+            env=gpu_env["env"],
+            cwd=gpu_env["tmp"],
+        )
+        for i in range(4)
+    ]
+    try:
+        deadline = time.monotonic() + 20
+        while sum(f"- w{i}: test" in board.read_text() for i in range(4)) < 4:
+            assert time.monotonic() < deadline, board.read_text()
+            time.sleep(0.05)
+    finally:
+        holder.kill()
+        holder.wait()
+    assert all(p.wait(timeout=60) == 0 for p in procs)
+    assert board.read_text() == BOARD
+
+
 def test_gpu_run_usage_errors(gpu_env):
     assert _gpu_run(gpu_env).returncode == 2
     assert _gpu_run(gpu_env, "--request", "x", "--", "true").returncode == 2
@@ -233,10 +381,7 @@ def repo(tmp_path):
     (main / "scripts").mkdir()
     for name in ("new_worktree.sh", "remove_worktree.sh"):
         shutil.copy2(ROOT / "scripts" / name, main / "scripts" / name)
-    (main / ".gitignore").write_text(
-        "/third_party\n/third_party/\n/data\n/data/\n/checkpoints\n/checkpoints/\n"
-        "/outputs\n/outputs/\n/assets/isaac/\n/assets/isaac\n"
-    )
+    shutil.copy2(ROOT / ".gitignore", main / ".gitignore")  # the repository's real rules
     (main / "README").write_text("x\n")
     _git(main, "add", ".")
     _git(main, "commit", "-m", "init")
@@ -244,6 +389,8 @@ def repo(tmp_path):
     (main / "third_party" / "lewm").mkdir(parents=True)
     (main / "third_party" / "lewm" / "keep").write_text("pinned\n")
     (main / "data" / "corpus").mkdir(parents=True)
+    (main / "assets" / "isaac").mkdir(parents=True)
+    (main / "assets" / "isaac" / "g1.usda").write_text("#usda\n")
     return main
 
 
@@ -264,6 +411,8 @@ def test_new_worktree_links_shared_inputs_and_never_outputs(repo, tmp_path):
     assert (wt / "third_party").is_symlink()
     assert (wt / "third_party" / "lewm" / "keep").read_text() == "pinned\n"
     assert (wt / "data").is_symlink() and not (wt / "checkpoints").exists()
+    assert (wt / "assets" / "isaac").is_symlink()
+    assert _git(wt, "status", "--porcelain") == ""  # the links are ignored (audit review B2)
     assert not (wt / "outputs").exists()
     assert _git(wt, "rev-parse", "HEAD") == _git(repo, "rev-parse", "origin/main")
     assert "check: skipped" in out.stdout
@@ -309,6 +458,24 @@ def test_remove_worktree_refuses_dirty_unpushed_or_evidence(repo, tmp_path):
     assert out.returncode == 0, out.stderr
     assert not wt.exists()
     assert (repo / "third_party" / "lewm" / "keep").read_text() == "pinned\n"  # target kept
+
+
+def test_remove_worktree_lists_other_ignored_content_and_needs_force(repo, tmp_path):
+    wt = tmp_path / "wt"
+    assert _run("new_worktree.sh", str(wt), "--no-sync", cwd=repo).returncode == 0
+    (wt / "wandb").mkdir()
+    (wt / "wandb" / "run.log").write_text("x")
+    (wt / ".venv" / "lib").mkdir(parents=True)  # a known cache: never a reason to refuse
+    (wt / "scripts" / "__pycache__").mkdir()
+    (wt / "scripts" / "__pycache__" / "x.pyc").write_text("")
+    out = _run("remove_worktree.sh", str(wt), "--dry-run", cwd=repo)
+    assert out.returncode == 1 and "wandb" in out.stderr
+    assert ".venv" not in out.stderr and "__pycache__" not in out.stderr
+    assert "third_party" not in out.stderr and "assets" not in out.stderr  # symlinks are fine
+    out = _run("remove_worktree.sh", str(wt), "--force-ignored", cwd=repo)
+    assert out.returncode == 0, out.stderr
+    assert not wt.exists()
+    assert (repo / "assets" / "isaac" / "g1.usda").exists()
 
 
 def test_remove_worktree_refuses_the_main_worktree(repo):
