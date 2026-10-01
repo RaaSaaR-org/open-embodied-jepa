@@ -206,3 +206,23 @@ def v2_rest_height(robot):
         + sim.object_support_height
         - (sim.model.body("plate").pos[2] - ae.OUR_PLATE_BASE_HALF)
     )
+
+
+def test_gravity_offset_holds_the_arm_with_arena_gains():
+    pytest.importorskip("mujoco")
+    from embodied_jepa.simulation import MuJoCoSimulation
+
+    sim = MuJoCoSimulation(object_kind="apple", container_kind="plate", render=False)
+    names = list(sim.joint_names)
+    kp = ae.upper_body_kp(names)
+    assert kp[names.index("right_shoulder_pitch_joint")] == 100.0
+    assert kp[names.index("right_wrist_yaw_joint")] == 20.0
+    assert kp[names.index("left_hand_index_0_joint")] == 4.0
+    assert kp[names.index("left_knee_joint")] == 0.0 and kp[names.index("waist_yaw_joint")] == 0.0
+    sim.data.qpos[sim.qadr[names.index("right_shoulder_pitch_joint")]] = -0.8  # arm forward
+    sim.mj.mj_forward(sim.model, sim.data)
+    off = ae.gravity_offset(sim)
+    bias = sim.data.qfrc_bias[sim.vadr]
+    i = names.index("right_shoulder_pitch_joint")
+    assert abs(off[i]) > 1e-3 and off[i] * kp[i] == pytest.approx(bias[i])
+    assert off[names.index("left_knee_joint")] == 0.0

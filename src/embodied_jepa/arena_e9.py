@@ -43,6 +43,18 @@ ARENA_DT = 0.02  # 50 Hz (sim dt 0.005, decimation 4)
 COMMAND_DT = 0.05  # 20 Hz
 COMMAND_STEPS = (2, 3)  # Arena steps per command, alternately: 0.04 s + 0.06 s = 2 x 0.05 s
 HAND_FORCE_CONTACT_N = 0.0  # any reported apple-hand force counts as contact
+# Arena's IdealPDActuator stiffness (N m/rad) for the upper body (read back in arena-probe-2;
+# isaaclab_arena g1 embodiment cfg). Used only by the opt-in gravity offset.
+ARENA_UPPER_KP = {
+    "shoulder_pitch": 100.0,
+    "shoulder_roll": 100.0,
+    "shoulder_yaw": 40.0,
+    "elbow": 40.0,
+    "wrist_roll": 20.0,
+    "wrist_pitch": 20.0,
+    "wrist_yaw": 20.0,
+    "hand_": 4.0,
+}
 
 
 def arena_steps(command_index: int) -> int:
@@ -199,6 +211,7 @@ def mirror_state(raw: dict, *, arena_names, mirror_names, time: float) -> dict:
     hand = raw.get("apple_hand_force_n")
     return {
         "time": float(time),
+        "gravity": frame.vector([0.0, 0.0, -9.81]).tolist(),
         "q": reorder(raw["q"], arena_names, mirror_names).tolist(),
         "qd": reorder(raw["qd"], arena_names, mirror_names).tolist(),
         "apple_pos": frame.point(com[:3]).tolist(),
@@ -224,6 +237,8 @@ class ArenaMirrorSimulation(ie.MirrorSimulation):
     layout_error_m: dict | None = None
 
     def _apply(self, state: dict) -> None:
+        if state.get("gravity") is not None:  # Arena's gravity in its pelvis frame
+            self.model.opt.gravity[:] = state["gravity"]
         if state.get("hand_contact") is None:
             state = {**state, "hand_contact": False, "_geometric_hand": True}
         super()._apply(state)
@@ -247,8 +262,34 @@ class ArenaMirrorSimulation(ie.MirrorSimulation):
         self.targets[:] = self.data.qpos[self.qadr]
 
 
-def make_arena_mirror_robot(endpoint, *, render=False):
-    """``G1Embodiment`` over a v2 ``ArenaMirrorSimulation`` (as ``isaac_e9.make_mirror_robot``)."""
+def upper_body_kp(names) -> np.ndarray:
+    """Arena's PD stiffness per joint (0 for legs and waist, which the WBC drives)."""
+    out = np.zeros(len(names))
+    for i, n in enumerate(names):
+        for key, kp in ARENA_UPPER_KP.items():
+            if key in n:
+                out[i] = kp
+    return out
+
+
+def gravity_offset(sim) -> np.ndarray:
+    """Position-target offsets that make Arena's PD hold the arm and hand against gravity.
+
+    Our MuJoCo actuator is PD plus bias compensation (``MuJoCoSimulation``: torque =
+    kp (target - q) - kd qd + qfrc_bias); Arena's ``IdealPDActuator`` has no bias term, so the
+    same targets sag. Adding ``qfrc_bias / kp_arena`` to the target gives Arena's PD the same
+    holding torque. The bias is our MJCF's, at Arena's joint state, with gravity in Arena's
+    pelvis frame (``mirror_state``'s ``gravity``); legs and waist get no offset."""
+    kp = upper_body_kp(sim.joint_names)
+    bias = np.asarray(sim.data.qfrc_bias[sim.vadr], float)
+    return np.divide(bias, kp, out=np.zeros_like(bias), where=kp > 0)
+
+
+def make_arena_mirror_robot(endpoint, *, render=False, gravity_offset_targets=False):
+    """``G1Embodiment`` over a v2 ``ArenaMirrorSimulation`` (as ``isaac_e9.make_mirror_robot``).
+
+    ``gravity_offset_targets`` adds ``gravity_offset`` to every command sent to Arena (the
+    mirror and e9 still see and record the unshifted targets)."""
     from embodied_jepa import apple_to_plate_v2 as v2
     from embodied_jepa import first_policy as fp
     from embodied_jepa.embodiment import G1Embodiment
@@ -262,6 +303,8 @@ def make_arena_mirror_robot(endpoint, *, render=False):
         height=fp.IMAGE_SIZE,
     )
     scene = v2.apply_v2_scene(sim.model)  # geometry for contact detection only
+    if gravity_offset_targets:
+        endpoint.feedforward = lambda: gravity_offset(sim)
     return G1Embodiment(sim), scene
 
 
@@ -289,6 +332,8 @@ class ArenaEndpoint:
         self.records: list[dict] = []
         self.reset_info: dict = {}
         self._hold = None
+        self.feedforward = None  # optional: () -> offsets added to each command's targets
+        self.offsets: list[np.ndarray] = []
 
     def _state(self, raw) -> dict:
         return mirror_state(
@@ -317,7 +362,7 @@ class ArenaEndpoint:
             steps=self.place_steps,
             joint_positions=by_name,
         )
-        self.commands, self.time, self.records = 0, 0.0, []
+        self.commands, self.time, self.records, self.offsets = 0, 0.0, [], []
         self._hold = action
         self.reset_info = {
             "seed": int(seed),
@@ -336,6 +381,11 @@ class ArenaEndpoint:
                 "state": self._state(self.call("read")["raw"]),
             }
         n = arena_steps(self.commands)
+        targets = np.asarray(targets, float)
+        if self.feedforward is not None:
+            offset = np.asarray(self.feedforward(), float)
+            self.offsets.append(offset)
+            targets = targets + offset
         action = command_action(targets, self.mirror_names, self.arena_names)
         reply = self.call("step", action=action.tolist(), steps=n)
         self.commands += 1

@@ -304,7 +304,9 @@ def cmd_arena(args) -> int:
         endpoint = ae.ArenaEndpoint(
             conn.call, mirror_names, settle_steps=args.settle_steps, place_steps=args.place_steps
         )
-        robot, scene = ae.make_arena_mirror_robot(endpoint, render=False)
+        robot, scene = ae.make_arena_mirror_robot(
+            endpoint, render=False, gravity_offset_targets=args.gravity_offset
+        )
         recorder = ie.StepRecorder(robot)
         bounds = rt.configured_bounds()
         first = tasks[0]
@@ -348,6 +350,7 @@ def cmd_arena(args) -> int:
                     args.output / f"arena_{task['key']}.npz",
                     **arrays,
                     **records_arrays(endpoint.records),
+                    arena_target_offsets=np.asarray(endpoint.offsets, float),
                 )
                 row["arena"] = {"ok": True, **summary}
             except Exception as error:  # noqa: BLE001 - recorded, next attempt
@@ -396,6 +399,7 @@ def cmd_arena(args) -> int:
         "hello": endpoint.hello if endpoint else None,
         "mirror_scene": scene,
         "calibration": calibration,
+        "gravity_offset": bool(args.gravity_offset),
         "settle_steps": args.settle_steps,
         "place_steps": args.place_steps,
         "server_timing": timing,
@@ -434,6 +438,11 @@ def main() -> int:
     p.add_argument("--plate_height", type=float, default=0.024, help="plate AABB height, m")
     p.add_argument("--clearance", type=float, default=0.01)
     p.add_argument("--connect_timeout", type=float, default=1800.0)
+    p.add_argument(
+        "--gravity_offset",
+        action="store_true",
+        help="add qfrc_bias / kp_arena to each arm and hand target (arena_e9.gravity_offset)",
+    )
     args = parser.parse_args()
     return {"kinematics": cmd_kinematics, "arena": cmd_arena}[args.cmd](args)
 
