@@ -16,7 +16,8 @@ any view, so the protocol's next step is "a task or condition change" (§7).
 - **R_full and R_pix fail as well.** No view passes B. The best value is R_pix on overview 224:
   c_upper 2.022 cm, with an upper bound of 0.867 on its ratio to the clock prior.
 - **Every view fails A3**: none of them beats a clock prior that reads no image (median 2.350 cm).
-  A3 does not depend on τ, so under the frozen admission rule no value of τ would admit any view.
+  A3 does not depend on τ, so, for the frozen R_off as fitted, no value of τ would admit any view
+  under the frozen admission rule.
   The sensitivity row admits nothing at 0.5 or at 1.5 cm.
 - **A reported-only decomposition** (§4.1's plate and apple target readouts, which gate nothing)
   points to where the error sits. The same pooled-token ridge reads the **plate** position to a
@@ -212,14 +213,17 @@ they are the same for every view.
 - The τ-curve prediction maps each window's error to the measured success fraction. It is
   optimistic above 5 cm, which maps to 8/32. It gives **16.1–18.6 of 32** across the views,
   against the 28/32 bar.
-- No signed mean is distinguishable from zero: every interval contains 0. So the error is
-  spread, not a constant offset that could be calibrated away.
+- No pooled signed mean is distinguishable from zero: every interval contains 0. So the error is
+  not a single constant offset across windows. A zero pooled mean does not rule out a bias that
+  depends on the condition (for example on the move's direction; τ is anisotropic in y), which
+  was not measured.
 
 ### 3.2 The sensitivity row
 
 With A1–A4 unchanged, the views admitted would be: at τ = 0.5 cm, **none**; at τ = 1.5 cm,
 **none**. A3 fails on every view and does not depend on τ, so no τ would admit a view under the
-frozen rule. This is a property of the rule, derived here; it is not a separate computation.
+frozen rule. This is a property of the frozen R_off as fitted and of the rule, derived here; it is
+not a separate computation.
 
 ### 3.3 Subsets: shifted and unshifted roots (reported, not gated)
 
@@ -234,8 +238,9 @@ frozen rule. This is a property of the rule, derived here; it is not a separate 
 | overview224 | shifted | 652 / 160 | 2.931 [2.700, 3.176] | 2.233 [2.064, 2.442] | 2.228 [2.036, 2.427] |
 | overview224 | unshifted | 263 / 58 | 3.969 [3.554, 4.358] | 3.454 [3.123, 3.857] | 3.021 [2.535, 3.442] |
 
-On the shifted roots, which are τ's kind of condition, R_off is still at 2.3–3.0 cm, and no view
-is below the clock prior's 2.23 cm.
+On the shifted roots, which are τ's kind of condition, R_off is still at 2.3–3.0 cm in median, and no view's
+median is below the clock prior's median of 2.23 cm. On the hand crop the intervals overlap
+(2.309 [2.165, 2.496] against 2.228 [2.036, 2.427]).
 
 ### 3.4 Representation checks and what the reported readouts suggest (descriptive, not gates)
 
@@ -244,8 +249,10 @@ is below the clock prior's 2.23 cm.
   on the hand crop. A4 passes on every view. A4 is necessary, not sufficient (§9b).
 - **The apple contributes little to the pixel readout.** Hiding the apple barely moves R_pix
   (onboard 112: 2.189 to 2.218 cm; overview 224: 1.840 to 1.956 cm). It does move R_off and
-  R_full a lot. R_pix's offset reading therefore comes from the plate and the arm, not from
-  seeing the apple.
+  R_full a lot. This supports that R_pix's offset reading does not come from seeing the
+  apple. That it comes from the plate and, likely, the arm is inferred, not measured: the
+  plate-hidden rise is consistent with it, but A4 is necessary, not sufficient (§9b), and the
+  arm's contribution was not isolated.
 - **The offset error follows the apple term.** The same pooled-token ridge, fitted to the plate
   position or to the apple position instead of the offset, reads them as follows:
   - the **plate** to a median of 0.493, 0.510, 0.682 and 0.550 cm (upper bounds 0.511–0.721);
@@ -278,10 +285,13 @@ is below the clock prior's 2.23 cm.
   onboard 112, onboard 224 and overview 224, R_off fitted on 50 % of each fold's training roots
   has a *lower* median error than the one fitted on 100 %, and the interval excludes zero. On the
   hand crop, 25 → 50 % fell (0.609 [0.331, 0.832]) but 50 → 100 % did not detectably fall.
-- This reversal is an anomaly, recorded without an explanation. One untested candidate: λ is
-  chosen by inner-CV MSE over all fit rows (every 8th band frame from 384 to 560), not by the
-  moving-window median error that is reported. In any case, a larger corpus of the same kind
-  (candidate (c)) is not indicated.
+- This reversal is an anomaly, recorded without an explanation. It hints that R_off's λ
+  selection may not track the reported error: λ is chosen by inner-CV MSE over all fit rows
+  (every 8th band frame from 384 to 560), not by the moving-window median error (untested). On
+  the hand crop the 50 % fit's median, 2.300 cm, is even below the clock prior's 2.350 cm.
+- **The frozen rule does not select candidate (c), a larger corpus.** The reversal makes the curve
+  uninformative about data scaling; it is not evidence against more data. It does not change the
+  row: every learning-curve median is ≥ 2.30 cm, far from τ = 1.0 cm.
 
 ### 3.6 Comparison with TASK-074's reference numbers (descriptive)
 
@@ -290,7 +300,9 @@ the reference readout read 2.872 cm against a clock prior of 3.123 cm. On this s
 cross-fitted windows, the same view reads 3.232 cm against 2.350 cm. The window set differs
 (218 roots instead of 22), as do the fit (the dual form on four of five folds, about 202 roots,
 instead of the primal form on 225 train roots) and the clock prior's fit set. On the larger
-window set, the clock prior that reads no image is **better** than every R_off. TASK-074's small
+window set, the clock prior that reads no image is **better in median** than every R_off. It is
+detectably better (ratio lower bound > 1) on onboard 112, onboard 224 and overview 224; on the
+hand crop the ratio R_off / clock is 1.056 [0.962, 1.145], whose interval includes 1. TASK-074's small
 margin over the clock prior (0.25 cm) does not hold on this cohort.
 
 ## 4. What OBS-NONE shows, stated precisely
@@ -370,7 +382,7 @@ of a different kind.
   it scored 31/32 (9 cm) and 30/32 (12 cm) in closed loop. That was a development probe on P-truth
   frames, not a gated result.
 
-## 7. Next-step options (for the coordinator to decide)
+## 7. Next-step options (for the owner, or Claude under the owner's delegation, to decide)
 
 The applicable entry is "a task or condition change" (§5). The options below are concrete
 candidates. For each, it says whether the clause permits it, how it moves towards a LeWM-driven
@@ -388,8 +400,8 @@ task's measured stage times (τ: 288 attempts in 265 s on 6 workers; readouts: a
 - **Does the clause permit it?** The perception-twin closed loop is not a LeWM world-model task,
   so the clause does not close it. It runs no world model. A later *LeWM* task built on a plate
   target would change the task interface: the quantity changes from the offset to the plate. The
-  coordinator must rule explicitly whether that counts as "a task change" under §7. It is none of
-  the clause's other two kinds (a new view, a new readout family), and it rests partly on a
+  owner, or Claude under the owner's delegation of 2026-09-30, must rule explicitly whether that
+  counts as "a task change" under §7. It is none of the clause's other two kinds (a new view, a new readout family), and it rests partly on a
   reported-only number, so it must not be presented as a silent reopening.
 - **How it moves towards LeWM.** It would give the first gated, image-in-the-loop place on v2
   with a frozen encoder: the perception baseline (TASK-074's T bar) that any LeWM place planner
@@ -414,16 +426,22 @@ task's measured stage times (τ: 288 attempts in 265 s on 6 workers; readouts: a
   the offset quantity, not the camera. A fail despite a 0.5 cm median plate reading points at
   per-decision variance, tails or τ's anisotropy, which leads to Option 2.
 
-### Option 2: closed-loop correction at the place (a task change to the primitive)
+### Option 2: closed-loop correction at the place (a new place primitive)
 
 - **What.** Give e9's place primitive its own local feedback, so the upstream target only needs
   to land within the correction's capture radius. The feedback could be contact-triggered release
   plus a short local visual servo on the hand crop, or on contact.
-- **Does the clause permit it?** Yes: it is a task change (a different place primitive).
-- **How it moves towards LeWM.** It separates a coarse target, which a LeWM planner supplies,
-  from fine precision, which the local loop supplies. The LeWM bar becomes the capture radius
-  instead of 1 cm. **Caveat:** the clock prior already reads 2.35 cm with no image. If the
-  capture radius exceeds about 2.5 cm, an image-free prior would suffice, and the LeWM part
+- **Does the clause permit it?** Developing and measuring the corrected place primitive (with
+  its own τ curve) is not a LeWM world-model task, so the clause does not close it. The protocol
+  does not classify a new place primitive as "a task or condition change": `apple-to-plate-v2`
+  and TASK-074's condition stay the same, and the primitive is part of the solution (changing it
+  changes τ). Whether a later LeWM task built on it counts as "a task change" under §7 needs the
+  same explicit ruling as Option 1, by the owner, or Claude under the owner's delegation of
+  2026-09-30. It must not be presented as a silent reopening.
+- **How it moves towards LeWM.** It separates a coarse target from fine precision, which the
+  local loop supplies. If a later LeWM task is ruled admissible, a LeWM planner could supply the
+  coarse target, with its bar set by the capture radius instead of 1 cm.
+  **Caveat:** the clock prior already reads 2.35 cm with no image. If the capture radius exceeds about 2.5 cm, an image-free prior would suffice, and the LeWM part
   would not be tested. The condition then needs targets that a prior cannot guess.
 - **First decisive experiment.** Re-measure the τ curve (levels 0–5 cm, 32 development resets
   per level) with the corrected primitive. It passes if τ_servo exceeds every R_off c_upper,
@@ -435,8 +453,9 @@ task's measured stage times (τ: 288 attempts in 265 s on 6 workers; readouts: a
 
 - **What.** Enlarge the plate, or change the move magnitude or direction (τ is anisotropic: +y
   tolerated about 2 cm), so that τ exceeds the readout ceiling.
-- **Does the clause permit it?** Yes: it is a condition change, though it needs a v2 scene
-  variant, reviewed as a separate benchmark.
+- **Does the clause permit it?** A different move magnitude or direction is plainly a condition
+  change. A larger plate is a scene or task variant of v2, which needs its own review as a
+  separate benchmark.
 - **How it moves towards LeWM.** Weakly. A3 fails on every view independent of τ (§3.2), so a
   larger τ alone admits nothing under the frozen admission. A condition with τ ≳ 2.4 cm would
   also let the image-free clock prior succeed, so vision, and with it LeWM, would not be
@@ -451,8 +470,8 @@ task's measured stage times (τ: 288 attempts in 265 s on 6 workers; readouts: a
 - **What.** An MLP or attention head over the full tokens, or over stacked frames from the six
   decisions, trained on the same 253 roots with the same cross-fitting and gates.
 - **Does the clause permit it?** The scope names "a new readout family" as new evidence of a
-  different kind. It is not, however, the next step that §7's table names for a flat curve. The
-  coordinator must rule. Fine-tuning the encoder on this corpus would come close to TASK-062's
+  different kind. It is not, however, the next step that §7's table names for a flat curve.
+  The owner, or Claude under the owner's delegation of 2026-09-30, must rule. Fine-tuning the encoder on this corpus would come close to TASK-062's
   closed in-corpus encoder-training line.
 - **How it moves towards LeWM.** If it passed, the TASK-074 formulation (the offset cost) would
   become feasible again on an onboard view. **Evidence against:** RBF kernel ridge is already

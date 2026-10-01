@@ -75,7 +75,8 @@ view.
 - **No view is admitted.** The R_off c_upper values are: hand crop 2.655, onboard 112 3.394,
   onboard 224 3.321 and overview 224 3.438 cm, against τ = 1.0 cm.
 - **A3 fails on every view.** No pooled-token readout beats a clock prior that reads no image
-  (2.350 cm). So no τ would admit a view under the frozen rule, and nothing is admitted at 0.5 or
+  (2.350 cm; in median, and detectably on three of four views). So, for the frozen R_off as
+  fitted, no τ would admit a view under the frozen rule, and nothing is admitted at 0.5 or
   1.5 cm.
 - **The representation checks fail too.** R_full and R_pix fail B on every view. The best value
   is R_pix on overview 224, at c_upper 2.022 cm.
@@ -91,8 +92,10 @@ view.
   0.49–0.68 cm and the apple position to 2.2–3.1 cm. The offset error tracks the apple term.
 - **Next:** "a task or condition change" (§7). The results document lists four options. It
   recommends a gated perception-twin closed loop first: the place aimed at the frozen-DINOv2
-  *plate* readout, with no world model. That choice is the coordinator's. Whether a later LeWM
-  task on a plate target counts as a "task change" under the clause needs an explicit ruling.
+  *plate* readout, with no world model. The choice is made by the owner,
+  or Claude under the owner's delegation of 2026-09-30. Whether a later LeWM task on a plate
+  target (or on a new place primitive) counts as a "task change" under the
+  clause needs an explicit ruling by them.
 - **Learned Apple→Plate on the frozen benchmark is still 0 successes.** No control line is
   primary.
 
