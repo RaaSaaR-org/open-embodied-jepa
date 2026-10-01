@@ -462,6 +462,19 @@
    "B4_plate_hidden": "its plate-hidden lower 95 % bound > tau"
   },
   "ratio_bar": 1.0,
+  "reported": {
+   "percentile": "the 87.5th percentile of R_off(V)'s window errors (cm), with a root-clustered interval: A1 bounds the median, so up to half the windows may err by more than tau",
+   "tau_curve_prediction": "each window's R_off(V) error e (cm) is mapped to the measured tau curve's counted-success fraction (TAU_MEASURED['counts'] / 32) by linear interpolation between the levels 0, 0.5, ..., 5 cm (numpy.interp); e > 5 cm takes the 5 cm fraction 8/32, an optimistic value there. The predicted successes out of 32 are 32 x the mean of the mapped values over the windows, with a root-clustered interval. It treats each window's readout error as a constant target error in a random direction, which is what tau measured",
+   "signed_mean": "the mean signed R_off(V) error (predicted minus true offset) along x and along y (cm), with root-clustered intervals; tau's tolerance depends on the direction (protocol \u00a79b: -y errors fail earlier than +y)",
+   "sensitivity": "the views that would be admitted (A1-A4 unchanged) at tau = 0.5 cm and at tau = 1.5 cm, the neighbouring levels; reported, never a row",
+   "extra_with_representation": "under OBS-EXTRA, the onboard views that pass B with R_full or R_pix are listed beside the row"
+  },
+  "reported_percentile": 87.5,
+  "sensitivity_tau_cm": [
+   0.5,
+   1.5
+  ],
+  "tau_remeasure": "on an OBS-ONBOARD or OBS-EXTRA outcome, tau is re-measured on fresh development seeds (same arm, condition, levels, direction rule and rule) before the next world-model task freezes; its bar B uses the re-measured tau (c_V <= B <= tau_re), and if tau_re < c_V no bar is feasible and that task is not frozen",
   "rows": [
    "V",
    "TAU-NONE",
@@ -531,7 +544,7 @@
    "results"
   ]
  },
- "frozen_sha256": "f6ed707cdca808e38e652f9dd2b742120bd17e74b1df5ef7c83223331c63d8a5",
+ "frozen_sha256": "a64b58331cebac08a95bf62ede6b9b834be188f7e30574887bf4ec0bc1c9ee24",
  "encoder_digests": {
   "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
   "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
@@ -717,7 +730,7 @@
   "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
   "scripts/run_lewm_planner_v2.py": "2d229a95b219b531eb18d84381c36c8db2294f4b2771e3bb0a75945ea087b94a",
-  "scripts/run_obs_ceiling_v2.py": "c317d69900a411de953713a8535be986eac2cd68a5ae33efd5a29edc4b64d5d0",
+  "scripts/run_obs_ceiling_v2.py": "bca518c14806f4b27ec0a11cb7b9c46b0bb3ea6c273b27048726398899f11958",
   "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
   "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
@@ -753,8 +766,8 @@
   "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
   "src/embodied_jepa/models/native.py": "95e112e13b0bf4d587fd5c35008e99b1e0a3759fb4f458c24bdd20304d0fadf3",
   "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
-  "src/embodied_jepa/obs_ceiling_v2.py": "1b74cc71941d09683c6eec9a5d214630e76f29ecbd36faecdbcaaac3b36e52f8",
-  "src/embodied_jepa/obs_ceiling_v2_offline.py": "f0110a8f0fb4603de4ff6a8efdb89734483a120a16db2b10aca78cca44d153f0",
+  "src/embodied_jepa/obs_ceiling_v2.py": "0ca412f94c838b39c275cddb75228eb02f75131cc9d652df8350dd9e932f7035",
+  "src/embodied_jepa/obs_ceiling_v2_offline.py": "fb93698cdabc0b4907bbcd42233b98cce68a5122fbb2efa98c0fb9e316dfdc29",
   "src/embodied_jepa/obs_ceiling_v2_runtime.py": "85383d4e4228cda0b258590b3774e16db2a10727cdaa06dd483d90dc342fd836",
   "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
   "src/embodied_jepa/place_planner.py": "1842d3e0ca31bfbe6c0568ab5a8d9c75c513e8b5a784ae7200c43101d270c846",
@@ -773,11 +786,11 @@
   "src/embodied_jepa/wm_critic_v2_offline.py": "7c2cd7bc39d1b87e46b4c4e92ab55bbe4a357ccc1dfccbf16e7a066a3f9c1cfa",
   "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
   "tests/test_lewm_planner_v2.py": "6392fe6e38e88bb6356dbfcae3f095402817cc08f869f9547d2046ca89e8ec1c",
-  "tests/test_obs_ceiling_v2.py": "fed078f4a2dc5e8c7f84d48d43d66cd00838bf51713a74e308185a061ceade7e",
+  "tests/test_obs_ceiling_v2.py": "74f8d95e0427678d5c74a1fbd1134e46f34db46e89ac91c41932ecb64862192b",
   "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "pins_note": "the protocol document and this manifest are not pinned: the smoke record is added after the frozen-code smokes, so that the smoked code stays the frozen code; TASK-074's pins are carried and every one of them is unchanged",
- "protocol_document_sha256": "60066b074b15e3012964d8ce0a4c7151907dd15157fcd023ca67d348a147ee11",
+ "protocol_document_sha256": "48f6aa50367fca11947dc68582b7a060cc5e51c73a89285680aa697b9b7e6939",
  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. TASK-075 is a measurement study and makes no control claim."
 }

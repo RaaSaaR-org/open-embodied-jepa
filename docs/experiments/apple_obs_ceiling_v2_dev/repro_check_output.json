@@ -1,0 +1,36 @@
+{
+ "repro_off": {
+  "got": {
+   "encoded_median_cm": 2.8722625765232763,
+   "persistence_median_cm": 4.350821813169937,
+   "clock_prior_median_cm": 3.1225649505050876,
+   "windows": 90,
+   "roots": 22,
+   "r_off_readout_sha256": "260af3f7567aadd03391edc96bd71132ce8b1fa4f791906cf6f596bbfd803157",
+   "r_off_rows": 5175,
+   "r_off_groups": 225
+  },
+  "matches": {
+   "encoded_median_cm": true,
+   "persistence_median_cm": true,
+   "clock_prior_median_cm": true,
+   "windows": true,
+   "roots": true,
+   "r_off_readout_sha256": true,
+   "r_off_rows": true,
+   "r_off_groups": true
+  },
+  "frames": 44781,
+  "seconds": 110.8400122000603
+ },
+ "gpu": {
+  "gpu_free_gib_at_start": 8.50830078125,
+  "gpu_total_gib": 15.44854736328125,
+  "gpu_process_cap_gib": 3.0,
+  "gpu_peak_reserved_gib": 0.951171875,
+  "gpu_peak_allocated_gib": 0.847419261932373
+ },
+ "test_split_decoded": false,
+ "decoded": 270,
+ "seconds": 111.52869486808777
+}

@@ -341,6 +341,7 @@ def cross_fit(data: ViewData, *, kernels: bool = True, log=None) -> dict:
     clusters = np.asarray([roots[i]["id"] for i in owner])
     return {
         "errors": errors,
+        "signed": {"r_off": 100.0 * (pred["r_off"] - truth)},
         "clusters": clusters,
         "shifted": np.asarray([bool(roots[i].get("shifted", False)) for i in owner]),
         "windows": [(roots[i]["id"], int(t)) for i, t in wins],
@@ -381,6 +382,22 @@ def view_statistics(fit: dict, *, kernels: bool = True, resamples=None) -> dict:
             "plate_hidden_lower": ci["r_off_plate_hidden"]["ci95"][0],
         },
         "learning_curve_still_falling": bool(difference["lc_0.5-r_off"]["ci95"][0] > 0),
+    }
+    # Reported only (oc.REPORTED): the 87.5th percentile, the tau-curve prediction, the signed
+    # mean error along x and y.
+    signed = np.asarray(fit.get("signed", {}).get("r_off", np.zeros((len(c), 2))), np.float64)
+    predicted = oc.tau_curve_fraction(e["r_off"]) * oc.TAU["resets"] if oc.TAU_MEASURED else None
+    out["reported"] = {
+        "r_off_percentile": oc.cluster_quantile_ci(
+            e["r_off"], c, oc.REPORTED_PERCENTILE, resamples=resamples
+        ),
+        "r_off_tau_curve_predicted_successes": (
+            None if predicted is None else oc.cluster_mean_ci(predicted, c, resamples=resamples)
+        ),
+        "r_off_signed_mean_cm": {
+            axis: oc.cluster_mean_ci(signed[:, j], c, resamples=resamples)
+            for j, axis in enumerate(("x", "y"))
+        },
     }
     # Reported only: the windows of roots whose plate moved at step 300 (tau's condition moves
     # it by 9 cm; the corpus by 3-12 cm) and of the unshifted roots.

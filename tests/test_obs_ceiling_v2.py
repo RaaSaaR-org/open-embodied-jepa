@@ -22,7 +22,7 @@ from embodied_jepa.contracts import ContractError
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = json.loads((ROOT / "benchmarks" / "manifests" / "apple-obs-ceiling-v2.json").read_text())
 T074 = json.loads((ROOT / "benchmarks" / "manifests" / "apple-lewm-planner-v2.json").read_text())
-FROZEN_SHA256 = "f6ed707cdca808e38e652f9dd2b742120bd17e74b1df5ef7c83223331c63d8a5"
+FROZEN_SHA256 = "a64b58331cebac08a95bf62ede6b9b834be188f7e30574887bf4ec0bc1c9ee24"
 
 
 def _load_script(name: str, relative: str):
@@ -366,6 +366,12 @@ def test_cross_fit_reads_every_moving_window_out_of_fold(monkeypatch):
             assert not (set(map(str, groups)) & held)
     stats = off.view_statistics(fit, resamples=200)
     assert set(stats["subsets"]) == {"unshifted"}  # the synthetic roots are unshifted
+    rep = stats["reported"]
+    assert rep["r_off_percentile"]["quantile"] == 87.5
+    assert 0 <= rep["r_off_tau_curve_predicted_successes"]["mean"] <= 32
+    assert set(rep["r_off_signed_mean_cm"]) == {"x", "y"}
+    assert fit["signed"]["r_off"].shape == (len(wins), 2)
+    assert np.allclose(np.linalg.norm(fit["signed"]["r_off"], axis=1), fit["errors"]["r_off"])
     assert set(stats["r_off"]) == {
         "c_upper",
         "floor_ratio_upper",
@@ -485,3 +491,31 @@ def test_cli_refuses_misused_flags(tmp_path):
     ):
         with pytest.raises(SystemExit):
             runner.main(argv)
+
+
+# ----- reported-only statistics (review of #117) ------------------------------------------------
+def test_the_tau_curve_mapping_interpolates_the_measured_counts():
+    f = oc.tau_curve_fraction([0.0, 0.75, 1.0, 1.25, 5.0, 9.0]) * 32
+    assert np.allclose(f, [31, 29.5, 28, 25, 8, 8])  # linear between levels; clamped beyond 5 cm
+    fake = {"counts": {str(float(x)): 32 for x in oc.TAU["levels_cm"]}}
+    assert np.allclose(oc.tau_curve_fraction([0.3, 7.0], fake), 1.0)
+    for key in ("percentile", "tau_curve_prediction", "signed_mean", "sensitivity"):
+        assert key in oc.REPORTED and key in oc.frozen_block()["reported"]
+    assert oc.SENSITIVITY_TAU_CM == (0.5, 1.5) and oc.REPORTED_PERCENTILE == 87.5
+    assert "re-measured" in oc.frozen_block()["tau_remeasure"]
+
+
+def test_cluster_mean_and_quantile():
+    clusters = np.repeat(np.arange(30), 3)
+    v = np.arange(90, dtype=float)
+    m = oc.cluster_mean_ci(v, clusters, resamples=300)
+    q = oc.cluster_quantile_ci(v, clusters, 87.5, resamples=300)
+    assert np.isclose(m["mean"], 44.5) and m["ci95"][0] < 44.5 < m["ci95"][1]
+    assert np.isclose(q["value"], np.percentile(v, 87.5)) and q["ci95"][0] <= q["ci95"][1]
+
+
+def test_obs_extra_lists_onboard_representation_passes_without_changing_the_row():
+    views = _views(admitted=("overview224",), representation=("onboard224",))
+    d = oc.decide(views, 2.0)
+    assert d["row"] == "OBS-EXTRA" and d["onboard_representation_passes"] == ["onboard224"]
+    assert oc.decide(_views(admitted=("onboard224",)), 2.0)["onboard_representation_passes"] is None

@@ -471,6 +471,75 @@ def cluster_median_difference(first, second, clusters, *, resamples: int | None 
     }
 
 
+def cluster_mean_ci(values, clusters, *, resamples: int | None = None) -> dict:
+    """The mean with a root-clustered bootstrap 95 % percentile interval."""
+    v = np.asarray(values, np.float64)
+    boot = _boot(
+        lambda i: np.mean(v[i]),
+        _groups(clusters),
+        resamples or BOOTSTRAP_RESAMPLES,
+        SEEDS["bootstrap"],
+    )
+    lo, hi = np.percentile(boot, [2.5, 97.5])
+    return {"mean": float(np.mean(v)), "ci95": [float(lo), float(hi)], "n": int(len(v))}
+
+
+def cluster_quantile_ci(values, clusters, q: float, *, resamples: int | None = None) -> dict:
+    """The q-th percentile with a root-clustered bootstrap 95 % percentile interval."""
+    v = np.asarray(values, np.float64)
+    boot = _boot(
+        lambda i: np.percentile(v[i], q),
+        _groups(clusters),
+        resamples or BOOTSTRAP_RESAMPLES,
+        SEEDS["bootstrap"],
+    )
+    lo, hi = np.percentile(boot, [2.5, 97.5])
+    return {
+        "quantile": float(q),
+        "value": float(np.percentile(v, q)),
+        "ci95": [float(lo), float(hi)],
+        "n": int(len(v)),
+    }
+
+
+# ----- reported-only statistics (fixed before any view number exists; they gate nothing) ----------
+REPORTED_PERCENTILE = 87.5
+SENSITIVITY_TAU_CM = (0.5, 1.5)
+REPORTED = {
+    "percentile": "the 87.5th percentile of R_off(V)'s window errors (cm), with a root-clustered "
+    "interval: A1 bounds the median, so up to half the windows may err by more than tau",
+    "tau_curve_prediction": "each window's R_off(V) error e (cm) is mapped to the measured tau "
+    "curve's counted-success fraction (TAU_MEASURED['counts'] / 32) by linear interpolation "
+    "between the levels 0, 0.5, ..., 5 cm (numpy.interp); e > 5 cm takes the 5 cm fraction 8/32, "
+    "an optimistic value there. The predicted successes out of 32 are 32 x the mean of the mapped "
+    "values over the windows, with a root-clustered interval. It treats each window's readout "
+    "error as a constant target error in a random direction, which is what tau measured",
+    "signed_mean": "the mean signed R_off(V) error (predicted minus true offset) along x and "
+    "along y (cm), with root-clustered intervals; tau's tolerance depends on the direction "
+    "(protocol §9b: -y errors fail earlier than +y)",
+    "sensitivity": "the views that would be admitted (A1-A4 unchanged) at tau = 0.5 cm and at "
+    "tau = 1.5 cm, the neighbouring levels; reported, never a row",
+    "extra_with_representation": "under OBS-EXTRA, the onboard views that pass B with R_full or "
+    "R_pix are listed beside the row",
+}
+
+
+TAU_REMEASURE = (
+    "on an OBS-ONBOARD or OBS-EXTRA outcome, tau is re-measured on fresh development seeds (same "
+    "arm, condition, levels, direction rule and rule) before the next world-model task freezes; "
+    "its bar B uses the re-measured tau (c_V <= B <= tau_re), and if tau_re < c_V no bar is "
+    "feasible and that task is not frozen"
+)
+
+
+def tau_curve_fraction(errors_cm, measured: dict | None = None) -> np.ndarray:
+    """REPORTED['tau_curve_prediction']: the measured success fraction at each error (cm)."""
+    m = measured if measured is not None else TAU_MEASURED
+    levels = np.asarray(TAU["levels_cm"], np.float64)
+    fraction = np.asarray([m["counts"][str(float(x))] for x in levels], np.float64) / TAU["resets"]
+    return np.interp(np.asarray(errors_cm, np.float64), levels, fraction)
+
+
 # ----- admission, rows and consequences -----------------------------------------------------------
 ADMISSION = {
     "A1_precision": "c_V = the upper 95 % bound of the root-clustered median error of R_off(V) "
@@ -553,6 +622,7 @@ def decide(views: dict, tau_cm: float | None, *, void: bool = False) -> dict:
         for v in VIEWS
     }
     onboard = [v for v in ONBOARD_VIEWS if adm[v]["admitted"]]
+    onboard_rep = [v for v in ONBOARD_VIEWS if any(r["passes"] for r in rep[v].values())]
     extra = [v for v in EXTRA_VIEWS if adm[v]["admitted"]]
     passing = [v for v in VIEWS if any(r["passes"] for r in rep[v].values())]
     if onboard:
@@ -571,6 +641,7 @@ def decide(views: dict, tau_cm: float | None, *, void: bool = False) -> dict:
         "representation": rep,
         "tau_cm": tau_cm,
         "consequence": ROW_CONSEQUENCES[row],
+        "onboard_representation_passes": onboard_rep if row == "OBS-EXTRA" else None,
         "abandonment_clause_fires": row in CLAUSE_ROWS,
     }
 
@@ -679,6 +750,10 @@ def frozen_block() -> dict:
             "admission": ADMISSION,
             "representation_pass": REPRESENTATION_PASS,
             "ratio_bar": RATIO_BAR,
+            "reported": REPORTED,
+            "reported_percentile": REPORTED_PERCENTILE,
+            "sensitivity_tau_cm": SENSITIVITY_TAU_CM,
+            "tau_remeasure": TAU_REMEASURE,
             "rows": ROWS,
             "clause_rows": CLAUSE_ROWS,
             "clause_scope": CLAUSE_SCOPE,

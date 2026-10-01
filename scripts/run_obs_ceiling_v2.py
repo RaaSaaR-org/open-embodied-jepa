@@ -802,6 +802,10 @@ def readouts_core(report, source, views, clock, *, smoke: bool, probe: bool = Fa
         if decision["row"] == "OBS-ONBOARD"
         else None
     )
+    inputs = {v: {k: stats[v][k] for k in ("r_off", "r_full", "r_pix")} for v in oc.VIEWS}
+    decision["sensitivity_admitted"] = {  # oc.REPORTED['sensitivity']: never a row
+        str(t): oc.decide(inputs, t)["admitted"] for t in oc.SENSITIVITY_TAU_CM
+    }
     decision["learning_curve_still_falling"] = {
         v: stats[v]["learning_curve_still_falling"] for v in oc.VIEWS
     }
@@ -822,6 +826,7 @@ def save_errors(folder: Path, errors: dict) -> dict:
             clusters=fit["clusters"],
             windows=np.asarray([f"{r}@{t}" for r, t in fit["windows"]]),
             **{f"e__{k}": v for k, v in fit["errors"].items()},
+            **{f"signed__{k}": v for k, v in fit.get("signed", {}).items()},
         )
         shas[view] = R65.sha256_file(path)
     return shas

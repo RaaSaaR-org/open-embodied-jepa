@@ -17,8 +17,10 @@ protocol was written; they are disclosed in §1.
   line is primary.
 - **What the best row, OBS-ONBOARD, would show:** that a frozen-DINOv2 readout of one onboard
   view reads the apple-minus-plate offset, during the carry and place of TASK-074's condition,
-  within the precision the place primitive tolerates, beats its random-init floor and a prior
-  that reads no image, and does not do so without the plate in view. It would license the next
+  with the upper 95 % bound of its *median* error at or below τ, the largest *constant* target
+  error the place tolerates; that it beats its random-init floor and a prior that reads no image;
+  and that it does not do so without the plate in view. A1 is necessary, not sufficient: up to
+  half the windows may err by more than τ (§6.1, the reported statistics of §6.4). It would license the next
   LeWM task on that view with a calibrated readout bar. It would not show that a world model
   predicts that offset.
 
@@ -157,7 +159,18 @@ tree (frozen sha `de3218c7…` before the record below was added), on the Linux 
 
 **τ = 1.0 cm** (`TAU_MEASURED`, frozen; the seeds are spent).
 - The one level-0 failure is seed 55028, where P-3's grasp failed (no latched grasp).
-- **τ sits exactly on the bar** (28/32 at 1.0 cm). One run per level, no interval (§9b).
+- **τ sits exactly on the bar** (28/32 at 1.0 cm). One run per level. Wilson 95 % intervals:
+  31/32 at 0.5 cm [0.84, 0.99]; **28/32 at 1.0 cm [0.72, 0.95]**; 22/32 at 1.5 cm [0.51, 0.82].
+  The curve is noisy: 22 at 1.5 cm against 23 at 2.0 cm, and **10 of the 32 seeds are
+  non-monotone** across the levels (a seed fails at one level and succeeds at a larger one).
+  A confidence-bounded rule could not define τ at n = 32 (even 31/32 has a lower bound of 0.84
+  < 0.875), so the point rule fixed before the run stays; §6.3 pre-commits a re-measurement.
+- **τ = 1.0 cm coincides numerically with TASK-074's uncalibrated O2 bar of 1.0 cm.** It was
+  measured here under the rule fixed before the run (at `26c64d9`), not carried from TASK-074.
+- **τ depends on the error's direction.** Excluding seed 55028 (its grasp fails at every
+  level), errors pointing to the robot's right (−y half) fail earlier: 16/19 against 12/12 (+y
+  half) at 1.0 cm, 11/19 against 11/12 at 1.5 cm, 12/19 against 11/12 at 2.0 cm. The uniform draw
+  put 20 of the 32 directions in the −y half. See §9b.
 - For comparison only (other conditions): TASK-070's e9 rested 30/32 at 1.0 cm plate error on its
   gated seeds and 59/64 (1.0 cm) and 57/64 (1.5 cm) on development seeds
   (`apple_to_plate_v2_expert.md`:3–5, 150–158); TASK-074's Probe A gave 6/32 for e9 aimed at a
@@ -295,7 +308,7 @@ for that stage. The coordinator is told before each stage starts.
 
 | | condition | why |
 |---|---|---|
-| **A1** precision | c_V := the upper 95 % bound of R_off(V)'s median error ≤ τ | the readout is at least as precise as the place needs, with its uncertainty counted against it |
+| **A1** precision | c_V := the upper 95 % bound of R_off(V)'s median error ≤ τ | it compares a median upper bound with a constant-error tolerance: necessary for the place, not sufficient (half the windows may exceed the median; the reported 87.5th percentile and τ-curve prediction of §6.4 show by how much) |
 | **A2** floor | the upper bound of median(e_R_off) / median(e_R_floor) < 1.0 | pretrained features carry the precision (TASK-063's lesson; in M2 the random-init floor tied P-3) |
 | **A3** clock prior | the upper bound of median(e_R_off) / median(e_clock) < 1.0 | the image adds over a prior that reads none (TASK-074: 2.872 against 3.123 cm) |
 | **A4** plate hidden | the lower bound of R_off(V)'s median error on the plate-hidden t + 16 frames > τ | without the plate in view, the readout does not reach the place precision; otherwise the precision comes from something else, for example e9's arm pose, which is aimed at the plate in this corpus |
@@ -322,6 +335,10 @@ X-2); A4 reuses τ.
 **B (`REPRESENTATION_PASS`)** is A1, A3 and A4 with R_full or R_pix in place of R_off. There is no
 floor for raw pixels, and R_full's floor is not fitted (§9b).
 
+**Under OBS-EXTRA** the onboard views that pass B with R_full or R_pix are listed beside the row
+(`decide`'s `onboard_representation_passes`), so the owner's hardware ruling sees the
+representation alternative too. The row order is unchanged.
+
 ### 6.3 The downstream rule (for the next world-model task)
 
 If the row is OBS-ONBOARD with view V*, the next task's O2-type encoded-readout bar B must satisfy
@@ -331,6 +348,29 @@ carried; TASK-066's 0.5 cm G5 margin was uncalibrated,
 `apple_token_dynamics_v1_results.md`:234). TASK-074's 1.0 cm bar against a 2.872 cm readout is
 exactly what `bar_is_valid` refuses (tested). If c_V > τ for
 every view, no world-model task is preregistered on these views.
+
+**Pre-committed re-measurement of τ** (`TAU_REMEASURE`, fixed now, before any view number exists). On an
+OBS-ONBOARD or OBS-EXTRA outcome, τ is re-measured on fresh development seeds, with the same arm,
+condition, levels, direction rule and rule, before the next world-model task freezes; its bar B
+uses the re-measured τ (c_V\* ≤ B ≤ τ_re). If the re-measured τ falls below c_V\*, no bar is
+feasible and that task is not frozen. This is because τ = 1.0 cm rests on one run at exactly the
+bar (§2, §9b).
+
+### 6.4 Reported-only statistics (`REPORTED`; they gate nothing)
+
+Defined here, in the frozen block, before any view number exists:
+- **The 87.5th percentile** of R_off(V)'s window errors, with a root-clustered interval.
+- **The τ-curve prediction.** Each window's R_off(V) error e (cm) is mapped to the measured
+  counted-success fraction (`TAU_MEASURED["counts"]` / 32) by linear interpolation between the
+  levels 0, 0.5, …, 5 cm (`numpy.interp`, `tau_curve_fraction`); e > 5 cm takes the 5 cm
+  fraction 8/32, which is optimistic there. The predicted successes out of 32 are 32 × the mean of
+  the mapped values over the windows, with a root-clustered interval. It treats each window's
+  error as a constant target error in a random direction, which is what τ measured. For scale: a
+  window error of 0.75 cm maps to 29.5/32, 1.0 cm to 28/32, 1.25 cm to 25/32 (tested).
+- **The signed mean error** (predicted minus true offset) along x and along y, in cm, with
+  root-clustered intervals: τ's tolerance depends on the direction (§9b).
+- **A sensitivity row:** the views that would be admitted, with A1–A4 unchanged, at τ = 0.5 cm
+  and at τ = 1.5 cm, the neighbouring levels (`decision.sensitivity_admitted`). Never a row.
 
 ## 7. Void rule, abandonment clause, next steps
 
@@ -353,8 +393,8 @@ product goal stay open.
 
 | row | next step |
 |---|---|
-| OBS-ONBOARD (V*) | preregister the LeWM place planner or critic on V*, with c_V\* ≤ B ≤ τ (§6.3); a new corpus on V* is that task's own stage |
-| OBS-EXTRA | the owner rules on an external camera (PRD.md:208); no onboard world-model task is preregistered meanwhile |
+| OBS-ONBOARD (V*) | re-measure τ on fresh seeds (§6.3, `TAU_REMEASURE`), then preregister the LeWM place planner or critic on V*, with c_V\* ≤ B ≤ τ_re; a new corpus on V* is that task's own stage |
+| OBS-EXTRA | the owner rules on an external camera (PRD.md:208), seeing any onboard B passes; τ is re-measured (§6.3) before any world-model task on the overview freezes; no onboard world-model task is preregistered meanwhile |
 | OBS-REPRESENTATION | the owner rules on a representation change (for example a full-token latent for the world model); the study reports which readout and view passed |
 | OBS-NONE, learning curve still falling on any view (the lower bound of median(e_50) − median(e_100) > 0) | candidate (c): a larger corpus, preregistered with its own memory plan |
 | OBS-NONE, otherwise | a task or condition change |
@@ -397,8 +437,16 @@ world model, and none of these rows is about the world model.
 
 ## 9b. Limitations (stated plainly; not redesigned)
 
-- **τ is one run of 32 resets per level, with no interval.** A level's count is binomial; τ can
-  move by one level between runs.
+- **τ is one run of 32 resets per level, at exactly the bar.** Wilson 95 % intervals: 28/32
+  [0.72, 0.95] at 1.0 cm, 31/32 [0.84, 0.99] at 0.5 cm, 22/32 [0.51, 0.82] at 1.5 cm; 10/32 seeds
+  are non-monotone across the levels. τ can move by one level between runs; §6.3 pre-commits a
+  re-measurement on fresh seeds before any world-model task freezes, and §6.4 reports the views
+  admitted at 0.5 and 1.5 cm.
+- **τ is anisotropic.** From the τ report's `per_reset` and `directions_rad` (seed 55028
+  excluded): at 1.0 cm, 16/19 in the −y half against 12/12 in the +y half; at 1.5 cm, 11/19
+  against 11/12; at 2.0 cm, 12/19 against 11/12. Errors towards the robot's right fail early,
+  errors towards +y are tolerated to about 2 cm. A readout whose error is biased along y faces a
+  tolerance that differs from τ; each view's signed mean error is reported (§6.4), not gated.
 - **τ models a constant target error.** A readout whose error varies between the six decisions
   is not modelled; the last decision (485) sets the frozen target.
 - **The views share one rollout.** They are paired (good) but not independent corpora; the
@@ -475,6 +523,12 @@ published (§1, §4.4); it fits no readout of any new view.
 - **Every TASK-074 number is reproduced exactly:** encoded 2.8722625765232763 cm, persistence
   4.350821813169937 cm, clock prior 3.1225649505050876 cm, 90 windows, 22 roots, R_off readout
   sha256 `260af3f7…803157`, 5 175 rows, 225 groups.
+- **Stored output** (review of #117): the script's JSON output, verbatim as it ran, is committed
+  unpinned as [`apple_obs_ceiling_v2_dev/repro_check_output.json`](apple_obs_ceiling_v2_dev/repro_check_output.json),
+  sha256 `c1f2eead5509d8e8868c24bc9c9d90c9950d0d14f6b1e679bb1d7a4e3d2cff78`; its `matches` are
+  all true. The script calls `repro_off(..., smoke=True)`, which reports a mismatch rather than
+  raising, so the evidence is that recorded `matches` block, not an exit code. The independent
+  reviewer of #117 re-ran it and reproduced every number.
 - 270 train and val roots decoded, no test root; 44 781 band frames in 111 s; GPU peak reserved
   0.95 GiB (8.51 GiB free at the start).
 
