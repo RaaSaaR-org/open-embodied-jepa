@@ -18,7 +18,7 @@ shelf support, apple, plate, finger friction and success term, and adds, all opt
 - ``--oej_episode_s``: the episode length (the tutorial's 6 s would time out an e9 attempt);
 - ``--oej_hand_net_sensor``: a contact sensor on the right hand's palm and finger links with no
   filter (net contact force on each link; read only). With the apple and plate out of reach it
-  reads hand-shelf contact (the shelf-press probe, docs/ARENA.md §8).
+  reads hand-shelf contact (the shelf-press probe, docs/ARENA.md §9).
 
 Terminations are left as the task defines them; the server holds them (records each term's
 value and returns False) through ``arena_transport.ArenaScene(hold_terminations=True)``.

@@ -239,7 +239,7 @@ def test_gravity_offset_holds_the_arm_with_arena_gains():
     assert off[names.index("left_knee_joint")] == 0.0
 
 
-# ----- e9-arena and the shelf-press probe (docs/ARENA.md §8) -----------------------------------
+# ----- e9-arena and the shelf-press probe (docs/ARENA.md §9) -----------------------------------
 def _tilted_pose(xyz, yaw, pitch):
     c, s = np.cos(pitch), np.sin(pitch)
     ry = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
@@ -263,6 +263,9 @@ def test_anchored_target_is_e9_offset_upright_and_world_vertical_when_tilted():
 def test_stop_height():
     h = ae.stop_height(finger_drop_m=0.11, apple_com_above_shelf_m=0.026, clearance_m=0.01)
     assert h == pytest.approx(0.094)
+    t1 = ae.declared_variant("T1", 0.01, "hold")
+    assert t1["stop_height_m"] == pytest.approx(0.1019) and t1["close_mode"] == "hold"
+    assert ae.declared_variant("T3", 0.005, "hold")["stop_height_m"] == pytest.approx(0.0969)
     with pytest.raises(ContractError):
         ae.stop_height(finger_drop_m=-0.1, apple_com_above_shelf_m=0.026, clearance_m=0.01)
 

@@ -299,8 +299,14 @@ def cmd_arena(args) -> int:
     ie.check_seeds(sorted({t["seed"] for t in tasks}))
     if args.expert == ae.E9_ARENA:
         if not args.variant:
-            raise SystemExit("e9-arena needs at least one --variant (docs/ARENA.md §8)")
-        variants = [json.loads(v) for v in args.variant]
+            raise SystemExit("e9-arena needs at least one --variant (docs/ARENA.md §9)")
+        variants = []
+        for v in map(json.loads, args.variant):
+            if "clearance_m" in v:  # docs/ARENA.md §9.2: h_stop from the measured geometry
+                v = ae.declared_variant(
+                    v["name"], v["clearance_m"], v["close_mode"], v.get("close_ramp")
+                )
+            variants.append(v)
         for v in variants:
             if "name" not in v:
                 raise SystemExit("every --variant needs a name")
@@ -451,7 +457,7 @@ def cmd_arena(args) -> int:
             pass
     report = {
         "what": (
-            "e9-arena (the Arena-adapted e9 of docs/ARENA.md §8; not e9)"
+            "e9-arena (the Arena-adapted e9 of docs/ARENA.md §9; not e9)"
             if args.expert == ae.E9_ARENA
             else "e9"
         )
@@ -537,7 +543,7 @@ def phase_window(records, log, name) -> np.ndarray:
 
 
 def probe_facts(records, log) -> dict:
-    """The shelf-press probe's measurements of one attempt (docs/ARENA.md §8.1)."""
+    """The shelf-press probe's measurements of one attempt (docs/ARENA.md §9.1)."""
     pel = np.asarray([r["pelvis_pose"] for r in records], float)
     low = np.asarray([np.nan if r.get("hand_min_z") is None else r["hand_min_z"] for r in records])
     force = np.asarray(
@@ -577,7 +583,7 @@ def probe_facts(records, log) -> dict:
 
 
 def cmd_probe(args) -> int:
-    """The empty-hand shelf-press probe (docs/ARENA.md §8.1): does the WBC step when the hand
+    """The empty-hand shelf-press probe (docs/ARENA.md §9.1): does the WBC step when the hand
     presses the shelf, against a hover 1 cm above it and a hold at e9's orient height?"""
     from embodied_jepa import first_policy_runtime as rt
     from embodied_jepa import resting_expert as rx
@@ -904,7 +910,7 @@ def main() -> int:
     p.add_argument(
         "--zero_leg_velocity",
         action="store_true",
-        help="write the WBC's leg velocities as 0 in the mirror (e9-arena; docs/ARENA.md §8)",
+        help="write the WBC's leg velocities as 0 in the mirror (e9-arena; docs/ARENA.md §9)",
     )
     p = sub.add_parser("probe")
     p.add_argument("--socket", type=Path, required=True)
