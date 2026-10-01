@@ -360,7 +360,47 @@
    "rule": "tau = the largest level L such that every level <= L reaches >= 28/32 counted successes; if level 0 fails, TAU-NONE (the place itself is the constraint)",
    "when": "Stage 0, before the freeze, on development seeds that are then spent"
   },
-  "tau_measured": null,
+  "tau_measured": {
+   "tau_cm": 1.0,
+   "row": "TAU-MEASURED",
+   "counts": {
+    "0.0": 31,
+    "0.5": 31,
+    "1.0": 28,
+    "1.5": 22,
+    "2.0": 23,
+    "2.5": 21,
+    "3.0": 15,
+    "4.0": 11,
+    "5.0": 8
+   },
+   "at_rest": {
+    "0.0": 31,
+    "0.5": 31,
+    "1.0": 28,
+    "1.5": 22,
+    "2.0": 23,
+    "2.5": 21,
+    "3.0": 15,
+    "4.0": 11,
+    "5.0": 13
+   },
+   "seeds": [
+    55000,
+    55031
+   ],
+   "report_sha256": "08a152f14e63902e7e045f8890a000c0eedd0d7ac751af6bd879e6e512c519d3",
+   "revision": "26c64d906b2777734e29021433d903080ec1b13c",
+   "frozen_sha256_at_run": "de3218c787c7162069e7252dfde8ca13c59a2ef9c2f3d539fe2c47cc156caf42",
+   "started_utc": "2026-10-01T12:35:57Z",
+   "ended_utc": "2026-10-01T12:40:22Z",
+   "load_average_at_start": [
+    0.04638671875,
+    1.42724609375
+   ],
+   "planted_check": "every decision aimed at plate + e (max |difference| 0.0 m); no fallback; no blocked move",
+   "level_0_failure": "seed 55028: P-3's grasp failed (no latched grasp)"
+  },
   "readouts": {
    "R_off": "RidgeReadout (latent_critic.py:42) from the pooled 4 x 4 pretrained DINOv2 patch tokens (6144-d, standardised on the fit rows) to the apple-minus-plate offset xy (m); lambda from lewm_planner_v2.READOUTS' grid by grouped inner CV; solved in the dual form, which RidgeReadout defines to give the same readout as the primal (latent_critic.py:43-45). The admission readout",
    "R_floor": "R_off on the seed-0 random-init DINOv2's pooled tokens (pretrained_encoder.random_init): the floor",
@@ -483,7 +523,7 @@
    "per_root": 300.0,
    "per_attempt": 300.0
   },
-  "void_rule": "a guard, a crash, a cap, a CUDA allocation failure or a failed reproduction makes the stage V and nothing in it is read; batches are never shrunk to fit. A V before a stage's boundary is not a spent attempt and may be repeated as-is, recorded. The boundary is cohort_first_render_utc for the render stage and first_outcome_utc for the readouts stage (written after G-repro-off and the featurisation, before the first out-of-fold error of any view). After the boundary a stage may be repeated once from scratch after a reviewed fix; a second V closes TASK-075 as INCONCLUSIVE. Nothing is re-thresholded, refitted or re-selected after its numbers are seen",
+  "void_rule": "a guard, a crash, a cap, a CUDA allocation failure or a failed reproduction makes the stage V and nothing in it is read; batches are never shrunk to fit. A V before a stage's boundary is not a spent attempt and may be repeated as-is, recorded. The boundary is cohort_first_render_utc for the render stage and first_outcome_utc for the readouts stage (written after G-repro-off and the loading of the read roots and their folds, before the first view is featurised or fitted). After the boundary a stage may be repeated once from scratch after a reviewed fix; a second V closes TASK-075 as INCONCLUSIVE. Nothing is re-thresholded, refitted or re-selected after its numbers are seen",
   "stages": [
    "tau (Stage 0, before the freeze)",
    "render",
@@ -491,7 +531,7 @@
    "results"
   ]
  },
- "frozen_sha256": "de3218c787c7162069e7252dfde8ca13c59a2ef9c2f3d539fe2c47cc156caf42",
+ "frozen_sha256": "f6ed707cdca808e38e652f9dd2b742120bd17e74b1df5ef7c83223331c63d8a5",
  "encoder_digests": {
   "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
   "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
@@ -517,7 +557,52 @@
   "excluded_test_ids_sha256": "4fa7512c06a85b72fe1fe82e2538398e3c2cf55c0e9497c2116f9728304357bf",
   "excluded_rule": "the 30 test roots are never simulated, rendered or decoded (CorpusReader refuses them; the digest is sha256 of the sorted id list's JSON)"
  },
- "tau_calibration": null,
+ "tau_calibration": {
+  "tau_cm": 1.0,
+  "row": "TAU-MEASURED",
+  "report": "outputs/task075-tau/run-1/report.json (Linux PC, task075-prereg worktree)",
+  "report_sha256": "08a152f14e63902e7e045f8890a000c0eedd0d7ac751af6bd879e6e512c519d3",
+  "revision": "26c64d906b2777734e29021433d903080ec1b13c",
+  "tracked_tree_dirty": false,
+  "frozen_sha256_at_run": "de3218c787c7162069e7252dfde8ca13c59a2ef9c2f3d539fe2c47cc156caf42",
+  "seeds": [
+   55000,
+   55031
+  ],
+  "counts": {
+   "0.0": 31,
+   "0.5": 31,
+   "1.0": 28,
+   "1.5": 22,
+   "2.0": 23,
+   "2.5": 21,
+   "3.0": 15,
+   "4.0": 11,
+   "5.0": 8
+  },
+  "at_rest": {
+   "0.0": 31,
+   "0.5": 31,
+   "1.0": 28,
+   "1.5": 22,
+   "2.0": 23,
+   "2.5": 21,
+   "3.0": 15,
+   "4.0": 11,
+   "5.0": 13
+  },
+  "started_utc": "2026-10-01T12:35:57Z",
+  "ended_utc": "2026-10-01T12:40:22Z",
+  "total_seconds": 264.9,
+  "load_average_at_start": [
+   0.04638671875,
+   1.42724609375,
+   4.91259765625
+  ],
+  "peak_tree_pss_gib": 7.94,
+  "g_repro": "every TASK-072 run-1 reproduction check passed",
+  "render_disagreements": 0
+ },
  "render_smoke": {},
  "smoke": {},
  "hashes": {
@@ -539,7 +624,7 @@
   "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
   "scripts/run_lewm_planner_v2.py": "2d229a95b219b531eb18d84381c36c8db2294f4b2771e3bb0a75945ea087b94a",
-  "scripts/run_obs_ceiling_v2.py": "05351e336bce7bba92c37334994abb5c1520223e850f311293b95a296ab7274b",
+  "scripts/run_obs_ceiling_v2.py": "c317d69900a411de953713a8535be986eac2cd68a5ae33efd5a29edc4b64d5d0",
   "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
   "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
@@ -575,8 +660,8 @@
   "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
   "src/embodied_jepa/models/native.py": "95e112e13b0bf4d587fd5c35008e99b1e0a3759fb4f458c24bdd20304d0fadf3",
   "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
-  "src/embodied_jepa/obs_ceiling_v2.py": "ff2513a71cf76a5438f1fdd07375f2a6ae29be3a6ce19dbc3bbce77922784f81",
-  "src/embodied_jepa/obs_ceiling_v2_offline.py": "fc2744ab6f84bcb4fddad7882c3c02edfa8dc756764ee01737d2e0498eb43c0e",
+  "src/embodied_jepa/obs_ceiling_v2.py": "1b74cc71941d09683c6eec9a5d214630e76f29ecbd36faecdbcaaac3b36e52f8",
+  "src/embodied_jepa/obs_ceiling_v2_offline.py": "f0110a8f0fb4603de4ff6a8efdb89734483a120a16db2b10aca78cca44d153f0",
   "src/embodied_jepa/obs_ceiling_v2_runtime.py": "85383d4e4228cda0b258590b3774e16db2a10727cdaa06dd483d90dc342fd836",
   "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
   "src/embodied_jepa/place_planner.py": "1842d3e0ca31bfbe6c0568ab5a8d9c75c513e8b5a784ae7200c43101d270c846",
@@ -595,11 +680,11 @@
   "src/embodied_jepa/wm_critic_v2_offline.py": "7c2cd7bc39d1b87e46b4c4e92ab55bbe4a357ccc1dfccbf16e7a066a3f9c1cfa",
   "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
   "tests/test_lewm_planner_v2.py": "6392fe6e38e88bb6356dbfcae3f095402817cc08f869f9547d2046ca89e8ec1c",
-  "tests/test_obs_ceiling_v2.py": "abebdf5cfcf47c06333b20202ed7a18fa74cb737e9bd1b0a5151f3ec06239b7f",
+  "tests/test_obs_ceiling_v2.py": "fed078f4a2dc5e8c7f84d48d43d66cd00838bf51713a74e308185a061ceade7e",
   "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "pins_note": "the protocol document and this manifest are not pinned: the smoke record is added after the frozen-code smokes, so that the smoked code stays the frozen code; TASK-074's pins are carried and every one of them is unchanged",
- "protocol_document_sha256": "f558ee1d6179973aede6f444f30fca6946191ab7cafbcaa23760a38e14368dae",
+ "protocol_document_sha256": "0f776b2024877af94a297f554b4dc333cedeb184ab495ccdb66bf55ca2df249c",
  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. TASK-075 is a measurement study and makes no control claim."
 }

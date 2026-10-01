@@ -258,7 +258,7 @@ for that stage. The coordinator is told before each stage starts.
 2. **Stage 1, render** (`run_obs_ceiling_v2.py render`). The 270 roots, 6 workers; G-repro-render
    (§3.2); outcome VIEWS-SEALED. Boundary: `cohort_first_render_utc`.
 3. **Stage 2, readouts** (`readouts`). G-repro-off (§4.4); the read roots and folds; then
-   `first_outcome_utc` (the boundary: before the first out-of-fold fit of any view); then per
+   `first_outcome_utc` (the boundary: before the first view is featurised or fitted); then per
    view: featurisation, the Gram matrices, the cross-fit, the statistics; then the row (§6.2).
    The errors of every readout on every window are saved per view.
 4. **Stage 3, results PR.** Every view's numbers are reported, with the reference view's TASK-074
@@ -379,6 +379,13 @@ world model, and none of these rows is about the world model.
   corpus is TASK-074's plan (privileged e9, mis-aims, noise), not P-3's own carry.
 - **c_V is the offset at t + 16 on O2's windows.** Other phases (the pick, the post-look frame)
   are not measured.
+- **A4 is necessary, not sufficient.** A readout fitted on frames with the plate may fail on
+  plate-hidden frames merely because they are out of its training distribution, so a clean A4
+  does not prove the precision is plate-caused. R_proprio (a readout of the robot state alone) is
+  reported beside it.
+- **τ's condition and c_V's windows differ.** τ is measured under a 9 cm move; c_V pools all read
+  roots (unshifted, and moves of 3–12 cm). c_V on the shifted and unshifted roots' windows is
+  reported beside it (`subsets`), not gated.
 - **The expert aims at the plate.** In this corpus e9's arm moves towards the (mis-aimed) plate,
   so the arm's pose carries plate information. A4 and R_proprio expose this; they do not remove
   it.

@@ -22,7 +22,7 @@ from embodied_jepa.contracts import ContractError
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = json.loads((ROOT / "benchmarks" / "manifests" / "apple-obs-ceiling-v2.json").read_text())
 T074 = json.loads((ROOT / "benchmarks" / "manifests" / "apple-lewm-planner-v2.json").read_text())
-FROZEN_SHA256 = MANIFEST["frozen_sha256"]
+FROZEN_SHA256 = "f6ed707cdca808e38e652f9dd2b742120bd17e74b1df5ef7c83223331c63d8a5"
 
 
 def _load_script(name: str, relative: str):
@@ -365,6 +365,7 @@ def test_cross_fit_reads_every_moving_window_out_of_fold(monkeypatch):
         for groups in seen[k * per_fold : (k + 1) * per_fold]:
             assert not (set(map(str, groups)) & held)
     stats = off.view_statistics(fit, resamples=200)
+    assert set(stats["subsets"]) == {"unshifted"}  # the synthetic roots are unshifted
     assert set(stats["r_off"]) == {
         "c_upper",
         "floor_ratio_upper",

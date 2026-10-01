@@ -342,6 +342,7 @@ def cross_fit(data: ViewData, *, kernels: bool = True, log=None) -> dict:
     return {
         "errors": errors,
         "clusters": clusters,
+        "shifted": np.asarray([bool(roots[i].get("shifted", False)) for i in owner]),
         "windows": [(roots[i]["id"], int(t)) for i, t in wins],
         "selections": selections,
     }
@@ -381,6 +382,16 @@ def view_statistics(fit: dict, *, kernels: bool = True, resamples=None) -> dict:
         },
         "learning_curve_still_falling": bool(difference["lc_0.5-r_off"]["ci95"][0] > 0),
     }
+    # Reported only: the windows of roots whose plate moved at step 300 (tau's condition moves
+    # it by 9 cm; the corpus by 3-12 cm) and of the unshifted roots.
+    shifted = np.asarray(fit.get("shifted", np.zeros(len(c), bool)), bool)
+    out["subsets"] = {}
+    for name, mask in (("shifted", shifted), ("unshifted", ~shifted)):
+        if mask.any():
+            out["subsets"][name] = {
+                k: oc.cluster_median_ci(e[k][mask], c[mask], resamples=resamples)
+                for k in ("r_off", "r_floor", "clock")
+            }
     if kernels:
         for source in ("full", "pix"):
             key = f"r_{source}"

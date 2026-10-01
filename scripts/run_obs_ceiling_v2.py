@@ -597,7 +597,7 @@ def load_roots(source) -> list[dict]:
     roots = []
     for split in oc.SOURCE_CORPUS["read_splits"]:
         for episode_id in source.manifest["splits"][split]:
-            arrays, _meta = source.episode(episode_id, keys=("apple", "plate", "states"))
+            arrays, meta = source.episode(episode_id, keys=("apple", "plate", "states"))
             length = len(arrays["apple"])
             hi = band_hi(length)
             if hi <= oc.FEATURE_BAND[0] + oc.CHUNK:  # lewm_planner_v2 featurisation's rule
@@ -608,6 +608,7 @@ def load_roots(source) -> list[dict]:
                 {
                     "id": episode_id,
                     "split": split,
+                    "shifted": meta.get("shift") is not None,
                     "hi": hi,
                     "offset": apple - plate,
                     "plate": plate,

@@ -301,8 +301,45 @@ def tau_from_counts(counts: dict) -> dict:
     return {"tau_cm": tau, "row": "TAU-MEASURED" if tau is not None else "TAU-NONE"}
 
 
-# Written after the Stage-0 calibration ran (protocol §2); the frozen block carries it.
-TAU_MEASURED: dict | None = None
+# Written after the Stage-0 calibration ran (protocol §2); the frozen block carries it. The run:
+# ``run_obs_ceiling_v2.py tau`` at 26c64d9 (clean tree; frozen sha de3218c7... before this record
+# was added), outputs/task075-tau/run-1/report.json on the Linux PC.
+TAU_MEASURED: dict | None = {
+    "tau_cm": 1.0,
+    "row": "TAU-MEASURED",
+    "counts": {
+        "0.0": 31,
+        "0.5": 31,
+        "1.0": 28,
+        "1.5": 22,
+        "2.0": 23,
+        "2.5": 21,
+        "3.0": 15,
+        "4.0": 11,
+        "5.0": 8,
+    },
+    "at_rest": {
+        "0.0": 31,
+        "0.5": 31,
+        "1.0": 28,
+        "1.5": 22,
+        "2.0": 23,
+        "2.5": 21,
+        "3.0": 15,
+        "4.0": 11,
+        "5.0": 13,
+    },
+    "seeds": [55000, 55031],
+    "report_sha256": "08a152f14e63902e7e045f8890a000c0eedd0d7ac751af6bd879e6e512c519d3",
+    "revision": "26c64d906b2777734e29021433d903080ec1b13c",
+    "frozen_sha256_at_run": "de3218c787c7162069e7252dfde8ca13c59a2ef9c2f3d539fe2c47cc156caf42",
+    "started_utc": "2026-10-01T12:35:57Z",
+    "ended_utc": "2026-10-01T12:40:22Z",
+    "load_average_at_start": [0.04638671875, 1.42724609375],
+    "planted_check": "every decision aimed at plate + e (max |difference| 0.0 m); no fallback; "
+    "no blocked move",
+    "level_0_failure": "seed 55028: P-3's grasp failed (no latched grasp)",
+}
 
 # ----- readouts -----------------------------------------------------------------------------------
 OUTER_FOLDS = 5
@@ -585,10 +622,10 @@ VOID_RULE = (
     "V and nothing in it is read; batches are never shrunk to fit. A V before a stage's boundary "
     "is not a spent attempt and may be repeated as-is, recorded. The boundary is "
     "cohort_first_render_utc for the render stage and first_outcome_utc for the readouts stage "
-    "(written after G-repro-off and the featurisation, before the first out-of-fold error of "
-    "any view). After the boundary a stage may be repeated once from scratch after a reviewed "
-    "fix; a second V closes TASK-075 as INCONCLUSIVE. Nothing is re-thresholded, refitted or "
-    "re-selected after its numbers are seen"
+    "(written after G-repro-off and the loading of the read roots and their folds, before the "
+    "first view is featurised or fitted). After the boundary a stage may be repeated once from "
+    "scratch after a reviewed fix; a second V closes TASK-075 as INCONCLUSIVE. Nothing is "
+    "re-thresholded, refitted or re-selected after its numbers are seen"
 )
 STAGES = ("tau (Stage 0, before the freeze)", "render", "readouts", "results")
 
