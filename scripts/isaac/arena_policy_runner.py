@@ -40,5 +40,11 @@ if __name__ == "__main__":
     if any("remote" in a.lower() or "gr00t" in a.lower() for a in args):
         sys.exit("refusing: this wrapper runs local policies only (no GR00T server)")
     os.chdir("/workspaces/isaaclab_arena")
+    # stdout is a pipe (tee): line-buffer it, or the runner's per-episode and final "Metrics"
+    # prints are lost when Kit exits without flushing (seen in arena-runner-zero-1).
+    sys.stdout.reconfigure(line_buffering=True)
     sys.argv = [RUNNER, *args]
-    runpy.run_path(RUNNER, run_name="__main__")
+    try:
+        runpy.run_path(RUNNER, run_name="__main__")
+    finally:
+        print("[arena] policy_runner returned", flush=True)
