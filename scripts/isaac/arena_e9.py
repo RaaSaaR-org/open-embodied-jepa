@@ -42,6 +42,7 @@ def provenance() -> dict:
         "tracked_tree_dirty": bool(git("status", "--porcelain", "--untracked-files=no")),
         "version": ae.VERSION,
         "expert": ie.E9,
+        "e9_arena_version": ae.E9_ARENA_VERSION,
     }
 
 
@@ -246,6 +247,11 @@ def records_arrays(records) -> dict:
         out[f"arena_{k}"] = np.asarray([bool(r[k]) for r in records])
     for k in ("apple_plate_force_n", "apple_hand_force_n"):
         out[f"arena_{k}"] = np.asarray([np.nan if r[k] is None else r[k] for r in records], float)
+    for k in ("hand_min_z", "apple_top_z", "right_hand_net_force_n"):
+        if any(k in r for r in records):
+            out[f"arena_{k}"] = np.asarray(
+                [np.nan if r.get(k) is None else r[k] for r in records], float
+            )
     out["arena_command"] = np.asarray([r["command"] for r in records], int)
     return out
 
@@ -291,6 +297,23 @@ def cmd_arena(args) -> int:
     if args.seeds:
         tasks = [r for r in tasks if r["seed"] in set(args.seeds)]
     ie.check_seeds(sorted({t["seed"] for t in tasks}))
+    if args.expert == ae.E9_ARENA:
+        if not args.variant:
+            raise SystemExit("e9-arena needs at least one --variant (docs/ARENA.md §9)")
+        variants = []
+        for v in map(json.loads, args.variant):
+            if "clearance_m" in v:  # docs/ARENA.md §9.2: h_stop from the measured geometry
+                v = ae.declared_variant(
+                    v["name"], v["clearance_m"], v["close_mode"], v.get("close_ramp")
+                )
+            variants.append(v)
+        for v in variants:
+            if "name" not in v:
+                raise SystemExit("every --variant needs a name")
+    else:
+        if args.variant:
+            raise SystemExit("--variant is for e9-arena only")
+        variants = [{"name": "e9"}]
     args.output.mkdir(parents=True)
     conn = Connection(args.socket, args.connect_timeout)
     started = time.monotonic()
@@ -303,11 +326,18 @@ def cmd_arena(args) -> int:
         mirror_names = list(names_sim.joint_names)  # MJCF actuator order
         names_sim.close()
         endpoint = ae.ArenaEndpoint(
-            conn.call, mirror_names, settle_steps=args.settle_steps, place_steps=args.place_steps
+            conn.call,
+            mirror_names,
+            settle_steps=args.settle_steps,
+            place_steps=args.place_steps,
+            zero_leg_velocity=args.zero_leg_velocity,
         )
         robot, scene = ae.make_arena_mirror_robot(
             endpoint, render=False, gravity_offset_targets=args.gravity_offset
         )
+        if args.expert == ae.E9_ARENA:
+            geometry = conn.call("geometry")
+            print("geometry", json.dumps(geometry, default=float)[:2000], flush=True)
         recorder = ie.StepRecorder(robot)
         bounds = rt.configured_bounds()
         first = tasks[0]
@@ -322,15 +352,22 @@ def cmd_arena(args) -> int:
             **{k: v for k, v in records_arrays([{**r, "command": 0} for r in cal_records]).items()},
         )
         print("calibration", calibration, flush=True)
-        for task in tasks:
+        for variant, task in [(v, t) for v in variants for t in tasks]:
             t0 = time.monotonic()
             row = {k: task[k] for k in ("key", "seed", "plate_cm", "reset", "plate_offset")}
+            row["variant"] = variant["name"]
             row["mujoco"] = {
                 k: task["closed"].get(k)
                 for k in ("at_rest", "latched_success", "final_distance_cm", "stop_reason")
             }
             try:
-                summary, arrays = e9r.closed_loop(robot, recorder, bounds, task)
+                if args.expert == ae.E9_ARENA:
+                    summary, arrays, expert_log = adapted_closed_loop(
+                        robot, recorder, bounds, task, endpoint, variant
+                    )
+                else:
+                    summary, arrays = e9r.closed_loop(robot, recorder, bounds, task)
+                    expert_log = []
                 verdicts = ae.arena_verdicts(
                     endpoint.records, rest_height_m=calibration["rest_height_m"]
                 )
@@ -357,13 +394,20 @@ def cmd_arena(args) -> int:
                             max(r["apple_com_pose"][2] for r in endpoint.records)
                             - endpoint.records[0]["apple_com_pose"][2]
                         ),
+                        "leg_speed_max_rad_s": endpoint.leg_speed_max,
+                        **grasp_facts(endpoint.records, expert_log),
                     }
                 )
+                tag = task["key"] if len(variants) == 1 else f"{variant['name']}_{task['key']}"
                 np.savez_compressed(
-                    args.output / f"arena_{task['key']}.npz",
+                    args.output / f"arena_{tag}.npz",
                     **arrays,
                     **records_arrays(endpoint.records),
                     arena_target_offsets=np.asarray(endpoint.offsets, float),
+                    expert_phase=np.asarray([e["phase"] for e in expert_log]),
+                    expert_target_base=np.asarray(
+                        [e["target_base"] for e in expert_log], float
+                    ).reshape(-1, 3),
                 )
                 row["arena"] = {"ok": True, **summary}
             except Exception as error:  # noqa: BLE001 - recorded, next attempt
@@ -377,6 +421,7 @@ def cmd_arena(args) -> int:
                 robot.stop("error")
             a = row["arena"]
             print(
+                variant["name"],
                 task["key"],
                 {
                     k: a.get(k)
@@ -385,6 +430,10 @@ def cmd_arena(args) -> int:
                         "at_rest_arena",
                         "arena_success",
                         "final_distance_cm",
+                        "final_distance_arena_cm",
+                        "arena_apple_max_rise_m",
+                        "pelvis_drift_max_m",
+                        "close_pelvis_step_m",
                         "stop_reason",
                         "error",
                     )
@@ -406,10 +455,17 @@ def cmd_arena(args) -> int:
             conn.call("close")
         except Exception:  # noqa: BLE001
             pass
-    ok = [r for r in rows if r["arena"].get("ok")]
     report = {
-        "what": "e9 in Isaac Lab-Arena (our v2 layout variant) through the mirror adapter "
+        "what": (
+            "e9-arena (the Arena-adapted e9 of docs/ARENA.md §9; not e9)"
+            if args.expert == ae.E9_ARENA
+            else "e9"
+        )
+        + " in Isaac Lab-Arena (our v2 layout variant) through the mirror adapter "
         "(development; privileged scripted expert; not a gated run; not a learned result)",
+        "expert_label": args.expert,
+        "variants": variants,
+        "zero_leg_velocity": bool(args.zero_leg_velocity),
         **prov,
         "reference": str(args.reference),
         "reference_revision": ref.get("revision"),
@@ -424,26 +480,278 @@ def cmd_arena(args) -> int:
         "seconds": time.monotonic() - started,
         "attempts": rows,
         "counts": {
-            "attempts": len(rows),
-            "errors": len(rows) - len(ok),
-            "arena_success": sum(r["arena"]["arena_success"] for r in ok),
-            "at_rest_arena": sum(r["arena"]["at_rest_arena"] for r in ok),
-            "at_rest_mirror": sum(r["arena"]["at_rest"] for r in ok),
-            "mujoco_at_rest": sum(bool(r["mujoco"]["at_rest"]) for r in rows),
-            "mujoco_latched": sum(bool(r["mujoco"]["latched_success"]) for r in rows),
-            "placement_hand_contact": sum(
-                bool(r["arena"]["reset_info"].get("placement_apple_hand_force_n")) for r in ok
-            ),
-            "placement_error_over_5mm": sum(
-                r["arena"]["reset_info"]["placement_error_xy_m"] > 0.005 for r in ok
-            ),
-            "apple_hand_contact_any": sum(r["arena"]["arena_hand_contact_steps"] > 0 for r in ok),
-            "apple_lifted_2cm": sum(r["arena"]["arena_apple_max_rise_m"] > 0.02 for r in ok),
+            v["name"]: counts([r for r in rows if r["variant"] == v["name"]]) for v in variants
         },
     }
     write_report(args.output / "report.json", report)
     print(json.dumps(report["counts"], indent=1))
     return 0
+
+
+def counts(rows) -> dict:
+    ok = [r for r in rows if r["arena"].get("ok")]
+    return {
+        "attempts": len(rows),
+        "errors": len(rows) - len(ok),
+        "arena_success": sum(r["arena"]["arena_success"] for r in ok),
+        "at_rest_arena": sum(r["arena"]["at_rest_arena"] for r in ok),
+        "at_rest_mirror": sum(r["arena"]["at_rest"] for r in ok),
+        "mujoco_at_rest": sum(bool(r["mujoco"]["at_rest"]) for r in rows),
+        "mujoco_latched": sum(bool(r["mujoco"]["latched_success"]) for r in rows),
+        "placement_hand_contact": sum(
+            bool(r["arena"]["reset_info"].get("placement_apple_hand_force_n")) for r in ok
+        ),
+        "placement_error_over_5mm": sum(
+            r["arena"]["reset_info"]["placement_error_xy_m"] > 0.005 for r in ok
+        ),
+        "apple_hand_contact_any": sum(r["arena"]["arena_hand_contact_steps"] > 0 for r in ok),
+        "apple_lifted_2cm": sum(r["arena"]["arena_apple_max_rise_m"] > 0.02 for r in ok),
+        "complete": sum(bool(r["arena"].get("complete")) for r in ok),
+        "pelvis_drift_over_5cm": sum(r["arena"]["pelvis_drift_max_m"] > 0.05 for r in ok),
+    }
+
+
+def grasp_facts(records, expert_log) -> dict:
+    """Per-attempt facts about the grasp: the pelvis step during close, the hand's lowest point
+    and the hand-shelf clearance (when the server measures geometry)."""
+    out: dict = {}
+    if not expert_log:
+        return out
+    cmd = np.asarray([r["command"] for r in records])
+    pel = np.asarray([r["pelvis_pose"][:2] for r in records], float)
+    for name in ("descend", "close", "lift"):
+        idx = [e["command"] for e in expert_log if e["phase"] == name]
+        if not idx:
+            continue
+        mask = (cmd >= idx[0]) & (cmd <= idx[-1])
+        if mask.any():
+            k = np.flatnonzero(mask)
+            out[f"{name}_pelvis_step_m"] = float(np.linalg.norm(pel[k[-1]] - pel[k[0]]))
+            low = [records[i].get("hand_min_z") for i in k]
+            if all(v is not None for v in low):
+                out[f"{name}_hand_min_above_shelf_m"] = float(min(low) - ae.ARENA_SHELF_TOP_Z)
+    return out
+
+
+def phase_window(records, log, name) -> np.ndarray:
+    """Indices of the Arena records (per Arena step) of the expert's phase ``name``."""
+    idx = [e["command"] for e in log if e["phase"] == name]
+    cmd = np.asarray([r["command"] for r in records])
+    if not idx:
+        return np.zeros(0, int)
+    return np.flatnonzero((cmd >= idx[0]) & (cmd <= idx[-1]))
+
+
+def probe_facts(records, log) -> dict:
+    """The shelf-press probe's measurements of one attempt (docs/ARENA.md §9.1)."""
+    pel = np.asarray([r["pelvis_pose"] for r in records], float)
+    low = np.asarray([np.nan if r.get("hand_min_z") is None else r["hand_min_z"] for r in records])
+    force = np.asarray(
+        [
+            np.nan if r.get("right_hand_net_force_n") is None else r["right_hand_net_force_n"]
+            for r in records
+        ]
+    )
+    orient = [e for e in log if e["phase"] == "orient"][-10:]
+    out = {
+        "finger_drop_m": float(np.mean([e["ee_world"][2] - e["hand_min_z"] for e in orient])),
+        "finger_drop_spread_m": float(np.ptp([e["ee_world"][2] - e["hand_min_z"] for e in orient])),
+        "lowest_link_end_orient": orient[-1]["hand_min_link"],
+    }
+    for name in ("orient", "descend", "close", "hold", "retreat"):
+        k = phase_window(records, log, name)
+        if not len(k):
+            continue
+        step = pel[k, :2] - pel[k[0], :2]
+        heading = ae.heading(pel[k[0]])[:2]
+        out[name] = {
+            "pelvis_step_end_m": float(np.linalg.norm(step[-1])),
+            "pelvis_step_max_m": float(np.linalg.norm(step, axis=1).max()),
+            "pelvis_step_forward_end_m": float(step[-1] @ heading),
+            "hand_min_above_shelf_min_m": float(np.nanmin(low[k]) - ae.ARENA_SHELF_TOP_Z),
+            "hand_min_above_shelf_end_m": float(low[k[-1]] - ae.ARENA_SHELF_TOP_Z),
+            "hand_net_force_max_n": float(np.nanmax(force[k])),
+            "hand_net_force_median_n": float(np.nanmedian(force[k])),
+            "steps_with_hand_force_over_1n": int(np.nansum(force[k] > 1.0)),
+        }
+    k = np.r_[phase_window(records, log, "close"), phase_window(records, log, "hold")]
+    if len(k):
+        step = pel[k, :2] - pel[k[0], :2]
+        out["close_hold_pelvis_step_max_m"] = float(np.linalg.norm(step, axis=1).max())
+        out["close_hold_pelvis_step_end_m"] = float(np.linalg.norm(step[-1]))
+    return out
+
+
+def cmd_probe(args) -> int:
+    """The empty-hand shelf-press probe (docs/ARENA.md §9.1): does the WBC step when the hand
+    presses the shelf, against a hover 1 cm above it and a hold at e9's orient height?"""
+    from embodied_jepa import first_policy_runtime as rt
+    from embodied_jepa import resting_expert as rx
+    from embodied_jepa.simulation import MuJoCoSimulation
+
+    if args.output.exists():
+        raise SystemExit(f"refusing to overwrite {args.output}")
+    for m in args.modes:
+        if m not in ae.PROBE_MODES:
+            raise SystemExit(f"unknown mode {m}")
+    ie.check_seeds([args.seed])
+    ref = json.loads((args.reference / "report.json").read_text())
+    task = next(
+        r for r in ref["attempts"] if r["ok"] and r["seed"] == args.seed and r["plate_cm"] == 0.0
+    )
+    reset = {**task["reset"], "object_xy": list(args.away_xy)}
+    args.output.mkdir(parents=True)
+    conn = Connection(args.socket, args.connect_timeout)
+    started = time.monotonic()
+    rows, geometry = [], None
+    try:
+        names_sim = MuJoCoSimulation(object_kind="apple", container_kind="plate", render=False)
+        mirror_names = list(names_sim.joint_names)
+        names_sim.close()
+        endpoint = ae.ArenaEndpoint(
+            conn.call,
+            mirror_names,
+            settle_steps=args.settle_steps,
+            place_steps=args.place_steps,
+            zero_leg_velocity=True,
+        )
+        robot, _scene = ae.make_arena_mirror_robot(
+            endpoint, render=False, gravity_offset_targets=True
+        )
+        geometry = conn.call("geometry")
+        print("geometry", json.dumps(geometry, default=float)[:3000], flush=True)
+        bounds = rt.configured_bounds()
+        for i, mode in enumerate(args.modes):
+            t0 = time.monotonic()
+            holder: dict = {}
+
+            def make(truth, mode=mode, holder=holder):
+                settled = endpoint.reset_info["settled_pelvis_pose"]
+                lay = ae.layout_in_arena(
+                    task["reset"]["object_xy"], task["reset"]["plate_xy"], arena_pelvis_pose=settled
+                )
+                site = [*lay["apple"][:2], ae.ARENA_SHELF_TOP_Z + args.apple_com_above_shelf]
+                holder["site_w"] = site
+                holder["p"] = ae.ShelfPressProbe(
+                    truth, live=endpoint.live, site_w=site, mode=mode, clearance_m=args.clearance
+                )
+                return holder["p"]
+
+            row = {"index": i, "mode": mode}
+            try:
+                summary, arrays = rx.run_attempt(
+                    robot,
+                    bounds,
+                    seed=args.seed,
+                    reset=reset,
+                    plate_offset=[0.0, 0.0],
+                    make_expert=make,
+                )
+                log = holder["p"].log
+                row.update(
+                    {
+                        "ok": True,
+                        "stop_reason": summary["stop_reason"],
+                        "site_w": holder["site_w"],
+                        "reset_info": {
+                            k: v for k, v in endpoint.reset_info.items() if k != "place_records"
+                        },
+                        "leg_speed_max_rad_s": endpoint.leg_speed_max,
+                        "apple_hand_contact_steps": int(
+                            sum((r.get("apple_hand_force_n") or 0.0) > 0 for r in endpoint.records)
+                        ),
+                        **probe_facts(endpoint.records, log),
+                        "seconds": time.monotonic() - t0,
+                    }
+                )
+                np.savez_compressed(
+                    args.output / f"probe_{i:02d}_{mode}.npz",
+                    **{k: v for k, v in arrays.items() if k != "counts"},
+                    **records_arrays(endpoint.records),
+                    log_phase=np.asarray([e["phase"] for e in log]),
+                    log_command=np.asarray([e["command"] for e in log], int),
+                    log_ee_world=np.asarray([e["ee_world"] for e in log], float),
+                    log_hand_min_z=np.asarray([e["hand_min_z"] for e in log], float),
+                    log_target_base=np.asarray([e["target_base"] for e in log], float),
+                )
+            except Exception as error:  # noqa: BLE001 - recorded, next attempt
+                import traceback
+
+                row.update(
+                    {
+                        "ok": False,
+                        "error": f"{type(error).__name__}: {error}",
+                        "traceback": traceback.format_exc(),
+                    }
+                )
+                robot.stop("error")
+            print(
+                json.dumps(
+                    {
+                        k: row.get(k)
+                        for k in (
+                            "index",
+                            "mode",
+                            "ok",
+                            "error",
+                            "stop_reason",
+                            "finger_drop_m",
+                            "close_hold_pelvis_step_max_m",
+                            "close_hold_pelvis_step_end_m",
+                            "close",
+                            "hold",
+                        )
+                    },
+                    default=float,
+                ),
+                flush=True,
+            )
+            rows.append(row)
+    finally:
+        try:
+            conn.call("close")
+        except Exception:  # noqa: BLE001
+            pass
+    report = {
+        "what": "empty-hand shelf-press probe in Isaac Lab-Arena (development; no apple in "
+        "reach; not a gated run; not a learned result)",
+        **provenance(),
+        "reference": str(args.reference),
+        "seed": args.seed,
+        "away_xy": args.away_xy,
+        "clearance_m": args.clearance,
+        "apple_com_above_shelf_m": args.apple_com_above_shelf,
+        "geometry": geometry,
+        "seconds": time.monotonic() - started,
+        "attempts": rows,
+    }
+    write_report(args.output / "report.json", report)
+    return 0
+
+
+def adapted_closed_loop(robot, recorder, bounds, task, endpoint, variant):
+    """One e9-arena attempt (``arena_e9.ArenaAdaptedE9``) through the unchanged harness."""
+    from embodied_jepa import resting_expert as rx
+
+    holder: dict = {}
+    params = {k: v for k, v in variant.items() if k != "name"}
+
+    def make(truth):
+        holder["expert"] = ae.ArenaAdaptedE9(truth, live=endpoint.live, **params)
+        return holder["expert"]
+
+    summary, arrays = rx.run_attempt(
+        robot,
+        bounds,
+        seed=task["seed"],
+        reset=task["reset"],
+        plate_offset=task["plate_offset"],
+        make_expert=make,
+    )
+    rec = recorder.arrays()
+    summary["look_steps"] = int(len(rec["rec_time"]) - summary["steps"])
+    summary["expert_label"] = ae.E9_ARENA
+    return summary, {**arrays, **rec}, holder["expert"].log
 
 
 def records_from_arrays(d) -> list[dict]:
@@ -592,12 +900,39 @@ def main() -> int:
         action="store_true",
         help="add qfrc_bias / kp_arena to each arm and hand target (arena_e9.gravity_offset)",
     )
+    p.add_argument("--expert", choices=("e9", ae.E9_ARENA), default="e9")
+    p.add_argument(
+        "--variant",
+        action="append",
+        help='e9-arena parameters as JSON, e.g. {"name": "T1", "stop_height_m": 0.07}; '
+        "repeatable (each variant runs every seed, variant by variant)",
+    )
+    p.add_argument(
+        "--zero_leg_velocity",
+        action="store_true",
+        help="write the WBC's leg velocities as 0 in the mirror (e9-arena; docs/ARENA.md §9)",
+    )
+    p = sub.add_parser("probe")
+    p.add_argument("--socket", type=Path, required=True)
+    p.add_argument("--reference", type=Path, required=True)
+    p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--seed", type=int, default=50200)
+    p.add_argument("--modes", nargs="+", default=["hover", "press", "high"] * 2)
+    p.add_argument("--away_xy", type=float, nargs=2, default=[0.60, 0.30])
+    p.add_argument("--clearance", type=float, default=0.01)
+    p.add_argument("--apple_com_above_shelf", type=float, default=0.0263)
+    p.add_argument("--settle_steps", type=int, default=75)
+    p.add_argument("--place_steps", type=int, default=50)
+    p.add_argument("--connect_timeout", type=float, default=1800.0)
     p = sub.add_parser("rescore")
     p.add_argument("--run", type=Path, required=True)
     args = parser.parse_args()
-    return {"kinematics": cmd_kinematics, "arena": cmd_arena, "rescore": cmd_rescore}[args.cmd](
-        args
-    )
+    return {
+        "kinematics": cmd_kinematics,
+        "arena": cmd_arena,
+        "probe": cmd_probe,
+        "rescore": cmd_rescore,
+    }[args.cmd](args)
 
 
 if __name__ == "__main__":

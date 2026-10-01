@@ -193,7 +193,9 @@ def command_action(targets, mirror_names, arena_names) -> np.ndarray:
 
 
 # ----- Arena state -> mirror state ----------------------------------------------------------
-def mirror_state(raw: dict, *, arena_names, mirror_names, time: float) -> dict:
+def mirror_state(
+    raw: dict, *, arena_names, mirror_names, time: float, zero_leg_velocity: bool = False
+) -> dict:
     """An ``isaac_e9.MirrorSimulation`` state message from one Arena raw state.
 
     Positions, rotations and velocities pass through ``FrameMap`` (Arena's live pelvis).
@@ -201,8 +203,14 @@ def mirror_state(raw: dict, *, arena_names, mirror_names, time: float) -> dict:
     centre, Arena's plate origin at its bottom, hence ``OUR_PLATE_BASE_HALF``. ``hand_contact``
     is Arena's own apple-hand contact sensor when present (else None: the mirror's geometric
     flag is used). ``contacts`` is empty (Arena reports no contact list here); ``pre`` is None
-    (no ``mj_step`` layout: the mirror runs a plain forward pass of the new state)."""
+    (no ``mj_step`` layout: the mirror runs a plain forward pass of the new state).
+    ``zero_leg_velocity`` (e9-arena only, docs/ARENA.md §9) writes the WBC's leg joint
+    velocities as 0: with the pelvis fixed in the mirror they enter neither FK, IK nor the arm's
+    bias, only the embodiment's 5 rad/s guard, which was written for our fixed-pelvis robot."""
     frame = FrameMap(raw["pelvis_pose"])
+    qd = reorder(raw["qd"], arena_names, mirror_names)
+    if zero_leg_velocity:
+        qd = np.where([is_leg_joint(n) for n in mirror_names], 0.0, qd)
     com = np.asarray(raw["apple_com_pose"], float)
     link = np.asarray(raw["apple_pose"], float)
     rotation = frame.rotation(at.quat_xyzw_to_matrix(link[3:]))
@@ -213,7 +221,7 @@ def mirror_state(raw: dict, *, arena_names, mirror_names, time: float) -> dict:
         "time": float(time),
         "gravity": frame.vector([0.0, 0.0, -9.81]).tolist(),
         "q": reorder(raw["q"], arena_names, mirror_names).tolist(),
-        "qd": reorder(raw["qd"], arena_names, mirror_names).tolist(),
+        "qd": qd.tolist(),
         "apple_pos": frame.point(com[:3]).tolist(),
         "apple_quat_xyzw": matrix_to_quat_xyzw(rotation).tolist(),
         "apple_lin_w": frame.vector(vel[:3]).tolist(),
@@ -319,7 +327,9 @@ class ArenaEndpoint:
     Arena steps. Every Arena step's raw record (success term, forces, apple, plate, pelvis) is
     kept in ``records`` for the Arena-side verdicts; ``records`` restarts at each reset."""
 
-    def __init__(self, call, mirror_names, *, settle_steps=75, place_steps=50):
+    def __init__(
+        self, call, mirror_names, *, settle_steps=75, place_steps=50, zero_leg_velocity=False
+    ):
         self.call = call
         hello = call("hello")
         self.arena_names = list(hello["joint_names"])
@@ -336,10 +346,29 @@ class ArenaEndpoint:
         self._hold = None
         self.feedforward = None  # optional: () -> offsets added to each command's targets
         self.offsets: list[np.ndarray] = []
+        self.zero_leg_velocity = bool(zero_leg_velocity)
+        self.last_raw: dict | None = None  # Arena's latest raw state (e9-arena's live truth)
+        self.leg_speed_max = 0.0  # the largest raw leg joint speed since the reset (rad/s)
+
+    def live(self) -> dict:
+        """Arena's latest raw state plus ``_command``, the index of the next command (privileged
+        truth for e9-arena and the probe; never a policy input)."""
+        if self.last_raw is None:
+            raise ContractError("no Arena state yet")
+        return {**self.last_raw, "_command": self.commands}
 
     def _state(self, raw) -> dict:
+        self.last_raw = raw
+        legs = [i for i, n in enumerate(self.arena_names) if is_leg_joint(n)]
+        self.leg_speed_max = max(
+            self.leg_speed_max, float(np.abs(np.asarray(raw["qd"], float)[legs]).max())
+        )
         return mirror_state(
-            raw, arena_names=self.arena_names, mirror_names=self.mirror_names, time=self.time
+            raw,
+            arena_names=self.arena_names,
+            mirror_names=self.mirror_names,
+            time=self.time,
+            zero_leg_velocity=self.zero_leg_velocity,
         )
 
     def reset(self, *, seed, object_xy, plate_xy, object_on_container, joint_positions):
@@ -370,6 +399,7 @@ class ArenaEndpoint:
             joint_positions=by_name,
         )
         self.commands, self.time, self.records, self.offsets = 0, 0.0, [], []
+        self.leg_speed_max = 0.0
         self._hold = action
         prc = placed["raw"]
         target_com = np.asarray(layout["apple"][:2]) + offset
@@ -418,7 +448,13 @@ class ArenaEndpoint:
 
 def _scalars(raw: dict) -> dict:
     return {
-        k: (np.asarray(v, float).tolist() if not isinstance(v, int | float) else float(v))
+        k: (
+            v
+            if v is None or isinstance(v, str)
+            else float(v)
+            if isinstance(v, int | float)
+            else np.asarray(v, float).tolist()
+        )
         for k, v in raw.items()
         if k != "body_pose"
     }
@@ -686,3 +722,348 @@ class MuJoCoArenaSham:
         if cmd in ("info", "close"):
             return {}
         raise ContractError(f"unknown command {cmd!r}")
+
+
+# ----- e9-arena: the Arena-adapted e9 (docs/ARENA.md §9) -------------------------------------
+# Development only, declared in docs/ARENA.md §9 before any Arena run of it. It is a privileged
+# scripted expert, **not e9**: always label it "e9-arena". Its targets are recomputed every
+# command from Arena's live state (pelvis, apple, plate and, for the shelf-clearance close, the
+# right hand's lowest collision point), which is privileged truth, as e9's reset truth is.
+E9_ARENA = "e9-arena"
+E9_ARENA_VERSION = "e9_arena_v1"
+LEG_JOINT_KEYS = ("hip_", "knee_", "ankle_")  # the WBC's leg joints (AGILE drives them)
+E9_PICK_DX = -0.015  # e9: the collector's -0.03 plus palm_x_offset 0.015 (pelvis x)
+E9_ORIENT_DZ = 0.13
+E9_LIFT_DZ = 0.21
+# Measured in Arena by the shelf-press probe (docs/ARENA.md §9.1, arena-shelf-probe-1)
+ARENA_FINGER_DROP_M = 0.1182  # palm site to the lowest right-hand collision point, open
+ARENA_APPLE_COM_ABOVE_SHELF_M = 0.0263  # resting apple centre above the shelf top
+
+
+def declared_variant(name: str, clearance_m: float, close_mode: str, close_ramp=None) -> dict:
+    """An e9-arena tuning variant of docs/ARENA.md §9.2 (h_stop from the measured geometry)."""
+    return {
+        "name": name,
+        "stop_height_m": stop_height(
+            finger_drop_m=ARENA_FINGER_DROP_M,
+            apple_com_above_shelf_m=ARENA_APPLE_COM_ABOVE_SHELF_M,
+            clearance_m=clearance_m,
+        ),
+        "shelf_clearance_m": float(clearance_m),
+        "close_mode": close_mode,
+        "close_ramp": close_ramp,
+    }
+
+
+E9_REACH = {"reach_radius_m": 0.485, "release_z_floor_m": 0.10, "release_z_ceiling_m": 0.26}
+PHASE_NAMES = (
+    "orient",
+    "descend",
+    "close",
+    "lift",
+    "transfer",
+    "lower",
+    "steady",
+    "open",
+    "clear",
+    "retreat",
+)
+
+
+def is_leg_joint(name: str) -> bool:
+    return any(k in name for k in LEG_JOINT_KEYS)
+
+
+def heading(pelvis_pose) -> np.ndarray:
+    """The pelvis's forward (x) axis projected on the horizontal plane, unit length."""
+    r = at.quat_xyzw_to_matrix(np.asarray(pelvis_pose, float)[3:])
+    f = np.array([r[0, 0], r[1, 0], 0.0])
+    n = np.linalg.norm(f)
+    if n < 1e-6:
+        raise ContractError("the pelvis's x axis is vertical")
+    return f / n
+
+
+def world_to_base(p_world, pelvis_pose) -> np.ndarray:
+    """An Arena env-local point in e9's base frame (our pelvis frame: the mirror minus its base)."""
+    return FrameMap(pelvis_pose).point(p_world) - np.asarray(OUR_PELVIS_POS)
+
+
+def base_to_world(p_base, pelvis_pose) -> np.ndarray:
+    return FrameMap(pelvis_pose).inverse_point(np.asarray(p_base, float) + OUR_PELVIS_POS)
+
+
+def anchored_target(anchor_w, pelvis_pose, *, dx: float, dz: float) -> np.ndarray:
+    """e9's palm target ``anchor + dx`` along the pelvis heading ``+ dz`` up, in the base frame.
+
+    The offsets are applied in the world (``dz`` along gravity, ``dx`` along the horizontal
+    heading), then the point is mapped through Arena's live pelvis. With an upright, fixed pelvis
+    this is exactly e9's ``obj + [dx, 0, dz]``."""
+    p = np.asarray(anchor_w, float) + dx * heading(pelvis_pose) + [0.0, 0.0, dz]
+    return world_to_base(p, pelvis_pose)
+
+
+def stop_height(*, finger_drop_m: float, apple_com_above_shelf_m: float, clearance_m: float):
+    """e9-arena's descent stop: the palm (``*_ee``) height above the apple centre at which Arena's
+    lowest open-hand collision point is ``clearance_m`` above the shelf top.
+
+    ``finger_drop_m`` is how far that lowest point hangs below the palm site in e9's palm-down,
+    open-hand pose, measured in Arena (the shelf-press probe); ``apple_com_above_shelf_m`` is
+    Arena's resting apple centre above the shelf top."""
+    for name, v in (
+        ("finger_drop_m", finger_drop_m),
+        ("apple_com_above_shelf_m", apple_com_above_shelf_m),
+        ("clearance_m", clearance_m),
+    ):
+        if not np.isfinite(v) or v < 0:
+            raise ContractError(f"{name} must be finite and non-negative")
+    return float(finger_drop_m + clearance_m - apple_com_above_shelf_m)
+
+
+class ArenaAdaptedE9:
+    """e9-arena: TASK-070's e9 with the changes declared in docs/ARENA.md §9, nothing else.
+
+    It wraps e9 (``resting_expert.RestingPlaceExpert`` with ``isaac_e9.E9``: same phases, same
+    command counts, same grasp and opening schedule, same clips, rotations and release rule) and
+    rewrites only the current phase's palm target before each command:
+
+    1. **descent stop**: descend and close aim at ``stop_height_m`` above the apple centre
+       instead of e9's 0.052 m (which e9 never reaches in MuJoCo: its thumb lands on the table);
+    2. **live targets** (privileged): every command, the targets are recomputed from Arena's
+       live pelvis, apple and plate (``live()``: the server's last raw state). Orient and
+       descend follow the live apple; at the first close command the apple's world position is
+       frozen as the grasp anchor, which close and lift use; transfer to retreat use e9's
+       release rule on the live plate. Offsets are applied in the world (``anchored_target``);
+    3. (the gravity offset is the endpoint's, unchanged);
+    4. **close** (``close_mode``): ``"hold"`` keeps the descent stop height; ``"shelf_servo"``
+       moves the palm so that Arena's lowest right-hand collision point stays
+       ``shelf_clearance_m`` above the shelf while the fingers close (MuJoCo's hand follows the
+       table down during e9's close; this follows it without pressing). ``close_ramp`` (per
+       command, optional) ramps the grasp scalar instead of e9's single step."""
+
+    def __init__(
+        self,
+        initial_truth,
+        *,
+        live,
+        stop_height_m: float,
+        close_mode: str = "hold",
+        shelf_clearance_m: float = 0.01,
+        shelf_top_z: float = ARENA_SHELF_TOP_Z,
+        close_ramp: float | None = None,
+    ):
+        from embodied_jepa import resting_expert as rx
+
+        if close_mode not in ("hold", "shelf_servo"):
+            raise ContractError("close_mode must be 'hold' or 'shelf_servo'")
+        if close_ramp is not None and not 0 < close_ramp <= 2:
+            raise ContractError("close_ramp must lie in (0, 2]")
+        if not np.isfinite(stop_height_m):
+            raise ContractError("stop height must be finite")
+        self.e9_truth = initial_truth
+        self.e9 = rx.RestingPlaceExpert(initial_truth, **ie.E9)
+        names = tuple(p.name for p in self.e9.phases)
+        if names != PHASE_NAMES:
+            raise ContractError(f"unexpected e9 phases {names}")
+        self.live = live
+        self.stop_height_m = float(stop_height_m)
+        self.close_mode = close_mode
+        self.shelf_clearance_m = float(shelf_clearance_m)
+        self.shelf_top_z = float(shelf_top_z)
+        self.close_ramp = None if close_ramp is None else float(close_ramp)
+        self.anchor_w: np.ndarray | None = None
+        self.log: list[dict] = []
+
+    # e9's interface (run_attempt reads these)
+    @property
+    def phases(self):
+        return self.e9.phases
+
+    @property
+    def phase_index(self):
+        return self.e9.phase_index
+
+    @property
+    def done(self):
+        return self.e9.done
+
+    @property
+    def max_steps(self):
+        return self.e9.max_steps
+
+    @property
+    def step_count(self):
+        return self.e9.step_count
+
+    @property
+    def release_target(self):
+        return self.e9.release_target
+
+    def target(self, name: str, raw: dict, ee_base) -> np.ndarray:
+        """The palm target (base frame) of phase ``name`` on Arena's live state ``raw``."""
+        from embodied_jepa import resting_expert as rx
+
+        pelvis = raw["pelvis_pose"]
+        apple = np.asarray(raw["apple_com_pose"], float)[:3]
+        if name == "orient":
+            return anchored_target(apple, pelvis, dx=E9_PICK_DX, dz=E9_ORIENT_DZ)
+        if name == "descend":
+            return anchored_target(apple, pelvis, dx=E9_PICK_DX, dz=self.stop_height_m)
+        if self.anchor_w is None:  # the first close command freezes the grasp anchor
+            self.anchor_w = apple.copy()
+        if name == "close":
+            hold = anchored_target(self.anchor_w, pelvis, dx=E9_PICK_DX, dz=self.stop_height_m)
+            if self.close_mode == "hold":
+                return hold
+            low = raw.get("hand_min_z")
+            if low is None:
+                raise ContractError("shelf_servo needs the server's hand geometry")
+            ee_w = base_to_world(ee_base, pelvis)
+            z = ee_w[2] + (self.shelf_top_z + self.shelf_clearance_m - float(low))
+            p = self.anchor_w + E9_PICK_DX * heading(pelvis)
+            return world_to_base([p[0], p[1], z], pelvis)
+        lift = anchored_target(self.anchor_w, pelvis, dx=E9_PICK_DX, dz=E9_LIFT_DZ)
+        if name == "lift":
+            return lift
+        plate = world_to_base(np.asarray(raw["plate_pose"], float)[:3], pelvis)
+        release = rx.RestingPlaceExpert.release_pose(
+            plate[:2] + [ie.E9["release_dx"], 0.0],
+            reach_radius_m=E9_REACH["reach_radius_m"],
+            floor=E9_REACH["release_z_floor_m"],
+            ceiling=E9_REACH["release_z_ceiling_m"],
+        )
+        if name == "transfer":
+            return np.array([release[0], release[1], max(lift[2], release[2])])
+        if name in ("lower", "steady", "open", "clear"):
+            return release  # e9's open_dx_m is 0
+        if name == "retreat":
+            return release + [0.0, 0.0, 0.08]
+        raise ContractError(f"unknown phase {name!r}")
+
+    def action(self, robot):
+        from dataclasses import replace
+
+        i = self.e9.phase_index
+        phase = self.e9.phases[i]
+        raw = self.live()
+        ee_base, _ = robot.ee_pose("right")
+        target = self.target(phase.name, raw, ee_base)
+        phases = list(self.e9.phases)
+        phases[i] = replace(phase, target_base=np.asarray(target, float))
+        self.e9.phases = tuple(phases)
+        action = self.e9.action(robot)
+        if self.close_ramp is not None and phase.name == "close":
+            action[13] = min(float(action[13]), self.e9.accepted_grasp + self.close_ramp)
+        self.log.append(
+            {
+                "phase": phase.name,
+                "command": raw.get("_command"),
+                "target_base": np.asarray(target).tolist(),
+            }
+        )
+        return action
+
+    def advance(self, result):
+        self.e9.advance(result)
+
+
+# ----- the shelf-press probe (docs/ARENA.md §9.1) ---------------------------------------------
+PROBE_PHASES = (  # (name, commands, grasp): e9's orient, descend and close counts, then a hold
+    ("orient", 130, -1.0),
+    ("descend", 80, -1.0),
+    ("close", 45, 1.0),
+    ("hold", 100, 1.0),
+    ("retreat", 60, -1.0),
+)
+PROBE_MODES = ("press", "hover", "high")
+E9_DESCEND_DZ = 0.052  # e9's descend and close target above the apple centre
+
+
+class ShelfPressProbe:
+    """Empty-hand probe: does the WBC step when the right hand presses the shelf?
+
+    e9's palm-down approach to ``site_w`` (Arena env-local: where the apple centre would be;
+    the apple is placed out of reach), then e9's descend and close command counts and a
+    100-command closed hold:
+
+    * ``press``: e9's own descend/close target (0.052 m above the apple centre), which puts the
+      hand on the shelf as e9 did in Arena;
+    * ``hover``: the palm is servoed so that Arena's lowest right-hand collision point stays
+      ``clearance_m`` above the shelf top (live ``hand_min_z``);
+    * ``high``: the palm stays at e9's orient height (0.13 m above the site).
+
+    Targets are world-anchored and mapped through the live pelvis each command (as e9-arena).
+    ``log`` keeps, per command, the palm's world height, the hand's lowest point and the pelvis."""
+
+    def __init__(
+        self,
+        initial_truth,
+        *,
+        live,
+        site_w,
+        mode: str,
+        clearance_m: float = 0.01,
+        shelf_top_z: float = ARENA_SHELF_TOP_Z,
+    ):
+        from embodied_jepa.scripted import OracleManipulationPolicy, OraclePhase
+
+        if mode not in PROBE_MODES:
+            raise ContractError(f"mode must be one of {PROBE_MODES}")
+        self.p = OracleManipulationPolicy(initial_truth)
+        self.p.phases = tuple(OraclePhase(n, np.zeros(3), g, c) for n, c, g in PROBE_PHASES)
+        self.live = live
+        self.site_w = np.asarray(site_w, float)
+        if self.site_w.shape != (3,) or not np.isfinite(self.site_w).all():
+            raise ContractError("site must be 3 finite values (Arena env-local)")
+        self.mode = mode
+        self.clearance_m = float(clearance_m)
+        self.shelf_top_z = float(shelf_top_z)
+        self.log: list[dict] = []
+
+    phases = property(lambda self: self.p.phases)
+    phase_index = property(lambda self: self.p.phase_index)
+    done = property(lambda self: self.p.done)
+    max_steps = property(lambda self: self.p.max_steps)
+    step_count = property(lambda self: self.p.step_count)
+
+    def target(self, name: str, raw: dict, ee_base) -> np.ndarray:
+        pelvis = raw["pelvis_pose"]
+        high = anchored_target(self.site_w, pelvis, dx=E9_PICK_DX, dz=E9_ORIENT_DZ)
+        if name in ("orient", "retreat") or self.mode == "high":
+            return high
+        if self.mode == "press":
+            return anchored_target(self.site_w, pelvis, dx=E9_PICK_DX, dz=E9_DESCEND_DZ)
+        low = raw.get("hand_min_z")
+        if low is None:
+            raise ContractError("hover needs the server's hand geometry")
+        ee_w = base_to_world(ee_base, pelvis)
+        z = ee_w[2] + (self.shelf_top_z + self.clearance_m - float(low))
+        p = self.site_w + E9_PICK_DX * heading(pelvis)
+        return world_to_base([p[0], p[1], z], pelvis)
+
+    def action(self, robot):
+        from dataclasses import replace
+
+        i = self.p.phase_index
+        phase = self.p.phases[i]
+        raw = self.live()
+        ee_base, _ = robot.ee_pose("right")
+        target = self.target(phase.name, raw, ee_base)
+        phases = list(self.p.phases)
+        phases[i] = replace(phase, target_base=np.asarray(target, float))
+        self.p.phases = tuple(phases)
+        self.log.append(
+            {
+                "phase": phase.name,
+                "command": raw.get("_command"),
+                "ee_world": base_to_world(ee_base, raw["pelvis_pose"]).tolist(),
+                "hand_min_z": raw.get("hand_min_z"),
+                "hand_min_link": raw.get("hand_min_link"),
+                "pelvis_pose": list(map(float, raw["pelvis_pose"])),
+                "target_base": np.asarray(target).tolist(),
+            }
+        )
+        return self.p.action(robot)
+
+    def advance(self, result):
+        self.p.advance(result)
