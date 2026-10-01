@@ -56,4 +56,7 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Import this checkout's src, not whatever checkout the shared .venv's editable install
+# points at (git worktrees share one .venv). tests/conftest.py fails loudly otherwise.
+pythonpath = ["src"]
 addopts = "-ra"
