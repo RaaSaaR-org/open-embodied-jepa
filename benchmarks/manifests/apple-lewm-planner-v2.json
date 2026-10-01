@@ -4722,7 +4722,7 @@
   }
  },
  "corpus_plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
- "protocol_document_sha256": "28b5837a89e2c3aa93958f1104295cd3913f822ae2f3ce9b1f26245d978b3941",
+ "protocol_document_sha256": "b3192cd48593b0797fee9f5a7385b28e62398385dcf9c89e1e5b5da799ae9085",
  "encoder_digests": {
   "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
   "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2"
@@ -5474,7 +5474,7 @@
   "scripts/rank_wm_critic_v2.py": "6d4cdc9017369f9c4ae95184c153b8bed5c6db84cc02a6cd9c4b84a243861d64",
   "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
-  "scripts/run_lewm_planner_v2.py": "46c364b8a511b9046d6b9d7df7f978088e1254010acdc8338e13fdea356832a5",
+  "scripts/run_lewm_planner_v2.py": "2d229a95b219b531eb18d84381c36c8db2294f4b2771e3bb0a75945ea087b94a",
   "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
   "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
@@ -5497,7 +5497,7 @@
   "src/embodied_jepa/hybrid_selection.py": "b96ae08098da94202ec74f1cab9ff0fe025ced7f65bf505bbb21ca557a298d4a",
   "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
   "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
-  "src/embodied_jepa/lewm_planner_v2.py": "b7a375c79d9ee4d782389fe8dc5a715827c676ad6efc98149ac3e86c76a5113b",
+  "src/embodied_jepa/lewm_planner_v2.py": "f097d179479fe1f48b21594c594d2fc99565522a3347fb8514743d94c295d737",
   "src/embodied_jepa/lewm_planner_v2_offline.py": "84ae5ee71829443665163941aab100c7219453962678a037fc27e8cbaf11d3a7",
   "src/embodied_jepa/lewm_planner_v2_runtime.py": "ccfac04c1f2e8cc62039186c3388d971a002e7ebe5b08f70f6e97e257c3cb170",
   "src/embodied_jepa/look_corpus.py": "41a05027d30375884f9e562a4887814db65bf5111fc7bc8fe2ddcf38e206d84b",
@@ -5525,7 +5525,7 @@
   "src/embodied_jepa/wm_critic_v2.py": "125b6f64d3acb9341f243fe123d1c646a433104471924790c79112678c0efc85",
   "src/embodied_jepa/wm_critic_v2_offline.py": "7c2cd7bc39d1b87e46b4c4e92ab55bbe4a357ccc1dfccbf16e7a066a3f9c1cfa",
   "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
-  "tests/test_lewm_planner_v2.py": "6a261cc5f94ca226ae0356c48101c1b641dc2e2472a5ab953c4bcc3ca7cb71df",
+  "tests/test_lewm_planner_v2.py": "6392fe6e38e88bb6356dbfcae3f095402817cc08f869f9547d2046ca89e8ec1c",
   "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
@@ -5724,6 +5724,111 @@
     "diag2.py": "OUT=outputs/task074-fix-diag-2 UPDATES=3000 (fixed featurise_sources)"
    },
    "revision": "e9da1cc632de24d6c791fbaf42a11324ad7bde83 (task074-memfix worktree), MUJOCO_GL=egl, PYTHONPATH=src"
+  }
+ },
+ "addendum_a2": {
+  "date": "2026-10-01",
+  "section": "docs/experiments/apple_lewm_planner_v2.md, Addendum A2",
+  "frozen_sha256_unchanged": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+  "ruled_by": "decided by Claude under owner delegation, 2026-10-01",
+  "train_run_2_escalate": {
+   "revision": "f52c905a423a0f50b4a95ec46466aa758983178d",
+   "report": "outputs/task074-train/run-2/report.json (worktree task074-run2)",
+   "report_sha256": "f5974cd290f739e7cc20944e68fe8a9dfe485f46cf400d7c89960fa608f20638",
+   "outcome": "ESCALATE-BUDGET",
+   "started_utc": "2026-09-30T23:58:15Z",
+   "first_outcome_utc": "2026-10-01T00:01:39Z",
+   "ended_utc": "2026-10-01T01:30:22Z",
+   "peak_tree_pss_gib": 5.249903678894043,
+   "calibration": {
+    "W-7410": {
+     "saturation_update": 25000,
+     "selected_update": 39000,
+     "selected_val_criterion": 0.3459730805883059,
+     "selected_in_last_two_points": false,
+     "seconds": 2664.3
+    },
+    "N-7410": {
+     "saturation_update": 40000,
+     "selected_update": 54000,
+     "selected_val_criterion": 0.378675604954762,
+     "selected_in_last_two_points": false,
+     "seconds": 2653.9
+    }
+   },
+   "rule": {
+    "max_saturation_update": 40000,
+    "wanted": 80000.0,
+    "updates": 60000,
+    "escalate": true
+   },
+   "seed_models_trained": false,
+   "baselines_sha256": "ff3a2e7bc5b5b9d4e625c1a969643b79c62269b6c2ce3dbc7484b2ce5ff4d07e",
+   "baselines_identical_to_run_1": true
+  },
+  "cap": {
+   "frozen": 60000,
+   "train_stage": 80000
+  },
+  "scope": "TASK-074's train stage only; BUDGET in the frozen block is not edited (it is hashed by frozen_sha256, and read_stage_report refuses K1-PASS and CORPUS-SEALED reports from another frozen block)",
+  "override": "lewm_planner_v2.A2_TRAIN_BUDGET (outside the frozen block), train_budget_updates, train_last_two_raise, a2_calibration_check; the runner's stage_train only",
+  "last_two_raise": "min(2U, 80000); a last-two selection at U = 80000 escalates (ESCALATE-BUDGET-LAST-TWO), not ruled in advance",
+  "unchanged": "calibration runs and updates, select-every, saturation tolerance, factor, step, min, selection points, seeds, splits, batch, selection rules, O1-O5, every bar, the void rule",
+  "seen_before_ruling": "run-2's calibration values and curves (W and N on seed 7410, on val roots; W's selected criterion 0.346 below N's 0.379) and the W-independent blind baselines already disclosed in A1.5; no O1/O2 statistic and no seed model exists",
+  "upstream_reports": {
+   "K1-PASS": {
+    "report": "outputs/task074-k1/run-1/report.json (worktree task074-run)",
+    "sha256": "25701293c54fd585274d7734018de7485d65f92915060ed7aa034439db8aad88",
+    "revision": "9d9b03cff44848f0b43b63f9d1f560a378c672ba",
+    "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+    "accepted_by_read_stage_report_at_a2": true
+   },
+   "CORPUS-SEALED": {
+    "report": "outputs/task074-corpus/run-1/report.json (worktree task074-run)",
+    "sha256": "16e6417eee7596e9553cf65f02afc4c3784224406782f685067cb83ddda702ac",
+    "revision": "9d9b03cff44848f0b43b63f9d1f560a378c672ba",
+    "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+    "corpus_manifest_sha256": "fe7ab9150216887f5759521dcc7fe7c7f54d2e5e8c36fecf6ed713a000b134bd",
+    "accepted_by_read_stage_report_at_a2": true
+   }
+  },
+  "run_3": {
+   "what": "the train stage's continuation after an escalation, from scratch, in a new run worktree at the A2 merge commit; not a section-7 V-repeat (that repeat was spent by run-2)",
+   "output": "outputs/task074-train/run-3",
+   "checkpoints": "checkpoints/task074-train/run-3",
+   "calibration": "re-run as frozen (deterministic); if its saturation updates equal run-2's (W-7410 25000, N-7410 40000), U = 80000; if they differ, ESCALATE-BUDGET again and nothing is changed",
+   "void": "a V before first_outcome_utc may be repeated as-is; a V after it is not repeated: it goes to the owner and TASK-074 closes INCONCLUSIVE",
+   "expected_offline_rows": "O2 fails its W-independent encoded bar (A1.5), so the best row is L-G2A (the clause fires), else L-NO-DYNAMICS or L-O2-VOID; the results document records O2's W-dependent components per W seed"
+  },
+  "pins_changed": {
+   "scripts/run_lewm_planner_v2.py": [
+    "46c364b8a511b9046d6b9d7df7f978088e1254010acdc8338e13fdea356832a5",
+    "2d229a95b219b531eb18d84381c36c8db2294f4b2771e3bb0a75945ea087b94a"
+   ],
+   "src/embodied_jepa/lewm_planner_v2.py": [
+    "b7a375c79d9ee4d782389fe8dc5a715827c676ad6efc98149ac3e86c76a5113b",
+    "f097d179479fe1f48b21594c594d2fc99565522a3347fb8514743d94c295d737"
+   ],
+   "tests/test_lewm_planner_v2.py": [
+    "6a261cc5f94ca226ae0356c48101c1b641dc2e2472a5ab953c4bcc3ca7cb71df",
+    "6392fe6e38e88bb6356dbfcae3f095402817cc08f869f9547d2046ca89e8ec1c"
+   ]
+  },
+  "smoke": {
+   "revision": "cb26c0863b35d309a3b0fcde7575d230d074d432",
+   "tracked_tree_dirty": false,
+   "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+   "output": "outputs/task074-a2-smoke-1/train",
+   "report_sha256": "cb4fddf7ffa8a9ae488bbf1a2c6abc574a38f47810c60fd8231bb806d9d10ca5",
+   "inputs": {
+    "k1_report_sha256": "6c38f56b24cca5524a04680d786ebd0b4febda5b7223967d3b2aede3b8a98787",
+    "corpus_manifest_sha256": "68499d90c4ee4e0c4cf76b861ed1eafc657df1bcee26f6913d803c4015d11c46"
+   },
+   "outcome": "TRAIN-COMPLETE",
+   "total_seconds": 1494.4,
+   "train_scale_peak_tree_pss_gib": 7.817322731018066,
+   "within_margin": true,
+   "compared_with": "A1 fix smoke c0044bb6c... (e9da1cc): 998 leaves, 976 identical, 22 timing/path fields differ, 9 new A2 leaves; baselines.json, r_off.npz, r_plate.npz and 6 checkpoint sha256s byte-identical"
   }
  }
 }

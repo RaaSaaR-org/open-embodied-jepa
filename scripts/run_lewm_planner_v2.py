@@ -722,6 +722,9 @@ def stage_train(report, manifest, evidence, clock, args):
     from embodied_jepa import pretrained_encoder as pe
     from embodied_jepa import token_dynamics as td
 
+    report["addendum_a2"] = {
+        k: lp.A2_TRAIN_BUDGET[k] for k in ("addendum", "stage", "frozen_cap", "cap", "ruled_by")
+    }
     read_stage_report(args.k1_report, args.k1_sha256, "K1-PASS", args.smoke, report)
     reader = rt2.CorpusReader(Path(args.corpus), args.corpus_sha256, splits=lp.READ_SPLITS)
     report["_reader"] = reader
@@ -791,7 +794,8 @@ def stage_train(report, manifest, evidence, clock, args):
     ctx = train_context(table, idx, schema, {"corpus_manifest_sha256": args.corpus_sha256})
     ckpt = Path(args.checkpoints)
     ckpt.mkdir(parents=True, exist_ok=False)
-    b = dict(lp.BUDGET) | (SMOKE_BUDGET if args.smoke else {})
+    # Addendum A2: the train stage's cap is 80 000 (the frozen BUDGET["cap"] stays 60 000).
+    b = dict(lp.BUDGET) | {"cap": lp.A2_TRAIN_BUDGET["cap"]} | (SMOKE_BUDGET if args.smoke else {})
     calibration = {}
     for arm, seed in b["calibration_runs"]:
         clock.check(f"calibration {arm}")
@@ -801,8 +805,11 @@ def stage_train(report, manifest, evidence, clock, args):
         calibration[f"{arm}-{seed}"] = rec | {
             "saturation_update": td.saturation_update(rec["val_curve"], b["saturation_tolerance"])
         }
-    budget = lp.budget_updates([v["saturation_update"] for v in calibration.values()])
-    report["stages"]["budget"] = {"calibration": calibration, "rule": budget}
+    budget = lp.train_budget_updates([v["saturation_update"] for v in calibration.values()])
+    a2 = lp.a2_calibration_check({k: v["saturation_update"] for k, v in calibration.items()})
+    report["stages"]["budget"] = {"calibration": calibration, "rule": budget, "addendum_a2": a2}
+    if not a2["reproduces_run_2"] and not args.smoke:
+        return {"outcome": "ESCALATE-BUDGET"}  # A2: the calibration differs from run-2's
     if budget["escalate"] and not args.smoke:
         return {"outcome": "ESCALATE-BUDGET"}
     updates = budget["updates"] if not args.smoke else b["updates"]
@@ -821,9 +828,10 @@ def stage_train(report, manifest, evidence, clock, args):
         report["stages"][f"models_u{updates}"] = records
         if not last_two or args.smoke:
             break
-        if attempt == 1 or updates >= b["cap"]:
+        raised = lp.train_last_two_raise(updates, attempt)  # A2: min(2U, 80 000)
+        if raised is None:
             return {"outcome": "ESCALATE-BUDGET-LAST-TWO"}
-        updates = min(2 * updates, b["cap"])
+        updates = raised
     w = {s: models[("W", s)] for s in lp.MODEL_SEEDS}
     n = {s: models[("N", s)] for s in lp.MODEL_SEEDS}
     primary = min(lp.MODEL_SEEDS, key=lambda s: (records[f"W-{s}"]["selected_val_criterion"], s))

@@ -30,6 +30,8 @@ TASK-072 run-1's perception seeds and D2. It refits run-1's readouts and reprodu
 
 **Addendum A1 (2026-10-01, at the end of this document).** The train stage's run-1 ended V on G-memory after its boundary. A1 records the V, the memory fix (no computed number changes; the frozen block and its sha are unchanged), the full-scale smoke, and the finding that O2's encoded-readout bar (1.0 cm) is above this corpus's readout ceiling (about 2.9 cm), which is not a code bug.
 
+**Addendum A2 (2026-10-01, after A1).** The train stage's run-2 (the A1 repeat) ended ESCALATE-BUDGET: the frozen budget rule wanted 80 000 updates, above the 60 000 cap. A2 raises the train stage's cap to 80 000 (TASK-074's train stage only) as a recorded override outside the frozen block (the frozen sha is unchanged), discloses what was seen (the calibration curves and the blind baselines), and defines run-3 as the stage's continuation after an escalation, not a §7 V-repeat.
+
 Manifest: `benchmarks/manifests/apple-lewm-planner-v2.json` (the frozen block, the stored cohort
 values and digests, the corpus plan's digest, the pins, the smoke record).
 - **Design:** `src/embodied_jepa/lewm_planner_v2.py`.
@@ -1086,3 +1088,168 @@ match), never OFFLINE-PASS. That is recorded here, before the re-run, and is not
 - The closest earlier project figure is TASK-054's encoded-target readout error of 2.47–2.59 cm.
   It was measured on moving windows at h = 8, with a different encoder and a different quantity
   (palm–apple); it alone exceeded that protocol's 1.5 cm rollout bar (G1).
+
+---
+
+## Addendum A2 (2026-10-01): the train run-2 ESCALATE-BUDGET and the train stage's budget cap
+
+This addendum resolves an escalation. It raises **one number for one stage**: the train stage's
+budget cap, from 60 000 to 80 000 updates. It changes **no threshold, seed, split, batch size,
+selection rule, gate, fit or computed number**. The frozen block is unchanged (frozen sha
+`2cf80f5a…e36a`), so K1's K1-PASS report and the sealed `apple-far-shift-v2` corpus's
+CORPUS-SEALED report stay valid upstream evidence.
+
+### A2.1 What happened: run-2 ended ESCALATE-BUDGET
+
+The train stage's repeat under A1 (§7's one repeat after a reviewed fix) ran at `f52c905` in the
+run worktree `task074-run2` and ended **ESCALATE-BUDGET**, a budget row, which §7 lists under
+"escalate".
+- report `outputs/task074-train/run-2/report.json`, sha256
+  `f5974cd290f739e7cc20944e68fe8a9dfe485f46cf400d7c89960fa608f20638`;
+- `started_utc` 2026-09-30T23:58:15Z, `first_outcome_utc` 2026-10-01T00:01:39Z, `ended_utc`
+  01:30:22Z (5 527 s); clean tree, frozen sha `2cf80f5a…`;
+- upstream: K1-PASS `25701293…8aad88` and the corpus manifest `fe7ab915…b134bd`, both at
+  `9d9b03c`;
+- memory: peak tree PSS **5.25 GiB** (ceiling 12), 1 process, no RSS fallback.
+
+**Calibration** (seed 7410, 60 000 updates each, a selection point every 1 000):
+
+| run | saturation update | selected update | selected val criterion | in last two points | seconds |
+|---|---|---|---|---|---|
+| W-7410 | 25 000 | 39 000 | 0.34597 | no | 2 664 |
+| N-7410 | 40 000 | 54 000 | 0.37868 | no | 2 654 |
+
+**The budget rule** (§5, carried from TASK-073: U = clamp(5000 · ⌈2 · max u_sat / 5000⌉,
+10 000, 60 000), escalate above the cap) gave `wanted` 80 000, `updates` 60 000,
+`escalate` true. The stage stopped there, as written. **No W or N seed model was trained**: there
+are no O1 or O2 per-seed numbers and no checkpoints. The stage had also written its
+readouts and the blind baselines. Its `baselines.json` and `r_off.npz` are byte-identical to
+run-1's (`ff3a2e7b…d07e`, `22707264…b6a0`), so the baselines are the values A1.5 already
+disclosed (encoded 2.872 cm, persistence 4.351 cm, clock prior 3.123 cm; 90 moving windows on 22
+val roots).
+
+### A2.2 The ruling (decided by Claude under owner delegation, 2026-10-01)
+
+1. **The train budget cap is raised from 60 000 to 80 000 updates, for TASK-074's train stage
+   only.** U is then 80 000: the value the frozen formula asks for, not a value chosen here. The
+   last-two rule's raise becomes min(2U, 80 000), so a last-two selection at U = 80 000 still
+   escalates (ESCALATE-BUDGET-LAST-TWO). That row stays "escalate" and is not ruled in advance.
+2. **The next train stage runs from scratch as run-3**, in a new run worktree at this
+   addendum's merge commit (§A2.5).
+3. Nothing else changes. Calibration (2 runs, 60 000 updates, every 1 000), the saturation
+   tolerance (0.01), the factor (2), the step (5 000), the minimum (10 000), the 20 selection
+   points, the model seeds, the splits, batch 64, O1–O5, every bar and the void rule are as
+   frozen.
+
+### A2.3 Why
+
+- **The cap was a resource bound, not a quality bar.** It bounded the train stage's time and
+  memory; no gate reads it.
+- **The frozen rule itself asks for 80 000.** 2 × 40 000 (N's saturation) is 80 000, already on
+  the 5 000 grid. Raising the cap to exactly that value leaves no free choice: the cap is not set
+  to any number that the formula does not produce.
+- **The resources are measured and fit.** Peak PSS was 5.25 GiB against the 12 GiB ceiling. A
+  60 000-update calibration model took about 2 660 s, so an 80 000-update model takes about
+  3 550 s (about 1 h; with 20 selection points instead of 60 it should take a little less). That is
+  below the 5 400 s per-model cap. Run-3 is about 2 × 2 660 s of calibration, 6 × about 3 550 s of
+  models, about 200 s of features and readouts and 10–40 min of O1/O2: about 7.3–7.9 h, below the
+  43 200 s cap per invocation.
+- **What is known is limited, and it is disclosed here (A2.4).** No W or N outcome number exists:
+  no O1 or O2 statistic, no seed model. The cap is not selected on outcomes: it is the formula's
+  own value.
+
+### A2.4 What was seen before this ruling (disclosure)
+
+- **The calibration values** in A2.1: the two saturation updates, the selected updates and
+  the selected val criteria, and the two full val curves in the run-2 report.
+- **The blind baselines** (encoded 2.872, persistence 4.351, clock prior 3.123 cm). They do not
+  depend on W, and A1.5 had already disclosed them from run-1.
+- **A caveat on "no W or N outcome number".** The calibration's selected val criteria are W and N
+  numbers on val roots: on seed 7410, W's normalised squared error (0.346) is below N's (0.379).
+  That is the same direction as O1's W/N comparison (§6.1), on one seed and one criterion, not
+  O1's statistic, horizon or bar. It was seen before this ruling. It did not set the cap: the
+  formula did.
+
+### A2.5 Implementation: a recorded override, not an edit of the frozen block
+
+**Where the cap lives.** `BUDGET["cap"]` (60 000) is in `src/embodied_jepa/lewm_planner_v2.py`,
+inside `frozen_block()["budget"]`, which `frozen_sha256()` hashes. Editing it would change the
+frozen sha, and `read_stage_report` would then refuse the K1-PASS and CORPUS-SEALED reports
+(both recorded under `2cf80f5a…`). So **the frozen block is not edited**. Instead:
+- **`lewm_planner_v2.A2_TRAIN_BUDGET`**, outside the frozen block: addendum `A2`, stage `train`,
+  `frozen_cap` 60 000 (read from `BUDGET`), `cap` 80 000, the ruling, and run-2's revision,
+  report sha256 and saturation updates;
+- **`budget_updates(…, cap=None)`**: the frozen formula, unchanged; `cap` defaults to the frozen
+  60 000;
+- **`train_budget_updates`**: the frozen formula with A2's cap; the rule it returns records
+  `cap`, `frozen_cap` and `addendum`;
+- **`train_last_two_raise(U, attempt)`**: min(2U, 80 000), or escalate after one raise or when U
+  is already 80 000 (the logic the runner had inline, with A2's cap);
+- **`a2_calibration_check`**: whether the calibration's saturation updates equal run-2's (25 000
+  and 40 000).
+- **The runner** (`stage_train` only): the budget dict takes A2's cap; the stage writes a
+  top-level `addendum_a2` record (addendum, stage, both caps, the ruling) at its start, and
+  `stages.budget.addendum_a2` (the reproduction check) next to the rule. If the calibration does
+  not reproduce run-2's saturation updates, the stage returns ESCALATE-BUDGET before the budget
+  rule is applied. No other stage reads A2.
+- **The manifest** records `addendum_a2`, and the pins of the three changed files:
+  `src/embodied_jepa/lewm_planner_v2.py`, `scripts/run_lewm_planner_v2.py` and
+  `tests/test_lewm_planner_v2.py`. `protocol_document_sha256` is this document's new sha256.
+- **Tests:** the cap is 80 000 for the train stage and U is 80 000 for u_sat = 40 000; the frozen
+  cap is still 60 000 and gives run-2's result; escalation still fires above 80 000; the last-two
+  raise is min(2U, 80 000) and escalates at U = 80 000; the reproduction check; the frozen sha is
+  the literal and `read_stage_report` accepts K1-PASS and CORPUS-SEALED reports recorded under
+  it; and `stage_train` uses the A2 functions. The real K1-PASS (`25701293…`) and CORPUS-SEALED
+  (`16e6417e…`) reports in `task074-run` were checked with `read_stage_report` at this addendum's
+  code: both are accepted.
+
+### A2.6 Run-3, and how it is counted
+
+- **What it is.** Run-3 is the train stage's **continuation after an escalation**. It is **not a
+  §7 V-repeat**: the one repeat after a reviewed fix was spent by run-2 (A1).
+- **How it runs.** From scratch, in a new run worktree at this addendum's merge commit, into new
+  output and checkpoint directories (`outputs/task074-train/run-3`,
+  `checkpoints/task074-train/run-3`), with the same upstream inputs as run-2 (K1-PASS
+  `25701293…`, corpus manifest `fe7ab915…`) and the same evidence root. Nothing from run-2 is
+  reused.
+- **The calibration is re-run as frozen.** It is deterministic.
+  - If it reproduces run-2's saturation updates (W-7410 25 000, N-7410 40 000), U = 80 000.
+  - If it differs, the stage returns ESCALATE-BUDGET again and nothing is changed.
+- **A last-two selection at U = 80 000** returns ESCALATE-BUDGET-LAST-TWO, an escalation that is
+  not ruled in advance.
+- **A V in run-3:**
+  - before its boundary (`first_outcome_utc`): it may be repeated as-is, recorded, as §7 allows;
+  - after its boundary: it is **not repeated**. It goes to the owner, and TASK-074 closes
+    **INCONCLUSIVE**.
+
+### A2.7 A1.5's expectations still hold
+
+O2's encoded-readout statistic (2.872 cm against the 1.0 cm bar) does not depend on W or on U, so
+O2 fails on every seed whatever run-3 trains. The best possible offline decision is **L-G2A**,
+which fires the §7 abandonment clause; otherwise it is L-NO-DYNAMICS or L-O2-VOID. If run-3 is
+TRAIN-COMPLETE, the results document records, as A1.5's ruling requires, that the encoded bar was
+uncalibrated and sat below the readout ceiling, and O2's W-dependent components for every W seed:
+the predicted median, the ratio against persistence (i), the ratio against the clock prior (iii),
+and N's ratio against persistence (ii).
+
+### A2.8 The smoke at this addendum's code
+
+A train smoke ran at the A2 code commit `cb26c08` (clean tree, frozen sha `2cf80f5a…`), on the
+frozen-code smoke's own inputs (K1 smoke report `6c38f56b…`, smoke corpus `68499d90…`), into
+`outputs/task074-a2-smoke-1/train` (report sha256 `cb4fddf7…0ca5`). Later commits on this branch
+change only this document and the manifest, which are not pinned.
+- **Outcome TRAIN-COMPLETE**, 1 494 s; start loads 0.76 / 0.75.
+- **The A2 record is written:** top-level `addendum_a2` (`cap` 80 000, `frozen_cap` 60 000,
+  addendum `A2`, stage `train`); `stages.budget.rule` carries `cap`, `frozen_cap` and
+  `addendum`; `stages.budget.addendum_a2` records the reproduction check. Its value is
+  `reproduces_run_2: false` because the smoke's 200-update calibration saturates at 200. A smoke
+  does not apply that check, or the escalation.
+- **No computed number changes.** Against the A1 fix smoke (`c0044bb6…a532`, at `e9da1cc`, same
+  inputs), all 998 of its `stages` leaf values (`train_scale` excluded) are present.
+  - **976 are identical.** The 22 that differ are the same timing and path fields as in A1.3: 10
+    `seconds` and 12 run paths.
+  - The 9 new leaves are the A2 record.
+  - `baselines.json`, `r_off.npz`, `r_plate.npz` and all 6 W/N checkpoint sha256s are
+    byte-identical.
+- **Train-scale probe:** stage peak tree PSS **7.82 GiB** (ceiling 12, margin 2.0: passes); the
+  probe took 730 s.
