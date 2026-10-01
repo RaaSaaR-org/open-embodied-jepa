@@ -465,7 +465,7 @@ The two processes also differ from each other: grasp misses were 7/30 against 17
 **Arena-rule failure modes** (`gr00t-tutorial-1`, 14 failures). The classes and thresholds were set after the episodes were seen. Lift is the apple's maximum rise above its start; displacement is its maximum 3-D displacement from the start.
 - **lifted, not placed** (lift ≥ 5 cm): **5.** The apple was lifted 8.3–9.6 cm, then dropped or released off the plate, ending 8.9–18.3 cm from its centre.
 - **knocked** (lift < 5 cm, displacement ≥ 5 cm): **2.** These are eps 15 and 20. The rises were 0.9 and 1.6 cm and the displacements 11.3 and 8.6 cm.
-- **grasp miss** (lift < 5 cm, displacement < 5 cm): **7.** At most 0.3 cm of lift and 2.9 cm of displacement. The hand closes beside the apple or brushes it, then carries an empty hand to the plate.
+- **grasp miss** (lift < 5 cm, displacement < 5 cm): **7.** At most 0.3 cm of lift and 3.7 cm of displacement (ep 16). The hand closes beside the apple or brushes it, then carries an empty hand to the plate.
 
 In `gr00t-settle-1`, under the same thresholds:
 - **grasp miss: 17.** At most 0.3 cm of lift and 4.2 cm of displacement.
