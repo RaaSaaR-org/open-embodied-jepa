@@ -25,7 +25,7 @@ the record shows what was assumed before each was resolved.
 | Actual G1 EDU4 joint/hand/camera configuration | Dual Dex3 as specified, precise calibration pending | TASK-001, 008 | **Simulation only** — MJCF verified in [MUJOCO_SPIKE.md](MUJOCO_SPIKE.md); physical calibration still unset |
 | Existing demonstrations and rights | No usable dataset assumed yet | TASK-001, 010 | **Resolved by collection** — all corpora are locally collected simulation data; no external demonstrations |
 | Python/framework versions | Choose macOS arm64 compatible pins after MuJoCo and LeWM spike | TASK-002, 003, 005 | **Resolved** — pinned in `uv.lock` |
-| External checkpoint suitability | Train on G1 canonical data; no transferable checkpoint assumed | TASK-002, 015 | **Resolved as assumed** — no upstream pretrained weights are used. **Revisited 2026-10-02**: frozen, externally pretrained DINOv2 ViT-S/14 weights are used since TASK-063 (`scripts/fetch_dinov2.py`); GR00T N1.7 is used only as an external reference baseline in Arena (#121), never as a project model |
+| External checkpoint suitability | Train on G1 canonical data; no transferable checkpoint assumed | TASK-002, 015 | **Resolved as assumed** — no upstream pretrained weights are used. **Revisited 2026-10-02**: frozen, externally pretrained DINOv2 ViT-S/14 weights are used since TASK-063 (`scripts/fetch_dinov2.py`); NVIDIA's GN1x-Tuned GR00T N1.7 release (step 65000) is used only as an external reference baseline in Arena (#121), never as a project model |
 | Action frequency/scales and IK implementation | Unset until tested in simulation | TASK-004, 008 | **Resolved for simulation** — `configs/g1_sim_action.json`; hardware values remain unset |
 | Owners, staffing, delivery date | Unassigned; effort ranges only | Assign when execution starts | Still open |
 | Isaac and physical execution | Future ports; local preparation now, commissioning when resources exist | TASK-022, 025, 026 | Still open — TASK-025/026 are in the backlog. **Revisited 2026-10-02**: Isaac (PhysX and Newton) and Isaac Lab-Arena run as development cross-sim checks under TASK-025, not admitted as benchmarks; physical execution is still open (TASK-026, `hardware.py` mock-only) |
@@ -72,7 +72,8 @@ No run was made for them.
 
 - **R1 — the next task is Option 1, the plate-readout perception twin (TASK-076).** The place
   reads the plate position from the image, not the apple-minus-plate offset. The reported-only
-  plate readout is 0.49–0.68 cm against τ = 1.0 cm, and the offset error comes from the apple
+  plate readout is 0.49–0.68 cm in median against τ = 1.0 cm (its 87.5th percentile reaches
+  1.35–1.36 cm on the hand crop, so the tails matter), and the offset error comes from the apple
   term (2.2–3.1 cm). The closed loop (P-3's pick plus e9's place aimed at the frozen-DINOv2 plate
   readout, beside a true-plate ceiling and an image-free clock-prior control) runs no world model,
   so the TASK-075 clause does not close it. TASK-076 needs its own preregistration and review
@@ -103,15 +104,19 @@ No run was made for them.
   [mvp_results.md](experiments/mvp_results.md):
 
   > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
-  > (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (a
-  > frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a
-  > world model) scored 40/40 on the held-out cohort C against 39/40 for its random-init encoder
-  > control R-3, so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing
-  > measurable), and cohort C is no longer held out. No LeWM-driven controller has run in closed
-  > loop on v2 yet; LeWM's only closed-loop runs are on v1, with 0 successes. Scripted-expert,
-  > privileged-ceiling, oracle and GR00T successes are not project-learned results.
+  > (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an
+  > MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert
+  > e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40
+  > for its random-init encoder control R-3 (one run, one training seed per arm, 40 resets, one
+  > camera at 112 px onboard, a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3
+  > (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. No
+  > LeWM-driven controller has run in closed loop on v2 yet; LeWM's only closed-loop Apple→Plate
+  > runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T
+  > successes are not project-learned results. (LeWM also ran in closed loop on
+  > the TASK-014 development reach pilot, a reach task, not Apple→Plate: its v2 target-space
+  > selector reached 1/5 goals, with intervals overlapping the 0/5 controls.)
 
-(R5, any reuse of cohort C, is unchanged: it needs a new, disclosed protocol and a ruling, as
+(R5, any reuse of cohort C, is unchanged: it needs a new, disclosed protocol and the owner's ruling, as
 the 2026-09-28 M2 decision says.)
 
 ## Development record 2026-10-01/02 — Arena cross-simulator checks, a GR00T reference baseline and the white plate (not gated)
@@ -124,15 +129,17 @@ Development only: no preregistration, no gate, and nothing here is a project-lea
   seeds (16/16 in MuJoCo on the same seeds): it never grasps, because the arms stall without a
   gravity offset and, with one, the floating base steps back during the close. A scripted expert
   does not transfer as is. See [ARENA.md](ARENA.md) §7.
-- **GR00T reference baseline (#121, TASK-025).** NVIDIA's GR00T N1.7, run client-only against the
-  owner's server in that scene: **16/30** and **10/30** under Arena's loose contact-and-speed rule
+- **GR00T reference baseline (#121, TASK-025).** NVIDIA's GN1x-Tuned release (GR00T N1.7, step 65000), not
+  the tutorial's checkpoint-20000, run client-only against the owner's server in that scene: **16/30** and **10/30** under Arena's loose contact-and-speed rule
   in two processes, and **0/30** under our stricter `apple_at_rest_arena_v0`. The strict check
   used PhysX's reported apple velocity, which is stale for a resting apple (inferred); a post-hoc
   position-based diagnostic gives 6/30. This is GR00T's result, an external reference, not ours.
   See [ARENA.md](ARENA.md) §8.
-- **White plate (#122).** An opt-in white plate (`plate_color.py`) does not change TASK-075's
-  readouts: the paired white/blue ratios of the offset's median error lie within about 0.90–1.11,
-  and the apple term is unchanged. The plate's colour is not what limits the readout. See
+- **White plate (#122).** An opt-in white plate (`plate_color.py`) leaves TASK-075 at
+  OBS-NONE. The paired intervals bound any colour effect on the offset's median error to about
+  0.90–1.11 (a bound, not a finding of no difference; 1 of 12 intervals excludes 1.0), the apple
+  term is unchanged, and colour does shift the plate-hidden check (overview224 R_off 7.86 → 4.26
+  cm), a real colour effect on a gating check that still passes. The plate's colour is not what limits the readout. See
   [apple_white_plate_dev.md](experiments/apple_white_plate_dev.md).
 
 ## Decision 2026-10-01 — TASK-075 ends OBS-NONE: no view reads the place offset within τ; the clause fires; the next step is a task or condition change

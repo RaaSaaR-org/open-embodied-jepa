@@ -126,9 +126,10 @@ scene's demonstrator ([apple_to_plate_v2_expert.md](experiments/apple_to_plate_v
 
 - **Opt-in plate colour (development).** `plate_color.apply_plate_rgba(model, rgba=None)` recolours
   the 17 plate geoms in place; the default `None` is a no-op, so v2 renders and hashes are
-  unchanged, and `WHITE_PLATE_RGBA` is an off-white. Physics and trajectories are identical. The
-  colour did not change TASK-075's readouts
-  ([apple_white_plate_dev.md](experiments/apple_white_plate_dev.md)).
+  unchanged, and `WHITE_PLATE_RGBA` is an off-white. Physics and trajectories are identical. With
+  the white plate TASK-075 stays OBS-NONE; any colour effect on the offset's median error is
+  bounded to about 0.90–1.11 (1 of 12 intervals excludes 1.0), and colour does shift the
+  plate-hidden check ([apple_white_plate_dev.md](experiments/apple_white_plate_dev.md)).
 - **Simulation-only plate move.** `plate_shift.py` moves the static plate once at a declared
   post-look step (TASK-073/074 conditions); it runs in the harness, outside every controller.
 - **The same scene in Isaac.** [ISAAC_V2_SCENE.md](ISAAC_V2_SCENE.md) adds the v2 apple and plate

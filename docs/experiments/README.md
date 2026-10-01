@@ -6,14 +6,15 @@ failures and negative results stay in them. Read each outcome with the caveats i
 document; the one-line outcomes below are pointers, not claims.
 
 **Status (canonical sentence, [DECISIONS.md](../DECISIONS.md), decision 2026-10-02, R7).**
-Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
-(`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (a
-frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a
-world model) scored 40/40 on the held-out cohort C against 39/40 for its random-init encoder
-control R-3, so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing
-measurable), and cohort C is no longer held out. No LeWM-driven controller has run in closed loop
-on v2 yet; LeWM's only closed-loop runs are on v1, with 0 successes. Scripted-expert,
-privileged-ceiling, oracle and GR00T successes are not project-learned results.
+Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa`
+and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen
+DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world
+model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init
+encoder control R-3 (one run, one training seed per arm, 40 resets, one camera at 112 px onboard,
+a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed
+nothing measurable), and cohort C is no longer held out. No LeWM-driven controller has run in
+closed loop on v2 yet; LeWM's only closed-loop Apple→Plate runs are on v1, with 0 successes.
+Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results.
 
 Manifests are under [`benchmarks/manifests/`](../../benchmarks/manifests/). Run outputs are
 git-ignored and stay on the machine that made them; several finished run worktrees have been
@@ -62,7 +63,7 @@ not rewritten when its worktree is archived.
 | TASK-029/030 | [feasibility_v1](feasibility_v1.md), [feasibility_v2](feasibility_v2.md), [projection optimisation](projection_optimization_v1.md) | [v1 results](feasibility_results_v1.md), [v2 results](feasibility_results_v2.md) | candidate-feasibility diagnostics | `feasibility-results-v{1,2}.json` |
 | TASK-024 | [jepa_wms_spike](jepa_wms_spike.md) | same | optional JEPA-WMs adapter: CPU compatibility only, no manipulation claim | `jepa-wms-spike.json` |
 | TASK-019/020 | [mvp_final](mvp_final.md), [mvp_evaluation](mvp_evaluation.md) | [training](mvp_training_results.md), [results](mvp_results.md) | the frozen v1 MVP benchmark: **0/150 per model** for `native_jepa` and LeWM | `mvp-{corpus-v0,goals-v0,leakage-audit,results-v0}.json` |
-| TASK-014 | [reach_pilot](reach_pilot.md), [v1](reach_pilot_v1.md), [v2](reach_pilot_v2.md) | [results](reach_results.md) | development reaching: 1/5 per model against 0/5 for the controls (intervals overlap) | `reach-pilot-v0*.json`, `reach-development-results.json` |
+| TASK-014 | [reach_pilot](reach_pilot.md), [v1](reach_pilot_v1.md), [v2](reach_pilot_v2.md) | [results](reach_results.md) | development reaching: the v2 selectors reached 1/5 each against 0/5 for the controls (intervals overlap); native v0 reached 3/5 with a collapsed representation | `reach-pilot-v0*.json`, `reach-development-results.json` |
 
 ## Earlier apple development records (TASK-030 to TASK-038, sensor world model)
 
@@ -103,8 +104,8 @@ No preregistration and no gate. Nothing here is a project-learned result.
 
 | Date | Record | What it found |
 |---|---|---|
-| 2026-10-02 | [apple_white_plate_dev](apple_white_plate_dev.md) | an opt-in white plate does not change TASK-075's readouts; colour does not limit the plate readout |
-| 2026-10-01 | [ARENA.md](../ARENA.md) §8 | GR00T N1.7 reference baseline in Isaac Lab-Arena (client-only): 16/30 and 10/30 under Arena's rule, 0/30 under the strict at-rest rule (stale PhysX velocity, inferred; post-hoc position check 6/30). GR00T's result, not ours |
+| 2026-10-02 | [apple_white_plate_dev](apple_white_plate_dev.md) | an opt-in white plate leaves TASK-075 at OBS-NONE; any colour effect on the offset's median error is bounded to about 0.90–1.11 (1 of 12 intervals excludes 1.0), though colour does shift the plate-hidden check; colour is not what limits the readout |
+| 2026-10-01 | [ARENA.md](../ARENA.md) §8 | GR00T reference baseline in Isaac Lab-Arena (client-only; NVIDIA's GN1x-Tuned release (GR00T N1.7, step 65000), not the tutorial's checkpoint-20000): 16/30 and 10/30 under Arena's rule, 0/30 under the strict at-rest rule (stale PhysX velocity, inferred; post-hoc position check 6/30). GR00T's result, not ours |
 | 2026-10-01 | [ARENA.md](../ARENA.md) §1–§7 | the GR00T-tutorial Arena scene; arm kinematics agree, Dex3 fingertips differ by up to 3.1 cm; e9 at rest 0/16 in Arena |
 | 2026-09-30 | [ISAAC_E9_REPLAY.md](../ISAAC_E9_REPLAY.md) | e9 in Isaac/Newton: actions match, at rest 24–26/32 per cell against 31/32 in MuJoCo |
 | 2026-09-29 | [ISAAC_NEWTON_SPIKE.md](../ISAAC_NEWTON_SPIKE.md), [ISAAC_V2_SCENE.md](../ISAAC_V2_SCENE.md) | Newton reproduces MuJoCo's contact behaviour on five scripted cases; PhysX does not roll like MuJoCo |

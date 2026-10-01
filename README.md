@@ -6,7 +6,7 @@ A research framework for action-conditioned visual world models on a simulated U
 
 ## Status — 2026-10-02
 
-**Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world model) scored 40/40 on the held-out cohort C against 39/40 for its random-init encoder control R-3, so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. No LeWM-driven controller has run in closed loop on v2 yet; LeWM's only closed-loop runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results.** (This is the canonical status sentence, [decision 2026-10-02, R7](docs/DECISIONS.md).)
+**Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init encoder control R-3, so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. No LeWM-driven controller has run in closed loop on v2 yet; LeWM's only closed-loop Apple→Plate runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results.** (This is the canonical status sentence; see [decision 2026-10-02, R7](docs/DECISIONS.md) for its scope.)
 
 On v1, the frozen unseen-pair
 benchmark recorded 0/50 on each of three training seeds for both backends — **0/150 per
@@ -89,7 +89,8 @@ loop.
 
 - **TASK-073** ([results](docs/experiments/apple_wm_critic_v2_results.md)), a LeWM token critic
   to pick P-3's aim under a simulation-only mid-episode plate shift, ended at its K0 calibration
-  with row **S-NO-CONDITION**: P-3 given the true plate already reached 26–29/32, and privileged
+  (32 development resets per cell, one run) with row **S-NO-CONDITION**: where the shift broke
+  the unaided policy, P-3 given the true plate already reached 26–29/32, and privileged
   look-ahead added at most +3/32 (bar +4), so there was no measurable room for a critic. The
   critic was never trained or run, and the clause did not fire.
 - **TASK-074** ([results](docs/experiments/apple_lewm_planner_v2_results.md)), a LeWM token
@@ -103,15 +104,16 @@ loop.
   frozen DINOv2 features (upper bounds 2.66–3.44 cm), and no pooled-token readout beats a clock
   prior that reads no image. That closes a LeWM planner or critic for the place phase under
   TASK-074's condition on these views with frozen DINOv2 features, without new evidence of a
-  different kind. Reported only: the plate is read to 0.49–0.68 cm, the apple to 2.2–3.1 cm.
+  different kind. Reported only: the plate is read to 0.49–0.68 cm in median (tails up to about 1.36 cm), the apple to 2.2–3.1 cm.
 - **Next: TASK-076**, the plate-readout perception twin (the place aims at the plate read from the
   image; no world model), with its preregistration pending. This and what counts as a later "task
   change" for LeWM were decided by Claude under owner delegation
   ([decision 2026-10-02](docs/DECISIONS.md), R1–R4).
-- **Development only, not gated:** an opt-in white plate does not change TASK-075's readouts
+- **Development only, not gated:** an opt-in white plate leaves TASK-075 at OBS-NONE (any colour
+  effect on the offset's median error is bounded to about 0.90–1.11; 1 of 12 intervals excludes 1.0)
   ([white plate](docs/experiments/apple_white_plate_dev.md)). In Isaac Lab-Arena (TASK-025,
   [ARENA.md](docs/ARENA.md)), e9 left the apple at rest on 0/16 development seeds (16/16 in
-  MuJoCo), and NVIDIA's GR00T N1.7, run client-only as an external reference, scored 16/30 and
+  MuJoCo), and NVIDIA's GN1x-Tuned release (GR00T N1.7, step 65000), not the tutorial's checkpoint-20000, run client-only as an external reference, scored 16/30 and
   10/30 under Arena's loose rule and 0/30 under our strict at-rest rule, whose check used PhysX's
   reported velocity (a post-hoc position check gives 6/30). Neither is a project-learned result.
 

@@ -131,5 +131,5 @@ from this task would be one run on D2, not LeWM, and not the frozen benchmark.
   owner's ruling. Recorded in the results doc §7 and in DECISIONS (PR #104).
 - 2026-10-02: closed as done. M2 results merged in #104 (`70f1358`), with the owner's ruling
   recorded in `docs/DECISIONS.md` (2026-09-28). Cohort C is no longer held out; any reuse needs
-  a new, disclosed protocol and a ruling. `mc validate` passed with mc 0.1.14.
+  a new, disclosed protocol and the owner's ruling. `mc validate` passed with mc 0.1.14.
 %% mc-links: [[TASK-071]] %%

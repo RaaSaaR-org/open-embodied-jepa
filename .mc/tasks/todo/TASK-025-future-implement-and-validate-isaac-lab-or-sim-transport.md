@@ -89,13 +89,15 @@ criterion above is met yet. Status set to `in-progress` because work is active (
   the Dex3 fingertips differ by up to 3.1 cm. e9 left the apple at rest on 0/16 development seeds
   in Arena (16/16 in MuJoCo): it never grasps, because the arms stall without a gravity offset
   and, with one, the floating base steps back during the close. `docs/ARENA.md` §7.
-- **#121 (`a1b67f4`), GR00T reference baseline.** GR00T N1.7, client-only against the owner's
+- **#121 (`a1b67f4`), GR00T reference baseline.** NVIDIA's GN1x-Tuned release (GR00T N1.7, step 65000), not the tutorial's checkpoint-20000,
+  client-only against the owner's
   server: 16/30 and 10/30 under Arena's rule in two processes, 0/30 under the strict
   `apple_at_rest_arena_v0`, whose check used PhysX's reported velocity (stale for a resting apple,
   inferred); a post-hoc position-based diagnostic gives 6/30. An external reference only.
   `docs/ARENA.md` §8.
 - **#122 (`c16fb04`), white plate.** Not Isaac work, but the same plate question: an opt-in white
-  plate for the MuJoCo v2 scene does not change TASK-075's readouts.
+  plate for the MuJoCo v2 scene leaves TASK-075 at OBS-NONE; any colour effect on the offset's
+  median error is bounded to about 0.90–1.11 (1 of 12 intervals excludes 1.0).
   `docs/experiments/apple_white_plate_dev.md`.
 - **#123 (open, `feat/arena-e9-adapted`), e9-arena.** An Arena-adapted e9 and a shelf-press probe,
   with its declaration (`docs/ARENA.md` §9.0–9.2) committed before any Arena run of e9-arena. Tuning
