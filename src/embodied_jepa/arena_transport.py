@@ -84,10 +84,19 @@ def pin_pxr_work_thread_limit(value: str | None = None, environ=None) -> str | N
     return pin
 
 
-def tutorial_argv(*, headless: bool = True, enable_cameras: bool = True, num_envs: int = 1):
+def tutorial_argv(
+    *,
+    headless: bool = True,
+    enable_cameras: bool = True,
+    num_envs: int = 1,
+    environment: str = TUTORIAL["environment"],
+    external_environment: str | None = None,
+):
     """The Arena CLI arguments of the tutorial's evaluation command, minus the GR00T policy.
 
-    ``--viz kit`` (an on-screen viewer) is replaced by ``--headless``.
+    ``--viz kit`` (an on-screen viewer) is replaced by ``--headless``. ``environment`` and
+    ``external_environment`` (Arena's ``module:Class`` for an environment outside Arena, e.g.
+    ``scripts/isaac/arena_layout_env.py``) select a variant; the defaults are the tutorial's.
     """
     argv = []
     if headless:
@@ -96,8 +105,10 @@ def tutorial_argv(*, headless: bool = True, enable_cameras: bool = True, num_env
         argv.append("--enable_cameras")
     if num_envs != 1:
         argv += ["--num_envs", str(int(num_envs))]
+    if external_environment is not None:
+        argv += ["--external_environment_class_path", str(external_environment)]
     argv += [
-        TUTORIAL["environment"],
+        str(environment),
         "--object",
         TUTORIAL["object"],
         "--destination",
@@ -206,13 +217,27 @@ class ArenaScene:
     RGB; ``truth`` is evaluator-only (apple/plate state, never a policy input).
     """
 
-    def __init__(self, extra_argv: Sequence[str] = (), *, num_envs: int = 1):
+    def __init__(
+        self,
+        extra_argv: Sequence[str] = (),
+        *,
+        num_envs: int = 1,
+        enable_cameras: bool = True,
+        environment: str = TUTORIAL["environment"],
+        external_environment: str | None = None,
+        hold_terminations: bool = False,
+    ):
         import sys
 
         from isaaclab_arena.cli.isaaclab_arena_cli import get_isaaclab_arena_cli_parser
         from isaaclab_arena.utils.isaaclab_utils.simulation_app import get_app_launcher
 
-        argv = tutorial_argv(num_envs=num_envs) + list(extra_argv)
+        argv = tutorial_argv(
+            num_envs=num_envs,
+            enable_cameras=enable_cameras,
+            environment=environment,
+            external_environment=external_environment,
+        ) + list(extra_argv)
         sys.argv = [sys.argv[0], *argv]  # the Arena environment parser reads sys.argv
         parser = get_isaaclab_arena_cli_parser()
         args, _ = parser.parse_known_args(argv)
@@ -237,7 +262,10 @@ class ArenaScene:
         self.plate = self.unwrapped.scene[self.arena_env.task.destination_location.name]
         self.joint_names = list(self.robot.data.joint_names)
         self.success_inputs: dict = {}
+        self.held_terms: dict[str, bool] = {}
         self._wrap_success_term()
+        if hold_terminations:
+            self._hold_terminations()
 
     def _wrap_success_term(self) -> None:
         """Record the success term's own inputs when it is evaluated, before any auto-reset.
@@ -273,6 +301,25 @@ class ArenaScene:
             return value
 
         cfg.func = recorded
+
+    def _hold_terminations(self) -> None:
+        """Evaluate every termination term as usual, record its value (env 0), return False.
+
+        For runs longer than the task's episode (an e9 attempt is about 40 s): the env never
+        terminates or auto-resets, and the caller reads ``held_terms`` after each step (also
+        returned by ``step``). The success term's own inputs are still recorded."""
+        torch = self._torch
+        tm = self.unwrapped.termination_manager
+        for name in tm.active_terms:
+            cfg = tm.get_term_cfg(name)
+            inner = cfg.func
+
+            def held(env, _inner=inner, _name=name, **params):
+                value = _inner(env, **params)
+                self.held_terms[_name] = bool(self.np(value)[0])
+                return torch.zeros_like(value)
+
+            cfg.func = held
 
     # ---------------------------------------------------------------- helpers
     def np(self, x) -> np.ndarray:
@@ -312,6 +359,7 @@ class ArenaScene:
             "terminated": bool(self.np(terminated)[0]),
             "truncated": bool(self.np(truncated)[0]),
             "terms": terms,
+            "held_terms": dict(self.held_terms),
             "success_inputs": dict(self.success_inputs),  # pre-reset, from the success term
             "obs": obs,
         }
@@ -344,6 +392,65 @@ class ArenaScene:
                 self.env,
                 Pose(position_xyz=tuple(map(float, xyz_local)), rotation_xyzw=tuple(quat_xyzw)),
             )
+
+    def set_object_pose(self, role: str, xyz_local, quat_xyzw=(0.0, 0.0, 0.0, 1.0)) -> None:
+        """Teleport the apple (``role="apple"``) or plate (``"plate"``) with zero velocity.
+
+        Harness only (scene layout at reset): not a controller API."""
+        from isaaclab_arena.utils.pose import Pose
+
+        asset = {
+            "apple": self.arena_env.task.pick_up_object,
+            "plate": self.arena_env.task.destination_location,
+        }[role]
+        with self._torch.inference_mode():
+            asset.set_object_pose(
+                self.env,
+                Pose(position_xyz=tuple(map(float, xyz_local)), rotation_xyzw=tuple(quat_xyzw)),
+            )
+
+    def raw_state(self, *, bodies: bool = False) -> dict:
+        """Evaluator-only raw state of env 0 as NumPy (env-local positions, xyzw quaternions).
+
+        Robot joints in the articulation's own order (``joint_names``), the root (pelvis) pose
+        and velocity, the apple's link pose, centre-of-mass pose and velocity, the plate's pose
+        and velocity, the apple-plate force (the success term's sensor) and, if the scene has
+        ``oej_apple_hand_contact``, the apple-hand force. ``bodies`` adds every robot link's
+        pose (``robot.data.body_names`` order)."""
+        origin = self.np(self.unwrapped.scene.env_origins)[0]
+        r = self.robot.data
+
+        def local(pose):
+            pose = np.asarray(pose, float).copy()
+            pose[..., :3] -= origin
+            return pose
+
+        apple, plate = self.apple.data, self.plate.data
+        plate_sensor = self.unwrapped.scene["pick_up_object_contact_sensor"]
+        out = {
+            "q": self.np(r.joint_pos)[0].astype(float),
+            "qd": self.np(r.joint_vel)[0].astype(float),
+            "q_target": self.np(r.joint_pos_target)[0].astype(float),
+            "pelvis_pose": local(self.np(r.root_link_pose_w)[0]),
+            "pelvis_vel": self.np(r.root_link_vel_w)[0].astype(float),
+            "apple_pose": local(self.np(apple.root_link_pose_w)[0]),
+            "apple_com_pose": local(self.np(apple.root_com_pose_w)[0]),
+            "apple_com_vel": self.np(apple.root_com_vel_w)[0].astype(float),
+            "plate_pose": local(self.np(plate.root_link_pose_w)[0]),
+            "plate_vel": self.np(plate.root_com_vel_w)[0].astype(float),
+            "apple_plate_force_n": float(
+                np.linalg.norm(
+                    self.np(plate_sensor.data.force_matrix_w).reshape(-1, 3), axis=-1
+                ).max()
+            ),
+        }
+        if "oej_apple_hand_contact" in self.unwrapped.scene.keys():
+            hand = self.unwrapped.scene["oej_apple_hand_contact"]
+            force = np.linalg.norm(self.np(hand.data.force_matrix_w).reshape(-1, 3), axis=-1)
+            out["apple_hand_force_n"] = float(force.max())
+        if bodies:
+            out["body_pose"] = local(self.np(r.body_link_pose_w)[0])
+        return out
 
     def truth(self) -> dict:
         """Evaluator-only state: never a policy input."""

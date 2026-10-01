@@ -17,6 +17,10 @@ RUNNER = "/workspaces/isaaclab_arena/isaaclab_arena/evaluation/policy_runner.py"
 # Arena's registered local policies (release/0.2.1). A dotted --policy_type path could import
 # arbitrary code, so only these names are accepted.
 ALLOWED_POLICIES = ("zero_action", "replay", "rsl_rl")
+# Arena's parser keeps argparse's default allow_abbrev=True, so "--policy_t pkg.X" would reach
+# --policy_type past an exact-name check. Every argument that starts with "--pol" must be one of
+# the real option names, spelled out (bare or "--name=value").
+POLICY_OPTIONS = ("--policy_type", "--policy_config_yaml_path")
 
 
 def check_args(args: list[str]) -> None:
@@ -25,6 +29,8 @@ def check_args(args: list[str]) -> None:
         low = a.lower()
         if "remote" in low or "gr00t" in low or "5555" in low:
             sys.exit(f"refusing {a!r}: this wrapper runs local policies only (no GR00T server)")
+        if a.startswith("--pol") and a.split("=", 1)[0] not in POLICY_OPTIONS:
+            sys.exit(f"refusing {a!r}: spell out {POLICY_OPTIONS} (no argparse abbreviations)")
     types = [args[i + 1] for i, a in enumerate(args[:-1]) if a == "--policy_type"]
     types += [a.split("=", 1)[1] for a in args if a.startswith("--policy_type=")]
     if not types or any(t not in ALLOWED_POLICIES for t in types):
