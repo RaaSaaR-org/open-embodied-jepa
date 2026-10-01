@@ -77,6 +77,11 @@ point). The stage returned before O1 and O2.
   would cost about 9 h or more to reach, at best, L-G2A, which the rules already make
   uninformative about W; the binding constraint is the observation and readout, not the
   predictor.
+  - *Note (factual, added after the descriptive diagnostic; the ruling is unchanged):* "at best,
+    L-G2A" names the furthest row the rules permit. The diagnostic later found that the frozen
+    `o2_passes` marks W seeds 7411 and 7412 void (N / persistence upper bounds 0.756 and 0.699,
+    < 0.8). In `decide_offline`'s first-match order that void row comes before L-G2A, so, read
+    as gates, these models would not have reached L-G2A. No row is read from the diagnostic.
 - **The abandonment clause does not fire.** Its scope is not refuted and not closed.
 - **No LeWM controller ran in closed loop.** Ranking, D3 and the gated stages never ran.
 - **Lesson:** readout bars must be calibrated from measured ceilings before a freeze. O2's bar

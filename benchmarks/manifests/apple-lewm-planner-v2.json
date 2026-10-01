@@ -5945,7 +5945,8 @@
    "measured_cm": 2.8722625765232763,
    "calibrated": false,
    "origin": "carried verbatim from TASK-073 (wm_critic_v2.O2[\"encoded_median_max_cm\"]); no calibration recorded in either protocol",
-   "lesson": "readout bars must be calibrated from measured readout ceilings on representative data before the freeze"
+   "lesson": "readout bars must be calibrated from measured readout ceilings on representative data before the freeze",
+   "consequence": "from A1.5 on, the furthest offline row the frozen rules permitted was L-G2A; see results.ruling_note"
   },
   "descriptive_diagnostic": {
    "label": "descriptive, not a gate, N-7412 unsaturated; no row is read from these numbers",
@@ -6052,6 +6053,7 @@
   "closed_loop_lewm_controller_run": false,
   "abandonment_clause_fires": false,
   "learned_apple_to_plate": "still 0 successes on the frozen benchmark (0/150 per model); unchanged",
-  "next": "a measurement-first observation-ceiling study, to be preregistered separately"
+  "next": "a measurement-first observation-ceiling study, to be preregistered separately",
+  "ruling_note": "Factual note, added after the descriptive diagnostic; the ruling strings above are unchanged. 'At best, L-G2A' names the furthest row the frozen rules permit. The diagnostic found that the frozen o2_passes marks W seeds 7411 and 7412 void (N / persistence upper bounds 0.756 and 0.699 < 0.8); in decide_offline's first-match order that void row (L-O2-VOID) comes before L-G2A, so, read as gates, these models would not have reached L-G2A. No row is read from the diagnostic. See docs/experiments/apple_lewm_planner_v2_results.md \u00a73, note on 'at best, L-G2A'."
  }
 }

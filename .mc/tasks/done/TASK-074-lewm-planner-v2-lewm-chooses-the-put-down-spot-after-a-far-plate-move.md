@@ -90,6 +90,8 @@ apple", not LeWM driving the whole episode, and not the v1 benchmark. No control
       (#111) and used through `run_guards`.
 - [x] Stage 0 smokes on 54650–54699 only, with the train stage's memory measured at full corpus
       scale.
+      Qualified: Addendum A1 found that the pre-freeze train-scale probe did not scale the
+      per-episode term (it cycled 14 decoded smoke episodes); the full-scale probe was added in A1.
 - [x] Stage 0 merged on an independent reviewer's reported APPROVE.
 - [x] K1 on a fresh pre-run reviewer's reported GO, with the coordinator told first.
 - [ ] Corpus, training, P-far, ranking and the offline decision, each on its own reported GO.

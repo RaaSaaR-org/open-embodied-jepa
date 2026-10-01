@@ -196,6 +196,19 @@ Recorded verbatim:
 >
 >    If the protocol forbids it, skip it and say why.
 
+<a id="note-l-g2a"></a>**Note on "at best, L-G2A"** (factual, added after the §4 diagnostic; the ruling and its
+verbatim text are unchanged).
+- The phrase names the furthest offline row the frozen rules permit. It is not a prediction of
+  the row.
+- The descriptive diagnostic (§4) later found that, on run-3's selected models, the frozen
+  `o2_passes` returns `void: true` on W seeds 7411 and 7412: N's ratio against persistence has
+  upper bounds 0.756 and 0.699, both < 0.8.
+- In `decide_offline`'s first-match order (§5 item 7), that void row (L-O2-VOID, escalate) is
+  checked before L-G2A.
+- So, read as gates, these models would not have reached L-G2A.
+- No row is read from the diagnostic (descriptive, not a gate, N-7412 unsaturated), and the
+  ruling is unchanged.
+
 The delegation it rests on is the owner's of 2026-09-30, quoted verbatim in protocol §0.
 
 **What the ruling does and does not do.**
@@ -259,7 +272,7 @@ h = 16). The ranges over the three seeds:
 | effective-rank ratio (≥ 0.16) | 0.365–0.379 | 0.349–0.365 | 0.374–0.387 | 0.359–0.374 |
 | std ratio (≥ 0.39) | 0.822–0.838 | 0.822–0.839 | 0.822–0.839 | 0.820–0.841 |
 | predicted collapsed fraction (≤ 0.05) | 0.000 | 0.000 | 0.000 | 0.000 |
-| W − N comparative-rank lower bound (> 0) | 0.048–0.060 | 0.064–0.080 | 0.053–0.064 | 0.072–0.090 |
+| W − N comparative-rank lower bound (> 0) | 0.048–0.059 | 0.064–0.080 | 0.053–0.064 | 0.072–0.090 |
 | truncation controls k = 1, 2, 4 (must fail) | all fail | all fail | all fail | all fail |
 | W / copy-last upper bound (≤ 0.8) | 0.706–0.712 | 0.533–0.540 | 0.725–0.731 | 0.545–0.553 |
 | W / N upper bound (< 1.0) | 0.939–0.954 | 0.870–0.889 | 0.945–0.961 | 0.870–0.898 |
@@ -280,13 +293,14 @@ ratios with reset-clustered 95 % intervals.
 | 7412 | 2.872 | 2.623 | 0.603 [0.480, 0.757] | 0.840 [0.672, 0.965] | 0.572 [0.472, 0.699] | passes false, void true |
 
 What these numbers show, descriptively and without reading a row:
-- **Every O1 bar is met on all three seeds:** no collapse, W beats copy-last and the
-  action-blind N, and W is action-sensitive.
+- **Every O1 bar is met on all three seeds:** the collapse bars are met (effective-rank ratio
+  0.35–0.39 against the bar of 0.16, calibrated in TASK-066 on `apple-look-v1` pilot data and
+  carried unchanged), W beats copy-last and the action-blind N, and W is action-sensitive.
 - **On O2's moving windows, W's predicted readout (2.47–2.62 cm) is below the encoded readout
   (2.872 cm) and the clock prior (3.123 cm), but nowhere near 1.0 or 1.5 cm.** The readout, not
   the predictor, sets this floor.
 - **The action-blind N reads the offset about as well as W on these windows:** N's ratio against
-  persistence (0.565–0.610) overlaps W's (0.568–0.603). On two seeds N's upper bound is ≤ 0.8,
+  persistence (0.565–0.610) overlaps W's (0.568–0.603). On two seeds N's upper bound is < 0.8 (0.756 and 0.699),
   which the frozen function labels void (O2 (ii)). So on O2's windows the readout does not
   separate W from N, even though O1 does in latent space.
 - N-7412 selected its last point, so its N numbers (in O1's W / N and comparative-rank columns
@@ -308,8 +322,10 @@ What these numbers show, descriptively and without reading a row:
   encoded-target readout error, was 2.47–2.59 cm (a different encoder, horizon and quantity).
 - **The measured value.** 2.872 cm, byte-identical in runs 1, 2 and 3. The clock prior, which
   reads no image, is 3.123 cm; the encoded readout beats it by about 0.25 cm.
-- **Consequence.** From A1.5 on, the best reachable offline row was L-G2A, which would have fired
-  the §7 clause on a bar the readout could not meet, not because of anything W does.
+- **Consequence.** From A1.5 on, the furthest offline row the frozen rules permitted was L-G2A,
+  which would have fired the §7 clause on a bar the readout could not meet, not because of
+  anything W does. On the models run-3 actually trained, the void check that precedes L-G2A
+  already holds on two seeds, descriptively; see the [note in §3](#note-l-g2a).
 - **Lesson.** A bar on a readout must be calibrated from that readout's measured ceiling on
   representative data *before* the freeze. Carrying a bar from another protocol, or setting it
   against a perfect-readout stand-in, is not calibration. When a smoke shows a W-independent
