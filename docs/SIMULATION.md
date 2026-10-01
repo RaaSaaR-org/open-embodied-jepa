@@ -112,3 +112,7 @@ lets CEM score rate-feasible arm and grasp targets with
 `planner.project_candidates: true`. It is a simulation kinematics implementation;
 Isaac and physical transports need their own validated preview adapters. It does
 not relax execution guards or establish collision-free motion.
+
+A third simulator setup, NVIDIA's GR00T-tutorial Isaac Lab-Arena scene
+(`galileo_g1_static_pick_and_place`, floating-base G1 on a whole-body controller, 50-D joint
+actions, 640 × 480 head camera), is documented as a development spike in [ARENA.md](ARENA.md).
