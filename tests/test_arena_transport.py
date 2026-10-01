@@ -127,12 +127,19 @@ def test_runner_wrapper_allows_local_policies_only():
     assert mod.strip_output(["--output", "x", "--a", "--output=y", "b"]) == ["--a", "b"]
     mod.check_args(["--policy_type", "zero_action", "--num_steps", "600"])
     mod.check_args(["--policy_type=replay"])
+    mod.check_args(["--policy_type", "rsl_rl", "--policy_config_yaml_path", "c.yaml"])
+    mod.check_args(["--policy_type", "zero_action", "--policy_config_yaml_path=c.yaml"])
     for bad in (
         [],
         ["--policy_type", "pkg.mod.Policy"],
         ["--policy_type", "zero_action", "--remote_host", "localhost"],
         ["--policy_type", "zero_action", "--port", "5555"],
         ["--policy_type", "isaaclab_arena_gr00t.policy.X"],
+        # argparse abbreviations of --policy_type would bypass the allowlist
+        ["--policy_type", "zero_action", "--policy_t", "pkg.mod.Policy"],
+        ["--policy_type", "zero_action", "--pol=pkg.mod.Policy"],
+        ["--policy_typ=pkg.mod.Policy"],
+        ["--policy_type", "zero_action", "--policy_config_yaml", "x.yaml"],
     ):
         with pytest.raises(SystemExit):
             mod.check_args(bad)
