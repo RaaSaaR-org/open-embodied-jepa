@@ -436,6 +436,8 @@ flock <lock> sg docker -c "scripts/isaac/run_isaac.sh arena_gr00t_baseline.py ou
 | **`gr00t-tutorial-1`** | `7e4f6cb`, clean | tutorial mode, 30 episodes, 1 env | Arena: **`success_rate 0.533, object_moved_rate 0.733, num_episodes 30`** |
 | **`gr00t-settle-1`** | `7e4f6cb`, clean | settle mode, 30 episodes, 1 env | Arena's rule (first firing): **10/30**. `apple_at_rest_arena_v0`: **0/30** |
 
+The code revisions are the ones each run recorded in `code_revision.txt`, before this branch was rebased onto main. They stay reachable on the branch `archive/arena-gr00t-baseline-runs` (`7e4f6cb`). The rebased commits carry byte-identical code for the script, its tests and `run_isaac.sh`. The mapping is `c79c73d`→`3552bd6`, `153430b`→`a12d905`, `e16c98c`→`3c1dd35`, `16ebcb8`→`4735a6c` and `7e4f6cb`→`c9310fb`.
+
 All runs used one env, under the shared lock, after checking that load was ≤ 2.0 and at least 7 GiB of GPU memory was free. `--num_envs` was not used: the device peaked at 14.0 GiB of 15.9 GiB with one env (Isaac 6.7–6.8 GiB plus GR00T 6.5 GiB), so a second env does not fit.
 
 ### Results
