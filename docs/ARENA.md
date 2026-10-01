@@ -1,6 +1,6 @@
 # Isaac Lab-Arena: the GR00T tutorial's G1 pick-and-place scene (development spike, 2026-10-01)
 
-A development bring-up spike on the Linux PC (RTX 5080), under TASK-025. It is not a gated run, not a preregistered comparison, and not a manipulation, policy or task result. The only "policies" here are a joint-hold command, Arena's built-in zero action and scripted teleports of the apple. No GR00T policy server was started, contacted or touched: the owner's server (pid 14247, `/home/huhn/Isaac-GR00T`) kept running throughout, and no request was sent to port 5555. **Learned Apple→Plate is still 0 successes**, and nothing here changes the v1 benchmark, the v2 task or any gate.
+A development bring-up spike on the Linux PC (RTX 5080), under TASK-025. It is not a gated run, not a preregistered comparison, and not a manipulation, policy or task result. The only "policies" here are a joint-hold command, Arena's built-in zero action and scripted teleports of the apple. No GR00T policy server was started, contacted or touched during the spike: the owner's server (pid 14247, `/home/huhn/Isaac-GR00T`) kept running throughout, and no request was sent to port 5555. A later run, with the owner's permission, used that server as a client only; see [§8, GR00T reference baseline](#8-gr00t-reference-baseline). **Learned Apple→Plate is still 0 successes**, and nothing here changes the v1 benchmark, the v2 task or any gate.
 
 The aim is a third simulator setup next to MuJoCo v2 ([SIMULATION.md](SIMULATION.md), `src/embodied_jepa/apple_to_plate_v2.py`) and our Isaac v2 scene ([ISAAC_V2_SCENE.md](ISAAC_V2_SCENE.md), [ISAAC_E9_REPLAY.md](ISAAC_E9_REPLAY.md)). The scene is the one NVIDIA's GR00T end-to-end tutorial evaluates in: [Sim Evaluation](https://docs.nvidia.com/learning/physical-ai/gr00t-e2e-workflow/latest/simulation-workflow/sim-evaluation.html).
 
@@ -20,6 +20,9 @@ The aim is a third simulator setup next to MuJoCo v2 ([SIMULATION.md](SIMULATION
 - **Cross-simulator checks (§7, 2026-10-01, development).** The arm kinematics of NVIDIA's USD agree with our MJCF: the wrist is within 0.8 mm and 0.0002° of our FK at Arena's measured joints. The Dex3 fingers do not: their joint origins sit up to 2.3 cm closer to the wrist, and the fingertips differ by up to 3.1 cm. e9 does not transfer to Arena with our layout. It left the apple at rest on 0 of 16 development seeds by both verdicts, against 16/16 in MuJoCo on the same seeds. **Blocker:** e9 never grasps. Two causes were found:
   - The arms stall without a gravity offset, because Arena's ideal-PD drive has no bias compensation.
   - With the offset, the arm follows e9's targets to within millimetres of MuJoCo. Then, in the close phase, the floating base steps back 3.6–11.7 cm, and e9's pelvis-frame targets end up behind the apple. Hand–shelf contact as the trigger of that step is inferred; it was not measured.
+- **GR00T reference baseline (§8, 2026-10-01, development; GR00T's result, not ours).** The tutorial's own command, run against the owner's GR00T N1.7 server as a client only, in one env:
+  - Arena's rule: 16/30 (0.53) in one process and 10/30 in another, 26/60 pooled. The tutorial's 1.0 is not reproduced.
+  - Our stricter `apple_at_rest_arena_v0`: 0/30, failing only on a stale-velocity artefact; a post-hoc position-based diagnostic gives 6/30.
 - **Plan.** The cheapest meaningful cross-simulator check is an e9 replay in Arena through a mirror adapter (§5). It has to deal with three differences: the floating pelvis, 50 Hz against our 20 Hz, and the apple sitting on the robot's left (e9 is right-handed).
 
 ## 1. Environment and provenance
@@ -178,7 +181,7 @@ All frames are from `robot_head_cam` in `arena-probe-2`. The full 640 × 480 PNG
 2. **Run; blocked (§7.2). e9 in Arena, our layout.** Run a variant env (Arena `--external_environment_class_path`, our own class) that keeps the robot, WBC, assets, shelf and success term, but places the apple and plate at our v2 positions relative to the settled pelvis, with the apple on the right. Run e9 closed loop through the mirror adapter (step 1, plus the 20→50 Hz hold and the pelvis pose), on development seeds only (TASK-070 dev seeds 50200–50215, as in the e9 replay). Report Arena's success term and our `apple_at_rest_v0` side by side. Labelled as a cross-simulator scripted-expert check, never a learned result. This isolates the robot asset, floating base, WBC, drive and object differences from the layout. Because the tutorial resets are deterministic, the variant would apply our seeded jitter itself.
 3. **e9 on the tutorial layout.** The same, but with a y-mirrored, left-handed e9 and the table-height constants re-derived for Arena's shelf, both declared before running. This is the like-for-like "e9 replay success in Arena" on the tutorial's own scene.
 4. **Perception transfer, offline.** Collect head-camera frames, and optionally a second camera at our `onboard_rgb` pose, from step 2 or 3 resets. Measure the frozen DINOv2 readout's estimate error on them. Only if that error is within the place tolerance is a P-3 closed loop worth planning.
-5. **Later.** Arena as a data source for LeWM training, and a GR00T-versus-ours comparison on the same success definitions. The latter requires the owner's GR00T server and therefore the owner's go-ahead.
+5. **Later.** Arena as a data source for LeWM training, and a GR00T-versus-ours comparison on the same success definitions. The latter requires the owner's GR00T server; the owner has since allowed client-only use, and GR00T's own numbers on both success rules are in §8.
 
 ## 6. Caveats and blockers
 
@@ -189,7 +192,7 @@ All frames are from `robot_head_cam` in `arena-probe-2`. The full 640 × 480 PNG
 - **Rendering.** Background materials fail to resolve (magenta), and DLSS is active at this resolution. Frames are not repeatable across processes although physics was: later frames differ by a mean absolute difference of about 1/255, and the first frame after the build was entirely black in 1 of 4 runs. The headless viewer is black. The camera pose read from the `TiledCamera` sensor (`pos_w`) was the same at step 0 and step 100 although the pelvis had moved, so it may not refresh each step (not investigated); the colour projection still landed on the plate.
 - **GPU headroom.** About 2 GiB remains next to GR00T. One Arena process at a time.
 - **Small sample.** Each episode type was run once per run (one hold, one drop, two zero-action episodes). Nothing here is a rate.
-- **Tutorial's own policy.** The tutorial reports an expected success rate of 1.0 for its GR00T N1.7 policy over its 600-step command. That was not reproduced or tested here.
+- **Tutorial's own policy.** The tutorial reports an expected success rate of 1.0 for its GR00T N1.7 policy over its 600-step command. That was not reproduced or tested in the spike. §8 tests it: 16/30, not reproduced.
 
 ## 7. Cross-simulator checks: kinematics, and e9 on our layout (development, 2026-10-01)
 
@@ -373,3 +376,127 @@ These are development runs under TASK-025 on the Linux PC. None of them is a gat
    - re-plan e9's phase targets from the current apple position relative to the live pelvis, rather than freezing them at reset.
 2. **Measure base compliance alone.** A short scripted press of the hand on the shelf, with no apple, would show how the WBC steps under arm contact. Alternatively a fixed-root variant (`fix_root_link`), which is no longer the tutorial's embodiment.
 3. **Then step 3 of §5** (the tutorial layout with a left-handed e9). It inherits both blockers above, so it is not worth running first.
+
+## 8. GR00T reference baseline
+
+**This is GR00T's result, not a LeWM or learned-project result.** NVIDIA's fine-tuned GR00T N1.7 policy, served by the owner's already-running GR00T server, was evaluated in the tutorial's Arena scene using the tutorial's own evaluation command (development, 2026-10-01, not a gated run). Nothing of ours is in the loop: no model, planner or controller from this project. **Learned Apple→Plate is still 0 successes**, and nothing here changes the v1 benchmark, the v2 task or any gate.
+
+### Setup
+
+- **Server: client only.** The server is pid 14247 (uv parent 14139), launched from `/home/huhn/Isaac-GR00T` (Isaac-GR00T `4b1dca9`, the tutorial's pin) with `run_gr00t_server.py --model-path /home/huhn/models/isaaclab_arena/static_apple_tutorial/gn1x_tuned_static_apple --modality-config-path /home/huhn/IsaacLab-Arena/isaaclab_arena_gr00t/embodiments/g1/g1_sim_wbc_data_gr00t_n_1_7_config.py --embodiment-tag NEW_EMBODIMENT --device cuda --host 0.0.0.0 --port 5555`. This was read from `/proc/<pid>/cmdline` only; the server was never stopped, restarted or reconfigured, and it was still running afterwards.
+- **Model.** `gn1x_tuned_static_apple` is NVIDIA's Hugging Face release `nvidia/GN1x-Tuned-Arena-G1-Static-PickNPlace`:
+  - `Gr00tN1d7`, fine-tuned from `nvidia/GR00T-N1.7-3B` on `nvidia/Arena-G1-Static-PickNPlace-Task`;
+  - `trainer_state.json` global step 65000; `config.json` sha256 `ee690c15…`; `model.safetensors.index.json` sha256 `12117379…`; 40-step action horizon.
+  - It is not the tutorial's own step-3 output (`static_apple_n17_finetune/checkpoint-20000`). The owner's local Arena config points `model_path` at this release.
+- **Modality config** (modality config file sha256 `20de8b54…`; read back from the server with `get_modality_config`):
+  - video `ego_view`, delta [0];
+  - state `left_arm`, `right_arm`, `left_hand`, `right_hand`, `waist`, delta [0];
+  - action: the same five plus `base_height_command` and `navigate_command`, deltas 0–39, all absolute non-EEF;
+  - language `annotation.human.task_description` ("move the apple to the plate").
+- **Command.** `scripts/isaac/arena_gr00t_baseline.py` builds exactly the tutorial command:
+  - `policy_runner.py --policy_type …Gr00tRemoteClosedloopPolicy --policy_config_yaml_path …/g1_static_apple_gr00t_closedloop_config.yaml --remote_host localhost --remote_port 5555 --num_episodes N --enable_cameras galileo_g1_static_pick_and_place --object apple_01_objaverse_robolab --destination clay_plates_hot3d_robolab --embodiment g1_wbc_agile_joint`;
+  - `--headless` replaces `--viz kit`; `--num_episodes` replaces `--num_steps 600`, as the tutorial itself recommends for a representative rate.
+- **Guards** (tests in `tests/test_arena_gr00t_baseline.py`):
+  - host and port are pinned;
+  - any kill, exit, host, port or policy flag is refused;
+  - the GR00T client may call only `ping`, `get_action`, `reset` and `get_modality_config`;
+  - `kill_server` and `shutdown_remote` are disabled;
+  - the socket has 60 s timeouts;
+  - `arena_policy_runner.py` still refuses GR00T and remote policies.
+- **Recording.** The script wraps the env and the `success` term to record evaluator-only truth before each auto-reset: apple and plate pose and velocity, the apple–plate and total contact force on the apple, and the nearest Dex3 link. It also records GR00T `get_action` latency and head-camera frames.
+- **Models mount.** The client config asserts that `model_path` exists, although it loads no weights. `run_isaac.sh` therefore gained an opt-in read-only mount, `ISAAC_MODELS_DIR=~/models/isaaclab_arena` → `/models/isaaclab_arena`.
+
+```sh
+export MJCF_DIR=<repo>/third_party/unitree_mujoco/unitree_robots/g1 PXR_WORK_THREAD_LIMIT=1 \
+  ISAAC_MODELS_DIR=$HOME/models/isaaclab_arena
+flock <lock> sg docker -c "scripts/isaac/run_isaac.sh arena_gr00t_baseline.py outputs/<new> \
+  --mode tutorial --num_episodes 30"      # or --mode settle
+```
+
+### The two success rules
+
+- **Arena's rule** (the tutorial's). `success` terminates the episode on the first step where the apple–plate contact force is above 0.5 N and the apple's speed is below 0.1 m/s. Arena's metrics are `success_rate`, `object_moved_rate` and `num_episodes`.
+- **`apple_at_rest_arena_v0`** (ours, stricter). It was declared before any GR00T episode ran and committed in `c79c73d` (`strict_verdict`).
+  - **Mode.** It is measured in `--mode settle`: the same command, except that `success` is recorded every step but does not end the episode. Each episode therefore runs to Arena's own 6 s time-out with GR00T acting throughout. An `object_dropped` ending fails.
+  - **Window.** The final 50 steps (1.0 s, as in v0's 20 steps at 20 Hz).
+  - **Tests.** Every window step must pass all four:
+    - **inside:** the apple's root xy is within 4 cm of the plate's root xy;
+    - **supported:** the apple–plate force is at least 0.5 N;
+    - **still:** the apple's reported linear speed is at most 0.001 m/s (v0's bar);
+    - **released:** the non-plate contact force on the apple, |net − plate|, is at most 0.1 N.
+  - **Arena's rule in this mode.** The `success` term's first firing. The trajectory up to that step is the same as in tutorial mode.
+
+### Runs (git-ignored `outputs/`, in the `arena-gr00t` worktree)
+
+| Run | Code | What | Result |
+| --- | --- | --- | --- |
+| `gr00t-smoke-1` | `c79c73d` | tutorial, 2 episodes | **void**: importing `gr00t` before Kit started loaded `pxr` early; Kit segfaulted at start-up. Fixed in `153430b`. |
+| `gr00t-smoke-2` | `153430b` | tutorial, 2 episodes | **void**: the client config's `model_path` assertion failed because there was no `/models` in the container. Fixed in `e16c98c`/`16ebcb8`. |
+| `gr00t-smoke-3` | `16ebcb8` | tutorial, 2 episodes | ran. 0/2 successes (two grasp misses, one of which pushed the plate 5 cm); the summary was lost because Kit exits before an outer `finally` (fixed in `7e4f6cb`) |
+| **`gr00t-tutorial-1`** | `7e4f6cb`, clean | tutorial mode, 30 episodes, 1 env | Arena: **`success_rate 0.533, object_moved_rate 0.733, num_episodes 30`** |
+| **`gr00t-settle-1`** | `7e4f6cb`, clean | settle mode, 30 episodes, 1 env | Arena's rule (first firing): **10/30**. `apple_at_rest_arena_v0`: **0/30** |
+
+All runs used one env, under the shared lock, after checking that load was ≤ 2.0 and at least 7 GiB of GPU memory was free. `--num_envs` was not used: the device peaked at 14.0 GiB of 15.9 GiB with one env (Isaac 6.7–6.8 GiB plus GR00T 6.5 GiB), so a second env does not fit.
+
+### Results
+
+| | `gr00t-tutorial-1` (tutorial mode) | `gr00t-settle-1` (settle mode) | Pooled |
+| --- | --- | --- | --- |
+| Arena's rule | **16/30 = 0.53** (95% Wilson 0.36–0.70) | **10/30 = 0.33** (0.19–0.51) | **26/60 = 0.43** (0.32–0.56) |
+| `apple_at_rest_arena_v0` (declared) | not measurable: episodes end at the first contact | **0/30** (0.00–0.11) | – |
+| Arena `object_moved_rate` | 0.733 | 0.533 | – |
+
+**The tutorial's number is not reproduced.** The tutorial shows `success_rate 1.0` for one episode (its 600-step smoke) and for five parallel episodes, and asks for "similar metrics". Here the rate is 0.53 (0.36–0.70) over 30 episodes in one process and 0.33 in a second process. The causes were not tested. Candidates:
+- the served checkpoint is the Hugging Face release, not the tutorial's own `checkpoint-20000`;
+- the background materials fail to resolve, so the shelving renders magenta (§4);
+- Isaac Sim 6.0.0-rc.22 is used, not 6.0.0;
+- the run was headless instead of `--viz kit`;
+- the first frame of each process is black (below).
+
+The two processes also differ from each other: grasp misses were 7/30 against 17/30, although the episode set-up was identical (Fisher exact two-sided p ≈ 0.02, computed after the fact). The cause is unknown. Run-to-run rendering differences between processes are a candidate (§1).
+
+**How episodes vary.** There is no reset randomisation. The apple starts at (0.5785, 0.270, −0.0104) and the plate at (0.578, 0.060, −0.027) in every episode, and physics was repeatable in the spike. All variation comes from GR00T: the flow-matching sampler's noise on the server, which this client neither seeds nor controls. Outcomes nonetheless range from a clean place at step 134 to a miss on the first reach.
+
+**Arena-rule failure modes** (`gr00t-tutorial-1`, 14 failures; the classes were defined after the episodes were seen):
+- **grasp miss, 7.** The apple moved < 5 cm and was not lifted. The hand closes beside the apple or brushes it, then carries an empty hand to the plate.
+- **lifted, not placed, 5.** The apple was lifted 8–10 cm, then dropped or released off the plate, ending 9–18 cm from its centre.
+- **knocked without lift, 2.**
+
+In `gr00t-settle-1`: 17 grasp misses, 3 knocked.
+
+**What Arena's successes contain** (`gr00t-tutorial-1`, 16; the rule fired at steps 134–293, median 176.5, about 3.5 s):
+- **5 fired with the hand still on the apple** (non-plate force 5–16 N at the firing step: eps 3, 8, 17, 18, 26).
+- **6 fired with the apple more than 4 cm from the plate centre** (4.1–8.3 cm; the plate's radius is about 7.5 cm).
+- **6 were clean at the firing step**: released, and within 4 cm.
+
+In `gr00t-settle-1`, 2 of the 10 firings were at steps 11 and 12 and are false positives: the arm swept the apple into the plate's rim at more than 1 m/s and pinned it under the hand for a step. Neither apple ended on the plate. Arena's rule counts such sweeps, and grasps still pressed onto the plate, as successes.
+
+**Why the strict verdict is 0/30.**
+- **The episodes that ended well.** In 7 settle episodes the apple ended inside 4 cm, supported and released for the whole final second (eps 0, 2, 21, 22, 24, 25, 29; final distance 0.6–2.7 cm).
+- **What failed them.** All 7 failed only on *still*: the reported speed was 0.006–0.032 m/s against the 0.001 bar.
+- **Diagnosis, after the fact.** In 6 of the 7 the apple's position did not change at all over the final second (0.0000 m). The reported velocity is constant there: PhysX keeps a stale velocity on a body that is asleep. Untouched apples resting on the shelf also report 0.0002–0.004 m/s.
+- **What the declared rule therefore measures.** The *still* test on reported velocity cannot pass in this scene. The declared verdict stays 0/30.
+- **A post-hoc diagnostic.** It is **not** the declared rule, and it is labelled as such. Replacing the reported speed with the position-difference speed (≤ 0.001 m/s per 20 ms step) gives **6/30** (eps 0, 2, 21, 22, 24, 25; 95% Wilson 0.10–0.37). Ep 29's apple was still creeping 1.1 mm over the final second. Any future Arena at-rest rule should be declared on position change, not on reported velocity.
+
+**Timing and latency.**
+- **Start-up.** 320–350 s per process.
+- **Stepping.** 16–18 env steps/s including GR00T: about 0.33× real time, 10–21 s per episode.
+- **GR00T latency.** `get_action` was called once per 40-step chunk (199 calls in `gr00t-tutorial-1`, 240 in `gr00t-settle-1`). The latency measured at the client: median 0.051 s, p95 0.117 s, max 0.385 s in `gr00t-tutorial-1`; median 0.050 s, p95 0.052 s, max 0.095 s in `gr00t-settle-1`.
+
+**First frame is black.** In all three processes that recorded a step-0 frame (`gr00t-smoke-3`, `gr00t-tutorial-1`, `gr00t-settle-1`), the first head-camera observation of episode 0 was entirely black (the spike saw it in 1 of 4 runs). So GR00T's first 40-action chunk in each process was computed blind. Every later episode's first frame rendered. Episode 0 failed in the smoke and tutorial runs, but fired Arena's rule (and ended at rest by the diagnostic) in the settle run. Without episode 0: 16/29 (0.38–0.72) and 9/29 by Arena's rule — the same picture.
+
+### Frames (`robot_head_cam`, from `gr00t-tutorial-1`, 240 × 180 strips, JPEG)
+
+| File | Shows |
+| --- | --- |
+| [`gr00t_success_ep1_strip.jpg`](arena/gr00t_success_ep1_strip.jpg) | ep 1 (Arena success at step 148): steps 0, 50, 100 and the last observation. Left-hand grasp, carry, place on the cream plate. |
+| [`gr00t_fail_ep0_strip.jpg`](arena/gr00t_fail_ep0_strip.jpg) | ep 0 (time-out): the black step-0 frame, the reach past the apple, the empty hand over the plate, and the apple left on the shelf |
+
+### Are GR00T's successes usable as demonstrations?
+
+**Only after filtering, and only in Arena.**
+- **Arena's rule is too loose to select demonstrations.** About a third of its successes are presses with the hand still on the apple, or rim or edge contacts, and some are sweeps.
+- **The declared strict rule cannot pass** (stale-velocity artefact).
+- **What is left.** About 6 in 30 episodes (20%; 0.10–0.37) end with the apple released, at rest and within 4 cm, under the position-based diagnostic. Those, filtered by such a rule, would be plausible Arena demonstrations of a left-handed place.
+- **Our stack is a different domain.** The trajectories are 50 Hz, 50-D WBC joint targets on a floating base, seen from a 640 × 480 head camera in a photoreal scene with no layout variation. That is a different action space, rate, camera and layout from our MuJoCo v2 `ee_delta_grasp_v0` stack (§3, §5), so they are not usable there without the adapter work in §5.
+- **What they are for.** As a reference, GR00T sets the bar: a 3B VLA fine-tuned on this exact scene places the apple cleanly in roughly one episode in five here, and fires Arena's loose rule in about 0.43 of episodes.
