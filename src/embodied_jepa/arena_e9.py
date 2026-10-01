@@ -204,7 +204,7 @@ def mirror_state(
     is Arena's own apple-hand contact sensor when present (else None: the mirror's geometric
     flag is used). ``contacts`` is empty (Arena reports no contact list here); ``pre`` is None
     (no ``mj_step`` layout: the mirror runs a plain forward pass of the new state).
-    ``zero_leg_velocity`` (e9-arena only, docs/ARENA.md §8) writes the WBC's leg joint
+    ``zero_leg_velocity`` (e9-arena only, docs/ARENA.md §9) writes the WBC's leg joint
     velocities as 0: with the pelvis fixed in the mirror they enter neither FK, IK nor the arm's
     bias, only the embodiment's 5 rad/s guard, which was written for our fixed-pelvis robot."""
     frame = FrameMap(raw["pelvis_pose"])
@@ -724,8 +724,8 @@ class MuJoCoArenaSham:
         raise ContractError(f"unknown command {cmd!r}")
 
 
-# ----- e9-arena: the Arena-adapted e9 (docs/ARENA.md §8) -------------------------------------
-# Development only, declared in docs/ARENA.md §8 before any Arena run of it. It is a privileged
+# ----- e9-arena: the Arena-adapted e9 (docs/ARENA.md §9) -------------------------------------
+# Development only, declared in docs/ARENA.md §9 before any Arena run of it. It is a privileged
 # scripted expert, **not e9**: always label it "e9-arena". Its targets are recomputed every
 # command from Arena's live state (pelvis, apple, plate and, for the shelf-clearance close, the
 # right hand's lowest collision point), which is privileged truth, as e9's reset truth is.
@@ -735,6 +735,26 @@ LEG_JOINT_KEYS = ("hip_", "knee_", "ankle_")  # the WBC's leg joints (AGILE driv
 E9_PICK_DX = -0.015  # e9: the collector's -0.03 plus palm_x_offset 0.015 (pelvis x)
 E9_ORIENT_DZ = 0.13
 E9_LIFT_DZ = 0.21
+# Measured in Arena by the shelf-press probe (docs/ARENA.md §9.1, arena-shelf-probe-1)
+ARENA_FINGER_DROP_M = 0.1182  # palm site to the lowest right-hand collision point, open
+ARENA_APPLE_COM_ABOVE_SHELF_M = 0.0263  # resting apple centre above the shelf top
+
+
+def declared_variant(name: str, clearance_m: float, close_mode: str, close_ramp=None) -> dict:
+    """An e9-arena tuning variant of docs/ARENA.md §9.2 (h_stop from the measured geometry)."""
+    return {
+        "name": name,
+        "stop_height_m": stop_height(
+            finger_drop_m=ARENA_FINGER_DROP_M,
+            apple_com_above_shelf_m=ARENA_APPLE_COM_ABOVE_SHELF_M,
+            clearance_m=clearance_m,
+        ),
+        "shelf_clearance_m": float(clearance_m),
+        "close_mode": close_mode,
+        "close_ramp": close_ramp,
+    }
+
+
 E9_REACH = {"reach_radius_m": 0.485, "release_z_floor_m": 0.10, "release_z_ceiling_m": 0.26}
 PHASE_NAMES = (
     "orient",
@@ -801,7 +821,7 @@ def stop_height(*, finger_drop_m: float, apple_com_above_shelf_m: float, clearan
 
 
 class ArenaAdaptedE9:
-    """e9-arena: TASK-070's e9 with the changes declared in docs/ARENA.md §8, nothing else.
+    """e9-arena: TASK-070's e9 with the changes declared in docs/ARENA.md §9, nothing else.
 
     It wraps e9 (``resting_expert.RestingPlaceExpert`` with ``isaac_e9.E9``: same phases, same
     command counts, same grasp and opening schedule, same clips, rotations and release rule) and
@@ -947,7 +967,7 @@ class ArenaAdaptedE9:
         self.e9.advance(result)
 
 
-# ----- the shelf-press probe (docs/ARENA.md §8.1) ---------------------------------------------
+# ----- the shelf-press probe (docs/ARENA.md §9.1) ---------------------------------------------
 PROBE_PHASES = (  # (name, commands, grasp): e9's orient, descend and close counts, then a hold
     ("orient", 130, -1.0),
     ("descend", 80, -1.0),
