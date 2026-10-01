@@ -275,6 +275,7 @@ def calibrate_rest_height(conn, endpoint, steps: int, plate_height: float, clear
         "distance_from_plate_origin_m": float(dist[-1]),
         "arena_success_fired": bool(any(r["success"] for r in rec)),
         "steps": steps,
+        "_records": rec,
     }
 
 
@@ -315,6 +316,11 @@ def cmd_arena(args) -> int:
         calibration = calibrate_rest_height(
             conn, endpoint, args.calibrate_steps, args.plate_height, args.clearance
         )
+        cal_records = calibration.pop("_records")
+        np.savez_compressed(
+            args.output / "calibration.npz",
+            **{k: v for k, v in records_arrays([{**r, "command": 0} for r in cal_records]).items()},
+        )
         print("calibration", calibration, flush=True)
         for task in tasks:
             t0 = time.monotonic()
@@ -344,6 +350,13 @@ def cmd_arena(args) -> int:
                             max(ae.rotation_angle(ae.at.quat_xyzw_to_matrix(p[3:])) for p in pel)
                         ),
                         **verdicts,
+                        "arena_hand_contact_steps": int(
+                            sum((r["apple_hand_force_n"] or 0.0) > 0 for r in endpoint.records)
+                        ),
+                        "arena_apple_max_rise_m": float(
+                            max(r["apple_com_pose"][2] for r in endpoint.records)
+                            - endpoint.records[0]["apple_com_pose"][2]
+                        ),
                     }
                 )
                 np.savez_compressed(
@@ -375,6 +388,11 @@ def cmd_arena(args) -> int:
                         "stop_reason",
                         "error",
                     )
+                },
+                "placement",
+                {
+                    k: (a.get("reset_info") or {}).get(k)
+                    for k in ("placement_error_xy_m", "placement_apple_hand_force_n")
                 },
                 "mujoco",
                 row["mujoco"],
@@ -413,6 +431,14 @@ def cmd_arena(args) -> int:
             "at_rest_mirror": sum(r["arena"]["at_rest"] for r in ok),
             "mujoco_at_rest": sum(bool(r["mujoco"]["at_rest"]) for r in rows),
             "mujoco_latched": sum(bool(r["mujoco"]["latched_success"]) for r in rows),
+            "placement_hand_contact": sum(
+                bool(r["arena"]["reset_info"].get("placement_apple_hand_force_n")) for r in ok
+            ),
+            "placement_error_over_5mm": sum(
+                r["arena"]["reset_info"]["placement_error_xy_m"] > 0.005 for r in ok
+            ),
+            "apple_hand_contact_any": sum(r["arena"]["arena_hand_contact_steps"] > 0 for r in ok),
+            "apple_lifted_2cm": sum(r["arena"]["arena_apple_max_rise_m"] > 0.02 for r in ok),
         },
     }
     write_report(args.output / "report.json", report)
@@ -434,7 +460,7 @@ def main() -> int:
     p.add_argument("--levels", type=float, nargs="+", default=[0.0])
     p.add_argument("--settle_steps", type=int, default=75)
     p.add_argument("--place_steps", type=int, default=50)
-    p.add_argument("--calibrate_steps", type=int, default=100)
+    p.add_argument("--calibrate_steps", type=int, default=150)
     p.add_argument("--plate_height", type=float, default=0.024, help="plate AABB height, m")
     p.add_argument("--clearance", type=float, default=0.01)
     p.add_argument("--connect_timeout", type=float, default=1800.0)

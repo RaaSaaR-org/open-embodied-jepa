@@ -344,7 +344,12 @@ class ArenaEndpoint:
         if object_on_container:
             raise ContractError("the Arena layout places the apple on the shelf")
         hold = np.asarray(joint_positions, float)
-        action = command_action(hold, self.mirror_names, self.arena_names)
+        # With the gravity offset, the initial pose is held against gravity too (as our MuJoCo
+        # actuator does); without it Arena's arms sag onto the apple's reset position.
+        hold_offset = (
+            np.asarray(self.feedforward(), float) if self.feedforward is not None else 0.0 * hold
+        )
+        action = command_action(hold + hold_offset, self.mirror_names, self.arena_names)
         by_name = dict(zip(self.mirror_names, hold.tolist(), strict=True))  # recorded
         settled = self.call(
             "settle", action=action.tolist(), steps=self.settle_steps, joint_positions=by_name
@@ -364,7 +369,15 @@ class ArenaEndpoint:
         )
         self.commands, self.time, self.records, self.offsets = 0, 0.0, [], []
         self._hold = action
+        prc = placed["raw"]
+        target_com = np.asarray(layout["apple"][:2]) + offset
         self.reset_info = {
+            "placement_error_xy_m": float(
+                np.linalg.norm(np.asarray(prc["apple_com_pose"][:2]) - target_com)
+            ),
+            "placement_apple_speed_m_s": float(np.linalg.norm(prc["apple_com_vel"][:3])),
+            "placement_apple_hand_force_n": prc.get("apple_hand_force_n"),
+            "hold_offset_max_rad": float(np.abs(hold_offset).max()),
             "seed": int(seed),
             "settled_pelvis_pose": list(map(float, raw["pelvis_pose"])),
             "layout": layout,
