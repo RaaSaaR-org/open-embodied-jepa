@@ -15,7 +15,10 @@ shelf support, apple, plate, finger friction and success term, and adds, all opt
   ``Z`` (env-local), so the robot stands higher relative to the shelf (table-height matching);
 - ``--oej_object_xyz`` / ``--oej_plate_xyz``: the apple's and plate's spawn positions (the
   e9 server teleports both after every reset anyway);
-- ``--oej_episode_s``: the episode length (the tutorial's 6 s would time out an e9 attempt).
+- ``--oej_episode_s``: the episode length (the tutorial's 6 s would time out an e9 attempt);
+- ``--oej_hand_net_sensor``: a contact sensor on the right hand's palm and finger links with no
+  filter (net contact force on each link; read only). With the apple and plate out of reach it
+  reads hand-shelf contact (the shelf-press probe, docs/ARENA.md §8).
 
 Terminations are left as the task defines them; the server holds them (records each term's
 value and returns False) through ``arena_transport.ArenaScene(hold_terminations=True)``.
@@ -99,6 +102,7 @@ class OejG1StaticEnvironment(GalileoG1StaticPickAndPlaceEnvironment):
         inner = env.env_cfg_callback
         episode_s = args_cli.oej_episode_s
         hand_sensor = args_cli.oej_hand_sensor
+        hand_net_sensor = args_cli.oej_hand_net_sensor
 
         def callback(env_cfg):
             env_cfg = inner(env_cfg) if inner is not None else env_cfg
@@ -111,6 +115,12 @@ class OejG1StaticEnvironment(GalileoG1StaticPickAndPlaceEnvironment):
                 env_cfg.scene.oej_apple_hand_contact = ContactSensorCfg(
                     prim_path=plate_sensor.prim_path,
                     filter_prim_paths_expr=[f"{{ENV_REGEX_NS}}/Robot/{n}" for n in HAND_LINKS],
+                )
+            if hand_net_sensor:
+                from isaaclab.sensors import ContactSensorCfg
+
+                env_cfg.scene.oej_right_hand_net_contact = ContactSensorCfg(
+                    prim_path="{ENV_REGEX_NS}/Robot/right_hand_.*_link"
                 )
             return env_cfg
 
@@ -126,3 +136,4 @@ class OejG1StaticEnvironment(GalileoG1StaticPickAndPlaceEnvironment):
         parser.add_argument("--oej_plate_xyz", type=float, nargs=3, default=None)
         parser.add_argument("--oej_episode_s", type=float, default=None)
         parser.add_argument("--oej_hand_sensor", action="store_true")
+        parser.add_argument("--oej_hand_net_sensor", action="store_true")

@@ -15,9 +15,9 @@ targets, joints, every link pose) and ``kinematics.json`` (names, limits, defaul
 paths, nearby background colliders, feet heights). The host compares it with FK on our MJCF
 (``scripts/isaac/arena_e9.py kinematics``).
 
-``--mode serve`` (step 2): serves ``hello``, ``settle``, ``place``, ``calibrate``, ``step``,
-``read``, ``info`` and ``close`` over a Unix socket (``e9.sock`` in the run directory, key in
-``authkey``) to ``arena_e9.ArenaEndpoint`` on the host (``scripts/isaac/arena_e9.py arena``).
+``--mode serve`` (step 2): serves ``hello``, ``geometry``, ``settle``, ``place``, ``calibrate``,
+``step``, ``read``, ``info`` and ``close`` over a Unix socket (``e9.sock`` in the run directory,
+key in ``authkey``) to ``arena_e9.ArenaEndpoint`` on the host (``scripts/isaac/arena_e9.py arena``).
 Replies carry evaluator-only truth (apple, plate, pelvis, contact forces): e9 and its scorers
 read truth by design.
 """
@@ -61,16 +61,139 @@ def jsonable(x):
     return x
 
 
+# ----- collision geometry (the shelf-press probe and e9-arena, docs/ARENA.md §8) ------------------
+def _prim_points(prim):
+    """Local points of one collision prim: mesh vertices, else its extent's 8 corners."""
+    from pxr import Usd, UsdGeom
+
+    if prim.IsA(UsdGeom.Mesh):
+        pts = UsdGeom.Mesh(prim).GetPointsAttr().Get()
+        if pts:
+            return np.asarray(pts, float), "mesh"
+    if prim.IsA(UsdGeom.Boundable):
+        ext = UsdGeom.Boundable.ComputeExtentFromPlugins(
+            UsdGeom.Boundable(prim), Usd.TimeCode.Default()
+        )
+        if ext:
+            lo, hi = np.asarray(ext[0], float), np.asarray(ext[1], float)
+            corners = np.array([[i, j, k] for i in (0, 1) for j in (0, 1) for k in (0, 1)])
+            return lo + corners * (hi - lo), f"extent:{prim.GetTypeName()}"
+    return None, prim.GetTypeName()
+
+
+def collision_points(body_path: str) -> dict:
+    """Every collision point of the rigid body at ``body_path``, in the body's own frame.
+
+    Walks the body's subtree (instance proxies included), stops at nested rigid bodies, and maps
+    each collision prim's points through the static prim-to-body transform. Read once from USD;
+    per-step poses come from the simulator (``body_link_pose_w`` / ``root_link_pose_w``)."""
+    import omni.usd
+    from pxr import Gf, Usd, UsdGeom, UsdPhysics
+
+    stage_ = omni.usd.get_context().get_stage()
+    body = stage_.GetPrimAtPath(body_path)
+    if not body.IsValid():
+        raise ValueError(f"no prim at {body_path}")
+    cache = UsdGeom.XformCache(Usd.TimeCode.Default())
+    to_body = cache.GetLocalToWorldTransform(body).GetInverse()
+    points, kinds = [], {}
+    it = iter(Usd.PrimRange(body, Usd.TraverseInstanceProxies()))
+    for prim in it:
+        if prim != body and prim.HasAPI(UsdPhysics.RigidBodyAPI):
+            it.PruneChildren()
+            continue
+        if not prim.HasAPI(UsdPhysics.CollisionAPI):
+            continue
+        local, kind = _prim_points(prim)
+        kinds[kind] = kinds.get(kind, 0) + 1
+        if local is None:
+            continue
+        m = cache.GetLocalToWorldTransform(prim) * to_body
+        points.extend(np.asarray(m.Transform(Gf.Vec3d(*p)), float) for p in local)
+    return {"points": np.asarray(points, float).reshape(-1, 3), "kinds": kinds}
+
+
+class Geometry:
+    """Right-hand and apple collision points; per step: the hand's lowest point and the apple's
+    top (env-local z). Measurement only: it changes no physics."""
+
+    def __init__(self, scene: at.ArenaScene):
+        import re
+
+        self.scene = scene
+        names = list(scene.robot.data.body_names)
+        root = "/World/envs/env_0/Robot"
+        self.links = [
+            n for n in names if n.startswith("right_hand_") or n == "right_wrist_yaw_link"
+        ]
+        self.link_index = [names.index(n) for n in self.links]
+        self.link_points = {n: collision_points(f"{root}/{n}") for n in self.links}
+        apple_path = scene.apple.cfg.prim_path.replace("{ENV_REGEX_NS}", "/World/envs/env_0")
+        apple_path = re.sub(r"env_\.\*", "env_0", apple_path)
+        self.apple_path = apple_path
+        self.apple_points = collision_points(apple_path)
+
+    def summary(self) -> dict:
+        return {
+            "links": {
+                n: {"n_points": len(v["points"]), "kinds": v["kinds"]}
+                for n, v in self.link_points.items()
+            },
+            "apple_path": self.apple_path,
+            "apple": {
+                "n_points": len(self.apple_points["points"]),
+                "kinds": self.apple_points["kinds"],
+                "extent_body_m": (
+                    np.ptp(self.apple_points["points"], axis=0).tolist()
+                    if len(self.apple_points["points"])
+                    else None
+                ),
+            },
+        }
+
+    def measure(self) -> dict:
+        s = self.scene
+        origin = s.np(s.unwrapped.scene.env_origins)[0]
+        poses = s.np(s.robot.data.body_link_pose_w)[0]
+        low, low_link = np.inf, None
+        for n, i in zip(self.links, self.link_index, strict=True):
+            pts = self.link_points[n]["points"]
+            if not len(pts):
+                continue
+            r = at.quat_xyzw_to_matrix(poses[i][3:])
+            z = float((pts @ r.T)[:, 2].min() + poses[i][2] - origin[2])
+            if z < low:
+                low, low_link = z, n
+        apple = s.np(s.apple.data.root_link_pose_w)[0]
+        pts = self.apple_points["points"]
+        top = (
+            float((pts @ at.quat_xyzw_to_matrix(apple[3:]).T)[:, 2].max() + apple[2] - origin[2])
+            if len(pts)
+            else None
+        )
+        return {
+            "hand_min_z": None if low_link is None else low,
+            "hand_min_link": low_link,
+            "apple_top_z": top,
+        }
+
+
 class Server:
     def __init__(self, scene: at.ArenaScene):
         self.scene = scene
         self.timing: dict[str, list[float]] = {}
+        self.geometry: Geometry | None = None
+
+    def extras(self) -> dict:
+        return self.geometry.measure() if self.geometry is not None else {}
 
     def record(self) -> dict:
         s = self.scene
         raw = s.raw_state()
         held = s.held_terms
         return {
+            **self.extras(),
+            "right_hand_net_force_n": raw.get("right_hand_net_force_n"),
             "success": bool(held.get("success", False)),
             "object_dropped": bool(held.get("object_dropped", False)),
             "success_inputs": dict(s.success_inputs) if held.get("success") else None,
@@ -93,8 +216,11 @@ class Server:
 
     def raw(self) -> dict:
         return {
-            k: (v.tolist() if isinstance(v, np.ndarray) else v)
-            for k, v in self.scene.raw_state().items()
+            **{
+                k: (v.tolist() if isinstance(v, np.ndarray) else v)
+                for k, v in self.scene.raw_state().items()
+            },
+            **self.extras(),
         }
 
     def handle(self, msg: dict) -> dict:
@@ -106,6 +232,10 @@ class Server:
                 "physics": "physx (Arena galileo_g1_static_pick_and_place variant)",
                 "argv": sys.argv,
             }
+        if cmd == "geometry":
+            if self.geometry is None:
+                self.geometry = Geometry(s)
+            return {"geometry": self.geometry.summary(), "now": self.geometry.measure()}
         if cmd == "settle":
             s.reset(seed=0)
             self.run(msg["action"], msg["steps"], keep=False)
