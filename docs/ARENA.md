@@ -22,7 +22,7 @@ The aim is a third simulator setup next to MuJoCo v2 ([SIMULATION.md](SIMULATION
   - With the offset, the arm follows e9's targets to within millimetres of MuJoCo. Then, in the close phase, the floating base steps back 3.6–11.7 cm, and e9's pelvis-frame targets end up behind the apple. Hand–shelf contact as the trigger of that step is inferred; it was not measured.
 - **GR00T reference baseline (§8, 2026-10-01, development; GR00T's result, not ours).** The tutorial's own command, run against the owner's GR00T N1.7 server as a client only, in one env:
   - Arena's rule: 16/30 (0.53) in one process and 10/30 in another, 26/60 pooled. The tutorial's 1.0 is not reproduced.
-  - Our stricter `apple_at_rest_arena_v0`: 0/30, failing only on a stale-velocity artefact; a post-hoc position-based diagnostic gives 6/30.
+  - Our stricter `apple_at_rest_arena_v0`: 0/30. The 7 episodes that ended placed and released failed only on *still*, consistent with a stale reported velocity (inferred). The other 23 did not end with the apple placed and released. A post-hoc position-based diagnostic gives 6/30.
 - **Plan.** The cheapest meaningful cross-simulator check is an e9 replay in Arena through a mirror adapter (§5). It has to deal with three differences: the floating pelvis, 50 Hz against our 20 Hz, and the apple sitting on the robot's left (e9 is right-handed).
 
 ## 1. Environment and provenance
@@ -433,8 +433,8 @@ flock <lock> sg docker -c "scripts/isaac/run_isaac.sh arena_gr00t_baseline.py ou
 | `gr00t-smoke-1` | `c79c73d` | tutorial, 2 episodes | **void**: importing `gr00t` before Kit started loaded `pxr` early; Kit segfaulted at start-up. Fixed in `153430b`. |
 | `gr00t-smoke-2` | `153430b` | tutorial, 2 episodes | **void**: the client config's `model_path` assertion failed because there was no `/models` in the container. Fixed in `e16c98c`/`16ebcb8`. |
 | `gr00t-smoke-3` | `16ebcb8` | tutorial, 2 episodes | ran. 0/2 successes (two grasp misses, one of which pushed the plate 5 cm); the summary was lost because Kit exits before an outer `finally` (fixed in `7e4f6cb`) |
-| **`gr00t-tutorial-1`** | `7e4f6cb`, clean | tutorial mode, 30 episodes, 1 env | Arena: **`success_rate 0.533, object_moved_rate 0.733, num_episodes 30`** |
-| **`gr00t-settle-1`** | `7e4f6cb`, clean | settle mode, 30 episodes, 1 env | Arena's rule (first firing): **10/30**. `apple_at_rest_arena_v0`: **0/30** |
+| **`gr00t-tutorial-1`** | `7e4f6cb`, clean code (`code_status.txt` empty) | tutorial mode, 30 episodes, 1 env | Arena: **`success_rate 0.533, object_moved_rate 0.733, num_episodes 30`** |
+| **`gr00t-settle-1`** | `7e4f6cb`, clean code (`code_status.txt` lists only the two untracked strip JPEGs under `docs/arena/`) | settle mode, 30 episodes, 1 env | Arena's rule (first firing): **10/30**. `apple_at_rest_arena_v0`: **0/30** |
 
 The code revisions are the ones each run recorded in `code_revision.txt`, before this branch was rebased onto main. They stay reachable on the branch `archive/arena-gr00t-baseline-runs` (`7e4f6cb`). The rebased commits carry byte-identical code for the script, its tests and `run_isaac.sh`. The mapping is `c79c73d`→`3552bd6`, `153430b`→`a12d905`, `e16c98c`→`3c1dd35`, `16ebcb8`→`4735a6c` and `7e4f6cb`→`c9310fb`.
 
@@ -459,33 +459,40 @@ The two processes also differ from each other: grasp misses were 7/30 against 17
 
 **How episodes vary.** There is no reset randomisation. The apple starts at (0.5785, 0.270, −0.0104) and the plate at (0.578, 0.060, −0.027) in every episode, and physics was repeatable in the spike. All variation comes from GR00T: the flow-matching sampler's noise on the server, which this client neither seeds nor controls. Outcomes nonetheless range from a clean place at step 134 to a miss on the first reach.
 
-**Arena-rule failure modes** (`gr00t-tutorial-1`, 14 failures; the classes were defined after the episodes were seen):
-- **grasp miss, 7.** The apple moved < 5 cm and was not lifted. The hand closes beside the apple or brushes it, then carries an empty hand to the plate.
-- **lifted, not placed, 5.** The apple was lifted 8–10 cm, then dropped or released off the plate, ending 9–18 cm from its centre.
-- **knocked without lift, 2.**
+**Arena-rule failure modes** (`gr00t-tutorial-1`, 14 failures). The classes and thresholds were set after the episodes were seen. Lift is the apple's maximum rise above its start; displacement is its maximum 3-D displacement from the start.
+- **lifted, not placed** (lift ≥ 5 cm): **5.** The apple was lifted 8.3–9.6 cm, then dropped or released off the plate, ending 8.9–18.3 cm from its centre.
+- **knocked** (lift < 5 cm, displacement ≥ 5 cm): **2.** These are eps 15 and 20. The rises were 0.9 and 1.6 cm and the displacements 11.3 and 8.6 cm.
+- **grasp miss** (lift < 5 cm, displacement < 5 cm): **7.** At most 0.3 cm of lift and 2.9 cm of displacement. The hand closes beside the apple or brushes it, then carries an empty hand to the plate.
 
-In `gr00t-settle-1`: 17 grasp misses, 3 knocked.
+In `gr00t-settle-1`, under the same thresholds:
+- **grasp miss: 17.** At most 0.3 cm of lift and 4.2 cm of displacement.
+- **knocked: 3.** These are eps 5, 15 and 18. The apple rose 2.8, 4.2 and 3.2 cm, so these are partial lifts that stayed below the 5 cm line, not flat pushes. Displacements were 17.7, 16.6 and 25.4 cm.
+- **lifted, not placed: none.**
+
+So "knocked" covers rises of 0.9–1.6 cm in one run and 2.8–4.2 cm in the other, and the two runs' classes are only comparable through the stated thresholds.
 
 **What Arena's successes contain** (`gr00t-tutorial-1`, 16; the rule fired at steps 134–293, median 176.5, about 3.5 s):
-- **5 fired with the hand still on the apple** (non-plate force 5–16 N at the firing step: eps 3, 8, 17, 18, 26).
-- **6 fired with the apple more than 4 cm from the plate centre** (4.1–8.3 cm; the plate's radius is about 7.5 cm).
-- **6 were clean at the firing step**: released, and within 4 cm.
+- **10 of the 16 were not clean** at the firing step. The two groups below overlap: ep 3 is in both, so 5 + 6 counts 11 group memberships for 10 episodes.
+  - **5 fired with the hand still on the apple:** eps 3, 8, 17, 18 and 26, with a non-plate force of 5.5–16.1 N at the firing step.
+  - **6 fired more than 4 cm from the plate centre:** eps 2, 3, 21, 25, 27 and 28. Five of them are 4.1–5.3 cm out, still on the plate's surface (radius about 7.5 cm). Only ep 3, at 8.3 cm, is past the rim.
+- **6 were clean:** released and within 4 cm (eps 1, 6, 12, 14, 23, 29).
+- **Count check:** 10 + 6 = 16.
 
 In `gr00t-settle-1`, 2 of the 10 firings were at steps 11 and 12 and are false positives: the arm swept the apple into the plate's rim at more than 1 m/s and pinned it under the hand for a step. Neither apple ended on the plate. Arena's rule counts such sweeps, and grasps still pressed onto the plate, as successes.
 
 **Why the strict verdict is 0/30.**
 - **The episodes that ended well.** In 7 settle episodes the apple ended inside 4 cm, supported and released for the whole final second (eps 0, 2, 21, 22, 24, 25, 29; final distance 0.6–2.7 cm).
 - **What failed them.** All 7 failed only on *still*: the reported speed was 0.006–0.032 m/s against the 0.001 bar.
-- **Diagnosis, after the fact.** In 6 of the 7 the apple's position did not change at all over the final second (0.0000 m). The reported velocity is constant there: PhysX keeps a stale velocity on a body that is asleep. Untouched apples resting on the shelf also report 0.0002–0.004 m/s.
-- **What the declared rule therefore measures.** The *still* test on reported velocity cannot pass in this scene. The declared verdict stays 0/30.
+- **Diagnosis, after the fact.** In 6 of the 7 the apple's position did not change at all over the final second (0.0000 m). In 5 of those 6 (eps 0, 2, 21, 22, 24), the reported velocity was also constant, at 0.006–0.018 m/s. In ep 25 it varied between 0.005 and 0.010 m/s while the apple moved only µm. This is consistent with PhysX reporting a stale velocity on a sleeping body, but that is **inferred**: sleep state was not recorded. Untouched apples resting on the shelf also report 0.0002–0.004 m/s while their position does not change.
+- **What the declared rule therefore measures.** Given that inference, the *still* test on reported velocity appears unable to pass in this scene. The declared verdict stays 0/30.
 - **A post-hoc diagnostic.** It is **not** the declared rule, and it is labelled as such. Replacing the reported speed with the position-difference speed (≤ 0.001 m/s per 20 ms step) gives **6/30** (eps 0, 2, 21, 22, 24, 25; 95% Wilson 0.10–0.37). Ep 29's apple was still creeping 1.1 mm over the final second. Any future Arena at-rest rule should be declared on position change, not on reported velocity.
 
 **Timing and latency.**
 - **Start-up.** 320–350 s per process.
-- **Stepping.** 16–18 env steps/s including GR00T: about 0.33× real time, 10–21 s per episode.
+- **Stepping.** 16–18 env steps/s including GR00T, about 0.33× real time. Episodes took 7.7–21.4 s; the shortest was an early success in `gr00t-tutorial-1`.
 - **GR00T latency.** `get_action` was called once per 40-step chunk (199 calls in `gr00t-tutorial-1`, 240 in `gr00t-settle-1`). The latency measured at the client: median 0.051 s, p95 0.117 s, max 0.385 s in `gr00t-tutorial-1`; median 0.050 s, p95 0.052 s, max 0.095 s in `gr00t-settle-1`.
 
-**First frame is black.** In all three processes that recorded a step-0 frame (`gr00t-smoke-3`, `gr00t-tutorial-1`, `gr00t-settle-1`), the first head-camera observation of episode 0 was entirely black (the spike saw it in 1 of 4 runs). So GR00T's first 40-action chunk in each process was computed blind. Every later episode's first frame rendered. Episode 0 failed in the smoke and tutorial runs, but fired Arena's rule (and ended at rest by the diagnostic) in the settle run. Without episode 0: 16/29 (0.38–0.72) and 9/29 by Arena's rule — the same picture.
+**First frame is black.** In all three processes that recorded a step-0 frame (`gr00t-smoke-3`, `gr00t-tutorial-1`, `gr00t-settle-1`), the first head-camera observation of episode 0 was entirely black (the spike saw it in 1 of 4 runs). So GR00T's first 40-action chunk in each process was computed blind. Frames were saved only for episodes 0–2 (`--frame_episodes 3`). The step-0 frames of episodes 1 and 2 rendered; episodes 3 and later were not checked. Episode 0 failed in the smoke and tutorial runs, but fired Arena's rule (and ended at rest by the diagnostic) in the settle run. Without episode 0: 16/29 (0.38–0.72) and 9/29 by Arena's rule — the same picture.
 
 ### Frames (`robot_head_cam`, from `gr00t-tutorial-1`, 240 × 180 strips, JPEG)
 
@@ -497,8 +504,10 @@ In `gr00t-settle-1`, 2 of the 10 firings were at steps 11 and 12 and are false p
 ### Are GR00T's successes usable as demonstrations?
 
 **Only after filtering, and only in Arena.**
-- **Arena's rule is too loose to select demonstrations.** About a third of its successes are presses with the hand still on the apple, or rim or edge contacts, and some are sweeps.
-- **The declared strict rule cannot pass** (stale-velocity artefact).
+- **Arena's rule is too loose to select demonstrations.**
+  - In `gr00t-tutorial-1`, 10 of 16 firings were not clean: 5 with the hand still on the apple and 6 more than 4 cm off-centre, with ep 3 in both groups.
+  - In `gr00t-settle-1`, 2 firings were early arm sweeps.
+- **The declared strict rule did not pass in any episode.** The 7 episodes that ended placed and released failed only on *still*, which is inferred to be a stale-velocity artefact.
 - **What is left.** About 6 in 30 episodes (20%; 0.10–0.37) end with the apple released, at rest and within 4 cm, under the position-based diagnostic. Those, filtered by such a rule, would be plausible Arena demonstrations of a left-handed place.
 - **Our stack is a different domain.** The trajectories are 50 Hz, 50-D WBC joint targets on a floating base, seen from a 640 × 480 head camera in a photoreal scene with no layout variation. That is a different action space, rate, camera and layout from our MuJoCo v2 `ee_delta_grasp_v0` stack (§3, §5), so they are not usable there without the adapter work in §5.
-- **What they are for.** As a reference, GR00T sets the bar: a 3B VLA fine-tuned on this exact scene places the apple cleanly in roughly one episode in five here, and fires Arena's loose rule in about 0.43 of episodes.
+- **What they are for.** As a reference, GR00T sets the bar: a 3B VLA fine-tuned on this exact scene places the apple cleanly in roughly one episode in five here (6/30, by the post-hoc position-based diagnostic, not the declared rule), and fires Arena's loose rule in about 0.43 of episodes.
