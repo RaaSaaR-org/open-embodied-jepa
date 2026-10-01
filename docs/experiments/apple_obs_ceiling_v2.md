@@ -96,8 +96,8 @@ those windows the readout, not action conditioning, set the floor.
 
 **What is already known about the views (different quantities, phases and readouts; none is
 the quantity measured here):**
-- TASK-061 read the post-look apple at reset from raw 112 px onboard pixels to 0.469 cm, from
-  224 px to 0.386 cm, and from overview pixels to 0.183 cm
+- TASK-061 read the post-look apple from raw 112 px onboard pixels to 0.469 cm and from 224 px
+  to 0.386 cm, and the reset apple from overview 112 px pixels to 0.183 cm
   (`apple_observation_reprobe_v1_results.md`:92–95); resolution added 0.084 cm once the wrist was
   clear (`apple_observation_reprobe_v1_results.md`:163–164).
 - The hand-crop window shows about 8× the apple pixels of onboard 112 px at reset (p75 31 against
@@ -130,7 +130,8 @@ followed by e9's place still leaves the apple at rest on the plate on ≥ 28 of 
   TASK-070/K1 bar family (`apple_to_plate_v2_expert.md`:3–5).
 - **Rule.** τ = the largest level L such that every level ≤ L reaches ≥ 28/32. If level 0 fails,
   the row is TAU-NONE: the place itself is the constraint, and nothing is rendered.
-- **Seeds.** 55000–55031, development, now spent (§4 of the design, `SEED_RANGES["tau"]`).
+- **Seeds.** 55000–55031, development, now spent (`SEED_RANGES["tau"]`; a repository search of
+  2026-10-01 found no seed use in 55000–55999).
 
 **Why this quantity.** The planner's put-down spot is where e9's place primitive is aimed. A
 readout error in the plate (or the offset) becomes a target error of the same size in cm. A
@@ -162,8 +163,9 @@ tree (frozen sha `de3218c7…` before the record below was added), on the Linux 
   (`apple_to_plate_v2_expert.md`:3–5, 150–158); TASK-074's Probe A gave 6/32 for e9 aimed at a
   readout with a 3.5 cm median plate error (`apple_lewm_planner_v2.md`:154–156).
 - **What τ = 1.0 cm implies for the reference view, before anything is run:** TASK-074's
-  reference readout reads 2.872 cm on its val windows (§1). Unless cross-fitting lowers it by
-  more than a factor of 2.5, the reference view will not be admitted. This was visible when τ
+  reference readout reads 2.872 cm on its val windows (§1). A1 needs the *upper bound* of the
+  cross-fitted median at or below 1.0 cm, a factor of about 2.9 below that; the reference view is
+  very unlikely to be admitted. This was visible when τ
   was frozen; τ was not chosen, it was measured, and the rule (§2) was fixed before the run.
 
 ## 3. The views and the corpus
@@ -250,7 +252,8 @@ column halves of the token dimensions, so only half of the full tokens is held a
 
 - **Outer folds:** 5, by root, over the read roots (a seeded permutation in plan order,
   position mod 5; salt 7502). Every root's windows are read by readouts fitted on the other four
-  folds only; no window's own root enters its fit. A test checks this with poisoned labels.
+  folds only; no window's own root enters its fit. Tests check this (a spy on every fit's
+  groups; poisoned held-out labels for the kernel ridge).
 - **Inner folds:** 5, grouped by root (salt 7503).
 - **Windows:** O2's moving cohort: every read root's decision-step windows whose true offset
   moves by ≥ 1 cm over the 16 commands (`apple_lewm_planner_v2.md`:485–486). The quantity is
@@ -324,8 +327,9 @@ floor for raw pixels, and R_full's floor is not fitted (§9b).
 If the row is OBS-ONBOARD with view V*, the next task's O2-type encoded-readout bar B must satisfy
 **c_V\* ≤ B ≤ τ** (`downstream_bar_interval`, `bar_is_valid`), and its predicted-latent bar must
 be ≤ τ, with any allowance above c_V\* calibrated on development data before its freeze (not
-carried; TASK-066's 0.5 cm G5 margin was uncalibrated, `apple_token_dynamics_v1_results.md`:234). TASK-074's 1.0 cm
-bar against a 2.872 cm readout is exactly what `bar_is_valid` refuses (tested). If c_V > τ for
+carried; TASK-066's 0.5 cm G5 margin was uncalibrated,
+`apple_token_dynamics_v1_results.md`:234). TASK-074's 1.0 cm bar against a 2.872 cm readout is
+exactly what `bar_is_valid` refuses (tested). If c_V > τ for
 every view, no world-model task is preregistered on these views.
 
 ## 7. Void rule, abandonment clause, next steps
@@ -420,11 +424,54 @@ world model, and none of these rows is about the world model.
 
 ## 10. Stage-0 smokes (smoke seeds 55050–55099; nothing in them is read)
 
-⟨TBD-smokes⟩
+All smokes ran on the Linux PC, in the `task075-prereg` worktree's git-ignored `outputs/`. **The
+rows the smokes printed are meaningless and are not read** (the readouts smoke's row uses a
+placeholder τ of 2.0 cm on 13 smoke roots). Only mechanics, memory, time and disk are recorded.
+
+### 10.1 The frozen-code smokes (the record for the GO)
+
+Four smokes ran at `63c55086`, frozen sha `f6ed707c…d8a5`, on a clean tree
+(`tracked_tree_dirty: false`), on smoke seeds only, each started after the 1- and 5-minute load
+averages were ≤ 1.8. After them only this document and the manifest changed; neither is pinned.
+
+| smoke (report sha256) | start load (1, 5 min) | result |
+|---|---|---|
+| `tau --smoke` (`56765ab4…`) | 1.162, 1.685 | 4 smoke seeds × levels 0 and 3 cm; G-repro passed; G-planted clean; 50 s; peak tree PSS 7.95 GiB |
+| `source --smoke` (`49f74f91…`; corpus manifest `aafd09bb…`) | 1.285, 1.792 | TASK-074's collector on 16 smoke roots (10 / 4 / 2), sealed with TASK-074's seal; 22 s; peak PSS 7.53 GiB |
+| `render --smoke` (`d3d7c0ac…`) | 1.258, 1.739 | 14 train + val roots re-simulated (the 2 test roots excluded); **every array equal on 14/14 roots; 390/390 reference frames identical** (0 within the rule, 0 outside); 4.5 s per root (median, 6 workers); **1.85 MB per root** (largest); 18 s; peak PSS 7.92 GiB |
+| `readouts --smoke --scale` (`3c353747…`) | 1.382, 1.748 | the smoke stage (13 read roots, every view, every readout, the row code path), then **the full-scale probe**: 240 + 30 slots decoded afresh, 251 read roots, 10 542 frames per view, G-repro-off's band featurisation at 270 slots; **peak tree PSS 8.51 GiB** (ceiling 12, margin 2.0: passes); GPU peak reserved 0.95 GiB (cap 3.0), 8.51 GiB free at start; anchor ≤ 5.5e-5 (bound 1e-3); the probe took 1 414 s, the smoke 1 474 s |
+
+**Margins, stated plainly.**
+- The readouts peak (8.51 GiB) is 1.49 GiB inside the 10 GiB margin line. It was measured on
+  cycled smoke episodes (786 frames each, like the real roots); the real stage reads about the
+  same number of roots (TASK-074's train-stage rule kept 225 of 240 train roots).
+- The scale probe's start load was 1.75 (5 minutes), under the 2.0 rule.
+- One reference frame differed from the stored one by one level in 8 pixels in a development
+  render smoke (`render-smoke-3`, on the working tree before `26c64d9`; not the record); the
+  frozen-code render smoke saw none. The render rule tolerates it.
+
+### 10.2 Development smokes (historical; not the record)
+
+While the code was written (`26c64d9` and its working tree), the same four smokes ran under
+`outputs/task075-scratch/` and a first chain at `ad667d9` under `outputs/task075-smoke/` with a
+dirty tracked tree (this document had been edited). The first render smoke at the working tree V'd
+on an empty index array for a root that ended before step 384; the fix (an integer index) is in
+the frozen code. A second V'd on G-hash, because the fix changed a pinned file before the
+manifest's pins were refreshed. The `ad667d9` chain was stopped by its operator before its readouts smoke, and the
+whole chain was repeated on a clean tree (§10.1). The first full-scale probe (`readouts-scale-1`,
+working tree before `26c64d9`) peaked at 8.47 GiB and took 1 396 s.
 
 ## 11. Compute estimate (measured where marked)
 
-⟨TBD-compute⟩
+| stage | measured or estimated | basis |
+|---|---|---|
+| Stage 0, τ | **265 s** (measured) | 288 attempts + the G-repro refit on 6 workers |
+| Stage 1, render | about 4–6 min wall; store about 0.5 GB | 4.5 s per root (smoke median) × 270 / 6 workers; 1.85 MB per root |
+| Stage 2, readouts | about 25–30 min wall | the full-scale probe: 1 414 s at 251 read roots, 4 views (per view: featurisation and the full-token Gram 63–86 s, the pixel Gram 8–39 s, the cross-fit 209–214 s) |
+| memory | peak tree PSS 8.51 GiB (readouts), 7.92 GiB (render) | §10.1 |
+| GPU | peak reserved 0.95 GiB; cap 3.0 GiB; ≥ 4 GiB stays free | §10.1; the resident service (about 6.6–6.8 GB) is never touched |
+| disk | about 33 GB free at the smokes; the stage needs ≥ 10 GiB + 0.75 GB | `render_smoke.bytes_per_root_max` × 270 × 1.5 |
+| **total** | **under 1 h of machine time** after the GOs | no world-model training |
 
 ## 12. Deviations from the design proposal
 

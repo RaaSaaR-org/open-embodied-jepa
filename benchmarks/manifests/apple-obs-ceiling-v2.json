@@ -603,8 +603,101 @@
   "g_repro": "every TASK-072 run-1 reproduction check passed",
   "render_disagreements": 0
  },
- "render_smoke": {},
- "smoke": {},
+ "render_smoke": {
+  "bytes_per_root_max": 1851393,
+  "report_sha256": "d3d7c0acecb9b510065101a7592427515b2e111f334c62db6379fbd13373cb91",
+  "revision": "63c55086",
+  "note": "the render smoke at the frozen code; the render stage projects its store as 1.5 x this x 270"
+ },
+ "smoke": {
+  "frozen_code": {
+   "revision": "63c55086",
+   "frozen_sha256": "f6ed707cdca808e38e652f9dd2b742120bd17e74b1df5ef7c83223331c63d8a5",
+   "tracked_tree_dirty": false,
+   "seeds": "smoke seeds only: tau 55090-55093, source 55050-55065",
+   "root": "outputs/task075-smoke-2 in the task075-prereg worktree (git-ignored)",
+   "note": "mechanics only; nothing in them is read. After them only this manifest and the protocol document (both unpinned) changed",
+   "reports": {
+    "tau": {
+     "sha256": "56765ab40ff32d0f8a199dea0707a37cf27431f9fa15605578461106b4b6fbfd",
+     "outcome": "TAU-SMOKE",
+     "load_1_5": [
+      1.162,
+      1.685
+     ],
+     "seconds": 50,
+     "peak_tree_pss_gib": 7.95
+    },
+    "source": {
+     "sha256": "49f74f9139ad0723f5a27ac42ff1a41a31f1d91761228784c10bcf31cb056d0e",
+     "outcome": "SOURCE-SEALED",
+     "corpus_manifest_sha256": "aafd09bbf247ae6537214c5e2b49162031a67e7b6806543625740ddfb97e11ed",
+     "load_1_5": [
+      1.285,
+      1.792
+     ],
+     "seconds": 22,
+     "peak_tree_pss_gib": 7.53
+    },
+    "render": {
+     "sha256": "d3d7c0acecb9b510065101a7592427515b2e111f334c62db6379fbd13373cb91",
+     "outcome": "VIEWS-SEALED",
+     "load_1_5": [
+      1.258,
+      1.739
+     ],
+     "seconds": 18,
+     "peak_tree_pss_gib": 7.92,
+     "roots": 14,
+     "arrays_equal_roots": 14,
+     "frames_identical": 390,
+     "frames_within_rule": 0,
+     "frames_outside_rule": 0,
+     "bytes_per_root_max": 1851393,
+     "seconds_per_root_median": 4.5
+    },
+    "readouts": {
+     "sha256": "3c353747f0eb7559431e5bd49e45b2b50dfc674050b68c9e897b056abd1e65fa",
+     "outcome": "READOUTS-SMOKE",
+     "load_1_5": [
+      1.382,
+      1.748
+     ],
+     "seconds": 1474,
+     "peak_tree_pss_gib": 8.51,
+     "gpu_peak_reserved_gib": 0.95,
+     "gpu_free_gib_at_start": 8.51,
+     "scale": {
+      "slots": {
+       "train": 240,
+       "val": 30
+      },
+      "read_roots": 251,
+      "frames_per_view": 10542,
+      "seconds": 1414,
+      "peak_tree_pss_gib": 8.51,
+      "margin_gib": 2.0,
+      "within_margin": true,
+      "per_view_seconds": {
+       "featurise_and_full_gram": [
+        63,
+        86
+       ],
+       "pixel_gram": [
+        8,
+        39
+       ],
+       "fit": [
+        209,
+        214
+       ]
+      },
+      "anchor_max_abs_difference": 5.47e-05
+     }
+    }
+   }
+  }
+ },
  "hashes": {
   "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
   "benchmarks/manifests/apple-first-policy-v2-linux-results.json": "b97258bc14875e1c1de03e721e318b41fa582b216d1f1414637d0a56d1f159b9",
@@ -685,6 +778,6 @@
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "pins_note": "the protocol document and this manifest are not pinned: the smoke record is added after the frozen-code smokes, so that the smoked code stays the frozen code; TASK-074's pins are carried and every one of them is unchanged",
- "protocol_document_sha256": "0f776b2024877af94a297f554b4dc333cedeb184ab495ccdb66bf55ca2df249c",
+ "protocol_document_sha256": "63ebadf8186137ee4c95f5973024aad33087654bbad71590efb2ee3e1a579eaa",
  "note": "Learned Apple->Plate on the frozen benchmark is still 0 successes. TASK-075 is a measurement study and makes no control claim."
 }
