@@ -154,10 +154,12 @@ def serve(scene: at.ArenaScene, out: str, idle_timeout: float) -> None:
     key_path = os.path.join(out, "authkey")
     with open(key_path, "w") as f:
         f.write(key.hex())
-    os.chmod(key_path, 0o644)
+    # The container writes as the host user (run_isaac.sh passes DOCKER_RUN_USER_ID; the run
+    # files are owned by uid 1000), so owner-only permissions suffice for the host client.
+    os.chmod(key_path, 0o600)
     sock = os.path.join(out, "e9.sock")
     listener = Listener(sock, family="AF_UNIX", authkey=key)
-    os.chmod(sock, 0o777)
+    os.chmod(sock, 0o600)
     stage(f"listening on {sock}")
     conn = listener.accept()
     stage("client connected")

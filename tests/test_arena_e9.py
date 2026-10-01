@@ -126,6 +126,13 @@ def test_arena_verdicts():
         assert not ae.arena_verdicts(recs, rest_height_m=rest)["at_rest_arena"], bad
     with pytest.raises(ContractError):
         ae.arena_verdicts([], rest_height_m=rest)
+    # the window is the thresholds' (honoured, not just echoed)
+    from embodied_jepa.at_rest import AtRestThresholds
+
+    late = records[:-2] + [_record(29, apple=(0.65, 0.0, -0.03 + rest), plate=plate)] * 2
+    assert not ae.arena_verdicts(late, rest_height_m=rest)["at_rest_arena"]
+    v = ae.arena_verdicts(records, rest_height_m=rest, thresholds=AtRestThresholds(window_steps=5))
+    assert v["window_steps"] == 5
 
 
 def test_kinematic_trajectory():

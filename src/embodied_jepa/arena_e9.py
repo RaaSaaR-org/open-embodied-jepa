@@ -273,13 +273,15 @@ def upper_body_kp(names) -> np.ndarray:
 
 
 def gravity_offset(sim) -> np.ndarray:
-    """Position-target offsets that make Arena's PD hold the arm and hand against gravity.
+    """Position-target offsets that give Arena's PD our actuator's bias torque (arm and hand).
 
     Our MuJoCo actuator is PD plus bias compensation (``MuJoCoSimulation``: torque =
     kp (target - q) - kd qd + qfrc_bias); Arena's ``IdealPDActuator`` has no bias term, so the
     same targets sag. Adding ``qfrc_bias / kp_arena`` to the target gives Arena's PD the same
-    holding torque. The bias is our MJCF's, at Arena's joint state, with gravity in Arena's
-    pelvis frame (``mirror_state``'s ``gravity``); legs and waist get no offset."""
+    bias torque. ``qfrc_bias`` is gravity **plus** Coriolis and centrifugal terms at Arena's
+    measured joint velocities, as in our actuator; gravity dominates at e9's slow speeds. It is
+    our MJCF's, at Arena's joint state, with gravity in Arena's pelvis frame (``mirror_state``'s
+    ``gravity``) and the pelvis treated as fixed; legs and waist get no offset."""
     kp = upper_body_kp(sim.joint_names)
     bias = np.asarray(sim.data.qfrc_bias[sim.vadr], float)
     return np.divide(bias, kp, out=np.zeros_like(bias), where=kp > 0)
@@ -423,14 +425,15 @@ def _scalars(raw: dict) -> dict:
 
 
 # ----- Arena-side verdicts ------------------------------------------------------------------
-def arena_verdicts(records, *, rest_height_m: float, window_steps: int = 20) -> dict:
+def arena_verdicts(records, *, rest_height_m: float, thresholds=None) -> dict:
     """Both verdicts on Arena's own state, from the per-Arena-step records of one attempt.
 
     * **Arena contact success** (``object_on_destination``): the success term was True at any
       Arena step (Arena would have terminated there). Its first step, and whether the apple
       touched the hand then, are reported.
     * **``apple_at_rest_v0`` on Arena's world state**: over the last ``window_steps`` *commands*
-      (one record per command: its last Arena step), the apple's centre of mass within 4 cm of
+      of ``thresholds`` (default ``AtRestThresholds``: 20; one record per command: its last
+      Arena step), the apple's centre of mass within 4 cm of
       the plate origin in xy, within 1.2 cm of ``plate_z + rest_height_m`` in z (the resting
       height calibrated by a drop on the plate in the same run), speed <= 0.001 m/s, and no
       apple-hand force. World (env-local) frame, not pelvis-relative. The speed is the
@@ -462,8 +465,8 @@ def arena_verdicts(records, *, rest_height_m: float, window_steps: int = 20) -> 
     flat_plate = plate.copy()
     flat_plate[:, 2] = 0.0
     shifted = obj - np.c_[np.zeros((len(obj), 2)), expected_z]  # height error from 0
-    at_rest = apple_at_rest(shifted, flat_plate, fd, hand, expected_z=0.0)
-    reported = apple_at_rest(shifted, flat_plate, vel, hand, expected_z=0.0)
+    at_rest = apple_at_rest(shifted, flat_plate, fd, hand, expected_z=0.0, thresholds=thresholds)
+    reported = apple_at_rest(shifted, flat_plate, vel, hand, expected_z=0.0, thresholds=thresholds)
     return {
         "arena_success": bool(success.any()),
         "arena_first_success_step": first,
@@ -478,7 +481,7 @@ def arena_verdicts(records, *, rest_height_m: float, window_steps: int = 20) -> 
         "at_rest_arena_reported_vel_detail": reported,
         "final_distance_arena_cm": float(np.linalg.norm(obj[-1, :2] - plate[-1, :2]) * 100),
         "dropped": bool(any(r.get("object_dropped") for r in records)),
-        "window_steps": window_steps,
+        "window_steps": int(at_rest["window_steps"]),
     }
 
 

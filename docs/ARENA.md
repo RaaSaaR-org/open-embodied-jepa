@@ -19,7 +19,7 @@ The aim is a third simulator setup next to MuJoCo v2 ([SIMULATION.md](SIMULATION
 - **Success is one per-step test.** The apple–plate contact force must exceed 0.5 N while the apple's speed is below 0.1 m/s. There is no position bound and no settle window, and (inferred from the code, not tested) no release requirement. It is much looser than our `apple_at_rest_v0`.
 - **Cross-simulator checks (§7, 2026-10-01, development).** The arm kinematics of NVIDIA's USD agree with our MJCF: the wrist is within 0.8 mm and 0.0002° of our FK at Arena's measured joints. The Dex3 fingers do not: their joint origins sit up to 2.3 cm closer to the wrist, and the fingertips differ by up to 3.1 cm. e9 does not transfer to Arena with our layout. It left the apple at rest on 0 of 16 development seeds by both verdicts, against 16/16 in MuJoCo on the same seeds. **Blocker:** e9 never grasps. Two causes were found:
   - The arms stall without a gravity offset, because Arena's ideal-PD drive has no bias compensation.
-  - With the offset, the arm follows e9's targets to within millimetres of MuJoCo. Then, in the close phase, the floating base steps back 4–12 cm, and e9's pelvis-frame targets end up behind the apple.
+  - With the offset, the arm follows e9's targets to within millimetres of MuJoCo. Then, in the close phase, the floating base steps back 3.6–11.7 cm, and e9's pelvis-frame targets end up behind the apple. Hand–shelf contact as the trigger of that step is inferred; it was not measured.
 - **Plan.** The cheapest meaningful cross-simulator check is an e9 replay in Arena through a mirror adapter (§5). It has to deal with three differences: the floating pelvis, 50 Hz against our 20 Hz, and the apple sitting on the robot's left (e9 is right-handed).
 
 ## 1. Environment and provenance
@@ -236,10 +236,10 @@ These are development runs under TASK-025 on the Linux PC. None of them is a gat
 
 | Run | Code | What | Report sha256 |
 | --- | --- | --- | --- |
-| `arena-kin-1` | `a78a9e5` + an uncommitted addition to `arena_e9.py` (the sham class only; the trajectory code the container ran was as committed) | kinematic check, tutorial scene unchanged except the passive hand sensor and held terminations | compare `9cee9181…` |
+| `arena-kin-1` | `a78a9e5` with a dirty tree: an uncommitted addition to `src/embodied_jepa/arena_e9.py` (the sham class only; the trajectory code the container ran was as committed) and the host script `scripts/isaac/arena_e9.py` untracked (the container does not use it; the comparison ran at `b585b8a`, clean) | kinematic check, tutorial scene unchanged except the passive hand sensor and held terminations | compare `9cee9181…` |
 | `e9-mujoco-ref-arena-1` | `b585b8a`, clean | MuJoCo e9 reference, seeds 50200–50215, plate error 0 (`e9_replay.py mujoco`) | `d1062b3d…` |
-| `arena-e9-server-layout-1` + `arena-e9-layout-1` | `b585b8a`, clean | e9 in the Arena layout variant, **plain** adapter (no gravity offset) | `a3509418…`; rescore at `34bbfcf`: `e3cdc65e…` |
-| `arena-e9-server-grav-1` + `arena-e9-grav-1` | `e75540f`, clean | the same with `--gravity_offset` | `9e05f46d…`; rescore at `34bbfcf`: `c09cff41…` |
+| `arena-e9-server-layout-1` + `arena-e9-layout-1` | `b585b8a`, clean | e9 in the Arena layout variant, **plain** adapter (no gravity offset) | `a3509418…`; rescore `e3cdc65e…`, produced at `d623662` with a dirty tree (the uncommitted rescore diagnostics, committed as `34bbfcf`); a rescore at `b8b1d13` reproduces it identically |
+| `arena-e9-server-grav-1` + `arena-e9-grav-1` | `e75540f`, clean | the same with `--gravity_offset` | `9e05f46d…`; rescore at `34bbfcf`, clean: `c09cff41…` |
 
 **Environment.** Image `isaaclab_arena:latest` `sha256:2588b526…` (§1). Host MuJoCo 3.13.0. PhysX GPU, one environment.
 - Every Arena run held the shared lock, after a check that load ≤ 2.0 and at least 7 GiB of GPU memory was free. One Arena process ran at a time.
@@ -249,7 +249,7 @@ These are development runs under TASK-025 on the Linux PC. None of them is a gat
 **Variant settings** for both e9 runs, chosen before the e9 runs and unchanged between them:
 - Robot initial position (0.08, 0.08, 0.068) on a platform with its top at −0.727. The floor is at −0.795, read from the background's floor collider, so the robot stands 6.8 cm higher, which is what `shelf_height_match` gives from the spike's settled pelvis.
 - The robot moved 17 cm back from the tutorial's x = 0.25, so its legs clear the invisible shelf support, which starts at x = 0.22.
-- After the settle the pelvis stood at (0.024, 0.083, 0.031): **6.1 cm** above the shelf top against our 5.3 cm, leaning back about 4°. Table height is therefore matched to 0.8 cm.
+- After the settle the pelvis stood at (0.024, 0.083, 0.031): **6.1 cm** above the shelf top against our 5.3 cm, leaning back 2.9° (the settled pitch in `reset_info`, the same in all 16 attempts; 3.5–5.2° during the attempt in seed 50200). Table height is therefore matched to 0.8 cm.
 - Apple and plate are placed per seed at our v2 offsets from the settled pelvis. The placement error is ≤ 0.9 mm in `grav-1`.
 - The Arena apple (Objaverse mesh, 6.1 cm, 0.097 kg) and plate (cream HOT3D, 15 cm, dynamic 0.5 kg) are Arena's, not ours.
 
@@ -313,7 +313,7 @@ These are development runs under TASK-025 on the Linux PC. None of them is a gat
 | attempts completed (not stopped by a guard) | 16 | 15 (1 joint-velocity guard) | 14 (2 joint-velocity guards) |
 | apple lifted > 2 cm in Arena | 16 (grasped and carried) | 2 (knocked, not grasped) | 0 |
 | attempts with apple–hand contact (Arena's sensor) | 16 | 11, mostly at placement (see below) | 4 (≤ 31 steps; no grasp) |
-| pelvis drift > 5 cm during the attempt | — (fixed) | 14 | 15 (max 3.6–14.1 cm) |
+| pelvis drift > 5 cm during the attempt | — (fixed) | 14 | 15 (per-attempt max 4.6–14.1 cm) |
 | final apple–plate distance | 2.3–3.9 cm | 10.0–42.1 cm | 15.2–25.4 cm |
 
 **How the verdicts are computed**
@@ -326,6 +326,7 @@ These are development runs under TASK-025 on the Linux PC. None of them is a gat
 - **Which speed.** The speed is the displacement of the centre of mass per command interval. On an apple resting on the plate whose pose does not change (sub-µm over 0.4 s), PhysX's reported velocity reads 5–10 mm/s. That reported velocity gives a second, labelled reading, which is also 0/16 in both runs.
 - **Mirror verdict.** "Mirror" is `run_attempt`'s own verdict on the pelvis-relative mirror state.
 - **Rescoring.** Both runs were rescored with the final scorer (`arena_e9.py rescore`). The verdict counts are the same as in the run reports.
+- **When the speed definition was chosen.** The displacement-based speed (`d623662`) was adopted **after** `layout-1` had finished and while `grav-1` was running, after its first attempts had been seen. It was not declared before the results. It changes no verdict: every attempt in both runs fails the 4 cm position test (`inside_all`), so neither speed reading can make an attempt pass.
 
 **Why the plain adapter fails: the arms stall**
 - The commanded translation saturates at ±0.4 (6 mm per command) for hundreds of commands, yet the palm moves < 1 mm per command. In seed 50200 the palm stays 13–15 cm short of e9's orient and descend targets.
@@ -337,17 +338,17 @@ These are development runs under TASK-025 on the Linux PC. None of them is a gat
 - With it the arm follows e9. In seed 50200 the palm is within 1–5 mm of MuJoCo's at the end of transfer, lower, steady, open and retreat.
 - The grasp fails in every attempt:
   1. In MuJoCo, e9's descent stops when the fingers land on the apple: the palm sits 11.6 cm above the apple centre.
-  2. In Arena no finger touches the apple at that height. The fingers are 2.2–3.1 cm shorter (§7.1). In seed 50200 the apple also sits 2.4 cm lower in the pelvis frame, because the pelvis leans back about 4° and stands 0.8 cm high.
+  2. In Arena no finger touches the apple at that height. The fingers are 2.2–3.1 cm shorter (§7.1). In seed 50200 the apple also sits 2.4 cm lower in the pelvis frame, because the pelvis leans back 2.9° at settle and stands 0.8 cm high.
   3. In seed 50200 the palm keeps descending to 5 cm above the apple centre. FK on our MJCF at Arena's joints puts the lowest hand geometry centre at −0.02 to −0.03 m world z, the height of the shelf top (−0.030).
   4. During the close phase the floating base then steps **back**, in every attempt: by 3.6–11.7 cm (median about 6.5 cm; more than 5 cm in 14 of 16). By the end of the attempt the pelvis is 4.6–13.1 cm behind where it started.
-  5. e9's targets are fixed in the pelvis frame at reset, so after the step the hand closes 5–12 cm behind the apple. No attempt lifted the apple more than 4 mm.
+  5. e9's targets are fixed in the pelvis frame at reset, so after the step the hand closes 5–12 cm behind the apple. No attempt lifted the apple more than 4.2 mm.
   6. e9 then runs its transfer, release and retreat with an empty hand, and finishes "complete".
 - Seed 50200 shows the step clearly: between close commands 210 and 255, Arena's pelvis x goes from −0.010 to −0.103.
 - The two joint-velocity guard stops (seeds 50205 and 50207) come from the WBC's leg joints (ankle roll > 5 rad/s while stepping). That guard was written for our fixed-pelvis robot and checks all 43 joints.
 
 **The exact blocker**
 - e9's top-down grasp depends on stopping on the apple's top with our Dex3 finger geometry and a fixed pelvis.
-- In Arena the fingers are shorter. The hand reaches the shelf instead of the apple, and the AGILE WBC answers that contact by stepping the base back several centimetres. e9 is open loop in the pelvis frame after reset, so it cannot recover.
+- In Arena the fingers are shorter. The hand reaches the shelf instead of the apple, and the AGILE WBC steps the base back 3.6–11.7 cm during the close phase (measured). That this step answers hand–shelf contact is **inferred**: there is no hand–shelf sensor, only FK placing the lowest hand geometry at shelf height (next step 2 tests it). e9 is open loop in the pelvis frame after reset, so it cannot recover.
 - **This is a cross-simulator mismatch of the scripted expert, not evidence about any learned controller.**
 
 ### Caveats
@@ -355,7 +356,7 @@ These are development runs under TASK-025 on the Linux PC. None of them is a gat
 - **Sample and scope.** The sample is small: 16 development seeds, one plate level, one Arena process per configuration, and no repeat run. The 0/16 results come from one mechanism that recurs in every attempt; they are not a rate estimate.
 - **The layout is not the tutorial's.**
   - It is our v2 layout relative to the settled pelvis, with the robot moved back 17 cm and raised 6.8 cm on an invisible platform.
-  - Table height is matched to 0.8 cm, but the pelvis leans back about 4°, so in the pelvis frame the shelf is about 2.4 cm lower at the apple than our table.
+  - Table height is matched to 0.8 cm, but the pelvis leans back 2.9° at settle (3.5–5.2° during the attempt), so in the pelvis frame the shelf is about 2.4 cm lower at the apple than our table.
   - The objects are Arena's: the apple is larger and heavier, the plate is dynamic and shaped differently.
 - **The gravity offset changes the commands.** It is a controller-side change to the targets Arena receives. It reproduces our MuJoCo actuator's bias compensation; it is not part of Arena's embodiment. The plain-adapter run is the like-for-like mapping.
 - **Pelvis-relative mapping.** Mapping relative to the live pelvis means a base step moves the apparent apple in the mirror. That is the physical truth for IK, but e9's reset-time targets do not follow it.
