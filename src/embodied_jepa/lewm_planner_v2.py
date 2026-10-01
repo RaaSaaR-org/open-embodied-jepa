@@ -604,8 +604,12 @@ BUDGET = {
 }
 
 
-def budget_updates(saturation_updates) -> dict:
-    """U = clamp(5000 * ceil(2 * max(u_sat) / 5000), 10 000, 60 000); escalate above the cap."""
+def budget_updates(saturation_updates, cap: int | None = None) -> dict:
+    """U = clamp(5000 * ceil(2 * max(u_sat) / 5000), 10 000, cap); escalate above the cap.
+
+    ``cap`` defaults to the frozen ``BUDGET["cap"]`` (60 000); the train stage uses addendum A2's
+    cap through ``train_budget_updates``."""
+    cap = BUDGET["cap"] if cap is None else int(cap)
     values = [int(u) for u in saturation_updates]
     if not values or min(values) < 1:
         raise ContractError("the budget rule needs positive saturation updates")
@@ -614,8 +618,62 @@ def budget_updates(saturation_updates) -> dict:
     return {
         "max_saturation_update": max(values),
         "wanted": wanted,
-        "updates": min(max(updates, BUDGET["min"]), BUDGET["cap"]),
-        "escalate": bool(wanted > BUDGET["cap"]),
+        "updates": min(max(updates, BUDGET["min"]), cap),
+        "escalate": bool(wanted > cap),
+    }
+
+
+# ----- addendum A2 (2026-10-01): the train stage's budget cap, a recorded override ---------------
+# BUDGET is inside the frozen block, and K1's K1-PASS report and the sealed corpus's CORPUS-SEALED
+# report were recorded under that block's sha (read_stage_report refuses any other), so the block
+# is not edited: BUDGET["cap"] stays 60 000. A2 raises the cap to 80 000 for the train stage only,
+# here, outside the frozen block. Nothing else in BUDGET changes (calibration runs and updates,
+# selection points, saturation tolerance, factor, step, min, the last-two rule).
+A2_TRAIN_BUDGET = {
+    "addendum": "A2",
+    "stage": "train",
+    "frozen_cap": BUDGET["cap"],
+    "cap": 80_000,
+    "ruled_by": "decided by Claude under owner delegation, 2026-10-01",
+    "run_2": {
+        "revision": "f52c905a423a0f50b4a95ec46466aa758983178d",
+        "report_sha256": "f5974cd290f739e7cc20944e68fe8a9dfe485f46cf400d7c89960fa608f20638",
+        "outcome": "ESCALATE-BUDGET",
+        "saturation_updates": {"W-7410": 25_000, "N-7410": 40_000},
+    },
+    "reproduction_rule": "run-3's calibration is re-run as frozen; if its saturation updates "
+    "differ from run-2's, the stage escalates again (ESCALATE-BUDGET) and nothing is changed",
+}
+
+
+def train_budget_updates(saturation_updates) -> dict:
+    """The train stage's budget rule under addendum A2: the frozen formula with A2's cap."""
+    rule = budget_updates(saturation_updates, cap=A2_TRAIN_BUDGET["cap"])
+    return rule | {
+        "cap": A2_TRAIN_BUDGET["cap"],
+        "frozen_cap": A2_TRAIN_BUDGET["frozen_cap"],
+        "addendum": A2_TRAIN_BUDGET["addendum"],
+    }
+
+
+def train_last_two_raise(updates: int, attempt: int) -> int | None:
+    """The last-two rule's raise under A2: min(2U, 80 000). ``None`` means escalate
+    (ESCALATE-BUDGET-LAST-TWO): after one raise, or when U is already at A2's cap."""
+    cap = A2_TRAIN_BUDGET["cap"]
+    if attempt >= 1 or updates >= cap:
+        return None
+    return min(2 * int(updates), cap)
+
+
+def a2_calibration_check(saturation_updates: dict) -> dict:
+    """Whether a calibration reproduces run-2's saturation updates (A2's condition for U)."""
+    want = A2_TRAIN_BUDGET["run_2"]["saturation_updates"]
+    got = {str(k): int(v) for k, v in saturation_updates.items()}
+    return {
+        "addendum": A2_TRAIN_BUDGET["addendum"],
+        "run_2_saturation_updates": dict(want),
+        "saturation_updates": got,
+        "reproduces_run_2": got == want,
     }
 
 

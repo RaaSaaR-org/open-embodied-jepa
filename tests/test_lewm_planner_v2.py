@@ -898,3 +898,83 @@ def test_the_scale_probe_decodes_every_slot_at_the_real_split_sizes():
     for slot in cyc.manifest["splits"]["val"][:4]:
         cyc.episode(slot, None)
     assert smoke.reads == ["s1", "s2", "s3", "s1"]  # decoded afresh per slot; never the test split
+
+
+# ----- addendum A2: the train stage's budget cap (the run-2 ESCALATE-BUDGET) ---------------------
+def test_a2_train_cap_is_80000_and_u_is_80000_for_run_2s_saturation():
+    assert lp.BUDGET["cap"] == 60_000  # the frozen block is not edited
+    assert lp.A2_TRAIN_BUDGET["frozen_cap"] == 60_000
+    assert lp.A2_TRAIN_BUDGET["cap"] == 80_000 and lp.A2_TRAIN_BUDGET["stage"] == "train"
+    rule = lp.train_budget_updates([25_000, 40_000])  # run-2's W-7410 and N-7410
+    assert rule["wanted"] == 80_000 and rule["updates"] == 80_000 and not rule["escalate"]
+    assert (rule["cap"], rule["frozen_cap"], rule["addendum"]) == (80_000, 60_000, "A2")
+    # the same saturation under the frozen cap is run-2's ESCALATE-BUDGET
+    assert lp.budget_updates([25_000, 40_000]) == {
+        "max_saturation_update": 40_000,
+        "wanted": 80_000.0,
+        "updates": 60_000,
+        "escalate": True,
+    }
+    # the rest of the frozen formula is unchanged under A2
+    assert lp.train_budget_updates([3000, 4000])["updates"] == 10_000
+    assert lp.train_budget_updates([12_000])["updates"] == 25_000
+
+
+def test_a2_escalation_still_fires_above_80000():
+    assert lp.train_budget_updates([40_001])["escalate"]
+    assert lp.train_budget_updates([40_001])["updates"] == 80_000
+    assert lp.train_budget_updates([45_000])["escalate"]
+    assert not lp.train_budget_updates([40_000])["escalate"]
+
+
+def test_a2_last_two_raise_is_min_2u_80000():
+    assert lp.train_last_two_raise(30_000, 0) == 60_000
+    assert lp.train_last_two_raise(50_000, 0) == 80_000
+    assert lp.train_last_two_raise(80_000, 0) is None  # a last-two selection at U = 80 000
+    assert lp.train_last_two_raise(30_000, 1) is None  # only one raise
+
+
+def test_a2_calibration_must_reproduce_run_2():
+    ok = lp.a2_calibration_check({"W-7410": 25_000, "N-7410": 40_000})
+    assert ok["reproduces_run_2"] and ok["addendum"] == "A2"
+    assert not lp.a2_calibration_check({"W-7410": 25_000, "N-7410": 41_000})["reproduces_run_2"]
+    assert not lp.a2_calibration_check({"W-7410": 25_000})["reproduces_run_2"]
+
+
+def test_a2_keeps_the_frozen_block_so_k1_and_corpus_reports_are_accepted(tmp_path):
+    """A2 is outside the frozen block: the frozen sha is the literal, so the K1-PASS and
+    CORPUS-SEALED reports recorded under it are still accepted by ``read_stage_report``."""
+    assert lp.frozen_sha256() == FROZEN_SHA256
+    assert "A2_TRAIN_BUDGET" not in json.dumps(lp.frozen_block())
+    assert lp.frozen_block()["budget"]["cap"] == 60_000
+    a2 = MANIFEST["addendum_a2"]
+    assert a2["frozen_sha256_unchanged"] == FROZEN_SHA256
+    assert a2["cap"] == {"frozen": 60_000, "train_stage": 80_000}
+    runner = _runner("_run_lewm_planner_v2_a2")
+    for outcome in ("K1-PASS", "CORPUS-SEALED"):
+        recorded = a2["upstream_reports"][outcome]
+        assert recorded["frozen_sha256"] == FROZEN_SHA256
+        report = {
+            "protocol": lp.PROTOCOL,
+            "outcome": outcome,
+            "smoke": False,
+            "frozen_sha256": recorded["frozen_sha256"],
+            "tracked_tree_dirty": False,
+            "revision": recorded["revision"],
+        }
+        p = tmp_path / f"{outcome}.json"
+        p.write_text(json.dumps(report))
+        sha = hashlib.sha256(p.read_bytes()).hexdigest()
+        assert runner.read_stage_report(p, sha, outcome, False)["outcome"] == outcome
+
+
+def test_the_train_stage_applies_a2():
+    source = (ROOT / "scripts" / "run_lewm_planner_v2.py").read_text()
+    start = source.index("def stage_train(")
+    body = source[start : source.index("\n\n\n", start)]
+    assert 'report["addendum_a2"]' in body
+    assert '{"cap": lp.A2_TRAIN_BUDGET["cap"]}' in body
+    assert "lp.train_budget_updates(" in body and "lp.budget_updates(" not in body
+    assert "lp.a2_calibration_check(" in body
+    assert "lp.train_last_two_raise(updates, attempt)" in body
+    assert body.index("reproduces_run_2") < body.index('budget["escalate"]')
