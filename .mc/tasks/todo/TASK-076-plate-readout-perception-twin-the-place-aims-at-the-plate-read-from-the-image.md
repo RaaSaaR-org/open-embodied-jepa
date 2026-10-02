@@ -43,8 +43,12 @@ pass would not show that a world model is needed (TASK-074 protocol §9b); under
 task on a plate target counts as a task change only if it is paired with a condition where the
 target must be predicted (a moving plate, or a plate that leaves the view), declared as such.
 
-**The preregistration is pending.** Nothing may run before it is merged on an independent
-reviewer's reported APPROVE.
+**The preregistration is a draft:** [`docs/experiments/apple_plate_twin_v2.md`](../../../docs/experiments/apple_plate_twin_v2.md)
+(DRAFT, not frozen). Nothing may run before it is merged on an independent reviewer's reported
+APPROVE, except its K0 calibration (development seeds 56000–56031), which needs a reviewer's
+reported GO for K0 and runs before the freeze. Ruling R8 (DECISIONS 2026-10-02 (b)) adds a
+moving-plate headroom check, Stage K-pred, because Option 1 alone cannot advance the LeWM goal.
+The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
 
 ## Proposed shape (to be fixed by the preregistration, not by this card)
 
@@ -66,3 +70,13 @@ reviewer's reported APPROVE.
 ## Notes
 - 2026-10-02: card opened under ruling R1. Not started; the preregistration is pending.
   Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7.
+- 2026-10-02: preregistration draft `docs/experiments/apple_plate_twin_v2.md` and `docs/PLAN.md`
+  (branch `docs/task076-prereg-draft`); ruling R8 recorded. Status stays todo until the draft is
+  reviewed and the code exists. No run, no GPU.
+- 2026-10-02: the independent review of #129 (REQUEST CHANGES at `314d843`) is addressed in a
+  follow-up commit. Rulings R8.1–R8.6: the canonical sentence is quoted verbatim; c_plate is measured on
+  the pooled LeWM latent; an action-dependent K-pred cell is the only admitting cell;
+  PRED-INFEASIBLE, TWIN-NEAR and the K0 early stops are added; O2 is reported only.
+- 2026-10-02: the re-review at `3d8560e` is addressed by R8.7. Cell A is redesigned with L = 2, so
+  the target depends on the last aim. The required predictor history is declared, H-final iterates
+  to tolerance, and K0's G2 stop is now 4/32.
