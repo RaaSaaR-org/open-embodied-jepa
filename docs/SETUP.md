@@ -47,6 +47,39 @@ uv run --no-sync python scripts/dependency_inventory.py > outputs/feasibility/de
 
 Create the output directory first if the resource probe has not run. GitHub Actions runs core import isolation, lint, formatting, tests, and dependency inventory on Linux and macOS, plus a separate macOS optional integration job with actual model, dataset and physics dependencies. Graphics, unavailable-MPS and unavailable-CUDA checks remain explicit hosted-runner skips, so the CUDA tests (`tests/test_cuda_models.py`) run only on the Linux PC. A green core job does not validate physics, MPS, CUDA, or learning quality.
 
+## Worktrees, the GPU lock and run harness
+
+Added after the 2026-10-02 audit. A worktree that uses another checkout's venv imports that checkout's `src` while it records its own revision, so each worktree gets its own venv.
+
+```sh
+scripts/new_worktree.sh ../worktrees/<name> --branch feat/<x>   # from origin/main (fetched)
+scripts/new_worktree.sh ../worktrees/<name>-run --from <sha> --run
+scripts/remove_worktree.sh ../worktrees/<name>
+scripts/gpu_run.sh --min-free-gib 8 --max-util 30 -- uv run --no-sync python scripts/<runner>.py ...
+```
+
+- **`new_worktree.sh <dir> [--from <rev>] [--branch <name>] [--run] [--no-sync]`** checks out `origin/main` (or `<rev>`). It symlinks `third_party/` and, when the shared checkout has it, `assets/isaac/`; with `--run` it also links `data/` and `checkpoints/`. It never links `outputs/`. It then runs `uv sync --locked` with every extra and checks that `embodied_jepa` imports from the new worktree's `src`. The shared checkout is the repository's main worktree, or `SHARED_ROOT`.
+- **`remove_worktree.sh <dir> [--dry-run] [--force-ignored]`** refuses when the worktree has modified or untracked files, has commits on no remote branch (run `git fetch` first), or holds its own non-empty `data/`, `checkpoints/` or `outputs/`. It also refuses the main worktree. `git worktree remove` deletes ignored files, so it also lists every other ignored file or directory that is neither a symlink nor a known cache (`.venv/`, `__pycache__/`, `*.egg-info/`, the pytest and ruff caches), such as a real `third_party/`, `wandb/` or `configs/local*.yaml`, and refuses unless `--force-ignored` is given. It keeps the branch and what the symlinks point to.
+- **`gpu_run.sh [options] -- <cmd>`** is the entry point for every GPU job.
+  - **Lock.** It takes the machine-wide `flock ~/.local/state/gpu/lock`, which is shared with other projects (see `~/.local/state/gpu/BOARD.md`). It fails at once when the lock is busy (exit 75), or waits with `--wait [--wait-timeout S]`.
+  - **Checks.** Inside the lock it checks free VRAM (`--min-free-gib`, default 4), GPU utilisation (`--max-util`, default 30 %) and, optionally, the CPU load (`--max-load`); a failed check exits 76. It then logs the GPU's compute apps to `~/.local/state/gpu/oej-gpu_run.log` and runs the command with `GPU_RUN_LOCKED=1`.
+  - **Process group.** The command runs in its own process group and without the lock's file descriptor, so only gpu_run holds the lock. gpu_run exits, and so releases the lock, only when every process in that group is gone, including a background grandchild. It then logs `end` and restores the board.
+  - **Signals.** SIGTERM, SIGINT or SIGHUP sends SIGTERM to the whole group, and SIGKILL follows after `--grace` seconds (default 30).
+  - **No terminal input.** The command runs in a background process group, so it must not read from the terminal: a read stops it with SIGTTIN. Give it input from a file or `</dev/null`.
+  - **What it cannot cover.** A descendant that leaves the group (`setsid`, a daemon) is neither waited for nor signalled. A docker container is not a descendant at all. `docker run` without a TTY passes the TERM on to the container, but a docker client killed with SIGKILL leaves its container running on the GPU. Use `--container oej-isaac-` for Isaac runs: gpu_run then keeps the lock until no running container's name has that prefix (a plain `[A-Za-z0-9][A-Za-z0-9_-]*` prefix, compared literally, never as a docker regex), and after a stop signal it runs `docker stop` on them.
+  - **Board.** It writes `BOARD.md` only when asked: `--board` sets the Holder section, and `--request TEXT` (with `--wait`) adds a Requests line while it waits and removes it afterwards. Every edit holds `BOARD.md.lock`. A gpu_run killed with SIGKILL releases the lock immediately but leaves its board lines behind. They carry the tag `[gpu_run pid N]`, so a stale line can be recognised and deleted by hand.
+- **`scripts/isaac/run_isaac.sh`** no longer matches TASK-072 process names. Run it under `gpu_run.sh --container oej-isaac- -- …` or `flock`. It now fails before starting a container when the MJCF directory, `ISAAC_MODELS_DIR`, or the `assets/isaac` needed by a `/oej/usd` argument is missing.
+- **`embodied_jepa.run_tools`** holds the shared pieces for new runners (`run_guards.py` is hash-pinned, so it is unchanged):
+  - `assert_local_import`;
+  - `install_guards`, whose `Guards.void` reports the first signal even when its raise surfaced as another exception;
+  - `MemoryWatch`;
+  - `budget_rule_consistent`/`check_budget`, `select_checkpoint` and `last_two_triggered`;
+  - `gpu_guard(require_lock=True)`;
+  - `CycledReader`, `SlotProxy` and `scale_probe`, which runs the stage's own function with `probe=True` at the real sizes.
+
+  `tests/test_no_runner_imports.py` fails when a new `scripts/**/run_*.py` loads another script. The pinned runners' existing edges are allowlisted.
+- **Preregistration checks.** A new protocol's budget rule passes `check_budget(BUDGET)`, and its memory probe goes through `scale_probe` on the stage core. Neither is applied retroactively to frozen protocols.
+
 ## MissionControl
 
 Install the `mc` CLI once, without sudo, from the pinned release asset, checking its sha256 before
