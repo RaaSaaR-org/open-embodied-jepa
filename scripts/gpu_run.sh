@@ -36,13 +36,30 @@
 # descriptor, so the lock is held by this script alone and is released when it exits. The script
 # exits only after every process in that group is gone (a background grandchild included), and
 # only then logs "end" and restores the board. SIGTERM/SIGINT/SIGHUP to this script are sent to
-# the whole group as SIGTERM, followed by SIGKILL after --grace seconds. Limits: a descendant
-# that leaves the group (setsid, a daemon) is neither waited for nor signalled, and a docker
-# container is not a descendant at all. `docker run` without a TTY proxies the TERM to the
-# container, but a SIGKILLed docker client leaves its container running on the GPU; --container
-# covers that (it waits, and after a stop signal runs `docker stop`). If gpu_run itself is
-# SIGKILLed, the lock is released at once while the group may still run, and any board lines it
-# wrote stay behind; they carry the tag "[gpu_run pid N]", so a stale line is recognisable.
+# the whole group as SIGTERM, followed by SIGKILL after --grace seconds. The helper that sends
+# that SIGKILL runs in a process group of its own, so a signal to this script's own group (a
+# terminal's Ctrl-C, a tool timeout that TERMs the caller's group) cannot kill it while the
+# command, which may ignore TERM, lives on; it is started again if it has died anyway. A watchdog,
+# also in a group of its own, notices when this script dies without cleaning up (SIGKILL) while
+# the command's group still runs, and then sends that group SIGTERM and, --grace seconds later,
+# SIGKILL. It recognises this script as its parent (it is reparented when this script dies), not
+# by pid number. Whenever this script exits through its EXIT trap it stops the killer, and the
+# watchdog too unless an early error exit leaves the command's group running (the watchdog then
+# stops that group and ends with it). No killer is started for a signal that arrives after the command's group is gone (while
+# --container waits, say). Limits: a descendant that leaves the group (setsid, a daemon) is
+# neither waited for nor signalled, and a docker container is not a descendant at all.
+# `docker run` without a TTY proxies the TERM to the container, but a SIGKILLed docker client
+# leaves its container running on the GPU; --container covers that (it waits, and after a stop
+# signal runs `docker stop`). If gpu_run itself is SIGKILLed, the lock is released at once while
+# the group may still run for up to about --grace + 1 seconds (the watchdog polls once a
+# second), plus up to 5 s of repeated SIGKILLs for a process that a group SIGKILL missed while it
+# was being forked (under a parent or subreaper that is slow to reap, unreaped zombies in a
+# helper's group can also hold up a normal exit, lock still held, for up to those 5 s); any board
+# lines it wrote stay behind, tagged "[gpu_run pid N]" so a stale line is recognisable.
+# Not covered: a SIGKILL to the watchdog's group as well as this script's
+# (or to every process of the user) leaves the command's group running, with nothing left to stop
+# it. The helpers address the command's group by its number, which could in principle be reused
+# once the group has ended; they stop as soon as they see it gone.
 #
 # BOARD.md is never written unless --board or --request is given; every edit holds
 # BOARD.md.lock (a separate flock, not the GPU lock) and replaces the file atomically.
@@ -138,8 +155,37 @@ holder_set() {
   B_SEC=Holder B_BODY=$1 board_rewrite "$SECTION_SET"
 }
 
-CHILD=""
-cleanup() {
+CHILD="" KILLER="" WATCHDOG=""
+stop_helper() {  # stop_helper <pid>: end a helper started in its own group, and its sleep
+  [ -n "$1" ] || return 0
+  # SIGKILL, not TERM: a helper can receive a signal before it has reset the TERM trap it
+  # inherits from this script. Helpers always lead their own group, so the group is the target;
+  # once it is gone there is nothing to kill, and the bare pid may already be someone else's.
+  if kill -KILL -- "-$1" 2>/dev/null; then
+    wait "$1" 2>/dev/null || true
+    kill_group_again "$1"
+  else
+    wait "$1" 2>/dev/null || true
+  fi
+}
+kill_group_again() {  # kill_group_again <pgid>: SIGKILL it until it is empty (at most ~5 s)
+  # a child forked while its group is being killed can miss the signal (seen on macOS)
+  local k
+  for ((k = 0; k < 50; k++)); do
+    kill -0 -- "-$1" 2>/dev/null || return 0
+    kill -KILL -- "-$1" 2>/dev/null || true
+    sleep 0.1
+  done
+}
+cleanup() {  # every exit path that runs this trap stops the killer (a SIGKILL runs none)
+  stop_helper "$KILLER"
+  KILLER=""
+  # the watchdog too, unless an early exit (set -e) leaves the command's group running: then it is
+  # the only thing left to stop that group, and it ends by itself once the group is gone
+  if [ -z "$CHILD" ] || ! kill -0 -- "-$CHILD" 2>/dev/null; then
+    stop_helper "$WATCHDOG"
+    WATCHDOG=""
+  fi
   request_del
   if [ "$HOLDER_ON" = 1 ]; then
     holder_set "- holder: none (released by $WHO $TAG at $(now))"$'\n\n'
@@ -204,21 +250,78 @@ if [ "$BOARD_HOLDER" = 1 ]; then
   HOLDER_ON=1
 fi
 group_alive() { kill -0 -- "-$CHILD" 2>/dev/null; }
-STOPPED="" KILLER=""
+SPAWNING=0 DEFERRED=0
+in_own_group() {  # in_own_group <var> <command...>: start it in a new process group; pid to <var>
+  # While SPAWNING=1, forward() only records the signal (DEFERRED=1) and returns: it cannot
+  # replace $! before it is stored, and a helper that inherits the trap before resetting it
+  # (SPAWNING=1 is copied into it) cannot start a helper of its own.
+  local var=$1 monitor=$-
+  shift
+  SPAWNING=1
+  set -m
+  "$@" 9>&- < /dev/null > /dev/null 2>&1 &
+  printf -v "$var" %s "$!"
+  [[ $monitor == *m* ]] || set +m
+  SPAWNING=0
+  if [ "$DEFERRED" = 1 ]; then DEFERRED=0; forward; fi
+}
+grace_kill() {  # SIGKILL the command's group if it outlives the grace; poll it meanwhile
+  trap - TERM INT HUP
+  local k polls
+  polls=$(awk -v g="$GRACE" 'BEGIN { n = int(g * 5); if (n < g * 5) n++; print n }')
+  for ((k = 0; k < polls; k++)); do
+    kill -0 -- "-$CHILD" 2>/dev/null || return 0
+    sleep 0.2
+  done
+  if kill -0 -- "-$CHILD" 2>/dev/null; then
+    log "killed: $WHO group $CHILD still alive ${GRACE} s after the stop signal"
+    kill -KILL -- "-$CHILD" 2>/dev/null || true
+    kill_group_again "$CHILD"
+  fi
+}
+parent_of() {  # parent_of <pid>: its parent pid; prints nothing (status 1) when that is unknown
+  local stat ppid
+  if [ -r "/proc/$1/stat" ]; then  # Linux: field 4, after the parenthesised command name
+    stat=$(< "/proc/$1/stat") || return 1
+    stat=${stat##*) }
+    read -r _ ppid _ <<< "$stat" || return 1
+  else  # macOS: no /proc
+    ppid=$(ps -o ppid= -p "$1" 2>/dev/null) || return 1
+    ppid=${ppid//[[:space:]]/}
+  fi
+  [[ $ppid =~ ^[0-9]+$ ]] || return 1
+  echo "$ppid"
+}
+watchdog() {  # this script died without cleaning up: stop the command's group itself
+  trap - TERM INT HUP
+  local me=$1 self parent
+  # gpu_run is identified by being this helper's parent: when it dies, the helper is reparented,
+  # whatever happens to gpu_run's pid number afterwards (it may be reused at once). It fires only
+  # on positive evidence, a parent read successfully that is not gpu_run; an unreadable parent
+  # (no /proc and a failing ps, say) keeps it waiting, never kills a live job.
+  self=${BASHPID:-$(exec sh -c 'echo "$PPID"')}
+  while :; do
+    kill -0 -- "-$CHILD" 2>/dev/null || exit 0
+    if [[ $self =~ ^[0-9]+$ ]] && parent=$(parent_of "$self") && [ "$parent" != "$me" ]; then
+      break
+    fi
+    sleep 1
+  done
+  kill -0 -- "-$CHILD" 2>/dev/null || exit 0
+  log "orphaned: gpu_run pid $me is gone while $WHO group $CHILD runs; sending SIGTERM"
+  kill -TERM -- "-$CHILD" 2>/dev/null || true
+  grace_kill
+}
+STOPPED=""
 forward() {
   STOPPED=${STOPPED:-$(date +%s)}
+  if [ "$SPAWNING" = 1 ]; then DEFERRED=1; return 0; fi
   [ -n "$CHILD" ] || return 0
+  group_alive || return 0  # the command is gone: nothing to stop, so no killer
   kill -TERM -- "-$CHILD" 2>/dev/null || true
-  if [ -z "$KILLER" ]; then  # SIGKILL the group if it outlives the grace
-    (
-      trap - TERM INT HUP
-      sleep "$GRACE"
-      if kill -0 -- "-$CHILD" 2>/dev/null; then
-        log "killed: $WHO group $CHILD still alive ${GRACE} s after the stop signal"
-        kill -KILL -- "-$CHILD" 2>/dev/null || true
-      fi
-    ) 9>&- &
-    KILLER=$!
+  # a killer of its own group survives a signal to ours; start another if it died all the same
+  if [ -z "$KILLER" ] || ! kill -0 -- "-$KILLER" 2>/dev/null; then
+    in_own_group KILLER grace_kill
   fi
 }
 trap forward TERM INT HUP
@@ -226,6 +329,7 @@ set -m  # the command gets its own process group (its pgid is its pid)
 GPU_RUN_LOCKED=1 GPU_RUN_LOCK=$LOCK "$@" 9>&- &
 CHILD=$!
 set +m
+in_own_group WATCHDOG watchdog "$$"
 [ -z "$STOPPED" ] || forward  # a signal that arrived before the command started
 status=0
 while :; do
@@ -240,7 +344,10 @@ wait "$CHILD" 2>/dev/null || final=$?
 [ "$final" = 127 ] || status=$final
 # the leader is gone; wait for the rest of its group (a background grandchild, a sampler, ...)
 while group_alive; do sleep 0.2; done
-if [ -n "$KILLER" ]; then kill "$KILLER" 2>/dev/null || true; wait "$KILLER" 2>/dev/null || true; fi
+stop_helper "$KILLER"
+KILLER=""
+stop_helper "$WATCHDOG"
+WATCHDOG=""
 if [ -n "$CONTAINER" ]; then
   containers() {  # ids of running containers whose name starts with $CONTAINER, compared literally
     local id names name
