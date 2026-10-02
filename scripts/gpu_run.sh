@@ -152,11 +152,23 @@ stop_helper() {  # stop_helper <pid>: end a helper started in its own group, and
   [ -n "$1" ] || return 0
   # SIGKILL, not TERM: a helper can receive a signal before it has reset the TERM trap it
   # inherits from this script, and would then run forward() and start a helper of its own
-  if ! kill -KILL -- "-$1" 2>/dev/null; then
+  if kill -KILL -- "-$1" 2>/dev/null; then
+    wait "$1" 2>/dev/null || true
+    kill_group_again "$1"
+  else
     pkill -KILL -P "$1" 2>/dev/null || true
     kill -KILL "$1" 2>/dev/null || true
+    wait "$1" 2>/dev/null || true
   fi
-  wait "$1" 2>/dev/null || true
+}
+kill_group_again() {  # kill_group_again <pgid>: SIGKILL it until it is empty (at most ~5 s)
+  # a child forked while its group is being killed can miss the signal (seen on macOS)
+  local k
+  for ((k = 0; k < 50; k++)); do
+    kill -0 -- "-$1" 2>/dev/null || return 0
+    kill -KILL -- "-$1" 2>/dev/null || true
+    sleep 0.1
+  done
 }
 cleanup() {
   # an early exit while the command's group runs leaves the watchdog to stop that group
@@ -242,6 +254,7 @@ grace_kill() {  # SIGKILL the command's group if it outlives the grace
   if kill -0 -- "-$CHILD" 2>/dev/null; then
     log "killed: $WHO group $CHILD still alive ${GRACE} s after the stop signal"
     kill -KILL -- "-$CHILD" 2>/dev/null || true
+    kill_group_again "$CHILD"
   fi
 }
 parent_alive() {  # is this script (pid $1) still running? A zombie counts as gone
