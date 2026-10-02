@@ -43,8 +43,9 @@
 # also in a group of its own, notices when this script dies without cleaning up (SIGKILL) while
 # the command's group still runs, and then sends that group SIGTERM and, --grace seconds later,
 # SIGKILL. It recognises this script as its parent (it is reparented when this script dies), not
-# by pid number. Both helpers are stopped whenever this script exits through its EXIT trap, and
-# no killer is started for a signal that arrives after the command's group is gone (while
+# by pid number. Whenever this script exits through its EXIT trap it stops the killer, and the
+# watchdog too unless an early error exit leaves the command's group running (the watchdog then
+# stops that group and ends with it). No killer is started for a signal that arrives after the command's group is gone (while
 # --container waits, say). Limits: a descendant that leaves the group (setsid, a daemon) is
 # neither waited for nor signalled, and a docker container is not a descendant at all.
 # `docker run` without a TTY proxies the TERM to the container, but a SIGKILLed docker client
@@ -52,8 +53,10 @@
 # signal runs `docker stop`). If gpu_run itself is SIGKILLed, the lock is released at once while
 # the group may still run for up to about --grace + 1 seconds (the watchdog polls once a
 # second), plus up to 5 s of repeated SIGKILLs for a process that a group SIGKILL missed while it
-# was being forked; any board lines it wrote stay behind, tagged "[gpu_run pid N]" so a stale
-# line is recognisable. Not covered: a SIGKILL to the watchdog's group as well as this script's
+# was being forked (under a parent or subreaper that is slow to reap, unreaped zombies in a
+# helper's group can also hold up a normal exit, lock still held, for up to those 5 s); any board
+# lines it wrote stay behind, tagged "[gpu_run pid N]" so a stale line is recognisable.
+# Not covered: a SIGKILL to the watchdog's group as well as this script's
 # (or to every process of the user) leaves the command's group running, with nothing left to stop
 # it. The helpers address the command's group by its number, which could in principle be reused
 # once the group has ended; they stop as soon as they see it gone.
@@ -174,11 +177,15 @@ kill_group_again() {  # kill_group_again <pgid>: SIGKILL it until it is empty (a
     sleep 0.1
   done
 }
-cleanup() {  # every exit path that runs this trap stops the helpers (a SIGKILL runs none)
+cleanup() {  # every exit path that runs this trap stops the killer (a SIGKILL runs none)
   stop_helper "$KILLER"
   KILLER=""
-  stop_helper "$WATCHDOG"
-  WATCHDOG=""
+  # the watchdog too, unless an early exit (set -e) leaves the command's group running: then it is
+  # the only thing left to stop that group, and it ends by itself once the group is gone
+  if [ -z "$CHILD" ] || ! kill -0 -- "-$CHILD" 2>/dev/null; then
+    stop_helper "$WATCHDOG"
+    WATCHDOG=""
+  fi
   request_del
   if [ "$HOLDER_ON" = 1 ]; then
     holder_set "- holder: none (released by $WHO $TAG at $(now))"$'\n\n'
@@ -272,14 +279,32 @@ grace_kill() {  # SIGKILL the command's group if it outlives the grace; poll it 
     kill_group_again "$CHILD"
   fi
 }
+parent_of() {  # parent_of <pid>: its parent pid; prints nothing (status 1) when that is unknown
+  local stat ppid
+  if [ -r "/proc/$1/stat" ]; then  # Linux: field 4, after the parenthesised command name
+    stat=$(< "/proc/$1/stat") || return 1
+    stat=${stat##*) }
+    read -r _ ppid _ <<< "$stat" || return 1
+  else  # macOS: no /proc
+    ppid=$(ps -o ppid= -p "$1" 2>/dev/null) || return 1
+    ppid=${ppid//[[:space:]]/}
+  fi
+  [[ $ppid =~ ^[0-9]+$ ]] || return 1
+  echo "$ppid"
+}
 watchdog() {  # this script died without cleaning up: stop the command's group itself
   trap - TERM INT HUP
-  local me=$1 self
+  local me=$1 self parent
   # gpu_run is identified by being this helper's parent: when it dies, the helper is reparented,
-  # whatever happens to gpu_run's pid number afterwards (it may be reused at once)
-  self=$(exec sh -c 'echo "$PPID"')
-  while [ "$(ps -o ppid= -p "$self" 2>/dev/null | tr -d ' ')" = "$me" ]; do
+  # whatever happens to gpu_run's pid number afterwards (it may be reused at once). It fires only
+  # on positive evidence, a parent read successfully that is not gpu_run; an unreadable parent
+  # (no /proc and a failing ps, say) keeps it waiting, never kills a live job.
+  self=${BASHPID:-$(exec sh -c 'echo "$PPID"')}
+  while :; do
     kill -0 -- "-$CHILD" 2>/dev/null || exit 0
+    if [[ $self =~ ^[0-9]+$ ]] && parent=$(parent_of "$self") && [ "$parent" != "$me" ]; then
+      break
+    fi
     sleep 1
   done
   kill -0 -- "-$CHILD" 2>/dev/null || exit 0

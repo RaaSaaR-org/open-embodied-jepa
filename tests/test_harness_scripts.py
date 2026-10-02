@@ -500,6 +500,20 @@ def test_a_surviving_container_keeps_the_lock_and_is_stopped_after_a_signal(gpu_
     assert text.index("stopping containers") < text.index("end:")
 
 
+def test_the_watchdog_never_fires_when_it_cannot_read_its_parent(gpu_env):
+    """Re-review of #130: a failing ``ps`` (no procps, a transient fork failure) must not read as
+    "gpu_run is dead"; the watchdog fires only on a parent it has read and that is not gpu_run."""
+    bad = gpu_env["tmp"] / "bad-ps"
+    bad.mkdir()
+    (bad / "ps").write_text("#!/bin/sh\nexit 1\n")
+    (bad / "ps").chmod(0o755)
+    path = f"{bad}{os.pathsep}{gpu_env['env']['PATH']}"
+    out = _gpu_run(gpu_env, "--grace", "1", "--", BASH, "-c", "sleep 2.5", extra_env={"PATH": path})
+    assert out.returncode == 0, out.stderr
+    log = (gpu_env["state"] / "oej-gpu_run.log").read_text()
+    assert "orphaned:" not in log and "status 0" in log
+
+
 def test_a_signal_after_the_command_has_exited_starts_no_killer(gpu_env):
     """Review of #130, finding 2: while --container keeps gpu_run waiting after the command has
     exited, a TERM must stop the containers and let gpu_run exit 0 without starting a grace killer
