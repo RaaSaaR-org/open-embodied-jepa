@@ -119,6 +119,34 @@ No run was made for them.
 (R5, any reuse of cohort C, is unchanged: it needs a new, disclosed protocol and the owner's ruling, as
 the 2026-09-28 M2 decision says.)
 
+## Decision 2026-10-02 (b) — TASK-076's scope: the perception twin alone cannot advance the LeWM goal, so a moving-plate headroom check is added (R8)
+
+**Decided by Claude under owner delegation (2026-09-30).** No run was made for it. It refines R1
+and does not replace it.
+
+- **R8 — finding, stated plainly.** Option 1 (R1) runs no world model. With a static, visible
+  plate, a world model is not needed for the place (TASK-074 protocol §9b). So an H-twin pass
+  cannot be, or lead directly to, a LeWM-driven success. On its own it only calibrates things a
+  later LeWM task needs: the encoded-latent plate ceiling (DINOv2 tokens are TASK-066's LeWM
+  latent), τ re-measured, and the perception baseline.
+- **R8 — ruling.** TASK-076 keeps Option 1 as its primary, gated question and adds **Stage
+  K-pred**: a simulator-only check, with no world model, of whether a moving-plate condition on v2
+  leaves room for prediction. The plate moves at constant velocity after the pick and stops after
+  the place target freezes. The check compares aiming at the plate's final position, its current
+  true position, its current read position, and a constant-velocity extrapolation of the readings.
+  K-pred's row decides the next LeWM task. PRED-ADMIT means TASK-077, a LeWM plate-prediction
+  place planner, is declared as a task change under R2. PRED-NONE means no moving-plate LeWM place
+  task on v2, and the recommended next step is then a task change in which the target's motion
+  depends on the robot's own action.
+- **Why not skip to a LeWM task now.** No calibrated plate bar and no measured prediction headroom
+  exist yet. Starting without them would repeat TASK-074 (an uncalibrated bar) and TASK-073 (no
+  headroom). K-pred costs about 256 CPU attempts.
+- **A definition fixed now** for every later task: "a LeWM-driven closed-loop success". See
+  [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) §9 and [PLAN.md](PLAN.md).
+
+The draft preregistration is [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DRAFT,
+not frozen). The plan is [PLAN.md](PLAN.md).
+
 ## Development record 2026-10-01/02 — Arena cross-simulator checks, a GR00T reference baseline and the white plate (not gated)
 
 Development only: no preregistration, no gate, and nothing here is a project-learned result.

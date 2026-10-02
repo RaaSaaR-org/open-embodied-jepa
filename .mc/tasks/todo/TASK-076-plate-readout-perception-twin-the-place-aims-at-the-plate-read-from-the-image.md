@@ -43,8 +43,12 @@ pass would not show that a world model is needed (TASK-074 protocol §9b); under
 task on a plate target counts as a task change only if it is paired with a condition where the
 target must be predicted (a moving plate, or a plate that leaves the view), declared as such.
 
-**The preregistration is pending.** Nothing may run before it is merged on an independent
-reviewer's reported APPROVE.
+**The preregistration is a draft:** [`docs/experiments/apple_plate_twin_v2.md`](../../../docs/experiments/apple_plate_twin_v2.md)
+(DRAFT, not frozen). Nothing may run before it is merged on an independent reviewer's reported
+APPROVE, except its K0 calibration (development seeds 56000–56031), which needs a reviewer's
+reported GO for K0 and runs before the freeze. Ruling R8 (DECISIONS 2026-10-02 (b)) adds a
+moving-plate headroom check, Stage K-pred, because Option 1 alone cannot advance the LeWM goal.
+The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
 
 ## Proposed shape (to be fixed by the preregistration, not by this card)
 
@@ -66,3 +70,6 @@ reviewer's reported APPROVE.
 ## Notes
 - 2026-10-02: card opened under ruling R1. Not started; the preregistration is pending.
   Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7.
+- 2026-10-02: preregistration draft `docs/experiments/apple_plate_twin_v2.md` and `docs/PLAN.md`
+  (branch `docs/task076-prereg-draft`); ruling R8 recorded. Status stays todo until the draft is
+  reviewed and the code exists. No run, no GPU.

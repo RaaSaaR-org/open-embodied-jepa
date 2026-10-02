@@ -25,7 +25,7 @@ not rewritten when its worktree is archived.
 
 | Task | Protocol | Results | Outcome (pointer only) | Manifest |
 |---|---|---|---|---|
-| TASK-076 | pending | — | not started; the plate-readout perception twin, decided 2026-10-02 (R1) | — |
+| TASK-076 | [apple_plate_twin_v2](apple_plate_twin_v2.md) (**DRAFT**, not frozen) | — | not started; the plate-readout perception twin (R1) plus a moving-plate headroom check (R8) | — |
 | TASK-075 | [apple_obs_ceiling_v2](apple_obs_ceiling_v2.md) | [results](apple_obs_ceiling_v2_results.md) | **OBS-NONE**; the clause fires (next: a task or condition change) | `apple-obs-ceiling-v2.json` |
 | TASK-074 | [apple_lewm_planner_v2](apple_lewm_planner_v2.md) | [results](apple_lewm_planner_v2_results.md) | **INCONCLUSIVE**, closed without the clause after two budget escalations; no LeWM controller ran | `apple-lewm-planner-v2.json` |
 | TASK-073 | [apple_wm_critic_v2](apple_wm_critic_v2.md) | [results](apple_wm_critic_v2_results.md) | **S-NO-CONDITION** at K0; the critic never ran; the clause does not fire | `apple-wm-critic-v2.json` |
