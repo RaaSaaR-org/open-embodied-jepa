@@ -20,7 +20,11 @@
 #                      when it is still alive S seconds later (default 30)
 #   --container P      after the command's group is gone, keep the lock until no running docker
 #                      container's name starts with P; after a stop signal, `docker stop` them
-#                      (use `--container oej-isaac-` for scripts/isaac/run_isaac.sh)
+#                      (use `--container oej-isaac-` for scripts/isaac/run_isaac.sh). P must
+#                      match ^[A-Za-z0-9][A-Za-z0-9_-]*$ and is compared as a literal prefix
+#
+# The command runs in a background process group, so it must not read from the terminal (a read
+# stops it with SIGTTIN); give it its input from a file or </dev/null.
 #
 # It takes the machine-wide lock with flock on ~/.local/state/gpu/lock (the convention in
 # ~/.local/state/gpu/BOARD.md, shared with other projects' sessions), then, inside the lock,
@@ -78,6 +82,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ $# -gt 0 ] || { echo "no command given" >&2; usage; }
+if [ -n "$CONTAINER" ] && ! [[ "$CONTAINER" =~ ^[A-Za-z0-9][A-Za-z0-9_-]*$ ]]; then
+  echo "--container needs a plain name prefix ([A-Za-z0-9][A-Za-z0-9_-]*): $CONTAINER" >&2
+  exit 2
+fi
 [ -z "$REQUEST" ] || [ "$WAIT" = 1 ] || { echo "--request needs --wait" >&2; exit 2; }
 for n in "$MIN_FREE" "$MAX_UTIL" "$SAMPLES" "$GPU" "$GRACE" ${MAX_LOAD:+"$MAX_LOAD"} ${WAIT_TIMEOUT:+"$WAIT_TIMEOUT"}; do
   [[ "$n" =~ ^[0-9]+([.][0-9]+)?$ ]] || { echo "not a number: $n" >&2; exit 2; }
@@ -224,11 +232,25 @@ while :; do
   wait "$CHILD" && status=0 || status=$?
   kill -0 "$CHILD" 2>/dev/null || break  # a forwarded signal interrupted wait; keep waiting
 done
+# A signal can interrupt the last wait just as the command exits; that wait then returns
+# 128 + the signal's number, not the command's status. Ask once more (bash keeps the status of
+# a reaped background job; 127 means there is nothing more to learn).
+final=0
+wait "$CHILD" 2>/dev/null || final=$?
+[ "$final" = 127 ] || status=$final
 # the leader is gone; wait for the rest of its group (a background grandchild, a sampler, ...)
 while group_alive; do sleep 0.2; done
 if [ -n "$KILLER" ]; then kill "$KILLER" 2>/dev/null || true; wait "$KILLER" 2>/dev/null || true; fi
 if [ -n "$CONTAINER" ]; then
-  containers() { "$DOCKER" ps -q --filter "name=^$CONTAINER" 2>/dev/null; }
+  containers() {  # ids of running containers whose name starts with $CONTAINER, compared literally
+    local id names name
+    "$DOCKER" ps --format '{{.ID}} {{.Names}}' 2>/dev/null | while read -r id names; do
+      IFS=, read -r -a name <<< "$names"
+      for n in "${name[@]}"; do
+        if [[ "$n" == "$CONTAINER"* ]]; then echo "$id"; break; fi
+      done
+    done
+  }
   if ! "$DOCKER" ps -q > /dev/null 2>&1; then
     log "warning: cannot run '$DOCKER ps'; containers named $CONTAINER* not verified"
     echo "warning: cannot verify that containers named $CONTAINER* have stopped" >&2

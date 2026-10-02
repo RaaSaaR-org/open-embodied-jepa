@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -294,10 +295,15 @@ def test_a_child_that_ignores_sigterm_is_killed_after_the_grace(gpu_env):
 
 
 FAKE_DOCKER = """#!/bin/sh
-# stand-in docker: a container "runs" while $STATE/container exists; stop removes it
+# stand-in docker: a container "runs" while $STATE/container exists; stop removes it.
+# `ps --format` lists it with a regex-looking neighbour that a literal prefix must not match.
 case "$1" in
-  ps) [ -f "$FAKE_DOCKER_STATE/container" ] && [ "$2" = "-q" ] && [ "$#" -gt 2 ] \
-        && echo abc123; exit 0 ;;
+  ps)
+    if [ "$2" = "--format" ]; then
+      echo "fff999 oejXisaac-other"
+      [ -f "$FAKE_DOCKER_STATE/container" ] && echo "abc123 oej-isaac-run7,alias"
+    fi
+    exit 0 ;;
   stop) echo "$@" >> "$FAKE_DOCKER_STATE/stopped"; rm -f "$FAKE_DOCKER_STATE/container" ;;
 esac
 """
@@ -322,7 +328,8 @@ def test_a_surviving_container_keeps_the_lock_and_is_stopped_after_a_signal(gpu_
         time.sleep(0.05)
     proc.terminate()  # the client dies at once, the "container" does not
     assert proc.wait(timeout=30) != 0
-    assert "stop -t 10 abc123" in (gpu_env["tmp"] / "stopped").read_text()
+    stopped = (gpu_env["tmp"] / "stopped").read_text()
+    assert "stop -t 10 abc123" in stopped and "fff999" not in stopped
     assert _lock_free(gpu_env)
     text = log.read_text()
     assert text.index("stopping containers") < text.index("end:")
@@ -351,6 +358,31 @@ def test_concurrent_request_lines_are_not_lost(gpu_env):
         holder.wait()
     assert all(p.wait(timeout=60) == 0 for p in procs)
     assert board.read_text() == BOARD
+
+
+@pytest.mark.parametrize("prefix", ["oej.isaac", "^oej", "oej isaac", "-oej", "oej*"])
+def test_container_prefix_must_be_a_plain_name(gpu_env, prefix):
+    out = _gpu_run(gpu_env, "--container", prefix, "--", "true")
+    assert out.returncode == 2 and "plain name prefix" in out.stderr
+
+
+def test_the_commands_status_survives_a_signal_racing_its_exit(gpu_env):
+    """Review N8: HUP forwarded as TERM; the command exits 143 on TERM, so gpu_run reports 143,
+    never the 129 of its own interrupted wait."""
+    for attempt in range(5):
+        ready = gpu_env["tmp"] / f"ready-{attempt}"
+        script = f"trap 'exit 143' TERM; touch '{ready}'; while :; do sleep 0.05; done"
+        proc = subprocess.Popen(
+            [BASH, str(GPU_RUN), "--samples", "1", "--", BASH, "-c", script],
+            env=gpu_env["env"],
+            cwd=gpu_env["tmp"],
+        )
+        deadline = time.monotonic() + 20
+        while not ready.exists():
+            assert time.monotonic() < deadline
+            time.sleep(0.02)
+        proc.send_signal(signal.SIGHUP)
+        assert proc.wait(timeout=30) == 143, attempt
 
 
 def test_gpu_run_usage_errors(gpu_env):
