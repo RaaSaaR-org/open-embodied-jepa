@@ -102,6 +102,17 @@ def _tagged_pids(tag: str) -> set[int]:
     return found
 
 
+def _describe(pids: set[int]) -> str:
+    if not pids:
+        return ""
+    out = subprocess.run(
+        ["ps", "-o", "pid,ppid,pgid,stat,command", "-p", ",".join(map(str, sorted(pids)))],
+        capture_output=True,
+        text=True,
+    )
+    return out.stdout
+
+
 def _kill_hard(pid: int) -> None:
     """SIGKILL a process and, unless it is ours, its process group."""
     with contextlib.suppress(OSError):
@@ -153,6 +164,9 @@ def gpu_env(tmp_path):
         deadline = time.monotonic() + 5
         while (leaked := _tagged_pids(tag)) and time.monotonic() < deadline:
             time.sleep(0.1)
+        described = _describe(leaked)
+        if leaked and (state / "oej-gpu_run.log").exists():
+            described += "gpu_run log:\n" + (state / "oej-gpu_run.log").read_text()
         for proc in procs:
             if proc.poll() is None:  # not reaped yet, so the pid is still this process's
                 leaked.add(proc.pid)
@@ -171,7 +185,7 @@ def gpu_env(tmp_path):
         while (left := _tagged_pids(tag)) and time.monotonic() < deadline:
             time.sleep(0.1)
         assert not left, f"processes from {tmp_path} survive even SIGKILL: {sorted(left)}"
-        assert not leaked, f"processes from {tmp_path} outlived the test: {sorted(leaked)}"
+        assert not leaked, f"processes from {tmp_path} outlived the test:\n{described}"
 
 
 def _spawn(gpu_env, *args, extra_env=None, **kw) -> subprocess.Popen:
