@@ -75,31 +75,54 @@ def _zombie_or_gone(pid: int) -> bool:
         return True
 
 
-def _tagged_pids(tag: str) -> set[int]:
-    """Live processes started from one test's environment: every process gpu_run.sh starts
-    inherits ``OEJ_GPU_RUN_TEST_TAG=<the test's tmp dir>``. On Linux this reads each process's
-    initial environment; elsewhere ``ps -E`` (environment and command line, best effort)."""
-    me, needle, found = os.getpid(), f"{TAG_VAR}={tag}", set()
-    proc = Path("/proc")
-    if (proc / "self" / "environ").exists():
-        for entry in proc.iterdir():
-            if not entry.name.isdigit() or int(entry.name) == me:
-                continue
-            try:
-                env = (entry / "environ").read_bytes().split(b"\0")
-            except OSError:
-                continue
-            if needle.encode() in env and not _zombie_or_gone(int(entry.name)):
-                found.add(int(entry.name))
-        return found
+def _ps_tokens(*args: str) -> list[tuple[int, str, list[str]]]:
+    """(pid, state, whitespace-separated command and environment tokens) from ``ps -E``."""
     out = subprocess.run(
-        ["ps", "-axww", "-E", "-o", "pid=,stat=,command="], capture_output=True, text=True
+        ["ps", "-ww", "-E", "-o", "pid=,stat=,command=", *args], capture_output=True, text=True
     )
+    rows = []
     for line in out.stdout.splitlines():
         pid, stat, rest = (line.split(None, 2) + ["", ""])[:3]
-        if pid.isdigit() and int(pid) != me and not stat.startswith("Z") and needle in rest:
-            found.add(int(pid))
-    return found
+        if pid.isdigit():
+            rows.append((int(pid), stat, rest.split()))
+    return rows
+
+
+def _has_proc_environ() -> bool:
+    return Path("/proc/self/environ").exists()
+
+
+def _is_tagged(pid: int, tag: str) -> bool:
+    """Does live process ``pid`` carry exactly ``OEJ_GPU_RUN_TEST_TAG=<tag>`` right now?
+
+    On Linux this compares whole entries of its initial environment; elsewhere whole
+    whitespace-separated tokens of ``ps -E`` (environment and command line, best effort)."""
+    needle = f"{TAG_VAR}={tag}"
+    if _has_proc_environ():
+        try:
+            env = Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
+        except OSError:
+            return False
+        return needle.encode() in env and not _zombie_or_gone(pid)
+    return any(
+        p == pid and not stat.startswith("Z") and needle in tokens
+        for p, stat, tokens in _ps_tokens("-p", str(pid))
+    )
+
+
+def _tagged_pids(tag: str) -> set[int]:
+    """Live processes started from one test's environment: every process gpu_run.sh starts
+    inherits ``OEJ_GPU_RUN_TEST_TAG=<the test's tmp dir>``."""
+    me = os.getpid()
+    if _has_proc_environ():
+        pids = (int(e.name) for e in Path("/proc").iterdir() if e.name.isdigit())
+        return {pid for pid in pids if pid != me and _is_tagged(pid, tag)}
+    needle = f"{TAG_VAR}={tag}"
+    return {
+        pid
+        for pid, stat, tokens in _ps_tokens("-ax")
+        if pid != me and not stat.startswith("Z") and needle in tokens
+    }
 
 
 def _describe(pids: set[int]) -> str:
@@ -113,11 +136,15 @@ def _describe(pids: set[int]) -> str:
     return out.stdout
 
 
-def _kill_hard(pid: int) -> None:
-    """SIGKILL a process and, unless it is ours, its process group."""
+def _kill_tagged(pid: int, tag: str, *, ours: bool = False) -> None:
+    """SIGKILL ``pid`` if it is tagged right now (or is an unreaped child of ours), and its process
+    group only if that group's leader is tagged right now. Never pytest's own group, and never
+    a pid that has since been reused by somebody else's process."""
+    if not (ours or _is_tagged(pid, tag)):
+        return
     with contextlib.suppress(OSError):
         pgid = os.getpgid(pid)
-        if pgid != os.getpgrp():
+        if pgid != os.getpgrp() and _is_tagged(pgid, tag):
             os.killpg(pgid, signal.SIGKILL)
     with contextlib.suppress(OSError):
         os.kill(pid, signal.SIGKILL)
@@ -129,9 +156,10 @@ def gpu_env(tmp_path):
 
     Every process a test starts carries the tag ``OEJ_GPU_RUN_TEST_TAG=<tmp_path>`` in its
     environment. Teardown runs even when the test fails or times out: it waits briefly for the
-    tagged processes to end, then SIGKILLs every survivor and its process group, every tracked
-    ``Popen`` and every pid recorded in a file listed in ``env["pidfiles"]`` (such as the
-    stubborn child's), and fails the test if anything from this test's temp dir outlived it.
+    tagged processes to end, then SIGKILLs every unreaped tracked ``Popen``, every pid recorded in
+    a file listed in ``env["pidfiles"]`` (such as the stubborn child's) and every survivor of a
+    fresh scan, each only if it is tagged at that moment, with its process group when that
+    group's leader is tagged too; it fails the test if anything from its temp dir outlived it.
     The real ``~/.local/state/gpu`` is never touched."""
     state = tmp_path / "state"
     state.mkdir()
@@ -170,14 +198,12 @@ def gpu_env(tmp_path):
         for proc in procs:
             if proc.poll() is None:  # not reaped yet, so the pid is still this process's
                 leaked.add(proc.pid)
-                _kill_hard(proc.pid)
-        for pidfile in pidfiles:
+                _kill_tagged(proc.pid, tag, ours=True)
+        for pidfile in pidfiles:  # the tag is checked again right before each kill
             with contextlib.suppress(OSError, ValueError):
-                pid = int(pidfile.read_text())
-                if pid in _tagged_pids(tag):  # never a recycled pid of somebody else's
-                    _kill_hard(pid)
-        for pid in _tagged_pids(tag) | leaked:
-            _kill_hard(pid)
+                _kill_tagged(int(pidfile.read_text()), tag)
+        for pid in _tagged_pids(tag):  # a fresh scan, never the earlier snapshot
+            _kill_tagged(pid, tag)
         for proc in procs:
             with contextlib.suppress(subprocess.TimeoutExpired):
                 proc.wait(timeout=10)
@@ -472,6 +498,37 @@ def test_a_surviving_container_keeps_the_lock_and_is_stopped_after_a_signal(gpu_
     assert _lock_free(gpu_env)
     text = log.read_text()
     assert text.index("stopping containers") < text.index("end:")
+
+
+def test_a_signal_after_the_command_has_exited_starts_no_killer(gpu_env):
+    """Review of #130, finding 2: while --container keeps gpu_run waiting after the command has
+    exited, a TERM must stop the containers and let gpu_run exit 0 without starting a grace killer
+    (whose sleep would outlive gpu_run and later probe a pgid that may have been reused)."""
+    docker = gpu_env["tmp"] / "bin" / "docker"
+    docker.write_text(FAKE_DOCKER)
+    docker.chmod(0o755)
+    (gpu_env["tmp"] / "container").write_text("running")
+    pidfile = gpu_env["tmp"] / "quick"
+    env = {"DOCKER": str(docker), "FAKE_DOCKER_STATE": str(gpu_env["tmp"])}
+    proc = _spawn(
+        gpu_env,
+        *["--samples", "1", "--grace", "30", "--container", "oej-isaac-", "--"],
+        *[BASH, "-c", f"echo $$ > '{pidfile}'"],
+        extra_env=env,
+    )
+    command = int(_wait_file(pidfile))
+    assert _wait_gone(command, 20)
+    time.sleep(0.5)  # gpu_run is now in its container wait
+    assert proc.poll() is None
+    proc.terminate()
+    assert proc.wait(timeout=30) == 0
+    tag = gpu_env["env"][TAG_VAR]
+    deadline = time.monotonic() + 2
+    while (left := _tagged_pids(tag)) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert not left, _describe(left)  # no grace killer, no sleep, no watchdog
+    log = (gpu_env["state"] / "oej-gpu_run.log").read_text()
+    assert "stopping containers" in log and "end:" in log and "killed:" not in log
 
 
 def test_concurrent_request_lines_are_not_lost(gpu_env):
