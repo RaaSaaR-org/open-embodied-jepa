@@ -58,11 +58,13 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
 - **Question.** Two parts:
   - Can e9's place, after P-3's pick, aim at a frozen-DINOv2 single-frame plate readout and still
     reach the place bar under TASK-074's 9 cm condition?
-  - (K-pred) Is there a condition where the plate keeps moving, *driven by the robot's own action*
-    (cell A, a declared simulator rule), such that aiming at its current or extrapolated position
-    fails but aiming at its final position succeeds? Two constant-velocity cells are reported
-    only. There, an action-blind predictor is expected to tie, and the constant-velocity
-    extrapolator H-cv to reach about the ceiling.
+  - (K-pred) Is there a condition where the plate keeps moving, *driven by the robot's own
+    action*, such that aiming at its current or extrapolated position fails but aiming at its
+    final position succeeds? That is cell A, a declared simulator rule: the plate moves against
+    the palm's velocity of 2 steps earlier, so the target depends on the aim chosen at the last
+    decision (R8.7).
+  - Two constant-velocity cells are reported only. There, an action-blind predictor is expected
+    to tie, and the constant-velocity extrapolator H-cv to reach about the ceiling.
 - **LeWM's role.** None in the loop. The task measures what TASK-077 needs (ruling R8):
   - the plate ceiling c_plate, on the pooled 4 × 4 LeWM latent;
   - the perception baseline;

@@ -146,7 +146,8 @@ and does not replace it.
     measured on the representation that task would read. That is TASK-066's pooled 4 × 4 latent
     (R-plate-pool). The full-token R-plate stays as H-twin's readout only.
   - **R8.3.** K-pred gets an action-dependent cell, A. In it, the plate's velocity is κ = −0.5
-    times the robot's own palm velocity 40 steps earlier, from 405 to 525. This is a declared,
+    times the robot's own palm velocity L steps earlier, from 405 to 525 (L = 40 at
+    first; L = 2 since R8.7). This is a declared,
     simple, simulator-only rule. **Only cell A can admit TASK-077.** The definition of a LeWM-driven
     success requires beating an action-blind predictor, and with action-independent plate motion
     that predictor is expected to tie.
@@ -157,7 +158,7 @@ and does not replace it.
   - **R8.4.** Three changes so that a design failure or noise does not fire a clause:
     - PRED-INFEASIBLE (cell A removed, or its ceiling fails) escalates without a clause.
     - K0 stops early (CAL-ESCALATE) when H-stale(K) > 4/32, or when the in-sample H-clock(K) is
-      within 2/32 of the ceiling.
+      within 2/32 of the ceiling (4/32 since R8.7).
     - TWIN-NEAR (G1 missed, but H-twin not detectably below H-handover) escalates without a
       clause. G1's power is stated: 0.59 at a true rate of exactly 87.5 %.
   - **R8.5.** The tail bar O2 becomes reported only. A tail bar of 2 τ_re did not come from a
@@ -165,6 +166,30 @@ and does not replace it.
   - **R8.6.** τ_re uses the procedure of TASK-075's TAU_REMEASURE. That re-measurement was
     pre-committed only for OBS-ONBOARD and OBS-EXTRA, and its use for the plate readout is an
     extension, disclosed in the protocol.
+- **R8.7 — rulings on the re-review of #129** (REQUEST CHANGES at `3d8560e`; one blocking
+  finding). Each was decided by Claude under owner delegation.
+  - **The flaw.** With L = 40, cell A's motion after the last decision was
+    κ · [palm(485) − palm(445)], already fixed at 485. So action conditioning added nothing, and
+    TASK-066's history-one predictor could not recover palm(445).
+  - **The redesign.**
+    - L = 2 steps, so the plate's motion after 485 is κ · [palm(523) − palm(483)], caused almost
+      entirely by the aim chosen at 485. The aim that lands on the plate is the fixed point of
+      "where the plate will be given the palm motion my aim causes".
+    - The remedy for too little remaining motion lowers L (to 1) or moves s1 later. It never
+      raises L.
+  - **Required history, declared.**
+    - The action-conditioned predictor needs one frame plus the candidate commands. TASK-066's
+      history-one predictor qualifies if the missed 2-step term (at most about 0.85 cm in xy at
+      the clip) is within τ_re. Otherwise TASK-077 must declare 3 frames or the last 2 executed
+      commands.
+    - The action-blind twin gets the same one frame and no actions.
+  - **H-final(A)'s fixed point** iterates to |g_{k+1} − g_k| ≤ τ_re/4, at most 10 iterations.
+    Non-convergence lowers H-final and so can make the row PRED-INFEASIBLE.
+  - **Wording.** With κ < 0, the plate moves against the palm's velocity, back towards the
+    approaching hand, so refused moves are expected. The Stage-0 smoke measures the remaining
+    motion under H-final.
+  - **K0's G2 stop** is now H-clock(K) ≥ N_K(0) − 4/32, superseding R8.4's 2/32. An exact
+    one-sided McNemar test at p < 0.01 needs at least 7 one-way discordant pairs out of 64.
 - **Why not skip to a LeWM task now.** No calibrated plate bar and no measured prediction headroom
   exist yet. Starting without them would repeat TASK-074 (an uncalibrated bar) and TASK-073 (no
   headroom). K-pred costs about 416 CPU attempts.

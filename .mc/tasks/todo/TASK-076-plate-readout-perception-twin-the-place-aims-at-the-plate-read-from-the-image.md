@@ -77,3 +77,6 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
   follow-up commit. Rulings R8.1–R8.6: the canonical sentence is quoted verbatim; c_plate is measured on
   the pooled LeWM latent; an action-dependent K-pred cell is the only admitting cell;
   PRED-INFEASIBLE, TWIN-NEAR and the K0 early stops are added; O2 is reported only.
+- 2026-10-02: the re-review at `3d8560e` is addressed by R8.7. Cell A is redesigned with L = 2, so
+  the target depends on the last aim. The required predictor history is declared, H-final iterates
+  to tolerance, and K0's G2 stop is now 4/32.

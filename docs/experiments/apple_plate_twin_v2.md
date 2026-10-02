@@ -9,7 +9,7 @@ measured quantity. No bar is carried from an earlier task without being measured
 
 - Task card: `.mc/tasks/todo/TASK-076-*.md`. Rulings: [DECISIONS.md](../DECISIONS.md), decision
   2026-10-02, R1–R4 and R7, and decision 2026-10-02 (b), R8 (this draft's scope; its review
-  rulings R8.1–R8.6).
+  rulings R8.1–R8.7).
 - Plan context: [docs/PLAN.md](../PLAN.md).
 - Learned Apple→Plate status, the canonical sentence (DECISIONS 2026-10-02, R7), verbatim:
 
@@ -172,8 +172,8 @@ controller's `act()`. The plate is static after s1 = 525. s1 lies inside the low
 
 **To be confirmed in the Stage-0 smokes:**
 - no apple–plate contact before s1 on any smoke attempt. If a smoke finds contact, s1 moves
-  earlier and the cells are rescaled to keep their distance to go;
-- for cell A, the size of the plate's remaining motion at 485 (below).
+  earlier, and the cells are rescaled to keep their distance to go;
+- for cell A, the size of the plate's remaining motion at 485, measured under H-final (below).
 
 Any such change is made before the freeze and disclosed.
 
@@ -194,45 +194,98 @@ robot's action. So, for the plate target:
 So M cannot admit a task whose claim row needs to beat an action-blind twin (§9). M is reported
 to measure how much a non-predicting aim loses, and nothing more.
 
-**The action-dependent cell A (the only admitting cell; ruling R8.3).** This is a declared,
-simple, simulator-only rule:
-- From 405 to s1 = 525, the plate's xy velocity at step t is κ times the right palm's xy velocity
-  at step t − L. The palm velocity comes from robot kinematics (`PalmFK` on the executed joint
-  state, so it is the robot's own executed motion).
-- The constants are κ = −0.5 and L = 40 steps. The palm velocity before 405 counts as zero.
-- So the plate moves away from the direction the hand moved 40 steps earlier, at half its speed.
-- Its motion during 445–525 is set by the hand's motion during 405–485, which is the consequence
-  of the place decisions themselves.
-- At the last decision (485), the plate's remaining motion is fully determined by actions
-  already taken. It is not visible in the plate's current position or in its velocity so far.
+**The action-dependent cell A (the only admitting cell; rulings R8.3 and R8.7).** This is a
+declared, simple, simulator-only rule:
+- **The rule.** From 405 to s1 = 525, the plate's xy velocity at step t is κ times the right
+  palm's xy velocity at step t − L.
+  - The palm velocity comes from robot kinematics (`PalmFK` on the executed joint state), so it
+    is the robot's own executed motion.
+  - The constants are **κ = −0.5 and L = 2 steps**. Palm velocity before 405 counts as zero.
+- **Direction, stated plainly.** κ < 0, so the plate moves against the palm's velocity, at half
+  its speed. As the hand approaches the plate, the plate moves back towards the approaching hand.
+  - This risks moves that the hook refuses, because the plate would touch the hand, the apple or
+    the arm. A refused move is a counted failure.
+  - Refusals show up in H-final's count, and so in K-P1 and PRED-INFEASIBLE (§6.3).
+- **Why the last decision matters** (the R8.7 redesign).
+  - The plate's motion after the last decision at 485 is
+    κ · [palm(s1 − L) − palm(485 − L)] = κ · [palm(523) − palm(483)].
+  - All but the first 2 steps of that palm motion happen after 485, so they are caused by the aim
+    chosen at 485. The palm keeps moving towards it through the rest of the transfer, to 505.
+  - The aim that lands on the plate is therefore the fixed point of "where the plate will be,
+    given the palm motion my own aim causes".
+  - An action-conditioned predictor, given the candidate aim's commands, can find it. An
+    action-blind predictor cannot.
+  - Under the earlier L = 40, that motion was κ · [palm(485) − palm(445)], already fixed at 485,
+    so action conditioning added nothing. That design is withdrawn.
+- **Each predictor's required history, declared now** (R8.7).
+  - **Action-conditioned predictor.** It needs one current frame plus the candidate aim's
+    commands. The palm motion that the frame cannot show is palm(485) − palm(483): 2 executed
+    steps.
+    - Its contribution to the plate is at most |κ| × 2 steps × about 0.6 cm per step per axis
+      (the primitive's per-axis clip, `apple_lewm_planner_v2.md` §9b). That is 0.6 cm per axis,
+      about 0.85 cm in xy, at the clip; less at typical speeds.
+    - **TASK-066's history-one predictor** (`token_dynamics.py`, the comment above
+      `MODEL_CONFIG`) qualifies if that bound is within τ_re. It is at τ = 1.0 cm, but by a
+      narrow margin.
+    - If K0 measures τ_re < 0.85 cm, TASK-077 must declare a history of L + 1 = 3 frames, or
+      give its predictor the last 2 executed commands. Recorded now, before any number.
+  - **The action-blind twin** gets the same observation history (one current frame) and no
+    actions.
+- **Look-ahead to s1.** The plate's stop at s1 = 525 lies 40–120 steps after the decisions, so the
+  look-ahead goes beyond one 16-step chunk. TASK-077 must gate its own horizon (§9).
 
 The rule is a scene variant, not a claim about any real plate. **Its feasibility in this scene is
-unverified.** The Stage-0 smoke reports the median remaining plate motion at 485. If it is below
-2 cm, L is raised to 60 and then 80 (s1 unchanged), before the freeze. If no L ≤ 80 gives a median
-of at least 2 cm, or the moves are refused, cell A is declared infeasible and removed before the
-freeze. In that case PRED-ADMIT is unreachable: constant velocity alone cannot admit (§6.3).
+unverified.**
+- **The smoke measures under H-final.** The Stage-0 smoke reports, under H-final, the median
+  |plate(s1) − plate(485)| on the smoke resets: the plate's remaining motion after the last
+  decision. It also reports the same quantity under H-now, for scale.
+- **The remedy only makes the target depend more on the last aim** (R8.7). If the median under
+  H-final is below 2 cm:
+  1. first, L is lowered to 1;
+  2. then s1 moves later, in steps of 10, up to the contact limit found by the same smoke.
 
-**K-pred arms** (every cell runs all of them, except H-rule, which runs on A only):
+  L is never raised.
+- **If no allowed setting gives a median of at least 2 cm,** or if more than a quarter of the
+  smoke attempts are refused, cell A is declared infeasible and removed before the freeze. In
+  that case PRED-ADMIT is unreachable: constant velocity alone cannot admit (§6.3).
+
+**K-pred arms.** Every cell runs all of them, except H-rule, which runs on A only.
 
 | arm | aimed at, at each decision 405–485 | role |
 |---|---|---|
-| H-final | the plate's position at s1 (privileged). In M it is the scheduled final position. In A it is found by privileged look-ahead: the remaining place is simulated in cloned state to s1 under the current aim, and the aim is set to the simulated final plate, up to 3 iterations | the ceiling |
+| H-final | the plate's position at s1 (privileged). In M it is the scheduled final position. In A it is a fixed point found by privileged look-ahead (below) | the ceiling |
 | H-now | the plate's true position at the decision step (privileged, non-predicting) | the cost of not predicting, with perfect perception |
 | H-twin | R-plate's reading of the current frame | the cost of not predicting, with this perception |
 | H-cv | a least-squares constant-velocity line through H-twin's readings so far, extrapolated to s1 | the hand-written, action-blind extrapolator |
-| H-rule (A only) | H-twin's reading plus the declared rule applied to the robot's own palm history and the kinematic stand-in's predicted remaining palm motion | the rule-knowing non-world-model arm |
+| H-rule (A only) | the fixed point of the declared rule, computed from H-twin's reading, the robot's own last L executed palm steps, and the kinematic stand-in's palm path under each candidate aim | the rule-knowing non-world-model arm |
 
-- H-cv knows the M family's declared form (constant velocity, the stop step s1). H-rule knows the
-  A rule (κ, L, s1). That is privileged knowledge of the condition's structure, not of the state,
-  in the same way that H-clock knows the condition's distribution. A world model would have to
-  learn it from data.
+**H-final(A)'s look-ahead iterates to a declared tolerance** (R8.7). At each decision:
+- start from g₀ = the true current plate;
+- for each k, simulate the rest of the place in cloned state to s1 under aim g_k, and set
+  g_{k+1} = the simulated plate at s1;
+- stop when |g_{k+1} − g_k| ≤ τ_re/4 (0.25 cm if τ_re = 1.0 cm), with at most 10 iterations.
+
+With κ = −0.5 and a palm that follows the aim roughly one to one, the gap contracts by about half
+per iteration: from 10 cm, 6 iterations reach 0.16 cm. That is an estimate, to be checked in the
+smoke.
+- **If an attempt does not converge** at any decision within 10 iterations, it is logged, aimed at
+  the last iterate, and counted as an H-final failure if it does not succeed. So
+  non-convergence lowers H-final, and can make K-P1 fail and the row PRED-INFEASIBLE.
+- **The tolerance and the iteration cap are frozen with the protocol.**
+
+Further notes on the K-pred arms:
+- **Privileged knowledge of structure.** H-cv knows the M family's declared form (constant
+  velocity, the stop step s1). H-rule knows the A rule (κ, L, s1). That is privileged knowledge
+  of the condition's structure, not of the state, in the same way that H-clock knows the
+  condition's distribution. A world model would have to learn it from data.
 - **Expected in advance:** on A, H-rule is expected to come close to H-final. A later LeWM arm
   could then at best *tie* the best non-world-model arm on A. §9 requires only that it be
   reported beside that arm, and PLAN.md states the claim TASK-077 could make.
-- At 405, H-cv has one reading and aims at it (H-twin's choice). From 421 on, it fits a line.
-- R-plate is fitted on static-plate corpus frames. In A, the plate can be displaced in directions
-  the corpus did not cover (the corpus moves are on the −y arc). H-twin's error is reported per
-  cell.
+- **H-cv's first decision.** At 405 it has one reading and aims at it (H-twin's choice). From 421
+  on, it fits a line.
+- **Coverage of R-plate.** R-plate is fitted on static-plate corpus frames. In A, the plate can be
+  displaced in directions the corpus did not cover (the corpus moves are on the −y arc). H-twin's
+  error is reported per cell.
 
 ## 4. Seeds and cohorts
 
@@ -295,7 +348,7 @@ Every range below is disjoint from:
      - level 0 is below 28/32 (τ_re undefined);
      - N_K(0) < 30/32 (the gated bar of 56/64 is then not feasible);
      - H-stale(K) > 4/32 (the condition does not need a reading; TASK-074 K1's P-stale ≤ 4 bar);
-     - H-clock(K) ≥ N_K(0) − 2/32 (an image-free prior is near the ceiling, so G2 is not
+     - H-clock(K) ≥ N_K(0) − 4/32 (an image-free prior is near the ceiling, so G2 is not
        feasible).
    - The K0 values are written into the frozen block: τ_re, the τ curve, N_K(0), H-clock's fitted
      targets, and H-clock's and H-stale's K counts. K0 runs no hypothesis arm, so no bar sees an
@@ -377,6 +430,12 @@ R-plate-pool**.
     row below keeps such a miss from firing the clause (ruling R8.4).
 - **G2 (the image-free control):** H-twin(S) > H-clock(S), one-sided exact McNemar p < 0.01 on
   the paired resets. There is no tuned margin, as with TASK-075's ratio bars.
+  - **G2's minimum separation, stated** (R8.7). An exact one-sided McNemar test reaches p < 0.01
+    only with at least 7 discordant pairs, all in H-twin's favour (0.5⁷ = 0.0078; 6 give 0.0156).
+    With one reversed pair it needs 10 of 11 (p = 0.0059); 9 of 10 gives 0.0107 and fails.
+  - So G2 needs H-twin − H-clock ≥ 7/64, about 3.5/32, at the very least. K0's stop at
+    H-clock(K) ≥ N_K(0) − 4/32 is set at that separation. H-clock(K) is in-sample, and so
+    optimistic, which makes the stop conservative.
 - **G3 (no harm, U):** H-twin(U) ≥ P-stale(U) − 2/32 (TASK-074's G5).
 
 | row | condition | consequence |
@@ -482,7 +541,7 @@ The next step is then TASK-075's Option 2 (a place servo; R3).
 
 **K-pred's own clause.** It fires on PRED-NONE only, not on PRED-INFEASIBLE or PRED-NO-BAR. It
 closes preregistering a LeWM plate-target place task on v2 under the tested action-dependent rule
-(cell A: κ = −0.5 and the L it ran with) and under the constant-velocity family (M-a, M-b), without
+(cell A: κ = −0.5 and the L and s1 it ran with) and under the constant-velocity family (M-a, M-b), without
 new evidence of a different kind. It does not close the LeWM backend, the v2 task or the product
 goal.
 
@@ -563,8 +622,10 @@ goal beyond calibration. PLAN.md's Branch B applies.
   the frames then show the arm there. O4 checks offline that the readout reads the plate. It
   cannot check the closed loop's own feedback; the per-decision readings are logged.
 - **τ is anisotropic** (−y errors fail earlier). The signed errors are reported, not gated.
-- **Cell A is a declared simulator rule,** chosen so that the target depends on the robot's own
-  action. Its feasibility is unverified until Stage 0. A hand-written arm that knows the rule
+- **Cell A is a declared simulator rule.** With L = 2, the target depends on the aim chosen at the
+  decision that sets it (R8.7). Its feasibility is unverified until Stage 0, and moves against the
+  approaching hand may be refused. TASK-066's history-one predictor misses the last 2 executed
+  palm steps; that term is bounded at about 0.85 cm in xy at the clip (§3.2). A hand-written arm that knows the rule
   (H-rule) is expected to come close to the ceiling, which §6.3 states in advance.
 - **H-cv and H-rule know the condition's structure.** A later world model would have to learn it.
 - **One encoder, one view, one input size, one floor seed, one corpus.**
@@ -577,9 +638,9 @@ goal beyond calibration. PLAN.md's Branch B applies.
 | O | featurisation; cross-fitted ridges (full and pooled) on at most 1 518 rows (253 × 6) | GPU < 2 min, then CPU | about 15 min | TASK-075 readouts: featurisation 76–92 s per view; cross-fit 221–228 s per view for more readouts |
 | D | 32 attempts | CPU | about 2 min | as K0, plus the CPU encoding |
 | S/U | 384 + 96 attempts | CPU | about 10 min | as K0, plus six encodings per H-twin and H-floor attempt |
-| K-pred | M: 2 × 32 × 4 = 256; A: 32 × 5 = 160 attempts | CPU | about 15–30 min | as K0; H-final(A)'s look-ahead adds up to 3 cloned roll-outs per decision |
+| K-pred | M: 2 × 32 × 4 = 256; A: 32 × 5 = 160 attempts | CPU | about 30–60 min | as K0; H-final(A)'s look-ahead adds up to 10 cloned roll-outs to s1 per decision (6 at the estimated contraction) |
 
-Total machine time is about 1 h. The GPU is used for under 2 minutes.
+Total machine time is about 1–1.5 h. The GPU is used for under 2 minutes.
 
 ## 11. Deviations from the card's proposed shape (disclosed)
 
@@ -593,9 +654,11 @@ Total machine time is about 1 h. The GPU is used for under 2 minutes.
 ## 12. Review record and remaining open questions
 
 The independent review of #129 at `314d843` (REQUEST CHANGES, eleven findings) is addressed in
-this revision. The rulings it needed are R8.1–R8.6 in DECISIONS 2026-10-02 (b). Still open before
+this revision. The rulings it needed are R8.1–R8.6 in DECISIONS 2026-10-02 (b). The re-review at `3d8560e`
+(one blocking finding: under L = 40, cell A's target ignored the last aim) is addressed by R8.7.
+Still open before
 the freeze:
-1. Is s1 = 525 safe from apple–plate contact? Does cell A's rule (κ = −0.5, L = 40) give enough
+1. Is s1 = 525 safe from apple–plate contact? Does cell A's rule (κ = −0.5, L = 2) give enough
    remaining motion at 485? (The Stage-0 smokes decide, §3.2.)
 2. Should U also run H-handover (now included: 32 more attempts), or only H-twin and P-stale?
 3. Should a TWIN-PASS be followed by a hand-crop variant? Not planned. In the white-plate
