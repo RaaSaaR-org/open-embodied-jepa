@@ -45,4 +45,33 @@ The proposed cohort above was adopted as 50 fixed Apple→Plate resets for each 
 
 ## Task-specific apple protocols since the MVP
 
-Later work is a separately labelled task-specific mode on the apple corpus, not this common-mode benchmark, and must never be pooled into a common-mode table. Each protocol preregisters its own gates, thresholds and decision rule before the run, and its results document records the outcome including failures; both live under [docs/experiments/](experiments/) with a machine-readable manifest under `benchmarks/manifests/`. Every **learned** control attempt in that line, through TASK-057, has ended without meeting its declared gate (failed it, stopped at an earlier offline gate or stop rule, or ran incomplete), and **learned Apple→Plate is still 0 successes**. (Some non-learned privileged-ceiling diagnostics did pass their gates; they establish that a design is adequate under exact dynamics, never that a learned policy works.) At TASK-054 CEM over the world-model cost was abandoned as the primary control line in favour of behaviour cloning with the world model as a critic, and no further predictor-architecture protocol is preregistered. That behaviour-cloning line was preregistered and run as TASK-056 ([protocol](experiments/apple_policy_v1.md)) and diagnosed in TASK-057 ([results](experiments/apple_policy_diagnostics_v1_results.md)), where its own pre-declared abandonment clause fired: it stops on this corpus (`apple-wide-v1`) and this camera (112 px onboard), and no third control formulation is preregistered on them. There is currently no primary control line. The next task is a perception/data task, TASK-059 ([information-ceiling probe](experiments/apple_info_ceiling_v1.md)), whose thresholds and outcomes are preregistered in its own protocol; see [DECISIONS.md](DECISIONS.md).
+Later work is a separately labelled task-specific mode on the apple corpus, not this common-mode benchmark, and must never be pooled into a common-mode table. Each protocol preregisters its own gates, thresholds and decision rule before the run, and its results document records the outcome including failures; both live under [docs/experiments/](experiments/) with a machine-readable manifest under `benchmarks/manifests/`. Every **learned** control attempt in that line, through TASK-057, has ended without meeting its declared gate (failed it, stopped at an earlier offline gate or stop rule, or ran incomplete), with 0 learned successes on v1. (Some non-learned privileged-ceiling diagnostics did pass their gates; they establish that a design is adequate under exact dynamics, never that a learned policy works.) At TASK-054 CEM over the world-model cost was abandoned as the primary control line in favour of behaviour cloning with the world model as a critic, and no further predictor-architecture protocol is preregistered. That behaviour-cloning line was preregistered and run as TASK-056 ([protocol](experiments/apple_policy_v1.md)) and diagnosed in TASK-057 ([results](experiments/apple_policy_diagnostics_v1_results.md)), where its own pre-declared abandonment clause fired: it stops on this corpus (`apple-wide-v1`) and this camera (112 px onboard), and no third control formulation is preregistered on them. There is currently no primary control line. The next task is a perception/data task, TASK-059 ([information-ceiling probe](experiments/apple_info_ceiling_v1.md)), whose thresholds and outcomes are preregistered in its own protocol; see [DECISIONS.md](DECISIONS.md).
+
+## The `apple-to-plate-v2` task (since TASK-070)
+
+`apple-to-plate-v2` (`src/embodied_jepa/apple_to_plate_v2.py`, owner ruling R12) is the v1
+Apple→Plate task with one change: the apple's contact runs at condim 6, so the v1 scene's own
+declared apple friction (sliding 1, torsional 0.01 m, rolling 0.001 m) acts. The robot, the fixed
+pelvis, the action schema, the plate distribution, the 4 cm radius and the look are v1's. It is a
+separate benchmark: v2 numbers are never pooled with v1 numbers.
+
+- **Success is `apple_at_rest_v0`** (`at_rest.py`): an end-of-episode check that, on every one of the final
+  20 control steps, the apple centre is within 4 cm of the plate centre, at its resting height
+  (within 1.2 cm), moving at most 1 mm/s, with no hand contact. The latched v1 scorer
+  (`task.AppleToPlateTask`) is reported beside it. That latched scorer counts transient 0.15 s
+  crossings of the disc (TASK-067 landing diagnosis), so scripted-collector and privileged success
+  numbers elsewhere that were scored with it are flagged, not rewritten. A learned-policy success
+  in TASK-071/072 is counted as at rest after a latched grasp and a latched place (owner rulings
+  T71-R1 and T71-R2).
+- **Results on v2 so far.** Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init encoder control R-3, so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. No LeWM-driven controller has run in closed loop on v2 yet; LeWM's only closed-loop Apple→Plate runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results. (See DECISIONS 2026-10-02, R7, for scope.) The privileged scripted expert e9 passed the TASK-070 gate
+  (32/32 at rest with the plate exact, 30/32 at 1.0 cm plate error); that is a scripted-expert
+  result.
+- **LeWM-oriented tasks on v2.** TASK-073 (a LeWM critic for P-3's aim) ended S-NO-CONDITION at
+  its calibration, with no headroom for a critic; TASK-074 (a LeWM place planner) closed
+  INCONCLUSIVE after two budget escalations; TASK-075 (the observation ceiling) ended OBS-NONE and
+  its clause fired. None ran LeWM in closed loop. The next task is TASK-076, the plate-readout
+  perception twin (no world model), with its preregistration pending
+  ([DECISIONS.md](DECISIONS.md), 2026-10-02).
+- **There is still no primary control line.** A behaviour-cloning result on v2 is not a return to
+  behaviour cloning as the project's control approach; the product goal is LeWM on G1 + dual
+  Dex3.

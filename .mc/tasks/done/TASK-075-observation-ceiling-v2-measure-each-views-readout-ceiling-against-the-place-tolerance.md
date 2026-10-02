@@ -20,7 +20,7 @@ depends_on:
 - "[[TASK-074]]"
 due_date: ''
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 ---
 
 
@@ -64,7 +64,7 @@ no control claim is made and no control line is primary.
 - [x] Stage 0 merged on an independent reviewer's reported APPROVE.
 - [x] Stage 1 (render) on its own reported GO: VIEWS-SEALED.
 - [x] Stage 2 (readouts) on its own reported GO: a row (OBS-NONE).
-- [ ] The results PR, reviewed with every restated number checked. Opened; review pending.
+- [x] The results PR, reviewed with every restated number checked (#118, `6bad0ad`).
 
 ## Notes
 - 2026-10-01: preregistration PR opened (Stage 0). `mc` was not available on the Linux PC, so
@@ -80,3 +80,6 @@ no control claim is made and no control line is primary.
   Reported only: the plate position is read to 0.49–0.68 cm, the apple to 2.2–3.1 cm. Results:
   `docs/experiments/apple_obs_ceiling_v2_results.md`. Learned Apple→Plate is still 0 successes.
   `mc` was not available on the Linux PC, so `mc validate` was not run.
+- 2026-10-02: results merged in #118 (`6bad0ad`). The next step, decided by Claude under owner
+  delegation (2026-09-30), is §7 Option 1, the plate-readout perception twin: TASK-076
+  (`docs/DECISIONS.md`, decision 2026-10-02, R1–R4). `mc validate` passed with mc 0.1.14.

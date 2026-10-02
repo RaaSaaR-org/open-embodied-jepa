@@ -1,0 +1,114 @@
+# Experiment index
+
+Every protocol in this directory with its results document, outcome row and manifest, newest
+first. Protocols and results are the frozen historical record: they are not rewritten, and
+failures and negative results stay in them. Read each outcome with the caveats in its results
+document; the one-line outcomes below are pointers, not claims.
+
+**Status (canonical sentence, [DECISIONS.md](../DECISIONS.md), decision 2026-10-02, R7).**
+Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa`
+and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen
+DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world
+model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init
+encoder control R-3 (one run, one training seed per arm, 40 resets, one camera at 112 px onboard,
+a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed
+nothing measurable), and cohort C is no longer held out. No LeWM-driven controller has run in
+closed loop on v2 yet; LeWM's only closed-loop Apple→Plate runs are on v1, with 0 successes.
+Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results.
+
+Manifests are under [`benchmarks/manifests/`](../../benchmarks/manifests/). Run outputs are
+git-ignored and stay on the machine that made them; several finished run worktrees have been
+archived to external storage (archived, see docs/STORAGE.md). A results document's own paths are
+not rewritten when its worktree is archived.
+
+## Gated and preregistered tasks (newest first)
+
+| Task | Protocol | Results | Outcome (pointer only) | Manifest |
+|---|---|---|---|---|
+| TASK-076 | pending | — | not started; the plate-readout perception twin, decided 2026-10-02 (R1) | — |
+| TASK-075 | [apple_obs_ceiling_v2](apple_obs_ceiling_v2.md) | [results](apple_obs_ceiling_v2_results.md) | **OBS-NONE**; the clause fires (next: a task or condition change) | `apple-obs-ceiling-v2.json` |
+| TASK-074 | [apple_lewm_planner_v2](apple_lewm_planner_v2.md) | [results](apple_lewm_planner_v2_results.md) | **INCONCLUSIVE**, closed without the clause after two budget escalations; no LeWM controller ran | `apple-lewm-planner-v2.json` |
+| TASK-073 | [apple_wm_critic_v2](apple_wm_critic_v2.md) | [results](apple_wm_critic_v2_results.md) | **S-NO-CONDITION** at K0; the critic never ran; the clause does not fire | `apple-wm-critic-v2.json` |
+| TASK-072 (M2) | [apple_first_policy_v2_m2](apple_first_policy_v2_m2.md) | [results](apple_first_policy_v2_m2_results.md) | **M2-FAIL on G3 alone** (P-3 40/40, R-3 39/40 on cohort C); G3's reading adopted by owner ruling | `apple-first-policy-v2-m2{,-results}.json` |
+| TASK-072 | [apple_first_policy_v2_linux](apple_first_policy_v2_linux.md) | [results](apple_first_policy_v2_linux_results.md) | **REPLICATED** on Linux (M1-PASS, P-3 16/16 on the development cohort) | `apple-first-policy-v2-linux{,-results}.json` |
+| TASK-071 | [apple_first_policy_v2](apple_first_policy_v2.md) | [results](apple_first_policy_v2_results.md) | **M1-PASS** on the development cohort (P-3 16/16, R-3 16/16) | `apple-first-policy-v2{,-results}.json` |
+| TASK-070 | [apple_to_plate_v2_expert](apple_to_plate_v2_expert.md) (protocol and results) | same | **PASS**: e9 at rest 32/32 (plate exact), 30/32 at 1.0 cm; a scripted-expert result | `apple-to-plate-v2-expert-gate-v1.json` |
+| TASK-067 | [apple_first_policy_v1](apple_first_policy_v1.md); [proposal](control_formulation_proposal_v1.md) | [results](apple_first_policy_v1_results.md); [release probe](apple_first_policy_v1_release_probe.md); [landing diagnosis](apple_first_policy_v1_landing_diagnosis.md) | **CAL-ESCALATE** at C0; probe P-CANDIDATE-FAIL; closed under the owner's fallback | `apple-first-policy-v1{,-results}.json` |
+| TASK-066 | [apple_token_dynamics_v1](apple_token_dynamics_v1.md) | [results](apple_token_dynamics_v1_results.md) | **WM-TOK-DYNAMICS** (train split only; four caveats) | `apple-token-dynamics-v1{,-results}.json` |
+| TASK-065 | [apple_latent_dynamics_v1](apple_latent_dynamics_v1.md) | [results](apple_latent_dynamics_v1_results.md) | **WM-NO-DYNAMICS**; the clause fires (pooled-CLS predictor line only) | `apple-latent-dynamics-v1{,-results}.json` |
+| TASK-064 | [apple_look_corpus_v1](apple_look_corpus_v1.md) | [results](apple_look_corpus_v1_results.md) | **C-ACCEPT**: `apple-look-v1` accepted | `apple-look-corpus-v1{,-results}.json` |
+| TASK-063 | [apple_pretrained_encoder_v1](apple_pretrained_encoder_v1.md) | [results](apple_pretrained_encoder_v1_results.md) | **O-PT-POOLED** (offline readability only) | `apple-pretrained-encoder-v1{,-results}.json` |
+| TASK-062 | [apple_encoder_study_v1](apple_encoder_study_v1.md) | [results](apple_encoder_study_v1_results.md) | **O-ENC-ARCH**; the clause fires (in-corpus encoder training closed) | `apple-encoder-study-v1{,-results}.json` |
+| TASK-061 | [apple_observation_reprobe_v1](apple_observation_reprobe_v1.md) | [results](apple_observation_reprobe_v1_results.md) | **O-LOOK-RAW** | `apple-observation-reprobe-v1{,-results}.json` |
+| TASK-059 | [apple_info_ceiling_v1](apple_info_ceiling_v1.md) | [results](apple_info_ceiling_v1_results.md) | **O-OCC-NONE** | `apple-info-ceiling-v1{,-results}.json` |
+| TASK-058 | [claim_audit_v1](claim_audit_v1.md) | same | numerical-claim audit; corrections are errata in the audited documents | — |
+| TASK-057 | [apple_policy_diagnostics_v1](apple_policy_diagnostics_v1.md) | [results](apple_policy_diagnostics_v1_results.md) | **Outcome X**; the behaviour-cloning clause fires | `apple-policy-diagnostics-v1{,-results}.json` |
+| TASK-056 | [apple_policy_v1](apple_policy_v1.md); [handover](task056_handover.md) | [results](apple_policy_v1_results.md) | **FAILED** on the development stop rule (every arm 0/16) | `apple-policy-v1.json` |
+| TASK-054 | [apple_world_model_v4](apple_world_model_v4.md) | [results](apple_world_model_v4_results.md) | all four arms fail the 14 gates; the clause fires (CEM over this cost abandoned as the primary line) | `apple-world-model-v4.json` |
+| TASK-052 | [apple_world_model_v3](apple_world_model_v3.md) | [results](apple_world_model_v3_results.md) | all four arms fail the gate set | `apple-world-model-v3.json` |
+| TASK-051 | [apple_wide_grasp_closure_v3](apple_wide_grasp_closure_v3.md); [diagnosis](apple_grasp_closure_diagnosis.md) | [results](apple_wide_grasp_closure_results_v3.md) | primary gate passed (privileged ceiling, 8/8, `ceiling_adequate`) | `apple-wide-grasp-closure-v3.json` |
+| TASK-050 | [apple_world_model_v2](apple_world_model_v2.md) | [results](apple_world_model_v2_results.md) | FAIL: accurate on still frames, not where the offset moves | `apple-world-model-v2.json` |
+| TASK-049 | [apple_wide_object_ceiling_v2](apple_wide_object_ceiling_v2.md) | [results](apple_wide_object_ceiling_results_v2.md) | primary gate failed, conclusively (privileged ceiling, 5/8) | `apple-wide-object-ceiling-v2.json` |
+| TASK-048 | [apple_wide_collection_v1](apple_wide_collection_v1.md) | [results](apple_wide_collection_results_v1.md) | every acceptance check passed; `apple-wide-v1` accepted (scripted collection) | `apple-wide-collection-v1.json` |
+| TASK-047 | [apple_wide_object_ceiling_v1](apple_wide_object_ceiling_v1.md) | [results](apple_wide_object_ceiling_results_v1.md) | `ceiling_inadequate_task_feasible` (privileged ceiling) | `apple-wide-object-ceiling-v1.json` |
+| TASK-046 | [apple_hybrid_phase_v1](apple_hybrid_phase_v1.md) | [results](apple_hybrid_phase_results_v1.md) | primary gate failed (non-learned diagnostic) | `apple-hybrid-phase-v1.json` |
+| TASK-045 | [apple_trajectory_tracking_v1](apple_trajectory_tracking_v1.md) | [results](apple_trajectory_tracking_results_v1.md) | stage-1 gate failed (privileged ceiling) | `apple-trajectory-tracking-v1.json` |
+| TASK-044 | [apple_privileged_ceiling_v1](apple_privileged_ceiling_v1.md) | [results](apple_privileged_ceiling_results_v1.md) | primary gate failed (privileged ceiling) | `apple-privileged-ceiling-v1.json` |
+| TASK-043 | [apple_state_goal_control_v1](apple_state_goal_control_v1.md) | [results](apple_state_goal_control_results_v1.md) | primary gate failed (learned grasp 0/4) | `apple-state-goal-control-v1.json` |
+| TASK-042 | [apple_aligned_control_v1](apple_aligned_control_v1.md) | [results](apple_aligned_control_results_v1.md) | offline primary gate failed (+4.30 points against +5) | `apple-aligned-cost-v1.json` |
+| TASK-041 | [apple_goal_alignment_v1](apple_goal_alignment_v1.md); [data audit](apple_goal_alignment_data_audit.md) | [results](apple_goal_alignment_results_v1.md) | offline image-goal screen passed (offline only) | `apple-goal-alignment-v1.json` |
+| TASK-040 | [apple_arrival_feedback_v1](apple_arrival_feedback_v1.md) | [results](apple_arrival_feedback_results_v1.md) | negative paired result | `apple-arrival-feedback-v1.json` |
+| TASK-039 | [apple_control_commitment_v1](apple_control_commitment_v1.md) | [results](apple_control_commitment_results_v1.md) | negative, time-limited development result | `apple-control-commitment-v1.json` |
+| TASK-036 | [joint_limit_precision_v1](joint_limit_precision_v1.md) | — | joint-target precision investigation | — |
+| TASK-029/030 | [feasibility_v1](feasibility_v1.md), [feasibility_v2](feasibility_v2.md), [projection optimisation](projection_optimization_v1.md) | [v1 results](feasibility_results_v1.md), [v2 results](feasibility_results_v2.md) | candidate-feasibility diagnostics | `feasibility-results-v{1,2}.json` |
+| TASK-024 | [jepa_wms_spike](jepa_wms_spike.md) | same | optional JEPA-WMs adapter: CPU compatibility only, no manipulation claim | `jepa-wms-spike.json` |
+| TASK-019/020 | [mvp_final](mvp_final.md), [mvp_evaluation](mvp_evaluation.md) | [training](mvp_training_results.md), [results](mvp_results.md) | the frozen v1 MVP benchmark: **0/150 per model** for `native_jepa` and LeWM | `mvp-{corpus-v0,goals-v0,leakage-audit,results-v0}.json` |
+| TASK-014 | [reach_pilot](reach_pilot.md), [v1](reach_pilot_v1.md), [v2](reach_pilot_v2.md) | [results](reach_results.md) | development reaching: the v2 selectors reached 1/5 each against 0/5 for the controls (intervals overlap); native v0 reached 3/5 with a collapsed representation | `reach-pilot-v0*.json`, `reach-development-results.json` |
+
+## Earlier apple development records (TASK-030 to TASK-038, sensor world model)
+
+These predate the per-task index above; their task numbers are in the MC cards and the documents
+themselves. Plan and diagnosis: [apple_mvp_plan](apple_mvp_plan.md),
+[apple_wm_diagnosis](apple_wm_diagnosis.md), [apple_mechanics_probe](apple_mechanics_probe.md),
+[waypoint_design](waypoint_design.md). Collection: [apple_collection_v1](apple_collection_v1.md)
+→ [results](apple_collection_results_v1.md). Sensor model:
+[apple_sensor_training_v1](apple_sensor_training_v1.md) →
+[results](apple_sensor_training_results_v1.md);
+[apple_sensor_diagnostics_v1](apple_sensor_diagnostics_v1.md) →
+[results](apple_sensor_diagnostics_results_v1.md). Matched branches:
+[apple_branches_v1](apple_branches_v1.md) → [results](apple_branches_results_v1.md),
+[review](apple_branch_review.md); [apple_branch_training_v1](apple_branch_training_v1.md) →
+[results](apple_branch_training_results_v1.md);
+[apple_branch_diagnostics_v1](apple_branch_diagnostics_v1.md) →
+[results](apple_branch_diagnostics_results_v1.md);
+[apple_branch_training_h16_v1](apple_branch_training_h16_v1.md) →
+[H16 diagnostics](apple_branch_h16_diagnostics_results_v1.md). Control:
+[apple_control_development_v1](apple_control_development_v1.md) →
+[results](apple_control_results_v1.md);
+[apple_control_development_v2](apple_control_development_v2.md),
+[interruption](apple_control_interruption_v2.md), [resume](apple_control_development_v2_resume.md)
+→ [results](apple_control_results_v2_resumed1.md);
+[apple_control_forecast_audit_v1](apple_control_forecast_audit_v1.md) →
+[results](apple_control_forecast_results_v1.md). Every learned control attempt here ended without
+meeting its gate.
+
+Earlier manipulation and reproduction records:
+[manipulation_pilot](manipulation_pilot.md),
+[manipulation_controller_v1](manipulation_controller_v1.md),
+[manipulation_controller_v2](manipulation_controller_v2.md) (scripted collection, not learned),
+and [clean_reproduction](clean_reproduction.md) (software reproduction only).
+
+## Development, not gated
+
+No preregistration and no gate. Nothing here is a project-learned result.
+
+| Date | Record | What it found |
+|---|---|---|
+| 2026-10-02 | [apple_white_plate_dev](apple_white_plate_dev.md) | an opt-in white plate leaves TASK-075 at OBS-NONE; any colour effect on the offset's median error is bounded to about 0.90–1.11 (1 of 12 intervals excludes 1.0), though colour does shift the plate-hidden check; colour is not what limits the readout |
+| 2026-10-01 | [ARENA.md](../ARENA.md) §8 | GR00T reference baseline in Isaac Lab-Arena (client-only; NVIDIA's GN1x-Tuned release (GR00T N1.7, step 65000), not the tutorial's checkpoint-20000): 16/30 and 10/30 under Arena's rule, 0/30 under the strict at-rest rule (stale PhysX velocity, inferred; post-hoc position check 6/30). GR00T's result, not ours |
+| 2026-10-01 | [ARENA.md](../ARENA.md) §1–§7 | the GR00T-tutorial Arena scene; arm kinematics agree, Dex3 fingertips differ by up to 3.1 cm; e9 at rest 0/16 in Arena |
+| 2026-09-30 | [ISAAC_E9_REPLAY.md](../ISAAC_E9_REPLAY.md) | e9 in Isaac/Newton: actions match, at rest 24–26/32 per cell against 31/32 in MuJoCo |
+| 2026-09-29 | [ISAAC_NEWTON_SPIKE.md](../ISAAC_NEWTON_SPIKE.md), [ISAAC_V2_SCENE.md](../ISAAC_V2_SCENE.md) | Newton reproduces MuJoCo's contact behaviour on five scripted cases; PhysX does not roll like MuJoCo |
+| 2026-09-28 | [ISAAC_BRINGUP_SPIKE.md](../ISAAC_BRINGUP_SPIKE.md), [ISAAC_MJCF_TRANSPORT.md](../ISAAC_MJCF_TRANSPORT.md) | Isaac Sim bring-up, MJCF→USD conversion and joint-level parity |
+| 2026-09-28 | [apple_to_plate_v2_feasibility](apple_to_plate_v2_feasibility.md) (TASK-069) | the scan that led to `apple-to-plate-v2` |
+| 2026-09-28 | [apple_resting_expert_v1](apple_resting_expert_v1.md) (TASK-068) | closed on its development finding: 0 at rest in 269 attempts under v1 |

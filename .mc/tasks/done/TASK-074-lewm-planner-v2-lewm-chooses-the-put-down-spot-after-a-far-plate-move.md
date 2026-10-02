@@ -22,7 +22,7 @@ depends_on:
 - "[[TASK-073]]"
 due_date: ''
 created: 2026-09-30
-updated: 2026-10-01
+updated: 2026-10-02
 ---
 
 
@@ -100,7 +100,7 @@ apple", not LeWM driving the whole episode, and not the v1 benchmark. No control
 - [ ] D3, on its own reported GO. Not run (closed INCONCLUSIVE before it).
 - [ ] Gated S/U only after the owner or delegated authorisation record is in the manifest,
       validated by `check_authorisation`, after a reported reviewer GO and a chat notice. Not run.
-- [ ] The results PR, reviewed with every restated number checked.
+- [x] The results PR, reviewed with every restated number checked (#116, `1066afd`).
 
 ## Notes
 - 2026-09-30: #113 (preregistration) merged as `9d9b03c`. K1 ran on its GO: **K1-PASS** at
@@ -118,3 +118,4 @@ apple", not LeWM driving the whole episode, and not the v1 benchmark. No control
   Results: `docs/experiments/apple_lewm_planner_v2_results.md`. No LeWM controller ran in
   closed loop. Learned Apple→Plate is still 0 successes. The next task is a measurement-first
   observation-ceiling study, to be preregistered separately.
+- 2026-10-02: results merged in #116 (`1066afd`). `mc validate` passed with mc 0.1.14.

@@ -58,7 +58,7 @@ Code:
 
 ### Runs
 
-All runs are under `outputs/` in the worktree (git-ignored). The image is `isaaclab_arena:latest` `sha256:2588b52605d7…`. The other inputs are those of [ISAAC_NEWTON_SPIKE.md](ISAAC_NEWTON_SPIKE.md):
+All runs are under `outputs/` in the worktree `isaac-e9` (git-ignored; archived, see docs/STORAGE.md). The image is `isaaclab_arena:latest` `sha256:2588b52605d7…`. The other inputs are those of [ISAAC_NEWTON_SPIKE.md](ISAAC_NEWTON_SPIKE.md):
 - USD canonical tree `cd1fdb27…2fa8`;
 - scene manifest `e698b44d…`;
 - joint manifest v1 (`manifest_sha256` `c6c3ccfc…`);

@@ -1,29 +1,5 @@
 # Development and execution
 
-## Reproducible Mac environment
-
-Use Python 3.12 (tested 3.12.13), `uv` (tested 0.12.3), and the committed `uv.lock`. The required core imports NumPy/YAML only; learning and simulation are optional extras. Run from the repository root:
-
-```sh
-uv sync --locked --extra learning --extra sim --extra lewm --extra data --extra compatibility
-uv run --no-sync python scripts/resource_probe.py
-uv run --no-sync ruff check src tests scripts
-uv run --no-sync ruff format --check src tests scripts
-uv run --no-sync pytest
-```
-
-Use `--no-sync` on subsequent commands to preserve installed optional extras. `uv sync --locked` alone intentionally installs only core/development dependencies. No CUDA, Isaac, DDS, or physical robot connection is required for core tests; CUDA is optional (see the Linux section below). The `lewm` extra installs minimal adapter dependencies; the pinned source fetch/probe instructions are in [LEWM_SPIKE.md](LEWM_SPIKE.md).
-
-Measured CPU/MPS readiness, resource limits, and local artifact locations are in [RESOURCES.md](RESOURCES.md). Tested simulator assets, rendering, and viewer commands are in [MUJOCO_SPIKE.md](MUJOCO_SPIKE.md). Feasibility checks do not establish trained closed-loop manipulation performance.
-
-To audit installed dependency metadata:
-
-```sh
-uv run --no-sync python scripts/dependency_inventory.py > outputs/feasibility/dependencies.json
-```
-
-Create the output directory first if the resource probe has not run. GitHub Actions runs core import isolation, lint, formatting, tests, and dependency inventory on Linux and macOS, plus a separate macOS optional integration job with actual model, dataset and physics dependencies. Graphics, unavailable-MPS and unavailable-CUDA checks remain explicit hosted-runner skips, so the CUDA tests (`tests/test_cuda_models.py`) run only on the Linux PC. A green core job does not validate physics, MPS, CUDA, or learning quality.
-
 ## Linux with CUDA (working platform since TASK-072)
 
 On 2026-09-28 the owner made a Linux PC the project's working platform: Ubuntu 24.04.5, AMD Ryzen 7 9800X3D (16 threads), 32 GB memory, NVIDIA GeForce RTX 5080 16 GB (compute capability 12.0), driver 595.91.07, CPython 3.12.3. The locked sync installs PyTorch 2.14.0+cu130 (CUDA 13.0, cuDNN 9.24) from the same `uv.lock`; no CUDA toolkit, compiler or system package is needed. From the repository root:
@@ -47,7 +23,43 @@ uv run --no-sync python scripts/cuda_smoke.py --dataset data/linux-smoke --name 
 - **Cross-platform differences.** MuJoCo physics on x86-64 and arm64 gave identical task outcomes in the bring-up, but rendered frames differ between Apple GL and NVIDIA EGL (about a third of channels by about 2/255), and a random-init DINOv2 has different low-order bits on the two CPUs. Anything that pins frame or weight hashes is therefore platform-specific; a protocol pinned on the Mac (such as `apple_first_policy_v2`) does not run unchanged on Linux.
 - **Shared machine.** The GPU is shared with other services; check `nvidia-smi` for free memory before a long run, keep runs alive with `nohup` or `systemd-run --user`, and keep at least 10 GB of disk free.
 
+## macOS (supported; the archive platform since TASK-072)
+
+Use Python 3.12 (tested 3.12.13), `uv` (tested 0.12.3), and the committed `uv.lock`. The required core imports NumPy/YAML only; learning and simulation are optional extras. Run from the repository root:
+
+```sh
+uv sync --locked --extra learning --extra sim --extra lewm --extra data --extra compatibility --extra pretrained
+uv run --no-sync python scripts/resource_probe.py
+uv run --no-sync ruff check src tests scripts
+uv run --no-sync ruff format --check src tests scripts
+uv run --no-sync pytest
+```
+
+Use `--no-sync` on subsequent commands to preserve installed optional extras. `uv sync --locked` alone intentionally installs only core/development dependencies. No CUDA, Isaac, DDS, or physical robot connection is required for core tests; CUDA is optional (see the Linux section above). The `pretrained` extra is not needed for the smoke run; the TASK-063+ protocols use frozen DINOv2 ViT-S/14 weights fetched once by `scripts/fetch_dinov2.py`. The `lewm` extra installs minimal adapter dependencies; the pinned source fetch/probe instructions are in [LEWM_SPIKE.md](LEWM_SPIKE.md).
+
+Measured CPU/MPS readiness, resource limits, and local artifact locations are in [RESOURCES.md](RESOURCES.md). Tested simulator assets, rendering, and viewer commands are in [MUJOCO_SPIKE.md](MUJOCO_SPIKE.md). Feasibility checks do not establish trained closed-loop manipulation performance.
+
+To audit installed dependency metadata:
+
+```sh
+uv run --no-sync python scripts/dependency_inventory.py > outputs/feasibility/dependencies.json
+```
+
+Create the output directory first if the resource probe has not run. GitHub Actions runs core import isolation, lint, formatting, tests, and dependency inventory on Linux and macOS, plus a separate macOS optional integration job with actual model, dataset and physics dependencies. Graphics, unavailable-MPS and unavailable-CUDA checks remain explicit hosted-runner skips, so the CUDA tests (`tests/test_cuda_models.py`) run only on the Linux PC. A green core job does not validate physics, MPS, CUDA, or learning quality.
+
 ## MissionControl
+
+Install the `mc` CLI once, without sudo, from the pinned release asset, checking its sha256 before
+unpacking (Linux x86-64 shown; the macOS assets are on the same release):
+
+```sh
+gh release download v0.1.14 -R RaaSaaR-org/mission-control -p mc-linux-amd64.tar.gz
+echo "89145d96921e086fd22c08b715c35b93ae75bf4e2d1e22adcf15cd47e56f9598  mc-linux-amd64.tar.gz" | sha256sum -c -
+tar xzf mc-linux-amd64.tar.gz && install -m 755 mc ~/.local/bin/mc
+mc --version   # mc 0.1.14
+```
+
+Then, from the repository root:
 
 ```sh
 mc task board
@@ -63,7 +75,7 @@ Use `.mc/` for planning; `tasks/` holds benchmark documentation. Mark criteria c
 
 Core checks cover contracts, validation failures, registry/import isolation, and (as implemented) loader splits and known-dynamics planning. Model checks cover actual forward/backward, checkpoint reload, recursive prediction and collapse/action sensitivity. Simulator checks cover G1/Dex3 reset/render/action execution, scoring and closed-loop planning. Physical checks require separate calibrated hardware and are never inferred from simulation.
 
-Record code revision, configuration, data/action/checkpoint hashes, seeds, device and environment with experiment results. Keep recordings, checkpoints, model downloads and generated runs under ignored `data/`, `checkpoints/`, `third_party/` and `outputs/`. Future Isaac and hardware runtimes must use separate optional environments and commissioning procedures.
+Record code revision, configuration, data/action/checkpoint hashes, seeds, device and environment with experiment results. Keep recordings, checkpoints, model downloads and generated runs under ignored `data/`, `checkpoints/`, `third_party/` and `outputs/`. Isaac runs only inside its container (`scripts/isaac/run_isaac.sh`; see [ISAAC_PORT.md](ISAAC_PORT.md) and [ARENA.md](ARENA.md)), and hardware runtimes must use separate optional environments and commissioning procedures.
 
 ## Runtime and development experiments
 
@@ -73,6 +85,7 @@ Fetch pinned sources once:
 uv run --no-sync python scripts/fetch_assets.py
 uv run --no-sync python scripts/fetch_lewm.py
 uv run --no-sync python scripts/fetch_lerobot.py
+uv run --no-sync python scripts/fetch_dinov2.py   # TASK-063+ protocols only
 JEPA_TEST_RENDER=1 LEROBOT_SOURCE=third_party/lerobot uv run --no-sync pytest
 ```
 

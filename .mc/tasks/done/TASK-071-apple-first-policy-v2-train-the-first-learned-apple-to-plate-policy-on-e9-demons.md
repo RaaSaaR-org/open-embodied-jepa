@@ -4,7 +4,7 @@ aliases:
 - TASK-071
 title: 'Apple first policy v2: train the first learned Apple-to-Plate policy on e9 demonstrations under apple-to-plate-v2'
 slug: apple-first-policy-v2-train-the-first-learned-apple-to-plate-policy-on-e9-demons
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -18,7 +18,7 @@ depends_on:
 - "[[TASK-070]]"
 due_date: ''
 created: 2026-09-28
-updated: 2026-09-28
+updated: 2026-10-02
 ---
 
 
@@ -64,7 +64,8 @@ C0, B-oracle, A4-look) are never learned results. **Learned Apple→Plate is sti
       coordinator before the run started — see the results doc §6).
 - [x] Gated run from a clean checkout of `main` (`9e23ced`), to completion under the frozen caps:
       run-1, no void, 6 215 s on the Mac (MPS).
-- [ ] Results PR states the outcome plainly with counts, reviewed; the owner merges.
+- [x] Results PR states the outcome plainly with counts, reviewed; the owner merges (#97,
+      `7a2dafd`).
 
 ## Notes
 - 2026-09-28: card opened under the owner's TASK-071 brief. Branch
@@ -81,5 +82,7 @@ C0, B-oracle, A4-look) are never learned results. **Learned Apple→Plate is sti
 - 2026-09-28: the project paused, then moved to a Linux PC (RTX 5080), where the frozen v2 runner
   refuses to start (floor digest, MPS, frame hashes); a Linux replication is a separate task.
   Results PR: `results/task-071-run-1`.
-
+- 2026-10-02: closed as done. The results merged in #97 (`7a2dafd`); the Linux replication and M2
+  ran under TASK-072 (#100, #104). The status sentence is in `docs/DECISIONS.md` (decision
+  2026-10-02, R7). `mc validate` passed with mc 0.1.14.
 %% mc-links: [[TASK-070]] %%

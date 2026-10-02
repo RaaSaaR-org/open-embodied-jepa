@@ -4,7 +4,7 @@ aliases:
 - TASK-073
 title: 'Apple WM critic v2: a LeWM token critic picks P-3''s aim under a mid-episode plate shift'
 slug: apple-wm-critic-v2-a-lewm-token-critic-picks-p-3s-aim-under-a-mid-episode-plate-shift
-status: review
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -20,7 +20,7 @@ depends_on:
 - "[[TASK-072]]"
 due_date: ''
 created: 2026-09-29
-updated: 2026-09-30
+updated: 2026-10-02
 ---
 
 
@@ -55,10 +55,10 @@ and not the v1 benchmark. No control line is primary.
       digests, pins), modules, scripts and tests; smokes on 53950-53999 only; merged on an
       independent reviewer's reported APPROVE.
 - [x] K0 on a fresh pre-run reviewer's reported GO, orchestrator told first (run-1 V; run-2 after
-      the #108 fix): **S-NO-CONDITION**; results PR pending review.
+      the #108 fix): **S-NO-CONDITION**; results merged in #109 (`4d3e596`).
 - [x] Corpus, training, ranking, offline decision, D3, gated S/U: **not run by rule** (TASK-073
       ends at K0 with S-NO-CONDITION; the D7 fallback TASK-074 is authorised).
-- [ ] Results PR, reviewed; every restated number checked.
+- [x] Results PR, reviewed; every restated number checked (#109, `4d3e596`).
 
 ## Notes
 - 2026-09-29: card opened; branch `feat/task-073-wm-critic-v2` from `70f1358` (main after #104).
@@ -91,3 +91,6 @@ and not the v1 benchmark. No control line is primary.
   the D7 fallback (TASK-074, LeWM-only planner) is authorised. The LeWM critic never ran. Results:
   `docs/experiments/apple_wm_critic_v2_results.md` (branch `docs/task-073-results`). `mc` is not
   installed; MC validation was not run.
+- 2026-10-02: closed as done. Results merged in #109 (`4d3e596`); TASK-074 (the D7 fallback) has
+  since closed INCONCLUSIVE and TASK-075 OBS-NONE. `mc validate` passed with mc 0.1.14.
+%% mc-links: [[TASK-066]] [[TASK-072]] %%

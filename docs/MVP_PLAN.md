@@ -8,7 +8,7 @@ Prepared 2026-09-20 from PRD sections 1–21, updated with the user’s Mac-only
 > longer the primary control line: CEM over the world-model cost is abandoned in favour of
 > behaviour cloning with the world model as a critic. The current position, what is
 > demonstrated and what has been ruled out are summarised in the
-> [README status section](../README.md#status--2026-09-24); the decision and its evidence
+> [README status section](../README.md#status--2026-10-02); the decision and its evidence
 > are in [DECISIONS.md](DECISIONS.md). The milestone table below is kept as the original
 > plan of record and is not rewritten.
 >
@@ -16,6 +16,13 @@ Prepared 2026-09-20 from PRD sections 1–21, updated with the user’s Mac-only
 > abandonment clause (TASK-057), so there is currently no primary control line. No third
 > control formulation is preregistered on this corpus and this camera; the next task is a
 > perception/data task (TASK-059). See [DECISIONS.md](DECISIONS.md).
+>
+> **Update 2026-10-02.** Learned Apple→Plate on the frozen v1 MVP benchmark is still 0/150 per
+> backend. On the separate `apple-to-plate-v2` task, a behaviour-cloning/DAgger policy on a frozen
+> DINOv2 readout (P-3, not a world model) scored 40/40 on the held-out cohort C against 39/40 for
+> its random-init encoder control, so TASK-072 M2 is M2-FAIL on G3. No LeWM-driven controller has
+> run in closed loop on v2 yet. The canonical status sentence is in [DECISIONS.md](DECISIONS.md)
+> (decision 2026-10-02, R7), and the next task is TASK-076.
 
 ## Deliverable
 
@@ -84,8 +91,8 @@ benchmark, and it is recorded protocol-by-protocol under
 [docs/experiments/](experiments/) with machine-readable manifests under
 [benchmarks/manifests/](../benchmarks/manifests/). Every **learned** control attempt in that line,
 through TASK-057, has ended without meeting its declared gate (failed it, stopped at an
-earlier offline gate or stop rule, or ran incomplete), and the fresh 20-reset final cohort (TASK-034) has
-not been executed. Some non-learned privileged-ceiling diagnostics did pass their gates;
+earlier offline gate or stop rule, or ran incomplete), and the fresh 20-reset final cohort (TASK-034) was
+never executed (TASK-034 was closed as superseded on 2026-10-02). Some non-learned privileged-ceiling diagnostics did pass their gates;
 they are feasibility evidence, not learned-policy results.
 
 The last of those protocols, [world model v4](experiments/apple_world_model_v4_results.md)

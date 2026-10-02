@@ -54,7 +54,7 @@ a readout computable just as well from a *different window's* actions is reading
 dynamics. **Both control formulations in this task consume only the h ≈ 0 perception and neither
 ever asks the model what would happen under a counterfactual action.**
 
-Protocol: [docs/experiments/apple_policy_v1.md](../../docs/experiments/apple_policy_v1.md).
+Protocol: [docs/experiments/apple_policy_v1.md](../../../docs/experiments/apple_policy_v1.md).
 Frozen manifest: `benchmarks/manifests/apple-policy-v1.json`.
 
 ## Scope
