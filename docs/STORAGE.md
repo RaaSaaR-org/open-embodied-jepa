@@ -77,7 +77,8 @@ re-hashed on the disk and matched against the source, and then removed from the 
 For example `/home/huhn/develop/emai/worktrees/task074-run3/outputs/...` is now
 `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/task074-run3/outputs/...`.
 
-Not archived, still on the SSD: the main checkout; `task072-run` (the `--evidence` root of the
+Not archived, still on the SSD, as of 2026-10-02 (a snapshot; run `git worktree list` in the main
+checkout for the current set): the main checkout; `task072-run` (the `--evidence` root of the
 TASK-074/075 stages); `task074-run` (its `data/apple-far-shift-v2` is the source corpus that
 `task075-run` and other worktrees symlink to); `task075-run`; worktrees in active use
 (`white-plate-dev`, `arena-e9b`, `arena-gr00t`, `arena-gr00t-review`); and directories of other
@@ -89,20 +90,36 @@ holds a file inside it open, so it was not archived; archive it the same way onc
 
 ## Restore
 
+Restore to the row's recorded original path (the table's first column, or MANIFEST.md's
+"original path"), not to a fixed prefix: most rows lived under `~/develop/emai/worktrees/`, but
+`oej-isaac-spike`, `oej-isaac-v2` and `oej-isaac-mjcf` lived directly under `~/develop/emai/`.
+
 ```sh
 NAME=task074-run3                                        # worktree name from the table
+DEST=/home/huhn/develop/emai/worktrees/task074-run3      # that row's original path
 SHA=<HEAD from archive/MANIFEST.md>
 A=/media/huhn/INTENSO/emai/open-embodied-jepa/archive
-git -C ~/develop/emai/open-embodied-jepa worktree add --detach ~/develop/emai/worktrees/$NAME $SHA
-rsync -rt "$A/worktrees/$NAME/" ~/develop/emai/worktrees/$NAME/
-cd ~/develop/emai/worktrees/$NAME
+git -C ~/develop/emai/open-embodied-jepa worktree add --detach "$DEST" $SHA
+rsync -rt "$A/worktrees/$NAME/" "$DEST/"
+cd "$DEST"
 # rejoin any split file listed in MANIFEST.md:  cat big.bin.part-* > big.bin && rm big.bin.part-*
 # recreate skipped symlinks from MANIFEST.md:   ln -s <target> <path>   (e.g. third_party)
 sha256sum -c "$A/checksums/$NAME.sha256"                 # verify every file
 ```
 
+Recreated symlinks point back at the SSD, so they resolve only while their sources there exist:
+for example `data/apple-far-shift-v2` (to `task074-run/data/apple-far-shift-v2`) or
+`outputs/task073-scratch` (to the main checkout's `outputs/task073-scratch`). If a source has since been archived or removed, point the link at its
+new location or restore the source first.
+
 `.venv/` is restored without executable bits (FAT32 has no permissions); recreating it with
-`uv sync --locked --extra ...` (see [SETUP.md](SETUP.md)) is simpler than repairing it.
+`uv sync --locked --extra ...` (see [SETUP.md](SETUP.md)) is simpler than repairing it. A rebuilt
+`.venv/` does not match the archived hashes, so in that case leave it out of the check (only some
+checksum files list `.venv/` at all):
+
+```sh
+grep -v '  \.venv/' "$A/checksums/$NAME.sha256" | sha256sum -c -
+```
 
 ## FAT32 caveats
 
