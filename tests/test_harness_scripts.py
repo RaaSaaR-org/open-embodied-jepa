@@ -7,6 +7,7 @@ locks the inherited descriptor exactly as util-linux ``flock <fd>`` does."""
 
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import signal
@@ -62,8 +63,65 @@ BOARD = """# GPU board (test)
 """
 
 
+TAG_VAR = "OEJ_GPU_RUN_TEST_TAG"
+# a command's busy loop ends by itself after 120 s, even if every cleanup below failed
+BOUNDED_LOOP = "while [ $SECONDS -lt 120 ]; do sleep 0.05; done"
+
+
+def _zombie_or_gone(pid: int) -> bool:
+    try:
+        return Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0] == "Z"
+    except OSError:
+        return True
+
+
+def _tagged_pids(tag: str) -> set[int]:
+    """Live processes started from one test's environment: every process gpu_run.sh starts
+    inherits ``OEJ_GPU_RUN_TEST_TAG=<the test's tmp dir>``. On Linux this reads each process's
+    initial environment; elsewhere ``ps -E`` (environment and command line, best effort)."""
+    me, needle, found = os.getpid(), f"{TAG_VAR}={tag}", set()
+    proc = Path("/proc")
+    if (proc / "self" / "environ").exists():
+        for entry in proc.iterdir():
+            if not entry.name.isdigit() or int(entry.name) == me:
+                continue
+            try:
+                env = (entry / "environ").read_bytes().split(b"\0")
+            except OSError:
+                continue
+            if needle.encode() in env and not _zombie_or_gone(int(entry.name)):
+                found.add(int(entry.name))
+        return found
+    out = subprocess.run(
+        ["ps", "-axww", "-E", "-o", "pid=,stat=,command="], capture_output=True, text=True
+    )
+    for line in out.stdout.splitlines():
+        pid, stat, rest = (line.split(None, 2) + ["", ""])[:3]
+        if pid.isdigit() and int(pid) != me and not stat.startswith("Z") and needle in rest:
+            found.add(int(pid))
+    return found
+
+
+def _kill_hard(pid: int) -> None:
+    """SIGKILL a process and, unless it is ours, its process group."""
+    with contextlib.suppress(OSError):
+        pgid = os.getpgid(pid)
+        if pgid != os.getpgrp():
+            os.killpg(pgid, signal.SIGKILL)
+    with contextlib.suppress(OSError):
+        os.kill(pid, signal.SIGKILL)
+
+
 @pytest.fixture
 def gpu_env(tmp_path):
+    """A temporary GPU state directory, a stand-in nvidia-smi and an unconditional cleanup.
+
+    Every process a test starts carries the tag ``OEJ_GPU_RUN_TEST_TAG=<tmp_path>`` in its
+    environment. Teardown runs even when the test fails or times out: it waits briefly for the
+    tagged processes to end, then SIGKILLs every survivor and its process group, every tracked
+    ``Popen`` and every pid recorded in a file listed in ``env["pidfiles"]`` (such as the
+    stubborn child's), and fails the test if anything from this test's temp dir outlived it.
+    The real ``~/.local/state/gpu`` is never touched."""
     state = tmp_path / "state"
     state.mkdir()
     (state / "BOARD.md").write_text(BOARD)
@@ -77,13 +135,55 @@ def gpu_env(tmp_path):
         shim = bin_dir / "flock"
         shim.write_text(FLOCK_SHIM)
         shim.chmod(0o755)
+    tag = str(tmp_path)
     env = os.environ | {
         "GPU_STATE_DIR": str(state),
         "NVIDIA_SMI": str(smi),
         "PATH": f"{bin_dir}{os.pathsep}{path}",
+        TAG_VAR: tag,
     }
     env.pop("GPU_RUN_LOCKED", None)
-    return {"state": state, "env": env, "tmp": tmp_path}
+    real_state = Path.home() / ".local" / "state" / "gpu"
+    assert Path(env["GPU_STATE_DIR"]).resolve() != real_state.resolve()
+    procs: list[subprocess.Popen] = []
+    pidfiles: list[Path] = []
+    try:
+        yield {"state": state, "env": env, "tmp": tmp_path, "procs": procs, "pidfiles": pidfiles}
+    finally:
+        deadline = time.monotonic() + 5
+        while (leaked := _tagged_pids(tag)) and time.monotonic() < deadline:
+            time.sleep(0.1)
+        for proc in procs:
+            if proc.poll() is None:  # not reaped yet, so the pid is still this process's
+                leaked.add(proc.pid)
+                _kill_hard(proc.pid)
+        for pidfile in pidfiles:
+            with contextlib.suppress(OSError, ValueError):
+                pid = int(pidfile.read_text())
+                if pid in _tagged_pids(tag):  # never a recycled pid of somebody else's
+                    _kill_hard(pid)
+        for pid in _tagged_pids(tag) | leaked:
+            _kill_hard(pid)
+        for proc in procs:
+            with contextlib.suppress(subprocess.TimeoutExpired):
+                proc.wait(timeout=10)
+        deadline = time.monotonic() + 10
+        while (left := _tagged_pids(tag)) and time.monotonic() < deadline:
+            time.sleep(0.1)
+        assert not left, f"processes from {tmp_path} survive even SIGKILL: {sorted(left)}"
+        assert not leaked, f"processes from {tmp_path} outlived the test: {sorted(leaked)}"
+
+
+def _spawn(gpu_env, *args, extra_env=None, **kw) -> subprocess.Popen:
+    """Start gpu_run.sh in the background; the fixture's teardown kills it whatever happens."""
+    proc = subprocess.Popen(
+        [BASH, str(GPU_RUN), *args],
+        env=gpu_env["env"] | (extra_env or {}),
+        cwd=gpu_env["tmp"],
+        **kw,
+    )
+    gpu_env["procs"].append(proc)
+    return proc
 
 
 def _gpu_run(gpu_env, *args, extra_env=None, **kw):
@@ -109,7 +209,9 @@ def _hold_lock(gpu_env):
         [sys.executable, "-c", code, str(gpu_env["state"] / "lock")],
         stdout=subprocess.PIPE,
         text=True,
+        env=gpu_env["env"],
     )
+    gpu_env["procs"].append(holder)
     assert holder.stdout.readline().strip() == "held"
     return holder
 
@@ -152,11 +254,10 @@ def test_gpu_run_fails_at_once_while_another_job_holds_the_lock(gpu_env):
 def test_a_request_line_is_added_only_while_waiting_and_then_removed(gpu_env):
     board = gpu_env["state"] / "BOARD.md"
     holder = _hold_lock(gpu_env)
-    proc = subprocess.Popen(
-        [BASH, str(GPU_RUN), "--samples", "1", "--wait", "--who", "tester"]
-        + ["--request", "a short test, 1 s", "--", "true"],
-        env=gpu_env["env"],
-        cwd=gpu_env["tmp"],
+    proc = _spawn(
+        gpu_env,
+        *["--samples", "1", "--wait", "--who", "tester"],
+        *["--request", "a short test, 1 s", "--", "true"],
         stderr=subprocess.PIPE,
         text=True,
     )
@@ -188,12 +289,8 @@ def test_board_holder_is_written_only_with_the_flag(gpu_env):
 
 def test_gpu_run_forwards_sigterm_to_the_command(gpu_env):
     marker = gpu_env["tmp"] / "got-term"
-    script = f"trap 'touch \"{marker}\"; exit 143' TERM; while :; do sleep 0.1; done"
-    proc = subprocess.Popen(
-        [BASH, str(GPU_RUN), "--samples", "1", "--", BASH, "-c", script],
-        env=gpu_env["env"],
-        cwd=gpu_env["tmp"],
-    )
+    script = f"trap 'touch \"{marker}\"; exit 143' TERM; {BOUNDED_LOOP}"
+    proc = _spawn(gpu_env, "--samples", "1", "--", BASH, "-c", script)
     log = gpu_env["state"] / "oej-gpu_run.log"
     deadline = time.monotonic() + 20
     while not (log.exists() and "start:" in log.read_text()):
@@ -251,11 +348,11 @@ def test_a_grandchild_that_outlives_its_parent_keeps_gpu_run_and_the_lock(gpu_en
 RUN_ISAAC_SHAPE = """#!/usr/bin/env bash
 # shaped like scripts/isaac/run_isaac.sh: background samplers, a foreground "docker run"
 set -euo pipefail
-sleep 300 & SAMPLE_APPS=$!
-sleep 300 & SAMPLE_DEV=$!
+sleep 120 & SAMPLE_APPS=$!
+sleep 120 & SAMPLE_DEV=$!
 trap 'kill "$SAMPLE_APPS" "$SAMPLE_DEV" 2>/dev/null || true' EXIT
 echo "$SAMPLE_APPS $SAMPLE_DEV" > "$1/samplers"
-bash -c 'echo $$ > "$0/client"; exec sleep 300' "$1"
+bash -c 'echo $$ > "$0/client"; exec sleep 120' "$1"
 """
 
 
@@ -263,11 +360,7 @@ def test_sigterm_reaches_a_run_isaac_shaped_wrapper_and_its_foreground_child(gpu
     wrapper = gpu_env["tmp"] / "fake_run_isaac.sh"
     wrapper.write_text(RUN_ISAAC_SHAPE)
     wrapper.chmod(0o755)
-    proc = subprocess.Popen(
-        [BASH, str(GPU_RUN), "--samples", "1", "--", str(wrapper), str(gpu_env["tmp"])],
-        env=gpu_env["env"],
-        cwd=gpu_env["tmp"],
-    )
+    proc = _spawn(gpu_env, "--samples", "1", "--", str(wrapper), str(gpu_env["tmp"]))
     client = int(_wait_file(gpu_env["tmp"] / "client"))
     samplers = [int(p) for p in _wait_file(gpu_env["tmp"] / "samplers").split()]
     assert not _lock_free(gpu_env)
@@ -279,19 +372,52 @@ def test_sigterm_reaches_a_run_isaac_shaped_wrapper_and_its_foreground_child(gpu
     assert "end:" in (gpu_env["state"] / "oej-gpu_run.log").read_text()
 
 
-def test_a_child_that_ignores_sigterm_is_killed_after_the_grace(gpu_env):
+def _start_stubborn(gpu_env, *options, **kw):
+    """gpu_run.sh around a command that ignores SIGTERM; returns (gpu_run, the command's pid)."""
     pidfile = gpu_env["tmp"] / "stubborn"
-    script = f"trap '' TERM; echo $$ > '{pidfile}'; while :; do sleep 0.1; done"
-    proc = subprocess.Popen(
-        [BASH, str(GPU_RUN), "--samples", "1", "--grace", "1", "--", BASH, "-c", script],
-        env=gpu_env["env"],
-        cwd=gpu_env["tmp"],
-    )
-    pid = int(_wait_file(pidfile))
+    gpu_env["pidfiles"].append(pidfile)
+    script = f"trap '' TERM; echo $$ > '{pidfile}'; {BOUNDED_LOOP}"
+    proc = _spawn(gpu_env, "--samples", "1", *options, "--", BASH, "-c", script, **kw)
+    return proc, int(_wait_file(pidfile))
+
+
+def _wait_gone(pid: int, seconds: float) -> bool:
+    deadline = time.monotonic() + seconds
+    while _alive(pid):
+        if time.monotonic() > deadline:
+            return False
+        time.sleep(0.05)
+    return True
+
+
+def test_a_child_that_ignores_sigterm_is_killed_after_the_grace(gpu_env):
+    proc, pid = _start_stubborn(gpu_env, "--grace", "1")
     proc.terminate()
     assert proc.wait(timeout=30) != 0
     assert not _alive(pid) and _lock_free(gpu_env)
     assert "killed:" in (gpu_env["state"] / "oej-gpu_run.log").read_text()
+
+
+def test_a_term_to_gpu_runs_whole_group_cannot_stop_the_grace_kill(gpu_env):
+    """The 2026-10-02 leak: a TERM to gpu_run, then a TERM to the caller's whole process group (a
+    tool timeout, Ctrl-C), killed the helper that was to SIGKILL the command after the grace, and
+    gpu_run waited forever on a command that ignores TERM. The helper now has its own group."""
+    proc, pid = _start_stubborn(gpu_env, "--grace", "1", start_new_session=True)
+    proc.terminate()
+    time.sleep(0.3)
+    os.killpg(proc.pid, signal.SIGTERM)  # gpu_run's own group, as the caller's would be
+    assert proc.wait(timeout=30) != 0
+    assert not _alive(pid) and _lock_free(gpu_env)
+    assert "killed:" in (gpu_env["state"] / "oej-gpu_run.log").read_text()
+
+
+def test_the_watchdog_stops_the_command_when_gpu_run_is_sigkilled(gpu_env):
+    proc, pid = _start_stubborn(gpu_env, "--grace", "1")
+    proc.kill()
+    proc.wait(timeout=10)
+    assert _wait_gone(pid, 20), "the command outlived a SIGKILLed gpu_run"
+    log = (gpu_env["state"] / "oej-gpu_run.log").read_text()
+    assert "orphaned:" in log and "killed:" in log and "end:" not in log
 
 
 FAKE_DOCKER = """#!/bin/sh
@@ -315,11 +441,10 @@ def test_a_surviving_container_keeps_the_lock_and_is_stopped_after_a_signal(gpu_
     docker.chmod(0o755)
     (gpu_env["tmp"] / "container").write_text("running")
     env = {"DOCKER": str(docker), "FAKE_DOCKER_STATE": str(gpu_env["tmp"])}
-    proc = subprocess.Popen(
-        [BASH, str(GPU_RUN), "--samples", "1", "--container", "oej-isaac-", "--"]
-        + [BASH, "-c", "sleep 300"],
-        env=gpu_env["env"] | env,
-        cwd=gpu_env["tmp"],
+    proc = _spawn(
+        gpu_env,
+        *["--samples", "1", "--container", "oej-isaac-", "--", BASH, "-c", "sleep 120"],
+        extra_env=env,
     )
     log = gpu_env["state"] / "oej-gpu_run.log"
     deadline = time.monotonic() + 20
@@ -340,11 +465,8 @@ def test_concurrent_request_lines_are_not_lost(gpu_env):
     board = gpu_env["state"] / "BOARD.md"
     holder = _hold_lock(gpu_env)
     procs = [
-        subprocess.Popen(
-            [BASH, str(GPU_RUN), "--samples", "1", "--wait", "--who", f"w{i}"]
-            + ["--request", "test", "--", "true"],
-            env=gpu_env["env"],
-            cwd=gpu_env["tmp"],
+        _spawn(
+            gpu_env, "--samples", "1", "--wait", "--who", f"w{i}", "--request", "test", "--", "true"
         )
         for i in range(4)
     ]
@@ -371,12 +493,8 @@ def test_the_commands_status_survives_a_signal_racing_its_exit(gpu_env):
     never the 129 of its own interrupted wait."""
     for attempt in range(5):
         ready = gpu_env["tmp"] / f"ready-{attempt}"
-        script = f"trap 'exit 143' TERM; touch '{ready}'; while :; do sleep 0.05; done"
-        proc = subprocess.Popen(
-            [BASH, str(GPU_RUN), "--samples", "1", "--", BASH, "-c", script],
-            env=gpu_env["env"],
-            cwd=gpu_env["tmp"],
-        )
+        script = f"trap 'exit 143' TERM; touch '{ready}'; {BOUNDED_LOOP}"
+        proc = _spawn(gpu_env, "--samples", "1", "--", BASH, "-c", script)
         deadline = time.monotonic() + 20
         while not ready.exists():
             assert time.monotonic() < deadline
