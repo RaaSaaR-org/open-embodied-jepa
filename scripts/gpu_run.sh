@@ -150,7 +150,12 @@ holder_set() {
 CHILD="" KILLER="" WATCHDOG=""
 stop_helper() {  # stop_helper <pid>: end a helper started in its own group, and its sleep
   [ -n "$1" ] || return 0
-  kill -- "-$1" 2>/dev/null || true
+  # SIGKILL, not TERM: a helper can receive a signal before it has reset the TERM trap it
+  # inherits from this script, and would then run forward() and start a helper of its own
+  if ! kill -KILL -- "-$1" 2>/dev/null; then
+    pkill -KILL -P "$1" 2>/dev/null || true
+    kill -KILL "$1" 2>/dev/null || true
+  fi
   wait "$1" 2>/dev/null || true
 }
 cleanup() {
