@@ -73,3 +73,7 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
 - 2026-10-02: preregistration draft `docs/experiments/apple_plate_twin_v2.md` and `docs/PLAN.md`
   (branch `docs/task076-prereg-draft`); ruling R8 recorded. Status stays todo until the draft is
   reviewed and the code exists. No run, no GPU.
+- 2026-10-02: the independent review of #129 (REQUEST CHANGES at `314d843`) is addressed in a
+  follow-up commit. Rulings R8.1–R8.6: the canonical sentence is quoted verbatim; c_plate is measured on
+  the pooled LeWM latent; an action-dependent K-pred cell is the only admitting cell;
+  PRED-INFEASIBLE, TWIN-NEAR and the K0 early stops are added; O2 is reported only.

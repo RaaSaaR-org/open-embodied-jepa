@@ -127,20 +127,47 @@ and does not replace it.
 - **R8 — finding, stated plainly.** Option 1 (R1) runs no world model. With a static, visible
   plate, a world model is not needed for the place (TASK-074 protocol §9b). So an H-twin pass
   cannot be, or lead directly to, a LeWM-driven success. On its own it only calibrates things a
-  later LeWM task needs: the encoded-latent plate ceiling (DINOv2 tokens are TASK-066's LeWM
-  latent), τ re-measured, and the perception baseline.
+  later LeWM task needs: the plate ceiling on TASK-066's pooled 4 × 4 LeWM latent, τ re-measured,
+  and the perception baseline.
 - **R8 — ruling.** TASK-076 keeps Option 1 as its primary, gated question and adds **Stage
   K-pred**: a simulator-only check, with no world model, of whether a moving-plate condition on v2
-  leaves room for prediction. The plate moves at constant velocity after the pick and stops after
-  the place target freezes. The check compares aiming at the plate's final position, its current
-  true position, its current read position, and a constant-velocity extrapolation of the readings.
-  K-pred's row decides the next LeWM task. PRED-ADMIT means TASK-077, a LeWM plate-prediction
-  place planner, is declared as a task change under R2. PRED-NONE means no moving-plate LeWM place
-  task on v2, and the recommended next step is then a task change in which the target's motion
-  depends on the robot's own action.
+  leaves room for prediction. The plate keeps moving after the pick and stops after the place
+  target freezes. The check compares aiming at the plate's final position, its current true
+  position, its current read position, and extrapolations of the readings. K-pred's row decides
+  the next LeWM task:
+  - PRED-ADMIT means TASK-077, a LeWM plate-prediction place planner, is declared as a task change
+    under R2.
+  - Otherwise PLAN.md's Branch B applies.
+- **R8.1–R8.6 — rulings on the independent review of #129** (REQUEST CHANGES at `314d843`). Each
+  was decided by Claude under owner delegation.
+  - **R8.1.** Entry documents quote R7's canonical sentence verbatim and in full. A shortened
+    version must not carry the "canonical" label.
+  - **R8.2.** c_plate, the ceiling that bounds a later LeWM task's bar (c_plate ≤ B ≤ τ_re), is
+    measured on the representation that task would read. That is TASK-066's pooled 4 × 4 latent
+    (R-plate-pool). The full-token R-plate stays as H-twin's readout only.
+  - **R8.3.** K-pred gets an action-dependent cell, A. In it, the plate's velocity is κ = −0.5
+    times the robot's own palm velocity 40 steps earlier, from 405 to 525. This is a declared,
+    simple, simulator-only rule. **Only cell A can admit TASK-077.** The definition of a LeWM-driven
+    success requires beating an action-blind predictor, and with action-independent plate motion
+    that predictor is expected to tie.
+    - The constant-velocity cells are reported only. Their expected action-blind tie and H-cv tie
+      are stated in advance.
+    - If cell A proves infeasible in this scene at Stage 0, it is removed, and PRED-ADMIT is
+      unreachable.
+  - **R8.4.** Three changes so that a design failure or noise does not fire a clause:
+    - PRED-INFEASIBLE (cell A removed, or its ceiling fails) escalates without a clause.
+    - K0 stops early (CAL-ESCALATE) when H-stale(K) > 4/32, or when the in-sample H-clock(K) is
+      within 2/32 of the ceiling.
+    - TWIN-NEAR (G1 missed, but H-twin not detectably below H-handover) escalates without a
+      clause. G1's power is stated: 0.59 at a true rate of exactly 87.5 %.
+  - **R8.5.** The tail bar O2 becomes reported only. A tail bar of 2 τ_re did not come from a
+    measured ceiling.
+  - **R8.6.** τ_re uses the procedure of TASK-075's TAU_REMEASURE. That re-measurement was
+    pre-committed only for OBS-ONBOARD and OBS-EXTRA, and its use for the plate readout is an
+    extension, disclosed in the protocol.
 - **Why not skip to a LeWM task now.** No calibrated plate bar and no measured prediction headroom
   exist yet. Starting without them would repeat TASK-074 (an uncalibrated bar) and TASK-073 (no
-  headroom). K-pred costs about 256 CPU attempts.
+  headroom). K-pred costs about 416 CPU attempts.
 - **A definition fixed now** for every later task: "a LeWM-driven closed-loop success". See
   [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) §9 and [PLAN.md](PLAN.md).
 
