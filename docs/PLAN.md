@@ -168,6 +168,13 @@ restored and its check passes; K0 waits for a reviewer's GO
     action-dependent target, with its own K0-style headroom check and no world model. One example
     is a plate the hand must push into a marked zone before the place.
   - GPU: none for the design and the K0; TASK-077-sized afterwards.
+  - **Design note (DRAFT, 2026-10-04, R9):**
+    [apple_lewm_next_v2_design.md](experiments/apple_lewm_next_v2_design.md). Three candidates:
+    C1, an early committed aim under cell A's rule (its rule-knowing arm H-rule is expected at the
+    ceiling); C2, a single committed pre-pick push of a free plate into P-3's zone, ranked by
+    predicted plate rest position (recommended, decided by Claude under owner delegation); C3, a
+    contact-sensitive grasp approach (not taken). Next: a CPU-only feasibility record for C2 with
+    a headroom pre-check against a calibrated hand-written push model, before any protocol or GPU.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
