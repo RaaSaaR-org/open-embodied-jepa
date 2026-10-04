@@ -104,6 +104,14 @@ through `--evidence` and pins its hashes (G-evidence and G-repro: report, P-3, R
 corpus manifest; `plate_twin_v2.EVIDENCE`). K0 ran on it. **Do not clean it up, move or edit it
 while TASK-076 is open**; `scripts/remove_worktree.sh` does not apply to it.
 
+**TASK-076's run worktree: `/home/huhn/develop/emai/worktrees/task076-run`** (at `702a7d9`). Its
+`outputs/` holds the post-freeze reports of Stages O, D, K-pred (M-a, M-b) and S/U and the
+closed-loop readouts (`task076-O-1/r_plate*.npz`), which the workers loaded by absolute path; the
+results document cites their sha256 ([apple_plate_twin_v2_results.md](experiments/apple_plate_twin_v2_results.md) §1).
+K0's report is in the main checkout's `outputs/task076-k0-1`. Now that TASK-076 is closed, keep
+the run worktree, K0's report and the `--evidence` root until they are archived like the others
+(copy, checksum, MANIFEST row, verify before removing).
+
 ## Old path to archive path
 
 Results documents cite worktree paths on the SSD. Each worktree below was copied, every file

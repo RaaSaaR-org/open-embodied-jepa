@@ -921,10 +921,151 @@
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "mujoco_version": "3.13.0",
- "note": "FROZEN after K0-PASS (K0 at 2d0bdb7, report sha256 ef4b541067dc969ee5ebfc9ee78e2c719a4b84e4d3ed0d71a167feb6fcd0c876; tau_re = 1.0 cm); in force once merged on an independent APPROVE. Nothing after K0 has run. No arm of TASK-076 runs a world model. Learned Apple->Plate on the frozen v1 MVP benchmark is 0/150 per backend.",
+ "note": "FROZEN after K0-PASS (K0 at 2d0bdb7, report sha256 ef4b541067dc969ee5ebfc9ee78e2c719a4b84e4d3ed0d71a167feb6fcd0c876; tau_re = 1.0 cm); merged as 702a7d9 (#137). Every later stage ran once at 702a7d9: O-PASS, D-PASS, K-pred M-a and M-b KPRED-DONE (reported only), S/U TWIN-PASS; K-pred's row is PRED-INFEASIBLE (cell A removed at Stage 0). See results. No arm of TASK-076 runs a world model. Learned Apple->Plate on the frozen v1 MVP benchmark is 0/150 per backend.",
+ "outcome": "TWIN-PASS (claim row); K-pred PRED-INFEASIBLE (escalate, no clause; PLAN.md's Branch B); no clause fires",
  "pins_note": "every file TASK-075 pinned (TASK-074's included) is carried with its sha256 unchanged; TASK-076's own modules, runner and test are pinned beside them. The protocol document and this manifest are not pinned (the Stage-0 record is added after the smokes)",
  "protocol": "apple_plate_twin_v2",
- "protocol_document_sha256": "737280a1ad5ddd1d95a4078d42a2f3ef672094a6fe99d7d8783685817a067570",
+ "protocol_document_sha256": "d9047b8311928f1f9bc62bba8f928a597f4faca7dac0be88fc46889c89e40bf4",
+ "results": {
+  "abandonment_clause_fires": false,
+  "claim": true,
+  "document": "docs/experiments/apple_plate_twin_v2_results.md",
+  "kpred_clause_fires": false,
+  "kpred_consequence": "escalate, no clause; PLAN.md's Branch B",
+  "kpred_reason": "cell A removed at Stage 0",
+  "kpred_row": "PRED-INFEASIBLE",
+  "next_step": "the next LeWM task is chosen by K-pred's row: PRED-INFEASIBLE, so PLAN.md's Branch B (design note PR #135); no TASK-077 under cell A",
+  "no_world_model": true,
+  "outcome": "TWIN-PASS",
+  "protocol_document_sha256_before_r10_2": "737280a1ad5ddd1d95a4078d42a2f3ef672094a6fe99d7d8783685817a067570",
+  "protocol_text_change": "R10.2: section 6.1's O2 sentence quoted TASK-075's tau curve; corrected to K0's (reported-only text; frozen block unchanged)",
+  "stages": [
+   {
+    "go_comment": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/134#issuecomment-5982693642",
+    "outcome": "K0-PASS",
+    "report": "outputs/task076-k0-1/report.json",
+    "report_sha256": "ef4b541067dc969ee5ebfc9ee78e2c719a4b84e4d3ed0d71a167feb6fcd0c876",
+    "revision": "2d0bdb7b9aa5900be40a5b256df0aaa752179151",
+    "stage": "K0",
+    "worktree": "main checkout"
+   },
+   {
+    "c_plate_cm": 0.6616440520176452,
+    "decoded_episodes": 270,
+    "decoded_note": "17 train/val roots decoded, then dropped by the band check; no test root",
+    "ended_utc": "2026-10-04T18:39:43Z",
+    "first_outcome_utc": "2026-10-04T18:37:52Z",
+    "gates": {
+     "o1_upper_cm": 0.41556127237384877,
+     "o3_ratio_upper": 0.10639478061794706,
+     "o4_lower_cm": 3.712799155562174
+    },
+    "go_comment": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/137#issuecomment-5983130529",
+    "outcome": "O-PASS",
+    "r_plate_floor_median_cm": 0.2783896066929159,
+    "r_plate_floor_sha256": "0a59e9b97386a2bf088c9a5c7d774005671f5122b682089efd0d9a0acb3eaded",
+    "r_plate_median_cm": 0.402630680044891,
+    "r_plate_sha256": "e89e605b6a17fb9af45957542d938647e3264582ebbfa5def1438cf2d15ac2bd",
+    "read_roots": 253,
+    "report": "outputs/task076-O-1/report.json",
+    "report_sha256": "77ff37581e65420199cb09525ad261c86ce1be13f2b571c9ad17d5fcd71b05fd",
+    "revision": "702a7d9cc041efb4b2ab14772197210c03051e17",
+    "stage": "O",
+    "started_utc": "2026-10-04T18:37:22Z",
+    "worktree": "task076-run"
+   },
+   {
+    "counts": {
+     "H-handover": 16,
+     "H-twin": 15
+    },
+    "ended_utc": "2026-10-04T18:47:07Z",
+    "go_comment": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/137#issuecomment-5983196642",
+    "outcome": "D-PASS",
+    "report": "outputs/task076-D-1/report.json",
+    "report_sha256": "a84c00e2e487134973a775bb553640e5ec512de45e6e8de2cdf18886d178e93f",
+    "revision": "702a7d9cc041efb4b2ab14772197210c03051e17",
+    "stage": "D",
+    "started_utc": "2026-10-04T18:45:53Z",
+    "worktree": "task076-run"
+   },
+   {
+    "counts": {
+     "H-cv": 24,
+     "H-final": 32,
+     "H-now": 7,
+     "H-twin": 11
+    },
+    "ended_utc": "2026-10-04T18:51:00Z",
+    "go_comment": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/137#issuecomment-5983196642",
+    "outcome": "KPRED-DONE",
+    "report": "outputs/task076-Kpred-Ma-1/report.json",
+    "report_sha256": "d512a7126a3e87386fbee07b6f3769b9eb155493fd355079ca370d9006a7106e",
+    "revision": "702a7d9cc041efb4b2ab14772197210c03051e17",
+    "stage": "K-pred M-a",
+    "started_utc": "2026-10-04T18:48:24Z",
+    "worktree": "task076-run"
+   },
+   {
+    "counts": {
+     "H-cv": 24,
+     "H-final": 32,
+     "H-now": 1,
+     "H-twin": 4
+    },
+    "ended_utc": "2026-10-04T18:56:20Z",
+    "go_comment": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/137#issuecomment-5983196642",
+    "outcome": "KPRED-DONE",
+    "report": "outputs/task076-Kpred-Mb-1/report.json",
+    "report_sha256": "0c976384246a8125195a77443b425712bc48cc2401b43114aa17b299831a9130",
+    "revision": "702a7d9cc041efb4b2ab14772197210c03051e17",
+    "stage": "K-pred M-b",
+    "started_utc": "2026-10-04T18:53:46Z",
+    "worktree": "task076-run"
+   },
+   {
+    "counts_s": {
+     "H-clock": 51,
+     "H-floor": 64,
+     "H-handover": 64,
+     "H-stale": 0,
+     "H-twin": 64,
+     "P-stale": 0
+    },
+    "counts_u": {
+     "H-handover": 31,
+     "H-twin": 31,
+     "P-stale": 30
+    },
+    "determinism_rerun_matched": true,
+    "ended_utc": "2026-10-04T19:08:00Z",
+    "g1": true,
+    "g2": {
+     "b": 13,
+     "c": 0,
+     "p": 0.0001220703125
+    },
+    "g3": true,
+    "go_comment": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/137#issuecomment-5983322337",
+    "outcome": "TWIN-PASS",
+    "report": "outputs/task076-SU-1/report.json",
+    "report_sha256": "242655f009aa132911bf526788819186964ae8aa6351878b0f5cb62627474326",
+    "revision": "702a7d9cc041efb4b2ab14772197210c03051e17",
+    "stage": "S/U",
+    "started_utc": "2026-10-04T19:00:59Z",
+    "total_seconds": 421.75717846199404,
+    "twin_minus_handover": {
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "difference": 0
+    },
+    "worktree": "task076-run"
+   }
+  ],
+  "tau_re_cm": 1.0
+ },
  "status": "FROZEN",
  "task": "TASK-076"
 }

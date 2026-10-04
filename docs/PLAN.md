@@ -21,7 +21,7 @@ and outcomes are in the [experiment index](experiments/README.md).
 > the TASK-014 development reach pilot, a reach task, not Apple→Plate: its v2 target-space
 > selector reached 1/5 goals, with intervals overlapping the 0/5 controls.)
 
-**What the last three tasks taught.**
+**What the last four tasks taught.**
 - **TASK-073 (S-NO-CONDITION).** Under a mid-episode plate shift, privileged look-ahead added at
   most +3/32 over P-3 given the true plate (bar +4). There was no measurable room for a critic.
 - **TASK-074 (INCONCLUSIVE).** Its encoded-readout bar (1.0 cm) sat below the readout's measured
@@ -33,6 +33,13 @@ and outcomes are in the [experiment index](experiments/README.md).
   median, and the offset error tracks the apple term (2.2–3.1 cm). The tails matter: in the
   white-plate development record (`experiments/apple_white_plate_dev.md`), the plate readout's
   87.5th percentile reaches 1.35–1.36 cm on the hand crop.
+- **TASK-076 (TWIN-PASS; K-pred PRED-INFEASIBLE).** e9's place aimed at a frozen-DINOv2 ridge
+  readout of the plate, after P-3's pick, scored 64/64 on gated resets under TASK-074's 9 cm
+  condition, against 51/64 for an image-free clock prior and 64/64 for the true plate. The
+  random-init floor also scored 64/64, and offline it read the plate better (0.278 against
+  0.403 cm), so pretraining is not shown to matter. No world model is in the loop. K-pred could
+  not test an action-dependent plate (cell A was removed at Stage 0), so Branch B applies
+  ([results](experiments/apple_plate_twin_v2_results.md)).
 
 **What "a LeWM-driven closed-loop success" means here.** It is a counted success on a gated,
 fresh cohort, in an arm whose decisions for a named phase come from a LeWM predictor rolled
@@ -62,7 +69,16 @@ TASK-076's K-pred row picks one.
 ### TASK-076: the plate-readout perception twin, plus a prediction-headroom check
 
 Protocol: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (FROZEN after K0-PASS,
-in force once merged on an independent APPROVE).
+merged as `702a7d9`). Results: [apple_plate_twin_v2_results.md](experiments/apple_plate_twin_v2_results.md).
+
+**Results (2026-10-04, R10): done.** Every stage ran once at `702a7d9` on its own GO. Stage O
+O-PASS (R-plate median 0.403 cm, upper bound 0.416 cm ≤ τ_re; c_plate on the pooled latent
+0.662 cm), Stage D D-PASS (15/16, 16/16), and the gated Stage S/U **TWIN-PASS**: H-twin 64/64,
+H-handover 64/64, H-clock 51/64 (G2 b = 13, c = 0, p = 1.22 × 10⁻⁴), H-floor 64/64; on U H-twin
+31/32 against P-stale 30/32. **K-pred's row is PRED-INFEASIBLE** (cell A removed at Stage 0), so
+it escalates without a clause and Branch B applies; the constant-velocity cells (reported only)
+gave H-final 32 and 32, H-now 7 and 1, H-twin 11 and 4, H-cv 24 and 24, and they are
+action-independent. No world model ran. R7's canonical sentence is unchanged (R10.1).
 
 **Stage-0 update (2026-10-04, R8.16):** the smokes removed cell A, because its plate barely moves
 after the last decision (median 0.06 cm under H-final, against the 2 cm needed, and no declared
@@ -119,6 +135,9 @@ in the frozen block, and the protocol is FROZEN. Stage O is next, on a GO after 
 
 ### Branch A: TASK-077, a LeWM plate-prediction place planner on v2 (only if K-pred returns PRED-ADMIT(A))
 
+**Not taken** (2026-10-04, R10.3): K-pred returned PRED-INFEASIBLE, not PRED-ADMIT(A). The text
+below is kept as the design it was.
+
 - **Question.** Take cell A, the action-dependent plate, declared as a task change under R2. Does
   a LeWM token predictor choosing where e9's place puts the apple produce more counted successes
   than the non-predicting perception twin (H-twin), the constant-velocity extrapolator (H-cv), and
@@ -172,6 +191,10 @@ in the frozen block, and the protocol is FROZEN. Stage O is next, on a GO after 
     LeWM is needed if H-rule is at the ceiling** (stated in TASK-076 §6.3 before any number).
 
 ### Branch B: if K-pred returns PRED-NONE, PRED-NEAR, PRED-INFEASIBLE, PRED-NO-BAR or PRED-NOT-RUN (or TASK-076's clause fires)
+
+**This branch applies** (2026-10-04, R10.3): TASK-076's K-pred row is PRED-INFEASIBLE. The design
+note for the next LeWM task is PR #135 (`apple_lewm_next_v2_design.md`, a DRAFT under R9.8, not a
+protocol), which needs its own review.
 
 - **PRED-INFEASIBLE.** The declared action-dependent rule could not be run, or its ceiling failed.
   This is a design failure, so it escalates without a clause.

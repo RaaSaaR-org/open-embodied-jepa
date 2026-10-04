@@ -69,9 +69,12 @@ separate benchmark: v2 numbers are never pooled with v1 numbers.
 - **LeWM-oriented tasks on v2.** TASK-073 (a LeWM critic for P-3's aim) ended S-NO-CONDITION at
   its calibration, with no headroom for a critic; TASK-074 (a LeWM place planner) closed
   INCONCLUSIVE after two budget escalations; TASK-075 (the observation ceiling) ended OBS-NONE and
-  its clause fired. None ran LeWM in closed loop. The next task is TASK-076, the plate-readout
-  perception twin (no world model), with its preregistration pending
-  ([DECISIONS.md](DECISIONS.md), 2026-10-02).
+  its clause fired. None ran LeWM in closed loop. TASK-076, the plate-readout perception twin (no
+  world model), ended TWIN-PASS: e9's scripted place aimed at a frozen-DINOv2 plate readout after
+  P-3's pick scored 64/64 on gated resets (clock prior 51/64; random-init floor also 64/64), and
+  its K-pred row is PRED-INFEASIBLE, so the next LeWM task comes from PLAN.md's Branch B
+  ([DECISIONS.md](DECISIONS.md), 2026-10-04, R10;
+  [results](experiments/apple_plate_twin_v2_results.md)).
 - **There is still no primary control line.** A behaviour-cloning result on v2 is not a return to
   behaviour cloning as the project's control approach; the product goal is LeWM on G1 + dual
   Dex3.

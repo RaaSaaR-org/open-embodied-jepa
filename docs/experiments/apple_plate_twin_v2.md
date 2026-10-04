@@ -563,8 +563,10 @@ Intervals are reset-clustered bootstrap percentile intervals: 10 000 resamples, 
 
 **O2 is reported only** (ruling R8.5). It is the 87.5th percentile of R-plate's error, with its
 interval, plus the τ-curve-mapped predicted count, using K0's curve against 28/32. A tail bar of
-"2 τ_re" would not come from a measured ceiling. The one-run τ curve is non-monotone (22/32 at
-1.5 cm, 23/32 at 2 cm), and both are below 28/32.
+"2 τ_re" would not come from a measured ceiling. K0's one-run τ curve (§5.1) is non-monotone
+(17/32 at 2 cm, 18/32 at 2.5 cm), and every level from 1.5 cm up (23/32 at 1.5 cm) is below 28/32.
+(Corrected after the freeze, in the results PR, ruling R10.2: this sentence had quoted TASK-075's
+curve, 22/32 at 1.5 cm and 23/32 at 2 cm. Reported-only text; the frozen block is unchanged.)
 
 Reported, not gating: R-plate / R-plate-floor (the random-init floor tied P-3 in M2, and this task
 does not ask whether pretraining helps); per-step errors; the signed means; **c_plate on
