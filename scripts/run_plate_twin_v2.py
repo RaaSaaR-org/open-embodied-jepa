@@ -528,7 +528,7 @@ def stage_offline(report, manifest, args, clock):
             "train": pt.SOURCE_CORPUS["split_sizes"]["train"],
             "val": pt.SOURCE_CORPUS["split_sizes"]["val"],
         }
-        cycled = rt.CycledReader(reader, counts)
+        cycled = rt.CycledReader(reader, counts, read_splits=pt.SOURCE_CORPUS["read_splits"])
         probe = rt.scale_probe(
             off.offline_core,
             report,

@@ -691,7 +691,7 @@
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
   "scripts/run_lewm_planner_v2.py": "2d229a95b219b531eb18d84381c36c8db2294f4b2771e3bb0a75945ea087b94a",
   "scripts/run_obs_ceiling_v2.py": "bca518c14806f4b27ec0a11cb7b9c46b0bb3ea6c273b27048726398899f11958",
-  "scripts/run_plate_twin_v2.py": "ead455b43c2c15ac2d67ad21534efdb28c0549adf7819f9c1ca7048b6f5655ab",
+  "scripts/run_plate_twin_v2.py": "d447e347a18f8b49b2f6c0405ec76d5b03bed8c9d939d89026bf617712f6822a",
   "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
   "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
@@ -753,7 +753,7 @@
   "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
   "tests/test_lewm_planner_v2.py": "6392fe6e38e88bb6356dbfcae3f095402817cc08f869f9547d2046ca89e8ec1c",
   "tests/test_obs_ceiling_v2.py": "74f8d95e0427678d5c74a1fbd1134e46f34db46e89ac91c41932ecb64862192b",
-  "tests/test_plate_twin_v2.py": "222f40ed80a0cb42d159f99c9589682bbf81e1ae58c1ceb39b031a7cc6bab4db",
+  "tests/test_plate_twin_v2.py": "8a6b4522244b95340371b571450ec8f431b4a413b7f652a916ac913968a299c2",
   "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },

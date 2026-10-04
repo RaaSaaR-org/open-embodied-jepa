@@ -253,6 +253,12 @@ def test_the_scale_probe_calls_the_stages_own_function():
     assert "probe" in inspect.signature(off.offline_core).parameters
     runner = RUNNER.read_text()
     assert "off.offline_core(report, reader, views, clock, **kwargs)" in runner
+    # the probe's slots are served by train and val roots only (a test root is never decoded)
+    cycled = [c for c in _calls(RUNNER) if _name(c) == "rt.CycledReader"]
+    assert len(cycled) == 1
+    keywords = {k.arg: ast.unparse(k.value) for k in cycled[0].keywords}
+    assert keywords["read_splits"] == "pt.SOURCE_CORPUS['read_splits']"
+    assert pt.SOURCE_CORPUS["read_splits"] == ("train", "val")
 
 
 def test_the_runner_loads_no_other_script():
