@@ -227,6 +227,29 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
     GPU.** None of R9.10's remedies is chosen; any remedy needs its own ruling and feasibility
     record and must also re-measure the readout at r against the bar then in force. Next: the
     owner's choice among the escalation options.
+  - **Next direction (DRAFT ruling, 2026-10-04, R15; decided by Claude under owner delegation):
+    C1-M** ([apple_lewm_next_v2_direction.md](experiments/apple_lewm_next_v2_direction.md); in
+    force after its independent review).
+    - **The cause, as a calculation.** A scene-blind twin misses by p̄ − p whatever κ, L or the
+      commit step (at a fixed tolerance curve, with the twin's aim unclipped), so only the plate's
+      spread at the decision raises its headroom. R15.2 adds a Stage −1 rule: compute every twin's
+      projected miss from the declared distributions before any feasibility record, read as the
+      bar will be read and at the ceiling's bar. TASK-074's −y move would not help (its drawn
+      directions lie at 260–270°).
+    - **The condition.** C1 plus a declared post-pick plate move at step 300, over a disc whose
+      radius ρ\* (3–6 cm, TASK-073's |d| grid) is set by the ceiling only. Projected from
+      development data, the mean twin falls from C1's 25/32 to about 20–11/32; under the strict
+      reading at the 30/32 ceiling bar that clears +8 only from ρ = 5 cm, so with ρ\* ≤ 4 cm
+      M-TWINS-ESCALATE is the projected row (the record then stops early).
+    - **The readout.** The provisional 0.5 cm bar is withdrawn. τ_commit and an oracle-dynamics
+      readout arm, H-read, within 4/64 of the ceiling on 64 fresh paired resets (half of the design
+      note's proposed δ; an allocation inside the noise) replace it, on 4 × 4 then 8 × 8 tokens and
+      a 1 024-root corpus, with TASK-075's falling-curve guard.
+    - **Clause.** It fires on M-TWINS-NONE or M-READ-NONE only, each scoped to what was tested.
+    - **Cost.** The development measurements used no simulation (`scripts/r15_direction_dev.py`,
+      CPU). No GPU until M-PROCEED; then TASK-077-sized at 4 × 4.
+    - **Next.** The ruling's independent review, then the C1-M feasibility record (CPU, about
+      45–60 min, or about 15 min if it stops at M-F3; *estimate*).
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
