@@ -23,6 +23,12 @@ The aim is a third simulator setup next to MuJoCo v2 ([SIMULATION.md](SIMULATION
 - **GR00T reference baseline (§8, 2026-10-01, development; GR00T's result, not ours).** The tutorial's own command, run against the owner's GR00T N1.7 server as a client only, in one env:
   - Arena's rule: 16/30 (0.53) in one process and 10/30 in another, 26/60 pooled. The tutorial's 1.0 is not reproduced.
   - Our stricter `apple_at_rest_arena_v0`: 0/30. The 7 episodes that ended placed and released failed only on *still*, consistent with a stale reported velocity (inferred). The other 23 did not end with the apple placed and released. A post-hoc position-based diagnostic gives 6/30.
+- **e9-arena (§9, 2026-10-01, development).** A shelf-press probe with an empty hand measured the step directly. Pressing the shelf through e9's close moved the base 8.2 and 10.0 cm back. Hovering 1 cm above the shelf moved it 0.3–0.5 cm. The inferred cause holds. It also turned out that e9's descent in MuJoCo stops with the thumb on the table, not on the apple (§9.0 corrects §7.2). An Arena-adapted e9, labelled **e9-arena** and never e9, is declared in §9.2 before any run of it. Its descent stops at a height above the apple computed from Arena's finger geometry, and its targets are recomputed every command from Arena's live (privileged) state. The declared variant selected on tuning seeds 50200–50207 was then run once on fresh seeds 50216–50231:
+  - **16/16 Arena success** [79.4, 100] % and **13/16 `apple_at_rest_v0`** [54.4, 96.0] %, against MuJoCo e9's 16/16 at rest;
+  - the close-phase base step is at most 1.3 cm;
+  - the three misses are on the place: one apple rested 4.4 cm out, and two apples on the plate were still moving at 1–3 mm/s (cause not identified).
+  
+  This is a privileged scripted expert, not a learned result (§9.3).
 - **Plan.** The cheapest meaningful cross-simulator check is an e9 replay in Arena through a mirror adapter (§5). It has to deal with three differences: the floating pelvis, 50 Hz against our 20 Hz, and the apple sitting on the robot's left (e9 is right-handed).
 
 ## 1. Environment and provenance
@@ -340,7 +346,7 @@ These are development runs under TASK-025 on the Linux PC. None of them is a gat
 - `gravity_offset` adds `qfrc_bias(q) / kp_arena` to each arm and hand target. The bias is computed on our MJCF at Arena's joints, with gravity in Arena's pelvis frame, and is at most 0.087 rad. This gives Arena's PD the holding torque our actuator has.
 - With it the arm follows e9. In seed 50200 the palm is within 1–5 mm of MuJoCo's at the end of transfer, lower, steady, open and retreat.
 - The grasp fails in every attempt:
-  1. In MuJoCo, e9's descent stops when the fingers land on the apple: the palm sits 11.6 cm above the apple centre.
+  1. In MuJoCo, e9's descent stops when the fingers land on the apple: the palm sits 11.6 cm above the apple centre. *(Corrected in §9.0: the hand lands on the table beside the apple, not on it; the first apple contact comes during close.)*
   2. In Arena no finger touches the apple at that height. The fingers are 2.2–3.1 cm shorter (§7.1). In seed 50200 the apple also sits 2.4 cm lower in the pelvis frame, because the pelvis leans back 2.9° at settle and stands 0.8 cm high.
   3. In seed 50200 the palm keeps descending to 5 cm above the apple centre. FK on our MJCF at Arena's joints puts the lowest hand geometry centre at −0.02 to −0.03 m world z, the height of the shelf top (−0.030).
   4. During the close phase the floating base then steps **back**, in every attempt: by 3.6–11.7 cm (median about 6.5 cm; more than 5 cm in 14 of 16). By the end of the attempt the pelvis is 4.6–13.1 cm behind where it started.
@@ -370,6 +376,8 @@ These are development runs under TASK-025 on the Linux PC. None of them is a gat
 - **Unpinned assets.** The network assets are unpinned, as in §6.
 
 ### Next steps (development, cheapest first)
+
+*Steps 1 and 2 were taken in §9.*
 
 1. **Decide whether e9 may be adapted to Arena.** Any change would be declared before the run, and its result labelled an Arena-adapted scripted expert, not e9. Two candidate changes:
    - stop the descent at a measured height above the apple (no reliance on finger contact);
@@ -462,7 +470,7 @@ The two processes also differ from each other: grasp misses were 7/30 against 17
 **Arena-rule failure modes** (`gr00t-tutorial-1`, 14 failures). The classes and thresholds were set after the episodes were seen. Lift is the apple's maximum rise above its start; displacement is its maximum 3-D displacement from the start.
 - **lifted, not placed** (lift ≥ 5 cm): **5.** The apple was lifted 8.3–9.6 cm, then dropped or released off the plate, ending 8.9–18.3 cm from its centre.
 - **knocked** (lift < 5 cm, displacement ≥ 5 cm): **2.** These are eps 15 and 20. The rises were 0.9 and 1.6 cm and the displacements 11.3 and 8.6 cm.
-- **grasp miss** (lift < 5 cm, displacement < 5 cm): **7.** At most 0.3 cm of lift and 2.9 cm of displacement. The hand closes beside the apple or brushes it, then carries an empty hand to the plate.
+- **grasp miss** (lift < 5 cm, displacement < 5 cm): **7.** At most 0.3 cm of lift and 3.7 cm of displacement (ep 16). The hand closes beside the apple or brushes it, then carries an empty hand to the plate.
 
 In `gr00t-settle-1`, under the same thresholds:
 - **grasp miss: 17.** At most 0.3 cm of lift and 4.2 cm of displacement.
@@ -511,3 +519,224 @@ In `gr00t-settle-1`, 2 of the 10 firings were at steps 11 and 12 and are false p
 - **What is left.** About 6 in 30 episodes (20%; 0.10–0.37) end with the apple released, at rest and within 4 cm, under the position-based diagnostic. Those, filtered by such a rule, would be plausible Arena demonstrations of a left-handed place.
 - **Our stack is a different domain.** The trajectories are 50 Hz, 50-D WBC joint targets on a floating base, seen from a 640 × 480 head camera in a photoreal scene with no layout variation. That is a different action space, rate, camera and layout from our MuJoCo v2 `ee_delta_grasp_v0` stack (§3, §5), so they are not usable there without the adapter work in §5.
 - **What they are for.** As a reference, GR00T sets the bar: a 3B VLA fine-tuned on this exact scene places the apple cleanly in roughly one episode in five here (6/30, by the post-hoc position-based diagnostic, not the declared rule), and fires Arena's loose rule in about 0.43 of episodes.
+
+## 9. e9-arena: an Arena-adapted e9 (development, 2026-10-01)
+
+*Numbering and shas.* This section was §8 in its declaration commit `3146533`, which is kept on the branch `backup/arena-e9-adapted-declared-3146533`. It became §9 when the branch was rebased onto PR #121, whose GR00T baseline took §8. Its subsections 8.0–8.2 became 9.0–9.2. The branch was rebased again onto `b7e6474` on 2026-10-04, so the declaration commit is now `df19c7e`. Both rebases changed only section-number comments in the code (`git diff 3146533 df19c7e -- src/embodied_jepa/arena_e9.py src/embodied_jepa/arena_transport.py scripts/isaac/arena_e9.py scripts/isaac/arena_e9_server.py scripts/isaac/arena_layout_env.py tests/test_arena_e9.py`); the text is otherwise unchanged.
+
+**Ruling.** The owner delegated this decision to Claude, who decided it on 2026-10-01: build an Arena-adapted e9, declare it fully here, and commit the declaration **before** any Arena run of it. Its label is **"e9-arena", never "e9"**.
+
+These are development runs under TASK-025 on the Linux PC. They are not gated runs and not preregistered comparisons. e9-arena reads Arena's live simulator truth on every command, so it is a **privileged scripted expert**, like e9, and never a learned result. Project status (decision R7, docs/DECISIONS.md, quoted in full): "Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init encoder control R-3 (one run, one training seed per arm, 40 resets, one camera at 112 px onboard, a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. No LeWM-driven controller has run in closed loop on v2 yet; LeWM's only closed-loop Apple→Plate runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results. (LeWM also ran in closed loop on the TASK-014 development reach pilot, a reach task, not Apple→Plate: its v2 target-space selector reached 1/5 goals, with intervals overlapping the 0/5 controls.)" No learned or LeWM-driven controller has run in Arena. The v1 task, the v2 task and the TASK-070 gate are unchanged, and no GR00T server was started, contacted or touched.
+
+### 9.0 Correction to §7.2: in MuJoCo, e9's descent stops on the table, not on the apple
+
+§7.2 said that e9's descent in MuJoCo "stops when the fingers land on the apple". That is wrong. FK on our MJCF at the recorded joints of all 16 attempts of `e9-mujoco-ref-arena-1` (every collision geom of the right wrist-yaw and hand links, mesh vertices included) shows:
+- **At the end of descend.** The lowest hand point is 0.1–0.2 mm **below the table top**. The palm site sits 11.65–11.67 cm above the apple centre. In the palm-down open pose, the lowest hand point hangs 14.35–14.36 cm below the palm site. The thumb is the lowest link.
+- **No apple contact during descend.** No step of the descend phase has apple–hand contact (0 of 80 in every attempt).
+- **The first contact comes during close.** It is at close command 11 in all 16 attempts.
+- **At the end of close,** the hand is still on the table, and the palm is 7.0–7.5 cm above the apple centre. As the fingers curl, the hand follows the table down by about 4.4 cm.
+
+e9's descend and close target, 5.2 cm above the apple centre, is never reached in MuJoCo. **The hand presses the table** through descend and close, and our fixed pelvis does not react.
+
+In Arena, the same command presses the hand on the shelf as well. §7.2's account of the stepping (inferred: the WBC answers hand–shelf contact) is unchanged. Its account of the descent (the shorter fingers never touch the apple, so the descent never stops) becomes: **the descent stops on the shelf in both simulators.** Arena's shorter fingers only let the palm go lower first.
+
+### 9.1 Measurement first: the empty-hand shelf-press probe
+
+**Question.** How far does the WBC step the base when the right hand presses the shelf, compared with when it hovers 1 cm above it? This tests §7.2's inferred cause.
+
+**What ran (`arena-shelf-probe-1`).** Code `7a9f3c3`, clean. The run held the shared lock after the pre-run check (load 1.69, 9461 MiB of GPU free) and took 11.5 min including a 140 s build.
+- **Scene.** The §7 layout variant with the same settings. It added two read-only sensors:
+  - a net contact sensor on the right hand's palm and finger links (`--oej_hand_net_sensor`, no filter);
+  - the server's collision geometry (`geometry`). This reads the collision mesh points of every right-hand link from Arena's USD, and per step reports the lowest point in world z (`hand_min_z`).
+- **Placement.** Seed 50200's reset, but with the apple placed out of reach at our (0.60, 0.30). The plate was at its seed position. Apple–hand contact was 0 in every attempt, and the placement error was ≤ 1 mm.
+- **Drive.** The §7 mirror adapter with the gravity offset. Leg velocities were zeroed in the mirror's guard (§9.2 A2), so a step cannot stop an attempt.
+- **Motion.** e9's palm-down approach to where seed 50200's apple centre would be (`ShelfPressProbe`), with targets world-anchored and mapped through the live pelvis. Then e9's descend (80 commands, open) and close (45, grasp 1.0) counts, a 100-command closed hold, and a retreat.
+- **Three modes**, in the order hover, press, high, run twice:
+  - **press**: e9's own descend and close target, 5.2 cm above the apple centre. The hand meets the shelf, as e9's did;
+  - **hover**: the palm is servoed so that the hand's lowest collision point stays 1 cm above the shelf top;
+  - **high**: the palm stays at e9's orient height, 13 cm above the apple centre.
+
+**Results.** Pelvis xy displacement over each phase. "Back" is along the pelvis heading.
+
+| Attempt | Lowest hand point above shelf (descend → close) | Hand contact force, descend: median / max | Pelvis step, descend | Pelvis step, **close** | Max over close + hold |
+| --- | --- | --- | --- | --- | --- |
+| 0 hover | 0.5–1.2 cm | 0 / 0 N | 0.9 cm | **0.5 cm** | 0.9 cm |
+| 1 press | **0.0 cm** (−0.3 mm) | 3.9 / 46.6 N (175 steps > 1 N) | 3.7 cm (2.2 back) | **8.2 cm back** | 9.3 cm |
+| 2 high | 3.6–8.0 cm | 0 / 0 N | 1.1 cm | **0.4 cm** | 0.7 cm |
+| 3 hover | 0.7–1.2 cm | 0 / 0 N | 0.9 cm | **0.3 cm** | 0.4 cm |
+| 4 press | **0.0 cm** (−0.3 mm) | 3.4 / 4.4 N (171 steps > 1 N) | 1.3 cm (1.2 back) | **10.0 cm back** | 11.2 cm |
+| 5 high | 2.8–7.5 cm | 0 / 0 N | 1.7 cm | **1.0 cm** | 1.1 cm |
+
+- **Conclusion: the inferred cause holds.**
+  - With the hand pressing the shelf, the AGILE WBC steps the base back 8.2 and 10.0 cm during the 45 close commands. That is the size of §7.2's 3.6–11.7 cm.
+  - Hovering 1 cm above the shelf with the same arm pose and the same finger closure, the base moves 0.3–0.5 cm, no more than with the hand held high (0.4–1.0 cm).
+  - It is the contact, not the reach or the closing.
+  - Once the base has stepped, the hand comes off the shelf: its lowest point ends 3.5–4.5 cm above it.
+  - Leg joint speeds peaked at 2.2–2.3 rad/s while pressing and 0.2–0.6 rad/s otherwise.
+- **Arena's finger geometry.** In e9's palm-down, open-hand pose, the hand's lowest collision point hangs **11.81–11.83 cm** below the palm site (mean of the last 10 orient commands, six attempts). The thumb's distal link (`right_hand_thumb_2_link`) is the lowest. Our MJCF's is 14.35 cm (§9.0), so Arena's hand reaches 2.5 cm less far, consistent with §7.1's 2.2–3.1 cm shorter fingers.
+- **The apple's centre** rests **2.63 cm** above the shelf top. This is the same to 0.2 µm on all 16 placements of `arena-e9-grav-1`.
+- **Caveats.**
+  - There are two attempts per mode, all on one site, seed 50200's.
+  - The net sensor covers palm and finger links (not the wrist-yaw link) and does not identify the contact partner. With the apple out of reach, the only object near the hand is the shelf.
+  - The apple's top from the geometry reading (`apple_top_z`) was wrong in this run, because the apple prim's own 0.009 scale was divided out of its points. It is fixed for the runs below (`RemoveScaleShear`), and no number here uses it.
+
+### 9.2 Declaration of e9-arena (committed before any Arena run of it)
+
+e9-arena is `arena_e9.ArenaAdaptedE9` (version `e9_arena_v1`). It wraps e9 itself (`RestingPlaceExpert` with `isaac_e9.E9`). The following stay unchanged:
+- e9's ten phases and their command counts: 130, 80, 45, 150, 100, 50, 30, 50, 30, 60;
+- its grasp schedule (open, close to 1.0, opening ramp 0.04 per command) and its translation and rotation clips;
+- its palm-down pick rotation and its 0.45 rad release pitch;
+- its release rule: reach sphere 0.485 m about the right shoulder, release 1.5 cm beyond the plate centre in x, z in [0.10, 0.26] m in the pelvis frame;
+- its pick offsets: −1.5 cm in x, 13 cm (orient) and 21 cm (lift) above the apple centre.
+
+Only the palm target of the current phase is rewritten before each command, by these changes:
+
+1. **Descent stop (ruling item 1).** Descend, and close in the `hold` mode, aim at a height **h_stop above the apple centre** instead of e9's 5.2 cm:
+   - h_stop = d_finger + c − h_apple;
+   - d_finger = 0.1182 m: Arena's palm-site-to-lowest-hand-point drop, measured in §9.1;
+   - h_apple = 0.0263 m: the apple centre above the shelf, measured in §9.1;
+   - c is the shelf clearance;
+   - with c = 1.0 cm, h_stop = 0.1019 m.
+   
+   This is the height at which Arena's open hand clears the shelf by c. In MuJoCo, e9's hand stops with its lowest point on the table, 11.65 cm above the apple centre.
+2. **Live targets (ruling item 2), privileged.** Every command, the targets are recomputed from Arena's live state (the server's last raw state): pelvis pose, apple centre of mass and plate pose. This is evaluator-side simulator truth, as privileged as e9's reset truth.
+   - Offsets are applied in the world: vertical along gravity, x along the pelvis's horizontal heading. They are then mapped through the live pelvis into the base frame.
+   - Orient and descend follow the live apple.
+   - At the first close command, the apple's world position is frozen as the grasp anchor. Close and lift use the anchor, so a carried apple cannot drag its own target.
+   - Transfer to retreat apply e9's release rule to the live plate position in the pelvis frame.
+3. **Gravity offset (ruling item 3).** It is kept as in §7.2 (`--gravity_offset`).
+4. **Close (ruling item 4), one of two modes:**
+   - `hold`: the palm stays at h_stop while the fingers close;
+   - `shelf_servo`: the palm is servoed every command so that Arena's lowest right-hand collision point (the server's live `hand_min_z`, from Arena's own collision meshes) stays c above the shelf top. In MuJoCo, e9's hand follows the table down about 4.4 cm as the fingers curl (§9.0). This mode follows the shelf down without pressing it.
+   
+   Optionally, `close_ramp` raises the grasp scalar by at most that much per close command, instead of e9's single step.
+
+**Adapter-side changes (not e9's).** Both are named here so that they count as declared:
+- **A1.** The server measures collision geometry and the right-hand net force. These are read-only and change no physics.
+- **A2.** In the mirror, the WBC's leg joint velocities (`hip_`, `knee_`, `ankle_`) are written as 0. With the pelvis fixed in the mirror, they enter neither FK, IK nor the arm's bias, only the embodiment's 5 rad/s velocity guard. That guard was written for our fixed-pelvis robot, and in §7.2 it stopped 2 attempts on the WBC's ankle speed. Raw leg speeds are recorded per attempt (`leg_speed_max_rad_s`).
+
+Everything else is §7.2's run, unchanged:
+- the variant scene and its settings;
+- the settle and place steps (75 and 50);
+- the 20 → 50 Hz hold;
+- the look;
+- `run_attempt` with the 740-command budget and the 60-step settle;
+- the per-run resting-height calibration drop.
+
+**Tuning (development seeds 50200–50207 only, plate error 0).** Each variant runs all 8 seeds. The grid, in order:
+- **T1:** `hold`, c = 1.0 cm, e9's close;
+- **T2:** `shelf_servo`, c = 1.0 cm, e9's close;
+- then, only if neither T1 nor T2 rests at least 7 of 8 by `apple_at_rest_v0` on Arena's state:
+  - **T3:** the better of T1 and T2 with c = 0.5 cm (h_stop = 0.0969 m);
+  - **T4:** the best so far with `close_ramp` = 0.05.
+
+**Selection.** The variant with the most `apple_at_rest_v0` (Arena state) successes, then the most Arena contact successes, then the most apples lifted by more than 2 cm, then the earliest in grid order. Nothing outside the grid is tried. If no variant lifts an apple, the blocker is reported and the run stops there. The fresh-seed evaluation then runs only as a confirmation of that blocker.
+
+**Evaluation.** The selected variant runs **once** on development seeds **50216–50231**, plate error 0. These seeds were never used in any Arena run or tuning. They lie in TASK-070's development block, so they are fresh to e9-arena, not to e9.
+
+**Two verdicts are reported per attempt, as in §7.2:**
+- **Arena contact success.** Arena's own success term (apple–plate force > 0.5 N and apple speed < 0.1 m/s) at any Arena step.
+- **`apple_at_rest_v0` on Arena's world state:**
+  - over the last 20 commands of the 60-step settle;
+  - the apple within 4 cm of the plate origin in xy;
+  - within 1.2 cm of the calibrated resting height;
+  - no apple–hand force;
+  - speed ≤ 0.001 m/s, with speed as the centre of mass's **displacement per command interval** (declared here; §7.2 adopted it after its first run).
+  
+  PhysX's reported velocity gives a second, labelled reading.
+
+**Reference.** MuJoCo e9 (`e9_replay.py mujoco`) on the same seeds and resets.
+
+**Stop rule.** About one day in total. If e9-arena still fails, the exact blocker is reported and work stops.
+
+### 9.3 Runs and results
+
+**Runs** (`outputs/`, git-ignored, in the `arena-e9b` worktree). Every Arena run waited for the shared lock and checked load ≤ 2.0 and ≥ 7 GiB of GPU free inside it. From 2026-10-02 the machine GPU lock (`~/.local/state/gpu/lock`) was taken as well. One Arena process ran at a time. Image `isaaclab_arena:latest` `sha256:2588b526…` (§1). The env is the §7 layout variant with the same settings, plus `--oej_hand_net_sensor`.
+
+| Run | Code | What | Report sha256 |
+| --- | --- | --- | --- |
+| `e9-mujoco-ref-tune-1` | `7a9f3c3`, clean | MuJoCo e9 reference, seeds 50200–50207, plate error 0 | `f9d5d683…` |
+| `e9-mujoco-ref-fresh-1` | `7a9f3c3`, clean | MuJoCo e9 reference, seeds 50216–50231, plate error 0 | `ddd5bb3c…` |
+| `arena-shelf-probe-1` | `7a9f3c3`, clean | §9.1 probe | `48be4318…` |
+| `arena-e9a-tune-1` | `3146533` (the declaration commit, before the rebase), clean | e9-arena T1 and T2, seeds 50200–50207 | `78dfb3a9…` |
+| `arena-e9a-tune-3` | `3b0ee49`, clean; from here on, `scripts/gpu_run.sh` (machine lock, ≥ 7 GiB free, load ≤ 2.0), then the heavy lock and the same checks again | e9-arena T3, seeds 50200–50207 | `4419b1ce…` |
+| `arena-e9a-tune-4` | `a2b045f`, clean; gpu_run + heavy lock | e9-arena T4, seeds 50200–50207 | `6cc4c0f2…` |
+| `arena-e9a-fresh-1` | `a2b045f`, clean; gpu_run + heavy lock | **e9-arena T4, fresh seeds 50216–50231, run once** | `04225087…` |
+| `arena-e9a-tune-2` | — | **no run**: `run_isaac.sh`'s courtesy check refused to start. Its log reads only "a TASK-072/first_policy process is running; not starting Isaac". The matching process is inferred, not recorded: an archive `rsync` of the `task072-m2` worktree was seen running a few minutes later. The client created an empty output directory and timed out. Nothing was simulated, and the name is not reused | — |
+
+**Tuning, seeds 50200–50207** (plate error 0; MuJoCo e9 on the same seeds and resets: **8/8** at rest, 8/8 latched):
+
+| Variant | `apple_at_rest_v0` (Arena state) | Arena contact success | Apple lifted > 2 cm | Pelvis step in close, max | Final apple–plate distance |
+| --- | --- | --- | --- | --- | --- |
+| T1 `hold`, c = 1.0 cm | **0/8** | 0/8 | 0 | 0.6 cm | 14.8–17.5 cm |
+| T2 `shelf_servo`, c = 1.0 cm | **4/8** | **5/8** | 5 | 1.4 cm | 0.5–2.5 cm (lifted); 13.6–17.0 cm (missed) |
+| T3 `shelf_servo`, c = 0.5 cm | **4/8** | **6/8** | 7 | 1.8 cm | 0.4–4.1 cm (lifted, 6); 11.9 and 13.5 cm (missed) |
+| T4 `shelf_servo`, c = 0.5 cm, `close_ramp` 0.05 | **7/8** | **8/8** | 8 | 1.4 cm | 0.8–4.1 cm |
+
+- **The step is gone in both variants.** Over the 45 close commands, the pelvis moved at most 0.6 cm (T1) and 1.4 cm (T2), against 3.6–11.7 cm for e9 in §7.2. Over a whole attempt it drifted 4.2–6.8 cm, mostly outside the close phase. All 16 attempts completed. The leg speed peaked at 0.9 rad/s, below the 5 rad/s guard that A2 masks.
+- **T1 never grasps.** Its palm stays at h_stop, and as the fingers curl their lowest point rises from 1.3 to 5.6 cm above the shelf. That is about the apple's top (5.8 cm), so they close over the apple's crown. In seed 50200 there were 5 steps of apple–hand contact, at most 2.2 N, and the apple rose 3.8 mm.
+- **T2 grasps 5 of 8.** Following the shelf down during close (MuJoCo's behaviour without the press) gives 83–98 contact steps and 52–174 N in all 8 attempts.
+  - In 5 attempts the apple was lifted 22–24 cm, carried and released 0.5–2.5 cm from the plate centre. In 4 of those it came to rest.
+  - Seed 50205 landed 0.5 cm from the centre and fired Arena's success term, but it failed `apple_at_rest_v0` on *still* alone: up to 2.9 mm/s of displacement in the window.
+  - In 3 attempts (50201, 50203, 50204) the apple slipped out during the lift: rise 4 mm. The palm-to-apple offsets at the start and end of close look the same in grasps that held and in grasps that slipped (within 1 cm), so the grasp is marginal rather than mis-aimed.
+  - The reported-velocity reading is 0/8 in both variants, as in §7.2. In T2's 4 attempts at rest by displacement, PhysX's reported speed in the window peaks at 10.0–22.1 mm/s.
+- **T2 is short of 7/8,** so the declared grid continued with T3 (`shelf_servo`, c = 0.5 cm).
+- **T3 lifts 7 of 8.**
+  - Seed 50204 rose 3.9 cm and fell back.
+  - Seed 50206, a T2 success, slipped at once (4 mm).
+  - Of the 6 carried and released, 4 came to rest. Seed 50202 rested 4.05 cm from the plate origin, just outside the 4 cm disc. Seed 50205 again failed only on *still*, at up to 1.8 mm/s.
+  - The close-phase pelvis step was at most 1.8 cm, and the leg speed at most 1.2 rad/s.
+- **Selection after T3.** T2 and T3 tie at 4/8 at rest, and T3 has more Arena successes (6 against 5), so T3 is the best so far. By the grid, T4 is T3 with `close_ramp` = 0.05.
+- **T4 lifts and carries all 8.** All 8 attempts fire Arena's success term, and 7 rest by `apple_at_rest_v0`.
+  - The one miss, seed 50204, rested still but 4.07 cm from the plate origin, 0.7 mm outside the disc.
+  - The 7 resting apples ended 0.8–3.9 cm from the origin, against 2.3–3.7 cm for MuJoCo e9 on the same seeds. Both sit near the 4 cm edge, so the release point carries over but leaves little margin.
+  - The close-phase pelvis step was at most 1.4 cm, and the leg speed at most 0.6 rad/s.
+- **Selected: T4.** It has the most at-rest successes (7, against 4, 4 and 0). It is the variant that runs once on the fresh seeds.
+- **Run-to-run variability.** Seeds 50201 and 50203 failed in T2 and succeeded in T3, while 50206 did the reverse. A grasp at this margin can go either way, so differences of one or two seeds between variants are within run-to-run variation. They are not evidence that one variant is better.
+
+**Fresh-seed evaluation** (`arena-e9a-fresh-1`, report sha256 `04225087398e4634…`, revision `a2b045f`, clean). **Selection used only the tuning seeds 50200–50207.** The selected variant, T4, then ran **once** on seeds 50216–50231, which no Arena run had used before. Plate error 0. 95 % intervals are exact Clopper–Pearson.
+
+| Seeds 50216–50231 | MuJoCo e9 (`e9-mujoco-ref-fresh-1`) | e9-arena T4 in Arena (`arena-e9a-fresh-1`) |
+| --- | --- | --- |
+| `apple_at_rest_v0` (Arena: on Arena's world state, displacement speed) | **16/16** [79.4, 100] % | **13/16** [54.4, 96.0] % |
+| Arena contact success (`object_on_destination` at any step) | n/a (latched scorer: 16/16) | **16/16** [79.4, 100] % |
+| `apple_at_rest_v0` with PhysX's reported velocity (labelled second reading) | — | 0/16 (in the 13 attempts at rest by displacement, PhysX's reported speed in the window peaks at 7.5–24.4 mm/s; T4 on the tuning seeds: 5.7–24.0 mm/s) |
+| apple lifted > 2 cm | 16 | 16 (22.9–23.9 cm) |
+| attempts completed (no guard stop) | 16 | 16 |
+| final apple–plate distance, at-rest attempts | 2.1–3.9 cm | 0.7–4.0 cm |
+| pelvis step during close, max | — (fixed) | 1.3 cm (e9 in §7.2: 3.6–11.7 cm) |
+
+**The three Arena attempts that fail `apple_at_rest_v0`** all fired Arena's success term, all had the apple supported, and all had no hand contact in the window:
+
+| Seed | Distance from plate origin | Max displacement speed in the window | Fails on |
+| --- | --- | --- | --- |
+| 50216 | 4.4 cm | 0.00 mm/s | *inside* (4 cm disc) |
+| 50225 | 2.5 cm | 3.15 mm/s | *still* (≤ 1 mm/s) |
+| 50231 | 2.1 cm | 1.28 mm/s | *still* |
+
+**Verdict (development, not gated).** On fresh seeds, e9-arena moves the apple to the plate in Arena on 16 of 16 by Arena's rule and rests it by our `apple_at_rest_v0` on 13 of 16. MuJoCo e9 rests 16 of 16 on the same seeds. §7's blocker, the base stepping back during the grasp, is removed: the close-phase step is at most 1.3 cm. The remaining gap is at the place, with two failure kinds:
+- the apple lands near the 4 cm edge, as in MuJoCo (2.1–3.9 cm there);
+- the apple, supported on the plate, still moves at the end of the settle. The cause is not identified:
+  - in the window of 50225 and 50231 the plate itself moves ≤ 0.001 mm per command;
+  - the apple moves up to 0.13 and 0.07 mm per command relative to the plate, with a net displacement over the window of 0.13 and 0.02 mm;
+  - that Arena's plate is dynamic (ours is static) is an untested hypothesis, not a shown cause.
+
+**Caveats**
+- **It is not e9.** e9-arena reads Arena's live state every command (privileged), adapts the descent and close, and its close was tuned on Arena (T4 was the fourth of four declared variants).
+- **The sample is small.** There are 16 fresh attempts in one Arena process, with no repeat. Tuning showed run-to-run swings of one or two seeds between grasps that held and grasps that slipped (T2 against T3).
+- **The layout is still ours** (§7 caveats: the robot is raised 6.8 cm on an invisible platform and moved 17 cm back). This is not the tutorial layout.
+- **The objects are Arena's.** The resting height comes from one calibration drop per run (3.294 cm in every run here), and the network assets are unpinned (§6).
+- **The seeds' history.** Seeds 50216–50231 are fresh to Arena and to e9-arena's tuning. They lie in TASK-070's development block, where e9 itself was selected. Two things follow:
+  - MuJoCo e9's 16/16 on these seeds is an in-sample, selection-favoured reference, not an independent estimate.
+  - e9-arena inherits e9's release parameters, which were chosen on these seeds, so the place stage of its 13/16 is not fully out-of-sample either.
+  
+  Only the Arena-specific changes (the descent stop, the shelf servo and the close ramp) are fresh with respect to these seeds.
+- **This is a scripted-expert result.** It is a privileged scripted expert's result in a third simulator, not a project-learned result. No learned or LeWM-driven controller has run in Arena. For the project's learned status, see R7's sentence quoted in full at the top of §9.
+
+### 9.4 Next steps toward the tutorial layout (development)
+
+1. **The tutorial layout with a left-handed e9-arena** (§5 step 3): the apple at the tutorial's fixed spawn on the robot's left, the plate straight ahead, and no raised platform.
+   - It needs a y-mirrored e9-arena (left arm, left reach sphere).
+   - The tutorial's shelf is 1.5 cm *above* the pelvis, against our table 5.3 cm below it. The reach-sphere release heights (z in [0.10, 0.26] m in the pelvis frame) and the 21 cm lift must be re-derived for that geometry and declared before the run.
+2. **Place margin.** The two remaining failure kinds (landing near the 4 cm edge, and the apple still moving on the plate at the end of the settle) are place-side. Any change there, such as a longer settle, a lower release or releasing over the plate centre, would be a new declared variant, with tuning seeds separate from evaluation seeds.
+3. **Pin the network assets** before any recorded Arena experiment (§6).
