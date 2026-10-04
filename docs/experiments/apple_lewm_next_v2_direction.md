@@ -95,7 +95,9 @@ arithmetic on reset values and costs seconds; §3.3 is its first instance.
 - **Script:** `scripts/r15_direction_dev.py`, one invocation, CPU only (`CUDA_VISIBLE_DEVICES`
   empty; no GPU lock, no CUDA context), 29 s. Report `outputs/r15-dev-1/report.json` in the
   `next-direction-r15` worktree (git-ignored), sha256
-  `d3d95e04d2d95a83ca545b607833321d9fd2cc70c7744944314423c36ab06984`.
+  `d3d95e04d2d95a83ca545b607833321d9fd2cc70c7744944314423c36ab06984`. It was made on the
+  uncommitted script; a repeat at the committed `ca8fb99` (`outputs/r15-dev-2/report.json`) is
+  byte-identical (the only edit between them moved the CPU-only environment setting into `main`).
 - **Inputs:** the C1 record's run-2 `report.json` and `corpus.npz`, checked against the sha256 the
   record lists (`7779709c…fcef6`, `93e96c3f…cdb5`) before anything is read. No episode was
   simulated; run-2's frames are re-encoded with the pinned DINOv2 ViT-S/14 on the CPU.
