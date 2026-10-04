@@ -13,7 +13,8 @@ and no GPU is used. Three measurements:
    magnitude. Checked against the measured mean- and shuf-proxy counts.
 2. **The plate's spread at the decision step** under candidate conditions (v2's reset, TASK-074's
    -y move at 9 and 12 cm, a disc or -y half-disc move of radius rho), and the scene-blind twins'
-   expected counts from the curve (their miss is p - p_bar or p - p', R15.2).
+   expected counts from the curve (their miss is p - p_bar or p - p', R15.2), unclipped and
+   with C1's box clip (clip rates reported).
 3. **The readout at r = 460** on run-2's corpus frames: cross-fitted ridge on DINOv2 tokens pooled
    to 2 x 2, 4 x 4, 8 x 8 and the full 16 x 16 grid (C1's folds, lambda grid and salts), the same
    readouts on the plate-hidden renders, a learning curve, and each readout's errors mapped
@@ -36,13 +37,15 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-DEFAULT_RUN = Path("/home/huhn/develop/emai/worktrees/c1-feasibility/outputs/c1-run-2")
 PINNED = {  # docs/experiments/apple_lewm_next_v2_c1_feasibility.md §2.1
     "report.json": "7779709cf62ee61fac3e2acfbe16b2049479d02f8dc0af47fd809ccb993fcef6",
     "corpus.npz": "93e96c3f82b476e2a5096d22d6eb09e04bfa0323ecfdd26b7a25885e3275cdb5",
 }
 SEEDS = (58000, 58511)  # R15.9: reset values only, nothing simulated
 SALTS = {"learning_curve": 7801, "move_draw": 7802}  # R15.9
+PLATE_MEAN = (0.49, -0.09)  # R14.5's p-bar: v2's reset centre (wm_critic_v2.RESET_CENTERS)
+KAPPA = -0.5  # cell A (R14.2)
+A_LO = -0.5  # C1-F2's a_lo (R14.4)
 EDGES_CM = (0.0, 0.25, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 7.0, 10.0, float("inf"))
 RHO_CM = (3, 4, 5, 6)  # TASK-073's |d| grid (wm_critic_v2.SHIFT_GRID_CM), used as radii
 GRIDS = (2, 4, 8, 16)
@@ -79,10 +82,11 @@ def tolerance_curve(miss_cm: np.ndarray, ok: np.ndarray) -> list[dict]:
     for lo, hi in zip(EDGES_CM[:-1], EDGES_CM[1:], strict=True):
         k = (miss_cm >= lo) & (miss_cm < hi)
         n = int(k.sum())
+        top = None if hi == float("inf") else hi  # null, not Infinity, in the JSON
         rows.append(
-            {"lo_cm": lo, "hi_cm": hi, "n": n, "success": int(ok[k].sum()), "rate": ok[k].mean()}
+            {"lo_cm": lo, "hi_cm": top, "n": n, "success": int(ok[k].sum()), "rate": ok[k].mean()}
             if n
-            else {"lo_cm": lo, "hi_cm": hi, "n": 0, "success": 0, "rate": 0.0}
+            else {"lo_cm": lo, "hi_cm": top, "n": 0, "success": 0, "rate": 0.0}
         )
     return rows
 
@@ -94,7 +98,24 @@ def expected_rate(curve: list[dict], miss_cm) -> np.ndarray:
     return rates[np.clip(i, 0, len(rates) - 1)]
 
 
-def spreads(curve: list[dict]) -> dict:
+def twin_miss(p_twin, p, h, a_lo: float = A_LO, kappa: float = KAPPA):
+    """A scene-blind twin's landing miss (m) and whether the box clip bound: it aims at the fixed
+    point of its own plate p_twin, (p_twin - kappa h)/(1 - kappa), clipped to the box built around
+    the true plate p (as C1's proxies, ``c1.proxy_aim``); the plate stops at p + kappa (g - h)."""
+    from embodied_jepa import lewm_next_c1 as c1
+
+    p, h = np.asarray(p, float), np.asarray(h, float)
+    raw = c1.fixed_point(p_twin, h, kappa)
+    g = c1.clip_to_box(raw, p, h, a_lo)
+    landed = p + kappa * (g - h)
+    return g - landed, bool(np.linalg.norm(g - raw) > 1e-12)
+
+
+def spreads(curve: list[dict], h_minus_p: np.ndarray) -> dict:
+    """Plate spread at the decision and the scene-blind twins' expected counts. The mean twin
+    uses each distribution's own mean plate (R14.5's p-bar for v2's reset and the disc; the
+    half-disc's analytic mean; the sample mean for TASK-074's move). The clipped projection pairs
+    draw i with C1 run-2's ceiling palm offset h - p of reset i mod 32."""
     from embodied_jepa import lewm_planner_v2 as lp
     from embodied_jepa import wm_critic_v2 as wc
 
@@ -112,24 +133,58 @@ def spreads(curve: list[dict]) -> dict:
         plates[f"TASK-074 -y move, {cm} cm"] = np.array(rows)
         angles_by_cm[f"{cm} cm"] = np.percentile(angles, [5, 50, 95]).round(1).tolist()
     rng = np.random.default_rng(SALTS["move_draw"])
+    centre = np.array(PLATE_MEAN)
+    means = {"v2 reset (no move)": centre}
+    for cm in (9, 12):
+        means[f"TASK-074 -y move, {cm} cm"] = plates[f"TASK-074 -y move, {cm} cm"].mean(axis=0)
     for family, (lo, hi) in (("disc", (0.0, 2 * np.pi)), ("-y half-disc", (np.pi, 2 * np.pi))):
         for rho in RHO_CM:
             r = rho / 100.0 * np.sqrt(rng.uniform(size=len(base)))
             theta = rng.uniform(lo, hi, len(base))
-            plates[f"{family}, rho {rho} cm"] = base + np.c_[r * np.cos(theta), r * np.sin(theta)]
+            name = f"{family}, rho {rho} cm"
+            plates[name] = base + np.c_[r * np.cos(theta), r * np.sin(theta)]
+            shift = 0.0 if family == "disc" else -4.0 * rho / 100.0 / (3.0 * np.pi)
+            means[name] = centre + np.array([0.0, shift])
     out = {}
     for name, p in plates.items():
-        to_mean = 100.0 * np.linalg.norm(p - p.mean(axis=0), axis=1)
-        to_next = 100.0 * np.linalg.norm(p - np.roll(p, -1, axis=0), axis=1)
+        foreign = np.roll(p, -1, axis=0)
+        to_mean = 100.0 * np.linalg.norm(p - means[name], axis=1)
+        to_next = 100.0 * np.linalg.norm(p - foreign, axis=1)
+        clipped = {"mean": [], "shuf": []}
+        miss = {"mean": [], "shuf": []}
+        for i in range(len(p)):
+            h = p[i] + h_minus_p[i % len(h_minus_p)]
+            for twin, pt in (("mean", means[name]), ("shuf", foreign[i])):
+                m, c = twin_miss(pt, p[i], h)
+                miss[twin].append(100.0 * np.linalg.norm(m))
+                clipped[twin].append(c)
         out[name] = {
+            "mean_plate": [float(v) for v in means[name]],
             "median_to_mean_cm": float(np.median(to_mean)),
             "p87_5_to_mean_cm": float(np.percentile(to_mean, 87.5)),
             "median_to_foreign_cm": float(np.median(to_next)),
             "mean_proxy_expected_of_32": float(32 * expected_rate(curve, to_mean).mean()),
             "shuf_proxy_expected_of_32": float(32 * expected_rate(curve, to_next).mean()),
+            "mean_proxy_clip_rate": float(np.mean(clipped["mean"])),
+            "shuf_proxy_clip_rate": float(np.mean(clipped["shuf"])),
+            "mean_proxy_expected_clipped_of_32": float(
+                32 * expected_rate(curve, miss["mean"]).mean()
+            ),
+            "shuf_proxy_expected_clipped_of_32": float(
+                32 * expected_rate(curve, miss["shuf"]).mean()
+            ),
         }
     out["TASK-074 direction percentiles 5/50/95 (deg)"] = angles_by_cm
     return out
+
+
+def ceiling_palm_offsets(report: dict) -> np.ndarray:
+    """h - p (m) at 405 of C1 run-2's 32 ceiling attempts, in seed order."""
+    rows = [
+        np.subtract(a["commit"]["h"], a["commit"]["p"])
+        for a in report["stages"]["ceiling"]["attempts"]
+    ]
+    return np.array(rows)
 
 
 def readouts(corpus, curve: list[dict]) -> dict:
@@ -194,14 +249,16 @@ def readouts(corpus, curve: list[dict]) -> dict:
         xv = pooled(visible, grid)
         for frac in FRACTIONS:
             pv = np.full((n, 2), np.nan)
+            sizes = []
             for k in range(c1.OUTER_FOLDS):
                 fit = np.flatnonzero(fold != k)
                 fit = np.sort(rng.permutation(fit)[: int(round(frac * len(fit)))])
+                sizes.append(int(len(fit)))
                 held = fold == k
                 pv[held] = ridge(xv[fit], y[fit], roots[fit]).predict(xv[held])
             e = 100.0 * np.linalg.norm(pv - y, axis=1)
             out["learning_curve"][f"{grid}x{grid} fit {frac}"] = {
-                "fit_rows_per_fold": int(round(frac * int((fold != 0).sum()))),
+                "fit_rows_per_fold": sizes,
                 "median_cm": float(np.median(e)),
                 "p87_5_cm": float(np.percentile(e, 87.5)),
             }
@@ -210,7 +267,9 @@ def readouts(corpus, curve: list[dict]) -> dict:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--c1-run", type=Path, default=DEFAULT_RUN)
+    parser.add_argument(
+        "--c1-run", type=Path, required=True, help="the C1 record's run-2 folder (outputs/c1-run-2)"
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     os.environ["CUDA_VISIBLE_DEVICES"] = ""  # CPU only: no CUDA context, no GPU lock
@@ -242,12 +301,12 @@ def main(argv=None) -> int:
         "attempts": int(len(ok)),
         "tolerance_curve": curve,
         "curve_check": check,
-        "spreads": spreads(curve),
+        "spreads": spreads(curve, ceiling_palm_offsets(report)),
         "readouts": readouts(corpus, curve),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(out, indent=1, default=float) + "\n")
-    print(json.dumps(out, indent=1, default=float))
+    args.output.write_text(json.dumps(out, indent=1, default=float, allow_nan=False) + "\n")
+    print(json.dumps(out, indent=1, default=float, allow_nan=False))
     return 0
 
 

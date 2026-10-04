@@ -78,63 +78,82 @@ labels are R15 because R1–R14 are taken; a search of every ref and every workt
   until a feasibility record returns M-PROCEED.
 - **R15.2 — the common cause, and a Stage −1 rule.** Under a rule linear in palm displacement, a
   twin that predicts with the mean plate p̄ lands at a miss of exactly p̄ − p, and L-shuf at
-  p′ − p, whatever κ, L and the commit step are (the palm ending at the aim, the fixed point inside
-  the box). So, at a fixed tolerance curve, the scene-blind headroom is set only by the plate's
-  spread at the decision, mapped through the committed place's tolerance; that curve is measured
-  only at κ = −0.5, L = 2, s0 = 405, and how it depends on them is unmeasured. TASK-073,
-  TASK-074 and C1 all met a task too regular for that headroom. Rule: every later LeWM design
-  computes, from its declared reset and condition distributions alone, each gating twin's expected
-  miss and maps it through the best measured tolerance curve before any feasibility record; a
-  design whose projected headroom is below its bar, read as the bar will be read (under a strict
-  reading, minus the expected interval half-width, about 5/32 at n = 32), is not drafted.
+  p′ − p, whatever κ, L and the commit step are, provided the palm ends at the aim and the twin's
+  own aim is not clipped by the box (the box is built around the plate reading, so a clip leaks
+  scene information into the twin; development: it binds on up to 23 % of mean-twin and 41 % of
+  shuf-twin aims at ρ = 6 cm and raises their projected counts by at most +0.4 and +1.0 of 32).
+  So, at a fixed tolerance curve, the scene-blind headroom is set only by the plate's spread at the
+  decision, mapped through the committed place's tolerance; that curve is measured only at
+  κ = −0.5, L = 2, s0 = 405. TASK-073 and C1 measured a task too regular for a prediction to show;
+  for TASK-074 this is an inference (it never measured twin headroom; TASK-076's H-clock under its
+  condition was detectably worse than the twin, 51/64 against 64/64, under a re-aimed place).
+  Rule: every later LeWM design computes, from its declared distributions alone, each gating
+  twin's expected miss and maps it through the best measured tolerance curve before any
+  feasibility record; a design whose projected headroom, read as the bar will be read and at the
+  ceiling's bar, is below its bar is not drafted. Under a strict reading the projection minus the
+  expected interval half-width must reach the bar; that half-width, from C1's estimator at n = 32,
+  is about 5–6/32 from +10 to +19 of headroom, and the rule uses 6/32.
 - **R15.3 — the options** (document §4). Not taken: widening v2's reset jitter (a plate far from
   P-3's range at reset breaks P-3's pick, TASK-074 design Probe B); TASK-074's −y move as the
-  declared spread (its drawn directions lie at 260–270°, 5th–95th percentile at 9 and 12 cm, so the spread is
-  unchanged: median |p − p̄| 1.61 cm against 1.64 cm on v2's reset); a larger gated cohort (the
-  point headroom +6 [+1, +11] and its Stage −1 projection, about +5.6, are below +8); another commit
-  step, L or κ (not expected to help at a fixed tolerance curve, R15.2); a visible per-reset
-  κ cue (fallback only); C2 (R9.5's fallback, unchanged); pausing for Arena (development only).
+  declared spread (its drawn directions lie at 260–270°, 5th–95th percentile at 9 and 12 cm, so
+  the spread is unchanged: median |p − p̄| 1.61 cm against 1.64 cm on v2's reset); a larger gated
+  cohort (the point headroom +6 [+1, +11] and its Stage −1 projection, about +5.6, are below +8);
+  another commit step, L or κ (not expected to help at a fixed tolerance curve, R15.2); a visible
+  per-reset κ cue (fallback only); C2 (R9.5's fallback, unchanged); pausing for Arena
+  (development only).
 - **R15.4 — recommendation: C1-M.** C1 unchanged plus one declared condition change under R2: a
-  post-pick plate move. The decision at 405 then needs the moved plate, which only a frame
-  after the move shows (a twin that reads the plate before the move is reported, not gated), and
-  its action-dependent future, which only a model of the rule gives. Projected
-  from development data (estimates): at a disc radius of 3–6 cm the mean twin falls to about
-  20–11/32 and the shuf twin to about 16–7/32, against C1's measured 25 and 21. The secondary claim
-  ("LeWM needed") is still not expected.
+  post-pick plate move. The decision at 405 then needs the moved plate, which only a frame after
+  the move shows (a twin that reads the plate before the move is reported, not gated), and its
+  action-dependent future, which only a model of the rule gives. Projected from development data
+  (estimates, clipped as C1's proxies are): at a disc radius of 3–6 cm the mean twin falls from
+  C1's measured 25/32 to about 20–11/32 and the shuf twin from 21 to about 16–8/32. At the 30/32
+  ceiling bar the strict margin (30 − mean twin − 6) is +4.0, +7.7, +10.4 and +12.7 at ρ = 3, 4, 5
+  and 6 cm: it passes +8 from 5 cm (−y half-disc: from 6 cm). The secondary claim ("LeWM needed")
+  is still not expected.
 - **R15.5 — the move.** At step 300 (after the grasp latches) by TASK-073's hook; an offset uniform
-  over a disc of radius ρ\* around the reset's plate, one stored draw per reset with its own salt; no
-  direction-eligibility rule; off-table draws re-drawn by a declared rule; a blocked move fails in
-  every arm. **ρ\* is set by the ceiling only:** the largest radius in TASK-073's |d| grid
+  over a disc of radius ρ\* around the reset's plate, one stored draw per reset with its own salt;
+  no direction-eligibility rule; off-table draws re-drawn by a declared rule; a blocked move fails
+  in every arm. **ρ\* is set by the ceiling only:** the largest radius in TASK-073's |d| grid
   {3, 4, 5, 6} cm such that it and every smaller one reach H-final(commit) ≥ 30/32, refused and
-  blocked moves counted as failures (R9.6). The projection passes the strict twin reading from
-  ρ = 4 cm; at 3 cm M-TWINS-ESCALATE is the expected row. If 3 cm fails, the rule runs once on the −y half-disc; if that fails
-  too, M-INFEASIBLE.
+  blocked moves counted as failures (R9.6). If 3 cm fails, the rule runs once on the −y
+  half-disc; if that fails too, M-INFEASIBLE. With ρ\* ≤ 4 cm (disc) or ≤ 5 cm (half-disc),
+  M-TWINS-ESCALATE is the projected row.
 - **R15.6 — the readout at the decision point.** The provisional τ_re/2 = 0.5 cm bar is withdrawn
   for C1-M: it was never calibrated under a committed aim, and the development re-analysis shows
-  the count barely tracks a centimetre median (a committed place tolerates about 2 cm at roughly the
-  85 % level; development estimate). It is replaced by τ_commit (a planted-error measurement in
+  the count barely tracks a centimetre median (a committed place tolerates about 2 cm at roughly
+  the 85 % level; development estimate). It is replaced by τ_commit (a planted-error measurement in
   TASK-076 K0's rule form) and by **H-read**, H-final(commit)'s cloned look-ahead with plate(r)
   read by the pooled readout from the frame rendered at r: W with perfect dynamics and the real
-  readout. **The readout gates** (resolving the inconsistency R14.10 recorded): H-read must lie
-  within 2/32 of the ceiling (a point reading), half of the protocol's δ = 4/32; the 2/32 is an
-  allocation of δ, not a calibrated bar. The latent is 4 × 4 first and
-  8 × 8 only if 4 × 4 misses (8 × 8 read the moved plate at 0.642 cm against 0.886 cm on the same
-  frames; development); the declared-aim corpus is 1 024 roots, because the readout's learning
-  curve was still falling at C1's 255.
-- **R15.7 — the twins' reading is strict.** In C1-M's record a proxy passes only if its paired
-  headroom interval lies at or above +8/32 (lower bound ≥ +8), plus R8.12's feasibility ≥ 0.8 for
-  each scene-blind proxy. This resolves R14.5's ambiguity for C1-M; the C1 record is unchanged.
+  readout. **The readout gates** (resolving the inconsistency R14.10 recorded): on 64 fresh paired
+  resets, ceiling − H-read ≤ 4/64, a point reading. That is half of δ = 8/64, which is **the design
+  note's proposal**, neither frozen nor calibrated; the 4/64 is an allocation of δ, and it sits
+  inside the noise (a difference of 4/64 has a paired interval of about [+1, +8]/64). The latent is
+  4 × 4 first and 8 × 8 only if 4 × 4 misses (8 × 8 read the moved plate at 0.642 cm against
+  0.886 cm on the same frames; development); the declared-aim corpus is 1 024 roots, with a nested
+  learning curve and TASK-075 §7's falling-curve guard, because the readout's learning curve was
+  still falling at C1's 255.
+- **R15.7 — the twins' reading is strict, on fresh resets.** In C1-M's record a proxy passes only
+  if its paired headroom interval lies at or above +8/32 (lower bound ≥ +8), plus R8.12's
+  feasibility ≥ 0.8 for each scene-blind proxy. This resolves R14.5's ambiguity for C1-M; the C1
+  record is unchanged. M-F3 re-measures H-final(commit) on 32 fresh resets and pairs there, not on
+  M-F1's resets, whose ceiling was selected for passing; M-F5b uses those 32 plus 32 more. If M-F3
+  does not pass, the record stops there (M-F4 to M-F7 not run).
 - **R15.8 — rows and the clause.** In order: M-INFEASIBLE, M-TWINS-NONE (a scene-blind headroom
   detectably below +8/32: **clause**), M-TWINS-ESCALATE, M-NO-TAU, M-ARM-KEYED, M-READ-NONE (H-read
-  detectably more than δ below the ceiling on both grids: **clause**), M-NO-BAR, M-PROCEED. Every
-  other failure escalates without a clause. M-TWINS-NONE closes single committed LeWM aim selection
-  under cell A's rule (κ = −0.5, L = 2, s0 = 405, s1 = 525) on v2 with a post-pick move drawn
-  uniformly over a disc or −y half-disc of radius ≤ ρ\* (C1 and C1-M); not other move
-  distributions, radii above ρ\*, or other κ, L or commit steps. M-READ-NONE closes LeWM place-target prediction on v2 read from
-  onboard 112 px frozen DINOv2 tokens pooled to 4 × 4 or 8 × 8 at the read step under C1-M; the
-  next step is then a perception change (a view or a resolution). After admission the protocol
-  carries the design note's §4.1 clause with its scope extended by the move. Nothing closes the
-  LeWM backend, v2, the product goal, TASK-076's results or C2.
+  detectably more than the proposed δ below the ceiling on both grids, and neither grid's learning
+  curve still falling: **clause**), M-NO-BAR-DATA (a curve still falling: escalate to a larger
+  corpus), M-NO-BAR, M-PROCEED. Every other failure escalates without a clause.
+  - M-TWINS-NONE closes single committed LeWM aim selection under cell A's rule (κ = −0.5, L = 2,
+    s0 = 405, s1 = 525) on v2, with a post-pick move drawn uniformly over the family in which ρ\*
+    was set (the disc, which then also covers the −y half-disc; or the −y half-disc alone) at
+    radii ≤ ρ\*, and C1 itself. It does not close other move distributions, radii above ρ\*, or
+    other κ, L or commit steps.
+  - M-READ-NONE closes LeWM place-target prediction under C1-M read at the read step by a
+    cross-fitted dual-ridge readout of single onboard 112 px frames from frozen DINOv2 tokens
+    pooled to 4 × 4 or 8 × 8, fitted on a 1 024-root corpus. It does not close other readouts,
+    larger corpora, other views or resolutions, or the full-token grid.
+  - After admission the protocol carries the design note's §4.1 clause with its scope extended by
+    the move. Nothing closes the LeWM backend, v2, the product goal, TASK-076's results or C2.
 - **R15.9 — seeds and salts.** R15's development block is 58000–58999; 58000–58511 were used only
   to draw reset values (nothing simulated). Salts 7801 (learning-curve subsample) and 7802 (the
   move draws of the projection). A search of every ref and worktree found 58000–58999 only as byte
