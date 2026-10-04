@@ -69,7 +69,7 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
 - [x] Each gated stage on its own reported GO, from a clean checkout of the merged revision
       (O, D, K-pred M-a/M-b and S/U at `702a7d9`, each once).
 - [x] Results PR, reviewed with every restated number checked (#138, branch `results/task076`;
-      merge sha: TBD).
+      merge sha: `82da722`).
 
 ## Notes
 - 2026-10-02: card opened under ruling R1. Not started; the preregistration is pending.
