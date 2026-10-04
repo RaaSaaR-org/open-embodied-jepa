@@ -43,6 +43,28 @@ smokes exist to check them.
   16, 8 and 5 of 32 at 0, 0.5, 1, 1.5, 2, 2.5, 3, 4 and 5 cm.
 - **K-pred** is PRED-INFEASIBLE if Stage O records O-PASS, and PRED-NOT-RUN otherwise. Both rows
   escalate without a clause and lead to PLAN.md's Branch B, which this note answers.
+- **Reported-only data since the freeze** (run at `702a7d9`; no row is read from them here).
+  - **Stage D** ended D-PASS: H-twin 15/16 and H-handover 16/16 (`task076-D-1/report.json`,
+    sha256 `a84c00e2…e93f`).
+  - **K-pred's constant-velocity cells.** These are reported only and never admit. The plate moves
+    12 cm (M-a) or 9 cm (M-b), with 4.0 cm and 3.0 cm still to go at the last decision. Counted
+    successes of 32 (`task076-Kpred-Ma-1/report.json`, sha256 `d512a712…a106e`;
+    `task076-Kpred-Mb-1/report.json`, sha256 `0c976384…a9130`):
+
+    | arm | M-a | M-b |
+    |---|---|---|
+    | H-final (privileged ceiling) | 32 | 32 |
+    | H-now (privileged, the current plate) | 7 | 1 |
+    | H-twin (perception, the current plate) | 11 | 4 |
+    | H-cv (perception, constant-velocity extrapolation) | 24 | 24 |
+
+  - **What they show.**
+    - Not predicting costs most of the ceiling.
+    - A hand-written extrapolator fed perception readings of a *moving* plate still sat 8/32
+      below the ceiling in both cells, even though it knew the motion's form and stop step.
+  - **What they do not show.** These cells do not depend on the action, so an action-blind
+    predictor is expected to tie in them (TASK-076 §3.2). They say nothing about an
+    action-conditioned predictor.
 - **The primary question** (Stages O, D, S/U) is unaffected by this note.
 
 **Why cell A was removed.** Source: the Stage-0 record
@@ -340,6 +362,15 @@ How these are derived:
     roots) was 2–6 cm off on cell A. These are mechanics and are not read.
   - At 405 the plate is static and in distribution, but the tie still assumes R-plate's
     precision.
+  - **K-pred's reported-only M cells (§1) show the realistic size of a perception-fed
+    extrapolator's loss on a moving plate.** H-cv, using R-plate readings, reached 24/32 in both
+    cells against a ceiling of 32/32.
+    - C1's hand-written arms read the plate once, at 405, while it is still static, so the M cells
+      do not transfer to them directly.
+    - W, however, reads the plate on a predicted frame at r, after it has moved. The M cells are
+      a caution that readout errors on moved plates are not small: H-twin reached only 11/32 and
+      4/32 there. Most of that is the cost of not predicting, which H-now's 7/32 and 1/32 bound.
+    - C1-F5 measures that readout error at r directly.
 - **The claim-row competitors** are H-rule and H-sysid on the R-plate reading, the same
   non-privileged reading W gets (review item 8). Their true-plate versions are reported as their
   ceilings.
