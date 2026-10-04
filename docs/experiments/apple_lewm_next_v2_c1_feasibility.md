@@ -7,11 +7,20 @@ with **no world model**: every arm below is either a privileged calculation from
 (H-final, the proxies, the reach and corpus collectors) or a hand-written non-world-model arm
 (H-rule, H-sysid). Nothing here is a protocol, a gate of a learned arm or a learned result.
 
-**Status: DECLARATIONS ONLY. No seed of the block below has been simulated for a reading.** This
-section was written and committed before the run; the results sections are added after it.
+**Outcome: C1-TWINS-ESCALATE** (§2). C1-F3 fails on the mean-proxy (L-mean's stand-in): its
+headroom below the ceiling is +6/32 (bar +8/32; interval [+1, +11], so *near* under R8.14's
+guard) and its predicted McNemar feasibility is 0.728 (bar 0.8). By the note's row C1 escalates
+before any protocol, with no clause; none of R9.10's remedies is chosen here. C1-F5's readout at
+r also misses its estimate (median 0.886 cm against 0.5 cm), which on its own would be NO-BAR.
+C1-F1, C1-F2 and C1-F6 pass, and C1-F5's plate-hidden check passes. **No world model ran; no arm
+here is a learned or LeWM result.**
+
+§1 (the declarations) was written and committed (`2370ab3`, pushed) before the run, and is kept
+as written. The run is `outputs/c1-run-2` at `2370ab3` (§2.1).
 
 Every choice below is **decided by Claude under owner delegation (2026-09-30)**. The rulings are
-R14.1–R14.8 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-04 (c). R9 and R13 (and every
+R14.1–R14.10 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-04 (c) (R14.1–R14.8 before
+the run, R14.9–R14.10 after it). R9 and R13 (and every
 lower number) are taken; a search of every ref at `82da722` found no R14.
 
 The canonical status sentence (DECISIONS 2026-10-02, R7) is unchanged by this record, verbatim:
@@ -221,3 +230,168 @@ The note's failure rows, in its order (`lewm_next_c1.verdict`):
 No row fires a clause, and none closes the LeWM backend, v2 or the product goal. C1-F4 has no
 bar, and C1-F6 only reviews the cap. Every check is computed and reported whatever an earlier one
 shows, except where a_lo or r is undefined (then the stages that need them cannot run).
+
+## 2. Results (written after the run)
+
+### 2.1 The run and its provenance
+
+- **The record run:** `scripts/run_c1_feasibility.py --output outputs/c1-run-2 --evidence
+  /home/huhn/develop/emai/worktrees/task076-evidence`, in the worktree
+  `/home/huhn/develop/emai/worktrees/c1-feasibility` (made with `scripts/new_worktree.sh --run`
+  from `origin/main` at `82da722`, branch `dev/c1-feasibility`).
+  - Code revision `2370ab37dcef35a644c6676b1dd7dd7dfae11d43`, `tracked_tree_dirty: false` at the
+    start and the end; TASK-076's manifest pins matched at the start and the end.
+  - 2026-10-04 20:39:10Z to 20:54:21Z (910 s); 6 CPU workers, 1 torch thread each; peak
+    process-tree PSS 9.69 GiB (ceiling 12 GiB); no GPU, no GPU lock, no CUDA context.
+  - G-repro: all 8 of TASK-072 run-1's reproduction checks passed (39 s).
+  - Outcome: **C1-TWINS-ESCALATE**.
+- **Files** (all in `outputs/c1-run-2/`, git-ignored, on the Linux PC):
+
+  | file | sha256 |
+  |---|---|
+  | `report.json` | `7779709cf62ee61fac3e2acfbe16b2049479d02f8dc0af47fd809ccb993fcef6` |
+  | `corpus.npz` (255 rows) | `93e96c3f82b476e2a5096d22d6eb09e04bfa0323ecfdd26b7a25885e3275cdb5` |
+  | `errors.npz` (C1-F5's per-root errors) | `d81eb3e9bbe385405b0ffdb25c7ad9af8ccb13a84f41d230c72070f2e411ef1a` |
+  | `r_plate.npz` (the smoke R-plate; content sha256 `893b52d5…f00c`) | `4279e232354915b58b3f9a1bf5223294dead3471962517cf8b964271ab52fcb9` |
+
+- **The voided first run (R14.9).** `outputs/c1-run-1` (report sha256
+  `f1b470eb…41aa8`), at the same revision, ran every stage and then ended **V**: "G-hash: the
+  tracked tree changed during the run". The cause was the operator (Claude): during the run it edited a tracked
+  file in the worktree (the TASK-076 card's merge sha, `.mc/tasks/done/`), not code. The edit was
+  stashed and the run repeated once, from scratch, at the same revision on a clean tree
+  (run-2). Every reported value of run-2 equals run-1's. The only differences are the renderer's
+  documented one-level pixel differences: two plate-hidden renders (roots 79 and 114 of the
+  corpus, 12 pixels, one level each; their errors moved by at most 0.00024 cm, no reported
+  statistic changed) and run-1's G-repro re-render disagreement on seed 51235 (settled by the
+  render majority; none in run-2). The npz files differ in their sha256 for that reason and
+  because `np.savez` stamps the zip entries. Run-2 is the record.
+- **Seeds simulated:** F 57000–57031 (every arm), corpus 57100–57355, and the debug run
+  `outputs/c1-debug-1` on 57900–57905 and 57910–57939 (mechanics only, not read). No other seed.
+
+### 2.2 C1-F1: remaining motion, r and the palm speed: **PASS**
+
+On H-final(commit), 32 attempts, none refused:
+
+| quantity | value | bar |
+|---|---|---|
+| median \|plate(525) − plate(405)\| | **6.72 cm** (range 5.49–8.23) | ≥ 2 cm: passes |
+| r | **460** (28/32 within 0.1 cm of plate(525) at 460; 26/32 at 459; 32/32 from 465) | recorded |
+| horizon r − 405 | 55 steps (the note's estimate: ≤ 80) | recorded |
+| median palm speed at 405 | 0.0030 cm per step (max 0.016) | ≤ 0.5: W and N need no extra commands |
+| m2 at 405 = \|κ\|·‖palm(405) − palm(403)‖ | median 0.0022 cm, max 0.013 cm | reported |
+
+### 2.3 C1-F2: the ceiling and reach: **PASS**
+
+- **Ceiling H-final(commit): 31/32**, refused 0/32 (bars ≥ 30 and ≤ 8). The one failure, seed
+  57014, completed with a latched grasp and ended 4.14 cm from the plate, not at rest. All 32
+  look-aheads converged (at most 7 iterations). H-final's committed aims lie at a = 0.348–0.359
+  (the rule's fixed point is a = 1/3), and its aim landed within 0.124 cm of plate(525)
+  (median 0.086 cm).
+- **Reach: a_lo = −0.5.** At every level (−0.5, −0.4, −0.3, −0.2) and every b (−3, 0, +3 cm),
+  32/32 transfers completed: no fallback, every attempt ran to e9's end (`policy_complete`). Those
+  attempts' counted successes are not part of the check (they aim behind the moving plate and
+  fail, as expected).
+
+### 2.4 C1-F3: the twins lose: **FAIL** (the mean-proxy)
+
+Paired against the ceiling's 31/32 on the same resets; intervals are the paired,
+reset-clustered 95 % bootstrap (salt 7704); feasibility is R8.12's form for the 64-reset test.
+
+| proxy | count /32 | headroom (ceiling − proxy) | 95 % interval | discordant (ceiling only, proxy only) | McNemar feasibility (≥ 0.8) | median landing miss (cm) | the note's estimate | result |
+|---|---|---|---|---|---|---|---|---|
+| H-now | 0 | **+31** | [+29, +32] | 31, 0 | — | 9.31 | 0–5/32; 8–12 cm | passes |
+| N-proxy (a_N = 0.5) | 12 | **+19** | [+13, +25] | 20, 1 | — | 4.16 | 5–8/32; 4–6 cm | passes |
+| shuf-proxy | 21 | **+10** | [+4, +16] | 11, 1 | **0.985** (p 1.8 × 10⁻⁵ doubled) | 1.90 | ~19.9/32; 2.05 cm | passes |
+| **mean-proxy** | **25** | **+6** | **[+1, +11]** | 7, 1 | **0.728** (p 0.0021 doubled) | 1.65 | ~22.6/32; 1.60 cm | **fails both** |
+
+- **The mean-proxy fails both of its bars.** Its headroom +6/32 is below +8/32, and its interval's
+  upper bound (+11) is above 8, so under R8.14's guard it is *near*, not detectably below; its
+  feasibility 0.728 is below 0.8. The note stated this risk in advance ("L-mean makes C1's
+  feasibility marginal … about 7–9/32 … at or below C1-F3's +8/32 bar").
+- **The reported-only offset-consistent variants make it worse, not better** (R14.7, declared in
+  §1.6): mean-proxy-offset 27/32 (headroom +4, interval [+1, +8]) and shuf-proxy-offset 20/32
+  (headroom +11, interval [+6, +16]). So the gating mean-proxy formula was, if anything,
+  optimistic for C1: a twin that includes e9's release offset lands closer still.
+
+### 2.5 C1-F4: the best non-world-model arm (reported, no bar)
+
+On F's 32 resets, single commit at 405 (H-now-reaim re-aims 405–485):
+
+| arm | plate input | count /32 | median landing miss (cm) | paired vs ceiling (difference, interval) |
+|---|---|---|---|---|
+| H-rule | smoke R-plate reading | **30** | 0.23 | +1, [−2, +5] |
+| H-sysid | smoke R-plate reading | **30** | 0.67 | +1, [−2, +5] |
+| H-rule-true | true plate | 32 | 0.07 | −1, [−3, 0] |
+| H-sysid-true | true plate | 31 | 0.66 | 0, [−3, +3] |
+| H-now-reaim (reported only, not a comparator) | true plate, re-aimed | 31 | — (re-aimed; the first aim's miss is not its landing) | 0, [−3, +3] |
+
+- The smoke R-plate's reading error at 405 in these closed-loop attempts: median 0.223 cm
+  (95 % interval [0.187, 0.255], 64 readings of H-rule and H-sysid).
+- **The non-inferiority comparator** would be the better of H-rule and H-sysid on the reading:
+  they tie at 30/32. Both sit within noise of the ceiling, as the note expected; "LeWM needed"
+  would not be expected in a protocol under C1 (stated in advance by the note).
+- H-sysid's regression: cross-fitted plate(r) residual median 0.469 cm on the reading (0.353 cm
+  with the true plate) on the corpus.
+
+### 2.6 C1-F5: the readout at r = 460: plate-hidden **PASS**, readout **FAIL**
+
+On the smoke corpus: 256 roots simulated, 255 rows (root 57150 ended at step 235 on a guard
+refusal during P-3's pick and never reached 405; 0 fallbacks; 23/256 counted successes, which
+is expected with aims spread uniformly over the box and is not read). The plate moved a median of
+8.29 cm between 405 and r (interval [8.14, 8.46]).
+
+| readout (cross-fitted, 5 folds by root) | median error (cm) | 95 % interval | 87.5th pct | bar | result |
+|---|---|---|---|---|---|
+| **R-plate-pool at r** (pooled 4 × 4) | **0.886** | [0.778, 0.993] | 1.52 | point median ≤ 0.5 cm | **fails** |
+| **R-plate-pool on plate-hidden renders at r** | 3.865 | **[3.460, 4.285]** | 7.26 | lower bound > 1.0 cm | **passes** |
+| R-plate (full tokens) at 405 (reported) | 0.236 | [0.219, 0.264] | 0.48 | — | — |
+| constant prior at r (reported) | 1.771 | [1.623, 1.964] | 2.93 | — | — |
+
+- λ (relative): 0.01 in every fold for R-plate-pool at r; 0.01 in three folds and 0.1 in two for
+  R-plate at 405; 0.01 for the closed-loop smoke R-plate.
+- **What the miss means.** The pooled latent of the true frame at r reads the moved plate to
+  0.886 cm in median, above the note's estimate τ_re/2 = 0.5 cm, and its whole interval lies
+  above 0.5 cm. A predicted latent can only be read less precisely, so by the note's row no B is
+  feasible on this readout (NO-BAR). It still beats the constant prior and is not keyed on the
+  arm (the plate-hidden check passes). This is a smoke estimate on 255 roots, not c_plate; the
+  protocol's Stage O would measure c_plate itself, but the row applies to this estimate.
+
+### 2.7 C1-F6: cost: **PASS**
+
+H-final(commit) attempts took 8.2 s in median and **8.4 s at most** (bar ≤ 60 s); the
+per-attempt cap is not reviewed.
+
+### 2.8 Verdict: **C1-TWINS-ESCALATE** (escalate, no clause)
+
+| check | bar | result |
+|---|---|---|
+| C1-F1 | remaining ≥ 2 cm | 6.72 cm: pass (r = 460; palm speed 0.003 cm per step) |
+| C1-F2 | ceiling ≥ 30/32, refused ≤ 8/32, a_lo defined | 31/32, 0, a_lo = −0.5: pass |
+| C1-F3 | each proxy ≤ ceiling − 8/32; scene-blind feasibility ≥ 0.8 | H-now, N, shuf pass; **mean-proxy +6/32 (near) and 0.728: fail** |
+| C1-F4 | none | H-rule 30/32, H-sysid 30/32 on the reading |
+| C1-F5 | readout at r ≤ 0.5 cm; plate-hidden lower bound > 1.0 cm | **0.886 cm: fail**; 3.460 cm: pass |
+| C1-F6 | ≤ 60 s | 8.4 s: pass |
+
+By the note's rows, in its order (§1.10): C1-F1 and C1-F2 pass, so C1 is feasible as a
+condition; **C1-F3 fails, so C1 escalates before any protocol, with no clause** (R14.10). For
+L-mean the note's remedies are the options (R9.10): a reset distribution with more plate spread,
+declared as a task change under R2 by a declared rule; a larger gated cohort; or a different
+commit step or rule under its own feasibility record. **None is chosen here.** Independently of
+F3, C1-F5's readout miss is a second escalation (NO-BAR): a remedy for F3 alone would still meet
+it, so any remedy must also answer the readout at r.
+
+**No protocol is drafted, no GPU is used, and no LeWM task is admitted.** Nothing closes: not
+the LeWM backend, not v2, not the product goal, and not C1's condition (no clause is attached to
+any row of this record). The canonical status sentence is unchanged.
+
+### 2.9 Caveats
+
+- Development smokes: one run, 32 paired resets for F1–F4 and F6, 255 corpus rows for F5; the
+  ceiling stands in for W in F3's feasibility (optimistic for the test).
+- The proxies are privileged calculations, not trained twins; the real L-mean, L-shuf and N would
+  be measured only in a protocol. The offset-consistent variants suggest the real L-mean would be
+  at least as strong as its proxy.
+- C1-F5 reads the encoded *true* frame at r; W would read a *predicted* latent after a 55-step
+  roll-out, which can only add error.
+- The τ curve and τ_re = 1.0 cm are TASK-076's (re-aimed, under TASK-074's condition); τ_commit
+  was not measured, as the note says it belongs to a protocol's K0.

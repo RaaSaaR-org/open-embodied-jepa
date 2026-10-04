@@ -215,6 +215,16 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
     quasi-static, so a displacement table ties); C3, a contact-sensitive grasp approach (not
     taken). Next: a CPU-only feasibility record for C1 (C1-F1 to C1-F6), before any protocol or
     GPU.
+  - **C1 feasibility record (2026-10-04, R14): C1-TWINS-ESCALATE**
+    ([apple_lewm_next_v2_c1_feasibility.md](experiments/apple_lewm_next_v2_c1_feasibility.md);
+    development smokes, CPU only, no world model). C1-F1 and C1-F2 pass (remaining motion
+    6.72 cm, r = 460; H-final(commit) 31/32, a_lo = −0.5). C1-F3 fails on the mean-proxy (L-mean's
+    stand-in): 25/32, headroom +6/32 (bar +8, within noise) and McNemar feasibility 0.728 (bar
+    0.8). C1-F5's plate-hidden check passes, but the pooled readout at r misses its estimate
+    (0.886 cm against 0.5 cm), a second escalation (NO-BAR). H-rule and H-sysid on the reading
+    reach 30/32 each (reported). **Escalate, no clause; no protocol, no GPU.** None of R9.10's
+    remedies is chosen; any remedy needs its own ruling and feasibility record and must also
+    answer the readout at r. Next: the owner's choice among the escalation options.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
