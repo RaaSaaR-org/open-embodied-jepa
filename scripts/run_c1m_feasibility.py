@@ -66,12 +66,8 @@ from embodied_jepa import run_tools as rt  # noqa: E402
 from embodied_jepa import wm_critic_v2 as wc  # noqa: E402
 
 TASK076_MANIFEST = ROOT / "benchmarks" / "manifests" / "apple-plate-twin-v2.json"
-C1_FILES = (  # C1's code, unchanged since 0c64ec2 (R16.1)
-    "src/embodied_jepa/lewm_next_c1.py",
-    "src/embodied_jepa/lewm_next_c1_runtime.py",
-    "scripts/run_c1_feasibility.py",
-)
-C1_REFERENCE = "0c64ec2"
+C1_FILES = c1m.C1_CODE_FILES  # C1's code, unchanged since 0c64ec2 (R16.1)
+C1_REFERENCE = c1m.C1_REFERENCE
 OWN_FILES = (
     "src/embodied_jepa/lewm_next_c1m.py",
     "src/embodied_jepa/lewm_next_c1m_runtime.py",

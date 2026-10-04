@@ -63,7 +63,23 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
-## Decision 2026-10-05 — the C1-M feasibility record's declarations, made before the run (R16)
+## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
+
+**Outcome: M-PROCEED** ([apple_lewm_next_v2_c1m_feasibility.md](experiments/apple_lewm_next_v2_c1m_feasibility.md) §2; report
+`outputs/c1m-run-1/report.json` in the `c1m-run` worktree, sha256 `916d7c01…5a02`, at `d77f001`,
+one run, CPU only, no world model). M-F1: H-final(commit) 30, 30 and 29/32 at 3, 4 and 5 cm (disc),
+so ρ\* = 4 cm. M-F2: remaining motion 6.85 cm, r = 465, a_lo = −0.5. M-F3 (fresh resets): ceiling
+32/32; H-now 0, N-proxy 8, shuf-proxy 8, mean-proxy 12/32, headroom intervals [+32, +32],
+[+19, +28], [+19, +28], [+15, +25], feasibility 1.000 for both scene-blind proxies: passes under
+the strict reading, where R15 projected an escalation. M-F4: τ_commit = 1.0 cm (32, 29, 30, 15, 13,
+9 of 32 at 0–3 cm). M-F5a: the 4 × 4 plate-hidden lower bound 5.82 cm > 1.0 (8 × 8: 4.12); readout
+medians at r 0.650 cm (4 × 4) and 0.478 cm (8 × 8), both learning curves still falling. M-F5b on
+64 resets: ceiling 64/64; H-read 4 × 4 58/64 (+6, [+2, +11], misses), **8 × 8 60/64 (+4, [+1, +8],
+meets the 4/64 allowance exactly, a point reading inside the noise)**. M-F6: H-rule and H-sysid
+30/32 each on the reading; H-rule-stale 17/32. M-F7: 9.72 s at most. Development smokes; the
+proxies and H-read are privileged calculations, not trained arms.
+
+The declarations below (R16.1–R16.12) were made before the run, in `8601c1b`.
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
 [apple_lewm_next_v2_c1m_feasibility.md](experiments/apple_lewm_next_v2_c1m_feasibility.md); its
@@ -140,6 +156,22 @@ a search of every ref (79) and every worktree's `docs` on 2026-10-05 found no R1
   check shows, with fixed stand-ins (ρ\* = 3 cm disc, a_lo = −0.2, r = 485, τ_commit = 1.0 cm);
   nothing is read for the row.
 - **R16.12 — R7's canonical sentence is unchanged** by this record, whatever its row.
+- **R16.13 — the row is applied as written (after the run).** M-PROCEED: a preregistration may be
+  drafted under R9.8 and R9.9 (R15.8, row 6), with its own K0 on fresh seeds, Stage O on the 8 × 8
+  grid, a `check_budget`-passing training block, the offline horizon and dynamics gates at
+  h = r − 405 = 60 on 8 × 8 (choosing 8 × 8 commits the protocol to gating its own dynamics there;
+  TASK-066's gates cover 4 × 4 only), a 16-reset development closed loop with a stop rule and an
+  independent review. Two calls were close and are recorded as such: ρ\* was set by one reset
+  (5 cm: 29/32), and the 8 × 8 H-read met its allowance exactly. The report's `early_verdict` field
+  (`M-NO-TAU`) is the ladder evaluated before τ_commit existed and is not a row. No protocol is
+  drafted, no GPU is used and no task number is assigned by this record (R15.1). The canonical
+  status sentence is unchanged; nothing closes.
+- **R16.14 — the debug run and the void rule (after the run).** One debug run
+  (`outputs/c1m-debug-1`, at `d77f001`, after `8601c1b`, seeds 64900–64979 subsets) preceded the
+  record run on the same committed code, and was not read. The record run completed on its first
+  attempt; R16.10's repeat was not used. After the run, the runner's list of C1's hash-checked files moved into
+  `lewm_next_c1m.py` (same values) so that the audit test `test_no_runner_imports` passes; no
+  behaviour changed, and the record remains the run at `d77f001`.
 
 ## Decision 2026-10-04 (d) — after C1-TWINS-ESCALATE: the next direction is C1-M, C1 plus a declared post-pick plate move, with the readout judged by a paired oracle-dynamics arm (R15; DRAFT)
 

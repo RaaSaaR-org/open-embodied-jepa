@@ -32,6 +32,12 @@ DECLARING_COMMIT = "8601c1b"
 GuardError = pt.GuardError
 DELEGATED = "decided by Claude under owner delegation (2026-09-30)"
 NO_WORLD_MODEL = True
+C1_REFERENCE = "0c64ec2"  # C1's code files are checked byte-identical to this revision (R16.1)
+C1_CODE_FILES = (
+    "src/embodied_jepa/lewm_next_c1.py",
+    "src/embodied_jepa/lewm_next_c1_runtime.py",
+    "scripts/run_c1_feasibility.py",
+)
 
 # ----- seeds and salts (R16.2) --------------------------------------------------------------------
 SEED_BLOCK = (63000, 64999)
