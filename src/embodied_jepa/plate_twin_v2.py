@@ -1,16 +1,17 @@
 """TASK-076 (``apple_plate_twin_v2``): the plate-readout perception twin and the prediction-headroom
 check K-pred, as frozen module constants.
 
-Protocol ``docs/experiments/apple_plate_twin_v2.md`` (DRAFT; the freeze sets the sha pin of
-:func:`frozen_sha256` in ``tests/test_plate_twin_v2.py``). This module fixes in code what the
-protocol preregisters:
+Protocol ``docs/experiments/apple_plate_twin_v2.md`` (FROZEN after K0-PASS; the sha of
+:func:`frozen_sha256` is pinned in ``tests/test_plate_twin_v2.py`` and the manifest, and this block
+may not change). This module fixes in code what the protocol preregisters:
 - the seeds of every cohort, the smoke range, the RNG salts and their guard (§4);
 - the arms of the primary closed loop and of K-pred, and who reads what (§3);
 - K-pred's plate motions: the constant-velocity cells M-a and M-b and the action-dependent cell A
   (kappa = -0.5, L = 2, s1 = 525), and H-final(A)'s look-ahead tolerance (§3.2);
 - the Stage-0 smoke rules and remedies (§3.2, §5), and their measured results once they exist;
-- K0's calibration and its stops, the offline gates O1/O3/O4, G1/G2/G3, the K-pred bars with the
-  noise guard, every row and its consequence, the two abandonment clauses (§5-§7);
+- K0's calibration, its stops and its measured values (``K0_MEASURED``, K0-PASS), the offline
+  gates O1/O3/O4, G1/G2/G3, the K-pred bars with the noise guard, every row and its consequence,
+  the two abandonment clauses (§5-§7);
 - ``TRAINING_BUDGET = None`` (no stage trains iteratively), the caps, the memory and GPU plan.
 
 NumPy only: it imports without torch or MuJoCo.
@@ -34,7 +35,7 @@ from embodied_jepa.contracts import ContractError
 
 PROTOCOL = "apple_plate_twin_v2"
 TASK = "TASK-076"
-STATUS = "DRAFT"
+STATUS = "FROZEN"
 GuardError = lp.GuardError
 
 # ----- the owner's delegation -------------------------------------------------------------------
@@ -343,7 +344,9 @@ STAGE0_SMOKES: dict | None = {
         },
         "refused_by_setting": "0 of 16 at every setting",
         "verdict": "no allowed setting gives a median of at least 2 cm: cell A is removed before "
-        "the freeze (protocol §3.2), so K-pred's row is PRED-INFEASIBLE (escalate, no clause)",
+        "the freeze (protocol §3.2), so K-pred's row is PRED-INFEASIBLE if Stage O records "
+        "O-PASS and PRED-NOT-RUN otherwise (decide_kpred checks Stage O first); both escalate "
+        "with no clause",
     },
     "m2_cm": {"median": 0.0012, "max": 0.0019, "attempts": 16, "setting": "L = 2, s1 = 525"},
     "lookahead_attempt_seconds": {
@@ -375,7 +378,88 @@ K0_STOPS = {
 K0_CEILING_MIN = 30
 K0_STALE_MAX = 4
 K0_CLOCK_MARGIN = 4
-K0_MEASURED: dict | None = None  # written after K0 (tau_re, the curve, N_K(0), H-clock targets...)
+K0_MEASURED: dict | None = {
+    # Written after K0 ran once, ending K0-PASS (protocol §5 step 2, §13.2 step 3). The run:
+    # ``run_plate_twin_v2.py k0 --output outputs/task076-k0-1 --evidence <task076-evidence>`` at
+    # 2d0bdb7 (clean tree; DRAFT frozen sha fe23e917... before this record was added), on the CPU,
+    # without the GPU lock (§8), outputs/task076-k0-1/report.json in the main checkout of the
+    # Linux PC. Every value below is copied from that report (sha256 ef4b5410...c876).
+    "row": "K0-PASS",
+    "tau_re_cm": 1.0,
+    "counts": {
+        "0.0": 32,
+        "0.5": 31,
+        "1.0": 28,
+        "1.5": 23,
+        "2.0": 17,
+        "2.5": 18,
+        "3.0": 16,
+        "4.0": 8,
+        "5.0": 5,
+    },
+    "at_rest": {
+        "0.0": 32,
+        "0.5": 31,
+        "1.0": 28,
+        "1.5": 23,
+        "2.0": 17,
+        "2.5": 18,
+        "3.0": 16,
+        "4.0": 9,
+        "5.0": 10,
+        "H-clock": 24,
+        "H-stale": 0,
+    },  # reported only; the curve is the counted successes
+    "n_k0": 32,
+    "h_clock": 24,
+    "h_stale": 0,
+    "stops": {
+        "level0_below_bar": False,
+        "ceiling_below_30": False,
+        "stale_above_4": False,
+        "clock_near_ceiling": False,
+    },
+    "level0_failed_seeds": [],
+    "h_clock_failed_seeds": [56000, 56007, 56012, 56017, 56018, 56023, 56028, 56029],
+    "h_stale_succeeded_seeds": [],
+    # H-clock's fitted targets: the per-step median of the true plate xy over K's 32 resets (m).
+    # The plate is static after the shift at step 300, so every decision step has the same target.
+    "clock_targets": {
+        "405": [0.48203604672515477, -0.18195755761417065],
+        "421": [0.48203604672515477, -0.18195755761417065],
+        "437": [0.48203604672515477, -0.18195755761417065],
+        "453": [0.48203604672515477, -0.18195755761417065],
+        "469": [0.48203604672515477, -0.18195755761417065],
+        "485": [0.48203604672515477, -0.18195755761417065],
+    },
+    "g2_feasibility": {
+        "b": 8,
+        "c": 0,
+        "point_p_doubled": 1.52587890625e-05,
+        "predicted_pass_probability": 0.9983,
+        "resamples": 10000,
+        "below_half_disclosed": False,
+    },
+    "seeds": [56000, 56031],
+    "report": "outputs/task076-k0-1/report.json (Linux PC, main checkout; git-ignored)",
+    "report_sha256": "ef4b541067dc969ee5ebfc9ee78e2c719a4b84e4d3ed0d71a167feb6fcd0c876",
+    "revision": "2d0bdb7b9aa5900be40a5b256df0aaa752179151",
+    "tracked_tree_dirty": False,
+    "frozen_sha256_at_run": "fe23e9177142804e71dfd8f568b5226f276837f4950ce6dcaf43ec28a674112f",
+    "protocol_status_at_run": "DRAFT",
+    "go": "a reviewer's reported GO for K0 on #134 (issuecomment-5982693642), at the revision",
+    "started_utc": "2026-10-04T17:52:07Z",
+    "cohort_first_render_utc": "2026-10-04T17:52:52Z",
+    "ended_utc": "2026-10-04T17:57:27Z",
+    "total_seconds": 319.75,
+    "load_average_at_start": [0.21, 0.663, 1.244],
+    "peak_tree_pss_gib": 8.2,
+    "workers": 6,
+    "gpu_lock": "not taken: K0 is a CPU stage (§8); its EGL rendering runs without the GPU lock",
+    "g_repro": "every TASK-072 run-1 reproduction check passed (8 of 8)",
+    "render_disagreements": 0,
+    "evidence_root": "/home/huhn/develop/emai/worktrees/task076-evidence",
+}
 G2_FEASIBILITY = {
     "point": "the exact one-sided McNemar p on (2b, 2c), K0's H-handover(level 0) vs H-clock "
     "discordant counts doubled to S's 64 resets",

@@ -266,7 +266,115 @@
    "H-clock",
    "H-stale"
   ],
-  "k0_measured": null,
+  "k0_measured": {
+   "at_rest": {
+    "0.0": 32,
+    "0.5": 31,
+    "1.0": 28,
+    "1.5": 23,
+    "2.0": 17,
+    "2.5": 18,
+    "3.0": 16,
+    "4.0": 9,
+    "5.0": 10,
+    "H-clock": 24,
+    "H-stale": 0
+   },
+   "clock_targets": {
+    "405": [
+     0.48203604672515477,
+     -0.18195755761417065
+    ],
+    "421": [
+     0.48203604672515477,
+     -0.18195755761417065
+    ],
+    "437": [
+     0.48203604672515477,
+     -0.18195755761417065
+    ],
+    "453": [
+     0.48203604672515477,
+     -0.18195755761417065
+    ],
+    "469": [
+     0.48203604672515477,
+     -0.18195755761417065
+    ],
+    "485": [
+     0.48203604672515477,
+     -0.18195755761417065
+    ]
+   },
+   "cohort_first_render_utc": "2026-10-04T17:52:52Z",
+   "counts": {
+    "0.0": 32,
+    "0.5": 31,
+    "1.0": 28,
+    "1.5": 23,
+    "2.0": 17,
+    "2.5": 18,
+    "3.0": 16,
+    "4.0": 8,
+    "5.0": 5
+   },
+   "ended_utc": "2026-10-04T17:57:27Z",
+   "evidence_root": "/home/huhn/develop/emai/worktrees/task076-evidence",
+   "frozen_sha256_at_run": "fe23e9177142804e71dfd8f568b5226f276837f4950ce6dcaf43ec28a674112f",
+   "g2_feasibility": {
+    "b": 8,
+    "below_half_disclosed": false,
+    "c": 0,
+    "point_p_doubled": 1.52587890625e-05,
+    "predicted_pass_probability": 0.9983,
+    "resamples": 10000
+   },
+   "g_repro": "every TASK-072 run-1 reproduction check passed (8 of 8)",
+   "go": "a reviewer's reported GO for K0 on #134 (issuecomment-5982693642), at the revision",
+   "gpu_lock": "not taken: K0 is a CPU stage (§8); its EGL rendering runs without the GPU lock",
+   "h_clock": 24,
+   "h_clock_failed_seeds": [
+    56000,
+    56007,
+    56012,
+    56017,
+    56018,
+    56023,
+    56028,
+    56029
+   ],
+   "h_stale": 0,
+   "h_stale_succeeded_seeds": [],
+   "level0_failed_seeds": [],
+   "load_average_at_start": [
+    0.21,
+    0.663,
+    1.244
+   ],
+   "n_k0": 32,
+   "peak_tree_pss_gib": 8.2,
+   "protocol_status_at_run": "DRAFT",
+   "render_disagreements": 0,
+   "report": "outputs/task076-k0-1/report.json (Linux PC, main checkout; git-ignored)",
+   "report_sha256": "ef4b541067dc969ee5ebfc9ee78e2c719a4b84e4d3ed0d71a167feb6fcd0c876",
+   "revision": "2d0bdb7b9aa5900be40a5b256df0aaa752179151",
+   "row": "K0-PASS",
+   "seeds": [
+    56000,
+    56031
+   ],
+   "started_utc": "2026-10-04T17:52:07Z",
+   "stops": {
+    "ceiling_below_30": false,
+    "clock_near_ceiling": false,
+    "level0_below_bar": false,
+    "stale_above_4": false
+   },
+   "tau_re_cm": 1.0,
+   "total_seconds": 319.75,
+   "tracked_tree_dirty": false,
+   "workers": 6
+  },
   "k0_rows": [
    "CAL-ESCALATE",
    "K0-PASS"
@@ -463,7 +571,7 @@
   "reported_percentile": 87.5,
   "rerun": {
    "arm": "H-twin",
-   "rule": "pp.rerun_compare under lp.rerun_rule(); any difference is a V (TASK-074 \u00a78.3)",
+   "rule": "pp.rerun_compare under lp.rerun_rule(); any difference is a V (TASK-074 §8.3)",
    "seeds": 4
   },
   "reserved_salts": {
@@ -494,7 +602,7 @@
    "TWIN-NEAR": "escalate, no clause, no claim; any repeat needs fresh seeds and its own ruling",
    "TWIN-OFF-ARM": "escalate, no clause; K-pred is PRED-NOT-RUN",
    "TWIN-OFF-FAIL": "the clause fires; next step Option 2 (R3); K-pred is PRED-NOT-RUN",
-   "TWIN-PASS": "the claim of \u00a71; results PR; the next LeWM task is chosen by K-pred's row",
+   "TWIN-PASS": "the claim of §1; results PR; the next LeWM task is chosen by K-pred's row",
    "TWIN-PRIOR": "escalate, no clause, no claim",
    "U-VOID-CEILING": "escalate, no clause, no claim (R8.13)",
    "V": "one repeat after a reviewed fix; a second V escalates"
@@ -617,7 +725,7 @@
      "L1_s1_605": 0.0233
     },
     "refused_by_setting": "0 of 16 at every setting",
-    "verdict": "no allowed setting gives a median of at least 2 cm: cell A is removed before the freeze (protocol \u00a73.2), so K-pred's row is PRED-INFEASIBLE (escalate, no clause)"
+    "verdict": "no allowed setting gives a median of at least 2 cm: cell A is removed before the freeze (protocol §3.2), so K-pred's row is PRED-INFEASIBLE if Stage O records O-PASS and PRED-NOT-RUN otherwise (decide_kpred checks Stage O first); both escalate with no clause"
    },
    "contact": {
     "attempts": 144,
@@ -697,7 +805,7 @@
     4.0,
     5.0
    ],
-   "procedure": "TASK-075's TAU_REMEASURE procedure (its \u00a76.3), adopted: H-handover with a planted error e at every decision, under TASK-074's condition; one direction per reset, uniform on [0, 2 pi) from default_rng(SeedSequence([7601, seed])), the same at every level",
+   "procedure": "TASK-075's TAU_REMEASURE procedure (its §6.3), adopted: H-handover with a planted error e at every decision, under TASK-074's condition; one direction per reset, uniform on [0, 2 pi) from default_rng(SeedSequence([7601, seed])), the same at every level",
    "resets": 32,
    "rule": "tau_re = the largest level L such that every level <= L reaches >= 28/32"
   },
@@ -724,8 +832,8 @@
   "void_rule": "a stage is V on a stop signal (run_tools.install_guards records the first signal), a cap, a CUDA allocation failure, a pin or frozen-sha mismatch, a decoded test root, a privileged read in a non-privileged arm, a failed determinism re-run or G-repro failing. A V after the stage's outcome boundary (cohort_first_render_utc for a simulating stage, first_outcome_utc for Stage O) is not read as an outcome; one repeat from scratch after a reviewed fix; a second V escalates",
   "worker_torch_threads": 1
  },
- "frozen_sha256": "fe23e9177142804e71dfd8f568b5226f276837f4950ce6dcaf43ec28a674112f",
- "frozen_sha256_pin": null,
+ "frozen_sha256": "011dff8ac65dde7341850ac4c4d9c569b399f1e3a8d2a1e978d3a3b9bbb7570b",
+ "frozen_sha256_pin": "011dff8ac65dde7341850ac4c4d9c569b399f1e3a8d2a1e978d3a3b9bbb7570b",
  "hashes": {
   "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
   "benchmarks/manifests/apple-first-policy-v2-linux-results.json": "b97258bc14875e1c1de03e721e318b41fa582b216d1f1414637d0a56d1f159b9",
@@ -788,7 +896,7 @@
   "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
   "src/embodied_jepa/place_planner.py": "1842d3e0ca31bfbe6c0568ab5a8d9c75c513e8b5a784ae7200c43101d270c846",
   "src/embodied_jepa/plate_shift.py": "5ae0f016dd6ee628c60c3a6901f170d9bd1643df8e508e53fabbbc6e89650b39",
-  "src/embodied_jepa/plate_twin_v2.py": "af0b6894d07d402cd0cf0fa3ccdc1b3acd21bd5a4cfa83de76f727071bdfe487",
+  "src/embodied_jepa/plate_twin_v2.py": "a7174bc1cbf862b1f5af29ce3e11f4a909d9dd0010c7a050196601e4b3611618",
   "src/embodied_jepa/plate_twin_v2_harness.py": "44410cc6234e4634716b62b2049f650ec691b09b037f3a70c1f656bd206230fc",
   "src/embodied_jepa/plate_twin_v2_offline.py": "3a662b0ea3211bdf394fafcad06ddfa0a79ddd1341405c1d01a2230f2d726b87",
   "src/embodied_jepa/plate_twin_v2_runtime.py": "3c5a7198e243219c2ed1c06a296449d78d50968459e9d99a32d75026b88a24fb",
@@ -808,15 +916,15 @@
   "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
   "tests/test_lewm_planner_v2.py": "6392fe6e38e88bb6356dbfcae3f095402817cc08f869f9547d2046ca89e8ec1c",
   "tests/test_obs_ceiling_v2.py": "74f8d95e0427678d5c74a1fbd1134e46f34db46e89ac91c41932ecb64862192b",
-  "tests/test_plate_twin_v2.py": "1d1e5c3320d208ed9e8fe0f067f015b928572a2fc5409a96c6694d63942e4c0e",
+  "tests/test_plate_twin_v2.py": "f6acb07add0b592780a4959adf3fae256321a22184f5a068e44bf82855a8aae2",
   "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
  "mujoco_version": "3.13.0",
- "note": "DRAFT: nothing gated has run. No arm of TASK-076 runs a world model. Learned Apple->Plate on the frozen v1 MVP benchmark is 0/150 per backend.",
+ "note": "FROZEN after K0-PASS (K0 at 2d0bdb7, report sha256 ef4b541067dc969ee5ebfc9ee78e2c719a4b84e4d3ed0d71a167feb6fcd0c876; tau_re = 1.0 cm); in force once merged on an independent APPROVE. Nothing after K0 has run. No arm of TASK-076 runs a world model. Learned Apple->Plate on the frozen v1 MVP benchmark is 0/150 per backend.",
  "pins_note": "every file TASK-075 pinned (TASK-074's included) is carried with its sha256 unchanged; TASK-076's own modules, runner and test are pinned beside them. The protocol document and this manifest are not pinned (the Stage-0 record is added after the smokes)",
  "protocol": "apple_plate_twin_v2",
- "protocol_document_sha256": "2ac2649a3f31becd09ef9f34d3bdd6835c33731b02da205da5b1f2c81a28e188",
- "status": "DRAFT",
+ "protocol_document_sha256": "737280a1ad5ddd1d95a4078d42a2f3ef672094a6fe99d7d8783685817a067570",
+ "status": "FROZEN",
  "task": "TASK-076"
 }
