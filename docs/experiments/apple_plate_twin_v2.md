@@ -1,6 +1,6 @@
 # Apple→Plate plate-readout twin v2: the place aims at the plate read from the image, plus a prediction-headroom check (TASK-076)
 
-**Status: DRAFT, not frozen; text prepared for the freeze review (R8.8–R8.13).** Nothing in it
+**Status: DRAFT, not frozen; text prepared for the freeze review (R8.8–R8.14).** Nothing in it
 has run. It has no frozen block, no manifest and no code yet. Nothing from any cohort below may be
 simulated before the conditions in §5 are met: K0 runs only on a reviewer's reported GO for K0,
 and nothing after K0 runs before the frozen protocol is merged on an independent reviewer's
@@ -17,7 +17,7 @@ Everything else is reported only.
 
 - Task card: `.mc/tasks/todo/TASK-076-*.md`. Rulings: [DECISIONS.md](../DECISIONS.md), decision
   2026-10-02, R1–R4 and R7, and decision 2026-10-02 (b), R8 (this draft's scope; its review
-  rulings R8.1–R8.7; the freeze-preparation rulings R8.8–R8.13).
+  rulings R8.1–R8.7; the freeze-preparation rulings R8.8–R8.14).
 - Plan context: [docs/PLAN.md](../PLAN.md).
 - Learned Apple→Plate status, the canonical sentence (DECISIONS 2026-10-02, R7), verbatim:
 
@@ -546,12 +546,28 @@ never admit.
 
 Reported, never bars: H-rule(A), and H-final − H-rule with its interval; every M-cell count.
 
+**The headroom's noise guard** (R8.14). Each headroom (K-P2, K-P3, K-P4) is a paired difference on
+A's 32 resets, reported with its paired interval: the reset-clustered bootstrap percentile
+interval of §6 (10 000 resamples, 95 %, salt 7604). A failed headroom bar is:
+- **detectably below** +8/32 when that interval's upper bound is below 8/32;
+- **near** +8/32 otherwise (the interval includes +8/32).
+
+PRED-NONE needs at least one failed headroom bar that is detectably below. A failure that is only
+near gives PRED-NEAR, as G1's TWIN-NEAR does in §6.2.
+
+- **PRED-NONE's false-fire probability at a true headroom of exactly 8/32** is about 2–3 % per
+  bar: 2.6 %, 3.0 % and 2.2 % in a simulation (4 000 trials of 32 paired resets, 4 000 bootstrap
+  resamples each) with 0, 1 and 2 reversed pairs per 32 expected. Without the guard it was the
+  bar's own miss rate, 42–45 % in the same simulation. If all three headrooms sit exactly at 8/32,
+  the union bound is about 9 %.
+
 | row (first match) | condition | consequence (for the plan, not for TASK-076's claim) |
 |---|---|---|
 | **PRED-NOT-RUN** | Stage O did not record O-PASS, so K-pred did not run (§5) | no clause of its own; PLAN.md's Branch B applies, together with Stage O's own row (TWIN-OFF-ARM escalates, TWIN-OFF-FAIL fires its clause) |
 | **V** | the void rule | one repeat after a reviewed fix |
 | **PRED-INFEASIBLE** | cell A was removed at Stage 0 as infeasible, or K-P1 fails on A | **escalate, no clause** (ruling R8.4): the ceiling, not the room for prediction, failed. It is a design failure, as at TASK-073/074's failed ceilings |
-| **PRED-NONE** | K-P1 passes, and K-P2, K-P3 or K-P4 fails | the K-pred clause fires (§7) |
+| **PRED-NONE** | K-P1 passes, and at least one of K-P2, K-P3 and K-P4 fails with its paired upper bound below 8/32 (detectably below) | the K-pred clause fires (§7) |
+| **PRED-NEAR** | K-P1 passes, and at least one of K-P2–K-P4 fails, but every failed one's paired interval includes +8/32 | **escalate, no clause, no claim** (R8.14): the headroom is not detectably below its bar, so the miss may be noise at n = 32. Any repeat needs fresh seeds and its own ruling |
 | **PRED-NO-BAR** | K-P1–K-P4 pass, K-P5 fails | escalate, no clause: there is room for prediction, but the pooled LeWM latent does not read the plate within τ_re, so no TASK-077 bar is feasible |
 | **PRED-ADMIT(A)** | K-P1–K-P5 pass | TASK-077 may be preregistered under cell A, as a task change declared under R2, with the three declarations below |
 
@@ -633,8 +649,8 @@ CAL-ESCALATE. **Its scope:**
 
 The next step is then TASK-075's Option 2 (a place servo; R3).
 
-**K-pred's own clause.** It fires on PRED-NONE only, not on PRED-INFEASIBLE, PRED-NO-BAR or
-PRED-NOT-RUN. It
+**K-pred's own clause.** It fires on PRED-NONE only, not on PRED-NEAR, PRED-INFEASIBLE,
+PRED-NO-BAR or PRED-NOT-RUN. It
 closes preregistering a LeWM plate-target place task on v2 under the tested action-dependent rule
 (cell A: κ = −0.5 and the L and s1 it ran with) and under the constant-velocity family (M-a, M-b), without
 new evidence of a different kind. It does not close the LeWM backend, the v2 task or the product
@@ -705,7 +721,7 @@ recursive roll-out to s1 is therefore ungated. TASK-077 must gate its own horizo
 any closed loop, with TASK-066's no-collapse, copy-last, no-action and action-sensitivity gates at
 that horizon.
 
-**If the row is PRED-NONE, PRED-INFEASIBLE, PRED-NO-BAR or PRED-NOT-RUN,** Option 1 has not advanced the LeWM
+**If the row is PRED-NONE, PRED-NEAR, PRED-INFEASIBLE, PRED-NO-BAR or PRED-NOT-RUN,** Option 1 has not advanced the LeWM
 goal beyond calibration. PLAN.md's Branch B applies.
 
 ## 9b. Limitations (stated plainly)
@@ -772,7 +788,7 @@ this revision. The rulings it needed are R8.1–R8.6 in DECISIONS 2026-10-02 (b)
 (one blocking finding: under L = 40, cell A's target ignored the last aim) is addressed by R8.7.
 The third review at `ee3f3c9` (APPROVE as a DRAFT, four non-blocking items to settle before the
 freeze) is addressed by R8.8–R8.10 and R8.12; the freeze-readiness check of §13 added R8.11 and
-R8.13. All are in DECISIONS 2026-10-02 (b).
+R8.13, and R8.14 added the PRED-NEAR noise guard. All are in DECISIONS 2026-10-02 (b).
 
 Settled:
 - **U runs H-handover** (32 more attempts; R8.13). It is the feasibility check for G3 through
@@ -789,7 +805,7 @@ Still open, and decided only by the Stage-0 smokes (§3.2, §13.2):
    §3.2 apply, and failing them cell A is removed.
 3. The smoke's m2 (median and maximum) and the time of a full-look-ahead H-final(A) attempt.
 
-## 13. Freeze readiness (checked 2026-10-04, R8.11–R8.13)
+## 13. Freeze readiness (checked 2026-10-04, R8.11–R8.14)
 
 ### 13.1 Every bar: its source, and its feasibility check or role
 
@@ -806,15 +822,15 @@ Still open, and decided only by the Stage-0 smokes (§3.2, §13.2):
 | K0 stops | level 0 < 28/32; N_K(0) < 30/32; H-stale(K) > 4/32; H-clock(K) ≥ N_K(0) − 4/32 | τ's bar; TASK-074 K1's ceiling and P-stale bars; G2's minimum separation | stops (CAL-ESCALATE) |
 | TWIN-DEV-STOP | H-twin(D) < 12/16 or H-handover(D) < 14/16 | declared stop | at true rates of 87.5 % and 93.75 %, these fire with probability 0.04 and 0.07 (exact binomial); a stop, no clause |
 | K-P1 | H-final(A) ≥ 30/32 | TASK-074 K1's ceiling bar | itself the ceiling; a miss is PRED-INFEASIBLE |
-| K-P2–K-P4 | +8/32 each | TASK-074 K1's headroom bar | feasible whenever K-P1 passes (it leaves room for an 8/32 gap) |
+| K-P2–K-P4 | +8/32 each | TASK-074 K1's headroom bar | feasible whenever K-P1 passes (it leaves room for an 8/32 gap); a miss within noise is PRED-NEAR, so PRED-NONE fires falsely about 2–3 % of the time per bar at a true 8/32 (R8.14, §6.3) |
 | K-P5 | c_plate ≤ τ_re | c_plate (O1's form) and τ_re both measured | a miss is PRED-NO-BAR |
 | H-final(A) tolerance | τ_re/4, at most 10 iterations | declared (R8.7) | the contraction estimate is checked in the smoke |
 | m2\*, c_plate + m2\* ≤ τ_re | — | measured (R8.9) | **reported**; it decides TASK-077's history obligation, not a TASK-076 row |
 | every other number in §6 | — | — | **reported only** |
 
-The +8/32 headroom bars, like PRED-NONE's clause, have no near-noise escalation row of their own
-(unlike G1's TWIN-NEAR). That is a declared choice: a true headroom of exactly 8/32 would fire
-the clause about half the time. It is listed here so the freeze review can see it.
+The +8/32 headroom bars have a near-noise escalation row, PRED-NEAR (R8.14), like G1's TWIN-NEAR.
+Without it, a true headroom of exactly 8/32 would have missed its bar, and fired the clause,
+42–45 % of the time.
 
 ### 13.2 What must happen before the freeze, in order
 
@@ -864,4 +880,5 @@ sha pin and K0's values do not exist yet.
 | S/U | TWIN-PASS | the claim of §1; results PR; the next LeWM task is chosen by K-pred's row |
 | K-pred | PRED-NOT-RUN, PRED-INFEASIBLE, PRED-NO-BAR | escalate, no clause; PLAN.md's Branch B |
 | K-pred | PRED-NONE | K-pred's clause fires; Branch B |
+| K-pred | PRED-NEAR | escalate, no clause, no claim; any repeat needs fresh seeds and its own ruling |
 | K-pred | PRED-ADMIT(A) | TASK-077 may be preregistered under cell A, with R8.8's three declarations and R8.9's history rule (Branch A) |

@@ -94,7 +94,10 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
   - **K-pred:**
     - PRED-INFEASIBLE (cell A was removed at Stage 0, or its ceiling fails), PRED-NO-BAR and
       PRED-NOT-RUN (Stage O did not pass, so K-pred did not run) escalate without a clause.
-    - PRED-NONE (the ceiling holds but there is no room for prediction) fires K-pred's clause.
+    - PRED-NEAR (a headroom bar missed, but not detectably below +8/32; R8.14) escalates
+      without a clause or a claim.
+    - PRED-NONE (the ceiling holds, and a headroom is detectably below +8/32) fires K-pred's
+      clause. At a true headroom of exactly 8/32 it fires falsely about 2–3 % of the time per bar.
 
 ### Branch A: TASK-077, a LeWM plate-prediction place planner on v2 (only if K-pred returns PRED-ADMIT(A))
 
@@ -150,7 +153,7 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
     condition, beating the action-blind, scene-blind and random twins". **It does not show that
     LeWM is needed if H-rule is at the ceiling** (stated in TASK-076 §6.3 before any number).
 
-### Branch B: if K-pred returns PRED-NONE, PRED-INFEASIBLE, PRED-NO-BAR or PRED-NOT-RUN (or TASK-076's clause fires)
+### Branch B: if K-pred returns PRED-NONE, PRED-NEAR, PRED-INFEASIBLE, PRED-NO-BAR or PRED-NOT-RUN (or TASK-076's clause fires)
 
 - **PRED-INFEASIBLE.** The declared action-dependent rule could not be run, or its ceiling failed.
   This is a design failure, so it escalates without a clause.
@@ -161,6 +164,8 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
+- **PRED-NEAR.** A headroom bar missed within noise (R8.14). Escalate, no clause, no claim. Any
+  repeat of cell A needs fresh seeds and its own ruling.
 - **PRED-NO-BAR.** The pooled LeWM latent does not read the plate within τ_re, so no TASK-077 bar
   is feasible. Escalate. This is a representation question for the owner, close to TASK-075's
   OBS-REPRESENTATION. It is not a silent reopening.
@@ -205,7 +210,7 @@ needs commissioning and the owner. Nothing in this plan runs on hardware.
 | item | state | needs |
 |---|---|---|
 | **F10** integration workflow (timeout 20 → 30 min; per-module loop moved to nightly and `workflow_dispatch`) | ready as commit `7eb696e` on the local branch `fix/ci-integration-workflow`; the push was refused because the token lacks the `workflow` scope (#124) | the owner runs `gh auth refresh -s workflow`, then the branch is pushed and reviewed. A Linux integration job is still not added |
-| **F11** SIGTERM race flake (`void_reason` "RuntimeError: release unlocked lock" instead of "received SIGTERM", main run 36793229744; the stage still ends V) | `tests/test_wm_critic_v2.py` is hash-pinned by the TASK-073/074/075 manifests, so its assertion cannot be relaxed. New runners use `run_tools.install_guards` (#125) | either an amendment that re-pins the test file, or accepting the known flake |
+| **F11** SIGTERM race flake (`void_reason` "RuntimeError: release unlocked lock" instead of "received SIGTERM", main run 36793229744; the stage still ends V) | known flake, still open. `tests/test_wm_critic_v2.py` is hash-pinned by the TASK-073/074/075 manifests, so its assertion cannot be relaxed. New runners use `run_tools.install_guards` (#125). Seen again on 2026-10-04 in #133's macos-integration job (run 37208326249, `test_a_process_group_sigterm_with_a_live_pool_writes_the_v_report[0]`, in the per-module order check); it passed on a rerun of the failed job. A red macos-integration on this test alone is this flake, not a regression, but it must still be rerun to green, not ignored | either an amendment that re-pins the test file, or accepting the known flake |
 | **Test-order bug** | `pytest tests/test_apple_evaluation.py tests/test_privileged_rollout.py` gives 6 errors in `test_privileged_rollout.py` ("privileged rollouts require the live G1 MuJoCo embodiment"); each file passes alone, and so does the full suite. Pre-existing on main (#124 review) | find the shared state that the first file leaves behind |
 | **F14** shared `arena_truth.py` (finite-difference speed, `at_rest_arena`, blank first frame) | not started: wait for #123 to merge, to avoid conflicts | after #123; it is a prerequisite of TASK-078 |
 | **F26** independent review of #123 (e9-arena) | open, unreviewed | a CPU-only review of the code and of its pre-run declaration |

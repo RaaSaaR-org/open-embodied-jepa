@@ -87,3 +87,6 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
   2-step term ≤ τ_re; the remedy's limits are stated and |κ| ≥ 1 is forbidden; G2's predicted
   feasibility is reported at K0. The protocol's new §13 lists every bar's source and every row's
   action. Not frozen: the Stage-0 code and smokes, K0 and an independent APPROVE remain.
+- 2026-10-04: R8.14 (decided by Claude under owner delegation): PRED-NEAR escalates without a
+  clause when a headroom bar misses within noise; PRED-NONE now needs a headroom detectably below
+  +8/32 (false-fire about 2–3 % per bar at a true 8/32).

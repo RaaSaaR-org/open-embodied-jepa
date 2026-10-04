@@ -232,6 +232,15 @@ and does not replace it.
     No hand-crop variant follows a TWIN-PASS in TASK-076. The protocol's §13 lists every bar's
     source and every row's action, and what remains before the freeze (Stage-0 code and smokes,
     K0, then an independent APPROVE).
+  - **R8.14 — a noise guard for the headroom bars** (2026-10-04, decided by Claude under owner
+    delegation). New row PRED-NEAR: K-P1 passes and a headroom bar (K-P2, K-P3 or K-P4) fails,
+    but every failed one's paired interval (§6's reset-clustered bootstrap, 95 %, salt 7604)
+    includes +8/32. It escalates, with no clause and no claim, as TWIN-NEAR does for G1.
+    PRED-NONE now needs a failed headroom that is detectably below +8/32 (paired upper bound
+    < 8/32). At a true headroom of exactly 8/32, PRED-NONE then fires falsely about 2–3 % of the
+    time per bar (a simulation of 4 000 trials of 32 paired resets with 4 000 resamples each:
+    2.6 %, 3.0 % and 2.2 % with 0, 1 and 2 reversed pairs per 32 expected), or at most about 9 % if
+    all three sit at 8/32. Before, it was the bar's miss rate, 42–45 %.
 - **Why not skip to a LeWM task now.** No calibrated plate bar and no measured prediction headroom
   exist yet. Starting without them would repeat TASK-074 (an uncalibrated bar) and TASK-073 (no
   headroom). K-pred costs about 416 CPU attempts.
