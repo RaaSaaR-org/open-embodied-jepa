@@ -80,7 +80,8 @@ CHANGES). This entry is a stub: each ruling is provisional until the note's re-r
   candidate aims by their own predicted plate outcomes. Reasons: under R9.8 it is the likeliest
   and cheapest route to a first primary claim (TASK-076's code exists; the twins' expected losses
   follow from the rule and v2's fixed reset: N by 0.14–0.25·|p − h| depending on reach, L-shuf
-  by |Δp|, about 20/32, which is marginal (R9.10); estimates to be checked); at 405 the plate is
+  by |Δp|, about 19.9/32, and L-mean by |p − p̄|, about 22.6/32, so C1's feasibility is marginal,
+  with a headroom of about 7–9/32 (R9.10); estimates to be checked); at 405 the plate is
   static and the rule's clamp removes the 2-step palm term; its main risk, a
   horizon of about 80 steps, has its own offline gate and row (H-GATE-FAIL, no clause). The
   secondary claim ("LeWM needed") is expected to fail, because a hand-written rule arm and a
@@ -112,10 +113,10 @@ CHANGES). This entry is a stub: each ruling is provisional until the note's re-r
 - **R9.6 (revised) — the next step is a development feasibility record for C1** (C1-F1 to C1-F6:
   CPU, no world model, a newly declared smoke block): remaining motion after 405 ≥ 2 cm; the
   ceiling H-final(commit) ≥ 30/32 (one ceiling bar, in the smokes and the protocol); the
-  privileged proxies of N (with the declared candidate box and clip) and of L-shuf (as
-  implemented: the foreign plate with this reset's palm), and H-now, each ≤ the ceiling − 8/32
-  with R8.14's noise guard, plus a G2-style predicted feasibility ≥ 0.8 for the scene-blind twin
-  test; the readout at the read step r (moved plate, hand over the aim) with an O4-style
+  privileged proxies of N (with the declared candidate box and clip), of L-shuf (as
+  implemented: the foreign plate with this reset's palm) and of L-mean (the mean plate), and
+  H-now, each ≤ the ceiling − 8/32 with R8.14's noise guard, plus a G2-style predicted
+  feasibility ≥ 0.8 for each scene-blind twin test; the readout at the read step r (moved plate, hand over the aim) with an O4-style
   plate-hidden check; H-rule and H-sysid on the reading (single commit) reported as the
   non-inferiority comparator. A preregistration follows only if C1-F1 to C1-F3 and C1-F5's
   plate-hidden check pass.
@@ -138,15 +139,25 @@ CHANGES). This entry is a stub: each ruling is provisional until the note's re-r
   random choice "for every later task". R9.8 adds requirements to §9 (a calibrated bar,
   non-inferiority, the "LeWM needed" split) and supersedes nothing in it, so the primary claim keeps
   that test. The note and PLAN.md say the same.
-- **R9.10 — C1's scene-blind twin is kept as implemented, and its contrast is called marginal.**
-  TASK-074's `shuf` rolls this reset's commands from another reset's latent, so under C1 it misses
-  by exactly |Δp| (median about 2 cm with v2's ± 2 cm plate jitter), about 20/32 on TASK-076's K0
-  τ curve (R8.19; one run, under TASK-074's condition, re-aimed rather than committed): a headroom
-  of about 10–12/32 against the +8/32 bar. No stronger scene-blind control is added (a mean-latent
-  twin would be weaker, about 1.4 cm), and the reset jitter is not widened (it is the knob review
-  item 9 fixed). C1-F3 must instead show the shuf-proxy at least 8/32 below the ceiling with
-  R8.14's guard and a G2-style predicted feasibility of at least 0.8 for the 64-reset McNemar test
-  (as R8.12); otherwise C1 stops before any protocol, as a recorded design failure with no clause.
+- **R9.10 (revised after the third review of #135) — two scene-blind twins gate.**
+  - **Why both.** The primary claim says LeWM "beats the scene-blind twins", so it must beat the
+    strongest one. Both L-shuf and a mean-latent twin, L-mean, are gating twins.
+  - **L-shuf is kept** because it is TASK-074's `shuf`, which TASK-076 §9 refers to. It misses by
+    |p − p′|: median 2.05 cm, about 19.9/32 on TASK-076's K0 τ curve (R8.19; one run, under
+    TASK-074's condition, re-aimed rather than committed).
+  - **L-mean is the harder control.** It rolls this reset's commands from the corpus's mean
+    encoded latent and misses by |p − p̄|: median 1.60 cm, about 22.6/32. The note's earlier
+    "about 1.4 cm, so weaker" had both the number and the direction wrong.
+  - **L-mean makes C1's feasibility marginal,** with an expected headroom of about 7–9/32 against
+    the +8/32 bar.
+  - **What C1-F3 must show:** both proxies at least 8/32 below the ceiling, with R8.14's
+    near-noise guard, and each with a predicted McNemar feasibility for the 64-reset test of at
+    least 0.8 (as R8.12).
+  - **If L-mean fails, C1 escalates without a clause and is not abandoned.** Candidate remedies
+    are named but not chosen: a reset distribution with more plate-position spread, declared as a
+    task change under R2 and fixed by a declared rule rather than fitted to a headroom number; a
+    larger gated cohort; or a different commit step or rule under its own feasibility record.
+  - **The reset jitter is not widened inside C1 as designed.**
 
 ## Decision 2026-10-02 — after TASK-075: the plate-readout perception twin is next (TASK-076); what counts as a task change; one canonical status sentence
 

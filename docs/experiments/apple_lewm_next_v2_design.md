@@ -44,12 +44,19 @@ smokes exist to check them.
 - **K-pred** is PRED-INFEASIBLE if Stage O records O-PASS, and PRED-NOT-RUN otherwise. Both rows
   escalate without a clause and lead to PLAN.md's Branch B, which this note answers.
 - **Reported-only data since the freeze** (run at `702a7d9`; no row is read from them here).
-  - **Stage D** ended D-PASS: H-twin 15/16 and H-handover 16/16 (`task076-D-1/report.json`,
-    sha256 `a84c00e2…e93f`).
+  - **Provenance.** These counts are not yet in a reviewed TASK-076 results record. That record is
+    being written on branch `results/task076`, and TASK-076's results PR is their authoritative
+    source. They are quoted here from the run reports, with full paths and sha256.
+  - **Stage D** ended D-PASS: H-twin 15/16 and H-handover 16/16.
+    - Report: `/home/huhn/develop/emai/worktrees/task076-run/outputs/task076-D-1/report.json`.
+    - sha256 `a84c00e2e487134973a775bb553640e5ec512de45e6e8de2cdf18886d178e93f`.
   - **K-pred's constant-velocity cells.** These are reported only and never admit. The plate moves
     12 cm (M-a) or 9 cm (M-b), with 4.0 cm and 3.0 cm still to go at the last decision. Counted
-    successes of 32 (`task076-Kpred-Ma-1/report.json`, sha256 `d512a712…a106e`;
-    `task076-Kpred-Mb-1/report.json`, sha256 `0c976384…a9130`):
+    successes are out of 32.
+    - M-a report: `/home/huhn/develop/emai/worktrees/task076-run/outputs/task076-Kpred-Ma-1/report.json`, sha256
+      `d512a7126a3e87386fbee07b6f3769b9eb155493fd355079ca370d9006a7106e`.
+    - M-b report: `/home/huhn/develop/emai/worktrees/task076-run/outputs/task076-Kpred-Mb-1/report.json`, sha256
+      `0c976384246a8125195a77443b425712bc48cc2401b43114aa17b299831a9130`.
 
     | arm | M-a | M-b |
     |---|---|---|
@@ -61,7 +68,8 @@ smokes exist to check them.
   - **What they show.**
     - Not predicting costs most of the ceiling.
     - A hand-written extrapolator fed perception readings of a *moving* plate still sat 8/32
-      below the ceiling in both cells, even though it knew the motion's form and stop step.
+      below the ceiling in both cells, even though it knew the motion's form and stop step. That
+      gap mixes extrapolation error with readout error, and these cells do not separate the two.
   - **What they do not show.** These cells do not depend on the action, so an action-blind
     predictor is expected to tie in them (TASK-076 §3.2). They say nothing about an
     action-conditioned predictor.
@@ -191,7 +199,7 @@ simulated before the freeze, as R8.14 did.
 - **Success bar.** The ceiling measured in K0, minus a declared margin, in the τ family of
   TASK-076's G1.
 - **Twin and random tests.** An exact one-sided McNemar test at p < 0.01 (G2's form), for W
-  against N, W against L-shuf, and W against L-rand.
+  against N, W against each scene-blind twin (L-shuf and L-mean), and W against L-rand.
 - **Non-inferiority.**
   - Test: the lower bound of the paired, reset-clustered 95 % bootstrap interval of W minus the
     best non-world-model arm must lie above −δ.
@@ -218,6 +226,8 @@ All candidates keep the following:
   - **N:** the action-blind twin, an equally trained predictor that gets no actions.
   - **L-shuf:** the scene-blind twin, W rolled out from another reset's encoded frame (TASK-074's
     `shuf`).
+  - **L-mean:** the second scene-blind twin, W rolled out from the training corpus's mean
+    encoded latent at the decision step, with this reset's commands (R9.10).
   - **L-rand:** a random candidate.
   - **H-sim / H-final:** the privileged ceiling, simulated in cloned state.
 - **One ceiling bar everywhere:** ≥ 30/32 (K-P1's form), in the smokes and in the protocol (review
@@ -267,7 +277,7 @@ the primary claim, "LeWM-driven closed-loop success"? W predicts each candidate 
 outcome. The primary claim requires all of the following:
 - the calibrated bar;
 - non-inferiority to the best of H-rule and H-sysid on the reading;
-- beating N, L-shuf and L-rand.
+- beating N, L-shuf, L-mean and L-rand.
 
 The secondary claim, "LeWM needed", is reported only: whether W is detectably better than H-rule
 and H-sysid.
@@ -339,7 +349,8 @@ C1's own τ_commit is measured in K0.
 |---|---|---|---|
 | H-now | the plate now (H-cv is the same at 405, because the plate is static) | (1 − κ)·\|g\* − p\| = \|p − h\|/2 ≈ 8–12 cm | about 0–5/32 |
 | N | the corpus-mean outcome (table above) | 1.5·\|a_N − 1/3\|·\|p − h\| | about 5–8/32 at a_lo = −0.5; about 13–17/32 at a_lo = −0.2 |
-| L-shuf | W rolled out from the foreign reset's latent with *this* reset's commands (`place_planner` `shuf`). It predicts p′ + κ(g − h), so it lands at the foreign fixed point (p′ − κh)/(1 − κ) | exactly \|p − p′\| = \|Δp\| | median about 1.9–2.0 cm; about 20/32 |
+| L-shuf | W rolled out from the foreign reset's latent with *this* reset's commands (`place_planner` `shuf`). It predicts p′ + κ(g − h), so it lands at the foreign fixed point (p′ − κh)/(1 − κ) | exactly \|p − p′\| = \|Δp\| | median 2.05 cm; about 19.9/32 |
+| L-mean | W rolled out from the corpus's mean encoded latent with *this* reset's commands. If that latent stands for p̄, it lands at (p̄ − κh)/(1 − κ) | \|p − p̄\| | median 1.60 cm; about 22.6/32 (the stronger scene-blind control) |
 | L-rand | a uniformly random candidate in the box | large | low |
 | H-rule | `RuleAim` on the R-plate reading, single commit | about the reading error | near the ceiling |
 | H-sysid | a linear regression of plate(r) on the R-plate reading, the proprioceptive palm and the aim, fitted on the same corpus as W | about the reading error | near the ceiling |
@@ -356,7 +367,7 @@ How these are derived:
   - With v2's ± 2 cm plate jitter, Δp is the difference of two uniform draws per axis. In a
     simulation of 10⁶ draws (computed for this note) its 2-D median is 2.05 cm; a Rayleigh
     approximation gives 1.92 cm.
-  - Integrating the τ curve over those draws gives an expected L-shuf of **about 20/32**.
+  - Integrating the τ curve over those draws gives an expected L-shuf of **about 19.9/32**.
 - **The H-rule and H-sysid ties depend on the readout at 405.**
   - In Stage-0's smokes, H-rule scored 0/16 because the smoke R-plate (fitted on 20 static-plate
     roots) was 2–6 cm off on cell A. These are mechanics and are not read.
@@ -367,34 +378,58 @@ How these are derived:
     cells against a ceiling of 32/32.
     - C1's hand-written arms read the plate once, at 405, while it is still static, so the M cells
       do not transfer to them directly.
-    - W, however, reads the plate on a predicted frame at r, after it has moved. The M cells are
-      a caution that readout errors on moved plates are not small: H-twin reached only 11/32 and
-      4/32 there. Most of that is the cost of not predicting, which H-now's 7/32 and 1/32 bound.
-    - C1-F5 measures that readout error at r directly.
+    - W, however, reads the plate on a predicted frame at r, after it has moved. The M cells do
+      not isolate the readout's cost on moved plates.
+      - H-twin ≥ H-now in both cells (11 against 7, 4 against 1), so the low counts are the cost
+        of not predicting, not evidence of a large readout error.
+      - H-cv's 8/32 gap mixes extrapolation error with readout error.
+    - C1-F5 measures the readout error at r directly.
 - **The claim-row competitors** are H-rule and H-sysid on the R-plate reading, the same
   non-privileged reading W gets (review item 8). Their true-plate versions are reported as their
   ceilings.
 - **Feedback, for information.** H-now-reaim (TASK-076's H-now with decisions at 405–485) is
   reported only. It is not a comparator (§3).
 
-**The scene-blind contrast is marginal, and it is kept as implemented** (ruling R9.10, decided by
-Claude under owner delegation).
-- **The margin.** Against a ceiling of 30–32/32, L-shuf at about 20/32 leaves a headroom of about
-  10–12/32. That is marginal against C1-F3's +8/32 bar with R8.14's noise guard on 32 smoke
-  resets.
-- **The gated test has more room than the smoke check.** On 64 gated resets, a W near the ceiling
-  against an L-shuf near 40/64 gives an expected 18 or so discordant pairs one way. McNemar at
-  p < 0.01 needs 7 (R8.7).
-- **No stronger scene-blind control is added.** A mean-latent twin would land at the centre of
-  the reset distribution, miss by |p − p̄| (median about 1.4 cm, *estimate*), and so be weaker.
-- **The reset jitter is not widened.** It is the free knob that review item 9 asked to keep
-  fixed, and widening it would manufacture the contrast.
-- **So C1-F3 must show** (bars in the next table):
-  - the shuf-proxy at least 8/32 below the ceiling;
-  - G2's predicted feasibility for the 64-reset twin test, from the proxy's paired counts as in
-    R8.12, at a pass probability of at least 0.8.
+**Two scene-blind twins gate, and C1's feasibility is marginal because of the stronger one**
+(ruling R9.10, as revised after the third review; decided by Claude under owner delegation). The
+primary claim says LeWM "beats the scene-blind twins", so it must beat the strongest one. Two
+twins therefore gate.
 
-  Otherwise C1 stops before any protocol, as a recorded design failure with no clause.
+- **L-shuf** is kept because it is the scene-blind twin as TASK-074 implemented it (`shuf`), and
+  TASK-076 §9 refers to it.
+  - Its miss is |p − p′|.
+  - In a simulation of 10⁶ draws computed for this note, the median miss is 2.05 cm. Mapped on
+    TASK-076's τ curve, that is about 19.9/32.
+- **L-mean** is the stronger scene-blind control.
+  - It is W rolled out from the mean encoded 405 latent of the training corpus, with this reset's
+    commands. That is a fixed start that reads no image of this reset.
+  - If that latent stands for the mean plate p̄, it misses by |p − p̄|. With v2's ± 2 cm plate
+    jitter, the same simulation gives a median of 1.60 cm, or about 22.6/32 on the τ curve.
+  - The earlier "about 1.4 cm, so weaker" was a Rayleigh approximation and had the direction
+    backwards. A smaller miss makes a *harder* control.
+  - The proxy assumes the mean latent stands for p̄. The real twin's behaviour is measured in the
+    protocol.
+- **What this means for C1, stated plainly.** L-mean makes C1's feasibility marginal.
+  - Against a ceiling of 30–32/32, the expected headroom over L-mean is about **7–9/32**. That is
+    at or below C1-F3's +8/32 bar, which also carries R8.14's noise guard. Over L-shuf the
+    headroom is about 10–12/32.
+  - On 64 gated resets, a W near the ceiling gives roughly 18–23 one-way discordant pairs against
+    L-shuf near 40/64, and fewer against L-mean near 45/64. McNemar at p < 0.01 needs 7 (R8.7).
+- **So C1-F3 must show, for both twins** (bars in the next table):
+  - each proxy at least 8/32 below the ceiling, with R8.14's near-noise guard;
+  - each with a predicted McNemar feasibility for the 64-reset test of at least 0.8, from the
+    proxy's paired counts as in R8.12.
+- **If L-mean fails that check, C1 escalates without a clause. It is not abandoned.** Candidate
+  remedies are named here but not chosen:
+  1. a reset distribution with more plate-position spread, declared as a task change under R2,
+     with its spread fixed by a declared rule (for example, an existing project distribution) and
+     never fitted to a headroom number;
+  2. a larger gated cohort, to raise the McNemar power;
+  3. a different commit step or rule, under its own feasibility record.
+
+  Any remedy needs its own ruling before a protocol.
+- **The reset jitter is not widened inside C1 as designed.** It stays v2's own, as review item 9
+  asked. Widening it is remedy 1 only, as a declared task change.
 
 **Feasibility checks first.** CPU smokes with no world model, on a newly declared smoke block that
 is checked against every range on main. The code is TASK-076's, plus a commit-at-405 mode for
@@ -404,15 +439,16 @@ H-final, H-now, H-rule and the proxies.
 |---|---|---|
 | C1-F1: remaining motion and history | under H-final(commit): the median \|plate(s1) − plate(405)\|; r (as defined above); and the palm's speed at 405 | remaining motion ≥ 2 cm (TASK-076's bar). r and the palm speed are recorded. If the median palm speed at 405 exceeds 0.5 cm per step (declared now), the protocol gives W and N the last 2 executed commands (R8.7's alternative) |
 | C1-F2: ceiling and reach | H-final(commit) on 32 smoke resets, with refused moves counted as failures; the reach check for a_lo | ceiling ≥ 30/32; refusals ≤ 8/32 (TASK-076's removal rule); a_lo set by the reach rule |
-| C1-F3: the twins lose (privileged proxies, no world model) | **N-proxy:** aim at a_N, using the same box and clip, from the true p and h. **Shuf-proxy:** the foreign fixed point (p′ − κh)/(1 − κ), with the true p′ of reset (i + 1) mod n and *this* reset's h. **H-now** | each ≤ ceiling − 8/32, with R8.14's guard. For the shuf-proxy, G2-style predicted feasibility ≥ 0.8 |
+| C1-F3: the twins lose (privileged proxies, no world model) | **N-proxy:** aim at a_N, using the same box and clip, from the true p and h. **Shuf-proxy:** the foreign fixed point (p′ − κh)/(1 − κ), with the true p′ of reset (i + 1) mod n and *this* reset's h. **Mean-proxy:** the fixed point (p̄ − κh)/(1 − κ), with p̄ the reset distribution's mean plate. **H-now** | each ≤ ceiling − 8/32, with R8.14's guard. For the shuf-proxy and the mean-proxy, G2-style predicted feasibility ≥ 0.8 each |
 | C1-F4: the best non-world-model arm | H-rule and H-sysid on a smoke R-plate (single commit), with their true-plate versions; H-now-reaim (reported only) | reported, no bar. They set the non-inferiority comparator |
-| C1-F5: readout at r | cross-fitted R-plate-pool on corpus frames **at r** (moved plate, hand and apple over the aim); the same readout on plate-hidden renders of those states (O4's form); also R-plate at 405, for H-rule and H-sysid | at r: median error ≤ τ/2 (an estimate; c_plate itself comes from the protocol's Stage O). Plate-hidden at r: the lower bound of the median error > τ (O4's form) |
+| C1-F5: readout at r | cross-fitted R-plate-pool on corpus frames **at r** (moved plate, hand and apple over the aim); the same readout on plate-hidden renders of those states (O4's form); also R-plate at 405, for H-rule and H-sysid | at r: median error ≤ τ_re/2 = 0.5 cm (τ_re from TASK-076's K0, R8.19; τ_commit is not yet measured at smoke time, so the protocol re-sets this against τ_commit). This is an estimate; c_plate itself comes from the protocol's Stage O. Plate-hidden at r: the lower bound of the median error > τ_re (O4's form) |
 | C1-F6: cost | an H-final(commit) attempt, with at most 10 look-ahead roll-outs at a single decision | ≤ 60 s, as in TASK-076 |
 
 If a check fails:
 - **C1-F1 or C1-F2:** C1 is infeasible. Escalate, no clause.
-- **C1-F3** (a proxy not detectably below its bar, or the shuf feasibility below 0.8): stop before
-  any protocol, as a recorded design failure with no clause.
+- **C1-F3** (a proxy not detectably below its bar, or a scene-blind feasibility below 0.8):
+  escalate before any protocol, with no clause. For L-mean, the remedies listed under R9.10 above
+  are the options, and none is chosen now.
 - **C1-F5:**
   - If the plate-hidden check fails, the readout at r may be keyed on the arm. Escalate, no
     clause.
@@ -481,7 +517,8 @@ smokes need no GPU.
   apple are over the aim. c_plate(r) may be much worse than TASK-076's static-plate number, and
   the plate-hidden check may fail.
 - **Marginal twin contrasts.**
-  - L-shuf is expected at about 20/32 (R9.10).
+  - L-mean is expected at about 22.6/32, a headroom of about 7–9/32 against the +8/32 bar, and
+    L-shuf at about 19.9/32 (R9.10).
   - N comes close to g\* if reach forces a_lo up towards −0.2.
 - **Non-inferiority is demanding.** H-rule and H-sysid are expected near the ceiling, so W must be
   nearly as precise, with B close to c_plate(r) after an 80-step roll-out.
@@ -632,7 +669,7 @@ place-phase scope, and frozen pooled tokens avoid TASK-062 and TASK-065.
 | decision | the aim at 405 | the push before the look | the approach at about 130 |
 | consequence from | a declared kinematic rule | quasi-static pushing (slide ≤ 0.5 cm, *estimate*) | finger contact |
 | N (action-blind) | misses by 0.14–0.25·\|p − h\| ≈ 2.2–6 cm, depending on reach (*estimate*) | loses: uniform training pushes | loses: cannot rank |
-| L-shuf (scene-blind) | misses by \|Δp\|, median about 2 cm; about 20/32, which is marginal (*estimate*) | loses by the start jitter | loses by the apple jitter |
+| scene-blind twins | L-mean misses by \|p − p̄\|, median 1.60 cm, about 22.6/32: marginal, with a headroom of about 7–9/32. L-shuf misses by \|Δp\|, median 2.05 cm, about 19.9/32 (*estimates*) | loses by the start jitter | loses by the apple jitter |
 | best non-world-model arm | H-rule / H-sysid, near the ceiling | H-sysid, near the ceiling | H-sysid, probably strong |
 | primary claim plausible? | yes, if W holds the moved plate through about 80 steps and the readout at r passes its plate-hidden check | yes, at a higher cost | uncertain: the apple readout is weak |
 | secondary claim ("LeWM needed") | not expected | not expected | not expected |
@@ -648,7 +685,9 @@ place-phase scope, and frozen pooled tokens avoid TASK-062 and TASK-065.
    - The twins' expected losses follow from the rule and v2's fixed reset, not from tuning
      (*estimates*, checked in C1-F3):
      - N misses by 0.14–0.25·|p − h|, depending on reach.
-     - L-shuf misses by |Δp|, about 20/32. That is marginal and is said so (R9.10).
+     - Both scene-blind twins gate (R9.10). L-mean is expected at about 22.6/32, a headroom of
+       about 7–9/32 that is at or below the +8/32 bar, so C1's feasibility is marginal, and this is
+       said plainly. If L-mean fails C1-F3, C1 escalates without a clause.
    - The comparator arms are known and cheap: H-rule exists, and H-sysid is a regression.
 2. **It is the cheapest.** The rule, the look-ahead, H-rule, the readouts and the guards exist in
    TASK-076's code. C1 adds a commit-at-405 mode, and its decisive checks run on the CPU in about
