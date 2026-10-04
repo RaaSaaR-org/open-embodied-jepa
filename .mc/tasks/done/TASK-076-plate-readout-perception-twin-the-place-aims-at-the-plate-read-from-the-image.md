@@ -4,7 +4,7 @@ aliases:
 - TASK-076
 title: 'Plate-readout perception twin: the place aims at the plate read from the image'
 slug: plate-readout-perception-twin-the-place-aims-at-the-plate-read-from-the-image
-status: todo
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -13,6 +13,7 @@ tags:
 - perception
 - apple-pnp
 - preregistration
+- twin-pass
 sprint: ''
 depends_on:
 - "[[TASK-075]]"
@@ -44,9 +45,9 @@ task on a plate target counts as a task change only if it is paired with a condi
 target must be predicted (a moving plate, or a plate that leaves the view), declared as such.
 
 **The preregistration:** [`docs/experiments/apple_plate_twin_v2.md`](../../../docs/experiments/apple_plate_twin_v2.md)
-(FROZEN after K0-PASS on branch `prereg/task076-freeze`; in force once merged on an independent
-reviewer's reported APPROVE). Its K0 calibration (development seeds 56000–56031) ran before the
-freeze on a reviewer's reported GO; nothing else may run before the merge. Ruling R8 (DECISIONS 2026-10-02 (b)) adds a
+(FROZEN after K0-PASS, merged as `702a7d9`, #137). **Results:**
+[`docs/experiments/apple_plate_twin_v2_results.md`](../../../docs/experiments/apple_plate_twin_v2_results.md):
+**TWIN-PASS**, and K-pred **PRED-INFEASIBLE** (Branch B). Ruling R8 (DECISIONS 2026-10-02 (b)) adds a
 moving-plate headroom check, Stage K-pred, because Option 1 alone cannot advance the LeWM goal.
 The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
 
@@ -62,10 +63,13 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
    TASK-074 budget escalations are the lesson); the device is declared explicitly.
 
 ## Acceptance Criteria
-- [ ] Preregistration PR (protocol, manifest, code, tests, smoke on smoke seeds only), merged on
-      an independent reviewer's reported APPROVE.
-- [ ] Each gated stage on its own reported GO, from a clean checkout of the merged revision.
-- [ ] Results PR, reviewed with every restated number checked.
+- [x] Preregistration PR (protocol, manifest, code, tests, smoke on smoke seeds only), merged on
+      an independent reviewer's reported APPROVE (#134 Stage 0; #137 K0 values and the freeze,
+      `702a7d9`).
+- [x] Each gated stage on its own reported GO, from a clean checkout of the merged revision
+      (O, D, K-pred M-a/M-b and S/U at `702a7d9`, each once).
+- [x] Results PR, reviewed with every restated number checked (#138, branch `results/task076`;
+      merge sha: TBD).
 
 ## Notes
 - 2026-10-02: card opened under ruling R1. Not started; the preregistration is pending.
@@ -106,3 +110,18 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
   R8.19, decided by Claude under owner delegation): `K0_MEASURED` in the frozen block, status
   FROZEN, the sha pin set; the GO review's non-blocking notes 3, 4 and 6 folded in. Stage O
   waits for the merge on an independent APPROVE and its own GO.
+- 2026-10-04: every post-freeze stage ran once at `702a7d9` on its own reported GO (#137): Stage O
+  **O-PASS** (report `77ff3758…05fd`; R-plate median 0.403 cm, upper bound 0.416 cm; the
+  random-init floor reads 0.278 cm; c_plate 0.662 cm), Stage D **D-PASS** (`a84c00e2…e93f`;
+  15/16, 16/16), K-pred M-a and M-b KPRED-DONE (reported only; `d512a712…106e`,
+  `0c976384…9130`), and the gated Stage S/U **TWIN-PASS** (`242655f0…74326`): on S H-twin 64,
+  H-handover 64, H-clock 51, H-stale 0, H-floor 64, P-stale 0; on U H-twin 31, P-stale 30,
+  H-handover 31; G2 b = 13, c = 0, p = 1.22e-4. K-pred's row is **PRED-INFEASIBLE** (cell A
+  removed at Stage 0): escalate, no clause, Branch B. No world model ran. Results PR on branch
+  `results/task076` with rulings R13.1–R13.3 (decided by Claude under owner delegation): R7 is
+  unchanged; the protocol's O2 sentence is corrected; the next step is Branch B through #135's design note (merged as `ff37d96`).
+  Review of #138 (REQUEST CHANGES at `bf99ad8`) addressed after the rebase onto `ff37d96`: the
+  rulings are renumbered R13.1–R13.3 (R10–R12 were taken), the protocol erratum is labelled
+  "Erratum 2026-10-04", computed percentiles use numpy's linear method, and the largest attempt is
+  6.31 s (D).
+  Card moved to done.

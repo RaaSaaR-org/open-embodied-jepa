@@ -105,10 +105,14 @@ loop.
   prior that reads no image. That closes a LeWM planner or critic for the place phase under
   TASK-074's condition on these views with frozen DINOv2 features, without new evidence of a
   different kind. Reported only: the plate is read to 0.49–0.68 cm in median (tails up to about 1.36 cm), the apple to 2.2–3.1 cm.
-- **Next: TASK-076**, the plate-readout perception twin (the place aims at the plate read from the
-  image; no world model), with its preregistration pending. This and what counts as a later "task
-  change" for LeWM were decided by Claude under owner delegation
-  ([decision 2026-10-02](docs/DECISIONS.md), R1–R4).
+- **TASK-076** ([results](docs/experiments/apple_plate_twin_v2_results.md)), the plate-readout
+  perception twin, ended **TWIN-PASS** with no world model in the loop: P-3's learned pick plus
+  e9's scripted place aimed at a frozen-DINOv2 ridge readout of the plate scored 64/64 on gated
+  resets under TASK-074's 9 cm condition, against 51/64 for an image-free clock prior and 64/64
+  for the true plate. The random-init floor also scored 64/64, so pretraining is not shown to
+  matter. Its prediction-headroom check is **PRED-INFEASIBLE** (its only action-dependent cell was
+  removed at Stage 0), so no LeWM planner is admitted and the next LeWM task comes from PLAN.md's
+  Branch B ([decision 2026-10-04](docs/DECISIONS.md), R13).
 - **Development only, not gated:** an opt-in white plate leaves TASK-075 at OBS-NONE (any colour
   effect on the offset's median error is bounded to about 0.90–1.11; 1 of 12 intervals excludes 1.0)
   ([white plate](docs/experiments/apple_white_plate_dev.md)). In Isaac Lab-Arena (TASK-025,
