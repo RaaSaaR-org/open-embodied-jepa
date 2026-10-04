@@ -74,7 +74,9 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
   take about 1–2 days.
 - **Depends on.**
   - the sealed `apple-far-shift-v2-views` store and `apple-far-shift-v2` corpus (in the run
-    worktrees `task075-run` and `task074-run`, which stay on the SSD);
+    worktrees `task075-run` and `task074-run` until those were archived; restored from the USB
+    disk to the main checkout's `data/` on 2026-10-04, every file checked against the archived
+    sha256; a worktree symlinks them from there, see [STORAGE.md](STORAGE.md));
   - the P-3 checkpoint;
   - an independent review.
 - **Stop / abandon.**

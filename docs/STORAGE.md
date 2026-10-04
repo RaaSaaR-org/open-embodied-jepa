@@ -30,10 +30,13 @@ USB disk.
       runs/                         generated run outputs (empty for now)
 ```
 
-Nothing on the disk is the only copy of source: every archived worktree's HEAD is on origin
-(`task072-a`'s detached WIP commit was pushed as `archive/task072-a-wip` for this). The disk holds
-the ignored artefacts git does not track (`data/`, `outputs/`, `checkpoints/`, `.venv/`, logs).
-As with `data/`, `checkpoints/` and `outputs/`, never overwrite evidence on it: add, do not replace.
+Nothing on the disk is the only copy of source: every archived worktree's HEAD is reachable on
+GitHub, but since the merged branches were deleted from origin (2026-10-02) mostly not as a branch.
+Each HEAD is on `main`, on an `archive/*` branch (`task072-a`'s detached WIP commit was pushed as
+`archive/task072-a-wip` for this), or only as `refs/pull/<N>/head` of the PR in the tables below.
+The disk holds the ignored artefacts git does not track (`data/`, `outputs/`, `checkpoints/`,
+`.venv/`, logs). As with `data/`, `checkpoints/` and `outputs/`, never overwrite evidence on it:
+add, do not replace.
 
 ## Old path to archive path
 
@@ -77,30 +80,27 @@ re-hashed on the disk and matched against the source, and then removed from the 
 | `/home/huhn/develop/emai/worktrees/task072-m2-run/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/task072-m2-run/` | detached (on origin/HEAD->origin/main, origin/archive/arena-gr00t-baseline-runs, origin/backup/arena-e9-adapted-declared-3146533) @ `23e25937b1f1` | #102 |
 | `/home/huhn/develop/emai/worktrees/task072-a/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/task072-a/` | detached (on origin/archive/task072-a-wip) @ `4ae387c2f612` | - |
 | `/home/huhn/develop/emai/worktrees/isaac-usd-threads/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/isaac-usd-threads/` | fix/isaac-usd-thread-limit @ `561f257a70fd` | #112 |
+| `/home/huhn/develop/emai/worktrees/docs-pr-b/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/docs-pr-b/` | docs/post-task075-sweep @ `5c78ec2b45f2` | #126 |
+| `/home/huhn/develop/emai/worktrees/task075-run/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/task075-run/` | detached (on origin/main) @ `34345382cbf2` | TASK-075 run (results #118) |
+| `/home/huhn/develop/emai/worktrees/white-plate-dev/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/white-plate-dev/` | feat/white-plate-variant @ `f88edde1b170` | #122 |
+| `/home/huhn/develop/emai/worktrees/arena-gr00t/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/arena-gr00t/` | feat/arena-gr00t-baseline @ `7b387df3b461` | #121 |
+| `/home/huhn/develop/emai/worktrees/task074-run/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/task074-run/` | detached (on origin/main) @ `9d9b03cff448` | TASK-074 run (results #116) |
+| `/home/huhn/develop/emai/worktrees/task072-run/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/task072-run/` | detached (on origin/main) @ `db65816eb56d` | TASK-072 run (results #100, #104) |
 
 For example `/home/huhn/develop/emai/worktrees/task074-run3/outputs/...` is now
 `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/task074-run3/outputs/...`.
 
-### Archived, not yet removed from the SSD
-
-The worktrees below were copied and verified the same way on 2026-10-02 but **not** removed: the
-SSD path is still the live copy, and the citation in a results document stays valid as it is.
-When the owner removes one (`git worktree remove --force`, after re-checking that nothing changed),
-its old path maps to the archive path in the same way as the table above.
-
-| old path (still on the SSD) | archive path | branch @ HEAD | PR / task |
-|---|---|---|---|
-| `/home/huhn/develop/emai/worktrees/docs-pr-b/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/docs-pr-b/` | docs/post-task075-sweep @ `5c78ec2b45f2` | #126 |
-| `/home/huhn/develop/emai/worktrees/task075-run/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/task075-run/` | detached (on main) @ `34345382cbf2` | TASK-075 run (results #118) |
-| `/home/huhn/develop/emai/worktrees/white-plate-dev/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/white-plate-dev/` | feat/white-plate-variant @ `f88edde1b170` | #122 |
-| `/home/huhn/develop/emai/worktrees/arena-gr00t/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/arena-gr00t/` | feat/arena-gr00t-baseline @ `7b387df3b461` | #121 |
-| `/home/huhn/develop/emai/worktrees/task074-run/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/task074-run/` | detached (on main) @ `9d9b03cff448` | TASK-074 run (results #116) |
-| `/home/huhn/develop/emai/worktrees/task072-run/` | `/media/huhn/INTENSO/emai/open-embodied-jepa/archive/worktrees/task072-run/` | detached (on main) @ `db65816eb56d` | TASK-072 run (results #100, #104) |
-
-`task075-run/data/apple-far-shift-v2` is a symlink to `task074-run/data/apple-far-shift-v2`; on
-the disk the corpus is under `worktrees/task074-run/data/`. No kept worktree links into the three
-run worktrees (checked with `find -lname` on 2026-10-02). `task072-run` is the `--evidence` root of
-the TASK-074/075 stages.
+The last six rows (`docs-pr-b` to `task072-run`) were copied and verified on 2026-10-02 but kept on
+the SSD until 2026-10-04, when each was re-verified against its checksum file (file count and
+sha256) immediately before removal, which left 111 GB free on `/`.
+`task075-run/data/apple-far-shift-v2` was a symlink to `task074-run/data/apple-far-shift-v2`; on the
+disk the corpus is under `worktrees/task074-run/data/`, and the `apple-far-shift-v2-views` store
+under `worktrees/task075-run/data/`. Both were restored from the disk to the main checkout on
+2026-10-04 for TASK-076, as `/home/huhn/develop/emai/open-embodied-jepa/data/apple-far-shift-v2`
+(601 files) and `.../data/apple-far-shift-v2-views` (271 files), every file checked against the
+archived sha256 (each `manifest.json` matches the protocol's hash). A worktree that reads them
+symlinks them from there (`scripts/new_worktree.sh --run` links `data/`) rather than copying them.
+`task072-run` was the `--evidence` root of the TASK-074/075 stages.
 
 ### Other items on the disk
 
@@ -119,18 +119,29 @@ the TASK-074/075 stages.
 
 ### Not archived
 
-Still only on the SSD, as of 2026-10-02 (a snapshot; run `git worktree list` in the main checkout
-for the current set): the main checkout; `arena-e9b` (PR #123, open; its runs and the queued
-`arena_run.sh` job use it); `oej-isaac-newton` (below); the review and PR worktrees `docs-review`,
-`fix-ci-pr-a`, `fix-ci-review`, `followup-nits`, `tooling-pr-c`, `tooling-review`,
-`white-plate-review` and `arena-gr00t-review`, which hold no evidence of their own (every HEAD is on
-GitHub) and are pending removal with `scripts/remove_worktree.sh`; `storage-archive-2` (this
-document's PR); `fix-test-leak` (another session's); and directories of other projects (`ar-v1`,
-`t1-cluster`, `v2d-toolkit-8c778f9`).
+Still only on the SSD, as of 2026-10-04 (a snapshot; run `git worktree list` in the main checkout
+for the current set):
 
-Skipped for now, still on the SSD: `/home/huhn/develop/emai/oej-isaac-newton` (2.8 GB,
-`feat/task-025-isaac-newton`). A process (`tail -F .../outputs/isaac-newton-scripted-dev-3/log.txt`)
-holds a file inside it open, so it was not archived; archive it the same way once that process ends.
+- the main checkout;
+- `arena-e9b` (PR #123; a run is in progress in it);
+- `oej-isaac-newton` (below);
+- `fix-ci-pr-a` (`fix/ci-stabilise-imports` @ `51c6600`, squash-merged as #124);
+- `task076-prereg-draft` (`docs/task076-prereg-draft`, PR #129, merged), which holds only generated
+  `.mc/data/*.json` index files beyond git: `scripts/remove_worktree.sh` refuses it without
+  `--force-ignored`, so it was kept;
+- `storage-archive-3` (this document's PR);
+- `/home/huhn/develop/emai/wt-task076-freeze-prep` (`docs/task076-freeze-prep`, another session's);
+- directories of other projects (`ar-v1`, `t1-cluster`, `v2d-toolkit-8c778f9`).
+
+The review and PR worktrees `docs-review`, `fix-ci-review`, `followup-nits`, `tooling-pr-c`,
+`tooling-review`, `white-plate-review`, `arena-gr00t-review`, `fix-test-leak` and
+`storage-archive-2` held no evidence of their own (every HEAD is on GitHub) and were removed with
+`scripts/remove_worktree.sh` on 2026-10-04, without archiving.
+
+Still pending, on the SSD: `/home/huhn/develop/emai/oej-isaac-newton` (2.8 GB,
+`feat/task-025-isaac-newton`). A process (pid 260505,
+`tail -F .../outputs/isaac-newton-scripted-dev-3/log.txt`) still holds a file inside it open, as on
+2026-10-04, so it has not been archived; archive it the same way once that process ends.
 
 ## Restore
 
