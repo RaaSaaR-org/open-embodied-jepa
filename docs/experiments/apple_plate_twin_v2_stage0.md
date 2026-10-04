@@ -23,8 +23,10 @@ R8.15–R8.17 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-02 (b).
 - **A full-look-ahead H-final(A) attempt** took 15.0 s in median and 16.4 s at most (25.0 s at
   most over the remedy settings). That is below 60 s, so the 300 s per-attempt cap is not
   reviewed.
-- **Blocker for K0:** one file of TASK-072 run-1's evidence is unreadable on the archive disk, so
-  G-repro cannot run. The smokes therefore ran P-3 on a stand-in estimate (§2).
+- **The K0 evidence blocker is cleared.** During Stage 0 one file of TASK-072 run-1's evidence
+  was unreadable on the archive disk, so the smokes ran P-3 on a stand-in estimate (§2). The
+  coordinator has since restored the file bit-identically, and a real G-repro check now passes
+  all eight of run-1's recorded readout facts (§2a).
 
 ## 2. Setup, provenance and the evidence problem
 
@@ -40,6 +42,10 @@ R8.15–R8.17 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-02 (b).
     status and `STAGE0_SMOKES`), `cohort_digest` (floats rounded to 10 decimals, as
     `plan_digest`, after macOS CI computed a different last ulp; the draws themselves are
     unchanged), the tests, the manifest and the documents. The stage functions are unchanged.
+  - After the review of #134 (R8.18), the harness was replaced by verbatim copies of the pinned
+    runners' functions (`75d79ae`), and the truth stand-in moved into the runner as
+    `smoke_truth_estimates`. The stand-in path the smokes took produces the same estimates and
+    frame checks as before: the reset truth, after the same render-majority rule.
 - **The machine:** the Linux PC; MuJoCo 3.13.0 with EGL; 6 CPU workers with 1 torch thread each.
   - Only the two offline smokes used the GPU, each through
     `scripts/gpu_run.sh --wait --board --who oej:task076-O-smoke` (or `-scale`), with
@@ -66,8 +72,10 @@ R8.15–R8.17 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-02 (b).
   - no repair was attempted.
 
   G-repro reads every train root's post-look frame through `CorpusReader`, which checks each
-  file's sha256 first, so **G-repro cannot pass**. Every real stage that runs P-3 is V until this
-  file is restored or a reviewed ruling replaces the check. That includes K0 and every closed-loop
+  file's sha256 first, so G-repro could not pass during the smokes.
+  - **Cleared after the smokes.** The coordinator restored the file bit-identically (sha256
+    `e13c97cb…c296`; 414 of 414 run-1 files now verify). The procedure is in
+    `/home/huhn/develop/emai/worktrees/task076-evidence/RESTORE-51171.md`. That includes K0 and every closed-loop
   stage.
 - **The smoke stand-in.** Every closed-loop smoke ran with `--truth-estimates`: P-3's post-look
   estimates are the reset truth, not its refitted readout. The runner accepts this flag in smokes
@@ -78,6 +86,27 @@ R8.15–R8.17 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-02 (b).
   - It may change P-3's grasp rate, which the smokes do not read.
 - **τ_re** was a placeholder of 1.0 cm (TASK-075's τ) in every smoke. It sets H-final(A)'s
   look-ahead tolerance of 0.25 cm.
+
+## 2a. The real G-repro path, checked (after the restore)
+
+`scripts/run_plate_twin_v2.py preflight` ran at `75d79ae`, on a clean tree and on the CPU, with
+`--evidence /home/huhn/develop/emai/worktrees/task076-evidence`. It ran the preflight guards,
+G-evidence and G-repro. G-repro refits P-3's post-look readout exactly as TASK-072 run-1 did.
+- It re-renders only run-1's own post-look frames (the perception and D seeds of TASK-072's
+  block). No new seed was used and no attempt was run.
+- Outcome: **PREFLIGHT-READY**, in 46 s, with a peak of 8.0 GiB PSS.
+- All eight reproduction checks pass:
+  - the P and R readout selections;
+  - the fit rows;
+  - S0-P's apple and plate errors;
+  - C's mean estimates;
+  - the B-replay library;
+  - D2's nearest roots.
+- 170 train roots were decoded, and no test root.
+- One re-render disagreed and was settled by the render-majority rule: seed 51235, one level in
+  4 pixels, with equal states.
+- Report: `outputs/task076-grepro-1/report.json`, sha256
+  `8e52397a563fdd0ee25ac8cf3e46ab69f5a7d4e975d7f7f3e35b9d5300ecceb0`.
 
 ## 3. The smokes (outputs/task076-smoke-2, revision 14b23b0)
 
@@ -132,6 +161,11 @@ and a smoke R-plate fitted on 20 smoke roots.
 - **The contact check holds.** None of the 144 base-setting attempts had apple–plate contact
   before s1, and none was refused. The earliest contact over all of them was step 607. That is
   the contact limit for the remedies.
+- **What the contact check covers.** The hook checks contact from step 405 (s0) onward, once per
+  control step, at that step's observation. So "no contact before s1" means no contact at any
+  observed step from 405 to 524. Physics substeps between two observations are not checked.
+  Every plate move is separately refused by `plate_shift.move_plate` if the moved plate touches
+  anything but the table.
 - **Why cell A's plate barely moves after 485.** Under H-final, the palm's xy moved a median of
   0.12 cm (maximum 0.15 cm) between 483 and 523. e9's transfer brings the palm to the aim well
   before the last decision, and the lower is vertical. Before 485, though, the rule moved the
@@ -242,8 +276,24 @@ These runs gave the same K-pred numbers as smoke-2:
   later s1 applies to cell A only; M-a and M-b keep s1 = 525.
 - **The smoke stand-ins** were the truth estimates (G-repro unavailable) and τ_re = 1.0 cm.
 - **The harness pieces of the pinned runner chain** (G-evidence, G-repro, the render majority,
-  report I/O) are ported into `plate_twin_v2_harness.py` with their behaviour unchanged, because
-  a new runner may load no other script. The guards come from `run_tools`.
+  report I/O) are copied into `plate_twin_v2_harness.py`, because a new runner may load no
+  other script (R8.18, after the review of #134).
+  - **Verbatim.** Each copied definition has exactly its source's text, docstrings included.
+    `test_the_harness_ports_are_verbatim` compares them with `ast.get_source_segment`; nothing
+    is stripped.
+  - **Adapted, the only deviations:**
+    1. The module aliases the copied text uses (`R65`, `M2R`, `LIN`) are rebound to the
+       harness's own copies instead of loading the scripts.
+    2. `LIN.load_wide_reset()` returns `wm_critic_v2.wide_reset_values`, the NumPy copy of
+       `scripts/evaluate_apple.wide_reset`, instead of loading that script. A test checks that
+       the two are equal on every seed 51000–52199, which is where G-repro's re-rendered seeds
+       lie. These are pure draws, and nothing is simulated.
+  - **TASK-076's own code, not ports:** `utc`, the bounded `Pool` (the TASK-074/075 pattern on
+    TASK-076's worker), `seal_far_corpus` and `strip`.
+  - **The truth stand-in** is not in the harness. It is the runner's `smoke_truth_estimates`,
+    and both `estimates_for` and `run()` refuse it unless `--smoke` is set, behind the parser's
+    own check (tested).
+  - The guards come from `run_tools`.
 - **The protocol text items of the #133 approval** (R8.17):
   - the header's bar sources;
   - R8.12's two effects pulling in opposite directions;
@@ -252,14 +302,11 @@ These runs gave the same K-pred numbers as smoke-2:
 
 ## 5. What blocks K0
 
-1. **The G-repro evidence.** `look2-51171.npz` must be restored with its recorded sha256
-   (`e13c97cb…c296`), or a reviewed ruling must replace the check. Options, for the owner or a
-   reviewer:
-   - another copy, if one exists off this machine;
-   - re-collecting root 51171 with TASK-072's collector and checking each zip member's recorded
-     CRC32 (the archive's central directory is readable). This simulates a TASK-072 seed, so it
-     needs a ruling.
-2. **A reviewer's reported GO for K0**, as before.
+1. ~~**The G-repro evidence.**~~ **Cleared.** `look2-51171.npz` is restored with its recorded
+   sha256 (`e13c97cb…c296`). See `RESTORE-51171.md` in the evidence root for the procedure. The
+   real G-repro path passes (§2a).
+2. **A reviewer's reported GO for K0**, as before. K0 runs with
+   `--evidence /home/huhn/develop/emai/worktrees/task076-evidence`.
 3. Not a blocker: cell A's removal makes K-pred's row PRED-INFEASIBLE in advance. Whether the
    K-pred M cells (reported only) still run is unchanged by this: §5 step 7 runs them after
    O-PASS.

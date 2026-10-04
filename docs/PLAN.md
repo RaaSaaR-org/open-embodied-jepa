@@ -60,8 +60,9 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
 **Stage-0 update (2026-10-04, R8.16):** the smokes removed cell A, because its plate barely moves
 after the last decision (median 0.06 cm under H-final, against the 2 cm needed, and no declared
 remedy reached 2 cm). K-pred's row is therefore PRED-INFEASIBLE, and Branch B's PRED-INFEASIBLE
-entry applies. The primary question (Stages O, D, S/U) is unchanged. K0 is blocked until the
-G-repro evidence is restored ([Stage-0 record](experiments/apple_plate_twin_v2_stage0.md)).
+entry applies. The primary question (Stages O, D, S/U) is unchanged. The G-repro evidence is
+restored and its check passes; K0 waits for a reviewer's GO
+([Stage-0 record](experiments/apple_plate_twin_v2_stage0.md)).
 
 - **Question.** Two parts:
   - Can e9's place, after P-3's pick, aim at a frozen-DINOv2 single-frame plate readout and still

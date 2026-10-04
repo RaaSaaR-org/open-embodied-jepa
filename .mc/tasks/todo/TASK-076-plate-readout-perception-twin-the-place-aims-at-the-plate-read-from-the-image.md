@@ -97,3 +97,7 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
   plate motion 0.06 cm under H-final, 2 cm needed; no remedy reached it), so K-pred's row is
   PRED-INFEASIBLE. K0 is blocked: TASK-072 run-1's corpus root `look2-51171.npz` is unreadable on
   the archive disk, so G-repro cannot run until it is restored or a ruling replaces the check.
+- 2026-10-04: review of #134 addressed (R8.18): the harness is a verbatim, test-pinned port; the
+  truth stand-in is smoke-only and guarded twice. `look2-51171.npz` was restored bit-identically,
+  and a real G-repro check passes all eight facts, so K0's evidence blocker is cleared. K0 waits
+  for a reviewer's GO.

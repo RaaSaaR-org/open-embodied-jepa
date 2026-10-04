@@ -816,7 +816,7 @@
  "note": "DRAFT: nothing gated has run. No arm of TASK-076 runs a world model. Learned Apple->Plate on the frozen v1 MVP benchmark is 0/150 per backend.",
  "pins_note": "every file TASK-075 pinned (TASK-074's included) is carried with its sha256 unchanged; TASK-076's own modules, runner and test are pinned beside them. The protocol document and this manifest are not pinned (the Stage-0 record is added after the smokes)",
  "protocol": "apple_plate_twin_v2",
- "protocol_document_sha256": "be84cb7430b78b712903968160baa9cdc2d0c3cb68b45e7ea721dd6f20b5f6a5",
+ "protocol_document_sha256": "2ac2649a3f31becd09ef9f34d3bdd6835c33731b02da205da5b1f2c81a28e188",
  "status": "DRAFT",
  "task": "TASK-076"
 }

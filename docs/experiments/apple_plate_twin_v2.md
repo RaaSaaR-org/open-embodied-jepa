@@ -8,8 +8,8 @@ The smokes removed cell A (§3.2), so K-pred's row is already PRED-INFEASIBLE. N
 been simulated. Nothing from any cohort below may be simulated before the conditions in §5 are
 met: K0 runs only on a reviewer's reported GO for K0, and nothing after K0 runs before the frozen
 protocol is merged on an independent reviewer's reported APPROVE. What still stands between this
-text and the freeze is listed in §13.2, including a blocker for K0 found in Stage 0 (the TASK-072
-evidence that G-repro reads is damaged on the archive disk).
+text and the freeze is listed in §13.2. (A damaged TASK-072 evidence file found in Stage 0 has
+been restored, and G-repro passes.)
 
 Every precision bar below (O1, O4, K-P5) is τ_re, measured in K0, and every ratio or test bar is
 a definitional constant (O3's 1.0, G2's p < 0.01). The count bars and stop thresholds are
@@ -891,19 +891,17 @@ Without it, a true headroom of exactly 8/32 would have missed its bar, and fired
    (300 s) is reviewed before the freeze (§10).
    **Done** (R8.15–R8.17): s1 = 525 stays; cell A is removed (PRED-INFEASIBLE); the look-ahead
    attempt took at most 25.0 s, so the cap is not reviewed.
-   **Found in Stage 0, a blocker for K0:** TASK-072 run-1's corpus root
-   `data/apple-look-v2-linux/run-1/episodes/look2-51171.npz` is unreadable on the archive disk
-   (two 512-byte sectors), and no other copy was found, so G-repro (§2, P-3's readout refitted
-   exactly) cannot pass its G-data check. Every stage that runs P-3 is V until the evidence is
-   restored or a reviewed ruling replaces the check. The smokes ran on a stand-in (§3.2).
+   **Found in Stage 0, and cleared:** TASK-072 run-1's corpus root `look2-51171.npz` was
+   unreadable on the archive disk, so the smokes ran P-3 on a stand-in estimate (§3.2). It has
+   since been restored bit-identically (sha256 `e13c97cb…c296`). A real G-repro check then
+   passed all eight of run-1's recorded facts (R8.18; Stage-0 record §2a).
 3. **K0**, on a reviewer's reported GO for K0. Its values, including G2's predicted feasibility,
    are written into the frozen block (§5). A CAL-ESCALATE stops here.
 4. **The freeze:** status FROZEN and the frozen-block sha pin, merged on an independent
    reviewer's reported APPROVE.
 
-Steps 1 and 2 are done. Before step 3, the G-repro evidence must be restored or a reviewed
-ruling must replace its check. The text cannot be frozen before steps 3 and 4: the sha pin and
-K0's values do not exist yet.
+Steps 1 and 2 are done, and the G-repro evidence is restored. The text cannot be frozen before
+steps 3 and 4: the sha pin and K0's values do not exist yet.
 
 ### 13.3 The other freeze checks
 
