@@ -43,10 +43,10 @@ pass would not show that a world model is needed (TASK-074 protocol §9b); under
 task on a plate target counts as a task change only if it is paired with a condition where the
 target must be predicted (a moving plate, or a plate that leaves the view), declared as such.
 
-**The preregistration is a draft:** [`docs/experiments/apple_plate_twin_v2.md`](../../../docs/experiments/apple_plate_twin_v2.md)
-(DRAFT, not frozen). Nothing may run before it is merged on an independent reviewer's reported
-APPROVE, except its K0 calibration (development seeds 56000–56031), which needs a reviewer's
-reported GO for K0 and runs before the freeze. Ruling R8 (DECISIONS 2026-10-02 (b)) adds a
+**The preregistration:** [`docs/experiments/apple_plate_twin_v2.md`](../../../docs/experiments/apple_plate_twin_v2.md)
+(FROZEN after K0-PASS on branch `prereg/task076-freeze`; in force once merged on an independent
+reviewer's reported APPROVE). Its K0 calibration (development seeds 56000–56031) ran before the
+freeze on a reviewer's reported GO; nothing else may run before the merge. Ruling R8 (DECISIONS 2026-10-02 (b)) adds a
 moving-plate headroom check, Stage K-pred, because Option 1 alone cannot advance the LeWM goal.
 The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
 
@@ -95,9 +95,14 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
   56900–56999 ([record](../../../docs/experiments/apple_plate_twin_v2_stage0.md); rulings
   R8.15–R8.17). s1 = 525 is free of apple–plate contact; cell A is removed (median remaining
   plate motion 0.06 cm under H-final, 2 cm needed; no remedy reached it), so K-pred's row is
-  PRED-INFEASIBLE. K0 is blocked: TASK-072 run-1's corpus root `look2-51171.npz` is unreadable on
-  the archive disk, so G-repro cannot run until it is restored or a ruling replaces the check.
+  PRED-INFEASIBLE (after an O-PASS; PRED-NOT-RUN without one).
 - 2026-10-04: review of #134 addressed (R8.18): the harness is a verbatim, test-pinned port; the
   truth stand-in is smoke-only and guarded twice. `look2-51171.npz` was restored bit-identically,
   and a real G-repro check passes all eight facts, so K0's evidence blocker is cleared. K0 waits
   for a reviewer's GO.
+- 2026-10-04: K0 ran once at `2d0bdb7` on the reviewer's GO (#134) and ended **K0-PASS**
+  (τ_re = 1.0 cm; N_K(0) = 32/32; H-clock(K) 24/32; H-stale(K) 0/32; G2's predicted pass
+  probability 0.9983; report sha256 `ef4b5410…c876`). Freeze PR (branch `prereg/task076-freeze`,
+  R8.19, decided by Claude under owner delegation): `K0_MEASURED` in the frozen block, status
+  FROZEN, the sha pin set; the GO review's non-blocking notes 3, 4 and 6 folded in. Stage O
+  waits for the merge on an independent APPROVE and its own GO.

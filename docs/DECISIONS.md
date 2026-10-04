@@ -344,14 +344,37 @@ and does not replace it.
     smokes.
   - The damaged evidence file `look2-51171.npz` has been restored bit-identically. A real G-repro
     check at `75d79ae` passed all eight reproduction checks, so K0's evidence blocker is cleared.
+- **R8.19 — K0-PASS and the freeze** (2026-10-04, each decided by Claude under owner
+  delegation). K0 ran once at `2d0bdb7` on the reviewer's reported GO for K0 (#134), on cohort K
+  (56000–56031), on the CPU and without the GPU lock, and ended **K0-PASS** (report
+  `outputs/task076-k0-1/report.json`, sha256 `ef4b5410…c876`; protocol §5.1). τ curve, counted
+  successes of 32 at 0, 0.5, 1, 1.5, 2, 2.5, 3, 4 and 5 cm: 32, 31, 28, 23, 17, 18, 16, 8, 5, so
+  τ_re = 1.0 cm; N_K(0) = 32; H-clock(K) = 24/32; H-stale(K) = 0/32; G2's predicted feasibility
+  b = 8, c = 0, point p 1.53 × 10⁻⁵, pass probability 0.9983 (not below 0.5, so nothing is
+  disclosed as a risk). Decisions:
+  - **The K0 values enter the frozen block as `K0_MEASURED`**, copied from the report: the row,
+    τ_re, the count curve (and the at-rest curve, reported only), N_K(0), the H-clock and H-stale
+    counts and their per-seed outcomes, the stop flags, H-clock's fitted targets, G2's
+    feasibility, and the run's provenance. A test recomputes the decision and G2's feasibility
+    from them. The protocol status is FROZEN; the frozen block's sha256 `011dff8a…570b` is
+    pinned in the test and the manifest, and takes effect on the merge after an independent
+    APPROVE.
+  - **The K0 GO review's non-blocking notes are folded in.** Note 4: the text said K-pred's row
+    is "already PRED-INFEASIBLE", but `decide_kpred` returns PRED-NOT-RUN first when Stage O
+    misses O-PASS; the protocol header, §3.2, §12, §13.2 and the frozen block's Stage-0 verdict
+    now say PRED-INFEASIBLE after an O-PASS and PRED-NOT-RUN otherwise (both escalate, no clause;
+    the code is unchanged). Note 3: the simulating stages' EGL rendering stays outside the GPU
+    lock, as §8 declares and as K0 ran; §8 now says so explicitly, and rendering under the lock
+    would need its own ruling. Note 6: the task card's superseded "K0 is blocked" line is
+    removed.
 - **Why not skip to a LeWM task now.** No calibrated plate bar and no measured prediction headroom
   exist yet. Starting without them would repeat TASK-074 (an uncalibrated bar) and TASK-073 (no
   headroom). K-pred costs about 416 CPU attempts.
 - **A definition fixed now** for every later task: "a LeWM-driven closed-loop success". See
   [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) §9 and [PLAN.md](PLAN.md).
 
-The draft preregistration is [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DRAFT,
-not frozen). The plan is [PLAN.md](PLAN.md).
+The preregistration is [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (FROZEN after
+K0-PASS, R8.19; in force once merged on an independent APPROVE). The plan is [PLAN.md](PLAN.md).
 
 ## Development record 2026-10-01/02 — Arena cross-simulator checks, a GR00T reference baseline and the white plate (not gated)
 

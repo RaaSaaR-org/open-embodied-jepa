@@ -18,7 +18,8 @@ R8.15–R8.17 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-02 (b).
   decision, against the 2 cm the rule needs. No declared remedy reached 2 cm (L = 1, then
   s1 = 535 … 605: medians 0.022–0.063 cm). No move was refused. By the protocol's removal rule,
   cell A is removed before the freeze, and K-pred's row is **PRED-INFEASIBLE** (escalate, no
-  clause).
+  clause) if Stage O records O-PASS; without O-PASS, K-pred does not run and its row is
+  PRED-NOT-RUN (also escalate, no clause; `decide_kpred` checks Stage O first; R8.19).
 - **m2** (H-final, L = 2): median 0.0012 cm, maximum 0.0019 cm.
 - **A full-look-ahead H-final(A) attempt** took 15.0 s in median and 16.4 s at most (25.0 s at
   most over the remedy settings). That is below 60 s, so the 300 s per-attempt cap is not
@@ -307,6 +308,7 @@ These runs gave the same K-pred numbers as smoke-2:
    real G-repro path passes (§2a).
 2. **A reviewer's reported GO for K0**, as before. K0 runs with
    `--evidence /home/huhn/develop/emai/worktrees/task076-evidence`.
-3. Not a blocker: cell A's removal makes K-pred's row PRED-INFEASIBLE in advance. Whether the
+3. Not a blocker: cell A's removal makes K-pred's row PRED-INFEASIBLE in advance (after an
+   O-PASS; PRED-NOT-RUN without one, R8.19). Whether the
    K-pred M cells (reported only) still run is unchanged by this: §5 step 7 runs them after
    O-PASS.

@@ -38,8 +38,9 @@ STAGE_FILES = (
     "src/embodied_jepa/plate_twin_v2_harness.py",
     "scripts/run_plate_twin_v2.py",
 )
-# The frozen block's sha256, set at the freeze (protocol §13.2 step 4). None while DRAFT.
-FROZEN_SHA256_PIN = None
+# The frozen block's sha256, set at the freeze (protocol §13.2 step 4) after K0-PASS; the
+# K0 report is outputs/task076-k0-1/report.json, sha256 ef4b5410...c876 (``pt.K0_MEASURED``).
+FROZEN_SHA256_PIN = "011dff8ac65dde7341850ac4c4d9c569b399f1e3a8d2a1e978d3a3b9bbb7570b"
 
 
 def _runner():
@@ -68,7 +69,47 @@ def test_the_frozen_sha_pin_is_set_at_the_freeze():
         assert "**Status: DRAFT" in doc
     else:
         assert pt.frozen_sha256() == FROZEN_SHA256_PIN
-        assert MANIFEST["status"] != "DRAFT"
+        assert MANIFEST["status"] == pt.STATUS == "FROZEN"
+        doc = (ROOT / "docs" / "experiments" / "apple_plate_twin_v2.md").read_text()
+        assert "**Status: FROZEN" in doc
+        assert pt.K0_MEASURED is not None and pt.K0_MEASURED["row"] == "K0-PASS"
+
+
+def test_k0_measured_values_reproduce_k0s_decision_and_g2_feasibility():
+    """The frozen K0 values are internally consistent: the decision, tau_re and G2's predicted
+    feasibility recompute from the recorded counts and per-reset failures (protocol §5 step 2)."""
+    m = pt.K0_MEASURED
+    assert m["report_sha256"] == (
+        "ef4b541067dc969ee5ebfc9ee78e2c719a4b84e4d3ed0d71a167feb6fcd0c876"
+    )
+    assert m["revision"].startswith("2d0bdb7") and m["protocol_status_at_run"] == "DRAFT"
+    assert m["counts"] == {
+        "0.0": 32,
+        "0.5": 31,
+        "1.0": 28,
+        "1.5": 23,
+        "2.0": 17,
+        "2.5": 18,
+        "3.0": 16,
+        "4.0": 8,
+        "5.0": 5,
+    }
+    decision = pt.decide_k0(m["counts"], m["h_clock"], m["h_stale"])
+    assert decision["row"] == m["row"] == "K0-PASS"
+    assert decision["tau_re_cm"] == m["tau_re_cm"] == 1.0
+    assert decision["n_k0"] == m["n_k0"] == 32
+    assert decision["stops"] == m["stops"]
+    assert (m["h_clock"], m["h_stale"]) == (24, 0)
+    seeds = pt.seeds_of("K")
+    assert list(m["seeds"]) == [seeds[0], seeds[-1]]
+    handover = [s not in m["level0_failed_seeds"] for s in seeds]
+    clock = [s not in m["h_clock_failed_seeds"] for s in seeds]
+    stale = [s in m["h_stale_succeeded_seeds"] for s in seeds]
+    assert sum(handover) == m["n_k0"] and sum(clock) == m["h_clock"]
+    assert sum(stale) == m["h_stale"]
+    assert pt.g2_feasibility(handover, clock) == m["g2_feasibility"]
+    targets = {int(k): v for k, v in m["clock_targets"].items()}
+    assert tuple(sorted(targets)) == pt.DECISION_STEPS
 
 
 def test_pinned_files_match_and_task075_pins_are_unchanged():
