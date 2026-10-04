@@ -90,3 +90,14 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
 - 2026-10-04: R8.14 (decided by Claude under owner delegation): PRED-NEAR escalates without a
   clause when a headroom bar misses within noise; PRED-NONE now needs a headroom detectably below
   +8/32 (false-fire about 2–3 % per bar at a true 8/32).
+- 2026-10-04: Stage 0 (§13.2 steps 1–2) on branch `feat/task076-stage0`: the stage code, the
+  frozen block as module constants, the DRAFT manifest, the §5 tests and the smokes on smoke seeds
+  56900–56999 ([record](../../../docs/experiments/apple_plate_twin_v2_stage0.md); rulings
+  R8.15–R8.17). s1 = 525 is free of apple–plate contact; cell A is removed (median remaining
+  plate motion 0.06 cm under H-final, 2 cm needed; no remedy reached it), so K-pred's row is
+  PRED-INFEASIBLE. K0 is blocked: TASK-072 run-1's corpus root `look2-51171.npz` is unreadable on
+  the archive disk, so G-repro cannot run until it is restored or a ruling replaces the check.
+- 2026-10-04: review of #134 addressed (R8.18): the harness is a verbatim, test-pinned port; the
+  truth stand-in is smoke-only and guarded twice. `look2-51171.npz` was restored bit-identically,
+  and a real G-repro check passes all eight facts, so K0's evidence blocker is cleared. K0 waits
+  for a reviewer's GO.

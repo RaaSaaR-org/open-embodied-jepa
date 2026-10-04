@@ -241,6 +241,48 @@ and does not replace it.
     time per bar (a simulation of 4 000 trials of 32 paired resets with 4 000 resamples each:
     2.6 %, 3.0 % and 2.2 % with 0, 1 and 2 reversed pairs per 32 expected), or at most about 9 % if
     all three sit at 8/32. Before, it was the bar's miss rate, 42–45 %.
+- **R8.15–R8.17 — Stage 0** (2026-10-04, each decided by Claude under owner delegation; record:
+  [apple_plate_twin_v2_stage0.md](experiments/apple_plate_twin_v2_stage0.md)). Smoke seeds
+  56900–56999 only; no cohort seed simulated; no world model.
+  - **R8.15 — the Stage-0 code.** The frozen block is `plate_twin_v2.py` (DRAFT manifest
+    `apple-plate-twin-v2.json`; the sha pin is `None` until the freeze), with workers, Stage O,
+    a runner on `run_tools`' guards and the §5 tests. The pieces of the pinned runner chain that
+    the runner needs (G-evidence, G-repro, the render majority, report I/O) are ported into
+    `plate_twin_v2_harness.py` (as verbatim copies since R8.18), since a new runner may load no other script. Cell A's
+    rule is discretised as plate(t) = plate(s0) + κ·(palm(max(t − L, s0)) − palm(s0)); the
+    remedies' contact limit is the earliest apple–plate contact of the base-setting smokes, with
+    s1 strictly before it, and a later s1 applies to cell A only.
+  - **R8.16 — the Stage-0 smokes settle §12, and cell A is removed.** No apple–plate contact
+    before s1 = 525 on 144 base-setting attempts (earliest contact: step 607), so s1 stays. Under
+    H-final, cell A's plate moved a median of 0.060 cm after 485 (2 cm needed); L = 1 and s1 =
+    535–605 gave 0.022–0.063 cm; nothing was refused. By the declared removal rule cell A is
+    removed before the freeze, so K-pred's row is PRED-INFEASIBLE (escalate, no clause; PLAN.md's
+    Branch B). m2: median 0.0012 cm, maximum 0.0019 cm. A full-look-ahead H-final(A) attempt took
+    at most 25.0 s, below 60 s, so the per-attempt cap is not reviewed. The smokes ran P-3 on
+    the reset truth as a stand-in estimate, because TASK-072 run-1's corpus root
+    `look2-51171.npz` was unreadable on the archive disk and G-repro could not run. That
+    blocked K0 until the file was restored; it now is (R8.18).
+  - **R8.17 — the four non-blocking items of the #133 approval** are folded into the protocol:
+    the header now gives each count bar's real source (D's 12/16 and 14/16 are declared stops,
+    K0's H-clock stop is G2's minimum separation); R8.12's two numbers are not "both optimistic"
+    (H-handover for H-twin is optimistic for G2, the in-sample H-clock(K) pessimistic); the
+    noise guard's power is stated (PRED-NONE fires about 42 % of the time at a true headroom of
+    4/32 and about 87 % at 2/32, so PRED-NEAR is the likely row at intermediate headrooms); and
+    §10's "> 60 s per attempt" cap-review rule is part of §13.2 step 2.
+- **R8.18 — the harness is a verbatim port** (2026-10-04, decided by Claude under owner
+  delegation, on the review of #134). R8.15 called the ported harness "unchanged", but several
+  functions differed from their sources. Option (a) is taken.
+  - The pinned runners' pieces in `plate_twin_v2_harness.py` are now exact copies of their
+    sources' text, and a test pins each one to its source function.
+  - The only adaptations:
+    1. the aliases `R65`, `M2R` and `LIN` are rebound to the harness's own copies;
+    2. `LIN.load_wide_reset` returns `wm_critic_v2.wide_reset_values` instead of loading
+       `scripts/evaluate_apple.py`, tested equal on every seed 51000–52199.
+  - The truth stand-in moved out of the ported `cohort_estimates` into the runner's
+    smoke-only `smoke_truth_estimates`, which `estimates_for` and `run()` refuse outside
+    smokes.
+  - The damaged evidence file `look2-51171.npz` has been restored bit-identically. A real G-repro
+    check at `75d79ae` passed all eight reproduction checks, so K0's evidence blocker is cleared.
 - **Why not skip to a LeWM task now.** No calibrated plate bar and no measured prediction headroom
   exist yet. Starting without them would repeat TASK-074 (an uncalibrated bar) and TASK-073 (no
   headroom). K-pred costs about 416 CPU attempts.

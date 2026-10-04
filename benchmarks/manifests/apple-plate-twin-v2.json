@@ -1,0 +1,822 @@
+{
+ "cohorts": {
+  "A": "347a0d6e9ae35bc6ae6849ddc184be564e066dcfbbe9592cfcf28695a8defe50",
+  "D": "59efe3bb019f59ec090b875a3e48b28ba2b0280517efc8b9d75d56e54cab4b0f",
+  "K": "070196e907b0576b4dc5b1994fc8fa90d3ba1e3857ecf58e87665dbaf2fdede1",
+  "M-a": "aee18ef27ef8563aef0cbbb9ad470f46b5d0715905716d3c7269a0750149ddf0",
+  "M-b": "f7ace1040702bb78a645d9e1388f6f4bd511d34767cbdfd8a01cc7b56e9149ee",
+  "S": "4c89f88f332d826496fa3e70fc8e4aac1d39a53ccf08f386df0d447406cd3c8c",
+  "U": "41b01e78fbb347c7d89739ff1c51572d10c60fe1ca9e7e727fdbb247c2c77de7"
+ },
+ "document": "docs/experiments/apple_plate_twin_v2.md",
+ "encoder_digests": {
+  "floor": "546b90114b559b34e145cc7fa2985f529b11b22febcc06741ebcd2fdf89729d2",
+  "pretrained": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27"
+ },
+ "frozen": {
+  "arms": {
+   "H-clock": {
+    "aim": "the per-decision-step median of the true plate position over K0's resets (fitted once in K0; reads no image at run time)",
+    "privileged": false,
+    "role": "the image-free control (G2)"
+   },
+   "H-floor": {
+    "aim": "R-plate refitted on the seed-0 random-init DINOv2's full tokens",
+    "privileged": false,
+    "role": "the encoder floor (reported)"
+   },
+   "H-handover": {
+    "aim": "the true moved plate (lewm_planner_v2 schedule)",
+    "privileged": true,
+    "role": "the family ceiling"
+   },
+   "H-stale": {
+    "aim": "P-3's post-look plate estimate (read before the move; no later image)",
+    "privileged": false,
+    "role": "the condition's check (S-VOID-CONDITION, K0 stop)"
+   },
+   "H-twin": {
+    "aim": "R-plate's reading of the current onboard 112 px frame (pretrained DINOv2 full tokens, dual ridge), at every decision",
+    "privileged": false,
+    "role": "hypothesis"
+   },
+   "P-stale": {
+    "aim": "P-3 unchanged",
+    "privileged": false,
+    "role": "the incumbent (G3)"
+   }
+  },
+  "bootstrap_resamples": 10000,
+  "budget_rule": "if a reviewed amendment ever adds iterative training, its BUDGET block must pass run_tools.check_budget, select checkpoints with run_tools.select_checkpoint and apply the last-two rule only through run_tools.last_two_triggered",
+  "cap_factor_min": 5.0,
+  "caps_seconds": {
+   "featurisation": 1800.0,
+   "invocation": 7200.0,
+   "per_attempt": 300.0
+  },
+  "carried": "P-3",
+  "carried_from": [
+   "apple_lewm_planner_v2",
+   "apple_obs_ceiling_v2"
+  ],
+  "carried_salts": {
+   "reset_redraw": 7425,
+   "shift_direction": 7413
+  },
+  "cell_a": {
+   "L": 2,
+   "kappa": -0.5,
+   "rule": "for s0 < t <= s1: plate(t) = plate(s0) + kappa (palm(max(t - L, s0)) - palm(s0)), palm = the right palm's xy from PalmFK on the executed joint state of each step's observation; palm velocity at or before s0 counts as zero. So plate(s1) - plate(485) = kappa (palm(s1 - L) - palm(485 - L))",
+   "s1": 525,
+   "status": "removed"
+  },
+  "clause_rows": [
+   "TWIN-OFF-FAIL",
+   "TWIN-FAIL",
+   "TWIN-HARM"
+  ],
+  "clause_scope": "aiming e9's place primitive, after P-3's pick, at a single-frame frozen-DINOv2 ridge readout of the plate from the onboard 112 px camera, under TASK-074's 9 cm condition on apple-to-plate-v2: no further readout variant of this formulation (pooled or full tokens, lambda grid, crop, colour) is preregistered without new evidence of a different kind (a place primitive with its own feedback, temporal aggregation of readings, or a new view or sensor). The next step is TASK-075's Option 2 (a place servo; R3)",
+  "condition": {
+   "blocked": "if the move at step 300 would leave the plate touching anything other than the table (plate_shift's guard: the apple not yet lifted clear, or the hand), the plate is not moved; an evaluated attempt then ends as a counted failure (termination 'shift_blocked'), not a V; a corpus root is collected again without the move and flagged 'shift_blocked'. Every blocked move is reported per arm. decided by Claude under owner delegation, 2026-09-30",
+   "direction_arc_deg": [
+    225,
+    315
+   ],
+   "reset": "lewm_planner_v2.condition_reset(seed) (salt 7425), every cohort",
+   "shift_cm": 9,
+   "shift_step": 300,
+   "shift_vector": "lewm_planner_v2.shift_vector(seed, reset, 9) (salt 7413)"
+  },
+  "counted_success": "apple_at_rest_v0 after the settle AND the latched scorer's grasp stage AND its latched place stage, both reached during the attempt's commands, before the settle (owner rulings T71-R1, T71-R2); at rest without both is reported per arm and never counted",
+  "d_arms": [
+   "H-twin",
+   "H-handover"
+  ],
+  "d_bars": {
+   "H-handover": 14,
+   "H-twin": 12
+  },
+  "d_rows": [
+   "TWIN-DEV-STOP",
+   "D-PASS"
+  ],
+  "delegated": "decided by Claude under owner delegation (2026-09-30)",
+  "estimates_seconds": {
+   "attempt_lookahead": 42.0,
+   "attempt_ordinary": 5.5,
+   "featurisation": 120.0,
+   "invocation_max": 900.0
+  },
+  "evidence": {
+   "b_replay_library_roots": 112,
+   "carried": "P-3",
+   "checkpoint_dir": "checkpoints/task072-first-policy-v2-linux/run-1",
+   "checkpoints": {
+    "C-3": "d1820db4a1af3a63f02ed96c9a7c51d8b92d56ea7a23cf762940925f586b1289",
+    "P-3": "7988162df0b6106db5d007e322b824a3725b74cb103ba5a8de9f552912060be8",
+    "R-3": "bea0d422b951287fcad66630aa8ea837a59df441d7a6c1793e2423048e2c0fd3"
+   },
+   "corpus": "data/apple-look-v2-linux/run-1",
+   "corpus_manifest_sha256": "67c342f6d37f3bd1910af16139096c109fa0bf6647d87286ca26b0899c9b4f54",
+   "outcome": "M1-PASS",
+   "report": "outputs/task072-first-policy-v2-linux/run-1/report.json",
+   "report_sha256": "877452840d0d03520ec8644321ef32f6b19877caa679e77d173e3d2509edec78",
+   "results_manifest": "benchmarks/manifests/apple-first-policy-v2-linux-results.json",
+   "revision": "db65816eb56dadb73664f08978cadeb6e881b35f"
+  },
+  "expert": {
+   "release_dx": 0.015,
+   "release_pitch_rad": 0.45
+  },
+  "expert_budgets": [
+   130,
+   80,
+   45,
+   150,
+   100,
+   50,
+   30,
+   50,
+   30,
+   60
+  ],
+  "feature_anchor": {
+   "frames": 256,
+   "max_abs_pooled_difference": 0.001
+  },
+  "floor_seed": 0,
+  "forbidden_ranges": {
+   "apple_look_pilots": [
+    47900,
+    47931
+   ],
+   "apple_look_v1_corpus": [
+    47000,
+    47199
+   ],
+   "apple_wide_v1_corpus_and_pilots": [
+    48000,
+    48999
+   ],
+   "arena_123": [
+    50200,
+    50231
+   ],
+   "cohort_C": [
+    45300,
+    45339
+   ],
+   "cohort_D_and_prior_ceilings": [
+    45000,
+    45207
+   ],
+   "earlier_train_val_test": [
+    42000,
+    42031
+   ],
+   "final_cohort": [
+    44000,
+    44019
+   ],
+   "grasp_closure_probes": [
+    49000,
+    49199
+   ],
+   "mechanics_probes": [
+    41000,
+    41101
+   ],
+   "mvp_frozen_resets": [
+    20000,
+    20049
+   ],
+   "narrow_development": [
+    43000,
+    43004
+   ],
+   "task067_block": [
+    46000,
+    46999
+   ],
+   "task068_to_070_block": [
+    50000,
+    50999
+   ],
+   "task071_072_block": [
+    51000,
+    52199
+   ],
+   "task073_block": [
+    53000,
+    53999
+   ],
+   "task074_block": [
+    54000,
+    54999
+   ],
+   "task074_design_probes": [
+    54700,
+    54999
+   ],
+   "task075_block": [
+    55000,
+    55999
+   ]
+  },
+  "g1_bar": 56,
+  "g1_power": {
+   "0.875": 0.59,
+   "0.89": 0.73,
+   "0.906": 0.86,
+   "0.9375": 0.98,
+   "0.969": "> 0.99"
+  },
+  "g2_feasibility": {
+   "direction": "H-handover standing in for H-twin is optimistic for G2; H-clock(K) being in-sample is pessimistic for G2; the two pull in opposite directions",
+   "point": "the exact one-sided McNemar p on (2b, 2c), K0's H-handover(level 0) vs H-clock discordant counts doubled to S's 64 resets",
+   "probability": "the fraction of 10 000 resamples of 64 pairs drawn with replacement from K0's 32 pairs (salt 7604) whose exact one-sided McNemar p is below 0.01",
+   "resamples": 10000,
+   "rule": "reported only; it stops nothing; a probability below 0.5 is disclosed in the freeze PR as a known risk to G2"
+  },
+  "g2_p_bar": 0.01,
+  "g3_margin": 2,
+  "gated_rows": [
+   "V",
+   "S-VOID-CONDITION",
+   "U-VOID-CEILING",
+   "TWIN-HARM",
+   "TWIN-PASS",
+   "TWIN-PRIOR",
+   "TWIN-NEAR",
+   "TWIN-FAIL"
+  ],
+  "gpu": {
+   "guard": "run_tools.gpu_guard(report, min_free_gib=1.0, process_cap_gib=3.0, require_lock=True)",
+   "launcher": "scripts/gpu_run.sh --wait --min-free-gib 4 --board --who oej:task076-O -- uv run --no-sync python scripts/run_plate_twin_v2.py offline ...",
+   "min_free_gib": 1.0,
+   "process_cap_gib": 3.0,
+   "require_lock": true,
+   "rule": "the machine-wide flock ~/.local/state/gpu/lock (shared); resident GPU services are never stopped, killed or reconfigured; everything else runs on the CPU and takes no lock",
+   "stage": "Stage O's featurisation only"
+  },
+  "headroom_bar": 8,
+  "inner_folds": 5,
+  "k0_arms": [
+   "H-handover",
+   "H-clock",
+   "H-stale"
+  ],
+  "k0_measured": null,
+  "k0_rows": [
+   "CAL-ESCALATE",
+   "K0-PASS"
+  ],
+  "k0_stops": {
+   "ceiling_below_30": "N_K(0) < 30/32 (G1's 56/64 is not feasible)",
+   "clock_near_ceiling": "H-clock(K) >= N_K(0) - 4/32 (G2 is not feasible; G2's minimum separation)",
+   "level0_below_bar": "level 0 < 28/32 (tau_re undefined)",
+   "stale_above_4": "H-stale(K) > 4/32 (the condition does not need a reading)"
+  },
+  "k0_thresholds": {
+   "ceiling_min": 30,
+   "clock_margin": 4,
+   "stale_max": 4
+  },
+  "kappa_limit": 1.0,
+  "kp1_bar": 30,
+  "kpred": {
+   "hook": "a body_pos write plus mj_forward at every step's observation, outside every controller's act (as plate_shift.PlateShift); a move that would leave the plate touching anything but the table is refused, and a refused move ends the attempt as a counted failure",
+   "lower_phase": [
+    505,
+    555
+   ],
+   "no_step300_shift": true,
+   "open_phase": [
+    585,
+    635
+   ],
+   "s0": 405,
+   "s1": 525
+  },
+  "kpred_arm_specs": {
+   "H-cv": {
+    "aim": "a least-squares constant-velocity line through H-twin's readings so far, extrapolated to s1 (at 405: the reading)",
+    "privileged": false,
+    "role": "the hand-written action-blind extrapolator (knows the M form and s1)"
+   },
+   "H-final": {
+    "aim": "M: the scheduled final position; A: the fixed point by privileged look-ahead",
+    "privileged": true,
+    "role": "the ceiling"
+   },
+   "H-now": {
+    "aim": "the plate's true position at the decision step",
+    "privileged": true,
+    "role": "the cost of not predicting, with perfect perception"
+   },
+   "H-rule": {
+    "aim": "the fixed point g = p + kappa (palm_g(s1 - L) - palm(max(d - L, s0))), p = H-twin's reading, palm(.) from the robot's own executed states, palm_g from the kinematic stand-in's place-primitive path under aim g; iterated as H-final(A)",
+    "privileged": false,
+    "role": "the rule-knowing non-world-model arm (A only)"
+   },
+   "H-twin": {
+    "aim": "R-plate's reading of the current frame",
+    "privileged": false,
+    "role": "the cost of not predicting, with this perception"
+   }
+  },
+  "kpred_arms": {
+   "A": [
+    "H-final",
+    "H-now",
+    "H-twin",
+    "H-cv",
+    "H-rule"
+   ],
+   "M": [
+    "H-final",
+    "H-now",
+    "H-twin",
+    "H-cv"
+   ]
+  },
+  "kpred_clause_rows": [
+   "PRED-NONE"
+  ],
+  "kpred_clause_scope": "preregistering a LeWM plate-target place task on v2 under the tested action-dependent rule (cell A: kappa = -0.5 and the L and s1 it ran with) and under the constant-velocity family (M-a, M-b), without new evidence of a different kind. It does not close the LeWM backend, the v2 task or the product goal",
+  "kpred_rows": [
+   "PRED-NOT-RUN",
+   "V",
+   "PRED-INFEASIBLE",
+   "PRED-NONE",
+   "PRED-NEAR",
+   "PRED-NO-BAR",
+   "PRED-ADMIT(A)"
+  ],
+  "lambda_grid_relative": [
+   0.001,
+   0.01,
+   0.1,
+   1.0,
+   10.0,
+   100.0,
+   1000.0
+  ],
+  "lookahead": {
+   "iterate": "simulate the rest of the place in cloned state to s1 under aim g_k (the plate rule active), g_{k+1} = the simulated plate at s1; a branch whose plate move is refused ends there and its iterate is the plate where it stopped (logged)",
+   "max_iterations": 10,
+   "non_convergence": "logged, aimed at the last iterate, an H-final failure if it fails",
+   "start": "g0 = the true current plate",
+   "tolerance": "|g_{k+1} - g_k| <= tau_re / 4",
+   "tolerance_fraction_of_tau": 0.25
+  },
+  "m2_star": {
+   "history_rule": "TASK-066's history-one predictor qualifies for TASK-077 only if c_plate + m2* <= tau_re, or B's calibrated allowance covers m2*; otherwise TASK-077 declares 3 frames or the last 2 executed commands",
+   "m2": "|kappa| ||palm_xy(485) - palm_xy(483)|| per H-final(A) attempt, executed joint states",
+   "m2_star": "the upper 95 % bound of the median over cell A's 32 H-final attempts (bootstrap, salt 7604), and its 87.5th percentile"
+  },
+  "m_cells": {
+   "M-a": {
+    "distance_cm": 12,
+    "distance_to_go_cm": 4.0
+   },
+   "M-b": {
+    "distance_cm": 9,
+    "distance_to_go_cm": 3.0
+   }
+  },
+  "m_rule": "the plate moves at constant velocity from s0 to s1 along one direction per reset, drawn by TASK-074's -y arc rule (lewm_planner_v2.eligible_right_directions at |D|) from default_rng(SeedSequence([7606, seed])); plate(t) = plate(s0) + D (min(t, s1) - s0) / (s1 - s0) for t > s0",
+  "memory": {
+   "ceiling_gib": 12.0,
+   "headroom_gib": 4.0,
+   "measure": "pss",
+   "sample_seconds": 0.5,
+   "scale_rule": "the offline smoke's scale probe runs the Stage O core itself (run_tools.scale_probe) on smoke data presented at the real sizes (240 train + 30 val slots); its peak must stay SCALE_MARGIN_GIB below the ceiling before any GO",
+   "watch": "run_tools.MemoryWatch (process-tree PSS, run_guards.process_tree_memory)"
+  },
+  "never_closed": [
+   "the LeWM backend",
+   "DINOv2 as an encoder",
+   "the v2 task",
+   "Arena",
+   "the product goal"
+  ],
+  "noise_guard": {
+   "false_fire_at_8_of_32": "about 2-3 % per bar (2.6, 3.0, 2.2 % with 0, 1, 2 reversed pairs per 32); without the guard 42-45 %; union bound about 9 %",
+   "power_at_4_of_32": "PRED-NONE fires about 42 % of the time at a true headroom of 4/32 (36 % at 5/32 with one reversed pair) and about 87 % at 2/32; at an intermediate headroom PRED-NEAR is the likely row, an escalation rather than the clause (stated in advance)",
+   "rule": "a failed headroom bar is detectably below +8/32 when its paired interval's upper bound is below 8/32, and near otherwise; PRED-NONE needs one detectably below"
+  },
+  "o_gates": {
+   "O1_precision": "the upper 95 % bound of R_plate's cross-fitted median error <= tau_re",
+   "O3_clock_prior": "the upper 95 % bound of median(e_R_plate) / median(e_clock) < 1.0",
+   "O4_plate_hidden": "the lower 95 % bound of R_plate's median error on the plate-hidden frames > tau_re"
+  },
+  "o_reported": [
+   "the 87.5th percentile of R_plate's error (former O2) with its interval",
+   "the tau-curve-mapped predicted count with K0's curve, read against 28/32",
+   "per-step errors",
+   "the signed mean along x and y",
+   "c_plate on R_plate_pool (O1's form)",
+   "R_plate / R_plate_floor"
+  ],
+  "offline_rows": [
+   "V",
+   "TWIN-OFF-ARM",
+   "TWIN-OFF-FAIL",
+   "O-PASS"
+  ],
+  "outer_folds": 5,
+  "owner_decisions": {
+   "owner_delegation_date": "2026-09-30",
+   "owner_delegation_verbatim": "do the work without me - if you have decidions, choose your recommandation. do the work in subagents, use this chat just for updates. use subagents and workflows. goal is to continue working and try to get a real LeWM for the Unitree G1 without my help",
+   "rulings": "DECISIONS.md decision 2026-10-02 (R1-R4, R7) and decision 2026-10-02 (b) (R8, R8.1-R8.14)"
+  },
+  "p3_checkpoint_sha256": "7988162df0b6106db5d007e322b824a3725b74cb103ba5a8de9f552912060be8",
+  "platform": {
+   "machine": "x86_64",
+   "mujoco_gl": "egl",
+   "system": "Linux"
+  },
+  "protocol": "apple_plate_twin_v2",
+  "quiet_machine": {
+   "max_load_average_1min": 2.0,
+   "max_load_average_5min": 2.0,
+   "rule": "os.getloadavg() at the stage's start: the 1- and 5-minute load averages are both at most 2.0 (the idle machine with the GPU's resident service measures about 0.1-0.4); otherwise G-quiet makes the stage V before any render"
+  },
+  "ratio_bar": 1.0,
+  "read_roots": {
+   "total": 253,
+   "train": 225,
+   "val": 28
+  },
+  "readouts": {
+   "R_plate": "RidgeReadout (dual) from the full pretrained DINOv2 patch tokens (98 304-d, standardised on the fit rows) of the onboard 112 px decision frames to the plate xy (m); lambda from LAMBDA_GRID_RELATIVE by 5-fold inner CV grouped by root (salt 7603)",
+   "R_plate_floor": "R_plate on the seed-0 random-init DINOv2's full tokens",
+   "R_plate_pool": "RidgeReadout (dual; TASK-075's RidgeReadout settings) from the pooled 4 x 4 pretrained latent (6 144-d) to the plate xy: defines c_plate, gates nothing in TASK-076",
+   "clock_prior": "the per-decision-step median plate xy over the outer-training roots",
+   "closed_loop": "R_plate (and R_plate_floor for H-floor) fitted once after the Stage O boundary on every read root's decision frames, lambda by inner CV (salt 7603); its sha256 is recorded and every worker checks it",
+   "featurisation": "CUDA through scripts/gpu_run.sh, strict determinism, batch 64, with a CPU anchor check (lewm_planner_v2.FEATURE_ANCHOR); the fits on the CPU",
+   "hidden_rows": "each read root's stored plate-hidden onboard 112 px frames at 421-501 (t <= hi), read by the same outer fold's R_plate against the true plate at t",
+   "outer_folds": "5, by root: a seeded permutation of the read roots in plan order, position mod 5 (salt 7602)",
+   "rows": "each read root's decision frames 405-485 that lie inside its band (t <= hi)"
+  },
+  "reported_percentile": 87.5,
+  "rerun": {
+   "arm": "H-twin",
+   "rule": "pp.rerun_compare under lp.rerun_rule(); any difference is a V (TASK-074 \u00a78.3)",
+   "seeds": 4
+  },
+  "reserved_salts": {
+   "unused_learning_curve": 7605
+  },
+  "resets": {
+   "D": 16,
+   "K": 32,
+   "S": 64,
+   "U": 32,
+   "kpred": 32
+  },
+  "row_consequences": {
+   "CAL-ESCALATE": "escalate, no clause; nothing is frozen",
+   "D-PASS": "Stage S/U may run on a GO",
+   "K0-PASS": "K0's values enter the frozen block; freeze review",
+   "O-PASS": "Stage D and Stage K-pred may run, each on a GO",
+   "PRED-ADMIT(A)": "TASK-077 may be preregistered under cell A, with R8.8's three declarations and R8.9's history rule (Branch A)",
+   "PRED-INFEASIBLE": "escalate, no clause; PLAN.md's Branch B",
+   "PRED-NEAR": "escalate, no clause, no claim; any repeat needs fresh seeds and its own ruling",
+   "PRED-NO-BAR": "escalate, no clause; PLAN.md's Branch B",
+   "PRED-NONE": "K-pred's clause fires; Branch B",
+   "PRED-NOT-RUN": "escalate, no clause; PLAN.md's Branch B",
+   "S-VOID-CONDITION": "escalate, no clause, no claim",
+   "TWIN-DEV-STOP": "escalate, no clause",
+   "TWIN-FAIL": "the clause fires; next step Option 2 (R3)",
+   "TWIN-HARM": "the clause fires; next step Option 2 (R3)",
+   "TWIN-NEAR": "escalate, no clause, no claim; any repeat needs fresh seeds and its own ruling",
+   "TWIN-OFF-ARM": "escalate, no clause; K-pred is PRED-NOT-RUN",
+   "TWIN-OFF-FAIL": "the clause fires; next step Option 2 (R3); K-pred is PRED-NOT-RUN",
+   "TWIN-PASS": "the claim of \u00a71; results PR; the next LeWM task is chosen by K-pred's row",
+   "TWIN-PRIOR": "escalate, no clause, no claim",
+   "U-VOID-CEILING": "escalate, no clause, no claim (R8.13)",
+   "V": "one repeat after a reviewed fix; a second V escalates"
+  },
+  "s_arms": [
+   "H-twin",
+   "H-handover",
+   "H-clock",
+   "H-stale",
+   "H-floor",
+   "P-stale"
+  ],
+  "s_stale_max": 8,
+  "salts": {
+   "bootstrap": 7604,
+   "inner_folds": 7603,
+   "moving_direction": 7606,
+   "outer_folds": 7602,
+   "tau_direction": 7601
+  },
+  "scale_margin_gib": 2.0,
+  "scene_version": "apple_to_plate_v2",
+  "seed_ranges": {
+   "A": [
+    56160,
+    56191
+   ],
+   "D": [
+    56120,
+    56135
+   ],
+   "K": [
+    56000,
+    56031
+   ],
+   "M-a": [
+    56040,
+    56071
+   ],
+   "M-b": [
+    56080,
+    56111
+   ],
+   "S": [
+    56200,
+    56263
+   ],
+   "U": [
+    56300,
+    56331
+   ]
+  },
+  "shifted_roles": [
+   "K",
+   "D",
+   "S"
+  ],
+  "sim_workers": 6,
+  "smoke_seeds": [
+   56900,
+   56999
+  ],
+  "source_corpus": {
+   "excluded_rule": "the 30 test roots are never simulated, rendered or decoded (CorpusReader refuses them; the digest is sha256 of the sorted id list's JSON)",
+   "excluded_split": "test",
+   "excluded_test_ids_sha256": "4fa7512c06a85b72fe1fe82e2538398e3c2cf55c0e9497c2116f9728304357bf",
+   "frozen_sha256": "2cf80f5aa54d509e3801bcb3934409407da9b6a0600e6856f319ddeda1d2e36a",
+   "manifest_sha256": "fe7ab9150216887f5759521dcc7fe7c7f54d2e5e8c36fecf6ed713a000b134bd",
+   "name": "apple-far-shift-v2",
+   "plan_sha256": "41c505719a0012bd0d0dd453b39cb5230753739cef3252caa2176f334134c0b0",
+   "protocol": "apple_lewm_planner_v2",
+   "read_splits": [
+    "train",
+    "val"
+   ],
+   "revision": "9d9b03cff44848f0b43b63f9d1f560a378c672ba",
+   "split_sizes": {
+    "test": 30,
+    "train": 240,
+    "val": 30
+   }
+  },
+  "stage0_rules": {
+   "attempt_time": "the wall time of a full-look-ahead H-final(A) attempt; above 60 s, the per-attempt cap is reviewed before the freeze",
+   "contact": "no apple-plate contact before s1 on any smoke attempt; if a smoke finds contact, s1 moves earlier and the cells are rescaled to keep their distance to go",
+   "m2": "m2 = |kappa| ||palm_xy(485) - palm_xy(483)|| from executed joint states under H-final on cell A (median and maximum; the pre-freeze estimate, nothing decided from it)",
+   "remaining_motion": "under H-final on cell A, the median |plate(s1) - plate(485)| must be >= 2 cm, and at most a quarter of the smoke attempts may be refused",
+   "remedy": "if the median is below 2 cm: first L = 1; then s1 later in steps of 10, up to the contact limit found by the same smoke (s1 strictly before the earliest apple-plate contact step of any Stage-0 smoke attempt); L is never raised and kappa is not a remedy",
+   "removal": "if no allowed setting gives a median >= 2 cm, or more than a quarter of the smoke attempts are refused, cell A is removed before the freeze (PRED-INFEASIBLE)",
+   "seeds": "56900-56999 only; mechanics only; nothing in them is read"
+  },
+  "stage0_smokes": {
+   "cell_a_base": {
+    "h_final_max_remaining_cm": 0.076,
+    "h_final_median_remaining_cm": 0.0601,
+    "h_now_median_remaining_cm": 0.1481,
+    "refused": 0,
+    "report_sha256": "cdbc046a73960a2bc504ac01d08f77e00790087e15a53546316b445698b287b2",
+    "seeds": [
+     56930,
+     56945
+    ],
+    "setting": {
+     "L": 2,
+     "kappa": -0.5,
+     "s1": 525
+    }
+   },
+   "cell_a_remedies": {
+    "contact_limit": 607,
+    "median_remaining_cm_by_setting": {
+     "L1_s1_525": 0.0626,
+     "L1_s1_535": 0.0491,
+     "L1_s1_545": 0.0315,
+     "L1_s1_555": 0.0252,
+     "L1_s1_565": 0.023,
+     "L1_s1_575": 0.0222,
+     "L1_s1_585": 0.0235,
+     "L1_s1_595": 0.0235,
+     "L1_s1_605": 0.0233
+    },
+    "refused_by_setting": "0 of 16 at every setting",
+    "verdict": "no allowed setting gives a median of at least 2 cm: cell A is removed before the freeze (protocol \u00a73.2), so K-pred's row is PRED-INFEASIBLE (escalate, no clause)"
+   },
+   "contact": {
+    "attempts": 144,
+    "contact_before_s1_525": 0,
+    "earliest_apple_plate_contact_step": 607,
+    "verdict": "s1 = 525 is free of apple-plate contact on every smoke attempt; no change"
+   },
+   "estimates": "smoke stand-in: the reset truth (G-repro not run: TASK-072 run-1's corpus root look2-51171.npz is unreadable on the archive disk)",
+   "lookahead_attempt_seconds": {
+    "decisions_converged": "96 of 96 (at most 7 iterations)",
+    "max": 16.4,
+    "max_over_remedies": 25.0,
+    "median": 15.0,
+    "verdict": "below 60 s: the 300 s per-attempt cap is not reviewed"
+   },
+   "m2_cm": {
+    "attempts": 16,
+    "max": 0.0019,
+    "median": 0.0012,
+    "setting": "L = 2, s1 = 525"
+   },
+   "revision": "14b23b0734fb2209175d46d1499de72cf7885f57",
+   "root": "outputs/task076-smoke-2 in the task076-stage0 worktree (git-ignored)"
+  },
+  "stage0_thresholds": {
+   "attempt_review_seconds": 60.0,
+   "max_refused_fraction": 0.25,
+   "min_median_remaining_cm": 2.0,
+   "s1_step": 10
+  },
+  "stages": [
+   "stage0",
+   "k0",
+   "offline",
+   "dev",
+   "gated",
+   "kpred",
+   "results"
+  ],
+  "steps": {
+   "chunk": 16,
+   "decision": [
+    405,
+    421,
+    437,
+    453,
+    469,
+    485
+   ],
+   "eval": [
+    421,
+    437,
+    453,
+    469,
+    485,
+    501
+   ],
+   "lower_start": 505,
+   "place_end": 725,
+   "transfer_start": 405
+  },
+  "task": "TASK-076",
+  "task_block": [
+   56000,
+   56999
+  ],
+  "tau": {
+   "bar": 28,
+   "levels_cm": [
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "procedure": "TASK-075's TAU_REMEASURE procedure (its \u00a76.3), adopted: H-handover with a planted error e at every decision, under TASK-074's condition; one direction per reset, uniform on [0, 2 pi) from default_rng(SeedSequence([7601, seed])), the same at every level",
+   "resets": 32,
+   "rule": "tau_re = the largest level L such that every level <= L reaches >= 28/32"
+  },
+  "thread_env": {
+   "MKL_DYNAMIC": "FALSE",
+   "MKL_NUM_THREADS": "6",
+   "OMP_NUM_THREADS": "6",
+   "OPENBLAS_NUM_THREADS": "16"
+  },
+  "training_budget": null,
+  "u_arms": [
+   "H-twin",
+   "P-stale",
+   "H-handover"
+  ],
+  "views_store": {
+   "hidden_key": "onboard112__plate_hidden",
+   "manifest_sha256": "ea627a8fb6b8d7d4057a1a02b1d9c698549fe0a1719808c49a3e6d8a86554d77",
+   "name": "apple-far-shift-v2-views",
+   "note": "TASK-075's sealed store; Stage O reads its stored plate-hidden onboard 112 px frames at the eval steps 421-501; nothing is rendered",
+   "protocol": "apple_obs_ceiling_v2",
+   "view": "onboard112"
+  },
+  "void_rule": "a stage is V on a stop signal (run_tools.install_guards records the first signal), a cap, a CUDA allocation failure, a pin or frozen-sha mismatch, a decoded test root, a privileged read in a non-privileged arm, a failed determinism re-run or G-repro failing. A V after the stage's outcome boundary (cohort_first_render_utc for a simulating stage, first_outcome_utc for Stage O) is not read as an outcome; one repeat from scratch after a reviewed fix; a second V escalates",
+  "worker_torch_threads": 1
+ },
+ "frozen_sha256": "fe23e9177142804e71dfd8f568b5226f276837f4950ce6dcaf43ec28a674112f",
+ "frozen_sha256_pin": null,
+ "hashes": {
+  "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
+  "benchmarks/manifests/apple-first-policy-v2-linux-results.json": "b97258bc14875e1c1de03e721e318b41fa582b216d1f1414637d0a56d1f159b9",
+  "benchmarks/manifests/apple-first-policy-v2-linux.json": "29f2c98302adfe2b214a68a85de769b5ea8cf4f4dddf1622f90970a9c5efb9ba",
+  "benchmarks/manifests/apple-first-policy-v2-m2-results.json": "e84f0d51ba02eb02a997bf1fc7923cb7d8beca0bc34259fc82bb4b8b5fb424b2",
+  "benchmarks/manifests/apple-first-policy-v2-m2.json": "74b1a5814542727f90b8cc152b0e89dc1c7a4dabf6add36a8fa9ec3220fa9be0",
+  "benchmarks/manifests/apple-first-policy-v2.json": "cab7c7c8cfd8ac9aac2d4bbddccea5402d806c32df12396557013f60a5ed6e37",
+  "benchmarks/manifests/apple-policy-v1.json": "749c6f0e38c802b3b20aa7d0de2e089335126455a93e8ddc02369d6b5807a8ba",
+  "benchmarks/manifests/apple-token-dynamics-v1.json": "2191d57e869810aeb0601cdc85308d94dcd750782bac9596f0a78b0ea2fbdc38",
+  "configs/apple_wm_v4.yaml": "ceafcc71e5a7d8dc4d4b169120972c18aaf5b020e059b569b6fb0ac048772cc8",
+  "configs/g1_sim_action.json": "f247effe9a9cd5e9ae3a9ad8e13ed036fa652f5a0d39f96b14c98979642c38b1",
+  "docs/experiments/apple_wm_critic_v2.md": "161f9ed37939421f9f5e4f56ea38c8110d6b8da2dbc808dcead816fd2d81a39b",
+  "scripts/collect_apple_shift_v2.py": "584ed2386dc6ab99abb60a22922b9781ebbcd13f08ac3198fff93d8394ab93e5",
+  "scripts/collect_apple_wide.py": "fa3ef67d60ca24c1ff1fb1c054b90a992000c24e61047d46573e48fd93b17952",
+  "scripts/evaluate_apple.py": "61c5b728b62aed58a35ed9d17f8e20ae17ffa0a70d7ca024b8492072f35a406c",
+  "scripts/rank_wm_critic_v2.py": "6d4cdc9017369f9c4ae95184c153b8bed5c6db84cc02a6cd9c4b84a243861d64",
+  "scripts/run_first_policy_v2_linux.py": "f9f6b7bda8d9585ac01b734660c4ffa1a6024e0c26cae25c19bb8cd97563d73d",
+  "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
+  "scripts/run_lewm_planner_v2.py": "2d229a95b219b531eb18d84381c36c8db2294f4b2771e3bb0a75945ea087b94a",
+  "scripts/run_obs_ceiling_v2.py": "bca518c14806f4b27ec0a11cb7b9c46b0bb3ea6c273b27048726398899f11958",
+  "scripts/run_plate_twin_v2.py": "ac1139296b0d4eda8897d1ae6594bfd8b9a7a090b38f4c49e6caf56f10cbb71a",
+  "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
+  "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
+  "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
+  "src/embodied_jepa/__init__.py": "a0043e95cb31add021475ec8877d7a7b28189696ddf5ab2486d73537c84aec41",
+  "src/embodied_jepa/apple_to_plate_v2.py": "a3a7b116d26f8157cd19e120581e0840fde1e15453a5925ecd2f4c6018d96e03",
+  "src/embodied_jepa/at_rest.py": "b5121cb600db6bfb3f92b4161ba46d4cdcb31f98e99de512b257f2519db00527",
+  "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+  "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
+  "src/embodied_jepa/devices.py": "0976ccc0fb6d3c64d8128dbc152dcb2ebd3aee2211bc3ab5e25a772518e2fb72",
+  "src/embodied_jepa/embodiment.py": "2632259a8f17db4bd1543f8d6f5155ef47a3891e3712784a42bf294c43506ce9",
+  "src/embodied_jepa/first_policy.py": "2167a5b0ef368175a8c8f0a12cd34578003e1c37083cebe855c34466a5728d4c",
+  "src/embodied_jepa/first_policy_model.py": "5ebd70e07d9c6eba38f0fa4c8980602205f0e24420d39f252935dc47673fb984",
+  "src/embodied_jepa/first_policy_perception.py": "d2ae40118a78646c13e89a089049f80cdc0389dfdd2106f5862a03ab134ed497",
+  "src/embodied_jepa/first_policy_runtime.py": "d6d672dc26912371cae78c2d32ba84583adfab4adcab393445a770f994a5f953",
+  "src/embodied_jepa/first_policy_v2.py": "c05385701481bb6463e096899df8a8c4945239954db73f29b42ea19117d7a460",
+  "src/embodied_jepa/first_policy_v2_linux.py": "2ff753d1ae3c8db18d4b8f4dd79e1738a12ccedebc2014977d5c35f541e53ad7",
+  "src/embodied_jepa/first_policy_v2_m2.py": "39beb69a65c31b7b4491dafd092d2e2c98ad19ee6e70aa4514a48d948c86b4ea",
+  "src/embodied_jepa/first_policy_v2_model.py": "5e29fc12f496b2299c1d2d5b4df8ea99660b838a896587b9b890f846312a1a45",
+  "src/embodied_jepa/first_policy_v2_runtime.py": "2caa50e70d04c3d4898896acb402bb7ccc95897cece3c6a5d119db5ec4a3169a",
+  "src/embodied_jepa/hand_crop.py": "4aec02912654ba151ad92f7b39242ae3f60f60ba64da103bc9696ae55953cfb7",
+  "src/embodied_jepa/hybrid_selection.py": "b96ae08098da94202ec74f1cab9ff0fe025ced7f65bf505bbb21ca557a298d4a",
+  "src/embodied_jepa/info_ceiling.py": "6307885e036443e6dd0b2bbf89ba749793203ee27cfa069c35bff03517414ab4",
+  "src/embodied_jepa/latent_dynamics.py": "9028e70378e2b0e2a00e794fa68da89d4613c939cf01f062f6c51fbe69e8dc53",
+  "src/embodied_jepa/lewm_planner_v2.py": "f097d179479fe1f48b21594c594d2fc99565522a3347fb8514743d94c295d737",
+  "src/embodied_jepa/lewm_planner_v2_offline.py": "84ae5ee71829443665163941aab100c7219453962678a037fc27e8cbaf11d3a7",
+  "src/embodied_jepa/lewm_planner_v2_runtime.py": "ccfac04c1f2e8cc62039186c3388d971a002e7ebe5b08f70f6e97e257c3cb170",
+  "src/embodied_jepa/look_corpus.py": "41a05027d30375884f9e562a4887814db65bf5111fc7bc8fe2ddcf38e206d84b",
+  "src/embodied_jepa/models/__init__.py": "694622858ffd8a892d6746c65f162c2cea19e9ead1aa5c566ab4edc6fb962f94",
+  "src/embodied_jepa/models/base.py": "310a509d5f8043ad3cbdf85a0568d15bb4ed2e4faeddf6e10bed63abf8ee0549",
+  "src/embodied_jepa/models/frozen_encoder.py": "c1a4622a0765e44fc060c5313a85e4f727f51dc361acd5de50cb6990845e6011",
+  "src/embodied_jepa/models/frozen_tokens.py": "33e8e819ad557d4fec6167482f91b5aa0c5da5a1169e7f8e6e8f050390c9a3a2",
+  "src/embodied_jepa/models/latent_critic.py": "5af41f3fdc0767e76b9c6d4f833b267e33d90a7d420e712fc1f0a6d402140eeb",
+  "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
+  "src/embodied_jepa/models/native.py": "95e112e13b0bf4d587fd5c35008e99b1e0a3759fb4f458c24bdd20304d0fadf3",
+  "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
+  "src/embodied_jepa/obs_ceiling_v2.py": "0ca412f94c838b39c275cddb75228eb02f75131cc9d652df8350dd9e932f7035",
+  "src/embodied_jepa/obs_ceiling_v2_offline.py": "fb93698cdabc0b4907bbcd42233b98cce68a5122fbb2efa98c0fb9e316dfdc29",
+  "src/embodied_jepa/obs_ceiling_v2_runtime.py": "85383d4e4228cda0b258590b3774e16db2a10727cdaa06dd483d90dc342fd836",
+  "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
+  "src/embodied_jepa/place_planner.py": "1842d3e0ca31bfbe6c0568ab5a8d9c75c513e8b5a784ae7200c43101d270c846",
+  "src/embodied_jepa/plate_shift.py": "5ae0f016dd6ee628c60c3a6901f170d9bd1643df8e508e53fabbbc6e89650b39",
+  "src/embodied_jepa/plate_twin_v2.py": "af0b6894d07d402cd0cf0fa3ccdc1b3acd21bd5a4cfa83de76f727071bdfe487",
+  "src/embodied_jepa/plate_twin_v2_harness.py": "44410cc6234e4634716b62b2049f650ec691b09b037f3a70c1f656bd206230fc",
+  "src/embodied_jepa/plate_twin_v2_offline.py": "3a662b0ea3211bdf394fafcad06ddfa0a79ddd1341405c1d01a2230f2d726b87",
+  "src/embodied_jepa/plate_twin_v2_runtime.py": "3c5a7198e243219c2ed1c06a296449d78d50968459e9d99a32d75026b88a24fb",
+  "src/embodied_jepa/policy_diagnostics.py": "3898e34588145c14696835e5f89e75b112bc35f1087f206d4c4525774cab9faa",
+  "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+  "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
+  "src/embodied_jepa/resting_expert.py": "9f253b1d5025ff4c3176cdafe98ff59a50a51bdc9b90fe3a1f1d6fddc73bcd23",
+  "src/embodied_jepa/run_guards.py": "bad5bbfc71b9f5656e2cbadb933bd92e7152ac4aa6bf45ea00515886ec473cc3",
+  "src/embodied_jepa/run_tools.py": "1b3b61f89ca50e5d12650312c374bdcd07f1eb394ffb413c19eb844eb5ff5394",
+  "src/embodied_jepa/scripted.py": "79883ef9df6ad6d0fd3c162dc8b58b6cf389de97e08bbda3a66016e2b17ccfcc",
+  "src/embodied_jepa/sim_selector.py": "2861dc0aa7323222cbbd58030b575ea75fe01310f113a39cd6e994ffb98c259f",
+  "src/embodied_jepa/simulation.py": "9b8c9e3282e224951ce52242fcadd61e899024748396d3b96640e986d3d67739",
+  "src/embodied_jepa/task.py": "f23886fccd72d8500f2356ff216a8776eea0026485c34a3112d4914c3129567c",
+  "src/embodied_jepa/token_dynamics.py": "b80ec3506ff359c0e159b1f89e3bc234fcdecbdeccaa38e2ead455c438e34672",
+  "src/embodied_jepa/wm_critic_v2.py": "125b6f64d3acb9341f243fe123d1c646a433104471924790c79112678c0efc85",
+  "src/embodied_jepa/wm_critic_v2_offline.py": "7c2cd7bc39d1b87e46b4c4e92ab55bbe4a357ccc1dfccbf16e7a066a3f9c1cfa",
+  "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
+  "tests/test_lewm_planner_v2.py": "6392fe6e38e88bb6356dbfcae3f095402817cc08f869f9547d2046ca89e8ec1c",
+  "tests/test_obs_ceiling_v2.py": "74f8d95e0427678d5c74a1fbd1134e46f34db46e89ac91c41932ecb64862192b",
+  "tests/test_plate_twin_v2.py": "1d1e5c3320d208ed9e8fe0f067f015b928572a2fc5409a96c6694d63942e4c0e",
+  "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
+  "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
+ },
+ "mujoco_version": "3.13.0",
+ "note": "DRAFT: nothing gated has run. No arm of TASK-076 runs a world model. Learned Apple->Plate on the frozen v1 MVP benchmark is 0/150 per backend.",
+ "pins_note": "every file TASK-075 pinned (TASK-074's included) is carried with its sha256 unchanged; TASK-076's own modules, runner and test are pinned beside them. The protocol document and this manifest are not pinned (the Stage-0 record is added after the smokes)",
+ "protocol": "apple_plate_twin_v2",
+ "protocol_document_sha256": "2ac2649a3f31becd09ef9f34d3bdd6835c33731b02da205da5b1f2c81a28e188",
+ "status": "DRAFT",
+ "task": "TASK-076"
+}

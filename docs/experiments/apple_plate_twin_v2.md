@@ -1,19 +1,30 @@
 # Apple→Plate plate-readout twin v2: the place aims at the plate read from the image, plus a prediction-headroom check (TASK-076)
 
-**Status: DRAFT, not frozen; text prepared for the freeze review (R8.8–R8.14).** Nothing in it
-has run. It has no frozen block, no manifest and no code yet. Nothing from any cohort below may be
-simulated before the conditions in §5 are met: K0 runs only on a reviewer's reported GO for K0,
-and nothing after K0 runs before the frozen protocol is merged on an independent reviewer's
-reported APPROVE. What still stands between this text and the freeze is listed in §13.
+**Status: DRAFT, not frozen.** Stage 0 is done (§13.2 steps 1–2, R8.15–R8.17): the stage code,
+the frozen block as module constants (`src/embodied_jepa/plate_twin_v2.py`), the manifest
+(`benchmarks/manifests/apple-plate-twin-v2.json`), the §5 tests and the smokes on smoke seeds
+56900–56999. Their record is [apple_plate_twin_v2_stage0.md](apple_plate_twin_v2_stage0.md).
+The smokes removed cell A (§3.2), so K-pred's row is already PRED-INFEASIBLE. No cohort seed has
+been simulated. Nothing from any cohort below may be simulated before the conditions in §5 are
+met: K0 runs only on a reviewer's reported GO for K0, and nothing after K0 runs before the frozen
+protocol is merged on an independent reviewer's reported APPROVE. What still stands between this
+text and the freeze is listed in §13.2. (A damaged TASK-072 evidence file found in Stage 0 has
+been restored, and G-repro passes.)
 
 Every precision bar below (O1, O4, K-P5) is τ_re, measured in K0, and every ratio or test bar is
-a definitional constant (O3's 1.0, G2's p < 0.01). The count bars and stop thresholds (G1's
-56/64, G3's −2/32, K-P1's 30/32, K-P2–K-P4's +8/32, the K0, D and S-VOID thresholds) are declared
-decision margins: G1's is τ's own bar, and the others are carried from TASK-074's K1 and G5, as
-§13.1 lists. None of them is a precision bar on a readout, which is the kind TASK-074's lesson is
-about. §13.1 gives, for each, its source and either its feasibility check against a ceiling
-measured in this task or its role as a stop.
-Everything else is reported only.
+a definitional constant (O3's 1.0, G2's p < 0.01). The count bars and stop thresholds are
+declared decision margins, with these sources (§13.1 lists each):
+- G1's 56/64 and K0's level-0 stop (28/32) are τ's own bar;
+- K-P1's 30/32, the +8/32 headroom bars (K-P2–K-P4), K0's N_K(0) < 30/32 and H-stale(K) > 4/32
+  stops and S-VOID-CONDITION's H-stale(S) > 8/64 are carried from TASK-074's K1 (the last one
+  doubled), and G3's −2/32 from TASK-074's G5;
+- K0's H-clock stop, H-clock(K) ≥ N_K(0) − 4/32, is G2's minimum separation (§6.2), not a
+  TASK-074 bar;
+- Stage D's 12/16 and 14/16 (TWIN-DEV-STOP) are stops declared here; TASK-074 has no such bars.
+
+None of them is a precision bar on a readout, which is the kind TASK-074's lesson is about.
+§13.1 gives, for each, its source and either its feasibility check against a ceiling measured in
+this task or its role as a stop. Everything else is reported only.
 
 - Task card: `.mc/tasks/todo/TASK-076-*.md`. Rulings: [DECISIONS.md](../DECISIONS.md), decision
   2026-10-02, R1–R4 and R7, and decision 2026-10-02 (b), R8 (this draft's scope; its review
@@ -187,6 +198,27 @@ controller's `act()`. The plate is static after s1 = 525. s1 lies inside the low
 - for cell A, the size of the plate's remaining motion at 485, measured under H-final (below).
 
 Any such change is made before the freeze and disclosed.
+
+**Stage-0 result (R8.16; record: [apple_plate_twin_v2_stage0.md](apple_plate_twin_v2_stage0.md)).**
+- **Contact.** None of the 144 base-setting smoke attempts (cell A: 5 arms × 16 resets; M-a and
+  M-b: 4 arms × 8 resets) touched the plate with the apple before s1 = 525. The earliest
+  apple–plate contact was at step 607, in the open phase. s1 = 525 stays, and M-a and M-b are
+  unchanged.
+- **Cell A is removed.** Under H-final the median remaining motion |plate(s1) − plate(485)| was
+  0.060 cm (maximum 0.076 cm; H-now 0.148 cm), against the 2 cm the rule needs, with no refused
+  move. The declared remedies, in order (L = 1; then s1 = 535, 545, …, 605, strictly before the
+  contact limit of 607), gave medians of 0.022–0.063 cm, none refused. No allowed setting
+  reaches 2 cm, so cell A is removed before the freeze and K-pred's row is PRED-INFEASIBLE
+  (escalate, no clause; §6.3). The reason is the one §3.2's remedy limits foresaw: e9's transfer
+  brings the palm to the aim before 483, and the lower moves the palm by about 0.1 cm in xy. The
+  sections on cell A below are kept as the design that was tested.
+- **m2** (H-final, L = 2): median 0.0012 cm, maximum 0.0019 cm, on 16 smoke attempts.
+- **A full-look-ahead H-final(A) attempt** took 15.0 s in median and 16.4 s at most (25.0 s at
+  most over the remedy settings); every one of the 96 decisions converged, in at most 7
+  iterations. That is below §10's 60 s, so the 300 s per-attempt cap is not reviewed.
+- These smokes ran P-3 on the reset truth as its post-look estimate (a smoke stand-in, because
+  G-repro cannot run; §13.2), with a placeholder τ_re of 1.0 cm. Neither changes the plate's
+  remaining motion after 485, which the place primitive's palm path sets.
 
 **Constant-velocity cells (reported only; ruling R8.3).** The plate moves at constant velocity from
 s0 = 405 to s1 = 525, along a direction drawn by TASK-074's −y arc rule (salt 7606), by a total
@@ -416,7 +448,10 @@ and S only; U and the K-pred cells have none (§3.2).
    - **G2's predicted feasibility, reported beside the stop** (R8.12; reported only, it stops
      nothing). K0 runs H-handover at level 0 and H-clock on the same 32 resets, so their paired
      outcomes give discordant counts b (H-handover succeeds, H-clock fails) and c (the reverse).
-     H-handover stands in for H-twin at its ceiling, so both numbers below are optimistic for G2:
+     The two numbers below are not bounds, because two effects pull in opposite directions
+     (R8.17): H-handover stands in for H-twin at its ceiling, which is optimistic for G2; but
+     H-clock(K) is in-sample (fitted and run on K's resets), which flatters H-clock and so is
+     pessimistic for G2:
      - **the scaled point prediction:** the exact one-sided McNemar p-value on (2b, 2c), the K0
        counts doubled to S's 64 resets;
      - **the predicted pass probability:** the fraction of 10 000 resamples of 64 resets, drawn
@@ -560,6 +595,11 @@ near gives PRED-NEAR, as G1's TWIN-NEAR does in §6.2.
   resamples each) with 0, 1 and 2 reversed pairs per 32 expected. Without the guard it was the
   bar's own miss rate, 42–45 % in the same simulation. If all three headrooms sit exactly at 8/32,
   the union bound is about 9 %.
+- **The guard's power, stated in advance** (R8.17, from the independent review of #133, its own
+  simulation). At a true headroom of 4/32 (half the bar), PRED-NONE fires only about 42 % of the
+  time (about 36 % when that headroom comes as 5 wins with 1 reversed pair per 32); at 2/32 it
+  fires about 87 % of the time. So at an intermediate headroom PRED-NEAR is the likely row, and
+  K-pred then ends in an escalation rather than in its clause.
 
 | row (first match) | condition | consequence (for the plan, not for TASK-076's claim) |
 |---|---|---|
@@ -673,8 +713,7 @@ product goal.
     (`apple_obs_ceiling_v2_results.md` §1.3).
   - Estimate: under 2 minutes and under 1 GiB.
 - **How.** `scripts/gpu_run.sh --wait --min-free-gib 4 --board --who oej:task076-O -- uv run
-  --no-sync python scripts/run_plate_twin_v2.py offline …`. The script name is a placeholder until
-  the code exists.
+  --no-sync python scripts/run_plate_twin_v2.py offline …` (the runner exists since Stage 0).
   - The runner calls `run_tools.gpu_guard(report, min_free_gib=1.0, process_cap_gib=3.0,
     require_lock=True)`, so it refuses to start outside the lock.
   - The lock is the machine-wide flock `~/.local/state/gpu/lock`, shared with other projects.
@@ -798,12 +837,14 @@ Settled:
   an 87.5th percentile of 1.36 cm, against 0.91 cm on onboard 112. A hand-crop follow-up would be
   a new view, and so needs its own preregistration.
 
-Still open, and decided only by the Stage-0 smokes (§3.2, §13.2):
-1. Is s1 = 525 safe from apple–plate contact?
-2. Does cell A's rule (κ = −0.5, L = 2) give a median remaining motion of at least 2 cm at 485
-   under H-final, with at most a quarter of the smoke attempts refused? If not, the remedies of
-   §3.2 apply, and failing them cell A is removed.
-3. The smoke's m2 (median and maximum) and the time of a full-look-ahead H-final(A) attempt.
+Settled by the Stage-0 smokes (§3.2's Stage-0 result; R8.16):
+1. s1 = 525 is safe from apple–plate contact: no contact before s1 on any of the 144
+   base-setting smoke attempts; the earliest contact was at step 607.
+2. Cell A's rule does not give the remaining motion: the median under H-final was 0.060 cm at
+   L = 2, and 0.022–0.063 cm under every declared remedy (L = 1; s1 = 535–605), with no refused
+   move. Cell A is removed; K-pred's row is PRED-INFEASIBLE.
+3. m2: median 0.0012 cm, maximum 0.0019 cm. A full-look-ahead H-final(A) attempt: 15.0 s in
+   median, 16.4 s at most (25.0 s over the remedies), below §10's 60 s.
 
 ## 13. Freeze readiness (checked 2026-10-04, R8.11–R8.14)
 
@@ -840,15 +881,27 @@ Without it, a true headroom of exactly 8/32 would have missed its bar, and fired
    `obs_ceiling_v2.FORBIDDEN_RANGES` and TASK-075's block; `TRAINING_BUDGET is None`; the scale
    probe through `run_tools.scale_probe`; no runner imports; `assert_local_import`,
    `install_guards` and `gpu_guard`).
+   **Done** (R8.15): `plate_twin_v2.py` (the frozen block), `plate_twin_v2_runtime.py`,
+   `plate_twin_v2_offline.py`, `plate_twin_v2_harness.py`, `scripts/run_plate_twin_v2.py`,
+   `tests/test_plate_twin_v2.py` and the DRAFT manifest. The pin test holds `None` until the
+   freeze sets it.
 2. **The Stage-0 smokes** on 56900–56999, which settle §12's open items. Their results, and any
-   change they force (s1, L, or cell A's removal), are written into this protocol.
+   change they force (s1, L, or cell A's removal), are written into this protocol. If a
+   full-look-ahead H-final(A) attempt takes more than 60 s in the smoke, the per-attempt cap
+   (300 s) is reviewed before the freeze (§10).
+   **Done** (R8.15–R8.17): s1 = 525 stays; cell A is removed (PRED-INFEASIBLE); the look-ahead
+   attempt took at most 25.0 s, so the cap is not reviewed.
+   **Found in Stage 0, and cleared:** TASK-072 run-1's corpus root `look2-51171.npz` was
+   unreadable on the archive disk, so the smokes ran P-3 on a stand-in estimate (§3.2). It has
+   since been restored bit-identically (sha256 `e13c97cb…c296`). A real G-repro check then
+   passed all eight of run-1's recorded facts (R8.18; Stage-0 record §2a).
 3. **K0**, on a reviewer's reported GO for K0. Its values, including G2's predicted feasibility,
    are written into the frozen block (§5). A CAL-ESCALATE stops here.
 4. **The freeze:** status FROZEN and the frozen-block sha pin, merged on an independent
    reviewer's reported APPROVE.
 
-This text is ready for steps 1–4. It cannot itself be frozen before them: the frozen block, the
-sha pin and K0's values do not exist yet.
+Steps 1 and 2 are done, and the G-repro evidence is restored. The text cannot be frozen before
+steps 3 and 4: the sha pin and K0's values do not exist yet.
 
 ### 13.3 The other freeze checks
 
