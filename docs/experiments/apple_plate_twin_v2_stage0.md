@@ -37,8 +37,9 @@ R8.15–R8.17 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-02 (b).
   - `bf3902b` for the scale probe (`offline-scale-2`), after the fix in §3.4.
   - Every report records `tracked_tree_dirty: false`.
   - After the smokes, only these changed: the Stage-0 constants in `plate_twin_v2.py` (`CELL_A`'s
-    status and `STAGE0_SMOKES`), the tests, the manifest and the documents. The stage functions
-    are unchanged.
+    status and `STAGE0_SMOKES`), `cohort_digest` (floats rounded to 10 decimals, as
+    `plan_digest`, after macOS CI computed a different last ulp; the draws themselves are
+    unchanged), the tests, the manifest and the documents. The stage functions are unchanged.
 - **The machine:** the Linux PC; MuJoCo 3.13.0 with EGL; 6 CPU workers with 1 torch thread each.
   - Only the two offline smokes used the GPU, each through
     `scripts/gpu_run.sh --wait --board --who oej:task076-O-smoke` (or `-scale`), with
