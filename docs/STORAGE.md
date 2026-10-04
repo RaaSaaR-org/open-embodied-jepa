@@ -95,9 +95,12 @@ the SSD until 2026-10-04, when each was re-verified against its checksum file (f
 sha256) immediately before removal, which left 111 GB free on `/`.
 `task075-run/data/apple-far-shift-v2` was a symlink to `task074-run/data/apple-far-shift-v2`; on the
 disk the corpus is under `worktrees/task074-run/data/`, and the `apple-far-shift-v2-views` store
-under `worktrees/task075-run/data/`. Neither corpus is on the SSD any more: a run that reads them
-restores them first (see [Restore](#restore)). `task072-run` was the `--evidence` root of the
-TASK-074/075 stages.
+under `worktrees/task075-run/data/`. Both were restored from the disk to the main checkout on
+2026-10-04 for TASK-076, as `/home/huhn/develop/emai/open-embodied-jepa/data/apple-far-shift-v2`
+(601 files) and `.../data/apple-far-shift-v2-views` (271 files), every file checked against the
+archived sha256 (each `manifest.json` matches the protocol's hash). A worktree that reads them
+symlinks them from there (`scripts/new_worktree.sh --run` links `data/`) rather than copying them.
+`task072-run` was the `--evidence` root of the TASK-074/075 stages.
 
 ### Other items on the disk
 
