@@ -63,44 +63,66 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
-## Decision 2026-10-04 — Branch B after cell A's removal: a DRAFT design note for the next LeWM task (R9; stub)
+## Decision 2026-10-04 — Branch B after cell A's removal: a DRAFT design note for the next LeWM task; the claim is split in two (R9; stub)
 
 **Decided by Claude under owner delegation (2026-09-30).** No run was made for it, and nothing in
-it is frozen. It answers PLAN.md's Branch B entry for PRED-INFEASIBLE (TASK-076's Stage 0 removed
-cell A, R8.16). The note is
-[apple_lewm_next_v2_design.md](experiments/apple_lewm_next_v2_design.md) (DRAFT). This entry is a
-stub: each ruling is provisional until the note's review, and none changes TASK-076.
+it is frozen. It answers PLAN.md's Branch B entry after TASK-076's Stage 0 removed cell A (R8.16;
+K-pred: PRED-INFEASIBLE if Stage O passes, PRED-NOT-RUN otherwise; both escalate without a
+clause). The note is [apple_lewm_next_v2_design.md](experiments/apple_lewm_next_v2_design.md)
+(DRAFT), revised after the independent review of #135 at `c387b20` (REQUEST CHANGES). This entry
+is a stub: each ruling is provisional until the note's re-review, and none changes TASK-076.
 
 - **R9.1 — form.** The next LeWM step is first a docs-only design note with three candidates, not
   a protocol. No task number is assigned and no MC task is created until a candidate passes its
   feasibility record.
-- **R9.2 — recommendation: C2**, a single committed pre-pick push of a free plate into P-3's zone,
-  with LeWM ranking candidate pushes by their predicted plate rest positions (one roll-out per
-  candidate). Reasons: its consequence comes from contact physics, so no hand-written arm is
-  handed the answer by construction; the decision is the first controlled act and the remainder
-  is the v2 episode P-3 already solves; the plate is at rest at the decision, so history one
-  suffices; it lies outside every closed scope (TASK-054/057/062/065/075).
-- **R9.3 — a design requirement drawn from cell A** (note §2). A rule linear in palm velocity is
-  path-independent and its fixed point is a closed form, so a hand-written arm that knows any
-  declared kinematic rule ties; and re-aiming at the current target is itself a fixed-point
-  solver. A world model earns a decision only if its consequence depends on the action, comes
-  from physics the controller is not handed as a formula, is committed before it can be observed
-  and corrected, and still decides the episode.
-- **R9.4 — C3 (a contact-sensitive grasp approach) is not taken**; its tolerant pick would need a
-  tuned disturbance to open headroom, and its quantity is the apple, this project's weakest
-  readout. **C1 (an early committed aim under cell A's rule)** is kept as a fallback only if C2
-  ends PUSH-INFEASIBLE for engineering reasons, with its expected H-rule tie written into its
-  claim row in advance.
-- **R9.5 — the free plate is a declared task change** (a scene variant separate from v2, as v2 is
-  from v1, declared under R2). Its physical constants (plate mass, the scene's own plate friction)
-  and the candidate grid are fixed before any smoke that reads headroom and are never tuned on a
-  headroom number. The single push is a declared restriction; a two-push feedback arm is reported.
-- **R9.6 — the next step is a development feasibility record for C2** (C2-F0 to C2-F6 in the
-  note; CPU, no world model, a newly declared smoke seed block). A preregistration follows only if
-  C2-F4 shows a ceiling of at least 28/32 and a headroom of at least +8/32 over the best of H-kin,
-  H-kin-cal and H-fixed; below +4/32 the line stops before any protocol; in between, a ruling.
-- **R9.7 — scope.** TASK-076's primary question (K0, O, D, S/U) is unchanged and continues on its
-  reviewer's GO. The LeWM backend, DINOv2 as an encoder, v2 and the product goal are not affected.
+- **R9.2 (revised after the review) — recommendation: C1**, a single aim committed at 405 under
+  cell A's reactive-plate rule (κ = −0.5, L = 2, s1 = 525) on v2's own reset, with LeWM ranking
+  candidate aims by their own predicted plate outcomes. Reasons: under R9.8 it is the likeliest
+  and cheapest route to a first primary claim (TASK-076's code exists; the twins' expected losses
+  follow from the rule: N by about |p − h|/4, L-shuf by about 2.4 cm in median, estimates to be
+  checked); at 405 the plate is static and the missed-history term is zero; its main risk, a
+  horizon of about 80 steps, has its own offline gate and row (H-GATE-FAIL, no clause). The
+  secondary claim ("LeWM needed") is expected to fail, because a hand-written rule arm and a
+  regression (H-sysid) capture the rule; that is stated in advance. The first version recommended
+  C2; that recommendation is withdrawn (R9.5).
+- **R9.3 — what cell A teaches** (note §2). A rule linear in palm velocity is path-independent and
+  its fixed point is a closed form; re-aiming at the current target is itself a fixed-point
+  solver. So a prediction is *used* only if the decision is committed before its consequence can
+  be seen and corrected; whether a hand-written arm matches it decides only the secondary claim
+  (R9.8).
+- **R9.4 — C3 (a contact-sensitive grasp approach) is not taken.** Its pick tolerance under a
+  disturbance is unmeasured, the apple is this project's weakest readout quantity, and a
+  displacement table (H-sysid) is expected to be strong.
+- **R9.5 (revised after the review) — C2 (a single pre-pick push of a free plate) is not
+  recommended.** With the scene's constants (μ = 1 from the plate's declared friction and the
+  table's MuJoCo default; the end-effector cap of 0.015 m per 0.05 s step, so v ≤ 0.30 m/s), the
+  post-release slide is at most about 0.46 cm and mass-independent, so pushing is quasi-static and
+  a per-candidate displacement table or a regression on (plate reading, push) (H-sysid) is
+  expected to tie the ceiling. C2's approach pose would come from the R-plate reading, never from
+  simulator truth. C2 is kept only as a fallback if C1 fails for a reason a push condition would
+  not share; as a "LeWM needed" study it does not make sense with these constants, and any such
+  study needs a consequence no low-dimensional (reading, action) table captures.
+- **R9.6 (revised) — the next step is a development feasibility record for C1** (C1-F1 to C1-F6:
+  CPU, no world model, a newly declared smoke block): remaining motion after 405 ≥ 2 cm; the
+  ceiling H-final(commit) ≥ 30/32 (one ceiling bar, in the smokes and the protocol); the
+  privileged proxies of N and L-shuf, and H-now, each ≤ the ceiling − 8/32, with R8.14's noise
+  guard; H-rule and H-sysid on the reading reported as the non-inferiority comparator. A
+  preregistration follows only if C1-F1 to C1-F3 pass.
+- **R9.7 — scope.** TASK-076's primary question is unchanged and continues independently. The
+  LeWM backend, DINOv2 as an encoder, v2 and the product goal are not affected.
+- **R9.8 — the claim is split in two.** The product goal is a working LeWM-driven policy, and a
+  design that must show LeWM beats every hand-written model may have no feasible task in this
+  simulator. For tasks after TASK-076 (it refines TASK-076 §9 without changing TASK-076):
+  - **Primary claim, "LeWM-driven closed-loop success":** LeWM's predictor makes the named
+    decision from the encoded current frame with no privileged read at run time; the arm meets a
+    calibrated success bar on a fresh gated cohort; it is non-inferior to the best
+    non-world-model arm within a declared margin and test; and it beats the action-blind and
+    scene-blind twins (TASK-076 §9's random arm is kept beside them), which shows the prediction is
+    used.
+  - **Secondary claim, "LeWM needed":** LeWM is detectably better than the best hand-written arm.
+    Reported only, never a gate.
+  - Both claims are named exactly so in all wording, and "needed" is never claimed from a primary
+    pass.
 
 ## Decision 2026-10-02 — after TASK-075: the plate-readout perception twin is next (TASK-076); what counts as a task change; one canonical status sentence
 

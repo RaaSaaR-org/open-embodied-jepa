@@ -43,6 +43,10 @@ forward from the encoded current observation, with no privileged read.
   policy".
 
 The full definition is in [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) §9.
+For tasks after TASK-076, R9.8 (DECISIONS 2026-10-04) splits it into a primary claim, "LeWM-driven
+closed-loop success" (a calibrated bar, non-inferiority to the best non-world-model arm, and
+beating the action-blind and scene-blind twins), and a secondary claim, "LeWM needed" (detectably
+better than the best hand-written arm; reported only, never a gate).
 Because the LeWM arm must beat an action-blind predictor, any condition that admits a LeWM task
 must make the target depend on the robot's own action (ruling R8.3). That is necessary, not
 sufficient: an action-blind predictor can still tie if the training aims are centred on the
@@ -169,12 +173,14 @@ restored and its check passes; K0 waits for a reviewer's GO
     is a plate the hand must push into a marked zone before the place.
   - GPU: none for the design and the K0; TASK-077-sized afterwards.
   - **Design note (DRAFT, 2026-10-04, R9):**
-    [apple_lewm_next_v2_design.md](experiments/apple_lewm_next_v2_design.md). Three candidates:
-    C1, an early committed aim under cell A's rule (its rule-knowing arm H-rule is expected at the
-    ceiling); C2, a single committed pre-pick push of a free plate into P-3's zone, ranked by
-    predicted plate rest position (recommended, decided by Claude under owner delegation); C3, a
-    contact-sensitive grasp approach (not taken). Next: a CPU-only feasibility record for C2 with
-    a headroom pre-check against a calibrated hand-written push model, before any protocol or GPU.
+    [apple_lewm_next_v2_design.md](experiments/apple_lewm_next_v2_design.md), revised after the
+    review of #135. Three candidates, assessed under R9.8's two claims ("LeWM-driven closed-loop
+    success", the primary; "LeWM needed", reported only): C1, a single aim committed at 405 under
+    cell A's reactive-plate rule (recommended, decided by Claude under owner delegation); C2, a
+    single pre-pick push of a free plate (not recommended: with the scene's constants pushing is
+    quasi-static, so a displacement table ties); C3, a contact-sensitive grasp approach (not
+    taken). Next: a CPU-only feasibility record for C1 (C1-F1 to C1-F6), before any protocol or
+    GPU.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.

@@ -104,7 +104,7 @@ No preregistration and no gate. Nothing here is a project-learned result.
 
 | Date | Record | What it found |
 |---|---|---|
-| 2026-10-04 | [apple_lewm_next_v2_design](apple_lewm_next_v2_design.md) (**DRAFT** design note, R9) | Branch B after TASK-076's cell A was removed: three candidate designs for the next LeWM task; recommends C2, a single committed pre-pick push of a free plate, with a CPU-only feasibility and headroom pre-check first. No run |
+| 2026-10-04 | [apple_lewm_next_v2_design](apple_lewm_next_v2_design.md) (**DRAFT** design note, R9) | Branch B after TASK-076's cell A was removed: three candidate designs for the next LeWM task under R9.8's two claims; recommends C1, a single aim committed at 405 under the reactive-plate rule, with a CPU-only feasibility check first. No run |
 | 2026-10-02 | [apple_white_plate_dev](apple_white_plate_dev.md) | an opt-in white plate leaves TASK-075 at OBS-NONE; any colour effect on the offset's median error is bounded to about 0.90–1.11 (1 of 12 intervals excludes 1.0), though colour does shift the plate-hidden check; colour is not what limits the readout |
 | 2026-10-01 | [ARENA.md](../ARENA.md) §8 | GR00T reference baseline in Isaac Lab-Arena (client-only; NVIDIA's GN1x-Tuned release (GR00T N1.7, step 65000), not the tutorial's checkpoint-20000): 16/30 and 10/30 under Arena's rule, 0/30 under the strict at-rest rule (stale PhysX velocity, inferred; post-hoc position check 6/30). GR00T's result, not ours |
 | 2026-10-01 | [ARENA.md](../ARENA.md) §1–§7 | the GR00T-tutorial Arena scene; arm kinematics agree, Dex3 fingertips differ by up to 3.1 cm; e9 at rest 0/16 in Arena |
