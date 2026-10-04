@@ -69,8 +69,9 @@ is kept as written.
 review approves the ruling document**, [apple_lewm_next_v2_direction.md](experiments/apple_lewm_next_v2_direction.md).
 No gated run was made for it and no episode was simulated. Its development measurements (§3 of the
 document) are a CPU re-analysis of the C1 record's run-2 artifacts (sha256 checked) and reset-value
-arithmetic: `scripts/r15_direction_dev.py`, report `outputs/r15-dev-1/report.json` in the
-`next-direction-r15` worktree, sha256 `d3d95e04…6984`. They are not results and gate nothing. The
+arithmetic: `scripts/r15_direction_dev.py`, report `outputs/r15-dev-5/report.json` in the
+`next-direction-r15` worktree, made at `0f8043e`, sha256 `e51fb251…6448` (earlier reports
+`r15-dev-1` to `-3`, `d3d95e04…6984`, came from the script before the second review). They are not results and gate nothing. The
 labels are R15 because R1–R14 are taken; a search of every ref and every worktree's `docs` on
 2026-10-04 found no R15.
 

@@ -112,12 +112,17 @@ is arithmetic on reset values and costs seconds; §3.3 is its first instance.
 ### 3.1 How they were made
 
 - **Script:** `scripts/r15_direction_dev.py`, one invocation, CPU only (`CUDA_VISIBLE_DEVICES`
-  empty; no GPU lock, no CUDA context), 29 s. Report `outputs/r15-dev-1/report.json` in the
-  `next-direction-r15` worktree (git-ignored), sha256
-  `d3d95e04d2d95a83ca545b607833321d9fd2cc70c7744944314423c36ab06984`. It was made on the
-  uncommitted script; a repeat at the committed `ca8fb99` (`outputs/r15-dev-2/report.json`) is
-  byte-identical (the only edit between them moved the CPU-only environment setting into `main`), and so is a repeat at `a926405` after
-  comment-only script edits (`outputs/r15-dev-3/report.json`).
+  empty; no GPU lock, no CUDA context), about 30 s. **The record is `outputs/r15-dev-5/report.json`**
+  in the `next-direction-r15` worktree (git-ignored), made at the committed `0f8043e`, sha256
+  `e51fb251b2c90d3a1f310bb5129e876a2c6101b93176c2ee884652e47af56448`; `outputs/r15-dev-4` (the same
+  script before a docstring edit) is byte-identical.
+- **Earlier reports, kept.** `outputs/r15-dev-1` to `-3` (sha256 `d3d95e04…6984`, byte-identical at
+  `ca8fb99` and `a926405`) came from the first version of the script, before the second review.
+  The changes since: the clip columns and rates are new; the mean twin now uses each distribution's
+  own mean plate (R14.5's p̄ for v2's reset and the disc, the analytic centroid for the half-disc)
+  instead of the 512 draws' sample mean, which moves some §3.3 rows by up to 0.04 cm and 0.1/32;
+  the curve's open last bin is written as `null`, not `Infinity`; the learning curve reports every
+  fold's size. Every §3.2 and §3.4 number is unchanged.
 - **Inputs:** the C1 record's run-2 `report.json` and `corpus.npz`, checked against the sha256 the
   record lists (`7779709c…fcef6`, `93e96c3f…cdb5`) before anything is read. No episode was
   simulated; run-2's frames are re-encoded with the pinned DINOv2 ViT-S/14 on the CPU.
@@ -436,11 +441,12 @@ per job.
 - **R15.4** the recommendation: O1, C1-M.
 - **R15.5** the move: a disc over TASK-073's |d| grid, ρ\* by the ceiling only, the −y half-disc
   once as the declared second family.
-- **R15.6** the readout: the 0.5 cm bar withdrawn; τ_commit and H-read; the readout gates; 4 × 4
-  then 8 × 8; 1 024 roots.
+- **R15.6** the readout: the 0.5 cm bar withdrawn; τ_commit and H-read (64 fresh paired resets,
+  4/64, half of the note's proposed δ); the readout gates; 4 × 4 then 8 × 8; 1 024 roots with a
+  falling-curve guard.
 - **R15.7** M-F3's reading is the strict one (it resolves R14.5's ambiguity for this record); M-F3
   and M-F5b pair on fresh resets, not M-F1's; the record stops early if M-F3 does not pass.
-- **R15.8** the rows and the clause, with their scopes.
+- **R15.8** the rows (with M-NO-BAR-DATA) and the clause, each scoped to what was tested.
 - **R15.9** seeds and salts of §3; the feasibility record declares its own.
 - **R15.10** R7 unchanged; the wording nit in R14.2 fixed.
 
