@@ -69,17 +69,20 @@ is kept as written.
 report `outputs/c1-run-2/report.json` in the `c1-feasibility` worktree, sha256 `7779709c…fcef6`,
 at `2370ab3`, CPU only, no world model). C1-F1 passes (remaining motion 6.72 cm; r = 460; palm
 speed at 405 0.003 cm per step). C1-F2 passes (H-final(commit) 31/32, 0 refused; a_lo = −0.5).
-C1-F3 fails: H-now 0/32 (+31), N-proxy 12/32 (+19) and shuf-proxy 21/32 (+10, feasibility
-0.985) pass, but the mean-proxy scored 25/32 (+6/32, interval [+1, +11], *near* under R8.14's
+C1-F3 fails: H-now 0/32 (+31) and N-proxy 12/32 (+19) pass, shuf-proxy 21/32 (+10, interval
+[+4, +16], feasibility 0.985) passes under R14.5's point-headroom reading (it would fail under the
+stricter "not detectably below" reading of the note's failure row), but the mean-proxy scored 25/32 (+6/32, interval [+1, +11], *near* under R8.14's
 guard; feasibility 0.728 < 0.8). C1-F4 (reported): H-rule 30/32 and H-sysid 30/32 on the smoke
 reading. C1-F5: the plate-hidden check passes (lower bound 3.46 cm > 1.0) but the pooled readout
-at r misses its estimate (median 0.886 cm > 0.5 cm), a second escalation (NO-BAR). C1-F6 passes
-(8.4 s at most). All smokes, one run; the proxies are privileged calculations, not trained twins.
+at r misses the note's provisional estimate (median 0.886 cm > 0.5 cm), NO-BAR under the note's
+§4.1 row. C1-F6 passes (8.48 s at most). All smokes, one run; the proxies are privileged calculations, not trained twins.
 
 Ten rulings, each **decided by Claude under owner delegation (2026-09-30)**. They are numbered
 R14 because R1–R13 are taken (R9 by #135's design note, R13 by TASK-076's results); a search of
-every ref at `82da722` found no R14. R14.1–R14.8 were written and pushed (`2370ab3`) before any
-seed of the block was simulated for a reading; R14.9–R14.10 follow the run.
+every ref at `82da722` found no R14. R14.1–R14.8 were declared before the record run only in the record's §1
+(committed and pushed in `2370ab3`); this entry transcribes them unchanged after the run (it was
+added in `33ffe40`). A debug run on debug seeds 57900–57939 preceded `2370ab3`, on uncommitted
+code, and was not read (record §2.1). R14.9–R14.10 follow the run.
 
 - **R14.1 — seeds and salts.** Block 57000–57999 (no seed use on any ref, in any worktree, or in
   any manifest; outside every forbidden range and TASK-076's block): F 57000–57031 (32 paired
@@ -87,7 +90,8 @@ seed of the block was simulated for a reading; R14.9–R14.10 follow the run.
   corpus's aim draw), 7702 (outer folds), 7703 (λ), 7704 (bootstraps and feasibility); unused
   elsewhere. Resets: v2's own `wide_reset_values`, no shift.
 - **R14.2 — the code and the run.** TASK-076's worker, hook (cell A), `AimController`,
-  `LookaheadAim` and `RuleAim` are reused unchanged; a commit controller with one decision at
+  and `LookaheadAim` are reused unchanged (H-rule's fixed-point loop is a verbatim copy of
+`RuleAim`'s, plus a truth branch and the clip); a commit controller with one decision at
   405 is the only controller change. P-3's estimates come from G-repro. One invocation runs every
   stage in order and sets r and a_lo by their rules in code. CPU only, the DINOv2 featurisation
   included; no GPU lock.
@@ -114,21 +118,31 @@ seed of the block was simulated for a reading; R14.9–R14.10 follow the run.
 - **R14.8 — the verdict order**, from the note: F1/F2 → C1-INFEASIBLE; F3 → C1-TWINS-ESCALATE;
   F5's plate-hidden check → C1-ARM-KEYED; F5's readout → C1-NO-BAR; else C1-PROCEED. No row fires
   a clause; F4 has no bar and F6 only reviews the cap.
-- **R14.9 — the voided first run is repeated once.** `outputs/c1-run-1` ended V ("the tracked
+- **R14.9 — the voided first run is repeated once (disclosed departures).** `outputs/c1-run-1` ended V ("the tracked
   tree changed during the run") because Claude edited a tracked `.mc` card in the run's worktree
   during the run; no code changed. It was repeated once, from scratch, at the same revision on a
   clean tree, on the same seeds (the simulation is deterministic, so fresh seeds would not have
   been a fairer repeat). Every reported value matched; the only differences are the renderer's
   one-level pixel differences in two plate-hidden renders (errors moved ≤ 0.00024 cm) and one
-  G-repro re-render settled by majority. Run-2 is the record. No tracked file is edited in a run's
-  worktree while a run is going.
+  G-repro re-render settled by majority. Disclosed: no void rule was declared for this record;
+  TASK-076 §7's precedent ("one repeat from scratch is allowed after a reviewed fix") was not
+  followed literally, since run-2 started 17 s after the V with no fix and no review; and the
+  repeat was decided after run-1's arm counts were visible in its log. It is accepted because the
+  run is deterministic (no degree of freedom, no selection effect) and every reported value is
+  identical, which the independent review of #139 confirmed. Run-2 is the record. No tracked file
+  is edited in a run's worktree while a run is going.
 - **R14.10 — the row is applied as written.** C1-F3 fails on the mean-proxy, so C1 escalates
   before any protocol, with no clause, and none of R9.10's remedies (more plate spread as a
   declared task change, a larger gated cohort, a different commit step or rule) is chosen in this
   record. The reported-only offset-consistent mean variant scored 27/32 (+4/32), so the gating
-  proxy was, if anything, optimistic for C1. C1-F5's readout miss (0.886 cm against 0.5 cm at
-  r = 460) is recorded as a second escalation (NO-BAR): any remedy chosen later must answer it
-  too, since more plate spread or more resets do not change the readout. Nothing closes: the LeWM
+  proxy was, if anything, optimistic for C1. C1-F5's readout misses the note's provisional estimate
+  (0.886 cm against 0.5 cm at r = 460; the note says a protocol re-sets that bar against
+  τ_commit), NO-BAR under the note's §4.1 row. The note is inconsistent here: R9.6 and its §7
+  step 3 do not gate on the readout; only the §4.1 row does. This is recorded, not resolved; F3
+  sets the verdict either way. Only a larger cohort would leave the readout unchanged: more plate
+  spread changes the corpus and a different commit step or rule changes r. So any remedy's own
+  feasibility record must re-measure the readout at r against the bar then in force (τ_re/2, or a
+  protocol's τ_commit-based bar). Nothing closes: the LeWM
   backend, v2, the product goal and C1's condition stay open. R7's canonical sentence is
   unchanged. The next step is the owner's choice among the escalation options (a remedy with its
   own ruling and feasibility record, or the note's fallbacks), not another C1 variant.
