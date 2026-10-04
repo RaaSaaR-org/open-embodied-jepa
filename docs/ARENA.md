@@ -517,7 +517,7 @@ In `gr00t-settle-1`, 2 of the 10 firings were at steps 11 and 12 and are false p
 
 ## 9. e9-arena: an Arena-adapted e9 (development, 2026-10-01)
 
-*Numbering.* This section was §8 in its declaration commit `3146533`, which is kept on the branch `backup/arena-e9-adapted-declared-3146533`. It became §9 when the branch was rebased onto PR #121, whose GR00T baseline took §8. The text is otherwise unchanged by the rebase.
+*Numbering and shas.* This section was §8 in its declaration commit `3146533`, which is kept on the branch `backup/arena-e9-adapted-declared-3146533`. It became §9 when the branch was rebased onto PR #121, whose GR00T baseline took §8. The branch was rebased again onto `b7e6474` on 2026-10-04, so the declaration commit is now `df19c7e`. Both rebases changed only section-number comments in the code (`git diff 3146533 df19c7e -- src/embodied_jepa/arena_e9.py src/embodied_jepa/arena_transport.py scripts/isaac/arena_e9.py scripts/isaac/arena_e9_server.py scripts/isaac/arena_layout_env.py tests/test_arena_e9.py`); the text is otherwise unchanged.
 
 **Ruling.** The owner delegated this decision to Claude, who decided it on 2026-10-01: build an Arena-adapted e9, declare it fully here, and commit the declaration **before** any Arena run of it. Its label is **"e9-arena", never "e9"**.
 
@@ -654,6 +654,7 @@ Everything else is §7.2's run, unchanged:
 | `e9-mujoco-ref-fresh-1` | `7a9f3c3`, clean | MuJoCo e9 reference, seeds 50216–50231, plate error 0 | `ddd5bb3c…` |
 | `arena-shelf-probe-1` | `7a9f3c3`, clean | §9.1 probe | `48be4318…` |
 | `arena-e9a-tune-1` | `3146533` (the declaration commit, before the rebase), clean | e9-arena T1 and T2, seeds 50200–50207 | `78dfb3a9…` |
+| `arena-e9a-tune-3` | `3b0ee49`, clean; from here on, `scripts/gpu_run.sh` (machine lock, ≥ 7 GiB free, load ≤ 2.0), then the heavy lock and the same checks again | e9-arena T3, seeds 50200–50207 | `4419b1ce…` |
 | `arena-e9a-tune-2` | — | **no run**: `run_isaac.sh`'s courtesy check refused to start because an archive `rsync` of the `task072-m2` worktree was running. The client created an empty output directory and timed out. Nothing was simulated, and the name is not reused | — |
 
 **Tuning, seeds 50200–50207** (plate error 0; MuJoCo e9 on the same seeds and resets: **8/8** at rest, 8/8 latched):
@@ -662,6 +663,7 @@ Everything else is §7.2's run, unchanged:
 | --- | --- | --- | --- | --- | --- |
 | T1 `hold`, c = 1.0 cm | **0/8** | 0/8 | 0 | 0.6 cm | 14.8–17.5 cm |
 | T2 `shelf_servo`, c = 1.0 cm | **4/8** | **5/8** | 5 | 1.4 cm | 0.5–2.5 cm (lifted); 13.6–17.0 cm (missed) |
+| T3 `shelf_servo`, c = 0.5 cm | **4/8** | **6/8** | 7 | 1.8 cm | 0.4–4.1 cm (lifted, 6); 11.9 and 13.5 cm (missed) |
 
 - **The step is gone in both variants.** Over the 45 close commands, the pelvis moved at most 0.6 cm (T1) and 1.4 cm (T2), against 3.6–11.7 cm for e9 in §7.2. Over a whole attempt it drifted 4.2–6.8 cm, mostly outside the close phase. All 16 attempts completed. The leg speed peaked at 0.9 rad/s, below the 5 rad/s guard that A2 masks.
 - **T1 never grasps.** Its palm stays at h_stop, and as the fingers curl their lowest point rises from 1.3 to 5.6 cm above the shelf. That is about the apple's top (5.8 cm), so they close over the apple's crown. In seed 50200 there were 5 steps of apple–hand contact, at most 2.2 N, and the apple rose 3.8 mm.
@@ -670,4 +672,11 @@ Everything else is §7.2's run, unchanged:
   - Seed 50205 landed 0.5 cm from the centre and fired Arena's success term, but it failed `apple_at_rest_v0` on *still* alone: up to 2.9 mm/s of displacement in the window.
   - In 3 attempts (50201, 50203, 50204) the apple slipped out during the lift: rise 4 mm. The palm-to-apple offsets at the start and end of close look the same in grasps that held and in grasps that slipped (within 1 cm), so the grasp is marginal rather than mis-aimed.
   - The reported-velocity reading is 0/8 in both variants, as in §7.2: PhysX reports 5–10 mm/s for a still apple.
-- **T2 is best so far, but it is short of 7/8.** By the declared grid, T3 (`shelf_servo`, c = 0.5 cm) runs next, then T4 (the better of T2 and T3 with `close_ramp` 0.05).
+- **T2 is short of 7/8,** so the declared grid continued with T3 (`shelf_servo`, c = 0.5 cm).
+- **T3 lifts 7 of 8.**
+  - Seed 50204 rose 3.9 cm and fell back.
+  - Seed 50206, a T2 success, slipped at once (4 mm).
+  - Of the 6 carried and released, 4 came to rest. Seed 50202 rested 4.05 cm from the plate origin, just outside the 4 cm disc. Seed 50205 again failed only on *still*, at up to 1.8 mm/s.
+  - The close-phase pelvis step was at most 1.8 cm, and the leg speed at most 1.2 rad/s.
+- **Selection after T3.** T2 and T3 tie at 4/8 at rest, and T3 has more Arena successes (6 against 5), so T3 is the best so far. By the grid, T4 is T3 with `close_ramp` = 0.05.
+- **Run-to-run variability.** Seeds 50201 and 50203 failed in T2 and succeeded in T3, while 50206 did the reverse. A grasp at this margin can go either way, so differences of one or two seeds between variants are within run-to-run variation. They are not evidence that one variant is better.
