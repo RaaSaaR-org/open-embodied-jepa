@@ -88,6 +88,7 @@ def tolerance_curve(miss_cm: np.ndarray, ok: np.ndarray) -> list[dict]:
 
 
 def expected_rate(curve: list[dict], miss_cm) -> np.ndarray:
+    """The curve's rate in each miss's bin (an empty bin maps to 0; none is empty in run-2)."""
     rates = np.array([r["rate"] for r in curve])
     i = np.searchsorted(np.array(EDGES_CM), np.asarray(miss_cm, float), side="right") - 1
     return rates[np.clip(i, 0, len(rates) - 1)]
@@ -186,6 +187,8 @@ def readouts(corpus, curve: list[dict]) -> dict:
             "plate_hidden": c1.median_ci(eh),
             "curve_mapped_of_32": float(32 * expected_rate(curve, ev).mean()),
         }
+    # One shared generator: subsamples are neither nested across fractions nor paired between
+    # grids (the doc says so); only the full-data rows are shared.
     rng = np.random.default_rng(SALTS["learning_curve"])
     for grid in (4, 8):
         xv = pooled(visible, grid)

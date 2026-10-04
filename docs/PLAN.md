@@ -233,7 +233,7 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
     - **The cause, as a calculation.** A scene-blind twin misses by p̄ − p whatever κ, L or the
       commit step, so only the plate's spread at the decision raises its headroom. R15.2 adds a
       Stage −1 rule: compute every twin's projected miss from the declared distributions before
-      any feasibility record. TASK-074's −y move would not help (its directions lie at 261–270°).
+      any feasibility record, read as the bar will be read. TASK-074's −y move would not help (its drawn directions lie at 260–270°).
     - **The condition.** C1 plus a declared post-pick plate move at step 300, over a disc whose
       radius ρ\* (3–6 cm, TASK-073's |d| grid) is set by the ceiling only. Projected from
       development data, the mean twin falls from C1's 25/32 to about 20–11/32.
