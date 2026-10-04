@@ -18,7 +18,7 @@ depends_on:
 - "[[TASK-075]]"
 due_date: ''
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-04
 ---
 
 # Plate-readout perception twin: the place aims at the plate read from the image
@@ -80,3 +80,10 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
 - 2026-10-02: the re-review at `3d8560e` is addressed by R8.7. Cell A is redesigned with L = 2, so
   the target depends on the last aim. The required predictor history is declared, H-final iterates
   to tolerance, and K0's G2 stop is now 4/32.
+- 2026-10-04: freeze preparation (branch `docs/task076-freeze-prep`; R8.8–R8.13, decided by
+  Claude under owner delegation). The third review's four non-blocking items are settled: an
+  action-blind predictor can tie on cell A, so TASK-077 must declare its controller form, its
+  training-aim spread and the twin's expected result; the history rule is c_plate + the measured
+  2-step term ≤ τ_re; the remedy's limits are stated and |κ| ≥ 1 is forbidden; G2's predicted
+  feasibility is reported at K0. The protocol's new §13 lists every bar's source and every row's
+  action. Not frozen: the Stage-0 code and smokes, K0 and an independent APPROVE remain.

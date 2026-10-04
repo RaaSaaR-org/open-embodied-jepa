@@ -44,7 +44,9 @@ forward from the encoded current observation, with no privileged read.
 
 The full definition is in [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) §9.
 Because the LeWM arm must beat an action-blind predictor, any condition that admits a LeWM task
-must make the target depend on the robot's own action (ruling R8.3).
+must make the target depend on the robot's own action (ruling R8.3). That is necessary, not
+sufficient: an action-blind predictor can still tie if the training aims are centred on the
+target and the controller aims at one predicted plate (R8.8).
 
 ## The tasks
 
@@ -73,23 +75,25 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
   Everything else runs on the CPU. Machine time is about 1 h in total. Protocol, code and review
   take about 1–2 days.
 - **Depends on.**
-  - the sealed `apple-far-shift-v2-views` store and `apple-far-shift-v2` corpus (in the run
-    worktrees `task075-run` and `task074-run` until those were archived; restored from the USB
-    disk to the main checkout's `data/` on 2026-10-04, every file checked against the archived
-    sha256; a worktree symlinks them from there, see [STORAGE.md](STORAGE.md));
+  - the sealed `apple-far-shift-v2-views` store (manifest sha256 `ea627a8f…4d77`) and
+    `apple-far-shift-v2` corpus (manifest sha256 `fe7ab915…b134bd`), restored from the USB disk to
+    the main checkout's `data/` on 2026-10-04, every file checked against the archived sha256; a
+    run worktree reaches them through `scripts/new_worktree.sh --run` (see [STORAGE.md](STORAGE.md));
   - the P-3 checkpoint;
   - an independent review.
 - **Stop / abandon.**
   - **K0:** CAL-ESCALATE on any of: the ceiling below 30/32; τ_re undefined; H-stale above 4/32;
-    H-clock near the ceiling.
+    H-clock within 4/32 of the ceiling. G2's predicted feasibility (exact McNemar on K0's paired
+    counts) is reported beside the last stop (R8.12).
   - **Development closed loop:** TWIN-DEV-STOP.
-  - **Escalate, no clause:** TWIN-NEAR (a G1 miss within noise of the ceiling) and TWIN-PRIOR.
+  - **Escalate, no clause:** TWIN-NEAR (a G1 miss within noise of the ceiling), TWIN-PRIOR and
+    U-VOID-CEILING (the true plate itself misses G3's bar on U; R8.13).
   - **Clause:** it fires on TWIN-OFF-FAIL, TWIN-FAIL or TWIN-HARM, and closes single-frame
     frozen-readout variants of this place. The next step is then TASK-075's Option 2, a place
     servo (R3).
   - **K-pred:**
-    - PRED-INFEASIBLE (cell A was removed at Stage 0, or its ceiling fails) and PRED-NO-BAR
-      escalate without a clause.
+    - PRED-INFEASIBLE (cell A was removed at Stage 0, or its ceiling fails), PRED-NO-BAR and
+      PRED-NOT-RUN (Stage O did not pass, so K-pred did not run) escalate without a clause.
     - PRED-NONE (the ceiling holds but there is no room for prediction) fires K-pred's clause.
 
 ### Branch A: TASK-077, a LeWM plate-prediction place planner on v2 (only if K-pred returns PRED-ADMIT(A))
@@ -104,6 +108,14 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
   40–120 steps. TASK-066 gated only h = 8 and h = 16, so the recursive roll-out is ungated.
   TASK-077 gates its own horizon offline, with TASK-066's dynamics gates at that horizon, before
   any closed loop.
+- **Declared before the freeze** (R8.8, R8.9):
+  - the controller form, which should rank candidate aims by their individual predicted
+    outcomes (one roll-out per candidate), not aim at one predicted plate;
+  - the spread of the training aims relative to the fixed point g\* = (p − κh)/(1 − κ);
+  - the action-blind twin's expected result under that controller and corpus;
+  - the predictor's history: TASK-066's history-one predictor qualifies only if
+    c_plate + m2\* ≤ τ_re (m2\*, the measured 2-step palm term, from TASK-076's K-pred), or if
+    B's calibrated allowance covers m2\*; otherwise 3 frames or the last 2 executed commands.
 - **Bars, calibrated before the freeze.** The predicted-latent plate bar B satisfies
   c_plate ≤ B ≤ τ_re. c_plate is measured on the pooled latent in TASK-076. Any allowance above
   c_plate is calibrated on development data. The tie bar comes from TASK-076's measured H-twin,
@@ -138,7 +150,7 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
     condition, beating the action-blind, scene-blind and random twins". **It does not show that
     LeWM is needed if H-rule is at the ceiling** (stated in TASK-076 §6.3 before any number).
 
-### Branch B: if K-pred returns PRED-NONE, PRED-INFEASIBLE or PRED-NO-BAR (or TASK-076's clause fires)
+### Branch B: if K-pred returns PRED-NONE, PRED-INFEASIBLE, PRED-NO-BAR or PRED-NOT-RUN (or TASK-076's clause fires)
 
 - **PRED-INFEASIBLE.** The declared action-dependent rule could not be run, or its ceiling failed.
   This is a design failure, so it escalates without a clause.

@@ -190,6 +190,48 @@ and does not replace it.
     motion under H-final.
   - **K0's G2 stop** is now H-clock(K) ≥ N_K(0) − 4/32, superseding R8.4's 2/32. An exact
     one-sided McNemar test at p < 0.01 needs at least 7 one-way discordant pairs out of 64.
+- **R8.8–R8.13 — freeze preparation** (the four non-blocking items of the third review of #129,
+  APPROVE as a DRAFT at `ee3f3c9`, and a freeze-readiness check; 2026-10-04). Each was decided by
+  Claude under owner delegation. No run was made for them; none changes a seed, an arm or a gated
+  bar's value.
+  - **R8.8 — an action-blind predictor can tie on cell A.** The draft's "an action-blind
+    predictor cannot [find the fixed point]" is withdrawn. If the palm ends near the aim, the fixed
+    point is about g\* = (p − κh)/(1 − κ), from the plate p and palm h in the current frame. An
+    action-blind predictor predicts the mean over its training policy's aims; if those aims are
+    centred on g\*, a controller that aims at one predicted plate ties. It is expected to lose
+    only if the controller ranks candidate aims by their individual predicted outcomes, or the
+    training aims are not centred on g\*. So PRED-ADMIT(A) admits TASK-077 only with three
+    declarations made before its freeze: its controller form (which should rank candidates by
+    their individual predicted outcomes), the spread of its training aims relative to g\*, and
+    the action-blind twin's expected result.
+  - **R8.9 — the history rule uses the measured 2-step term.** It supersedes R8.7's "qualifies if
+    0.85 cm ≤ τ_re". TASK-066's history-one predictor qualifies for TASK-077 only if
+    c_plate + m2\* ≤ τ_re, or B's calibrated allowance covers m2\*. m2 = |κ| ·
+    ‖palm_xy(485) − palm_xy(483)‖ from executed joint states under H-final. The Stage-0 smoke
+    measures it (an estimate); K-pred reports m2\*, the upper 95 % bound of its median on cell A's
+    32 H-final attempts. The 0.85 cm clip bound is no longer used: the clip is on commands.
+    c_plate is defined in O1's form (the upper 95 % bound of cross-fitted R-plate-pool's median
+    error).
+  - **R8.10 — the remedy's limits.** Lowering L to 1 changes almost nothing; moving s1 later helps
+    only if the palm still moves in xy during the lower (505–555). κ is not a remedy, and any
+    |κ| ≥ 1 is forbidden, because the look-ahead would stop converging. A shortfall removes cell A
+    and gives PRED-INFEASIBLE (escalate, no clause).
+  - **R8.11 — seeds, salts and resets completed.** Every cohort draws its reset with
+    `condition_reset` (salt 7425). The salts' uses are listed (7603 also covers the closed-loop
+    R-plate's λ; 7604 also covers m2\* and the G2 feasibility resampling). 7605 is reserved and
+    unused. 7601–7609 appear nowhere in src, scripts, tests, configs or benchmarks on main
+    (re-checked 2026-10-04).
+  - **R8.12 — G2's predicted feasibility at K0.** Reported beside the −4/32 stop, from K0's paired
+    H-handover (level 0) and H-clock outcomes: the exact one-sided McNemar p on the doubled
+    discordant counts, and the fraction of 10 000 resamples of 64 pairs (salt 7604) with p < 0.01.
+    It stops nothing; a predicted pass probability below 0.5 is disclosed in the freeze PR.
+  - **R8.13 — rows completed.** U-VOID-CEILING (H-handover(U) < P-stale(U) − 2/32; escalate, no
+    clause) keeps a ceiling failure on U from firing the clause through TWIN-HARM, so U keeps its
+    H-handover arm. PRED-NOT-RUN (Stage O without O-PASS; no clause; Branch B) covers K-pred not
+    running. K-pred runs one invocation per cell, so each cap is at least 5 times its estimate.
+    No hand-crop variant follows a TWIN-PASS in TASK-076. The protocol's §13 lists every bar's
+    source and every row's action, and what remains before the freeze (Stage-0 code and smokes,
+    K0, then an independent APPROVE).
 - **Why not skip to a LeWM task now.** No calibrated plate bar and no measured prediction headroom
   exist yet. Starting without them would repeat TASK-074 (an uncalibrated bar) and TASK-073 (no
   headroom). K-pred costs about 416 CPU attempts.
