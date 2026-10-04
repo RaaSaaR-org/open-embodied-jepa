@@ -1,15 +1,23 @@
 # Apple→Plate plate-readout twin v2: the place aims at the plate read from the image, plus a prediction-headroom check (TASK-076)
 
-**Status: DRAFT, not frozen.** This document is a preregistration draft for review. Nothing in it
+**Status: DRAFT, not frozen; text prepared for the freeze review (R8.8–R8.14).** Nothing in it
 has run. It has no frozen block, no manifest and no code yet. Nothing from any cohort below may be
 simulated before the conditions in §5 are met: K0 runs only on a reviewer's reported GO for K0,
 and nothing after K0 runs before the frozen protocol is merged on an independent reviewer's
-reported APPROVE. Every bar below is either a formula fixed here whose value K0 measures, or a
-measured quantity. No bar is carried from an earlier task without being measured again.
+reported APPROVE. What still stands between this text and the freeze is listed in §13.
+
+Every precision bar below (O1, O4, K-P5) is τ_re, measured in K0, and every ratio or test bar is
+a definitional constant (O3's 1.0, G2's p < 0.01). The count bars and stop thresholds (G1's
+56/64, G3's −2/32, K-P1's 30/32, K-P2–K-P4's +8/32, the K0, D and S-VOID thresholds) are declared
+decision margins: G1's is τ's own bar, and the others are carried from TASK-074's K1 and G5, as
+§13.1 lists. None of them is a precision bar on a readout, which is the kind TASK-074's lesson is
+about. §13.1 gives, for each, its source and either its feasibility check against a ceiling
+measured in this task or its role as a stop.
+Everything else is reported only.
 
 - Task card: `.mc/tasks/todo/TASK-076-*.md`. Rulings: [DECISIONS.md](../DECISIONS.md), decision
   2026-10-02, R1–R4 and R7, and decision 2026-10-02 (b), R8 (this draft's scope; its review
-  rulings R8.1–R8.7).
+  rulings R8.1–R8.7; the freeze-preparation rulings R8.8–R8.14).
 - Plan context: [docs/PLAN.md](../PLAN.md).
 - Learned Apple→Plate status, the canonical sentence (DECISIONS 2026-10-02, R7), verbatim:
 
@@ -133,7 +141,10 @@ That margin is the room an action-conditioned predictor could have.
   file pinned by an earlier manifest is edited.
 - **The sealed views store** `apple-far-shift-v2-views` (manifest sha256 `ea627a8f…4d77`) and its
   source corpus `apple-far-shift-v2` (manifest sha256 `fe7ab915…b134bd`): 270 train + val roots,
-  of which 253 are read. The 30 test roots are never simulated, rendered or decoded.
+  of which 253 are read. The 30 test roots are never simulated, rendered or decoded. Both are
+  identified by name and manifest sha256, which every stage checks before reading. They live in the
+  main checkout's `data/`, and a run worktree made with `scripts/new_worktree.sh --run` reaches
+  them through its `data/` symlink.
 
 ## 3. Arms
 
@@ -212,23 +223,49 @@ declared, simple, simulator-only rule:
   - All but the first 2 steps of that palm motion happen after 485, so they are caused by the aim
     chosen at 485. The palm keeps moving towards it through the rest of the transfer, to 505.
   - The aim that lands on the plate is therefore the fixed point of "where the plate will be,
-    given the palm motion my own aim causes".
-  - An action-conditioned predictor, given the candidate aim's commands, can find it. An
-    action-blind predictor cannot.
+    given the palm motion my own aim causes". If the palm ends near the aim, the plate stops at
+    about p + κ(g − h) for an aim g, where p is the plate and h the palm at the decision. The fixed
+    point is then about g\* = (p − κh)/(1 − κ) = (p + 0.5h)/1.5. Both p and h are in the current
+    frame (and h in proprioception).
+- **What each predictor is given, and when an action-blind one could tie** (R8.8).
+  - An action-conditioned predictor, given each candidate aim's commands, predicts each
+    candidate's own outcome. It is given the information to rank candidates.
+  - An action-blind predictor is not. It predicts one plate(s1) for all candidates: in effect the
+    mean over the aims of the behaviour policy it was trained on.
+  - **It can still tie.** If the training aims are centred on g\* (for example e9 aimed at a
+    privileged fixed point, with zero-mean mis-aims), that mean is about g\*. A controller that
+    simply aims at the single predicted plate would then tie with either predictor.
+  - The action-blind twin is expected to lose only if (a) the controller ranks candidate aims by
+    their individual predicted outcomes, or (b) the training aims are not centred on g\*.
+  - **TASK-077 must therefore declare three things in advance:**
+    1. its controller form, which should rank candidate aims by their individual predicted
+       outcomes (one roll-out per candidate), not aim at one predicted plate;
+    2. the spread of its training aims relative to g\*: the corpus's aim distribution, its centre
+       and its spread;
+    3. the expected result of the action-blind twin under that controller and corpus.
+  - H-rule's expected near-ceiling result (below) is the same point seen from the
+    non-world-model side.
   - Under the earlier L = 40, that motion was κ · [palm(485) − palm(445)], already fixed at 485,
     so action conditioning added nothing. That design is withdrawn.
 - **Each predictor's required history, declared now** (R8.7).
   - **Action-conditioned predictor.** It needs one current frame plus the candidate aim's
     commands. The palm motion that the frame cannot show is palm(485) − palm(483): 2 executed
     steps.
-    - Its contribution to the plate is at most |κ| × 2 steps × about 0.6 cm per step per axis
-      (the primitive's per-axis clip, `apple_lewm_planner_v2.md` §9b). That is 0.6 cm per axis,
-      about 0.85 cm in xy, at the clip; less at typical speeds.
+    - **The 2-step term, m2.** Per attempt, m2 = |κ| · ‖palm_xy(485) − palm_xy(483)‖, from the
+      executed joint states (`PalmFK`), at the last decision 485. It is a bias that adds to the
+      readout error, not a substitute for it.
+    - **It is measured, not bounded** (R8.9). The clip bound, |κ| × 2 steps × about 0.6 cm per
+      step and axis (the primitive's per-axis clip, `apple_lewm_planner_v2.md` §9b), is about
+      0.85 cm in xy, but the clip is on commands, and m2 uses executed palm motion. So:
+      - the Stage-0 smoke measures m2 under H-final on its cell-A attempts and records its median
+        and maximum (the pre-freeze estimate; nothing is decided from it);
+      - Stage K-pred logs m2 on all 32 of cell A's H-final attempts and reports m2\*, the upper
+        95 % bound of its median (bootstrap, salt 7604), and its 87.5th percentile.
     - **TASK-066's history-one predictor** (`token_dynamics.py`, the comment above
-      `MODEL_CONFIG`) qualifies if that bound is within τ_re. It is at τ = 1.0 cm, but by a
-      narrow margin.
-    - If K0 measures τ_re < 0.85 cm, TASK-077 must declare a history of L + 1 = 3 frames, or
-      give its predictor the last 2 executed commands. Recorded now, before any number.
+      `MODEL_CONFIG`) qualifies for TASK-077 only if **c_plate + m2\* ≤ τ_re**, or if TASK-077's
+      bar B has a calibrated allowance that covers m2\* (c_plate + m2\* ≤ B ≤ τ_re).
+    - Otherwise TASK-077 must declare a history of L + 1 = 3 frames, or give its predictor the
+      last 2 executed commands. Recorded now, before any number.
   - **The action-blind twin** gets the same observation history (one current frame) and no
     actions.
 - **Look-ahead to s1.** The plate's stop at s1 = 525 lies 40–120 steps after the decisions, so the
@@ -245,6 +282,16 @@ unverified.**
   2. then s1 moves later, in steps of 10, up to the contact limit found by the same smoke.
 
   L is never raised.
+- **The remedy's limits, stated in advance** (R8.10).
+  - Lowering L from 2 to 1 changes almost nothing: the remaining motion becomes
+    κ · [palm(524) − palm(484)] instead of κ · [palm(523) − palm(483)], of nearly the same size.
+  - Moving s1 later adds remaining motion only if the palm still moves in xy during the lower
+    (505–555). If the lower is mostly vertical, it adds little.
+  - κ is not a remedy. It stays at −0.5. **Any |κ| ≥ 1 is forbidden** in this task and in any
+    amendment of it: H-final(A)'s look-ahead contracts by about |κ| per iteration, so at |κ| ≥ 1 it
+    would stop converging, and H-rule's fixed point with it.
+  - So a shortfall is the expected way for cell A to fail. It is handled by removing cell A, which
+    makes the row PRED-INFEASIBLE (escalate, no clause), not by stretching the rule.
 - **If no allowed setting gives a median of at least 2 cm,** or if more than a quarter of the
   smoke attempts are refused, cell A is declared infeasible and removed before the freeze. In
   that case PRED-ADMIT is unreachable: constant velocity alone cannot admit (§6.3).
@@ -311,10 +358,24 @@ Every range below is disjoint from:
 | 56300–56331 | U | gated | 32 unshifted resets: H-twin, P-stale, H-handover |
 | 56900–56999 | smoke | Stage 0 | mechanics only; nothing in them is read |
 
-**RNG salts.**
-- New: 7601 planted-error direction in K0's τ curve; 7602 outer folds; 7603 inner folds; 7604
-  bootstrap; 7605 learning-curve subsets; 7606 moving-plate direction (M cells).
+**Resets.** Every cohort, including U, M-a, M-b and A, draws its reset with
+`lewm_planner_v2.condition_reset` (the right-eligible re-draw, salt 7425), as TASK-074's cohorts
+did. So all cohorts share one reset distribution. The step-300 shift (salt 7413) applies to K, D
+and S only; U and the K-pred cells have none (§3.2).
+
+**RNG salts** (R8.11 completes the list).
+- New:
+  - 7601: the planted-error direction in K0's τ curve;
+  - 7602: the outer folds (Stage O's cross-fitted R-plate, R-plate-floor and R-plate-pool);
+  - 7603: the inner folds (λ selection in every ridge, including the closed-loop R-plate fit);
+  - 7604: every bootstrap (§6 intervals, m2\*, and K0's G2 feasibility resampling, §5);
+  - 7606: the moving-plate direction (M cells).
+- Reserved and unused: 7605 (it was listed for learning-curve subsets, but no stage fits a
+  learning curve). Any use needs a reviewed amendment.
 - Carried as part of the condition: 7413 (shift direction) and 7425 (reset re-draw).
+- Fixed seeds, not salts: the random-init floor uses `pretrained_encoder.random_init` seed 0
+  (H-floor, R-plate-floor). Cell A draws nothing: its plate motion is a deterministic function of
+  the executed palm motion. H-final(A)'s look-ahead is deterministic on cloned state.
 - Cohort C is not used.
 
 ## 5. Stages and stop rules
@@ -327,7 +388,9 @@ Every range below is disjoint from:
    - the runner imports no other runner script (`tests/test_no_runner_imports.py`);
    - `run_tools.assert_local_import`, `install_guards` and `gpu_guard` are used.
 
-   The smokes also settle the K-pred mechanics questions of §3.2.
+   The smokes also settle the K-pred mechanics questions of §3.2, and they measure the 2-step
+   term m2 under H-final on their cell-A attempts (§3.2, R8.9). Their results, and any change
+   they force (s1, L or cell A's removal), are written into the protocol before the freeze.
 2. **Stage K0, calibration (development; after a reviewer's reported GO for K0, before the
    freeze).** It runs on cohort K, the simulator only, on the CPU.
    - **τ_re.** It uses **the procedure of** TASK-075's `TAU_REMEASURE` (its §6.3): the same arm
@@ -350,9 +413,22 @@ Every range below is disjoint from:
      - H-stale(K) > 4/32 (the condition does not need a reading; TASK-074 K1's P-stale ≤ 4 bar);
      - H-clock(K) ≥ N_K(0) − 4/32 (an image-free prior is near the ceiling, so G2 is not
        feasible).
+   - **G2's predicted feasibility, reported beside the stop** (R8.12; reported only, it stops
+     nothing). K0 runs H-handover at level 0 and H-clock on the same 32 resets, so their paired
+     outcomes give discordant counts b (H-handover succeeds, H-clock fails) and c (the reverse).
+     H-handover stands in for H-twin at its ceiling, so both numbers below are optimistic for G2:
+     - **the scaled point prediction:** the exact one-sided McNemar p-value on (2b, 2c), the K0
+       counts doubled to S's 64 resets;
+     - **the predicted pass probability:** the fraction of 10 000 resamples of 64 resets, drawn
+       with replacement from K0's 32 pairs (salt 7604), whose exact one-sided McNemar p is
+       below 0.01.
+     Both are written into the frozen block with the K0 values. If the stop does not fire but the
+     predicted pass probability is below 0.5, that is disclosed in the freeze PR as a known risk
+     to G2, not as a stop.
    - The K0 values are written into the frozen block: τ_re, the τ curve, N_K(0), H-clock's fitted
-     targets, and H-clock's and H-stale's K counts. K0 runs no hypothesis arm, so no bar sees an
-     H-twin number.
+     targets, H-clock's and H-stale's K counts, b and c, and G2's predicted feasibility. K0 runs
+     no hypothesis arm, so no bar sees an H-twin number.
+   - **K0-PASS** (no stop fires): the K0 values are frozen with the protocol (step 3).
 3. **Freeze.** The PR is merged on an independent reviewer's reported APPROVE.
 4. **Stage O, offline plate admission (after the freeze, on a GO).** It reads the sealed views
    store: no render and no new simulation.
@@ -384,7 +460,9 @@ Every range below is disjoint from:
    once per reset, paired, from a clean worktree of the merged revision. It includes a determinism
    re-run of H-twin on the first four S seeds; any difference is a V (TASK-074 §8.3).
 7. **Stage K-pred (on a GO; it requires the recorded O-PASS; independent of D and S/U).** Cohorts
-   M-a, M-b and A (if A survived Stage 0), with the arms of §3.2. It produces its own row (§6.3).
+   M-a, M-b and A (if A survived Stage 0), with the arms of §3.2, one runner invocation per cell
+   (§7). It produces its own row (§6.3). If Stage O does not record O-PASS, K-pred does not run,
+   and its row is PRED-NOT-RUN (§6.3).
 8. **Results PR.** Every arm is reported, and the privileged ceilings, H-clock, H-cv and H-rule
    are labelled as not learned. An independent reviewer checks every restated number.
 
@@ -436,12 +514,15 @@ R-plate-pool**.
   - So G2 needs H-twin − H-clock ≥ 7/64, about 3.5/32, at the very least. K0's stop at
     H-clock(K) ≥ N_K(0) − 4/32 is set at that separation. H-clock(K) is in-sample, and so
     optimistic, which makes the stop conservative.
-- **G3 (no harm, U):** H-twin(U) ≥ P-stale(U) − 2/32 (TASK-074's G5).
+- **G3 (no harm, U):** H-twin(U) ≥ P-stale(U) − 2/32 (TASK-074's G5). Its feasibility is checked
+  on U itself: H-handover runs on U (R8.13), and the U-VOID-CEILING row below keeps a ceiling
+  failure on U from firing the clause through TWIN-HARM.
 
 | row | condition | consequence |
 |---|---|---|
 | **V** | the void rule (§7) | one repeat after a reviewed fix |
 | **S-VOID-CONDITION** | H-stale(S) > 8/64, or H-handover(S) < 56/64 | escalate: the condition does not need a reading, or the ceiling fell below the bar on S |
+| **U-VOID-CEILING** | H-handover(U) < P-stale(U) − 2/32 | escalate, no clause (R8.13): G3 is not feasible on U, because even the true plate falls below its bar, so a G3 miss would measure the place family, not the readout |
 | **TWIN-HARM** | G3 fails | the clause fires (§7) |
 | **TWIN-PASS** | G1 and G2 pass | **the only claim row** (§1) |
 | **TWIN-PRIOR** | G1 passes, G2 fails | escalate: an image-free prior is about as good, so this condition does not test perception |
@@ -459,17 +540,36 @@ never admit.
   K1's headroom bar).
 - **K-P3 (prediction matters with this perception):** H-final(A) − H-twin(A) ≥ +8/32.
 - **K-P4 (an action-blind extrapolator does not suffice):** H-final(A) − H-cv(A) ≥ +8/32.
-- **K-P5 (a TASK-077 bar is feasible):** c_plate, measured on R-plate-pool in Stage O, ≤ τ_re.
+- **K-P5 (a TASK-077 bar is feasible):** c_plate ≤ τ_re. **c_plate** is the upper 95 % bound of
+  cross-fitted R-plate-pool's median plate error on Stage O's frames and folds (O1's form,
+  TASK-075's A1 form c_V), with the bootstrap of §6.
 
 Reported, never bars: H-rule(A), and H-final − H-rule with its interval; every M-cell count.
 
+**The headroom's noise guard** (R8.14). Each headroom (K-P2, K-P3, K-P4) is a paired difference on
+A's 32 resets, reported with its paired interval: the reset-clustered bootstrap percentile
+interval of §6 (10 000 resamples, 95 %, salt 7604). A failed headroom bar is:
+- **detectably below** +8/32 when that interval's upper bound is below 8/32;
+- **near** +8/32 otherwise (the interval includes +8/32).
+
+PRED-NONE needs at least one failed headroom bar that is detectably below. A failure that is only
+near gives PRED-NEAR, as G1's TWIN-NEAR does in §6.2.
+
+- **PRED-NONE's false-fire probability at a true headroom of exactly 8/32** is about 2–3 % per
+  bar: 2.6 %, 3.0 % and 2.2 % in a simulation (4 000 trials of 32 paired resets, 4 000 bootstrap
+  resamples each) with 0, 1 and 2 reversed pairs per 32 expected. Without the guard it was the
+  bar's own miss rate, 42–45 % in the same simulation. If all three headrooms sit exactly at 8/32,
+  the union bound is about 9 %.
+
 | row (first match) | condition | consequence (for the plan, not for TASK-076's claim) |
 |---|---|---|
+| **PRED-NOT-RUN** | Stage O did not record O-PASS, so K-pred did not run (§5) | no clause of its own; PLAN.md's Branch B applies, together with Stage O's own row (TWIN-OFF-ARM escalates, TWIN-OFF-FAIL fires its clause) |
 | **V** | the void rule | one repeat after a reviewed fix |
 | **PRED-INFEASIBLE** | cell A was removed at Stage 0 as infeasible, or K-P1 fails on A | **escalate, no clause** (ruling R8.4): the ceiling, not the room for prediction, failed. It is a design failure, as at TASK-073/074's failed ceilings |
-| **PRED-NONE** | K-P1 passes, and K-P2, K-P3 or K-P4 fails | the K-pred clause fires (§7) |
+| **PRED-NONE** | K-P1 passes, and at least one of K-P2, K-P3 and K-P4 fails with its paired upper bound below 8/32 (detectably below) | the K-pred clause fires (§7) |
+| **PRED-NEAR** | K-P1 passes, and at least one of K-P2–K-P4 fails, but every failed one's paired interval includes +8/32 | **escalate, no clause, no claim** (R8.14): the headroom is not detectably below its bar, so the miss may be noise at n = 32. Any repeat needs fresh seeds and its own ruling |
 | **PRED-NO-BAR** | K-P1–K-P4 pass, K-P5 fails | escalate, no clause: there is room for prediction, but the pooled LeWM latent does not read the plate within τ_re, so no TASK-077 bar is feasible |
-| **PRED-ADMIT(A)** | K-P1–K-P5 pass | TASK-077 may be preregistered under cell A, as a task change declared under R2 |
+| **PRED-ADMIT(A)** | K-P1–K-P5 pass | TASK-077 may be preregistered under cell A, as a task change declared under R2, with the three declarations below |
 
 **Stated in advance.**
 - If H-rule(A) ≥ H-final(A) − 2/32, a rule-knowing non-world-model arm reaches the ceiling.
@@ -477,6 +577,13 @@ Reported, never bars: H-rule(A), and H-final − H-rule with its interval; every
   prediction condition and that it beats the action-blind, scene-blind and random twins. It could
   not claim that a world model is needed.
 - On M, an action-blind predictor is expected to tie, and H-cv to come near H-final (§3.2).
+- On A, an action-blind predictor can also tie, if TASK-077's training aims are centred on the
+  fixed point g\* and its controller aims at one predicted plate (§3.2, R8.8). So PRED-ADMIT(A)
+  admits TASK-077 only with three declarations made before its freeze: its controller form
+  (which should rank candidate aims by their individual predicted outcomes), the spread of its
+  training aims relative to g\*, and the action-blind twin's expected result.
+- Whether TASK-066's history-one predictor suffices is decided by c_plate + m2\* ≤ τ_re (§3.2,
+  R8.9), reported with the row.
 
 ### 6.4 Blind and prior-only baselines against every bar
 
@@ -507,12 +614,14 @@ rule.
   `run_tools.last_two_triggered`. A test will check that too.
 
 **Caps** (wall time; exceeding one is a V, never an escalation):
-- 7 200 s per runner invocation;
-- 300 s per attempt (TASK-074's);
+- 7 200 s per runner invocation. K0, O, D and S/U are one invocation each; K-pred is one
+  invocation per cell (M-a, M-b, A), so no invocation's estimate exceeds 20 minutes (§10);
+- 300 s per attempt (TASK-074's). The heaviest attempt is an H-final(A) attempt with the full
+  look-ahead (§10);
 - 1 800 s for Stage O's featurisation.
 
 Memory: process-tree PSS ≤ 12 GiB (`run_tools.MemoryWatch`). GPU: §8. Each cap is at least 5
-times the estimate in §10. No stage has a row that a budget can trigger: every escalation in §6
+times the corresponding estimate in §10 (checked there). No stage has a row that a budget can trigger: every escalation in §6
 comes from a measured result.
 
 **Void rule.** A stage is V on any of:
@@ -529,7 +638,8 @@ A V after the stage's outcome boundary is not read as an outcome. One repeat fro
 allowed after a reviewed fix (TASK-074 §7 precedent). A second V escalates.
 
 **The abandonment clause** fires on TWIN-OFF-FAIL, TWIN-FAIL or TWIN-HARM. It does not fire on
-TWIN-NEAR, TWIN-PRIOR, TWIN-OFF-ARM, S-VOID-CONDITION or CAL-ESCALATE. **Its scope:**
+TWIN-NEAR, TWIN-PRIOR, TWIN-OFF-ARM, S-VOID-CONDITION, U-VOID-CEILING, TWIN-DEV-STOP or
+CAL-ESCALATE. **Its scope:**
 
 > "aiming e9's place primitive, after P-3's pick, at a single-frame frozen-DINOv2 ridge readout of
 > the plate from the onboard 112 px camera, under TASK-074's 9 cm condition on `apple-to-plate-v2`:
@@ -539,7 +649,8 @@ TWIN-NEAR, TWIN-PRIOR, TWIN-OFF-ARM, S-VOID-CONDITION or CAL-ESCALATE. **Its sco
 
 The next step is then TASK-075's Option 2 (a place servo; R3).
 
-**K-pred's own clause.** It fires on PRED-NONE only, not on PRED-INFEASIBLE or PRED-NO-BAR. It
+**K-pred's own clause.** It fires on PRED-NONE only, not on PRED-NEAR, PRED-INFEASIBLE,
+PRED-NO-BAR or PRED-NOT-RUN. It
 closes preregistering a LeWM plate-target place task on v2 under the tested action-dependent rule
 (cell A: κ = −0.5 and the L and s1 it ran with) and under the constant-velocity family (M-a, M-b), without
 new evidence of a different kind. It does not close the LeWM backend, the v2 task or the product
@@ -598,6 +709,11 @@ perception result, labelled as such. It must not be described as progress in LeW
 - H-twin's, H-cv's and H-rule's counts on cell A. LeWM is reported beside them, and TASK-077
   declares its own tie bar against the best of them.
 - Cell A's rule, as a task change declared under R2.
+- m2\* and the history rule: TASK-066's history-one predictor qualifies only if
+  c_plate + m2\* ≤ τ_re, or B's calibrated allowance covers m2\* (§3.2, R8.9).
+- Three obligations, declared before TASK-077's freeze (§3.2, R8.8): its controller form (which
+  should rank candidate aims by their individual predicted outcomes), the spread of its training
+  aims relative to the fixed point g\*, and the action-blind twin's expected result.
 
 **A horizon caveat for TASK-077.** On cell A, the plate's final position at s1 = 525 lies 40 to
 120 steps after the decisions at 405–485. TASK-066 gated its predictor only at h = 8 and h = 16. A
@@ -605,7 +721,7 @@ recursive roll-out to s1 is therefore ungated. TASK-077 must gate its own horizo
 any closed loop, with TASK-066's no-collapse, copy-last, no-action and action-sensitivity gates at
 that horizon.
 
-**If the row is PRED-NONE, PRED-INFEASIBLE or PRED-NO-BAR,** Option 1 has not advanced the LeWM
+**If the row is PRED-NONE, PRED-NEAR, PRED-INFEASIBLE, PRED-NO-BAR or PRED-NOT-RUN,** Option 1 has not advanced the LeWM
 goal beyond calibration. PLAN.md's Branch B applies.
 
 ## 9b. Limitations (stated plainly)
@@ -625,8 +741,14 @@ goal beyond calibration. PLAN.md's Branch B applies.
 - **Cell A is a declared simulator rule.** With L = 2, the target depends on the aim chosen at the
   decision that sets it (R8.7). Its feasibility is unverified until Stage 0, and moves against the
   approaching hand may be refused. TASK-066's history-one predictor misses the last 2 executed
-  palm steps; that term is bounded at about 0.85 cm in xy at the clip (§3.2). A hand-written arm that knows the rule
-  (H-rule) is expected to come close to the ceiling, which §6.3 states in advance.
+  palm steps; that term, m2, is measured from executed palm motion (about 0.85 cm in xy if the
+  commands sit at the clip), and it adds to c_plate in the history rule (§3.2). A hand-written arm
+  that knows the rule (H-rule) is expected to come close to the ceiling, which §6.3 states in
+  advance. An action-blind predictor can tie on A if the training aims are centred on the fixed
+  point and the controller aims at one predicted plate (§3.2, R8.8).
+- **The remedies for too little remaining motion are weak** (R8.10). Lowering L to 1 changes
+  almost nothing, and moving s1 later helps only if the palm still moves in xy during the lower.
+  |κ| ≥ 1 is forbidden. A shortfall ends in PRED-INFEASIBLE.
 - **H-cv and H-rule know the condition's structure.** A later world model would have to learn it.
 - **One encoder, one view, one input size, one floor seed, one corpus.**
 
@@ -638,9 +760,17 @@ goal beyond calibration. PLAN.md's Branch B applies.
 | O | featurisation; cross-fitted ridges (full and pooled) on at most 1 518 rows (253 × 6) | GPU < 2 min, then CPU | about 15 min | TASK-075 readouts: featurisation 76–92 s per view; cross-fit 221–228 s per view for more readouts |
 | D | 32 attempts | CPU | about 2 min | as K0, plus the CPU encoding |
 | S/U | 384 + 96 attempts | CPU | about 10 min | as K0, plus six encodings per H-twin and H-floor attempt |
-| K-pred | M: 2 × 32 × 4 = 256; A: 32 × 5 = 160 attempts | CPU | about 30–60 min | as K0; H-final(A)'s look-ahead adds up to 10 cloned roll-outs to s1 per decision (6 at the estimated contraction) |
+| K-pred, M-a and M-b (one invocation each) | 32 × 4 = 128 attempts per cell | CPU | at most about 10 min per cell | as K0 (about 5.5 worker-seconds per attempt: 265 s × 6 workers / 288), plus H-twin's and H-cv's CPU encodings |
+| K-pred, A (one invocation) | 32 × 5 = 160 attempts | CPU | at most about 15 min | as M, plus H-final(A)'s look-ahead: at most 10 cloned roll-outs to s1 per decision, of 120, 104, 88, 72, 56 and 40 steps, so at most 4 800 extra steps per attempt, about 6.5 attempts of 740 commands (about 36 worker-seconds) |
 
 Total machine time is about 1–1.5 h. The GPU is used for under 2 minutes.
+
+**The caps against these estimates (§7).** Per invocation (7 200 s): the largest estimate is
+Stage O's and cell A's 15 minutes, a factor of 8. Per attempt (300 s): an ordinary attempt is about
+5.5 worker-seconds, and the worst H-final(A) attempt about 42 (5.5 + 36), a factor of about 7.
+Featurisation (1 800 s): under 2 minutes, a factor of at least 15. The Stage-0 smokes measure
+the per-attempt time of a full-look-ahead H-final(A) attempt; if it exceeds 60 s, the per-attempt
+cap is reviewed before the freeze.
 
 ## 11. Deviations from the card's proposed shape (disclosed)
 
@@ -656,11 +786,99 @@ Total machine time is about 1–1.5 h. The GPU is used for under 2 minutes.
 The independent review of #129 at `314d843` (REQUEST CHANGES, eleven findings) is addressed in
 this revision. The rulings it needed are R8.1–R8.6 in DECISIONS 2026-10-02 (b). The re-review at `3d8560e`
 (one blocking finding: under L = 40, cell A's target ignored the last aim) is addressed by R8.7.
-Still open before
-the freeze:
-1. Is s1 = 525 safe from apple–plate contact? Does cell A's rule (κ = −0.5, L = 2) give enough
-   remaining motion at 485? (The Stage-0 smokes decide, §3.2.)
-2. Should U also run H-handover (now included: 32 more attempts), or only H-twin and P-stale?
-3. Should a TWIN-PASS be followed by a hand-crop variant? Not planned. In the white-plate
-   development record (`apple_white_plate_dev.md`, blue plate), the hand crop's plate readout has
-   an 87.5th percentile of 1.36 cm, against 0.91 cm on onboard 112.
+The third review at `ee3f3c9` (APPROVE as a DRAFT, four non-blocking items to settle before the
+freeze) is addressed by R8.8–R8.10 and R8.12; the freeze-readiness check of §13 added R8.11 and
+R8.13, and R8.14 added the PRED-NEAR noise guard. All are in DECISIONS 2026-10-02 (b).
+
+Settled:
+- **U runs H-handover** (32 more attempts; R8.13). It is the feasibility check for G3 through
+  U-VOID-CEILING.
+- **No hand-crop variant follows a TWIN-PASS in this task** (R8.13). In the white-plate
+  development record (`apple_white_plate_dev.md`, blue plate), the hand crop's plate readout has
+  an 87.5th percentile of 1.36 cm, against 0.91 cm on onboard 112. A hand-crop follow-up would be
+  a new view, and so needs its own preregistration.
+
+Still open, and decided only by the Stage-0 smokes (§3.2, §13.2):
+1. Is s1 = 525 safe from apple–plate contact?
+2. Does cell A's rule (κ = −0.5, L = 2) give a median remaining motion of at least 2 cm at 485
+   under H-final, with at most a quarter of the smoke attempts refused? If not, the remedies of
+   §3.2 apply, and failing them cell A is removed.
+3. The smoke's m2 (median and maximum) and the time of a full-look-ahead H-final(A) attempt.
+
+## 13. Freeze readiness (checked 2026-10-04, R8.11–R8.14)
+
+### 13.1 Every bar: its source, and its feasibility check or role
+
+| bar | value | source | feasibility check, or role |
+|---|---|---|---|
+| O1 | upper bound of R-plate's median error ≤ τ_re | τ_re measured in K0 | precision bar on a measured tolerance; TASK-075's onboard-112 pooled plate readout (0.493 cm) is the scale reference (§6.4) |
+| O3 | ratio upper bound < 1.0 | definitional | image versus a prior that reads none |
+| O4 | plate-hidden lower bound > τ_re | τ_re measured in K0 | a check on the readout's source |
+| O2 | 87.5th percentile and τ-curve prediction | — | **reported only** (R8.5) |
+| G1 | H-twin(S) ≥ 56/64 | τ's own bar fraction, 28/32 | feasible only if N_K(0) ≥ 30/32 (K0 stop); power stated (§6.2); TWIN-NEAR covers a miss within noise |
+| G2 | exact one-sided McNemar p < 0.01 | definitional | K0 stop H-clock(K) ≥ N_K(0) − 4/32; G2's predicted feasibility from K0's paired counts, reported beside it (R8.12) |
+| G3 | H-twin(U) ≥ P-stale(U) − 2/32 | declared margin, carried from TASK-074's G5 | U-VOID-CEILING when H-handover(U) itself misses it (R8.13) |
+| S-VOID-CONDITION | H-stale(S) > 8/64; H-handover(S) < 56/64 | TASK-074 K1's P-stale ≤ 4/32, doubled; G1's bar | a row, not a bar on the hypothesis |
+| K0 stops | level 0 < 28/32; N_K(0) < 30/32; H-stale(K) > 4/32; H-clock(K) ≥ N_K(0) − 4/32 | τ's bar; TASK-074 K1's ceiling and P-stale bars; G2's minimum separation | stops (CAL-ESCALATE) |
+| TWIN-DEV-STOP | H-twin(D) < 12/16 or H-handover(D) < 14/16 | declared stop | at true rates of 87.5 % and 93.75 %, these fire with probability 0.04 and 0.07 (exact binomial); a stop, no clause |
+| K-P1 | H-final(A) ≥ 30/32 | TASK-074 K1's ceiling bar | itself the ceiling; a miss is PRED-INFEASIBLE |
+| K-P2–K-P4 | +8/32 each | TASK-074 K1's headroom bar | feasible whenever K-P1 passes (it leaves room for an 8/32 gap); a miss within noise is PRED-NEAR, so PRED-NONE fires falsely about 2–3 % of the time per bar at a true 8/32 (R8.14, §6.3) |
+| K-P5 | c_plate ≤ τ_re | c_plate (O1's form) and τ_re both measured | a miss is PRED-NO-BAR |
+| H-final(A) tolerance | τ_re/4, at most 10 iterations | declared (R8.7) | the contraction estimate is checked in the smoke |
+| m2\*, c_plate + m2\* ≤ τ_re | — | measured (R8.9) | **reported**; it decides TASK-077's history obligation, not a TASK-076 row |
+| every other number in §6 | — | — | **reported only** |
+
+The +8/32 headroom bars have a near-noise escalation row, PRED-NEAR (R8.14), like G1's TWIN-NEAR.
+Without it, a true headroom of exactly 8/32 would have missed its bar, and fired the clause,
+42–45 % of the time.
+
+### 13.2 What must happen before the freeze, in order
+
+1. **Stage 0, in the preregistration PR** (the task card's acceptance criterion): the stage code
+   in new modules, the frozen block as module constants with its sha256 pinned in a test, the
+   manifest under `benchmarks/manifests/`, and the tests of §5 (seed ranges against
+   `obs_ceiling_v2.FORBIDDEN_RANGES` and TASK-075's block; `TRAINING_BUDGET is None`; the scale
+   probe through `run_tools.scale_probe`; no runner imports; `assert_local_import`,
+   `install_guards` and `gpu_guard`).
+2. **The Stage-0 smokes** on 56900–56999, which settle §12's open items. Their results, and any
+   change they force (s1, L, or cell A's removal), are written into this protocol.
+3. **K0**, on a reviewer's reported GO for K0. Its values, including G2's predicted feasibility,
+   are written into the frozen block (§5). A CAL-ESCALATE stops here.
+4. **The freeze:** status FROZEN and the frozen-block sha pin, merged on an independent
+   reviewer's reported APPROVE.
+
+This text is ready for steps 1–4. It cannot itself be frozen before them: the frozen block, the
+sha pin and K0's values do not exist yet.
+
+### 13.3 The other freeze checks
+
+- **Seeds and salts** are declared in §4: every cohort, the smoke range, every salt with its use,
+  the reserved 7605, the fixed floor seed and the reset rule. The ranges were searched on all 50
+  local and remote refs in the review of #129; the Stage-0 test re-checks them in code.
+- **Budgets.** No stage trains iteratively, so there is no `BUDGET` block for
+  `run_tools.check_budget` to check (it takes a TASK-073/074-style dict with a cap, factor and
+  calibration count). The frozen code carries `TRAINING_BUDGET = None`, and a test asserts it
+  and requires any later `BUDGET` to pass `check_budget` (§7). The wall-time caps are checked
+  against §10's estimates.
+- **GPU.** Only Stage O's featurisation uses it, through `scripts/gpu_run.sh --wait
+  --min-free-gib 4 --board --who oej:task076-O`, with `run_tools.gpu_guard(...,
+  require_lock=True)` inside (§8). The flags and the guard's signature exist on main.
+- **Every row maps to an action:**
+
+| stage | row | action |
+|---|---|---|
+| K0 | CAL-ESCALATE | escalate, no clause; nothing is frozen |
+| K0 | K0-PASS | K0's values enter the frozen block; freeze review |
+| O | TWIN-OFF-ARM | escalate, no clause; K-pred is PRED-NOT-RUN |
+| O | TWIN-OFF-FAIL | the clause fires; next step Option 2 (R3); K-pred is PRED-NOT-RUN |
+| O | O-PASS | Stage D and Stage K-pred may run, each on a GO |
+| D | TWIN-DEV-STOP | escalate, no clause |
+| D | D-PASS | Stage S/U may run on a GO |
+| any | V | one repeat after a reviewed fix; a second V escalates |
+| S/U | S-VOID-CONDITION, U-VOID-CEILING, TWIN-PRIOR, TWIN-NEAR | escalate, no clause, no claim |
+| S/U | TWIN-HARM, TWIN-FAIL | the clause fires; next step Option 2 (R3) |
+| S/U | TWIN-PASS | the claim of §1; results PR; the next LeWM task is chosen by K-pred's row |
+| K-pred | PRED-NOT-RUN, PRED-INFEASIBLE, PRED-NO-BAR | escalate, no clause; PLAN.md's Branch B |
+| K-pred | PRED-NONE | K-pred's clause fires; Branch B |
+| K-pred | PRED-NEAR | escalate, no clause, no claim; any repeat needs fresh seeds and its own ruling |
+| K-pred | PRED-ADMIT(A) | TASK-077 may be preregistered under cell A, with R8.8's three declarations and R8.9's history rule (Branch A) |

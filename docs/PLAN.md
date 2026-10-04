@@ -44,7 +44,9 @@ forward from the encoded current observation, with no privileged read.
 
 The full definition is in [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) §9.
 Because the LeWM arm must beat an action-blind predictor, any condition that admits a LeWM task
-must make the target depend on the robot's own action (ruling R8.3).
+must make the target depend on the robot's own action (ruling R8.3). That is necessary, not
+sufficient: an action-blind predictor can still tie if the training aims are centred on the
+target and the controller aims at one predicted plate (R8.8).
 
 ## The tasks
 
@@ -73,24 +75,29 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
   Everything else runs on the CPU. Machine time is about 1 h in total. Protocol, code and review
   take about 1–2 days.
 - **Depends on.**
-  - the sealed `apple-far-shift-v2-views` store and `apple-far-shift-v2` corpus (in the run
-    worktrees `task075-run` and `task074-run` until those were archived; restored from the USB
-    disk to the main checkout's `data/` on 2026-10-04, every file checked against the archived
-    sha256; a worktree symlinks them from there, see [STORAGE.md](STORAGE.md));
+  - the sealed `apple-far-shift-v2-views` store (manifest sha256 `ea627a8f…4d77`) and
+    `apple-far-shift-v2` corpus (manifest sha256 `fe7ab915…b134bd`), restored from the USB disk to
+    the main checkout's `data/` on 2026-10-04, every file checked against the archived sha256; a
+    run worktree reaches them through `scripts/new_worktree.sh --run` (see [STORAGE.md](STORAGE.md));
   - the P-3 checkpoint;
   - an independent review.
 - **Stop / abandon.**
   - **K0:** CAL-ESCALATE on any of: the ceiling below 30/32; τ_re undefined; H-stale above 4/32;
-    H-clock near the ceiling.
+    H-clock within 4/32 of the ceiling. G2's predicted feasibility (exact McNemar on K0's paired
+    counts) is reported beside the last stop (R8.12).
   - **Development closed loop:** TWIN-DEV-STOP.
-  - **Escalate, no clause:** TWIN-NEAR (a G1 miss within noise of the ceiling) and TWIN-PRIOR.
+  - **Escalate, no clause:** TWIN-NEAR (a G1 miss within noise of the ceiling), TWIN-PRIOR and
+    U-VOID-CEILING (the true plate itself misses G3's bar on U; R8.13).
   - **Clause:** it fires on TWIN-OFF-FAIL, TWIN-FAIL or TWIN-HARM, and closes single-frame
     frozen-readout variants of this place. The next step is then TASK-075's Option 2, a place
     servo (R3).
   - **K-pred:**
-    - PRED-INFEASIBLE (cell A was removed at Stage 0, or its ceiling fails) and PRED-NO-BAR
-      escalate without a clause.
-    - PRED-NONE (the ceiling holds but there is no room for prediction) fires K-pred's clause.
+    - PRED-INFEASIBLE (cell A was removed at Stage 0, or its ceiling fails), PRED-NO-BAR and
+      PRED-NOT-RUN (Stage O did not pass, so K-pred did not run) escalate without a clause.
+    - PRED-NEAR (a headroom bar missed, but not detectably below +8/32; R8.14) escalates
+      without a clause or a claim.
+    - PRED-NONE (the ceiling holds, and a headroom is detectably below +8/32) fires K-pred's
+      clause. At a true headroom of exactly 8/32 it fires falsely about 2–3 % of the time per bar.
 
 ### Branch A: TASK-077, a LeWM plate-prediction place planner on v2 (only if K-pred returns PRED-ADMIT(A))
 
@@ -104,6 +111,14 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
   40–120 steps. TASK-066 gated only h = 8 and h = 16, so the recursive roll-out is ungated.
   TASK-077 gates its own horizon offline, with TASK-066's dynamics gates at that horizon, before
   any closed loop.
+- **Declared before the freeze** (R8.8, R8.9):
+  - the controller form, which should rank candidate aims by their individual predicted
+    outcomes (one roll-out per candidate), not aim at one predicted plate;
+  - the spread of the training aims relative to the fixed point g\* = (p − κh)/(1 − κ);
+  - the action-blind twin's expected result under that controller and corpus;
+  - the predictor's history: TASK-066's history-one predictor qualifies only if
+    c_plate + m2\* ≤ τ_re (m2\*, the measured 2-step palm term, from TASK-076's K-pred), or if
+    B's calibrated allowance covers m2\*; otherwise 3 frames or the last 2 executed commands.
 - **Bars, calibrated before the freeze.** The predicted-latent plate bar B satisfies
   c_plate ≤ B ≤ τ_re. c_plate is measured on the pooled latent in TASK-076. Any allowance above
   c_plate is calibrated on development data. The tie bar comes from TASK-076's measured H-twin,
@@ -138,7 +153,7 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
     condition, beating the action-blind, scene-blind and random twins". **It does not show that
     LeWM is needed if H-rule is at the ceiling** (stated in TASK-076 §6.3 before any number).
 
-### Branch B: if K-pred returns PRED-NONE, PRED-INFEASIBLE or PRED-NO-BAR (or TASK-076's clause fires)
+### Branch B: if K-pred returns PRED-NONE, PRED-NEAR, PRED-INFEASIBLE, PRED-NO-BAR or PRED-NOT-RUN (or TASK-076's clause fires)
 
 - **PRED-INFEASIBLE.** The declared action-dependent rule could not be run, or its ceiling failed.
   This is a design failure, so it escalates without a clause.
@@ -149,6 +164,8 @@ Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DR
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
+- **PRED-NEAR.** A headroom bar missed within noise (R8.14). Escalate, no clause, no claim. Any
+  repeat of cell A needs fresh seeds and its own ruling.
 - **PRED-NO-BAR.** The pooled LeWM latent does not read the plate within τ_re, so no TASK-077 bar
   is feasible. Escalate. This is a representation question for the owner, close to TASK-075's
   OBS-REPRESENTATION. It is not a silent reopening.
@@ -193,7 +210,7 @@ needs commissioning and the owner. Nothing in this plan runs on hardware.
 | item | state | needs |
 |---|---|---|
 | **F10** integration workflow (timeout 20 → 30 min; per-module loop moved to nightly and `workflow_dispatch`) | ready as commit `7eb696e` on the local branch `fix/ci-integration-workflow`; the push was refused because the token lacks the `workflow` scope (#124) | the owner runs `gh auth refresh -s workflow`, then the branch is pushed and reviewed. A Linux integration job is still not added |
-| **F11** SIGTERM race flake (`void_reason` "RuntimeError: release unlocked lock" instead of "received SIGTERM", main run 36793229744; the stage still ends V) | `tests/test_wm_critic_v2.py` is hash-pinned by the TASK-073/074/075 manifests, so its assertion cannot be relaxed. New runners use `run_tools.install_guards` (#125) | either an amendment that re-pins the test file, or accepting the known flake |
+| **F11** SIGTERM race flake (`void_reason` "RuntimeError: release unlocked lock" instead of "received SIGTERM", main run 36793229744; the stage still ends V) | known flake, still open. `tests/test_wm_critic_v2.py` is hash-pinned by the TASK-073/074/075 manifests, so its assertion cannot be relaxed. New runners use `run_tools.install_guards` (#125). Seen again on 2026-10-04 in #133's macos-integration job (run 37208326249, `test_a_process_group_sigterm_with_a_live_pool_writes_the_v_report[0]`, in the per-module order check); it passed on a rerun of the failed job. A red macos-integration on this test alone is this flake, not a regression, but it must still be rerun to green, not ignored | either an amendment that re-pins the test file, or accepting the known flake |
 | **Test-order bug** | `pytest tests/test_apple_evaluation.py tests/test_privileged_rollout.py` gives 6 errors in `test_privileged_rollout.py` ("privileged rollouts require the live G1 MuJoCo embodiment"); each file passes alone, and so does the full suite. Pre-existing on main (#124 review) | find the shared state that the first file leaves behind |
 | **F14** shared `arena_truth.py` (finite-difference speed, `at_rest_arena`, blank first frame) | not started: wait for #123 to merge, to avoid conflicts | after #123; it is a prerequisite of TASK-078 |
 | **F26** independent review of #123 (e9-arena) | open, unreviewed | a CPU-only review of the code and of its pre-run declaration |
