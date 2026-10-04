@@ -165,8 +165,8 @@ measurements of an arm.
 - **TASK-074's move widens nothing.** Its direction rule (TASK-073's eligibility, restricted to
   225–315°) leaves only a few whole-degree directions per reset; the drawn directions lie at
   261–270° (9 cm) and 260–267° (12 cm) between their 5th and 95th percentiles. The move is almost a
-  fixed translation, so the spread around the mean is v2's own. This is consistent with, after the
-  fact, why TASK-076's image-free H-clock reached 51/64 under that condition.
+  fixed translation, so the spread around the mean is v2's own. This is consistent, after the
+  fact, with TASK-076's image-free H-clock reaching 51/64 under that condition.
 - **A disc move of a few centimetres does.** At ρ = 4 cm the projected mean twin falls to about
   16/32 (headroom about +15 over a 31/32 ceiling), at ρ = 3 cm to about 20/32 (+11).
 - "Disc" draws the offset uniformly over a disc of radius ρ around the reset's plate; "−y
