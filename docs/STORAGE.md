@@ -38,6 +38,72 @@ The disk holds the ignored artefacts git does not track (`data/`, `outputs/`, `c
 `.venv/`, logs). As with `data/`, `checkpoints/` and `outputs/`, never overwrite evidence on it:
 add, do not replace.
 
+### The disk is failing; the evidence is back on the SSD (2026-10-04)
+
+The archive disk is degrading: a read-only audit on 2026-10-04 found four unreadable files
+(SCSI medium errors) and a growing number of bad sectors spread over the surface, beyond the
+clusters first seen on 2026-10-02. Its record is `archive/INTEGRITY-2026-10-04.md` on the disk
+(`/media/huhn/INTENSO/emai/open-embodied-jepa/archive/INTEGRITY-2026-10-04.md`). Only one of the
+four is cited evidence: `data/apple-look-v2-linux/run-1/episodes/look2-51171.npz` of TASK-072
+run-1 (the train root of seed 51171). It was restored bit-identically (sha256 `e13c97cb…c296`,
+the archived value) at
+`/home/huhn/develop/emai/worktrees/task076-evidence/data/apple-look-v2-linux/run-1/episodes/look2-51171.npz`,
+from the disk's readable bytes plus the two unreadable 512-byte sectors refilled from a
+deterministic re-collection of that seed; the method and checks are in
+`/home/huhn/develop/emai/worktrees/task076-evidence/RESTORE-51171.md`. The other three are Warp
+and Omniverse caches, not evidence.
+
+Because the disk had become the only copy, all archived evidence was copied back to the SSD the
+same day, at **`/home/huhn/develop/emai/evidence/`**: 42 items, 20 387 files, 10 049 048 059
+bytes (about 10.05 GB, 9.36 GiB), counted from the tree without `_checksums/` and its
+`README.md`.
+
+- One directory per archived worktree, **40 in all**, named as in the table below, plus
+  `_archive-extras/` (`run-logs/` and `patches/fix-ci-integration-workflow/`).
+- The 14 worktrees with run evidence (`task072-run`, `task072-m2-run`, `task072-m2`, `task072-a`,
+  `task073-go`, `task073-go-2`, `task073-fix`, `task074-run`, `task075-run`, `arena-e9`,
+  `arena-spike`, `arena-gr00t`, `white-plate-dev`, `isaac-usd-threads`) are copied whole, minus
+  `.venv/`, `home_cache/` and tool caches. The other 26 hold only `data/`, `outputs/`,
+  `checkpoints/`, `benchmarks/` and `docs/experiments/`.
+- TASK-072 run-1 (`task072-run/data/apple-look-v2-linux/run-1/`, 401 files: 200 episode `.npz`,
+  200 `.json` and `manifest.json`) is included. It was added after the first pass, which had
+  skipped it because of the copy in `task076-evidence`. Its 401 files verify against the archive
+  checksums (the damaged `look2-51171.npz` is the restored one), so `evidence/task072-run/`
+  holds 1 038 files.
+- **Verified:** every file checked with `sha256sum -c` against the disk's
+  `archive/checksums/<name>.sha256`, filtered to the copied scope; every count matched, with no
+  failure. The filtered lists are in `_checksums/` (42 files): `<name>.sha256` for each
+  worktree, plus `run-logs.sha256` and `patches.sha256`.
+- `README.md` there records the method and the per-worktree table.
+
+Re-verify a worktree, and the two extras, with:
+
+```sh
+E=/home/huhn/develop/emai/evidence
+cd "$E/<name>" && sha256sum -c --quiet ../_checksums/<name>.sha256
+cd "$E/_archive-extras/run-logs" && sha256sum -c --quiet ../../_checksums/run-logs.sha256
+cd "$E/_archive-extras/patches/fix-ci-integration-workflow" \
+  && sha256sum -c --quiet ../../../_checksums/patches.sha256
+```
+
+It is a plain directory tree, not a git worktree: each worktree's code is at its HEAD in the table
+below. **Read evidence from there, not from the disk.** The path mapping is uniform. For an old
+SSD path in a results document, replace `/home/huhn/develop/emai/worktrees/<name>/` (or
+`/home/huhn/develop/emai/<name>/` for the three `oej-isaac-*` rows) with
+`/home/huhn/develop/emai/evidence/<name>/`. That includes TASK-072 run-1, at
+`evidence/task072-run/data/apple-look-v2-linux/run-1/`. The archive path in the table is the
+second copy, and a loose run log is at `evidence/_archive-extras/run-logs/<file>`. Never
+overwrite anything under `evidence/`; add, do not replace. `.venv/` and caches were not copied,
+so the archive is still the only copy of those (none is cited evidence). Use the disk only to
+read, and copy anything new to the SSD as well.
+
+**A second SSD copy of TASK-072 run-1: `/home/huhn/develop/emai/worktrees/task076-evidence/`.**
+It is a plain directory (not a git worktree, and not in `git worktree list`) holding TASK-072
+run-1's `data/`, `checkpoints/` and `outputs/` and `RESTORE-51171.md`. TASK-076's runner reads it
+through `--evidence` and pins its hashes (G-evidence and G-repro: report, P-3, R-3, C-3 and the
+corpus manifest; `plate_twin_v2.EVIDENCE`). K0 ran on it. **Do not clean it up, move or edit it
+while TASK-076 is open**; `scripts/remove_worktree.sh` does not apply to it.
+
 ## Old path to archive path
 
 Results documents cite worktree paths on the SSD. Each worktree below was copied, every file
@@ -131,6 +197,8 @@ for the current set):
   `--force-ignored`, so it was kept;
 - `storage-archive-3` (this document's PR);
 - `/home/huhn/develop/emai/wt-task076-freeze-prep` (`docs/task076-freeze-prep`, another session's);
+- `/home/huhn/develop/emai/worktrees/task076-evidence` (a plain directory, not a worktree): the
+  `--evidence` root that TASK-076's runner pins; keep it until TASK-076 is closed (above);
 - directories of other projects (`ar-v1`, `t1-cluster`, `v2d-toolkit-8c778f9`).
 
 The review and PR worktrees `docs-review`, `fix-ci-review`, `followup-nits`, `tooling-pr-c`,
@@ -144,6 +212,10 @@ Still pending, on the SSD: `/home/huhn/develop/emai/oej-isaac-newton` (2.8 GB,
 2026-10-04, so it has not been archived; archive it the same way once that process ends.
 
 ## Restore
+
+Restore from the SSD copy (`/home/huhn/develop/emai/evidence/<name>/`, above) when it holds what
+you need; it is verified and does not stress the failing disk. The steps below restore a whole
+worktree, `.venv/` included, from the disk.
 
 Restore to the row's recorded original path (the table's first column, or MANIFEST.md's
 "original path"), not to a fixed prefix: most rows lived under `~/develop/emai/worktrees/`, but
