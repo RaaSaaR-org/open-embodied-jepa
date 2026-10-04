@@ -499,7 +499,7 @@ def stage_offline(report, manifest, args, clock):
     )
     result = off.offline_core(report, reader, views, clock, **kwargs)
     fit, closed = result.pop("_fit"), result.pop("_closed")
-    folder = Path(args.output)
+    folder = Path(args.output).resolve()  # workers read the readouts by this path
     errors = folder / "errors.npz"
     np.savez(
         errors,
@@ -713,6 +713,9 @@ def kpred_summary(name: str, by_arm: dict) -> dict:
             if r["blocked"] is None and k["remaining_cm"] is not None
         ]
         m2 = [k["m2_cm"] for k in rows if k["m2_cm"] is not None]
+        palm_moves = [
+            k["palm_remaining_cm"] for k in rows if k.get("palm_remaining_cm") is not None
+        ]
         contacts = [k["first_contact_step"] for k in rows if k["first_contact_step"] is not None]
         first_contacts += contacts
         item = {
@@ -729,6 +732,10 @@ def kpred_summary(name: str, by_arm: dict) -> dict:
             "m2_cm": {
                 "median": float(np.median(m2)) if m2 else None,
                 "max": float(np.max(m2)) if m2 else None,
+            },
+            "palm_remaining_cm": {
+                "median": float(np.median(palm_moves)) if palm_moves else None,
+                "max": float(np.max(palm_moves)) if palm_moves else None,
             },
             "seconds": timing(records),
         }

@@ -691,7 +691,7 @@
   "scripts/run_first_policy_v2_m2.py": "ca5e4bf9876672c8d735978141359a39a204413da47d041afb4a7d345d4d43ca",
   "scripts/run_lewm_planner_v2.py": "2d229a95b219b531eb18d84381c36c8db2294f4b2771e3bb0a75945ea087b94a",
   "scripts/run_obs_ceiling_v2.py": "bca518c14806f4b27ec0a11cb7b9c46b0bb3ea6c273b27048726398899f11958",
-  "scripts/run_plate_twin_v2.py": "d21860d6943ffc29f9043a5d414254619dea3185f604b6f884344d7e8a7bbb24",
+  "scripts/run_plate_twin_v2.py": "ead455b43c2c15ac2d67ad21534efdb28c0549adf7819f9c1ca7048b6f5655ab",
   "scripts/run_wm_critic_v2.py": "3d5df8ff8ff4de02d1120cd3926fe8e538a9abae7622e98e32be3088f1917cf5",
   "scripts/summarize_wm_critic_v2.py": "93328b0f5e780a7a98f2707c41a5b79d1dd043743ccc748144d32d306b3da9ce",
   "scripts/train_apple_latent_dynamics.py": "543f4429f6ac8218e2d9c99be515d5d2c8320e6c3445f4a7410fa471b76b07c8",
