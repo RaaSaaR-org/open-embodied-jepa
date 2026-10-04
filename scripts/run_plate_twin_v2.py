@@ -187,12 +187,43 @@ def make_pool(report, args, extra: dict | None = None) -> hz.Pool:
     return pool
 
 
+def refuse_stand_in_outside_smokes(args) -> None:
+    """The truth stand-in is a smoke-only mechanics aid; a real stage refuses it (V)."""
+    if getattr(args, "truth_estimates", False) and not args.smoke:
+        raise lp.GuardError("G-estimates: the truth stand-in is for smoke runs only")
+
+
+def smoke_truth_estimates(pool, args, seeds, resets, cap: float) -> dict:
+    """Smoke only: P-3's post-look estimates taken from the reset truth (no G-repro). The
+    post-look frames are still rendered with the render-majority rule (``hz.render_majority``),
+    so every attempt's G-frame check has its expected frame and state."""
+    refuse_stand_in_outside_smokes(args)
+    tasks = [{"kind": "frame", "seed": s, "reset": resets[s]} for s in seeds]
+    frames, disagreements = hz.render_majority(pool, tasks, cap, "cohort frames")
+    out = {}
+    for s, f in zip(seeds, frames, strict=True):
+        if f["seed"] != s:
+            raise lp.GuardError("G-cohort: a rendered frame is not its seed's")
+        out[s] = {
+            "estimates": [float(v) for v in f["truth_xy"]],
+            "frame_sha256": f["post_look_frame_sha256"],
+            "state_sha256": f["state_sha256"],
+            "truth_xy": f["truth_xy"],
+        }
+    if disagreements:
+        out["_render_disagreements"] = disagreements
+    return out
+
+
 def estimates_for(report, pool, args, seeds, resets) -> dict:
-    """P-3's post-look estimates: G-repro's refitted readout (every real stage), or the smoke's
-    stand-in, the reset truth (``--truth-estimates``, smokes only; disclosed in the report)."""
+    """P-3's post-look estimates: G-repro's refitted readout (``hz.cohort_estimates``, every real
+    stage), or the smoke's stand-in, the reset truth (``--truth-estimates``, smokes only;
+    refused otherwise, and disclosed in the report)."""
+    refuse_stand_in_outside_smokes(args)
     if args.truth_estimates:
         report["estimates_source"] = "smoke stand-in: the reset truth (G-repro not run)"
-        readout = encoder = None
+        mark_first_render(report)
+        est = smoke_truth_estimates(pool, args, seeds, resets, 1800.0)
     else:
         report["estimates_source"] = "G-repro: TASK-072 run-1's P readout, refitted exactly"
         if "_p_readout" not in report:
@@ -200,8 +231,8 @@ def estimates_for(report, pool, args, seeds, resets) -> dict:
                 report, pool, Path(args.evidence), report["_run1"]
             )
         readout, encoder = report["_p_readout"]
-    mark_first_render(report)
-    est = hz.cohort_estimates(pool, readout, encoder, seeds, resets, 1800.0)
+        mark_first_render(report)
+        est = hz.cohort_estimates(pool, readout, encoder, seeds, resets, 1800.0)
     report["stages"].setdefault("render_disagreements", {}).update(
         est.pop("_render_disagreements", {})
     )
@@ -857,6 +888,7 @@ def run(args) -> dict:
     guards = rt.install_guards(watch=watch, log=log)  # F11: the first signal is recorded
     report["_watch"] = watch
     try:
+        refuse_stand_in_outside_smokes(args)  # a second guard behind main()'s argparse check
         manifest = preflight(report, args, gpu=args.mode == "offline")
         if args.mode == "preflight":
             pool = make_pool(report, args)

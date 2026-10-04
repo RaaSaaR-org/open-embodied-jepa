@@ -628,3 +628,113 @@ def test_the_stage0_record_applies_the_removal_rule():
     assert pt.decide_kpred(None, offline_row="O-PASS", c_plate_cm=0.5, tau_re_cm=1.0)["row"] == (
         "PRED-INFEASIBLE"
     )
+
+
+# ----- R8.18: the harness is a verbatim copy of the pinned runners' pieces ------------------------
+HARNESS = ROOT / "src" / "embodied_jepa" / "plate_twin_v2_harness.py"
+PORTS = {
+    "scripts/train_apple_latent_dynamics.py": (
+        "GuardError",
+        "sha256_bytes",
+        "sha256_file",
+        "finite_json",
+        "write_report",
+        "log",
+        "Clock",
+        "check_pins",
+        "tracked_tree_dirty",
+        "revision",
+        "check_clean",
+    ),
+    "scripts/run_first_policy_v2_m2.py": (
+        "check_rerender_seeds",
+        "check_evidence",
+        "check_reproduction",
+        "_json_floats",
+    ),
+    "scripts/run_first_policy_v2_linux.py": ("check_look_states",),
+    "scripts/run_wm_critic_v2.py": (
+        "mem_available_bytes",
+        "p3_checkpoint",
+        "refit_p_readout",
+        "render_majority",
+        "cohort_estimates",
+        "gpu_snapshot",
+    ),
+}
+
+
+def _segments(path: Path) -> dict:
+    text = path.read_text()
+    return {
+        n.name: ast.get_source_segment(text, n)
+        for n in ast.parse(text).body
+        if isinstance(n, ast.FunctionDef | ast.ClassDef)
+    }
+
+
+def test_the_harness_ports_are_verbatim():
+    """Each ported definition's source text equals its source's exactly (nothing stripped)."""
+    ours = _segments(HARNESS)
+    for script, names in PORTS.items():
+        theirs = _segments(ROOT / script)
+        for name in names:
+            assert ours[name] == theirs[name], (script, name)
+    ported = {n for names in PORTS.values() for n in names}
+    own = {"_load_wide_reset", "utc", "Pool", "seal_far_corpus", "strip"}
+    assert set(ours) == ported | own
+
+
+def test_the_harness_aliases_are_its_own_copies():
+    from embodied_jepa import plate_twin_v2_harness as hz
+
+    assert hz.R65.sha256_file is hz.sha256_file
+    assert hz.M2R.check_rerender_seeds is hz.check_rerender_seeds
+    assert hz.M2R.check_reproduction is hz.check_reproduction
+    assert hz.M2R._json_floats is hz._json_floats
+    assert hz.ROOT == ROOT
+    from embodied_jepa import wm_critic_v2 as wc
+
+    assert hz.LIN.load_wide_reset() is wc.wide_reset_values
+
+
+def test_the_adapted_wide_reset_equals_the_source_on_g_repros_seeds():
+    """The one adapted call: LIN.load_wide_reset returns wide_reset_values, which must equal
+    scripts/evaluate_apple.wide_reset on every seed of TASK-071/072's block (51000-52199),
+    where G-repro's re-rendered seeds lie. Pure draws; nothing is simulated."""
+    pytest.importorskip("torch")
+    from embodied_jepa import plate_twin_v2_harness as hz
+
+    spec = importlib.util.spec_from_file_location(
+        "_evaluate_apple_076", ROOT / "scripts" / "evaluate_apple.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    ours = hz.LIN.load_wide_reset()
+    for seed in range(51000, 52200):
+        want, got = module.wide_reset(seed), ours(seed)
+        assert got["object_xy"] == list(map(float, want["object_xy"])), seed
+        assert got["plate_xy"] == list(map(float, want["plate_xy"])), seed
+
+
+def test_the_truth_stand_in_is_refused_outside_smokes():
+    runner = _runner()
+    real = SimpleNamespace(smoke=False, truth_estimates=True, evidence=".")
+    with pytest.raises(lp.GuardError, match="smoke runs only"):
+        runner.refuse_stand_in_outside_smokes(real)
+    with pytest.raises(lp.GuardError, match="smoke runs only"):
+        runner.estimates_for({"stages": {}}, None, real, (56000,), {})
+    with pytest.raises(lp.GuardError, match="smoke runs only"):
+        runner.smoke_truth_estimates(None, real, (56000,), {}, 1.0)
+    runner.refuse_stand_in_outside_smokes(SimpleNamespace(smoke=True, truth_estimates=True))
+    runner.refuse_stand_in_outside_smokes(SimpleNamespace(smoke=False, truth_estimates=False))
+    run_calls = [
+        _name(c)
+        for n in ast.parse(RUNNER.read_text()).body
+        if isinstance(n, ast.FunctionDef) and n.name == "run"
+        for c in ast.walk(n)
+        if isinstance(c, ast.Call)
+    ]
+    assert "refuse_stand_in_outside_smokes" in run_calls
+    harness = HARNESS.read_text()
+    assert "readout is None" not in harness  # the ported cohort_estimates has no stand-in
