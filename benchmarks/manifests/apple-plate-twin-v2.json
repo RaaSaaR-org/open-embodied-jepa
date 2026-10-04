@@ -68,7 +68,7 @@
    "kappa": -0.5,
    "rule": "for s0 < t <= s1: plate(t) = plate(s0) + kappa (palm(max(t - L, s0)) - palm(s0)), palm = the right palm's xy from PalmFK on the executed joint state of each step's observation; palm velocity at or before s0 counts as zero. So plate(s1) - plate(485) = kappa (palm(s1 - L) - palm(485 - L))",
    "s1": 525,
-   "status": "kept"
+   "status": "removed"
   },
   "clause_rows": [
    "TWIN-OFF-FAIL",
@@ -586,7 +586,62 @@
    "removal": "if no allowed setting gives a median >= 2 cm, or more than a quarter of the smoke attempts are refused, cell A is removed before the freeze (PRED-INFEASIBLE)",
    "seeds": "56900-56999 only; mechanics only; nothing in them is read"
   },
-  "stage0_smokes": null,
+  "stage0_smokes": {
+   "cell_a_base": {
+    "h_final_max_remaining_cm": 0.076,
+    "h_final_median_remaining_cm": 0.0601,
+    "h_now_median_remaining_cm": 0.1481,
+    "refused": 0,
+    "report_sha256": "cdbc046a73960a2bc504ac01d08f77e00790087e15a53546316b445698b287b2",
+    "seeds": [
+     56930,
+     56945
+    ],
+    "setting": {
+     "L": 2,
+     "kappa": -0.5,
+     "s1": 525
+    }
+   },
+   "cell_a_remedies": {
+    "contact_limit": 607,
+    "median_remaining_cm_by_setting": {
+     "L1_s1_525": 0.0626,
+     "L1_s1_535": 0.0491,
+     "L1_s1_545": 0.0315,
+     "L1_s1_555": 0.0252,
+     "L1_s1_565": 0.023,
+     "L1_s1_575": 0.0222,
+     "L1_s1_585": 0.0235,
+     "L1_s1_595": 0.0235,
+     "L1_s1_605": 0.0233
+    },
+    "refused_by_setting": "0 of 16 at every setting",
+    "verdict": "no allowed setting gives a median of at least 2 cm: cell A is removed before the freeze (protocol \u00a73.2), so K-pred's row is PRED-INFEASIBLE (escalate, no clause)"
+   },
+   "contact": {
+    "attempts": 144,
+    "contact_before_s1_525": 0,
+    "earliest_apple_plate_contact_step": 607,
+    "verdict": "s1 = 525 is free of apple-plate contact on every smoke attempt; no change"
+   },
+   "estimates": "smoke stand-in: the reset truth (G-repro not run: TASK-072 run-1's corpus root look2-51171.npz is unreadable on the archive disk)",
+   "lookahead_attempt_seconds": {
+    "decisions_converged": "96 of 96 (at most 7 iterations)",
+    "max": 16.4,
+    "max_over_remedies": 25.0,
+    "median": 15.0,
+    "verdict": "below 60 s: the 300 s per-attempt cap is not reviewed"
+   },
+   "m2_cm": {
+    "attempts": 16,
+    "max": 0.0019,
+    "median": 0.0012,
+    "setting": "L = 2, s1 = 525"
+   },
+   "revision": "14b23b0734fb2209175d46d1499de72cf7885f57",
+   "root": "outputs/task076-smoke-2 in the task076-stage0 worktree (git-ignored)"
+  },
   "stage0_thresholds": {
    "attempt_review_seconds": 60.0,
    "max_refused_fraction": 0.25,
@@ -669,7 +724,7 @@
   "void_rule": "a stage is V on a stop signal (run_tools.install_guards records the first signal), a cap, a CUDA allocation failure, a pin or frozen-sha mismatch, a decoded test root, a privileged read in a non-privileged arm, a failed determinism re-run or G-repro failing. A V after the stage's outcome boundary (cohort_first_render_utc for a simulating stage, first_outcome_utc for Stage O) is not read as an outcome; one repeat from scratch after a reviewed fix; a second V escalates",
   "worker_torch_threads": 1
  },
- "frozen_sha256": "a7489f273b6d0a645671f7fe5acbf0a84fedd4ae20d15da9b7a7ca12404003b5",
+ "frozen_sha256": "fe23e9177142804e71dfd8f568b5226f276837f4950ce6dcaf43ec28a674112f",
  "frozen_sha256_pin": null,
  "hashes": {
   "assets/manifest.json": "2421e194d4102a1ff3b59c9767ca5314d335d7e00dba010816177f06ed17e993",
@@ -733,7 +788,7 @@
   "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
   "src/embodied_jepa/place_planner.py": "1842d3e0ca31bfbe6c0568ab5a8d9c75c513e8b5a784ae7200c43101d270c846",
   "src/embodied_jepa/plate_shift.py": "5ae0f016dd6ee628c60c3a6901f170d9bd1643df8e508e53fabbbc6e89650b39",
-  "src/embodied_jepa/plate_twin_v2.py": "65363f392b5e4dad8d3c19f7a3559a58efc590ebc4b00b7311098680941f339b",
+  "src/embodied_jepa/plate_twin_v2.py": "1b710672d6e7d8ec0cda32b657fcd7e9ad0f3be926520520c8d65fe8a19764b3",
   "src/embodied_jepa/plate_twin_v2_harness.py": "94b2a213429302b5501f4e86160d27444d246759a60356eb430e29d699e38737",
   "src/embodied_jepa/plate_twin_v2_offline.py": "3a662b0ea3211bdf394fafcad06ddfa0a79ddd1341405c1d01a2230f2d726b87",
   "src/embodied_jepa/plate_twin_v2_runtime.py": "3c5a7198e243219c2ed1c06a296449d78d50968459e9d99a32d75026b88a24fb",
@@ -753,7 +808,7 @@
   "src/embodied_jepa/wm_critic_v2_runtime.py": "6cceea6da9287a21235ff6946ec9db49ee5da7448a28bfaad6d2241fa0769499",
   "tests/test_lewm_planner_v2.py": "6392fe6e38e88bb6356dbfcae3f095402817cc08f869f9547d2046ca89e8ec1c",
   "tests/test_obs_ceiling_v2.py": "74f8d95e0427678d5c74a1fbd1134e46f34db46e89ac91c41932ecb64862192b",
-  "tests/test_plate_twin_v2.py": "8a6b4522244b95340371b571450ec8f431b4a413b7f652a916ac913968a299c2",
+  "tests/test_plate_twin_v2.py": "95df87d558ff9e3aaf8122769ff28ad4d808df9f9b2b1d76a785951c70ca46ea",
   "tests/test_wm_critic_v2.py": "465551134f7f9cffda2f7e97a0da36f0946ff8a3ec0c7e3c77f773f2f48fabed",
   "uv.lock": "6c6f9033c062d9287651c637a5438b982b0b9cf9770cee0cf0e5b581ba56412c"
  },
@@ -761,7 +816,7 @@
  "note": "DRAFT: nothing gated has run. No arm of TASK-076 runs a world model. Learned Apple->Plate on the frozen v1 MVP benchmark is 0/150 per backend.",
  "pins_note": "every file TASK-075 pinned (TASK-074's included) is carried with its sha256 unchanged; TASK-076's own modules, runner and test are pinned beside them. The protocol document and this manifest are not pinned (the Stage-0 record is added after the smokes)",
  "protocol": "apple_plate_twin_v2",
- "protocol_document_sha256": "1dcf92424877e17594e9e17103ebe5cf16d758ebfd1133a819d7c71150617f17",
+ "protocol_document_sha256": "be84cb7430b78b712903968160baa9cdc2d0c3cb68b45e7ea721dd6f20b5f6a5",
  "status": "DRAFT",
  "task": "TASK-076"
 }

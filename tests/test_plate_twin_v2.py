@@ -611,3 +611,20 @@ def test_cli_refuses_misused_flags(tmp_path):
         with pytest.raises(SystemExit):
             runner.main(argv)
     assert not (tmp_path / "x").exists()
+
+
+def test_the_stage0_record_applies_the_removal_rule():
+    smokes = pt.STAGE0_SMOKES
+    assert smokes["contact"]["contact_before_s1_525"] == 0
+    assert smokes["contact"]["earliest_apple_plate_contact_step"] > pt.KPRED["s1"]
+    settings = pt.remedy_settings(smokes["cell_a_remedies"]["contact_limit"])
+    recorded = smokes["cell_a_remedies"]["median_remaining_cm_by_setting"]
+    assert [f"L{r['L']}_s1_{r['s1']}" for r in settings] == list(recorded)
+    base = smokes["cell_a_base"]["h_final_median_remaining_cm"]
+    feasible = [m >= pt.STAGE0_MIN_MEDIAN_REMAINING_CM for m in (base, *recorded.values())]
+    assert not any(feasible)
+    assert pt.CELL_A["status"] == "removed"
+    assert pt.STAGE0_SMOKES["lookahead_attempt_seconds"]["max_over_remedies"] < 60.0
+    assert pt.decide_kpred(None, offline_row="O-PASS", c_plate_cm=0.5, tau_re_cm=1.0)["row"] == (
+        "PRED-INFEASIBLE"
+    )

@@ -232,7 +232,7 @@ CELL_A = {
     "kappa": -0.5,
     "L": 2,
     "s1": 525,
-    "status": "kept",  # Stage 0 decides; "removed" makes K-pred's row PRED-INFEASIBLE
+    "status": "removed",  # by the Stage-0 removal rule (STAGE0_SMOKES); PRED-INFEASIBLE
     "rule": "for s0 < t <= s1: plate(t) = plate(s0) + kappa (palm(max(t - L, s0)) - palm(s0)), "
     "palm = the right palm's xy from PalmFK on the executed joint state of each step's "
     "observation; palm velocity at or before s0 counts as zero. So plate(s1) - plate(485) = "
@@ -305,7 +305,55 @@ STAGE0_MIN_MEDIAN_REMAINING_CM = 2.0
 STAGE0_MAX_REFUSED_FRACTION = 0.25
 STAGE0_S1_STEP = 10
 STAGE0_ATTEMPT_REVIEW_SECONDS = 60.0
-STAGE0_SMOKES: dict | None = None  # written after the Stage-0 smokes (the dev record has them)
+# Written after the Stage-0 smokes (docs/experiments/apple_plate_twin_v2_stage0.md has every
+# number). Smoke seeds only; mechanics only; P-3's estimates were the reset truth (a smoke
+# stand-in: G-repro could not run, see the record), and tau_re was a 1.0 cm placeholder.
+STAGE0_SMOKES: dict | None = {
+    "revision": "14b23b0734fb2209175d46d1499de72cf7885f57",
+    "root": "outputs/task076-smoke-2 in the task076-stage0 worktree (git-ignored)",
+    "estimates": "smoke stand-in: the reset truth (G-repro not run: TASK-072 run-1's corpus root "
+    "look2-51171.npz is unreadable on the archive disk)",
+    "contact": {
+        "contact_before_s1_525": 0,
+        "attempts": 144,  # A: 5 arms x 16; M-a, M-b: 4 arms x 8 each; 288 remedy attempts too
+        "earliest_apple_plate_contact_step": 607,
+        "verdict": "s1 = 525 is free of apple-plate contact on every smoke attempt; no change",
+    },
+    "cell_a_base": {
+        "setting": {"kappa": -0.5, "L": 2, "s1": 525},
+        "seeds": [56930, 56945],
+        "h_final_median_remaining_cm": 0.0601,
+        "h_final_max_remaining_cm": 0.0760,
+        "h_now_median_remaining_cm": 0.1481,
+        "refused": 0,
+        "report_sha256": "cdbc046a73960a2bc504ac01d08f77e00790087e15a53546316b445698b287b2",
+    },
+    "cell_a_remedies": {
+        "contact_limit": 607,
+        "median_remaining_cm_by_setting": {
+            "L1_s1_525": 0.0626,
+            "L1_s1_535": 0.0491,
+            "L1_s1_545": 0.0315,
+            "L1_s1_555": 0.0252,
+            "L1_s1_565": 0.0230,
+            "L1_s1_575": 0.0222,
+            "L1_s1_585": 0.0235,
+            "L1_s1_595": 0.0235,
+            "L1_s1_605": 0.0233,
+        },
+        "refused_by_setting": "0 of 16 at every setting",
+        "verdict": "no allowed setting gives a median of at least 2 cm: cell A is removed before "
+        "the freeze (protocol §3.2), so K-pred's row is PRED-INFEASIBLE (escalate, no clause)",
+    },
+    "m2_cm": {"median": 0.0012, "max": 0.0019, "attempts": 16, "setting": "L = 2, s1 = 525"},
+    "lookahead_attempt_seconds": {
+        "median": 15.0,
+        "max": 16.4,
+        "max_over_remedies": 25.0,
+        "decisions_converged": "96 of 96 (at most 7 iterations)",
+        "verdict": "below 60 s: the 300 s per-attempt cap is not reviewed",
+    },
+}
 
 # ----- K0 (§5) ----------------------------------------------------------------------------------
 TAU = {
