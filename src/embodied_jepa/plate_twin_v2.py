@@ -692,8 +692,9 @@ def cohort_values(role: str, seeds=None) -> dict:
 
 
 def cohort_digest(role: str) -> str:
-    text = json.dumps(cohort_values(role), sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(text.encode()).hexdigest()
+    """sha256 of the role's draws with every float rounded to 10 decimals (lewm_planner_v2.
+    plan_digest's rule: the last ulp of a draw is platform-dependent, as TASK-073 found)."""
+    return lp.plan_digest(cohort_values(role))
 
 
 # ----- K0 ---------------------------------------------------------------------------------------

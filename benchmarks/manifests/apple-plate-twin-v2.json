@@ -1,12 +1,12 @@
 {
  "cohorts": {
-  "A": "0dbcb2aae9a7a57e98b0ab2b0819f0db199f21ddb0b076833dc8afbd784cbb5a",
-  "D": "acaf2df1886cbef26baa5d31e0db24e3992f7e643de6804239c79d941a4ee153",
-  "K": "e2525b7078e2759296b4767252255613fd14eee69a5d97c3e2686b230c1d05ad",
-  "M-a": "423138db3f6ff38b176ea13fdf8cdcc2603ef5f9a58c4122971723432c6688ea",
-  "M-b": "6ecde1145d150eb81d5ea9a86aa10a68a567f296cf3775523c4e0030b00635e6",
-  "S": "ed633fdd9b12cdc98603502fd27ed574ffc70fbe600148bfded3d540839c021e",
-  "U": "af0ad167855a6c133b973a7af128886eb468ec428aec0cfe245df55781e0b4b4"
+  "A": "347a0d6e9ae35bc6ae6849ddc184be564e066dcfbbe9592cfcf28695a8defe50",
+  "D": "59efe3bb019f59ec090b875a3e48b28ba2b0280517efc8b9d75d56e54cab4b0f",
+  "K": "070196e907b0576b4dc5b1994fc8fa90d3ba1e3857ecf58e87665dbaf2fdede1",
+  "M-a": "aee18ef27ef8563aef0cbbb9ad470f46b5d0715905716d3c7269a0750149ddf0",
+  "M-b": "f7ace1040702bb78a645d9e1388f6f4bd511d34767cbdfd8a01cc7b56e9149ee",
+  "S": "4c89f88f332d826496fa3e70fc8e4aac1d39a53ccf08f386df0d447406cd3c8c",
+  "U": "41b01e78fbb347c7d89739ff1c51572d10c60fe1ca9e7e727fdbb247c2c77de7"
  },
  "document": "docs/experiments/apple_plate_twin_v2.md",
  "encoder_digests": {
@@ -788,7 +788,7 @@
   "src/embodied_jepa/observation_reprobe.py": "181fe6443714596bba6651f403028bc5235d5115fd375e8817c374795c5f47ec",
   "src/embodied_jepa/place_planner.py": "1842d3e0ca31bfbe6c0568ab5a8d9c75c513e8b5a784ae7200c43101d270c846",
   "src/embodied_jepa/plate_shift.py": "5ae0f016dd6ee628c60c3a6901f170d9bd1643df8e508e53fabbbc6e89650b39",
-  "src/embodied_jepa/plate_twin_v2.py": "1b710672d6e7d8ec0cda32b657fcd7e9ad0f3be926520520c8d65fe8a19764b3",
+  "src/embodied_jepa/plate_twin_v2.py": "af0b6894d07d402cd0cf0fa3ccdc1b3acd21bd5a4cfa83de76f727071bdfe487",
   "src/embodied_jepa/plate_twin_v2_harness.py": "94b2a213429302b5501f4e86160d27444d246759a60356eb430e29d699e38737",
   "src/embodied_jepa/plate_twin_v2_offline.py": "3a662b0ea3211bdf394fafcad06ddfa0a79ddd1341405c1d01a2230f2d726b87",
   "src/embodied_jepa/plate_twin_v2_runtime.py": "3c5a7198e243219c2ed1c06a296449d78d50968459e9d99a32d75026b88a24fb",
