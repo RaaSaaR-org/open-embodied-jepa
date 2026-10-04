@@ -38,6 +38,41 @@ The disk holds the ignored artefacts git does not track (`data/`, `outputs/`, `c
 `.venv/`, logs). As with `data/`, `checkpoints/` and `outputs/`, never overwrite evidence on it:
 add, do not replace.
 
+### The disk is failing; the evidence is back on the SSD (2026-10-04)
+
+The archive disk is degrading: a read-only audit on 2026-10-04 found four unreadable files
+(SCSI medium errors) and a growing number of bad sectors spread over the surface, beyond the
+clusters first seen on 2026-10-02. Its record is `archive/INTEGRITY-2026-10-04.md` on the disk
+(`/media/huhn/INTENSO/emai/open-embodied-jepa/archive/INTEGRITY-2026-10-04.md`). None of the four
+was uncopied cited evidence: `look2-51171.npz` (TASK-072 run-1) had already been restored
+bit-identically to the SSD, and the other three are Warp and Omniverse caches.
+
+Because the disk had become the only copy, all archived evidence was copied back to the SSD the
+same day, at **`/home/huhn/develop/emai/evidence/`** (about 8.2 GB):
+
+- one directory per archived worktree, **40 in all**, named as in the table below, plus
+  `_archive-extras/` (`run-logs/` and `patches/fix-ci-integration-workflow/`): 42 items, 19 986
+  files, 8 651 953 026 bytes;
+- the 14 worktrees with run evidence (`task072-run`, `task072-m2-run`, `task072-m2`, `task072-a`,
+  `task073-go`, `task073-go-2`, `task073-fix`, `task074-run`, `task075-run`, `arena-e9`,
+  `arena-spike`, `arena-gr00t`, `white-plate-dev`, `isaac-usd-threads`) whole, minus `.venv/`,
+  `home_cache/` and tool caches; the other 26 only `data/`, `outputs/`, `checkpoints/`,
+  `benchmarks/` and `docs/experiments/`;
+- **verified:** every file checked with `sha256sum -c` against the disk's
+  `archive/checksums/<name>.sha256`, filtered to the copied scope; every count matched, with no
+  failure. The filtered lists are in `_checksums/<name>.sha256` (42 files);
+- `README.md` there records the method and the per-worktree table. Re-verify one with
+  `cd /home/huhn/develop/emai/evidence/<name> && sha256sum -c --quiet ../_checksums/<name>.sha256`.
+
+It is a plain directory tree, not a git worktree: each worktree's code is at its HEAD in the table
+below. **Read evidence from there, not from the disk.** For an old SSD path in a results document,
+replace `/home/huhn/develop/emai/worktrees/<name>/` (or `/home/huhn/develop/emai/<name>/` for the
+three `oej-isaac-*` rows) with `/home/huhn/develop/emai/evidence/<name>/`; the archive path in the
+table remains the second copy. A loose run log is at `evidence/_archive-extras/run-logs/<file>`.
+Never overwrite anything under `evidence/`; add, do not replace. `.venv/` and caches were not
+copied, so the archive is still the only copy of those (none is cited evidence). Use the disk only
+to read, and copy anything new to the SSD as well.
+
 ## Old path to archive path
 
 Results documents cite worktree paths on the SSD. Each worktree below was copied, every file
@@ -144,6 +179,10 @@ Still pending, on the SSD: `/home/huhn/develop/emai/oej-isaac-newton` (2.8 GB,
 2026-10-04, so it has not been archived; archive it the same way once that process ends.
 
 ## Restore
+
+Restore from the SSD copy (`/home/huhn/develop/emai/evidence/<name>/`, above) when it holds what
+you need; it is verified and does not stress the failing disk. The steps below restore a whole
+worktree, `.venv/` included, from the disk.
 
 Restore to the row's recorded original path (the table's first column, or MANIFEST.md's
 "original path"), not to a fixed prefix: most rows lived under `~/develop/emai/worktrees/`, but
