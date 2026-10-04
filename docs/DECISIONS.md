@@ -69,8 +69,8 @@ is kept as written.
 it is frozen. It answers PLAN.md's Branch B entry after TASK-076's Stage 0 removed cell A (R8.16;
 K-pred: PRED-INFEASIBLE if Stage O passes, PRED-NOT-RUN otherwise; both escalate without a
 clause). The note is [apple_lewm_next_v2_design.md](experiments/apple_lewm_next_v2_design.md)
-(DRAFT), revised after the independent review of #135 at `c387b20` (REQUEST CHANGES). This entry
-is a stub: each ruling is provisional until the note's re-review, and none changes TASK-076.
+(DRAFT), revised after the independent reviews of #135 at `c387b20` and `008a1bf` (both REQUEST
+CHANGES). This entry is a stub: each ruling is provisional until the note's re-review, and none changes TASK-076.
 
 - **R9.1 — form.** The next LeWM step is first a docs-only design note with three candidates, not
   a protocol. No task number is assigned and no MC task is created until a candidate passes its
@@ -79,12 +79,19 @@ is a stub: each ruling is provisional until the note's re-review, and none chang
   cell A's reactive-plate rule (κ = −0.5, L = 2, s1 = 525) on v2's own reset, with LeWM ranking
   candidate aims by their own predicted plate outcomes. Reasons: under R9.8 it is the likeliest
   and cheapest route to a first primary claim (TASK-076's code exists; the twins' expected losses
-  follow from the rule: N by about |p − h|/4, L-shuf by about 2.4 cm in median, estimates to be
-  checked); at 405 the plate is static and the missed-history term is zero; its main risk, a
+  follow from the rule and v2's fixed reset: N by 0.14–0.25·|p − h| depending on reach, L-shuf
+  by |Δp|, about 20/32, which is marginal (R9.10); estimates to be checked); at 405 the plate is
+  static and the rule's clamp removes the 2-step palm term; its main risk, a
   horizon of about 80 steps, has its own offline gate and row (H-GATE-FAIL, no clause). The
   secondary claim ("LeWM needed") is expected to fail, because a hand-written rule arm and a
   regression (H-sysid) capture the rule; that is stated in advance. The first version recommended
-  C2; that recommendation is withdrawn (R9.5).
+  C2; that recommendation is withdrawn (R9.5). **C1 departs from R8's Branch B wording** ("a design
+  note for a *different* action-dependent target"): it keeps cell A's target and rule and changes
+  the controller to a single aim committed at 405. It is not a reopening of cell A: cell A was
+  removed only because under re-decisions the decision at 485 came too late to move its target
+  (R8.16), and C1 changes the decision time, the factor that failed; PRED-INFEASIBLE and
+  PRED-NOT-RUN carry no clause; and C1 is declared under R2 as a condition and controller
+  change.
 - **R9.3 — what cell A teaches** (note §2). A rule linear in palm velocity is path-independent and
   its fixed point is a closed form; re-aiming at the current target is itself a fixed-point
   solver. So a prediction is *used* only if the decision is committed before its consequence can
@@ -105,9 +112,13 @@ is a stub: each ruling is provisional until the note's re-review, and none chang
 - **R9.6 (revised) — the next step is a development feasibility record for C1** (C1-F1 to C1-F6:
   CPU, no world model, a newly declared smoke block): remaining motion after 405 ≥ 2 cm; the
   ceiling H-final(commit) ≥ 30/32 (one ceiling bar, in the smokes and the protocol); the
-  privileged proxies of N and L-shuf, and H-now, each ≤ the ceiling − 8/32, with R8.14's noise
-  guard; H-rule and H-sysid on the reading reported as the non-inferiority comparator. A
-  preregistration follows only if C1-F1 to C1-F3 pass.
+  privileged proxies of N (with the declared candidate box and clip) and of L-shuf (as
+  implemented: the foreign plate with this reset's palm), and H-now, each ≤ the ceiling − 8/32
+  with R8.14's noise guard, plus a G2-style predicted feasibility ≥ 0.8 for the scene-blind twin
+  test; the readout at the read step r (moved plate, hand over the aim) with an O4-style
+  plate-hidden check; H-rule and H-sysid on the reading (single commit) reported as the
+  non-inferiority comparator. A preregistration follows only if C1-F1 to C1-F3 and C1-F5's
+  plate-hidden check pass.
 - **R9.7 — scope.** TASK-076's primary question is unchanged and continues independently. The
   LeWM backend, DINOv2 as an encoder, v2 and the product goal are not affected.
 - **R9.8 — the claim is split in two.** The product goal is a working LeWM-driven policy, and a
@@ -116,13 +127,26 @@ is a stub: each ruling is provisional until the note's re-review, and none chang
   - **Primary claim, "LeWM-driven closed-loop success":** LeWM's predictor makes the named
     decision from the encoded current frame with no privileged read at run time; the arm meets a
     calibrated success bar on a fresh gated cohort; it is non-inferior to the best
-    non-world-model arm within a declared margin and test; and it beats the action-blind and
-    scene-blind twins (TASK-076 §9's random arm is kept beside them), which shows the prediction is
-    used.
+    non-world-model arm within a declared margin and test (the bar and non-inferiority must both
+    hold); and it beats the action-blind and scene-blind twins with a preregistered test, which
+    shows the prediction is used, and a random choice with a preregistered test (R9.9).
   - **Secondary claim, "LeWM needed":** LeWM is detectably better than the best hand-written arm.
     Reported only, never a gate.
   - Both claims are named exactly so in all wording, and "needed" is never claimed from a primary
     pass.
+- **R9.9 — the random-choice test stays.** TASK-076 §9 fixed a preregistered test against a
+  random choice "for every later task". R9.8 adds requirements to §9 (a calibrated bar,
+  non-inferiority, the "LeWM needed" split) and supersedes nothing in it, so the primary claim keeps
+  that test. The note and PLAN.md say the same.
+- **R9.10 — C1's scene-blind twin is kept as implemented, and its contrast is called marginal.**
+  TASK-074's `shuf` rolls this reset's commands from another reset's latent, so under C1 it misses
+  by exactly |Δp| (median about 2 cm with v2's ± 2 cm plate jitter), about 20/32 on TASK-076's K0
+  τ curve (R8.19; one run, under TASK-074's condition, re-aimed rather than committed): a headroom
+  of about 10–12/32 against the +8/32 bar. No stronger scene-blind control is added (a mean-latent
+  twin would be weaker, about 1.4 cm), and the reset jitter is not widened (it is the knob review
+  item 9 fixed). C1-F3 must instead show the shuf-proxy at least 8/32 below the ceiling with
+  R8.14's guard and a G2-style predicted feasibility of at least 0.8 for the 64-reset McNemar test
+  (as R8.12); otherwise C1 stops before any protocol, as a recorded design failure with no clause.
 
 ## Decision 2026-10-02 — after TASK-075: the plate-readout perception twin is next (TASK-076); what counts as a task change; one canonical status sentence
 

@@ -6,8 +6,9 @@ PRED-INFEASIBLE: "a design note for a different action-dependent target, with it
 headroom check and no world model".
 
 Every choice in it is **decided by Claude under owner delegation (2026-09-30)**. The rulings are
-R9.1–R9.8 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-04. This revision answers the
-independent review of #135 at `c387b20` (REQUEST CHANGES) and applies R9.8. Any task the note
+R9.1–R9.10 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-04. This revision answers the
+independent reviews of #135 at `c387b20` and `008a1bf` (both REQUEST CHANGES) and applies R9.8 and
+R9.9. Any task the note
 leads to needs, before a single cohort seed is simulated:
 - its own feasibility record;
 - its own preregistration;
@@ -34,13 +35,14 @@ smokes exist to check them.
 
 ---
 
-## 1. Where we start (checked against the repository on 2026-10-04, at `2d0bdb7`)
+## 1. Where we start (checked against the repository on 2026-10-04, at `702a7d9`)
 
-**TASK-076's status.** These lines are written to stay true whether or not #137 (the TASK-076
-freeze) merges first.
-- **K0:** K0 ran with outcome K0-PASS; see R8.19 once #137 merges.
-- **K-pred:** PRED-INFEASIBLE if Stage O passes, PRED-NOT-RUN otherwise. Both rows escalate
-  without a clause and lead to PLAN.md's Branch B, which this note answers.
+**TASK-076's status.**
+- **The protocol is frozen.** #137 merged as `702a7d9`, and R8.19 is in effect.
+- **K0 ran and ended K0-PASS** (R8.19), with τ_re = 1.0 cm. The τ curve is 32, 31, 28, 23, 17, 18,
+  16, 8 and 5 of 32 at 0, 0.5, 1, 1.5, 2, 2.5, 3, 4 and 5 cm.
+- **K-pred** is PRED-INFEASIBLE if Stage O records O-PASS, and PRED-NOT-RUN otherwise. Both rows
+  escalate without a clause and lead to PLAN.md's Branch B, which this note answers.
 - **The primary question** (Stages O, D, S/U) is unaffected by this note.
 
 **Why cell A was removed.** Source: the Stage-0 record
@@ -135,7 +137,7 @@ Both facts below are checked against the implemented code.
   plate does not depend on the action, so an action-blind predictor, or simply holding the last
   reading, ties.
 
-## 3. The two claims (R9.8)
+## 3. The two claims (R9.8, with R9.9)
 
 **Ruling R9.8** (decided by Claude under owner delegation). The product goal is a working
 LeWM-driven policy. A design that must show LeWM beats every hand-written model may have no
@@ -148,23 +150,41 @@ below:
   2. The arm meets a calibrated success bar on a fresh gated cohort.
   3. The arm is non-inferior to the best non-world-model arm for the same decision, within a
      declared margin and test.
-  4. The arm beats the action-blind and scene-blind twins, which shows that LeWM's prediction is
-     used. TASK-076 §9's random-choice arm is kept beside them.
+  4. The arm beats the action-blind and scene-blind twins with a preregistered test. Beating them
+     shows that LeWM's prediction is used.
+  5. **The arm also beats a random choice with a preregistered test** (ruling R9.9). TASK-076 §9
+     fixed this test "for every later task". R9.8 adds requirements to it and supersedes nothing
+     in it.
+
+  Items 2 and 3 must **both** hold. Meeting the bar without non-inferiority is not a primary pass,
+  and neither is non-inferiority without the bar.
 - **Secondary claim, "LeWM needed".** LeWM is detectably better than the best hand-written arm.
   It is reported only and never gates anything.
 
-A primary pass never supports a "LeWM needed" statement. R9.8 refines the definition of
-TASK-076 §9 for tasks after TASK-076 and does not change TASK-076.
+A primary pass never supports a "LeWM needed" statement. R9.8 and R9.9 refine TASK-076 §9 for
+tasks after TASK-076. They do not change TASK-076.
 
-**The proposed test forms.** They are proposals, set at the preregistration together with their
-power.
-- **Success bar:** the K0-measured ceiling minus a declared margin, in the τ family of TASK-076's
-  G1.
-- **Twin tests:** exact one-sided McNemar, p < 0.01, W against N and W against L-shuf (G2's form).
-- **Non-inferiority:** the lower bound of the paired, reset-clustered 95 % bootstrap interval of
-  W − best non-world-model arm lies above −δ. The proposal is δ = 8/64 on a 64-reset gated
-  cohort. Its power at true differences of 0 and −4/64 is simulated before the freeze, as R8.14
-  did.
+**Proposed test forms.** These are proposals. Each is set at the preregistration, with its power
+simulated before the freeze, as R8.14 did.
+- **Success bar.** The ceiling measured in K0, minus a declared margin, in the τ family of
+  TASK-076's G1.
+- **Twin and random tests.** An exact one-sided McNemar test at p < 0.01 (G2's form), for W
+  against N, W against L-shuf, and W against L-rand.
+- **Non-inferiority.**
+  - Test: the lower bound of the paired, reset-clustered 95 % bootstrap interval of W minus the
+    best non-world-model arm must lie above −δ.
+  - Proposal: δ = 8/64 (that is, 4/32) on a 64-reset gated cohort.
+  - Why 8/64:
+    - It is half of the +8/32 headroom scale that C1-F3 requires between the ceiling and each
+      twin. A W at the margin therefore still sits above every twin the check separated from the
+      ceiling.
+    - It equals the 4/32 stop margin K0 already uses (R8.7).
+    - On TASK-076's measured τ curve (R8.19: 32, 31 and 28 of 32 at 0, 0.5 and 1.0 cm), 4/32 is
+      about the cost of one τ_re (1.0 cm) of extra aim error. So W may be at most about one
+      tolerance less precise than the best hand-written arm.
+  - Power is simulated at true differences of 0 and −4/64.
+- **The non-inferiority comparators are single-commit arms only.** The re-aiming arm
+  (H-now-reaim) uses a different controller structure, so it is reported and is not a comparator.
 
 ## 4. Candidates
 
@@ -185,112 +205,213 @@ All candidates keep the following:
 
 ### 4.1 Candidate C1: a single committed aim under the reactive-plate rule (recommended)
 
-**The condition.** It is declared under R2 as a condition change, not a reopening.
-- **Reset.** v2 with its own reset unchanged: plate ± 2 cm, apple ± 3 cm, no step-300 shift. There
-  is no added jitter knob (review item 9).
-- **The plate rule.** Cell A's rule as implemented: κ = −0.5, L = 2, s0 = 405, s1 = 525,
-  `CellMotion`. |κ| ≥ 1 stays forbidden (R8.10).
-- **One controller change.** A single aim is committed at **c = 405**, and e9's primitive then
-  runs the transfer, lower and open with no re-aim. §2 shows why the commitment is required: with
-  re-aims, feedback ties. It is an imposed restriction, and any claim is limited to single
-  committed aims.
-- **Why c = 405, and not a later commit step:**
-  - At 405 the plate has not yet moved (palm velocity before s0 counts as zero, R8.15). So
-    R-plate reads a static plate inside its training distribution.
-  - The missed-history term is exactly zero: m2 = |κ|·‖palm(405) − palm(403)‖ is zero by the
-    rule.
-  - At 437 or 453 the palm is moving fast. The 2-step palm term the frame cannot show could then
-    reach |κ| × 2 steps × 1.5 cm (*estimate*), up to 1.5 cm, beyond what TASK-066's history-one
-    predictor sees.
+**A departure from R8's Branch B wording, stated plainly** (R9.2). R8 recommended "a design note
+for a *different* action-dependent target". C1 keeps cell A's target and rule and changes only the
+controller, to a single aim committed at 405.
 
-**The question.** With a single aim committed at 405 under the reactive-plate rule, does W, which
-predicts each candidate aim's plate outcome, reach the primary claim?
-- **Primary claim, "LeWM-driven closed-loop success":** calibrated bar, non-inferior to the best
-  of H-rule and H-sysid, beats N and L-shuf.
-- **Secondary claim, "LeWM needed"** (reported only): is W detectably better than H-rule and
-  H-sysid?
+This is not a reopening of cell A:
+- **Why cell A was removed.** It was removed for one reason: under re-decisions, the decision at
+  485 came too late to move its target (R8.16). C1 changes the decision time, which is the factor
+  that failed.
+- **No clause is in the way.** PRED-INFEASIBLE and PRED-NOT-RUN carry no clause, and K-pred's
+  clause (PRED-NONE) was never reached.
+- **It is declared as what it is.** C1 is a condition and controller change under R2, declared as
+  such, never presented as a silent reopening.
+
+**The condition.**
+- **Reset.** v2 with its own reset, unchanged: plate ± 2 cm, apple ± 3 cm, and no step-300 shift.
+  No jitter knob is added (review item 9).
+- **The plate rule.** Cell A's rule as implemented in `CellMotion`: κ = −0.5, L = 2, s0 = 405,
+  s1 = 525. |κ| ≥ 1 stays forbidden (R8.10).
+- **One controller change.** A single aim is committed at **c = 405**. e9's primitive then runs
+  the transfer, lower and open with no re-aim.
+  - §2 shows why the commitment is required: with re-aims, feedback ties.
+  - The commitment is an imposed restriction, and any claim is limited to single committed aims.
+- **Why c = 405 and not later.**
+  - At 405 the plate has not yet moved: palm velocity before s0 counts as zero (R8.15). So for H-rule and
+    H-sysid, R-plate reads a static plate inside its training distribution.
+  - **The missed-history term has no effect at 405, because of the clamp, though it is not literally
+    zero.**
+    - The rule uses palm(max(t − L, s0)), so palm(403) never enters plate(s1).
+    - m2 = |κ|·‖palm(405) − palm(403)‖ itself need not be zero.
+  - **What the frame cannot show at 405 is the palm's own velocity at the end of P-3's handover.** It
+    shapes the palm path after 405. C1-F1 records it.
+  - At 437 or 453 the palm is moving fast. The clamp no longer applies, and the 2-step term could
+    reach |κ| × 2 steps × 1.5 cm, up to 1.5 cm (*estimate*). That is beyond what TASK-066's
+    history-one predictor sees.
+
+**The question.** With a single aim committed at 405 under the reactive-plate rule, does W reach
+the primary claim, "LeWM-driven closed-loop success"? W predicts each candidate aim's plate
+outcome. The primary claim requires all of the following:
+- the calibrated bar;
+- non-inferiority to the best of H-rule and H-sysid on the reading;
+- beating N, L-shuf and L-rand.
+
+The secondary claim, "LeWM needed", is reported only: whether W is detectably better than H-rule
+and H-sysid.
 
 **Where LeWM sits.** At step 405 only.
 1. W encodes the onboard 112 px frame.
-2. It ranks a declared candidate grid around the plate reading by |predicted plate(r) −
-   candidate's landing point|. Here r is the read step, defined below.
-3. It refines with at most 10 single-candidate roll-outs, g ← predicted plate(r | g), stopping
-   at τ/4. This mirrors H-final and H-rule. Every step is an action-conditioned roll-out of one
-   candidate.
+2. It scores every candidate in the declared grid (below) by |predicted plate(r) − the candidate's
+   landing point|, where r is the read step.
+3. It refines with at most 10 single-candidate roll-outs, g ← predicted plate(r | g), stopping at
+   τ/4. Each refined aim is **clipped to the grid's box**. This mirrors H-final and H-rule. Every
+   step is an action-conditioned roll-out of one candidate.
 4. P-3 picks before 405, and e9's primitive executes the committed aim.
 
 The claim names the decision: "LeWM-driven aim selection at 405".
 
-**The read step r.** r is the earliest step at which H-final's plate is within 0.1 cm of plate(s1)
-on at least 87.5 % of the smoke attempts. It is measured in C1-F1.
-- Stage-0's 0.060 cm median after 485 suggests r ≤ 485 (*estimate*).
+**The read step r.** r is the earliest step at which H-final's plate is within 0.1 cm of
+plate(s1) on at least 87.5 % of the smoke attempts. C1-F1 measures it.
+- Stage-0's median of 0.060 cm of movement after 485 suggests r ≤ 485 (*estimate*).
 - That gives a horizon of r − 405 ≤ 80 steps, about 5 recursive chunks of 16.
+- **At r the plate has moved** about 5–8 cm towards the robot (Stage-0: 4.9–7.4 cm in −x,
+  2.1–4.1 cm in −y), and the hand and apple are over the aim. That is where W's readout must work
+  (see "Ceilings").
 
-**The training actions** (R8.8, declared now). A privileged scripted collector commits e9's aim at
-p₄₀₅ + u, where p₄₀₅ is the true plate at 405 and u is uniform over a box that covers the candidate
-grid. The aims are therefore centred on the current plate, not on g\*.
+**The candidate grid and the training aims** (R8.8; review item 1b; declared now, before any
+smoke). Coordinates are relative to the plate reading p̂ and the proprioceptive palm h at 405:
+g = p̂ + a·(h − p̂) + b·n, where n is the unit vector perpendicular to h − p̂.
+- **The box.** a ∈ [a_lo, a_hi] and b ∈ [−3, +3] cm.
+  - a_hi = 0.5. It covers g\*, which lies at a = 1/3, with a margin.
+  - a_lo is the most negative of −0.5, −0.4, −0.3 and −0.2 whose candidates are reachable: at
+    least 31/32 transfers complete in C1-F2's reach check.
+  - a_lo is set by reach only, never by a headroom number.
+- **The controller's grid** is the box at steps of 0.05 in a and 1 cm in b. The refinement is
+  clipped to the box. Every arm that chooses from candidates uses the same grid and the same clip.
+- **The training aims.** A privileged scripted collector commits e9's aim uniformly over the same
+  box, using the true p and h. W is therefore never asked to extrapolate outside its training
+  aims.
+- **What N does.**
+  - The aims' mean along h − p is a_m = (a_lo + 0.5)/2. N predicts the corpus-mean outcome,
+    which lies at a = 0.5·(1 − a_m), for every candidate.
+  - Its controller therefore picks a_N = min(0.5·(1 − a_m), a_hi). With a_hi = 0.5 the clip never
+    binds, because a_m ≥ 0.
+  - N's landing miss is 1.5·|a_N − 1/3|·|p − h|.
 
-**Why each arm should win or lose, with expected values** (*estimates* from the rule; the palm is
-taken to end near the aim; each is checked in C1-F3):
-
-| arm | what it aims at | miss of the landing point (*estimate*) | expected |
+| a_lo (set by reach) | a_m | a_N | N's miss (*estimate*, \|p − h\| ≈ 16–25 cm) |
 |---|---|---|---|
-| H-now | the plate now (H-cv is the same at 405, because the plate is static) | (1 − κ)·\|g\* − p\| = \|h − p\|/2 | about 8–12 cm: fails |
-| N | the mean outcome over the training aims, (p + h)/2 | \|p − h\|/4 | about 4–6 cm: fails |
-| L-shuf | another reset's fixed point | \|Δp + Δh/2\| | median about 2.4 cm (below): mostly fails |
-| H-rule | `RuleAim` on the R-plate reading | about the reading error | near the ceiling |
-| H-sysid | a linear regression of plate(r) on (R-plate reading, proprio palm, aim), fitted on the same corpus as W | about the reading error | near the ceiling |
-| W | its own roll-outs | the predicted-plate error B | non-inferior if B ≈ c_plate |
+| −0.5 | 0 | 0.5 | 0.25·\|p − h\| ≈ 4–6 cm |
+| −0.4 | 0.05 | 0.475 | 0.21·\|p − h\| ≈ 3.4–5.3 cm |
+| −0.3 | 0.1 | 0.45 | 0.175·\|p − h\| ≈ 2.8–4.4 cm |
+| −0.2 | 0.15 | 0.425 | 0.14·\|p − h\| ≈ 2.2–3.4 cm |
 
-How the estimates are derived:
-- **The palm-to-plate distance.** |p − h| = 1.5·|g\* − h|. Stage-0's plate travel of 4.9–7.4 cm
-  in −x and 2.1–4.1 cm in −y equals |κ| × the palm's travel. So the palm travelled about
-  11–17 cm, and |p − h| is about 16–25 cm (*estimate*).
-- **L-shuf.** Δp has a per-axis standard deviation of about 1.6 cm, from two ± 2 cm draws. Δh/2
-  has about 1.2 cm, if the palm at 405 tracks the apple's ± 3 cm reset. The 2-D median is then
-  about 2.4 cm, against e9's 30/32 at 1.0 cm plate error (TASK-070).
-- **The H-rule and H-sysid ties depend on the readout.** Stage-0's smoke H-rule scored 0/16
-  because its smoke R-plate, fitted on 20 static-plate roots, was 2–6 cm off on cell A (mechanics,
-  not read). At 405 the plate is static and in distribution, but the tie still assumes R-plate's
-  precision.
-- **The claim-row competitors.** H-rule and H-sysid on the R-plate reading, the same non-privileged
-  reading W gets, are the claim-row arms (review item 8). Their true-plate versions are reported as
-  their ceilings.
-- **Feedback for information.** The re-aiming arm H-now-reaim (TASK-076's H-now with decisions at
-  405–485) is reported, to show what feedback alone achieves without the commitment.
+**The expected partial tie, stated now.** The less reach allows behind the plate, the closer the
+training mean sits to g\*, and the closer N gets to it. At a_lo = −0.2, N's miss of 2.2–3.4 cm maps
+on TASK-076's τ curve (R8.19; caveats below) to roughly 13–17/32. That is a marginal headroom.
+C1-F3's N-proxy uses the same box, the same clip and the same a_lo.
 
-**Feasibility checks first.** These are CPU smokes with no world model, run on a newly declared
-smoke block checked against every range on main. The code is TASK-076's, plus a commit-at-405 mode
-for H-final, H-now, H-rule and the proxies.
+**What each arm is expected to do** (*estimates*). They come from the rule, taking the palm to end
+near the aim; C1-F3 checks each one. The counts are mapped through TASK-076's K0 τ curve
+(R8.19): 32, 31, 28, 23, 17, 18, 16, 8 and 5 of 32 at 0, 0.5, 1, 1.5, 2, 2.5, 3, 4 and 5 cm.
+
+**That curve carries four caveats:**
+- it is one run;
+- it was measured under TASK-074's condition with the step-300 shift;
+- the aim was re-aimed at a planted target, not committed;
+- it is non-monotone at 2–2.5 cm.
+
+C1's own τ_commit is measured in K0.
+
+| arm | what it aims at | miss of the landing point (*estimate*) | expected count (*estimate*) |
+|---|---|---|---|
+| H-now | the plate now (H-cv is the same at 405, because the plate is static) | (1 − κ)·\|g\* − p\| = \|p − h\|/2 ≈ 8–12 cm | about 0–5/32 |
+| N | the corpus-mean outcome (table above) | 1.5·\|a_N − 1/3\|·\|p − h\| | about 5–8/32 at a_lo = −0.5; about 13–17/32 at a_lo = −0.2 |
+| L-shuf | W rolled out from the foreign reset's latent with *this* reset's commands (`place_planner` `shuf`). It predicts p′ + κ(g − h), so it lands at the foreign fixed point (p′ − κh)/(1 − κ) | exactly \|p − p′\| = \|Δp\| | median about 1.9–2.0 cm; about 20/32 |
+| L-rand | a uniformly random candidate in the box | large | low |
+| H-rule | `RuleAim` on the R-plate reading, single commit | about the reading error | near the ceiling |
+| H-sysid | a linear regression of plate(r) on the R-plate reading, the proprioceptive palm and the aim, fitted on the same corpus as W | about the reading error | near the ceiling |
+| W | its own roll-outs | the predicted-plate error B | non-inferior if B is close to c_plate |
+
+How these are derived:
+- **The palm-to-plate distance.** |p − h| = 1.5·|g\* − h|. Stage-0's plate travel (4.9–7.4 cm in
+  −x, 2.1–4.1 cm in −y) is |κ| times the palm's travel. So the palm travelled about 11–17 cm, and
+  |p − h| ≈ 16–25 cm.
+- **L-shuf, as implemented** (review item 1a).
+  - The candidate commands are this reset's end-effector deltas from h.
+  - Rolled out from the foreign latent, they give a predicted plate of p′ + κ(g − h). Its fixed
+    point lands the apple at a miss of exactly |Δp|, whatever the palms.
+  - With v2's ± 2 cm plate jitter, Δp is the difference of two uniform draws per axis. In a
+    simulation of 10⁶ draws (computed for this note) its 2-D median is 2.05 cm; a Rayleigh
+    approximation gives 1.92 cm.
+  - Integrating the τ curve over those draws gives an expected L-shuf of **about 20/32**.
+- **The H-rule and H-sysid ties depend on the readout at 405.**
+  - In Stage-0's smokes, H-rule scored 0/16 because the smoke R-plate (fitted on 20 static-plate
+    roots) was 2–6 cm off on cell A. These are mechanics and are not read.
+  - At 405 the plate is static and in distribution, but the tie still assumes R-plate's
+    precision.
+- **The claim-row competitors** are H-rule and H-sysid on the R-plate reading, the same
+  non-privileged reading W gets (review item 8). Their true-plate versions are reported as their
+  ceilings.
+- **Feedback, for information.** H-now-reaim (TASK-076's H-now with decisions at 405–485) is
+  reported only. It is not a comparator (§3).
+
+**The scene-blind contrast is marginal, and it is kept as implemented** (ruling R9.10, decided by
+Claude under owner delegation).
+- **The margin.** Against a ceiling of 30–32/32, L-shuf at about 20/32 leaves a headroom of about
+  10–12/32. That is marginal against C1-F3's +8/32 bar with R8.14's noise guard on 32 smoke
+  resets.
+- **The gated test has more room than the smoke check.** On 64 gated resets, a W near the ceiling
+  against an L-shuf near 40/64 gives an expected 18 or so discordant pairs one way. McNemar at
+  p < 0.01 needs 7 (R8.7).
+- **No stronger scene-blind control is added.** A mean-latent twin would land at the centre of
+  the reset distribution, miss by |p − p̄| (median about 1.4 cm, *estimate*), and so be weaker.
+- **The reset jitter is not widened.** It is the free knob that review item 9 asked to keep
+  fixed, and widening it would manufacture the contrast.
+- **So C1-F3 must show** (bars in the next table):
+  - the shuf-proxy at least 8/32 below the ceiling;
+  - G2's predicted feasibility for the 64-reset twin test, from the proxy's paired counts as in
+    R8.12, at a pass probability of at least 0.8.
+
+  Otherwise C1 stops before any protocol, as a recorded design failure with no clause.
+
+**Feasibility checks first.** CPU smokes with no world model, on a newly declared smoke block that
+is checked against every range on main. The code is TASK-076's, plus a commit-at-405 mode for
+H-final, H-now, H-rule and the proxies.
 
 | check | what is measured | bar |
 |---|---|---|
-| C1-F1, remaining motion | under H-final(commit), the median \|plate(s1) − plate(405)\|; r as defined above | ≥ 2 cm (TASK-076's bar) |
-| C1-F2, ceiling | H-final(commit) on 32 smoke resets, refused moves counted as failures | ≥ 30/32, and refusals ≤ 8/32 (TASK-076's removal rule) |
-| C1-F3, the twins lose (privileged proxies, no world model) | **N-proxy**: aim at the mean outcome of the declared training aims, from the true p and h, with κ. **Shuf-proxy**: H-rule's fixed point from reset (i + 1) mod n's true p and h | each ≤ H-final − 8/32 (TASK-074 K1's headroom bar); also H-now ≤ H-final − 8/32 |
-| C1-F4, the best non-world-model arm | H-rule and H-sysid on a smoke R-plate; their true-plate versions; H-now-reaim | reported, no bar; they set the non-inferiority comparator |
-| C1-F5, readout | cross-fitted R-plate-pool on the 405 frames of the smoke corpus | median error ≤ τ/2 (an estimate; c_plate itself comes from the protocol's Stage O) |
-| C1-F6, cost | an H-final(commit) attempt, with at most 10 look-ahead roll-outs at a single decision | ≤ 60 s, as in TASK-076 |
+| C1-F1: remaining motion and history | under H-final(commit): the median \|plate(s1) − plate(405)\|; r (as defined above); and the palm's speed at 405 | remaining motion ≥ 2 cm (TASK-076's bar). r and the palm speed are recorded. If the median palm speed at 405 exceeds 0.5 cm per step (declared now), the protocol gives W and N the last 2 executed commands (R8.7's alternative) |
+| C1-F2: ceiling and reach | H-final(commit) on 32 smoke resets, with refused moves counted as failures; the reach check for a_lo | ceiling ≥ 30/32; refusals ≤ 8/32 (TASK-076's removal rule); a_lo set by the reach rule |
+| C1-F3: the twins lose (privileged proxies, no world model) | **N-proxy:** aim at a_N, using the same box and clip, from the true p and h. **Shuf-proxy:** the foreign fixed point (p′ − κh)/(1 − κ), with the true p′ of reset (i + 1) mod n and *this* reset's h. **H-now** | each ≤ ceiling − 8/32, with R8.14's guard. For the shuf-proxy, G2-style predicted feasibility ≥ 0.8 |
+| C1-F4: the best non-world-model arm | H-rule and H-sysid on a smoke R-plate (single commit), with their true-plate versions; H-now-reaim (reported only) | reported, no bar. They set the non-inferiority comparator |
+| C1-F5: readout at r | cross-fitted R-plate-pool on corpus frames **at r** (moved plate, hand and apple over the aim); the same readout on plate-hidden renders of those states (O4's form); also R-plate at 405, for H-rule and H-sysid | at r: median error ≤ τ/2 (an estimate; c_plate itself comes from the protocol's Stage O). Plate-hidden at r: the lower bound of the median error > τ (O4's form) |
+| C1-F6: cost | an H-final(commit) attempt, with at most 10 look-ahead roll-outs at a single decision | ≤ 60 s, as in TASK-076 |
 
 If a check fails:
-- **C1-F1 or C1-F2 fails:** C1 is infeasible. Escalate, no clause.
-- **A C1-F3 proxy is not detectably below its bar** (TASK-076's R8.14 guard): the primary claim's
-  twin tests have no expected room. Stop before any protocol, as a recorded design failure with no
-  clause.
+- **C1-F1 or C1-F2:** C1 is infeasible. Escalate, no clause.
+- **C1-F3** (a proxy not detectably below its bar, or the shuf feasibility below 0.8): stop before
+  any protocol, as a recorded design failure with no clause.
+- **C1-F5:**
+  - If the plate-hidden check fails, the readout at r may be keyed on the arm. Escalate, no
+    clause.
+  - If the readout at r misses its estimate, no B is feasible (NO-BAR). Escalate, no clause.
 
 **Ceilings that calibrate its bars.**
 - **The count ceiling:** H-final(commit), ≥ 30/32.
-- **τ_commit:** the place's tolerance to a planted error in the committed aim, re-measured in the
-  protocol's K0 as TASK-075's τ was. The committed aim gets no late correction, so it may differ
-  from τ.
-- **c_plate:** on the pooled latent at the 405 frames, in O1's form (R8.2).
-- **B:** the predicted-latent plate bar, with c_plate ≤ B ≤ τ_commit. Any allowance above c_plate
-  is calibrated on development data.
-- **The non-inferiority comparator:** the best of H-rule and H-sysid on the reading.
+- **τ_commit:** the place's tolerance to a planted error in the committed aim. It is re-measured
+  in the protocol's K0, as TASK-075's τ was. The committed aim gets no late correction, so
+  τ_commit may differ from τ_re.
+- **c_plate:** measured on the pooled latent **at r, on the declared-aim corpus's frames**, in
+  O1's form (R8.2).
+  - This is where the plate has moved 5–8 cm, outside R-plate's static-plate training
+    distribution: Stage-0 §3.2's coverage caveat, restored here.
+  - The hand and apple are over the aim, which is TASK-076's O4 risk. A readout keyed on the arm
+    would return about the aim for every candidate. W's ranking would then confirm itself and
+    degenerate.
+  - So O4's plate-hidden check runs at r too, and must hold before any B is set.
+- **B:** the predicted-latent plate bar, with c_plate(r) ≤ B ≤ τ_commit. Any allowance above
+  c_plate is calibrated on development data.
+- **R-plate at 405** bounds H-rule and H-sysid, not W.
+- **The non-inferiority comparator:** the better of H-rule and H-sysid on the reading, single
+  commit.
 
 **The horizon gate and its row** (review item 6).
-- W's dynamics gates run offline at h = r − 405 before any closed loop: no collapse, beats
-  copy-last, beats an equally trained N, action-sensitive.
+- W's dynamics gates run offline at h = r − 405, before any closed loop:
+  - no collapse;
+  - beats copy-last;
+  - beats an equally trained N;
+  - action-sensitive.
 - **On failure: row H-GATE-FAIL.** It escalates without a clause, closes nothing, and never
   reaches back over TASK-066's h ≤ 16 result.
 - A remedy would be a reviewed amendment that trains with `action_chunk` or
@@ -299,18 +420,22 @@ If a check fails:
 
 **The abandonment clause and its scope.**
 - **When it fires:**
-  - W fails a twin test (L-NO-GAIN);
-  - W is detectably inferior to the best non-world-model arm: the upper bound of the paired
-    interval lies below −δ.
-- **No clause, escalate:** W misses non-inferiority within noise (L-NEAR), H-GATE-FAIL, a failed
-  ceiling, or a budget escalation.
+  - W fails a twin or random test (L-NO-GAIN);
+  - W is detectably inferior to the best single-commit non-world-model arm: the upper bound of
+    the paired interval lies below −δ.
+- **No clause, escalate:**
+  - W misses non-inferiority within noise (L-NEAR);
+  - H-GATE-FAIL;
+  - NO-BAR, or a failed plate-hidden check at r;
+  - a failed ceiling;
+  - a budget escalation.
 - **Scope:** "LeWM aim selection with a single aim committed at 405 under the declared
   reactive-plate rule (κ = −0.5, L = 2, s1 = 525) on v2, from onboard 112 px frozen DINOv2 pooled
   tokens, with TASK-066-family predictors". It never closes the backend, v2 or the product goal.
 
-**GPU.** This is PLAN.md's TASK-077 sizing.
-- A new corpus under the rule, about 4 min of CPU.
-- DINOv2 featurisation, about 20 min of GPU.
+**GPU.** This is PLAN.md's TASK-077 sizing:
+- a new corpus under the rule, about 4 min of CPU;
+- DINOv2 featurisation, about 20 min of GPU;
 - W and N on three seeds.
 
 That totals about 6.5 h of GPU at TASK-074's measured times (2 664 s of calibration for 60 000
@@ -321,29 +446,35 @@ smokes need no GPU.
 **Risks.**
 - **The horizon.** About 80 steps (*estimate*), five recursive chunks beyond TASK-066's gate. This
   is the main risk to the primary claim.
+- **The readout at r.** The plate has moved off R-plate's static distribution, and the hand and
+  apple are over the aim. c_plate(r) may be much worse than TASK-076's static-plate number, and
+  the plate-hidden check may fail.
+- **Marginal twin contrasts.**
+  - L-shuf is expected at about 20/32 (R9.10).
+  - N comes close to g\* if reach forces a_lo up towards −0.2.
 - **Non-inferiority is demanding.** H-rule and H-sysid are expected near the ceiling, so W must be
-  nearly as precise. B has to sit close to c_plate after an 80-step roll-out.
-- **The secondary claim is expected to fail.** "LeWM needed" is not expected here: a linear
-  regression captures the rule. That is stated now.
+  nearly as precise, with B close to c_plate(r) after an 80-step roll-out.
+- **The secondary claim is expected to fail.** "LeWM needed" is not expected here, because a
+  linear regression captures the rule. This is stated now.
 - **The commitment and the rule are imposed.** The single commitment exists to make prediction
-  matter, and the rule is a simulator law. Neither transfers as such to Arena or the real G1. What
+  matter, and the rule is a simulator law; neither transfers as such to Arena or the real G1. What
   transfers is the machinery: a LeWM decision in closed loop, its gates and its twins.
-- **P-3 hands over at 405 with the hand's pose varying.** The palm's spread at 405 feeds the
-  L-shuf estimate; C1-F3 measures it.
 
 **Earlier clauses.**
-- **TASK-075:** its scope is the place phase under TASK-074's condition. C1 is a place-phase
-  decision under a different, declared condition (no step-300 shift; a reactive plate). A
-  condition change is one of the scope's own kinds of new evidence. It must be declared under R2
+- **TASK-075.** Its scope is the place phase under TASK-074's condition. C1 is a place-phase
+  decision under a different, declared condition: no step-300 shift, and a reactive plate. A
+  condition change is one of that scope's own kinds of new evidence. C1 must be declared under R2
   as a task change and never presented as a reopening.
-- **TASK-076:** its K-pred clause fires only on PRED-NONE and was never reached.
-- **TASK-057:** C1 uses the same 112 px onboard camera but a new corpus on v2, so it is outside a
-  clause scoped to `apple-wide-v1` on that camera. The same reasoning admitted TASK-071–076.
-- **TASK-054:** this is a ranking of one decision followed by refinement, with a plate-position
-  cost. It is not CEM over that cost as a primary line, and the note does not present
-  sampling-based planning as the project's control approach.
-- **TASK-062 and TASK-065:** frozen DINOv2 pooled patch tokens, so neither in-corpus encoder
-  training nor CLS.
+- **TASK-076.** Its K-pred clause fires only on PRED-NONE, which was never reached. The departure
+  from R8's "different target" wording is stated at the top of this section.
+- **TASK-057.** C1 uses the same 112 px onboard camera but a new corpus on v2. It is therefore
+  outside a clause scoped to `apple-wide-v1` on that camera, the same reasoning that admitted
+  TASK-071 to TASK-076.
+- **TASK-054.** C1 ranks one decision and then refines it, with a plate-position cost. That is not
+  CEM over that cost as a primary line, and the note does not present sampling-based planning as
+  the project's control approach.
+- **TASK-062 and TASK-065.** C1 uses frozen DINOv2 pooled patch tokens, so it involves neither
+  in-corpus encoder training nor CLS.
 
 ### 4.2 Candidate C2: a single pre-pick push of a free plate (re-assessed with the scene's constants; not recommended)
 
@@ -469,10 +600,10 @@ place-phase scope, and frozen pooled tokens avoid TASK-062 and TASK-065.
 |---|---|---|---|
 | decision | the aim at 405 | the push before the look | the approach at about 130 |
 | consequence from | a declared kinematic rule | quasi-static pushing (slide ≤ 0.5 cm, *estimate*) | finger contact |
-| N (action-blind) | misses by about \|p − h\|/4 ≈ 4–6 cm (*estimate*) | loses: uniform training pushes | loses: cannot rank |
-| L-shuf (scene-blind) | misses by about 2.4 cm in median (*estimate*) | loses by the start jitter | loses by the apple jitter |
+| N (action-blind) | misses by 0.14–0.25·\|p − h\| ≈ 2.2–6 cm, depending on reach (*estimate*) | loses: uniform training pushes | loses: cannot rank |
+| L-shuf (scene-blind) | misses by \|Δp\|, median about 2 cm; about 20/32, which is marginal (*estimate*) | loses by the start jitter | loses by the apple jitter |
 | best non-world-model arm | H-rule / H-sysid, near the ceiling | H-sysid, near the ceiling | H-sysid, probably strong |
-| primary claim plausible? | yes, if W holds the plate through about 80 steps | yes, at a higher cost | uncertain: the apple readout is weak |
+| primary claim plausible? | yes, if W holds the moved plate through about 80 steps and the readout at r passes its plate-hidden check | yes, at a higher cost | uncertain: the apple readout is weak |
 | secondary claim ("LeWM needed") | not expected | not expected | not expected |
 | new development | small: TASK-076's code plus a commit mode | free-plate variant and push primitive, about 3–5 days | disturbance and a pick-aim interface |
 | cheapest decisive check | C1-F1 to C1-F3, under 1 h of CPU (*estimate*) | C2-F4, under 1 h of CPU after the development | C3-F2, under 1 h of CPU after the development |
@@ -483,18 +614,22 @@ place-phase scope, and frozen pooled tokens avoid TASK-062 and TASK-065.
 **Main reasons.**
 1. **C1 is the likeliest route to a first primary claim, "LeWM-driven closed-loop success", on
    v2.**
-   - The twins' expected losses follow from the rule, not from tuning: N misses by about
-     |p − h|/4, and L-shuf by about 2.4 cm in median (*estimates*, checked in C1-F3).
+   - The twins' expected losses follow from the rule and v2's fixed reset, not from tuning
+     (*estimates*, checked in C1-F3):
+     - N misses by 0.14–0.25·|p − h|, depending on reach.
+     - L-shuf misses by |Δp|, about 20/32. That is marginal and is said so (R9.10).
    - The comparator arms are known and cheap: H-rule exists, and H-sysid is a regression.
 2. **It is the cheapest.** The rule, the look-ahead, H-rule, the readouts and the guards exist in
    TASK-076's code. C1 adds a commit-at-405 mode, and its decisive checks run on the CPU in about
    an hour (*estimate*). No scene variant is needed.
 3. **The decision is clean at 405.**
-   - The plate is static and in R-plate's distribution.
-   - The missed-history term is exactly zero, so TASK-066's history one is enough.
+   - The plate is static and inside R-plate's training distribution, for H-rule and H-sysid.
+   - The rule's clamp removes the 2-step palm term, so TASK-066's history-one predictor is enough,
+     subject to the palm speed at 405 that C1-F1 records.
    - The plate's remaining motion is large (Stage-0 mechanics: several centimetres over 405–525).
-4. **Its main risk is measurable before training.** The risk is the roughly 80-step horizon. It
-   has its own offline gate and its own row (H-GATE-FAIL, no clause).
+4. **Its main risks are measurable before training.**
+   - The roughly 80-step horizon has its own offline gate and row (H-GATE-FAIL, no clause).
+   - The readout at r, on the moved plate with plate-hidden frames, is checked in C1-F5.
 5. **It is honest about what it cannot show.** The secondary claim, "LeWM needed", is expected to
    fail, because H-sysid captures the rule. That is stated now, and it is the reason R9.8 split
    the claim.
@@ -517,16 +652,18 @@ place-phase scope, and frozen pooled tokens avoid TASK-062 and TASK-065.
 
 1. Re-review of this note (docs only).
 2. A development feasibility record for C1, in the style of TASK-076's Stage-0 record:
-   - a commit-at-405 mode for H-final, H-now, H-rule, the N-proxy and the shuf-proxy;
+   - a commit-at-405 mode for H-final, H-now, H-rule, the N-proxy and the shuf-proxy (as
+     implemented: the foreign p′ with this reset's h), using the declared box and clip;
    - H-sysid;
    - C1-F1 to C1-F6, on a newly declared smoke block and salts, checked against every range on
      main before any seed is simulated.
 3. Only if C1-F1 to C1-F3 pass: a preregistration with these stages, in order:
    - K0 (τ_commit and the ceiling);
-   - Stage O (c_plate at 405);
+   - Stage O (c_plate at r on the declared-aim corpus, the plate-hidden check at r, and R-plate at
+     405 for the hand-written arms);
    - the corpus with the declared aim distribution;
    - training under a `check_budget`-passing block;
    - the offline horizon and dynamics gates (H-GATE-FAIL row);
    - a 16-reset development closed loop with a stop rule;
-   - the gated cohort, with R9.8's two claims and their declared tests.
+   - the gated cohort, with the two claims of R9.8 and R9.9 and their declared tests.
 4. TASK-076's primary question continues independently.
