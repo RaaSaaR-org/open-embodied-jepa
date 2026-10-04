@@ -55,14 +55,19 @@ TASK-076's K-pred row picks one.
 
 ### TASK-076: the plate-readout perception twin, plus a prediction-headroom check
 
-Protocol draft: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (DRAFT).
+Protocol: [apple_plate_twin_v2.md](experiments/apple_plate_twin_v2.md) (FROZEN after K0-PASS,
+in force once merged on an independent APPROVE).
 
 **Stage-0 update (2026-10-04, R8.16):** the smokes removed cell A, because its plate barely moves
 after the last decision (median 0.06 cm under H-final, against the 2 cm needed, and no declared
-remedy reached 2 cm). K-pred's row is therefore PRED-INFEASIBLE, and Branch B's PRED-INFEASIBLE
-entry applies. The primary question (Stages O, D, S/U) is unchanged. The G-repro evidence is
-restored and its check passes; K0 waits for a reviewer's GO
+remedy reached 2 cm). K-pred's row is therefore PRED-INFEASIBLE if Stage O records O-PASS, and
+PRED-NOT-RUN if it does not; either way Branch B applies, with no clause. The primary question
+(Stages O, D, S/U) is unchanged. The G-repro evidence is restored and its check passes
 ([Stage-0 record](experiments/apple_plate_twin_v2_stage0.md)).
+
+**K0 update (2026-10-04, R8.19):** K0 ended K0-PASS: τ_re = 1.0 cm, N_K(0) = 32/32, H-clock(K) =
+24/32, H-stale(K) = 0/32, G2's predicted pass probability 0.9983 (protocol §5.1). Its values are
+in the frozen block, and the protocol is FROZEN. Stage O is next, on a GO after the merge.
 
 - **Question.** Two parts:
   - Can e9's place, after P-3's pick, aim at a frozen-DINOv2 single-frame plate readout and still
