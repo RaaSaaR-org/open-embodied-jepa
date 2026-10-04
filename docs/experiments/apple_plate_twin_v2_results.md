@@ -56,7 +56,7 @@ image-free prior." **It does not say** (§1, verbatim list):
 
 **The status sentence is unchanged.** R7's canonical sentence (DECISIONS 2026-10-02) stays as it
 is. Every clause in it is still true, and this result is not a learned Apple→Plate policy or a
-LeWM result (ruling R10.1, decided by Claude under owner delegation; §6). Verbatim:
+LeWM result (ruling R13.1, decided by Claude under owner delegation; §6). Verbatim:
 
 > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
 > (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an
@@ -76,7 +76,8 @@ LeWM task is chosen by K-pred's row". **K-pred's row is PRED-INFEASIBLE**: "esca
 PLAN.md's Branch B" (§13.3). As §9 says: "If the row is PRED-NONE, PRED-NEAR, PRED-INFEASIBLE,
 PRED-NO-BAR or PRED-NOT-RUN, Option 1 has not advanced the LeWM goal beyond calibration. PLAN.md's
 Branch B applies." No TASK-077 is admitted under cell A. The follow-up is the Branch B design note
-in PR #135 (DRAFT, under R9.8; §5).
+in [apple_lewm_next_v2_design.md](apple_lewm_next_v2_design.md) (#135, merged as `ff37d96`; a
+DRAFT design note under R9.8 of DECISIONS 2026-10-04; §5).
 
 Protocol: [`apple_plate_twin_v2.md`](apple_plate_twin_v2.md), FROZEN and merged as `702a7d9`
 (#137) on an independent reviewer's reported APPROVE. Manifest:
@@ -135,8 +136,8 @@ and all eight of TASK-072 run-1's reproduction checks were true in D, M-a, M-b a
 
 **The caps.** The 7 200 s invocation cap is checked only between arms (S/U GO, note a), so the
 results check it here: every stage's `total_seconds` is far below it (largest: S/U, 421.76 s).
-The largest single attempt was 6.24 s (an H-twin attempt on S), against the 300 s per-attempt
-cap.
+The largest single attempt over all closed-loop stages (K0, D, M-a, M-b, S/U) was 6.31 s (an H-twin
+attempt in D, seed 56122; the largest in S/U was 6.24 s), against the 300 s per-attempt cap.
 
 ### 1.1 K0 (K0-PASS; recorded in protocol §5.1)
 
@@ -221,8 +222,9 @@ pooled latent, with the TASK-074 lesson attached: c_plate ≤ B ≤ τ_re.
 The Stage O GO's note b found that §6.1's O2 paragraph quoted TASK-075's
 τ curve ("22/32 at 1.5 cm, 23/32 at 2 cm") instead of K0's (23/32 at 1.5 cm, 17/32 at 2 cm,
 non-monotone from 2 to 2.5 cm, 17 → 18). The paragraph is reported-only text; the frozen block
-and every bar are unaffected. This PR corrects the sentence in the protocol and re-records the
-document's sha256 in the manifest (ruling R10.2; §6).
+and every bar are unaffected. This PR corrects the sentence in the protocol, labelled "Erratum
+2026-10-04" with the original wording kept (the TASK-058 convention), and re-records the document's
+sha256 in the manifest: `737280a1…7570` before, `c56292b8…41e5` after (ruling R13.2; §6).
 
 ## 3. Stage D and Stage S/U (closed loop)
 
@@ -266,12 +268,13 @@ reset plate (U), over six decisions per attempt:
 
 | arm | readings | median error (cm) | 87.5th percentile (cm) | largest (cm) |
 |---|---|---|---|---|
-| H-twin, S | 384 | 0.273 | 0.625 | 1.149 |
-| H-floor, S | 384 | 0.180 | 0.381 | 0.852 |
+| H-twin, S | 384 | 0.273 | 0.622 | 1.149 |
+| H-floor, S | 384 | 0.180 | 0.379 | 0.852 |
 | H-twin, U | 186 | 0.282 | 0.558 | 1.500 |
 
 These are not report fields and gate nothing; they are recomputed from the report for this
-document. The closed-loop error is below Stage O's cross-fitted offline error (0.403 cm), and the
+document. Every computed percentile in this document uses numpy's default (linear) method, the
+repository's convention and the one behind Stage O's 87.5th percentile. The closed-loop error is below Stage O's cross-fitted offline error (0.403 cm), and the
 random-init floor is again more precise than the pretrained readout.
 
 ## 4. Stage K-pred (reported only; its row is PRED-INFEASIBLE)
@@ -307,11 +310,11 @@ reverse): H-now b = 25, c = 0 (M-a) and 31, 0 (M-b); H-twin 21, 0 and 28, 0; H-c
 - **No move was refused** and no apple–plate contact happened before s1 in any arm of either cell
   (earliest contact at step 608). The executed 2-step palm term was at most 0.0104 cm.
 - **H-twin's reading error per cell** (GO note c; computed from the logged readings against the
-  scheduled plate position at each decision step): median 0.354 cm, 87.5th percentile 0.697 cm
-  in M-a; 0.326 and 0.587 cm in M-b, over 192 readings each. That is slightly above the
+  scheduled plate position at each decision step): median 0.354 cm, 87.5th percentile 0.688 cm
+  in M-a; 0.326 and 0.583 cm in M-b, over 192 readings each. That is slightly above the
   static-plate error of §3.3 (0.273 cm), so R-plate kept reading a moving plate.
 - **Where H-cv loses its 8/32.** H-cv's last aim (at 485) missed the plate's position at s1 by a
-  median of 1.280 cm (87.5th percentile 1.779 cm) in M-a and 0.817 cm (1.481 cm) in M-b, against
+  median of 1.280 cm (87.5th percentile 1.763 cm) in M-a and 0.817 cm (1.469 cm) in M-b, against
   τ_re = 1.0 cm (computed from the logged extrapolations). H-twin's and H-now's last aims missed
   by about the distance still to go (4.1 and 4.0 cm in M-a; 3.2 and 3.0 cm in M-b). So H-cv's
   shortfall comes from extrapolating noisy single-frame readings 40 steps ahead, not from
@@ -333,13 +336,13 @@ filter could do too. That does not satisfy §9's requirement that the LeWM arm b
 action-blind predictor. So M-a and M-b do not admit a LeWM task, as the protocol says, and they
 do not change the row.
 
-They suggest two things for the Branch B design (PR #135), both descriptive:
+They suggest two things for the Branch B design note (#135), both descriptive:
 - **Not predicting costs a lot when the plate is still moving** (H-now 7/32 and 1/32; H-twin
   11/32 and 4/32), and a hand-written constant-velocity extrapolator recovers most of it but not
   all (24/32). In a moving-plate condition, a predictor's job is bounded by perception noise
   amplified over the look-ahead, not only by the motion model.
 - **The admitting cell must make the target depend on the robot's own action**, which neither M
-  cell does. Cell A tried and could not (R8.16). PR #135's candidate C1 is the next attempt at
+  cell does. Cell A tried and could not (R8.16). The design note's candidate C1 is the next attempt at
   such a condition.
 
 ## 5. The rows and what follows
@@ -356,11 +359,12 @@ They suggest two things for the Branch B design (PR #135), both descriptive:
 PRED-INFEASIBLE, so PLAN.md's Branch B applies: no TASK-077 under cell A, and Option 1 has not
 advanced the LeWM goal beyond calibration (§9). Branch B's entry for PRED-INFEASIBLE (recommended
 under R8) is a design note for a different action-dependent target, with its own K0-style
-headroom check and no world model. That note is **PR #135**
-(`docs/experiments/apple_lewm_next_v2_design.md`, a DRAFT design note, not a protocol), revised
-under ruling R9.8, which splits a later claim into a gated "LeWM-driven closed-loop success" and a
-reported-only "LeWM needed". It is not merged; it needs its own review, and any task from it
-needs its own preregistration.
+headroom check and no world model. That note is
+[apple_lewm_next_v2_design.md](apple_lewm_next_v2_design.md) (#135, merged as `ff37d96`; a DRAFT
+design note, not a protocol), under R9.8 of DECISIONS 2026-10-04, which splits a later claim into a
+gated "LeWM-driven closed-loop success" and a reported-only "LeWM needed". Its next step is a
+CPU-only feasibility record for its candidate C1, and any task from it needs its own
+preregistration.
 
 **Neither clause fires.** The twin clause fires only on TWIN-OFF-FAIL, TWIN-FAIL or TWIN-HARM;
 K-pred's only on PRED-NONE. Nothing is closed by this task. Never closed by it (§7): the LeWM
@@ -373,9 +377,13 @@ backend, DINOv2 as an encoder, the v2 task, Arena and the product goal.
 - The perception baseline: H-twin 64/64 on S under TASK-074's condition. Any later LeWM place
   planner under that condition would be reported beside it, and could at best tie it.
 
-## 6. Rulings (DECISIONS 2026-10-04, R10; each decided by Claude under owner delegation)
+## 6. Rulings (DECISIONS 2026-10-04, R13.1–R13.3; each decided by Claude under owner delegation)
 
-- **R10.1 — R7's canonical sentence is unchanged.** Every clause in it is still true after
+The prefix R13 is new and unused elsewhere: R10 is taken by TASK-067's owner ruling and by
+TASK-075's protocol, R11 by TASK-068's owner ruling, and R12 by the owner ruling that defines
+`apple-to-plate-v2`.
+
+- **R13.1 — R7's canonical sentence is unchanged.** Every clause in it is still true after
   TASK-076: v1 is 0/150 per backend; P-3's M2 result is as stated; no LeWM-driven controller has
   run in closed loop on v2; and privileged-ceiling successes are not project-learned results.
   TWIN-PASS is a hybrid (a learned pick, a scripted place and a learned perception readout), with
@@ -383,20 +391,22 @@ backend, DINOv2 as an encoder, the v2 task, Arena and the product goal.
   invite reading it as learned or LeWM progress. Documents that cite it use this wording:
   "TASK-076 TWIN-PASS: P-3's learned pick plus e9's scripted place aimed at a frozen-DINOv2 ridge
   readout of the plate scored 64/64 on gated resets under TASK-074's 9 cm condition (random-init
-  floor also 64/64); no world model; not a learned end-to-end policy."
-- **R10.2 — the O2 sentence in the protocol is corrected after the freeze.** It quoted TASK-075's
+  floor also 64/64; one run, simulation only); no world model; not a learned end-to-end policy."
+- **R13.2 — the O2 sentence in the protocol is corrected after the freeze.** It quoted TASK-075's
   τ curve, not K0's (Stage O GO, note b). It is reported-only text, the frozen block and every
-  bar are unchanged, and the correction is marked in place. The manifest's
+  bar are unchanged, and the correction is labelled "Erratum 2026-10-04" in place, keeping the
+  original wording (the TASK-058 errata convention). The manifest's
   `protocol_document_sha256` is re-recorded (previously `737280a1…7570`).
-- **R10.3 — next: Branch B, through PR #135.** K-pred's PRED-INFEASIBLE row decides the next
-  LeWM task (§13.3). No TASK-077 is opened under cell A. PR #135's design note is the follow-up;
-  it stays a DRAFT until its own review, and any candidate it recommends needs its own feasibility
-  record and preregistration. No H-twin variant (a hand crop, more seeds, another encoder) follows
+- **R13.3 — next: Branch B, through the design note of #135.** K-pred's PRED-INFEASIBLE row
+  decides the next LeWM task (§13.3). No TASK-077 is opened under cell A. The follow-up is
+  [apple_lewm_next_v2_design.md](apple_lewm_next_v2_design.md) (#135, merged as `ff37d96`), a DRAFT
+  design note, not a protocol; any candidate it recommends needs its own feasibility record and
+  preregistration. No H-twin variant (a hand crop, more seeds, another encoder) follows
   in TASK-076 (R8.13).
 
 ## 7. Process notes from the GO reviews
 
-- **The O2 sentence** (Stage O GO, note b): corrected in this PR (§2.3, R10.2).
+- **The O2 sentence** (Stage O GO, note b): corrected in this PR (§2.3, R13.2).
 - **G2's redundant condition** (S/U GO, note b): `decide_gated`'s G2 also requires
   n_twin > n_clock. Under the one-sided exact test p < 0.01 already implies it, so it is
   harmless. Here 64 > 51 and p = 1.22 × 10⁻⁴.
@@ -426,7 +436,7 @@ backend, DINOv2 as an encoder, the v2 task, Arena and the product goal.
   reported GOs, in the order O, D, M-a, M-b, S/U. No stage voided, and none was repeated.
 - Nothing was re-thresholded, refitted or re-selected after numbers were seen. The frozen block,
   its sha256 and the 84 pins are unchanged. The only protocol text change is the O2 correction
-  (R10.2).
+  (R13.2).
 - No experiment was run for this document. Every count, gate value and row is read from the six
   reports above. The exact count intervals, the paired discordant counts of the M cells and the
   closed-loop reading errors are computed here from those reports, and are labelled as such.

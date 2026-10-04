@@ -68,7 +68,8 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
       `702a7d9`).
 - [x] Each gated stage on its own reported GO, from a clean checkout of the merged revision
       (O, D, K-pred M-a/M-b and S/U at `702a7d9`, each once).
-- [ ] Results PR, reviewed with every restated number checked (branch `results/task076`).
+- [x] Results PR, reviewed with every restated number checked (#138, branch `results/task076`;
+      merge sha: TBD).
 
 ## Notes
 - 2026-10-02: card opened under ruling R1. Not started; the preregistration is pending.
@@ -117,6 +118,10 @@ The plan of the next tasks is [`docs/PLAN.md`](../../../docs/PLAN.md).
   H-handover 64, H-clock 51, H-stale 0, H-floor 64, P-stale 0; on U H-twin 31, P-stale 30,
   H-handover 31; G2 b = 13, c = 0, p = 1.22e-4. K-pred's row is **PRED-INFEASIBLE** (cell A
   removed at Stage 0): escalate, no clause, Branch B. No world model ran. Results PR on branch
-  `results/task076` with rulings R10.1–R10.3 (decided by Claude under owner delegation): R7 is
-  unchanged; the protocol's O2 sentence is corrected; the next step is Branch B through PR #135.
+  `results/task076` with rulings R13.1–R13.3 (decided by Claude under owner delegation): R7 is
+  unchanged; the protocol's O2 sentence is corrected; the next step is Branch B through #135's design note (merged as `ff37d96`).
+  Review of #138 (REQUEST CHANGES at `bf99ad8`) addressed after the rebase onto `ff37d96`: the
+  rulings are renumbered R13.1–R13.3 (R10–R12 were taken), the protocol erratum is labelled
+  "Erratum 2026-10-04", computed percentiles use numpy's linear method, and the largest attempt is
+  6.31 s (D).
   Card moved to done.

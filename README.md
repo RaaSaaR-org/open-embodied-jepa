@@ -112,7 +112,7 @@ loop.
   for the true plate. The random-init floor also scored 64/64, so pretraining is not shown to
   matter. Its prediction-headroom check is **PRED-INFEASIBLE** (its only action-dependent cell was
   removed at Stage 0), so no LeWM planner is admitted and the next LeWM task comes from PLAN.md's
-  Branch B ([decision 2026-10-04](docs/DECISIONS.md), R10).
+  Branch B ([decision 2026-10-04](docs/DECISIONS.md), R13).
 - **Development only, not gated:** an opt-in white plate leaves TASK-075 at OBS-NONE (any colour
   effect on the offset's median error is bounded to about 0.90–1.11; 1 of 12 intervals excludes 1.0)
   ([white plate](docs/experiments/apple_white_plate_dev.md)). In Isaac Lab-Arena (TASK-025,

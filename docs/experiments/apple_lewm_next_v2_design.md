@@ -41,12 +41,13 @@ smokes exist to check them.
 - **The protocol is frozen.** #137 merged as `702a7d9`, and R8.19 is in effect.
 - **K0 ran and ended K0-PASS** (R8.19), with τ_re = 1.0 cm. The τ curve is 32, 31, 28, 23, 17, 18,
   16, 8 and 5 of 32 at 0, 0.5, 1, 1.5, 2, 2.5, 3, 4 and 5 cm.
-- **K-pred** is PRED-INFEASIBLE if Stage O records O-PASS, and PRED-NOT-RUN otherwise. Both rows
-  escalate without a clause and lead to PLAN.md's Branch B, which this note answers.
+- **K-pred is PRED-INFEASIBLE**: cell A was removed at Stage 0 and Stage O recorded O-PASS. The
+  row escalates without a clause and leads to PLAN.md's Branch B, which this note answers. The
+  gated Stage S/U ended TWIN-PASS (no world model in the loop).
 - **Reported-only data since the freeze** (run at `702a7d9`; no row is read from them here).
-  - **Provenance.** These counts are not yet in a reviewed TASK-076 results record. That record is
-    being written on branch `results/task076`, and TASK-076's results PR is their authoritative
-    source. They are quoted here from the run reports, with full paths and sha256.
+  - **Provenance.** These counts are recorded in TASK-076's results document,
+    [apple_plate_twin_v2_results.md](apple_plate_twin_v2_results.md), which is their
+    authoritative source. They are quoted here from the run reports, with full paths and sha256.
   - **Stage D** ended D-PASS: H-twin 15/16 and H-handover 16/16.
     - Report: `/home/huhn/develop/emai/worktrees/task076-run/outputs/task076-D-1/report.json`.
     - sha256 `a84c00e2e487134973a775bb553640e5ec512de45e6e8de2cdf18886d178e93f`.
@@ -224,7 +225,7 @@ All candidates keep the following:
   - **W:** TASK-066's predictor family on the pooled 4 × 4 latent. It is rolled out once per
     candidate, and the plate is read from the predicted latent with R-plate-pool.
   - **N:** the action-blind twin, an equally trained predictor that gets no actions.
-  - **L-shuf:** the scene-blind twin, W rolled out from another reset's encoded frame (TASK-074's
+  - **L-shuf:** a scene-blind twin, W rolled out from another reset's encoded frame (TASK-074's
     `shuf`).
   - **L-mean:** the second scene-blind twin, W rolled out from the training corpus's mean
     encoded latent at the decision step, with this reset's commands (R9.10).
@@ -507,8 +508,8 @@ If a check fails:
 
 That totals about 6.5 h of GPU at TASK-074's measured times (2 664 s of calibration for 60 000
 updates; 3 431–3 582 s per model at 80 000), and 10–11 h worst case at a `check_budget`-passing cap
-of 120 000. It runs in per-job slots under the shared lock. L-shuf needs no extra model, and the
-smokes need no GPU.
+of 120 000. It runs in per-job slots under the shared lock. L-shuf and L-mean need no extra model, and
+the smokes need no GPU.
 
 **Risks.**
 - **The horizon.** About 80 steps (*estimate*), five recursive chunks beyond TASK-066's gate. This

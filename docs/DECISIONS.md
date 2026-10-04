@@ -159,7 +159,7 @@ CHANGES). This entry is a stub: each ruling is provisional until the note's re-r
     larger gated cohort; or a different commit step or rule under its own feasibility record.
   - **The reset jitter is not widened inside C1 as designed.**
 
-## Decision 2026-10-04 — TASK-076 ends TWIN-PASS; K-pred is PRED-INFEASIBLE, so Branch B applies; R7 is unchanged (R10.1–R10.3)
+## Decision 2026-10-04 — TASK-076 ends TWIN-PASS; K-pred is PRED-INFEASIBLE, so Branch B applies; R7 is unchanged (R13.1–R13.3)
 
 **Outcome: TWIN-PASS** (`apple_plate_twin_v2`, the claim row), and **K-pred's row is
 PRED-INFEASIBLE** (escalate, no clause). Neither clause fires. Every stage ran once at `702a7d9`
@@ -185,27 +185,30 @@ on its own reported GO (K0 at `2d0bdb7`, before the freeze).
   simulation only.
 
 Three rulings, each **decided by Claude under owner delegation (2026-09-30)**. No run was made for
-them. (The numbering continues after PR #135's R9; it is unrelated to TASK-067's owner ruling R10
-below.)
+them. They are numbered R13 because R10 is taken by TASK-067's owner ruling (below) and by
+TASK-075's protocol (`apple_obs_ceiling_v2.md`, the view order), R11 by TASK-068's owner ruling and
+R12 by the owner ruling that defines `apple-to-plate-v2`; R9 above is #135's.
 
-- **R10.1 — R7's canonical sentence is unchanged.** Every clause of it is still true: v1 is 0/150
+- **R13.1 — R7's canonical sentence is unchanged.** Every clause of it is still true: v1 is 0/150
   per backend, P-3's M2 result stands as stated, no LeWM-driven controller has run in closed loop
   on v2, and privileged-ceiling successes are not project-learned results. TWIN-PASS is a hybrid
   (a learned pick, a scripted place, a learned perception readout) with no world model, and its
   random-init floor scored the same; putting it into the canonical sentence would invite reading
   it as learned or LeWM progress. Documents that cite it use: "TASK-076 TWIN-PASS: P-3's learned
   pick plus e9's scripted place aimed at a frozen-DINOv2 ridge readout of the plate scored 64/64
-  on gated resets under TASK-074's 9 cm condition (random-init floor also 64/64); no world model;
-  not a learned end-to-end policy."
-- **R10.2 — the protocol's O2 sentence is corrected after the freeze.** §6.1 quoted TASK-075's
+  on gated resets under TASK-074's 9 cm condition (random-init floor also 64/64; one run, simulation
+  only); no world model; not a learned end-to-end policy."
+- **R13.2 — the protocol's O2 sentence is corrected after the freeze.** §6.1 quoted TASK-075's
   τ curve (22/32 at 1.5 cm, 23/32 at 2 cm) instead of K0's (23/32 and 17/32; Stage O GO, note
   b). It is reported-only text; the frozen block, its sha256 and every bar are unchanged. The
-  correction is marked in place, and the manifest's `protocol_document_sha256` is re-recorded
+  correction is labelled "Erratum 2026-10-04" in place, keeping the original wording (the TASK-058
+  errata convention), and the manifest's `protocol_document_sha256` is re-recorded
   (previously `737280a1…7570`).
-- **R10.3 — next: Branch B, through PR #135.** K-pred's row decides the next LeWM task (protocol
-  §13.3), and PRED-INFEASIBLE means PLAN.md's Branch B: no TASK-077 under cell A. The follow-up is
-  PR #135's design note (a DRAFT under R9.8, not a protocol). It needs its own review, and any
-  candidate in it needs its own feasibility record and preregistration. No H-twin variant follows
+- **R13.3 — next: Branch B, through #135's design note.** K-pred's row decides the next LeWM task
+  (protocol §13.3), and PRED-INFEASIBLE means PLAN.md's Branch B: no TASK-077 under cell A. The
+  follow-up is [apple_lewm_next_v2_design.md](experiments/apple_lewm_next_v2_design.md) (#135,
+  merged as `ff37d96`; a DRAFT design note under R9.8 above, not a protocol). Any candidate in it
+  needs its own feasibility record and preregistration. No H-twin variant follows
   inside TASK-076 (R8.13).
 
 **Evidence.** [apple_plate_twin_v2_results.md](experiments/apple_plate_twin_v2_results.md);

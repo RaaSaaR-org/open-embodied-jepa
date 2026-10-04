@@ -925,7 +925,7 @@
  "outcome": "TWIN-PASS (claim row); K-pred PRED-INFEASIBLE (escalate, no clause; PLAN.md's Branch B); no clause fires",
  "pins_note": "every file TASK-075 pinned (TASK-074's included) is carried with its sha256 unchanged; TASK-076's own modules, runner and test are pinned beside them. The protocol document and this manifest are not pinned (the Stage-0 record is added after the smokes)",
  "protocol": "apple_plate_twin_v2",
- "protocol_document_sha256": "d9047b8311928f1f9bc62bba8f928a597f4faca7dac0be88fc46889c89e40bf4",
+ "protocol_document_sha256": "c56292b87a2119b47df263eb65f1be93d40c46446437bc78e4517ceda5e541e5",
  "results": {
   "abandonment_clause_fires": false,
   "claim": true,
@@ -934,11 +934,11 @@
   "kpred_consequence": "escalate, no clause; PLAN.md's Branch B",
   "kpred_reason": "cell A removed at Stage 0",
   "kpred_row": "PRED-INFEASIBLE",
-  "next_step": "the next LeWM task is chosen by K-pred's row: PRED-INFEASIBLE, so PLAN.md's Branch B (design note PR #135); no TASK-077 under cell A",
+  "next_step": "the next LeWM task is chosen by K-pred's row: PRED-INFEASIBLE, so PLAN.md's Branch B (design note docs/experiments/apple_lewm_next_v2_design.md, #135, merged as ff37d96); no TASK-077 under cell A",
   "no_world_model": true,
   "outcome": "TWIN-PASS",
-  "protocol_document_sha256_before_r10_2": "737280a1ad5ddd1d95a4078d42a2f3ef672094a6fe99d7d8783685817a067570",
-  "protocol_text_change": "R10.2: section 6.1's O2 sentence quoted TASK-075's tau curve; corrected to K0's (reported-only text; frozen block unchanged)",
+  "protocol_document_sha256_before_erratum_2026_10_04": "737280a1ad5ddd1d95a4078d42a2f3ef672094a6fe99d7d8783685817a067570",
+  "protocol_text_change": "Erratum 2026-10-04 (R13.2, DECISIONS 2026-10-04; results PR #138): section 6.1's O2 sentence quoted TASK-075's tau curve; corrected to K0's, original wording kept in place (reported-only text; frozen block unchanged)",
   "stages": [
    {
     "go_comment": "https://github.com/RaaSaaR-org/open-embodied-jepa/pull/134#issuecomment-5982693642",
