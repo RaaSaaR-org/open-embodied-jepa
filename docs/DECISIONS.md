@@ -736,7 +736,7 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       sent SIGTERM to the driver and `gpu_run.sh` at 22:20:41Z (00:20 CEST on 2026-10-06), and
       the runner wrote **V** (`StageInterrupted: received SIGTERM`; report `bb2c442a…3355`; no
       checkpoint).
-    - **By §10.1 the V voids N-66800 only.** The four completed jobs and the plan are kept. No
+    - **By §10.1 the V voids N-66800 only.** The three completed jobs (cal-W, cal-N, W-66800) and the plan are kept. No
       Stage T process has run since, and the GPU is free.
   - **R17.47 — the cause and its prevention: the record that §10.1 requires for a non-code
     cause.**
@@ -744,12 +744,13 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       chains every job, so a pause asked for after one job fell inside the next one, and a stop
       signal is a V.
     - **The prevention** changes `scripts/run_task077_staget.sh` (not hash-pinned). With no
-      option and no earlier attempt, it behaves as under R17.45.
+      option, an empty `KEPT` and no earlier attempt, it behaves as under R17.45. With the default
+      pins, a pinned step must be found and kept, so Stage T cannot restart from scratch.
       - **A pause file** (`outputs/task077-staget.pause`) is checked before every step, and
         `--stop-after STEP` stops after a named step. A pause therefore lands between jobs and
         never interrupts one.
       - **`--resume` / `--resume-from DIR` keeps completed steps.** It checks that each kept
-        job's checkpoint matches its report, and that the four reports above match their
+        job's checkpoint matches its report, and that the reports of cal-W, cal-N, plan and W-66800 match their
         sha256s, which are pinned in the driver. A kept plan must come from the kept
         calibrations. The G-tests record is kept only at HEAD.
       - **A job with one V stops the driver unless `--repeat JOB` names it.** The repeat writes a
@@ -764,7 +765,11 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       W-66800's pace that is about 25.6 h of GPU in five slots.
     - **N-66800's repeat is its last allowed attempt: a second V of N-66800, from any cause, a
       pause included, ends TASK-077 as INCONCLUSIVE.**
-    - **Pauses use the pause file or `--stop-after`**, never a signal to a running job.
+    - **Pauses use the pause file or `--stop-after`**, never a signal to a running job (nor to
+      a `gpu_run.sh` waiting for the lock); the operator removes the file before resuming.
+    - **A preflight guard failure is a V too**, so before the repeat's GO the operator confirms
+      the preconditions: a TESTS-PASS record at the new revision, a clean tree, at least 8 GiB of
+      GPU memory free, and room for the 18 GiB PSS ceiling (§7.7).
     - **The repeat runs from a fresh worktree of this PR's merge commit**, with its own G-tests
       record, `--resume-from` the old worktree's `outputs/` and `--repeat N-66800` (the full
       command is in §7.7). The training code is byte-identical to the kept jobs'.

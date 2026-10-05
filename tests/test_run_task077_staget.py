@@ -310,3 +310,21 @@ def test_dry_run_starts_nothing(tmp_path):
 def test_bad_arguments_are_refused_before_anything_runs(tmp_path, args):
     proc, calls, gpu = _run(tmp_path, GOOD, *args)
     assert proc.returncode != 0 and calls == [] and gpu == []
+
+
+def test_a_pinned_step_that_is_not_found_stops_instead_of_running_afresh(tmp_path):
+    """With the first run's pins, neither a plain run nor --resume without --resume-from may
+    start Stage T again from scratch (the #148 review)."""
+    pins = {"KEPT": f"cal-W={'0' * 64}"}
+    for args in ((), ("--resume",)):
+        proc, calls, gpu = _run(tmp_path, GOOD, *args, env_extra=pins)
+        assert proc.returncode != 0 and calls == [] and gpu == []
+        assert "cal-W is complete (pinned in KEPT) but was not found" in proc.stderr
+
+
+def test_a_folder_named_twice_is_searched_once(tmp_path):
+    first = _first_run_paused_by_a_v(tmp_path)
+    args = ("--resume-from", str(first), "--resume-from", f"{first}/.", "--repeat", "N-66800")
+    proc, calls, _gpu = _run(tmp_path, GOOD, *args, "--dry-run")
+    assert proc.returncode == 0, proc.stderr
+    assert calls == [] and "N-66800: would run -> outputs/task077-t-N-66800-2" in proc.stdout

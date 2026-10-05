@@ -39,9 +39,13 @@
 #   - one V and --repeat: the one repeat, in a new folder. A V's folder is never reused.
 #   - any other earlier outcome, or a folder without a report: stop; the operator decides.
 #   - CAL-T-ESCALATE at plan: stop (escalate).
+#   - a step pinned in KEPT that is not found: stop (Stage T is never restarted from scratch).
 # Pause: if the pause file (outputs/task077-staget.pause) exists when a step is about to start,
 # the script exits 0 before that step, with nothing started. A job that has started runs to its
-# end, so `touch outputs/task077-staget.pause` pauses between jobs, never inside one.
+# end, so `touch outputs/task077-staget.pause` pauses between jobs, never inside one. The script
+# never removes the file: `rm outputs/task077-staget.pause` before resuming. Do not stop a waiting
+# gpu_run.sh instead (it can win the lock as it is stopped); and note that a runner's preflight
+# failure is also a V of its job.
 #
 # Inputs (fixed; overridable only for tests): C, CS (the sealed corpus and its manifest sha256),
 # F (Stage O's features), R (Stage O's fits), SUFFIX (the first run number), KEPT (step=sha256
@@ -147,6 +151,16 @@ elif cmd == "input":  # input <report> <flag>: that argument, resolved against t
 PYEOF
 pyq() { python3 -c "$PYQ" "$@"; }
 outcome() { pyq outcome "$1"; }
+
+# The search folders, each once (a folder named twice would count its attempts twice).
+UNIQUE=() SEEN_DIRS=" "
+for d in "${SEARCH[@]}"; do
+  rp=$(pyq realpath "$d")
+  is_word "$rp" "$SEEN_DIRS" && continue
+  SEEN_DIRS="$SEEN_DIRS$rp "
+  UNIQUE+=("$d")
+done
+SEARCH=("${UNIQUE[@]}")
 
 require() {  # require <report.json> <expected outcome> <what>
   local got
@@ -272,9 +286,15 @@ for d in "${SEARCH[@]}"; do
     fi
   done
 done
+# A step pinned in KEPT is complete, so it must be found and kept, never run afresh (R17.47,
+# the #148 review): Stage T is not restarted from scratch by mistake.
 for step in $JOBS plan; do
   if [ "$step" = plan ]; then resolve plan T-PLANNED; else resolve "$step" T-JOB-DONE; fi
-  if [ -n "$KEEP" ]; then keep "$step" "$KEEP" > /dev/null; fi
+  if [ -n "$KEEP" ]; then
+    keep "$step" "$KEEP" > /dev/null
+  elif [ -n "$(pinned_sha "$step")" ]; then
+    die "$step is complete (pinned in KEPT) but was not found; pass --resume-from the first run's outputs"
+  fi
 done
 
 # 0. the G-tests record at HEAD (kept only from this worktree's outputs/, and only at HEAD)

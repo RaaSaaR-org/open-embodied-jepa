@@ -1087,25 +1087,29 @@ asked for a pause after the first model job. The R17.45 driver chains every job 
 which it can stop between jobs, so it had already started the next one, N-66800, by the time the
 pause was carried out. A stop signal is a V by §10.1, so the pause voided a job that had barely
 begun. The prevention changes the driver
-`scripts/run_task077_staget.sh` (a development helper, not hash-pinned). R17.45's behaviour is
-unchanged when no option is given and no earlier attempt exists.
+`scripts/run_task077_staget.sh` (a development helper, not hash-pinned). With no option, an
+empty `KEPT` and no earlier attempt, it behaves as under R17.45. With its default `KEPT` (the four
+pins below), a step pinned there must be found and kept, so neither a plain run nor `--resume`
+without `--resume-from` can start Stage T again from scratch (the #148 review).
 - **A pause file.** If `outputs/task077-staget.pause` exists when a step is about to start, the
   driver exits 0 before that step and starts nothing. `touch outputs/task077-staget.pause`
   therefore pauses between jobs, never inside one; a job that has started runs to its end.
-  `--stop-after STEP` stops cleanly after a named step. To stop sooner, the operator stops
-  `gpu_run.sh` while it is still waiting for the lock (no runner has started, so there is no
-  report and no V). **Killing a job that holds the lock is a V of that job.**
+  `--stop-after STEP` stops cleanly after a named step. The driver never removes the file: the
+  operator runs `rm outputs/task077-staget.pause` before resuming. **Killing a job that holds the
+  lock is a V of that job.** Stopping `gpu_run.sh` while it waits for the lock is not a safe
+  pause either, because it can take the lock as it is being stopped; the pause file is the way to
+  pause.
 - **Resume mode** (`--resume`, `--resume-from DIR`). A step whose earlier attempt ended as
   required is kept, not re-run. A kept job's checkpoint must exist beside its report with the
-  recorded sha256. The four reports above are pinned by their sha256 in the driver. A kept plan
+  recorded sha256. The reports of cal-W, cal-N, plan and W-66800 are pinned by their sha256 in the driver. A kept plan
   must have been made from the kept calibration reports. The G-tests record is kept only from
   the worktree's own `outputs/` and only at HEAD.
 - **The repeat.** A job with one V stops the driver unless `--repeat JOB` names it. The repeat
   then writes a **new folder with the next run number** (`task077-t-N-66800-2`); a V's folder is
   never reused. A second V of the same job stops the driver with "TASK-077 ends INCONCLUSIVE",
   and nothing more runs. Any other earlier outcome, a folder without a report, or an earlier
-  CAL-T-ESCALATE also stops it. All of this is checked before the G-tests record or any job
-  starts.
+  CAL-T-ESCALATE also stops it. A search folder named twice is searched once. All of this is
+  checked before the G-tests record or any job starts.
 - **`--dry-run`** resolves every step and prints keep, run or stop; it starts nothing.
 - **Tested.** `tests/test_run_task077_staget.py` runs the driver with a fake runner and a fake
   `gpu_run.sh`. It covers the R17.45 cases unchanged and adds these: a resume keeps the completed
@@ -1128,6 +1132,12 @@ the 46 800 s cap per job is unchanged).
   included. A first V of any other job voids only that job and leaves it one repeat, after its own
   record.
 - **Pauses from now on** use the pause file or `--stop-after`, never a signal to a running job.
+- **A preflight failure is a V too.** The runner turns every guard failure into V, including
+  G-tests, G-memory and the GPU guard at a job's start. A guard failure at the start of
+  N-66800's repeat would therefore be its second V. Before that GO, the operator confirms the
+  following: the new worktree's G-tests record is TESTS-PASS at `M`, the tree is clean, nothing
+  else holds GPU memory (at least 8 GiB free), the machine's other jobs leave room for the
+  18 GiB PSS ceiling, and no pause file is left in the new worktree.
 - **The command a GO would name.** `M` is this PR's merge commit. First make a fresh worktree:
   `scripts/new_worktree.sh /home/huhn/develop/emai/worktrees/task077-staget2 --run --from M`.
   Then run, from its root:
