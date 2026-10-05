@@ -302,11 +302,19 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       stages. R17.38's 0.6 cm gate is an amendment, and W's CPU roll-out measured bit-identical
       across processes (R17.43; debug and random-init models, synthetic commands, 4 debug roots,
       no stand-in chunks; not the trained W).
-    - **Next:** this prep PR's independent review (R17.41–R17.45); then Stage T on its own
-      reported GO (`scripts/run_task077_staget.sh`: eight `gpu_run.sh --wait --min-free-gib 8
-      --board` jobs, each step's outcome checked, protocol §7.6; about
-      7.6–11.0 h of GPU at the minimum budget and 32.5–44.5 h at the cap), then G, D and S, each
-      on its own reported GO.
+    - **Stage T** started at `215fcce` on its GO (R17.46, protocol §7.7). cal-W and cal-N
+      completed, and `plan` ended **T-PLANNED** (U = 95 000 updates; G1's rank reference 0.254;
+      no escalation, no clause). W-66800 completed in about 5.1 h; its `last_two_triggered` flag
+      is set, which is reported only. **N-66800 ended V**: the owner asked for a pause to free the
+      shared GPU, and the driver had already chained into N-66800. The V voids that job only.
+      R17.47 records the cause and its prevention: the driver gains a pause file, `--stop-after`,
+      a resume mode that keeps completed jobs and checks their sha256s, and `--repeat`, which
+      writes to a new folder. Validation losses are selection criteria, not results; no LeWM
+      controller has run in closed loop.
+    - **Next:** this record's independent review and merge. Then, only when the owner frees the
+      GPU and a reported GO names the command, the remaining five jobs (about 25.6 h): **N-66800's
+      repeat, its last allowed attempt, since a second V ends TASK-077 INCONCLUSIVE**, then W and
+      N of 66801 and 66802 (R17.48). Then G, D and S, each on its own reported GO.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
