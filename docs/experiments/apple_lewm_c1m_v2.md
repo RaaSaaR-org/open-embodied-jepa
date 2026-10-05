@@ -591,8 +591,9 @@ R17.30–R17.34). This erratum changes code and report fields only. The frozen b
   - Stage C's seed preparation at 2 000 seeds now peaks at **7.75 GiB**.
   - No pinned TASK-073–076, C1 or C1-M file changes.
 - **The same pattern in Stage O (R17.31).** `featurise_corpus`'s memory-mapped stores held the
-  written pages of the whole train split in PSS (about 9.4 GiB). They are now re-mapped every 32
-  roots. The written files are byte-identical.
+  written pages of the whole train split in PSS: 8.82 GiB, measured on a synthetic 2 000-root
+  corpus with a stand-in encoder, before the encoder's own memory. They are now re-mapped every 32
+  roots, which measured 0.99 GiB, and the written files are byte-identical.
 - **Preflight (R17.32).**
   - Once FROZEN, preflight checks this document's sha256 directly against the manifest.
   - Tests cover the FROZEN-only paths.

@@ -1226,6 +1226,7 @@ def _quiet_preflight(monkeypatch, run):
     monkeypatch.setattr(run.hz, "tracked_tree_dirty", lambda: False)
     monkeypatch.setattr(run.hz, "revision", lambda: "0" * 40)
     monkeypatch.setattr(run.rt, "assert_local_import", lambda root, report: None)
+    monkeypatch.setattr(run, "check_disk", lambda report, path, minimum_gib: None)
 
 
 def test_frozen_preflight_checks_pins_and_the_protocol_document_and_refuses_k0(

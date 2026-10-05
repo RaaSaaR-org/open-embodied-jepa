@@ -424,15 +424,19 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
     - **The pattern.** `featurise_corpus` wrote each split into one `open_memmap` mapping. A
       mapping's written pages count in the process's PSS until it is unmapped. For the train
       split, that grows to the whole 9.58 GB `features8_train.npy` (8.9 GiB) plus 0.55 GiB of
-      `full405`, on top of the encoder. This would have voided Stage O's featurisation on the
-      12 GiB ceiling.
+      `full405`. With the real encoder's torch and CUDA context in the same process, that
+      approaches or passes the 12 GiB ceiling, so it puts Stage O's featurisation at risk of a V.
+      (An earlier run of the same probe, `task077-memprobe-featurise-1`, ran on a tree with
+      uncommitted documentation edits. It gave 8.55 and 1.63 GiB, with identical files, and it
+      is not cited.)
     - **The fix.** Both stores are flushed, unmapped and mapped again every 32 roots
       (`FEATURE_REMAP_ROOTS`). The same bytes go to the same offsets, and the header is written
       once.
-    - **Measured** (`probe_task077_memory.py featurise`, at `2e6b071`; a synthetic 2 000-root
-      corpus; a stand-in encoder with no weights; CPU only; report sha256 `{FEAT_SHA}`):
-      - one mapping per split: peak PSS {FEAT_OLD} GiB;
-      - re-mapped: {FEAT_NEW} GiB;
+    - **Measured** (`probe_task077_memory.py featurise`, at `5d1a5f7`, clean tree; report
+      `outputs/task077-memprobe-featurise-2/report.json`; a synthetic 2 000-root corpus; a
+      stand-in encoder with no weights; CPU only; sha256 `04a34f14bcd711286a1aba928f973c3affee7d728a7a7d9d8f4c5850dfd5d870`):
+      - one mapping per split: peak PSS **8.82 GiB**;
+      - re-mapped: **0.99 GiB** (94 s against 102 s);
       - every written file has the same sha256 in both modes.
 
       A test checks the byte-identity on a small corpus.
