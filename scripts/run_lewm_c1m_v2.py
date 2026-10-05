@@ -1724,6 +1724,7 @@ def open_log(path: Path) -> None:
     sys.stderr.flush()
     os.dup2(handle.fileno(), 1)
     os.dup2(handle.fileno(), 2)
+    sys.stdout.reconfigure(line_buffering=True)
 
 
 if __name__ == "__main__":
