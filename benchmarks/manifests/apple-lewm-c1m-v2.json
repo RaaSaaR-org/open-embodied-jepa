@@ -1,0 +1,1282 @@
+{
+ "carried": {
+  "carried_code_files": [
+   "src/embodied_jepa/lewm_next_c1.py",
+   "src/embodied_jepa/lewm_next_c1_runtime.py",
+   "scripts/run_c1_feasibility.py",
+   "src/embodied_jepa/lewm_next_c1m.py",
+   "src/embodied_jepa/lewm_next_c1m_runtime.py",
+   "scripts/run_c1m_feasibility.py"
+  ],
+  "carried_code_reference": "c764ac9540033894c640e9ef5ca71ecba47339a0",
+  "task076_manifest": "benchmarks/manifests/apple-plate-twin-v2.json",
+  "task076_manifest_sha256": "bc9c0ffdec00089f76574498696addaffa2d8484d2eb394b00b23df8033375a0"
+ },
+ "document": "docs/experiments/apple_lewm_c1m_v2.md",
+ "frozen": {
+  "arms": {
+   "H-final": {
+    "privileged": true,
+    "what": "H-final(commit): LookaheadAim at 405 in cloned state, unclipped"
+   },
+   "H-now": {
+    "privileged": true,
+    "what": "the true plate at 405"
+   },
+   "H-read": {
+    "privileged": true,
+    "what": "H-final(commit)'s look-ahead, plate(r) read by R8 from the clone's frame at r"
+   },
+   "H-rule": {
+    "privileged": false,
+    "what": "RuleCommit on p-hat and h, clipped"
+   },
+   "H-sysid": {
+    "privileged": false,
+    "what": "SysidAim fitted on the train split, out-of-fold readings"
+   },
+   "L-mean": {
+    "privileged": false,
+    "what": "W from the train split's mean encoded 405 latent (raw feature space, Stage O)"
+   },
+   "L-rand": {
+    "privileged": false,
+    "what": "a uniform feasible grid candidate (salt 8111), no refinement"
+   },
+   "L-shuf": {
+    "privileged": false,
+    "what": "W from the logged 405 frame of W's attempt on reset (i + 1) mod n, this reset's candidate commands"
+   },
+   "N": {
+    "privileged": false,
+    "what": "the trained action-blind N of the primary seed, zero commands"
+   },
+   "W": {
+    "privileged": false,
+    "what": "the trained W of the primary seed, from the encoded 405 frame"
+   }
+  },
+  "budget": {
+   "calibration_runs": [
+    [
+     "W",
+     66810
+    ],
+    [
+     "N",
+     66810
+    ]
+   ],
+   "calibration_select_every": 1000,
+   "calibration_updates": 50000,
+   "cap": 100000,
+   "factor": 2.0,
+   "min": 10000,
+   "saturation_tolerance": 0.01,
+   "selection_points": 20,
+   "step": 5000
+  },
+  "calibration_seed": 66810,
+  "cap_factor_min": 1.5,
+  "caps_seconds": {
+   "C": 14400.0,
+   "D": 7200.0,
+   "G": 7200.0,
+   "K0": 7200.0,
+   "O_featurisation": 3600.0,
+   "O_readouts": 7200.0,
+   "S": 21600.0,
+   "T_job": 46800.0,
+   "per_attempt": 300.0
+  },
+  "carried_code_blobs": {
+   "scripts/run_c1_feasibility.py": "2084b13f8fc10552c5856b21c9d30931513e70f0",
+   "scripts/run_c1m_feasibility.py": "3d4d9f5ebfbd81c034191745fda11f00041c0335",
+   "src/embodied_jepa/lewm_next_c1.py": "ea988ad859184de021fd0841bb7333eebd1837e3",
+   "src/embodied_jepa/lewm_next_c1_runtime.py": "fb230410659391fe7ae1ee72054e42fc95df2eb6",
+   "src/embodied_jepa/lewm_next_c1m.py": "11efc4bc184078e8eb726d2186f6c57d889ccedb",
+   "src/embodied_jepa/lewm_next_c1m_runtime.py": "0adf72dacdb2696f8a1457d32ab12feb40e75904"
+  },
+  "carried_code_files": [
+   "src/embodied_jepa/lewm_next_c1.py",
+   "src/embodied_jepa/lewm_next_c1_runtime.py",
+   "scripts/run_c1_feasibility.py",
+   "src/embodied_jepa/lewm_next_c1m.py",
+   "src/embodied_jepa/lewm_next_c1m_runtime.py",
+   "scripts/run_c1m_feasibility.py"
+  ],
+  "carried_code_reference": "c764ac9540033894c640e9ef5ca71ecba47339a0",
+  "clause_narrowing": "a 4 x 4 pooled latent on a corpus larger than C1-M's 1 024 roots is not covered",
+  "clause_results_wording": "if the clause fires, the results document states plainly that, with the design note's scope restored (R15.8), one 8 x 8 dual-ridge run closes under this condition every other pooled grid (except 4 x 4 on a corpus larger than 1 024 roots) and every readout of the predicted latent, including trained readout heads (#142 approval, note 3)",
+  "clause_rows": [
+   "L-INFERIOR",
+   "L-NO-GAIN"
+  ],
+  "clause_scope": "LeWM aim selection with a single aim committed at 405 under the declared reactive-plate rule (kappa = -0.5, L = 2, s1 = 525) on v2, with the declared post-pick plate move of radius rho* = 4 cm (the disc, which also covers the -y half-disc, at radii <= 4 cm), from onboard 112 px frozen DINOv2 pooled tokens, with TASK-066-family predictors",
+  "comparative_resamples": 2000,
+  "condition": {
+   "a_hi": 0.5,
+   "a_lo": -0.5,
+   "b_half_m": 0.03,
+   "commit_step": 405,
+   "family": "disc",
+   "grid": [
+    [
+     -0.5,
+     -0.03
+    ],
+    [
+     -0.5,
+     -0.02
+    ],
+    [
+     -0.5,
+     -0.01
+    ],
+    [
+     -0.5,
+     0.0
+    ],
+    [
+     -0.5,
+     0.01
+    ],
+    [
+     -0.5,
+     0.02
+    ],
+    [
+     -0.5,
+     0.03
+    ],
+    [
+     -0.45,
+     -0.03
+    ],
+    [
+     -0.45,
+     -0.02
+    ],
+    [
+     -0.45,
+     -0.01
+    ],
+    [
+     -0.45,
+     0.0
+    ],
+    [
+     -0.45,
+     0.01
+    ],
+    [
+     -0.45,
+     0.02
+    ],
+    [
+     -0.45,
+     0.03
+    ],
+    [
+     -0.4,
+     -0.03
+    ],
+    [
+     -0.4,
+     -0.02
+    ],
+    [
+     -0.4,
+     -0.01
+    ],
+    [
+     -0.4,
+     0.0
+    ],
+    [
+     -0.4,
+     0.01
+    ],
+    [
+     -0.4,
+     0.02
+    ],
+    [
+     -0.4,
+     0.03
+    ],
+    [
+     -0.35,
+     -0.03
+    ],
+    [
+     -0.35,
+     -0.02
+    ],
+    [
+     -0.35,
+     -0.01
+    ],
+    [
+     -0.35,
+     0.0
+    ],
+    [
+     -0.35,
+     0.01
+    ],
+    [
+     -0.35,
+     0.02
+    ],
+    [
+     -0.35,
+     0.03
+    ],
+    [
+     -0.3,
+     -0.03
+    ],
+    [
+     -0.3,
+     -0.02
+    ],
+    [
+     -0.3,
+     -0.01
+    ],
+    [
+     -0.3,
+     0.0
+    ],
+    [
+     -0.3,
+     0.01
+    ],
+    [
+     -0.3,
+     0.02
+    ],
+    [
+     -0.3,
+     0.03
+    ],
+    [
+     -0.25,
+     -0.03
+    ],
+    [
+     -0.25,
+     -0.02
+    ],
+    [
+     -0.25,
+     -0.01
+    ],
+    [
+     -0.25,
+     0.0
+    ],
+    [
+     -0.25,
+     0.01
+    ],
+    [
+     -0.25,
+     0.02
+    ],
+    [
+     -0.25,
+     0.03
+    ],
+    [
+     -0.2,
+     -0.03
+    ],
+    [
+     -0.2,
+     -0.02
+    ],
+    [
+     -0.2,
+     -0.01
+    ],
+    [
+     -0.2,
+     0.0
+    ],
+    [
+     -0.2,
+     0.01
+    ],
+    [
+     -0.2,
+     0.02
+    ],
+    [
+     -0.2,
+     0.03
+    ],
+    [
+     -0.15,
+     -0.03
+    ],
+    [
+     -0.15,
+     -0.02
+    ],
+    [
+     -0.15,
+     -0.01
+    ],
+    [
+     -0.15,
+     0.0
+    ],
+    [
+     -0.15,
+     0.01
+    ],
+    [
+     -0.15,
+     0.02
+    ],
+    [
+     -0.15,
+     0.03
+    ],
+    [
+     -0.1,
+     -0.03
+    ],
+    [
+     -0.1,
+     -0.02
+    ],
+    [
+     -0.1,
+     -0.01
+    ],
+    [
+     -0.1,
+     0.0
+    ],
+    [
+     -0.1,
+     0.01
+    ],
+    [
+     -0.1,
+     0.02
+    ],
+    [
+     -0.1,
+     0.03
+    ],
+    [
+     -0.05,
+     -0.03
+    ],
+    [
+     -0.05,
+     -0.02
+    ],
+    [
+     -0.05,
+     -0.01
+    ],
+    [
+     -0.05,
+     0.0
+    ],
+    [
+     -0.05,
+     0.01
+    ],
+    [
+     -0.05,
+     0.02
+    ],
+    [
+     -0.05,
+     0.03
+    ],
+    [
+     0.0,
+     -0.03
+    ],
+    [
+     0.0,
+     -0.02
+    ],
+    [
+     0.0,
+     -0.01
+    ],
+    [
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.01
+    ],
+    [
+     0.0,
+     0.02
+    ],
+    [
+     0.0,
+     0.03
+    ],
+    [
+     0.05,
+     -0.03
+    ],
+    [
+     0.05,
+     -0.02
+    ],
+    [
+     0.05,
+     -0.01
+    ],
+    [
+     0.05,
+     0.0
+    ],
+    [
+     0.05,
+     0.01
+    ],
+    [
+     0.05,
+     0.02
+    ],
+    [
+     0.05,
+     0.03
+    ],
+    [
+     0.1,
+     -0.03
+    ],
+    [
+     0.1,
+     -0.02
+    ],
+    [
+     0.1,
+     -0.01
+    ],
+    [
+     0.1,
+     0.0
+    ],
+    [
+     0.1,
+     0.01
+    ],
+    [
+     0.1,
+     0.02
+    ],
+    [
+     0.1,
+     0.03
+    ],
+    [
+     0.15,
+     -0.03
+    ],
+    [
+     0.15,
+     -0.02
+    ],
+    [
+     0.15,
+     -0.01
+    ],
+    [
+     0.15,
+     0.0
+    ],
+    [
+     0.15,
+     0.01
+    ],
+    [
+     0.15,
+     0.02
+    ],
+    [
+     0.15,
+     0.03
+    ],
+    [
+     0.2,
+     -0.03
+    ],
+    [
+     0.2,
+     -0.02
+    ],
+    [
+     0.2,
+     -0.01
+    ],
+    [
+     0.2,
+     0.0
+    ],
+    [
+     0.2,
+     0.01
+    ],
+    [
+     0.2,
+     0.02
+    ],
+    [
+     0.2,
+     0.03
+    ],
+    [
+     0.25,
+     -0.03
+    ],
+    [
+     0.25,
+     -0.02
+    ],
+    [
+     0.25,
+     -0.01
+    ],
+    [
+     0.25,
+     0.0
+    ],
+    [
+     0.25,
+     0.01
+    ],
+    [
+     0.25,
+     0.02
+    ],
+    [
+     0.25,
+     0.03
+    ],
+    [
+     0.3,
+     -0.03
+    ],
+    [
+     0.3,
+     -0.02
+    ],
+    [
+     0.3,
+     -0.01
+    ],
+    [
+     0.3,
+     0.0
+    ],
+    [
+     0.3,
+     0.01
+    ],
+    [
+     0.3,
+     0.02
+    ],
+    [
+     0.3,
+     0.03
+    ],
+    [
+     0.35,
+     -0.03
+    ],
+    [
+     0.35,
+     -0.02
+    ],
+    [
+     0.35,
+     -0.01
+    ],
+    [
+     0.35,
+     0.0
+    ],
+    [
+     0.35,
+     0.01
+    ],
+    [
+     0.35,
+     0.02
+    ],
+    [
+     0.35,
+     0.03
+    ],
+    [
+     0.4,
+     -0.03
+    ],
+    [
+     0.4,
+     -0.02
+    ],
+    [
+     0.4,
+     -0.01
+    ],
+    [
+     0.4,
+     0.0
+    ],
+    [
+     0.4,
+     0.01
+    ],
+    [
+     0.4,
+     0.02
+    ],
+    [
+     0.4,
+     0.03
+    ],
+    [
+     0.45,
+     -0.03
+    ],
+    [
+     0.45,
+     -0.02
+    ],
+    [
+     0.45,
+     -0.01
+    ],
+    [
+     0.45,
+     0.0
+    ],
+    [
+     0.45,
+     0.01
+    ],
+    [
+     0.45,
+     0.02
+    ],
+    [
+     0.45,
+     0.03
+    ],
+    [
+     0.5,
+     -0.03
+    ],
+    [
+     0.5,
+     -0.02
+    ],
+    [
+     0.5,
+     -0.01
+    ],
+    [
+     0.5,
+     0.0
+    ],
+    [
+     0.5,
+     0.01
+    ],
+    [
+     0.5,
+     0.02
+    ],
+    [
+     0.5,
+     0.03
+    ]
+   ],
+   "horizon": 60,
+   "lookahead_max_iter": 10,
+   "move_step": 300,
+   "plate_mean": [
+    0.49,
+    -0.09
+   ],
+   "read_step": 465,
+   "redraw_radius_cm": 6,
+   "refine_fraction_of_tau": 0.25,
+   "refine_max": 10,
+   "rho_cm": 4,
+   "rule": {
+    "L": 2,
+    "kappa": -0.5,
+    "name": "A",
+    "s0": 405,
+    "s1": 525
+   },
+   "tau_commit_record_cm": 1.0
+  },
+  "corpus": {
+   "command_steps": [
+    403,
+    466
+   ],
+   "debug_split_sizes": {
+    "gate": 5,
+    "train": 30,
+    "val": 5
+   },
+   "excluded_max_fraction": 0.02,
+   "frame_steps": [
+    403,
+    467
+   ],
+   "roots": 2000,
+   "split_sizes": {
+    "gate": 250,
+    "train": 1500,
+    "val": 250
+   },
+   "stop_step": 467,
+   "window_start_steps": [
+    403,
+    407
+   ]
+  },
+  "d": {
+   "arms": [
+    "W",
+    "N",
+    "L-shuf",
+    "L-mean",
+    "H-final"
+   ],
+   "bars": {
+    "W_min": 12,
+    "ceiling_min": 14,
+    "margin_min": 3
+   },
+   "resets": 16
+  },
+  "debug_calibration_seed": 66994,
+  "debug_model_seeds": [
+   66992,
+   66993
+  ],
+  "debug_ranges": {
+   "D": [
+    66910,
+    66913
+   ],
+   "K": [
+    66900,
+    66903
+   ],
+   "S": [
+    66920,
+    66923
+   ],
+   "corpus": [
+    66940,
+    66979
+   ]
+  },
+  "debug_seeds": [
+   66900,
+   66999
+  ],
+  "delegated": "decided by Claude under owner delegation (2026-09-30)",
+  "disk_min_gib": 10.0,
+  "disk_min_start_gib": {
+   "C": 25.0,
+   "O": 25.0
+  },
+  "feature_anchor": {
+   "frames": 256,
+   "max_abs_pooled_difference": 0.001
+  },
+  "forbidden_ranges": {
+   "apple_look_pilots": [
+    47900,
+    47931
+   ],
+   "apple_look_v1_corpus": [
+    47000,
+    47199
+   ],
+   "apple_wide_v1_corpus_and_pilots": [
+    48000,
+    48999
+   ],
+   "arena_123": [
+    50200,
+    50231
+   ],
+   "c1_block": [
+    57000,
+    57999
+   ],
+   "c1m_block": [
+    63000,
+    64999
+   ],
+   "cohort_C": [
+    45300,
+    45339
+   ],
+   "cohort_D_and_prior_ceilings": [
+    45000,
+    45207
+   ],
+   "earlier_train_val_test": [
+    42000,
+    42031
+   ],
+   "final_cohort": [
+    44000,
+    44019
+   ],
+   "grasp_closure_probes": [
+    49000,
+    49199
+   ],
+   "mechanics_probes": [
+    41000,
+    41101
+   ],
+   "mvp_frozen_resets": [
+    20000,
+    20049
+   ],
+   "narrow_development": [
+    43000,
+    43004
+   ],
+   "r15_block": [
+    58000,
+    58999
+   ],
+   "task067_block": [
+    46000,
+    46999
+   ],
+   "task068_to_070_block": [
+    50000,
+    50999
+   ],
+   "task071_072_block": [
+    51000,
+    52199
+   ],
+   "task073_block": [
+    53000,
+    53999
+   ],
+   "task074_block": [
+    54000,
+    54999
+   ],
+   "task074_design_probes": [
+    54700,
+    54999
+   ],
+   "task075_block": [
+    55000,
+    55999
+   ],
+   "task076_block": [
+    56000,
+    56999
+   ]
+  },
+  "g1": {
+   "bar_factor": 0.5,
+   "cal_t_escalate_below": 0.1,
+   "rank_floor": 0.1,
+   "std_floor": 0.25,
+   "truncation_controls": [
+    1,
+    2,
+    4
+   ]
+  },
+  "g_rows": {
+   "G-NO-BAR": "G1-G4 pass on all seeds and G5 fails on any: escalate, no clause",
+   "G-PASS": "the offline gates pass on all three seeds",
+   "H-GATE-FAIL": "any of G1-G4 fails on any seed: escalate, no clause"
+  },
+  "g_tests": {
+   "cpu": "the runner runs the full pytest suite itself at HEAD before its first simulation and records the summary line, exit status and timestamps; any failure is V",
+   "gpu": "the runner verifies pre_run_tests.json: revision == HEAD, exit status 0, no failure or error in the summary, finished after HEAD's commit time"
+  },
+  "g_thresholds": {
+   "G1_max_collapsed_fraction": 0.05,
+   "G2_max_ratio_upper": 0.8,
+   "G3_max_ratio_upper_exclusive": 1.0,
+   "G4_min_ratio_lower": 1.1,
+   "G5_ratio_upper_exclusive": 1.0
+  },
+  "gpu": {
+   "min_free_gib": 8.0,
+   "require_lock": true,
+   "who": "oej:task077-<stage>"
+  },
+  "k0": {
+   "ceiling_min": 30,
+   "feasibility_bar": 0.8,
+   "palm_speed_limit_cm": 0.5,
+   "proxies": [
+    "H-now",
+    "N-proxy",
+    "shuf-proxy",
+    "mean-proxy"
+   ],
+   "r_fraction_min": 28,
+   "r_latest": 465,
+   "resets": 32,
+   "stops": {
+    "ceiling_below_30": "N_K(0) < 30/32",
+    "level0_below_bar": "level 0 < 28/32 (tau_commit undefined)",
+    "palm_fast": "the median palm speed at 405 > 0.5 cm per step (a history-two predictor would be a different model)",
+    "r_late": "r_K later than 465 or undefined (the frozen h = 60 would read the plate before it settles)"
+   },
+   "tau_bar": 28,
+   "tau_levels_cm": [
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    3.0
+   ]
+  },
+  "k0_measured": null,
+  "memory": {
+   "ceiling_gib": 12.0,
+   "headroom_gib": 4.0,
+   "measure": "pss",
+   "sample_seconds": 0.5,
+   "train_ceiling_gib": 18.0
+  },
+  "model": {
+   "backend": "leworldmodel",
+   "batch_size": 16,
+   "config": {
+    "camera": "onboard_rgb",
+    "frozen_encoder": "dinov2_small_tokens",
+    "latent_dim": 24576,
+    "max_horizon": 64,
+    "sigreg_weight": 0.0,
+    "token_grid": 8
+   },
+   "device_eval": "cpu",
+   "device_train": "cuda",
+   "train_horizon": 60
+  },
+  "model_seeds": [
+   66800,
+   66801,
+   66802
+  ],
+  "never_closed": [
+   "a 4 x 4 latent on a larger corpus",
+   "the full, unpooled token grid",
+   "history longer than one, action_chunk or predictor_step_embedding",
+   "a fine-tuned or another encoder",
+   "other views or resolutions",
+   "other kappa, L, commit steps, move distributions or radii above 4 cm",
+   "C1 without the move",
+   "C2",
+   "TASK-076's results",
+   "the LeWM backend",
+   "v2",
+   "the product goal"
+  ],
+  "no_clause_rows": [
+   "CAL-ESCALATE",
+   "CORPUS-ESCALATE",
+   "O-ARM-KEYED",
+   "O-NO-BAR",
+   "CAL-T-ESCALATE",
+   "H-GATE-FAIL",
+   "G-NO-BAR",
+   "L-DEV-STOP",
+   "S-VOID-CEILING",
+   "L-TWIN-NEAR",
+   "L-NEAR",
+   "L-BAR",
+   "V",
+   "INCONCLUSIVE"
+  ],
+  "not_evaluated": "not evaluated",
+  "own_files": [
+   "src/embodied_jepa/lewm_c1m_v2.py",
+   "src/embodied_jepa/lewm_c1m_v2_runtime.py",
+   "src/embodied_jepa/lewm_c1m_v2_offline.py",
+   "src/embodied_jepa/lewm_c1m_v2_train.py",
+   "scripts/run_lewm_c1m_v2.py"
+  ],
+  "p3_checkpoint_sha256": "7988162df0b6106db5d007e322b824a3725b74cb103ba5a8de9f552912060be8",
+  "protocol": "apple_lewm_c1m_v2",
+  "quiet_machine": {
+   "max_load_average_1min": 2.0,
+   "max_load_average_5min": 2.0,
+   "rule": "os.getloadavg() at the stage's start: the 1- and 5-minute load averages are both at most 2.0 (the idle machine with the GPU's resident service measures about 0.1-0.4); otherwise G-quiet makes the stage V before any render"
+  },
+  "reported_horizons": [
+   16,
+   30
+  ],
+  "reserved_salts": {
+   "reserved": 8112
+  },
+  "rulings": "DECISIONS.md decision 2026-10-05 (b), R17.1-R17.18 (and R17.19 for Stage 0)",
+  "s": {
+   "arms": [
+    "W",
+    "N",
+    "L-shuf",
+    "L-mean",
+    "L-rand",
+    "H-rule",
+    "H-sysid",
+    "H-final",
+    "H-read",
+    "H-now"
+   ],
+   "comparators": [
+    "H-rule",
+    "H-sysid"
+   ],
+   "delta": 8,
+   "determinism": [
+    4,
+    0.001
+   ],
+   "g_bar": 56,
+   "mcnemar_p": 0.01,
+   "min_separation": 7,
+   "resets": 64,
+   "rows": {
+    "L-BAR": "G-bar fails with G-NI and the tests passing: escalate, no clause, no claim",
+    "L-INFERIOR": "W is detectably inferior beyond delta (upper bound of W - C < -8/64): the clause fires",
+    "L-NEAR": "G-NI fails, W not detectably inferior: escalate, no clause, no claim",
+    "L-NO-GAIN": "for a twin, the McNemar test fails and W is detectably no better (upper bound of W - arm < +7/64): the clause fires",
+    "L-PASS": "G-bar, G-NI and the four McNemar tests pass: the primary claim, 'LeWM-driven closed-loop success'",
+    "L-TWIN-NEAR": "a McNemar test fails and every failed one is a miss within noise: escalate, no clause, no claim",
+    "S-VOID-CEILING": "H-final(commit)(S) < 56/64: escalate, no clause, no claim",
+    "V": "one repeat of the stage after a recorded fix"
+   },
+   "twins": [
+    "N",
+    "L-shuf",
+    "L-mean",
+    "L-rand"
+   ]
+  },
+  "salts": {
+   "bootstrap": 8106,
+   "corpus_aim": 8102,
+   "corpus_split": 8103,
+   "inner_folds": 8105,
+   "l_rand": 8111,
+   "learning_curve": 8108,
+   "move": 8101,
+   "outer_folds": 8104,
+   "sampler": 8109,
+   "tau_direction": 8107,
+   "wrong_commands": 8110
+  },
+  "seed_block": [
+   66000,
+   68999
+  ],
+  "seed_ranges": {
+   "D": [
+    66100,
+    66115
+   ],
+   "K": [
+    66000,
+    66031
+   ],
+   "S": [
+    66200,
+    66263
+   ],
+   "corpus": [
+    67000,
+    68999
+   ]
+  },
+  "sim_grid": {
+   "ni": {
+    "dependence": [
+     "independent",
+     "nested"
+    ],
+    "gap_of_64": [
+     0,
+     2,
+     4,
+     8
+    ],
+    "p_c": [
+     0.9375,
+     0.96875,
+     1.0
+    ],
+    "share": [
+     0.0,
+     0.5,
+     1.0
+    ]
+   },
+   "twin": {
+    "advantage_of_64": [
+     0,
+     3,
+     7
+    ],
+    "p_w": [
+     0.875,
+     0.9375
+    ],
+    "reversed_pairs_per_64": [
+     0.0,
+     1.0,
+     2.0
+    ]
+   }
+  },
+  "sim_trials": 10000,
+  "sim_workers": 6,
+  "stage0": {
+   "renderer_differences": "at a98d893 two 405 R-plate readings differed between arms on the same reset (seed 66920: N 6.1e-5 m from the other arms; seed 66910: L-mean 1.6e-5 m); none at 9e772e0. The determinism tolerance is 0.1 cm (R17.21)",
+   "scale_probe": {
+    "bit_identical_rerun": true,
+    "gather_seconds_per_batch": [
+     0.0036,
+     0.0037,
+     0.0036
+    ],
+    "peak_tree_pss_gib": [
+     12.64,
+     12.74,
+     12.69
+    ],
+    "per_update_median_seconds": [
+     0.223,
+     0.166,
+     0.219
+    ],
+    "per_update_p95_seconds": [
+     0.277,
+     0.232,
+     0.262
+    ],
+    "report_sha256": [
+     "09628d9027d6fd6afe43823e6050eb795cbe7eca4b424d72d80ea14885b52701",
+     "27e4ada4d680183aa6bbee082386130c597f8adc82850eb5c76ed111f2ec301a",
+     "a505e621c4a0f6a916fd62fda9c9dad0297a6a386ade59bd3ee10b222662abb2"
+    ],
+    "revisions": [
+     "f4b6b48",
+     "a98d893",
+     "9e772e0"
+    ],
+    "selection_seconds_250_val_roots": [
+     17.4,
+     14.3
+    ],
+    "t_job_cap_over_worst": 1.69,
+    "t_job_worst_case_seconds": 27704
+   },
+   "simulations": {
+    "l_inferior_false_fire_at_delta": "0.9-2.0 % with one comparator, 0.9-3.1 % with the better of two",
+    "l_no_gain_false_fire_at_plus_7": "2.3-3.1 % per twin; 9.0-12.1 % that at least one of four twins all sitting at exactly +7/64 fires",
+    "ni_power_max_of_two": "at W = C: 0.69-0.77 (independent outcomes, C 30/32), 0.91-0.93 (31/32), 1.00 (nested); at -2/64: 0.35-0.86; at -4/64: 0.14-0.43",
+    "ni_size_at_margin": "G-NI passes at a true W - C of exactly -8/64 in 2.4-3.8 % of trials with one comparator and 0.9-3.5 % with the better of two chosen after S (C at 30-32/32; nominal one-sided 2.5 %)",
+    "report_sha256": "85adbdeea88a58e8f2def13caead1c29fe47f128d4f02df8d505a6eee557075f",
+    "revision": "f4b6b48",
+    "trials_per_configuration": 10000
+   },
+   "smoke_revision": "9e772e0",
+   "smoke_root": "outputs/task077-smoke-9e772e0 in the task077-stage0 worktree (git-ignored); the first chain, at a98d893, before the #143 review's fixes, is kept beside it"
+  },
+  "stage_o": {
+   "fractions": [
+    0.25,
+    0.5,
+    0.75,
+    1.0
+   ],
+   "inner_folds": 5,
+   "lambda_grid_relative": [
+    0.001,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+   ],
+   "outer_folds": 5,
+   "rows": {
+    "O-ARM-KEYED": "O4 fails: escalate, no clause",
+    "O-NO-BAR": "O1 or O3 fails: escalate, no clause (a still-falling curve says so)",
+    "O-PASS": "Stage O admits the stages that follow"
+   }
+  },
+  "stages": [
+   "K0",
+   "C",
+   "O",
+   "T",
+   "G",
+   "D",
+   "S"
+  ],
+  "status": "DRAFT",
+  "task": "TASK-077",
+  "task076_manifest": "benchmarks/manifests/apple-plate-twin-v2.json",
+  "thread_env": {
+   "MKL_DYNAMIC": "FALSE",
+   "MKL_NUM_THREADS": "6",
+   "OMP_NUM_THREADS": "6",
+   "OPENBLAS_NUM_THREADS": "16"
+  },
+  "void_rule": {
+   "debug": "debug runs only on committed code, only on 66900-66999; nothing in them is read",
+   "repeat": "at most one repeat per stage after a committed, pushed and recorded fix, on the same seeds in a new output directory; a second V of the same stage ends TASK-077 INCONCLUSIVE; Vs in different stages do not add up (R17.16)",
+   "stage_t": "each of Stage T's eight jobs is voided and repeated on its own; completed jobs with intact reports, checkpoints and sha256s are kept; a second V of the same job ends TASK-077 INCONCLUSIVE; the budget rule runs only after both calibration jobs complete",
+   "void": "any guard, crash, cap, stop signal or CUDA allocation failure makes a stage V; its report is kept with its sha256 and the cause disclosed"
+  },
+  "wm_workers": 4,
+  "worker_torch_threads": 1
+ },
+ "frozen_sha256": "89359ed32aa8d6380809aa0831e8f4890c21ebdf3336543186fa01c6a04c5b12",
+ "frozen_sha256_pin": null,
+ "hashes": {},
+ "note": "DRAFT until the freeze: no frozen-sha pin, no protocol-document sha and no file pins yet; the freeze (after a reported K0-PASS and an independent reviewer's APPROVE) sets frozen_sha256_pin, protocol_document_sha256 and hashes (the own files, the carried C1 and C1-M code files and TASK-076's 84 pins).",
+ "outcome": null,
+ "protocol": "apple_lewm_c1m_v2",
+ "protocol_document_sha256": null,
+ "status": "DRAFT",
+ "task": "TASK-077"
+}
