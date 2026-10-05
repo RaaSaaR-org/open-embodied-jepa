@@ -17,6 +17,10 @@ independent review of #143 (REQUEST CHANGES at `0dea22b`) led to R17.20–R17.24
 1.0 cm, N_K(0) = 32/32, r_K = 460. Its values are in the frozen block (`K0_MEASURED`). Two of
 them sit close to their bars, and this is disclosed in §7.1. K, a cohort of 32 resets, is the only
 cohort simulated. No seed of D, S or the corpus has been simulated.
+**Stage C ran once at `862d63c` and ended V on G-memory** during seed preparation, before any
+root was collected. **Erratum 2026-10-05** (§7.2; R17.30–R17.34) records the cause and the fix,
+re-pins the changed files and this document, and leaves the frozen block and its sha256
+unchanged. Stage C has its one repeat left (§10.1).
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
@@ -559,6 +563,54 @@ to a bar:
 - **What this means for O1 and G5 (a).** Both use τ_commit = 1.0 cm as their bar. A τ_commit of
   0.5 cm would have halved both bars.
 
+### 7.2 Stage C's first run: V on G-memory, and Erratum 2026-10-05 (R17.30–R17.34)
+
+**Erratum 2026-10-05** (decided by Claude under owner delegation; DECISIONS 2026-10-05 (b),
+R17.30–R17.34). This erratum changes code and report fields only. The frozen block, its sha256
+`f28e5e2c…548d`, and every bar, seed, salt, cap, ceiling and row are unchanged.
+
+- **The void.** Stage C ran once at `862d63c` under the GO (#144, issuecomment-5989316868). It
+  ended **V on G-memory**: process-tree PSS reached 12.22 GiB against the 12.00 GiB ceiling, with
+  a peak of 12.896 GiB. The V came during `Cohorts.seeds("corpus")`, after the corpus seeds'
+  post-look frames were rendered and before any root was collected. Nothing in the run is read.
+  - Report: `outputs/task077-corpus-1/report.json` in the `task077-corpus` worktree, sha256
+    `734fa771875110637748c00303e0aee6f65577c9b75558493df161f14194a6c3`.
+- **The cause (R17.30).** TASK-076's pinned `cohort_estimates` held all 2 000 seeds' full DINOv2
+  tokens at once in the main process:
+  - the tokens themselves, float64 [2 000, 98 304]: 1.47 GiB;
+  - two float64 copies made by `info_ceiling.cross_gram`: 2.93 GiB more.
+
+  That is about 4.4 GiB on top of a 7.6 GiB baseline (the main process 1.1 GiB, six workers of
+  1.07 GiB each). A probe of the pinned path at 2 000 seeds reproduced the void with a 12.94 GiB
+  peak. R17.28's scale probe had run this step on 100 seeds only.
+- **The fix (R17.30).** The runner's own `cohort_estimates` renders exactly as before. It then
+  streams the tokens 128 frames at a time through the pinned `cross_gram`, and runs the pinned
+  kernel-ridge `predict` once on all rows.
+  - The estimates are **bit-identical**, both by construction (32-row-aligned blocks) and as
+    measured: on the debug seeds' real tokens, on 2 000 synthetic rows and at the full step.
+  - Stage C's seed preparation at 2 000 seeds now peaks at **7.75 GiB**.
+  - No pinned TASK-073–076, C1 or C1-M file changes.
+- **The same pattern in Stage O (R17.31).** `featurise_corpus`'s memory-mapped stores held the
+  written pages of the whole train split in PSS: 8.82 GiB, measured on a synthetic 2 000-root
+  corpus with a stand-in encoder, before the encoder's own memory. They are now re-mapped every 32
+  roots, which measured 0.99 GiB, and the written files are byte-identical.
+- **Preflight (R17.32).**
+  - Once FROZEN, preflight checks this document's sha256 directly against the manifest.
+  - Tests cover the FROZEN-only paths.
+  - The report's top-level load average is renamed `load_average_after_preflight`, because it is
+    taken after G-tests. G-quiet's reading is `quiet_machine.load_average_at_start`.
+  - The runner creates `outputs/` when it is missing, and takes `--log <file>`.
+- **Disclosures (R17.33).** The `task077-cprobe-3` crash and the probe's 2.21 five-minute load are
+  disclosed. CPU stages render with EGL and take no GPU lock (§10.2).
+- **The repeat (§10.1).** Stage C gets its one repeat under these conditions:
+  - at this erratum's merge commit (the fix commit);
+  - on a reported GO that names that commit, the cause and the void report's sha256;
+  - from a fresh clean worktree;
+  - on the same seeds 67000–68999;
+  - into a new output directory.
+
+  A second V of Stage C ends TASK-077 as INCONCLUSIVE.
+
 ## 8. Gates, bars and rows
 
 Intervals are reset- (or root-) clustered bootstrap percentile intervals, 10 000 resamples, 95 %,
@@ -775,7 +827,9 @@ secondary claim's test.
 - **G-GPU:** every GPU job runs through `scripts/gpu_run.sh --wait --min-free-gib 8 --board --who
   oej:task077-<stage>`, and the runner calls `run_tools.gpu_guard(report, min_free_gib=8,
   require_lock=True)`. Resident services (the GR00T server, other projects' queues) are never
-  stopped or reconfigured.
+  stopped or reconfigured. **CPU stages and EGL (R17.33, Erratum 2026-10-05):** K0, C, D, S, the
+  readouts, plan and gates render with EGL on the GPU's driver but run no CUDA job; they do not
+  take the shared GPU lock and are not GPU jobs. "No GPU" in a GO means no CUDA job and no lock.
 
 ### 10.3 Caps (wall time; a cap is a V, never an escalation)
 
@@ -788,7 +842,9 @@ measured or scaled worst case ([stage-0 record](apple_lewm_c1m_v2_stage0.md) §3
 - **Stage C:** the worst case for 2 000 roots, scaled from 100 debug roots, is about 1 400 s. That
   is 2 000 roots at the slowest attempt, 3.24 s per root on 6 workers, plus writing, the cohort
   estimates, setup and G-tests. 14 400 s is 10 ×. Peak PSS was 8.46 GiB, against the 12 GiB
-  ceiling.
+  ceiling. **Erratum 2026-10-05 (R17.30):** that peak covered the cohort estimates at 100 seeds
+  only. At 2 000 seeds, the unstreamed estimates reached 12.9 GiB and voided the first run (§7.2).
+  With the streamed estimates, the seed preparation measures 7.75 GiB at 2 000 seeds.
 
 The caps:
 K0 7 200 s; Stage C 14 400 s; Stage O featurisation 3 600 s and readouts 7 200 s; **each Stage T

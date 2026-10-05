@@ -36,6 +36,7 @@ from embodied_jepa.contracts import ContractError
 GuardError = lm.GuardError
 FULL_WIDTH = 256 * 384
 FEATURE_BATCH = 66  # one root's 65 frames and its hidden render
+FEATURE_REMAP_ROOTS = 32  # roots between re-mappings of the stores (R17.31: bounds their PSS)
 R_INDEX = lm.READ_STEP - lm.FRAME_STEPS[0]  # 62
 START_INDEX = tr.START_INDEX  # 2
 
@@ -151,9 +152,23 @@ def anchor_check(encoder, frames, device_pooled, *, bound=None) -> dict:
 
 
 def featurise_corpus(
-    corpus, manifest: dict, out, *, device: str, encoder=None, check=None, probe: bool = False
+    corpus,
+    manifest: dict,
+    out,
+    *,
+    device: str,
+    encoder=None,
+    check=None,
+    probe: bool = False,
+    remap_every: int | None = FEATURE_REMAP_ROOTS,
 ) -> dict:
-    """Every split's per-root 8 x 8 store plus the side arrays (refuses to overwrite)."""
+    """Every split's per-root 8 x 8 store plus the side arrays (refuses to overwrite).
+
+    The two memory-mapped stores are re-mapped every ``remap_every`` roots (R17.31, Erratum
+    2026-10-05): the written pages of a mapping count in the process's PSS until it is unmapped,
+    so one mapping held over the train split grows to its whole 9.6 GB file. Re-mapping writes the
+    same bytes to the same offsets (the header is written once, at creation). ``None`` keeps one
+    mapping per split, as at ``862d63c`` (development probes only)."""
     from numpy.lib.format import open_memmap
 
     from embodied_jepa import pretrained_encoder as pe
@@ -200,6 +215,9 @@ def featurise_corpus(
             if check is not None and i % 50 == 0:
                 check()
             del tokens, pooled, stack
+            if remap_every is not None and (i + 1) % remap_every == 0 and i + 1 < n:
+                feats = _remap(feats, paths["features"])
+                full405 = _remap(full405, paths["full405"])
         feats.flush()
         full405.flush()
         del feats, full405
@@ -226,6 +244,13 @@ def featurise_corpus(
         "featurisation_seconds": gpu_seconds,
         "probe": bool(probe),
     }
+
+
+def _remap(store, path):
+    """Flush and unmap a store, and map it again (its written pages leave the process's PSS)."""
+    store.flush()
+    del store
+    return np.load(path, mmap_mode="r+")
 
 
 FEATURE_FILES = {  # every file a split's featurisation writes (its sha256 is in the report)

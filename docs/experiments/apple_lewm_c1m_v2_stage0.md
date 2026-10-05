@@ -331,8 +331,14 @@ on the Linux PC:
     own setup, cohort estimates, `collect` attempts and `write_root`.
     - It ran from an uncommitted copy whose code is the committed file before formatting. That
       copy's first launch had no `__main__` guard. Its spawned workers re-ran it and failed at
-      start, so the load spiked to about 20 and nothing was simulated. The copy was fixed, and
-      the probe ran after the load fell back under 2.0.
+      start, so the load spiked to about 20 and nothing was simulated. The copy was fixed.
+    - **Erratum 2026-10-05 (R17.33; the #144 approval's item 2).** A further launch,
+      `task077-cprobe-3`, crashed in `sim_setup` → `hz.refit_p_readout` with
+      `KeyError: 'stages'`, because the copy's report lacked `"stages"`. It had re-rendered
+      TASK-072 evidence frames for G-repro, rendered no TASK-077 seed and read nothing. The copy
+      was fixed again, and `task077-cprobe-4` is the probe cited here. This record first said
+      the probe "ran after the load fell back under 2.0". In fact the load at its start was
+      1.97 / 2.21 (see below): the 5-minute value was above 2.0.
   - **Results:**
     - Setup: 41 s, including G-repro.
     - Cohort estimates: 3.6 s per 100 seeds.

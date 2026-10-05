@@ -66,7 +66,9 @@ is kept as written.
 ## Decision 2026-10-05 (b) — TASK-077's DRAFT preregistration: LeWM chooses the single committed place aim under C1-M on an 8 × 8 latent (R17; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30). FROZEN after K0-PASS (R17.25), in force
-once merged on an independent reviewer's APPROVE; the text below was written as a DRAFT.** Revised after
+once merged on an independent reviewer's APPROVE; the text below was written as a DRAFT.
+Stage C's first run ended V on G-memory; Erratum 2026-10-05 (R17.30–R17.34) records the cause and
+the fix for its one repeat, with the frozen block unchanged.** Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
 is [apple_lewm_c1m_v2.md](experiments/apple_lewm_c1m_v2.md) (STATUS DRAFT), with the task card
@@ -323,7 +325,9 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
     - **The probe's disclosure.** It ran from an uncommitted copy of
       `scripts/probe_task077_stage_c.py` (now committed, formatted). A first launch without a
       `__main__` guard made its spawned workers fail at start: a load spike to about 20, with
-      nothing simulated.
+      nothing simulated. *(Amended, R17.33:)* a further launch, `task077-cprobe-3`, crashed in
+      `sim_setup` with `KeyError: 'stages'` after re-rendering TASK-072 evidence frames only; and
+      the probe that is cited started at a load of 1.97 / 2.21, above 2.0 on the 5-minute value.
   - **R17.29 — the thread environment.** K0's `thread_env` (`OPENBLAS_NUM_THREADS=16`, OMP and
     MKL at 6) is the declared G-threads environment, not a bug.
     - **Where it comes from.** It is the owner ruling of 2026-09-29 (TASK-073): OpenBLAS's default
@@ -341,6 +345,154 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
         is consistent with that.
     - **What changes.** Nothing; a test now pins the environment and checks that the runner sets
       it before NumPy loads.
+- **R17.30–R17.34 — Stage C's void and Erratum 2026-10-05** (2026-10-05, each decided by Claude
+  under owner delegation). The protocol carries them as "Erratum 2026-10-05" (§7.2). The frozen
+  block is unchanged: its sha256 stays `f28e5e2c…548d`, and no bar, seed, salt, cap, ceiling or
+  rule changes. The manifest re-pins the changed files and the protocol document.
+  - **R17.30 — the Stage C void, its cause and the fix.**
+    - **The run.** Stage C ran once at `862d63c` under the GO (#144,
+      issuecomment-5989316868), in the `task077-corpus` worktree. G-quiet read 0.11 / 0.13, and
+      in-run G-tests passed (1996 passed). G-repro passed 8 of 8. It ended **V on G-memory**:
+      process-tree PSS went to 12.22 GiB against the 12.00 GiB ceiling, with a peak of 12.896 GiB,
+      at 06:35:48Z. Report `outputs/task077-corpus-1/report.json`, sha256
+      `734fa771875110637748c00303e0aee6f65577c9b75558493df161f14194a6c3`. The log is beside it.
+    - **No corpus seed was collected.** The V came during seed preparation
+      (`Cohorts.seeds("corpus")`), before any `collect` attempt. The corpus seeds' post-look
+      frames (two renders each) were rendered, and P-3's estimates were being computed. Nothing
+      was written to `corpus/`, and nothing in the run is read.
+    - **The cause.** TASK-076's pinned `plate_twin_v2_harness.cohort_estimates` featurises every
+      seed's post-look frame and concatenates the tokens: 2 000 × 98 304 float64, 1.47 GiB, with a
+      second 1.47 GiB transiently while the per-frame list is concatenated.
+      `first_policy_perception.XYReadout.predict` then calls `info_ceiling.cross_gram`, whose norm
+      line makes two more float64 copies of all rows (`a.astype(np.float64)` twice): 2.93 GiB. So
+      the main process held about 4.4 GiB of token arrays at once, on top of the stage's
+      baseline. The R17.28 scale probe ran this step on 100 seeds only (0.07 GiB of tokens), so it
+      did not show the growth. K, D and S (32, 16 and 64 seeds) are too small to reach it.
+    - **Where the memory goes** (`scripts/probe_task077_memory.py seedprep`, at `2e6b071`, clean
+      tree, report `outputs/task077-memprobe-seedprep-1/report.json` in the `task077-memfix`
+      worktree, sha256 `76402f77b8a252d2e18b3cf04bdb4ae4ed8d1d1aa83b09a8722813af211247b6`):
+      - After setup, the tree is 7.58 GiB: the main process 1.14 GiB (torch, both encoders and
+        P-3's refitted readouts; the P readout keeps 426 × 98 304 float64 training rows,
+        0.31 GiB) and six workers of about 1.07 GiB each (6.44 GiB).
+      - The pinned path at 2 000 seeds peaked at **12.94 GiB** (the main process 6.51 GiB; the
+        workers unchanged at 6.44 GiB), which reproduces the void's 12.90 GiB. NumPy's traced
+        peak in the main process was 4.48 GiB, which matches the arithmetic above. So all 2 000
+        seeds' tokens are held at once, and the growth is in the main process only.
+    - **The fix** (TASK-077's own runner; no pinned TASK-073–076, C1 or C1-M file changes). The
+      runner's `cohort_estimates` renders exactly as the pinned function does (`render_majority`,
+      the same tasks, cap and checks). It then featurises 128 frames at a time (batch size 1, as
+      before), reduces each chunk to its cross-Gram against the readout's 426 training rows with
+      the pinned `cross_gram`, and drops the chunk's tokens. It runs the pinned
+      `Readout.predict` once on all rows. `Cohorts.seeds` uses it for every cohort (K, D, S and
+      the corpus).
+    - **Equivalence: bit-identical, not within a tolerance.**
+      - **By construction.** `cross_gram` works in blocks of 32 rows. A chunk that is a multiple
+        of 32 makes exactly the BLAS calls (block against block) that the unchunked path makes,
+        and each row's norm is its own sum. The final kernel-ridge product is one call on all
+        rows, as before. For K, D and S, one chunk holds the whole cohort, so the path is the
+        pinned one.
+      - **Measured** (the probe above):
+        - on the 100 debug seeds' real tokens, chunks of 32, 64 and 128 give a maximum absolute
+          difference of 0.0;
+        - end to end on the same 100 seeds, with both functions rendering, all frames are the
+          same, and every estimate is identical;
+        - on 2 000 synthetic token rows (each a debug row times 1 + 10⁻³ N(0, 1)), chunks of 32,
+          128 and 256 give 0.0;
+        - at the full seed-preparation step with 2 000 seeds, the fixed and the pinned paths give
+          identical estimates.
+      - **Tests** cover the bit-identity, the chunk bound, the refusal of a chunk that is not a
+        multiple of 32, and that the runner never calls the unstreamed function.
+    - **Measured peak after the fix.** The full Stage C seed-preparation step at 2 000 seeds peaked
+      at **7.75 GiB** (main 1.31 GiB, workers 6.44 GiB; NumPy's traced peak 0.38 GiB), 50 s. The
+      probe ran `Cohorts.seeds("corpus")` itself, with the real pool alive. It used a stand-in
+      that answers each frame task with a copy of a rendered debug frame, so the 2 000 seeds are
+      synthetic labels and nothing was simulated for them. The collection phase measured
+      8.46 GiB at 100 roots in R17.28, and it does not grow with the number of roots
+      (`CORPUS_CHUNK` = 60 roots per map), so the repeat's expected peak is about 8.5 GiB.
+    - **The repeat rule (§10.1).** Stage C gets its one repeat:
+      - only at the merge commit of the PR that carries this fix, which is the fix commit to
+        record;
+      - only on a reported GO naming that commit, the cause above and the void report's sha256
+        `734fa771…94a6c3`;
+      - from a fresh clean worktree;
+      - on the same corpus seeds 67000–68999;
+      - into a new output directory, with the same command and guards as the first GO.
+
+      A second V of Stage C ends TASK-077 as INCONCLUSIVE (R17.16). The void's evidence worktree
+      `task077-corpus` is kept untouched.
+  - **R17.31 — the featurisation's memory-mapped stores (the same pattern in Stage O).**
+    - **The pattern.** `featurise_corpus` wrote each split into one `open_memmap` mapping. A
+      mapping's written pages count in the process's PSS until it is unmapped. For the train
+      split, that grows to the whole 9.58 GB `features8_train.npy` (8.9 GiB) plus 0.55 GiB of
+      `full405`. With the real encoder's torch and CUDA context in the same process, that
+      approaches or passes the 12 GiB ceiling, so it puts Stage O's featurisation at risk of a V.
+      (An earlier run of the same probe, `task077-memprobe-featurise-1`, ran on a tree with
+      uncommitted documentation edits. It gave 8.55 and 1.63 GiB, with identical files, and it
+      is not cited.)
+    - **The fix.** Both stores are flushed, unmapped and mapped again every 32 roots
+      (`FEATURE_REMAP_ROOTS`). The same bytes go to the same offsets, and the header is written
+      once.
+    - **Measured** (`probe_task077_memory.py featurise`, at `5d1a5f7`, clean tree; report
+      `outputs/task077-memprobe-featurise-2/report.json`; a synthetic 2 000-root corpus; a
+      stand-in encoder with no weights; CPU only; sha256 `04a34f14bcd711286a1aba928f973c3affee7d728a7a7d9d8f4c5850dfd5d870`):
+      - one mapping per split: peak PSS **8.82 GiB**;
+      - re-mapped: **0.99 GiB** (94 s against 102 s);
+      - every written file has the same sha256 in both modes.
+
+      A test checks the byte-identity on a small corpus.
+    - **What else was checked, and is bounded:**
+      - D and S (64 seeds at most) and K go through the same streamed path in one chunk.
+      - Stage C's collection maps 60 roots at a time and keeps only each root's sha256.
+      - Stage G's R-plate reads are made one row at a time.
+      - Stage O's readouts were probed at the real sizes (2.96 GiB, R17.28).
+      - A Stage T job's train-split cache is declared under its own 18 GiB ceiling.
+  - **R17.32 — preflight and the report (the #144 approval's items 3 and 4, and the
+    load-average key).**
+    - **The protocol document.** Once FROZEN, preflight now checks the protocol document's
+      sha256 against the manifest's `protocol_document_sha256` directly (G-hash), and records it
+      as `protocol_document_check`. Before, only G-tests checked it.
+    - **New tests for the FROZEN-only preflight paths:**
+      - the own pins (13) and the document check are recorded;
+      - a tampered frozen pin is refused;
+      - a changed protocol document is refused;
+      - a non-debug `k0` is refused.
+    - **The load-average key.** The top-level `load_average_at_start` was taken at the end of
+      preflight, after in-run G-tests (2.22 in the void's report), so it could be mistaken for
+      G-quiet's reading. It is renamed `load_average_after_preflight`. G-quiet's reading stays
+      `quiet_machine.load_average_at_start` (0.11 / 0.13 in the void). K0's frozen value
+      `[0.216, 0.487, 0.724]` is G-quiet's reading, so it is unchanged.
+    - **The runner creates `outputs/`** when it is missing. A new `--log <file>` option points
+      the runner's stdout and stderr (and so its workers' and G-tests') at a new file, creating
+      its folder and refusing an existing file. A log redirect into a missing `outputs/` can
+      therefore no longer fail before the runner starts.
+  - **R17.33 — disclosures (the #144 approval's items 2 and 6).**
+    - **A second failed probe launch.** Besides the launch without a `__main__` guard
+      (`task077-cprobe-2`), a third launch, `task077-cprobe-3`, crashed in `sim_setup` →
+      `hz.refit_p_readout` with `KeyError: 'stages'`, because the probe copy's report lacked
+      `"stages"`. It had re-rendered TASK-072 evidence frames for G-repro. It rendered no
+      TASK-077 seed and read nothing. The copy was fixed, and `task077-cprobe-4` is the probe
+      R17.28 cites.
+    - **The load at the probe's start.** The Stage-0 record said the probe "ran after the load
+      fell back under 2.0". Its own report shows 1.97 / 2.21 at the start, so the 5-minute value
+      was above 2.0. G-quiet binds gated stages, not development probes. The record and R17.28's
+      text are corrected (§7 of the record).
+    - **The GPU lock and EGL (§10.2).** CPU stages (K0, C, D, S, the readouts, plan and gates)
+      render with EGL, which runs on the GPU's driver, but they run no CUDA job. They do not
+      take the shared GPU lock, and they are not "GPU jobs". "No GPU" in a GO means no CUDA job
+      and no lock. Only `featurise`, `train` and `scale` take the lock, through
+      `gpu_run.sh --wait`.
+  - **R17.34 — the erratum's pins.**
+    - **Files changed:** `scripts/run_lewm_c1m_v2.py` and `src/embodied_jepa/lewm_c1m_v2_offline.py`
+      (both TASK-077's own pinned files), `tests/test_lewm_c1m_v2.py` and this protocol
+      document.
+    - **Re-pinned:** their sha256s in the manifest's `hashes`, and `protocol_document_sha256`.
+    - **Unchanged:**
+      - the frozen block (`lewm_c1m_v2.py` is not edited), its pin `f28e5e2c…548d` and the
+        frozen-pin test's constant;
+      - TASK-076's 84 pins;
+      - the carried C1 and C1-M blobs.
+    - **Not pinned:** the probe script `scripts/probe_task077_memory.py`, which is development
+      only.
 
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)

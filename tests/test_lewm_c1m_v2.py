@@ -1122,3 +1122,224 @@ def test_the_stage_o_scale_probe_runs_the_readouts_on_its_synthetic_store(tmp_pa
     assert roots == [list(range(25)), list(range(25, 35))]  # disjoint groups across splits
     out = off.readouts_core(tmp_path / "feat", tmp_path / "fits", tau_commit_cm=1.0, probe=True)
     assert out["rows"] == 35 and out["probe"] and out["decision"]["row"].startswith("O-")
+
+
+# ----- Erratum 2026-10-05: the Stage C memory fix and the #144 approval's items (R17.30-R17.33) ---
+def _small_readout(rows=60, dims=700, seed=3):
+    from embodied_jepa import first_policy_perception as fpp
+
+    rng = np.random.default_rng(seed)
+    features = rng.standard_normal((rows, dims))
+    targets = features[:, :4] * 0.01 + rng.standard_normal((rows, 4)) * 1e-3
+    return fpp.XYReadout(features, targets), rng
+
+
+def test_streamed_estimates_are_bit_identical_to_the_pinned_predict(monkeypatch):
+    """R17.30: the streamed estimates equal ``XYReadout.predict`` bit for bit, and no
+    ``cross_gram`` call sees more than one chunk of rows."""
+    import inspect
+
+    from embodied_jepa import info_ceiling as ic
+
+    run = _runner()
+    readout, rng = _small_readout()
+    tokens = readout.features[rng.integers(0, 60, 300)] + 0.1 * rng.standard_normal((300, 700))
+    reference = readout.predict(tokens)
+    assert inspect.signature(ic.cross_gram).parameters["chunk"].default == run.CROSS_GRAM_BLOCK
+    assert run.ESTIMATE_CHUNK % run.CROSS_GRAM_BLOCK == 0
+    seen, original = [], ic.cross_gram
+
+    def spy(new, reference_rows, **kw):
+        seen.append(len(new))
+        return original(new, reference_rows, **kw)
+
+    monkeypatch.setattr(ic, "cross_gram", spy)
+    for chunk in (32, 64, 128, 256, 320):
+        seen.clear()
+        got = run.streamed_estimates(
+            readout, (tokens[lo : lo + chunk] for lo in range(0, len(tokens), chunk))
+        )
+        assert np.array_equal(got, reference), chunk
+        assert max(seen) == min(chunk, 300) and sum(seen) == 300
+
+
+def test_cohort_estimates_equal_the_pinned_function(monkeypatch):
+    """R17.30: the runner's ``cohort_estimates`` returns the pinned function's dict exactly
+    (frames, checks and disagreement record included), and refuses a chunk that is not a
+    multiple of ``cross_gram``'s block."""
+    from embodied_jepa import first_policy_perception as fpp
+    from embodied_jepa import plate_twin_v2_harness as hz
+
+    run = _runner()
+    readout, _ = _small_readout()
+    monkeypatch.setattr(
+        fpp,
+        "featurise",
+        lambda encoder, frames: (
+            np.asarray(frames, np.float64).reshape(len(frames), -1)[:, :700] / 255.0
+        ),
+    )
+
+    class FramePool:
+        def map(self, tasks, cap, what):
+            out = []
+            for t in tasks:
+                frame = np.random.default_rng(t["seed"]).integers(0, 256, (112, 112, 3), np.uint8)
+                out.append(
+                    {
+                        "seed": t["seed"],
+                        "frame": frame,
+                        "post_look_frame_sha256": f"f{t['seed']}",
+                        "state_sha256": f"s{t['seed']}",
+                        "truth_xy": [0.1, 0.2, 0.3, 0.4],
+                    }
+                )
+            return out
+
+    seeds = tuple(range(66900, 66900 + 70))
+    resets = {s: {"object_xy": [0.0, 0.0], "plate_xy": [0.0, 0.0]} for s in seeds}
+    pinned = hz.cohort_estimates(FramePool(), readout, None, seeds, resets, 10.0)
+    for chunk in (32, 64, None):
+        mine = run.cohort_estimates(FramePool(), readout, None, seeds, resets, 10.0, chunk=chunk)
+        assert mine == pinned
+    with pytest.raises(ValueError):
+        run.cohort_estimates(FramePool(), readout, None, seeds, resets, 10.0, chunk=48)
+    tree = ast.parse(RUNNER.read_text())
+    calls = [
+        ast.unparse(n.func)
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Call) and ast.unparse(n.func).endswith("cohort_estimates")
+    ]
+    assert calls and set(calls) == {"cohort_estimates"}  # never the pinned, unstreamed one
+
+
+def _preflight_args(run, stage: str, tmp_path):
+    argv = [stage, "--output", str(tmp_path / "out")]
+    if stage in run.SIM_STAGES:
+        argv += ["--evidence", str(tmp_path / "evidence")]
+    return run.build_parser().parse_args(argv)
+
+
+def _quiet_preflight(monkeypatch, run):
+    """Preflight with the git- and tree-dependent checks stubbed (the pins are read as is)."""
+    monkeypatch.setattr(run, "check_code", lambda report: None)
+    monkeypatch.setattr(run.hz, "tracked_tree_dirty", lambda: False)
+    monkeypatch.setattr(run.hz, "revision", lambda: "0" * 40)
+    monkeypatch.setattr(run.rt, "assert_local_import", lambda root, report: None)
+    monkeypatch.setattr(run, "check_disk", lambda report, path, minimum_gib: None)
+
+
+def test_frozen_preflight_checks_pins_and_the_protocol_document_and_refuses_k0(
+    monkeypatch, tmp_path
+):
+    """The #144 approval's items 3 and 4: once FROZEN, preflight checks TASK-077's own pins and
+    the protocol document's sha256 directly, refuses a tampered frozen pin, and refuses a
+    non-debug K0 (R17.25); the top-level load average is named for when it is taken (R17.32)."""
+    run = _runner()
+    _quiet_preflight(monkeypatch, run)
+    manifest = json.loads(MANIFEST.read_text())
+    assert lm.STATUS == "FROZEN"
+
+    class Stop(Exception):
+        pass
+
+    def stop():
+        raise Stop
+
+    with monkeypatch.context() as m:  # a FROZEN corpus run passes the frozen checks
+        m.setattr(lm, "check_seed_ranges", stop)
+        report: dict = {}
+        with pytest.raises(Stop):
+            run.preflight(report, _preflight_args(run, "corpus", tmp_path))
+        assert report["own_pins_at_preflight"] == len(manifest["hashes"]) == 13
+        assert report["protocol_document_check"]["sha256"] == manifest["protocol_document_sha256"]
+        assert report["frozen_pin_check"]["pin"] == FROZEN_SHA256_PIN
+    with pytest.raises(pt.GuardError, match="K0 ran once"):
+        run.preflight({}, _preflight_args(run, "k0", tmp_path))
+    with monkeypatch.context() as m:
+        m.setattr(lm, "frozen_sha256", lambda: "0" * 64)
+        with pytest.raises(pt.GuardError, match="G-frozen"):
+            run.preflight({}, _preflight_args(run, "corpus", tmp_path))
+    other = tmp_path / "protocol.md"
+    other.write_text(DOC.read_text() + "\nedited\n")
+    with monkeypatch.context() as m:
+        m.setattr(run, "PROTOCOL_DOCUMENT", other)
+        with pytest.raises(pt.GuardError, match="protocol document"):
+            run.preflight({}, _preflight_args(run, "corpus", tmp_path))
+    with pytest.raises(pt.GuardError, match="pin"):
+        run.check_protocol_document({})
+    report = {}
+    run.preflight(report, run.build_parser().parse_args(["tests", "--output", "x"]))
+    assert "load_average_after_preflight" in report and "load_average_at_start" not in report
+
+
+def test_the_runner_log_option_creates_its_folder_and_refuses_an_existing_log(tmp_path):
+    """--log writes the runner's stdout and stderr to a new file, creating its folder."""
+    log_path = tmp_path / "outputs" / "run.log"
+    code = (
+        "import importlib.util, sys\n"
+        f"spec = importlib.util.spec_from_file_location('r', {str(RUNNER)!r})\n"
+        "r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)\n"
+        f"r.open_log(r.Path({str(log_path)!r}))\n"
+        "print('to the log'); print('also', file=sys.stderr)\n"
+    )
+    proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout == "" and log_path.read_text().splitlines() == ["to the log", "also"]
+    again = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert again.returncode != 0 and "FileExistsError" in again.stderr
+
+
+def test_featurise_corpus_remaps_its_stores_without_changing_a_byte(tmp_path):
+    """R17.31: re-mapping the memory-mapped stores every few roots writes the same files as one
+    mapping per split (a stand-in encoder; no weights)."""
+    torch = pytest.importorskip("torch")
+    import types
+
+    from embodied_jepa import lewm_c1m_v2_offline as off
+
+    class Encoder:
+        def to(self, device):
+            return self
+
+        def eval(self):
+            return self
+
+        def __call__(self, pixel_values):
+            p = torch.nn.functional.avg_pool2d(pixel_values, 14)
+            t = p.flatten(2).transpose(1, 2).repeat(1, 1, 128)
+            return types.SimpleNamespace(
+                last_hidden_state=torch.cat([t.new_zeros((len(t), 1, 384)), t], dim=1)
+            )
+
+    corpus = tmp_path / "corpus"
+    corpus.mkdir()
+    rng = np.random.default_rng(0)
+    entries = {}
+    for seed in range(7):
+        frames = rng.integers(0, 256, (lm.N_FRAMES, 112, 112, 3), np.uint8)
+        entries[seed] = off.write_root(
+            corpus,
+            seed,
+            {
+                "frames": frames,
+                "commands": rng.standard_normal((lm.N_COMMANDS, 14)).astype(np.float32),
+                "plate": rng.standard_normal((lm.N_FRAMES, 2)),
+                "palm": rng.standard_normal((lm.N_FRAMES, 2)),
+                "hidden_r": frames[-1],
+                "target": rng.standard_normal(2),
+                "state405": rng.standard_normal(5),
+                "apple_estimate": rng.standard_normal(2),
+                "last_grasp": rng.standard_normal(14),
+            },
+        )
+    off.seal_corpus(corpus, entries, {"train": [0, 1, 2, 3, 4], "val": [5], "gate": [6]}, {})
+    manifest = off.open_corpus(corpus, None)
+    assert off.FEATURE_REMAP_ROOTS == 32
+    files = [
+        off.featurise_corpus(
+            corpus, manifest, tmp_path / name, device="cpu", encoder=Encoder(), remap_every=every
+        )["files_sha256"]
+        for name, every in (("every2", 2), ("one", None), ("default", off.FEATURE_REMAP_ROOTS))
+    ]
+    assert files[0] == files[1] == files[2]

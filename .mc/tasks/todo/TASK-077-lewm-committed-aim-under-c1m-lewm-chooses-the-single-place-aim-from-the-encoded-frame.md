@@ -96,3 +96,13 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   probes on synthetic and debug data, caps kept (R17.28); `OPENBLAS_NUM_THREADS=16` is the
   declared G-threads environment, not a bug (R17.29). Thin margins disclosed: r_K 5 steps inside
   r; 0.5 and 1.0 cm each 1 above the 28/32 bar.
+- 2026-10-05: Stage C ran once at `862d63c` (GO on #144) and ended **V on G-memory** (PSS
+  12.22 GiB > 12.00, peak 12.896) in seed preparation, before any root was collected
+  (`outputs/task077-corpus-1/report.json`, sha256 `734fa771…94a6c3`). Cause: the pinned
+  `cohort_estimates` held all 2 000 seeds' float64 DINOv2 tokens plus two `cross_gram` copies
+  (about 4.4 GiB). Erratum 2026-10-05 (R17.30–R17.34, branch `task077-memory-fix`): the runner
+  streams the tokens (bit-identical estimates; seed preparation 7.75 GiB at 2 000 seeds),
+  `featurise_corpus` re-maps its stores (same files), preflight checks the protocol sha
+  directly, the load-average key is renamed, `--log` and `outputs/` creation; disclosures of
+  `cprobe-3` and the 2.21 load; EGL takes no GPU lock. Frozen block unchanged. Stage C's one
+  repeat needs the merged fix and a reported GO.
