@@ -97,23 +97,34 @@ def _time_updates(grid: int, horizon: int, batch: int, seed: int, warmup: int, t
     }
 
 
-def time_rollout(grid: int, horizon: int, candidates: int, seed: int, repeats: int) -> dict:
+def time_rollout(
+    grid: int, horizon: int, candidates: int, seed: int, repeats: int, device: str = "cuda"
+) -> dict:
     import torch
 
-    model, dim = _model(grid, seed, "cuda")
+    model, dim = _model(grid, seed, device)
     rng = np.random.default_rng(seed)
     start_features = rng.standard_normal((candidates, dim), dtype=np.float32)
     actions = (0.1 * rng.uniform(-1, 1, (candidates, horizon, 14))).astype(np.float32)
+    sync = torch.cuda.synchronize if device == "cuda" else (lambda: None)
     model.predict_features(start_features, actions)
-    torch.cuda.synchronize()
+    sync()
     begin = time.perf_counter()
     for _ in range(repeats):
         model.predict_features(start_features, actions)
-    torch.cuda.synchronize()
+    sync()
     seconds = (time.perf_counter() - begin) / repeats
     del model
-    torch.cuda.empty_cache()
-    return {"grid": grid, "horizon": horizon, "candidates": candidates, "seconds": seconds}
+    if device == "cuda":
+        torch.cuda.empty_cache()
+    return {
+        "grid": grid,
+        "horizon": horizon,
+        "candidates": candidates,
+        "device": device,
+        "threads": torch.get_num_threads(),
+        "seconds": seconds,
+    }
 
 
 def time_gather(grid: int, horizon: int, batch: int, frames: int, seed: int, repeats: int) -> dict:
@@ -144,11 +155,28 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--timed", type=int, default=60)
+    parser.add_argument(
+        "--cpu-only", action="store_true", help="only the CPU roll-out (1 thread); no GPU, no lock"
+    )
     args = parser.parse_args()
     if args.output.exists():
         raise SystemExit(f"refusing to overwrite {args.output}")
 
     import torch
+
+    if args.cpu_only:
+        torch.set_num_threads(1)
+        report = {"probe": "task077-cost-cpu", "synthetic": True, **_revision()}
+        report["torch"] = torch.__version__
+        report["host"] = platform.node()
+        report["rollouts"] = [
+            time_rollout(8, 60, 147, DEBUG_SEEDS[0], 2, device="cpu"),
+            time_rollout(8, 60, 1, DEBUG_SEEDS[0], 3, device="cpu"),
+        ]
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(report, indent=2) + "\n")
+        print(json.dumps(report, indent=2))
+        return
 
     from embodied_jepa import devices
     from embodied_jepa.run_tools import gpu_guard
