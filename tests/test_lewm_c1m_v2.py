@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -799,8 +800,8 @@ def _commit(seed, target, reading, success=True):
 
 
 def test_determinism_check_tolerance_and_refused_resets():
-    """R17.21 as amended by R17.27: the reading (0.1 cm) and the success outcome are gated, the
-    commit target's difference is reported only; refusals must repeat identically."""
+    """R17.21 as amended by R17.27 and R17.38: the reading (0.1 cm), the success outcome and the
+    commit target (0.6 cm) are gated; refusals must repeat identically."""
     a = [_commit(1, (0.5, -0.1), (0.49, -0.09)), {"seed": 2, "termination_reason": "guard_refusal",
                                                   "executed_steps": 230}]  # fmt: skip
     near = [_commit(1, (0.5004, -0.1), (0.49006, -0.09)), dict(a[1])]
@@ -808,11 +809,27 @@ def test_determinism_check_tolerance_and_refused_resets():
     out = lm.determinism_check(a, near)
     assert out["ok"] and out["resets"][1]["refused_identically"]
     assert out["rule"] == lm.DETERMINISM_RULE
-    # a target 1.5 mm away (a flipped near-tie, or one refinement iterate less) is reported only
+    # a target 1.5 mm away (a flipped near-tie, or one refinement iterate less) is within the
+    # derived 0.6 cm bound (R17.38)
     far_target = [_commit(1, (0.5015, -0.1), (0.49, -0.09)), dict(a[1])]
     out = lm.determinism_check(a, far_target)
     assert out["ok"] and out["resets"][0]["target_diff_m"] == pytest.approx(0.0015)
     assert out["max_target_diff_m"] == pytest.approx(0.0015)
+    assert out["target_bound_m"] == lm.DETERMINISM_TARGET_BOUND_M == 0.006
+    assert out["target_rule"] == lm.DETERMINISM_TARGET_RULE
+    # the bound is the refinement argument's: 2 x (tau/4) at contraction 0.5, plus the reading
+    # gate through 1 / (1 - kappa), rounded up to the next millimetre (tau_commit = 1.0 cm)
+    q, tau = abs(lm.RULE["kappa"]), lm.K0_MEASURED["tau_commit_cm"] / 100.0
+    derived = 2 * q / (1 - q) * lm.REFINE_FRACTION_OF_TAU * tau
+    derived += lm.DETERMINISM_TOLERANCE_M / (1 - lm.RULE["kappa"])
+    assert derived == pytest.approx(0.00567, abs=1e-5)
+    assert lm.DETERMINISM_TARGET_BOUND_M == math.ceil(derived * 1000) / 1000
+    # a target beyond 0.6 cm is V even with the same reading and outcome
+    beyond = [_commit(1, (0.5061, -0.1), (0.49, -0.09)), dict(a[1])]
+    out = lm.determinism_check(a, beyond)
+    assert not out["ok"] and out["resets"][0]["target_diff_m"] == pytest.approx(0.0061)
+    edge = [_commit(1, (0.5059, -0.1), (0.49, -0.09)), dict(a[1])]
+    assert lm.determinism_check(a, edge)["ok"]
     # ... but not when the success outcome differs
     flipped = [_commit(1, (0.5015, -0.1), (0.49, -0.09), success=False), dict(a[1])]
     assert not lm.determinism_check(a, flipped)["ok"]
@@ -1161,6 +1178,22 @@ def test_streamed_estimates_are_bit_identical_to_the_pinned_predict(monkeypatch)
         )
         assert np.array_equal(got, reference), chunk
         assert max(seen) == min(chunk, 300) and sum(seen) == 300
+
+
+def test_streamed_estimates_refuse_a_one_row_final_chunk():
+    """R17.36 (the #145 approval's note 1): a final chunk of exactly one row after another chunk
+    takes ``cross_gram``'s one-row norm path and is not bit-identical, so it is refused; a single
+    chunk (K, D and S) and the corpus's tail of 80 at 128 are not affected."""
+    from embodied_jepa import first_policy as fp
+
+    run = _runner()
+    readout, rng = _small_readout()
+    tokens = readout.features[rng.integers(0, 60, 33)] + 0.1 * rng.standard_normal((33, 700))
+    with pytest.raises(fp.GuardError, match="one-row final chunk"):
+        run.streamed_estimates(readout, (tokens[lo : lo + 32] for lo in range(0, 33, 32)))
+    one = run.streamed_estimates(readout, iter([tokens[:1]]))  # one chunk of one row: pinned path
+    assert np.array_equal(one, readout.predict(tokens[:1]))
+    assert 2000 % run.ESTIMATE_CHUNK == 80
 
 
 def test_cohort_estimates_equal_the_pinned_function(monkeypatch):
