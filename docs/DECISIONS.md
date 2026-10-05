@@ -68,7 +68,10 @@ is kept as written.
 **Decided by Claude under owner delegation (2026-09-30). FROZEN after K0-PASS (R17.25), in force
 once merged on an independent reviewer's APPROVE; the text below was written as a DRAFT.
 Stage C's first run ended V on G-memory; Erratum 2026-10-05 (R17.30–R17.34) records the cause and
-the fix for its one repeat, with the frozen block unchanged.** Revised after
+the fix for its one repeat, with the frozen block unchanged. Stage C's repeat at `4f30fbb` ended
+CORPUS-SEALED (R17.35); Erratum 2026-10-05 (b) (R17.36–R17.39) corrects the bit-identity claim,
+records the featurisation scale probe, gates the determinism re-run's commit target at 0.6 cm and
+makes G-anchor check the frozen 256 frames, with the frozen block unchanged.** Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
 is [apple_lewm_c1m_v2.md](experiments/apple_lewm_c1m_v2.md) (STATUS DRAFT), with the task card
@@ -385,7 +388,9 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       the pinned `cross_gram`, and drops the chunk's tokens. It runs the pinned
       `Readout.predict` once on all rows. `Cohorts.seeds` uses it for every cohort (K, D, S and
       the corpus).
-    - **Equivalence: bit-identical, not within a tolerance.**
+    - **Equivalence: bit-identical, not within a tolerance.** *(Corrected by R17.36: measured,
+      not proved; a one-row final chunk is not bit-identical, cannot occur in TASK-077 and is
+      now refused, and the multiple-of-32 rule is conservative, not the operative condition.)*
       - **By construction.** `cross_gram` works in blocks of 32 rows. A chunk that is a multiple
         of 32 makes exactly the BLAS calls (block against block) that the unchunked path makes,
         and each row's norm is its own sum. The final kernel-ridge product is one call on all
@@ -409,6 +414,7 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       synthetic labels and nothing was simulated for them. The collection phase measured
       8.46 GiB at 100 roots in R17.28, and it does not grow with the number of roots
       (`CORPUS_CHUNK` = 60 roots per map), so the repeat's expected peak is about 8.5 GiB.
+      *(R17.36: an expectation, not a measurement; the repeat measured 8.38 GiB, R17.35.)*
     - **The repeat rule (§10.1).** Stage C gets its one repeat:
       - only at the merge commit of the PR that carries this fix, which is the fix commit to
         record;
@@ -493,6 +499,97 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       - the carried C1 and C1-M blobs.
     - **Not pinned:** the probe script `scripts/probe_task077_memory.py`, which is development
       only.
+- **R17.35–R17.39 — Stage C's repeat and Erratum 2026-10-05 (b)** (2026-10-05, each decided by
+  Claude under owner delegation). The protocol records them in §7.3 and §7.4. The frozen block is
+  unchanged: its sha256 stays `f28e5e2c…548d`, and no bar, seed, salt, cap, ceiling or row
+  changes. The manifest re-pins the changed files and the protocol document.
+  - **R17.35 — Stage C's repeat ended CORPUS-SEALED.**
+    - **The run.** At `4f30fbb`, the erratum's merge commit (#145), on the reviewer's reported GO
+      (#145, issuecomment-5990368000), from the fresh clean worktree `task077-corpus2`, on the
+      CPU with 6 workers and without the GPU lock. G-quiet read 0.10 / 0.08. In-run G-tests
+      passed (2001 passed, 37 skipped). G-hash checked 84 + 13 pins, the frozen sha and the
+      protocol document. G-repro passed 8 of 8. The run took 1 234 s (cap 14 400 s).
+    - **Memory.** Peak process-tree PSS was **8.38 GiB** against the 12.00 GiB ceiling. The
+      "about 8.5 GiB" of R17.30 was an expectation; this is the measurement.
+    - **The row.** 1 995 of 2 000 roots are kept. Five were excluded as `no_decision` (no commit
+      decision at 405): 67692, 67888, 68047, 68414 and 68774, all train seeds. The kept split is
+      1 495 / 250 / 250 (train / val / gate), and 0.25 % excluded is below the 2 % bar.
+    - **Render disagreements.** Two seeds, 67133 and 68878, each had one post-look render that
+      differed from the other two in 4 pixels by at most 1 level, with equal states. The majority
+      frame was used.
+    - **Artifacts** (in `/home/huhn/develop/emai/worktrees/task077-corpus2`, git-ignored):
+      - the sealed manifest `outputs/task077-corpus-2/corpus/manifest.json`, sha256
+        **`ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb`**, which every later
+        stage requires;
+      - the report `outputs/task077-corpus-2/report.json`, sha256
+        `2f84515bbdd612c75f56439355eff580f0617f0b5a7e64652a3626653dd07e47`.
+    - **The void first run is kept** as the record of the V: `outputs/task077-corpus-1/report.json`
+      in `task077-corpus`, sha256 `734fa771…94a6c3` (R17.30). Neither corpus worktree is edited.
+    - **What it admits.** Stage O may get its own reported GO (§7 step 5). Stage C is done; it
+      is not repeated.
+  - **R17.36 — the bit-identity claim, corrected (the #145 approval's note 1 and notes 2–3).**
+    - R17.30's "by construction" argument was not true for every tail. The estimates differ by
+      about 1e-15 when the **final chunk has exactly one row**: `cross_gram`'s norm line
+      (`np.einsum("ij,ij->i")`) takes a different reduction path on a one-row array. The reviewer
+      measured it at N = 1 985 (chunks of 32 or 64), N = 97 (32 or 96) and N = 33 (32).
+    - **The multiple-of-32 rule is not the operative condition.** A chunk of 100 was also
+      bit-identical at N = 2 000. The runner keeps the rule as a conservative one.
+    - **It cannot occur in TASK-077.** The corpus's final chunk is 80 rows at 128, and K, D and S
+      are single chunks. The runner now refuses a one-row final chunk after another chunk, and a
+      test covers it. Bit-identity is described as measured, not proved, in §7.2, here and in
+      the runner's docstrings.
+    - **The 7.75 GiB and the 8.5 GiB.** 7.75 GiB measured the estimate step only, with stand-in
+      frames. The stage's "about 8.5 GiB" was an expectation, now measured at 8.38 GiB (R17.35).
+  - **R17.37 — the featurisation's scale probe (the #144 approval's note 5).** The open item
+    before Stage O's GO.
+    - **Method.** `scripts/probe_task077_featurise.py` (development only, not pinned) writes a
+      synthetic corpus of the sealed corpus's size (1 995 roots: 1 495 / 250 / 250) with
+      uniform-noise frames under the labels 900000–901999. Nothing is simulated, and the real
+      corpus is not read. It then runs the runner's own `featurise` stage on it with `--debug`,
+      through `scripts/gpu_run.sh --wait`, on a clean committed tree, with a `tests` record at the
+      same revision. It samples the tree's PSS and the process's GPU memory around the stage.
+      Noise roots are 2.49 MB each against about 0.61 MB for rendered ones, so reading them is
+      slower than on the real corpus.
+    - **Result** (`task077-fscale-3`, at `ab5935f`, clean tree; its `tests` record at the same revision passed
+      2002 with 37 skipped): the stage took **212.7 s** against the 3 600 s
+      cap (17 ×); peak PSS **1.76 GiB** against 12.00 GiB; GPU memory **0.90 GiB** for the
+      process (torch's peak allocation 0.49 GiB), against the 8 GiB `gpu_guard` requires free;
+      G-anchor's maximum difference 7.4e-5 on 256 frames against 1e-3; 13.8 GB of feature files.
+      Probe report sha256 `07663fc18f722daef3c6c0df071d434248ebbd56542e6c2333140f0475133fbd`, stage report `f9ebedc9b6094f5071291b595fdb21aa2e33a197f774d40d8ad70f65447a9494`, in the `task077-stageo-prep` worktree.
+    - **The cap is kept** at 3 600 s.
+    - **Disclosed:** `task077-fscale-1` (at `badbbe1`) ended V on G-hash because documentation
+      was edited in its worktree during the run (the R14.9 lesson, in a development probe); its
+      featurisation completed in 201.6 s. `task077-fscale-2` (at `badbbe1`, clean) ended
+      FEATURISED-DEBUG in 206.8 s with 1.72 GiB PSS and 0.90 GiB of GPU memory. Both checked
+      G-anchor on 32 frames (R17.39).
+  - **R17.38 — the determinism re-run's commit target is gated at 0.6 cm (the #144 approval's
+    note 1; settled before Stage S's GO).**
+    - **The choice.** Of the two options the approval offered, the target's difference is
+      **gated at a derived bound**, not left to an explanation in the results. Real
+      nondeterminism in W's roll-out or R8, with the same frame, then voids instead of hiding
+      behind an unchanged success bit.
+    - **The bound.** The refinement stops at a move of at most τ_commit/4 = 0.25 cm and returns
+      that iterate; at contraction |κ| = 0.5 it is within 0.25 cm of the fixed point, so two runs
+      end at most 0.5 cm apart. A reading difference within the 0.1 cm gate moves the fixed point
+      by at most 0.1/(1 − κ) = 0.067 cm. 0.567 cm, rounded up: **0.6 cm**. A test recomputes it
+      from the frozen values.
+    - **Its assumption, disclosed.** W's learned map contracts like the rule's, and the
+      refinement converged. Otherwise a renderer flake could void S falsely. The gate can bind
+      only when a frame differs, which is rare (R17.35's 2 of 2 000), and a V is a repeat.
+    - **Where.** `DETERMINISM_TARGET_BOUND_M` and `DETERMINISM_TARGET_RULE` in `lewm_c1m_v2.py`,
+      outside the frozen block; `determinism_check` gates on them and reports both rules. The
+      frozen block's `determinism_rule` text is unchanged and superseded for the target only.
+  - **R17.39 — G-anchor checks the frozen block's 256 frames.** Found while preparing R17.37.
+    The frozen block carries `FEATURE_ANCHOR` = {frames 256, bound 1e-3} from TASK-076, but
+    `featurise_corpus` compared the first root's 32 frames, as TASK-075's and TASK-076's runners
+    did. It now compares the first 256 kept frames (the first four train roots). The bound is
+    unchanged, and a test checks the count.
+  - **The erratum's pins.** Changed: `scripts/run_lewm_c1m_v2.py`, `src/embodied_jepa/lewm_c1m_v2.py`
+    (outside the frozen block), `src/embodied_jepa/lewm_c1m_v2_offline.py`,
+    `tests/test_lewm_c1m_v2.py` and the protocol document; their sha256s and
+    `protocol_document_sha256` are re-pinned. Unchanged: the frozen block and its pin
+    `f28e5e2c…548d`, TASK-076's 84 pins, and the carried C1 and C1-M blobs. Not pinned: the
+    probe script.
 
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)

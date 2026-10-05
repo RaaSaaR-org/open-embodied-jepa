@@ -1584,21 +1584,21 @@
   "benchmarks/manifests/apple-plate-twin-v2.json": "bc9c0ffdec00089f76574498696addaffa2d8484d2eb394b00b23df8033375a0",
   "scripts/run_c1_feasibility.py": "f92262dd06f91fa14ac38f06e0707256d8348d6320668218c76b0a9dc0d2543f",
   "scripts/run_c1m_feasibility.py": "6db5e69479b6bf195c8cdfd4c91417abf81f40643e91180efb840d751c132aea",
-  "scripts/run_lewm_c1m_v2.py": "bbf04ad0583446e814d0814b8f21fc1f55a52d8e7d7080897f70ce7355c3094e",
-  "src/embodied_jepa/lewm_c1m_v2.py": "d28a543127221d4c8225ed18d4f536141e5a05af476acc8a3d89c3e2b84a13c3",
-  "src/embodied_jepa/lewm_c1m_v2_offline.py": "fb3238ba2e14d4acfeeb0934fe7f79c518ba4d3629c84e916738a2552fc17a68",
+  "scripts/run_lewm_c1m_v2.py": "49c54462cd36a9316d0d0aa60ca793abbfb6a5c7a42fa74cd49c5d4a0d7fd7dc",
+  "src/embodied_jepa/lewm_c1m_v2.py": "cc765b217b6b91486d8b094b10c9192aa06beff3a1d49dd51f446f97aa6a8545",
+  "src/embodied_jepa/lewm_c1m_v2_offline.py": "13253588f4b1c2bad1822413e75ae27535c711b2afaed259ce21b884257e862c",
   "src/embodied_jepa/lewm_c1m_v2_runtime.py": "04921828c9989f28f9b57117b52be3b2733f220e4fa58ccaad22e454707f171e",
   "src/embodied_jepa/lewm_c1m_v2_train.py": "dbbac044472649c775c54e7ffb8b33c3f5b814d6756bc6e2f3872437350d2b75",
   "src/embodied_jepa/lewm_next_c1.py": "4a3da542bdc474f6e0a2e1b6a2b3a442ae8f402d29fcbe143bc48072cb0934cf",
   "src/embodied_jepa/lewm_next_c1_runtime.py": "770dc7e917d6c38b98514ad57758efe91e6e66e41774fd3b47b29deea8a748e0",
   "src/embodied_jepa/lewm_next_c1m.py": "7101c14dc7b292afb9311e61f847684083085b491deccefd71bc2a0e76283879",
   "src/embodied_jepa/lewm_next_c1m_runtime.py": "a3fc591799039a8a229568a99407afb99882eba62e8b1744d30567270ef7e4a9",
-  "tests/test_lewm_c1m_v2.py": "af22fa86c18d9298765f30e1d8e3242f8ac1bdcffc4e11de63b4ca848be6ff3e"
+  "tests/test_lewm_c1m_v2.py": "726f3c653eaf17731f7143ff5a57cbb27b1019998e053ee07a7b2b315d732968"
  },
  "note": "FROZEN after K0-PASS (R17.25), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins the stage's own files, the carried C1 and C1-M code files, the test file and TASK-076's manifest (whose 84 pins the runner checks too); protocol_document_sha256 is the protocol's sha256. K0's report: outputs/task077-k0-1/report.json, sha256 9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235.",
  "outcome": null,
  "protocol": "apple_lewm_c1m_v2",
- "protocol_document_sha256": "1bf22166e843ef3a0f78b84c735a228fb437a08ca995d8698a1d9d1ec590cf92",
+ "protocol_document_sha256": "8483979983908317497ad33560a45794c63a1fc0fefb52c69bb8b7db09b1b9f6",
  "status": "FROZEN",
  "task": "TASK-077"
 }

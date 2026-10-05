@@ -179,7 +179,11 @@ def featurise_corpus(
     out.mkdir(parents=True, exist_ok=True)
     encoder = pe.load_pretrained() if encoder is None else encoder
     encoder.to(device).eval()
-    files, anchor, first = {}, None, None
+    files, anchor = {}, None
+    # G-anchor's frames (R17.39): the first FEATURE_ANCHOR["frames"] (256) kept frames, in split
+    # and root order, as the frozen block declares (32 before, as TASK-075/076 checked)
+    anchor_need = int(lm.FEATURE_ANCHOR["frames"])
+    anchor_frames, anchor_pooled = [], []
     table = {}
     for split in ("train", "val", "gate"):
         seeds = [int(s) for s in manifest["split"][split]]
@@ -210,8 +214,10 @@ def featurise_corpus(
             side["state405"].append(root["state405"])
             side["apple"].append(root["apple_estimate"])
             side["last_grasp"].append(root["last_grasp"])
-            if first is None:
-                first = (root["frames"][:32].copy(), pooled[:32].copy())
+            take = min(anchor_need - sum(len(a) for a in anchor_frames), lm.N_FRAMES)
+            if take > 0:
+                anchor_frames.append(root["frames"][:take].copy())
+                anchor_pooled.append(pooled[:take].copy())
             if check is not None and i % 50 == 0:
                 check()
             del tokens, pooled, stack
@@ -233,8 +239,8 @@ def featurise_corpus(
         table[split] = n
         files[split] = {k: sha256_file(p) for k, p in paths.items()}
     gpu_seconds = time.monotonic() - started
-    if first is not None:
-        anchor = anchor_check(encoder, first[0], first[1])
+    if anchor_frames:
+        anchor = anchor_check(encoder, np.concatenate(anchor_frames), np.concatenate(anchor_pooled))
     return {
         "device": str(device),
         "files_sha256": files,

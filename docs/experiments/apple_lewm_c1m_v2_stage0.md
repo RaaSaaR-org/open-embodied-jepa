@@ -268,7 +268,9 @@ worst case:
   starting, the main session posts a notice in chat.
 - **Required before Stage O's GO (R17.24):** a scale probe of Stage O's readouts and of Stage C's
   per-root cost, on synthetic or debug data, that sets their caps to at least 1.5 × the measured
-  worst case.
+  worst case. *(Done: R17.28, §7 below. The featurisation's own scale probe, the #144
+  approval's note 5, is done too: R17.37, protocol §7.4, 212.7 s for 1 995 synthetic roots
+  against the 3 600 s cap.)*
 
 ## 6. The #143 review's changes (R17.20–R17.24)
 

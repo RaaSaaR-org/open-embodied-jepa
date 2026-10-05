@@ -421,10 +421,16 @@ def streamed_estimates(readout, token_chunks) -> np.ndarray:
     Each chunk's cross-Gram against the readout's training rows is computed by the pinned
     ``info_ceiling.cross_gram`` and the chunk's tokens are then dropped; the small [N, n_train]
     Gram and the norms are concatenated and the pinned kernel-ridge ``Readout.predict`` runs once
-    on all N rows, exactly as ``XYReadout.predict`` does. ``cross_gram`` works in blocks of
-    ``CROSS_GRAM_BLOCK`` rows, so with chunks that are multiples of it every BLAS call (block
-    against block) is the one the unchunked path makes, and every row's norm is its own sum: the
-    estimates are bit-identical (tests and ``scripts/probe_task077_memory.py``)."""
+    on all N rows, exactly as ``XYReadout.predict`` does.
+
+    Bit-identity is measured, not proved (correction 2026-10-05, R17.36; the #145 approval's
+    note 1). It held at every size tested (tests and ``scripts/probe_task077_memory.py``), and
+    a chunk of 100, not a multiple of ``CROSS_GRAM_BLOCK``, was bit-identical too, so the
+    multiple-of-32 rule is conservative, not the operative condition. It fails when the final
+    chunk has exactly one row: ``cross_gram``'s norm line (``einsum("ij,ij->i")``) takes a
+    different reduction path on a one-row array, and the estimates then differ by about 1e-15.
+    That cannot occur in TASK-077 (2 000 corpus seeds leave a tail of 80 at 128; K, D and S are
+    one chunk each), and a one-row final chunk after another chunk is refused here."""
     from embodied_jepa import first_policy as fp
     from embodied_jepa import info_ceiling as ic
 
@@ -434,6 +440,8 @@ def streamed_estimates(readout, token_chunks) -> np.ndarray:
         grams.append(g_rt)
         norms.append(norm)
         del tokens
+    if len(norms) > 1 and len(norms[-1]) == 1:
+        raise fp.GuardError("G-cohort: a one-row final chunk is not bit-identical (R17.36)")
     out = readout.readout.predict(np.concatenate(grams), np.concatenate(norms))
     if not np.isfinite(out).all():
         raise fp.GuardError("G-finite: a readout estimate is not finite")
@@ -448,7 +456,10 @@ def cohort_estimates(pool, readout, encoder, seeds, resets, cap: float, *, chunk
     with 2.93 GiB of copies, which voided the first Stage C run on G-memory. Here the frames are
     rendered exactly as there (``render_majority``, the same tasks, cap and checks), and the
     tokens are featurised (batch size 1, ``first_policy_perception.featurise``, as there) and
-    reduced to their cross-Gram ``chunk`` frames at a time. The output is the same dict."""
+    reduced to their cross-Gram ``chunk`` frames at a time. The output is the same dict, with
+    estimates that were bit-identical wherever measured (see ``streamed_estimates`` for the one
+    known exception, a one-row final chunk, which is refused). ``chunk`` is kept a multiple of
+    ``CROSS_GRAM_BLOCK``: a conservative rule, not the condition for bit-identity (R17.36)."""
     from embodied_jepa import first_policy_perception as fpp
 
     chunk = ESTIMATE_CHUNK if chunk is None else int(chunk)

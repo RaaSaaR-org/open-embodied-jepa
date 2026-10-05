@@ -41,7 +41,7 @@ L-mean, and a random choice. "LeWM needed" is reported only and not expected.
 
 **The protocol (FROZEN after K0-PASS, R17.25; in force once merged on an independent APPROVE):**
 [`docs/experiments/apple_lewm_c1m_v2.md`](../../../docs/experiments/apple_lewm_c1m_v2.md).
-Rulings R17.1–R17.29 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
+Rulings R17.1–R17.38 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
 owner delegation (2026-09-30). The plan is `docs/PLAN.md`.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. This task does not
@@ -54,7 +54,7 @@ change it unless an L-PASS is followed by its own reviewed ruling.
       `select_checkpoint`/`last_two_triggered`, the `"not evaluated"` sentinel, no runner imports,
       no privileged read in W or a twin), debug smokes and the scale probe.
 - [x] K0 on a reported GO (K0-PASS at `306fbdc`); K0's values in the frozen block.
-- [ ] The freeze merged on an independent reviewer's reported APPROVE.
+- [x] The freeze merged on an independent reviewer's reported APPROVE (#144, `862d63c`).
 - [ ] Stages C, O, T, G, D and S, each on its own reported GO, from a clean worktree of the merged
       revision, after a full `pytest` at that revision (G-tests).
 - [ ] Results PR, with every restated number checked by an independent reviewer.
@@ -106,3 +106,20 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   directly, the load-average key is renamed, `--log` and `outputs/` creation; disclosures of
   `cprobe-3` and the 2.21 load; EGL takes no GPU lock. Frozen block unchanged. Stage C's one
   repeat needs the merged fix and a reported GO.
+- 2026-10-05: Stage C's one repeat ran at `4f30fbb` (GO on #145, issuecomment-5990368000) and
+  ended **CORPUS-SEALED** (R17.35): 1 995/2 000 roots, 5 train roots excluded as `no_decision`
+  (67692, 67888, 68047, 68414, 68774); sealed manifest
+  `outputs/task077-corpus-2/corpus/manifest.json` (worktree `task077-corpus2`), sha256
+  `ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb`; report sha256
+  `2f84515bbdd612c75f56439355eff580f0617f0b5a7e64652a3626653dd07e47`; peak PSS 8.38 GiB; 1 234 s;
+  two render disagreements (67133, 68878: 4 px by at most 1 level, states equal). The void run 1
+  report (`734fa771…94a6c3`) is kept.
+- 2026-10-05: Erratum 2026-10-05 (b) (R17.36–R17.39, branch `task077-stageo-prep`): the
+  bit-identity claim corrected (a one-row final chunk differs by about 1e-15; cannot occur here;
+  now refused); the featurisation scale probe (`scripts/probe_task077_featurise.py`, synthetic
+  1 995-root corpus, the runner's own `featurise` stage through `gpu_run.sh --wait`, at
+  `ab5935f`): 212.7 s against the 3 600 s cap, peak PSS 1.76 GiB, GPU 0.90 GiB; the determinism
+  re-run's commit target gated at 0.6 cm (R17.38, before Stage S's GO); G-anchor checks the
+  frozen 256 frames (R17.39). Disclosed: `task077-fscale-1` was V on G-hash (docs edited in its
+  worktree during the run). Frozen block unchanged. Stage O needs this erratum merged and its
+  own reported GO.

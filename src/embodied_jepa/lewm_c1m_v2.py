@@ -296,16 +296,23 @@ def reached_405(record: dict) -> bool:
     return record.get("frame405") is not None
 
 
-def determinism_check(first: list[dict], again: list[dict], tol_m: float | None = None) -> dict:
-    """W's re-run on S's first resets (R17.21, amended by R17.27): a reset refused before 405
-    must be refused again identically (termination reason and executed steps); a committed reset
-    must commit again, with its R-plate reading within the declared tolerance (0.1 cm) and the
-    same success outcome. The commit target's difference is reported, never gated: the target is
-    an argmin over 147 candidates followed by a refinement stopped at tau/4, so a renderer flake
-    that meets a near-tie or stops the refinement one iterate earlier can move it by more than
-    0.1 cm without any difference in what the arm saw (R17.27). ``ok`` is False on any gated
-    mismatch (the stage is V)."""
+def determinism_check(
+    first: list[dict],
+    again: list[dict],
+    tol_m: float | None = None,
+    target_bound_m: float | None = None,
+) -> dict:
+    """W's re-run on S's first resets (R17.21, amended by R17.27 and R17.38): a reset refused
+    before 405 must be refused again identically (termination reason and executed steps); a
+    committed reset must commit again, with its R-plate reading within the declared tolerance
+    (0.1 cm), the same success outcome and, under R17.38, its commit target within 0.6 cm. The
+    target is not held to the reading's 0.1 cm: it is an argmin over 147 candidates followed by a
+    refinement stopped at tau/4, so a renderer flake that meets a near-tie or stops the
+    refinement one iterate earlier can move it by more than 0.1 cm without any difference in what
+    the arm saw (R17.27); the refinement argument bounds that at about 0.57 cm (R17.38). ``ok``
+    is False on any gated mismatch (the stage is V)."""
     tol = DETERMINISM_TOLERANCE_M if tol_m is None else float(tol_m)
+    bound = DETERMINISM_TARGET_BOUND_M if target_bound_m is None else float(target_bound_m)
     items, ok = [], True
     for a, b in zip(first, again, strict=True):
         if a["seed"] != b["seed"]:
@@ -328,15 +335,17 @@ def determinism_check(first: list[dict], again: list[dict], tol_m: float | None 
             sa, sb = bool(a["success"]), bool(b["success"])
             item |= {
                 "reading_diff_m": dr,
-                "target_diff_m": dt,  # reported only (R17.27)
+                "target_diff_m": dt,  # gated at 0.6 cm (R17.38; reported only under R17.27)
                 "success": [sa, sb],
-                "ok": dr <= tol and sa == sb,
+                "ok": dr <= tol and sa == sb and dt <= bound,
             }
         ok = ok and item["ok"]
         items.append(item)
     return {
         "tolerance_m": tol,
+        "target_bound_m": bound,
         "rule": DETERMINISM_RULE,
+        "target_rule": DETERMINISM_TARGET_RULE,
         "resets": items,
         "max_target_diff_m": max(
             (i["target_diff_m"] for i in items if "target_diff_m" in i), default=None
@@ -824,6 +833,20 @@ DETERMINISM_RULE = (
     "is refused again identically (termination reason and executed steps); a committed reset "
     "commits again, with its R-plate reading within 0.1 cm and the same success outcome; the "
     "commit target's difference is reported, not gated; any gated mismatch is V"
+)
+# R17.38 (decided by Claude under owner delegation; the #144 approval's note 1), outside the frozen
+# block, whose text above it supersedes for the target only: the commit target's difference is
+# gated at a bound derived from the refinement argument of §7 step 9. The refinement stops once a
+# move is <= tau_commit / 4 = 0.25 cm and returns that iterate; with the rule's contraction
+# |kappa| = 0.5 the iterate is then within 0.5 / (1 - 0.5) x 0.25 = 0.25 cm of the fixed point, so
+# two runs end at most 0.5 cm apart. A reading difference within the 0.1 cm gate moves the fixed
+# point by at most 0.1 / (1 - kappa) = 0.067 cm. 0.5 + 0.067 = 0.567 cm, rounded up to 0.6 cm. A
+# larger difference is V (real nondeterminism voids rather than hides).
+DETERMINISM_TARGET_BOUND_M = 0.006
+DETERMINISM_TARGET_RULE = (
+    "R17.38: on a committed reset the commit target's difference between the two runs is gated "
+    "at 0.6 cm (the refinement argument: 2 x 0.25 cm from the tau/4 stop at contraction 0.5, plus "
+    "0.1 cm / 1.5 from the reading gate, rounded up); a larger difference is V"
 )
 S_ROWS = {
     "V": "one repeat of the stage after a recorded fix",
