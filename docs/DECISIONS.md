@@ -63,6 +63,90 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-05 (b) — TASK-077's DRAFT preregistration: LeWM chooses the single committed place aim under C1-M on an 8 × 8 latent (R17; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30). DRAFT: nothing is frozen.** The document
+is [apple_lewm_c1m_v2.md](experiments/apple_lewm_c1m_v2.md) (STATUS DRAFT), with the task card
+TASK-077. It applies the C1-M record's row M-PROCEED (R16.13), which admits only the drafting of a
+preregistration. No seed of TASK-077's block has been simulated. The only measurement made for it
+is a development GPU and CPU cost probe on synthetic features (`scripts/probe_task077_cost.py`;
+reports `outputs/task077-cost-2/report.json`, sha256 `0669bf24…378b`, at `2dc6106`, and
+`outputs/task077-cost-cpu-1/report.json`, sha256 `f760f32f…28e1`, at `5218857`, in the
+`task077-prereg` worktree; an earlier run, `task077-cost-1` at `39c6967`, ran out of GPU memory and
+wrote no report). It sizes the budget and caps and gates nothing. The labels are R17 because
+R1–R16 are taken; a search of every local and remote ref (74) and every worktree's `docs` on
+2026-10-05 found no R17.
+
+- **R17.1 — form.** A DRAFT protocol and an MC card (TASK-077), not frozen. The freeze follows
+  TASK-076's sequence: this draft's independent review; Stage 0 (code, frozen block, manifest,
+  tests, debug smokes and the scale probe); K0 on a reported GO; the freeze merged on an
+  independent reviewer's reported APPROVE; then each stage on its own reported GO.
+- **R17.2 — the condition is C1-M as recorded.** v2's reset, P-3's pick, the step-300 move over a
+  4 cm disc (ρ\* = 4 cm), cell A's rule (κ = −0.5, L = 2, s0 = 405, s1 = 525), one aim committed at
+  405, e9's place; the 147-candidate box with a_lo = −0.5; r = 465 and h = 60. τ_commit and the
+  ceiling are re-measured in K0 on fresh seeds (K0 stops: level 0 < 28/32, ceiling < 30/32, r later
+  than 465, palm speed at 405 > 0.5 cm per step).
+- **R17.3 — the model.** TASK-066's LeWM token predictor (history one, capacity and settings
+  unchanged) on frozen DINOv2 tokens pooled to 8 × 8 (24 576-d). Two departures from TASK-066's
+  recipe, declared: training windows of 60 transitions (the gated horizon; TASK-066's readings
+  degraded beyond its training window) and batch 16 (batch 64 at T = 60 ran out of the 16 GB GPU's
+  memory in the probe; 960 transitions per update against TASK-066's 1 024). Training on CUDA;
+  every prediction a gate or the closed loop reads is computed on the CPU (7.4 s for 147 candidates
+  on one thread, measured).
+- **R17.4 — the corpus.** 2 000 roots (67000–68999) by the privileged scripted collector with aims
+  uniform over the box; frames 403–467; split by root before collection into train 1 500, val 250
+  and gate 250. The gate split serves only the offline gates.
+- **R17.5 — the budget and saturation (TASK-074's lessons).** Calibration W and N, 50 000 updates
+  each, select every 1 000; U = clamp(5 000·⌈2·max u_sat/5 000⌉, 10 000, 100 000); the block
+  passes `run_tools.check_budget`, so no budget row exists. Selection and saturation use
+  `run_tools.select_checkpoint` (earliest within 1 %); `last_two_triggered` is a reported flag that
+  never raises or escalates, and an unsaturated N is reported beside every W-versus-N comparison of
+  its seed.
+- **R17.6 — the offline gates at h = 60 on 8 × 8** (never gated by any task). Stage O: O1 (c_plate's
+  upper bound ≤ τ_commit), O3 (below the constant prior), O4 (plate-hidden lower bound > τ_commit).
+  Stage G on the gate split, all three seeds: G1 no collapse (calibrated bars from the calibration W
+  on val, floors 0.10 and 0.25, W − N comparative part, truncation controls), G2 copy-last ≤ 0.8 and
+  G4 sensitivity ≥ 1.10 (carried from TASK-065/066 and labelled as allocations), G3 W/N < 1.0
+  (definitional), G5 the predicted plate at r (upper bound ≤ τ_commit, measured; ratio to N < 1.0).
+  H-GATE-FAIL and G-NO-BAR escalate without a clause.
+- **R17.7 — the twins are trained models.** N is a trained action-blind model; L-shuf and L-mean
+  are W rolled from the next reset's encoded frame and from the train split's mean encoded latent;
+  L-rand is a random grid candidate. Every candidate-choosing arm shares W's grid, built from
+  R-plate's reading at 405 (conservative for the twin tests). None is a privileged proxy.
+- **R17.8 — the gated cohort and its bars (R9.8, R9.9).** 64 fresh resets (66200–66263): W(S) ≥
+  56/64 (τ_commit's bar fraction); non-inferiority to the better of H-rule and H-sysid with δ =
+  8/64, **the design note's proposal, an allocation, not calibrated** (R15.6's label); W beats N,
+  L-shuf, L-mean and L-rand by exact one-sided McNemar p < 0.01. Rows: S-VOID-CEILING, L-NO-GAIN
+  (clause), L-INFERIOR (clause), L-PASS (the primary claim), L-TWIN-WEAK, L-NEAR, L-BAR. "LeWM
+  needed" is reported only and not expected.
+- **R17.9 — the staged GO flow and the void rule.** K0, C, O, T, G, D (16 resets, L-DEV-STOP) and S,
+  each on its own reported GO from a clean worktree of the merged revision. One repeat per stage
+  after a committed, pushed and recorded fix; a second V closes the task INCONCLUSIVE. Two new
+  guards from the #141 review: G-tests (a full `pytest` at the exact revision before any stage) and
+  G-sentinel (a field not evaluated holds `"not evaluated"`, never a row; the `early_verdict` bug).
+- **R17.10 — the clause.** It fires on L-NO-GAIN or L-INFERIOR only, and closes preregistering
+  LeWM selection of a single committed place aim at 405 under C1-M by a history-one TASK-066-family
+  predictor on frozen DINOv2 tokens pooled to 8 × 8, rolled 60 steps and read by a dual-ridge plate
+  readout, and its recipe variants. It does not close 4 × 4 on a larger corpus (untested), other
+  latents, longer history or action chunking, other encoders or readouts, other conditions, C2,
+  the LeWM backend, v2 or the product goal.
+- **R17.11 — seeds and salts.** Block 66000–68999: K 66000–66031, D 66100–66115, S 66200–66263,
+  model seeds 66800–66802, calibration 66810, debug 66900–66999, corpus 67000–68999. Salts
+  8101–8112. A search of all 74 refs found 66000–66999 nowhere and 67000–68999 only as byte and row
+  counts; 69000–69999 was avoided (a recorded RNG value 69112). 58000–58999 and 63000–64999 are
+  excluded; the block is outside every forbidden range in `lewm_next_c1m`.
+- **R17.12 — the cost probe.** A development measurement on synthetic data and debug torch seeds,
+  through `gpu_run.sh --wait`. 8 × 8: 0.110 s per update at T = 16, batch 64; out of memory at
+  T = 60, batch 64; 0.161 s at T = 60, batch 16. Stage T is therefore about 22–58 h of GPU in eight
+  per-job slots, several times PLAN.md's 4 × 4 sizing; this is stated as a cost, not hidden.
+- **R17.13 — the #141 review's caveats bind the wording.** 60/64 is never cited as a margin
+  (H-read met its allowance exactly; ρ\* was set by one reset; the fixed point converged on
+  21/64); 4 × 4 on a larger corpus is untested (Stage O reports it only); 8 × 8 dynamics have never
+  been gated; the full test suite runs at the exact commit before any stage; the new runner fixes
+  the `early_verdict` placeholder.
+- **R17.14 — R7's canonical sentence is unchanged** by this draft. Only a reviewed ruling after an
+  L-PASS could change it.
+
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 
 **Outcome: M-PROCEED** ([apple_lewm_next_v2_c1m_feasibility.md](experiments/apple_lewm_next_v2_c1m_feasibility.md) §2; report

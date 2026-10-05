@@ -265,6 +265,22 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       and an independent review. No protocol, no GPU and no task number yet.
     - **Next.** The record's independent review; then, on approval, the preregistration draft
       (8 × 8 calibration run first, to size its budget).
+  - **TASK-077 preregistration (DRAFT, 2026-10-05, R17; decided by Claude under owner
+    delegation)** ([apple_lewm_c1m_v2.md](experiments/apple_lewm_c1m_v2.md); not frozen, no seed
+    of its block simulated). W, TASK-066's LeWM token predictor on frozen DINOv2 tokens pooled to
+    8 × 8 and trained over the 60-step horizon, ranks the 147 candidate aims at 405 by their
+    predicted plate at r = 465; N, L-shuf and L-mean are trained twins, L-rand a random choice.
+    - **Stages:** K0 (τ_commit, ceiling, r; CPU) → freeze → a 2 000-root corpus → Stage O (8 × 8
+      readout at r against τ_commit) → training (a `check_budget`-passing block, cap 100 000, no
+      budget row) → the 8 × 8 dynamics and predicted-plate gates at h = 60 (never gated before) →
+      16 development resets → 64 gated resets with R9.8's bar (56/64), non-inferiority within
+      δ = 8/64 (an allocation) and McNemar tests against N, L-shuf, L-mean and L-rand.
+    - **GPU:** a cost probe on synthetic data measured 0.161 s per 8 × 8 update at T = 60, batch 16
+      (batch 64 ran out of memory), so training is about 22–58 h of GPU in eight per-job slots,
+      several times the 4 × 4 sizing above. The closed loop runs on the CPU.
+    - **Clause:** L-NO-GAIN or L-INFERIOR only, scoped to this condition, latent and predictor
+      recipe; 4 × 4 on a larger corpus stays untested and open.
+    - **Next:** this draft's independent review, then Stage 0 and K0.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
