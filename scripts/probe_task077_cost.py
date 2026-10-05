@@ -59,6 +59,16 @@ def _model(grid: int, seed: int, device: str):
 def time_updates(grid: int, horizon: int, batch: int, seed: int, warmup: int, timed: int) -> dict:
     import torch
 
+    try:
+        return _time_updates(grid, horizon, batch, seed, warmup, timed)
+    except torch.OutOfMemoryError as error:
+        torch.cuda.empty_cache()
+        return {"grid": grid, "horizon": horizon, "batch": batch, "oom": str(error)[:200]}
+
+
+def _time_updates(grid: int, horizon: int, batch: int, seed: int, warmup: int, timed: int):
+    import torch
+
     model, dim = _model(grid, seed, "cuda")
     rng = np.random.default_rng(seed)
     features = rng.standard_normal((batch, horizon + 1, dim), dtype=np.float32)
@@ -155,6 +165,9 @@ def main() -> None:
         time_updates(8, 16, 64, seed_a, 10, args.timed),
         time_updates(8, 60, 64, seed_a, 5, max(10, args.timed // 3)),
         time_updates(8, 60, 32, seed_b, 5, max(10, args.timed // 3)),
+        time_updates(8, 60, 16, seed_b, 5, max(10, args.timed // 3)),
+        time_updates(8, 30, 32, seed_b, 5, max(10, args.timed // 3)),
+        time_updates(4, 60, 64, seed_b, 5, max(10, args.timed // 3)),
     ]
     report["rollouts"] = [
         time_rollout(8, 60, 147, seed_a, 5),
