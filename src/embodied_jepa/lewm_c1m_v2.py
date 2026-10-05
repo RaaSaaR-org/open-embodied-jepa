@@ -1,11 +1,11 @@
 """TASK-077 (``apple_lewm_c1m_v2``): LeWM chooses the single place aim committed at 405 under C1-M.
 
-Protocol ``docs/experiments/apple_lewm_c1m_v2.md`` (STATUS DRAFT; rulings R17.1-R17.18 in
-``docs/DECISIONS.md``, decision 2026-10-05 (b), each decided by Claude under owner delegation,
-2026-09-30). This module is the protocol's **frozen block** as module constants, with its
-statistics, the Stage-0 simulations and every stage's row ladder. It is DRAFT until the freeze:
-K0's measured values are ``None`` here until a reported K0 enters them, and the sha pin of
-:func:`frozen_sha256` is set only at the freeze (``tests/test_lewm_c1m_v2.py``).
+Protocol ``docs/experiments/apple_lewm_c1m_v2.md`` (STATUS FROZEN after K0-PASS, R17.25; rulings
+R17.1-R17.29 in ``docs/DECISIONS.md``, decision 2026-10-05 (b), each decided by Claude under owner
+delegation, 2026-09-30). This module is the protocol's **frozen block** as module constants, with
+its statistics, the Stage-0 simulations and every stage's row ladder. K0's measured values are in
+:data:`K0_MEASURED`, and the sha of :func:`frozen_sha256` is pinned in ``tests/test_lewm_c1m_v2.py``
+and the manifest; the freeze takes effect when merged on an independent reviewer's APPROVE.
 
 LeWM makes one decision: W, a TASK-066-family LeWM token predictor on frozen DINOv2 tokens pooled
 to 8 x 8, encodes the onboard frame at 405, rolls every candidate aim's 60 stand-in commands to
@@ -39,11 +39,14 @@ from embodied_jepa.contracts import ContractError
 
 PROTOCOL = "apple_lewm_c1m_v2"
 TASK = "TASK-077"
-STATUS = "DRAFT"
+STATUS = "FROZEN"
 DOCUMENT = "docs/experiments/apple_lewm_c1m_v2.md"
 MANIFEST = "benchmarks/manifests/apple-lewm-c1m-v2.json"
 DELEGATED = "decided by Claude under owner delegation (2026-09-30)"
-RULINGS = "DECISIONS.md decision 2026-10-05 (b), R17.1-R17.18 (and R17.19 for Stage 0)"
+RULINGS = (
+    "DECISIONS.md decision 2026-10-05 (b), R17.1-R17.18 (R17.19 for Stage 0, R17.20-R17.24 after "
+    "the #143 review, R17.25-R17.29 at the freeze)"
+)
 GuardError = pt.GuardError
 NOT_EVALUATED = "not evaluated"  # G-sentinel: a field a stage has not reached
 
@@ -456,7 +459,189 @@ K0_STOPS = {
     "palm_fast": "the median palm speed at 405 > 0.5 cm per step (a history-two predictor would be "
     "a different model)",
 }
-K0_MEASURED = None  # filled from K0's report on a reported K0-PASS, before the freeze
+K0_MEASURED: dict | None = {
+    # Written after K0 ran once, ending K0-PASS (protocol §7 step 2 and §7.1; R17.25). The run:
+    # ``run_lewm_c1m_v2.py k0 --output outputs/task077-k0-1 --evidence <task076-evidence>`` at
+    # 306fbdc (clean tree; DRAFT frozen sha 89359ed3... before this record was added), CPU only,
+    # without the GPU lock, in the worktree /home/huhn/develop/emai/worktrees/task077-k0 on the
+    # Linux PC, on the reviewer's reported GO (#143, issuecomment-5988386225). Every value below
+    # is copied from that report (outputs/task077-k0-1/report.json, sha256 9be44fd9...f235).
+    "row": "K0-PASS",
+    "tau_commit_cm": 1.0,
+    "tau": {
+        "counts": {"0.0": 32, "0.5": 29, "1.0": 29, "1.5": 18, "2.0": 11, "3.0": 2},
+        "tau_commit_cm": 1.0,
+        "failed_seeds": {
+            "0.0": [],
+            "0.5": [66013, 66014, 66017],
+            "1.0": [66018, 66019, 66028],
+            "1.5": [
+                66001,
+                66002,
+                66003,
+                66005,
+                66007,
+                66013,
+                66017,
+                66018,
+                66019,
+                66020,
+                66024,
+                66025,
+                66027,
+                66030,
+            ],
+            "2.0": [
+                66000,
+                66003,
+                66004,
+                66007,
+                66008,
+                66011,
+                66012,
+                66013,
+                66015,
+                66016,
+                66017,
+                66019,
+                66020,
+                66022,
+                66023,
+                66024,
+                66025,
+                66027,
+                66029,
+                66030,
+                66031,
+            ],
+            "3.0": [s for s in range(66000, 66032) if s not in (66009, 66021)],
+        },
+        "landing_miss_cm_median": {
+            "0.0": 0.0908,
+            "0.5": 0.7468,
+            "1.0": 1.4932,
+            "1.5": 2.2447,
+            "2.0": 2.9838,
+            "3.0": 4.4938,
+        },
+        "clip_binding_fraction": 0.0,
+        "fallbacks": 0,
+        "refused": 0,
+    },  # fmt: skip
+    "n_k0": 32,
+    "ceiling_failed_seeds": [],
+    "r_k": 460,
+    "history": {
+        "palm_speed_405_cm_per_step": {"median": 0.0022685313876560373, "max": 0.02381166932121218},
+        "m2_405_cm": {"median": 0.0022659150972495793, "max": 0.020198497171998078},
+        "remaining_405_cm_median": 6.85500003093623,
+    },
+    "proxies": {
+        "H-now": {"count": 0, "succeeded_seeds": [], "headroom": [32, [32.0, 32.0]]},
+        "N-proxy": {
+            "count": 13,
+            "succeeded_seeds": [
+                66000,
+                66001,
+                66005,
+                66009,
+                66010,
+                66013,
+                66016,
+                66017,
+                66018,
+                66020,
+                66024,
+                66027,
+                66029,
+            ],
+            "headroom": [19, [14.0, 25.0]],
+        },
+        "shuf-proxy": {
+            "count": 10,
+            "succeeded_seeds": [
+                66003,
+                66005,
+                66007,
+                66011,
+                66015,
+                66016,
+                66019,
+                66028,
+                66029,
+                66031,
+            ],
+            "headroom": [22, [17.0, 27.0]],
+            "feasibility_at_ceiling": {"b": 22, "c": 0, "predicted_pass_probability": 1.0},
+            "feasibility_at_w_bar": {"b": 18, "c": 0, "predicted_pass_probability": 1.0},
+            "known_risk": False,
+        },
+        "mean-proxy": {
+            "count": 15,
+            "succeeded_seeds": [
+                66000,
+                66003,
+                66004,
+                66005,
+                66008,
+                66014,
+                66015,
+                66016,
+                66019,
+                66024,
+                66025,
+                66026,
+                66027,
+                66029,
+                66031,
+            ],
+            "headroom": [17, [11.0, 22.0]],
+            "feasibility_at_ceiling": {"b": 17, "c": 0, "predicted_pass_probability": 1.0},
+            "feasibility_at_w_bar": {"b": 13, "c": 0, "predicted_pass_probability": 1.0},
+            "known_risk": False,
+        },
+        "clip_binding_fraction": 0.0,
+        "fallbacks": 0,
+        "refused_before_405": 0,
+    },  # fmt: skip
+    "stops": {
+        "level0_below_bar": False,
+        "ceiling_below_30": False,
+        "r_late": False,
+        "palm_fast": False,
+    },
+    "thin_margins": "r_K = 460 against the frozen r = 465 (5 steps); the 0.5 and 1.0 cm levels "
+    "each sit only 1 above the 28/32 bar (29/32, on disjoint failed seeds), so one more failure "
+    "at 1.0 cm would have made tau_commit 0.5 cm (R17.25)",
+    "seeds": [66000, 66031],
+    "report": "outputs/task077-k0-1/report.json (Linux PC, worktree task077-k0; git-ignored)",
+    "report_sha256": "9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235",
+    "log": "outputs/task077-k0-1.log beside it",
+    "revision": "306fbdc597364edeb86e94530101097fad9cd8a6",
+    "tracked_tree_dirty": False,
+    "frozen_sha256_at_run": "89359ed32aa8d6380809aa0831e8f4890c21ebdf3336543186fa01c6a04c5b12",
+    "protocol_status_at_run": "DRAFT",
+    "go": "the reviewer's reported APPROVE and K0 GO on #143 (issuecomment-5988386225), at the "
+    "revision",
+    "g_tests": "1990 passed, 37 skipped, 1 warning in 148.86s (exit 0, at the revision)",
+    "started_utc": "2026-10-05T04:58:47Z",
+    "first_render_utc": "2026-10-05T05:01:58Z",
+    "ended_utc": "2026-10-05T05:08:26Z",
+    "total_seconds": 579.25,
+    "load_average_at_start": [0.216, 0.487, 0.724],
+    "peak_tree_pss_gib": 8.0,
+    "workers": 6,
+    "thread_env": {
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "6",
+        "OMP_NUM_THREADS": "6",
+        "OPENBLAS_NUM_THREADS": "16",
+    },  # the declared G-threads environment (R17.29: deliberate, not a bug)
+    "gpu_lock": "not taken: K0 is a CPU stage; its EGL rendering runs without the GPU lock",
+    "g_repro": "every TASK-072 run-1 reproduction check passed (8 of 8)",
+    "render_disagreements": 0,
+    "evidence_root": "/home/huhn/develop/emai/worktrees/task076-evidence",
+}
 
 
 def decide_tau(counts: dict) -> dict:
@@ -827,7 +1012,7 @@ PRIVILEGED_ARMS = frozenset(
 )
 
 # ----- caps, memory, guards (§10) ----------------------------------------------------------------
-CAPS_SECONDS = {  # provisional (§10.3); re-set from Stage 0's scale probe before the freeze
+CAPS_SECONDS = {  # §10.3; each >= 1.5 x its measured worst case (Stage 0; R17.28 for C and O)
     "K0": 7_200.0,
     "C": 14_400.0,
     "O_featurisation": 3_600.0,
@@ -839,6 +1024,39 @@ CAPS_SECONDS = {  # provisional (§10.3); re-set from Stage 0's scale probe befo
     "per_attempt": 300.0,
 }
 CAP_FACTOR_MIN = 1.5  # every cap >= 1.5 x the measured worst case
+PRE_FREEZE_PROBES = {  # R17.28: development probes before Stage O's GO (nothing in them is read)
+    "revision": "86985a2",
+    "stage_o_readouts": {
+        "how": "run_lewm_c1m_v2.py oscale: readouts_core through run_tools.scale_probe on "
+        "synthetic features at the real sizes (1 500 train, 250 val roots), after the "
+        "feature-file check; CPU, clean tree, G-tests in the run",
+        "report_sha256": "ea09d23b649c20f760c408f02a0f827991c4adbf44f2cc5b0b3260dd2a3a048c",
+        "feature_check_seconds": 7.9,
+        "feature_check_gb": 12.1,
+        "readouts_core_seconds": 98.9,
+        "probe_peak_pss_gib": 2.96,
+        "stage_seconds_with_g_tests": 284.8,
+        "cap_seconds": 7_200.0,
+        "cap_over_worst": 67.4,
+    },
+    "stage_c": {
+        "how": "the debug corpus stage (40 roots, 66940-66979; report sha256 e2cce181...f988) and "
+        "scripts/probe_task077_stage_c.py on debug seeds 66900-66999 (100 roots; report sha256 "
+        "3ae3486f...7d28): the runner's own setup, cohort estimates and collect attempts, 6 "
+        "workers",
+        "setup_seconds": 40.8,
+        "estimates_seconds_per_100_seeds": 3.6,
+        "collect_seconds_per_root_wall": 0.476,
+        "attempt_seconds_per_root": {"median": 2.60, "max": 3.24},
+        "root_bytes_median": 607_635,
+        "peak_pss_gib": 8.46,
+        "worst_case_2000_roots_seconds": 1_400.0,
+        "cap_seconds": 14_400.0,
+        "cap_over_worst": 10.3,
+        "corpus_disk_gb": 1.2,
+    },
+    "rule": "every cap is kept: each is at least 1.5 x the measured or scaled worst case",
+}
 MEMORY = {
     "ceiling_gib": 12.0,  # process-tree PSS, CPU stages
     "train_ceiling_gib": 18.0,  # one Stage T job (its train-split cache is about 9.6 GB)
@@ -1420,6 +1638,7 @@ def frozen_block() -> dict:
             "arms": ARMS,
             "caps_seconds": CAPS_SECONDS,
             "cap_factor_min": CAP_FACTOR_MIN,
+            "pre_freeze_probes": PRE_FREEZE_PROBES,
             "memory": MEMORY,
             "disk_min_gib": DISK_MIN_GIB,
             "disk_min_start_gib": DISK_MIN_START_GIB,

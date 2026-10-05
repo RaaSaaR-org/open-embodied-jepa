@@ -47,13 +47,77 @@ def test_manifest_frozen_block_equals_the_module():
     assert manifest["status"] == lm.STATUS
 
 
-def test_the_frozen_sha_pin_is_set_only_at_the_freeze():
+# The frozen block's sha256, set at the freeze (protocol §7 step 3, R17.25) after K0-PASS; the K0
+# report is outputs/task077-k0-1/report.json, sha256 9be44fd9...f235 (``lm.K0_MEASURED``).
+FROZEN_SHA256_PIN = "f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d"
+
+
+def test_the_frozen_sha_pin_is_set_at_the_freeze():
+    """The freeze pins the frozen block; from then on the module's block may not change."""
     manifest = json.loads(MANIFEST.read_text())
-    if lm.STATUS == "DRAFT":
-        assert manifest["frozen_sha256_pin"] is None
-        assert lm.K0_MEASURED is None
-    else:  # pragma: no cover - after the freeze
-        assert manifest["frozen_sha256_pin"] == lm.frozen_sha256()
+    assert manifest["frozen_sha256_pin"] == FROZEN_SHA256_PIN == lm.frozen_sha256()
+    assert manifest["status"] == lm.STATUS == "FROZEN"
+    assert "**STATUS: FROZEN**" in DOC.read_text()
+    assert lm.K0_MEASURED is not None and lm.K0_MEASURED["row"] == "K0-PASS"
+    run = _runner()
+    assert run.check_frozen_pin(manifest)["pin"] == FROZEN_SHA256_PIN
+
+
+def test_the_freeze_pins_files_and_the_protocol_document():
+    import hashlib
+
+    manifest = json.loads(MANIFEST.read_text())
+    want = {*lm.OWN_FILES, *lm.CARRIED_CODE_FILES, "tests/test_lewm_c1m_v2.py", lm.TASK076_MANIFEST}
+    assert set(manifest["hashes"]) == want
+    for relative, sha in manifest["hashes"].items():
+        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == sha, relative
+    assert hashlib.sha256(DOC.read_bytes()).hexdigest() == manifest["protocol_document_sha256"]
+
+
+def test_k0_measured_values_reproduce_k0s_decision_and_feasibility():
+    """The frozen K0 values recompute: tau_commit, the stops and row, and each scene-blind
+    proxy's McNemar feasibility (R17.25)."""
+    m = lm.K0_MEASURED
+    assert m["report_sha256"] == (
+        "9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235"
+    )
+    assert m["revision"].startswith("306fbdc") and m["protocol_status_at_run"] == "DRAFT"
+    seeds = lm.seeds_of("K")
+    assert list(m["seeds"]) == [seeds[0], seeds[-1]]
+    counts = m["tau"]["counts"]
+    assert counts == {"0.0": 32, "0.5": 29, "1.0": 29, "1.5": 18, "2.0": 11, "3.0": 2}
+    for level, failed in m["tau"]["failed_seeds"].items():
+        assert set(failed) <= set(seeds) and len(seeds) - len(failed) == counts[level]
+    tau = lm.decide_tau(counts)
+    assert tau["tau_commit_cm"] == m["tau_commit_cm"] == m["tau"]["tau_commit_cm"] == 1.0
+    ceiling = [s not in m["ceiling_failed_seeds"] for s in seeds]
+    assert sum(ceiling) == m["n_k0"] == 32
+    decision = lm.decide_k0(
+        tau=tau,
+        ceiling=m["n_k0"],
+        r_k=m["r_k"],
+        palm_speed_median_cm=m["history"]["palm_speed_405_cm_per_step"]["median"],
+    )
+    assert decision["row"] == m["row"] == "K0-PASS" and decision["stops"] == m["stops"]
+    assert m["r_k"] <= lm.READ_STEP and lm.READ_STEP - m["r_k"] == 5  # the thin r margin
+    assert [counts["0.5"] - lm.TAU_BAR, counts["1.0"] - lm.TAU_BAR] == [1, 1]  # thin tau margins
+    run = _runner()
+    for arm in lm.K0_PROXIES:
+        item = m["proxies"][arm]
+        outcome = [s in item["succeeded_seeds"] for s in seeds]
+        assert sum(outcome) == item["count"]
+        diff = lm.paired_interval(ceiling, outcome)
+        assert [diff["difference"], diff["ci95"]] == item["headroom"]
+        if arm in lm.K0_SCENE_BLIND:
+            for key, ref in (
+                ("feasibility_at_ceiling", ceiling),
+                ("feasibility_at_w_bar", run.scene_blind_at_bar(ceiling, outcome, lm.TAU_BAR)),
+            ):
+                got = lm.mcnemar_feasibility(ref, outcome)
+                want = item[key]
+                assert (got["b"], got["c"]) == (want["b"], want["c"])
+                assert got["predicted_pass_probability"] == want["predicted_pass_probability"]
+            assert item["known_risk"] is False
 
 
 def test_carried_code_and_task076_pins_are_unchanged():
@@ -998,7 +1062,7 @@ def test_stage_caps_frozen_pin_decide_g_and_stage_t_rows():
     assert run.stage_cap(SimpleNamespace(stage="train", cohort=None)) == 46_800.0
     manifest = json.loads(MANIFEST.read_text())
     out = run.check_frozen_pin(manifest)
-    assert out["pin"] is None and out["status"] == "DRAFT"
+    assert out["pin"] == lm.frozen_sha256() and out["status"] == "FROZEN"
     with pytest.raises(pt.GuardError):
         run.check_frozen_pin(manifest | {"frozen_sha256_pin": "0" * 64})
     good = {"G1": True, "G2": True, "G3": True, "G4": True, "G5": True}
@@ -1010,7 +1074,7 @@ def test_stage_caps_frozen_pin_decide_g_and_stage_t_rows():
 
 
 def test_g_threads_pins_the_declared_thread_environment():
-    """G-threads (R17.26's thread check): the runner sets exactly the declared environment before
+    """G-threads (R17.29): the runner sets exactly the declared environment before
     NumPy loads. OPENBLAS_NUM_THREADS = 16 is not a typo for 6: it is the owner ruling of
     2026-09-29 (TASK-073), OpenBLAS's default of one thread per logical CPU on the 16-thread PC,
     pinned so that it cannot drift, and carried unchanged by TASK-074, 075, 076 and C1-M."""

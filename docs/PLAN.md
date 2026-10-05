@@ -265,9 +265,11 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       and an independent review. No protocol, no GPU and no task number yet.
     - **Next.** The record's independent review; then, on approval, the preregistration draft
       (8 × 8 calibration run first, to size its budget).
-  - **TASK-077 preregistration (DRAFT, 2026-10-05, R17; decided by Claude under owner
-    delegation)** ([apple_lewm_c1m_v2.md](experiments/apple_lewm_c1m_v2.md); not frozen, no seed
-    of its block simulated). W, TASK-066's LeWM token predictor on frozen DINOv2 tokens pooled to
+  - **TASK-077 preregistration (FROZEN after K0-PASS, 2026-10-05, R17.25; in force once merged on
+    an independent APPROVE; decided by Claude under owner delegation)**
+    ([apple_lewm_c1m_v2.md](experiments/apple_lewm_c1m_v2.md)). K0 ran on K (32 resets):
+    τ_commit = 1.0 cm (curve 32/29/29/18/11/2 of 32), ceiling 32/32, r_K = 460 against r = 465,
+    with thin margins disclosed (§7.1). No seed of D, S or the corpus has been simulated. W, TASK-066's LeWM token predictor on frozen DINOv2 tokens pooled to
     8 × 8 and trained over the 60-step horizon, ranks the 147 candidate aims at 405 by their
     predicted plate at r = 465; N, L-shuf and L-mean are trained twins, L-rand a random choice.
     - **Stages:** K0 (τ_commit, ceiling, r; CPU) → freeze → a 2 000-root corpus → Stage O (8 × 8
@@ -285,7 +287,8 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       more than δ (misses within noise escalate, R17.15); R15.8's scope extended by the move, with
       one declared exclusion: 4 × 4 on a larger corpus stays untested and open.
     - **Revised** after the independent review of #142 (REQUEST CHANGES; R17.15–R17.18).
-    - **Next:** this draft's independent review, then Stage 0 and K0.
+    - **Next:** the freeze PR's independent review; then Stage C, Stage O (its scale probe is
+      done, R17.28), Stage T, G, D and S, each on its own reported GO.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.

@@ -965,7 +965,283 @@
     3.0
    ]
   },
-  "k0_measured": null,
+  "k0_measured": {
+   "ceiling_failed_seeds": [],
+   "ended_utc": "2026-10-05T05:08:26Z",
+   "evidence_root": "/home/huhn/develop/emai/worktrees/task076-evidence",
+   "first_render_utc": "2026-10-05T05:01:58Z",
+   "frozen_sha256_at_run": "89359ed32aa8d6380809aa0831e8f4890c21ebdf3336543186fa01c6a04c5b12",
+   "g_repro": "every TASK-072 run-1 reproduction check passed (8 of 8)",
+   "g_tests": "1990 passed, 37 skipped, 1 warning in 148.86s (exit 0, at the revision)",
+   "go": "the reviewer's reported APPROVE and K0 GO on #143 (issuecomment-5988386225), at the revision",
+   "gpu_lock": "not taken: K0 is a CPU stage; its EGL rendering runs without the GPU lock",
+   "history": {
+    "m2_405_cm": {
+     "max": 0.020198497171998078,
+     "median": 0.0022659150972495793
+    },
+    "palm_speed_405_cm_per_step": {
+     "max": 0.02381166932121218,
+     "median": 0.0022685313876560373
+    },
+    "remaining_405_cm_median": 6.85500003093623
+   },
+   "load_average_at_start": [
+    0.216,
+    0.487,
+    0.724
+   ],
+   "log": "outputs/task077-k0-1.log beside it",
+   "n_k0": 32,
+   "peak_tree_pss_gib": 8.0,
+   "protocol_status_at_run": "DRAFT",
+   "proxies": {
+    "H-now": {
+     "count": 0,
+     "headroom": [
+      32,
+      [
+       32.0,
+       32.0
+      ]
+     ],
+     "succeeded_seeds": []
+    },
+    "N-proxy": {
+     "count": 13,
+     "headroom": [
+      19,
+      [
+       14.0,
+       25.0
+      ]
+     ],
+     "succeeded_seeds": [
+      66000,
+      66001,
+      66005,
+      66009,
+      66010,
+      66013,
+      66016,
+      66017,
+      66018,
+      66020,
+      66024,
+      66027,
+      66029
+     ]
+    },
+    "clip_binding_fraction": 0.0,
+    "fallbacks": 0,
+    "mean-proxy": {
+     "count": 15,
+     "feasibility_at_ceiling": {
+      "b": 17,
+      "c": 0,
+      "predicted_pass_probability": 1.0
+     },
+     "feasibility_at_w_bar": {
+      "b": 13,
+      "c": 0,
+      "predicted_pass_probability": 1.0
+     },
+     "headroom": [
+      17,
+      [
+       11.0,
+       22.0
+      ]
+     ],
+     "known_risk": false,
+     "succeeded_seeds": [
+      66000,
+      66003,
+      66004,
+      66005,
+      66008,
+      66014,
+      66015,
+      66016,
+      66019,
+      66024,
+      66025,
+      66026,
+      66027,
+      66029,
+      66031
+     ]
+    },
+    "refused_before_405": 0,
+    "shuf-proxy": {
+     "count": 10,
+     "feasibility_at_ceiling": {
+      "b": 22,
+      "c": 0,
+      "predicted_pass_probability": 1.0
+     },
+     "feasibility_at_w_bar": {
+      "b": 18,
+      "c": 0,
+      "predicted_pass_probability": 1.0
+     },
+     "headroom": [
+      22,
+      [
+       17.0,
+       27.0
+      ]
+     ],
+     "known_risk": false,
+     "succeeded_seeds": [
+      66003,
+      66005,
+      66007,
+      66011,
+      66015,
+      66016,
+      66019,
+      66028,
+      66029,
+      66031
+     ]
+    }
+   },
+   "r_k": 460,
+   "render_disagreements": 0,
+   "report": "outputs/task077-k0-1/report.json (Linux PC, worktree task077-k0; git-ignored)",
+   "report_sha256": "9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235",
+   "revision": "306fbdc597364edeb86e94530101097fad9cd8a6",
+   "row": "K0-PASS",
+   "seeds": [
+    66000,
+    66031
+   ],
+   "started_utc": "2026-10-05T04:58:47Z",
+   "stops": {
+    "ceiling_below_30": false,
+    "level0_below_bar": false,
+    "palm_fast": false,
+    "r_late": false
+   },
+   "tau": {
+    "clip_binding_fraction": 0.0,
+    "counts": {
+     "0.0": 32,
+     "0.5": 29,
+     "1.0": 29,
+     "1.5": 18,
+     "2.0": 11,
+     "3.0": 2
+    },
+    "failed_seeds": {
+     "0.0": [],
+     "0.5": [
+      66013,
+      66014,
+      66017
+     ],
+     "1.0": [
+      66018,
+      66019,
+      66028
+     ],
+     "1.5": [
+      66001,
+      66002,
+      66003,
+      66005,
+      66007,
+      66013,
+      66017,
+      66018,
+      66019,
+      66020,
+      66024,
+      66025,
+      66027,
+      66030
+     ],
+     "2.0": [
+      66000,
+      66003,
+      66004,
+      66007,
+      66008,
+      66011,
+      66012,
+      66013,
+      66015,
+      66016,
+      66017,
+      66019,
+      66020,
+      66022,
+      66023,
+      66024,
+      66025,
+      66027,
+      66029,
+      66030,
+      66031
+     ],
+     "3.0": [
+      66000,
+      66001,
+      66002,
+      66003,
+      66004,
+      66005,
+      66006,
+      66007,
+      66008,
+      66010,
+      66011,
+      66012,
+      66013,
+      66014,
+      66015,
+      66016,
+      66017,
+      66018,
+      66019,
+      66020,
+      66022,
+      66023,
+      66024,
+      66025,
+      66026,
+      66027,
+      66028,
+      66029,
+      66030,
+      66031
+     ]
+    },
+    "fallbacks": 0,
+    "landing_miss_cm_median": {
+     "0.0": 0.0908,
+     "0.5": 0.7468,
+     "1.0": 1.4932,
+     "1.5": 2.2447,
+     "2.0": 2.9838,
+     "3.0": 4.4938
+    },
+    "refused": 0,
+    "tau_commit_cm": 1.0
+   },
+   "tau_commit_cm": 1.0,
+   "thin_margins": "r_K = 460 against the frozen r = 465 (5 steps); the 0.5 and 1.0 cm levels each sit only 1 above the 28/32 bar (29/32, on disjoint failed seeds), so one more failure at 1.0 cm would have made tau_commit 0.5 cm (R17.25)",
+   "thread_env": {
+    "MKL_DYNAMIC": "FALSE",
+    "MKL_NUM_THREADS": "6",
+    "OMP_NUM_THREADS": "6",
+    "OPENBLAS_NUM_THREADS": "16"
+   },
+   "total_seconds": 579.25,
+   "tracked_tree_dirty": false,
+   "workers": 6
+  },
   "memory": {
    "ceiling_gib": 12.0,
    "headroom_gib": 4.0,
@@ -1032,6 +1308,37 @@
    "scripts/run_lewm_c1m_v2.py"
   ],
   "p3_checkpoint_sha256": "7988162df0b6106db5d007e322b824a3725b74cb103ba5a8de9f552912060be8",
+  "pre_freeze_probes": {
+   "revision": "86985a2",
+   "rule": "every cap is kept: each is at least 1.5 x the measured or scaled worst case",
+   "stage_c": {
+    "attempt_seconds_per_root": {
+     "max": 3.24,
+     "median": 2.6
+    },
+    "cap_over_worst": 10.3,
+    "cap_seconds": 14400.0,
+    "collect_seconds_per_root_wall": 0.476,
+    "corpus_disk_gb": 1.2,
+    "estimates_seconds_per_100_seeds": 3.6,
+    "how": "the debug corpus stage (40 roots, 66940-66979; report sha256 e2cce181...f988) and scripts/probe_task077_stage_c.py on debug seeds 66900-66999 (100 roots; report sha256 3ae3486f...7d28): the runner's own setup, cohort estimates and collect attempts, 6 workers",
+    "peak_pss_gib": 8.46,
+    "root_bytes_median": 607635,
+    "setup_seconds": 40.8,
+    "worst_case_2000_roots_seconds": 1400.0
+   },
+   "stage_o_readouts": {
+    "cap_over_worst": 67.4,
+    "cap_seconds": 7200.0,
+    "feature_check_gb": 12.1,
+    "feature_check_seconds": 7.9,
+    "how": "run_lewm_c1m_v2.py oscale: readouts_core through run_tools.scale_probe on synthetic features at the real sizes (1 500 train, 250 val roots), after the feature-file check; CPU, clean tree, G-tests in the run",
+    "probe_peak_pss_gib": 2.96,
+    "readouts_core_seconds": 98.9,
+    "report_sha256": "ea09d23b649c20f760c408f02a0f827991c4adbf44f2cc5b0b3260dd2a3a048c",
+    "stage_seconds_with_g_tests": 284.8
+   }
+  },
   "protocol": "apple_lewm_c1m_v2",
   "quiet_machine": {
    "max_load_average_1min": 2.0,
@@ -1045,7 +1352,7 @@
   "reserved_salts": {
    "reserved": 8112
   },
-  "rulings": "DECISIONS.md decision 2026-10-05 (b), R17.1-R17.18 (and R17.19 for Stage 0)",
+  "rulings": "DECISIONS.md decision 2026-10-05 (b), R17.1-R17.18 (R17.19 for Stage 0, R17.20-R17.24 after the #143 review, R17.25-R17.29 at the freeze)",
   "s": {
    "arms": [
     "W",
@@ -1253,7 +1560,7 @@
    "D",
    "S"
   ],
-  "status": "DRAFT",
+  "status": "FROZEN",
   "task": "TASK-077",
   "task076_manifest": "benchmarks/manifests/apple-plate-twin-v2.json",
   "thread_env": {
@@ -1271,13 +1578,27 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "f6bb928e4e65b6584b8e27fb56fba75646f0327bb53b8ed7078bd3508a2de71e",
- "frozen_sha256_pin": null,
- "hashes": {},
- "note": "DRAFT until the freeze: no frozen-sha pin, no protocol-document sha and no file pins yet; the freeze (after a reported K0-PASS and an independent reviewer's APPROVE) sets frozen_sha256_pin, protocol_document_sha256 and hashes (the own files, the carried C1 and C1-M code files and TASK-076's 84 pins).",
+ "frozen_sha256": "f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d",
+ "frozen_sha256_pin": "f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d",
+ "hashes": {
+  "benchmarks/manifests/apple-plate-twin-v2.json": "bc9c0ffdec00089f76574498696addaffa2d8484d2eb394b00b23df8033375a0",
+  "scripts/run_c1_feasibility.py": "f92262dd06f91fa14ac38f06e0707256d8348d6320668218c76b0a9dc0d2543f",
+  "scripts/run_c1m_feasibility.py": "6db5e69479b6bf195c8cdfd4c91417abf81f40643e91180efb840d751c132aea",
+  "scripts/run_lewm_c1m_v2.py": "5bb359333f5028b0d230cfe4300d3028d67a23326d6c2510beb5536e9d9525b2",
+  "src/embodied_jepa/lewm_c1m_v2.py": "d28a543127221d4c8225ed18d4f536141e5a05af476acc8a3d89c3e2b84a13c3",
+  "src/embodied_jepa/lewm_c1m_v2_offline.py": "4143a5ae3980ef4bda53919deeb436a3ca6d152c682cde680904bff1f7ce36b1",
+  "src/embodied_jepa/lewm_c1m_v2_runtime.py": "04921828c9989f28f9b57117b52be3b2733f220e4fa58ccaad22e454707f171e",
+  "src/embodied_jepa/lewm_c1m_v2_train.py": "dbbac044472649c775c54e7ffb8b33c3f5b814d6756bc6e2f3872437350d2b75",
+  "src/embodied_jepa/lewm_next_c1.py": "4a3da542bdc474f6e0a2e1b6a2b3a442ae8f402d29fcbe143bc48072cb0934cf",
+  "src/embodied_jepa/lewm_next_c1_runtime.py": "770dc7e917d6c38b98514ad57758efe91e6e66e41774fd3b47b29deea8a748e0",
+  "src/embodied_jepa/lewm_next_c1m.py": "7101c14dc7b292afb9311e61f847684083085b491deccefd71bc2a0e76283879",
+  "src/embodied_jepa/lewm_next_c1m_runtime.py": "a3fc591799039a8a229568a99407afb99882eba62e8b1744d30567270ef7e4a9",
+  "tests/test_lewm_c1m_v2.py": "32b151d501adf7c94b345bf4c6d97ac8950b26fee90c3dd69fd6e2d748830a7d"
+ },
+ "note": "FROZEN after K0-PASS (R17.25), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins the stage's own files, the carried C1 and C1-M code files, the test file and TASK-076's manifest (whose 84 pins the runner checks too); protocol_document_sha256 is the protocol's sha256. K0's report: outputs/task077-k0-1/report.json, sha256 9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235.",
  "outcome": null,
  "protocol": "apple_lewm_c1m_v2",
- "protocol_document_sha256": null,
- "status": "DRAFT",
+ "protocol_document_sha256": "9dcd36cc0adb26682f603ea7dafaed4abedf0ad9f3923d7ab209a8bc21a9b388",
+ "status": "FROZEN",
  "task": "TASK-077"
 }

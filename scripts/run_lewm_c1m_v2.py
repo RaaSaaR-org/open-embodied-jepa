@@ -1,4 +1,4 @@
-"""TASK-077's runner: every stage of ``docs/experiments/apple_lewm_c1m_v2.md`` (STATUS DRAFT).
+"""TASK-077's runner: every stage of ``docs/experiments/apple_lewm_c1m_v2.md`` (STATUS FROZEN).
 
 Frozen block ``src/embodied_jepa/lewm_c1m_v2.py``; workers ``lewm_c1m_v2_runtime.py``; offline
 stages ``lewm_c1m_v2_offline.py``; training ``lewm_c1m_v2_train.py``. Guards from
@@ -26,9 +26,11 @@ One invocation runs one stage and writes ``<output>/report.json`` (it refuses an
   at the real sizes on synthetic features, after the feature-file check; time and peak PSS.
 
 Every CPU stage runs the full test suite itself first (G-tests); every stage checks the clean
-tree, TASK-076's pins and C1's and C1-M's code (G-hash). While the protocol is DRAFT, only
-``tests``, ``simulate``, ``scale``, ``k0`` and ``--debug`` runs are allowed (§7: nothing from C, D,
-S or the corpus is simulated before its GO, and those stages run only after the freeze).
+tree, TASK-076's pins and C1's and C1-M's code (G-hash), and, once FROZEN, TASK-077's own
+pins. While the protocol was DRAFT, only ``tests``, ``simulate``, ``scale``, ``oscale``, ``k0`` and
+``--debug`` runs were allowed (§7: nothing from C, D, S or the corpus is simulated before its GO,
+and those stages run only after the freeze). Once FROZEN, a non-debug ``k0`` is refused: K0 ran
+once (R17.25).
 ``--debug`` simulates debug seeds 66900-66999 only, at small sizes, with declared stand-ins;
 nothing in it is read.
 """
@@ -315,6 +317,8 @@ def preflight(report: dict, args) -> dict:
         report["own_pins_at_preflight"] = len(hz.check_pins(own["hashes"]))
     if lm.STATUS != "FROZEN" and args.stage not in DRAFT_ALLOWED and not args.debug:
         raise lp.GuardError(f"G-frozen: {args.stage} runs only after the freeze (STATUS FROZEN)")
+    if lm.STATUS == "FROZEN" and args.stage == "k0" and not args.debug:
+        raise lp.GuardError("G-frozen: K0 ran once before the freeze (R17.25); it is not repeated")
     report["thread_env"] = {k: os.environ.get(k) for k in lm.THREAD_ENV}
     if report["thread_env"] != lm.THREAD_ENV:
         raise lp.GuardError(f"G-threads: {report['thread_env']} is not {lm.THREAD_ENV}")
