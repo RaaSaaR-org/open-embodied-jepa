@@ -709,10 +709,8 @@ def job_budget(args, spec: dict) -> dict:
         }
     if args.debug and not args.plan:
         return {"updates": DEBUG["model_updates"], "select_every": DEBUG["model_select_every"]}
-    plan = json.loads(Path(args.plan).read_text())
+    plan = completed(args.plan, ("T-PLANNED",), args.debug)
     budget = plan["fields"]["budget"]
-    if plan["fields"]["decision"]["row"] != "T-PLANNED":
-        raise lp.GuardError("G-plan: the plan did not admit the six models")
     return {"updates": int(budget["updates"]), "select_every": int(budget["select_every"])}
 
 
@@ -799,11 +797,18 @@ def stage_train(report, args, fields: Fields, manifest) -> str:
     return "T-JOB-DONE"
 
 
-def load_job(path) -> dict:
+def completed(path, rows, debug: bool) -> dict:
+    """An earlier stage's report whose outcome is one of ``rows`` (``-DEBUG`` in a debug run;
+    a debug report never feeds a real run and the reverse)."""
     report = json.loads(Path(path).read_text())
-    if report.get("outcome") != "T-JOB-DONE":
-        raise lp.GuardError(f"G-plan: {path} is not a completed Stage T job")
-    return report["fields"]["record"]
+    allowed = {f"{r}-DEBUG" for r in rows} if debug else set(rows)
+    if report.get("outcome") not in allowed or bool(report.get("debug")) != bool(debug):
+        raise lp.GuardError(f"G-plan: {path} ended {report.get('outcome')}, not one of {rows}")
+    return report
+
+
+def load_job(path, debug: bool) -> dict:
+    return completed(path, ("T-JOB-DONE",), debug)["fields"]["record"]
 
 
 def stage_plan(report, args, fields: Fields, manifest) -> str:
@@ -812,7 +817,7 @@ def stage_plan(report, args, fields: Fields, manifest) -> str:
     import torch
 
     torch.set_num_threads(1)
-    cal_w, cal_n = load_job(args.cal_w), load_job(args.cal_n)
+    cal_w, cal_n = load_job(args.cal_w, args.debug), load_job(args.cal_n, args.debug)
     u_w = rt.select_checkpoint(cal_w["val_curve"], lm.SELECTION_TOLERANCE)
     u_n = rt.select_checkpoint(cal_n["val_curve"], lm.SELECTION_TOLERANCE)
     fields.set(
@@ -856,9 +861,9 @@ def stage_gates(report, args, fields: Fields, manifest) -> str:
 
     torch.set_num_threads(1)
     report["first_outcome_utc"] = hz.utc()
-    plan = json.loads(Path(args.plan).read_text())["fields"]
+    plan = completed(args.plan, ("T-PLANNED",), args.debug)["fields"]
     bars = plan["g1"]["bars"]
-    jobs = [load_job(p) for p in args.models]
+    jobs = [load_job(p, args.debug) for p in args.models]
     by = {(j["arm"], j["seed"]): j for j in jobs}
     seeds = sorted({j["seed"] for j in jobs})
     expected = (lm.DEBUG_MODEL_SEEDS[0],) if args.debug else lm.MODEL_SEEDS
@@ -954,7 +959,7 @@ def model_config(args, primary: int) -> dict:
     record = json.loads((fits.parent / "report.json").read_text())["fields"]["fits"]
     models = {}
     for path in args.models:
-        job = load_job(path)
+        job = load_job(path, args.debug)
         if job["seed"] == primary:
             models[job["arm"]] = {
                 "path": job["checkpoint"],
@@ -1036,14 +1041,10 @@ def offline_aims(args, pool, gate, table, tau: float) -> dict:
 
 
 def stage_closed(report, args, fields: Fields, manifest) -> str:
-    gates = json.loads(Path(args.gates).read_text())
-    if gates.get("outcome") not in (
-        "G-PASS",
-        "G-PASS-DEBUG",
-        "H-GATE-FAIL-DEBUG",
-        "G-NO-BAR-DEBUG",
-    ):
-        raise lp.GuardError("G-plan: the closed loop runs only after G-PASS")
+    # a debug run reads any gates row (mechanics only); a real run only after G-PASS (and S
+    # only after D-PASS, which its GO checks)
+    rows = ("G-PASS", "H-GATE-FAIL", "G-NO-BAR") if args.debug else ("G-PASS",)
+    gates = completed(args.gates, rows, args.debug)
     primary = int(gates["fields"]["primary_seed"]["seed"])
     config = model_config(args, primary)
     coef = config.pop("_sysid_coef")
