@@ -389,7 +389,7 @@ def decide_tau(counts: dict) -> dict:
 def read_step_k(distances) -> int | None:
     """r_K: the earliest step in [405, 525] at which >= 28/32 level-0 attempts are within 0.1 cm
     of plate(525) (R14.3; a refused attempt is never within)."""
-    need = R_FRACTION_MIN
+    need = math.ceil(R_FRACTION_MIN / K_RESETS * len(distances) - 1e-12)  # 28 of K's 32
     for t in range(RULE["s0"], RULE["s1"] + 1):
         within = sum(1 for d in distances if d is not None and d.get(t, math.inf) <= R_TOLERANCE_CM)
         if within >= need:

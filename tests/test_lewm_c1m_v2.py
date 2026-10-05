@@ -252,6 +252,7 @@ def test_k0_rows():
     paths = [{t: (0.0 if t >= 460 else 1.0) for t in range(405, 526)} for _ in range(28)]
     assert lm.read_step_k(paths + [None] * 4) == 460
     assert lm.read_step_k(paths[:27] + [None] * 5) is None
+    assert lm.read_step_k(paths[:4]) == 460 and lm.read_step_k(paths[:3] + [None]) is None
 
 
 def test_corpus_o_t_g_d_rows():

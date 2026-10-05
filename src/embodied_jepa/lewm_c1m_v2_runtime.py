@@ -285,6 +285,7 @@ class CorpusMotion(c1mrt.MoveMotion):
         self.corpus = bool(corpus)
         self.frames: dict[int, np.ndarray] = {}
         self.hidden_r: np.ndarray | None = None
+        self.plate_kept: dict[int, np.ndarray] = {}
 
     def _observe(self):
         t = self.state["calls"]
@@ -292,6 +293,7 @@ class CorpusMotion(c1mrt.MoveMotion):
         keep = t == lm.COMMIT_STEP or (self.corpus and lm.FRAME_STEPS[0] <= t <= lm.FRAME_STEPS[1])
         if keep:
             self.frames[int(t)] = np.asarray(observation.images[fp2.CAMERA][0], np.uint8).copy()
+            self.plate_kept[int(t)] = self.current()  # the hook's own path starts at s0 = 405
         if self.corpus and t == lm.READ_STEP:
             from embodied_jepa import obs_ceiling_v2_runtime as ort
 
@@ -489,7 +491,7 @@ def corpus_arrays(hook: CorpusMotion, logged: CommandLog | None, decisions) -> d
         why = "hidden_missing"
     if why is not None:
         return {"complete": False, "why": why}
-    plate, palm = hook.state["plate"], hook.state["palm"]
+    plate, palm = hook.plate_kept, hook.state["palm"]
     first = decisions[0]
     return {
         "complete": True,
