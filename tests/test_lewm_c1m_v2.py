@@ -554,6 +554,8 @@ def test_prefetcher_matches_the_sampler_and_zeroes_n(tmp_path):
     mean, std = tr.moments(s, chunk=3)
     flat = s.features.reshape(-1, 8).astype(np.float64)
     assert np.allclose(mean, flat.mean(0)) and np.allclose(std, flat.std(0))
+    fm, fs = tr.moments_file(tmp_path / "features8_train.npy", chunk=3)
+    assert np.allclose(fm, mean) and np.allclose(fs, std)
     gather = tr.measure_gather(s, seed=66992, batches=3)
     assert gather["seconds_per_batch"] > 0
 

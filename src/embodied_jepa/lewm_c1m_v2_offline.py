@@ -409,7 +409,7 @@ def downstream_fits(feat, out, tables, train_store, *, check=None) -> dict:
     del full
     if check is not None:
         check()
-    mean, std = tr.moments(train_store)
+    mean, std = tr.moments_file(Path(feat) / "features8_train.npy")
     mean_latent = np.asarray(train_store.features[:, START_INDEX], np.float64).mean(0)
     out = Path(out)
     paths = {

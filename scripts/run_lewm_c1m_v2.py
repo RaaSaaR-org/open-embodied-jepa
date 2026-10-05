@@ -1102,7 +1102,7 @@ def stage_closed(report, args, fields: Fields, manifest) -> str:
         else:
             decision = lm.decide_s(outcomes)
         fields.set("decision", decision)
-        return "CLOSED-DEBUG" if args.debug else decision["row"]
+        return decision["row"]
     finally:
         report["pool_close"] = pool.close()
 

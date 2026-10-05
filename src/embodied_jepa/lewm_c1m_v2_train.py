@@ -145,6 +145,33 @@ def moments(store: RootStore, chunk: int = 50) -> tuple[np.ndarray, np.ndarray]:
     return mean, std
 
 
+def moments_file(path, chunk: int = 50) -> tuple[np.ndarray, np.ndarray]:
+    """:func:`moments` of a stored ``features8_<split>.npy`` read in plain file chunks, never
+    mapped (a memory map of the 9.6 GB train store would count its touched pages in the stage's
+    process-tree PSS, G-memory)."""
+    with Path(path).open("rb") as stream:
+        version = np.lib.format.read_magic(stream)
+        if version == (1, 0):
+            shape, fortran, dtype = np.lib.format.read_array_header_1_0(stream)
+        else:
+            shape, fortran, dtype = np.lib.format.read_array_header_2_0(stream)
+        if fortran or dtype != np.float32 or len(shape) != 3:
+            raise ContractError("a feature store is a C-order float32 [roots, frames, D] array")
+        per = int(shape[1]) * int(shape[2])
+        d = int(shape[2])
+        n, s1, s2 = 0, np.zeros(d), np.zeros(d)
+        for lo in range(0, int(shape[0]), chunk):
+            rows = min(chunk, int(shape[0]) - lo)
+            data = stream.read(rows * per * 4)
+            x = np.frombuffer(data, np.float32).astype(np.float64).reshape(-1, d)
+            n += len(x)
+            s1 += x.sum(0)
+            s2 += (x * x).sum(0)
+            del data, x
+    mean = s1 / n
+    return mean, np.sqrt(np.clip(s2 / n - mean * mean, 0.0, None))
+
+
 # ----- sampling -----------------------------------------------------------------------------------
 class WindowSampler:
     """Uniform root, uniform start in 403-407, ``batch`` windows per draw, from
