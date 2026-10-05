@@ -1156,7 +1156,7 @@
     ]
    }
   },
-  "sim_trials": 4000,
+  "sim_trials": 10000,
   "sim_workers": 6,
   "stage0": null,
   "stage_o": {
@@ -1209,7 +1209,7 @@
   },
   "worker_torch_threads": 1
  },
- "frozen_sha256": "cf256936db532c0fcd76f7ba36e53c01d94df689dd1c35f3b091b36a1302baee",
+ "frozen_sha256": "829ec7b90d39e1fc8bd5a85115836d95f913eb691f0843a4a2b2d860a0c4efe8",
  "frozen_sha256_pin": null,
  "hashes": {},
  "note": "DRAFT until the freeze: no frozen-sha pin, no protocol-document sha and no file pins yet; the freeze (after a reported K0-PASS and an independent reviewer's APPROVE) sets frozen_sha256_pin, protocol_document_sha256 and hashes (the own files, the carried C1 and C1-M code files and TASK-076's 84 pins).",

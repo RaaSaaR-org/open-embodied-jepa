@@ -974,7 +974,7 @@ def tau_curve_probability(aim_error_cm, tau_counts: dict, resets: int = K_RESETS
 
 
 # ----- the Stage-0 simulations (§8.4; R17.15, R17.17 point 4) ----------------------------------
-SIM_TRIALS = 4_000
+SIM_TRIALS = 10_000
 SIM_SALT_STREAM = 1  # trials: default_rng(SeedSequence([8106, 1, config index]))
 
 
