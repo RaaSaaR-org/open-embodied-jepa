@@ -69,6 +69,7 @@ from embodied_jepa import plate_twin_v2_harness as hz  # noqa: E402
 from embodied_jepa import run_guards as rg  # noqa: E402
 from embodied_jepa import run_tools as rt  # noqa: E402
 
+fpl.configure_headless()
 GIB = 2**30
 log = hz.log
 MAP_CAP_SECONDS = 3600.0
