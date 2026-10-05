@@ -271,8 +271,57 @@ def l_rand_index(seed: int, feasible) -> int:
 
 
 def foreign_index(i: int, n: int) -> int:
-    """L-shuf's foreign reset: (i + 1) mod n in the cohort's order."""
+    """L-shuf's foreign reset when every reset reached 405: (i + 1) mod n in the cohort's order."""
     return (int(i) + 1) % int(n)
+
+
+def foreign_reached(i: int, reached) -> int | None:
+    """L-shuf's foreign reset (R17.20): the next reset after ``i`` in cohort order, cyclically,
+    whose W attempt reached 405 (logged its 405 frame). A reset refused before 405 fails in P-3's
+    shared pick for every arm and needs no frame; ``None`` only if no other reset reached 405."""
+    reached = [bool(r) for r in reached]
+    n = len(reached)
+    for k in range(1, n):
+        j = (int(i) + k) % n
+        if reached[j]:
+            return j
+    return None
+
+
+def reached_405(record: dict) -> bool:
+    """Whether an attempt reached step 405 (it logged the 405 frame)."""
+    return record.get("frame405") is not None
+
+
+def determinism_check(first: list[dict], again: list[dict], tol_m: float | None = None) -> dict:
+    """W's re-run on S's first resets (R17.21): a reset refused before 405 must be refused again
+    identically (termination reason and executed steps); a committed reset must commit again,
+    with its R-plate reading and its commit target each within the declared tolerance (0.1 cm).
+    ``ok`` is False on any mismatch (the stage is V)."""
+    tol = DETERMINISM_TOLERANCE_M if tol_m is None else float(tol_m)
+    items, ok = [], True
+    for a, b in zip(first, again, strict=True):
+        if a["seed"] != b["seed"]:
+            raise ContractError("the re-run must cover the same resets in order")
+        ca, cb = bool(a.get("commit")), bool(b.get("commit"))
+        item = {"seed": a["seed"], "committed": [ca, cb]}
+        if ca != cb:
+            item["ok"] = False
+        elif not ca:
+            same = (a.get("termination_reason"), a.get("executed_steps")) == (
+                b.get("termination_reason"),
+                b.get("executed_steps"),
+            )
+            item |= {"refused_identically": same, "ok": same}
+        else:
+            ra = np.asarray(a["decisions"][0].get("reading", a["commit"]["target"]), np.float64)
+            rb = np.asarray(b["decisions"][0].get("reading", b["commit"]["target"]), np.float64)
+            dt = float(np.linalg.norm(np.asarray(a["commit"]["target"]) - b["commit"]["target"]))
+            dr = float(np.linalg.norm(ra - rb))
+            item |= {"target_diff_m": dt, "reading_diff_m": dr, "ok": dt <= tol and dr <= tol}
+        ok = ok and item["ok"]
+        items.append(item)
+    return {"tolerance_m": tol, "resets": items, "ok": bool(ok)}
 
 
 # ----- the corpus (§4.3) -------------------------------------------------------------------------
@@ -514,13 +563,13 @@ def g1_passes(stats: dict, bars: dict, comparative: dict) -> dict:
     return {k: bool(v) for k, v in parts.items()} | {"passes": bool(all(parts.values()))}
 
 
-def decide_g(per_seed: dict) -> dict:
-    """``per_seed[seed] = {"G1": bool, ..., "G5": bool}`` for every model seed."""
+def decide_g(per_seed: dict, *, debug: bool = False) -> dict:
+    """``per_seed[seed] = {"G1": bool, ..., "G5": bool}`` for every model seed (a debug run:
+    the one debug model seed, never in a real run)."""
     _require(per_seed=per_seed)
-    if sorted(per_seed) != sorted(MODEL_SEEDS) and sorted(per_seed) != sorted(
-        DEBUG_MODEL_SEEDS[:1]
-    ):
-        raise ContractError(f"Stage G needs every model seed {MODEL_SEEDS}")
+    expected = DEBUG_MODEL_SEEDS[:1] if debug else MODEL_SEEDS
+    if sorted(per_seed) != sorted(expected):
+        raise ContractError(f"Stage G needs every model seed {expected}")
     for seed, gates in per_seed.items():
         missing = [g for g in ("G1", "G2", "G3", "G4", "G5") if not isinstance(gates.get(g), bool)]
         if missing:
@@ -565,7 +614,8 @@ DELTA = 8  # of 64: an allocation (the design note's proposal, R15.6's label), n
 MCNEMAR_P = 0.01
 MIN_SEPARATION = 7  # of 64: the smallest b - c at which the one-sided McNemar test can pass
 DETERMINISM_RESETS = 4  # W's re-run on S's first four resets
-DETERMINISM_TOLERANCE_M = 1e-6
+DETERMINISM_TOLERANCE_M = 0.001  # 0.1 cm on the R-plate reading and the commit target (R17.21):
+# > 15 x the renderer noise seen in Stage 0 (about 6e-5 m in the 405 reading) and 10 x below tau
 S_ROWS = {
     "V": "one repeat of the stage after a recorded fix",
     "S-VOID-CEILING": "H-final(commit)(S) < 56/64: escalate, no clause, no claim",

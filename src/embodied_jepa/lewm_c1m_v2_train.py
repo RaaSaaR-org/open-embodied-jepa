@@ -344,7 +344,7 @@ def train_model(
     sampler = WindowSampler(len(train), seed)
     feeder = Prefetcher(train, sampler, zero=(arm == "N"))
     curve, losses, states = [], [], {}
-    step_seconds = []
+    step_seconds, selection_seconds = [], []
     sync = torch.cuda.synchronize if str(device).startswith("cuda") else (lambda: None)
     try:
         for step in range(1, int(updates) + 1):
@@ -362,7 +362,9 @@ def train_model(
                     check()
             step_seconds.append(time.perf_counter() - t0)
             if step % select_every == 0:
+                t_sel = time.perf_counter()
                 value = val_criterion(model, val, scale, arm)
+                selection_seconds.append(time.perf_counter() - t_sel)
                 curve.append([step, value])
                 states[step] = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
                 if log is not None:
@@ -394,6 +396,7 @@ def train_model(
             "note": "wall time per update including the wait for the prefetched batch "
             "(selection evaluations excluded); the first 10 updates excluded when > 20",
         },
+        "selection_seconds": selection_seconds,
         "prefetch": {
             "batches": feeder.batches,
             "fill_seconds_total": feeder.fill_seconds,

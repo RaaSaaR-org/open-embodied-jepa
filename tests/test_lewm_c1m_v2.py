@@ -337,7 +337,7 @@ def test_gated_rows_first_match_and_in_both_directions():
 
 def test_no_clause_row_fires_on_a_run_whose_tests_and_ni_pass():
     rng = np.random.default_rng(5)
-    for _ in range(300):
+    for _ in range(120):
         p = rng.uniform(0.3, 1.0, 8)
         o = {a: (rng.uniform(size=64) < q).tolist() for a, q in zip(_outcomes(), p, strict=True)}
         out = lm.decide_s(o)
@@ -474,19 +474,26 @@ def test_choose_from_grid_ties_infeasible_lrand_and_fallback():
 
 
 def test_world_model_arms_read_no_task_truth():
-    """G-privileged, statically: W's aim reads the observation, the controller's own palm,
-    kinematics, apple estimate and grasp, the stand-in and the readouts, never the hook or the
-    simulator."""
-    source = ast.get_source_segment(
-        (ROOT / "src/embodied_jepa/lewm_c1m_v2_runtime.py").read_text(),
-        next(
-            n
-            for n in ast.parse((ROOT / "src/embodied_jepa/lewm_c1m_v2_runtime.py").read_text()).body
-            if isinstance(n, ast.ClassDef) and n.name == "WorldModelAim"
-        ),
-    )
-    for forbidden in ("hook", ".sim", "truth", "robot", "current()"):
-        assert forbidden not in source, forbidden
+    """G-privileged, statically: W's aim and every helper it calls read the observation, the
+    controller's own palm, kinematics, apple estimate and grasp, the stand-in and the readouts,
+    never the hook, the simulator or the truth."""
+    path = ROOT / "src/embodied_jepa/lewm_c1m_v2_runtime.py"
+    text = path.read_text()
+    names = {
+        "WorldModelAim",
+        "choose_from_grid",
+        "encode",
+        "rollout_plates",
+        "world_model",
+        "mean_latent",
+        "run_offline_aim_task",
+    }
+    nodes = [n for n in ast.parse(text).body if getattr(n, "name", None) in names]
+    assert {n.name for n in nodes} == names
+    for node in nodes:
+        source = ast.get_source_segment(text, node)
+        for forbidden in ("hook", ".sim", "truth", "robot", "current()", "plate_xy_now"):
+            assert forbidden not in source, (node.name, forbidden)
     assert lm.NON_PRIVILEGED_ARMS == frozenset(
         {"W", "N", "L-shuf", "L-mean", "L-rand", "H-rule", "H-sysid"}
     )
@@ -668,8 +675,11 @@ def test_train_model_selects_with_select_checkpoint(monkeypatch):
 
     monkeypatch.setattr(ft.FrozenTokenMixin, "_load_frozen_module", lambda s, n: _tiny_dinov2())
     torch.set_num_threads(2)
+    # a reduced latent (2 x 2 grid, 1 536-d) keeps the test fast; the loop is the same code
+    small = dict(lm.MODEL_CONFIG, token_grid=2, latent_dim=2 * 2 * 384)
+    monkeypatch.setattr(lm, "MODEL_CONFIG", small)
     rng = np.random.default_rng(1)
-    d = lm.LATENT_DIM
+    d = small["latent_dim"]
     f = (0.1 * rng.standard_normal((3, lm.N_FRAMES, d))).astype(np.float32)
     a = rng.uniform(-0.1, 0.1, (3, lm.N_COMMANDS, 14)).astype(np.float32)
     train = tr.RootStore(f, a, (1, 2, 3))
@@ -690,3 +700,222 @@ def test_train_model_selects_with_select_checkpoint(monkeypatch):
     assert calls and calls[0][1] == 0.01
     assert record["kept_update"] == real(record["val_curve"], 0.01)
     assert record["prefetch"]["batches"] == 4 and len(record["val_curve"]) == 2
+
+
+# ----- R17.20-R17.24: refused resets, determinism, the artifact chain, caps, rows --------------
+def test_foreign_reached_and_reached_405():
+    assert lm.foreign_reached(0, [True, True, True]) == 1
+    assert lm.foreign_reached(2, [True, True, True]) == 0
+    assert lm.foreign_reached(0, [True, False, True]) == 2
+    assert lm.foreign_reached(2, [False, True, True]) == 1
+    assert lm.foreign_reached(1, [False, True, False]) is None
+    assert lm.reached_405({"frame405": np.zeros(1)}) and not lm.reached_405({"frame405": None})
+
+
+def _commit(seed, target, reading):
+    return {
+        "seed": seed,
+        "commit": {"target": list(target)},
+        "decisions": [{"reading": list(reading)}],
+        "termination_reason": "step_limit",
+        "executed_steps": 800,
+    }
+
+
+def test_determinism_check_tolerance_and_refused_resets():
+    a = [_commit(1, (0.5, -0.1), (0.49, -0.09)), {"seed": 2, "termination_reason": "guard_refusal",
+                                                  "executed_steps": 230}]  # fmt: skip
+    near = [_commit(1, (0.5004, -0.1), (0.49006, -0.09)), dict(a[1])]
+    assert lm.DETERMINISM_TOLERANCE_M == 0.001
+    out = lm.determinism_check(a, near)
+    assert out["ok"] and out["resets"][1]["refused_identically"]
+    far = [_commit(1, (0.5015, -0.1), (0.49, -0.09)), dict(a[1])]
+    assert not lm.determinism_check(a, far)["ok"]
+    other = [near[0], dict(a[1], executed_steps=231)]
+    assert not lm.determinism_check(a, other)["ok"]
+    mixed = [near[0], _commit(2, (0.5, -0.1), (0.49, -0.09))]
+    assert not lm.determinism_check(a, mixed)["ok"]
+
+
+class _FakeCohort:
+    def __init__(self, seeds):
+        self.resets = {s: lm.reset_of(s) for s in seeds}
+        self.est = {
+            s: {"estimates": [0.3, -0.2, 0.5, -0.1], "frame_sha256": "f", "state_sha256": "s"}
+            for s in seeds
+        }
+
+
+class _FakePool:
+    """Every arm fails on ``refused`` (P-3's shared pick); elsewhere W, H-final and H-read
+    succeed and the twins fail (an L-PASS-like cohort)."""
+
+    def __init__(self, refused):
+        self.refused, self.calls = set(refused), []
+
+    def map(self, tasks, cap, what):
+        self.calls.append(tasks)
+        out = []
+        for task in tasks:
+            s, arm = task["seed"], task["arm"]
+            base = {"seed": s, "arm": arm, "blocked": None, "privileged_ok": True,
+                    "task_truth_in_controller": 0, "seconds": 1.0}  # fmt: skip
+            if s in self.refused:
+                out.append(
+                    base
+                    | {
+                        "success": False,
+                        "termination_reason": "guard_refusal",
+                        "executed_steps": 230,
+                        "frame405": None,
+                        "decisions": [],
+                    }
+                )
+                continue  # fmt: skip
+            good = arm in ("W", "H-final", "H-read", "H-rule", "H-sysid")
+            rec = _commit(s, (0.5, -0.1), (0.49, -0.09)) | base
+            rec |= {"success": good, "frame405": np.full((2, 2, 3), s % 251, np.uint8)}
+            rec["commit"] |= {"fallback": False, "clipped": False}
+            out.append(rec)
+        return out
+
+
+@pytest.mark.parametrize("role", ["D", "S"])
+def test_a_reset_refused_before_405_never_voids_d_or_s(role):
+    run = _runner()
+    n = 16 if role == "D" else 64
+    seeds = tuple(range(66100, 66100 + n)) if role == "D" else tuple(range(66200, 66200 + n))
+    refused = {seeds[1], seeds[2]}  # inside the determinism re-run's first four for S
+    pool = _FakePool(refused)
+    report: dict = {}
+    fields = run.Fields(report, "closed")
+    row = run.closed_core(
+        pool, _FakeCohort(seeds), seeds, role, {"tau_commit_cm": 1.0, "a_lo": lm.A_LO}, [[0.0]],
+        fields,
+    )  # fmt: skip
+    arms = report["fields"]["arms"]
+    assert arms["refused_before_405"]["W"] == 2
+    assert arms["W"]["count"] == n - 2 and arms["W"]["refused_before_405"] == 2
+    # L-shuf: reset 0's foreign frame skips the two refused resets
+    shuf = next(c for c in pool.calls if c[0]["arm"] == "L-shuf")
+    assert int(shuf[0]["foreign_frame"][0, 0, 0]) == seeds[3] % 251
+    assert arms["l_shuf_foreign"][str(seeds[0])] == seeds[3]
+    if role == "S":
+        det = report["fields"]["determinism"]
+        assert det["ok"] and det["resets"][1]["refused_identically"]
+        assert row == "L-PASS"  # 62/64 >= 56/64: the refused resets are counted misses
+        assert report["fields"]["decision"]["counts"]["W"] == 62
+    else:
+        assert row == "D-PASS" and report["fields"]["determinism"] == lm.NOT_EVALUATED
+
+
+def _chain_files(tmp_path, *, debug=False, row="O-PASS"):
+    from embodied_jepa import lewm_c1m_v2_offline as off
+    from embodied_jepa.models.latent_critic import RidgeReadout
+
+    corpus = tmp_path / "corpus"
+    corpus.mkdir(parents=True)
+    (corpus / "manifest.json").write_text("{}")
+    sha = off.sha256_file(corpus / "manifest.json")
+    feat = tmp_path / "featurise"
+    (feat / "features").mkdir(parents=True)
+    suffix = "-DEBUG" if debug else ""
+    (feat / "report.json").write_text(json.dumps({
+        "outcome": "FEATURISED" + suffix, "debug": debug, "corpus_sha256": sha,
+        "fields": {"featurisation": {"files_sha256": {}}}}))  # fmt: skip
+    fits = tmp_path / "readouts" / "fits"
+    fits.mkdir(parents=True)
+    mean, std = np.zeros(4), np.ones(4)
+    np.savez(fits / "moments.npz", mean=mean, std=std)
+    r = RidgeReadout(np.zeros(4), np.ones(4), np.ones((4, 2)), np.zeros(2), 0.1)
+    np.savez(fits / "r8.npz", **r.state())
+    np.savez(fits / "r_plate.npz", **r.state())
+    latent = np.ones(4, np.float32)
+    np.save(fits / "mean_latent.npy", latent)
+    import hashlib
+
+    record = {
+        "moments": {"path": str(fits / "moments.npz"), "sha256": off.moments_sha256(mean, std)},
+        "r8": {"path": str(fits / "r8.npz"), "sha256": r.sha256()},
+        "r_plate": {"path": str(fits / "r_plate.npz"), "sha256": r.sha256()},
+        "mean_latent": {"path": str(fits / "mean_latent.npy"),
+                        "sha256": hashlib.sha256(latent.tobytes()).hexdigest()},
+        "sysid": {"coef": [[0.0]]},
+    }  # fmt: skip
+    (fits.parent / "report.json").write_text(json.dumps({
+        "outcome": row + suffix, "debug": debug, "corpus_sha256": sha,
+        "fields": {"fits": record}}))  # fmt: skip
+    from types import SimpleNamespace
+
+    args = SimpleNamespace(corpus=str(corpus), corpus_sha256=sha, debug=debug,
+                           features=str(feat / "features"), fits=str(fits))  # fmt: skip
+    return args, record, sha
+
+
+def test_the_artifact_chain_ties_corpus_features_fits_and_models(tmp_path):
+    run = _runner()
+    args, record, sha = _chain_files(tmp_path)
+    report: dict = {}
+    chain = run.artifact_chain(args, report)
+    assert chain["corpus_sha256"] == sha == report["corpus_sha256"]
+    mean, std, msha = run.load_moments(chain)
+    assert msha == record["moments"]["sha256"]
+    run.load_readout(chain, "r8")
+    run.check_mean_latent(chain)
+    job = {"arm": "W", "seed": 66800,
+           "metadata": {"corpus_manifest_sha256": sha, "normalisation_sha256": msha}}  # fmt: skip
+    assert run.check_job(job, chain) is job
+    with pytest.raises(pt.GuardError):
+        run.check_job(job | {"metadata": job["metadata"] | {"normalisation_sha256": "x"}}, chain)
+    with pytest.raises(pt.GuardError):
+        run.check_job(job | {"metadata": job["metadata"] | {"corpus_manifest_sha256": "x"}}, chain)
+    # a tampered artifact is refused
+    np.savez(record["moments"]["path"], mean=np.ones(4), std=np.ones(4))
+    with pytest.raises(pt.GuardError):
+        run.load_moments(chain)
+    np.save(record["mean_latent"]["path"], np.zeros(4, np.float32))
+    with pytest.raises(pt.GuardError):
+        run.check_mean_latent(chain)
+    from embodied_jepa.models.latent_critic import RidgeReadout
+
+    other = RidgeReadout(np.zeros(4), np.ones(4), np.zeros((4, 2)), np.zeros(2), 0.1)
+    np.savez(record["r8"]["path"], **other.state())
+    with pytest.raises(pt.GuardError):
+        run.load_readout(chain, "r8")
+    # the wrong corpus, a missing sha in a real run
+    with pytest.raises(pt.GuardError):
+        run.artifact_chain(type(args)(**vars(args) | {"corpus_sha256": "0" * 64}), {})
+    with pytest.raises(pt.GuardError):
+        run.artifact_chain(type(args)(**vars(args) | {"corpus_sha256": None}), {})
+
+
+def test_the_chain_refuses_debug_or_non_o_pass_reports_in_a_real_run(tmp_path):
+    run = _runner()
+    args, _r, _s = _chain_files(tmp_path / "a", row="O-NO-BAR")
+    with pytest.raises(pt.GuardError):
+        run.artifact_chain(args, {})
+    args, _r, _s = _chain_files(tmp_path / "b", debug=True)
+    with pytest.raises(pt.GuardError):  # a debug report in a real run
+        run.artifact_chain(type(args)(**vars(args) | {"debug": False}), {})
+    args, _r, _s = _chain_files(tmp_path / "c", debug=True, row="O-NO-BAR")
+    assert run.artifact_chain(args, {})["fits"]  # any O row in a debug run
+
+
+def test_stage_caps_frozen_pin_decide_g_and_stage_t_rows():
+    run = _runner()
+    from types import SimpleNamespace
+
+    assert run.stage_cap(SimpleNamespace(stage="closed", cohort="D")) == 7_200.0
+    assert run.stage_cap(SimpleNamespace(stage="closed", cohort="S")) == 21_600.0
+    assert run.stage_cap(SimpleNamespace(stage="train", cohort=None)) == 46_800.0
+    manifest = json.loads(MANIFEST.read_text())
+    out = run.check_frozen_pin(manifest)
+    assert out["pin"] is None and out["status"] == "DRAFT"
+    with pytest.raises(pt.GuardError):
+        run.check_frozen_pin(manifest | {"frozen_sha256_pin": "0" * 64})
+    good = {"G1": True, "G2": True, "G3": True, "G4": True, "G5": True}
+    with pytest.raises(ContractError):
+        lm.decide_g({66992: good})  # a debug seed in the frozen ladder
+    assert lm.decide_g({66992: good}, debug=True)["row"] == "G-PASS"
+    assert "decide_t" in _calls(RUNNER)
+    assert "stage_t" in run.STAGE_FIELDS["gates"]

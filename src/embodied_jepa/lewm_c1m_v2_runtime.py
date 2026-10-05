@@ -230,6 +230,8 @@ class WorldModelAim(ptr.TwinAim):
         if self.arm == "L-rand":
             predict = None
         else:
+            if self.start is None:
+                raise lp.GuardError("G-frames: L-shuf reached 405 without a foreign frame")
             if isinstance(self.start, str) and self.start == "own":
                 start = own
             elif isinstance(self.start, str) and self.start == "mean":
@@ -334,8 +336,9 @@ def _controller(task: dict, hook: CorpusMotion):
             W["bounds"],
         )
         start = {"W": "own", "N": "own", "L-mean": "mean", "L-rand": None}.get(arm)
-        if arm == "L-shuf":
-            start = np.asarray(task["foreign_frame"], np.uint8)
+        if arm == "L-shuf":  # None only when no other reset reached 405 (R17.20)
+            frame = task["foreign_frame"]
+            start = None if frame is None else np.asarray(frame, np.uint8)
         aim = WorldModelAim(
             rtm.encoder(),
             ptr._readout("r_plate"),

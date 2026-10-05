@@ -274,7 +274,7 @@ def readouts_core(feat, out, *, tau_commit_cm, check=None, probe: bool = False) 
     started = time.monotonic()
     feat, out = Path(feat), Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    tables = {s: load_table(feat, s) for s in ("train", "val", "gate")}
+    tables = {s: load_table(feat, s) for s in ("train", "val")}  # the gate split: Stage G only
     stores = {s: tr.RootStore.open(feat, s, mmap=True) for s in ("train", "val")}
     tv = {
         "seeds": np.concatenate([tables[s]["seeds"] for s in ("train", "val")]),

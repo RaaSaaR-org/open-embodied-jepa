@@ -108,7 +108,7 @@ STAGE_FIELDS = {
     "readouts": ("admission", "fits", "decision"),
     "train": ("job", "record", "checkpoint"),
     "plan": ("calibration", "budget", "g1", "decision"),
-    "gates": ("primary_seed", "per_seed", "offline_aims", "decision"),
+    "gates": ("primary_seed", "per_seed", "offline_aims", "stage_t", "decision"),
     "closed": ("arms", "determinism", "decision"),
     "simulate": ("simulations",),
     "scale": ("gather", "probe", "bit_identity", "caps"),
@@ -170,6 +170,10 @@ def check_code(report: dict) -> None:
     for path in lm.CARRIED_CODE_FILES:
         want = lm.CARRIED_CODE_BLOBS[path]  # the blob at the reference, recorded
         got = git("hash-object", path)
+        if reference_present():  # a full clone: the recorded blob is the reference's
+            want_ref = git("rev-parse", f"{lm.CARRIED_CODE_REFERENCE}:{path}")
+            if want_ref != want:
+                raise lp.GuardError(f"G-hash: the recorded blob of {path} is not the reference's")
         if want != got:
             raise lp.GuardError(f"G-hash: {path} differs from {lm.CARRIED_CODE_REFERENCE[:7]}")
         carried[path] = got
@@ -180,6 +184,29 @@ def check_code(report: dict) -> None:
             raise lp.GuardError(f"G-hash: {path} is not committed") from error
     report["carried_code_git_blobs"] = carried
     report["own_code_git_blobs"] = {p: git("hash-object", p) for p in lm.OWN_FILES}
+
+
+def reference_present() -> bool:
+    return (
+        subprocess.run(
+            ["git", "-C", str(ROOT), "cat-file", "-e", lm.CARRIED_CODE_REFERENCE],
+            capture_output=True,
+        ).returncode
+        == 0
+    )
+
+
+def check_frozen_pin(manifest: dict) -> dict:
+    """G-frozen (direct): after the freeze, the manifest's pin must equal this revision's frozen
+    block; before it, the pin must be unset."""
+    sha = lm.frozen_sha256()
+    pin = manifest.get("frozen_sha256_pin")
+    if lm.STATUS == "FROZEN":
+        if pin != sha:
+            raise lp.GuardError(f"G-frozen: the frozen block {sha[:12]} is not the pin {pin}")
+    elif pin is not None:
+        raise lp.GuardError("G-frozen: a DRAFT protocol carries no pin")
+    return {"status": lm.STATUS, "frozen_sha256": sha, "pin": pin}
 
 
 def summary_line(text: str) -> str:
@@ -276,6 +303,7 @@ def preflight(report: dict, args) -> dict:
     hz.check_clean(dirty)
     report["protocol_status"] = lm.STATUS
     report["frozen_sha256_at_run"] = lm.frozen_sha256()
+    report["frozen_pin_check"] = check_frozen_pin(json.loads((ROOT / lm.MANIFEST).read_text()))
     if lm.STATUS != "FROZEN" and args.stage not in DRAFT_ALLOWED and not args.debug:
         raise lp.GuardError(f"G-frozen: {args.stage} runs only after the freeze (STATUS FROZEN)")
     report["thread_env"] = {k: os.environ.get(k) for k in lm.THREAD_ENV}
@@ -291,6 +319,7 @@ def preflight(report: dict, args) -> dict:
             report["g_tests"] = {"skipped": "debug run with --debug-skip-tests (nothing is read)"}
         else:
             report["g_tests"] = run_full_tests()
+    report["load_average_at_start"] = list(os.getloadavg())  # recorded in every stage
     if args.stage in GPU_STAGES:
         report["g_tests"] = verify_tests_record(args.tests_record)
     return manifest
@@ -431,6 +460,7 @@ def arm_summary(records) -> dict:
         "n": len(records),
         "per_reset": successes(records),
         "refused": sum(r["blocked"] is not None for r in records),
+        "refused_before_405": sum(1 for r in records if not r.get("commit")),
         "fallbacks": sum(bool(r["commit"]["fallback"]) for r in commits),
         "clip_binding_fraction": (
             sum(bool(r["commit"].get("clipped")) for r in commits) / len(commits)
@@ -560,23 +590,14 @@ def stage_k0(report, args, fields: Fields, manifest) -> str:
                     item["feasibility_at_w_bar"]["predicted_pass_probability"] < lm.FEASIBILITY_BAR
                 )
             proxies[arm] = item
-        ni = [
-            lm.simulate_non_inferiority(
-                p_c=min(30, sum(ceiling) * 32 // max(n, 1)) / 32,
-                gap=gap,
-                dependence="independent",
-                share=0.5,
-                config_index=900 + i,
-            )
-            for i, gap in enumerate((0, 2, 4, 8))
-        ]
         fields.set(
             "proxies",
             {
                 "proxies": proxies,
-                "ni_simulation_at_k0_counts": ni,
-                "note": "the comparator's true rate is taken as min(30/32, N_K(0)): K0 runs no "
-                "comparator arm (H-rule and H-sysid scored 30/32 each in C1-M's M-F6)",
+                "refused_before_405": {
+                    "ceiling": sum(1 for r in ceiling_records if not r.get("commit")),
+                    "note": "a reset refused in P-3's pick fails for every arm (R17.20)",
+                },
             },
         )
         palm = history["palm_speed_405_cm"]["median"]
@@ -649,6 +670,7 @@ def stage_featurise(report, args, fields: Fields, manifest) -> str:
     devices.configure_determinism("cuda", strict=True)
     torch.set_num_threads(6)
     corpus = open_corpus_checked(args)
+    report["corpus_sha256"] = corpus["_sha256"]
     out = Path(args.output) / "features"
     result = off.featurise_corpus(Path(args.corpus), corpus, out, device="cuda")
     fields.set("featurisation", result)
@@ -657,10 +679,90 @@ def stage_featurise(report, args, fields: Fields, manifest) -> str:
 
 
 def open_corpus_checked(args) -> dict:
-    expected = None if args.debug else args.corpus_sha256
+    """§7 step 4: every stage after C checks the sealed corpus manifest's sha256 (a debug run
+    checks it when given, and always through the artifact chain below)."""
+    expected = args.corpus_sha256
     if not args.debug and not expected:
         raise lp.GuardError("G-split: the sealed corpus manifest's sha256 is required")
+    if not args.corpus:
+        raise lp.GuardError("G-split: the sealed corpus folder is required")
     return off.open_corpus(Path(args.corpus), expected)
+
+
+O_ROWS_READ = {False: ("O-PASS",), True: ("O-PASS", "O-NO-BAR", "O-ARM-KEYED")}
+
+
+def artifact_chain(args, report: dict) -> dict:
+    """G-split (R17.22): the sealed corpus, its featurisation and Stage O's fits, tied by sha256.
+    The featurise report must be FEATURISED and the readouts report O-PASS (any O row in a debug
+    run), each on the same corpus manifest, and neither a debug report in a real run."""
+    corpus = open_corpus_checked(args)
+    chain = {"corpus_sha256": corpus["_sha256"]}
+    if getattr(args, "features", None):
+        feat = completed(Path(args.features).parent / "report.json", ("FEATURISED",), args.debug)
+        check_same_corpus(feat, chain, "featurise")
+        chain["features_files_sha256"] = feat["fields"]["featurisation"]["files_sha256"]
+    if getattr(args, "fits", None):
+        ro = completed(
+            Path(args.fits).parent / "report.json", O_ROWS_READ[bool(args.debug)], args.debug
+        )
+        check_same_corpus(ro, chain, "readouts")
+        chain["fits"] = ro["fields"]["fits"]
+    report["artifact_chain"] = {
+        "corpus_sha256": chain["corpus_sha256"],
+        "fits": None
+        if "fits" not in chain
+        else {k: v.get("sha256") for k, v in chain["fits"].items() if isinstance(v, dict)},
+    }
+    report["corpus_sha256"] = chain["corpus_sha256"]
+    return chain
+
+
+def check_same_corpus(earlier: dict, chain: dict, what: str) -> None:
+    if earlier.get("corpus_sha256") != chain["corpus_sha256"]:
+        raise lp.GuardError(f"G-split: the {what} report was made from another corpus")
+
+
+def load_moments(chain: dict):
+    """Stage O's normalisation moments, checked against the readouts report's sha256."""
+    record = chain["fits"]["moments"]
+    with np.load(record["path"]) as data:
+        mean, std = data["mean"], data["std"]
+    sha = off.moments_sha256(mean, std)
+    if sha != record["sha256"]:
+        raise lp.GuardError("G-split: the moments differ from Stage O's recorded sha256")
+    return mean, std, sha
+
+
+def load_readout(chain: dict, name: str):
+    """R8 or R-plate from Stage O's fits, checked against the recorded sha256 (G-readout)."""
+    from embodied_jepa.models.latent_critic import RidgeReadout
+
+    record = chain["fits"][name]
+    with np.load(record["path"]) as data:
+        readout = RidgeReadout.from_state({k: data[k] for k in data.files})
+    if readout.sha256() != record["sha256"]:
+        raise lp.GuardError(f"G-readout: {name} differs from Stage O's recorded sha256")
+    return readout
+
+
+def check_mean_latent(chain: dict) -> None:
+    import hashlib
+
+    record = chain["fits"]["mean_latent"]
+    data = np.ascontiguousarray(np.load(record["path"]), np.float32)
+    if hashlib.sha256(data.tobytes()).hexdigest() != record["sha256"]:
+        raise lp.GuardError("G-readout: the mean latent differs from Stage O's recorded sha256")
+
+
+def check_job(job: dict, chain: dict) -> dict:
+    """A trained model was fitted on this corpus with these normalisation moments."""
+    meta = job["metadata"]
+    if meta.get("corpus_manifest_sha256") != chain["corpus_sha256"]:
+        raise lp.GuardError(f"G-split: {job['arm']}-{job['seed']} was trained on another corpus")
+    if meta.get("normalisation_sha256") != chain["fits"]["moments"]["sha256"]:
+        raise lp.GuardError(f"G-split: {job['arm']}-{job['seed']} used other moments")
+    return job
 
 
 def tau_commit(args):
@@ -677,6 +779,7 @@ def tau_commit(args):
 
 def stage_readouts(report, args, fields: Fields, manifest) -> str:
     out = Path(args.output) / "fits"
+    artifact_chain(args, report)
     report["first_outcome_utc"] = hz.utc()
     result = off.readouts_core(Path(args.features), out, tau_commit_cm=tau_commit(args))
     fields.set("admission", result["admission"])
@@ -715,13 +818,13 @@ def job_budget(args, spec: dict) -> dict:
     return {"updates": int(budget["updates"]), "select_every": int(budget["select_every"])}
 
 
-def train_context(args, *, train=None, val=None, mean=None, std=None, moments_sha=None) -> dict:
-    """The stores and the normalisation a Stage T job reads (Stage O's train-only moments)."""
-    fits = Path(args.fits) if args.fits else None
+def train_context(
+    args, *, chain=None, train=None, val=None, mean=None, std=None, moments_sha=None
+) -> dict:
+    """The stores and the normalisation a Stage T job reads (Stage O's train-only moments,
+    checked against the readouts report's sha256)."""
     if mean is None:
-        with np.load(fits / "moments.npz") as data:
-            mean, std = data["mean"], data["std"]
-        moments_sha = off.moments_sha256(mean, std)
+        mean, std, moments_sha = load_moments(chain)
     if train is None:
         train = tr.RootStore.open(Path(args.features), "train")  # in RAM: about 9.6 GB
         val = tr.RootStore.open(Path(args.features), "val", mmap=True)
@@ -783,14 +886,14 @@ def stage_train(report, args, fields: Fields, manifest) -> str:
     spec = parse_job(args.job, args.debug)
     budget = job_budget(args, spec)
     fields.set("job", spec | budget)
-    corpus = open_corpus_checked(args)
-    ctx = train_context(args)
+    chain = artifact_chain(args, report)
+    ctx = train_context(args, chain=chain)
     record = train_job_core(
         ctx,
         spec,
         budget,
         output=Path(args.output),
-        corpus_sha=corpus["_sha256"],
+        corpus_sha=chain["corpus_sha256"],
         cap=lm.CAPS_SECONDS["T_job"],
     )
     fields.set("record", record)
@@ -818,7 +921,9 @@ def stage_plan(report, args, fields: Fields, manifest) -> str:
     import torch
 
     torch.set_num_threads(1)
-    cal_w, cal_n = load_job(args.cal_w, args.debug), load_job(args.cal_n, args.debug)
+    chain = artifact_chain(args, report)
+    cal_w = check_job(load_job(args.cal_w, args.debug), chain)
+    cal_n = check_job(load_job(args.cal_n, args.debug), chain)
     u_w = rt.select_checkpoint(cal_w["val_curve"], lm.SELECTION_TOLERANCE)
     u_n = rt.select_checkpoint(cal_n["val_curve"], lm.SELECTION_TOLERANCE)
     fields.set(
@@ -837,8 +942,7 @@ def stage_plan(report, args, fields: Fields, manifest) -> str:
         budget = lm.budget_rule(u_w, u_n)
     fields.set("budget", budget)
     val = tr.RootStore.open(Path(args.features), "val", mmap=True)
-    with np.load(Path(args.fits) / "moments.npz") as data:
-        scale = np.maximum(data["std"], lm.METRIC_FLOOR_STD)
+    scale = np.maximum(load_moments(chain)[1], lm.METRIC_FLOOR_STD)
     model = tr.load_model(
         cal_w["checkpoint"],
         seed=cal_w["seed"],
@@ -861,10 +965,13 @@ def stage_gates(report, args, fields: Fields, manifest) -> str:
     import torch
 
     torch.set_num_threads(1)
+    chain = artifact_chain(args, report)
     report["first_outcome_utc"] = hz.utc()
-    plan = completed(args.plan, ("T-PLANNED",), args.debug)["fields"]
+    plan_report = completed(args.plan, ("T-PLANNED",), args.debug)
+    check_same_corpus(plan_report, chain, "plan")
+    plan = plan_report["fields"]
     bars = plan["g1"]["bars"]
-    jobs = [load_job(p, args.debug) for p in args.models]
+    jobs = [check_job(load_job(p, args.debug), chain) for p in args.models]
     by = {(j["arm"], j["seed"]): j for j in jobs}
     seeds = sorted({j["seed"] for j in jobs})
     expected = (lm.DEBUG_MODEL_SEEDS[0],) if args.debug else lm.MODEL_SEEDS
@@ -883,16 +990,12 @@ def stage_gates(report, args, fields: Fields, manifest) -> str:
     )
     gate = tr.RootStore.open(Path(args.features), "gate", mmap=True)
     table = off.load_table(Path(args.features), "gate")
-    with np.load(Path(args.fits) / "moments.npz") as data:
-        scale = np.maximum(data["std"], lm.METRIC_FLOOR_STD)
-    from embodied_jepa.models.latent_critic import RidgeReadout
-
-    with np.load(Path(args.fits) / "r8.npz") as data:
-        r8 = RidgeReadout.from_state({k: data[k] for k in data.files})
+    scale = np.maximum(load_moments(chain)[1], lm.METRIC_FLOOR_STD)
+    r8 = load_readout(chain, "r8")
     tau = tau_commit(args)
     found = hz.check_evidence(Path(args.evidence))
     report["evidence"] = {"root": str(args.evidence), "sha256": found["sha256"]}
-    config = model_config(args, primary)
+    config = model_config(args, primary, chain)
     config.pop("_sysid_coef")
     config |= {"torch_threads": 1, "p3_checkpoint": hz.p3_checkpoint(Path(args.evidence))}
     pool = Pool(int(args.workers or lm.WM_WORKERS), config)
@@ -912,7 +1015,7 @@ def stage_gates(report, args, fields: Fields, manifest) -> str:
             for i in range(len(gate))
         ]
         chunks = pool.map(tasks, MAP_CAP_SECONDS, "stand-in chunks of the gate roots' aims")
-        fields.set("offline_aims", offline_aims(args, pool, gate, table, tau))
+        fields.set("offline_aims", offline_aims(chain, pool, gate, table, tau, args))
     finally:
         report["pool_close"] = pool.close()
     standin = np.stack([c["chunks"][0] for c in sorted(chunks, key=lambda c: c["key"])])
@@ -946,22 +1049,28 @@ def stage_gates(report, args, fields: Fields, manifest) -> str:
         gates[s] = result["gates"]
         del w, n
     fields.set("per_seed", per_seed)
-    if args.debug:
-        decision = lm.decide_g({lm.DEBUG_MODEL_SEEDS[0]: gates[seeds[0]]})
-    else:
-        decision = lm.decide_g(gates)
+    # Stage T's row: all eight jobs are complete when Stage G reads them (R17.24)
+    fields.set(
+        "stage_t",
+        lm.decide_t(rank_reference=plan["decision"]["rank_reference"], jobs_complete=True)
+        | {"jobs": sorted(f"{j['arm']}-{j['seed']}" for j in jobs)},
+    )
+    decision = lm.decide_g(gates, debug=args.debug)
     fields.set("decision", decision)
     return decision["row"]
 
 
 # ----- Stages D and S -----------------------------------------------------------------------------
-def model_config(args, primary: int) -> dict:
-    """The closed-loop workers' configuration: the train-only fits and the primary seed's W, N."""
-    fits = Path(args.fits)
-    record = json.loads((fits.parent / "report.json").read_text())["fields"]["fits"]
+def model_config(args, primary: int, chain: dict) -> dict:
+    """The closed-loop workers' configuration: Stage O's train-only fits (from an O-PASS readouts
+    report, every sha256 checked) and the primary seed's W and N (same corpus, same moments)."""
+    record = chain["fits"]
+    load_readout(chain, "r_plate")
+    load_readout(chain, "r8")
+    check_mean_latent(chain)
     models = {}
     for path in args.models:
-        job = load_job(path, args.debug)
+        job = check_job(load_job(path, args.debug), chain)
         if job["seed"] == primary:
             models[job["arm"]] = {
                 "path": job["checkpoint"],
@@ -983,15 +1092,11 @@ def model_config(args, primary: int) -> dict:
     }
 
 
-def offline_aims(args, pool, gate, table, tau: float) -> dict:
+def offline_aims(chain, pool, gate, table, tau: float, args) -> dict:
     """§7 step 7 (reported only, before any closed loop): each candidate-choosing arm's aim from
     the gate roots' logged 405 states with the same controller code, its error against the rule's
     fixed point g* = (p - kappa h) / (1 - kappa), and the tau-curve-mapped predicted count."""
-    from embodied_jepa.models.latent_critic import RidgeReadout
-
-    fits = Path(args.fits)
-    with np.load(fits / "r_plate.npz") as data:
-        r_plate = RidgeReadout.from_state({k: data[k] for k in data.files})
+    r_plate = load_readout(chain, "r_plate")
     full = np.load(Path(args.features) / "full405_gate.npy", mmap_mode="r")
     p_hat = np.stack([r_plate.predict(np.asarray(full[i], np.float64)) for i in range(len(gate))])
     latents = np.asarray(gate.features[:, tr.START_INDEX])
@@ -1046,65 +1151,80 @@ def stage_closed(report, args, fields: Fields, manifest) -> str:
     # a debug run reads any gates row (mechanics only); a real run only after G-PASS (and S
     # only after D-PASS, which its GO checks)
     rows = ("G-PASS", "H-GATE-FAIL", "G-NO-BAR") if args.debug else ("G-PASS",)
+    chain = artifact_chain(args, report)
     gates = completed(args.gates, rows, args.debug)
+    check_same_corpus(gates, chain, "gates")
     primary = int(gates["fields"]["primary_seed"]["seed"])
-    config = model_config(args, primary)
+    config = model_config(args, primary, chain)
     coef = config.pop("_sysid_coef")
     report["primary_seed"] = primary
-    role = args.cohort
     pool, co = sim_setup(report, args, manifest, config)
     try:
-        seeds = co.seeds(role)
+        seeds = co.seeds(args.cohort)
         report["first_outcome_utc"] = hz.utc()
-        tau = tau_commit(args)
-        arms = lm.D_ARMS if role == "D" else lm.S_ARMS
-        records = {}
-        common = {"tau_commit_cm": tau, "a_lo": lm.A_LO}
-        records["W"] = run_arm(pool, attempt_tasks("W", seeds, co, **common), f"{role} W")
-        frames = {r["seed"]: r["frame405"] for r in records["W"]}
-        if any(f is None for f in frames.values()):
-            raise lp.GuardError("G-frames: W's attempt did not log its 405 frame")
-        n = len(seeds)
-        for arm in arms:
-            if arm == "W":
-                continue
-            per, extra = None, dict(common)
-            if arm == "L-shuf":
-
-                def per(s):
-                    return {"foreign_frame": frames[seeds[lm.foreign_index(seeds.index(s), n)]]}
-
-            if arm == "H-sysid":
-                extra["sysid_coef"] = coef
-            if arm == "H-read":
-                extra |= {"readout": "r8", "grid": lm.TOKEN_GRID, "read_step": lm.READ_STEP}
-            tasks = attempt_tasks(arm, seeds, co, per, **extra)
-            records[arm] = run_arm(pool, tasks, f"{role} {arm}")
-        determinism = lm.NOT_EVALUATED
-        if role == "S":
-            first = seeds[: lm.DETERMINISM_RESETS]
-            again = run_arm(pool, attempt_tasks("W", first, co, **common), "S W determinism")
-            diffs = [
-                float(np.max(np.abs(np.asarray(a["commit"]["target"]) - b["commit"]["target"])))
-                for a, b in zip(again, records["W"][: len(first)], strict=True)
-            ]
-            determinism = {"max_abs_diff_m": max(diffs), "ok": max(diffs) <= 1e-6}
-            if not determinism["ok"]:
-                raise lp.GuardError(f"G-determinism: W's aims differ by {max(diffs)} m")
-            fields.set("determinism", determinism)
-        fields.set(
-            "arms",
-            {a: arm_summary(r) | {"attempts": lean(r)} for a, r in records.items()},
-        )
-        outcomes = {a: successes(r) for a, r in records.items()}
-        if role == "D":
-            decision = lm.decide_d({a: sum(v) for a, v in outcomes.items()})
-        else:
-            decision = lm.decide_s(outcomes)
-        fields.set("decision", decision)
-        return decision["row"]
+        common = {"tau_commit_cm": tau_commit(args), "a_lo": lm.A_LO}
+        return closed_core(pool, co, seeds, args.cohort, common, coef, fields)
     finally:
         report["pool_close"] = pool.close()
+
+
+def closed_core(pool, co, seeds, role: str, common: dict, coef, fields: Fields) -> str:
+    """Stage D or S on ``seeds`` (the stage's own code; tests drive it with a fake pool).
+
+    A reset refused before 405 (P-3's shared pick) fails for every arm: it is a concordant
+    fail-fail pair, stays in the denominator and never voids the stage (R17.20). L-shuf's
+    foreign frame is the next reset in cohort order, cyclically, whose W attempt reached 405."""
+    arms = lm.D_ARMS if role == "D" else lm.S_ARMS
+    records = {"W": run_arm(pool, attempt_tasks("W", seeds, co, **common), f"{role} W")}
+    reached = [lm.reached_405(r) for r in records["W"]]
+    foreign = {}
+    for i, s in enumerate(seeds):
+        j = lm.foreign_reached(i, reached)
+        if j is None and reached[i]:
+            raise lp.GuardError("G-frames: no other reset reached 405 for L-shuf's frame")
+        foreign[s] = None if j is None else records["W"][j]["frame405"]
+    for arm in arms:
+        if arm == "W":
+            continue
+        per, extra = None, dict(common)
+        if arm == "L-shuf":
+
+            def per(s):
+                return {"foreign_frame": foreign[s]}
+
+        if arm == "H-sysid":
+            extra["sysid_coef"] = coef
+        if arm == "H-read":
+            extra |= {"readout": "r8", "grid": lm.TOKEN_GRID, "read_step": lm.READ_STEP}
+        records[arm] = run_arm(pool, attempt_tasks(arm, seeds, co, per, **extra), f"{role} {arm}")
+    refused = {
+        a: [int(r["seed"]) for r in recs if not lm.reached_405(r)] for a, recs in records.items()
+    }
+    if role == "S":
+        first = list(seeds[: lm.DETERMINISM_RESETS])
+        again = run_arm(pool, attempt_tasks("W", first, co, **common), "S W determinism")
+        determinism = lm.determinism_check(records["W"][: len(first)], again)
+        fields.set("determinism", determinism)
+        if not determinism["ok"]:
+            raise lp.GuardError(f"G-determinism: W's re-run differs: {determinism['resets']}")
+    fields.set(
+        "arms",
+        {a: arm_summary(r) | {"attempts": lean(r)} for a, r in records.items()}
+        | {
+            "refused_before_405": {"by_arm": refused, "W": len(refused["W"])},
+            "l_shuf_foreign": {
+                str(s): None if foreign[s] is None else int(seeds[lm.foreign_reached(i, reached)])
+                for i, s in enumerate(seeds)
+            },
+        },
+    )
+    outcomes = {a: successes(r) for a, r in records.items()}
+    if role == "D":
+        decision = lm.decide_d({a: sum(v) for a, v in outcomes.items()})
+    else:
+        decision = lm.decide_s(outcomes)
+    fields.set("decision", decision)
+    return decision["row"]
 
 
 # ----- Stage 0: the simulations and the scale probe ----------------------------------------------
@@ -1206,9 +1326,8 @@ def stage_scale(report, args, fields: Fields, manifest) -> str:
             },
         )
         per = probe["result"]["per_update_seconds"]
-        worst = per["p95"] * lm.BUDGET["cap"] + 20 * probe["result"]["seconds"] / max(
-            1, args.scale_updates
-        )
+        selection = probe["result"]["selection_seconds"]  # measured, 250 val roots
+        worst = per["p95"] * lm.BUDGET["cap"] + lm.BUDGET["selection_points"] * max(selection)
         fields.set(
             "caps",
             {
@@ -1218,8 +1337,10 @@ def stage_scale(report, args, fields: Fields, manifest) -> str:
                 "cap_T_job_s": lm.CAPS_SECONDS["T_job"],
                 "cap_over_worst": lm.CAPS_SECONDS["T_job"] / (per["p95"] * lm.BUDGET["cap"]),
                 "note": "the worst case is 100 000 updates at the probe's 95th-percentile update "
-                "time; the 20 val selections add little at 250 val roots",
-                "estimate_with_selection_s": worst,
+                "time, plus 20 val selections at the probe's slowest measured selection",
+                "selection_seconds_measured": selection,
+                "worst_case_with_selections_s": worst,
+                "cap_over_worst_with_selections": lm.CAPS_SECONDS["T_job"] / worst,
             },
         )
     finally:
@@ -1256,9 +1377,15 @@ STAGE_CAPS = {
     "train": "T_job",
     "plan": "G",
     "gates": "G",
-    "closed": "S",
     "scale": "T_job",
 }
+
+
+def stage_cap(args) -> float:
+    """The stage's wall cap (§10.3); Stage D and Stage S have their own (D 7 200 s, S 21 600 s)."""
+    if args.stage == "closed":
+        return lm.CAPS_SECONDS[args.cohort]
+    return lm.CAPS_SECONDS.get(STAGE_CAPS.get(args.stage, ""), 4 * 3600.0)
 
 
 def run(args) -> dict:
@@ -1280,7 +1407,7 @@ def run(args) -> dict:
         "seed_ranges": lm.DEBUG_RANGES if args.debug else lm.SEED_RANGES,
     }
     fields = Fields(report, args.stage)
-    cap = lm.CAPS_SECONDS.get(STAGE_CAPS.get(args.stage, ""), 4 * 3600.0)
+    cap = stage_cap(args)
     clock = hz.Clock(cap)
     ceiling = (
         lm.MEMORY["train_ceiling_gib"]
@@ -1303,6 +1430,7 @@ def run(args) -> dict:
         if hz.tracked_tree_dirty():
             raise lp.GuardError("G-hash: the tracked tree changed during the run")
         report["revision_at_end"] = hz.revision()
+        report["load_average_at_end"] = list(os.getloadavg())
         fields.check()
         report["outcome"] = f"{outcome}-DEBUG" if args.debug else outcome
     except BaseException as error:  # noqa: BLE001 - every failure, signal included, is V
@@ -1365,6 +1493,11 @@ def main(argv=None) -> int:
         parser.error(f"{args.stage} needs --evidence (G-repro)")
     if args.stage in GPU_STAGES and not args.tests_record:
         parser.error(f"{args.stage} needs --tests-record (G-tests for GPU jobs)")
+    if args.stage in ("featurise", "readouts", "train", "plan", "gates", "closed"):
+        if not args.corpus:
+            parser.error(f"{args.stage} needs --corpus (G-split: the sealed manifest is checked)")
+        if not args.debug and not args.corpus_sha256:
+            parser.error(f"{args.stage} needs --corpus-sha256 (§7 step 4)")
     if args.stage == "scale" and not args.scratch:
         parser.error("scale needs --scratch")
     if args.stage == "closed" and not args.cohort:
