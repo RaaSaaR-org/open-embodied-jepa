@@ -76,10 +76,13 @@ from embodied_jepa import run_tools as rt  # noqa: E402
 fpl.configure_headless()
 GIB = 2**30
 log = hz.log
+PROTOCOL_DOCUMENT = ROOT / lm.DOCUMENT
 MAP_CAP_SECONDS = 3600.0
 QUIET_POLL_SECONDS = 30.0
 QUIET_WAIT_CAP_SECONDS = 4 * 3600.0
 CORPUS_CHUNK = 60  # corpus roots per pool map (bounds the frames held at once)
+ESTIMATE_CHUNK = 128  # post-look frames featurised at once for P-3's estimates (R17.30)
+CROSS_GRAM_BLOCK = 32  # info_ceiling.cross_gram's row block (its default ``chunk``)
 STAGES = (
     "tests",
     "k0",
@@ -215,6 +218,18 @@ def check_frozen_pin(manifest: dict) -> dict:
     return {"status": lm.STATUS, "frozen_sha256": sha, "pin": pin}
 
 
+def check_protocol_document(manifest: dict) -> dict:
+    """G-hash (direct, R17.32): once FROZEN, the protocol document's sha256 is the manifest's
+    ``protocol_document_sha256`` (G-tests checks it too)."""
+    want = manifest.get("protocol_document_sha256")
+    got = hz.sha256_file(PROTOCOL_DOCUMENT) if PROTOCOL_DOCUMENT.exists() else None
+    if not want or got != want:
+        raise lp.GuardError(
+            f"G-hash: the protocol document's sha256 {str(got)[:12]} is not the pin {want}"
+        )
+    return {"path": lm.DOCUMENT, "sha256": got}
+
+
 def summary_line(text: str) -> str:
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     return lines[-1] if lines else ""
@@ -315,6 +330,7 @@ def preflight(report: dict, args) -> dict:
         if not own.get("hashes"):
             raise lp.GuardError("G-hash: a FROZEN manifest pins its files")
         report["own_pins_at_preflight"] = len(hz.check_pins(own["hashes"]))
+        report["protocol_document_check"] = check_protocol_document(own)
     if lm.STATUS != "FROZEN" and args.stage not in DRAFT_ALLOWED and not args.debug:
         raise lp.GuardError(f"G-frozen: {args.stage} runs only after the freeze (STATUS FROZEN)")
     if lm.STATUS == "FROZEN" and args.stage == "k0" and not args.debug:
@@ -332,7 +348,9 @@ def preflight(report: dict, args) -> dict:
             report["g_tests"] = {"skipped": "debug run with --debug-skip-tests (nothing is read)"}
         else:
             report["g_tests"] = run_full_tests()
-    report["load_average_at_start"] = list(os.getloadavg())  # recorded in every stage
+    # recorded in every stage, after G-tests on a CPU stage; G-quiet's reading at the stage's
+    # start is quiet_machine.load_average_at_start (R17.32: renamed from load_average_at_start)
+    report["load_average_after_preflight"] = list(os.getloadavg())
     if args.stage in GPU_STAGES:
         report["g_tests"] = verify_tests_record(args.tests_record)
     return manifest
@@ -389,14 +407,75 @@ class Cohorts:
             resets = {s: lm.reset_of(s) for s in seeds}
             self.resets |= resets
             self.digests[role] = lp.plan_digest({str(s): v for s, v in resets.items()})
-            est = hz.cohort_estimates(
-                self.pool, self.p_readout, self.encoder, seeds, resets, 1800.0
-            )
+            est = cohort_estimates(self.pool, self.p_readout, self.encoder, seeds, resets, 1800.0)
             disagreements = est.pop("_render_disagreements", {})
             self.report.setdefault("render_disagreements", {})[role] = disagreements
             self.est |= est
             self.report["resets_digest"] = dict(self.digests)
         return seeds
+
+
+def streamed_estimates(readout, token_chunks) -> np.ndarray:
+    """``XYReadout.predict`` over all rows, from token chunks (R17.30, Erratum 2026-10-05).
+
+    Each chunk's cross-Gram against the readout's training rows is computed by the pinned
+    ``info_ceiling.cross_gram`` and the chunk's tokens are then dropped; the small [N, n_train]
+    Gram and the norms are concatenated and the pinned kernel-ridge ``Readout.predict`` runs once
+    on all N rows, exactly as ``XYReadout.predict`` does. ``cross_gram`` works in blocks of
+    ``CROSS_GRAM_BLOCK`` rows, so with chunks that are multiples of it every BLAS call (block
+    against block) is the one the unchunked path makes, and every row's norm is its own sum: the
+    estimates are bit-identical (tests and ``scripts/probe_task077_memory.py``)."""
+    from embodied_jepa import first_policy as fp
+    from embodied_jepa import info_ceiling as ic
+
+    grams, norms = [], []
+    for tokens in token_chunks:
+        g_rt, norm = ic.cross_gram(np.asarray(tokens, np.float64), readout.features)
+        grams.append(g_rt)
+        norms.append(norm)
+        del tokens
+    out = readout.readout.predict(np.concatenate(grams), np.concatenate(norms))
+    if not np.isfinite(out).all():
+        raise fp.GuardError("G-finite: a readout estimate is not finite")
+    return out
+
+
+def cohort_estimates(pool, readout, encoder, seeds, resets, cap: float, *, chunk=None) -> dict:
+    """``plate_twin_v2_harness.cohort_estimates`` with the tokens streamed (R17.30).
+
+    The pinned function featurises every seed's post-look frame at once and ``cross_gram`` then
+    makes two float64 copies of them: at Stage C's 2 000 seeds that is 1.47 GiB of tokens held
+    with 2.93 GiB of copies, which voided the first Stage C run on G-memory. Here the frames are
+    rendered exactly as there (``render_majority``, the same tasks, cap and checks), and the
+    tokens are featurised (batch size 1, ``first_policy_perception.featurise``, as there) and
+    reduced to their cross-Gram ``chunk`` frames at a time. The output is the same dict."""
+    from embodied_jepa import first_policy_perception as fpp
+
+    chunk = ESTIMATE_CHUNK if chunk is None else int(chunk)
+    if chunk < 1 or chunk % CROSS_GRAM_BLOCK:
+        raise ValueError(f"the estimate chunk must be a multiple of {CROSS_GRAM_BLOCK}")
+    tasks = [{"kind": "frame", "seed": s, "reset": resets[s]} for s in seeds]
+    frames, disagreements = hz.render_majority(pool, tasks, cap, "cohort frames")
+    for s, f in zip(seeds, frames, strict=True):
+        if f["seed"] != s:
+            raise lp.GuardError("G-cohort: a rendered frame is not its seed's")
+    chunks = (
+        np.concatenate([fpp.featurise(encoder, f["frame"][None]) for f in frames[lo : lo + chunk]])
+        for lo in range(0, len(frames), chunk)
+    )
+    estimates = streamed_estimates(readout, chunks)
+    out = {
+        s: {
+            "estimates": estimates[i].tolist(),
+            "frame_sha256": frames[i]["post_look_frame_sha256"],
+            "state_sha256": frames[i]["state_sha256"],
+            "truth_xy": frames[i]["truth_xy"],
+        }
+        for i, s in enumerate(seeds)
+    }
+    if disagreements:
+        out["_render_disagreements"] = disagreements
+    return out
 
 
 def attempt_tasks(arm: str, seeds, co: Cohorts, per_seed=None, **extra) -> list[dict]:
@@ -1513,7 +1592,7 @@ def run(args) -> dict:
     output = Path(args.output)
     if output.exists():
         raise FileExistsError(f"refusing to overwrite {output}")
-    output.mkdir(parents=True)
+    output.mkdir(parents=True)  # creates outputs/ (or any missing parent) when it is missing
     report = {
         "protocol": lm.PROTOCOL,
         "task": lm.TASK,
@@ -1579,6 +1658,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--workers", type=int, default=None, help="debug only (1-6)")
     parser.add_argument("--evidence", help="TASK-072 run-1's evidence root (G-repro)")
+    parser.add_argument(
+        "--log",
+        help="also write the runner's stdout and stderr to this new file (its folder, outputs/ "
+        "included, is created when missing; an existing file is refused)",
+    )
     parser.add_argument("--tests-record", help="GPU jobs: a `tests` stage report at HEAD")
     parser.add_argument("--corpus", help="the sealed corpus folder")
     parser.add_argument("--corpus-sha256", help="the sealed corpus manifest's sha256")
@@ -1625,8 +1709,21 @@ def main(argv=None) -> int:
         parser.error("closed needs --cohort")
     if args.stage == "train" and not args.job:
         parser.error("train needs --job")
+    (ROOT / "outputs").mkdir(exist_ok=True)  # the runs' folder (git-ignored), when missing
+    if args.log:
+        open_log(Path(args.log))
     report = run(args)
     return 0 if report.get("outcome") not in (None, "V") else 1
+
+
+def open_log(path: Path) -> None:
+    """Point this process's stdout and stderr (and so its workers' and G-tests') at ``path``."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle = open(path, "x", buffering=1)  # refuses an existing log
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os.dup2(handle.fileno(), 1)
+    os.dup2(handle.fileno(), 2)
 
 
 if __name__ == "__main__":
