@@ -24,7 +24,12 @@ unchanged. **Stage C's one repeat ran at `4f30fbb` and ended CORPUS-SEALED** (§
 1 995 of 2 000 roots, sealed manifest sha256 `ad8974b2…43fb`. **Erratum 2026-10-05 (b)** (§7.4;
 R17.36–R17.39) corrects the bit-identity claim of §7.2, records the GPU featurisation scale probe
 that Stage O's GO needed, gates the determinism re-run's commit target at a derived 0.6 cm, and
-makes G-anchor check the frozen 256 frames. It re-pins the changed files and this document; the frozen block and its sha256 are unchanged.
+makes G-anchor check the frozen 256 frames. It re-pins the changed files and this document; the frozen block and its sha256 are unchanged. Its 0.6 cm gate (R17.38) is a post-freeze **amendment**, a tightening, not an erratum (R17.43).
+**Stage O ran once at `8721516` and ended O-PASS** (§7.5, R17.40): c_plate 0.404 cm
+[0.385, 0.417] against τ_commit = 1.0 cm; two command and report anomalies are disclosed
+(R17.41). **Before Stage T's GO** (§7.6, R17.41–R17.44): the runner records peak GPU memory and
+finds Stage O's fits from another worktree; W's CPU roll-out measured bit-identical across
+processes; Stage T's scale re-probed at 50 kept states; the eight job commands are written out.
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
@@ -487,7 +492,8 @@ a notice in chat before the gated stage.
    controls on val, then the six models. Rows: CAL-T-ESCALATE, T-DONE. No budget row (§4.5).
    (R17.24: each job's report ends T-JOB-DONE; the `plan` step ends CAL-T-ESCALATE or T-PLANNED;
    Stage T's row T-DONE is decided by `decide_t` when Stage G reads all eight jobs, and is
-   recorded in Stage G's report.)
+   recorded in Stage G's report.) The exact commands, with `gpu_run.sh --wait --min-free-gib 8
+   --board`, are in §7.6.
 7. **Stage G, the offline gates (on a GO; CPU).** §8.2 on the gate split, every gate on all three
    seeds. Also written before any closed loop (reported only): each arm's offline aim error from
    the gate roots' 405 states (stand-in chunks, the same controller code) against the rule's fixed
@@ -503,7 +509,7 @@ a notice in chat before the gated stage.
    amended by R17.27).** The R-plate reading of the 405 frame is gated at 0.1 cm: more than 15 ×
    the renderer noise Stage 0 saw (about 6e-5 m), and 10 × below τ_commit. The success outcome
    must also be the same in both runs. The commit target's difference is **reported, not gated**
-   *(amended by R17.38, Erratum 2026-10-05 (b): it is gated at 0.6 cm, the bound that the
+   *(amended by R17.38, a post-freeze amendment recorded with Erratum 2026-10-05 (b), R17.43: it is gated at 0.6 cm, the bound that the
    argument below gives; see §7.4)*. The target comes from an argmin over 147 candidates followed by a refinement that stops at
    τ_commit/4. A renderer flake that meets a near-tie, or that stops the refinement one iterate
    earlier, can therefore move the target by more than 0.1 cm with no difference in what W saw.
@@ -660,8 +666,10 @@ GPU lock, with the command the GO named, on the corpus seeds 67000–68999.
 
 **Erratum 2026-10-05 (b)** (decided by Claude under owner delegation; DECISIONS 2026-10-05 (b),
 R17.36–R17.39). It changes code, tests and this document only. The frozen block, its sha256
-`f28e5e2c…548d`, and every bar, seed, salt, cap, ceiling and row are unchanged. The manifest
-re-pins the changed files and this document.
+`f28e5e2c…548d`, and every seed, salt, cap, ceiling and row are unchanged, and **no bar changes
+except R17.38's added 0.6 cm determinism gate, a post-freeze tightening**. R17.38 is therefore an
+**amendment**, not an erratum in the TASK-058/076 sense (R17.43, the #146 approval's note 1). The
+manifest re-pins the changed files and this document.
 
 - **Bit-identity, corrected (R17.36; the #145 approval's note 1).** §7.2 and R17.30 said the
   streamed estimates are bit-identical "by construction". That overstated it.
@@ -715,7 +723,7 @@ re-pins the changed files and this document.
     - `task077-fscale-2` ran clean and ended FEATURISED-DEBUG in 206.8 s, with a peak PSS of
       1.72 GiB and 0.90 GiB of GPU memory. Probe report sha256 `02e546e0…298e`, stage report
       `c3706582…36ad`.
-- **The determinism re-run's commit target is gated (R17.38; the #144 approval's note 1).** The
+- **The determinism re-run's commit target is gated (R17.38, an amendment; the #144 approval's note 1).** The
   target's difference was reported, not gated (R17.27). It is now **gated at 0.6 cm**, a bound
   derived from §7 step 9's own argument:
   - The refinement stops once a move is at most τ_commit/4 = 0.25 cm, and it returns that
@@ -746,6 +754,250 @@ re-pins the changed files and this document.
   first root's first 32 frames, as TASK-075's and TASK-076's runners did. It now compares the
   first 256 kept frames, in split and root order (the first four train roots), with the CPU path.
   The bound is unchanged. A test checks the 256. `task077-fscale-3` ran with it.
+
+### 7.5 Stage O's result: O-PASS (R17.40, R17.41)
+
+Stage O ran once at `8721516`, the merge commit of #146, on the reviewer's reported GO
+(<https://github.com/RaaSaaR-org/open-embodied-jepa/pull/146#issuecomment-5991796440>), from the
+fresh clean worktree `/home/huhn/develop/emai/worktrees/task077-stageo`, with the commands the GO
+named. Its reports are in that worktree (git-ignored); it is not edited.
+
+- **G-tests record.** `outputs/task077-o-tests-1/report.json`, sha256
+  `80fc8344b128e03f7604481364ead13bba1fbba2bef0d535a0b950df3e3784b4`: TESTS-PASS at `8721516`,
+  clean tree, 2002 passed and 37 skipped, 09:32:21Z–09:34:55Z.
+- **Featurisation (GPU).** `outputs/task077-featurise-1/report.json`, sha256
+  `f187c7c8179ffe0d1883739be0f30ae960c6033e4c1d088d800075490ef3e9ee`: **FEATURISED**, corpus
+  sha256 `ad8974b2…43fb`, 1 495 / 250 / 250 roots. It ran under the GPU lock (`gpu_lock_held`
+  true; the lock log has its start and end at 09:35:08Z and 09:38:40Z) with 14.98 GiB of GPU
+  memory free at the start. The stage took 211.3 s against the 3 600 s cap (featurisation
+  205.5 s). G-anchor: maximum difference 1.0e-4 on 256 frames, against 1e-3. Peak process-tree
+  PSS 1.73 GiB against 12.00 GiB. The feature files' sha256s are in the report's
+  `files_sha256`; every later stage checks them.
+- **Readouts (CPU, no lock).** `outputs/task077-readouts-1/report.json`, sha256
+  `452045d22c21b067c8bfe78cb72f4e842fc61f3c44a9e17b6fae860c244f8b78`: **O-PASS**. G-quiet read
+  1.62 / 1.52 at the start (bar 2.0). In-run G-tests passed (2002 passed, 37 skipped,
+  09:39:13Z–09:41:41Z). The feature-file check verified the 14 train and val files (12.1 GB) in
+  9.4 s. `first_outcome_utc` 09:41:50Z. The stage took 194.2 s against the 7 200 s cap, with a
+  peak PSS of 2.97 GiB.
+
+**The gates** (median plate error in cm over the 1 745 train + val roots, cross-fitted on 5 outer
+folds; 95 % root-clustered intervals):
+
+| gate | measured | bar | result |
+|---|---|---|---|
+| O1: c_plate, the 8 × 8 readout at r | 0.404 [0.385, 0.417] | upper bound ≤ τ_commit = 1.0 | pass |
+| O3: c_plate / the constant prior (2.644 [2.549, 2.724]) | 0.153 [0.145, 0.160] | upper bound < 1.0 | pass |
+| O4: the same readout on the plate-hidden renders at r | 4.579 [4.443, 4.673] | lower bound > τ_commit = 1.0 | pass |
+
+**Reported only.** The learning curve is **still falling**: median 0.625, 0.515, 0.446 and
+0.404 cm at 1/4, 1/2, 3/4 and all of each fold's fit roots, and the guard's 3/4-minus-all
+difference is 0.041 [0.027, 0.060] cm, above 0. The 87.5th percentile of c_plate is 0.805 cm. The
+4 × 4 readout at r reads 0.584 [0.564, 0.602] cm, R-plate at 405 reads 0.148 [0.142, 0.153] cm,
+and H-sysid at r reads 0.554 [0.539, 0.574] cm. The plate moves 8.43 [8.33, 8.49] cm from 405 to
+r. C1-M's record read 0.478 cm (8 × 8) on 1 024 roots; that was a scale reference, not a bar.
+
+**The train-only fits** that later stages read (1 495 train roots; `outputs/task077-readouts-1/
+fits/`). The content sha256s below are what the runner checks; the file sha256s are given too:
+
+| fit | content sha256 (checked) | file sha256 |
+|---|---|---|
+| normalisation moments | `5415eea4b5eda30712176b4f23c0022886a0f9cf1ac60cdf742863393550de6d` | `8d2417d61dbd91618c7a2c290f53f3387d85e1df6716ccd4cd94b826cb7b344e` |
+| R8 (dual ridge, λ_rel 0.01) | `62a5ea8abe348d2e7cbdb3379a22ecddcabd6a3f57c65a6f38f8ae57b8e43b4a` | `c1b2c3e3778dcbfe91a0905584180fe4ffdb6d3c0490c235db2222152e96d768` |
+| R-plate (dual ridge, λ_rel 0.01) | `08bde901ca75ab0ee4bc1c74bf4da91117ba57c0491828d81bc9db921cc49eb9` | `4f33bc31eb331a80c4c6bbe42477bd742eab3c1c4455b1d0b9664117a64977a8` |
+| L-mean's mean latent | `85da63360c6d3c308d4c760cfc43c2391c0beab1c3fefd3ceb5017c7759d53bd` | `699463e1bc6f489a220da1bb577736bfdacb6b29e59e147af77dcd0bc8fca81c` |
+| H-sysid (coefficients in the report) | — | `671841cd581d86844c0ad14c03839cf965e912f628dd875b89c7adf3b46121fc` (`sysid.json`) |
+
+**What O-PASS admits.** Stage T may get its own reported GO (§7 step 6). Stage O is done; it is
+not repeated.
+
+**Two anomalies, disclosed (R17.41).** Neither changes a number or the row.
+- **The featurisation's command lacked `--min-free-gib 8 --board`.** §10.2 names
+  `scripts/gpu_run.sh --wait --min-free-gib 8 --board --who oej:task077-<stage>`. The GO's
+  command (copied from the #146 approval) had `--wait --who oej:task077-stageo` only.
+  - So the shared `~/.local/state/gpu/BOARD.md` did not show the job as the holder while it ran
+    (its holder line still named `task077-fscale`'s release at 08:44:07Z).
+  - The lock itself was held: `gpu_run.sh` took the flock, the lock log has the start and end
+    records, and the runner recorded `gpu_lock_held: true`.
+  - `gpu_run.sh`'s own free-memory check used its default of 4 GiB, not 8. The runner's
+    `gpu_guard` still required 8 GiB free and measured 14.98 GiB, so G-GPU's declared bound held.
+  - The fix: every documented GPU command now uses the full form (§7.6, the runner's docstring,
+    the featurisation probe's docstring), and each Stage T command in §7.6 is written out with it.
+- **The featurise report records no peak GPU memory.** The runner did not read it. The scale
+  probe of the same code at 1 995 synthetic roots measured 0.90 GiB for the process
+  (`nvidia-smi`) and a torch peak allocation of 0.49 GiB (§7.4). Encoding does not depend on
+  content, so the real run is expected to be the same; that is an inference, not a measurement.
+  The runner now records `gpu_memory` (torch's `max_memory_allocated` and
+  `max_memory_reserved`) for every GPU stage, a V included (R17.41).
+
+### 7.6 Before Stage T's GO: fixes, the #146 approval's two items, and the Stage T plan (R17.41–R17.44)
+
+Decided by Claude under owner delegation (DECISIONS 2026-10-05 (b), R17.41–R17.44). Code, tests,
+a development probe and this document change. The frozen block and its sha256 `f28e5e2c…548d` are
+unchanged, and no bar, seed, salt, cap, ceiling or row changes. The manifest re-pins the runner,
+the tests and this document.
+
+**The fixes for the GPU stages (R17.41, R17.42).**
+- **Peak GPU memory (R17.41).** The runner records `gpu_memory` for every GPU stage
+  (`featurise`, `train`, `scale`): torch's `max_memory_allocated` and `max_memory_reserved` at the
+  stage's end, read in `run()`'s `finally`, so a V records it too. The CUDA context's own memory
+  (about 0.4 GiB) is not in either number. Tests cover the reading and the V path.
+- **`--board` (R17.41).** Every documented GPU command uses
+  `scripts/gpu_run.sh --wait --min-free-gib 8 --board --who oej:task077-<stage>` (§10.2).
+- **Artifacts from another worktree (R17.42; found while preparing this section).** Stage O wrote
+  its fits' paths relative to its own worktree (`outputs/task077-readouts-1/fits/moments.npz`, and
+  so on), and a Stage T job writes its checkpoint's path relative to its own. A Stage T job run
+  from a fresh worktree of a later revision could not open them: the first job would have crashed
+  (a V). The runner now finds each fit by its file name in the folder `--fits` names, and each
+  job's checkpoint beside the job's report. Every sha256 check is unchanged: the moments, R8,
+  R-plate and the mean latent are still checked against Stage O's recorded sha256s, and every
+  checkpoint against its job's. Checked on the real Stage O artifacts from this PR's worktree
+  (read only): the chain resolved to the `task077-stageo` worktree's `fits/` folder, verified the
+  14 train and val feature files (12.1 GB) in 11.4 s, and the moments (`5415eea4…`), R8, R-plate
+  and the mean latent all matched.
+
+**The #146 approval's non-blocking items 1 and 2, settled before Stage S's GO (R17.43).**
+- **(1) R17.38 is an amendment.** §7.4's header and R17.35–R17.39's header said that no bar
+  changes. R17.38 adds a gated bar, the 0.6 cm determinism target gate in Stage S's V rule, so
+  both now say "no bar changes except R17.38's added 0.6 cm determinism gate, a post-freeze
+  tightening", and R17.38 is called an **amendment**, not an erratum. The precedent the reviewer
+  named is accepted: code outside the frozen block may change a gated rule without moving the
+  frozen sha256 only as a disclosed, dated, data-blind tightening, like this one.
+- **(2) W's CPU roll-out is bit-reproducible on identical input.** Measured, as the approval suggested, before any W exists.
+  - **How.** `scripts/probe_task077_rollout_determinism.py` (development only, not pinned) runs
+    the closed loop's own functions from an identical frame to the commit target:
+    `lewm_c1m_v2_runtime.encode` (DINOv2 on the CPU), R-plate's reading, the 147-candidate grid,
+    `rollout_plates` and `choose_from_grid` with the frozen refinement tolerance (0.25 cm). Its
+    inputs are the Stage-0 debug chain only (`task077-smoke-9e772e0`; debug seeds): the 405
+    frames of the debug val roots 66953, 66965, 66967 and 66975, the debug-trained `W-66992` and
+    `N-66992`, and the debug R-plate, R8 and mean latent, each checked against its debug
+    report's sha256; plus a **random-init model of the real architecture** (torch seed 66995,
+    debug range). The arms are W, N and L-mean on the debug models and W on the random-init
+    model. The candidates' commands are synthetic but deterministic (each root's logged commands
+    from 405, offset by the candidate); the kinematic stand-in (MuJoCo) is not exercised, since
+    the simulator's determinism is G-repro's.
+  - **Processes and threads.** Seven fresh interpreters, each with the runner's thread
+    environment set before NumPy loads (`MKL_DYNAMIC=FALSE`, `OMP_NUM_THREADS=6`,
+    `MKL_NUM_THREADS=6`, `OPENBLAS_NUM_THREADS=16`) and one torch thread
+    (`WORKER_TORCH_THREADS`), with `CUDA_VISIBLE_DEVICES` empty: three one after another, then
+    four at once, as Stage S's four workers run. Each made two passes, so 14 observations.
+  - **Result: IDENTICAL.** For every root and arm, all 14 observations gave the same sha256 of
+    the DINOv2 tokens, the pooled latent, the reading, every roll-out's predicted plates (148 or
+    149 roll-outs per decision) and the commit target; the largest target difference is 0. Every
+    decision converged; two were clipped to the box (the debug N and the random-init W, both on root 66953).
+  - **Report** `outputs/task077-rdet-1/report.json` in this PR's worktree (git-ignored), sha256
+    `5f94100b1c62d38b09e7e5698b45f85817b82985ef1911009edb603b4bf26fde`, at `afaf50d` on a clean
+    tree (clean again at the end), 662 s; the load rose from 2.53 to 3.97 during the concurrent
+    processes. The scratch models were removed.
+  - **What it covers.** This is the same code path on debug models and synthetic commands, not
+    the trained W on S. It supports the premise of R17.38's gate: with identical frames the
+    target is identical, so the 0.6 cm gate can only bind when a frame differs. It does not
+    measure the stand-in's chunks or a renderer flake.
+
+**Stage T's code path at full scale (R17.44).** The only Stage T code changes since Stage 0's
+scale probe (`9e772e0`) are the feature-file check before a job reads the stores (R17.26), the
+path lookup above and the GPU memory record; `lewm_c1m_v2_train.py`, the model and the frozen
+block's training values are unchanged. The scale probe was run again at this PR's code
+(`afaf50d`), through `scripts/gpu_run.sh --wait --min-free-gib 8 --board --who
+oej:task077-tscale`, on synthetic features at the real sizes (1 500 train roots in RAM, 250 val
+roots), with **50 val selections**, as many as a calibration job keeps (a job holds one copy of
+the weights per selection point, 34.6 MB each, which Stage 0's 2-point probe did not show):
+
+| measure | `task077-tscale-1` (`afaf50d`) | Stage 0 (`f4b6b48`, `a98d893`, `9e772e0`) |
+|---|---|---|
+| per update, median / 95th percentile | 0.169 s / 0.250 s | 0.166–0.223 s / 0.232–0.277 s |
+| gather alone, one batch | 6.3 ms (in the prefetch thread; the loop waited 0.14 s in 1 000 updates) | 3.6–3.7 ms |
+| one val selection (250 roots) | 3.9–12.3 s (50 selections) | 14.3–17.4 s (run 3) |
+| peak process-tree PSS | **13.09 GiB** (probe 13.02 GiB, 50 kept states), against 18 GiB | 12.64–12.74 GiB (2 kept states) |
+| peak GPU memory (torch) | **5.48 GiB allocated, 6.45 GiB reserved** of 15.45 GiB | 5.48 GiB (cost probe, §15) |
+| the same N job twice (200 updates) | bit-identical | bit-identical |
+
+Report `outputs/task077-tscale-1/report.json` in the worktree
+`/home/huhn/develop/emai/worktrees/task077-staget-prep` (git-ignored), sha256
+`b409e339bde149f2e502d7156045f7d84469aa1d1d95443e200c72d594852e9d`; its `tests` record
+`outputs/task077-tprep-tests-1/report.json` (2006 passed, 37 skipped, at `afaf50d`), sha256
+`fb11c0c92adc1e028c35f9ab635f867c61e3a78bac2fab36159283200bf601a6`. Stage 552 s; the synthetic
+store was removed. Nothing changed the per-update cost.
+
+**Confirmed against the frozen block and the code (R17.44).**
+- **Eight jobs, each its own `gpu_run.sh --wait` slot:** cal-W and cal-N (model seed 66810,
+  50 000 updates, a selection every 1 000), then, after `plan`, W and N of seeds 66800, 66801 and
+  66802 at the planned budget. W and N of a seed draw the same windows
+  (`SeedSequence([8109, seed])`); N trains on zero commands.
+- **The budget:** `plan` sets U = clamp(5 000 · ⌈2 · max(u_sat(W), u_sat(N)) / 5 000⌉, 10 000,
+  100 000) with u_sat = `select_checkpoint(curve, 0.01)` of each calibration run, and a selection
+  every U/20. Checked: u_sat 1 000 gives 10 000 (every 500); u_sat 50 000 gives 100 000 (every
+  5 000). No budget row. `plan` also sets G1's bars from cal-W on val at h = 60, and ends
+  CAL-T-ESCALATE if the rank reference is below 0.10 (escalate, no clause), else T-PLANNED.
+- **Checkpoint and selection:** each job keeps `select_checkpoint(curve, 0.01)`, the earliest
+  point within 1 % of the curve's minimum, records the raw argmin and `last_two_triggered`
+  beside it, and saves that checkpoint with its sha256, the corpus sha256 and the moments'
+  sha256. The primary seed is chosen in Stage G (the W seed with the lowest kept val criterion).
+- **The void rule, per job (§10.1, R17.16):** a V voids that job only; it is repeated once after
+  a committed, pushed and recorded fix, in a new output directory; completed jobs are kept; a
+  second V of the same job ends TASK-077 as INCONCLUSIVE.
+- **Caps and memory:** each job's cap is 46 800 s. The worst job is a model job at U = 100 000:
+  100 000 × 0.277 s + 20 × 17.4 s = 28 048 s, so the cap is 1.67 × (a calibration job's worst case
+  is 14 720 s). G-memory is 18 GiB of PSS per job; the measured peak with 50 kept states is
+  13.09 GiB. The machine has 30 GiB of RAM; other projects' processes are not in a job's tree.
+- **Expected GPU time** (per update 0.166–0.223 s, a selection 4–17 s, plus about a minute per
+  job for the checks and loading the 9.6 GB store):
+  - the two calibration jobs: 2 × (50 000 updates + 50 selections) ≈ **4.7–6.7 h**;
+  - the six model jobs at U = 10 000: ≈ 2.9–4.3 h, so Stage T ≈ **7.6–11.0 h** in all;
+  - at U = 100 000: ≈ 27.8–37.8 h, so Stage T ≈ **32.5–44.5 h** in all (about 55 h at the 95th
+    percentile update time).
+
+  Each job holds the shared lock only for itself, so the V2D queue and other agents get the GPU
+  between jobs (`--wait` queues on the flock; `--board` shows the holder).
+
+**The Stage T commands a GO would name** (R17.44). `M` is this PR's merge commit. From a fresh
+clean worktree of `M`, made with `scripts/new_worktree.sh
+/home/huhn/develop/emai/worktrees/task077-staget --run --from M`, run from its root as one script
+(`bash -u`), with no edit in the worktree while any job runs:
+
+```sh
+C=/home/huhn/develop/emai/worktrees/task077-corpus2/outputs/task077-corpus-2/corpus
+CS=ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb
+F=/home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-featurise-1/features
+R=/home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-readouts-1/fits
+T=outputs/task077-t-tests-1/report.json
+
+# 0. the G-tests record at M (CPU, no lock)
+uv run --no-sync python scripts/run_lewm_c1m_v2.py tests --output outputs/task077-t-tests-1 \
+  --log outputs/task077-t-tests-1.log
+
+# 1-2. the calibration jobs (GPU, one slot each)
+for job in cal-W cal-N; do
+  scripts/gpu_run.sh --wait --min-free-gib 8 --board --who oej:task077-staget-$job -- \
+    uv run --no-sync python scripts/run_lewm_c1m_v2.py train --job $job \
+      --output outputs/task077-t-$job-1 --tests-record $T \
+      --corpus $C --corpus-sha256 $CS --features $F --fits $R \
+      --log outputs/task077-t-$job-1.log </dev/null || exit 1
+done
+
+# 3. the plan (CPU, no lock; G-quiet, in-run G-tests): the budget, G1's bars, CAL-T-ESCALATE
+uv run --no-sync python scripts/run_lewm_c1m_v2.py plan --output outputs/task077-t-plan-1 \
+  --corpus $C --corpus-sha256 $CS --features $F --fits $R \
+  --cal-w outputs/task077-t-cal-W-1/report.json --cal-n outputs/task077-t-cal-N-1/report.json \
+  --log outputs/task077-t-plan-1.log || exit 1
+# continue only if outputs/task077-t-plan-1/report.json ends T-PLANNED
+
+# 4-9. the six models (GPU, one slot each), only after T-PLANNED
+for job in W-66800 N-66800 W-66801 N-66801 W-66802 N-66802; do
+  scripts/gpu_run.sh --wait --min-free-gib 8 --board --who oej:task077-staget-$job -- \
+    uv run --no-sync python scripts/run_lewm_c1m_v2.py train --job $job \
+      --plan outputs/task077-t-plan-1/report.json \
+      --output outputs/task077-t-$job-1 --tests-record $T \
+      --corpus $C --corpus-sha256 $CS --features $F --fits $R \
+      --log outputs/task077-t-$job-1.log </dev/null || exit 1
+done
+```
+
+- Each job must end T-JOB-DONE; a non-zero exit stops the chain (a V is repeated per job, only
+  after a recorded fix). `plan` must end T-PLANNED; CAL-T-ESCALATE stops Stage T and escalates.
+- One `tests` record serves every job: G-tests for a GPU job checks that its revision is HEAD
+  and that it finished after HEAD's commit time.
+- The two Stage O folders and the corpus are read, never written; the jobs check their sha256s.
+- Stage T's row T-DONE is decided in Stage G's report, which reads all eight jobs (R17.24).
 
 ## 8. Gates, bars and rows
 
@@ -962,7 +1214,7 @@ secondary claim's test.
   ≥ 10 GiB free disk throughout (≥ 25 GiB at the start of Stages C and O).
 - **G-GPU:** every GPU job runs through `scripts/gpu_run.sh --wait --min-free-gib 8 --board --who
   oej:task077-<stage>`, and the runner calls `run_tools.gpu_guard(report, min_free_gib=8,
-  require_lock=True)`. Resident services (the GR00T server, other projects' queues) are never
+  require_lock=True)` and records torch's peak GPU memory in `gpu_memory` (R17.41). Resident services (the GR00T server, other projects' queues) are never
   stopped or reconfigured. **CPU stages and EGL (R17.33, Erratum 2026-10-05):** K0, C, D, S, the
   readouts, plan and gates render with EGL on the GPU's driver but run no CUDA job; they do not
   take the shared GPU lock and are not GPU jobs. "No GPU" in a GO means no CUDA job and no lock.
@@ -1043,7 +1295,7 @@ goal.
 | K0 | **9.7 min CPU, measured** (579 s) | 352 attempts plus G-tests and G-repro on 6 workers; attempts took about 4.2 s (proxies) to 8.2 s (look-ahead arms) median |
 | C | **about 20–23 min CPU, scaled from 100 debug roots (R17.28)** | 0.48 s of wall time per root on 6 workers (attempts 2.6 s median, 3.24 s maximum), plus the cohort estimates (3.6 s per 100 seeds), setup and G-tests; about 0.6 MB per root, 1.2 GB on disk. The draft's 45–60 min was an estimate |
 | O | 10–20 min GPU, 20–40 min CPU (*estimate*) | about 130 000 frames through DINOv2 on CUDA; ridges at 24 576-d by dual form |
-| T | **a scenario band, not bounds: about 7–10 h to about 32–43 h of GPU in eight jobs, with the Stage-0 storage fix, measured** (R17.19; up to about 58 h without it) | **Stage 0's scale probe** (Stage T's own code, synthetic features at the real sizes, two runs): 0.166–0.223 s per update median, 0.232–0.277 s at the 95th percentile, the slice gather 3.7 ms per batch in the prefetch thread. **Low end:** U = 10 000: 160 000 updates, about 7.4–9.9 h. **At the cap** U = 100 000: 700 000 updates, about 32–43 h (54 h at the 95th percentile). The draft's band (7–8 h to 31–33 h, from the probe's 0.161 s compute alone) is superseded. **Without the fix**, the probe's fancy-indexed gather (0.55 s for batch 64, about 0.14 s for batch 16) without overlap gives about 0.30 s per update and up to about 58 h at the cap; at U = 60 000, 22–38 h (460 000 updates at 0.17–0.30 s) |
+| T | *(R17.44, with the selections: about 7.6–11.0 h at U = 10 000 and 32.5–44.5 h at U = 100 000; §7.6)* **a scenario band, not bounds: about 7–10 h to about 32–43 h of GPU in eight jobs, with the Stage-0 storage fix, measured** (R17.19; up to about 58 h without it) | **Stage 0's scale probe** (Stage T's own code, synthetic features at the real sizes, two runs): 0.166–0.223 s per update median, 0.232–0.277 s at the 95th percentile, the slice gather 3.7 ms per batch in the prefetch thread. **Low end:** U = 10 000: 160 000 updates, about 7.4–9.9 h. **At the cap** U = 100 000: 700 000 updates, about 32–43 h (54 h at the 95th percentile). The draft's band (7–8 h to 31–33 h, from the probe's 0.161 s compute alone) is superseded. **Without the fix**, the probe's fancy-indexed gather (0.55 s for batch 64, about 0.14 s for batch 16) without overlap gives about 0.30 s per update and up to about 58 h at the cap; at U = 60 000, 22–38 h (460 000 updates at 0.17–0.30 s) |
 | G | 20–40 min CPU | 250 gate roots × 6 models × (true, wrong, zero) roll-outs on one CPU thread each (0.055 s per 60-step roll-out, §15) |
 | D | about 15 min CPU | 80 attempts; a W-family attempt adds about 7–10 s of CPU roll-outs and the stand-in chunks |
 | S | 1–2 h CPU | 64 resets × 10 arms, H-read the slowest |

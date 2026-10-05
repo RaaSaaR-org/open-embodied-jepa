@@ -1598,7 +1598,7 @@
  "note": "FROZEN after K0-PASS (R17.25), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins the stage's own files, the carried C1 and C1-M code files, the test file and TASK-076's manifest (whose 84 pins the runner checks too); protocol_document_sha256 is the protocol's sha256. K0's report: outputs/task077-k0-1/report.json, sha256 9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235.",
  "outcome": null,
  "protocol": "apple_lewm_c1m_v2",
- "protocol_document_sha256": "8483979983908317497ad33560a45794c63a1fc0fefb52c69bb8b7db09b1b9f6",
+ "protocol_document_sha256": "2907a83782a43053d6174db608951aa01dd4f2a125689556a9b587fd4d02c28c",
  "status": "FROZEN",
  "task": "TASK-077"
 }
