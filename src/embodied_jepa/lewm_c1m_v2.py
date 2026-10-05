@@ -794,7 +794,38 @@ G_TESTS = {
 }
 
 # ----- Stage 0 (filled by the Stage-0 PR; development only, debug seeds and synthetic data) -------
-STAGE0 = None  # the record lives in docs/experiments/apple_lewm_c1m_v2_stage0.md
+STAGE0 = {  # the record: docs/experiments/apple_lewm_c1m_v2_stage0.md (development only)
+    "smoke_revision": "a98d893",
+    "smoke_root": "outputs/task077-smoke-a98d893 in the task077-stage0 worktree (git-ignored)",
+    "simulations": {
+        "revision": "f4b6b48",
+        "report_sha256": "85adbdeea88a58e8f2def13caead1c29fe47f128d4f02df8d505a6eee557075f",
+        "trials_per_configuration": 10_000,
+        "ni_size_at_margin": "G-NI passes at a true W - C of exactly -8/64 in 2.4-3.8 % of trials "
+        "with one comparator and 0.9-3.5 % with the better of two chosen after S (C at 30-32/32; "
+        "nominal one-sided 2.5 %)",
+        "ni_power_max_of_two": "at W = C: 0.69-0.77 (independent outcomes, C 30/32), 0.91-0.93 "
+        "(31/32), 1.00 (nested); at -2/64: 0.35-0.86; at -4/64: 0.14-0.43",
+        "l_inferior_false_fire_at_delta": "0.9-2.0 % with one comparator, 0.9-3.1 % with the "
+        "better of two",
+        "l_no_gain_false_fire_at_plus_7": "2.3-3.1 % per twin; 9.0-12.1 % that at least one of "
+        "four twins all sitting at exactly +7/64 fires",
+    },
+    "scale_probe": {
+        "revisions": ["f4b6b48", "a98d893"],
+        "report_sha256": [
+            "09628d9027d6fd6afe43823e6050eb795cbe7eca4b424d72d80ea14885b52701",
+            "27e4ada4d680183aa6bbee082386130c597f8adc82850eb5c76ed111f2ec301a",
+        ],
+        "gather_seconds_per_batch": [0.0036, 0.0037],
+        "per_update_median_seconds": [0.223, 0.166],
+        "per_update_p95_seconds": [0.277, 0.232],
+        "peak_tree_pss_gib": [12.64, 12.74],
+        "bit_identical_rerun": True,
+        "t_job_worst_case_seconds": 27_704,
+        "t_job_cap_over_worst": 1.69,
+    },
+}
 
 
 # ----- helpers ------------------------------------------------------------------------------------

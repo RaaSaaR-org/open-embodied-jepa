@@ -75,3 +75,11 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   misses within noise are L-TWIN-NEAR; a second V counts within the same stage, and Stage T voids
   per job; the ten non-blocking items fixed; the five open points settled. Stage T is now a
   scenario band of about 8–33 h with the Stage-0 storage fix (up to about 58 h without).
+- 2026-10-05: Stage 0 under R17.19 on branch `feat/task077-stage0` (record
+  `docs/experiments/apple_lewm_c1m_v2_stage0.md`). New modules `lewm_c1m_v2{,_runtime,_offline,_train}.py`
+  and `scripts/run_lewm_c1m_v2.py`, DRAFT manifest, 34 tests. Simulations (10 000 trials per
+  configuration): G-NI's size at the margin 2.4–3.8 % (one comparator) and 0.9–3.5 % (better of two);
+  clause false fire 2.3–3.1 % per twin at +7/64, 0.9–3.1 % for L-INFERIOR at δ. The storage fix's
+  gather is 3.7 ms per batch, and Stage T's own code ran at 0.166–0.223 s per update on synthetic
+  features at the real sizes, which puts Stage T at about 7.4–9.9 h to 32–43 h. Debug smokes
+  (66900–66999) of every stage passed mechanically at `a98d893`. No K0: it needs a reviewer GO.

@@ -190,6 +190,25 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
   and prefetches the next batch in a thread; without that fix, up to about 58 h. Stage 0 implements
   the fix and measures the real gather; the Stage T cap is 46 800 s per job, at least 1.5 × the
   unfixed worst case of 30 000 s.
+- **R17.19 — Stage 0** (2026-10-05, decided by Claude under owner delegation; record
+  [apple_lewm_c1m_v2_stage0.md](experiments/apple_lewm_c1m_v2_stage0.md)). Debug seeds 66900–66999
+  and synthetic features only; no seed of K, D, S or the corpus simulated; no K0; the protocol
+  stays DRAFT. The stage code is in new modules (`lewm_c1m_v2.py`, the frozen block;
+  `_runtime`, `_offline`, `_train`; `scripts/run_lewm_c1m_v2.py`), with G-tests and G-sentinel,
+  and the DRAFT manifest. **Simulations** (10 000 trials per configuration, the real estimator):
+  G-NI's size at the margin is 2.4–3.8 % with one comparator and 0.9–3.5 % with the better of two
+  chosen after S (nominal 2.5 %); the clause's false fire is 2.3–3.1 % per twin at +7/64 (9–12 %
+  if all four twins sat at the boundary) and 0.9–3.1 % for L-INFERIOR at δ. The percentile
+  interval is kept. **The storage fix** (per-root contiguous `[roots, 65, 24 576]` plus a
+  prefetch thread) gathers a batch in 3.7 ms; Stage T's own code on synthetic features at the real
+  sizes ran at 0.166–0.223 s per update (median, two runs; 95th percentile 0.232–0.277 s), peak
+  PSS 12.7 GiB, bit-identical on a re-run. The Stage T band becomes about 7.4–9.9 h to 32–43 h
+  (it was 7–8 h to 31–33 h); the 46 800 s job cap is 1.69 × the worst case and is kept, as are the
+  other caps. Two additions: the stages that load a world model (G, D, S) use 4 workers (about
+  1.7 GiB PSS each; debug D and S tripped 12 GiB with 6), and K0's report re-runs the
+  non-inferiority simulation at min(30/32, N_K(0)), since K0 runs no comparator arm. The three
+  fixes of the #142 approval are applied (§12's 22–38 h; §13's "and per job in Stage T"; §11's
+  plain statement of the restored scope if the clause fires).
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 
