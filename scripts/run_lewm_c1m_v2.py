@@ -1269,6 +1269,7 @@ def run(args) -> dict:
         "stage": args.stage,
         "debug": bool(args.debug),
         "outcome": None,
+        "stages": {},  # the harness records G-repro here
         "argv": sys.argv[1:],
         "paths": {"output": str(output.resolve())},
         "started_utc": hz.utc(),
