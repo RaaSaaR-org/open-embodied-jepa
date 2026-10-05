@@ -1369,10 +1369,14 @@ def test_featurise_corpus_remaps_its_stores_without_changing_a_byte(tmp_path):
     off.seal_corpus(corpus, entries, {"train": [0, 1, 2, 3, 4], "val": [5], "gate": [6]}, {})
     manifest = off.open_corpus(corpus, None)
     assert off.FEATURE_REMAP_ROOTS == 32
-    files = [
+    results = [
         off.featurise_corpus(
             corpus, manifest, tmp_path / name, device="cpu", encoder=Encoder(), remap_every=every
-        )["files_sha256"]
+        )
         for name, every in (("every2", 2), ("one", None), ("default", off.FEATURE_REMAP_ROOTS))
     ]
+    files = [r["files_sha256"] for r in results]
     assert files[0] == files[1] == files[2]
+    # G-anchor checks the frozen block's 256 frames (R17.39), across the first roots
+    assert lm.FEATURE_ANCHOR["frames"] == 256
+    assert all(r["anchor"]["frames"] == 256 for r in results)

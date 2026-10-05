@@ -68,7 +68,10 @@ is kept as written.
 **Decided by Claude under owner delegation (2026-09-30). FROZEN after K0-PASS (R17.25), in force
 once merged on an independent reviewer's APPROVE; the text below was written as a DRAFT.
 Stage C's first run ended V on G-memory; Erratum 2026-10-05 (R17.30–R17.34) records the cause and
-the fix for its one repeat, with the frozen block unchanged.** Revised after
+the fix for its one repeat, with the frozen block unchanged. Stage C's repeat at `4f30fbb` ended
+CORPUS-SEALED (R17.35); Erratum 2026-10-05 (b) (R17.36–R17.38) corrects the bit-identity claim,
+records the featurisation scale probe and gates the determinism re-run's commit target at 0.6 cm,
+with the frozen block unchanged.** Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
 is [apple_lewm_c1m_v2.md](experiments/apple_lewm_c1m_v2.md) (STATUS DRAFT), with the task card

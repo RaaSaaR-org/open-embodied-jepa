@@ -41,7 +41,7 @@ L-mean, and a random choice. "LeWM needed" is reported only and not expected.
 
 **The protocol (FROZEN after K0-PASS, R17.25; in force once merged on an independent APPROVE):**
 [`docs/experiments/apple_lewm_c1m_v2.md`](../../../docs/experiments/apple_lewm_c1m_v2.md).
-Rulings R17.1–R17.29 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
+Rulings R17.1–R17.38 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
 owner delegation (2026-09-30). The plan is `docs/PLAN.md`.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. This task does not
@@ -54,7 +54,7 @@ change it unless an L-PASS is followed by its own reviewed ruling.
       `select_checkpoint`/`last_two_triggered`, the `"not evaluated"` sentinel, no runner imports,
       no privileged read in W or a twin), debug smokes and the scale probe.
 - [x] K0 on a reported GO (K0-PASS at `306fbdc`); K0's values in the frozen block.
-- [ ] The freeze merged on an independent reviewer's reported APPROVE.
+- [x] The freeze merged on an independent reviewer's reported APPROVE (#144, `862d63c`).
 - [ ] Stages C, O, T, G, D and S, each on its own reported GO, from a clean worktree of the merged
       revision, after a full `pytest` at that revision (G-tests).
 - [ ] Results PR, with every restated number checked by an independent reviewer.

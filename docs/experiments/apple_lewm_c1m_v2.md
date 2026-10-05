@@ -20,7 +20,11 @@ cohort simulated. No seed of D, S or the corpus has been simulated.
 **Stage C ran once at `862d63c` and ended V on G-memory** during seed preparation, before any
 root was collected. **Erratum 2026-10-05** (§7.2; R17.30–R17.34) records the cause and the fix,
 re-pins the changed files and this document, and leaves the frozen block and its sha256
-unchanged. Stage C has its one repeat left (§10.1).
+unchanged. **Stage C's one repeat ran at `4f30fbb` and ended CORPUS-SEALED** (§7.3, R17.35):
+1 995 of 2 000 roots, sealed manifest sha256 `ad8974b2…43fb`. **Erratum 2026-10-05 (b)** (§7.4;
+R17.36–R17.38) corrects the bit-identity claim of §7.2, records the GPU featurisation scale probe
+that Stage O's GO needed, and gates the determinism re-run's commit target at a derived 0.6 cm. It
+re-pins the changed files and this document; the frozen block and its sha256 are unchanged.
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
@@ -475,6 +479,9 @@ a notice in chat before the gated stage.
    roots, the hidden render, the 4 × 4 pool, the full tokens and the table. It compares them with
    the featurise report's `files_sha256`. A missing, unrecorded or different file is V. The check
    costs about 8 s for the 12 GB of the train and val splits (R17.28).
+   **The featurisation's scale probe (R17.37, Erratum 2026-10-05 (b)): done** (§7.4, §10.3). It
+   ran the runner's own `featurise` stage on a synthetic corpus of the sealed corpus's size
+   (1 995 roots) through `scripts/gpu_run.sh --wait`, without reading the corpus.
 6. **Stage T, training (on a GO; GPU, one `gpu_run.sh --wait` job per model: the two
    calibration runs and the six models, eight jobs).** The calibration (W and N, 66810), the budget rule, G1's bars and the truncation
    controls on val, then the six models. Rows: CAL-T-ESCALATE, T-DONE. No budget row (§4.5).
@@ -495,15 +502,17 @@ a notice in chat before the gated stage.
    reset, paired, with a determinism re-run of W on S's first four resets. **Its rule (R17.21,
    amended by R17.27).** The R-plate reading of the 405 frame is gated at 0.1 cm: more than 15 ×
    the renderer noise Stage 0 saw (about 6e-5 m), and 10 × below τ_commit. The success outcome
-   must also be the same in both runs. The commit target's difference is **reported, not gated**.
-   The target comes from an argmin over 147 candidates followed by a refinement that stops at
+   must also be the same in both runs. The commit target's difference is **reported, not gated**
+   *(amended by R17.38, Erratum 2026-10-05 (b): it is gated at 0.6 cm, the bound that the
+   argument below gives; see §7.4)*. The target comes from an argmin over 147 candidates followed by a refinement that stops at
    τ_commit/4. A renderer flake that meets a near-tie, or that stops the refinement one iterate
    earlier, can therefore move the target by more than 0.1 cm with no difference in what W saw.
    With the rule's contraction |κ| = 0.5, stopping at a move of 0.25 cm leaves the iterate within
    about 0.25 cm of the fixed point, so two runs can end about 0.5 cm apart. The re-run is V in any
    of these cases: a committed reset whose reading differs beyond 0.1 cm; a reset whose success
-   differs between the runs; a reset that commits in one run and not the other. A reset refused
-   before 405 must be refused identically. Rows: §8.4.
+   differs between the runs; a reset that commits in one run and not the other; *(R17.38)* a
+   committed reset whose commit target differs by more than 0.6 cm. A reset refused before 405
+   must be refused identically. Rows: §8.4.
 10. **Results PR.** Every arm is reported, the privileged arms are labelled as not learned, and an
     independent reviewer checks every restated number.
 
@@ -588,7 +597,12 @@ R17.30–R17.34). This erratum changes code and report fields only. The frozen b
   kernel-ridge `predict` once on all rows.
   - The estimates are **bit-identical**, both by construction (32-row-aligned blocks) and as
     measured: on the debug seeds' real tokens, on 2 000 synthetic rows and at the full step.
-  - Stage C's seed preparation at 2 000 seeds now peaks at **7.75 GiB**.
+    *(Corrected by R17.36, §7.4: "by construction" overstated it. Bit-identity is measured, and
+    it fails when the final chunk has exactly one row; that cannot occur in TASK-077, and such a
+    chunk is now refused.)*
+  - Stage C's seed preparation at 2 000 seeds now peaks at **7.75 GiB**. *(R17.36: that is the
+    estimate step with stand-in frames, not the stage's peak; the stage's peak of about 8.5 GiB
+    was an expectation, and the repeat measured 8.38 GiB, §7.3.)*
   - No pinned TASK-073–076, C1 or C1-M file changes.
 - **The same pattern in Stage O (R17.31).** `featurise_corpus`'s memory-mapped stores held the
   written pages of the whole train split in PSS: 8.82 GiB, measured on a synthetic 2 000-root
