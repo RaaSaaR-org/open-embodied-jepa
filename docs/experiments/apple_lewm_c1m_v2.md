@@ -680,6 +680,13 @@ batch, budget, loss weighting, selection) stays inside the note's scope, as R15.
 draft's narrowing to "rolled 60 steps and read by a dual-ridge plate readout" is withdrawn: it had
 no stated reason.
 
+**If the clause fires, the results document states the restored scope plainly** (the #142
+approval's note 3). With the design note's scope restored (R15.8), one 8 × 8 run read by a
+dual-ridge readout closes, under this condition, **every other pooled grid** (except 4 × 4 on a
+corpus larger than 1 024 roots, above) **and every readout of the predicted latent, including
+trained readout heads**, not only the 8 × 8 grid and the dual-ridge readout that were run. The
+results document says this in those words, beside the row.
+
 **What does not close:** a 4 × 4 latent on a larger corpus (above); the full, unpooled token grid
 (not "pooled tokens"); history longer than one, `action_chunk` or `predictor_step_embedding` (the
 design note's declared remedies, outside "TASK-066-family" as TASK-066 defined it: history one, no
@@ -695,7 +702,7 @@ goal.
 | K0 | 10–15 min CPU | about 350 attempts; C1-M's attempts took 8.2 s median, 9.7 s maximum |
 | C | 45–60 min CPU (*estimate*) | 2 000 roots to step 467, 65 renders each; the C1-M run did 1 024 roots plus 224 look-ahead attempts in 39 min |
 | O | 10–20 min GPU, 20–40 min CPU (*estimate*) | about 130 000 frames through DINOv2 on CUDA; ridges at 24 576-d by dual form |
-| T | **a scenario band, not bounds: about 8 h to about 33 h of GPU in eight jobs, with the Stage-0 storage fix** (up to about 58 h without it) | per update 0.161 s measured compute; calibration is always 2 × 50 000 updates. **Low end:** U = 10 000 (the rule's minimum): 2 × 50 000 + 6 × 10 000 = 160 000 updates in all, about 7–8 h. **With the fix** (below), an update approaches 0.161–0.17 s, so the cap U = 100 000 gives 700 000 updates, about 31–33 h. **Without it**, the probe's fancy-indexed gather (0.55 s for batch 64, about 0.14 s for batch 16) without overlap gives about 0.30 s per update and up to about 58 h at the cap; at U = 60 000, 22–41 h |
+| T | **a scenario band, not bounds: about 8 h to about 33 h of GPU in eight jobs, with the Stage-0 storage fix** (up to about 58 h without it) | per update 0.161 s measured compute; calibration is always 2 × 50 000 updates. **Low end:** U = 10 000 (the rule's minimum): 2 × 50 000 + 6 × 10 000 = 160 000 updates in all, about 7–8 h. **With the fix** (below), an update approaches 0.161–0.17 s, so the cap U = 100 000 gives 700 000 updates, about 31–33 h. **Without it**, the probe's fancy-indexed gather (0.55 s for batch 64, about 0.14 s for batch 16) without overlap gives about 0.30 s per update and up to about 58 h at the cap; at U = 60 000, 22–38 h (460 000 updates at 0.17–0.30 s) |
 | G | 20–40 min CPU | 250 gate roots × 6 models × (true, wrong, zero) roll-outs on one CPU thread each (0.055 s per 60-step roll-out, §15) |
 | D | about 15 min CPU | 80 attempts; a W-family attempt adds about 7–10 s of CPU roll-outs and the stand-in chunks |
 | S | 1–2 h CPU | 64 resets × 10 arms, H-read the slowest |
@@ -725,7 +732,7 @@ full tokens at 405 0.8 GB; the main checkout has 95 GB free.
 - **The secondary claim is not expected** (R15 §5.7).
 - **Cost.** Stage T is about 8–33 h of GPU with the storage fix, up to about 58 h without it (a
   scenario band, §12); a V in Stage T is expensive, and the void rule
-  allows one repeat per stage.
+  allows one repeat per stage, and per job in Stage T (R17.16).
 - **The proxies were privileged.** The trained twins may be stronger than the proxies (L-mean
   through a mean latent that still encodes a "typical" plate, N through the box), though every
   proxy cleared +8/32 by at least 7 resets (lower bounds +15 to +32).
