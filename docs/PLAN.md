@@ -276,10 +276,15 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       16 development resets → 64 gated resets with R9.8's bar (56/64), non-inferiority within
       δ = 8/64 (an allocation) and McNemar tests against N, L-shuf, L-mean and L-rand.
     - **GPU:** a cost probe on synthetic data measured 0.161 s per 8 × 8 update at T = 60, batch 16
-      (batch 64 ran out of memory), so training is about 22–58 h of GPU in eight per-job slots,
-      several times the 4 × 4 sizing above. The closed loop runs on the CPU.
-    - **Clause:** L-NO-GAIN or L-INFERIOR only, scoped to this condition, latent and predictor
-      recipe; 4 × 4 on a larger corpus stays untested and open.
+      (batch 64 ran out of memory). Training is a scenario band of about 8–33 h of GPU in eight
+      per-job slots once Stage 0 stores frames contiguously and prefetches (up to about 58 h
+      without), several times the 4 × 4 sizing above; the budget is sized from that synthetic
+      probe, and the real 8 × 8 calibration is Stage T's first two jobs. The closed loop runs on
+      the CPU.
+    - **Clause:** only when LeWM is detectably no better than a twin or detectably inferior by
+      more than δ (misses within noise escalate, R17.15); R15.8's scope extended by the move, with
+      one declared exclusion: 4 × 4 on a larger corpus stays untested and open.
+    - **Revised** after the independent review of #142 (REQUEST CHANGES; R17.15–R17.18).
     - **Next:** this draft's independent review, then Stage 0 and K0.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause

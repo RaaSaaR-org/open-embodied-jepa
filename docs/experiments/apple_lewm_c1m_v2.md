@@ -1,6 +1,7 @@
 # Apple→Plate LeWM committed aim under C1-M: LeWM chooses the single place aim at 405 from the encoded current frame (TASK-077)
 
-**STATUS: DRAFT.** This is a draft preregistration. It is **not frozen**: no frozen block, no
+**STATUS: DRAFT** (revision 2, after the independent review of #142 at `26894ca`, REQUEST
+CHANGES; rulings R17.15–R17.18). This is a draft preregistration. It is **not frozen**: no frozen block, no
 frozen-sha pin, no manifest, no stage code. **No seed of TASK-077's block has been simulated.**
 The only work done for it is a development GPU cost probe on synthetic features (§15), with no
 corpus, no rendered frame and no cohort seed. Every bar below is a proposal for the review. A bar
@@ -13,7 +14,7 @@ APPROVE (§7).
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
   That row admits **only the drafting of a preregistration** (R16.13). This document is that
   draft and nothing more.
-- **Rulings:** R17.1–R17.14 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-05 (b). Each is
+- **Rulings:** R17.1–R17.18 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-05 (b). Each is
   **decided by Claude under owner delegation (2026-09-30)**. They build on R9 (the design note,
   [apple_lewm_next_v2_design.md](apple_lewm_next_v2_design.md); the claim split R9.8 and the
   random-choice test R9.9), R13 (TASK-076's results), R14 (the C1 record), R15 (the C1-M
@@ -85,7 +86,8 @@ rule (R15 §5.7). A primary pass never supports a "LeWM needed" statement.
 **What a pass would show:** "LeWM-driven aim selection at 405, followed by e9's place, reaches the
 calibrated bar, is non-inferior to the best hand-written arm within the allocated δ and beats its
 action-blind, scene-blind and random twins, under a declared reactive-plate rule with a post-pick
-plate move on v2". That would be the first LeWM-driven closed-loop success on v2. It would change
+plate move on v2; LeWM ranks aims inside a box built from a non-LeWM single-frame readout (R-plate)
+and the proprioceptive palm, and its refinement is clipped to that box". That would be the first LeWM-driven closed-loop success on v2. It would change
 R7's sentence only through its own reviewed ruling (R15 §5.7).
 
 **What it would not show:** that LeWM is needed; a LeWM policy (P-3 picks and e9 places);
@@ -177,7 +179,7 @@ record's §2.10. They bind this protocol's wording and design.
   `latent_dim: 24576` (`max_horizon` 64 ≥ 60).
 - **The backend swap** stays one key (`BACKEND = "leworldmodel"`); native code is not run.
 
-### 4.2 Two departures from TASK-066's recipe, and why (R17.3)
+### 4.2 Three departures from TASK-066's recipe, and why (R17.3, R17.17)
 
 TASK-066 trained on windows of 16 transitions with batch 64. Here:
 - **Training windows of T = 60 transitions**, the gated horizon. TASK-066 gated only inside its
@@ -188,11 +190,22 @@ TASK-066 trained on windows of 16 transitions with batch 64. Here:
 - **Batch 16 windows**, because batch 64 at T = 60 does not fit the 16 GB GPU: the cost probe ran
   out of memory there (§15). Batch 16 × 60 = 960 transitions per update, against TASK-066's
   64 × 16 = 1 024, so the data per update is about the same.
+- **BatchNorm's batch statistics change with the batch.** The upstream predictor's `pred_proj` MLP
+  carries BatchNorm, whose training statistics are computed over the batch (here 16 windows × 64
+  tokens = 1 024 rows per step, against TASK-066's 64 × 16 = 1 024; the same row count, a different
+  mix of windows and tokens). It needs batch ≥ 2, which batch 16 satisfies. Declared as the third
+  departure; nothing else in the recipe changes.
+
+**The decisive argument for T = 60 (from the review of #142, R17.17).** Training windows start at
+403–407 and the corpus keeps frames 403–467 only. With T = 16, no training transition after step
+423 would ever be seen, so the plate's motion from 423 to 465, the phase the decision depends on,
+would be untrained recursion in a regime the model never trained on. TASK-066's h = 64 readings
+(1.18–1.52 cm) show how such extrapolation degrades.
 
 Measured cost (§15, synthetic features, one run): 0.161 s per update at 8 × 8, T = 60, batch 16
 (5.48 GiB peak), against 0.110 s for TASK-066's T = 16, batch 64 at 8 × 8. The alternative (T = 16,
-batch 64, extrapolated to h = 60) is cheaper by about a third and is rejected for the horizon
-reason above. **This is an open point for the review** (§14).
+batch 64, extrapolated to h = 60) is cheaper by about a third and is rejected for the reasons
+above (settled, R17.17).
 
 ### 4.3 The corpus, `apple-c1m-v2` (privileged scripted collector; Stage C)
 
@@ -277,7 +290,8 @@ its last-two rule used a raw argmin, so noise in a flat tail read as unsaturated
 
 At 405, with the robot's own joint state and the onboard frame only:
 1. **Grid.** The plate reading p̂ = R-plate's reading of the 405 frame (full DINOv2 tokens, dual
-   ridge fitted on the train split's 405 frames; TASK-076's readout) and the proprioceptive palm h
+   ridge: TASK-076's readout *form*, **refitted on this corpus's train split** at 405, not
+   TASK-076's fitted weights) and the proprioceptive palm h
    define the 147-candidate grid of §2.1. Infeasible candidates (stand-in refusal or unreachable
    release pose) are dropped for every arm alike. If all are infeasible, the arm aims at p̂ (a
    counted attempt; expected never, a_lo's reach check was 31/32 complete).
@@ -297,7 +311,10 @@ At 405, with the robot's own joint state and the onboard frame only:
 L-rand). It is a non-privileged single-frame readout. For the scene-blind twins it leaks scene
 information only through the box (R15.2: the clip raised the record's proxy counts by at most
 about +1/32 at ρ = 6 cm, development). That makes them stronger twins, so the twin tests are
-conservative, and "every arm shares the grid and the clip" (design note §4.1) is kept.
+conservative, and "every arm shares the grid and the clip" (design note §4.1) is kept (settled,
+R17.17). **Each arm's clip-binding fraction** (the share of attempts whose chosen or refined aim
+was clipped to the box) is reported in K0 (for the proxies), D and S, so that "scene-blind in
+prediction only" is visible in the results.
 
 ### 5.2 The twins: trained models, not privileged proxies (R17.7)
 
@@ -305,7 +322,7 @@ conservative, and "every arm shares the grid and the clip" (design note §4.1) i
 |---|---|---|
 | **N** (action-blind) | the trained N of the primary seed, rolled from this reset's encoded 405 frame with zero commands; its p̃ is the same for every candidate, so it picks the candidate nearest its prediction and the refinement converges to it | the N-proxy scored 8/32 (M-F3) |
 | **L-shuf** (scene-blind) | W from the encoded 405 frame of the **next reset in the cohort's order**, (i + 1) mod n, with **this** reset's candidate commands (TASK-074's `shuf`) | the shuf-proxy scored 8/32 |
-| **L-mean** (scene-blind) | W from the **mean encoded 405 latent of the train split** (raw feature space, fixed after Stage T and before any closed loop), with this reset's candidate commands (R9.10) | the mean-proxy scored 12/32 |
+| **L-mean** (scene-blind) | W from the **mean encoded 405 latent of the train split** (raw feature space, computed in Stage O from the train split's 405 features and fixed there), with this reset's candidate commands (R9.10) | the mean-proxy scored 12/32 |
 | **L-rand** | a candidate drawn uniformly from the feasible grid (salt 8111), no refinement | low |
 
 The foreign 405 frame for L-shuf is the logged 405 frame of W's attempt on reset (i + 1) mod n.
@@ -414,8 +431,9 @@ a notice in chat before the gated stage.
 5. **Stage O, offline admission (on a GO; GPU for featurisation only).** Featurisation of every
    kept frame (8 × 8; 4 × 4 at 405 and r, reported; full tokens at 405) on CUDA through
    `scripts/gpu_run.sh --wait`, with a CPU anchor check (G-anchor). `first_outcome_utc` is written
-   before the first fit. Then O1, O3, O4 (§8.1), the learning curve, R-plate, H-sysid, R8 and
-   L-mean's mean latent. Rows: O-ARM-KEYED, O-NO-BAR, O-PASS (§8.1).
+   before the first fit. Then O1, O3, O4 (§8.1), the learning curve, and the train-only fits used
+   downstream: R-plate, H-sysid, R8, the normalisation moments and L-mean's mean latent (computed
+   here and fixed; Stage T only reads it). Rows: O-ARM-KEYED, O-NO-BAR, O-PASS (§8.1).
 6. **Stage T, training (on a GO; GPU, one `gpu_run.sh --wait` job per model: the two
    calibration runs and the six models, eight jobs).** The calibration (W and N, 66810), the budget rule, G1's bars and the truncation
    controls on val, then the six models. Rows: CAL-T-ESCALATE, T-DONE. No budget row (§4.5).
@@ -480,6 +498,10 @@ normalised errors (TASK-065's MSE in metric-scale units), bootstrapped over gate
   moves the converged aim by ε/(1 − κ) = ε/1.5, and τ_commit is measured in aim error, so the
   matching tolerance on ε would be about 1.5 τ_commit. Using τ_commit itself is conservative by
   that factor; the scaled number is reported, not gated.
+- **G5 on the stand-in chunks (reported beside G5, not gated):** the same statistic with W rolled
+  from each gate root's 405 frame under the **stand-in** chunk of that root's own committed aim
+  (`primitive_chunks` from the logged 405 state), the commands W ranks in closed loop, against the
+  executed commands G5 uses. The difference between the two is the stand-in's cost to W.
 - **Reported only:** every gate at h = 16 and 30 from 405; the encoded readout's error on the gate
   split (c_plate there) and W minus it; the constant prior; copy-last's reading; each offline aim
   error and predicted count (§7, step 7).
@@ -506,26 +528,55 @@ As §7 step 8: **L-DEV-STOP** or **D-PASS**.
   label; not calibrated). Simulated power (this draft; 2 000 trials, 2 000 resamples, C at 30/32):
   at W = C, 0.78 with independent outcomes and 1.00 with maximally shared outcomes; at W = C − 2/64,
   0.48 and 0.85; at W = C − 4/64, 0.20 and 0.42. **Non-inferiority is demanding**: W must be about
-  as precise as H-rule. Stage 0 repeats the simulation with K0's measured counts.
+  as precise as H-rule. **Two corrections from the review of #142, which Stage 0's simulation must
+model:** (i) the test's size: at the margin (W = C − 8/64) the paired percentile bootstrap rejected
+3.3 % of the time (3.0–3.5 % for C at 30–32/32), against the nominal one-sided 2.5 %, so it is
+slightly anti-conservative at n = 64 near the ceiling; (ii) the comparator is the better of two
+arms chosen after S, which lowers the power: with two comparators at 30/32 sharing half their
+outcomes, 0.72, 0.39 and 0.16 at 0, −2 and −4/64 (independent outcomes; the reviewer's
+simulation). Stage 0 repeats the simulation with K0's counts, the max-of-two comparator and the
+size at the margin, and reports both; an exact or score interval may replace the percentile
+interval only by a declared change before the freeze.
 - **G-N, G-shuf, G-mean, G-rand:** W > arm, exact one-sided McNemar p < 0.01 on the paired resets.
   The minimum separation is 7 discordant pairs, all W's (TASK-076 R8.7). From the record's proxies
   (8, 8, 12 of 32 against a 32/32 ceiling) every test's feasibility was 1.000 at the ceiling; W
   will sit below the ceiling, so K0 re-states it with W's bar in place of the ceiling.
 - **The voids:** **S-VOID-CEILING** if H-final(commit)(S) < 56/64 (the condition's ceiling fell
   below the bar on S).
+- **"Detectably", defined (R17.15).** Every twin row reads the **same declared test**, the exact
+  one-sided McNemar test of W > arm at p < 0.01, plus the paired reset-clustered 95 % interval of
+  W − arm (§8, salt 8106):
+  - a twin test **passes** when its McNemar p < 0.01;
+  - W is **detectably no better** than an arm when that arm's McNemar test fails **and** the upper
+    bound of W − arm is below **+7/64**, the minimum separation at which the McNemar test can pass
+    at all (7 discordant pairs, all W's). W's advantage is then detectably smaller than any
+    advantage the declared test could certify;
+  - a failed test whose upper bound is ≥ +7/64 is a **miss within noise**.
+
+  Non-inferiority uses the same interval: W is **detectably inferior** when the upper bound of
+  W − C is below −δ = −8/64. A clause row therefore needs a failed declared test **and** a
+  detectable shortfall, and **no clause row can fire on a run whose four McNemar tests and G-NI all
+  pass**. Stage 0 simulates the clause's false-fire probability at a true twin advantage of
+  exactly +7/64 and at δ, as R8.14 did, and writes it into the protocol before the freeze.
 
 | row (first match) | condition | consequence |
 |---|---|---|
-| **V** | the void rule (§10.1) | one repeat after a recorded fix |
+| **V** | the void rule (§10.1) | one repeat of the stage after a recorded fix |
 | **S-VOID-CEILING** | H-final(commit)(S) < 56/64 | escalate, no clause, no claim |
-| **L-NO-GAIN** | for at least one of N, L-shuf, L-mean, L-rand, the paired interval of W − arm has its lower bound ≤ 0 (W is not detectably better than a blind twin or a random choice) | **the clause fires** (§11) |
-| **L-INFERIOR** | the upper bound of W − C's interval < −8/64 (W detectably inferior beyond δ) | **the clause fires** (§11) |
+| **L-NO-GAIN** | for at least one of N, L-shuf, L-mean, L-rand, the McNemar test fails **and** W is detectably no better (upper bound of W − arm < +7/64) | **the clause fires** (§11) |
+| **L-INFERIOR** | W is detectably inferior beyond δ (upper bound of W − C < −8/64) | **the clause fires** (§11) |
 | **L-PASS** | G-bar, G-NI and the four McNemar tests all pass | **the primary claim, "LeWM-driven closed-loop success"**; the secondary claim is then reported |
-| **L-TWIN-WEAK** | every twin interval's lower bound > 0, but at least one McNemar test has p ≥ 0.01 | escalate, no clause, no claim |
+| **L-TWIN-NEAR** | at least one McNemar test fails, and every failed one is a miss within noise (upper bound ≥ +7/64) | escalate, no clause, no claim (the TWIN-NEAR / PRED-NEAR convention, R17.15) |
 | **L-NEAR** | G-NI fails, but W is not detectably inferior beyond δ | escalate, no clause, no claim |
 | **L-BAR** | otherwise (G-bar fails, with G-NI and the tests passing) | escalate, no clause, no claim: the place family itself sits below the bar on S |
 
-Any repeat after L-TWIN-WEAK, L-NEAR or L-BAR needs fresh seeds and its own ruling. Reported in
+**Declared departures from the design note's clause trigger (§4.1, "W fails a twin or random
+test").** The note fires the clause on any failed twin test. Here a failed test fires it only when
+the shortfall is detectable; a miss within noise is L-TWIN-NEAR and escalates (R17.15, the
+TWIN-NEAR/PRED-NEAR convention of TASK-076 and R8.14). The first draft's L-TWIN-WEAK and its
+bootstrap-lower-bound trigger are withdrawn.
+
+Any repeat after L-TWIN-NEAR, L-NEAR or L-BAR needs fresh seeds and its own ruling. Reported in
 every row: every arm's count, every paired difference with its discordant counts and interval,
 H-read's and H-now's counts, the offline predictions of §7 step 7 against the S counts, and the
 secondary claim's test.
@@ -552,7 +603,14 @@ secondary claim's test.
 - **At most one repeat per stage**, only after a fix that is committed, pushed and recorded (the
   cause, the fix commit, the void report's sha256), from scratch at the fix's revision on the same
   seeds, in a new output directory; a non-code cause still needs a committed record of the cause and
-  its prevention. **A second V ends TASK-077 as INCONCLUSIVE** (escalate to the owner).
+  its prevention. **A second V of the same stage ends TASK-077 as INCONCLUSIVE** (escalate to the
+  owner). Vs in different stages do not add up (R17.16).
+- **Stage T is voided and repeated per job** (R17.16). Each of its eight jobs (the two
+  calibration runs, the six models) is its own unit with its own report: a V voids that job only,
+  which is repeated once after a recorded fix; completed jobs whose reports, checkpoints and
+  sha256s are intact are kept (strict CUDA determinism makes a re-run of an identical job
+  bit-identical; Stage 0's scale probe shows this on a debug seed). A second V of the **same job**
+  ends TASK-077 as INCONCLUSIVE. The budget rule runs only after both calibration jobs complete.
 - A V after a stage's `first_outcome_utc` is never read as an outcome.
 - A completed stage is the record; no stage is repeated for its result; no tracked file is edited
   in a run's worktree during a run (R14.9's lesson).
@@ -560,18 +618,24 @@ secondary claim's test.
 
 ### 10.2 Guards (any failure is V)
 
-- **G-tests (new; #141 review note 1):** the runner refuses to start unless `pre_run_tests.json` in
-  the stage's output directory records a complete `uv run --no-sync pytest` at the same revision
-  as HEAD, exit status 0, with its summary line; the GO comment also cites a green CI run for that
-  commit.
+- **G-tests (new; #141 review note 1):** for CPU stages the runner **runs the full suite itself**
+  (`pytest` from the worktree root, at HEAD) before its first simulation and records the summary
+  line, exit status and timestamps; any failure is V before the outcome boundary. For GPU jobs,
+  where running the suite would hold the lock, the runner **verifies** `pre_run_tests.json`
+  instead: the recorded revision equals HEAD, the exit status is 0, the summary shows no failure
+  or error, and its finish time is later than HEAD's commit time. The GO comment also cites a green
+  CI run for that commit.
 - **G-sentinel (new; #141 review note 2):** every report field for a check or row the stage has not
   reached holds `"not evaluated"`; no row ladder is evaluated with a missing input.
 - **G-hash and G-frozen:** the tracked tree is clean at the start and the end; the frozen-block sha
   and every pinned file match (including TASK-076's 84 pins and C1's and C1-M's code files).
 - **G-repro, G-anchor, G-threads, G-quiet** (TASK-076's: G-repro's eight facts; the DINOv2 anchor;
   pinned thread settings; 1- and 5-minute load ≤ 2.0 at start for CPU stages).
-- **G-split:** only train fits; val only selects and calibrates; the gate split is read only by
-  Stage G; the corpus manifest's sha matches.
+- **G-split:** every fit used downstream (normalisation, W, N, R-plate, R8, H-sysid, L-mean's mean)
+  is fitted on train only; val only selects and calibrates; the gate split is read only by Stage G;
+  the corpus manifest's sha matches. **The one declared exception:** Stage O's *admission*
+  estimates (O1, O3, O4 and the learning curve) are cross-fitted over train + val roots (5 outer
+  folds), as in the C1-M record; no fold of them is used by a later stage.
 - **G-privileged:** `task_truth_in_controller` is 0 for W, N, L-shuf, L-mean, L-rand, H-rule and
   H-sysid on every attempt.
 - **G-finite, G-memory, G-disk:** every feature, loss, prediction and statistic finite; process-tree
@@ -586,33 +650,41 @@ secondary claim's test.
 
 Provisional, to be re-set by Stage 0's scale probe to at least 1.5 × the measured worst case:
 K0 7 200 s; Stage C 14 400 s; Stage O featurisation 3 600 s and readouts 7 200 s; **each Stage T
-job 43 200 s** (one calibration run, or one W or N model: at most 100 000 updates at the
-measured 0.161 s plus the batch gather, §12); Stage G 7 200 s; Stage D 7 200 s; Stage S 21 600 s;
+job 46 800 s** (13 h; one calibration run, or one W or N model: at most 100 000 updates, whose
+worst case without the Stage-0 storage fix is 30 000 s at 0.30 s per update, so the cap is
+1.56 × that; with the fix, about 17 000 s, §12); Stage G 7 200 s; Stage D 7 200 s; Stage S 21 600 s;
 per closed-loop attempt 300 s.
 
 ## 11. The abandonment clause and its scope (R17.10)
 
-**It fires on L-NO-GAIN or L-INFERIOR only.** It does not fire on CAL-ESCALATE, CORPUS-ESCALATE,
-O-ARM-KEYED, O-NO-BAR, CAL-T-ESCALATE, H-GATE-FAIL, G-NO-BAR, L-DEV-STOP, S-VOID-CEILING,
-L-TWIN-WEAK, L-NEAR, L-BAR, V or INCONCLUSIVE.
+**It fires on L-NO-GAIN or L-INFERIOR only**, that is, only when W is detectably no better than a
+twin or random choice, or detectably inferior to the best non-world-model arm by more than δ, as
+§8.4 defines "detectably" with the declared tests (R17.15). It does not fire on CAL-ESCALATE,
+CORPUS-ESCALATE, O-ARM-KEYED, O-NO-BAR, CAL-T-ESCALATE, H-GATE-FAIL, G-NO-BAR, L-DEV-STOP,
+S-VOID-CEILING, L-TWIN-NEAR, L-NEAR, L-BAR, V or INCONCLUSIVE.
 
-**What closes** (R15 §5.5's post-admission clause, with its scope extended by the move and the
-latent):
+**What closes.** R15.8's form: the design note's §4.1 scope, **extended by the move**:
 
-> Preregistering LeWM selection of a single place aim committed at 405 under C1-M — v2's own
-> reset, P-3's pick, a post-pick plate move at step 300 drawn uniformly over a disc of radius
-> ≤ 4 cm, cell A's reactive-plate rule (κ = −0.5, L = 2, s0 = 405, s1 = 525) and e9's place
-> primitive — made by a history-one TASK-066-family LeWM token predictor on frozen pretrained
-> DINOv2 ViT-S/14 tokens of the onboard 112 px frame pooled to 8 × 8, rolled 60 steps and read by
-> a dual-ridge plate readout. No recipe variant of that predictor (capacity, depth, training
-> horizon, batch, budget, loss weighting, selection rule) is preregistered under this condition
-> and latent without new evidence of a different kind.
+> "LeWM aim selection with a single aim committed at 405 under the declared reactive-plate rule
+> (κ = −0.5, L = 2, s1 = 525) on v2, **with the declared post-pick plate move of radius ρ\* = 4 cm
+> (the disc, which also covers the −y half-disc, at radii ≤ 4 cm)**, from onboard 112 px frozen
+> DINOv2 pooled tokens, with TASK-066-family predictors."
 
-**What does not close:** other latents (**4 × 4 on a larger corpus, untested**; the full-token
-grid; other grids); history longer than one, `action_chunk` or `predictor_step_embedding` (the
-design note's declared remedies); a fine-tuned or another encoder; other readouts of predicted
-latents (kernel, trained heads, temporal aggregation); other views or resolutions; other κ, L,
-commit steps, move distributions or radii above 4 cm; C1 without the move (its own record ended
+**One declared narrowing, with its reason (a departure from R15.8; R17.10).** The scope does **not**
+cover a 4 × 4 pooled latent on a corpus larger than C1-M's 1 024 roots. Reason: this protocol never
+runs W on 4 × 4; 8 × 8 was chosen only because 4 × 4 missed H-read's allowance on 1 024 roots while
+its readout curve was still falling (#141 caveat 2), so a clause fired on an 8 × 8 W would close a
+4 × 4 W that was never tested on adequate data. Every other pooled grid, every readout of the
+predicted latent and every TASK-066-family recipe variant (capacity, depth, training horizon,
+batch, budget, loss weighting, selection) stays inside the note's scope, as R15.8 has it. The first
+draft's narrowing to "rolled 60 steps and read by a dual-ridge plate readout" is withdrawn: it had
+no stated reason.
+
+**What does not close:** a 4 × 4 latent on a larger corpus (above); the full, unpooled token grid
+(not "pooled tokens"); history longer than one, `action_chunk` or `predictor_step_embedding` (the
+design note's declared remedies, outside "TASK-066-family" as TASK-066 defined it: history one, no
+chunking); a fine-tuned or another encoder; other views or resolutions; other κ, L, commit steps,
+move distributions or radii above 4 cm; C1 without the move (its own record ended
 C1-TWINS-ESCALATE, which closes nothing); C2; TASK-076's results; the LeWM backend; v2; the product
 goal.
 
@@ -623,10 +695,15 @@ goal.
 | K0 | 10–15 min CPU | about 350 attempts; C1-M's attempts took 8.2 s median, 9.7 s maximum |
 | C | 45–60 min CPU (*estimate*) | 2 000 roots to step 467, 65 renders each; the C1-M run did 1 024 roots plus 224 look-ahead attempts in 39 min |
 | O | 10–20 min GPU, 20–40 min CPU (*estimate*) | about 130 000 frames through DINOv2 on CUDA; ridges at 24 576-d by dual form |
-| T | **about 22–58 h of GPU in eight jobs** | per update 0.161 s measured compute plus a batch gather of about 0.14 s (scaled from the probe's 0.55 s for batch 64), so 0.17–0.30 s with or without overlap: calibration 2 × 50 000 updates = 4.7–8.3 h; six models at U = 60 000, 17–30 h, or at the cap U = 100 000, 28–50 h |
+| T | **a scenario band, not bounds: about 8 h to about 33 h of GPU in eight jobs, with the Stage-0 storage fix** (up to about 58 h without it) | per update 0.161 s measured compute; calibration is always 2 × 50 000 updates. **Low end:** U = 10 000 (the rule's minimum): 2 × 50 000 + 6 × 10 000 = 160 000 updates in all, about 7–8 h. **With the fix** (below), an update approaches 0.161–0.17 s, so the cap U = 100 000 gives 700 000 updates, about 31–33 h. **Without it**, the probe's fancy-indexed gather (0.55 s for batch 64, about 0.14 s for batch 16) without overlap gives about 0.30 s per update and up to about 58 h at the cap; at U = 60 000, 22–41 h |
 | G | 20–40 min CPU | 250 gate roots × 6 models × (true, wrong, zero) roll-outs on one CPU thread each (0.055 s per 60-step roll-out, §15) |
 | D | about 15 min CPU | 80 attempts; a W-family attempt adds about 7–10 s of CPU roll-outs and the stand-in chunks |
 | S | 1–2 h CPU | 64 resets × 10 arms, H-read the slowest |
+
+**The storage fix, implemented in Stage 0 (R17.18).** The probe's gather fancy-indexed 383 MB
+at about 0.7 GB/s. Stage 0 stores each root's 65 frames contiguously, so a training window is one
+slice, and fills the next batch in a prefetch thread while the GPU trains; its scale probe measures
+the real gather path, and the caps are reset from it.
 
 **Stage T is the main cost and is several times PLAN.md's 4 × 4 sizing** (6.5 h, 10–11 h worst
 case). It comes from the 8 × 8 grid (2.6 × the 4 × 4 update at T = 16, §15) and from training at
@@ -646,7 +723,8 @@ full tokens at 405 0.8 GB; the main checkout has 95 GB free.
   exactly on one run (§3). W can only add error. The larger corpus may help the readout (both
   curves were still falling), but that is a hope, not a measurement.
 - **The secondary claim is not expected** (R15 §5.7).
-- **Cost.** Stage T is 1–2.5 days of GPU (§12); a V in Stage T is expensive, and the void rule
+- **Cost.** Stage T is about 8–33 h of GPU with the storage fix, up to about 58 h without it (a
+  scenario band, §12); a V in Stage T is expensive, and the void rule
   allows one repeat per stage.
 - **The proxies were privileged.** The trained twins may be stronger than the proxies (L-mean
   through a mean latent that still encodes a "typical" plate, N through the box), though every
@@ -654,17 +732,25 @@ full tokens at 405 0.8 GB; the main checkout has 95 GB free.
 - **The scorer and the condition are imposed**: the single commitment and the reactive rule are
   simulator laws; neither transfers as such to Arena or the real G1 (design note §4.1).
 
-## 14. Open points for the review (to settle before Stage 0)
+## 14. Points settled after the first review (R17.17, decided by Claude under owner delegation)
 
-1. **T = 60 with batch 16 (chosen) against TASK-066's T = 16 with batch 64** (§4.2): the horizon
-   argument against a third less GPU time.
-2. **Three model seeds** (TASK-066/074's practice) against two, which would save a third of Stage T.
-3. **The twins' shared grid** built from R-plate's reading (§5.1): conservative for the twin tests,
-   but it means the scene-blind twins are scene-blind in prediction only.
-4. **δ = 8/64** stays an allocation (R15.6); the review may set another value before the freeze,
-   and the simulated power then follows it.
-5. **G2 and G4 are carried bars** (TASK-065/066); at h = 60 G2 is expected to be easy. The review
-   may prefer to report G2 only.
+The first draft left five points open. The independent review of #142 (REQUEST CHANGES at
+`26894ca`) recommended each, and they are settled:
+
+1. **T = 60 with batch 16 is kept** (§4.2). The decisive argument, from the review: with T = 16
+   and windows starting at 403–407 in a corpus that keeps frames 403–467, no transition after
+   step 423 would ever be trained, so the plate's motion from 423 to 465 would be untrained
+   recursion.
+2. **Three model seeds are kept** (TASK-065/066/074's practice; every gate on all seeds). If cost
+   ever forces a cut, it goes through the gather (§12), not the seeds.
+3. **The shared twin grid is kept**, with each arm's clip-binding fraction reported (§5.1) and the
+   claim wording of §1 ("ranks inside a box built from a non-LeWM readout").
+4. **δ = 8/64 is kept as an allocation** (R15.6's label). Its only anchor is its τ-curve reading,
+   about one τ of extra aim error. The Stage-0 simulation models the test's size and the
+   max-of-two comparator (§8.4).
+5. **G2 and G4 stay gated**, escalating without the clause (H-GATE-FAIL). G4 is the
+   action-sensitivity diagnostic the repository's rules require; G2 at h = 60 is cheap. Both are
+   also reported at h = 16 and 30.
 
 ## 15. Development measurement made for this draft (not a result; gates nothing)
 

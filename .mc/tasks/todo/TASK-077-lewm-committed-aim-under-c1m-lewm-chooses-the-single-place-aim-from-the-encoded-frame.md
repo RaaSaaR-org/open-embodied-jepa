@@ -41,7 +41,7 @@ L-mean, and a random choice. "LeWM needed" is reported only and not expected.
 
 **The protocol (DRAFT, not frozen):**
 [`docs/experiments/apple_lewm_c1m_v2.md`](../../../docs/experiments/apple_lewm_c1m_v2.md).
-Rulings R17.1–R17.14 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
+Rulings R17.1–R17.18 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
 owner delegation (2026-09-30). The plan is `docs/PLAN.md`.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. This task does not
@@ -68,3 +68,10 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   `2dc6106`): 0.161 s per update at T = 60, batch 16, 5.48 GiB; `outputs/task077-cost-cpu-1/report.json`
   (sha256 `f760f32f…28e1`, at `5218857`): 7.43 s for 147 candidates × 60 steps on one CPU thread.
   Stage T is estimated at 22–58 h of GPU in eight per-job slots.
+- 2026-10-05: independent review of #142 at `26894ca`: REQUEST CHANGES (two blocking: the clause's
+  scope and trigger; the void rule's counting). Revised under R17.15–R17.18 (decided by Claude
+  under owner delegation): R15.8's clause scope extended by the move, with one declared exclusion
+  (4 × 4 on a larger corpus); L-NO-GAIN needs a failed McNemar test and a detectable shortfall,
+  misses within noise are L-TWIN-NEAR; a second V counts within the same stage, and Stage T voids
+  per job; the ten non-blocking items fixed; the five open points settled. Stage T is now a
+  scenario band of about 8–33 h with the Stage-0 storage fix (up to about 58 h without).
