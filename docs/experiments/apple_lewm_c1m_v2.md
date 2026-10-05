@@ -22,9 +22,9 @@ root was collected. **Erratum 2026-10-05** (§7.2; R17.30–R17.34) records the 
 re-pins the changed files and this document, and leaves the frozen block and its sha256
 unchanged. **Stage C's one repeat ran at `4f30fbb` and ended CORPUS-SEALED** (§7.3, R17.35):
 1 995 of 2 000 roots, sealed manifest sha256 `ad8974b2…43fb`. **Erratum 2026-10-05 (b)** (§7.4;
-R17.36–R17.38) corrects the bit-identity claim of §7.2, records the GPU featurisation scale probe
-that Stage O's GO needed, and gates the determinism re-run's commit target at a derived 0.6 cm. It
-re-pins the changed files and this document; the frozen block and its sha256 are unchanged.
+R17.36–R17.39) corrects the bit-identity claim of §7.2, records the GPU featurisation scale probe
+that Stage O's GO needed, gates the determinism re-run's commit target at a derived 0.6 cm, and
+makes G-anchor check the frozen 256 frames. It re-pins the changed files and this document; the frozen block and its sha256 are unchanged.
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
@@ -625,6 +625,128 @@ R17.30–R17.34). This erratum changes code and report fields only. The frozen b
 
   A second V of Stage C ends TASK-077 as INCONCLUSIVE.
 
+### 7.3 Stage C's repeat: CORPUS-SEALED (R17.35)
+
+Stage C's one repeat ran at `4f30fbb`, the merge commit of the erratum (#145), on the reviewer's
+reported GO (#145, <https://github.com/RaaSaaR-org/open-embodied-jepa/pull/145#issuecomment-5990368000>).
+It ran from a fresh clean worktree (`task077-corpus2`) on the CPU with 6 workers and without the
+GPU lock, with the command the GO named, on the corpus seeds 67000–68999.
+- **Guards.** G-quiet read 0.10 / 0.08 at the start. In-run G-tests passed at `4f30fbb` on a
+  clean tree (2001 passed, 37 skipped). G-hash checked TASK-076's 84 pins and TASK-077's 13 own
+  pins, with the frozen sha `f28e5e2c…548d` and the protocol document's pin. G-repro passed 8 of 8
+  checks. MemAvailable at the start was 25.4 GiB.
+- **Memory.** Peak process-tree PSS was **8.38 GiB** against the 12.00 GiB ceiling (RSS
+  10.05 GiB). §7.2's "about 8.5 GiB" was an expectation (the #145 approval's note 2); this is the
+  measured peak.
+- **Time.** 1 234 s from start to end (cap 14 400 s), from 07:53:59Z to 08:14:33Z.
+- **Row: CORPUS-SEALED.** 1 995 of 2 000 roots are kept. The 5 excluded roots are 67692, 67888,
+  68047, 68414 and 68774. Each was excluded as `no_decision`: no commit decision was made at 405.
+  All five are train seeds, so the kept split is 1 495 train, 250 val and 250 gate roots. The
+  excluded fraction is 0.25 %, against the 2 % bar.
+- **Render disagreements.** Two seeds, 67133 and 68878, had one of their three post-look renders
+  differ from the other two in 4 pixels, by at most 1 level, with equal states. The majority frame
+  was used, as declared.
+- **Sealed manifest:** `outputs/task077-corpus-2/corpus/manifest.json` in the worktree
+  `/home/huhn/develop/emai/worktrees/task077-corpus2` (git-ignored), sha256
+  **`ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb`**. Every later stage
+  requires it (§7 step 4).
+- **Report:** `outputs/task077-corpus-2/report.json` in the same worktree, sha256
+  `2f84515bbdd612c75f56439355eff580f0617f0b5a7e64652a3626653dd07e47`. Its log is beside it.
+- **The void first run is kept.** Its report (`outputs/task077-corpus-1/report.json` in the
+  `task077-corpus` worktree, sha256 `734fa771…94a6c3`) stays the record of the V (§7.2). Neither
+  corpus worktree is edited.
+
+### 7.4 Erratum 2026-10-05 (b): bit-identity, the featurisation's scale probe, the determinism target and G-anchor's frames (R17.36–R17.39)
+
+**Erratum 2026-10-05 (b)** (decided by Claude under owner delegation; DECISIONS 2026-10-05 (b),
+R17.36–R17.39). It changes code, tests and this document only. The frozen block, its sha256
+`f28e5e2c…548d`, and every bar, seed, salt, cap, ceiling and row are unchanged. The manifest
+re-pins the changed files and this document.
+
+- **Bit-identity, corrected (R17.36; the #145 approval's note 1).** §7.2 and R17.30 said the
+  streamed estimates are bit-identical "by construction". That overstated it.
+  - Bit-identity is **measured**, at every size that was tried. It **fails when the final chunk
+    has exactly one row**: `cross_gram`'s norm line (`einsum("ij,ij->i")`) takes a different
+    reduction path on a one-row array, and the estimates then differ by about 1e-15. The reviewer
+    measured this at N = 1 985 (chunks of 32 or 64), N = 97 and N = 33.
+  - **The multiple-of-32 rule is not the real condition.** A chunk of 100 was also bit-identical
+    at N = 2 000. The runner keeps the rule as a conservative one.
+  - **This cannot occur in TASK-077.** The corpus's 2 000 seeds leave a final chunk of 80 at 128,
+    and K, D and S are one chunk each. The runner now also refuses a one-row final chunk after
+    another chunk (a GuardError), and a test covers it.
+  - **The 8.5 GiB.** §7.2's 7.75 GiB measured only the estimate step, with stand-in frames, and
+    the stage's "about 8.5 GiB" was an expectation (the #145 approval's notes 2 and 3). The repeat
+    measured 8.38 GiB (§7.3).
+- **The featurisation's scale probe (R17.37; the #144 approval's note 5).** This was the open item
+  before Stage O's GO.
+  - **What ran.** `scripts/probe_task077_featurise.py` (development only, not pinned) wrote a
+    synthetic corpus of the sealed corpus's size: 1 995 roots, 1 495 train, 250 val and 250 gate,
+    with uniform-noise frames under the labels 900000–901999. Nothing was simulated and the real
+    corpus was not read. It then ran the runner's own `featurise` stage on that corpus, with
+    `--debug`, through `scripts/gpu_run.sh --wait`. That is the real stage code: preflight,
+    G-memory at 12 GiB of PSS, the 3 600 s cap, `gpu_guard` with 8 GiB free, the pretrained
+    DINOv2 encoder on CUDA under strict determinism, the re-mapped stores and G-anchor. Around the
+    stage it sampled the process tree's PSS and this process's GPU memory, and read torch's peak
+    allocation at the end. Noise frames compress worse than rendered ones (2.49 MB a root against
+    about 0.61 MB), so reading and hashing the roots is slower than it will be on the real corpus.
+    The encoder's cost does not depend on the content.
+  - **Result** (`task077-fscale-3`, at `ab5935f`, clean tree, G-tests from a `tests` record at
+    the same revision: 2002 passed, 37 skipped, sha256 `536e9968…c60a`):
+
+    | measure | probe | Stage O's cap or guard |
+    |---|---|---|
+    | stage wall time | 212.7 s (featurisation 207.4 s, G-anchor on 256 frames included) | 3 600 s (17 ×) |
+    | process-tree PSS, peak | 1.76 GiB | 12.00 GiB (G-memory) |
+    | GPU memory, this process (`nvidia-smi`) | 0.90 GiB (torch's peak allocation 0.49 GiB, reserved 0.55 GiB) | 8 GiB required free at the start (`gpu_guard`); 16 GiB card |
+    | G-anchor | max difference 7.4e-5 on 256 frames | 1e-3 |
+    | feature files written | 13.8 GB | 25 GiB of free disk at the start |
+
+  - **The 3 600 s cap is kept.** It is about 17 × the measured stage, far above the 1.5 × rule.
+  - **Reports:** `outputs/task077-fscale-3/probe.json`, sha256 `07663fc18f722daef3c6c0df071d434248ebbd56542e6c2333140f0475133fbd`, and the stage's own
+    report `outputs/task077-fscale-3/stage/report.json`, sha256 `f9ebedc9b6094f5071291b595fdb21aa2e33a197f774d40d8ad70f65447a9494`, in the worktree
+    `/home/huhn/develop/emai/worktrees/task077-stageo-prep` (git-ignored). The synthetic corpus and
+    features were removed afterwards.
+  - **Two earlier runs, disclosed.** Both ran at `badbbe1`, which checked G-anchor on the first
+    root's 32 frames only (see R17.39 below).
+    - `task077-fscale-1` ended **V on G-hash**: documentation edits were made in the probe's
+      worktree while it ran, so the tracked tree changed during the run. The featurisation itself
+      completed (201.6 s; peak PSS 1.74 GiB; GPU 0.90 GiB). That is the R14.9 lesson again, in a
+      development probe. Probe report sha256 `342ccf01…2304`, stage report `c326d7c2…91ad5`.
+    - `task077-fscale-2` ran clean and ended FEATURISED-DEBUG in 206.8 s, with a peak PSS of
+      1.72 GiB and 0.90 GiB of GPU memory. Probe report sha256 `02e546e0…298e`, stage report
+      `c3706582…36ad`.
+- **The determinism re-run's commit target is gated (R17.38; the #144 approval's note 1).** The
+  target's difference was reported, not gated (R17.27). It is now **gated at 0.6 cm**, a bound
+  derived from §7 step 9's own argument:
+  - The refinement stops once a move is at most τ_commit/4 = 0.25 cm, and it returns that
+    iterate. With the rule's contraction |κ| = 0.5, that iterate is within
+    |κ|/(1 − |κ|) × 0.25 = 0.25 cm of the fixed point. Two runs can therefore end at most 0.5 cm
+    apart.
+  - A frame difference that passes the 0.1 cm reading gate is taken to move W's predicted plate by
+    about as much. That moves the fixed point by at most 0.1/(1 − κ) = 0.067 cm (κ = −0.5).
+  - 0.5 + 0.067 = 0.567 cm, rounded up to **0.6 cm**.
+  - **Why gate rather than explain.** A W roll-out or R8 that differs between runs while the frame
+    is the same would move the target, and without this gate it would be caught only if one of
+    the four resets flipped its success. With the gate, real nondeterminism voids rather than
+    hides.
+  - **What it assumes, disclosed.** The bound assumes that W's learned map contracts like the
+    rule's (|κ| = 0.5), and that the refinement converged. If W's map contracts less, or a
+    refinement stops on an infeasible step or after its 10 roll-outs, two runs can end further
+    apart, and the gate would void S on a renderer flake. Identical frames give
+    identical targets on the CPU, so the gate can only bind when a frame differs. Stage 0 saw two
+    such differences in 405 readings on debug seeds, and Stage C two in 2 000 post-look renders
+    (§7.3). The risk of a false V is small, and a false V is a repeat, not a lost result.
+  - **Where it lives.** `DETERMINISM_TARGET_BOUND_M = 0.006` and its rule text sit in
+    `lewm_c1m_v2.py` **outside** the frozen block, and `determinism_check` gates on them. The
+    frozen block's `determinism_rule` text ("reported, not gated") is unchanged and is superseded
+    for the target only by this erratum. The frozen sha256 does not change. This tightens Stage S
+    only, and it is settled before Stage S's GO, as the approval asked.
+- **G-anchor's frames (R17.39; found while preparing this probe).** The frozen block carries
+  TASK-076's `FEATURE_ANCHOR` = {frames 256, bound 1e-3}. `featurise_corpus` compared only the
+  first root's first 32 frames, as TASK-075's and TASK-076's runners did. It now compares the
+  first 256 kept frames, in split and root order (the first four train roots), with the CPU path.
+  The bound is unchanged. A test checks the 256. `task077-fscale-3` ran with it.
+
 ## 8. Gates, bars and rows
 
 Intervals are reset- (or root-) clustered bootstrap percentile intervals, 10 000 resamples, 95 %,
@@ -859,6 +981,12 @@ measured or scaled worst case ([stage-0 record](apple_lewm_c1m_v2_stage0.md) §3
   ceiling. **Erratum 2026-10-05 (R17.30):** that peak covered the cohort estimates at 100 seeds
   only. At 2 000 seeds, the unstreamed estimates reached 12.9 GiB and voided the first run (§7.2).
   With the streamed estimates, the seed preparation measures 7.75 GiB at 2 000 seeds.
+  *(R17.35–R17.36:)* Stage C's repeat measured a peak of 8.38 GiB over the whole stage, and took
+  1 234 s, 0.09 of the cap (§7.3).
+- **Stage O's featurisation (R17.37, Erratum 2026-10-05 (b)):** the runner's own `featurise`
+  stage on a synthetic corpus of the sealed corpus's size (1 995 roots) took 212.7 s on CUDA,
+  G-anchor included, with a peak PSS of 1.76 GiB and 0.90 GiB of GPU memory (§7.4). 3 600 s is
+  17 × that, so the cap stays.
 
 The caps:
 K0 7 200 s; Stage C 14 400 s; Stage O featurisation 3 600 s and readouts 7 200 s; **each Stage T
