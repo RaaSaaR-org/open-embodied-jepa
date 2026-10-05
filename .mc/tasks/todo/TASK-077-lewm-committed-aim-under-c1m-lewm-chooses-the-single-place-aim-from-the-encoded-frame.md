@@ -39,22 +39,22 @@ non-inferiority to the best non-world-model arm within δ = 8/64 (an allocation)
 McNemar wins over the trained action-blind twin N, the trained scene-blind twins L-shuf and
 L-mean, and a random choice. "LeWM needed" is reported only and not expected.
 
-**The protocol (DRAFT, not frozen):**
+**The protocol (FROZEN after K0-PASS, R17.25; in force once merged on an independent APPROVE):**
 [`docs/experiments/apple_lewm_c1m_v2.md`](../../../docs/experiments/apple_lewm_c1m_v2.md).
-Rulings R17.1–R17.18 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
+Rulings R17.1–R17.29 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
 owner delegation (2026-09-30). The plan is `docs/PLAN.md`.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. This task does not
 change it unless an L-PASS is followed by its own reviewed ruling.
 
 ## Acceptance Criteria
-- [ ] DRAFT preregistration reviewed independently (this card's first PR; docs plus a
+- [x] DRAFT preregistration reviewed independently (this card's first PR; docs plus a
       development cost probe on synthetic data only).
-- [ ] Stage 0 PR: stage code, frozen block, manifest, tests (seed ranges, `check_budget`,
+- [x] Stage 0 PR: stage code, frozen block, manifest, tests (seed ranges, `check_budget`,
       `select_checkpoint`/`last_two_triggered`, the `"not evaluated"` sentinel, no runner imports,
       no privileged read in W or a twin), debug smokes and the scale probe.
-- [ ] K0 on a reported GO; K0's values in the frozen block; the freeze merged on an independent
-      reviewer's reported APPROVE.
+- [x] K0 on a reported GO (K0-PASS at `306fbdc`); K0's values in the frozen block.
+- [ ] The freeze merged on an independent reviewer's reported APPROVE.
 - [ ] Stages C, O, T, G, D and S, each on its own reported GO, from a clean worktree of the merged
       revision, after a full `pytest` at that revision (G-tests).
 - [ ] Results PR, with every restated number checked by an independent reviewer.
@@ -87,3 +87,12 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   refused before 405 voided D or S; the 1e-6 m determinism tolerance against renderer noise; the
   artifact chain; Stage D's cap; CI timing). Fixed under R17.20–R17.24 (decided by Claude under
   owner delegation), with the eleven non-blocking items; debug chain re-run at `9e772e0`; no K0.
+- 2026-10-05: K0 ran once at `306fbdc` on the #143 reviewer's GO and ended **K0-PASS**
+  (`outputs/task077-k0-1/report.json`, sha256 `9be44fd9…f235`): τ_commit = 1.0 cm (32/29/29/18/
+  11/2 of 32), ceiling 32/32, r_K = 460, palm speed 0.00227 cm per step; proxies H-now 0, N 13,
+  shuf 10, mean 15 of 32. Freeze PR on branch `task077-freeze` under R17.25–R17.29: STATUS FROZEN,
+  frozen sha `f28e5e2c…548d` pinned; feature-file check (R17.26); determinism re-run gates the
+  reading and the success outcome, target reported (R17.27); Stage O readouts and Stage C scale
+  probes on synthetic and debug data, caps kept (R17.28); `OPENBLAS_NUM_THREADS=16` is the
+  declared G-threads environment, not a bug (R17.29). Thin margins disclosed: r_K 5 steps inside
+  r; 0.5 and 1.0 cm each 1 above the 28/32 bar.

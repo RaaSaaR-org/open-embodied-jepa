@@ -65,7 +65,8 @@ is kept as written.
 
 ## Decision 2026-10-05 (b) — TASK-077's DRAFT preregistration: LeWM chooses the single committed place aim under C1-M on an 8 × 8 latent (R17; DRAFT)
 
-**Decided by Claude under owner delegation (2026-09-30). DRAFT: nothing is frozen.** Revised after
+**Decided by Claude under owner delegation (2026-09-30). FROZEN after K0-PASS (R17.25), in force
+once merged on an independent reviewer's APPROVE; the text below was written as a DRAFT.** Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
 is [apple_lewm_c1m_v2.md](experiments/apple_lewm_c1m_v2.md) (STATUS DRAFT), with the task card
@@ -244,6 +245,103 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
     stated as modest (95th percentile 0.262–0.277 s, near the unfixed 0.30 s estimate; a third
     scale run, on a quiet machine, gave 0.219 s median) and every stage records its load
     average; a scale probe of Stage O's readouts and Stage C is required before Stage O's GO.
+- **R17.25–R17.29 — K0-PASS and the freeze** (2026-10-05, each decided by Claude under owner
+  delegation).
+  - **R17.25 — K0-PASS and the freeze.**
+    - **The run.** K0 ran once at `306fbdc` on the reviewer's reported APPROVE and K0 GO (#143,
+      issuecomment-5988386225), on cohort K (66000–66031). It ran on the CPU with 6 workers,
+      without the GPU lock, on a clean tree, with in-run G-tests (1990 passed) and G-repro 8 of 8.
+      It ended **K0-PASS** (report `outputs/task077-k0-1/report.json` in the `task077-k0`
+      worktree, sha256 `9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235`;
+      protocol §7.1).
+    - **τ curve.** Counted successes of 32 at planted errors of 0, 0.5, 1, 1.5, 2 and 3 cm: 32,
+      29, 29, 18, 11, 2. So **τ_commit = 1.0 cm**, and N_K(0) = 32/32.
+    - **r and the history check.** **r_K = 460**, against the frozen r = 465. The median palm
+      speed at 405 was 0.00227 cm per step.
+    - **Proxies** (reported; privileged, not learned): H-now 0, N-proxy 13, shuf-proxy 10 and
+      mean-proxy 15 of 32. The scene-blind proxies' McNemar feasibility is 1.000 at the ceiling
+      and at W's bar.
+    - **No stop fired.** There were 0 refusals, a clip-binding fraction of 0 and 0 fallbacks.
+    - **What enters the frozen block.** The values go in as `K0_MEASURED`, copied from the
+      report: the τ curve with its failed seeds, the ceiling, r_K, the history, the proxies with
+      their seeds, headroom and feasibility, the stops, and the run's provenance. A test
+      recomputes τ_commit, the row and the feasibility from them.
+    - **The pins.** STATUS is FROZEN. The frozen block's sha256
+      `f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d` is pinned in the test
+      and in the manifest. The manifest also pins 13 files (the stage's own 5, the 6 carried C1
+      and C1-M files, the test file and TASK-076's manifest) and the protocol document's sha256.
+      The runner checks those pins once FROZEN, and it refuses a second non-debug K0.
+    - **Thin margins, disclosed.**
+      - r_K is 5 steps inside the frozen r. S re-measures nothing about r; only S-VOID-CEILING
+        guards the ceiling there.
+      - Both 0.5 cm and 1.0 cm sit only one success above the 28/32 bar, on disjoint failed
+        resets. One more failure at 1.0 cm would have made τ_commit 0.5 cm, halving O1's and
+        G5 (a)'s bars. τ_commit = 1.0 cm is therefore an upper reading on 32 resets, not a margin.
+      - A W whose aim error sits at about τ_commit would succeed at about 29/32 by this curve. At
+        that rate G-bar (56/64) passes with probability 0.86, not with certainty.
+  - **R17.26 — the feature-file check (the #143 approval's non-blocking note 1).**
+    - Before Stage O's readouts, each Stage T job, the plan or Stage G reads a featurisation
+      split, `verify_feature_files` hashes every file of that split and compares it with the
+      featurise report's `files_sha256`. The files are `features8_*`, `commands_*`, `roots_*`,
+      `hidden8_r_*`, `pool4_405_r_*`, `full405_*` and `table_*`.
+    - The splits each stage checks: readouts and train, train + val; plan, val; gates, gate.
+    - A missing, unrecorded or different file is V. Tests cover each case.
+    - The check measured 7.9 s for the 12.1 GB of train + val (R17.28).
+  - **R17.27 — the determinism rule (note 2).** The re-run of W on S's first four resets now gates
+    four things:
+    1. the R-plate reading at 0.1 cm (R17.21's tolerance, kept);
+    2. the commit itself, or an identical refusal before 405;
+    3. the success outcome;
+    4. nothing else: the commit target's difference is reported, not gated.
+
+    **Reason.** The target is an argmin over 147 candidates followed by a refinement that stops
+    when a move is ≤ τ_commit/4 = 0.25 cm. With |κ| = 0.5, that leaves the iterate within about
+    0.25 cm of the fixed point, so two runs that saw the same frame up to renderer noise (about
+    6e-5 m) can end about 0.5 cm apart:
+    - when the noise flips a near-tie, or
+    - when it stops the refinement one iterate earlier.
+
+    A 0.1 cm target tolerance would void S for a difference that changes nothing W saw. The
+    success outcome is what the rows count, so it is gated. The alternative, a target tolerance
+    characterised from smoke data, was not available: the two debug S re-runs (4 resets each)
+    showed zero difference, which characterises nothing.
+  - **R17.28 — the scale probes of Stage O's readouts and Stage C (R17.24's requirement),
+    development only, at `86985a2`.**
+    - **Stage O's readouts.** `oscale` ran `readouts_core` itself through `scale_probe` on
+      synthetic features at the real sizes (1 500 train, 250 val). The feature check took 7.9 s
+      and the readouts 98.9 s, at a peak PSS of 2.96 GiB; the whole stage, with G-tests, took
+      285 s. Report sha256 `ea09d23b…048c`.
+    - **Stage C.** The debug corpus stage ran on 40 roots (66 s; `e2cce181…f988`). A probe of
+      the runner's own setup, estimates and `collect` attempts ran on debug seeds 66900–66999
+      (`3ae3486f…7d28`). It measured 0.48 s of wall time per root on 6 workers, attempts of
+      2.6 s median and 3.24 s at most, 3.6 s of cohort estimates per 100 seeds, about 0.61 MB
+      per root and a peak PSS of 8.46 GiB. The worst case for 2 000 roots is about 1 400 s.
+    - **The caps are kept.** Stage O's readouts stay at 7 200 s (67 × the core) and Stage C at
+      14 400 s (about 10 ×); both are well above the declared factor of 1.5. Lowering them buys
+      nothing, since a cap only bounds a hang.
+    - **Stage C's estimate.** About 20–23 min, replacing the draft's 45–60 min estimate.
+    - **The probe's disclosure.** It ran from an uncommitted copy of
+      `scripts/probe_task077_stage_c.py` (now committed, formatted). A first launch without a
+      `__main__` guard made its spawned workers fail at start: a load spike to about 20, with
+      nothing simulated.
+  - **R17.29 — the thread environment.** K0's `thread_env` (`OPENBLAS_NUM_THREADS=16`, OMP and
+    MKL at 6) is the declared G-threads environment, not a bug.
+    - **Where it comes from.** It is the owner ruling of 2026-09-29 (TASK-073): OpenBLAS's default
+      of one thread per logical CPU on this 16-thread PC, pinned with MKL's dynamic threads off.
+      TASK-074–076 (TASK-076's K0 included) and C1-M carried it. K0's G-threads check passed
+      against it.
+    - **Why it could not affect K0's counts.**
+      - K0 ran under exactly the environment every comparable run used, so it is not a deviation.
+      - The physics (MuJoCo) and the workers' torch (one thread) do not use OpenBLAS's thread
+        count.
+      - The main process's NumPy linear algebra (P-3's readout refit, which G-repro checks)
+        reproduced TASK-072's values 8 of 8.
+      - For a fixed thread count and problem size, OpenBLAS splits the work the same way in every
+        run, so its summation order does not vary between runs; G-repro's 8-of-8 reproduction
+        is consistent with that.
+    - **What changes.** Nothing; a test now pins the environment and checks that the runner sets
+      it before NumPy loads.
+
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 

@@ -1,4 +1,4 @@
-"""TASK-077's runner: every stage of ``docs/experiments/apple_lewm_c1m_v2.md`` (STATUS DRAFT).
+"""TASK-077's runner: every stage of ``docs/experiments/apple_lewm_c1m_v2.md`` (STATUS FROZEN).
 
 Frozen block ``src/embodied_jepa/lewm_c1m_v2.py``; workers ``lewm_c1m_v2_runtime.py``; offline
 stages ``lewm_c1m_v2_offline.py``; training ``lewm_c1m_v2_train.py``. Guards from
@@ -22,11 +22,15 @@ One invocation runs one stage and writes ``<output>/report.json`` (it refuses an
 * ``scale``      -- Stage 0's scale probe of a Stage T job at the real sizes on synthetic features
   (CUDA, through ``scripts/gpu_run.sh``): the measured per-update time with the contiguous gather
   and prefetch, the gather alone, the peak PSS, and a bit-identity re-run.
+* ``oscale``     -- the scale probe of Stage O's readouts (R17.24, R17.28; CPU): ``readouts_core``
+  at the real sizes on synthetic features, after the feature-file check; time and peak PSS.
 
 Every CPU stage runs the full test suite itself first (G-tests); every stage checks the clean
-tree, TASK-076's pins and C1's and C1-M's code (G-hash). While the protocol is DRAFT, only
-``tests``, ``simulate``, ``scale``, ``k0`` and ``--debug`` runs are allowed (§7: nothing from C, D,
-S or the corpus is simulated before its GO, and those stages run only after the freeze).
+tree, TASK-076's pins and C1's and C1-M's code (G-hash), and, once FROZEN, TASK-077's own
+pins. While the protocol was DRAFT, only ``tests``, ``simulate``, ``scale``, ``oscale``, ``k0`` and
+``--debug`` runs were allowed (§7: nothing from C, D, S or the corpus is simulated before its GO,
+and those stages run only after the freeze). Once FROZEN, a non-debug ``k0`` is refused: K0 ran
+once (R17.25).
 ``--debug`` simulates debug seeds 66900-66999 only, at small sizes, with declared stand-ins;
 nothing in it is read.
 """
@@ -88,11 +92,12 @@ STAGES = (
     "closed",
     "simulate",
     "scale",
+    "oscale",
 )
-CPU_STAGES = ("k0", "corpus", "readouts", "plan", "gates", "closed", "simulate")
+CPU_STAGES = ("k0", "corpus", "readouts", "plan", "gates", "closed", "simulate", "oscale")
 GPU_STAGES = ("featurise", "train", "scale")
 SIM_STAGES = ("k0", "corpus", "gates", "closed")  # stages with a simulator pool
-DRAFT_ALLOWED = ("tests", "simulate", "scale", "k0")
+DRAFT_ALLOWED = ("tests", "simulate", "scale", "k0", "oscale")
 DEBUG = {  # declared debug stand-ins (nothing in a debug run is read)
     "tau_commit_cm": lm.TAU_COMMIT_RECORD_CM,
     "calibration_updates": 400,
@@ -112,6 +117,7 @@ STAGE_FIELDS = {
     "closed": ("arms", "determinism", "decision"),
     "simulate": ("simulations",),
     "scale": ("gather", "probe", "bit_identity", "caps"),
+    "oscale": ("synthetic", "verify", "probe", "caps"),
     "tests": ("tests",),
 }
 
@@ -303,9 +309,16 @@ def preflight(report: dict, args) -> dict:
     hz.check_clean(dirty)
     report["protocol_status"] = lm.STATUS
     report["frozen_sha256_at_run"] = lm.frozen_sha256()
-    report["frozen_pin_check"] = check_frozen_pin(json.loads((ROOT / lm.MANIFEST).read_text()))
+    own = json.loads((ROOT / lm.MANIFEST).read_text())
+    report["frozen_pin_check"] = check_frozen_pin(own)
+    if lm.STATUS == "FROZEN":  # G-hash: TASK-077's own pins (the freeze sets them)
+        if not own.get("hashes"):
+            raise lp.GuardError("G-hash: a FROZEN manifest pins its files")
+        report["own_pins_at_preflight"] = len(hz.check_pins(own["hashes"]))
     if lm.STATUS != "FROZEN" and args.stage not in DRAFT_ALLOWED and not args.debug:
         raise lp.GuardError(f"G-frozen: {args.stage} runs only after the freeze (STATUS FROZEN)")
+    if lm.STATUS == "FROZEN" and args.stage == "k0" and not args.debug:
+        raise lp.GuardError("G-frozen: K0 ran once before the freeze (R17.25); it is not repeated")
     report["thread_env"] = {k: os.environ.get(k) for k in lm.THREAD_ENV}
     if report["thread_env"] != lm.THREAD_ENV:
         raise lp.GuardError(f"G-threads: {report['thread_env']} is not {lm.THREAD_ENV}")
@@ -690,6 +703,15 @@ def open_corpus_checked(args) -> dict:
 
 
 O_ROWS_READ = {False: ("O-PASS",), True: ("O-PASS", "O-NO-BAR", "O-ARM-KEYED")}
+# the featurisation splits each stage reads; their files are hashed against the featurise
+# report's ``files_sha256`` before the stage reads them (the #143 approval's note 1, R17.26)
+FEATURE_SPLITS = {
+    "readouts": ("train", "val"),
+    "train": ("train", "val"),
+    "plan": ("val",),
+    "gates": ("gate",),
+    "oscale": ("train", "val"),
+}
 
 
 def artifact_chain(args, report: dict) -> dict:
@@ -701,7 +723,12 @@ def artifact_chain(args, report: dict) -> dict:
     if getattr(args, "features", None):
         feat = completed(Path(args.features).parent / "report.json", ("FEATURISED",), args.debug)
         check_same_corpus(feat, chain, "featurise")
-        chain["features_files_sha256"] = feat["fields"]["featurisation"]["files_sha256"]
+        files = feat["fields"]["featurisation"]["files_sha256"]
+        chain["features_files_sha256"] = files
+        splits = FEATURE_SPLITS.get(getattr(args, "stage", None), ())
+        report["feature_files_verified"] = off.verify_feature_files(
+            Path(args.features), files, splits
+        )
     if getattr(args, "fits", None):
         ro = completed(
             Path(args.fits).parent / "report.json", O_ROWS_READ[bool(args.debug)], args.debug
@@ -1236,7 +1263,7 @@ def stage_simulate(report, args, fields: Fields, manifest) -> str:
     return "SIMULATED"
 
 
-def synthetic_store(folder: Path, split: str, roots: int, seed: int) -> dict:
+def synthetic_store(folder: Path, split: str, roots: int, seed: int, offset: int = 0) -> dict:
     """Synthetic features at the real layout (no corpus, no rendered frame)."""
     from numpy.lib.format import open_memmap
 
@@ -1251,8 +1278,100 @@ def synthetic_store(folder: Path, split: str, roots: int, seed: int) -> dict:
     del feats
     commands = rng.uniform(-0.1, 0.1, (roots, lm.N_COMMANDS, 14)).astype(np.float32)
     np.save(folder / f"commands_{split}.npy", commands)
-    (folder / f"roots_{split}.json").write_text(json.dumps(list(range(roots))))
+    (folder / f"roots_{split}.json").write_text(json.dumps(list(range(offset, offset + roots))))
     return {"roots": roots, "bytes": roots * lm.N_FRAMES * lm.LATENT_DIM * 4}
+
+
+def synthetic_featurisation(folder: Path, sizes: dict) -> dict:
+    """Synthetic files at Stage O's real featurisation layout for every split in ``sizes`` (no
+    corpus, no rendered frame, no seed: the roots are indices 0..n-1, offset per split), with the
+    ``files_sha256`` record a featurise report carries. Nothing in them is read as a result."""
+    from numpy.lib.format import open_memmap
+
+    files, offset = {}, 0
+    for i, (split, n) in enumerate(sizes.items()):
+        synthetic_store(folder, split, n, i, offset)
+        rng = np.random.default_rng(np.random.SeedSequence([lm.SALTS["bootstrap"], 78, i]))
+        paths = off.feature_paths(folder, split)
+        np.save(paths["hidden8"], rng.standard_normal((n, lm.LATENT_DIM), dtype=np.float32))
+        np.save(paths["pool4"], rng.standard_normal((n, 2, 16 * 384), dtype=np.float32))
+        full = open_memmap(paths["full405"], "w+", np.float32, (n, off.FULL_WIDTH))
+        for k in range(n):
+            full[k] = rng.standard_normal(off.FULL_WIDTH, dtype=np.float32)
+        full.flush()
+        del full
+        plate = np.asarray(lm.PLATE_MEAN) + rng.normal(0.0, 0.02, (n, 1, 2))
+        plate = plate + rng.normal(0.0, 0.01, (n, lm.N_FRAMES, 2)).cumsum(1) * 0.1
+        np.savez(
+            paths["table"],
+            seeds=np.arange(offset, offset + n, dtype=np.int64),
+            plate=plate,
+            palm=plate + rng.normal(0.0, 0.05, (n, lm.N_FRAMES, 2)),
+            target=plate[:, 2] + rng.normal(0.0, 0.03, (n, 2)),
+            state405=rng.standard_normal((n, 86)),
+            apple=rng.standard_normal((n, 2)),
+            last_grasp=rng.standard_normal((n, 2)),
+        )
+        files[split] = {k: off.sha256_file(p) for k, p in paths.items()}
+        offset += n
+    return files
+
+
+def stage_oscale(report, args, fields: Fields, manifest) -> str:
+    """The scale probe of Stage O's readouts (R17.24, R17.28): ``readouts_core`` itself, through
+    ``run_tools.scale_probe``, at the real sizes (1 500 train and 250 val roots: the 24 576-d and
+    98 304-d dual ridges, the learning curve, the train moments) on synthetic features, after the
+    feature-file check the readouts stage runs first. CPU only; nothing in it is read."""
+    scratch = Path(args.scratch)
+    if scratch.exists():
+        raise FileExistsError(f"refusing to overwrite {scratch}")
+    sizes = {"train": args.scale_train_roots, "val": args.scale_val_roots}
+    try:
+        started = time.monotonic()
+        files = synthetic_featurisation(scratch, sizes)
+        fields.set(
+            "synthetic",
+            {"roots": sizes, "write_seconds": time.monotonic() - started, "files_sha256": files},
+        )
+        verify = off.verify_feature_files(scratch, files, FEATURE_SPLITS["oscale"])
+        fields.set("verify", verify)
+        probe = rt.scale_probe(
+            off.readouts_core,
+            scratch,
+            Path(args.output) / "fits",
+            tau_commit_cm=lm.TAU_COMMIT_RECORD_CM,
+            watch=report["_watch"],
+            ceiling_gib=lm.MEMORY["ceiling_gib"],
+            margin_gib=2.0,
+        )
+        result = probe.pop("result")
+        probe["result"] = {
+            "rows": result["rows"],
+            "seconds": result["seconds"],
+            "selections": result["selections"],
+            "decision": result["decision"],
+        }
+        fields.set("probe", probe)
+        worst = verify["seconds"] + probe["seconds"]
+        cap = lm.CAPS_SECONDS["O_readouts"]
+        fields.set(
+            "caps",
+            {
+                "verify_seconds": verify["seconds"],
+                "readouts_seconds": probe["seconds"],
+                "worst_case_s": worst,
+                "cap_O_readouts_s": cap,
+                "cap_over_worst": cap / worst,
+                "peak_tree_gib": probe["probe_peak_tree_gib"],
+                "note": "one run on synthetic features at the real sizes; the worst case is the "
+                "feature-file check plus readouts_core; G-tests and the preflight are not in it",
+            },
+        )
+    finally:
+        if scratch.exists() and not args.keep_scratch:
+            shutil.rmtree(scratch)
+            report["synthetic_removed"] = True
+    return "O-SCALE-PROBED"
 
 
 def stage_scale(report, args, fields: Fields, manifest) -> str:
@@ -1368,6 +1487,7 @@ RUNNERS = {
     "closed": stage_closed,
     "simulate": stage_simulate,
     "scale": stage_scale,
+    "oscale": stage_oscale,
 }
 STAGE_CAPS = {
     "k0": "K0",
@@ -1378,6 +1498,7 @@ STAGE_CAPS = {
     "plan": "G",
     "gates": "G",
     "scale": "T_job",
+    "oscale": "O_readouts",
 }
 
 
@@ -1498,8 +1619,8 @@ def main(argv=None) -> int:
             parser.error(f"{args.stage} needs --corpus (G-split: the sealed manifest is checked)")
         if not args.debug and not args.corpus_sha256:
             parser.error(f"{args.stage} needs --corpus-sha256 (§7 step 4)")
-    if args.stage == "scale" and not args.scratch:
-        parser.error("scale needs --scratch")
+    if args.stage in ("scale", "oscale") and not args.scratch:
+        parser.error(f"{args.stage} needs --scratch")
     if args.stage == "closed" and not args.cohort:
         parser.error("closed needs --cohort")
     if args.stage == "train" and not args.job:

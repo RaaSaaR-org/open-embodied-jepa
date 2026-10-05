@@ -290,3 +290,59 @@ worst case:
 | 9 | the static G-privileged scan covers `WorldModelAim` and every helper it calls |
 | 10 | the storage-gain wording (§3) and the load average in every stage |
 | 11 | the Stage O and Stage C scale probe is required before Stage O's GO (§5; protocol §7 step 5) |
+
+## 7. Before the freeze: K0, the #143 approval's notes and the scale probes (R17.25–R17.29)
+
+**K0 ran once** at `306fbdc` on the reviewer's reported GO and ended **K0-PASS**. Its values and
+thin margins are in the protocol's §7.1 and in the frozen block's `K0_MEASURED`. §5's K0 items
+are therefore done. The remaining items, all development work, ran at `86985a2` on a clean tree
+on the Linux PC:
+
+- **The feature-file check (the approval's note 1, R17.26).** `verify_feature_files` hashes
+  every file of each split that a stage reads, and compares it with the featurise report's
+  `files_sha256` before the stage reads it. The splits are: readouts and train, train + val;
+  plan, val; gates, gate. Tests cover a tampered file, a missing file, an unrecorded split and
+  the per-stage splits through `artifact_chain`.
+- **The determinism rule (note 2, R17.27).** The re-run gates the R-plate reading at 0.1 cm, the
+  commit or refusal, and the success outcome. The commit target's difference is reported only.
+  - This existing smoke data does not characterise a target tolerance: two debug S re-runs of 4
+    resets each (`a98d893` and `9e772e0`), both with zero difference.
+  - That is why the rule is chosen rather than a measured tolerance.
+- **The thread environment (R17.29).** `OPENBLAS_NUM_THREADS=16` with OMP and MKL at 6 is the
+  declared G-threads environment. It comes from the owner ruling of 2026-09-29 (TASK-073), and
+  TASK-076's K0 ran with it too. It is not a bug, so nothing is changed.
+- **The scale probe of Stage O's readouts (R17.28).**
+  - What ran: `run_lewm_c1m_v2.py oscale --output outputs/task077-oscale-1 --scratch <scratch>`,
+    in the worktree `task077-freeze` (git-ignored), report sha256
+    `ea09d23b649c20f760c408f02a0f827991c4adbf44f2cc5b0b3260dd2a3a048c`. It ran `readouts_core`
+    itself through `run_tools.scale_probe` on synthetic features at the real sizes (1 500 train
+    and 250 val roots, 12.1 GB), after the feature-file check. The run included in-run G-tests
+    (1994 passed, 37 skipped).
+  - Results: the feature-file check took 7.9 s and `readouts_core` 98.9 s, with a probe peak PSS
+    of 2.96 GiB. The whole stage, including writing the synthetic store and G-tests, took 285 s.
+    The cap stays at 7 200 s.
+  - Its admission row on random features (O-NO-BAR) means nothing.
+- **The Stage C probe (R17.28).** Two runs on the debug range only, in the worktree
+  `task077-cprobe` at `86985a2`:
+  - **The debug corpus stage:** 40 roots, 66940–66979, `--debug --debug-skip-tests`, 66 s,
+    CORPUS-SEALED-DEBUG, report sha256 `e2cce1815ec310c22dfa50f9111dbb25248faf4ad8f62b9c1545f57d4599f988`.
+  - **`scripts/probe_task077_stage_c.py`** on 100 roots, 66900–66999, report sha256
+    `3ae3486ff4fead4d3d8c73d923501e7d3879ac596453244c02fcff4623487d28`. It uses the runner's
+    own setup, cohort estimates, `collect` attempts and `write_root`.
+    - It ran from an uncommitted copy whose code is the committed file before formatting. That
+      copy's first launch had no `__main__` guard. Its spawned workers re-ran it and failed at
+      start, so the load spiked to about 20 and nothing was simulated. The copy was fixed, and
+      the probe ran after the load fell back under 2.0.
+  - **Results:**
+    - Setup: 41 s, including G-repro.
+    - Cohort estimates: 3.6 s per 100 seeds.
+    - Collection: 0.48 s of wall time per root on 6 workers; attempts took 2.6 s median and
+      3.24 s at most.
+    - Size: about 0.61 MB per root.
+    - Peak PSS: 8.46 GiB. There were no exclusions and no render disagreements.
+    - Load at the start of the run: 1.97 / 2.21. The 5-minute value was just above the 2.0 rule,
+      which binds gated stages, not this probe.
+  - **The worst case for 2 000 roots** is about 1 400 s: every root at 3.24 s on 6 workers, plus
+    writing, estimates, setup and G-tests. The 14 400 s cap is about 10 × that and stays. The
+    estimates map's 1 800 s cap compares with about 72 s for 2 000 seeds. The corpus needs about
+    1.2 GB of disk.

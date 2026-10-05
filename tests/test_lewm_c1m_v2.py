@@ -47,13 +47,77 @@ def test_manifest_frozen_block_equals_the_module():
     assert manifest["status"] == lm.STATUS
 
 
-def test_the_frozen_sha_pin_is_set_only_at_the_freeze():
+# The frozen block's sha256, set at the freeze (protocol §7 step 3, R17.25) after K0-PASS; the K0
+# report is outputs/task077-k0-1/report.json, sha256 9be44fd9...f235 (``lm.K0_MEASURED``).
+FROZEN_SHA256_PIN = "f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d"
+
+
+def test_the_frozen_sha_pin_is_set_at_the_freeze():
+    """The freeze pins the frozen block; from then on the module's block may not change."""
     manifest = json.loads(MANIFEST.read_text())
-    if lm.STATUS == "DRAFT":
-        assert manifest["frozen_sha256_pin"] is None
-        assert lm.K0_MEASURED is None
-    else:  # pragma: no cover - after the freeze
-        assert manifest["frozen_sha256_pin"] == lm.frozen_sha256()
+    assert manifest["frozen_sha256_pin"] == FROZEN_SHA256_PIN == lm.frozen_sha256()
+    assert manifest["status"] == lm.STATUS == "FROZEN"
+    assert "**STATUS: FROZEN**" in DOC.read_text()
+    assert lm.K0_MEASURED is not None and lm.K0_MEASURED["row"] == "K0-PASS"
+    run = _runner()
+    assert run.check_frozen_pin(manifest)["pin"] == FROZEN_SHA256_PIN
+
+
+def test_the_freeze_pins_files_and_the_protocol_document():
+    import hashlib
+
+    manifest = json.loads(MANIFEST.read_text())
+    want = {*lm.OWN_FILES, *lm.CARRIED_CODE_FILES, "tests/test_lewm_c1m_v2.py", lm.TASK076_MANIFEST}
+    assert set(manifest["hashes"]) == want
+    for relative, sha in manifest["hashes"].items():
+        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == sha, relative
+    assert hashlib.sha256(DOC.read_bytes()).hexdigest() == manifest["protocol_document_sha256"]
+
+
+def test_k0_measured_values_reproduce_k0s_decision_and_feasibility():
+    """The frozen K0 values recompute: tau_commit, the stops and row, and each scene-blind
+    proxy's McNemar feasibility (R17.25)."""
+    m = lm.K0_MEASURED
+    assert m["report_sha256"] == (
+        "9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235"
+    )
+    assert m["revision"].startswith("306fbdc") and m["protocol_status_at_run"] == "DRAFT"
+    seeds = lm.seeds_of("K")
+    assert list(m["seeds"]) == [seeds[0], seeds[-1]]
+    counts = m["tau"]["counts"]
+    assert counts == {"0.0": 32, "0.5": 29, "1.0": 29, "1.5": 18, "2.0": 11, "3.0": 2}
+    for level, failed in m["tau"]["failed_seeds"].items():
+        assert set(failed) <= set(seeds) and len(seeds) - len(failed) == counts[level]
+    tau = lm.decide_tau(counts)
+    assert tau["tau_commit_cm"] == m["tau_commit_cm"] == m["tau"]["tau_commit_cm"] == 1.0
+    ceiling = [s not in m["ceiling_failed_seeds"] for s in seeds]
+    assert sum(ceiling) == m["n_k0"] == 32
+    decision = lm.decide_k0(
+        tau=tau,
+        ceiling=m["n_k0"],
+        r_k=m["r_k"],
+        palm_speed_median_cm=m["history"]["palm_speed_405_cm_per_step"]["median"],
+    )
+    assert decision["row"] == m["row"] == "K0-PASS" and decision["stops"] == m["stops"]
+    assert m["r_k"] <= lm.READ_STEP and lm.READ_STEP - m["r_k"] == 5  # the thin r margin
+    assert [counts["0.5"] - lm.TAU_BAR, counts["1.0"] - lm.TAU_BAR] == [1, 1]  # thin tau margins
+    run = _runner()
+    for arm in lm.K0_PROXIES:
+        item = m["proxies"][arm]
+        outcome = [s in item["succeeded_seeds"] for s in seeds]
+        assert sum(outcome) == item["count"]
+        diff = lm.paired_interval(ceiling, outcome)
+        assert [diff["difference"], diff["ci95"]] == item["headroom"]
+        if arm in lm.K0_SCENE_BLIND:
+            for key, ref in (
+                ("feasibility_at_ceiling", ceiling),
+                ("feasibility_at_w_bar", run.scene_blind_at_bar(ceiling, outcome, lm.TAU_BAR)),
+            ):
+                got = lm.mcnemar_feasibility(ref, outcome)
+                want = item[key]
+                assert (got["b"], got["c"]) == (want["b"], want["c"])
+                assert got["predicted_pass_probability"] == want["predicted_pass_probability"]
+            assert item["known_risk"] is False
 
 
 def test_carried_code_and_task076_pins_are_unchanged():
@@ -590,7 +654,17 @@ def test_the_scale_probe_calls_the_train_stages_own_function():
         for n in ast.walk(tree)
         if isinstance(n, ast.Call) and getattr(n.func, "attr", "") == "scale_probe"
     ]
-    assert len(probes) == 1 and probes[0].args[0].id == "train_job_core"
+    assert sorted(ast.unparse(p.args[0]) for p in probes) == [
+        "off.readouts_core",  # Stage O's readouts (R17.28): the readouts stage's own function
+        "train_job_core",
+    ]
+    stage_readouts = next(
+        n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "stage_readouts"
+    )
+    assert any(
+        isinstance(n, ast.Call) and ast.unparse(n.func) == "off.readouts_core"
+        for n in ast.walk(stage_readouts)
+    )
     stage_train = next(
         n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "stage_train"
     )
@@ -602,13 +676,14 @@ def test_the_scale_probe_calls_the_train_stages_own_function():
 
 def test_the_runner_refuses_gated_stages_while_draft_and_misused_flags(tmp_path):
     run = _runner()
-    assert set(run.DRAFT_ALLOWED) == {"tests", "simulate", "scale", "k0"}
+    assert set(run.DRAFT_ALLOWED) == {"tests", "simulate", "scale", "k0", "oscale"}
     for argv in (
         ["k0", "--output", str(tmp_path / "a")],  # no evidence
         ["train", "--output", str(tmp_path / "b"), "--job", "cal-W"],  # no tests record
         ["simulate", "--output", str(tmp_path / "c"), "--workers", "2"],  # workers: debug only
         ["simulate", "--output", str(tmp_path / "d"), "--debug-skip-tests"],
         ["readouts", "--output", str(tmp_path / "e"), "--tau-commit-cm", "1.0"],
+        ["oscale", "--output", str(tmp_path / "f")],  # no scratch
     ):
         with pytest.raises(SystemExit):
             run.main(argv)
@@ -712,25 +787,38 @@ def test_foreign_reached_and_reached_405():
     assert lm.reached_405({"frame405": np.zeros(1)}) and not lm.reached_405({"frame405": None})
 
 
-def _commit(seed, target, reading):
+def _commit(seed, target, reading, success=True):
     return {
         "seed": seed,
         "commit": {"target": list(target)},
         "decisions": [{"reading": list(reading)}],
         "termination_reason": "step_limit",
         "executed_steps": 800,
+        "success": success,
     }
 
 
 def test_determinism_check_tolerance_and_refused_resets():
+    """R17.21 as amended by R17.27: the reading (0.1 cm) and the success outcome are gated, the
+    commit target's difference is reported only; refusals must repeat identically."""
     a = [_commit(1, (0.5, -0.1), (0.49, -0.09)), {"seed": 2, "termination_reason": "guard_refusal",
                                                   "executed_steps": 230}]  # fmt: skip
     near = [_commit(1, (0.5004, -0.1), (0.49006, -0.09)), dict(a[1])]
     assert lm.DETERMINISM_TOLERANCE_M == 0.001
     out = lm.determinism_check(a, near)
     assert out["ok"] and out["resets"][1]["refused_identically"]
-    far = [_commit(1, (0.5015, -0.1), (0.49, -0.09)), dict(a[1])]
-    assert not lm.determinism_check(a, far)["ok"]
+    assert out["rule"] == lm.DETERMINISM_RULE
+    # a target 1.5 mm away (a flipped near-tie, or one refinement iterate less) is reported only
+    far_target = [_commit(1, (0.5015, -0.1), (0.49, -0.09)), dict(a[1])]
+    out = lm.determinism_check(a, far_target)
+    assert out["ok"] and out["resets"][0]["target_diff_m"] == pytest.approx(0.0015)
+    assert out["max_target_diff_m"] == pytest.approx(0.0015)
+    # ... but not when the success outcome differs
+    flipped = [_commit(1, (0.5015, -0.1), (0.49, -0.09), success=False), dict(a[1])]
+    assert not lm.determinism_check(a, flipped)["ok"]
+    # a reading beyond 0.1 cm is V even with the same target and outcome
+    far_reading = [_commit(1, (0.5, -0.1), (0.4912, -0.09)), dict(a[1])]
+    assert not lm.determinism_check(a, far_reading)["ok"]
     other = [near[0], dict(a[1], executed_steps=231)]
     assert not lm.determinism_check(a, other)["ok"]
     mixed = [near[0], _commit(2, (0.5, -0.1), (0.49, -0.09))]
@@ -901,6 +989,70 @@ def test_the_chain_refuses_debug_or_non_o_pass_reports_in_a_real_run(tmp_path):
     assert run.artifact_chain(args, {})["fits"]  # any O row in a debug run
 
 
+def _feature_split(folder, split, n=3):
+    from embodied_jepa import lewm_c1m_v2_offline as off
+
+    paths = off.feature_paths(folder, split)
+    for key, path in paths.items():
+        if path.suffix == ".json":
+            path.write_text(json.dumps(list(range(n))))
+        elif path.suffix == ".npz":
+            np.savez(path, seeds=np.arange(n))
+        else:
+            np.save(path, np.full((n, 2), len(key), np.float32))
+    return {k: off.sha256_file(p) for k, p in paths.items()}
+
+
+def test_feature_files_are_checked_against_the_featurise_report(tmp_path):
+    """The #143 approval's note 1 (R17.26): every file of a split a stage reads is hashed against
+    the featurise report's files_sha256; a tampered, missing or unrecorded file is refused."""
+    from embodied_jepa import lewm_c1m_v2_offline as off
+
+    assert set(off.FEATURE_FILES) == {
+        "features", "commands", "roots", "hidden8", "pool4", "full405", "table"
+    }  # fmt: skip
+    files = {s: _feature_split(tmp_path, s) for s in ("train", "val", "gate")}
+    out = off.verify_feature_files(tmp_path, files, ("train", "val"))
+    assert out["ok"] and out["files"] == 14 and out["splits"] == ["train", "val"]
+    with pytest.raises(pt.GuardError):  # a split the report lacks
+        off.verify_feature_files(tmp_path, {"train": files["train"]}, ("val",))
+    with pytest.raises(pt.GuardError):  # an incomplete record
+        off.verify_feature_files(tmp_path, {"val": {"features": "x"}}, ("val",))
+    np.save(tmp_path / "features8_val.npy", np.zeros((3, 2), np.float32))  # tampered
+    with pytest.raises(pt.GuardError):
+        off.verify_feature_files(tmp_path, files, ("val",))
+    assert off.verify_feature_files(tmp_path, files, ("train", "gate"))["ok"]
+    (tmp_path / "table_gate.npz").unlink()  # missing
+    with pytest.raises(pt.GuardError):
+        off.verify_feature_files(tmp_path, files, ("gate",))
+
+
+def test_the_chain_checks_the_feature_files_each_stage_reads(tmp_path):
+    run = _runner()
+    assert run.FEATURE_SPLITS == {
+        "readouts": ("train", "val"),
+        "train": ("train", "val"),
+        "plan": ("val",),
+        "gates": ("gate",),
+        "oscale": ("train", "val"),
+    }
+    args, _record, _sha = _chain_files(tmp_path)
+    feat = Path(args.features)
+    files = {s: _feature_split(feat, s) for s in ("train", "val", "gate")}
+    report_path = feat.parent / "report.json"
+    rep = json.loads(report_path.read_text())
+    rep["fields"]["featurisation"]["files_sha256"] = files
+    report_path.write_text(json.dumps(rep))
+    for stage, splits in run.FEATURE_SPLITS.items():
+        report: dict = {}
+        run.artifact_chain(type(args)(**vars(args) | {"stage": stage}), report)
+        assert report["feature_files_verified"]["splits"] == list(splits)
+    np.save(feat / "commands_gate.npy", np.zeros((3, 2), np.float32))  # tampered gate split
+    run.artifact_chain(type(args)(**vars(args) | {"stage": "plan"}), {})  # plan reads val only
+    with pytest.raises(pt.GuardError):
+        run.artifact_chain(type(args)(**vars(args) | {"stage": "gates"}), {})
+
+
 def test_stage_caps_frozen_pin_decide_g_and_stage_t_rows():
     run = _runner()
     from types import SimpleNamespace
@@ -910,7 +1062,7 @@ def test_stage_caps_frozen_pin_decide_g_and_stage_t_rows():
     assert run.stage_cap(SimpleNamespace(stage="train", cohort=None)) == 46_800.0
     manifest = json.loads(MANIFEST.read_text())
     out = run.check_frozen_pin(manifest)
-    assert out["pin"] is None and out["status"] == "DRAFT"
+    assert out["pin"] == lm.frozen_sha256() and out["status"] == "FROZEN"
     with pytest.raises(pt.GuardError):
         run.check_frozen_pin(manifest | {"frozen_sha256_pin": "0" * 64})
     good = {"G1": True, "G2": True, "G3": True, "G4": True, "G5": True}
@@ -919,3 +1071,54 @@ def test_stage_caps_frozen_pin_decide_g_and_stage_t_rows():
     assert lm.decide_g({66992: good}, debug=True)["row"] == "G-PASS"
     assert "decide_t" in _calls(RUNNER)
     assert "stage_t" in run.STAGE_FIELDS["gates"]
+
+
+def test_g_threads_pins_the_declared_thread_environment():
+    """G-threads (R17.29): the runner sets exactly the declared environment before
+    NumPy loads. OPENBLAS_NUM_THREADS = 16 is not a typo for 6: it is the owner ruling of
+    2026-09-29 (TASK-073), OpenBLAS's default of one thread per logical CPU on the 16-thread PC,
+    pinned so that it cannot drift, and carried unchanged by TASK-074, 075, 076 and C1-M."""
+    from embodied_jepa import wm_critic_v2 as wc
+
+    assert (
+        lm.THREAD_ENV
+        == pt.THREAD_ENV
+        == wc.THREAD_ENV
+        == {
+            "MKL_DYNAMIC": "FALSE",
+            "OMP_NUM_THREADS": "6",
+            "MKL_NUM_THREADS": "6",
+            "OPENBLAS_NUM_THREADS": "16",
+        }
+    )
+    tree = ast.parse(RUNNER.read_text())
+    first_numpy = min(
+        n.lineno
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Import | ast.ImportFrom)
+        and any(a.name.split(".")[0] == "numpy" for a in n.names)
+    )
+    updates = [
+        n
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "update"
+        and ast.unparse(n.func.value) == "os.environ"
+    ]
+    assert len(updates) == 1 and updates[0].lineno < first_numpy
+    assert ast.literal_eval(updates[0].args[0]) == lm.THREAD_ENV
+
+
+def test_the_stage_o_scale_probe_runs_the_readouts_on_its_synthetic_store(tmp_path):
+    """R17.28: ``oscale``'s synthetic featurisation has the real file layout, passes the
+    feature-file check and runs the readouts stage's own function (small sizes here)."""
+    from embodied_jepa import lewm_c1m_v2_offline as off
+
+    run = _runner()
+    files = run.synthetic_featurisation(tmp_path / "feat", {"train": 25, "val": 10})
+    assert off.verify_feature_files(tmp_path / "feat", files, ("train", "val"))["files"] == 14
+    roots = [json.loads((tmp_path / "feat" / f"roots_{s}.json").read_text()) for s in files]
+    assert roots == [list(range(25)), list(range(25, 35))]  # disjoint groups across splits
+    out = off.readouts_core(tmp_path / "feat", tmp_path / "fits", tau_commit_cm=1.0, probe=True)
+    assert out["rows"] == 35 and out["probe"] and out["decision"]["row"].startswith("O-")

@@ -1,28 +1,27 @@
 # Apple→Plate LeWM committed aim under C1-M: LeWM chooses the single place aim at 405 from the encoded current frame (TASK-077)
 
-**STATUS: DRAFT** (revision 2, after the independent review of #142 at `26894ca`, REQUEST
-CHANGES; rulings R17.15–R17.18; Stage 0 under R17.19). This is a draft preregistration. It is
-**not frozen**: no frozen-sha pin; the frozen block, manifest and stage code exist as DRAFT since
-Stage 0 (below). **No seed of K, D, S or the corpus has been simulated.**
-Before Stage 0, the only work done for it was a development GPU cost probe on synthetic features (§15), with no
-corpus, no rendered frame and no cohort seed. Every bar below is a proposal for the review. A bar
-whose value comes from K0 is written as a rule here and gets its value only in K0 (§7, step 2).
-The freeze follows the TASK-076 sequence: Stage 0 (code, frozen block, tests and smokes on debug
-seeds), then K0 on a reported GO, then the freeze, merged on an independent reviewer's reported
-APPROVE (§7).
+**STATUS: FROZEN** (after K0-PASS; R17.25–R17.29, decided by Claude under owner delegation).
+The frozen block is `src/embodied_jepa/lewm_c1m_v2.py`; its sha256
+**`f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d`** is pinned in
+`tests/test_lewm_c1m_v2.py` and in the manifest (`benchmarks/manifests/apple-lewm-c1m-v2.json`),
+with the manifest's file pins and this document's sha256. **The freeze takes effect when it is
+merged on an independent reviewer's reported APPROVE.** Each later stage still needs its own
+reported GO (§7).
 
-**Stage 0 (R17.19): done; still DRAFT.** The Stage-0 PR added the stage code, the DRAFT manifest
-(`benchmarks/manifests/apple-lewm-c1m-v2.json`; the frozen block is `src/embodied_jepa/lewm_c1m_v2.py`),
-the tests, the simulations of §8.4, the storage fix of §12 with its measured speed, the scale probe
-and smokes on the debug range 66900–66999 only. Its record is
-[apple_lewm_c1m_v2_stage0.md](apple_lewm_c1m_v2_stage0.md). Still no seed of K, D, S or the corpus
-has been simulated. K0 needs a separate reviewer GO. After the independent review of the
-Stage-0 PR (#143, REQUEST CHANGES at `0dea22b`), rulings R17.20–R17.24 changed §5.2, §7 and §10.3–§13.
+History. Revision 2 of the draft followed the independent review of #142 at `26894ca` (REQUEST
+CHANGES; R17.15–R17.18). Stage 0 (R17.19) added the stage code, the manifest, the tests, the
+simulations of §8.4, the storage fix of §12, the scale probe and smokes on the debug range
+66900–66999 only; its record is [apple_lewm_c1m_v2_stage0.md](apple_lewm_c1m_v2_stage0.md). The
+independent review of #143 (REQUEST CHANGES at `0dea22b`) led to R17.20–R17.24, and its APPROVE at
+`306fbdc` gave K0 its GO. **K0 ran once at `306fbdc` and ended K0-PASS** (§7.1): τ_commit =
+1.0 cm, N_K(0) = 32/32, r_K = 460. Its values are in the frozen block (`K0_MEASURED`). Two of
+them sit close to their bars, and this is disclosed in §7.1. K, a cohort of 32 resets, is the only
+cohort simulated. No seed of D, S or the corpus has been simulated.
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
   That row admits **only the drafting of a preregistration** (R16.13). This document is that
-  draft and nothing more.
+  preregistration, frozen after K0-PASS (R17.25).
 - **Rulings:** R17.1–R17.18 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-05 (b). Each is
   **decided by Claude under owner delegation (2026-09-30)**. They build on R9 (the design note,
   [apple_lewm_next_v2_design.md](apple_lewm_next_v2_design.md); the claim split R9.8 and the
@@ -35,8 +34,8 @@ Stage-0 PR (#143, REQUEST CHANGES at `0dea22b`), rulings R17.20–R17.24 changed
   [apple_lewm_planner_v2_results.md](apple_lewm_planner_v2_results.md)); TASK-076 for the
   protocol form, the freeze and the staged GO flow ([apple_plate_twin_v2.md](apple_plate_twin_v2.md)).
 
-The canonical status sentence (DECISIONS 2026-10-02, R7), verbatim. **This draft does not change
-it** (R17.14):
+The canonical status sentence (DECISIONS 2026-10-02, R7), verbatim. **This protocol does not
+change it** (R17.14):
 
 > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
 > (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an
@@ -445,7 +444,11 @@ a notice in chat before the gated stage.
      frozen block. About 350 attempts, about 10–15 min on 6 workers (*estimate* from C1-M's
      9.7 s maximum per attempt).
 3. **The freeze.** Status FROZEN and the frozen-block sha pin, merged on an independent
-   reviewer's reported APPROVE.
+   reviewer's reported APPROVE. **Prepared (R17.25)**: K0's values are in `K0_MEASURED`, the pin
+   is set, and the manifest pins the stage's files and this document. The pre-freeze items of the
+   #143 approval are settled: the feature-file check (R17.26), the determinism rule (R17.27), and
+   the scale probes of Stage O's readouts and Stage C (R17.28). The thread environment was checked
+   (R17.29). A non-debug `k0` is refused once FROZEN.
 4. **Stage C, the corpus (on a GO; CPU).** §4.3. Rows: CORPUS-ESCALATE (> 2 % excluded; escalate,
    no clause), CORPUS-SEALED. The sealed manifest's sha256 is checked by every later stage
    (R17.22): the runner requires it, and ties the artifacts to it. The featurise report must be
@@ -459,10 +462,15 @@ a notice in chat before the gated stage.
    before the first fit. Then O1, O3, O4 (§8.1), the learning curve, and the train-only fits used
    downstream: R-plate, H-sysid, R8, the normalisation moments and L-mean's mean latent (computed
    here and fixed; Stage T only reads it). Rows: O-ARM-KEYED, O-NO-BAR, O-PASS (§8.1).
-   **Before Stage O's GO (R17.24):** a scale probe of Stage O's readouts (1 750 roots, the
-   24 576-d and 98 304-d ridges, the train moments) and of Stage C's per-root cost, on synthetic
-   or debug data, sets their caps to at least 1.5 × the measured worst case; Stage 0 did not
-   measure them at scale.
+   **Before Stage O's GO (R17.24): done (R17.28, §10.3).** The scale probe of Stage O's readouts
+   ran on synthetic features at the real sizes (1 750 roots, the 24 576-d and 98 304-d ridges,
+   the train moments). Stage C's per-root cost was measured on debug seeds. Both caps are kept:
+   each is far above 1.5 × the measured worst case.
+   **Feature files (R17.26).** Every stage that reads Stage O's featurisation (readouts, train,
+   plan, gates) first hashes every file of each split it reads: the 8 × 8 store, the commands, the
+   roots, the hidden render, the 4 × 4 pool, the full tokens and the table. It compares them with
+   the featurise report's `files_sha256`. A missing, unrecorded or different file is V. The check
+   costs about 8 s for the 12 GB of the train and val splits (R17.28).
 6. **Stage T, training (on a GO; GPU, one `gpu_run.sh --wait` job per model: the two
    calibration runs and the six models, eight jobs).** The calibration (W and N, 66810), the budget rule, G1's bars and the truncation
    controls on val, then the six models. Rows: CAL-T-ESCALATE, T-DONE. No budget row (§4.5).
@@ -480,13 +488,76 @@ a notice in chat before the gated stage.
    (False-stop probabilities, exact binomial: W < 12/16 at a true rate of 0.875 is 0.041, at 0.9375
    is 0.002; H-final < 14/16 at 0.9375 is 0.074, at 0.969 is 0.012.)
 9. **Stage S, gated (on a reported GO after D-PASS; CPU).** Cohort S, every arm of §5 once per
-   reset, paired, with a determinism re-run of W on S's first four resets. **Its tolerance
-   (R17.21)** is declared and characterised: 0.1 cm on the R-plate reading and on the commit
-   target, more than 15 × the renderer noise Stage 0 saw (about 6e-5 m) and 10 × below τ_commit;
-   a committed reset whose re-run differs beyond it, or that commits in one run and not the
-   other, is V; a reset refused before 405 must be refused identically. Rows: §8.4.
+   reset, paired, with a determinism re-run of W on S's first four resets. **Its rule (R17.21,
+   amended by R17.27).** The R-plate reading of the 405 frame is gated at 0.1 cm: more than 15 ×
+   the renderer noise Stage 0 saw (about 6e-5 m), and 10 × below τ_commit. The success outcome
+   must also be the same in both runs. The commit target's difference is **reported, not gated**.
+   The target comes from an argmin over 147 candidates followed by a refinement that stops at
+   τ_commit/4. A renderer flake that meets a near-tie, or that stops the refinement one iterate
+   earlier, can therefore move the target by more than 0.1 cm with no difference in what W saw.
+   With the rule's contraction |κ| = 0.5, stopping at a move of 0.25 cm leaves the iterate within
+   about 0.25 cm of the fixed point, so two runs can end about 0.5 cm apart. The re-run is V in any
+   of these cases: a committed reset whose reading differs beyond 0.1 cm; a reset whose success
+   differs between the runs; a reset that commits in one run and not the other. A reset refused
+   before 405 must be refused identically. Rows: §8.4.
 10. **Results PR.** Every arm is reported, the privileged arms are labelled as not learned, and an
     independent reviewer checks every restated number.
+
+### 7.1 K0's result: K0-PASS (R17.25)
+
+K0 ran once, on the reviewer's reported GO (#143,
+<https://github.com/RaaSaaR-org/open-embodied-jepa/pull/143#issuecomment-5988386225>), at
+`306fbdc`, on a clean tree with the DRAFT frozen sha `89359ed3…5b12`. It ran on the CPU with
+6 workers and without the GPU lock. In-run G-tests passed (1990 passed, 37 skipped). G-repro
+passed 8 of 8 checks. There were no render disagreements. The run took 579 s. Load at the start
+was 0.22 / 0.49 (1- and 5-minute). Peak process-tree PSS was 8.0 GiB.
+- **Report:** `outputs/task077-k0-1/report.json` in the worktree
+  `/home/huhn/develop/emai/worktrees/task077-k0` (git-ignored), sha256
+  `9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235`. Its log is beside it.
+
+**τ_commit**: counted successes of 32 for H-final(commit)'s aim plus a planted error, on the same
+32 resets:
+
+| planted error (cm) | 0 | 0.5 | 1 | 1.5 | 2 | 3 |
+|---|---|---|---|---|---|---|
+| counted successes / 32 | 32 | 29 | 29 | 18 | 11 | 2 |
+| median landing miss (cm) | 0.09 | 0.75 | 1.49 | 2.24 | 2.98 | 4.49 |
+
+- **τ_commit = 1.0 cm**, equal to the C1-M record's value. It enters O1, O4 and G5 (a).
+- **The ceiling N_K(0) = 32/32.**
+- **r_K = 460**, so the frozen r = 465 stands.
+- **The history check.** At 405 the palm speed had median 0.00227 cm per step (maximum 0.024),
+  and m2 had median 0.00227 cm (maximum 0.020). A history-one predictor qualifies.
+- **No stop fired.** There were no refusals, the clip-binding fraction was 0 and there were no
+  fallbacks in any arm.
+
+**The proxies** (reported; privileged calculations, not the trained twins):
+
+| proxy | count / 32 | ceiling minus proxy (95 % interval) | McNemar feasibility at the ceiling / at W's bar |
+|---|---|---|---|
+| H-now | 0 | +32 [+32, +32] | — |
+| N-proxy | 13 | +19 [+14, +25] | — |
+| shuf-proxy | 10 | +22 [+17, +27] | 1.000 / 1.000 (b = 22 / 18, c = 0) |
+| mean-proxy | 15 | +17 [+11, +22] | 1.000 / 1.000 (b = 17 / 13, c = 0) |
+
+No scene-blind feasibility is below 0.8, so no known risk is disclosed on that ground. The
+proxies scored higher than in the C1-M record (8, 8 and 12 of 32 there). A higher proxy count is
+also what the trained twins could reach (§13).
+
+**Thin margins, disclosed (R17.25).** Each of these values passed its stop rule, but each is close
+to a bar:
+- **r_K = 460 against the frozen r = 465:** 5 steps of margin. If S's resets settle later than K's
+  did, W reads a plate that has not settled. That would lower every arm's success, including
+  H-final(commit). S-VOID-CEILING covers the condition's ceiling on S, but r is not re-measured.
+- **The 0.5 cm and 1.0 cm levels each sit only one success above the 28/32 bar (29/32).** Their
+  failures fall on disjoint resets (66013, 66014, 66017 and 66018, 66019, 66028). One more failure
+  at 1.0 cm would have made τ_commit = 0.5 cm. One more at 0.5 cm would have made it 0 cm. So
+  τ_commit = 1.0 cm is an upper reading of the tolerance on 32 resets, not a margin.
+- **What this means for G-bar.** G-bar is 56/64, which is 28/32. A W whose aim error sits at
+  about τ_commit would succeed at about 29/32 ≈ 0.906, by this curve. At that rate G-bar passes
+  with probability 0.86 (§8.4's power table), not with certainty.
+- **What this means for O1 and G5 (a).** Both use τ_commit = 1.0 cm as their bar. A τ_commit of
+  0.5 cm would have halved both bars.
 
 ## 8. Gates, bars and rows
 
@@ -682,7 +753,16 @@ secondary claim's test.
   and every pinned file match (including TASK-076's 84 pins and C1's and C1-M's code files).
 - **G-repro, G-anchor, G-threads, G-quiet** (TASK-076's: G-repro's eight facts; the DINOv2 anchor;
   pinned thread settings; 1- and 5-minute load ≤ 2.0 at start for CPU stages).
-- **G-split:** every fit used downstream (normalisation, W, N, R-plate, R8, H-sysid, L-mean's mean)
+  - **The pinned threads (R17.29).** They are `MKL_DYNAMIC=FALSE`, `OMP_NUM_THREADS=6`,
+    `MKL_NUM_THREADS=6` and **`OPENBLAS_NUM_THREADS=16`**.
+  - The 16 is not a typo for 6. It is the owner ruling of 2026-09-29 (TASK-073,
+    `wm_critic_v2.THREAD_ENV`): OpenBLAS's default of one thread per logical CPU on this 16-thread
+    PC, pinned so that it cannot drift.
+  - TASK-074, 075, 076 (including its K0) and C1-M ran with the same environment. K0 ran with it
+    as declared.
+  - A test checks that the runner sets exactly this environment before NumPy loads.
+- **G-split:** every featurisation file a stage reads matches the featurise report's sha256
+  (R17.26); every fit used downstream (normalisation, W, N, R-plate, R8, H-sysid, L-mean's mean)
   is fitted on train only; val only selects and calibrates; the gate split is read only by Stage G;
   the corpus manifest's sha matches. **The one declared exception:** Stage O's *admission*
   estimates (O1, O3, O4 and the learning curve) are cross-fitted over train + val roots (5 outer
@@ -699,9 +779,18 @@ secondary claim's test.
 
 ### 10.3 Caps (wall time; a cap is a V, never an escalation)
 
-Kept by Stage 0 (R17.19): each is at least 1.5 × the measured or scaled worst case
-([stage-0 record](apple_lewm_c1m_v2_stage0.md) §3–§4; Stage T's job worst case at the cap is
-27 700 s, so 46 800 s is 1.69 ×; Stage O's readouts and Stage C were not measured at scale):
+Kept by Stage 0 (R17.19) and by the pre-freeze probes (R17.28). Each is at least 1.5 × the
+measured or scaled worst case ([stage-0 record](apple_lewm_c1m_v2_stage0.md) §3–§4 and §7):
+- **Stage T:** the job worst case at the cap is 27 700 s, so 46 800 s is 1.69 ×.
+- **Stage O's readouts:** `readouts_core` at the real sizes took 98.9 s on synthetic features,
+  plus 7.9 s for the feature-file check, with a peak PSS of 2.96 GiB. The whole probe stage,
+  including G-tests, took 285 s. 7 200 s is 67 × the core.
+- **Stage C:** the worst case for 2 000 roots, scaled from 100 debug roots, is about 1 400 s. That
+  is 2 000 roots at the slowest attempt, 3.24 s per root on 6 workers, plus writing, the cohort
+  estimates, setup and G-tests. 14 400 s is 10 ×. Peak PSS was 8.46 GiB, against the 12 GiB
+  ceiling.
+
+The caps:
 K0 7 200 s; Stage C 14 400 s; Stage O featurisation 3 600 s and readouts 7 200 s; **each Stage T
 job 46 800 s** (13 h; one calibration run, or one W or N model: at most 100 000 updates, whose
 worst case without the Stage-0 storage fix is 30 000 s at 0.30 s per update, so the cap is
@@ -753,8 +842,8 @@ goal.
 
 | stage | estimate | basis |
 |---|---|---|
-| K0 | 10–15 min CPU | about 350 attempts; C1-M's attempts took 8.2 s median, 9.7 s maximum |
-| C | 45–60 min CPU (*estimate*) | 2 000 roots to step 467, 65 renders each; the C1-M run did 1 024 roots plus 224 look-ahead attempts in 39 min |
+| K0 | **9.7 min CPU, measured** (579 s) | 352 attempts plus G-tests and G-repro on 6 workers; attempts took about 4.2 s (proxies) to 8.2 s (look-ahead arms) median |
+| C | **about 20–23 min CPU, scaled from 100 debug roots (R17.28)** | 0.48 s of wall time per root on 6 workers (attempts 2.6 s median, 3.24 s maximum), plus the cohort estimates (3.6 s per 100 seeds), setup and G-tests; about 0.6 MB per root, 1.2 GB on disk. The draft's 45–60 min was an estimate |
 | O | 10–20 min GPU, 20–40 min CPU (*estimate*) | about 130 000 frames through DINOv2 on CUDA; ridges at 24 576-d by dual form |
 | T | **a scenario band, not bounds: about 7–10 h to about 32–43 h of GPU in eight jobs, with the Stage-0 storage fix, measured** (R17.19; up to about 58 h without it) | **Stage 0's scale probe** (Stage T's own code, synthetic features at the real sizes, two runs): 0.166–0.223 s per update median, 0.232–0.277 s at the 95th percentile, the slice gather 3.7 ms per batch in the prefetch thread. **Low end:** U = 10 000: 160 000 updates, about 7.4–9.9 h. **At the cap** U = 100 000: 700 000 updates, about 32–43 h (54 h at the 95th percentile). The draft's band (7–8 h to 31–33 h, from the probe's 0.161 s compute alone) is superseded. **Without the fix**, the probe's fancy-indexed gather (0.55 s for batch 64, about 0.14 s for batch 16) without overlap gives about 0.30 s per update and up to about 58 h at the cap; at U = 60 000, 22–38 h (460 000 updates at 0.17–0.30 s) |
 | G | 20–40 min CPU | 250 gate roots × 6 models × (true, wrong, zero) roll-outs on one CPU thread each (0.055 s per 60-step roll-out, §15) |
