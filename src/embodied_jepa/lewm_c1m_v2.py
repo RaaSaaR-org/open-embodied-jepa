@@ -56,6 +56,16 @@ CARRIED_CODE_FILES = (
     "src/embodied_jepa/lewm_next_c1m_runtime.py",
     "scripts/run_c1m_feasibility.py",
 )
+CARRIED_CODE_BLOBS = {  # git blob ids at CARRIED_CODE_REFERENCE (checked without history)
+    "src/embodied_jepa/lewm_next_c1.py": "ea988ad859184de021fd0841bb7333eebd1837e3",
+    "src/embodied_jepa/lewm_next_c1_runtime.py": "fb230410659391fe7ae1ee72054e42fc95df2eb6",
+    "scripts/run_c1_feasibility.py": "2084b13f8fc10552c5856b21c9d30931513e70f0",
+    "src/embodied_jepa/lewm_next_c1m.py": "11efc4bc184078e8eb726d2186f6c57d889ccedb",
+    "src/embodied_jepa/lewm_next_c1m_runtime.py": "0adf72dacdb2696f8a1457d32ab12feb40e75904",
+    "scripts/run_c1m_feasibility.py": "3d4d9f5ebfbd81c034191745fda11f00041c0335",
+}
+if tuple(CARRIED_CODE_BLOBS) != CARRIED_CODE_FILES:
+    raise ContractError("every carried code file has its recorded blob")
 TASK076_MANIFEST = "benchmarks/manifests/apple-plate-twin-v2.json"
 OWN_FILES = (
     "src/embodied_jepa/lewm_c1m_v2.py",
@@ -1347,6 +1357,7 @@ def frozen_block() -> dict:
             "stage0": STAGE0,
             "carried_code_reference": CARRIED_CODE_REFERENCE,
             "carried_code_files": CARRIED_CODE_FILES,
+            "carried_code_blobs": CARRIED_CODE_BLOBS,
             "task076_manifest": TASK076_MANIFEST,
             "own_files": OWN_FILES,
         }

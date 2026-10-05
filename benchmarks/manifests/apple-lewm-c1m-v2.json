@@ -89,6 +89,14 @@
    "T_job": 46800.0,
    "per_attempt": 300.0
   },
+  "carried_code_blobs": {
+   "scripts/run_c1_feasibility.py": "2084b13f8fc10552c5856b21c9d30931513e70f0",
+   "scripts/run_c1m_feasibility.py": "3d4d9f5ebfbd81c034191745fda11f00041c0335",
+   "src/embodied_jepa/lewm_next_c1.py": "ea988ad859184de021fd0841bb7333eebd1837e3",
+   "src/embodied_jepa/lewm_next_c1_runtime.py": "fb230410659391fe7ae1ee72054e42fc95df2eb6",
+   "src/embodied_jepa/lewm_next_c1m.py": "11efc4bc184078e8eb726d2186f6c57d889ccedb",
+   "src/embodied_jepa/lewm_next_c1m_runtime.py": "0adf72dacdb2696f8a1457d32ab12feb40e75904"
+  },
   "carried_code_files": [
    "src/embodied_jepa/lewm_next_c1.py",
    "src/embodied_jepa/lewm_next_c1_runtime.py",
@@ -1251,7 +1259,7 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "cd25d279fce2e29123fb42d8ef675bfadcc5eb6d7042e0dfca7736cf867cfb86",
+ "frozen_sha256": "a422fb83cb8a6871a502380f8da830971ea0de2e66d563b24f6f9647d6229f7a",
  "frozen_sha256_pin": null,
  "hashes": {},
  "note": "DRAFT until the freeze: no frozen-sha pin, no protocol-document sha and no file pins yet; the freeze (after a reported K0-PASS and an independent reviewer's APPROVE) sets frozen_sha256_pin, protocol_document_sha256 and hashes (the own files, the carried C1 and C1-M code files and TASK-076's 84 pins).",

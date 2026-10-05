@@ -168,7 +168,7 @@ def check_code(report: dict) -> None:
     TASK-077's own files are committed."""
     carried = {}
     for path in lm.CARRIED_CODE_FILES:
-        want = git("rev-parse", f"{lm.CARRIED_CODE_REFERENCE}:{path}")
+        want = lm.CARRIED_CODE_BLOBS[path]  # the blob at the reference, recorded
         got = git("hash-object", path)
         if want != got:
             raise lp.GuardError(f"G-hash: {path} differs from {lm.CARRIED_CODE_REFERENCE[:7]}")

@@ -57,18 +57,21 @@ def test_the_frozen_sha_pin_is_set_only_at_the_freeze():
 
 
 def test_carried_code_and_task076_pins_are_unchanged():
-    out = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", lm.CARRIED_CODE_REFERENCE],
-                         capture_output=True)  # fmt: skip
-    if out.returncode != 0:
-        pytest.skip("the carried-code reference is not in this clone")
-    for path in lm.CARRIED_CODE_FILES:
-        want = subprocess.check_output(
-            ["git", "-C", str(ROOT), "rev-parse", f"{lm.CARRIED_CODE_REFERENCE}:{path}"], text=True
-        ).strip()
+    for path, blob in lm.CARRIED_CODE_BLOBS.items():
         got = subprocess.check_output(
             ["git", "-C", str(ROOT), "hash-object", path], text=True
         ).strip()
-        assert want == got, path
+        assert got == blob, path
+    known = subprocess.run(
+        ["git", "-C", str(ROOT), "cat-file", "-e", lm.CARRIED_CODE_REFERENCE], capture_output=True
+    )
+    if known.returncode == 0:  # a full clone: the recorded blobs are the reference's
+        for path, blob in lm.CARRIED_CODE_BLOBS.items():
+            ref = f"{lm.CARRIED_CODE_REFERENCE}:{path}"
+            want = subprocess.check_output(
+                ["git", "-C", str(ROOT), "rev-parse", ref], text=True
+            ).strip()
+            assert want == blob, path
     from embodied_jepa import plate_twin_v2_harness as hz
 
     manifest = json.loads((ROOT / lm.TASK076_MANIFEST).read_text())
