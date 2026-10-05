@@ -72,7 +72,10 @@ the fix for its one repeat, with the frozen block unchanged. Stage C's repeat at
 CORPUS-SEALED (R17.35); Erratum 2026-10-05 (b) (R17.36–R17.39) corrects the bit-identity claim,
 records the featurisation scale probe, gates the determinism re-run's commit target at 0.6 cm and
 makes G-anchor check the frozen 256 frames, with the frozen block unchanged; its 0.6 cm gate is an
-amendment (R17.43). Stage O at `8721516` ended O-PASS (R17.40); R17.41–R17.45 prepare Stage T.**
+amendment (R17.43). Stage O at `8721516` ended O-PASS (R17.40); R17.41–R17.45 prepare Stage T.
+Stage T at `215fcce` completed the calibrations, the plan (T-PLANNED, U = 95 000) and W-66800;
+N-66800 ended V when the owner asked for a pause, and its one repeat, its last allowed attempt,
+needs R17.47's record and its own GO (R17.46–R17.48).**
 Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
@@ -696,6 +699,82 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
     result is summarised, and the `sysid.json` and file-name notes are in R17.42 and in
     `rebased()`'s docstring. That docstring is the runner's only change after `afaf50d`, where the
     scale re-probe and the determinism probe ran; the manifest re-pins the runner for it.
+
+- **R17.46–R17.48 — Stage T's interim record, the pause, and N-66800's V** (2026-10-06). The
+  pause was **the owner's instruction**, not a ruling. The record and R17.47–R17.48 are **decided
+  by Claude under owner delegation**. The protocol records them in §7.7. The frozen block is
+  unchanged (`f28e5e2c…548d`), and no bar, seed, salt, cap, ceiling or row changes. The runner,
+  the stage modules and the pinned test file are unchanged; the manifest re-pins the protocol
+  document only. **No result is claimed**: a validation loss is a selection criterion, not a
+  success measure, and no LeWM controller has run in closed loop under this protocol. R7 is
+  unchanged.
+  - **R17.46 — the record.**
+    - **The run.** Stage T started at `215fcce` on the reported GO (#147,
+      issuecomment-5993481678), from the clean worktree `task077-staget`, with the R17.45
+      driver. Its first step started at 11:26:04Z on 2026-10-05. Report sha256s (git-ignored,
+      in that worktree; not edited):
+      - tests `928277d3…e761`: TESTS-PASS, 2014 passed, 37 skipped;
+      - cal-W `2339f5f1…0cb8`: T-JOB-DONE, kept update 46 000 at val 0.372733 (last point
+        0.375754 at 50 000), checkpoint `5a2bbf6c…3b1c`;
+      - cal-N `42ad6cf8…4423`: T-JOB-DONE, kept update 38 000 at val 0.736775 (last point
+        0.804274), checkpoint `c1f4778e…3297`;
+      - plan `7c714760…7cdfb`: **T-PLANNED**, u_sat W 46 000 and N 38 000, U = 95 000 with a
+        selection every 4 750, no escalation, rank reference 0.254 (bars: rank 0.12, std
+        0.38), no clause;
+      - W-66800 `42195ded…757b`: T-JOB-DONE, 95 000 updates in 18 405 s, kept update 95 000 at
+        val 0.350399, checkpoint `891d2664…76b8`.
+      The full sha256s are in §7.7.
+    - **Disclosed.**
+      - **W-66800's `last_two_triggered` is true**: its minimum is its last point. By §4.5 the
+        flag never changes a budget or a row. It will be stated beside every W-versus-N
+        comparison of seed 66800.
+      - **The rank-4 truncation control misses G1's 0.12 rank bar by 0.0013** (ratio 0.119).
+        All three truncations fail G1, so the bar is not raised.
+    - **N-66800.** The driver started it automatically 23 s after W-66800 ended. It logged
+      update 4 750 (val 0.837403; not a result). The owner then asked for a pause after the
+      first model job, to free the shared GPU for another agent. The operator, the main session,
+      sent SIGTERM to the driver and `gpu_run.sh` at 22:20:41Z (00:20 CEST on 2026-10-06), and
+      the runner wrote **V** (`StageInterrupted: received SIGTERM`; report `bb2c442a…3355`; no
+      checkpoint).
+    - **By §10.1 the V voids N-66800 only.** The three completed jobs (cal-W, cal-N, W-66800) and the plan are kept. No
+      Stage T process has run since, and the GPU is free.
+  - **R17.47 — the cause and its prevention: the record that §10.1 requires for a non-code
+    cause.**
+    - **The cause.** It was an owner-requested pause, not a fault in the run. The R17.45 driver
+      chains every job, so a pause asked for after one job fell inside the next one, and a stop
+      signal is a V.
+    - **The prevention** changes `scripts/run_task077_staget.sh` (not hash-pinned). With no
+      option, an empty `KEPT` and no earlier attempt, it behaves as under R17.45. With the default
+      pins, a pinned step must be found and kept, so Stage T cannot restart from scratch.
+      - **A pause file** (`outputs/task077-staget.pause`) is checked before every step, and
+        `--stop-after STEP` stops after a named step. A pause therefore lands between jobs and
+        never interrupts one.
+      - **`--resume` / `--resume-from DIR` keeps completed steps.** It checks that each kept
+        job's checkpoint matches its report, and that the reports of cal-W, cal-N, plan and W-66800 match their
+        sha256s, which are pinned in the driver. A kept plan must come from the kept
+        calibrations. The G-tests record is kept only at HEAD.
+      - **A job with one V stops the driver unless `--repeat JOB` names it.** The repeat writes a
+        new folder (`task077-t-N-66800-2`); a V's folder is never reused. A second V of the same
+        job stops the driver as INCONCLUSIVE and refuses any further attempt. All of this is
+        checked before anything starts.
+      - **`--dry-run`** prints keep, run or stop and starts nothing.
+    - **Tests.** `tests/test_run_task077_staget.py` covers these with a fake runner. A read-only
+      dry run on the real reports kept the four steps and would put N-66800's repeat in `-2`.
+  - **R17.48 — what remains, and the rule that binds it.**
+    - **Five jobs remain** at U = 95 000: N-66800's repeat, then W/N-66801 and W/N-66802. At
+      W-66800's pace that is about 25.6 h of GPU in five slots.
+    - **N-66800's repeat is its last allowed attempt: a second V of N-66800, from any cause, a
+      pause included, ends TASK-077 as INCONCLUSIVE.**
+    - **Pauses use the pause file or `--stop-after`**, never a signal to a running job (nor to
+      a `gpu_run.sh` waiting for the lock); the operator removes the file before resuming.
+    - **A preflight guard failure is a V too**, so before the repeat's GO the operator confirms
+      the preconditions: a TESTS-PASS record at the new revision, a clean tree, at least 8 GiB of
+      GPU memory free, and room for the 18 GiB PSS ceiling (§7.7).
+    - **The repeat runs from a fresh worktree of this PR's merge commit**, with its own G-tests
+      record, `--resume-from` the old worktree's `outputs/` and `--repeat N-66800` (the full
+      command is in §7.7). The training code is byte-identical to the kept jobs'.
+    - **It runs only after** this PR is merged, a reported GO names that command, and the owner
+      gives the go-ahead for the GPU. Nothing has been launched.
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 

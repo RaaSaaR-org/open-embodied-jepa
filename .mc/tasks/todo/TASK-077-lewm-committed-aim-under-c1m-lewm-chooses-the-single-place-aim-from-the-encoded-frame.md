@@ -19,7 +19,7 @@ depends_on:
 - "[[TASK-076]]"
 due_date: ''
 created: 2026-10-05
-updated: 2026-10-05
+updated: 2026-10-06
 ---
 
 # LeWM committed aim under C1-M: LeWM chooses the single place aim from the encoded frame
@@ -41,7 +41,7 @@ L-mean, and a random choice. "LeWM needed" is reported only and not expected.
 
 **The protocol (FROZEN after K0-PASS, R17.25; in force once merged on an independent APPROVE):**
 [`docs/experiments/apple_lewm_c1m_v2.md`](../../../docs/experiments/apple_lewm_c1m_v2.md).
-Rulings R17.1–R17.45 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
+Rulings R17.1–R17.48 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
 owner delegation (2026-09-30). The plan is `docs/PLAN.md`.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. This task does not
@@ -146,3 +146,16 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   T-PLANNED required after each step), tested with a fake runner and `gpu_run.sh`; the
   determinism probe's limits added to PLAN.md and this log; `sysid.json` noted as existence-checked,
   not read.
+- 2026-10-06: Stage T record and pause (R17.46–R17.48, protocol §7.7, branch
+  `docs/task077-staget-pause`). Stage T started at `215fcce` on the GO
+  (#147, issuecomment-5993481678) in worktree `task077-staget`. tests TESTS-PASS (`928277d3…e761`);
+  cal-W T-JOB-DONE (kept 46 000, val 0.372733; `2339f5f1…0cb8`); cal-N T-JOB-DONE (kept 38 000,
+  0.736775; `42ad6cf8…4423`); plan T-PLANNED (u_sat 46 000 / 38 000, U = 95 000, every 4 750; rank
+  reference 0.254; `7c714760…7cdfb`); W-66800 T-JOB-DONE (95 000 updates, 18 405 s, kept 95 000,
+  0.350399, `last_two_triggered` true; `42195ded…757b`). N-66800 was started automatically by the
+  driver and stopped by SIGTERM at the owner's request to pause and free the GPU (22:20:41Z):
+  **V**, report `bb2c442a…3355`, voiding that job only. Prevention (R17.47): the driver's pause
+  file, `--stop-after`, resume mode with sha256 checks of kept jobs, `--repeat` into a new folder
+  (`-2`), and a refusal after a second V; tested with a fake runner. Five jobs remain (about
+  25.6 h). N-66800's repeat is its last; a second V ends TASK-077 INCONCLUSIVE. Nothing has been
+  launched; the owner wants the GPU free. No result is claimed.

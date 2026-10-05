@@ -32,6 +32,11 @@ finds Stage O's fits from another worktree; W's CPU roll-out measured bit-identi
 processes (debug and random-init models, synthetic commands, 4 debug roots); Stage T's scale
 re-probed at 50 kept states; the eight jobs run from a committed driver script that checks each
 step's outcome (R17.45).
+**Stage T started at `215fcce`** (§7.7, R17.46–R17.48): the calibration jobs, the plan
+(T-PLANNED, U = 95 000) and W-66800 completed. N-66800 ended **V** when the operator stopped it
+at the owner's request, to pause Stage T and free the shared GPU. That V voids N-66800 only. Its
+one repeat, its last allowed attempt, needs §7.7's record of the cause and its prevention, merged,
+and its own GO. Five jobs remain; nothing has been launched since the pause.
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
@@ -999,6 +1004,157 @@ also passes `--tests-record outputs/task077-t-tests-1/report.json`; every step w
   `sysid.json` must exist in `--fits` but is not read: H-sysid's coefficients come from the
   O-PASS readouts report itself, so it carries no sha256 check (R17.45).
 - Stage T's row T-DONE is decided in Stage G's report, which reads all eight jobs (R17.24).
+
+### 7.7 Stage T's interim record and the pause; N-66800's V and its prevention (R17.46–R17.48)
+
+Recorded by Claude under owner delegation (DECISIONS 2026-10-05 (b), R17.46–R17.48). The pause
+itself was the owner's instruction, not a ruling. The frozen block and its sha256 `f28e5e2c…548d`
+are unchanged, and no bar, seed, salt, cap, ceiling or row changes. The runner, the stage modules
+and the test file the manifest pins are unchanged; the manifest re-pins this document only. **No
+Stage T result is claimed here.** A validation loss is a selection criterion, not a success
+measure, and no LeWM controller has run in closed loop under this protocol.
+
+**The run (R17.46).** Stage T started at `215fcce` on the reviewer's reported GO
+(<https://github.com/RaaSaaR-org/open-embodied-jepa/pull/147#issuecomment-5993481678>, 11:25:50Z),
+from the fresh clean worktree `/home/huhn/develop/emai/worktrees/task077-staget`, with the GO's
+command `env -u C -u CS -u F -u R -u SUFFIX -u PY -u GPU_RUN bash scripts/run_task077_staget.sh`
+(the R17.45 driver). The first step started at 11:26:04Z (13:26 CEST). The reports are in that
+worktree (git-ignored) and are not edited. All times below are UTC; the job logs print local
+time (CEST, UTC + 2).
+
+| step | outcome | span (UTC) | report sha256 |
+|---|---|---|---|
+| tests | TESTS-PASS (2014 passed, 37 skipped, clean tree, at `215fcce`) | 10-05 11:26:04–11:28:39 | `928277d365522ef5a372cc44074c41c8a5bf76955294495843ea140fe17ae761` |
+| cal-W (W, 66810, 50 000 updates) | T-JOB-DONE | 11:28:41–14:03:42 | `2339f5f1dc4447af6c04a7ea40e9d22708aec849bece080c57d5301a7e270cb8` |
+| cal-N (N, 66810, 50 000 updates) | T-JOB-DONE | 14:03:47–16:43:37 | `42ad6cf892f14c6338608d3d9b148eff34db8e797892a98ac5d46ce08e984423` |
+| plan | **T-PLANNED** | 16:43:40–16:47:26 | `7c7147601c156a793c238e34d00ee74e9855f29d19e4ee0d653882335d67cdfb` |
+| W-66800 (95 000 updates) | T-JOB-DONE | 16:47:28–21:54:13 | `42195ded1ac1c41a77ed0b47e2031e4066f9bc2c2a61637ea5aa17f08e05757b` |
+| N-66800 | **V** (`StageInterrupted: received SIGTERM`) | 21:54:36–22:20:42 | `bb2c442a3a610ea89c10ad22d089a58b3d27d9e6df22d2c02a16b9f3a7ec3355` |
+
+- **The calibration jobs.** The kept checkpoint is `select_checkpoint(curve, 0.01)`, the earliest
+  point within 1 % of the curve's minimum (§4.4).
+  - cal-W kept update 46 000 (val criterion 0.372733; raw argmin 47 000; last point 0.375754 at
+    50 000). Checkpoint `W-66810.pt`, sha256
+    `5a2bbf6cba68ae3f3cd74502d76f1f9646a0fa48d389a0291d23f75d0c7b3b1c`.
+  - cal-N kept update 38 000 (0.736775; raw argmin 38 000; last point 0.804274 at 50 000).
+    Checkpoint `N-66810.pt`, sha256
+    `c1f4778eee7bee6dc3030decdfb28d5634e43bd542411c077740ddacf26c3297`.
+  - Neither job was flagged by `last_two_triggered`.
+- **The plan.** u_sat(W) = 46 000 and u_sat(N) = 38 000, so 2 × 46 000 = 92 000 and **U = 95 000
+  updates, a selection every 4 750** (20 points). U is below the 100 000 cap, so nothing escalates
+  (no budget row exists, §4.5). G1's calibrated bars come from cal-W on val at h = 60: the rank
+  reference is **0.254** (effective rank 6.55 predicted against 25.77 encoded), above the 0.10
+  CAL-T-ESCALATE floor, so the rank bar is 0.12 (its floor 0.10); the std reference is 0.774, so
+  the std bar is 0.38 (its floor 0.25). The rank-1, 2 and 4 truncations of cal-W's val
+  predictions all fail G1 (i)–(ii), so the bar is not raised (`bar_raised` false). Their rank
+  ratios are 0.039, 0.077 and 0.119. **The rank-4 truncation misses the 0.12 bar by only
+  0.0013** (its std ratio, 0.692, would pass), a thin margin disclosed now. Row T-PLANNED; the
+  clause does not fire.
+  G-quiet read 0.90 / 1.88 at the start (bar 2.0), and the in-run G-tests passed (2014 passed).
+- **W-66800.** 95 000 updates in 18 405 s, about 5.1 h (median 0.172 s per update, 95th
+  percentile 0.242 s). It kept update 95 000 (val criterion 0.350399), which is also the raw
+  argmin. Checkpoint `W-66800.pt`, sha256
+  `891d26640e82ab8fce62c32b7d4a7a9eba99ae1babb8614777c668fe498876b8`.
+  - **Disclosed: `last_two_triggered` is true for W-66800.** Its minimum is the curve's last
+    point (0.362693 at 90 250, then 0.350399 at 95 000), so by the saturation flag the curve may
+    still have been falling at U.
+  - By §4.5 the flag never raises a budget and never changes a row; §4.5's reporting duty is
+    written for an N model. It is recorded here and will be stated beside every W-versus-N
+    comparison of seed 66800 in Stage G's record and the results document. That a W can be
+    unsaturated at U was not foreseen in the plan (U is twice the calibration's saturation).
+- **Resources.** Peak process-tree PSS 13.11, 13.17 and 13.15 GiB for the three completed GPU
+  jobs, against the 18 GiB ceiling. Torch's GPU peak was 5.48 GiB allocated and 6.45 GiB
+  reserved in every job. The lock log (`~/.local/state/gpu/oej-gpu_run.log`) has each job's start
+  and end; each started with 15 612 MiB of 16 303 MiB free.
+
+**N-66800's V and the pause (R17.46).** The driver started N-66800 automatically 23 s after
+W-66800 ended (lock start 21:54:36Z). It logged update 4 750 with val criterion 0.837403 at
+22:12:43Z (its first of 20 selection points; not a result). The owner then asked for a pause
+after the first model job, to free the shared GPU for another agent ("lets do a pause after that
+first run ... lets free the gpu, so other agent can use it"). The operator, the main session,
+sent SIGTERM to the driver and to `gpu_run.sh` at 22:20:41Z (00:20 CEST, 2026-10-06). The runner
+caught it and wrote outcome **V** (`void_reason` `StageInterrupted: received SIGTERM (SIGTERM)`,
+1 566 s). It saved no checkpoint. The lock was released at 22:20:44Z (`status 1 after 1568 s`).
+No Stage T process has run since, and the GPU is free.
+- **Under §10.1 the V voids N-66800 only.** cal-W, cal-N, plan and W-66800 are complete; their
+  reports, checkpoints and sha256s are intact and they are kept. The driver checks them on resume
+  (R17.47).
+- **N-66800 has one repeat left.** It needs this record of the cause and its prevention
+  (a non-code cause, §10.1), merged, and its own reported GO.
+
+**The cause and its prevention (R17.47).** **The cause was not a fault in the run.** The owner
+asked for a pause after the first model job. The R17.45 driver chains every job with no point at
+which it can stop between jobs, so it had already started the next one, N-66800, by the time the
+pause was carried out. A stop signal is a V by §10.1, so the pause voided a job that had barely
+begun. The prevention changes the driver
+`scripts/run_task077_staget.sh` (a development helper, not hash-pinned). With no option, an
+empty `KEPT` and no earlier attempt, it behaves as under R17.45. With its default `KEPT` (the four
+pins below), a step pinned there must be found and kept, so neither a plain run nor `--resume`
+without `--resume-from` can start Stage T again from scratch (the #148 review).
+- **A pause file.** If `outputs/task077-staget.pause` exists when a step is about to start, the
+  driver exits 0 before that step and starts nothing. `touch outputs/task077-staget.pause`
+  therefore pauses between jobs, never inside one; a job that has started runs to its end.
+  `--stop-after STEP` stops cleanly after a named step. The driver never removes the file: the
+  operator runs `rm outputs/task077-staget.pause` before resuming. **Killing a job that holds the
+  lock is a V of that job.** Stopping `gpu_run.sh` while it waits for the lock is not a safe
+  pause either, because it can take the lock as it is being stopped; the pause file is the way to
+  pause.
+- **Resume mode** (`--resume`, `--resume-from DIR`). A step whose earlier attempt ended as
+  required is kept, not re-run. A kept job's checkpoint must exist beside its report with the
+  recorded sha256. The reports of cal-W, cal-N, plan and W-66800 are pinned by their sha256 in the driver. A kept plan
+  must have been made from the kept calibration reports. The G-tests record is kept only from
+  the worktree's own `outputs/` and only at HEAD.
+- **The repeat.** A job with one V stops the driver unless `--repeat JOB` names it. The repeat
+  then writes a **new folder with the next run number** (`task077-t-N-66800-2`); a V's folder is
+  never reused. A second V of the same job stops the driver with "TASK-077 ends INCONCLUSIVE",
+  and nothing more runs. Any other earlier outcome, a folder without a report, or an earlier
+  CAL-T-ESCALATE also stops it. A search folder named twice is searched once. All of this is
+  checked before the G-tests record or any job starts.
+- **`--dry-run`** resolves every step and prints keep, run or stop; it starts nothing.
+- **Tested.** `tests/test_run_task077_staget.py` runs the driver with a fake runner and a fake
+  `gpu_run.sh`. It covers the R17.45 cases unchanged and adds these: a resume keeps the completed
+  jobs and repeats the V job in `-2`; a V without `--repeat` stops; a second V stops as
+  INCONCLUSIVE and refuses a third attempt; a changed checkpoint, a report that differs from its
+  pin, or a plan made from another calibration stops the resume; the pause file stops between
+  jobs and a resume continues; `--stop-after` and `--dry-run` work; bad arguments are refused.
+- **Checked on the real reports (read only).** A dry run from this PR's worktree,
+  `--resume-from /home/huhn/develop/emai/worktrees/task077-staget/outputs --repeat N-66800
+  --dry-run`, kept cal-W, cal-N, plan and W-66800 (each report's sha256 matched its pin; each
+  checkpoint matched its report; the plan matched both calibrations). It would run the G-tests
+  record, then N-66800 into `task077-t-N-66800-2`, then W and N of 66801 and 66802 into `-1`.
+  Without `--repeat` it stops at N-66800.
+
+**What is left, and the rule that binds it (R17.48).** Five jobs remain: **N-66800's repeat (its
+last allowed attempt)**, then W-66801, N-66801, W-66802 and N-66802, each at U = 95 000 with the
+kept plan. At W-66800's 18 405 s each, that is about **25.6 h of GPU** (five slots of about 5.1 h;
+the 46 800 s cap per job is unchanged).
+- **A second V of N-66800 ends TASK-077 as INCONCLUSIVE** (§10.1), whatever its cause, a pause
+  included. A first V of any other job voids only that job and leaves it one repeat, after its own
+  record.
+- **Pauses from now on** use the pause file or `--stop-after`, never a signal to a running job.
+- **A preflight failure is a V too.** The runner turns every guard failure into V, including
+  G-tests, G-memory and the GPU guard at a job's start. A guard failure at the start of
+  N-66800's repeat would therefore be its second V. Before that GO, the operator confirms the
+  following: the new worktree's G-tests record is TESTS-PASS at `M`, the tree is clean, nothing
+  else holds GPU memory (at least 8 GiB free), the machine's other jobs leave room for the
+  18 GiB PSS ceiling, and no pause file is left in the new worktree.
+- **The command a GO would name.** `M` is this PR's merge commit. First make a fresh worktree:
+  `scripts/new_worktree.sh /home/huhn/develop/emai/worktrees/task077-staget2 --run --from M`.
+  Then run, from its root:
+  `env -u C -u CS -u F -u R -u SUFFIX -u PY -u GPU_RUN -u REV -u KEPT -u PAUSE_FILE bash
+  scripts/run_task077_staget.sh --resume-from
+  /home/huhn/develop/emai/worktrees/task077-staget/outputs --repeat N-66800`.
+  - The new worktree writes its own G-tests record at `M`, because G-tests checks HEAD. The
+    repeat runs at `M` "from scratch at the fix's revision on the same seeds, in a new output
+    directory" (§10.1).
+  - The runner, the stage modules, the training module and the frozen block are byte-identical
+    at `215fcce` and at `M`, so the repeat and the later jobs train with the same code as the
+    kept jobs. Only the recorded protocol-document sha256 differs, as it has between stages.
+  - The old worktree `task077-staget` is read only, and is not removed until Stage G has read
+    its jobs.
+- **When it runs is the owner's decision.** The owner wants the GPU left free now. The repeat
+  needs this PR merged, a reported GO naming the command above, and the owner's go-ahead for the
+  GPU. Nothing has been launched.
 
 ## 8. Gates, bars and rows
 
