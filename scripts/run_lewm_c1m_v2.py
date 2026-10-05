@@ -447,7 +447,8 @@ def arm_summary(records) -> dict:
 
 
 def open_pool(report, args, config: dict):
-    workers = int(args.workers or lm.SIM_WORKERS)
+    default = lm.WM_WORKERS if args.stage in ("gates", "closed") else lm.SIM_WORKERS
+    workers = int(args.workers or default)
     report["workers"] = workers
     return Pool(workers, {"torch_threads": lm.WORKER_TORCH_THREADS} | config)
 
@@ -894,7 +895,8 @@ def stage_gates(report, args, fields: Fields, manifest) -> str:
     config = model_config(args, primary)
     config.pop("_sysid_coef")
     config |= {"torch_threads": 1, "p3_checkpoint": hz.p3_checkpoint(Path(args.evidence))}
-    pool = Pool(int(args.workers or lm.SIM_WORKERS), config)
+    pool = Pool(int(args.workers or lm.WM_WORKERS), config)
+    report["workers"] = int(args.workers or lm.WM_WORKERS)
     try:
         targets = [np.asarray(t) for t in table["target"]]
         tasks = [

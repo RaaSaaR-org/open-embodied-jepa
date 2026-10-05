@@ -766,6 +766,8 @@ DISK_MIN_GIB = 10.0
 DISK_MIN_START_GIB = {"C": 25.0, "O": 25.0}
 GPU = {"min_free_gib": 8.0, "who": "oej:task077-<stage>", "require_lock": True}
 SIM_WORKERS = pt.SIM_WORKERS  # 6
+WM_WORKERS = 4  # stages whose workers load a world model (G, D, S): about 1.7 GiB PSS each
+# (Stage 0's debug D and S with 6 workers tripped the 12 GiB ceiling; TASK-073/074's H_WORKERS)
 WORKER_TORCH_THREADS = 1
 THREAD_ENV = pt.THREAD_ENV
 QUIET_MACHINE = pt.QUIET_MACHINE
@@ -1301,6 +1303,7 @@ def frozen_block() -> dict:
             "disk_min_start_gib": DISK_MIN_START_GIB,
             "gpu": GPU,
             "sim_workers": SIM_WORKERS,
+            "wm_workers": WM_WORKERS,
             "worker_torch_threads": WORKER_TORCH_THREADS,
             "thread_env": THREAD_ENV,
             "quiet_machine": QUIET_MACHINE,

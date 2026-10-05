@@ -1207,9 +1207,10 @@
    "stage_t": "each of Stage T's eight jobs is voided and repeated on its own; completed jobs with intact reports, checkpoints and sha256s are kept; a second V of the same job ends TASK-077 INCONCLUSIVE; the budget rule runs only after both calibration jobs complete",
    "void": "any guard, crash, cap, stop signal or CUDA allocation failure makes a stage V; its report is kept with its sha256 and the cause disclosed"
   },
+  "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "829ec7b90d39e1fc8bd5a85115836d95f913eb691f0843a4a2b2d860a0c4efe8",
+ "frozen_sha256": "5e526b0d3cf0ed0698f1a02366845a50e3560de3f803b86a4e5aeea73acdf9b4",
  "frozen_sha256_pin": null,
  "hashes": {},
  "note": "DRAFT until the freeze: no frozen-sha pin, no protocol-document sha and no file pins yet; the freeze (after a reported K0-PASS and an independent reviewer's APPROVE) sets frozen_sha256_pin, protocol_document_sha256 and hashes (the own files, the carried C1 and C1-M code files and TASK-076's 84 pins).",
