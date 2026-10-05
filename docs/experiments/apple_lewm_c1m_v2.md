@@ -27,9 +27,11 @@ that Stage O's GO needed, gates the determinism re-run's commit target at a deri
 makes G-anchor check the frozen 256 frames. It re-pins the changed files and this document; the frozen block and its sha256 are unchanged. Its 0.6 cm gate (R17.38) is a post-freeze **amendment**, a tightening, not an erratum (R17.43).
 **Stage O ran once at `8721516` and ended O-PASS** (§7.5, R17.40): c_plate 0.404 cm
 [0.385, 0.417] against τ_commit = 1.0 cm; two command and report anomalies are disclosed
-(R17.41). **Before Stage T's GO** (§7.6, R17.41–R17.44): the runner records peak GPU memory and
+(R17.41). **Before Stage T's GO** (§7.6, R17.41–R17.45): the runner records peak GPU memory and
 finds Stage O's fits from another worktree; W's CPU roll-out measured bit-identical across
-processes; Stage T's scale re-probed at 50 kept states; the eight job commands are written out.
+processes (debug and random-init models, synthetic commands, 4 debug roots); Stage T's scale
+re-probed at 50 kept states; the eight jobs run from a committed driver script that checks each
+step's outcome (R17.45).
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
@@ -829,9 +831,9 @@ not repeated.
   The runner now records `gpu_memory` (torch's `max_memory_allocated` and
   `max_memory_reserved`) for every GPU stage, a V included (R17.41).
 
-### 7.6 Before Stage T's GO: fixes, the #146 approval's two items, and the Stage T plan (R17.41–R17.44)
+### 7.6 Before Stage T's GO: fixes, the #146 approval's two items, and the Stage T plan (R17.41–R17.45)
 
-Decided by Claude under owner delegation (DECISIONS 2026-10-05 (b), R17.41–R17.44). Code, tests,
+Decided by Claude under owner delegation (DECISIONS 2026-10-05 (b), R17.41–R17.45). Code, tests,
 a development probe and this document change. The frozen block and its sha256 `f28e5e2c…548d` are
 unchanged, and no bar, seed, salt, cap, ceiling or row changes. The manifest re-pins the runner,
 the tests and this document.
@@ -850,7 +852,9 @@ the tests and this document.
   (a V). The runner now finds each fit by its file name in the folder `--fits` names, and each
   job's checkpoint beside the job's report. Every sha256 check is unchanged: the moments, R8,
   R-plate and the mean latent are still checked against Stage O's recorded sha256s, and every
-  checkpoint against its job's. Checked on the real Stage O artifacts from this PR's worktree
+  checkpoint against its job's. `sysid.json` is only required to exist (it has no recorded
+  sha256 and is not read; H-sysid's coefficients come from the O-PASS report), and the lookup
+  keeps only the file name, which suits the flat `fits/` and job folders (R17.45). Checked on the real Stage O artifacts from this PR's worktree
   (read only): the chain resolved to the `task077-stageo` worktree's `fits/` folder, verified the
   14 train and val feature files (12.1 GB) in 11.4 s, and the moments (`5415eea4…`), R8, R-plate
   and the mean latent all matched.
@@ -949,54 +953,51 @@ store was removed. Nothing changed the per-update cost.
   Each job holds the shared lock only for itself, so the V2D queue and other agents get the GPU
   between jobs (`--wait` queues on the flock; `--board` shows the holder).
 
-**The Stage T commands a GO would name** (R17.44). `M` is this PR's merge commit. From a fresh
-clean worktree of `M`, made with `scripts/new_worktree.sh
-/home/huhn/develop/emai/worktrees/task077-staget --run --from M`, run from its root as one script
-(`bash -u`), with no edit in the worktree while any job runs:
+**The Stage T commands a GO would name** (R17.44, revised by R17.45 after the #147 review). `M`
+is this PR's merge commit. From a fresh clean worktree of `M`, made with `scripts/new_worktree.sh
+/home/huhn/develop/emai/worktrees/task077-staget --run --from M`, run from its root, with no edit
+in the worktree while any job runs:
 
 ```sh
-C=/home/huhn/develop/emai/worktrees/task077-corpus2/outputs/task077-corpus-2/corpus
-CS=ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb
-F=/home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-featurise-1/features
-R=/home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-readouts-1/fits
-T=outputs/task077-t-tests-1/report.json
-
-# 0. the G-tests record at M (CPU, no lock)
-uv run --no-sync python scripts/run_lewm_c1m_v2.py tests --output outputs/task077-t-tests-1 \
-  --log outputs/task077-t-tests-1.log
-
-# 1-2. the calibration jobs (GPU, one slot each)
-for job in cal-W cal-N; do
-  scripts/gpu_run.sh --wait --min-free-gib 8 --board --who oej:task077-staget-$job -- \
-    uv run --no-sync python scripts/run_lewm_c1m_v2.py train --job $job \
-      --output outputs/task077-t-$job-1 --tests-record $T \
-      --corpus $C --corpus-sha256 $CS --features $F --fits $R \
-      --log outputs/task077-t-$job-1.log </dev/null || exit 1
-done
-
-# 3. the plan (CPU, no lock; G-quiet, in-run G-tests): the budget, G1's bars, CAL-T-ESCALATE
-uv run --no-sync python scripts/run_lewm_c1m_v2.py plan --output outputs/task077-t-plan-1 \
-  --corpus $C --corpus-sha256 $CS --features $F --fits $R \
-  --cal-w outputs/task077-t-cal-W-1/report.json --cal-n outputs/task077-t-cal-N-1/report.json \
-  --log outputs/task077-t-plan-1.log || exit 1
-# continue only if outputs/task077-t-plan-1/report.json ends T-PLANNED
-
-# 4-9. the six models (GPU, one slot each), only after T-PLANNED
-for job in W-66800 N-66800 W-66801 N-66801 W-66802 N-66802; do
-  scripts/gpu_run.sh --wait --min-free-gib 8 --board --who oej:task077-staget-$job -- \
-    uv run --no-sync python scripts/run_lewm_c1m_v2.py train --job $job \
-      --plan outputs/task077-t-plan-1/report.json \
-      --output outputs/task077-t-$job-1 --tests-record $T \
-      --corpus $C --corpus-sha256 $CS --features $F --fits $R \
-      --log outputs/task077-t-$job-1.log </dev/null || exit 1
-done
+bash scripts/run_task077_staget.sh
 ```
 
-- Each job must end T-JOB-DONE; a non-zero exit stops the chain (a V is repeated per job, only
-  after a recorded fix). `plan` must end T-PLANNED; CAL-T-ESCALATE stops Stage T and escalates.
+`scripts/run_task077_staget.sh` (a committed development helper, not hash-pinned) runs under
+`set -euo pipefail` and checks each step's report **outcome**, not only its exit status, before
+the next step starts:
+
+| step | command (runner stage) | GPU | must end |
+|---|---|---|---|
+| 0 | `tests --output outputs/task077-t-tests-1` | no lock | TESTS-PASS |
+| 1–2 | `train --job cal-W`, `train --job cal-N` | one `gpu_run.sh --wait --min-free-gib 8 --board --who oej:task077-staget-<job>` slot each | T-JOB-DONE |
+| 3 | `plan --cal-w … --cal-n …` | no lock (G-quiet, in-run G-tests) | **T-PLANNED** |
+| 4–9 | `train --job W-66800`, `N-66800`, `W-66801`, `N-66801`, `W-66802`, `N-66802`, each with `--plan outputs/task077-t-plan-1/report.json` | one slot each | T-JOB-DONE |
+
+Every `train` and `plan` step passes `--corpus` (the sealed corpus in `task077-corpus2`),
+`--corpus-sha256 ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb`, `--features
+/home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-featurise-1/features` and `--fits
+/home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-readouts-1/fits`; each GPU job
+also passes `--tests-record outputs/task077-t-tests-1/report.json`; every step writes
+`outputs/task077-t-<step>-1/` and a sibling `.log`.
+
+- **Why the outcome check (R17.45, the #147 review's blocking finding).** The runner exits 0 for
+  every row except V, so `plan` exits 0 on **CAL-T-ESCALATE**. A script that only checked exit
+  statuses would have started `W-66800`, which would take the lock, pass `gpu_guard` and then
+  end V on the plan check, leaving a spurious V under the per-job void rule. The script stops
+  instead, before any model job takes the lock. Likewise a `tests` step that does not end
+  TESTS-PASS stops the script before `cal-W` takes the lock.
+- **Tested.** `tests/test_run_task077_staget.py` runs the script with a fake runner and a fake
+  `gpu_run.sh`: the eight jobs run in order, each through `gpu_run.sh --wait --min-free-gib 8
+  --board`; CAL-T-ESCALATE stops it after `plan` with no model job started; a V or any other
+  outcome at `tests`, a calibration job or a model job stops it there.
+- Each job must end T-JOB-DONE; any other outcome or a non-zero exit stops the chain (a V is
+  repeated per job, only after a recorded fix and under its own GO, §10.1). CAL-T-ESCALATE stops
+  Stage T and escalates.
 - One `tests` record serves every job: G-tests for a GPU job checks that its revision is HEAD
   and that it finished after HEAD's commit time.
 - The two Stage O folders and the corpus are read, never written; the jobs check their sha256s.
+  `sysid.json` must exist in `--fits` but is not read: H-sysid's coefficients come from the
+  O-PASS readouts report itself, so it carries no sha256 check (R17.45).
 - Stage T's row T-DONE is decided in Stage G's report, which reads all eight jobs (R17.24).
 
 ## 8. Gates, bars and rows

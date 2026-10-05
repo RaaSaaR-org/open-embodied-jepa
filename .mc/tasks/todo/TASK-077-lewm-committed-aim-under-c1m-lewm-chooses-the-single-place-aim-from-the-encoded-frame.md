@@ -41,7 +41,7 @@ L-mean, and a random choice. "LeWM needed" is reported only and not expected.
 
 **The protocol (FROZEN after K0-PASS, R17.25; in force once merged on an independent APPROVE):**
 [`docs/experiments/apple_lewm_c1m_v2.md`](../../../docs/experiments/apple_lewm_c1m_v2.md).
-Rulings R17.1–R17.44 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
+Rulings R17.1–R17.45 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
 owner delegation (2026-09-30). The plan is `docs/PLAN.md`.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. This task does not
@@ -135,7 +135,14 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   `gpu_memory` for GPU stages; finds Stage O's fits by name in `--fits` and job checkpoints beside
   their reports (Stage O's recorded paths were relative to its worktree); R17.38 reworded as an
   amendment; W's CPU roll-out measured bit-identical across 7 processes × 2 passes
-  (`task077-rdet-1`, `5f94100b…6fde`); Stage T scale re-probed at 50 kept states
+  (`task077-rdet-1`, `5f94100b…6fde`; debug and random-init models, synthetic commands, 4 debug
+  roots, no stand-in chunks; not the trained W); Stage T scale re-probed at 50 kept states
   (`task077-tscale-1`, `b409e339…2e9d`: 0.169 s per update, 13.09 GiB PSS, 5.48 GiB GPU);
   Stage T's eight job commands written out (protocol §7.6), about 7.6–44.5 h of GPU. Stage T needs
   this PR merged and its own reported GO.
+- 2026-10-05: independent review of #147 at `60b6722`: REQUEST CHANGES (one blocking: §7.6's
+  script did not stop on CAL-T-ESCALATE, which exits 0, nor check `tests`). R17.45: the commands
+  are now `scripts/run_task077_staget.sh` (`set -euo pipefail`; TESTS-PASS, T-JOB-DONE and
+  T-PLANNED required after each step), tested with a fake runner and `gpu_run.sh`; the
+  determinism probe's limits added to PLAN.md and this log; `sysid.json` noted as existence-checked,
+  not read.

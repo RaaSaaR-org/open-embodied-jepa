@@ -300,9 +300,11 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       learning curve is still falling. Two anomalies are disclosed (R17.41: the featurise command
       lacked `--min-free-gib 8 --board`; no peak GPU memory was recorded) and fixed for later GPU
       stages. R17.38's 0.6 cm gate is an amendment, and W's CPU roll-out measured bit-identical
-      across processes (R17.43).
-    - **Next:** this prep PR's independent review (R17.41–R17.44); then Stage T on its own
-      reported GO (eight `gpu_run.sh --wait --min-free-gib 8 --board` jobs, protocol §7.6; about
+      across processes (R17.43; debug and random-init models, synthetic commands, 4 debug roots,
+      no stand-in chunks; not the trained W).
+    - **Next:** this prep PR's independent review (R17.41–R17.45); then Stage T on its own
+      reported GO (`scripts/run_task077_staget.sh`: eight `gpu_run.sh --wait --min-free-gib 8
+      --board` jobs, each step's outcome checked, protocol §7.6; about
       7.6–11.0 h of GPU at the minimum budget and 32.5–44.5 h at the cap), then G, D and S, each
       on its own reported GO.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A

@@ -72,7 +72,7 @@ the fix for its one repeat, with the frozen block unchanged. Stage C's repeat at
 CORPUS-SEALED (R17.35); Erratum 2026-10-05 (b) (R17.36–R17.39) corrects the bit-identity claim,
 records the featurisation scale probe, gates the determinism re-run's commit target at 0.6 cm and
 makes G-anchor check the frozen 256 frames, with the frozen block unchanged; its 0.6 cm gate is an
-amendment (R17.43). Stage O at `8721516` ended O-PASS (R17.40); R17.41–R17.44 prepare Stage T.**
+amendment (R17.43). Stage O at `8721516` ended O-PASS (R17.40); R17.41–R17.45 prepare Stage T.**
 Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
@@ -594,7 +594,7 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
     `protocol_document_sha256` are re-pinned. Unchanged: the frozen block and its pin
     `f28e5e2c…548d`, TASK-076's 84 pins, and the carried C1 and C1-M blobs. Not pinned: the
     probe script.
-- **R17.40–R17.44 — Stage O's record and the preparation of Stage T** (2026-10-05, each decided
+- **R17.40–R17.45 — Stage O's record and the preparation of Stage T** (2026-10-05, each decided
   by Claude under owner delegation). The protocol records them in §7.5 and §7.6. The frozen block
   is unchanged (`f28e5e2c…548d`), and no bar, seed, salt, cap, ceiling or row changes. The
   manifest re-pins the runner, the tests and the protocol document.
@@ -643,7 +643,10 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
     worktree, and a Stage T job records its checkpoint's path relative to its own, so a job run
     from a fresh worktree of a later revision would have crashed on its first read. The runner
     now looks each fit up by name in the `--fits` folder, and each checkpoint beside its job's
-    report. Every sha256 check is unchanged; checked read-only on the real Stage O artifacts.
+    report. Every sha256 check is unchanged for every input that is read; checked read-only on
+    the real Stage O artifacts. `sysid.json` is only required to exist: it has no recorded
+    sha256 and is not read (H-sysid's coefficients come inline from the O-PASS report). The
+    lookup keeps the file name only, which suits today's flat folders.
   - **R17.43 — the #146 approval's non-blocking items 1 and 2, settled before Stage S's GO.**
     - **(1)** R17.38 adds a gated bar, so §7.4's and R17.35–R17.39's "no bar changes" now read
       "no bar changes except R17.38's added 0.6 cm determinism gate, a post-freeze tightening",
@@ -677,6 +680,22 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
     - **Expected GPU time:** about 7.6–11.0 h at U = 10 000 and 32.5–44.5 h at U = 100 000 (the
       calibration jobs 4.7–6.7 h of it), one lock slot per job.
     - **The commands** a GO would name are in §7.6.
+  - **R17.45 — the Stage T driver checks outcomes (the #147 review's blocking finding).** The
+    runner exits 0 for every row except V, so `plan` exits 0 on CAL-T-ESCALATE, and §7.6's first
+    script, which chained exit statuses only, would have started `W-66800`: it would have taken
+    the lock and ended V on the plan check, a spurious V under the per-job void rule. Its
+    `tests` step was not checked at all. The commands now live in
+    `scripts/run_task077_staget.sh` (a development helper, not hash-pinned), under
+    `set -euo pipefail`, which requires TESTS-PASS after `tests`, T-JOB-DONE after each job and
+    **T-PLANNED after `plan`** before the next step starts, and stops otherwise.
+    `tests/test_run_task077_staget.py` runs it with a fake runner and a fake `gpu_run.sh`: the
+    eight jobs in order, each with `--wait --min-free-gib 8 --board`; CAL-T-ESCALATE stops it
+    with no model job started; any other outcome stops it at that step. The review's
+    non-blocking notes are also taken: the determinism probe's limits (debug and random-init
+    models, synthetic commands, 4 debug roots, no stand-in chunks) are stated wherever its
+    result is summarised, and the `sysid.json` and file-name notes are in R17.42 and in
+    `rebased()`'s docstring. That docstring is the runner's only change after `afaf50d`, where the
+    scale re-probe and the determinism probe ran; the manifest re-pins the runner for it.
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 

@@ -818,7 +818,10 @@ def rebased(recorded: str, folder) -> str:
     run from another worktree, at a later revision, cannot open such a path. The file is
     therefore looked up in the folder the command line names (``--fits``, or the job report's
     own folder), and its identity is still checked by sha256 where it is read (the moments, R8,
-    R-plate, the mean latent and every checkpoint)."""
+    R-plate, the mean latent and every checkpoint). ``sysid.json`` is only required to exist: it
+    is not read (H-sysid's coefficients come from the readouts report) and has no sha256. Only
+    the file name is kept, which suits the flat ``fits/`` and job folders; an artifact recorded
+    in a subfolder would need its relative path kept (R17.45)."""
     path = Path(folder).resolve() / Path(recorded).name
     if not path.is_file():
         raise lp.GuardError(f"G-split: {Path(recorded).name} is not in {Path(folder).resolve()}")
