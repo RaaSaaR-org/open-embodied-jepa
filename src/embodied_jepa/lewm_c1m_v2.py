@@ -855,8 +855,12 @@ G_TESTS = {
 
 # ----- Stage 0 (filled by the Stage-0 PR; development only, debug seeds and synthetic data) -------
 STAGE0 = {  # the record: docs/experiments/apple_lewm_c1m_v2_stage0.md (development only)
-    "smoke_revision": "a98d893",
-    "smoke_root": "outputs/task077-smoke-a98d893 in the task077-stage0 worktree (git-ignored)",
+    "smoke_revision": "9e772e0",
+    "smoke_root": "outputs/task077-smoke-9e772e0 in the task077-stage0 worktree (git-ignored); "
+    "the first chain, at a98d893, before the #143 review's fixes, is kept beside it",
+    "renderer_differences": "at a98d893 two 405 R-plate readings differed between arms on the same "
+    "reset (seed 66920: N 6.1e-5 m from the other arms; seed 66910: L-mean 1.6e-5 m); none at "
+    "9e772e0. The determinism tolerance is 0.1 cm (R17.21)",
     "simulations": {
         "revision": "f4b6b48",
         "report_sha256": "85adbdeea88a58e8f2def13caead1c29fe47f128d4f02df8d505a6eee557075f",
@@ -872,15 +876,17 @@ STAGE0 = {  # the record: docs/experiments/apple_lewm_c1m_v2_stage0.md (developm
         "four twins all sitting at exactly +7/64 fires",
     },
     "scale_probe": {
-        "revisions": ["f4b6b48", "a98d893"],
+        "revisions": ["f4b6b48", "a98d893", "9e772e0"],
         "report_sha256": [
             "09628d9027d6fd6afe43823e6050eb795cbe7eca4b424d72d80ea14885b52701",
             "27e4ada4d680183aa6bbee082386130c597f8adc82850eb5c76ed111f2ec301a",
+            "a505e621c4a0f6a916fd62fda9c9dad0297a6a386ade59bd3ee10b222662abb2",
         ],
-        "gather_seconds_per_batch": [0.0036, 0.0037],
-        "per_update_median_seconds": [0.223, 0.166],
-        "per_update_p95_seconds": [0.277, 0.232],
-        "peak_tree_pss_gib": [12.64, 12.74],
+        "gather_seconds_per_batch": [0.0036, 0.0037, 0.0036],
+        "per_update_median_seconds": [0.223, 0.166, 0.219],
+        "per_update_p95_seconds": [0.277, 0.232, 0.262],
+        "selection_seconds_250_val_roots": [17.4, 14.3],
+        "peak_tree_pss_gib": [12.64, 12.74, 12.69],
         "bit_identical_rerun": True,
         "t_job_worst_case_seconds": 27_704,
         "t_job_cap_over_worst": 1.69,

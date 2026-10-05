@@ -83,3 +83,7 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   gather is 3.7 ms per batch, and Stage T's own code ran at 0.166–0.223 s per update on synthetic
   features at the real sizes, which puts Stage T at about 7.4–9.9 h to 32–43 h. Debug smokes
   (66900–66999) of every stage passed mechanically at `a98d893`. No K0: it needs a reviewer GO.
+- 2026-10-05: independent review of #143 at `0dea22b`: REQUEST CHANGES (five blocking: a reset
+  refused before 405 voided D or S; the 1e-6 m determinism tolerance against renderer noise; the
+  artifact chain; Stage D's cap; CI timing). Fixed under R17.20–R17.24 (decided by Claude under
+  owner delegation), with the eleven non-blocking items; debug chain re-run at `9e772e0`; no K0.

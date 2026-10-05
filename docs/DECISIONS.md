@@ -209,6 +209,41 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
   non-inferiority simulation at min(30/32, N_K(0)), since K0 runs no comparator arm. The three
   fixes of the #142 approval are applied (§12's 22–38 h; §13's "and per job in Stage T"; §11's
   plain statement of the restored scope if the clause fires).
+- **R17.20–R17.24 — the #143 review's changes** (2026-10-05, each decided by Claude under owner
+  delegation, after an independent REQUEST CHANGES at `0dea22b`; record
+  [apple_lewm_c1m_v2_stage0.md](experiments/apple_lewm_c1m_v2_stage0.md) §6). Still DRAFT; no K0.
+  - **R17.20 — a reset refused before 405.** P-3's pick is the shared prefix of every arm, so a
+    reset whose attempts end before 405 is a failure for every arm: a concordant fail-fail pair,
+    kept in the cohort's denominator (the 56/64 bar counts it as a miss). It never voids a stage.
+    L-shuf's foreign frame is the next reset in cohort order, cyclically, whose W attempt reached
+    405. The determinism re-run checks such a reset only for being refused identically. K0's and
+    every closed-loop stage's reports count refusals per arm; the corpus already excludes and
+    counts them. Tests drive Stage D's and S's own code with refused resets.
+  - **R17.21 — the determinism tolerance.** 0.1 cm on the R-plate reading and the commit target,
+    declared and characterised: more than 15 × the renderer noise Stage 0 saw (about 6e-5 m, two
+    405 readings that differed between arms in the first smoke chain, seeds 66920 and 66910,
+    disclosed) and 10 × below τ_commit. §5.2 now says the 405 frame matches across arms only up to
+    the renderer's nondeterminism (EGL worker history). A commit that differs between the runs
+    beyond the tolerance, or that happens in one run and not the other, is still V.
+  - **R17.22 — the artifact chain.** Every stage after C requires and checks the sealed corpus
+    manifest's sha256. The featurise report must be FEATURISED and the readouts report O-PASS,
+    both from that corpus and neither a debug report in a real run; the moments, R8, R-plate and
+    L-mean's mean latent are checked against Stage O's recorded sha256s; every model's
+    `normalisation_sha256` and corpus sha256 against those. Tests cover each refusal.
+  - **R17.23 — Stage D's cap and CI.** Stage D has its own 7 200 s cap (§10.3), Stage S its
+    21 600 s. The slow test trains on a reduced 2 × 2 latent (the same loop), so the
+    macos-integration job stays well within its 20 minutes; the CI timeout is not raised.
+  - **R17.24 — the eleven smaller items.** §10.3 and §13 give the measured 27 700 s and the 54 h at
+    the 95th percentile; the selection time is measured (14.3–17.4 s per selection) and the
+    mislabelled estimate replaced; the K0 non-inferiority re-run is vacuous (K0-PASS makes
+    min(30/32, N_K(0)) always 30/32) and is dropped; `decide_t` emits T-DONE in Stage G's report
+    (each job ends T-JOB-DONE, the plan T-PLANNED or CAL-T-ESCALATE); `decide_g` refuses the
+    debug seed in the frozen ladder; Stage O no longer loads the gate table; every stage checks
+    the frozen pin directly; `check_code` also compares with `c764ac9` when present; the static
+    G-privileged scan covers every helper W's aim calls; the storage fix's end-to-end gain is
+    stated as modest (95th percentile 0.262–0.277 s, near the unfixed 0.30 s estimate; a third
+    scale run, on a quiet machine, gave 0.219 s median) and every stage records its load
+    average; a scale probe of Stage O's readouts and Stage C is required before Stage O's GO.
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 

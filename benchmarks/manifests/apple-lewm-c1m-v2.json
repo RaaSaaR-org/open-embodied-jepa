@@ -1167,31 +1167,42 @@
   "sim_trials": 10000,
   "sim_workers": 6,
   "stage0": {
+   "renderer_differences": "at a98d893 two 405 R-plate readings differed between arms on the same reset (seed 66920: N 6.1e-5 m from the other arms; seed 66910: L-mean 1.6e-5 m); none at 9e772e0. The determinism tolerance is 0.1 cm (R17.21)",
    "scale_probe": {
     "bit_identical_rerun": true,
     "gather_seconds_per_batch": [
      0.0036,
-     0.0037
+     0.0037,
+     0.0036
     ],
     "peak_tree_pss_gib": [
      12.64,
-     12.74
+     12.74,
+     12.69
     ],
     "per_update_median_seconds": [
      0.223,
-     0.166
+     0.166,
+     0.219
     ],
     "per_update_p95_seconds": [
      0.277,
-     0.232
+     0.232,
+     0.262
     ],
     "report_sha256": [
      "09628d9027d6fd6afe43823e6050eb795cbe7eca4b424d72d80ea14885b52701",
-     "27e4ada4d680183aa6bbee082386130c597f8adc82850eb5c76ed111f2ec301a"
+     "27e4ada4d680183aa6bbee082386130c597f8adc82850eb5c76ed111f2ec301a",
+     "a505e621c4a0f6a916fd62fda9c9dad0297a6a386ade59bd3ee10b222662abb2"
     ],
     "revisions": [
      "f4b6b48",
-     "a98d893"
+     "a98d893",
+     "9e772e0"
+    ],
+    "selection_seconds_250_val_roots": [
+     17.4,
+     14.3
     ],
     "t_job_cap_over_worst": 1.69,
     "t_job_worst_case_seconds": 27704
@@ -1205,8 +1216,8 @@
     "revision": "f4b6b48",
     "trials_per_configuration": 10000
    },
-   "smoke_revision": "a98d893",
-   "smoke_root": "outputs/task077-smoke-a98d893 in the task077-stage0 worktree (git-ignored)"
+   "smoke_revision": "9e772e0",
+   "smoke_root": "outputs/task077-smoke-9e772e0 in the task077-stage0 worktree (git-ignored); the first chain, at a98d893, before the #143 review's fixes, is kept beside it"
   },
   "stage_o": {
    "fractions": [
@@ -1259,7 +1270,7 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "f264a2143706efe21455c04d5270b51ffd06773a166a99968ad80d0a3937f64b",
+ "frozen_sha256": "89359ed32aa8d6380809aa0831e8f4890c21ebdf3336543186fa01c6a04c5b12",
  "frozen_sha256_pin": null,
  "hashes": {},
  "note": "DRAFT until the freeze: no frozen-sha pin, no protocol-document sha and no file pins yet; the freeze (after a reported K0-PASS and an independent reviewer's APPROVE) sets frozen_sha256_pin, protocol_document_sha256 and hashes (the own files, the carried C1 and C1-M code files and TASK-076's 84 pins).",

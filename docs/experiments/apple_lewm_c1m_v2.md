@@ -16,7 +16,8 @@ APPROVE (§7).
 the tests, the simulations of §8.4, the storage fix of §12 with its measured speed, the scale probe
 and smokes on the debug range 66900–66999 only. Its record is
 [apple_lewm_c1m_v2_stage0.md](apple_lewm_c1m_v2_stage0.md). Still no seed of K, D, S or the corpus
-has been simulated. K0 needs a separate reviewer GO.
+has been simulated. K0 needs a separate reviewer GO. After the independent review of the
+Stage-0 PR (#143, REQUEST CHANGES at `0dea22b`), rulings R17.20–R17.24 changed §5.2, §7 and §10.3–§13.
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).

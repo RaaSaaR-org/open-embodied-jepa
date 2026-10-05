@@ -5,7 +5,9 @@ used the debug range 66900–66999, and every training run used synthetic featur
 smoke corpus. Nothing here is a result, and nothing is read from it. No K0 was run; K0 needs a
 separate reviewer GO. The protocol ([apple_lewm_c1m_v2.md](apple_lewm_c1m_v2.md)) stays
 **DRAFT**. Every choice below was **decided by Claude under owner delegation (2026-09-30)**
-(R17.19 in [DECISIONS.md](../DECISIONS.md)).
+(R17.19 in [DECISIONS.md](../DECISIONS.md)). Revised after the independent review of #143
+(REQUEST CHANGES at `0dea22b`) under R17.20–R17.24: refused resets, the determinism tolerance,
+the artifact chain, Stage D's cap, CI, and eleven smaller items (§6).
 
 The canonical status sentence (DECISIONS 2026-10-02, R7) is unchanged.
 
@@ -23,7 +25,7 @@ edited. The runner checks C1's and C1-M's six code files byte for byte against `
 | `src/embodied_jepa/lewm_c1m_v2_train.py` | the shared training code: the contiguous per-root store, the prefetching sampler, the training loop with `select_checkpoint` and `last_two_triggered` |
 | `scripts/run_lewm_c1m_v2.py` | one invocation per stage (`tests`, `k0`, `corpus`, `featurise`, `readouts`, `train`, `plan`, `gates`, `closed`, `simulate`, `scale`), with G-tests, G-sentinel, G-hash, G-frozen, G-privileged, G-memory, G-disk, G-quiet and G-GPU |
 | `benchmarks/manifests/apple-lewm-c1m-v2.json` | DRAFT: the frozen block and its sha256; no pin |
-| `tests/test_lewm_c1m_v2.py` | 34 tests (§7 step 1's list; listed below) |
+| `tests/test_lewm_c1m_v2.py` | 41 tests (§7 step 1's list and the review's fixes; listed below) |
 
 **Guards new here.**
 - **G-tests.** A CPU stage runs the full suite itself before it starts, and records the summary,
@@ -33,7 +35,13 @@ edited. The runner checks C1's and C1-M's six code files byte for byte against `
   `"not evaluated"`, and only the stage's own setter changes one. At the end, a row in a field
   that was never set is refused (the `early_verdict` bug).
 - **G-frozen.** While the protocol is DRAFT, the runner refuses every non-debug stage except
-  `tests`, `simulate`, `scale` and `k0`.
+  `tests`, `simulate`, `scale` and `k0`. Every stage also checks the manifest's pin directly:
+  unset while DRAFT, equal to the frozen block's sha256 after the freeze.
+- **G-split's artifact chain (R17.22).** Every stage after C requires the sealed corpus manifest's
+  sha256. The featurise report (FEATURISED) and the readouts report (O-PASS; any O row in a debug
+  run) must come from that corpus, and a debug report never feeds a real stage. The moments, R8,
+  R-plate and L-mean's mean latent are checked against Stage O's recorded sha256s, and every model
+  against the corpus and the moments it was trained with.
 
 **The tests** cover:
 - the seed ranges against every forbidden range, and the salts;
@@ -55,7 +63,13 @@ edited. The runner checks C1's and C1-M's six code files byte for byte against `
 - the DRAFT refusals and the misused flags;
 - the G-tests record checks;
 - lazy imports;
-- a CPU training run with a tiny encoder, whose kept checkpoint is `select_checkpoint`'s.
+- a CPU training run with a tiny encoder and a reduced 2 × 2 latent (the same loop), whose kept
+  checkpoint is `select_checkpoint`'s;
+- Stage D and Stage S's own code (`closed_core`) driven by a fake pool, with two resets refused
+  before 405: no V, the refused resets counted as misses for every arm, L-shuf's frame from the
+  next reset that reached 405, and the determinism re-run passing them as identically refused;
+- the determinism tolerance; the artifact chain (every tamper and every wrong report refused);
+  Stage D's and Stage S's caps; the direct pin check; `decide_g`'s debug flag; T-DONE.
 
 **Three fixes from the #142 approval**, applied to the protocol:
 - §12: at U = 60 000, the figure is 22–38 h.
@@ -114,10 +128,10 @@ the two on the trial; a tie goes to H-rule.
   per twin, so the row would most often be L-TWIN-NEAR (an escalation).
 
 **The protocol asked for a re-run "with K0's counts".** K0 runs no comparator arm, so its only
-count that bears on C is the ceiling N_K(0).
-- K0's runner re-runs the non-inferiority simulation at a comparator rate of min(30/32, N_K(0))
-  and reports it beside the proxies.
-- The interval stays the percentile interval. No exact or score interval was declared.
+count that bears on C is the ceiling N_K(0). K0-PASS needs N_K(0) ≥ 30/32, so a re-run at
+min(30/32, N_K(0)) would always be 30/32, a configuration already in the grid above. The first
+version of this PR re-ran it in K0 anyway; that vacuous re-run is dropped (R17.24). The interval
+stays the percentile interval. No exact or score interval was declared.
 
 ## 3. The storage fix and its measured speed (§12, R17.18)
 
@@ -135,41 +149,86 @@ on synthetic features at the real sizes:
 
 The synthetic store was written to the scratchpad and removed afterwards.
 
-| | run 1 (`f4b6b48`, sha256 `09628d90…2b52701`) | run 2 (`a98d893`, sha256 `27e4ada4…2ec301a`) |
-|---|---|---|
-| gather alone, one batch of 16 windows (96 MB) | **3.6 ms (26.5 GB/s)** | **3.7 ms (26.0 GB/s)** |
-| per update, median (incl. the wait for the batch) | **0.223 s** | **0.166 s** |
-| per update, 95th percentile | 0.277 s | 0.232 s |
-| time the training loop waited for a batch, 600 updates | 0.15 s | 0.14 s |
-| peak process-tree PSS (ceiling 18 GiB, margin 2) | 12.64 GiB | 12.74 GiB |
-| the same N job twice (200 updates, seed 66993) | bit-identical | bit-identical |
+| | run 1 (`f4b6b48`, `09628d90…2b52701`) | run 2 (`a98d893`, `27e4ada4…2ec301a`) | run 3 (`9e772e0`, `a505e621…abb2`) |
+|---|---|---|---|
+| gather alone, one batch of 16 windows (96 MB) | **3.6 ms** | **3.7 ms** | **3.6 ms** |
+| per update, median (incl. the wait for the batch) | **0.223 s** | **0.166 s** | **0.219 s** |
+| per update, 95th percentile | 0.277 s | 0.232 s | 0.262 s |
+| time the training loop waited for a batch, 600 updates | 0.15 s | 0.14 s | — |
+| one val selection (250 val roots) | not measured | not measured | 14.3–17.4 s |
+| 1-minute load at start / end | not recorded | not recorded | 0.97 / 1.35 |
+| peak process-tree PSS (ceiling 18 GiB, margin 2) | 12.64 GiB | 12.74 GiB | 12.69 GiB |
+| the same N job twice (200 updates, seed 66993) | bit-identical | bit-identical | bit-identical |
 
 **Reading.**
-- **The gather is no longer a cost.** The draft's fancy-indexed gather took about 0.14 s for
-  batch 16. The slice gather takes 3.7 ms and runs in the prefetch thread, so the loop waits
-  about 0.2 ms per update.
-- **Per update is 0.166–0.223 s**, against the probe's 0.161 s for compute alone on a reused
-  batch.
-  - The two runs differ by a third, and the cause is not established (the GPU stages do not
-    record the CPU load). The cap below is checked against run 1's slower figures.
-  - The likely remainder over 0.161 s is the model's own per-update host copy and transfer of
-    the batch (`train_step_features` copies it; no model file was changed). This is not
-    measured separately.
+- **The gather itself is no longer a cost.** The draft's fancy-indexed gather took about 0.14 s
+  for batch 16. The slice gather takes 3.6–3.7 ms in the prefetch thread, and the loop waits about
+  0.2 ms per update.
+- **The end-to-end gain is modest** (the #143 review). Per update is 0.166–0.223 s (median) and
+  0.232–0.277 s (95th percentile), against the probe's 0.161 s for compute alone on a reused batch
+  and the draft's estimate of about 0.30 s without the fix. The 95th percentile is close to that
+  unfixed estimate.
+- **Part of the update time is unexplained.** Run 3, on a quiet machine (load 0.97 at start),
+  matched run 1, so run 2's faster 0.166 s is the outlier and the load does not explain it. The
+  likely remainder over 0.161 s is the model's own per-update host copy and transfer of the batch
+  (`train_step_features` copies it; no model file was changed); it is not measured separately.
+  Every stage now records the load average at its start and end.
 - **Revised Stage T band** (protocol §12, replacing "31–33 h with the fix"):
   - At the rule's minimum: 160 000 updates × 0.166–0.223 s is about **7.4–9.9 h**.
   - At the cap: 700 000 updates is about **32–43 h** (54 h at the 95th percentile).
-- **The cap holds.** One job's worst case at the cap is 100 000 × 0.277 s = 27 700 s. The Stage
-  T cap of 46 800 s is 1.69 × that, so it is kept (≥ 1.5 ×).
+- **The cap holds.** One job's worst case at the cap is 100 000 × 0.277 s = 27 700 s, plus 20
+  selections of at most 17.4 s (348 s; measured in run 3, the first draft's
+  `estimate_with_selection_s` was mislabelled and is replaced by this measured figure). The
+  Stage T cap of 46 800 s is 1.67 × the sum, so it is kept (≥ 1.5 ×).
 
 ## 4. Debug smokes (debug seeds only; nothing read)
 
-**The chain.** Every stage ran in order at revision `a98d893`, clean tree, as
-`outputs/task077-smoke-a98d893/<stage>/report.json`:
-- K0, the corpus and every later CPU stage each ran the full suite first (1983 passed, 37
-  skips).
-- The GPU jobs verified the `tests` record of that revision, each in its own `gpu_run.sh` slot.
+**The chain at `9e772e0` (after the #143 review's fixes).** Every stage ran in order on a clean
+tree, as `outputs/task077-smoke-9e772e0/<stage>/report.json`. The `tests` stage and K0 ran the
+full suite (1990 passed, 37 skipped); the later CPU stages ran with `--debug-skip-tests`
+(recorded), since the first chain had already run G-tests in every CPU stage. The GPU jobs
+verified the `tests` record, each in its own `gpu_run.sh` slot. Every stage after C checked the
+artifact chain: the same corpus manifest (`2af6335d…`), the featurise and readouts reports, the
+moments, R8, R-plate, the mean latent and both models' corpus and moments.
 
-**Earlier smoke runs that ended V.** The fixes, each committed before the chain:
+| stage | row | seconds | peak PSS (GiB) | sha256 |
+|---|---|---|---|---|
+| tests | TESTS-PASS | 143 | 3.03 | `c7a67816…1d3b` |
+| scale | SCALE-PROBED | 349 | 12.80 (probe 12.69) | `a505e621…abb2` |
+| k0 (K 66900–66903) | CAL-ESCALATE (4 resets) | 254 | 8.20 | `bfbe2b2c…b160` |
+| corpus (40 roots) | CORPUS-SEALED (0 excluded) | 63 | 8.60 | `4ba7b0b4…761e` |
+| featurise | FEATURISED | 7 | 1.41 | `9f82f564…94c8` |
+| readouts | O-NO-BAR | 0.4 | — | `d736a452…48ea` |
+| train cal-W / cal-N | T-JOB-DONE | 71 / 71 | 2.81 / 2.82 | `655c42c8…79f2` / `9dfd17da…d176` |
+| plan | T-PLANNED | 2 | 0.67 | `d24e01e6…f794` |
+| train W / N, 66992 | T-JOB-DONE | 37 / 37 | 2.74 / 2.82 | `d353c67a…436d` / `882a46ae…d4ee` |
+| gates (and Stage T's row) | H-GATE-FAIL; `stage_t` T-DONE | 69 | 8.19 | `7542bcb2…b5f6` |
+| closed D | L-DEV-STOP | 103 | 9.54 | `0fbfb7d5…e32f` |
+| closed S | S-VOID-CEILING | 145 | 9.26 | `6b2de4ca…6577` |
+
+No reset was refused before 405 in either chain (the refused-reset path is covered by the fake-pool
+tests). The determinism re-run reproduced W's R-plate readings and commit targets exactly (0 m,
+tolerance 0.1 cm), and no reading differed between arms on a reset in this chain.
+
+**The first chain, at `a98d893` (before the review's fixes), kept beside it:** the same stages,
+every CPU stage running the full suite first (1983 passed), sha256s in the record's first version
+and in `outputs/task077-smoke-a98d893`. Its rows were the same.
+
+**Renderer differences disclosed (R17.21).** In the first chain, the R-plate reading of the 405
+frame differed between arms on the same reset twice, although the post-look frame (G-repro) and
+the palm agreed:
+- **seed 66920 (closed S):** N read (0.502269, −0.057836), every other arm (0.502208, −0.057844):
+  6.1e-5 m; N's start latent sha differed from W's (`1a924562` against `63f2d121`);
+- **seed 66910 (closed D):** L-mean read (0.517201, −0.101965), W, N and L-shuf (0.517185,
+  −0.101966): 1.6e-5 m.
+
+The probable cause is the EGL renderer's history in a worker (the effect TASK-073's render retry
+handles for the post-look frame); the 405 frame is not retried. §5.2's premise is corrected: the
+405 frame matches across arms only up to this nondeterminism. The determinism re-run's tolerance
+is declared at 0.1 cm (R17.21), more than 15 × these differences and 10 × below τ_commit; the first
+draft's 1e-6 m would have voided an S run on such a flake.
+
+**Earlier smoke Vs (first chain), each fixed and committed before it:**
 - K0 ran without EGL (`64b138e`).
 - The report lacked the harness's `stages` section (`177aa04`).
 - The corpus kept the plate only from 405 (`6a99778`).
@@ -178,31 +237,12 @@ The synthetic store was written to the scratchpad and removed afterwards.
   DINOv2 and a world model. Stages G, D and S now use 4 workers (`WM_WORKERS`; TASK-073/074's
   `H_WORKERS`) (`bc0e4c6`).
 
-| stage | debug size | row | seconds | peak PSS (GiB) | sha256 |
-|---|---|---|---|---|---|
-| tests | — | TESTS-PASS | 156 | — | `8fa168c5…99bc8` |
-| scale | synthetic | SCALE-PROBED | 256 | 12.74 | `27e4ada4…2ec301a` |
-| k0 | K 66900–66903, 6 levels + 4 proxies | CAL-ESCALATE (4 resets) | 275 | 8.24 | `5e616d03…65c793` |
-| corpus | 40 roots 66940–66979 (30/5/5) | CORPUS-SEALED (0 excluded) | 219 | 8.27 | `bec3248a…ecf9` |
-| featurise | 2 640 frames, CUDA | FEATURISED (G-anchor 1.1e-4 ≤ 1e-3) | 7 | 1.38 | `1e1540ef…94f` |
-| readouts | 35 roots, 5 folds | O-NO-BAR | 156 | 7.75 | `4538d902…8fde` |
-| train cal-W / cal-N | 400 updates | T-JOB-DONE | 71 / 71 | 2.81 / 2.79 | `43220321…80d` / `44d715c2…af72` |
-| plan | 5 val roots | T-PLANNED | 158 | 7.77 | `0fc47226…02db` |
-| train W / N, 66992 | 200 updates | T-JOB-DONE | 37 / 38 | 2.79 / 2.82 | `4885cb3e…5ec4` / `69aa7345…13ae` |
-| gates | 5 gate roots, 1 seed | H-GATE-FAIL | 226 | 8.64 | `e88f2e2a…24c3` |
-| closed D | 4 resets × 5 arms | L-DEV-STOP | 259 | 9.77 | `db714126…8068` |
-| closed S | 4 resets × 10 arms + determinism re-run | S-VOID-CEILING | 302 | 9.78 | `a825a300…652a` |
-
-**What the smokes exercise.** The rows above are mechanics on 4–40 debug items and
-200–400-update models; they are not read.
-
-**What they show:**
+**What the smokes show.**
 - Every arm runs: W, N, L-shuf, L-mean, L-rand, H-rule, H-sysid, H-final(commit), H-read and
   H-now, plus K0's planted levels and proxies.
 - `task_truth_in_controller` is 0 for every non-privileged arm.
 - W's decision rolls 147 candidates plus up to 10 refinements on one CPU thread in about 9.7 s.
   An attempt takes at most 15.6 s (cap 300 s).
-- The determinism re-run of W reproduced its aims exactly (0 m).
 - The corpus root store has the declared shapes: 65 frames, 64 commands in [−1, 1], plate and
   palm at every kept step, and the plate-hidden render at r.
 - The featurised store is the per-root contiguous layout that Stage T reads.
@@ -210,21 +250,43 @@ The synthetic store was written to the scratchpad and removed afterwards.
 **Caps (§10.3).** The provisional caps are kept; each is at least 1.5 × the measured or scaled
 worst case:
 - K0: about 320 attempts of at most 8.3 s on 6 workers, plus about 6 min of preflight.
-- D: about 10 min.
-- S: about 35 min (cap 21 600 s).
-- G: about 45 min, most of it the offline aims (cap 7 200 s).
+- D (its own cap, 7 200 s; R17.23): about 10 min.
+- S (21 600 s): about 35 min.
+- G (7 200 s): about 45 min, most of it the offline aims.
 - Stage T: as in §3.
 - **Not measured at scale:** Stage O's readouts on 1 750 roots (cap 7 200 s, CPU) and Stage C's
-  2 000 roots (cap 14 400 s; C1-M did 1 024 roots in 39 min). Stage O's train moments are now
-  streamed from the file unmapped, so the 9.6 GB store does not enter the stage's PSS. A scale
-  probe of the readouts on synthetic features is recommended before Stage O's GO; it is not a K0
-  prerequisite.
+  2 000 roots (cap 14 400 s; C1-M did 1 024 roots in 39 min). Stage O's train moments are
+  streamed from the file unmapped, so the 9.6 GB store does not enter the stage's PSS.
 
-## 5. Open before K0
+## 5. Open before K0, and before Stage O
 
-- **A reviewer's GO for K0** on this PR, at its head revision.
+- **A reviewer's GO for K0** on this PR, at its head revision. Nothing else is known to block it.
 - **The evidence root.** K0 needs TASK-072 run-1's evidence at
   `/home/huhn/develop/emai/worktrees/task076-evidence`. It passed G-repro in every smoke.
 - **K0 runs from a clean worktree of this PR's head** (`scripts/new_worktree.sh --run --from
   <rev>`). The command is `run_lewm_c1m_v2.py k0 --output <new> --evidence <root>`. Before
   starting, the main session posts a notice in chat.
+- **Required before Stage O's GO (R17.24):** a scale probe of Stage O's readouts and of Stage C's
+  per-root cost, on synthetic or debug data, that sets their caps to at least 1.5 × the measured
+  worst case.
+
+## 6. The #143 review's changes (R17.20–R17.24)
+
+| finding | change |
+|---|---|
+| 1, a reset refused before 405 | a concordant fail-fail pair for every arm, in the denominator, never a V; L-shuf's frame from the next reset in cohort order that reached 405; the determinism re-run checks such a reset for an identical refusal; refusals counted per arm in K0, D and S (`closed_core`, `foreign_reached`, `determinism_check`; fake-pool tests for D and S) |
+| 2, the determinism tolerance | 0.1 cm on the R-plate reading and the commit target (R17.21); §5.2 corrected; the two differences disclosed (§4) |
+| 3, the artifact chain | the corpus sha required in every later stage; the featurise and readouts reports read by row and debug flag; the moments, R8, R-plate, mean latent and models checked by sha256 (`artifact_chain`, `load_moments`, `load_readout`, `check_mean_latent`, `check_job`; tests for each) |
+| 4, Stage D's cap | its own 7 200 s (`stage_cap`) |
+| 5, CI | the training test runs on a reduced 2 × 2 latent (18 s to 5 s locally for the file) |
+| non-blocking 1 | §10.3 now gives the measured 27 700 s; §13 the 54 h at the 95th percentile |
+| 2 | the selection time is measured (14.3–17.4 s) and the estimate relabelled |
+| 3 | the vacuous K0 re-run is dropped and the reason stated |
+| 4 | `decide_t` emits T-DONE in Stage G's report; the per-job and plan rows are documented in §7 |
+| 5 | `decide_g(debug=)`: the frozen ladder refuses the debug seed |
+| 6 | Stage O no longer loads the gate split's table |
+| 7 | a direct frozen-pin check in every stage's preflight |
+| 8 | `check_code` also compares the recorded blobs with `c764ac9` when that commit is present |
+| 9 | the static G-privileged scan covers `WorldModelAim` and every helper it calls |
+| 10 | the storage-gain wording (§3) and the load average in every stage |
+| 11 | the Stage O and Stage C scale probe is required before Stage O's GO (§5; protocol §7 step 5) |
