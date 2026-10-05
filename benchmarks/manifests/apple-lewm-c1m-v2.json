@@ -1584,7 +1584,7 @@
   "benchmarks/manifests/apple-plate-twin-v2.json": "bc9c0ffdec00089f76574498696addaffa2d8484d2eb394b00b23df8033375a0",
   "scripts/run_c1_feasibility.py": "f92262dd06f91fa14ac38f06e0707256d8348d6320668218c76b0a9dc0d2543f",
   "scripts/run_c1m_feasibility.py": "6db5e69479b6bf195c8cdfd4c91417abf81f40643e91180efb840d751c132aea",
-  "scripts/run_lewm_c1m_v2.py": "49c54462cd36a9316d0d0aa60ca793abbfb6a5c7a42fa74cd49c5d4a0d7fd7dc",
+  "scripts/run_lewm_c1m_v2.py": "5c455fbfea41dd24598ce44416f9a1dca04462d6b8b9d6b6b4c0da1aafbcca07",
   "src/embodied_jepa/lewm_c1m_v2.py": "cc765b217b6b91486d8b094b10c9192aa06beff3a1d49dd51f446f97aa6a8545",
   "src/embodied_jepa/lewm_c1m_v2_offline.py": "13253588f4b1c2bad1822413e75ae27535c711b2afaed259ce21b884257e862c",
   "src/embodied_jepa/lewm_c1m_v2_runtime.py": "04921828c9989f28f9b57117b52be3b2733f220e4fa58ccaad22e454707f171e",
@@ -1593,12 +1593,12 @@
   "src/embodied_jepa/lewm_next_c1_runtime.py": "770dc7e917d6c38b98514ad57758efe91e6e66e41774fd3b47b29deea8a748e0",
   "src/embodied_jepa/lewm_next_c1m.py": "7101c14dc7b292afb9311e61f847684083085b491deccefd71bc2a0e76283879",
   "src/embodied_jepa/lewm_next_c1m_runtime.py": "a3fc591799039a8a229568a99407afb99882eba62e8b1744d30567270ef7e4a9",
-  "tests/test_lewm_c1m_v2.py": "726f3c653eaf17731f7143ff5a57cbb27b1019998e053ee07a7b2b315d732968"
+  "tests/test_lewm_c1m_v2.py": "bc9d97049dd7783f983266e40a778635b9d290795d4b20d48b748b3ef4a924fd"
  },
  "note": "FROZEN after K0-PASS (R17.25), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins the stage's own files, the carried C1 and C1-M code files, the test file and TASK-076's manifest (whose 84 pins the runner checks too); protocol_document_sha256 is the protocol's sha256. K0's report: outputs/task077-k0-1/report.json, sha256 9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235.",
  "outcome": null,
  "protocol": "apple_lewm_c1m_v2",
- "protocol_document_sha256": "8483979983908317497ad33560a45794c63a1fc0fefb52c69bb8b7db09b1b9f6",
+ "protocol_document_sha256": "283a8466495aebf132fff40dcf92ade5a53c7c4aeed61798307110536b0e1f77",
  "status": "FROZEN",
  "task": "TASK-077"
 }

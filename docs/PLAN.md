@@ -281,7 +281,7 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       16 development resets → 64 gated resets with R9.8's bar (56/64), non-inferiority within
       δ = 8/64 (an allocation) and McNemar tests against N, L-shuf, L-mean and L-rand.
     - **GPU:** a cost probe on synthetic data measured 0.161 s per 8 × 8 update at T = 60, batch 16
-      (batch 64 ran out of memory). Training is a scenario band of about 8–33 h of GPU in eight
+      (batch 64 ran out of memory). Training is a scenario band (now about 7.6–44.5 h with the selections, R17.44; first estimated at about 8–33 h) of GPU in eight
       per-job slots once Stage 0 stores frames contiguously and prefetches (up to about 58 h
       without), several times the 4 × 4 sizing above; the budget is sized from that synthetic
       probe, and the real 8 × 8 calibration is Stage T's first two jobs. The closed loop runs on
@@ -295,9 +295,18 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       scale probe at 1 995 synthetic roots took 212.7 s against the 3 600 s cap, with 1.76 GiB
       PSS and 0.90 GiB of GPU memory; the determinism re-run's commit target is gated at a
       derived 0.6 cm; G-anchor checks the frozen 256 frames.
-    - **Next:** this erratum's independent review; then Stage O on its own reported GO (its
-      readouts and featurisation scale probes are done, R17.28 and R17.37), then Stage T, G, D
-      and S, each on its own reported GO.
+    - **Stage O** ran once at `8721516` and ended **O-PASS** (R17.40): c_plate 0.404 cm
+      [0.385, 0.417] against τ_commit = 1.0 cm, prior ratio 0.153, plate-hidden 4.579 cm; the
+      learning curve is still falling. Two anomalies are disclosed (R17.41: the featurise command
+      lacked `--min-free-gib 8 --board`; no peak GPU memory was recorded) and fixed for later GPU
+      stages. R17.38's 0.6 cm gate is an amendment, and W's CPU roll-out measured bit-identical
+      across processes (R17.43; debug and random-init models, synthetic commands, 4 debug roots,
+      no stand-in chunks; not the trained W).
+    - **Next:** this prep PR's independent review (R17.41–R17.45); then Stage T on its own
+      reported GO (`scripts/run_task077_staget.sh`: eight `gpu_run.sh --wait --min-free-gib 8
+      --board` jobs, each step's outcome checked, protocol §7.6; about
+      7.6–11.0 h of GPU at the minimum budget and 32.5–44.5 h at the cap), then G, D and S, each
+      on its own reported GO.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.

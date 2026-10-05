@@ -8,14 +8,15 @@ simulated), and then runs the runner's own ``featurise`` stage on it, in this pr
 ``gpu_guard``, the real DINOv2 encoder on CUDA under strict determinism, the re-mapped stores and
 G-anchor). Around it, it samples the process tree's PSS and this process's GPU memory
 (``nvidia-smi``), and reads torch's peak allocation at the end. Noise frames compress worse than
-rendered ones (about 2.4 MB a root against about 0.61 MB), so reading and hashing the roots is
+rendered ones (2.49 MB a root against about 0.61 MB), so reading and hashing the roots is
 slower than on the real corpus; the encoder's cost does not depend on the content.
 
 Run from a clean worktree root (the ``featurise`` step through ``scripts/gpu_run.sh --wait``):
 
     uv run --no-sync python scripts/probe_task077_featurise.py corpus --scratch <new folder>
     uv run --no-sync python scripts/run_lewm_c1m_v2.py tests --output outputs/<tests>
-    scripts/gpu_run.sh --wait --who oej:task077-fscale -- uv run --no-sync python \\
+    scripts/gpu_run.sh --wait --min-free-gib 8 --board --who oej:task077-fscale -- \\
+        uv run --no-sync python \\
         scripts/probe_task077_featurise.py featurise --scratch <folder> \\
         --output outputs/<new> --tests-record outputs/<tests>/report.json
 

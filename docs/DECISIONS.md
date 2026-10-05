@@ -71,7 +71,9 @@ Stage C's first run ended V on G-memory; Erratum 2026-10-05 (R17.30–R17.34) re
 the fix for its one repeat, with the frozen block unchanged. Stage C's repeat at `4f30fbb` ended
 CORPUS-SEALED (R17.35); Erratum 2026-10-05 (b) (R17.36–R17.39) corrects the bit-identity claim,
 records the featurisation scale probe, gates the determinism re-run's commit target at 0.6 cm and
-makes G-anchor check the frozen 256 frames, with the frozen block unchanged.** Revised after
+makes G-anchor check the frozen 256 frames, with the frozen block unchanged; its 0.6 cm gate is an
+amendment (R17.43). Stage O at `8721516` ended O-PASS (R17.40); R17.41–R17.45 prepare Stage T.**
+Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
 is [apple_lewm_c1m_v2.md](experiments/apple_lewm_c1m_v2.md) (STATUS DRAFT), with the task card
@@ -501,8 +503,10 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       only.
 - **R17.35–R17.39 — Stage C's repeat and Erratum 2026-10-05 (b)** (2026-10-05, each decided by
   Claude under owner delegation). The protocol records them in §7.3 and §7.4. The frozen block is
-  unchanged: its sha256 stays `f28e5e2c…548d`, and no bar, seed, salt, cap, ceiling or row
-  changes. The manifest re-pins the changed files and the protocol document.
+  unchanged: its sha256 stays `f28e5e2c…548d`, and no seed, salt, cap, ceiling or row changes.
+  **No bar changes except R17.38's added 0.6 cm determinism gate, a post-freeze tightening;
+  R17.38 is an amendment, not an erratum** (reworded by R17.43, the #146 approval's note 1). The
+  manifest re-pins the changed files and the protocol document.
   - **R17.35 — Stage C's repeat ended CORPUS-SEALED.**
     - **The run.** At `4f30fbb`, the erratum's merge commit (#145), on the reviewer's reported GO
       (#145, issuecomment-5990368000), from the fresh clean worktree `task077-corpus2`, on the
@@ -562,8 +566,8 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       featurisation completed in 201.6 s. `task077-fscale-2` (at `badbbe1`, clean) ended
       FEATURISED-DEBUG in 206.8 s with 1.72 GiB PSS and 0.90 GiB of GPU memory. Both checked
       G-anchor on 32 frames (R17.39).
-  - **R17.38 — the determinism re-run's commit target is gated at 0.6 cm (the #144 approval's
-    note 1; settled before Stage S's GO).**
+  - **R17.38 — the determinism re-run's commit target is gated at 0.6 cm (an amendment, R17.43;
+    the #144 approval's note 1; settled before Stage S's GO).**
     - **The choice.** Of the two options the approval offered, the target's difference is
       **gated at a derived bound**, not left to an explanation in the results. Real
       nondeterminism in W's roll-out or R8, with the same frame, then voids instead of hiding
@@ -590,7 +594,108 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
     `protocol_document_sha256` are re-pinned. Unchanged: the frozen block and its pin
     `f28e5e2c…548d`, TASK-076's 84 pins, and the carried C1 and C1-M blobs. Not pinned: the
     probe script.
-
+- **R17.40–R17.45 — Stage O's record and the preparation of Stage T** (2026-10-05, each decided
+  by Claude under owner delegation). The protocol records them in §7.5 and §7.6. The frozen block
+  is unchanged (`f28e5e2c…548d`), and no bar, seed, salt, cap, ceiling or row changes. The
+  manifest re-pins the runner, the tests and the protocol document.
+  - **R17.40 — Stage O ended O-PASS.**
+    - **The run.** At `8721516`, the #146 merge commit, on the reviewer's reported GO (#146,
+      issuecomment-5991796440), from the fresh clean worktree `task077-stageo`, with the GO's
+      commands. Its reports (git-ignored, in that worktree; not edited):
+      - G-tests record `outputs/task077-o-tests-1/report.json`, sha256
+        `80fc8344b128e03f7604481364ead13bba1fbba2bef0d535a0b950df3e3784b4` (TESTS-PASS, 2002
+        passed, 37 skipped, clean tree);
+      - featurisation `outputs/task077-featurise-1/report.json`, sha256
+        `f187c7c8179ffe0d1883739be0f30ae960c6033e4c1d088d800075490ef3e9ee` (FEATURISED; corpus
+        `ad8974b2…43fb`; 1 495 / 250 / 250 roots; 211.3 s against 3 600 s; G-anchor 1.0e-4 on 256
+        frames against 1e-3; peak PSS 1.73 GiB; lock held, 14.98 GiB free at the start);
+      - readouts `outputs/task077-readouts-1/report.json`, sha256
+        `452045d22c21b067c8bfe78cb72f4e842fc61f3c44a9e17b6fae860c244f8b78` (O-PASS; G-quiet
+        1.62 / 1.52; in-run G-tests 2002 passed; 194.2 s against 7 200 s; peak PSS 2.97 GiB).
+    - **The gates** (median cm, 1 745 roots, 5 outer folds, 95 % intervals): O1 c_plate **0.404
+      [0.385, 0.417]** ≤ τ_commit = 1.0; O3 the prior ratio **0.153 [0.145, 0.160]** < 1.0 (the
+      constant prior 2.644 [2.549, 2.724]); O4 the plate-hidden check **4.579 [4.443, 4.673]**,
+      lower bound > 1.0. No clause.
+    - **Reported only.** The learning curve is still falling (0.625, 0.515, 0.446, 0.404 cm at
+      1/4 to all; 3/4 minus all 0.041 [0.027, 0.060]). The 4 × 4 readout at r reads 0.584
+      [0.564, 0.602] cm, R-plate at 405 0.148 [0.142, 0.153] cm, H-sysid at r 0.554
+      [0.539, 0.574] cm; the plate moves 8.43 [8.33, 8.49] cm from 405 to r.
+    - **The train-only fits** (content sha256s, which the runner checks): moments
+      `5415eea4b5eda30712176b4f23c0022886a0f9cf1ac60cdf742863393550de6d`, R8
+      `62a5ea8abe348d2e7cbdb3379a22ecddcabd6a3f57c65a6f38f8ae57b8e43b4a`, R-plate
+      `08bde901ca75ab0ee4bc1c74bf4da91117ba57c0491828d81bc9db921cc49eb9`, L-mean's mean latent
+      `85da63360c6d3c308d4c760cfc43c2391c0beab1c3fefd3ceb5017c7759d53bd`; the file sha256s are
+      in §7.5.
+    - **What it admits.** Stage T may get its own reported GO. Stage O is not repeated.
+  - **R17.41 — two anomalies of Stage O, disclosed, and their fixes.**
+    - **The featurisation's command lacked `--min-free-gib 8 --board`** (§10.2 names both; the
+      GO copied the #146 approval's command). BOARD.md did not show the job as holder; the lock
+      was held (lock log 09:35:08Z–09:38:40Z, `gpu_lock_held` true); `gpu_run.sh` checked its
+      default 4 GiB free, while the runner's `gpu_guard` required 8 GiB and measured 14.98 GiB.
+      Fix: every documented GPU command uses the full form, and §7.6 writes out each Stage T
+      command with it.
+    - **The featurise report records no peak GPU memory.** The fscale-3 probe of the same code
+      measured 0.90 GiB (torch 0.49 GiB allocated); the real run is expected to match, which is
+      an inference, not a measurement. Fix: the runner records `gpu_memory` (torch's
+      `max_memory_allocated` and `max_memory_reserved`) for every GPU stage, a V included.
+  - **R17.42 — later stages find Stage O's fits and job checkpoints from another worktree.**
+    Found while preparing Stage T. Stage O recorded its fits' paths relative to its own
+    worktree, and a Stage T job records its checkpoint's path relative to its own, so a job run
+    from a fresh worktree of a later revision would have crashed on its first read. The runner
+    now looks each fit up by name in the `--fits` folder, and each checkpoint beside its job's
+    report. Every sha256 check is unchanged for every input that is read; checked read-only on
+    the real Stage O artifacts. `sysid.json` is only required to exist: it has no recorded
+    sha256 and is not read (H-sysid's coefficients come inline from the O-PASS report). The
+    lookup keeps the file name only, which suits today's flat folders.
+  - **R17.43 — the #146 approval's non-blocking items 1 and 2, settled before Stage S's GO.**
+    - **(1)** R17.38 adds a gated bar, so §7.4's and R17.35–R17.39's "no bar changes" now read
+      "no bar changes except R17.38's added 0.6 cm determinism gate, a post-freeze tightening",
+      and R17.38 is called an amendment. Code outside the frozen block may change a gated rule
+      without moving the frozen sha256 only as a disclosed, dated, data-blind tightening.
+    - **(2)** `scripts/probe_task077_rollout_determinism.py` (development only, not pinned) ran
+      the closed loop's own functions from an identical 405 frame to the commit target
+      (`encode`, R-plate, the 147-candidate grid, `rollout_plates`, `choose_from_grid`) for W, N
+      and L-mean on the Stage-0 debug models and W on a random-init model of the real
+      architecture (torch seed 66995), on 4 debug roots, in 7 separate processes (3 in turn, 4 at
+      once) with the runner's thread environment and one torch thread, 2 passes each. **Every
+      sha256, from the tokens to the commit target, was identical in all 14 observations.**
+      Report `outputs/task077-rdet-1/report.json` (this PR's worktree), sha256
+      `5f94100b1c62d38b09e7e5698b45f85817b82985ef1911009edb603b4bf26fde`, at `afaf50d`, clean.
+      It covers the code path on debug models and synthetic commands, not the trained W, the
+      stand-in's chunks or a renderer flake.
+  - **R17.44 — Stage T is ready for its GO.**
+    - **The scale re-probe** at `afaf50d` (`task077-tscale-1`, through `gpu_run.sh --wait
+      --min-free-gib 8 --board`, synthetic features at the real sizes, 1 000 updates and 50
+      selections, as many states as a calibration job keeps): 0.169 s per update (median), 0.250 s
+      (95th percentile), selections 3.9–12.3 s, peak PSS **13.09 GiB** against 18 GiB, torch GPU
+      peak **5.48 GiB allocated, 6.45 GiB reserved**, the repeated N job bit-identical. Report
+      sha256 `b409e339bde149f2e502d7156045f7d84469aa1d1d95443e200c72d594852e9d`; its tests record
+      `fb11c0c92adc1e028c35f9ab635f867c61e3a78bac2fab36159283200bf601a6`. Nothing changed the
+      per-update cost since Stage 0 (0.166–0.223 s).
+    - **Confirmed:** eight jobs (cal-W and cal-N at seed 66810, 50 000 updates; then W and N of
+      66800–66802 at U = clamp(5 000 · ⌈2 · max u_sat / 5 000⌉, 10 000, 100 000), 20 selections);
+      `select_checkpoint(curve, 0.01)` per job; per-job void and one repeat (a second V of the
+      same job is INCONCLUSIVE); the 46 800 s job cap (1.67 × the worst job, 28 048 s); the 18 GiB
+      ceiling.
+    - **Expected GPU time:** about 7.6–11.0 h at U = 10 000 and 32.5–44.5 h at U = 100 000 (the
+      calibration jobs 4.7–6.7 h of it), one lock slot per job.
+    - **The commands** a GO would name are in §7.6.
+  - **R17.45 — the Stage T driver checks outcomes (the #147 review's blocking finding).** The
+    runner exits 0 for every row except V, so `plan` exits 0 on CAL-T-ESCALATE, and §7.6's first
+    script, which chained exit statuses only, would have started `W-66800`: it would have taken
+    the lock and ended V on the plan check, a spurious V under the per-job void rule. Its
+    `tests` step was not checked at all. The commands now live in
+    `scripts/run_task077_staget.sh` (a development helper, not hash-pinned), under
+    `set -euo pipefail`, which requires TESTS-PASS after `tests`, T-JOB-DONE after each job and
+    **T-PLANNED after `plan`** before the next step starts, and stops otherwise.
+    `tests/test_run_task077_staget.py` runs it with a fake runner and a fake `gpu_run.sh`: the
+    eight jobs in order, each with `--wait --min-free-gib 8 --board`; CAL-T-ESCALATE stops it
+    with no model job started; any other outcome stops it at that step. The review's
+    non-blocking notes are also taken: the determinism probe's limits (debug and random-init
+    models, synthetic commands, 4 debug roots, no stand-in chunks) are stated wherever its
+    result is summarised, and the `sysid.json` and file-name notes are in R17.42 and in
+    `rebased()`'s docstring. That docstring is the runner's only change after `afaf50d`, where the
+    scale re-probe and the determinism probe ran; the manifest re-pins the runner for it.
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 

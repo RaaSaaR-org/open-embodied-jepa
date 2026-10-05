@@ -41,7 +41,7 @@ L-mean, and a random choice. "LeWM needed" is reported only and not expected.
 
 **The protocol (FROZEN after K0-PASS, R17.25; in force once merged on an independent APPROVE):**
 [`docs/experiments/apple_lewm_c1m_v2.md`](../../../docs/experiments/apple_lewm_c1m_v2.md).
-Rulings R17.1–R17.38 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
+Rulings R17.1–R17.45 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
 owner delegation (2026-09-30). The plan is `docs/PLAN.md`.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. This task does not
@@ -123,3 +123,26 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   frozen 256 frames (R17.39). Disclosed: `task077-fscale-1` was V on G-hash (docs edited in its
   worktree during the run). Frozen block unchanged. Stage O needs this erratum merged and its
   own reported GO.
+- 2026-10-05: Stage O ran once at `8721516` (GO on #146, issuecomment-5991796440) from the clean
+  worktree `task077-stageo` and ended **O-PASS** (R17.40): O1 c_plate 0.404 cm [0.385, 0.417] ≤ 1.0;
+  O3 prior ratio 0.153 [0.145, 0.160]; O4 plate-hidden 4.579 [4.443, 4.673] > 1.0; learning curve
+  still falling (reported). Reports (sha256): tests `80fc8344…84b4`, featurise `f187c7c8…e9ee`,
+  readouts `452045d2…8b78`; fits (content): moments `5415eea4…`, R8 `62a5ea8a…`, R-plate
+  `08bde901…`, mean latent `85da6336…`. Disclosed (R17.41): the featurise command lacked
+  `--min-free-gib 8 --board` (lock held; runner's 8 GiB guard held; board not updated) and its
+  report has no peak GPU memory.
+- 2026-10-05: Stage T prep (R17.41–R17.44, branch `task077-staget-prep`): the runner records
+  `gpu_memory` for GPU stages; finds Stage O's fits by name in `--fits` and job checkpoints beside
+  their reports (Stage O's recorded paths were relative to its worktree); R17.38 reworded as an
+  amendment; W's CPU roll-out measured bit-identical across 7 processes × 2 passes
+  (`task077-rdet-1`, `5f94100b…6fde`; debug and random-init models, synthetic commands, 4 debug
+  roots, no stand-in chunks; not the trained W); Stage T scale re-probed at 50 kept states
+  (`task077-tscale-1`, `b409e339…2e9d`: 0.169 s per update, 13.09 GiB PSS, 5.48 GiB GPU);
+  Stage T's eight job commands written out (protocol §7.6), about 7.6–44.5 h of GPU. Stage T needs
+  this PR merged and its own reported GO.
+- 2026-10-05: independent review of #147 at `60b6722`: REQUEST CHANGES (one blocking: §7.6's
+  script did not stop on CAL-T-ESCALATE, which exits 0, nor check `tests`). R17.45: the commands
+  are now `scripts/run_task077_staget.sh` (`set -euo pipefail`; TESTS-PASS, T-JOB-DONE and
+  T-PLANNED required after each step), tested with a fake runner and `gpu_run.sh`; the
+  determinism probe's limits added to PLAN.md and this log; `sysid.json` noted as existence-checked,
+  not read.
