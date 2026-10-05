@@ -250,6 +250,21 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       CPU). No GPU until M-PROCEED; then TASK-077-sized at 4 × 4.
     - **Next.** The ruling's independent review, then the C1-M feasibility record (CPU, about
       45–60 min, or about 15 min if it stops at M-F3; *estimate*).
+  - **C1-M feasibility record (2026-10-05, R16): M-PROCEED**
+    ([apple_lewm_next_v2_c1m_feasibility.md](experiments/apple_lewm_next_v2_c1m_feasibility.md);
+    development smokes, one run, CPU only, no world model). ρ\* = 4 cm on the disc (5 cm reached
+    29/32, one reset short). On fresh resets the ceiling scored 32/32 and every privileged proxy
+    lost by at least the strict +8/32 (mean-proxy 12/32, +20, [+15, +25]), where R15 had projected
+    an escalation at 4 cm. τ_commit = 1.0 cm. The oracle-dynamics readout arm H-read missed on
+    4 × 4 (58/64, +6) and met the 4/64 allowance exactly on 8 × 8 (60/64, +4, [+1, +8]; inside the
+    noise). Both readout learning curves were still falling at 1 024 roots. H-rule and H-sysid
+    reach 30/32 on the reading, so "LeWM needed" is still not expected.
+    - **What it admits:** only the drafting of a preregistration (R9.8, R9.9), with its own K0,
+      Stage O and dynamics gates **on the 8 × 8 grid** at h = 60 (no task has gated 8 × 8
+      dynamics), a `check_budget`-passing training block whose 8 × 8 GPU cost is not yet measured,
+      and an independent review. No protocol, no GPU and no task number yet.
+    - **Next.** The record's independent review; then, on approval, the preregistration draft
+      (8 × 8 calibration run first, to size its budget).
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.

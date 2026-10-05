@@ -63,6 +63,116 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
+
+**Outcome: M-PROCEED** ([apple_lewm_next_v2_c1m_feasibility.md](experiments/apple_lewm_next_v2_c1m_feasibility.md) §2; report
+`outputs/c1m-run-1/report.json` in the `c1m-run` worktree, sha256 `916d7c01…5a02`, at `d77f001`,
+one run, CPU only, no world model). M-F1: H-final(commit) 30, 30 and 29/32 at 3, 4 and 5 cm (disc),
+so ρ\* = 4 cm. M-F2: remaining motion 6.85 cm, r = 465, a_lo = −0.5. M-F3 (fresh resets): ceiling
+32/32; H-now 0, N-proxy 8, shuf-proxy 8, mean-proxy 12/32, headroom intervals [+32, +32],
+[+19, +28], [+19, +28], [+15, +25], feasibility 1.000 for both scene-blind proxies: passes under
+the strict reading, where R15 projected an escalation. M-F4: τ_commit = 1.0 cm (32, 29, 30, 15, 13,
+9 of 32 at 0–3 cm). M-F5a: the 4 × 4 plate-hidden lower bound 5.82 cm > 1.0 (8 × 8: 4.12); readout
+medians at r 0.650 cm (4 × 4) and 0.478 cm (8 × 8), both learning curves still falling. M-F5b on
+64 resets: ceiling 64/64; H-read 4 × 4 58/64 (+6, [+2, +11], misses), **8 × 8 60/64 (+4, [+1, +8],
+meets the 4/64 allowance exactly, a point reading inside the noise)**. M-F6: H-rule and H-sysid
+30/32 each on the reading; H-rule-stale 17/32. M-F7: 9.72 s at most. Development smokes; the
+proxies and H-read are privileged calculations, not trained arms.
+
+The declarations below (R16.1–R16.12) were made before the run, in `8601c1b`.
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_next_v2_c1m_feasibility.md](experiments/apple_lewm_next_v2_c1m_feasibility.md); its
+§1 holds the full text of these declarations. **This entry was written in the same commit as that
+§1, before any seed of the record's block was simulated** (the C1 review's lesson: R14.1–R14.8
+existed only in that record until after its run). It applies R15 (merged in #140) and answers the
+three non-blocking notes of #140's approving review. The labels are R16 because R1–R15 are taken;
+a search of every ref (79) and every worktree's `docs` on 2026-10-05 found no R16.
+
+- **R16.1 — form and code.** A development feasibility record, CPU only, no world model. TASK-076's
+  worker, hook, `AimController`, `LookaheadAim` and `PlateBrancher` and C1's runtime classes are
+  reused unchanged; the new code is `lewm_next_c1m.py`, `lewm_next_c1m_runtime.py` and
+  `scripts/run_c1m_feasibility.py`. No hash-pinned TASK-073–076 file and no C1 file is edited (the
+  runner checks TASK-076's pins and C1's code hashes). One invocation sets ρ\*, r, a_lo and
+  τ_commit by their rules in code; it starts only on a quiet machine (1- and 5-minute load ≤ 2.0).
+- **R16.2 — seeds and salts.** Block 63000–64999: M1 63000–63031 (M-F1, M-F2), F3 63100–63131
+  (M-F3, M-F6, half of M-F5b), R 63132–63163 (the other half of M-F5b), T 63200–63231 (M-F4),
+  corpus 63300–64323 (1 024 roots), debug 64900–64999 (mechanics only, not read). Salts 7901 (the
+  move draw), 7902 (the corpus aim), 7903 (outer folds), 7904 (λ), 7905 (bootstraps and
+  feasibility), 7906 (τ_commit's direction), 7907 (the learning curve's nested subsample). The
+  search found no seed use of the block on any ref or worktree (only a wall-time constant, a
+  decimal's digits, a byte count and a latency), and 7901–7909 in no `src`, `scripts`, `tests` or
+  `configs`; R15's block and salts are not reused. Resets: v2's own `wide_reset_values`.
+- **R16.3 — the move.** At the observation of step 300, `plate_shift.move_plate` by the reset's
+  stored offset; the rule's base is then the moved plate. One draw per reset (salt 7901), shared by
+  every radius and both families: offset = ρ·√u·(cos 2πv, sin 2πv) (disc) or
+  ρ·√u·(cos(π + πv), sin(π + πv)) (−y half-disc). An off-table draw at 6 cm in either family is
+  re-drawn (k + 1, at most 50; none expected on v2's reset). A blocked move is a counted failure in
+  every arm. p̄ = (0.49, −0.09) plus the family's mean offset (0, or (0, −4ρ\*/(3π))).
+- **R16.4 — M-F1 and M-F2.** H-final(commit) on M1 at ρ = 3, 4, 5, 6 cm (disc), stopping at the first
+  radius below 30/32; ρ\* is the largest radius passing with every smaller one; if 3 cm fails, the
+  −y half-disc runs once by the same rule; if that fails, M-INFEASIBLE. At ρ\*, C1-F1's remaining
+  motion (≥ 2 cm) and r (R14.3) from M-F1's attempts, and a_lo by R14.4's reach rule on M1.
+- **R16.5 — M-F3, with the fresh ceiling's consequence (#140 review, note 2).** On F3's fresh 32:
+  H-final(commit), H-now, N-proxy, shuf-proxy (p′ the next reset's moved plate) and mean-proxy, every
+  proxy aim clipped as in C1. Strict reading (R15.7): each proxy's paired interval lower bound
+  ≥ +8/32; each scene-blind proxy's McNemar feasibility ≥ 0.8. **If the fresh ceiling is below
+  30/32, the row is M-INFEASIBLE**, since the ceiling bar is the admission precondition; the
+  proxies are then reported, and no clause can fire on them.
+- **R16.6 — the early stop is realistic (#140 review, note 3).** With ρ\* ≤ 4 cm (disc) or ≤ 5 cm
+  (−y half-disc), M-TWINS-ESCALATE is the projected row, and the projected-pass radii (5–6 cm,
+  disc) are the most exposed to a ceiling drop. An early stop after M-F3 is a realistic outcome,
+  not an unlikely one.
+- **R16.7 — how intervals are stated (#140 review, note 1).** Every interval is computed from the
+  observed pairs (paired, reset-clustered bootstrap, salt 7905). R15's quoted intervals hold with
+  at most one reversed pair: 4/64 gives [+1, +8] with none, [−1, +9] with one and [−1, +10] with
+  two; +10/32 with two reversed pairs gives [+3, +16]. In general each reversed pair widens the
+  interval at a fixed difference, so R15.2's 6/32 half-width holds for at most one reversed pair
+  and is not a bound.
+- **R16.8 — M-F4 to M-F7, if M-F3 passes.** τ_commit on T's 32 (H-final(commit)'s aim plus a planted
+  error of 0, 0.5, 1, 1.5, 2 or 3 cm, one direction per reset; TASK-076 K0's rule, undefined if
+  level 0 < 28/32). The 1 024-root corpus at ρ\*; cross-fitted dual ridge at r on pooled 4 × 4 and
+  8 × 8 tokens; the 4 × 4 plate-hidden lower bound > τ_commit gates (8 × 8's admits 8 × 8 to H-read);
+  a nested learning curve (1/4, 1/2, 3/4, all) shared between grids, with TASK-075 §7's guard on
+  3/4 against all. H-read on F3 + R (64): H-final(commit)'s cloned look-ahead with plate(r) read by
+  the pooled readout from the frame rendered at r in the clone (g0 the true plate, a disclosed
+  privileged start of the fixed point); bar ceiling − H-read ≤ 4/64, 4 × 4 first, 8 × 8 only if
+  4 × 4 misses. Comparators on F3 (reported): H-rule, H-sysid on the R-plate reading and the true
+  plate, H-now-reaim, and H-rule-stale fed P-3's post-look (pre-move) plate estimate. Cost: each
+  H-final and H-read attempt ≤ 60 s or the cap is reviewed.
+- **R16.9 — the rows.** M-INFEASIBLE (no ρ\*, M-F2 fails, or the fresh ceiling < 30/32);
+  M-TWINS-NONE (a scene-blind upper bound < +8: clause); M-TWINS-ESCALATE (any other M-F3 failure;
+  the record stops); M-NO-TAU; M-ARM-KEYED; M-READ-NONE (both grids' lower bounds > 8/64 and no
+  curve falling: clause); M-NO-BAR-DATA (a curve falling); M-NO-BAR; M-PROCEED. The clause scopes are
+  R15 §5.5's.
+- **R16.10 — void and repeat.** A V is void; its report is kept and disclosed. At most one repeat,
+  only after a fix that is committed, pushed and recorded (cause, fix commit, void report sha256),
+  from scratch at the fix's revision on the same seeds; a non-code cause still needs a committed
+  record of the cause and its prevention first. A second V ends the record V-ESCALATE. A completed
+  run is the record; no run is repeated for its result; no tracked file is edited in a run's
+  worktree during a run.
+- **R16.11 — debug runs.** Only after the commit that declares this entry, only on committed code
+  (the runner refuses a dirty or untracked runner), only on 64900–64999; every stage runs whatever a
+  check shows, with fixed stand-ins (ρ\* = 3 cm disc, a_lo = −0.2, r = 485, τ_commit = 1.0 cm);
+  nothing is read for the row.
+- **R16.12 — R7's canonical sentence is unchanged** by this record, whatever its row.
+- **R16.13 — the row is applied as written (after the run).** M-PROCEED: a preregistration may be
+  drafted under R9.8 and R9.9 (R15.8, row 6), with its own K0 on fresh seeds, Stage O on the 8 × 8
+  grid, a `check_budget`-passing training block, the offline horizon and dynamics gates at
+  h = r − 405 = 60 on 8 × 8 (choosing 8 × 8 commits the protocol to gating its own dynamics there;
+  TASK-066's gates cover 4 × 4 only), a 16-reset development closed loop with a stop rule and an
+  independent review. Two calls were close and are recorded as such: ρ\* was set by one reset
+  (5 cm: 29/32), and the 8 × 8 H-read met its allowance exactly. The report's `early_verdict` field
+  (`M-NO-TAU`) is the ladder evaluated before τ_commit existed and is not a row. No protocol is
+  drafted, no GPU is used and no task number is assigned by this record (R15.1). The canonical
+  status sentence is unchanged; nothing closes.
+- **R16.14 — the debug run and the void rule (after the run).** One debug run
+  (`outputs/c1m-debug-1`, at `d77f001`, after `8601c1b`, seeds 64900–64979 subsets) preceded the
+  record run on the same committed code, and was not read. The record run completed on its first
+  attempt; R16.10's repeat was not used. After the run, the runner's list of C1's hash-checked files moved into
+  `lewm_next_c1m.py` (same values) so that the audit test `test_no_runner_imports` passes; no
+  behaviour changed, and the record remains the run at `d77f001`.
+
 ## Decision 2026-10-04 (d) — after C1-TWINS-ESCALATE: the next direction is C1-M, C1 plus a declared post-pick plate move, with the readout judged by a paired oracle-dynamics arm (R15; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30). DRAFT: in force only after an independent
