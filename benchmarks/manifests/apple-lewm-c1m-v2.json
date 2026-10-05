@@ -1068,6 +1068,7 @@
     4,
     0.001
    ],
+   "determinism_rule": "W's re-run on S's first four resets (R17.21, amended by R17.27): a reset refused before 405 is refused again identically (termination reason and executed steps); a committed reset commits again, with its R-plate reading within 0.1 cm and the same success outcome; the commit target's difference is reported, not gated; any gated mismatch is V",
    "g_bar": 56,
    "mcnemar_p": 0.01,
    "min_separation": 7,
@@ -1270,7 +1271,7 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "89359ed32aa8d6380809aa0831e8f4890c21ebdf3336543186fa01c6a04c5b12",
+ "frozen_sha256": "f6bb928e4e65b6584b8e27fb56fba75646f0327bb53b8ed7078bd3508a2de71e",
  "frozen_sha256_pin": null,
  "hashes": {},
  "note": "DRAFT until the freeze: no frozen-sha pin, no protocol-document sha and no file pins yet; the freeze (after a reported K0-PASS and an independent reviewer's APPROVE) sets frozen_sha256_pin, protocol_document_sha256 and hashes (the own files, the carried C1 and C1-M code files and TASK-076's 84 pins).",

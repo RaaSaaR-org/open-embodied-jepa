@@ -294,10 +294,14 @@ def reached_405(record: dict) -> bool:
 
 
 def determinism_check(first: list[dict], again: list[dict], tol_m: float | None = None) -> dict:
-    """W's re-run on S's first resets (R17.21): a reset refused before 405 must be refused again
-    identically (termination reason and executed steps); a committed reset must commit again,
-    with its R-plate reading and its commit target each within the declared tolerance (0.1 cm).
-    ``ok`` is False on any mismatch (the stage is V)."""
+    """W's re-run on S's first resets (R17.21, amended by R17.27): a reset refused before 405
+    must be refused again identically (termination reason and executed steps); a committed reset
+    must commit again, with its R-plate reading within the declared tolerance (0.1 cm) and the
+    same success outcome. The commit target's difference is reported, never gated: the target is
+    an argmin over 147 candidates followed by a refinement stopped at tau/4, so a renderer flake
+    that meets a near-tie or stops the refinement one iterate earlier can move it by more than
+    0.1 cm without any difference in what the arm saw (R17.27). ``ok`` is False on any gated
+    mismatch (the stage is V)."""
     tol = DETERMINISM_TOLERANCE_M if tol_m is None else float(tol_m)
     items, ok = [], True
     for a, b in zip(first, again, strict=True):
@@ -318,10 +322,24 @@ def determinism_check(first: list[dict], again: list[dict], tol_m: float | None 
             rb = np.asarray(b["decisions"][0].get("reading", b["commit"]["target"]), np.float64)
             dt = float(np.linalg.norm(np.asarray(a["commit"]["target"]) - b["commit"]["target"]))
             dr = float(np.linalg.norm(ra - rb))
-            item |= {"target_diff_m": dt, "reading_diff_m": dr, "ok": dt <= tol and dr <= tol}
+            sa, sb = bool(a["success"]), bool(b["success"])
+            item |= {
+                "reading_diff_m": dr,
+                "target_diff_m": dt,  # reported only (R17.27)
+                "success": [sa, sb],
+                "ok": dr <= tol and sa == sb,
+            }
         ok = ok and item["ok"]
         items.append(item)
-    return {"tolerance_m": tol, "resets": items, "ok": bool(ok)}
+    return {
+        "tolerance_m": tol,
+        "rule": DETERMINISM_RULE,
+        "resets": items,
+        "max_target_diff_m": max(
+            (i["target_diff_m"] for i in items if "target_diff_m" in i), default=None
+        ),
+        "ok": bool(ok),
+    }
 
 
 # ----- the corpus (§4.3) -------------------------------------------------------------------------
@@ -614,8 +632,14 @@ DELTA = 8  # of 64: an allocation (the design note's proposal, R15.6's label), n
 MCNEMAR_P = 0.01
 MIN_SEPARATION = 7  # of 64: the smallest b - c at which the one-sided McNemar test can pass
 DETERMINISM_RESETS = 4  # W's re-run on S's first four resets
-DETERMINISM_TOLERANCE_M = 0.001  # 0.1 cm on the R-plate reading and the commit target (R17.21):
+DETERMINISM_TOLERANCE_M = 0.001  # 0.1 cm on the R-plate reading (R17.21, amended by R17.27):
 # > 15 x the renderer noise seen in Stage 0 (about 6e-5 m in the 405 reading) and 10 x below tau
+DETERMINISM_RULE = (
+    "W's re-run on S's first four resets (R17.21, amended by R17.27): a reset refused before 405 "
+    "is refused again identically (termination reason and executed steps); a committed reset "
+    "commits again, with its R-plate reading within 0.1 cm and the same success outcome; the "
+    "commit target's difference is reported, not gated; any gated mismatch is V"
+)
 S_ROWS = {
     "V": "one repeat of the stage after a recorded fix",
     "S-VOID-CEILING": "H-final(commit)(S) < 56/64: escalate, no clause, no claim",
@@ -1384,6 +1408,7 @@ def frozen_block() -> dict:
                 "mcnemar_p": MCNEMAR_P,
                 "min_separation": MIN_SEPARATION,
                 "determinism": [DETERMINISM_RESETS, DETERMINISM_TOLERANCE_M],
+                "determinism_rule": DETERMINISM_RULE,
                 "rows": S_ROWS,
             },
             "clause_rows": CLAUSE_ROWS,

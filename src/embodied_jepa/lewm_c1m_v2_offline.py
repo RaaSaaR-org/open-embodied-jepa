@@ -169,15 +169,7 @@ def featurise_corpus(
     for split in ("train", "val", "gate"):
         seeds = [int(s) for s in manifest["split"][split]]
         n = len(seeds)
-        paths = {
-            "features": out / f"features8_{split}.npy",
-            "commands": out / f"commands_{split}.npy",
-            "roots": out / f"roots_{split}.json",
-            "hidden8": out / f"hidden8_r_{split}.npy",
-            "pool4": out / f"pool4_405_r_{split}.npy",
-            "full405": out / f"full405_{split}.npy",
-            "table": out / f"table_{split}.npz",
-        }
+        paths = feature_paths(out, split)
         for path in paths.values():
             if path.exists():
                 raise FileExistsError(f"refusing to overwrite {path}")
@@ -233,6 +225,51 @@ def featurise_corpus(
         "seconds": time.monotonic() - started,
         "featurisation_seconds": gpu_seconds,
         "probe": bool(probe),
+    }
+
+
+FEATURE_FILES = {  # every file a split's featurisation writes (its sha256 is in the report)
+    "features": "features8_{split}.npy",
+    "commands": "commands_{split}.npy",
+    "roots": "roots_{split}.json",
+    "hidden8": "hidden8_r_{split}.npy",
+    "pool4": "pool4_405_r_{split}.npy",
+    "full405": "full405_{split}.npy",
+    "table": "table_{split}.npz",
+}
+
+
+def feature_paths(folder, split: str) -> dict:
+    return {k: Path(folder) / v.format(split=split) for k, v in FEATURE_FILES.items()}
+
+
+def verify_feature_files(folder, files_sha256: dict, splits) -> dict:
+    """G-split (the #143 approval's note 1): before a stage reads a split's featurisation, every
+    file of that split is hashed and compared with the featurise report's ``files_sha256``. A
+    split the report lacks, a missing file or a different sha256 is a GuardError (V)."""
+    started = time.monotonic()
+    checked, size = {}, 0
+    for split in splits:
+        want = files_sha256.get(split)
+        if not isinstance(want, dict) or set(want) != set(FEATURE_FILES):
+            raise GuardError(f"G-split: the featurise report records no complete {split} split")
+        for key, path in feature_paths(folder, split).items():
+            if not path.is_file():
+                raise GuardError(f"G-split: the feature file {path.name} is missing")
+            got = sha256_file(path)
+            if got != want[key]:
+                raise GuardError(
+                    f"G-split: {path.name} sha256 {got[:12]} differs from the featurise report's "
+                    f"{str(want[key])[:12]}"
+                )
+            checked[f"{split}/{key}"] = got
+            size += path.stat().st_size
+    return {
+        "splits": list(splits),
+        "files": len(checked),
+        "bytes": int(size),
+        "seconds": time.monotonic() - started,
+        "ok": True,
     }
 
 
