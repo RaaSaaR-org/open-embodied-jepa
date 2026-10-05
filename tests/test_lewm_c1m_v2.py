@@ -1380,3 +1380,111 @@ def test_featurise_corpus_remaps_its_stores_without_changing_a_byte(tmp_path):
     # G-anchor checks the frozen block's 256 frames (R17.39), across the first roots
     assert lm.FEATURE_ANCHOR["frames"] == 256
     assert all(r["anchor"]["frames"] == 256 for r in results)
+
+
+# ----- before Stage T (R17.41-R17.42) -------------------------------------------------------------
+def test_the_chain_finds_stage_o_fits_by_name_in_the_folder_it_is_given(tmp_path, monkeypatch):
+    """Stage O recorded its fits' paths relative to its own worktree (R17.42): a later stage in
+    another worktree finds them by name in ``--fits``, and still checks every sha256."""
+    run = _runner()
+    args, record, _sha = _chain_files(tmp_path / "o")
+    relative = {
+        k: v | {"path": f"outputs/task077-readouts-1/fits/{Path(v['path']).name}"}
+        if "path" in v
+        else v
+        for k, v in record.items()
+    }
+    report_path = Path(args.fits).parent / "report.json"
+    stored = json.loads(report_path.read_text())
+    stored["fields"]["fits"] = relative
+    report_path.write_text(json.dumps(stored))
+    elsewhere = tmp_path / "another-worktree"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)  # the recorded relative paths do not exist here
+    report: dict = {}
+    chain = run.artifact_chain(args, report)
+    for name in ("moments", "r8", "r_plate", "mean_latent"):
+        want = Path(args.fits).resolve() / Path(record[name]["path"]).name
+        assert chain["fits"][name]["path"] == str(want)
+    assert report["artifact_chain"]["fits_folder"] == str(Path(args.fits).resolve())
+    run.load_moments(chain)
+    run.load_readout(chain, "r8")
+    run.check_mean_latent(chain)
+    # the sha256 checks still bind on the file found by name
+    np.savez(Path(args.fits) / "moments.npz", mean=np.ones(4), std=np.ones(4))
+    with pytest.raises(pt.GuardError):
+        run.load_moments(run.artifact_chain(args, {}))
+    # a fit missing from the named folder is refused
+    (Path(args.fits) / "r8.npz").unlink()
+    with pytest.raises(pt.GuardError, match="r8.npz"):
+        run.artifact_chain(args, {})
+
+
+def test_a_job_checkpoint_is_found_beside_its_report(tmp_path, monkeypatch):
+    run = _runner()
+    job = tmp_path / "train-W-66800"
+    job.mkdir()
+    (job / "W-66800.pt").write_bytes(b"weights")
+    record = {"arm": "W", "seed": 66800, "checkpoint": "outputs/train-W-66800/W-66800.pt"}
+    (job / "report.json").write_text(
+        json.dumps({"outcome": "T-JOB-DONE", "debug": False, "fields": {"record": record}})
+    )
+    monkeypatch.chdir(tmp_path)  # "outputs/..." does not exist here
+    loaded = run.load_job(job / "report.json", False)
+    assert loaded["checkpoint"] == str((job / "W-66800.pt").resolve())
+    (job / "W-66800.pt").unlink()
+    with pytest.raises(pt.GuardError):
+        run.load_job(job / "report.json", False)
+
+
+def test_gpu_memory_peak_reads_torchs_allocator_peaks(monkeypatch):
+    """R17.41: a GPU stage's report records torch's peak allocated and reserved memory."""
+    import types
+
+    run = _runner()
+    monkeypatch.delitem(sys.modules, "torch", raising=False)
+    assert run.gpu_memory_peak()["recorded"] is False
+    gib = 2**30
+
+    class Props:
+        total_memory = 16 * gib
+
+    cuda = types.SimpleNamespace(
+        is_available=lambda: True,
+        is_initialized=lambda: True,
+        current_device=lambda: 0,
+        get_device_name=lambda d: "fake",
+        max_memory_allocated=lambda d: 5 * gib,
+        max_memory_reserved=lambda d: 6 * gib,
+        get_device_properties=lambda d: Props(),
+    )
+    monkeypatch.setitem(sys.modules, "torch", types.SimpleNamespace(cuda=cuda))
+    peak = run.gpu_memory_peak()
+    assert peak["recorded"] is True
+    assert peak["max_memory_allocated_gib"] == 5.0 and peak["max_memory_reserved_gib"] == 6.0
+    assert peak["total_gib"] == 16.0
+    cuda.is_initialized = lambda: False
+    assert run.gpu_memory_peak()["recorded"] is False
+
+
+def test_a_gpu_stage_report_carries_gpu_memory_even_when_void(tmp_path):
+    """The reading is taken in run()'s finally, for GPU stages only, so a V records it too."""
+    out = tmp_path / "train-v"
+    code = (
+        "import importlib.util, sys\n"
+        f"spec = importlib.util.spec_from_file_location('r', {str(RUNNER)!r})\n"
+        "r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)\n"
+        "def boom(report, args): raise r.lp.GuardError('stop here')\n"
+        "r.preflight = boom\n"
+        f"args = r.build_parser().parse_args(['train', '--output', {str(out)!r}, '--job', 'cal-W',"
+        " '--tests-record', 'x', '--corpus', 'x', '--corpus-sha256', 'x'])\n"
+        "rep = r.run(args)\n"
+        "print(rep['outcome'], 'gpu_memory' in rep)\n"
+    )
+    proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.split()[-2:] == ["V", "True"]
+    stored = json.loads((out / "report.json").read_text())
+    assert stored["outcome"] == "V" and "recorded" in stored["gpu_memory"]
+    run = _runner()
+    assert set(run.GPU_STAGES) == {"featurise", "train", "scale"}

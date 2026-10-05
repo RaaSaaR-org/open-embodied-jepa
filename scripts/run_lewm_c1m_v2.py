@@ -25,6 +25,11 @@ One invocation runs one stage and writes ``<output>/report.json`` (it refuses an
 * ``oscale``     -- the scale probe of Stage O's readouts (R17.24, R17.28; CPU): ``readouts_core``
   at the real sizes on synthetic features, after the feature-file check; time and peak PSS.
 
+Every GPU stage (``featurise``, ``train``, ``scale``) runs through
+``scripts/gpu_run.sh --wait --min-free-gib 8 --board --who oej:task077-<stage> -- ...`` (G-GPU,
+§10.2; ``--board`` keeps the shared BOARD.md's holder line current, R17.41) and records torch's
+peak allocated and reserved GPU memory in ``gpu_memory`` (R17.41).
+
 Every CPU stage runs the full test suite itself first (G-tests); every stage checks the clean
 tree, TASK-076's pins and C1's and C1-M's code (G-hash), and, once FROZEN, TASK-077's own
 pins. While the protocol was DRAFT, only ``tests``, ``simulate``, ``scale``, ``oscale``, ``k0`` and
@@ -804,6 +809,22 @@ FEATURE_SPLITS = {
 }
 
 
+def rebased(recorded: str, folder) -> str:
+    """An artifact recorded by an earlier stage, found by its file name in ``folder``, the folder
+    named on this stage's command line (Stage T onwards, R17.42).
+
+    Stage O wrote its fits' paths relative to its own worktree (``outputs/task077-readouts-1/
+    fits/...``) and a Stage T job writes its checkpoint's path relative to its own; a later stage
+    run from another worktree, at a later revision, cannot open such a path. The file is
+    therefore looked up in the folder the command line names (``--fits``, or the job report's
+    own folder), and its identity is still checked by sha256 where it is read (the moments, R8,
+    R-plate, the mean latent and every checkpoint)."""
+    path = Path(folder).resolve() / Path(recorded).name
+    if not path.is_file():
+        raise lp.GuardError(f"G-split: {Path(recorded).name} is not in {Path(folder).resolve()}")
+    return str(path)
+
+
 def artifact_chain(args, report: dict) -> dict:
     """G-split (R17.22): the sealed corpus, its featurisation and Stage O's fits, tied by sha256.
     The featurise report must be FEATURISED and the readouts report O-PASS (any O row in a debug
@@ -824,12 +845,18 @@ def artifact_chain(args, report: dict) -> dict:
             Path(args.fits).parent / "report.json", O_ROWS_READ[bool(args.debug)], args.debug
         )
         check_same_corpus(ro, chain, "readouts")
-        chain["fits"] = ro["fields"]["fits"]
+        chain["fits"] = {
+            k: v | {"path": rebased(v["path"], args.fits)}
+            if isinstance(v, dict) and "path" in v
+            else v
+            for k, v in ro["fields"]["fits"].items()
+        }
     report["artifact_chain"] = {
         "corpus_sha256": chain["corpus_sha256"],
         "fits": None
         if "fits" not in chain
         else {k: v.get("sha256") for k, v in chain["fits"].items() if isinstance(v, dict)},
+        "fits_folder": str(Path(args.fits).resolve()) if "fits" in chain else None,
     }
     report["corpus_sha256"] = chain["corpus_sha256"]
     return chain
@@ -1029,7 +1056,11 @@ def completed(path, rows, debug: bool) -> dict:
 
 
 def load_job(path, debug: bool) -> dict:
-    return completed(path, ("T-JOB-DONE",), debug)["fields"]["record"]
+    """A completed Stage T job's record, its checkpoint found beside its report (R17.42; the
+    checkpoint's sha256 is checked wherever it is loaded)."""
+    record = dict(completed(path, ("T-JOB-DONE",), debug)["fields"]["record"])
+    record["checkpoint"] = rebased(record["checkpoint"], Path(path).parent)
+    return record
 
 
 def stage_plan(report, args, fields: Fields, manifest) -> str:
@@ -1493,7 +1524,12 @@ def stage_scale(report, args, fields: Fields, manifest) -> str:
             moments_sha=off.moments_sha256(mean, std),
         )
         spec = {"arm": "W", "seed": lm.DEBUG_MODEL_SEEDS[0], "calibration": False}
-        budget = {"updates": args.scale_updates, "select_every": args.scale_updates // 2}
+        if args.scale_updates % args.scale_selections:
+            raise ValueError("--scale-updates must be a multiple of --scale-selections")
+        budget = {
+            "updates": args.scale_updates,
+            "select_every": args.scale_updates // args.scale_selections,
+        }
         out = Path(args.output) / "checkpoints"
         out.mkdir()
         probe = rt.scale_probe(
@@ -1592,6 +1628,27 @@ STAGE_CAPS = {
 }
 
 
+def gpu_memory_peak() -> dict:
+    """The CUDA caching allocator's peaks for this process (R17.41): torch's
+    ``max_memory_allocated`` and ``max_memory_reserved`` since the process started, read at the
+    end of a GPU stage (also after a V). The process is fresh, so no reset is needed. The driver's
+    own overhead (the CUDA context, about 0.4 GiB on this card) is not in either number."""
+    torch = sys.modules.get("torch")
+    if torch is None or not torch.cuda.is_available() or not torch.cuda.is_initialized():
+        return {"recorded": False, "reason": "CUDA was not initialised in this process"}
+    device = torch.cuda.current_device()
+    return {
+        "recorded": True,
+        "device": int(device),
+        "name": torch.cuda.get_device_name(device),
+        "max_memory_allocated_gib": torch.cuda.max_memory_allocated(device) / GIB,
+        "max_memory_reserved_gib": torch.cuda.max_memory_reserved(device) / GIB,
+        "total_gib": torch.cuda.get_device_properties(device).total_memory / GIB,
+        "note": "torch.cuda.max_memory_allocated / max_memory_reserved at the stage's end; the "
+        "CUDA context's own memory is not included",
+    }
+
+
 def stage_cap(args) -> float:
     """The stage's wall cap (§10.3); Stage D and Stage S have their own (D 7 200 s, S 21 600 s)."""
     if args.stage == "closed":
@@ -1647,6 +1704,11 @@ def run(args) -> dict:
     except BaseException as error:  # noqa: BLE001 - every failure, signal included, is V
         guards.void(report, error)
     finally:
+        if args.stage in GPU_STAGES:
+            try:
+                report["gpu_memory"] = gpu_memory_peak()
+            except Exception as error:  # noqa: BLE001 - a reading never changes the outcome
+                report["gpu_memory"] = {"recorded": False, "reason": repr(error)}
         guards.finish(report)
         report.pop("_watch", None)
         report.pop("_run1", None)
@@ -1693,6 +1755,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--scale-train-roots", type=int, default=lm.SPLIT_SIZES["train"])
     parser.add_argument("--scale-val-roots", type=int, default=lm.SPLIT_SIZES["val"])
     parser.add_argument("--scale-updates", type=int, default=600)
+    parser.add_argument(
+        "--scale-selections",
+        type=int,
+        default=2,
+        help="scale: val selections in the probe job (50 = a calibration job's kept states)",
+    )
     return parser
 
 
