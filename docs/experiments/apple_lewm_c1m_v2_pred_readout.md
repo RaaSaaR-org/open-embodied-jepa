@@ -6,14 +6,15 @@ block is `src/embodied_jepa/lewm_pr_v2.py`; its sha256
 `tests/test_lewm_pr_v2.py` and in the manifest (`benchmarks/manifests/apple-lewm-pr-v2.json`),
 with the manifest's file pins and this document's sha256. **The freeze takes effect when it is
 merged on an independent reviewer's reported APPROVE.** Each later stage (C′, R, D, S) still needs
-its own reported GO (§8). K0′'s record is §8.1.
+its own reported GO (§8). K0′'s record is §8.1, Stage C′'s §8.2 and Stage R's plan §8.3.
 
 History. The DRAFT (R18.1–R18.14) was reviewed independently (#153). Stage 0 (R18.15–R18.21,
 [Stage-0 record](apple_lewm_c1m_v2_pred_readout_stage0.md), #154) added the code, debug smokes on
 65900–65999 only, the caps and R18.13's development dry run on TASK-077's val roots, which sets no
 bar; §15's questions 1–5 are ruled there. K0′ then ran once on a reported GO, and this freeze
-writes its values into the frozen block. No seed of D, S or F has been simulated and no fresh
-corpus root has been collected. A later stage's GO approves that stage only.
+writes its values into the frozen block. Stage C′ then sealed the fresh corpus (§8.2, R18.23);
+no seed of D, S or F has been simulated, and no fresh root has been featurised or read. A later
+stage's GO approves that stage only.
 
 - **Admitted by:** the TASK-077 decomposition record's row **D-READOUT**
   ([apple_lewm_c1m_v2_decomposition.md](apple_lewm_c1m_v2_decomposition.md) §2, R17.53–R17.54,
@@ -475,9 +476,12 @@ salt 8207), every level on the same 32 resets K′ = 65000–65031, beside TASK-
   1 and 1 of 28/32 in K alone. Pooling did what R18.19 asked of it: the 1.0 cm level is now
   measured on 64 resets, not 32.
 - **The K′ curve is not monotone** (1.0 cm 31 > 0.5 cm 29; 2.0 cm 18 > 1.5 cm 14), and K′ is more
-  lenient than K at 2 and 3 cm (18 against 11, 5 against 2). These differences (2 and 4 of 32)
-  are of the size binomial noise gives on 32 resets per level; the mapping uses the pooled counts as measured,
-  without smoothing, as declared (TASK-077's mapping: linear between the planted levels).
+  lenient than K at 2 and 3 cm (18 against 11, 5 against 2). The two non-monotone steps within
+  K′ (2 and 4 of 32, paired on the same resets) are of the size binomial noise gives on 32 resets
+  per level; the K′-against-K gaps (7 and 3 of 32, on different resets) are within chance too
+  (Fisher two-sided p ≈ 0.13 and 0.43; #155 review, nit 1) and sit above τ_commit, so they do not
+  move it. The mapping uses the pooled counts as measured, without smoothing, as declared
+  (TASK-077's mapping: linear between the planted levels).
 - **r_K′ = 459 against r = 465:** 6 steps of margin (K: 5).
 - **What this means for G-bar.** A W whose aim error sits at about τ_commit would succeed at about
   60/64 ≈ 0.94 by the pooled curve, where G-bar passes with probability about 0.98 (§10), and
@@ -495,6 +499,76 @@ coupling (lowest 0.99946, N, independent). Report `outputs/task080-simulate-k0p-
 `931281a` from the K0′ worktree after G-tests (2066 passed, 37 skipped); copied with K0′'s files to
 `~/develop/emai/evidence/task080-k0/`. These numbers come from TASK-077's val roots with aims built
 from the true plate; Stage R measures them on fresh gate-P roots.
+
+### 8.2 Stage C′'s result: CORPUS-SEALED (R18.23)
+
+Stage C′ ran once, on the reviewer's reported GO (#155,
+<https://github.com/RaaSaaR-org/open-embodied-jepa/pull/155#issuecomment-6048275092>, posted
+22:36:26 UTC), at `514110d`, the freeze's merge commit, on a clean tree with STATUS FROZEN and the
+frozen sha `0fc095dc…be064`, in the worktree `/home/huhn/develop/emai/worktrees/task080-stagec`,
+with the command the GO named. It ran on the CPU with 6 workers and without the GPU lock, from
+22:37:16 to 22:45:01 UTC on 2026-10-07 (465 s; cap 7 200 s).
+- **Guards.** In-run G-tests passed at `514110d` on a clean tree (2070 passed, 37 skipped, with
+  CUDA hidden; 22:37:16–22:39:58). G-hash checked TASK-076's 84 pins, TASK-077's 13 pins and
+  this task's 7 own pins, with the protocol document's pin `5b28c2d0…e78c`; the revision at the end
+  was still `514110d` and the tracked tree stayed clean. G-repro passed 8 of 8 checks. Load at the
+  start was 0.21 / 0.13 (bar 2.0 / 2.0); MemAvailable 24.8 GiB; 68.3 GiB free on disk.
+- **Memory.** Peak process-tree PSS was **9.78 GiB** against the 12 GiB ceiling (RSS 12.01 GiB,
+  11 processes).
+- **Row: CORPUS-SEALED.** 499 of the 500 roots 65300–65799 are kept. The one excluded root,
+  **65688** (gate-P), was excluded as `no_decision` (no commit decision at 405), so the excluded
+  fractions are 0.2 % overall, 0.4 % in gate-P and 0 % in contrast-T, against the 2 % bar in each.
+  The split, drawn before collection (salt 8203), was 250 and 250; the kept halves are **gate-P
+  249** and **contrast-T 250**. The clause does not fire.
+- **Render disagreements.** None in the corpus. In G-repro's re-render of TASK-072's seed 51307,
+  one of the three renders differed from the other two in 4 pixels by at most 1 level, with equal
+  states; the majority frame was used, as declared (TASK-077 §7.3 saw the same kind on two corpus
+  seeds).
+- **The log** has one line per 60-root chunk of the form `fresh corpus 65300-65359: 0/60`. The
+  count is the collector attempts' `success` field, which a corpus attempt never sets because it
+  stops before the place; TASK-077's Stage C log reads the same (`corpus 67000-67059: 0/60`). It
+  is not an exclusion count.
+- **Sealed manifest:** `outputs/task080-corpus-1/corpus/manifest.json` in that worktree
+  (git-ignored; 499 root files and the manifest, 302 MB), sha256
+  **`deebd83db6de53e23dbde0b921ae7f7c1cf79cb24c6dd27bfae066c2f5017c4e`**, with provenance
+  `privileged_scripted_collector: true`, `learned_control: false`, revision `514110d` and resets
+  digest `e7f5dbf1…bf27`. Every later stage requires it (`--corpus-sha256`, §8 step 4).
+- **Report:** `outputs/task080-corpus-1/report.json`, sha256
+  `63b085df119f59219c24057ad4f592a59d20f43ff5ca210c32fd0e570bf6b0ca`; its log
+  (`outputs/task080-corpus-1.log`, sha256 `540c2ee5…4751`) and its stdout capture (empty, 0 bytes)
+  are beside it. A copy of all three and of the sealed manifest is in
+  `~/develop/emai/evidence/task080-stagec/`, with the manifest `_checksums/task080-stagec.sha256`
+  (sha256 `89779255…49dc`). The root files themselves are not copied, as TASK-077's corpus was
+  not; they stay in the `task080-stagec` worktree, which is not edited and must not be removed
+  before TASK-080's results PR.
+
+Nothing in the corpus has been featurised or read: no readout has seen a fresh root, and gate-P
+opens only inside Stage R after `first_outcome_utc` (§8 step 5, §11 G-split).
+
+### 8.3 Stage R's plan (R18.24)
+
+Stage R runs once, on its own reported GO at this record's merge commit, from a fresh clean
+worktree of that commit (`scripts/new_worktree.sh <dir> --run --from <merge sha>`). One GO covers
+its three invocations, in this order, each from the worktree root:
+
+1. **`tests`** (CPU, a few minutes): the full suite at HEAD with CUDA hidden, written as a stage
+   report. It is the G-tests record the GPU stage requires (`--tests-record`: same revision,
+   exit 0, clean tree, finished after HEAD's commit). It simulates and reads nothing.
+2. **`featurise`** (GPU) through `scripts/gpu_run.sh --wait --min-free-gib 8 --board --who
+   oej:task080-featurise`, with `--corpus` the sealed folder of §8.2 and `--corpus-sha256
+   deebd83d…7c4e`. It writes the 8 × 8 features and the full tokens at 405 for both halves
+   (about 3.3 GB, scaled from TASK-077's 13 GB for 1 995 roots), checks G-anchor on 256 frames and
+   records the GPU memory peak. Cap 3 600 s (§11); expected about a minute.
+3. **`rgate`** (CPU) with the same corpus and sha, `--features` the featurise output, TASK-077's
+   featurisation, Stage O fits, six job reports and T-PLANNED plan (each checked by sha256), and
+   TASK-076's evidence root (G-repro). It runs its own in-run G-tests and G-quiet, the roll-outs
+   and fits on the 1 995 old roots with their cross-fit, writes `first_outcome_utc`, and only then
+   opens gate-P and contrast-T. Cap 14 400 s (§11); Stage 0 scaled it at ≤ 4 200 s (record §4).
+   The dry run's peak PSS was 9.96 GiB against the 12 GiB ceiling.
+
+If one of the three ends in anything other than its expected outcome (TESTS-PASS, FEATURISED,
+or a row of §9.4 for `rgate`), nothing further is launched and the case is ruled under §11 before
+anything else runs. The exact commands are in the GO.
 
 ## 9. Gates, bars and rows
 
@@ -721,6 +795,7 @@ models (§3). Disk: the fresh corpus about 0.3 GB of frames and about 3.2 GB of 
 - **Non-inferiority is demanding**, as in TASK-077 (§10).
 - **τ_commit's margins were thin in K0** (the 0.5 and 1.0 cm levels each one success above 28/32);
   the pooled K0′ rule may move τ_commit to 0.5 cm, which would make R1 likely to fail (§8 step 2).
+  (K0′ left it at 1.0 cm, §8.1.)
 - **W-66800 is flagged** (`last_two_triggered`); all W curves were lowest at their last point.
 - **The scorer and condition are imposed simulator laws**, as TASK-077 §13 says; nothing here
   transfers as such to Arena or the real G1.

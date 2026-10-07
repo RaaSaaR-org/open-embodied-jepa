@@ -63,6 +63,33 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 — TASK-080 Stage C′ ends CORPUS-SEALED; Stage R's plan (R18.23–R18.24)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_c1m_v2_pred_readout.md](experiments/apple_lewm_c1m_v2_pred_readout.md) §8.2 and
+§8.3. No fresh root has been featurised or read; no seed of D, S or F has been simulated; R7 is
+unchanged.
+
+- **R18.23 — Stage C′: CORPUS-SEALED.** Stage C′ ran once on the reviewer's GO (#155,
+  issuecomment-6048275092) at `514110d`, CPU only, 22:37:16–22:45:01 UTC on 2026-10-07 (465 s),
+  after in-run G-tests (2070 passed, 37 skipped); G-repro 8 of 8; peak process-tree PSS 9.78 GiB
+  (cap 12). 499 of the 500 roots 65300–65799 are kept; 65688 (gate-P) was excluded as
+  `no_decision`, so the excluded fractions are 0.2 % overall, 0.4 % in gate-P and 0 % in
+  contrast-T against the 2 % bar. Kept: gate-P 249, contrast-T 250. Sealed manifest sha256
+  `deebd83db6de53e23dbde0b921ae7f7c1cf79cb24c6dd27bfae066c2f5017c4e`; report sha256
+  `63b085df…f0ca`; evidence copy `~/develop/emai/evidence/task080-stagec/` (report, log, stdout
+  and the sealed manifest; the root files stay in the `task080-stagec` worktree, as TASK-077's
+  corpus did). The corpus is privileged scripted-collector data, not a learned result.
+- **R18.24 — Stage R's plan, and #155's nits.** Stage R runs once on one reported GO at this
+  record's merge commit, from a fresh clean worktree of it: `tests` (the G-tests record the GPU
+  stage needs), then `featurise` through `scripts/gpu_run.sh --wait --min-free-gib 8 --board --who
+  oej:task080-featurise`, then `rgate` on the CPU, each with `--corpus-sha256 deebd83d…7c4e`; if
+  one ends in anything other than its expected outcome, nothing further runs until it is ruled
+  under §11. This PR also takes #155's review nits 1–3 (the §8.1 wording on which differences are
+  within noise, §14's τ_commit risk now noting K0′'s 1.0 cm, a PLAN.md line wrapped); nit 4 (the
+  pytest count's CUDA visibility) is answered on #155. Only the protocol document's sha256 pin in
+  the manifest changes; the frozen block and its pin do not.
+
 ## Decision 2026-10-07 (c) — TASK-080 is frozen after K0′-PASS: pooled τ_commit = 1.0 cm (R18.22)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
