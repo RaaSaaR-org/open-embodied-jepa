@@ -1,0 +1,1208 @@
+{
+ "carried": {
+  "reused": {
+   "featurise_report_sha256": "f187c7c8179ffe0d1883739be0f30ae960c6033e4c1d088d800075490ef3e9ee",
+   "k0_report_sha256": "9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235",
+   "mean_latent": "85da63360c6d3c308d4c760cfc43c2391c0beab1c3fefd3ceb5017c7759d53bd",
+   "models": {
+    "N-66800": "51b51035be262e7c0ba2d1bb96beeec2939ee82b5d86217409e90424391ed2c2",
+    "N-66801": "15f5dd413aac48aff0eb628b9b3c66d62b97f986111eaec3de4db23887112d37",
+    "N-66802": "4f92a8feba04218b21dd289e5749da5abc4c6aef5c5efc08c4f94fd81a01bfef",
+    "W-66800": "891d26640e82ab8fce62c32b7d4a7a9eba99ae1babb8614777c668fe498876b8",
+    "W-66801": "27aeadab1476e5097b550f2a17c5de36ef1ea3c75852f4556eab0d54773ec193",
+    "W-66802": "ba2614ec271525e0ca9f3a5980afd080e2ae00302e145d96adb0f13cc6ef97b4"
+   },
+   "moments": "5415eea4b5eda30712176b4f23c0022886a0f9cf1ac60cdf742863393550de6d",
+   "plan_report_sha256": null,
+   "r8": "62a5ea8abe348d2e7cbdb3379a22ecddcabd6a3f57c65a6f38f8ae57b8e43b4a",
+   "r_plate": "08bde901ca75ab0ee4bc1c74bf4da91117ba57c0491828d81bc9db921cc49eb9",
+   "readouts_report_sha256": "452045d22c21b067c8bfe78cb72f4e842fc61f3c44a9e17b6fae860c244f8b78",
+   "sysid_file": "671841cd581d86844c0ad14c03839cf965e912f628dd875b89c7adf3b46121fc"
+  },
+  "task077_frozen_sha256": "f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d",
+  "task077_manifest": "benchmarks/manifests/apple-lewm-c1m-v2.json"
+ },
+ "document": "docs/experiments/apple_lewm_c1m_v2_pred_readout.md",
+ "frozen": {
+  "arms": {
+   "H-final": {
+    "privileged": true,
+    "what": "H-final(commit): LookaheadAim at 405 in cloned state, unclipped"
+   },
+   "H-now": {
+    "privileged": true,
+    "what": "the true plate at 405"
+   },
+   "H-read": {
+    "privileged": true,
+    "what": "H-final(commit)'s look-ahead, plate(r) read by R8 from the clone's frame at r"
+   },
+   "H-rule": {
+    "privileged": false,
+    "what": "RuleCommit on p-hat and h, clipped"
+   },
+   "H-sysid": {
+    "privileged": false,
+    "what": "SysidAim fitted on the train split, out-of-fold readings"
+   },
+   "L-mean": {
+    "privileged": false,
+    "what": "W from L-mean's mean 405 latent, read by R-S"
+   },
+   "L-rand": {
+    "privileged": false,
+    "what": "a uniform feasible grid candidate (salt 8209), no refinement"
+   },
+   "L-shuf": {
+    "privileged": false,
+    "what": "W from the logged 405 frame of W's attempt on the next reset that reached 405, this reset's candidate commands, read by R-S"
+   },
+   "N": {
+    "privileged": false,
+    "what": "the primary seed's N, zero commands, read by R-N"
+   },
+   "W": {
+    "privileged": false,
+    "what": "the primary seed's W from the encoded 405 frame, read by R-S"
+   }
+  },
+  "cap_factor_min": 1.5,
+  "caps_seconds": {
+   "C": 7200.0,
+   "D": 7200.0,
+   "K0": 7200.0,
+   "R": 14400.0,
+   "R_featurisation": 3600.0,
+   "S": 21600.0,
+   "dryrun": 14400.0,
+   "per_attempt": 300.0
+  },
+  "clause_narrowing": "a 4 x 4 pooled latent on a corpus larger than C1-M's 1 024 roots is not covered",
+  "clause_results_wording": "if the clause fires, the results document states plainly that one 8 x 8 run read by a dual ridge fitted on its own stand-in predictions closes, under this condition, every other pooled grid (except 4 x 4 on a corpus larger than 1 024 roots) and every readout of the predicted latent, including trained readout heads and readouts fitted on executed-command or other predictions, not only the readout that was run",
+  "clause_rows": [
+   "L-INFERIOR",
+   "L-NO-GAIN"
+  ],
+  "clause_scope": "LeWM aim selection with a single aim committed at 405 under the declared reactive-plate rule (kappa = -0.5, L = 2, s1 = 525) on v2, with the declared post-pick plate move of radius rho* = 4 cm (the disc, which also covers the -y half-disc, at radii <= 4 cm), from onboard 112 px frozen DINOv2 pooled tokens, with TASK-066-family predictors",
+  "condition": {
+   "a_hi": 0.5,
+   "a_lo": -0.5,
+   "b_half_m": 0.03,
+   "commit_step": 405,
+   "family": "disc",
+   "grid": [
+    [
+     -0.5,
+     -0.03
+    ],
+    [
+     -0.5,
+     -0.02
+    ],
+    [
+     -0.5,
+     -0.01
+    ],
+    [
+     -0.5,
+     0.0
+    ],
+    [
+     -0.5,
+     0.01
+    ],
+    [
+     -0.5,
+     0.02
+    ],
+    [
+     -0.5,
+     0.03
+    ],
+    [
+     -0.45,
+     -0.03
+    ],
+    [
+     -0.45,
+     -0.02
+    ],
+    [
+     -0.45,
+     -0.01
+    ],
+    [
+     -0.45,
+     0.0
+    ],
+    [
+     -0.45,
+     0.01
+    ],
+    [
+     -0.45,
+     0.02
+    ],
+    [
+     -0.45,
+     0.03
+    ],
+    [
+     -0.4,
+     -0.03
+    ],
+    [
+     -0.4,
+     -0.02
+    ],
+    [
+     -0.4,
+     -0.01
+    ],
+    [
+     -0.4,
+     0.0
+    ],
+    [
+     -0.4,
+     0.01
+    ],
+    [
+     -0.4,
+     0.02
+    ],
+    [
+     -0.4,
+     0.03
+    ],
+    [
+     -0.35,
+     -0.03
+    ],
+    [
+     -0.35,
+     -0.02
+    ],
+    [
+     -0.35,
+     -0.01
+    ],
+    [
+     -0.35,
+     0.0
+    ],
+    [
+     -0.35,
+     0.01
+    ],
+    [
+     -0.35,
+     0.02
+    ],
+    [
+     -0.35,
+     0.03
+    ],
+    [
+     -0.3,
+     -0.03
+    ],
+    [
+     -0.3,
+     -0.02
+    ],
+    [
+     -0.3,
+     -0.01
+    ],
+    [
+     -0.3,
+     0.0
+    ],
+    [
+     -0.3,
+     0.01
+    ],
+    [
+     -0.3,
+     0.02
+    ],
+    [
+     -0.3,
+     0.03
+    ],
+    [
+     -0.25,
+     -0.03
+    ],
+    [
+     -0.25,
+     -0.02
+    ],
+    [
+     -0.25,
+     -0.01
+    ],
+    [
+     -0.25,
+     0.0
+    ],
+    [
+     -0.25,
+     0.01
+    ],
+    [
+     -0.25,
+     0.02
+    ],
+    [
+     -0.25,
+     0.03
+    ],
+    [
+     -0.2,
+     -0.03
+    ],
+    [
+     -0.2,
+     -0.02
+    ],
+    [
+     -0.2,
+     -0.01
+    ],
+    [
+     -0.2,
+     0.0
+    ],
+    [
+     -0.2,
+     0.01
+    ],
+    [
+     -0.2,
+     0.02
+    ],
+    [
+     -0.2,
+     0.03
+    ],
+    [
+     -0.15,
+     -0.03
+    ],
+    [
+     -0.15,
+     -0.02
+    ],
+    [
+     -0.15,
+     -0.01
+    ],
+    [
+     -0.15,
+     0.0
+    ],
+    [
+     -0.15,
+     0.01
+    ],
+    [
+     -0.15,
+     0.02
+    ],
+    [
+     -0.15,
+     0.03
+    ],
+    [
+     -0.1,
+     -0.03
+    ],
+    [
+     -0.1,
+     -0.02
+    ],
+    [
+     -0.1,
+     -0.01
+    ],
+    [
+     -0.1,
+     0.0
+    ],
+    [
+     -0.1,
+     0.01
+    ],
+    [
+     -0.1,
+     0.02
+    ],
+    [
+     -0.1,
+     0.03
+    ],
+    [
+     -0.05,
+     -0.03
+    ],
+    [
+     -0.05,
+     -0.02
+    ],
+    [
+     -0.05,
+     -0.01
+    ],
+    [
+     -0.05,
+     0.0
+    ],
+    [
+     -0.05,
+     0.01
+    ],
+    [
+     -0.05,
+     0.02
+    ],
+    [
+     -0.05,
+     0.03
+    ],
+    [
+     0.0,
+     -0.03
+    ],
+    [
+     0.0,
+     -0.02
+    ],
+    [
+     0.0,
+     -0.01
+    ],
+    [
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.01
+    ],
+    [
+     0.0,
+     0.02
+    ],
+    [
+     0.0,
+     0.03
+    ],
+    [
+     0.05,
+     -0.03
+    ],
+    [
+     0.05,
+     -0.02
+    ],
+    [
+     0.05,
+     -0.01
+    ],
+    [
+     0.05,
+     0.0
+    ],
+    [
+     0.05,
+     0.01
+    ],
+    [
+     0.05,
+     0.02
+    ],
+    [
+     0.05,
+     0.03
+    ],
+    [
+     0.1,
+     -0.03
+    ],
+    [
+     0.1,
+     -0.02
+    ],
+    [
+     0.1,
+     -0.01
+    ],
+    [
+     0.1,
+     0.0
+    ],
+    [
+     0.1,
+     0.01
+    ],
+    [
+     0.1,
+     0.02
+    ],
+    [
+     0.1,
+     0.03
+    ],
+    [
+     0.15,
+     -0.03
+    ],
+    [
+     0.15,
+     -0.02
+    ],
+    [
+     0.15,
+     -0.01
+    ],
+    [
+     0.15,
+     0.0
+    ],
+    [
+     0.15,
+     0.01
+    ],
+    [
+     0.15,
+     0.02
+    ],
+    [
+     0.15,
+     0.03
+    ],
+    [
+     0.2,
+     -0.03
+    ],
+    [
+     0.2,
+     -0.02
+    ],
+    [
+     0.2,
+     -0.01
+    ],
+    [
+     0.2,
+     0.0
+    ],
+    [
+     0.2,
+     0.01
+    ],
+    [
+     0.2,
+     0.02
+    ],
+    [
+     0.2,
+     0.03
+    ],
+    [
+     0.25,
+     -0.03
+    ],
+    [
+     0.25,
+     -0.02
+    ],
+    [
+     0.25,
+     -0.01
+    ],
+    [
+     0.25,
+     0.0
+    ],
+    [
+     0.25,
+     0.01
+    ],
+    [
+     0.25,
+     0.02
+    ],
+    [
+     0.25,
+     0.03
+    ],
+    [
+     0.3,
+     -0.03
+    ],
+    [
+     0.3,
+     -0.02
+    ],
+    [
+     0.3,
+     -0.01
+    ],
+    [
+     0.3,
+     0.0
+    ],
+    [
+     0.3,
+     0.01
+    ],
+    [
+     0.3,
+     0.02
+    ],
+    [
+     0.3,
+     0.03
+    ],
+    [
+     0.35,
+     -0.03
+    ],
+    [
+     0.35,
+     -0.02
+    ],
+    [
+     0.35,
+     -0.01
+    ],
+    [
+     0.35,
+     0.0
+    ],
+    [
+     0.35,
+     0.01
+    ],
+    [
+     0.35,
+     0.02
+    ],
+    [
+     0.35,
+     0.03
+    ],
+    [
+     0.4,
+     -0.03
+    ],
+    [
+     0.4,
+     -0.02
+    ],
+    [
+     0.4,
+     -0.01
+    ],
+    [
+     0.4,
+     0.0
+    ],
+    [
+     0.4,
+     0.01
+    ],
+    [
+     0.4,
+     0.02
+    ],
+    [
+     0.4,
+     0.03
+    ],
+    [
+     0.45,
+     -0.03
+    ],
+    [
+     0.45,
+     -0.02
+    ],
+    [
+     0.45,
+     -0.01
+    ],
+    [
+     0.45,
+     0.0
+    ],
+    [
+     0.45,
+     0.01
+    ],
+    [
+     0.45,
+     0.02
+    ],
+    [
+     0.45,
+     0.03
+    ],
+    [
+     0.5,
+     -0.03
+    ],
+    [
+     0.5,
+     -0.02
+    ],
+    [
+     0.5,
+     -0.01
+    ],
+    [
+     0.5,
+     0.0
+    ],
+    [
+     0.5,
+     0.01
+    ],
+    [
+     0.5,
+     0.02
+    ],
+    [
+     0.5,
+     0.03
+    ]
+   ],
+   "horizon": 60,
+   "move_step": 300,
+   "read_step": 465,
+   "refine_fraction_of_tau": 0.25,
+   "refine_max": 10,
+   "rho_cm": 4,
+   "rule": {
+    "L": 2,
+    "kappa": -0.5,
+    "name": "A",
+    "s0": 405,
+    "s1": 525
+   },
+   "token_grid": 8
+  },
+  "corpus": {
+   "aim_from": {
+    "contrast_t": "true",
+    "gate_p": "p_hat"
+   },
+   "debug_half_sizes": {
+    "contrast_t": 2,
+    "gate_p": 2
+   },
+   "excluded_max_fraction": 0.02,
+   "half_sizes": {
+    "contrast_t": 250,
+    "gate_p": 250
+   },
+   "halves": [
+    "gate_p",
+    "contrast_t"
+   ],
+   "roots": 500
+  },
+  "d": {
+   "arms": [
+    "W",
+    "N",
+    "L-shuf",
+    "L-mean",
+    "H-final"
+   ],
+   "bars": {
+    "W_min": 12,
+    "ceiling_min": 14,
+    "margin_min": 3
+   },
+   "resets": 16
+  },
+  "debug_ranges": {
+   "D": [
+    65910,
+    65913
+   ],
+   "K": [
+    65900,
+    65903
+   ],
+   "S": [
+    65920,
+    65923
+   ],
+   "corpus": [
+    65940,
+    65943
+   ]
+  },
+  "debug_seeds": [
+   65900,
+   65999
+  ],
+  "delegated": "decided by Claude under owner delegation (2026-09-30)",
+  "disk_min_gib": 10.0,
+  "disk_min_start_gib": {
+   "C": 15.0,
+   "R_featurisation": 15.0
+  },
+  "feature_anchor": {
+   "frames": 256,
+   "max_abs_pooled_difference": 0.001
+  },
+  "forbidden_ranges": {
+   "apple_look_pilots": [
+    47900,
+    47931
+   ],
+   "apple_look_v1_corpus": [
+    47000,
+    47199
+   ],
+   "apple_wide_v1_corpus_and_pilots": [
+    48000,
+    48999
+   ],
+   "arena_123": [
+    50200,
+    50231
+   ],
+   "c1_block": [
+    57000,
+    57999
+   ],
+   "c1m_block": [
+    63000,
+    64999
+   ],
+   "cohort_C": [
+    45300,
+    45339
+   ],
+   "cohort_D_and_prior_ceilings": [
+    45000,
+    45207
+   ],
+   "earlier_train_val_test": [
+    42000,
+    42031
+   ],
+   "final_cohort": [
+    44000,
+    44019
+   ],
+   "grasp_closure_probes": [
+    49000,
+    49199
+   ],
+   "mechanics_probes": [
+    41000,
+    41101
+   ],
+   "mvp_frozen_resets": [
+    20000,
+    20049
+   ],
+   "narrow_development": [
+    43000,
+    43004
+   ],
+   "r15_block": [
+    58000,
+    58999
+   ],
+   "task067_block": [
+    46000,
+    46999
+   ],
+   "task068_to_070_block": [
+    50000,
+    50999
+   ],
+   "task071_072_block": [
+    51000,
+    52199
+   ],
+   "task073_block": [
+    53000,
+    53999
+   ],
+   "task074_block": [
+    54000,
+    54999
+   ],
+   "task074_design_probes": [
+    54700,
+    54999
+   ],
+   "task075_block": [
+    55000,
+    55999
+   ],
+   "task076_block": [
+    56000,
+    56999
+   ],
+   "task077_block": [
+    66000,
+    68999
+   ]
+  },
+  "gpu": {
+   "min_free_gib": 8.0,
+   "require_lock": true,
+   "who": "oej:task080-<stage>"
+  },
+  "k0_prime": {
+   "ceiling_min": 30,
+   "k_counts": {
+    "0.0": 32,
+    "0.5": 29,
+    "1.0": 29,
+    "1.5": 18,
+    "2.0": 11,
+    "3.0": 2
+   },
+   "palm_speed_limit_cm": 0.5,
+   "pooled_resets": 64,
+   "r_latest": 465,
+   "resets": 32,
+   "stops": {
+    "ceiling_below_30": "N_K′(0) < 30/32",
+    "level0_below_bar": "K′ level 0 < 28/32 (carried; implied by the next stop)",
+    "palm_fast": "the median palm speed at 405 > 0.5 cm per step",
+    "pooled_tau_undefined": "the pooled tau_commit is undefined (pooled level 0 < 56/64)",
+    "r_late": "r_K′ later than 465 or undefined"
+   },
+   "tau_bar_k": 28,
+   "tau_bar_pooled": 56,
+   "tau_levels_cm": [
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    3.0
+   ]
+  },
+  "k0_prime_measured": null,
+  "memory": {
+   "ceiling_gib": 12.0,
+   "headroom_gib": 4.0,
+   "measure": "pss",
+   "sample_seconds": 0.5,
+   "train_ceiling_gib": 18.0
+  },
+  "model_seeds": [
+   66800,
+   66801,
+   66802
+  ],
+  "never_closed": [
+   "the full, unpooled token grid",
+   "history longer than one, action_chunk or predictor_step_embedding",
+   "a fine-tuned or another encoder",
+   "other views or resolutions",
+   "other kappa, L, commit steps, move distributions or radii above 4 cm",
+   "C1 without the move",
+   "C2",
+   "TASK-076's results",
+   "the LeWM backend",
+   "v2",
+   "the product goal"
+  ],
+  "no_clause_rows": [
+   "CAL-ESCALATE",
+   "CORPUS-ESCALATE",
+   "R-VOID-CEILING",
+   "R-COMMAND-KEYED",
+   "R-NO-BAR",
+   "A-NO-BAR",
+   "A-TWIN",
+   "L-DEV-STOP",
+   "S-VOID-CEILING",
+   "L-TWIN-NEAR",
+   "L-NEAR",
+   "L-BAR",
+   "V",
+   "INCONCLUSIVE"
+  ],
+  "not_evaluated": "not evaluated",
+  "old_corpus_sha256": "ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb",
+  "old_split_sizes": {
+   "gate": 250,
+   "train": 1495,
+   "val": 250
+  },
+  "own_files": [
+   "src/embodied_jepa/lewm_pr_v2.py",
+   "src/embodied_jepa/lewm_pr_v2_runtime.py",
+   "src/embodied_jepa/lewm_pr_v2_offline.py",
+   "scripts/run_lewm_pr_v2.py"
+  ],
+  "power": {
+   "couplings": [
+    "nested",
+    "half",
+    "independent"
+   ],
+   "trials": 200000
+  },
+  "primary_seed": 66800,
+  "primary_seed_flag": "W-66800's last_two_triggered flag is true and every W curve was lowest at its last point (TASK-077 results §3, caveats 1-2): stated beside every seed-66800 comparison",
+  "protocol": "apple_lewm_c1m_v2_pred_readout",
+  "quiet_machine": {
+   "max_load_average_1min": 2.0,
+   "max_load_average_5min": 2.0,
+   "rule": "os.getloadavg() at the stage's start: the 1- and 5-minute load averages are both at most 2.0 (the idle machine with the GPU's resident service measures about 0.1-0.4); otherwise G-quiet makes the stage V before any render"
+  },
+  "reserved_salts": {
+   "reserved_a": 8211,
+   "reserved_b": 8212
+  },
+  "reused": {
+   "featurise_report_sha256": "f187c7c8179ffe0d1883739be0f30ae960c6033e4c1d088d800075490ef3e9ee",
+   "k0_report_sha256": "9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235",
+   "mean_latent": "85da63360c6d3c308d4c760cfc43c2391c0beab1c3fefd3ceb5017c7759d53bd",
+   "models": {
+    "N-66800": "51b51035be262e7c0ba2d1bb96beeec2939ee82b5d86217409e90424391ed2c2",
+    "N-66801": "15f5dd413aac48aff0eb628b9b3c66d62b97f986111eaec3de4db23887112d37",
+    "N-66802": "4f92a8feba04218b21dd289e5749da5abc4c6aef5c5efc08c4f94fd81a01bfef",
+    "W-66800": "891d26640e82ab8fce62c32b7d4a7a9eba99ae1babb8614777c668fe498876b8",
+    "W-66801": "27aeadab1476e5097b550f2a17c5de36ef1ea3c75852f4556eab0d54773ec193",
+    "W-66802": "ba2614ec271525e0ca9f3a5980afd080e2ae00302e145d96adb0f13cc6ef97b4"
+   },
+   "moments": "5415eea4b5eda30712176b4f23c0022886a0f9cf1ac60cdf742863393550de6d",
+   "plan_report_sha256": null,
+   "r8": "62a5ea8abe348d2e7cbdb3379a22ecddcabd6a3f57c65a6f38f8ae57b8e43b4a",
+   "r_plate": "08bde901ca75ab0ee4bc1c74bf4da91117ba57c0491828d81bc9db921cc49eb9",
+   "readouts_report_sha256": "452045d22c21b067c8bfe78cb72f4e842fc61f3c44a9e17b6fae860c244f8b78",
+   "sysid_file": "671841cd581d86844c0ad14c03839cf965e912f628dd875b89c7adf3b46121fc"
+  },
+  "rulings": "DECISIONS.md decision 2026-10-07, R18.1-R18.14 (Stage 0: R18.15-R18.21)",
+  "s": {
+   "arms": [
+    "W",
+    "N",
+    "L-shuf",
+    "L-mean",
+    "L-rand",
+    "H-rule",
+    "H-sysid",
+    "H-final",
+    "H-read",
+    "H-now"
+   ],
+   "comparators": [
+    "H-rule",
+    "H-sysid"
+   ],
+   "delta": 8,
+   "determinism_resets": 4,
+   "g_bar": 56,
+   "mcnemar_p": 0.01,
+   "min_separation": 7,
+   "resets": 64,
+   "rows": {
+    "L-BAR": "G-bar fails with G-NI and the tests passing: escalate, no clause, no claim",
+    "L-INFERIOR": "W is detectably inferior beyond delta (upper bound of W - C < -8/64): the clause fires",
+    "L-NEAR": "G-NI fails, W not detectably inferior: escalate, no clause, no claim",
+    "L-NO-GAIN": "for a twin, the McNemar test fails and W is detectably no better (upper bound of W - arm < +7/64): the clause fires",
+    "L-PASS": "G-bar, G-NI and the four McNemar tests pass: the primary claim, 'LeWM-driven closed-loop success'",
+    "L-TWIN-NEAR": "a McNemar test fails and every failed one is a miss within noise: escalate, no clause, no claim",
+    "S-VOID-CEILING": "H-final(commit)(S) < 56/64: escalate, no clause, no claim",
+    "V": "one repeat of the stage after a recorded fix"
+   },
+   "twins": [
+    "N",
+    "L-shuf",
+    "L-mean",
+    "L-rand"
+   ]
+  },
+  "salts": {
+   "bootstrap": 8206,
+   "corpus_aim": 8202,
+   "corpus_split": 8203,
+   "inner_folds": 8205,
+   "l_rand": 8209,
+   "learning_curve": 8208,
+   "move": 8201,
+   "outer_folds": 8204,
+   "tau_direction": 8207,
+   "wrong_commands": 8210
+  },
+  "seed_block": [
+   65000,
+   65999
+  ],
+  "seed_ranges": {
+   "D": [
+    65100,
+    65115
+   ],
+   "K": [
+    65000,
+    65031
+   ],
+   "S": [
+    65200,
+    65263
+   ],
+   "corpus": [
+    65300,
+    65799
+   ]
+  },
+  "sim_workers": 6,
+  "stage0": {
+   "dry_run": {
+    "e_L_val_lower_cm": {
+     "66800": 2.092,
+     "66801": 2.104,
+     "66802": 2.093
+    },
+    "e_N_val_cm": {
+     "66800": 1.583,
+     "66801": 1.421,
+     "66802": 1.581
+    },
+    "e_S_val_cm": {
+     "66800": 0.54,
+     "66801": 0.529,
+     "66802": 0.535
+    },
+    "e_S_val_upper_cm": {
+     "66800": 0.581,
+     "66801": 0.571,
+     "66802": 0.597
+    },
+    "encoded_ceiling_val_cm": {
+     "ci95": [
+      0.343,
+      0.424
+     ],
+     "median": 0.382
+    },
+    "eval_roots": "TASK-077's 250 val roots",
+    "fit_roots": 1745,
+    "peak_tree_pss_gib": 9.96,
+    "predicted_counts_of_64": {
+     "H-rule": 58.5,
+     "H-sysid": 54.22,
+     "L-mean": 25.54,
+     "L-rand": 8.54,
+     "L-shuf": 21.24,
+     "N": 25.94,
+     "W": 56.88
+    },
+    "report": "outputs/task080-dryrun-1/report.json (task080-stage0 worktree)",
+    "report_sha256": "e3becdfad070cc96b7080feadd80f0b0496a18bdd88d9728fc636a7db9e1aed5",
+    "revision": "e4babc1c885d354b7a07069402503d6308693548",
+    "seconds": 3312,
+    "tau_curve": "TASK-077's K (32 resets), tau_commit 1.0 cm",
+    "w_aim_error_cm": {
+     "ci95": [
+      0.559,
+      0.66
+     ],
+     "median": 0.612,
+     "p87_5": 1.044
+    }
+   },
+   "simulate_report_sha256": "f28b708225358f5304aa438e6884cad3567bc4402d5b3534f187d536046698cc",
+   "smoke_revision": "e4babc1",
+   "smoke_root": "outputs/task080-smoke-* in the task080-stage0 worktree (git-ignored); debug seeds 65900-65999 only; nothing in them is read"
+  },
+  "stage_r": {
+   "a1_bar": 56,
+   "a2_min_separation": 7,
+   "arms": [
+    "W",
+    "N",
+    "L-shuf",
+    "L-mean",
+    "L-rand"
+   ],
+   "fractions": [
+    0.25,
+    0.5,
+    0.75,
+    1.0
+   ],
+   "inner_folds": 5,
+   "lambda_grid_relative": [
+    0.001,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+   ],
+   "outer_folds": 5,
+   "r2_ratio_upper_exclusive": 1.0,
+   "readouts": {
+    "L-mean": "r_s",
+    "L-shuf": "r_s",
+    "N": "r_n",
+    "W": "r_s"
+   },
+   "reported_arms": [
+    "H-rule",
+    "H-sysid"
+   ],
+   "rows": {
+    "A-NO-BAR": "A1 fails: escalate, no clause",
+    "A-TWIN": "A2 fails for any of N, L-shuf, L-mean, L-rand: escalate, no clause",
+    "R-COMMAND-KEYED": "R3 fails on any seed (the commands alone read the plate within tau): escalate, no clause",
+    "R-NO-BAR": "R1 or R2 fails on any seed: escalate, no clause",
+    "R-PASS": "Stage D may get its GO",
+    "R-VOID-CEILING": "R0 fails (the fresh encoded frame does not read the plate within tau): escalate, no clause",
+    "V": "the void rule: one repeat after a recorded fix"
+   }
+  },
+  "stages": [
+   "K0′",
+   "C′",
+   "R",
+   "D",
+   "S"
+  ],
+  "status": "DRAFT",
+  "task": "TASK-080",
+  "task077_frozen_sha256": "f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d",
+  "task077_manifest": "benchmarks/manifests/apple-lewm-c1m-v2.json",
+  "thread_env": {
+   "MKL_DYNAMIC": "FALSE",
+   "MKL_NUM_THREADS": "6",
+   "OMP_NUM_THREADS": "6",
+   "OPENBLAS_NUM_THREADS": "16"
+  },
+  "void_rule": {
+   "debug": "debug runs only on committed code, only on 65900-65999; nothing in them is read",
+   "repeat": "at most one repeat per stage after a committed, pushed and recorded fix, on the same seeds in a new output directory; a second V of the same stage ends TASK-080 INCONCLUSIVE; Vs in different stages do not add up; there is no Stage T",
+   "void": "any guard, crash, cap, stop signal or CUDA allocation failure makes a stage V; its report is kept with its sha256 and the cause disclosed"
+  },
+  "wm_workers": 4,
+  "worker_torch_threads": 1
+ },
+ "frozen_sha256": "d3ebc26b3ad85006977481e4ab0a660aaf791af0fb8496fea0428bd5788754fe",
+ "frozen_sha256_pin": null,
+ "note": "DRAFT (R18.1): no pin until the freeze, which follows K0′ and is merged on an independent reviewer's reported APPROVE; frozen_sha256 is the DRAFT block's sha256 at this revision.",
+ "protocol": "apple_lewm_c1m_v2_pred_readout",
+ "status": "DRAFT",
+ "task": "TASK-080"
+}

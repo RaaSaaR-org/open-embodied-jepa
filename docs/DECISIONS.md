@@ -63,6 +63,43 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-07 (b) — TASK-080 Stage 0: code, debug smokes, scale probes, R18.13's dry run and §15's open questions (R18.15–R18.21; protocol still DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_c1m_v2_pred_readout_stage0.md](experiments/apple_lewm_c1m_v2_pred_readout_stage0.md).
+The protocol stays **DRAFT**; no seed of K′, D, S or F has been simulated; R7 is unchanged.
+
+- **R18.15 — Stage 0.** New modules only (`lewm_pr_v2.py`, `_runtime`, `_offline`,
+  `scripts/run_lewm_pr_v2.py`; TASK-077's are imported, and its frozen block and 13 pins are
+  checked), the DRAFT manifest, 31 tests, debug smokes of every stage on 65900–65999, the caps
+  (each ≥ 3.4 × its measured or scaled worst case) and R18.13's dry run. The dry run is
+  development only and sets no bar: on TASK-077's 250 val roots, with R-S, R-N and R-L fitted on
+  the 1 745 train and old-gate roots and mapped through K0's curve, W's offline predicted count
+  (primary seed 66800, flagged `last_two_triggered`) is
+  56.88 of 64 (aim error 0.612 cm median), N 25.94, L-shuf 21.24, L-mean 25.54, L-rand 8.54,
+  H-rule 58.50 and H-sysid 54.22 (reported); e_S 0.529–0.540 cm in val median on the three seeds
+  (upper bounds 0.571–0.597), e_N 1.42–1.58, e_L lower bounds 2.09–2.10. Optimistic twice over
+  (val selected the checkpoints; the fit roots' aims were built from the true plate).
+- **R18.16 — §15 question 1: the primary seed stays 66800** by the carried rule; the seeds' e_S on
+  val differ by 0.011 cm, and a rule chosen now would be chosen after the numbers.
+- **R18.17 — question 2: the fit set stays all 1 995 old roots.** R-S's learning curves on val do
+  not rise from 3/4 to all of the 1 745 roots (−0.113, −0.017 and −0.002 cm: still falling on
+  66800, nearly flat on 66801 and 66802); cross-fitted R-S reads the old-gate roots (out of sample
+  for W) better than train on 66800, worse by 0.056 cm on 66801 and equal on 66802.
+- **R18.18 — question 3: S stays 64 resets and A2 stays +7/64.** §10's trigger (W − N below about
+  +10/64) is not met: W − N is +30.9 of 64 offline (development, optimistic; seed 66800 flagged
+  `last_two_triggered`; power of the twin tests ≥ 0.9997 at the dry run's rates). The binding risk is G-bar (W 56.88 against 56; power about 0.72), which a larger
+  cohort at the same fraction does not fix (0.73 at 96 resets, 0.75 at 128). The freeze PR states
+  this beside §10.
+- **R18.19 — question 4: τ_commit is the pooled K ∪ K′ rule** (the draft); W's offline aim errors
+  sit between the 0.5 and 1.0 cm levels, where 64 pooled resets measure the curve better than 32.
+  The freeze PR re-maps the dry run through the pooled curve.
+- **R18.20 — question 5: G1–G4 on fresh roots stay reported, not gated** (the draft).
+- **R18.21 — question 6 (recommendation only) and K0′.** Recommended to the owner: a TASK-080
+  L-PASS counts as TASK-077's "L-PASS (or its equivalent row)" for TASK-079; TASK-078's pass and
+  an owner ruling on Arena stay required. K0′ is prepared (command and GO checklist in the record,
+  §8) and runs only on an independent reviewer's reported GO at the merge revision.
+
 ## Decision 2026-10-07 — TASK-080's DRAFT preregistration: LeWM's committed aim under C1-M, read by a readout fitted on W's predicted latents, on fresh roots (R18; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30). DRAFT, not frozen.** The document is

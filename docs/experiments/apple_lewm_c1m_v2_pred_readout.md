@@ -1,8 +1,10 @@
 # Apple→Plate LeWM committed aim under C1-M, read by a readout fitted on W's predicted latents (TASK-080)
 
-**STATUS: DRAFT** (R18.1). Not frozen. Nothing in this document has been run: no seed of its
-block (65000–65999) has been simulated, no readout has been fitted, and no corpus root has been
-collected. The freeze follows TASK-077's sequence: this draft's independent review; Stage 0
+**STATUS: DRAFT** (R18.1). Not frozen. No seed of K′, D, S or F has been simulated and no
+fresh corpus root has been collected. Stage 0 is done (R18.15–R18.21,
+[Stage-0 record](apple_lewm_c1m_v2_pred_readout_stage0.md)): the code, debug smokes on
+65900–65999 only, the caps and R18.13's development dry run on TASK-077's val roots, which sets no
+bar; §15's questions 1–5 are ruled there. The freeze follows TASK-077's sequence: this draft's independent review; Stage 0
 (code, frozen block, manifest, tests, debug smokes, scale probes and one development dry run);
 K0′ on a reported GO; the freeze merged on an independent reviewer's reported APPROVE; then each
 later stage on its own reported GO. A later K0′ or freeze needs its own GO or APPROVE; approving
@@ -660,3 +662,12 @@ models (§3). Disk: the fresh corpus about 0.3 GB of frames and about 3.2 GB of 
 6. **TASK-079's precondition.** The draft proposes that a TASK-080 L-PASS counts as "TASK-077 L-PASS
    (or its equivalent row)" in PLAN.md (R18.12); TASK-078's pass and an owner ruling on Arena are
    still required.
+
+**Rulings at Stage 0 (R18.16–R18.21; [record](apple_lewm_c1m_v2_pred_readout_stage0.md) §7),
+informed by R18.13's dry run** (development and optimistic, setting no bar; primary seed 66800,
+flagged `last_two_triggered`; W's offline predicted count 56.88/64, N 25.94, W − N +30.9; offline
+predicted counts are not closed-loop counts): 1 — the carried rule, 66800 (R18.16); 2 — all 1 995 old roots (R18.17); 3 — 64 resets and
++7/64 unchanged, since W − N is far above +10/64; the binding risk is G-bar, which a larger cohort
+does not fix (R18.18); 4 — the pooled K ∪ K′ rule (R18.19); 5 — reported, not gated (R18.20);
+6 — a recommendation to the owner that a TASK-080 L-PASS counts as the equivalent row, not ruled
+(R18.21).
