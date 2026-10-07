@@ -19,7 +19,7 @@ depends_on:
 - "[[TASK-076]]"
 due_date: ''
 created: 2026-10-05
-updated: 2026-10-06
+updated: 2026-10-07
 ---
 
 # LeWM committed aim under C1-M: LeWM chooses the single place aim from the encoded frame
@@ -41,7 +41,7 @@ L-mean, and a random choice. "LeWM needed" is reported only and not expected.
 
 **The protocol (FROZEN after K0-PASS, R17.25; in force once merged on an independent APPROVE):**
 [`docs/experiments/apple_lewm_c1m_v2.md`](../../../docs/experiments/apple_lewm_c1m_v2.md).
-Rulings R17.1–R17.48 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
+Rulings R17.1–R17.49 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
 owner delegation (2026-09-30). The plan is `docs/PLAN.md`.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. This task does not
@@ -159,3 +159,13 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   (`-2`), and a refusal after a second V; tested with a fake runner. Five jobs remain (about
   25.6 h). N-66800's repeat is its last; a second V ends TASK-077 INCONCLUSIVE. Nothing has been
   launched; the owner wants the GPU free. No result is claimed.
+- 2026-10-07: Stage T completed (R17.49, protocol §7.8, branch `docs/task077-staget-record`). The
+  resume ran at `2aa4f5b` on the GO (#148, issuecomment-6013921627) in worktree `task077-staget2`:
+  tests TESTS-PASS (2035 passed; `ff8ffb08…feec`); cal-W, cal-N, plan and W-66800 kept at their
+  pins; N-66800-2 (`d17894a6…58e9`, kept 38 000, 0.741328), W-66801 (`eb3d1e98…2953`, 71 250,
+  0.364904), N-66801 (`faa330d4…eb7f`, 80 750, 0.729304), W-66802 (`ec65c4f3…9f2c`, 80 750,
+  0.364660) and N-66802 (`7976c594…2164`, 38 000, 0.746241) all T-JOB-DONE; no V. W-66800's
+  `last_two_triggered` true (stated beside every seed-66800 W-versus-N comparison); no N flagged;
+  all three W curves' raw minimum at 95 000. Evidence copied to `~/develop/emai/evidence/
+  task077-staget{,2}/` with sha256 manifests. T-DONE is decided by Stage G; Stage G's command is
+  in §7.8 and needs its own reported GO. Validation losses are not results; no closed loop has run.

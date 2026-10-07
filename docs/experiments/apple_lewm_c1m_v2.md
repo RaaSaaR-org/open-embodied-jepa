@@ -37,6 +37,10 @@ step's outcome (R17.45).
 at the owner's request, to pause Stage T and free the shared GPU. That V voids N-66800 only. Its
 one repeat, its last allowed attempt, needs §7.7's record of the cause and its prevention, merged,
 and its own GO. Five jobs remain; nothing has been launched since the pause.
+**Stage T completed at `2aa4f5b`** (§7.8, R17.49): on its reported GO, N-66800's repeat and W
+and N of 66801 and 66802 each ended T-JOB-DONE, so all eight jobs are complete. Stage T's row,
+T-DONE, is decided by Stage G (R17.24). W-66800's `last_two_triggered` flag is true. No closed loop
+has run. Stage G is prepared, not run; it needs this record merged and its own reported GO.
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
@@ -1155,6 +1159,209 @@ the 46 800 s cap per job is unchanged).
 - **When it runs is the owner's decision.** The owner wants the GPU left free now. The repeat
   needs this PR merged, a reported GO naming the command above, and the owner's go-ahead for the
   GPU. Nothing has been launched.
+
+### 7.8 Stage T's completion: all eight jobs T-JOB-DONE (R17.49)
+
+Recorded by Claude under owner delegation (DECISIONS 2026-10-05 (b), R17.49). The frozen block
+and its sha256 `f28e5e2c…548d` are unchanged, and no bar, seed, salt, cap, ceiling or row
+changes. The runner, the stage modules and the pinned test file are unchanged; the manifest
+re-pins this document only. **No Stage T result is claimed here, and Stage T's row is not
+decided here.**
+- **T-DONE is decided by Stage G** (`decide_t`, R17.24) and recorded in Stage G's report.
+- **A validation loss is a selection criterion, not a success measure.**
+- **The val criterion is a raw latent MSE.** W's and N's numbers below are not comparable as a
+  success claim. Whether W beats N is G3's question on the gate split (§8.2), with its
+  bootstrap, not a reading of this table.
+- **No closed-loop result exists.** No LeWM controller has run in closed loop under this
+  protocol. The canonical R7 sentence above is unchanged.
+
+**The resume (R17.49).** It ran on the reviewer's reported GO at `2aa4f5b`
+(<https://github.com/RaaSaaR-org/open-embodied-jepa/pull/148#issuecomment-6013921627>,
+2026-10-06 10:03:08Z). It used the fresh clean worktree
+`/home/huhn/develop/emai/worktrees/task077-staget2` and the GO's two-step procedure. The driver
+logs do not record the launch environment.
+- **Step 1** was the driver with `--resume-from /home/huhn/develop/emai/worktrees/task077-staget/outputs
+  --repeat N-66800 --stop-after tests`. It wrote the G-tests record and stopped: "Stage T paused
+  after tests (--stop-after)".
+- **Step 2** was the same command without `--stop-after`.
+  - It kept the step-1 record (TESTS-PASS at HEAD `2aa4f5b…`).
+  - It kept cal-W, cal-N, plan and W-66800 from the first worktree, each at its pinned sha256.
+  - It ran the five remaining jobs, each in its own `gpu_run.sh --wait --min-free-gib 8 --board`
+    slot (lock log `~/.local/state/gpu/oej-gpu_run.log`, every slot `status 0`).
+  - Before N-66801, W-66802 and N-66802 the driver log shows "waiting for the GPU lock". Each of
+    those jobs started 18 s after the previous job's slot ended. The lock log records only this
+    project's slots, so what held the lock in between is not recorded.
+- **The driver log** `outputs/task077-staget2-driver.log` (sha256 `6d94c70d…8c10`) ends
+  "Stage T: all eight jobs ended T-JOB-DONE; T-DONE is decided by Stage G (R17.24)".
+- **Nothing was paused or stopped.** No job ended V, and N-66800's repeat, its last allowed
+  attempt, completed. All times are UTC. The reports are git-ignored and are not edited.
+
+| step | outcome | span (UTC) | report sha256 |
+|---|---|---|---|
+| tests (run 2) | TESTS-PASS (2035 passed, 37 skipped, clean tree, at `2aa4f5b`) | 10-06 10:03:30–10:06:13 | `ff8ffb08bd95d70ef16d9065d0c504705740688ca2da87b01806542cef9bfeec` |
+| N-66800 (repeat, `task077-t-N-66800-2`) | T-JOB-DONE | 10-06 10:06:20–15:01:57 | `d17894a6927301dff1ffb35883e8ef481cf0f53e5ea98e61a35f608be7ba58e9` |
+| W-66801 | T-JOB-DONE | 10-06 15:02:02–19:49:06 | `eb3d1e9823c1c8aaae779a2e8052557a51b54e8193ec3583bfefb58764be2953` |
+| N-66801 | T-JOB-DONE | 10-06 19:49:26 – 10-07 01:44:27 | `faa330d4c893ac697403166b7b56f3705ae47aa78c2b4d950b6f7b6c9bc1eb7f` |
+| W-66802 | T-JOB-DONE | 10-07 01:44:48–07:39:33 | `ec65c4f39157875a38398d7def0dcf8a82e9a66629f87d049a14c05cc4d99f2c` |
+| N-66802 | T-JOB-DONE | 10-07 07:39:53–12:26:13 | `7976c5945679d0d6e1ec053579639d070b3203dda57956e53938aaeebedd2164` |
+
+**The six models.** Every model ran U = 95 000 updates with a selection every 4 750 (20 points)
+on device `cuda` (RTX 5080), from the kept plan `7c714760…7cdfb`. The kept checkpoint is
+`select_checkpoint(curve, 0.01)`, the earliest point within 1 % of the curve's minimum (§4.4).
+`last_two_triggered` is true only when that kept point is one of the curve's last two points. The
+val criterion is the job's own selection criterion on val; it is not a gate.
+
+| seed | arm | job (revision) | kept update | kept val | raw argmin (val) | val at 95 000 | `last_two_triggered` | wall time (s) | checkpoint sha256 |
+|---|---|---|---|---|---|---|---|---|---|
+| 66800 | W | W-66800-1 (`215fcce`) | 95 000 | 0.350399 | 95 000 (0.350399) | 0.350399 | **true** | 18 405 | `891d26640e82ab8fce62c32b7d4a7a9eba99ae1babb8614777c668fe498876b8` |
+| 66800 | N | N-66800-2 (`2aa4f5b`) | 38 000 | 0.741328 | 38 000 (0.741328) | 0.773894 | false (W-66800's is **true**) | 17 736 | `51b51035be262e7c0ba2d1bb96beeec2939ee82b5d86217409e90424391ed2c2` |
+| 66801 | W | W-66801-1 (`2aa4f5b`) | 71 250 | 0.364904 | 95 000 (0.361504) | 0.361504 | false | 17 224 | `27aeadab1476e5097b550f2a17c5de36ef1ea3c75852f4556eab0d54773ec193` |
+| 66801 | N | N-66801-1 (`2aa4f5b`) | 80 750 | 0.729304 | 80 750 (0.729304) | 0.751034 | false | 21 301 | `15f5dd413aac48aff0eb628b9b3c66d62b97f986111eaec3de4db23887112d37` |
+| 66802 | W | W-66802-1 (`2aa4f5b`) | 80 750 | 0.364660 | 95 000 (0.363314) | 0.363314 | false | 21 285 | `ba2614ec271525e0ca9f3a5980afd080e2ae00302e145d96adb0f13cc6ef97b4` |
+| 66802 | N | N-66802-1 (`2aa4f5b`) | 38 000 | 0.746241 | 47 500 (0.742907) | 0.777143 | false | 17 180 | `4f92a8feba04218b21dd289e5749da5abc4c6aef5c5efc08c4f94fd81a01bfef` |
+
+The calibration jobs (W and N, seed 66810) are in §7.7. Neither is flagged by `last_two_triggered`.
+W-66800's report sha256 is `42195ded…757b` (§7.7). Wall time is the stage's `total_seconds`,
+rounded. Each checkpoint's sha256 was recomputed from the file beside its report and matches the
+report.
+
+**What the flags and curves show, disclosed before Stage G reads them.**
+- **W-66800's `last_two_triggered` is true** (§7.7). **It is stated beside every W-versus-N
+  comparison of seed 66800**, here and in Stage G's record and the results document. By §4.5 it
+  changes no budget and no row. Stage G's report records only N's flag per seed
+  (`n_unsaturated`), so the W flag is carried by this record.
+- **N's flag is false for all three seeds.** No N is flagged unsaturated, so §4.5's duty for an
+  unsaturated N, and its stated bias towards W on G3 and G1 (iii), does not arise from the flag.
+- **All three W curves have their raw minimum at the last point, 95 000.** The flag is false for
+  W-66801 and W-66802 only because the 1 % rule kept an earlier point, 71 250 and 80 750. Their
+  last points are lower by 0.0034 and 0.0013. So all three W curves may still have been falling
+  slightly at U = 95 000.
+  - This is reported only. U was fixed by the plan from the calibration runs, and no rule
+    extends it.
+  - An under-trained W would, if anything, weaken W against N rather than favour it. This is a
+    reading, not a measurement.
+- **The primary seed follows mechanically from these numbers.** §7.6's rule picks the W with the
+  lowest kept val criterion, which is W-66800 (0.350399). The other W models kept 0.364904 and
+  0.364660. **So Stage G will pick 66800, the seed whose W is flagged.** Stage G's report makes
+  that choice and records it; this record only discloses it in advance. The comparison is of W
+  models with each other on the same criterion, not of W against N.
+- **The N curves are noisy**, as cal-N's was (§7.7).
+  - N-66802 kept 38 000 (0.746241), although its raw argmin is 47 500 (0.742907, within the 1 %
+    bound 0.750336).
+  - Each N's last point lies above its kept point by 0.022–0.033.
+- **N-66800's repeat matches its voided first attempt where they overlap.** The V attempt logged
+  update 4 750 at val 0.837403 before the SIGTERM. The repeat logged the same value, to the six
+  digits the log prints, at the same update. This is consistent with the strict CUDA determinism
+  of §10.1, at a single point. No checkpoint of the V attempt exists to compare.
+
+**The code is identical across all eight jobs.** The kept jobs ran at `215fcce`; the repeat and
+the four new jobs ran at `2aa4f5b`. In all eight reports the following fields are equal:
+- the runner's and stage modules' git blobs (`own_code_git_blobs`) and the carried C1/C1-M blobs;
+- `frozen_sha256_at_run` (`f28e5e2c…548d`);
+- the model `implementation_sha256` (`155dc5c0…6cab`) and the frozen encoder digest;
+- the train roots' sha256 (`28f0363d…`), the Stage O fits' sha256s and the normalisation moments
+  (`5415eea4…`);
+- the corpus sha256 (`ad8974b2…43fb`).
+
+The reports at `2aa4f5b` record the protocol document as `e862bc68…`, those at `215fcce` as
+`283a8466…`; only this document changed between them (§7.7).
+
+**Guards and resources (the five resumed jobs).** Every job ran on a clean tree, with HEAD unchanged from start to end,
+the frozen pin matching, the 14 train and val feature files (12.1 GB) verified against Stage O's
+featurise report, and a G-tests record at its own HEAD.
+- **Memory.** Peak process-tree PSS was 13.28–13.41 GiB, against the 18 GiB ceiling. Torch's GPU
+  peak was 5.48 GiB allocated and 6.45 GiB reserved in every job.
+- **Disk.** At least 74.59 GiB was free throughout.
+- **Per-update time.** The median was 0.168 s for N-66800, W-66801 and N-66802, and 0.213 s and
+  0.216 s for N-66801 and W-66802 (95th percentiles 0.224–0.274 s).
+  - These are within Stage 0's measured band (median 0.166–0.223 s). The cause of the two slower
+    jobs, overnight, was not identified.
+  - The GPU lock serialises GPU jobs, and each slot started with 15 611–15 612 MiB of 16 303 MiB
+    free.
+- **Wall time.** The longest job took 21 301 s, 0.46 of the 46 800 s cap. The five resumed jobs
+  used 94 726 s of GPU (26.3 h), against §7.7's estimate of about 25.6 h.
+
+**Evidence copies.** The reports, logs and checkpoints of both Stage T worktrees are copied to
+the SSD evidence store `~/develop/emai/evidence/` (its README, section "TASK-077 Stage T").
+- **Run 1:** `task077-staget/outputs/` (tests, cal-W, cal-N, plan, W-66800 and the voided
+  N-66800-1), 16 files.
+- **Resume:** `task077-staget2/outputs/` (tests, N-66800-2, W/N-66801, W/N-66802, the driver and
+  step logs), 19 files.
+- **Manifests:** `_checksums/task077-staget.sha256` (sha256 `35970e88…0487`) and
+  `_checksums/task077-staget2.sha256` (sha256 `cc148a2f…d063`). Both copies were verified
+  against their sources and against the manifests.
+- **The originals stay in place.** Both worktrees are read only and are not removed until Stage G
+  has read their jobs. The USB disk is not used.
+
+**Stage G, prepared, not run (R17.49).** Stage G needs this PR merged and its own reported GO,
+which must name the command below. `M` is this PR's merge commit. First make a fresh clean
+worktree with `scripts/new_worktree.sh /home/huhn/develop/emai/worktrees/task077-stageg --run
+--from M`. Then run from its root, with no edit in the worktree while it runs:
+
+```sh
+uv run --no-sync python scripts/run_lewm_c1m_v2.py gates \
+  --output outputs/task077-gates-1 --log outputs/task077-gates-1.log \
+  --evidence /home/huhn/develop/emai/worktrees/task076-evidence \
+  --corpus /home/huhn/develop/emai/worktrees/task077-corpus2/outputs/task077-corpus-2/corpus \
+  --corpus-sha256 ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb \
+  --features /home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-featurise-1/features \
+  --fits /home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-readouts-1/fits \
+  --plan /home/huhn/develop/emai/worktrees/task077-staget/outputs/task077-t-plan-1/report.json \
+  --models \
+    /home/huhn/develop/emai/worktrees/task077-staget/outputs/task077-t-W-66800-1/report.json \
+    /home/huhn/develop/emai/worktrees/task077-staget2/outputs/task077-t-N-66800-2/report.json \
+    /home/huhn/develop/emai/worktrees/task077-staget2/outputs/task077-t-W-66801-1/report.json \
+    /home/huhn/develop/emai/worktrees/task077-staget2/outputs/task077-t-N-66801-1/report.json \
+    /home/huhn/develop/emai/worktrees/task077-staget2/outputs/task077-t-W-66802-1/report.json \
+    /home/huhn/develop/emai/worktrees/task077-staget2/outputs/task077-t-N-66802-1/report.json
+```
+
+- **What it is.** Stage G is a CPU stage with no GPU lock (`CUDA_VISIBLE_DEVICES` empty in its
+  G-tests).
+  - In `preflight()` the runner first waits for G-quiet (the 1- and 5-minute loads at most 2.0;
+    at most 4 h), then runs the full suite itself (G-tests).
+  - `stage_gates` then checks the plan and the six models and records the primary seed (§7.6's
+    rule). It needs the primary seed before the pool opens, because the offline aims use that
+    seed's W and N.
+  - It opens a pool of 4 world-model workers (`WM_WORKERS`) and computes the stand-in chunks and
+    the offline aims of §7 step 7, which are reported only.
+  - After closing the pool, it computes G1–G5 on the 250 gate roots for each seed. It then
+    records `stage_t` (`decide_t`, the T-DONE row) and the row: H-GATE-FAIL, G-NO-BAR or G-PASS
+    (§8.2).
+- **Its cap is 7 200 s** (§10.3), against Stage 0's estimate of about 45 min, most of it the
+  offline aims.
+  - The cap's clock starts before `preflight()` and is checked at the stage's end. **The G-quiet
+    wait and G-tests (about 3 min) count against it.** A G-quiet wait of more than about 1 h
+    would therefore let the stage run to its end and then end V on the cap, using Stage G's one
+    repeat. So the GO requires the 1- and 5-minute loads to be at most 2.0 at launch.
+  - Its memory ceiling is 12 GiB of process-tree PSS.
+  - The debug smoke peaked at 8.19 GiB (Stage 0 record). It ran with the same 4 workers, about
+    1.7 GiB each.
+  - The 1.6 GB gate store is memory-mapped. Every gate feature file is hashed in full at the
+    start (R17.26). While the pool is open, the offline aims read only the 405 slice of the
+    8 × 8 features (about 25 MB). The per-seed gates read the windows, after the pool has closed.
+    That ordering is a reading of the code, not a measurement at scale.
+- **"All eight jobs".** Stage G reads the six model reports named in `--models` and the plan.
+  - The calibration jobs enter only through the kept plan, which was checked against them on
+    resume.
+  - The runner checks each model's outcome, its corpus and moments, and each checkpoint's sha256
+    against its report. It does not check the reports' own sha256s, so the GO checks them
+    against this section.
+- **What the GO must check.**
+  - The merged revision `M`: CI green at `M`; the new worktree at `M` with a clean tree and an
+    empty `outputs/`.
+  - The pins: the manifest's 13 pins and this document's sha256 match the files at `M`.
+  - The reports: all six model reports and the plan re-hashed to this section's and §7.7's
+    sha256s; each checkpoint beside its report re-hashed to its recorded sha256.
+  - Stage O's featurise and readouts reports and the corpus manifest unchanged since Stage T
+    (`ad8974b2…43fb`).
+  - The evidence root `task076-evidence` intact (G-repro checks it at run time).
+  - The machine: enough RAM for the 12 GiB ceiling plus its headroom; the 1- and 5-minute loads
+    at most 2.0 at launch, since G-quiet's wait counts against the cap; at least 10 GiB of disk
+    free; and no other TASK-077 stage running.
+  - The command above, verbatim, including the six `--models` paths in seed order W, N.
+- **A V of Stage G voids Stage G only.** It leaves one repeat after a recorded fix (§10.1). Vs in
+  different stages do not add up (R17.16).
 
 ## 8. Gates, bars and rows
 

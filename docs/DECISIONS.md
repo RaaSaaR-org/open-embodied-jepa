@@ -75,7 +75,8 @@ makes G-anchor check the frozen 256 frames, with the frozen block unchanged; its
 amendment (R17.43). Stage O at `8721516` ended O-PASS (R17.40); R17.41–R17.45 prepare Stage T.
 Stage T at `215fcce` completed the calibrations, the plan (T-PLANNED, U = 95 000) and W-66800;
 N-66800 ended V when the owner asked for a pause, and its one repeat, its last allowed attempt,
-needs R17.47's record and its own GO (R17.46–R17.48).**
+needs R17.47's record and its own GO (R17.46–R17.48). The resume at `2aa4f5b` completed Stage T:
+all eight jobs ended T-JOB-DONE; T-DONE is decided by Stage G (R17.49).**
 Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
@@ -775,6 +776,61 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       command is in §7.7). The training code is byte-identical to the kept jobs'.
     - **It runs only after** this PR is merged, a reported GO names that command, and the owner
       gives the go-ahead for the GPU. Nothing has been launched.
+
+- **R17.49 — Stage T's completion and Stage G's preparation** (2026-10-07). **Recorded by Claude
+  under owner delegation.** The protocol records it in §7.8. The frozen block is unchanged
+  (`f28e5e2c…548d`), and no bar, seed, salt, cap, ceiling or row changes. The runner, the stage
+  modules and the pinned test file are unchanged; the manifest re-pins the protocol document
+  only.
+  - **No result is claimed.**
+    - Stage T's row, T-DONE, is decided by Stage G (`decide_t`, R17.24), not here.
+    - A validation loss is a selection criterion, not a success measure.
+    - It is a raw latent MSE, so W's and N's numbers are not comparable as a success claim.
+    - No LeWM controller has run in closed loop under this protocol. R7 is unchanged.
+  - **The resume.** It ran on the reported GO at `2aa4f5b` (#148, issuecomment-6013921627), in the
+    fresh worktree `task077-staget2`. The G-tests record (`ff8ffb08…feec`) is TESTS-PASS, with
+    2035 passed and 37 skipped. The driver kept cal-W, cal-N, plan and W-66800 at their pinned
+    sha256s. It then ran these jobs, each of which ended T-JOB-DONE:
+    - N-66800's repeat in `task077-t-N-66800-2` (`d17894a6…58e9`), its last allowed attempt;
+    - W-66801 (`eb3d1e98…2953`) and N-66801 (`faa330d4…eb7f`);
+    - W-66802 (`ec65c4f3…9f2c`) and N-66802 (`7976c594…2164`).
+
+    The driver log ends "all eight jobs ended T-JOB-DONE". No job ended V.
+  - **The six models.** Each ran U = 95 000 updates on CUDA. The table gives the kept update and
+    the val criterion there, then `last_two_triggered`:
+
+    | model | kept update | val | `last_two_triggered` |
+    |---|---|---|---|
+    | W-66800 | 95 000 | 0.350399 | **true** |
+    | N-66800 | 38 000 | 0.741328 | false |
+    | W-66801 | 71 250 | 0.364904 | false |
+    | N-66801 | 80 750 | 0.729304 | false |
+    | W-66802 | 80 750 | 0.364660 | false |
+    | N-66802 | 38 000 | 0.746241 | false |
+
+    Every checkpoint's sha256 was recomputed and matches its report. The code, the frozen block,
+    the implementation hash, the train roots, the fits and the corpus are identical across all
+    eight jobs, those at `215fcce` and those at `2aa4f5b`.
+  - **Disclosed.**
+    - **W-66800's flag is true, and it is stated beside every W-versus-N comparison of seed
+      66800.** Stage G's report records only N's flag, so this record carries W's.
+    - No N is flagged.
+    - All three W curves have their raw minimum at their last point. W-66801's and W-66802's
+      flags are false only because the 1 % rule kept an earlier point. This is reported only,
+      since no rule extends U.
+    - §7.6's primary-seed rule will pick 66800, the flagged W (lowest kept val, 0.350399).
+    - N-66800's repeat logged the same val at update 4 750 as its voided first attempt
+      (0.837403).
+    - Two jobs ran slower, with median updates of 0.213 s and 0.216 s. That is within Stage 0's
+      band, and the cause was not identified.
+    - The resources: peak PSS ≤ 13.41 GiB of 18 GiB; the longest job took 21 301 s against the
+      46 800 s cap; the five jobs used 26.3 h of GPU.
+  - **Evidence.** Both Stage T worktrees' reports, logs and checkpoints are copied to
+    `~/develop/emai/evidence/task077-staget{,2}/`, with sha256 manifests in `_checksums/`. Both
+    copies were verified. The originals stay read only until Stage G has read them.
+  - **Stage G is prepared, not run.** §7.8 names the command, which runs from a fresh worktree of
+    this record's merge commit, and lists what the GO must check. Stage G runs only on a
+    reported GO, after the main session's notice.
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 
