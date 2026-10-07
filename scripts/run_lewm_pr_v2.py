@@ -893,6 +893,17 @@ def fit_phase(report, args, chain, fit: dict, folder: Path, *, crossfit: bool) -
     return {"record": out, "readouts": readouts, "preds": preds}
 
 
+def release_models(phase: dict) -> None:
+    """Free the main process's models and fit-root predictions before the world-model workers
+    start (G-memory: each worker holds about 1.7 GiB)."""
+    import gc
+
+    for item in phase["readouts"].values():
+        item.pop("models", None)
+    phase["preds"].clear()
+    gc.collect()
+
+
 def read_phase(chain, fitted: dict, ev: dict, eval_chunks) -> tuple[dict, dict]:
     """e_S, e_N, e_L per seed on the evaluated roots, the encoded ceiling (R8 on the encoded frame
     at r, R0's form) and R8 on W's stand-in prediction (reported continuity)."""
@@ -993,6 +1004,12 @@ def stage_dryrun(report, args, fields: Fields, manifest) -> str:
         curve[str(s)] = pof.learning_curve(
             phase["preds"][s], fit["plate_r"], fit["seeds"], preds[s]["pred"], ev["plate_r"]
         )
+    at_15 = {
+        str(s): {k: float(np.mean(v <= 1.5 * tau)) for k, v in preds[s]["errors"].items()}
+        for s in pr.MODEL_SEEDS
+    }
+    release_models(phase)
+    del preds
     aims = aims_phase(report, args, chain, phase["readouts"], ev, p_hat, tau)
     fields.set("offline_aims", aims)
     fields.set(
@@ -1000,10 +1017,7 @@ def stage_dryrun(report, args, fields: Fields, manifest) -> str:
         {
             "r_plate_405_error_val": pr.median_ci(off.errors_cm(p_hat, ev["plate405"])),
             "learning_curve_on_val": curve,
-            "at_1_5_tau": {
-                str(s): {k: float(np.mean(v <= 1.5 * tau)) for k, v in preds[s]["errors"].items()}
-                for s in pr.MODEL_SEEDS
-            },
+            "at_1_5_tau": at_15,
         },
     )
     a = aims["arms"]
@@ -1077,8 +1091,6 @@ def stage_rgate(report, args, fields: Fields, manifest) -> str:
         readings[h]["standin_infeasible"] = int((~chunks_by[h][1]).sum())
     fields.set("readings", readings)
     gate = halves["gate_p"]
-    aims_by = aims_phase(report, args, chain, phase["readouts"], gate, gate["p_hat405"], tau)
-    fields.set("offline_aims", aims_by)
     confound = {
         str(s): pr.unpaired_median_difference_ci(
             preds_by["gate_p"][s]["errors"]["e_S"], preds_by["contrast_t"][s]["errors"]["e_S"]
@@ -1095,6 +1107,17 @@ def stage_rgate(report, args, fields: Fields, manifest) -> str:
     for s in pr.MODEL_SEEDS:
         m = phase["readouts"][s]["models"]
         dynamics[str(s)] = pof.dynamics_report(m["W"], m["N"], store, chain["scale"], bars)
+    at_15 = {
+        str(s): {
+            k: float(np.mean(v <= 1.5 * tau)) for k, v in preds_by["gate_p"][s]["errors"].items()
+        }
+        for s in pr.MODEL_SEEDS
+    }
+    e_s_gate = {s: preds_by["gate_p"][s]["errors"]["e_S"] for s in pr.MODEL_SEEDS}
+    release_models(phase)
+    del preds_by
+    aims_by = aims_phase(report, args, chain, phase["readouts"], gate, gate["p_hat405"], tau)
+    fields.set("offline_aims", aims_by)
     r_plate_f = {
         h: pr.median_ci(
             off.errors_cm(
@@ -1113,11 +1136,8 @@ def stage_rgate(report, args, fields: Fields, manifest) -> str:
             "p_hat_logged_vs_stored_tokens_max_cm": float(100.0 * np.abs(
                 pof.r_plate_readings(chain["readouts"]["r_plate"], gate["full405"])
                 - gate["p_hat405"]).max()),
-            "at_1_5_tau": {
-                str(s): {k: float(np.mean(v <= 1.5 * tau))
-                         for k, v in preds_by["gate_p"][s]["errors"].items()}
-                for s in pr.MODEL_SEEDS
-            },
+            "at_1_5_tau": at_15,
+            "e_S_gate_p_median_cm": {str(s): float(np.median(v)) for s, v in e_s_gate.items()},
         },
     )  # fmt: skip
     gp = readings["gate_p"]
