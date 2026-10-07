@@ -200,7 +200,7 @@ feature space R8 reads) to the true plate (x, y) at r, one per model seed s:
 |---|---|---|
 | **R-S^s** | W^s's predictions at r from each fit root's encoded 405 frame under **the stand-in chunk of that root's own committed aim** | W, L-shuf and L-mean (the scene-blind twins are W rolled from another latent; they keep W's readout, as they kept R8 in TASK-077) |
 | **R-N^s** | N^s's predictions at r from the same 405 frames under zero commands | N |
-| **R-L^s** (diagnostic, §5.3) | W^s's predictions at r from **L-mean's mean 405 latent** under the same stand-in chunks | nothing at run time; Stage R's command-keyed check only |
+| **R-L^s** (diagnostic, §5.3) | W^s's predictions at r from **L-mean's mean 405 latent** under the same stand-in chunks | nothing at run time; Stage R's commands-alone screen (R3) only |
 
 The stand-in chunk is the kinematic stand-in's 60 commands (405–464) for the root's own committed
 aim, from its logged 405 state (`lewm_c1m_v2_runtime.run_chunks_task`,
@@ -293,9 +293,9 @@ privileged read reaches any arm.
    own aim across the 147 candidates, which a one-aim-per-root reading cannot see. A1 and A2 read
    the argmin over the whole grid, so such an echo shows up as missed offline aims, not as a pass.
    **Reported in Stage R:** per gate-P root, the slope of the predicted plate p̃(g) against the aim
-   g across the candidates (a least-squares fit over the feasible grid), beside the slope κ = −0.5
-   that the rule's fixed-point form implies (g\* = (p − κh)/(1 − κ) is the fixed point of
-   g = p + κ(g − h)); a slope near 1 would be the echo.
+   g across the candidates, as the 2 × 2 least-squares matrix over the feasible grid, compared with
+   κI, κ = −0.5, the slope that the rule's fixed-point form implies (g\* = (p − κh)/(1 − κ) is the
+   fixed point of g = p + κ(g − h)); a matrix near I would be the echo.
 5. **The closed loop is the final check**: on cohort S, every grid is built from p̂, so a readout
    that relied on the true p would show up as missed bars, never as a pass.
 
@@ -478,7 +478,7 @@ test's minimum separation is not run.
 |---|---|---|
 | **V** | the void rule (§11) | one repeat after a recorded fix |
 | **R-VOID-CEILING** | R0 fails (the fresh encoded frame does not read the plate within τ_commit) | escalate, no clause; nothing below is informative |
-| **R-COMMAND-KEYED** | R3 fails on any seed | escalate, no clause: the commands alone read the plate, so R-S may be keyed by the aim's construction (§5.3) |
+| **R-COMMAND-KEYED** | R3 fails on any seed | escalate, no clause: the commands alone (with no scene latent) read the plate within τ_commit, so W's prediction would add nothing measurable over them (§5.3, point 3) |
 | **R-NO-BAR** | R1 or R2 fails on any seed | escalate, no clause: the decomposition's reading does not hold on fresh roots with the closed loop's aim construction |
 | **A-NO-BAR** | A1 fails | escalate, no clause: the readout reads the plate but the ranking does not predict the bar |
 | **A-TWIN** | A2 fails for any of the four | escalate, no clause: the offline aims leave no room for the declared twin test |

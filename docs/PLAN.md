@@ -346,8 +346,8 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       R-N, fitted the same way. TASK-077's six checkpoints are reused (no training). A fresh
       500-root corpus (65300–65799) gives a gate split whose aims are built from R-plate's reading,
       as in closed loop, plus a true-plate contrast half that measures the corpus-aim confound.
-      Stage R gates R-S on fresh roots (upper bound ≤ τ_commit, ratio to N < 1, a command-keyed
-      check) and the offline aims (W's predicted count ≥ 56/64 and ≥ +7/64 above every twin)
+      Stage R gates R-S on fresh roots (upper bound ≤ τ_commit, ratio to N < 1, a commands-alone
+      screen) and the offline aims (W's predicted count ≥ 56/64 and ≥ +7/64 above every twin)
       before any closed loop. D and S carry TASK-077's bars and rows. **CPU**: about 3–5.5 h in all;
       **GPU**: the fresh corpus's featurisation only (minutes). TASK-079's precondition
       (TASK-077 L-PASS) is not met; R18.12 proposes that a TASK-080 L-PASS counts as its
