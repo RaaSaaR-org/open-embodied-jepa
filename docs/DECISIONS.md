@@ -63,6 +63,91 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-07 — TASK-080's DRAFT preregistration: LeWM's committed aim under C1-M, read by a readout fitted on W's predicted latents, on fresh roots (R18; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30). DRAFT, not frozen.** The document is
+[apple_lewm_c1m_v2_pred_readout.md](experiments/apple_lewm_c1m_v2_pred_readout.md) (STATUS DRAFT),
+with the task card TASK-080. It applies R17.54 (the decomposition record's row D-READOUT), which
+names a new preregistration on fresh gated roots. Nothing has been run for it: no seed of its block
+has been simulated, no readout fitted, no root collected. The labels are R18 because R1–R17 are
+taken; a search of every local and remote ref (104) and every worktree's `docs` on 2026-10-07 found
+no R18. TASK-078 and TASK-079 are reserved in PLAN.md, so this is TASK-080.
+
+- **R18.1 — form.** A DRAFT protocol and an MC card (TASK-080), not frozen. The sequence is
+  TASK-077's: this draft's independent review; Stage 0 (code, frozen block, manifest, tests, debug
+  smokes, scale probes, R18.13's dry run); K0′ on a reported GO; the freeze merged on an independent
+  reviewer's reported APPROVE; then Stages C′, R, D and S, each on its own reported GO. Approving
+  this draft approves neither K0′ nor the freeze.
+- **R18.2 — reuse TASK-077's six Stage T checkpoints; no training.** The predictor passed G1–G4 on
+  the then-unread gate split; G5 (a) failed on a readout fitted on encoded frames, and the
+  decomposition record measured that a readout refitted on W's own predictions removes most of the
+  gap. Retraining the same recipe would test nothing new and cost about 31 h on the GPU queue
+  (113 131 s of wall time for the six model jobs). The val selection and the read gate split are handled by gating only on fresh
+  roots that no fit, selection or calibration has seen; W-66800's `last_two_triggered` flag is
+  stated beside every seed-66800 comparison. The primary seed is 66800 by TASK-077's rule (the
+  lowest kept val criterion), carried so that no choice is made after the decomposition record.
+- **R18.3 — the readouts.** R-S^s: a dual ridge of Stage O's form from W^s's raw 8 × 8 predicted
+  latent at r, under the kinematic stand-in chunk of each fit root's own committed aim, to the true
+  plate at r; read by W and by the scene-blind twins (which are W rolled from another latent).
+  R-N^s: the same on N^s's zero-command predictions; read by N. R-L^s (diagnostic only): the same
+  on W^s rolled from L-mean's mean latent. **Fit set: all 1 995 roots of `apple-c1m-v2`** (train,
+  val and TASK-077's read gate split; none is a gate here, and the readout learning curves were
+  still falling). R8 is used only for the encoded ceiling. The readout is fitted on stand-in
+  predictions because one fitted on executed-command predictions read stand-in predictions at
+  4.6–9.5 cm (decomposition record §2.3).
+- **R18.4 — the fresh corpus `apple-c1m-v2-f`.** 500 roots (65300–65799) by TASK-077's privileged
+  scripted collector, split before collection (salt 8203) into **gate-P** (250; aims drawn uniformly
+  over the box built from p̂, R-plate's reading of the 405 frame on the CPU, as the closed loop
+  builds its grid; the offline gate split) and **contrast-T** (250; aims built from the true plate,
+  as TASK-077's corpus; reported only). CORPUS-ESCALATE above 2 % excluded overall or in either half.
+- **R18.5 — the corpus-aim confound.** A stand-in chunk encodes its aim, which TASK-077's corpus
+  built from the true plate, so R-S may read part of the plate from the aim's construction. Handled
+  by: gating on gate-P only (the closed loop's aim construction); measuring the confound's size
+  (gate-P minus contrast-T, reported; it can show only an effect of about p̂ − p, 0.148 cm); a
+  gated commands-alone screen R3 (R-L, with no scene information, must not read the plate within
+  τ_commit: its lower bound > τ_commit; a sufficient screen, not a full test of keying); the offline
+  aims A1–A2, which catch a readout that echoes each candidate's aim (with the per-root slope of
+  p̃(g) against g reported); and the closed loop itself, where every grid is built from p̂.
+- **R18.6 — K0′ and τ_commit.** 32 fresh resets (65000–65031) re-measure the ceiling, r and the palm
+  speed, with TASK-077's stops (CAL-ESCALATE). τ_commit is TASK-076 K0's rule on the pooled 64 resets
+  of K (TASK-077) and K′, every level up to it ≥ 56/64; the pooled curve maps the offline aims. A
+  pooled τ_commit of 0.5 cm tightens every bar tied to it; that is not an escalation by itself.
+- **R18.7 — Stage R, the fresh offline gate** (gate-P, h = 60; all three seeds for R1–R3, the primary
+  seed for A1–A2): R0 the encoded ceiling (R8's upper bound ≤ τ_commit); R1 R-S's upper bound
+  ≤ τ_commit; R2 the upper bound of e_S / e_N < 1.0; R3 R-L's lower bound > τ_commit; A1 W's
+  offline predicted count ≥ 56/64; A2 W's predicted count at least +7/64 above each of N's, L-shuf's,
+  L-mean's and L-rand's. Rows, first match: V, R-VOID-CEILING, R-COMMAND-KEYED, R-NO-BAR, A-NO-BAR,
+  A-TWIN, R-PASS; every non-pass row escalates without the clause. G1–G4 on gate-P are reported,
+  not gated (these checkpoints passed them on the old gate split).
+- **R18.8 — the closed loop is TASK-077's, with the new readouts.** Arms as TASK-077 §5 (W and its
+  controller form, N, L-shuf, L-mean, L-rand, H-rule, H-sysid, H-final(commit), and H-read and
+  H-now reported); D (16 resets, L-DEV-STOP) and S (64 resets) with TASK-077 §8.4's bars, tests and
+  rows unchanged: G-bar 56/64, G-NI against the better of H-rule and H-sysid with δ = 8/64 (an
+  allocation), exact one-sided McNemar p < 0.01 against N, L-shuf, L-mean and L-rand, and R17.15's
+  "detectably". "LeWM-driven closed-loop success" is the primary claim; "LeWM needed" is reported
+  only (R9.8, R9.9).
+- **R18.9 — seeds and salts.** Block 65000–65999: K′ 65000–65031, D 65100–65115, S 65200–65263,
+  F 65300–65799, debug 65900–65999; TASK-077's whole block 66000–68999 is forbidden (its D and S
+  ranges were never simulated and are not taken over). Salts 8201–8212. The search (104 refs, 38
+  worktrees) found 65000–65999 only as `65000`, a GR00T training step, and no `82xx` in code.
+- **R18.10 — the clause.** It fires on L-NO-GAIN or L-INFERIOR only. Its scope is TASK-077's R17.10
+  unchanged (not fired by TASK-077); if it fires, the results document states plainly that every
+  readout of the predicted latent under this condition closes, not only the one run.
+- **R18.11 — power and compute.** G-bar 0.59–0.98 at true rates 0.875–0.9375; G-NI as TASK-077's
+  Stage-0 simulation; the McNemar test against N, likely the binding twin under R-N, has power
+  0.42–0.89 at W 0.906 and N 0.75 and 0.67–0.99 at N 0.70 (independent to nested outcomes), so
+  L-TWIN-NEAR is a live row. No training; about 3–5.5 h of CPU (§13's rows) and a few minutes of GPU in all.
+- **R18.12 — R7 is unchanged** by this draft; only a reviewed ruling after an L-PASS could change it.
+  Proposed for the owner's PLAN: a TASK-080 L-PASS counts as TASK-079's "equivalent row"; TASK-078's
+  pass and an owner ruling on Arena are still required.
+- **R18.13 — Stage 0's development dry run.** The offline aims of every arm on TASK-077's 250 val
+  roots, with the readouts fitted on the other 1 745 old roots and mapped through K0's curve,
+  reported only, to size the power table before the freeze; optimistic twice over (val selected the
+  checkpoints; val's aims are built from the true plate).
+- **R18.14 — #151's five minor review nits are applied** (results §1 table's tests records; "the
+  first passed gate"; the card's R17.52, its blank line and its review citation; the manifest's full
+  C run-1 sha256). No number changes.
+
 ## Decision 2026-10-05 (b) — TASK-077's DRAFT preregistration: LeWM chooses the single committed place aim under C1-M on an 8 × 8 latent (R17; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30). FROZEN after K0-PASS (R17.25), in force

@@ -1619,7 +1619,7 @@
    {
     "outcome": "V (G-memory)",
     "report": "task077-corpus/outputs/task077-corpus-1/report.json",
-    "report_sha256_prefix": "734fa771",
+    "report_sha256": "734fa771875110637748c00303e0aee6f65577c9b75558493df161f14194a6c3",
     "revision": "862d63c",
     "stage": "C run 1"
    },

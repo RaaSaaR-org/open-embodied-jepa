@@ -25,6 +25,7 @@ not rewritten when its worktree is archived.
 
 | Task | Protocol | Results | Outcome (pointer only) | Manifest |
 |---|---|---|---|---|
+| TASK-080 | [apple_lewm_c1m_v2_pred_readout](apple_lewm_c1m_v2_pred_readout.md) (**DRAFT**, R18) | — | not run: TASK-077's design with the plate read by a ridge fitted on W's own stand-in predictions, TASK-077's six checkpoints reused, gated first offline on 250 fresh roots (gate-P) | — (Stage 0) |
 | TASK-077 | [apple_lewm_c1m_v2](apple_lewm_c1m_v2.md) (FROZEN, R17) ([Stage 0](apple_lewm_c1m_v2_stage0.md)) | [results](apple_lewm_c1m_v2_results.md) | **G-NO-BAR** at Stage G (Stage T T-DONE): G1–G4 pass on all three seeds, G5 (a) fails on all three (predicted-plate readout 1.58–1.87 cm against τ_commit 1.0 cm); escalate, no clause; D and S not run, so no LeWM closed loop | `apple-lewm-c1m-v2.json` |
 | TASK-076 | [apple_plate_twin_v2](apple_plate_twin_v2.md) ([Stage 0](apple_plate_twin_v2_stage0.md)) | [results](apple_plate_twin_v2_results.md) | **TWIN-PASS** (H-twin 64/64 vs H-clock 51/64; random-init floor also 64/64; no world model); K-pred **PRED-INFEASIBLE** (cell A removed), so Branch B; no clause fires | `apple-plate-twin-v2.json` |
 | TASK-075 | [apple_obs_ceiling_v2](apple_obs_ceiling_v2.md) | [results](apple_obs_ceiling_v2_results.md) | **OBS-NONE**; the clause fires (next: a task or condition change) | `apple-obs-ceiling-v2.json` |
