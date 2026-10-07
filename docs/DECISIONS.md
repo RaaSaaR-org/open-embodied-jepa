@@ -843,7 +843,7 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
     fresh worktree `task077-stageg`, with §7.8's command verbatim. It took 2 369 s against the
     7 200 s cap. G-tests passed (2035 passed, 37 skipped, clean tree). Peak PSS was 8.79 GiB of
     12 GiB. Report `outputs/task077-gates-1/report.json`, sha256 `dbd9e714…5727`. The log's eight
-    MuJoCo EGL `__del__` tracebacks come from the four workers' interpreter teardown at pool
+    MuJoCo EGL `__del__` tracebacks come from the four worker processes' interpreter teardown at pool
     close; they are teardown-only. The stdout file is empty.
   - **The rows.** `decision.row` **G-NO-BAR** (`clause_fires` false); `stage_t.row` **T-DONE**;
     primary seed 66800 (§7.6's rule). **W-66800's `last_two_triggered` is true**, and it is stated
@@ -897,7 +897,8 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       than one, the full token grid and a declared task change, because the clause did not fire.
   - **The recommendation: an offline, measurement-first decomposition record before any remedy.**
     - **Its form.** A development record, CPU only. It uses the six existing checkpoints and the
-      train and val splits of `apple-c1m-v2`, never the gate split. There is no new training,
+      train and val splits of `apple-c1m-v2`, never the gate split. The kept W and N checkpoints
+      were selected on val, and the record says so. There is no new training,
       collection or closed loop, and it gates no claim.
     - **What it measures.**
       1. R8 refitted, cross-fitted, on W's own predicted latents at r, under the executed and
@@ -924,8 +925,9 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
       CPU only. Whether the plate information survives the roll-out is exactly what (1) measures.
     - **A shorter commit horizon or an earlier read point is not recommended now.** W's latent
       error is nearly flat from h = 16 to 60 (0.350–0.383), so the horizon is not shown to drive
-      the error. r is set by the plate's settling (r_K = 460; K0 stops later than 465), so an
-      earlier read point reads a plate that is still moving. Another commit step is a task
+      the error. r is set by the plate's settling (r_K = 460, the earliest step at which ≥ 28/32
+      level-0 attempts are within 0.1 cm of the final plate; the frozen r = 465 keeps 5 steps of
+      margin), so a read point before 460 reads a plate that is still moving. Another commit step is a task
       change. Measurement (2) tests the horizon directly.
     - **N's offline predicted count is above W's** (25.4 against 22.6, W-66800 flagged). Under
       the stand-in, W's predicted plate is worse than N's on every seed. A closed loop under the

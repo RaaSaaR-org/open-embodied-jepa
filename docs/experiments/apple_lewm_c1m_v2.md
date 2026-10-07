@@ -1403,7 +1403,7 @@ verbatim (the report's `argv` matches it, including the six `--models` paths in 
 - **The log** `outputs/task077-gates-1.log` has sha256 `2f93d546…cdf5`. It holds eight MuJoCo EGL
   "Exception ignored in … `__del__`" tracebacks (`TypeError: 'NoneType' object is not callable` in
   `mujoco/egl/__init__.py` `free`). They come in four pairs (`Renderer.__del__`,
-  `GLContext.__del__`) with four distinct object addresses, one pair per world-model worker. They
+  `GLContext.__del__`) from four processes, one pair per world-model worker. They
   are raised as each worker's interpreter exits when the pool closes (`pool_close` joined all four
   workers), and they precede the log's only other line, "report written: outcome G-NO-BAR". They
   are teardown-only and affect no number.
@@ -1446,7 +1446,7 @@ part (a) alone.
   median predicted-plate error is above N's (2.43, 2.29, 2.58 cm) on every seed; for 66800,
   W-66800's flag is true.
 - **G2–G4 at h = 16 and 30** (G1 and G5 are computed at h = 60 only). All pass their bars at both horizons on every seed (G2 ub
-  ≤ 0.204; G3 ub ≤ 0.634; G4 lb ≥ 1.65). W's normalised MSE on the true commands barely changes
+  ≤ 0.204; G3 ub ≤ 0.634; G4 lb ≥ 1.647). W's normalised MSE on the true commands barely changes
   with the horizon: 0.355, 0.350 and 0.376 (66800, h = 16, 30, 60), 0.376, 0.373 and 0.383
   (66801), 0.374, 0.370 and 0.383 (66802). Over the same horizons N's grows from 0.62–0.67 to
   1.00–1.05 and copy-last's from 1.89 to 2.62. The report has no plate reading at h = 16 or 30:
@@ -1500,6 +1500,9 @@ no new training and no closed loop. It would measure:
 2. the predicted plate's readability at h = 16, 30 and 60, each with a readout fitted at its own
    frame;
 3. the stand-in's command mismatch and W's error as a function of it.
+
+The val split is the one the kept W and N checkpoints were selected on, so the record would
+say so; it gates nothing.
 
 Its declared rule would choose among a readout on predicted latents, a command-matching change,
 and a declared task change. The reasons are in DECISIONS R17.51.
