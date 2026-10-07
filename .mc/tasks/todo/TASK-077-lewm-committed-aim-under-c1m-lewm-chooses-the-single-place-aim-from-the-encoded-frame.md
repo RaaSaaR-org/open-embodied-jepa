@@ -41,7 +41,7 @@ L-mean, and a random choice. "LeWM needed" is reported only and not expected.
 
 **The protocol (FROZEN after K0-PASS, R17.25; in force once merged on an independent APPROVE):**
 [`docs/experiments/apple_lewm_c1m_v2.md`](../../../docs/experiments/apple_lewm_c1m_v2.md).
-Rulings R17.1–R17.49 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
+Rulings R17.1–R17.51 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
 owner delegation (2026-09-30). The plan is `docs/PLAN.md`.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. This task does not
@@ -55,8 +55,10 @@ change it unless an L-PASS is followed by its own reviewed ruling.
       no privileged read in W or a twin), debug smokes and the scale probe.
 - [x] K0 on a reported GO (K0-PASS at `306fbdc`); K0's values in the frozen block.
 - [x] The freeze merged on an independent reviewer's reported APPROVE (#144, `862d63c`).
-- [ ] Stages C, O, T, G, D and S, each on its own reported GO, from a clean worktree of the merged
-      revision, after a full `pytest` at that revision (G-tests).
+- [x] Stages C, O, T and G, each on its own reported GO, from a clean worktree of the merged
+      revision, after a full `pytest` at that revision (G-tests). Stage G ended G-NO-BAR (R17.50).
+- [ ] ~~Stages D and S~~: not run; G-NO-BAR escalates without a clause, and the runner accepts
+      only a G-PASS gates report for them (R17.50).
 - [ ] Results PR, with every restated number checked by an independent reviewer.
 
 ## Notes
@@ -169,3 +171,14 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   all three W curves' raw minimum at 95 000. Evidence copied to `~/develop/emai/evidence/
   task077-staget{,2}/` with sha256 manifests. T-DONE is decided by Stage G; Stage G's command is
   in §7.8 and needs its own reported GO. Validation losses are not results; no closed loop has run.
+- 2026-10-07: Stage G ran once at `1cb5f79` on the GO (#149, issuecomment-6040670640) in worktree
+  `task077-stageg` and ended **G-NO-BAR**; Stage T's row **T-DONE** (R17.50, protocol §7.9;
+  report `dbd9e714…5727`). G1–G4 pass on all three seeds; G5 (a) fails on all three: R8 on W's
+  predicted latent at r 1.581/1.617/1.873 cm (ub 1.697/1.794/2.076) against τ_commit 1.0 cm;
+  G5 (b) passes (ub 0.716/0.804/0.798). Encoded readout 0.411 cm; stand-in chunks 3.09–3.63 cm.
+  Offline-aim predicted counts (reported only, not closed loop; primary 66800, W flagged
+  `last_two_triggered`): W 22.6, N 25.4, L-shuf 19.1, L-mean 19.8, L-rand 9.6 of 64. Escalate, no
+  clause; D and S do not run; no LeWM-driven controller has run in closed loop; R7 unchanged.
+  Evidence `~/develop/emai/evidence/task077-stageg/`. R17.51: DRAFT recommendation of an offline
+  decomposition record (predicted-latent readout, per-horizon readability, stand-in mismatch).
+  Remaining: the results document.

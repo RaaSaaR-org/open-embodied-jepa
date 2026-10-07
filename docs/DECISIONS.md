@@ -76,7 +76,9 @@ amendment (R17.43). Stage O at `8721516` ended O-PASS (R17.40); R17.41–R17.45 
 Stage T at `215fcce` completed the calibrations, the plan (T-PLANNED, U = 95 000) and W-66800;
 N-66800 ended V when the owner asked for a pause, and its one repeat, its last allowed attempt,
 needs R17.47's record and its own GO (R17.46–R17.48). The resume at `2aa4f5b` completed Stage T:
-all eight jobs ended T-JOB-DONE; T-DONE is decided by Stage G (R17.49).**
+all eight jobs ended T-JOB-DONE; T-DONE is decided by Stage G (R17.49). Stage G at `1cb5f79` ended
+G-NO-BAR with Stage T's row T-DONE: G1–G4 pass on all three seeds, G5 fails on all three; escalate,
+no clause; Stage D and S do not run (R17.50). R17.51 is a DRAFT next-direction recommendation.**
 Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
@@ -831,6 +833,110 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
   - **Stage G is prepared, not run.** §7.8 names the command, which runs from a fresh worktree of
     this record's merge commit, and lists what the GO must check. Stage G runs only on a
     reported GO, after the main session's notice.
+
+- **R17.50 — Stage G's result: G-NO-BAR; Stage T's row T-DONE** (2026-10-07). **Recorded by
+  Claude under owner delegation.** The protocol records it in §7.9. The frozen block is unchanged
+  (`f28e5e2c…548d`), and no bar, seed, salt, cap, ceiling or row changes. The runner, the stage
+  modules and the pinned test file are unchanged; the manifest re-pins the protocol document
+  only.
+  - **The run.** One run on the reported GO at `1cb5f79` (#149, issuecomment-6040670640), in the
+    fresh worktree `task077-stageg`, with §7.8's command verbatim. It took 2 369 s against the
+    7 200 s cap. G-tests passed (2035 passed, 37 skipped, clean tree). Peak PSS was 8.79 GiB of
+    12 GiB. Report `outputs/task077-gates-1/report.json`, sha256 `dbd9e714…5727`. The log's eight
+    MuJoCo EGL `__del__` tracebacks come from the four workers' interpreter teardown at pool
+    close; they are teardown-only. The stdout file is empty.
+  - **The rows.** `decision.row` **G-NO-BAR** (`clause_fires` false); `stage_t.row` **T-DONE**;
+    primary seed 66800 (§7.6's rule). **W-66800's `last_two_triggered` is true**, and it is stated
+    beside every seed-66800 W-versus-N comparison. No N is flagged.
+  - **The gates** (gate split, 250 roots, h = 60; seeds 66800, 66801, 66802).
+    - **G1–G4 pass on all three seeds.** G1: no collapsed dimension; rank ratio 0.283, 0.272 and
+      0.273 (bar 0.12); std ratio 0.776, 0.754 and 0.756 (bar 0.38); W − N rank-ratio lower
+      bounds 0.142, 0.097 and 0.159. G2 upper bounds 0.148, 0.151 and 0.151 (bar 0.8). G3 upper
+      bounds 0.377, 0.404 and 0.403 (bar 1.0). G4 lower bounds: wrong 3.62, 3.49 and 3.50; zero
+      6.30, 15.64 and 5.93 (bar 1.10).
+    - **G5 fails on all three, on part (a).** R8's median plate error on W's predicted latent at r
+      is 1.581, 1.617 and 1.873 cm, with upper bounds 1.697, 1.794 and 2.076 cm, against
+      τ_commit = 1.0 cm. Part (b) passes: the median e_W/e_N ratio's upper bounds are 0.716,
+      0.804 and 0.798.
+  - **Reported only, not gated.**
+    - The encoded readout on the gate split reads 0.411 cm [0.360, 0.452]. W minus it is +1.17,
+      +1.21 and +1.46 cm.
+    - The 1.5 cm scaled tolerance is missed too.
+    - On the stand-in chunks, which W ranks in closed loop, G5's statistic is 3.63, 3.09 and
+      3.16 cm. That is +2.04, +1.47 and +1.29 cm above the executed commands, and above N's
+      2.43, 2.29 and 2.58 cm on every seed.
+    - W's normalised MSE barely changes from h = 16 to 60 (0.350–0.383). No plate reading
+      exists at h = 16 or 30.
+    - **Offline aims** (primary seed 66800, W-66800 flagged; K0's τ curve): the predicted counts
+      of 64 are W 22.6, N 25.4, L-shuf 19.1, L-mean 19.8 and L-rand 9.6, against the 56/64 bar.
+      N's is above W's. **These are predictions from offline aim errors, not closed-loop counts,
+      and they gate nothing.**
+  - **What it means.**
+    - G1–G4: offline at h = 60, the 8 × 8 LeWM token predictor is not collapsed, is
+      action-sensitive, and beats copy-last and an equally trained no-action model. This is not a
+      control result.
+    - G5: its predicted plate is not readable within τ_commit at r. The binding constraint is the
+      predicted plate's readability over 60 recursive steps (encoded 0.41 cm against predicted
+      1.58–1.87 cm). The stand-in's command mismatch adds a gap of similar size.
+  - **What follows from the row.** G-NO-BAR escalates without a clause (§8.2). **Stage D and
+    Stage S do not run**: the runner accepts only a G-PASS gates report for them. Nothing in §11's
+    scope is closed. **No LeWM-driven controller has run in closed loop on v2; R7 is unchanged.**
+    The gate split has been read and is not fresh for these models.
+  - **Evidence.** The report, log and stdout are copied to
+    `~/develop/emai/evidence/task077-stageg/`, with the sha256 manifest
+    `_checksums/task077-stageg.sha256` (`dc1c2368…0271`), verified against source and copy.
+
+- **R17.51 — the next direction after G-NO-BAR (DRAFT recommendation)** (2026-10-07). **Decided by
+  Claude under owner delegation (2026-09-30). This is a recommendation, not a preregistration.**
+  Nothing is run under it until its own DRAFT is reviewed.
+  - **What the frozen texts say.**
+    - §8.2 and R17.6 say only "escalate, no clause".
+    - The design note names a remedy for H-GATE-FAIL only: a reviewed amendment with
+      `action_chunk` or `predictor_step_embedding`. It names none for a predicted-plate miss.
+    - §11 leaves open every readout of the predicted latent, other commit steps, history longer
+      than one, the full token grid and a declared task change, because the clause did not fire.
+  - **The recommendation: an offline, measurement-first decomposition record before any remedy.**
+    - **Its form.** A development record, CPU only. It uses the six existing checkpoints and the
+      train and val splits of `apple-c1m-v2`, never the gate split. There is no new training,
+      collection or closed loop, and it gates no claim.
+    - **What it measures.**
+      1. R8 refitted, cross-fitted, on W's own predicted latents at r, under the executed and
+         under the stand-in commands. The corpus logs both (§5.1).
+      2. The predicted plate's readability at h = 16, 30 and 60, each with a readout fitted at its
+         own frame.
+      3. The stand-in's command mismatch per root, and W's error as a function of it.
+    - **Its decision rule.** The rule, declared in its own DRAFT before it runs, would choose
+      among three remedies:
+      - a readout on predicted latents, if (1) brings the stand-in-chunk error within τ_commit;
+      - a command-matching change, for example W trained or evaluated on stand-in commands, if
+        the executed-command error does but the stand-in error does not;
+      - a declared task change, if neither does.
+      Any later gated test needs fresh roots.
+  - **Reasons, from the measured numbers.**
+    - **Two error terms of similar size.** On executed commands, the readout gap is +1.17 to
+      +1.46 cm. The stand-in gap is +1.29 to +2.04 cm. Removing the stand-in gap alone leaves
+      1.58–1.87 cm, above τ_commit. A refitted readout alone leaves a stand-in gap whose size after
+      refitting is unmeasured. Choosing one remedy now would set a bar before measuring its
+      ceiling, which is TASK-074's lesson.
+    - **A readout on predicted latents is the cheapest candidate**, but it is not yet shown to
+      help. W's predictions have an effective rank of about 7, against 25.5 for the encoded
+      latents, so R8, fitted on encoded frames, reads a shifted distribution. Refitting it costs
+      CPU only. Whether the plate information survives the roll-out is exactly what (1) measures.
+    - **A shorter commit horizon or an earlier read point is not recommended now.** W's latent
+      error is nearly flat from h = 16 to 60 (0.350–0.383), so the horizon is not shown to drive
+      the error. r is set by the plate's settling (r_K = 460; K0 stops later than 465), so an
+      earlier read point reads a plate that is still moving. Another commit step is a task
+      change. Measurement (2) tests the horizon directly.
+    - **N's offline predicted count is above W's** (25.4 against 22.6, W-66800 flagged). Under
+      the stand-in, W's predicted plate is worse than N's on every seed. A closed loop under the
+      frozen controller would therefore not be expected to beat N, so no amendment that only
+      relaxes or re-labels G5 is recommended.
+    - **The task change stays the fallback.** A declared task change is reached only if the
+      decomposition shows that the plate does not survive the roll-out under any readout. It is
+      not chosen now.
+  - **The other TASK-077 item.** The results document (§7 step 10) is still to be written, with
+    every restated number checked by an independent reviewer. TASK-079's precondition (TASK-077
+    L-PASS) is not met.
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 
