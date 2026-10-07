@@ -1,20 +1,25 @@
 # Apple→Plate LeWM committed aim under C1-M, read by a readout fitted on W's predicted latents (TASK-080)
 
-**STATUS: DRAFT** (R18.1). Not frozen. No seed of K′, D, S or F has been simulated and no
-fresh corpus root has been collected. Stage 0 is done (R18.15–R18.21,
-[Stage-0 record](apple_lewm_c1m_v2_pred_readout_stage0.md)): the code, debug smokes on
+**STATUS: FROZEN** (after K0′-PASS; R18.22, decided by Claude under owner delegation). The frozen
+block is `src/embodied_jepa/lewm_pr_v2.py`; its sha256
+**`0fc095dc947f0ac74ebf6d1c541098a1e6fec1897592256f97ac8962b97be064`** is pinned in
+`tests/test_lewm_pr_v2.py` and in the manifest (`benchmarks/manifests/apple-lewm-pr-v2.json`),
+with the manifest's file pins and this document's sha256. **The freeze takes effect when it is
+merged on an independent reviewer's reported APPROVE.** Each later stage (C′, R, D, S) still needs
+its own reported GO (§8). K0′'s record is §8.1.
+
+History. The DRAFT (R18.1–R18.14) was reviewed independently (#153). Stage 0 (R18.15–R18.21,
+[Stage-0 record](apple_lewm_c1m_v2_pred_readout_stage0.md), #154) added the code, debug smokes on
 65900–65999 only, the caps and R18.13's development dry run on TASK-077's val roots, which sets no
-bar; §15's questions 1–5 are ruled there. The freeze follows TASK-077's sequence: this draft's independent review; Stage 0
-(code, frozen block, manifest, tests, debug smokes, scale probes and one development dry run);
-K0′ on a reported GO; the freeze merged on an independent reviewer's reported APPROVE; then each
-later stage on its own reported GO. A later K0′ or freeze needs its own GO or APPROVE; approving
-this draft approves neither.
+bar; §15's questions 1–5 are ruled there. K0′ then ran once on a reported GO, and this freeze
+writes its values into the frozen block. No seed of D, S or F has been simulated and no fresh
+corpus root has been collected. A later stage's GO approves that stage only.
 
 - **Admitted by:** the TASK-077 decomposition record's row **D-READOUT**
   ([apple_lewm_c1m_v2_decomposition.md](apple_lewm_c1m_v2_decomposition.md) §2, R17.53–R17.54,
   #152). That row names "a new preregistration whose controller reads the plate with a readout
   fitted on W's predicted latents under the stand-in at r, on fresh gated roots". This document
-  is that preregistration, in DRAFT.
+  is that preregistration, frozen at R18.22.
 - **Rulings:** R18.1–R18.14 in [DECISIONS.md](../DECISIONS.md), decision 2026-10-07. Each is
   **decided by Claude under owner delegation (2026-09-30)**. They build on R9.8 and R9.9 (the
   claim split and the random-choice test; [design note](apple_lewm_next_v2_design.md) §3), R15
@@ -27,7 +32,7 @@ this draft approves neither.
   the LeWM place in Arena); this task is TASK-080, the next free number (checked on 2026-10-07:
   no card, branch or document uses TASK-080).
 
-The canonical status sentence (DECISIONS 2026-10-02, R7), verbatim. **This draft does not change
+The canonical status sentence (DECISIONS 2026-10-02, R7), verbatim. **This protocol does not change
 it** (R18.12):
 
 > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
@@ -425,6 +430,72 @@ chat before the gated stage.
 8. **Results PR.** Every arm is reported, privileged arms labelled as not learned, and an
    independent reviewer checks every restated number.
 
+### 8.1 K0′'s result: K0′-PASS (R18.22)
+
+K0′ ran once, on the reviewer's reported GO (#154,
+<https://github.com/RaaSaaR-org/open-embodied-jepa/pull/154#issuecomment-6047218319>), at
+`931281a`, on a clean tree with the DRAFT frozen sha `d3ebc26b…54fe`, in the worktree
+`/home/huhn/develop/emai/worktrees/task080-k0`. It ran on the CPU with 6 workers and without the
+GPU lock, from 21:34:57 to 21:43:13 UTC (496 s). In-run G-tests passed (2066 passed, 37 skipped).
+G-repro passed 8 of 8 checks. There were no render disagreements. Load at the start was
+0.67 / 1.76 (1- and 5-minute; the G-quiet bar is 2.0 / 2.0). Peak process-tree PSS was 8.08 GiB
+(cap 12).
+- **Report:** `outputs/task080-k0-1/report.json` (git-ignored), sha256
+  `a0939e3eea7b695d1c3029e733970bcd123ea62db76192104c69479ad9314c16`; its log
+  (`outputs/task080-k0-1.log`, sha256 `f677d2dd…3d02`) and its stdout capture (empty, 0 bytes) are
+  beside it. A copy of all three is in `~/develop/emai/evidence/task080-k0/`, with the manifest
+  `_checksums/task080-k0.sha256`.
+
+**τ_commit**: counted successes of 32 for H-final(commit)'s aim plus a planted error (direction
+salt 8207), every level on the same 32 resets K′ = 65000–65031, beside TASK-077's K (66000–66031):
+
+| planted error (cm) | 0 | 0.5 | 1 | 1.5 | 2 | 3 |
+|---|---|---|---|---|---|---|
+| K′ counted successes / 32 | 32 | 29 | 31 | 14 | 18 | 5 |
+| K (TASK-077 K0) / 32 | 32 | 29 | 29 | 18 | 11 | 2 |
+| **pooled K ∪ K′ / 64** | **64** | **58** | **60** | 32 | 29 | 7 |
+| K′ median landing miss (cm) | 0.08 | 0.75 | 1.49 | 2.24 | 2.98 | 4.48 |
+
+- **Pooled τ_commit = 1.0 cm** (every level up to it reaches ≥ 56/64; 1.5 cm reaches 32/64). It
+  is TASK-077's value, so nothing tightens (§8 step 2): R0's, R1's and R3's bars stay at 1.0 cm,
+  and the offline aims (A1, A2) map through the pooled curve above.
+- **The ceiling N_K′(0) = 32/32.**
+- **r_K′ = 459**, so the frozen r = 465 stands.
+- **The history check.** At 405 the palm speed had median 0.00277 cm per step (maximum 0.0141),
+  and m2 had median 0.00217 cm (maximum 0.0135); the plate's remaining distance at 405 had median
+  6.52 cm.
+- **No stop fired** (K′ level 0 32 ≥ 28; N_K′(0) 32 ≥ 30; r_K′ 459 ≤ 465; palm speed 0.00277 ≤
+  0.5 cm per step; pooled τ defined). There were no refusals, the clip-binding fraction was 0 and
+  there were no fallbacks at any level.
+- **Failed seeds:** at 0.5 cm 65008, 65014, 65024; at 1.0 cm 65001; the frozen block lists every
+  level's.
+
+**Margins, disclosed (R18.22).** Each passed its rule; each is stated with its distance to the bar:
+- **The pooled 0.5 cm and 1.0 cm levels sit 2 and 4 successes above 56/64** (58 and 60), against
+  1 and 1 of 28/32 in K alone. Pooling did what R18.19 asked of it: the 1.0 cm level is now
+  measured on 64 resets, not 32.
+- **The K′ curve is not monotone** (1.0 cm 31 > 0.5 cm 29; 2.0 cm 18 > 1.5 cm 14), and K′ is more
+  lenient than K at 2 and 3 cm (18 against 11, 5 against 2). These differences (2 and 4 of 32)
+  are of the size binomial noise gives on 32 resets per level; the mapping uses the pooled counts as measured,
+  without smoothing, as declared (TASK-077's mapping: linear between the planted levels).
+- **r_K′ = 459 against r = 465:** 6 steps of margin (K: 5).
+- **What this means for G-bar.** A W whose aim error sits at about τ_commit would succeed at about
+  60/64 ≈ 0.94 by the pooled curve, where G-bar passes with probability about 0.98 (§10), and
+  at 0.5 cm at about 58/64 ≈ 0.906 (probability 0.86). These are curve readings, not predictions
+  of W.
+
+**The dry run re-mapped through the pooled curve** (R18.19; `simulate --dryrun … --k0-prime …`,
+development, optimistic, setting no bar; primary seed 66800, flagged `last_two_triggered`;
+predicted counts are not closed-loop counts): W **57.35** of 64 (56.88 through K alone), N
+28.36, L-shuf 23.79, L-mean 28.02, L-rand 11.62; H-rule 58.62 and H-sysid 54.49 (reported). W − N
+is **+29.0** (N is the closest twin; L-mean +29.3, L-shuf +33.6, L-rand +45.7). A1's form (≥ 56) holds by **1.35 of 64**
+(0.88 through K); A2's form (≥ +7) holds for every twin. G-bar's power at W's predicted rate
+(57.35/64 ≈ 0.896) is **0.78** (0.72 through K); the twin tests' power is at least 0.999 in every
+coupling (lowest 0.99946, N, independent). Report `outputs/task080-simulate-k0p-1/report.json` (sha256 `5e97ac85…48cb`), run at
+`931281a` from the K0′ worktree after G-tests (2066 passed, 37 skipped); copied with K0′'s files to
+`~/develop/emai/evidence/task080-k0/`. These numbers come from TASK-077's val roots with aims built
+from the true plate; Stage R measures them on fresh gate-P roots.
+
 ## 9. Gates, bars and rows
 
 Intervals are root- or reset-clustered bootstrap percentile intervals, 10 000 resamples, 95 %,
@@ -570,6 +641,15 @@ offline predicted count on val, and the freeze PR re-states this section with th
 shows W − N below +10/64, the freeze PR must say so and the reviewer decides whether the 64-reset
 cohort is kept (open question 3).
 
+**At the freeze (R18.22).** K0′ left τ_commit at 1.0 cm, and the dry run re-mapped through the pooled
+curve (§8.1) puts W at 57.35 of 64 and N at 28.36 (development, optimistic; primary seed 66800,
+flagged `last_two_triggered`; predictions, not closed-loop counts). The twin tests are not the
+binding risk (power ≥ 0.999 at those rates in every coupling). **The binding risk is G-bar**
+(R18.18): at W's predicted rate of about 0.896 it passes with probability about 0.78; R18.18 found that a
+larger cohort at the same fraction does not change this materially (0.72 at 64 resets, 0.73 at
+96 and 0.75 at 128, at a rate of 0.889). A1 (W ≥ 56/64 offline) is the gate
+most likely to stop Stage R if the fresh roots read even slightly worse than val.
+
 ## 11. Void rule, guards, caps and memory (carried from TASK-077 §10)
 
 - **Void and repeat:** TASK-077 §10.1 (R16.10's form; one repeat per stage after a committed, pushed
@@ -584,7 +664,7 @@ cohort is kept (open question 3).
   after `first_outcome_utc`; contrast-T is reported only. **G-fresh (new):** the runner refuses any
   fit whose roots include a fresh-corpus root, and any closed-loop or K0′ seed outside its range.
 - **Caps:** set by Stage 0's scale probes at ≥ 1.5 × the measured worst case and written here
-  before the freeze. Working values for this draft: K0′ 7 200 s; Stage C′ 7 200 s; Stage R
+  before the freeze. Stage 0's caps (R18.15), kept at the freeze: K0′ 7 200 s; Stage C′ 7 200 s; Stage R
   featurisation 3 600 s and the rest 14 400 s; Stage D 7 200 s; Stage S 21 600 s; per closed-loop
   attempt 300 s.
 

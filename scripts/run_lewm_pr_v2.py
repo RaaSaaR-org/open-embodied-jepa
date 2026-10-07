@@ -1,6 +1,6 @@
 """TASK-080's runner: every stage of ``docs/experiments/apple_lewm_c1m_v2_pred_readout.md``.
 
-Frozen block ``src/embodied_jepa/lewm_pr_v2.py`` (STATUS DRAFT until the freeze); workers
+Frozen block ``src/embodied_jepa/lewm_pr_v2.py`` (STATUS FROZEN, R18.22); workers
 ``lewm_pr_v2_runtime.py``; offline parts ``lewm_pr_v2_offline.py``. TASK-077's modules are
 imported, never edited; guards from ``embodied_jepa.run_tools`` and TASK-076's harness module.
 This runner loads no other script.
@@ -22,8 +22,10 @@ One invocation runs one stage and writes ``<output>/report.json`` (it refuses an
   mapped through K0's curve; reported only, sets no bar.
 
 Every stage checks the clean tree, TASK-076's pins, TASK-077's 13 pins and frozen block (G-frozen),
-and the reused artifacts by sha256 (G-hash). While the protocol is DRAFT only ``tests``,
-``simulate``, ``k0``, ``dryrun`` and ``--debug`` runs are allowed. ``--debug`` simulates debug
+and the reused artifacts by sha256 (G-hash). While the protocol was DRAFT only ``tests``,
+``simulate``, ``k0``, ``dryrun`` and ``--debug`` runs were allowed; once FROZEN, a non-debug ``k0``
+or ``dryrun`` is refused (each ran once, before the freeze), and every stage also checks this
+task's own file pins and the protocol document's sha256. ``--debug`` simulates debug
 seeds 65900-65999 only, at small sizes; nothing in it is read.
 """
 

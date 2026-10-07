@@ -340,8 +340,9 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       against τ_commit = 1.0 cm; 0.34–0.38 of N's refit error), while the frozen R8 reads the same
       predictions at 2.86–3.41 cm. Optimistic reading (checkpoints selected on val; readouts
       mostly fitted on in-sample train predictions); not a gate or a closed-loop result.
-    - **Next: TASK-080, DRAFT** ([apple_lewm_c1m_v2_pred_readout.md](experiments/apple_lewm_c1m_v2_pred_readout.md),
-      R18; not frozen, nothing run). Under C1-M, W's controller reads the plate with R-S, a ridge
+    - **Next: TASK-080, FROZEN** ([apple_lewm_c1m_v2_pred_readout.md](experiments/apple_lewm_c1m_v2_pred_readout.md),
+      R18; frozen after K0′-PASS, R18.22: pooled K ∪ K′ τ_commit = 1.0 cm, ceiling 32/32,
+      r_K′ = 459; no seed of D, S or F simulated yet; Stage C′ next, on its own GO). Under C1-M, W's controller reads the plate with R-S, a ridge
       fitted on W's own predicted latents under stand-in chunks over the 1 995 old roots; N gets
       R-N, fitted the same way. TASK-077's six checkpoints are reused (no training). A fresh
       500-root corpus (65300–65799) gives a gate split whose aims are built from R-plate's reading,

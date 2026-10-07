@@ -860,6 +860,31 @@
     68999
    ]
   },
+  "freeze_remap": {
+   "dry_run_report_sha256": "e3becdfad070cc96b7080feadd80f0b0496a18bdd88d9728fc636a7db9e1aed5",
+   "g_bar_power_at_w": 0.783,
+   "predicted_counts_of_64": {
+    "H-rule": 58.62,
+    "H-sysid": 54.49,
+    "L-mean": 28.02,
+    "L-rand": 11.62,
+    "L-shuf": 23.79,
+    "N": 28.36,
+    "W": 57.35
+   },
+   "predicted_counts_of_64_k_curve": {
+    "H-rule": 58.5,
+    "H-sysid": 54.22,
+    "L-mean": 25.54,
+    "L-rand": 8.54,
+    "L-shuf": 21.24,
+    "N": 25.94,
+    "W": 56.88
+   },
+   "report_sha256": "5e97ac85daf23763b9c48e8a55a246f44e276eb1f3d3c6596636922ae0ad48cb",
+   "revision": "931281a925e36f6b3e6e9e88f05ba2a0e8892a56",
+   "twin_power_min": 0.99946
+  },
   "gpu": {
    "min_free_gib": 8.0,
    "require_lock": true,
@@ -897,7 +922,176 @@
     3.0
    ]
   },
-  "k0_prime_measured": null,
+  "k0_prime_measured": {
+   "ceiling_failed_seeds": [],
+   "clip_binding_fraction": 0.0,
+   "counts_k_prime": {
+    "0.0": 32,
+    "0.5": 29,
+    "1.0": 31,
+    "1.5": 14,
+    "2.0": 18,
+    "3.0": 5
+   },
+   "failed_seeds": {
+    "0.0": [],
+    "0.5": [
+     65008,
+     65014,
+     65024
+    ],
+    "1.0": [
+     65001
+    ],
+    "1.5": [
+     65001,
+     65002,
+     65004,
+     65006,
+     65008,
+     65009,
+     65011,
+     65013,
+     65015,
+     65017,
+     65020,
+     65022,
+     65023,
+     65024,
+     65026,
+     65027,
+     65028,
+     65029
+    ],
+    "2.0": [
+     65001,
+     65002,
+     65003,
+     65004,
+     65008,
+     65009,
+     65012,
+     65019,
+     65020,
+     65023,
+     65026,
+     65027,
+     65029,
+     65031
+    ],
+    "3.0": [
+     65000,
+     65001,
+     65003,
+     65004,
+     65005,
+     65006,
+     65007,
+     65009,
+     65011,
+     65012,
+     65013,
+     65014,
+     65015,
+     65016,
+     65017,
+     65019,
+     65020,
+     65021,
+     65022,
+     65023,
+     65024,
+     65026,
+     65027,
+     65028,
+     65029,
+     65030,
+     65031
+    ]
+   },
+   "fallbacks": 0,
+   "frozen_sha256_at_run": "d3ebc26b3ad85006977481e4ab0a660aaf791af0fb8496fea0428bd5788754fe",
+   "history": {
+    "m2_405_cm": {
+     "max": 0.013545317066374676,
+     "median": 0.002172692072816615
+    },
+    "palm_speed_405_cm_per_step": {
+     "max": 0.0141141458940937,
+     "median": 0.0027703868621819895
+    },
+    "remaining_405_cm_median": 6.516742886740665
+   },
+   "landing_miss_cm_median": {
+    "0.0": 0.0751,
+    "0.5": 0.7464,
+    "1.0": 1.489,
+    "1.5": 2.2407,
+    "2.0": 2.9764,
+    "3.0": 4.4764
+   },
+   "n_k_prime_0": 32,
+   "pooled": {
+    "bar": 56,
+    "counts_k": {
+     "0.0": 32,
+     "0.5": 29,
+     "1.0": 29,
+     "1.5": 18,
+     "2.0": 11,
+     "3.0": 2
+    },
+    "counts_k_prime": {
+     "0.0": 32,
+     "0.5": 29,
+     "1.0": 31,
+     "1.5": 14,
+     "2.0": 18,
+     "3.0": 5
+    },
+    "counts_pooled": {
+     "0.0": 64,
+     "0.5": 58,
+     "1.0": 60,
+     "1.5": 32,
+     "2.0": 29,
+     "3.0": 7
+    },
+    "resets": 64,
+    "tau_commit_cm": 1.0
+   },
+   "protocol_status_at_run": "DRAFT",
+   "r_k_prime": 459,
+   "refused": 0,
+   "report_sha256": "a0939e3eea7b695d1c3029e733970bcd123ea62db76192104c69479ad9314c16",
+   "revision": "931281a925e36f6b3e6e9e88f05ba2a0e8892a56",
+   "row": "K0′-PASS",
+   "run": {
+    "g_repro": "8/8",
+    "g_tests": "2066 passed, 37 skipped",
+    "load_average_at_start": [
+     0.67,
+     1.76
+    ],
+    "peak_tree_pss_gib": 8.08,
+    "render_disagreements": 0,
+    "seconds": 495.8,
+    "workers": 6
+   },
+   "seeds": [
+    65000,
+    65031
+   ],
+   "stops": {
+    "ceiling_below_30": false,
+    "level0_below_bar": false,
+    "palm_fast": false,
+    "pooled_tau_undefined": false,
+    "r_late": false
+   },
+   "tau_commit_cm": 1.0,
+   "tightened_below_task077": false
+  },
   "memory": {
    "ceiling_gib": 12.0,
    "headroom_gib": 4.0,
@@ -991,7 +1185,7 @@
    "readouts_report_sha256": "452045d22c21b067c8bfe78cb72f4e842fc61f3c44a9e17b6fae860c244f8b78",
    "sysid_file": "671841cd581d86844c0ad14c03839cf965e912f628dd875b89c7adf3b46121fc"
   },
-  "rulings": "DECISIONS.md decision 2026-10-07, R18.1-R18.14 (Stage 0: R18.15-R18.21)",
+  "rulings": "DECISIONS.md decision 2026-10-07, R18.1-R18.14 (Stage 0: R18.15-R18.21; freeze: R18.22)",
   "s": {
    "arms": [
     "W",
@@ -1181,7 +1375,7 @@
    "D",
    "S"
   ],
-  "status": "DRAFT",
+  "status": "FROZEN",
   "task": "TASK-080",
   "task077_frozen_sha256": "f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d",
   "task077_manifest": "benchmarks/manifests/apple-lewm-c1m-v2.json",
@@ -1199,10 +1393,20 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "d3ebc26b3ad85006977481e4ab0a660aaf791af0fb8496fea0428bd5788754fe",
- "frozen_sha256_pin": null,
- "note": "DRAFT (R18.1): no pin until the freeze, which follows K0′ and is merged on an independent reviewer's reported APPROVE; frozen_sha256 is the DRAFT block's sha256 at this revision.",
+ "frozen_sha256": "0fc095dc947f0ac74ebf6d1c541098a1e6fec1897592256f97ac8962b97be064",
+ "frozen_sha256_pin": "0fc095dc947f0ac74ebf6d1c541098a1e6fec1897592256f97ac8962b97be064",
+ "hashes": {
+  "benchmarks/manifests/apple-lewm-c1m-v2.json": "46198a3dffdc1ad6bcd21ac410c410de65de24714f1555c4b3c0c0ab4838f581",
+  "benchmarks/manifests/apple-plate-twin-v2.json": "bc9c0ffdec00089f76574498696addaffa2d8484d2eb394b00b23df8033375a0",
+  "scripts/run_lewm_pr_v2.py": "e30388cee25a13892c9f6b24a2914c39273d1526466242f2101f27eb5934d6fa",
+  "src/embodied_jepa/lewm_pr_v2.py": "90a7dfd18f2a1c527f7c75b624236d4e872138609d54a4db97587ceab44145b4",
+  "src/embodied_jepa/lewm_pr_v2_offline.py": "3b6b5ea00817b9a440e90ca736e51e1067794c4a7d5462849af81872a0171403",
+  "src/embodied_jepa/lewm_pr_v2_runtime.py": "a2446b75dec8ea677f1c2ff959fc060786986567522d1312606750821c3fc3da",
+  "tests/test_lewm_pr_v2.py": "932190400fc7fd09f82f61d972731dcbd545fb7e134ef9aef348049cb5a28be3"
+ },
+ "note": "FROZEN after K0′-PASS (R18.22), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins the stage's four own files, the test file, TASK-077's manifest (whose 13 pins and frozen block the runner checks too) and TASK-076's manifest (whose 84 pins the runner checks too); protocol_document_sha256 is the protocol's sha256. K0′'s report: outputs/task080-k0-1/report.json, sha256 a0939e3eea7b695d1c3029e733970bcd123ea62db76192104c69479ad9314c16.",
  "protocol": "apple_lewm_c1m_v2_pred_readout",
- "status": "DRAFT",
+ "protocol_document_sha256": "5b28c2d099877dbc8c8529133ca600e785247f4ebbfd0d876310e580f494e78c",
+ "status": "FROZEN",
  "task": "TASK-080"
 }
