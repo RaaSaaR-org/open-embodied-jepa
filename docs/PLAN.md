@@ -319,9 +319,22 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       comparable as a success claim. W-66800's `last_two_triggered` is true (stated beside every
       seed-66800 W-versus-N comparison), no N is flagged, and all three W curves have their raw
       minimum at their last point. No closed loop has run.
-    - **Next:** this record's independent review and merge. Then Stage G (CPU, cap 7 200 s), from
-      a fresh worktree of the merge commit, with the command in §7.8, on its own reported GO.
-      Then D and S, each on its own reported GO.
+    - **Stage G** ran once at `1cb5f79` on its reported GO and ended **G-NO-BAR**, with Stage T's
+      row **T-DONE** (R17.50, protocol §7.9). G1–G4 pass on all three seeds: offline at h = 60
+      the 8 × 8 predictor is not collapsed, is action-sensitive, and beats copy-last and the
+      no-action model N. G5 fails on all three: R8 reads the plate from W's predicted latent at r
+      at 1.58, 1.62 and 1.87 cm (upper bounds 1.70, 1.79 and 2.08) against τ_commit = 1.0 cm,
+      while the encoded frame reads at 0.41 cm. On the stand-in commands W ranks in closed loop
+      the error is 3.09–3.63 cm. The offline aims' predicted counts (reported only, not closed
+      loop; primary seed 66800, whose W is `last_two_triggered`) are W 22.6 and N 25.4 of 64,
+      against the 56/64 bar. Escalate, no clause; **Stage D and S do not run, and no LeWM-driven
+      controller has run in closed loop.**
+    - **Next:** this record's independent review and merge; the results document (§7 step 10).
+      R17.51 recommends (DRAFT, not preregistered) an offline, CPU-only decomposition record on the
+      train and val splits with the existing checkpoints. It would measure a readout refitted on
+      W's predicted latents, per-horizon readability and the stand-in's command mismatch, before
+      choosing between a predicted-latent readout, a command-matching change and a declared task
+      change. TASK-079's precondition (TASK-077 L-PASS) is not met.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.

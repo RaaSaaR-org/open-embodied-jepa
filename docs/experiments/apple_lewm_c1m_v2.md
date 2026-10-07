@@ -40,7 +40,13 @@ and its own GO. Five jobs remain; nothing has been launched since the pause.
 **Stage T completed at `2aa4f5b`** (§7.8, R17.49): on its reported GO, N-66800's repeat and W
 and N of 66801 and 66802 each ended T-JOB-DONE, so all eight jobs are complete. Stage T's row,
 T-DONE, is decided by Stage G (R17.24). W-66800's `last_two_triggered` flag is true. No closed loop
-has run. Stage G is prepared, not run; it needs this record merged and its own reported GO.
+has run.
+**Stage G ran once at `1cb5f79` and ended G-NO-BAR** (§7.9, R17.50; Stage T's row T-DONE): G1–G4
+pass on all three seeds; G5 fails on all three, on R8's median plate error on W's predicted latent
+at r (1.58, 1.62 and 1.87 cm, upper bounds 1.70, 1.79 and 2.08 cm, against τ_commit = 1.0 cm; the
+encoded readout reads 0.41 cm). G-NO-BAR escalates without a clause; **Stage D and Stage S do not
+run under this row, and no LeWM-driven controller has run in closed loop.** R17.51 records a
+DRAFT next-direction recommendation, not a preregistration.
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
@@ -1362,6 +1368,144 @@ uv run --no-sync python scripts/run_lewm_c1m_v2.py gates \
   - The command above, verbatim, including the six `--models` paths in seed order W, N.
 - **A V of Stage G voids Stage G only.** It leaves one repeat after a recorded fix (§10.1). Vs in
   different stages do not add up (R17.16).
+
+### 7.9 Stage G's result: G-NO-BAR; Stage T's row T-DONE (R17.50, R17.51)
+
+Recorded by Claude under owner delegation (DECISIONS 2026-10-05 (b), R17.50). The frozen block
+and its sha256 `f28e5e2c…548d` are unchanged, and no bar, seed, salt, cap, ceiling or row
+changes. The runner, the stage modules and the pinned test file are unchanged; the manifest
+re-pins this document only.
+
+**Outcome: G-NO-BAR** (`decision.row`; `clause_fires` false): G1–G4 pass on all three seeds and
+G5 fails on all three. **Stage T's row is T-DONE** (`stage_t.row`, `decide_t`, R17.24). By §8.2,
+G-NO-BAR escalates without a clause. **Stage D and Stage S do not run under this row**: the
+runner's closed-loop stages accept only a G-PASS gates report in a real run (`stage_closed`), and
+no GO for them can be given. **No closed loop has run under this protocol. No LeWM-driven
+controller has run in closed loop on v2. The canonical R7 sentence above is unchanged** (R17.14).
+The abandonment clause (§11) fires only on L-NO-GAIN or L-INFERIOR, so nothing in its scope is
+closed.
+
+**The run.** One run, on the reviewer's reported GO at `1cb5f79`
+(<https://github.com/RaaSaaR-org/open-embodied-jepa/pull/149#issuecomment-6040670640>), in the
+fresh clean worktree `/home/huhn/develop/emai/worktrees/task077-stageg`, with §7.8's command
+verbatim (the report's `argv` matches it, including the six `--models` paths in seed order W, N).
+- 2026-10-07 14:58:07Z–15:37:36Z, `total_seconds` 2 369 against the 7 200 s cap.
+- G-quiet waited 0 s (loads 0.08 and 0.06 at the start).
+- G-tests: 2035 passed, 37 skipped, exit 0, clean tracked tree, at `1cb5f79`.
+- HEAD unchanged to the end; frozen pin FROZEN and matching; this document's sha256 at run time
+  `e865300c…05fd`, the manifest's pin at `1cb5f79`.
+- The 7 gate-split feature files (1.73 GB) verified against Stage O's featurise report.
+- Corpus `ad8974b2…43fb`; Stage O's fits checked by sha256; `non_finite_fields` empty.
+- Peak process-tree PSS 8.79 GiB against the 12 GiB ceiling, 4 world-model workers; at least
+  73.67 GiB of disk free.
+- **The report** `outputs/task077-gates-1/report.json` has sha256
+  `dbd9e71414aeec4bd2710c17586bb4bcd59bc7e137c6fd3807da19cac2e15727`.
+- **The log** `outputs/task077-gates-1.log` has sha256 `2f93d546…cdf5`. It holds eight MuJoCo EGL
+  "Exception ignored in … `__del__`" tracebacks (`TypeError: 'NoneType' object is not callable` in
+  `mujoco/egl/__init__.py` `free`). They come in four pairs (`Renderer.__del__`,
+  `GLContext.__del__`) from four processes, one pair per world-model worker. They
+  are raised as each worker's interpreter exits when the pool closes (`pool_close` joined all four
+  workers), and they precede the log's only other line, "report written: outcome G-NO-BAR". They
+  are teardown-only and affect no number.
+- **The stdout file** `outputs/task077-gates-1.stdout` is empty (0 bytes).
+- **The primary seed** is 66800 by §7.6's rule (lowest kept val criterion), as §7.8 disclosed in
+  advance. **W-66800's `last_two_triggered` is true** (§7.7, §7.8). It is stated beside every
+  seed-66800 W-versus-N comparison below. No N is flagged (`n_unsaturated` false for all three).
+
+**The gates on the gate split** (250 roots, window set E60, h = 60; bootstrap 95 % intervals as
+§8; "ub" is the upper bound, "lb" the lower bound).
+
+| gate (bar) | 66800 (W flagged) | 66801 | 66802 | passes |
+|---|---|---|---|---|
+| G1 (i) collapsed fraction (≤ 0.05) | 0.0 | 0.0 | 0.0 | all |
+| G1 (ii) effective-rank ratio (≥ 0.12) / std ratio (≥ 0.38) | 0.283 / 0.776 | 0.272 / 0.754 | 0.273 / 0.756 | all |
+| G1 (iii) rank ratio W − N, lb (> 0) | 0.142 | 0.097 | 0.159 | all |
+| G2 MSE(W)/MSE(copy-last), ub (≤ 0.8) | 0.148 | 0.151 | 0.151 | all |
+| G3 MSE(W)/MSE(N), ub (< 1.0) | 0.377 | 0.404 | 0.403 | all |
+| G4 wrong/true, lb (≥ 1.10) | 3.62 | 3.49 | 3.50 | all |
+| G4 zero/true, lb (≥ 1.10) | 6.30 | 15.64 | 5.93 | all |
+| **G5 (a) R8's median plate error on W's predicted latent at r** (ub ≤ τ_commit = 1.0 cm) | **1.581 cm [1.448, 1.697]** | **1.617 cm [1.506, 1.794]** | **1.873 cm [1.693, 2.076]** | **none** |
+| G5 (b) median(e_W)/median(e_N), ub (< 1.0) | 0.652, ub 0.716 | 0.706, ub 0.804 | 0.726, ub 0.798 | all |
+
+G1's bars are the plan's (B_rank 0.12, B_std 0.38, not raised). W's predicted effective rank is
+7.21, 6.94 and 6.96 against 25.52 for the encoded latents (N: 3.63, 4.35 and 2.93). G5 fails on
+part (a) alone.
+
+**Reported only, not gated.**
+- **The encoded readout on the gate split** (R8 on the encoded frames at r, c_plate there):
+  median 0.411 cm [0.360, 0.452], 87.5th percentile 0.77 cm. **W minus it:** +1.170 [1.034,
+  1.296], +1.206 [1.096, 1.399] and +1.462 [1.278, 1.663] cm (66800, 66801, 66802).
+- **N's predicted plate at r** (e_N): 2.426, 2.289 and 2.581 cm. W reads the plate better than
+  N on all three seeds (G5 (b)). For seed 66800 W-66800's flag is true.
+- **G5 (a)'s 87.5th percentiles:** 3.28, 3.07 and 3.29 cm.
+- **The scaled tolerance** (§8.2; 1.5 τ_commit = 1.5 cm) is missed too: all three upper bounds
+  (1.70, 1.79 and 2.08 cm) exceed it.
+- **G5 on the stand-in chunks**, the commands W ranks in closed loop: 3.625 cm [3.247, 3.996],
+  3.085 [2.855, 3.318] and 3.164 [2.852, 3.405]. **Stand-in minus executed:** +2.044 [1.729,
+  2.379], +1.469 [1.233, 1.668] and +1.291 [0.956, 1.548] cm. Under the stand-in chunks, W's
+  median predicted-plate error is above N's (2.43, 2.29, 2.58 cm) on every seed; for 66800,
+  W-66800's flag is true.
+- **G2–G4 at h = 16 and 30** (G1 and G5 are computed at h = 60 only). All pass their bars at both horizons on every seed (G2 ub
+  ≤ 0.204; G3 ub ≤ 0.634; G4 lb ≥ 1.647). W's normalised MSE on the true commands barely changes
+  with the horizon: 0.355, 0.350 and 0.376 (66800, h = 16, 30, 60), 0.376, 0.373 and 0.383
+  (66801), 0.374, 0.370 and 0.383 (66802). Over the same horizons N's grows from 0.62–0.67 to
+  1.00–1.05 and copy-last's from 1.89 to 2.62. The report has no plate reading at h = 16 or 30:
+  R8 is fitted at r only.
+- **Offline aims** (§7 step 7; primary seed 66800, **W-66800's flag true**; stand-in chunks, the
+  same controller code; p̂ from R-plate on Stage O's CUDA full tokens at 405; 250 gate roots, no
+  fallbacks). These are predictions from K0's τ curve (32, 29, 29, 18, 11, 2 of 32 at 0, 0.5, 1,
+  1.5, 2, 3 cm). **They are not closed-loop counts and gate nothing.**
+
+  | arm | median aim error (cm) [95 %] | 87.5th pct | clip-binding fraction | predicted count of 64 |
+  |---|---|---|---|---|
+  | W | 2.346 [2.123, 2.570] | 3.31 | 0.216 | 22.6 |
+  | N | 2.113 [1.905, 2.238] | 3.21 | 0.104 | 25.4 |
+  | L-shuf | 2.756 [2.559, 2.928] | 3.57 | 0.260 | 19.1 |
+  | L-mean | 2.612 [2.420, 2.810] | 3.54 | 0.252 | 19.8 |
+  | L-rand | 6.002 [4.867, 7.141] | 13.64 | 0.0 | 9.6 |
+
+  Every arm's predicted count is far below the 56/64 bar. **N's predicted count is above W's**
+  and its median aim error is below W's (intervals overlap). One reading, not a measurement: N's
+  prediction does not depend on the commands, so the stand-in's cost (above) falls on W only.
+
+**What this shows, and what it does not.**
+- **G1–G4 passing on all three seeds** means that, offline on the gate split at h = 60, the 8 × 8
+  LeWM token predictor's roll-out is not collapsed, is action-sensitive, and beats copy-last and
+  an equally trained no-action model N. This is the first gate of 8 × 8 dynamics at any horizon,
+  and it is offline only; it is not a closed-loop or control result.
+- **G5 failing on all three seeds** means that R8 does not read the plate from W's predicted
+  latent at r within τ_commit, nor within the 1.5 cm scaled tolerance. **The binding constraint is
+  the predicted plate's readability after 60 recursive steps**: the same readout reads the
+  encoded frame at r to 0.41 cm and W's prediction of it to 1.58–1.87 cm.
+- **The closed loop would face a larger error still.** W ranks the stand-in's commands, under
+  which the error is 3.09–3.63 cm. That gap (+1.29 to +2.04 cm) is as large as the readout gap.
+- **This is one run** at the frozen budget (U = 95 000, all three W curves at their raw minimum at
+  the last point), on one corpus, one camera and one encoder.
+- **No bar, threshold or readout is changed after seeing these numbers.**
+- **The gate split has now been read**, so it is no longer fresh for these six models.
+
+**Evidence.** The report, log and stdout are copied to the SSD evidence store
+`~/develop/emai/evidence/task077-stageg/` (its README, section "TASK-077 Stage G"). The manifest
+`_checksums/task077-stageg.sha256` (sha256 `dc1c2368…0271`) was verified against the source and
+the copy. The worktree stays in place as the original.
+
+**What follows (R17.51, a DRAFT recommendation, decided by Claude under owner delegation; not a
+preregistration).** §8.2 says only "escalate, no clause". The design note names a remedy for
+H-GATE-FAIL (`action_chunk` or `predictor_step_embedding`) but none for a predicted-plate miss.
+R17.51 recommends **an offline, measurement-first decomposition record** before any remedy is
+chosen. It uses the six existing checkpoints and the train and val splits only, on the CPU, with
+no new training and no closed loop. It would measure:
+1. R8 refitted on W's own predicted latents at r (cross-fitted), under executed and under
+   stand-in commands;
+2. the predicted plate's readability at h = 16, 30 and 60, each with a readout fitted at its own
+   frame;
+3. the stand-in's command mismatch and W's error as a function of it.
+
+The val split is the one the kept W and N checkpoints were selected on, so the record would
+say so; it gates nothing.
+
+Its declared rule would choose among a readout on predicted latents, a command-matching change,
+and a declared task change. The reasons are in DECISIONS R17.51.
 
 ## 8. Gates, bars and rows
 
