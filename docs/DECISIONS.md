@@ -964,6 +964,31 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
     on train and val with its decision rule declared before it runs. TASK-079's precondition
     (TASK-077 L-PASS) is not met.
 
+- **R17.53 — the decomposition record's declarations, before its run** (2026-10-07). **Decided by
+  Claude under owner delegation (2026-09-30).** R17.51's recommended record is
+  [apple_lewm_c1m_v2_decomposition.md](experiments/apple_lewm_c1m_v2_decomposition.md). Its §1
+  (inputs, measurements, bars, limits and the decision rule) is entered in the same commit as this
+  ruling and pushed before any of its numbers is computed. It is a development record outside
+  TASK-077: CPU only, the six kept Stage T checkpoints as they are, the train and val splits only
+  (the gate split is never opened), no training, no collection, no closed loop; it gates no claim
+  and changes no TASK-077 row, clause or R7.
+  - **What it measures** (on the 1 745 train + val roots, readouts cross-fitted in Stage O's
+    5 outer folds): the plate read at 405 + h, h = 16, 30 and 60, from the encoded latent (E_h),
+    from W's predicted latent under the executed commands (X_h) and under the kinematic stand-in's
+    chunks (S_h), each with its own refitted readout, and from N's prediction (N_h); the frozen
+    R8 on W's predictions at r; the stand-in's command mismatch per root and W's cost against it;
+    and, reported only, G1 (iii)'s bootstrap centre on val.
+  - **The rule** (first match; val roots; every one of the three seeds; τ_commit = 1.0 cm from
+    K0): **D-VOID-CEILING** if E_60's upper bound exceeds τ_commit; **D-READOUT** (a readout on
+    predicted latents) if S_60's upper bound ≤ τ_commit and the upper bound of S_60/N_60 < 1.0;
+    **D-COMMAND** (a command-matching change) if instead X_60's upper bound ≤ τ_commit and the
+    upper bound of X_60/N_60 < 1.0; **D-TASK** (a declared task change) otherwise, with the
+    sub-reading D-TASK/H (a later commit step) when X_16 or X_30 meets the same two bars on every
+    seed, and D-TASK/R otherwise.
+  - **Disclosed limits.** The kept checkpoints were selected on val; the refit readouts are mostly
+    fitted on train-root predictions, which are in sample for W. A pass is an optimistic reading
+    that chooses a direction; any remedy needs its own preregistration and fresh gated roots.
+
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 
 **Outcome: M-PROCEED** ([apple_lewm_next_v2_c1m_feasibility.md](experiments/apple_lewm_next_v2_c1m_feasibility.md) §2; report
