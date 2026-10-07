@@ -79,7 +79,8 @@ needs R17.47's record and its own GO (R17.46–R17.48). The resume at `2aa4f5b` 
 all eight jobs ended T-JOB-DONE; T-DONE is decided by Stage G (R17.49). Stage G at `1cb5f79` ended
 G-NO-BAR with Stage T's row T-DONE: G1–G4 pass on all three seeds, G5 fails on all three; escalate,
 no clause; Stage D and S do not run (R17.50). R17.51 is a DRAFT next-direction recommendation.
-The results document closes TASK-077 with outcome G-NO-BAR (R17.52).**
+The results document closes TASK-077 with outcome G-NO-BAR (R17.52). The decomposition record
+(R17.53, declared before its run) ended D-READOUT (R17.54): next, a new preregistration (TASK-080).**
 Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
@@ -963,6 +964,64 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
   - **What follows** is R17.51's recommendation, outside TASK-077: an offline decomposition record
     on train and val with its decision rule declared before it runs. TASK-079's precondition
     (TASK-077 L-PASS) is not met.
+
+- **R17.53 — the decomposition record's declarations, before its run** (2026-10-07). **Decided by
+  Claude under owner delegation (2026-09-30).** R17.51's recommended record is
+  [apple_lewm_c1m_v2_decomposition.md](experiments/apple_lewm_c1m_v2_decomposition.md). Its §1
+  (inputs, measurements, bars, limits and the decision rule) is entered in the same commit as this
+  ruling and pushed before any of its numbers is computed. It is a development record outside
+  TASK-077: CPU only, the six kept Stage T checkpoints as they are, the train and val splits only
+  (the gate split is never opened), no training, no collection, no closed loop; it gates no claim
+  and changes no TASK-077 row, clause or R7.
+  - **What it measures** (on the 1 745 train + val roots, readouts cross-fitted in Stage O's
+    5 outer folds): the plate read at 405 + h, h = 16, 30 and 60, from the encoded latent (E_h),
+    from W's predicted latent under the executed commands (X_h) and under the kinematic stand-in's
+    chunks (S_h), each with its own refitted readout, and from N's prediction (N_h); the frozen
+    R8 on W's predictions at r; the stand-in's command mismatch per root and W's cost against it;
+    and, reported only, G1 (iii)'s bootstrap centre on val.
+  - **The rule** (first match; val roots; every one of the three seeds; τ_commit = 1.0 cm from
+    K0): **D-VOID-CEILING** if E_60's upper bound exceeds τ_commit; **D-READOUT** (a readout on
+    predicted latents) if S_60's upper bound ≤ τ_commit and the upper bound of S_60/N_60 < 1.0;
+    **D-COMMAND** (a command-matching change) if instead X_60's upper bound ≤ τ_commit and the
+    upper bound of X_60/N_60 < 1.0; **D-TASK** (a declared task change) otherwise, with the
+    sub-reading D-TASK/H (a later commit step) when X_16 or X_30 meets the same two bars on every
+    seed, and D-TASK/R otherwise.
+  - **Disclosed limits.** The kept checkpoints were selected on val; the refit readouts are mostly
+    fitted on train-root predictions, which are in sample for W. A pass is an optimistic reading
+    that chooses a direction; any remedy needs its own preregistration and fresh gated roots.
+
+- **R17.54 — the decomposition record's result: D-READOUT; the next task** (2026-10-07). **Decided
+  by Claude under owner delegation (2026-09-30)**, applying R17.53's rule unchanged. The record is
+  [apple_lewm_c1m_v2_decomposition.md](experiments/apple_lewm_c1m_v2_decomposition.md) §2.
+  - **The run.** One run at `ab6d73f` (the pushed declaration commit, clean tree), 812 s on the
+    CPU, peak PSS 5.88 GiB; report `outputs/task077-decomp-1/report.json` in the worktree
+    `task077-decomp`, sha256 `8a774260…9c5a`; 1 745 train + val roots, 0 infeasible stand-in
+    chunks; the gate split was not opened. Evidence `~/develop/emai/evidence/task077-decomp/`
+    (manifest `5e2a9e88…7f29`, verified).
+  - **The rule's inputs** (val, h = 60): E_60 0.410 cm [0.379, 0.440]; S_60 0.578, 0.564 and
+    0.556 cm (upper bounds 0.636, 0.625, 0.612 ≤ 1.0); S_60/N_60 upper bounds 0.413, 0.451, 0.398
+    (< 1.0); X_60 0.530, 0.473, 0.565 cm; N_60 1.68, 1.48, 1.62 cm. **Row D-READOUT** (W-66800's
+    `last_two_triggered` is true and is stated beside its numbers).
+  - **Reported.** The frozen R8 on the same predictions reads 1.56–1.77 cm (executed) and
+    2.86–3.41 cm (stand-in), close to the gate split's values. A readout fitted on executed-command
+    predictions reads stand-in predictions at 4.6–9.5 cm, so the readout must be fitted on the
+    commands it will read. Refit, the stand-in costs −0.01 to +0.09 cm in median (upper bounds up to +0.16). The per-root
+    mismatch (RMS 0.112) does not predict the per-root cost on val (every interval includes 0; on
+    all 1 745 roots three intervals exclude 0, weak and negative, |ρ| ≤ 0.163). At h = 16 and 30 the refit predicted
+    latent reads the plate no worse than the encoded frame. G1 (iii)'s point estimate falls below
+    its percentile interval on val too (two of three seeds), with the encoded rank shrinking by
+    14 % under resampling, as the results document explained.
+  - **What it means.** The plate information survives W's 60-step roll-out at this precision on
+    train and val; what missed G5 (a) was the frozen readout's distribution shift. This is an
+    optimistic development reading (checkpoints selected on val, readouts mostly fitted on train
+    predictions that are in sample for W), not a gate, not a closed-loop result and not a remedy
+    shown to work. TASK-077 stays closed at G-NO-BAR; its clause and R7 are unchanged.
+  - **The next task** (the row's direction): a new DRAFT preregistration, **TASK-080**, under
+    C1-M, whose controller reads the plate with a readout fitted on W's predicted latents under
+    stand-in chunks across the box; re-gated on fresh roots (a new offline gate split), with an
+    offline ranking check (the offline aims) before Stage D; it states that the corpus's aims are
+    built from the true plate. Reusing the six checkpoints or retraining is that draft's choice.
+    It needs its own independent review, freeze and GOs. No card is opened by this ruling.
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 

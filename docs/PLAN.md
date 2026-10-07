@@ -332,11 +332,18 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
     - **Results** ([apple_lewm_c1m_v2_results.md](experiments/apple_lewm_c1m_v2_results.md),
       R17.52): **TASK-077 is closed with outcome G-NO-BAR** (Stage T T-DONE; no clause; D and S
       not run). R7 is unchanged.
-    - **Next:** R17.51 recommends (DRAFT, not preregistered) an offline, CPU-only decomposition record on the
-      train and val splits with the existing checkpoints. It would measure a readout refitted on
-      W's predicted latents, per-horizon readability and the stand-in's command mismatch, before
-      choosing between a predicted-latent readout, a command-matching change and a declared task
-      change. TASK-079's precondition (TASK-077 L-PASS) is not met.
+    - **The decomposition record** (R17.51, R17.53–R17.54;
+      [apple_lewm_c1m_v2_decomposition.md](experiments/apple_lewm_c1m_v2_decomposition.md);
+      development, train and val only, CPU, no training or closed loop) ended **D-READOUT** under
+      its rule declared before the run: a dual ridge refitted on W's own predicted latents under
+      the stand-in reads the plate at r at 0.556–0.578 cm in val median (upper bounds 0.61–0.64 cm
+      against τ_commit = 1.0 cm; 0.34–0.38 of N's refit error), while the frozen R8 reads the same
+      predictions at 2.86–3.41 cm. Optimistic reading (checkpoints selected on val; readouts
+      mostly fitted on in-sample train predictions); not a gate or a closed-loop result.
+    - **Next:** a DRAFT preregistration (TASK-080) under C1-M whose controller reads the plate with
+      a readout fitted on W's predicted latents under stand-in chunks, re-gated on fresh roots
+      with an offline ranking check before any closed loop (record §2.7). TASK-079's precondition
+      (TASK-077 L-PASS) is not met.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
