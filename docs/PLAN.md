@@ -265,8 +265,8 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       and an independent review. No protocol, no GPU and no task number yet.
     - **Next.** The record's independent review; then, on approval, the preregistration draft
       (8 × 8 calibration run first, to size its budget).
-  - **TASK-077 preregistration (FROZEN after K0-PASS, 2026-10-05, R17.25; in force once merged on
-    an independent APPROVE; decided by Claude under owner delegation)**
+  - **TASK-077 (FROZEN after K0-PASS, 2026-10-05, R17.25; closed 2026-10-07 with outcome G-NO-BAR,
+    R17.52; decided by Claude under owner delegation)**
     ([apple_lewm_c1m_v2.md](experiments/apple_lewm_c1m_v2.md)). K0 ran on K (32 resets):
     τ_commit = 1.0 cm (curve 32/29/29/18/11/2 of 32), ceiling 32/32, r_K = 460 against r = 465,
     with thin margins disclosed (§7.1). Stage C's first run was V on G-memory (Erratum
@@ -329,8 +329,10 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       loop; primary seed 66800, whose W is `last_two_triggered`) are W 22.6 and N 25.4 of 64,
       against the 56/64 bar. Escalate, no clause; **Stage D and S do not run, and no LeWM-driven
       controller has run in closed loop.**
-    - **Next:** this record's independent review and merge; the results document (§7 step 10).
-      R17.51 recommends (DRAFT, not preregistered) an offline, CPU-only decomposition record on the
+    - **Results** ([apple_lewm_c1m_v2_results.md](experiments/apple_lewm_c1m_v2_results.md),
+      R17.52): **TASK-077 is closed with outcome G-NO-BAR** (Stage T T-DONE; no clause; D and S
+      not run). R7 is unchanged.
+    - **Next:** R17.51 recommends (DRAFT, not preregistered) an offline, CPU-only decomposition record on the
       train and val splits with the existing checkpoints. It would measure a readout refitted on
       W's predicted latents, per-horizon readability and the stand-in's command mismatch, before
       choosing between a predicted-latent readout, a command-matching change and a declared task

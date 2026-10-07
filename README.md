@@ -113,6 +113,14 @@ loop.
   matter. Its prediction-headroom check is **PRED-INFEASIBLE** (its only action-dependent cell was
   removed at Stage 0), so no LeWM planner is admitted and the next LeWM task comes from PLAN.md's
   Branch B ([decision 2026-10-04](docs/DECISIONS.md), R13).
+- **TASK-077** ([results](docs/experiments/apple_lewm_c1m_v2_results.md)), a LeWM token predictor
+  on frozen DINOv2 tokens pooled to 8 × 8 that would choose the single place aim committed at
+  step 405 under C1-M, stopped at its offline Stage G with **G-NO-BAR** (escalate, no clause):
+  offline at h = 60 the roll-out is not collapsed, is action-sensitive and beats copy-last and a
+  no-action model on all three seeds, but the plate readout on the predicted latent at the read
+  step misses τ_commit = 1.0 cm on all three (1.58–1.87 cm in median, against 0.41 cm on the
+  encoded frame). The closed loop did not run, so no LeWM-driven controller has run in closed loop
+  on v2 ([decision 2026-10-05 (b)](docs/DECISIONS.md), R17.50–R17.52).
 - **Development only, not gated:** an opt-in white plate leaves TASK-075 at OBS-NONE (any colour
   effect on the offset's median error is bounded to about 0.90–1.11; 1 of 12 intervals excludes 1.0)
   ([white plate](docs/experiments/apple_white_plate_dev.md)). In Isaac Lab-Arena (TASK-025,

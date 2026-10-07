@@ -25,7 +25,7 @@ not rewritten when its worktree is archived.
 
 | Task | Protocol | Results | Outcome (pointer only) | Manifest |
 |---|---|---|---|---|
-| TASK-077 | [apple_lewm_c1m_v2](apple_lewm_c1m_v2.md) (**DRAFT**, R17; not frozen) ([Stage 0](apple_lewm_c1m_v2_stage0.md)) | — | not run: no seed of K, D, S or the corpus simulated (Stage 0: debug seeds and synthetic data only); LeWM (8 × 8 token predictor, 60-step roll-out) chooses the single committed place aim at 405 under C1-M; trained twins N, L-shuf, L-mean | `apple-lewm-c1m-v2.json` (DRAFT) |
+| TASK-077 | [apple_lewm_c1m_v2](apple_lewm_c1m_v2.md) (FROZEN, R17) ([Stage 0](apple_lewm_c1m_v2_stage0.md)) | [results](apple_lewm_c1m_v2_results.md) | **G-NO-BAR** at Stage G (Stage T T-DONE): G1–G4 pass on all three seeds, G5 (a) fails on all three (predicted-plate readout 1.58–1.87 cm against τ_commit 1.0 cm); escalate, no clause; D and S not run, so no LeWM closed loop | `apple-lewm-c1m-v2.json` |
 | TASK-076 | [apple_plate_twin_v2](apple_plate_twin_v2.md) ([Stage 0](apple_plate_twin_v2_stage0.md)) | [results](apple_plate_twin_v2_results.md) | **TWIN-PASS** (H-twin 64/64 vs H-clock 51/64; random-init floor also 64/64; no world model); K-pred **PRED-INFEASIBLE** (cell A removed), so Branch B; no clause fires | `apple-plate-twin-v2.json` |
 | TASK-075 | [apple_obs_ceiling_v2](apple_obs_ceiling_v2.md) | [results](apple_obs_ceiling_v2_results.md) | **OBS-NONE**; the clause fires (next: a task or condition change) | `apple-obs-ceiling-v2.json` |
 | TASK-074 | [apple_lewm_planner_v2](apple_lewm_planner_v2.md) | [results](apple_lewm_planner_v2_results.md) | **INCONCLUSIVE**, closed without the clause after two budget escalations; no LeWM controller ran | `apple-lewm-planner-v2.json` |

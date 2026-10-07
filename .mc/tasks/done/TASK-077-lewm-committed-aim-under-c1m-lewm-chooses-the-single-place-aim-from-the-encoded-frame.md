@@ -4,7 +4,7 @@ aliases:
 - TASK-077
 title: 'LeWM committed aim under C1-M: LeWM chooses the single place aim from the encoded frame'
 slug: lewm-committed-aim-under-c1m-lewm-chooses-the-single-place-aim-from-the-encoded-frame
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -13,7 +13,7 @@ tags:
 - lewm
 - apple-pnp
 - preregistration
-- draft
+- g-no-bar
 sprint: ''
 depends_on:
 - "[[TASK-076]]"
@@ -21,6 +21,7 @@ due_date: ''
 created: 2026-10-05
 updated: 2026-10-07
 ---
+
 
 # LeWM committed aim under C1-M: LeWM chooses the single place aim from the encoded frame
 
@@ -59,7 +60,8 @@ change it unless an L-PASS is followed by its own reviewed ruling.
       revision, after a full `pytest` at that revision (G-tests). Stage G ended G-NO-BAR (R17.50).
 - [ ] ~~Stages D and S~~: not run; G-NO-BAR escalates without a clause, and the runner accepts
       only a G-PASS gates report for them (R17.50).
-- [ ] Results PR, with every restated number checked by an independent reviewer.
+- [x] Results PR, with every restated number checked by an independent reviewer
+      (`docs/experiments/apple_lewm_c1m_v2_results.md`, R17.52).
 
 ## Notes
 - 2026-10-05: card opened under R17.1 on branch `docs/task077-prereg-draft`. DRAFT protocol
@@ -182,3 +184,12 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   Evidence `~/develop/emai/evidence/task077-stageg/`. R17.51: DRAFT recommendation of an offline
   decomposition record (predicted-latent readout, per-horizon readability, stand-in mismatch).
   Remaining: the results document.
+- 2026-10-07: results document `docs/experiments/apple_lewm_c1m_v2_results.md` (protocol §7 step 10,
+  R17.52, branch `docs/task077-results`). **TASK-077 closes with outcome G-NO-BAR** (Stage T
+  T-DONE; escalate, no clause; Stage D and S not run; no LeWM-driven closed loop; R7 unchanged).
+  Caveats: W-66800 `last_two_triggered` beside every seed-66800 W-versus-N comparison; all W
+  curves lowest at their last point; N's offline predicted count above W's (reported only);
+  G1 (iii)'s point below its percentile-bootstrap interval on 66800 and 66802 (resampling bias of
+  the effective rank; gate unchanged); the gate split has been read. Next (outside this task):
+  R17.51's decomposition record on train and val. Card moved to done.
+%% mc-links: [[TASK-076]] %%
