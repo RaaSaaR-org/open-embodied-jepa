@@ -144,7 +144,9 @@ stand-in chunks (upper bounds 0.636, 0.625 and 0.612 cm, against τ_commit = 1.0
 0.34–0.38 of N's refitted error (upper bounds 0.40–0.45) on every seed. The frozen R8, fitted on encoded frames, reads the
 same predictions at 2.86–3.41 cm. **The plate information survives W's 60-step roll-out; what
 missed G5 (a) was the readout's distribution shift**, not the prediction. The direction the rule
-names is **a readout on predicted latents** (§2.6). This is a development reading on the train
+names is **a readout on predicted latents** (§2.7). One confound bears on that sentence: the
+corpus's aims, which the stand-in chunks encode, were drawn from the true plate and palm at 405
+(§2.7, point 4). This is a development reading on the train
 and val splits with checkpoints selected on val; it gates nothing and changes no TASK-077 row,
 clause or R7.
 
@@ -157,7 +159,7 @@ the run used that commit, unchanged.
 |---|---|
 | revision | `ab6d73f0932579f0672c139cc01589c8cb145dc3`, clean tracked tree, unchanged to the end |
 | script | `scripts/decompose_task077.py`, sha256 `6010a498bee81805a79415cdf2457291e214455d7184a4fb7e6fafa01f68c8b9` |
-| report | `outputs/task077-decomp-1/report.json` in `/home/huhn/develop/emai/worktrees/task077-decomp`, sha256 `8a7742609462ce161029860af102022cda169843f8ca159422c8624ae5dd9c5a`; log sha256 `5119bc50…9c5a` |
+| report | `outputs/task077-decomp-1/report.json` in `/home/huhn/develop/emai/worktrees/task077-decomp`, sha256 `8a7742609462ce161029860af102022cda169843f8ca159422c8624ae5dd9c5a`; log sha256 `5119bc50…426e` |
 | span | 2026-10-07 16:30:19Z–16:43:51Z, 812 s; load 0.11 / 0.15 at the start; peak process-tree PSS 5.88 GiB (ceiling 12) |
 | inputs | the 14 train and val feature files (verified against the featurise report `f187c7c8…e9ee`), corpus `ad8974b2…43fb`; moments `5415eea4…`, R8 `62a5ea8a…`; the six checkpoints at their Stage T sha256s (§7.8); evidence root `task076-evidence` checked |
 | roots | 1 495 train + 250 val; Stage O's outer folds, 349 roots each |
@@ -182,6 +184,9 @@ Evidence: `~/develop/emai/evidence/task077-decomp/` with `_checksums/task077-dec
 | N_60, refit on N's predictions | 1.680 [1.409, 1.785] | 1.481 [1.304, 1.617] | 1.620 [1.437, 1.723] | — |
 
 † W-66800's `last_two_triggered` is true (results §3, caveat 1).
+
+The 1.5 τ_commit scaled tolerance (§1.3) is met too: every S_h and X_h upper bound at every
+horizon is at most 0.64 cm, below 1.0 cm already.
 
 Every check of the rule holds on every seed (S_60, X_60, X_16 and X_30 all meet both bars), so the
 first match is D-READOUT; D-TASK's sub-reading is not reached.
@@ -236,7 +241,9 @@ first match is D-READOUT; D-TASK's sub-reading is not reached.
 - **Cost against size.** The per-root mismatch spans a narrow range (val quartile edges 0.098,
   0.112, 0.117) and does not predict W's per-root cost. Spearman ρ of m with d = e_S − e_X on val:
   −0.035, −0.016, −0.021 with refit readouts and +0.106, +0.077, −0.070 with the frozen R8 (every
-  interval includes 0; on all 1 745 roots |ρ| ≤ 0.163). With the frozen R8 the cost is about
+  interval includes 0). On all 1 745 roots |ρ| ≤ 0.163, and three intervals exclude 0, each weak
+  and negative: 66801 refit −0.088 [−0.137, −0.038], 66802 refit −0.053 [−0.101, −0.005], 66802
+  frozen −0.163 [−0.209, −0.117]. With the frozen R8 the cost is about
   +1.0 to +2.0 cm in every quartile of m; with refit readouts it is −0.04 to +0.25 cm.
 - **Reading** (not a measurement): the stand-in's cost under the frozen R8 is a shift common to
   all roots, which moves the predicted latents away from where R8 was fitted. A readout fitted on

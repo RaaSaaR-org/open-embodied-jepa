@@ -995,7 +995,7 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
   [apple_lewm_c1m_v2_decomposition.md](experiments/apple_lewm_c1m_v2_decomposition.md) §2.
   - **The run.** One run at `ab6d73f` (the pushed declaration commit, clean tree), 812 s on the
     CPU, peak PSS 5.88 GiB; report `outputs/task077-decomp-1/report.json` in the worktree
-    `task077-decomp`, sha256 `8a774260…5c9a`; 1 745 train + val roots, 0 infeasible stand-in
+    `task077-decomp`, sha256 `8a774260…9c5a`; 1 745 train + val roots, 0 infeasible stand-in
     chunks; the gate split was not opened. Evidence `~/develop/emai/evidence/task077-decomp/`
     (manifest `5e2a9e88…7f29`, verified).
   - **The rule's inputs** (val, h = 60): E_60 0.410 cm [0.379, 0.440]; S_60 0.578, 0.564 and
@@ -1005,8 +1005,9 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
   - **Reported.** The frozen R8 on the same predictions reads 1.56–1.77 cm (executed) and
     2.86–3.41 cm (stand-in), close to the gate split's values. A readout fitted on executed-command
     predictions reads stand-in predictions at 4.6–9.5 cm, so the readout must be fitted on the
-    commands it will read. Refit, the stand-in costs −0.01 to +0.09 cm in median. The per-root
-    mismatch (RMS 0.112) does not predict the per-root cost. At h = 16 and 30 the refit predicted
+    commands it will read. Refit, the stand-in costs −0.01 to +0.09 cm in median (upper bounds up to +0.16). The per-root
+    mismatch (RMS 0.112) does not predict the per-root cost on val (every interval includes 0; on
+    all 1 745 roots three intervals exclude 0, weak and negative, |ρ| ≤ 0.163). At h = 16 and 30 the refit predicted
     latent reads the plate no worse than the encoded frame. G1 (iii)'s point estimate falls below
     its percentile interval on val too (two of three seeds), with the encoded rank shrinking by
     14 % under resampling, as the results document explained.
