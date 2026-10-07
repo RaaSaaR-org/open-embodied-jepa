@@ -78,7 +78,8 @@ N-66800 ended V when the owner asked for a pause, and its one repeat, its last a
 needs R17.47's record and its own GO (R17.46–R17.48). The resume at `2aa4f5b` completed Stage T:
 all eight jobs ended T-JOB-DONE; T-DONE is decided by Stage G (R17.49). Stage G at `1cb5f79` ended
 G-NO-BAR with Stage T's row T-DONE: G1–G4 pass on all three seeds, G5 fails on all three; escalate,
-no clause; Stage D and S do not run (R17.50). R17.51 is a DRAFT next-direction recommendation.**
+no clause; Stage D and S do not run (R17.50). R17.51 is a DRAFT next-direction recommendation.
+The results document closes TASK-077 with outcome G-NO-BAR (R17.52).**
 Revised after
 the independent review of #142 (REQUEST CHANGES at `26894ca`): R17.3, R17.7–R17.10 and R17.12 are
 amended in place, and R17.15–R17.18 are added. The document
@@ -939,6 +940,29 @@ R1–R16 are taken; a search of every local and remote ref (74) and every worktr
   - **The other TASK-077 item.** The results document (§7 step 10) is still to be written, with
     every restated number checked by an independent reviewer. TASK-079's precondition (TASK-077
     L-PASS) is not met.
+
+- **R17.52 — the results document; TASK-077 closes with outcome G-NO-BAR** (2026-10-07).
+  **Recorded by Claude under owner delegation.** The results document is
+  [apple_lewm_c1m_v2_results.md](experiments/apple_lewm_c1m_v2_results.md) (§7 step 10). It adds
+  no measurement: every number is read from the stage reports and §7.1–§7.9. The frozen block is
+  unchanged; the protocol gains a pointer to the results, and the manifest re-pins the protocol
+  document and records the outcome.
+  - **TASK-077 closes.** Step 10 is the protocol's last step, and under G-NO-BAR no later stage
+    can run (the runner accepts only a G-PASS gates report for D and S). The outcome is
+    **G-NO-BAR** at Stage G, Stage T's row T-DONE; escalate, no clause. The task card moves to
+    done. Nothing in §11's scope is closed.
+  - **R7 is unchanged and still true.** No LeWM-driven controller has run in closed loop on v2;
+    no closed-loop count of any §5 arm exists; the offline aims' predicted counts (W 22.6, N 25.4
+    of 64) are not closed-loop results.
+  - **Caveats stated in the results document** (its §3): W-66800's `last_two_triggered` beside
+    every seed-66800 W-versus-N comparison; all three W curves lowest at their last point; N's
+    offline predicted count above W's, reported only; G1 (iii)'s point estimate below its own
+    percentile-bootstrap interval on seeds 66800 and 66802, explained from the code as a
+    resampling bias of the effective rank that leaves the gate unchanged; the gate split has been
+    read; the kept checkpoints were selected on val.
+  - **What follows** is R17.51's recommendation, outside TASK-077: an offline decomposition record
+    on train and val with its decision rule declared before it runs. TASK-079's precondition
+    (TASK-077 L-PASS) is not met.
 
 ## Decision 2026-10-05 — the C1-M feasibility record ends M-PROCEED: ρ\* = 4 cm, the twins lose, τ_commit = 1.0 cm, and the 8 × 8 oracle-dynamics readout meets its allowance exactly (R16)
 

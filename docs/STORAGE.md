@@ -112,6 +112,15 @@ K0's report is in the main checkout's `outputs/task076-k0-1`. Now that TASK-076 
 the run worktree, K0's report and the `--evidence` root until they are archived like the others
 (copy, checksum, MANIFEST row, verify before removing).
 
+**TASK-077's run worktrees** (closed 2026-10-07, G-NO-BAR; [results](experiments/apple_lewm_c1m_v2_results.md)
+§1): `task077-k0`, `task077-corpus`, `task077-corpus2` (the sealed corpus), `task077-stageo`
+(the featurisation and Stage O's fits), `task077-staget` and `task077-staget2` (the eight Stage T
+jobs and their checkpoints) and `task077-stageg`. Stage T's and Stage G's outputs are copied to
+the SSD evidence store (`~/develop/emai/evidence/task077-stage{t,t2,g}/`, sha256 manifests under
+`_checksums/`). The decomposition record that R17.51 recommends reads the featurisation, the fits
+and the six checkpoints from these worktrees, so keep them until that record is merged and they
+are archived like the others.
+
 ## Old path to archive path
 
 Results documents cite worktree paths on the SSD. Each worktree below was copied, every file

@@ -74,7 +74,10 @@ separate benchmark: v2 numbers are never pooled with v1 numbers.
   P-3's pick scored 64/64 on gated resets (clock prior 51/64; random-init floor also 64/64), and
   its K-pred row is PRED-INFEASIBLE, so the next LeWM task comes from PLAN.md's Branch B
   ([DECISIONS.md](DECISIONS.md), 2026-10-04, R13;
-  [results](experiments/apple_plate_twin_v2_results.md)).
+  [results](experiments/apple_plate_twin_v2_results.md)). TASK-077 (a LeWM 8 × 8 token predictor
+  choosing a committed place aim under C1-M) stopped at its offline Stage G with G-NO-BAR: its
+  dynamics gates passed, but the plate readout on its predicted latent missed τ_commit, so its
+  closed loop did not run ([results](experiments/apple_lewm_c1m_v2_results.md)).
 - **There is still no primary control line.** A behaviour-cloning result on v2 is not a return to
   behaviour cloning as the project's control approach; the product goal is LeWM on G1 + dual
   Dex3.

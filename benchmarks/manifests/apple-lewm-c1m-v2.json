@@ -1596,9 +1596,91 @@
   "tests/test_lewm_c1m_v2.py": "bc9d97049dd7783f983266e40a778635b9d290795d4b20d48b748b3ef4a924fd"
  },
  "note": "FROZEN after K0-PASS (R17.25), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins the stage's own files, the carried C1 and C1-M code files, the test file and TASK-076's manifest (whose 84 pins the runner checks too); protocol_document_sha256 is the protocol's sha256. K0's report: outputs/task077-k0-1/report.json, sha256 9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235.",
- "outcome": null,
+ "outcome": "G-NO-BAR at Stage G (Stage T T-DONE); escalate, no clause; Stage D and S not run; TASK-077 closed (R17.52)",
  "protocol": "apple_lewm_c1m_v2",
- "protocol_document_sha256": "6ab71d3edbe3301feb22d84949ef85c94d1631b7bae5b74eb0a56cd6866decc3",
+ "protocol_document_sha256": "4489c39f41a1813e2d50197a74f43ff90ec1eefd9e306ae210622f274a9d7a44",
+ "results": {
+  "abandonment_clause_fires": false,
+  "closed_loop_run": false,
+  "document": "docs/experiments/apple_lewm_c1m_v2_results.md",
+  "next_step": "R17.51 (DRAFT): an offline CPU-only decomposition record on train and val with the six kept checkpoints, its decision rule declared before it runs; outside TASK-077",
+  "outcome": "G-NO-BAR",
+  "primary_seed": 66800,
+  "r7_changed": false,
+  "stage_t_row": "T-DONE",
+  "stages": [
+   {
+    "outcome": "K0-PASS",
+    "report": "task077-k0/outputs/task077-k0-1/report.json",
+    "report_sha256": "9be44fd93996c03cacc6cde089225f0f986676020f2ceb2138f062131f1af235",
+    "revision": "306fbdc",
+    "stage": "K0"
+   },
+   {
+    "outcome": "V (G-memory)",
+    "report": "task077-corpus/outputs/task077-corpus-1/report.json",
+    "report_sha256_prefix": "734fa771",
+    "revision": "862d63c",
+    "stage": "C run 1"
+   },
+   {
+    "corpus_manifest_sha256": "ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb",
+    "outcome": "CORPUS-SEALED",
+    "report": "task077-corpus2/outputs/task077-corpus-2/report.json",
+    "report_sha256": "2f84515bbdd612c75f56439355eff580f0617f0b5a7e64652a3626653dd07e47",
+    "revision": "4f30fbb",
+    "stage": "C repeat"
+   },
+   {
+    "c_plate_cm": 0.404,
+    "outcome": "O-PASS",
+    "report": "task077-stageo/outputs/task077-readouts-1/report.json",
+    "report_sha256": "452045d22c21b067c8bfe78cb72f4e842fc61f3c44a9e17b6fae860c244f8b78",
+    "revision": "8721516",
+    "stage": "O readouts"
+   },
+   {
+    "outcome": "eight jobs T-JOB-DONE (N-66800 attempt 1 V, repeated once); plan T-PLANNED, U = 95 000",
+    "records": "protocol sections 7.7-7.8",
+    "revisions": [
+     "215fcce",
+     "2aa4f5b"
+    ],
+    "stage": "T"
+   },
+   {
+    "encoded_readout_gate_median_cm": 0.411,
+    "g5_standin_median_cm": {
+     "66800": 3.625,
+     "66801": 3.085,
+     "66802": 3.164
+    },
+    "g5a_median_cm": {
+     "66800": 1.581,
+     "66801": 1.617,
+     "66802": 1.873
+    },
+    "g5a_upper_cm": {
+     "66800": 1.697,
+     "66801": 1.794,
+     "66802": 2.076
+    },
+    "offline_aims_predicted_count_of_64": {
+     "L-mean": 19.8,
+     "L-rand": 9.6,
+     "L-shuf": 19.1,
+     "N": 25.4,
+     "W": 22.6
+    },
+    "outcome": "G-NO-BAR",
+    "report": "task077-stageg/outputs/task077-gates-1/report.json",
+    "report_sha256": "dbd9e71414aeec4bd2710c17586bb4bcd59bc7e137c6fd3807da19cac2e15727",
+    "revision": "1cb5f79",
+    "stage": "G"
+   }
+  ],
+  "w_66800_last_two_triggered": true
+ },
  "status": "FROZEN",
  "task": "TASK-077"
 }

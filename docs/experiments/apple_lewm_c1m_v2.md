@@ -47,6 +47,8 @@ at r (1.58, 1.62 and 1.87 cm, upper bounds 1.70, 1.79 and 2.08 cm, against τ_co
 encoded readout reads 0.41 cm). G-NO-BAR escalates without a clause; **Stage D and Stage S do not
 run under this row, and no LeWM-driven controller has run in closed loop.** R17.51 records a
 DRAFT next-direction recommendation, not a preregistration.
+**Results (§7 step 10):** [apple_lewm_c1m_v2_results.md](apple_lewm_c1m_v2_results.md). TASK-077
+closes there with outcome G-NO-BAR (Stage T T-DONE; the clause does not fire; R17.52).
 
 - **Admitted by:** the C1-M feasibility record's row **M-PROCEED**
   ([apple_lewm_next_v2_c1m_feasibility.md](apple_lewm_next_v2_c1m_feasibility.md), R16, #141).
@@ -57,7 +59,7 @@ DRAFT next-direction recommendation, not a preregistration.
   [apple_lewm_next_v2_design.md](apple_lewm_next_v2_design.md); the claim split R9.8 and the
   random-choice test R9.9), R13 (TASK-076's results), R14 (the C1 record), R15 (the C1-M
   direction, [apple_lewm_next_v2_direction.md](apple_lewm_next_v2_direction.md)) and R16.
-- **Task card:** `.mc/tasks/todo/TASK-077-lewm-committed-aim-under-c1m-lewm-chooses-the-single-place-aim-from-the-encoded-frame.md`.
+- **Task card:** `.mc/tasks/done/TASK-077-lewm-committed-aim-under-c1m-lewm-chooses-the-single-place-aim-from-the-encoded-frame.md`.
 - **Templates:** TASK-066 for the model, its gates and its calibration
   ([apple_token_dynamics_v1.md](apple_token_dynamics_v1.md)); TASK-074 for the budget lessons
   ([apple_lewm_planner_v2.md](apple_lewm_planner_v2.md) Addendum A2,
