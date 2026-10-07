@@ -833,7 +833,37 @@ def check_sentinel(report: dict, evaluated: set[str], fields) -> list[str]:
 
 
 # ----- Stage 0 (filled by the Stage-0 PR; development only) ---------------------------------------
-STAGE0: dict = {}  # the record: docs/experiments/apple_lewm_c1m_v2_pred_readout_stage0.md
+STAGE0: dict = {  # the record: docs/experiments/apple_lewm_c1m_v2_pred_readout_stage0.md
+    "smoke_revision": "e4babc1",
+    "smoke_root": "outputs/task080-smoke-* in the task080-stage0 worktree (git-ignored); debug "
+    "seeds 65900-65999 only; nothing in them is read",
+    "dry_run": {  # R18.13: development only, sets no bar (R18.15)
+        "revision": "e4babc1c885d354b7a07069402503d6308693548",
+        "report": "outputs/task080-dryrun-1/report.json (task080-stage0 worktree)",
+        "report_sha256": "e3becdfad070cc96b7080feadd80f0b0496a18bdd88d9728fc636a7db9e1aed5",
+        "fit_roots": 1745,
+        "eval_roots": "TASK-077's 250 val roots",
+        "tau_curve": "TASK-077's K (32 resets), tau_commit 1.0 cm",
+        "predicted_counts_of_64": {
+            "W": 56.88,
+            "N": 25.94,
+            "L-shuf": 21.24,
+            "L-mean": 25.54,
+            "L-rand": 8.54,
+            "H-rule": 58.50,
+            "H-sysid": 54.22,
+        },
+        "w_aim_error_cm": {"median": 0.612, "ci95": [0.559, 0.660], "p87_5": 1.044},
+        "e_S_val_cm": {"66800": 0.540, "66801": 0.529, "66802": 0.535},
+        "e_S_val_upper_cm": {"66800": 0.581, "66801": 0.571, "66802": 0.597},
+        "e_N_val_cm": {"66800": 1.583, "66801": 1.421, "66802": 1.581},
+        "e_L_val_lower_cm": {"66800": 2.092, "66801": 2.104, "66802": 2.093},
+        "encoded_ceiling_val_cm": {"median": 0.382, "ci95": [0.343, 0.424]},
+        "seconds": 3312,
+        "peak_tree_pss_gib": 9.96,
+    },
+    "simulate_report_sha256": "f28b708225358f5304aa438e6884cad3567bc4402d5b3534f187d536046698cc",
+}
 
 
 # ----- the frozen block ---------------------------------------------------------------------------

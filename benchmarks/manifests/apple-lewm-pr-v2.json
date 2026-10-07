@@ -1067,7 +1067,65 @@
    ]
   },
   "sim_workers": 6,
-  "stage0": {},
+  "stage0": {
+   "dry_run": {
+    "e_L_val_lower_cm": {
+     "66800": 2.092,
+     "66801": 2.104,
+     "66802": 2.093
+    },
+    "e_N_val_cm": {
+     "66800": 1.583,
+     "66801": 1.421,
+     "66802": 1.581
+    },
+    "e_S_val_cm": {
+     "66800": 0.54,
+     "66801": 0.529,
+     "66802": 0.535
+    },
+    "e_S_val_upper_cm": {
+     "66800": 0.581,
+     "66801": 0.571,
+     "66802": 0.597
+    },
+    "encoded_ceiling_val_cm": {
+     "ci95": [
+      0.343,
+      0.424
+     ],
+     "median": 0.382
+    },
+    "eval_roots": "TASK-077's 250 val roots",
+    "fit_roots": 1745,
+    "peak_tree_pss_gib": 9.96,
+    "predicted_counts_of_64": {
+     "H-rule": 58.5,
+     "H-sysid": 54.22,
+     "L-mean": 25.54,
+     "L-rand": 8.54,
+     "L-shuf": 21.24,
+     "N": 25.94,
+     "W": 56.88
+    },
+    "report": "outputs/task080-dryrun-1/report.json (task080-stage0 worktree)",
+    "report_sha256": "e3becdfad070cc96b7080feadd80f0b0496a18bdd88d9728fc636a7db9e1aed5",
+    "revision": "e4babc1c885d354b7a07069402503d6308693548",
+    "seconds": 3312,
+    "tau_curve": "TASK-077's K (32 resets), tau_commit 1.0 cm",
+    "w_aim_error_cm": {
+     "ci95": [
+      0.559,
+      0.66
+     ],
+     "median": 0.612,
+     "p87_5": 1.044
+    }
+   },
+   "simulate_report_sha256": "f28b708225358f5304aa438e6884cad3567bc4402d5b3534f187d536046698cc",
+   "smoke_revision": "e4babc1",
+   "smoke_root": "outputs/task080-smoke-* in the task080-stage0 worktree (git-ignored); debug seeds 65900-65999 only; nothing in them is read"
+  },
   "stage_r": {
    "a1_bar": 56,
    "a2_min_separation": 7,
@@ -1141,7 +1199,7 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "3cacc3d5656afec4e01471738c370dc66d5d91e003953e84a705bc4939dd60b5",
+ "frozen_sha256": "d3ebc26b3ad85006977481e4ab0a660aaf791af0fb8496fea0428bd5788754fe",
  "frozen_sha256_pin": null,
  "note": "DRAFT (R18.1): no pin until the freeze, which follows K0′ and is merged on an independent reviewer's reported APPROVE; frozen_sha256 is the DRAFT block's sha256 at this revision.",
  "protocol": "apple_lewm_c1m_v2_pred_readout",

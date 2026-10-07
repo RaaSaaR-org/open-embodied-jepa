@@ -4,7 +4,7 @@ aliases:
 - TASK-080
 title: 'LeWM committed aim under C1-M, read by a readout fitted on predicted latents'
 slug: lewm-committed-aim-under-c1m-read-by-a-readout-fitted-on-predicted-latents
-status: todo
+status: in-progress
 priority: 1
 owner: ''
 projects: []
@@ -54,7 +54,7 @@ change it unless an L-PASS is followed by its own reviewed ruling.
 ## Acceptance Criteria
 - [ ] DRAFT preregistration reviewed independently (this card's first PR; docs only, plus
       #151's five minor nits).
-- [ ] Stage 0 PR: stage code in new modules, frozen block, manifest, tests (seed ranges against
+- [x] Stage 0 PR: stage code in new modules, frozen block, manifest, tests (seed ranges against
       every forbidden range including 66000–68999; the reused artifacts' sha256s; W reads R-S and
       N reads R-N, never R8; gate-P aims built from p̂; the `"not evaluated"` sentinel; no
       privileged read in W or a twin), debug smokes, scale probes and R18.13's development dry run.
@@ -67,3 +67,8 @@ change it unless an L-PASS is followed by its own reviewed ruling.
 ## Notes
 - 2026-10-07: card opened under R18.1 on branch `docs/task080-prereg-draft`. DRAFT protocol only;
   nothing run. Open questions for the freeze are the protocol's §15.
+- 2026-10-07: Stage 0 (R18.15–R18.21; `docs/experiments/apple_lewm_c1m_v2_pred_readout_stage0.md`):
+  new modules `lewm_pr_v2{,_runtime,_offline}.py` and `scripts/run_lewm_pr_v2.py`, DRAFT manifest,
+  29 tests, debug smokes (65900–65999), caps, and R18.13's dry run at `e4babc1` (development; W
+  56.88/64 offline, N 25.94, W − N +30.9; report sha256 `e3becdfa…aed5`). §15 questions 1–5 ruled;
+  6 recommended. Next: K0′ on a reviewer's GO, then the freeze.
