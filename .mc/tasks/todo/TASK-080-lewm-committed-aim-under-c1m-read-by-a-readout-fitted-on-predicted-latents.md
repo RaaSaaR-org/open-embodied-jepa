@@ -19,7 +19,7 @@ depends_on:
 - "[[TASK-077]]"
 due_date: ''
 created: 2026-10-07
-updated: 2026-10-07
+updated: 2026-10-08
 ---
 
 # LeWM committed aim under C1-M, read by a readout fitted on predicted latents
@@ -52,14 +52,14 @@ Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. T
 change it unless an L-PASS is followed by its own reviewed ruling.
 
 ## Acceptance Criteria
-- [ ] DRAFT preregistration reviewed independently (this card's first PR; docs only, plus
+- [x] DRAFT preregistration reviewed independently (this card's first PR; docs only, plus
       #151's five minor nits).
 - [x] Stage 0 PR: stage code in new modules, frozen block, manifest, tests (seed ranges against
       every forbidden range including 66000–68999; the reused artifacts' sha256s; W reads R-S and
       N reads R-N, never R8; gate-P aims built from p̂; the `"not evaluated"` sentinel; no
       privileged read in W or a twin), debug smokes, scale probes and R18.13's development dry run.
 - [x] K0′ on a reported GO; K0′'s values in the frozen block.
-- [ ] The freeze merged on an independent reviewer's reported APPROVE.
+- [x] The freeze merged on an independent reviewer's reported APPROVE (#155, `514110d`).
 - [ ] Stages C′, R, D and S, each on its own reported GO, from a clean worktree of the merged
       revision, after a full `pytest` at that revision (G-tests).
 - [ ] Results PR, with every restated number checked by an independent reviewer.
@@ -79,3 +79,12 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   K ∪ K′ 64/58/60/32/29/7 of 64; pooled τ_commit = 1.0 cm (not tightened); ceiling 32/32;
   r_K′ = 459; no stop. The freeze PR (R18.22) writes these into the frozen block, sets STATUS
   FROZEN and pins the block, the files and the protocol document. Next: Stage C′ on its own GO.
+- 2026-10-08: Stage C′ ran once on the reviewer's GO (#155, issuecomment-6048275092) at `514110d`:
+  **CORPUS-SEALED** (R18.23; protocol §8.2). 499 of 500 roots kept (65688, gate-P, excluded as
+  `no_decision`; 0.2 % overall, 0.4 % gate-P, 0 % contrast-T; bar 2 %); gate-P 249, contrast-T
+  250. Sealed manifest sha256 `deebd83db6de53e23dbde0b921ae7f7c1cf79cb24c6dd27bfae066c2f5017c4e`;
+  report sha256 `63b085df…f0ca`; evidence copy `~/develop/emai/evidence/task080-stagec/`. Nothing
+  featurised or read. Stage R's plan is §8.3 (R18.24): `tests`, then `featurise` through
+  `gpu_run.sh`, then `rgate`, on one reported GO at the record's merge commit. The record PR also
+  fixes #155's review nits 1–3 (protocol §8.1 and §14 wording, a PLAN.md line); the protocol
+  document's sha256 is re-pinned in the manifest.
