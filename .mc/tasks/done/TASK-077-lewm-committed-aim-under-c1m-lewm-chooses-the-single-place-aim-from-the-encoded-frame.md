@@ -22,7 +22,6 @@ created: 2026-10-05
 updated: 2026-10-07
 ---
 
-
 # LeWM committed aim under C1-M: LeWM chooses the single place aim from the encoded frame
 
 ## Description
@@ -42,7 +41,7 @@ L-mean, and a random choice. "LeWM needed" is reported only and not expected.
 
 **The protocol (FROZEN after K0-PASS, R17.25; in force once merged on an independent APPROVE):**
 [`docs/experiments/apple_lewm_c1m_v2.md`](../../../docs/experiments/apple_lewm_c1m_v2.md).
-Rulings R17.1–R17.51 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
+Rulings R17.1–R17.52 (`docs/DECISIONS.md`, decision 2026-10-05 (b)), decided by Claude under
 owner delegation (2026-09-30). The plan is `docs/PLAN.md`.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7. This task does not
@@ -61,7 +60,7 @@ change it unless an L-PASS is followed by its own reviewed ruling.
 - [ ] ~~Stages D and S~~: not run; G-NO-BAR escalates without a clause, and the runner accepts
       only a G-PASS gates report for them (R17.50).
 - [x] Results PR, with every restated number checked by an independent reviewer
-      (`docs/experiments/apple_lewm_c1m_v2_results.md`, R17.52).
+      (`docs/experiments/apple_lewm_c1m_v2_results.md`, R17.52; #151, APPROVE at `7c4c2f8`).
 
 ## Notes
 - 2026-10-05: card opened under R17.1 on branch `docs/task077-prereg-draft`. DRAFT protocol

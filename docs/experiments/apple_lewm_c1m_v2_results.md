@@ -7,8 +7,8 @@ here, at protocol step 10, with outcome G-NO-BAR (DECISIONS R17.52).
 
 - **What passed (offline, gate split, h = 60, all three model seeds).** G1–G4: the 8 × 8 LeWM token
   predictor W's 60-step roll-out from the encoded 405 frame is not collapsed, is action-sensitive,
-  and beats both copy-last and an equally trained no-action model N. This is the first gate of
-  8 × 8 dynamics at any horizon in this repository. It is an offline dynamics result only, not a
+  and beats both copy-last and an equally trained no-action model N. This is the first passed
+  gate of 8 × 8 dynamics at any horizon in this repository. It is an offline dynamics result only, not a
   control result.
 - **What failed.** G5 (a), on all three seeds: R8, the dual-ridge plate readout fitted on encoded
   frames at r = 465, reads the plate from W's *predicted* latent at r with a median error of
@@ -58,9 +58,9 @@ on the Linux PC (RTX 5080). Times are UTC.
 | O, G-tests | `8721516` | `task077-stageo` | `outputs/task077-o-tests-1/report.json` | `80fc8344b128e03f7604481364ead13bba1fbba2bef0d535a0b950df3e3784b4` | TESTS-PASS |
 | O, featurisation (GPU) | `8721516` | `task077-stageo` | `outputs/task077-featurise-1/report.json` | `f187c7c8179ffe0d1883739be0f30ae960c6033e4c1d088d800075490ef3e9ee` | FEATURISED |
 | O, readouts | `8721516` | `task077-stageo` | `outputs/task077-readouts-1/report.json` | `452045d22c21b067c8bfe78cb72f4e842fc61f3c44a9e17b6fae860c244f8b78` | **O-PASS** |
-| T, run 1 (tests, cal-W, cal-N, plan, W-66800) | `215fcce` | `task077-staget` | protocol §7.7's table | §7.7 | T-JOB-DONE ×3, **T-PLANNED** |
+| T, run 1 (tests, cal-W, cal-N, plan, W-66800) | `215fcce` | `task077-staget` | protocol §7.7's table | §7.7 | TESTS-PASS (2014 passed), T-JOB-DONE ×3, **T-PLANNED** |
 | T, N-66800 attempt 1 | `215fcce` | `task077-staget` | `outputs/task077-t-N-66800-1/report.json` | `bb2c442a3a610ea89c10ad22d089a58b3d27d9e6df22d2c02a16b9f3a7ec3355` | **V** (SIGTERM at the owner's pause; protocol §7.7) |
-| T, resume (N-66800-2, W/N-66801, W/N-66802) | `2aa4f5b` | `task077-staget2` | protocol §7.8's table | §7.8 | T-JOB-DONE ×5 |
+| T, resume (N-66800-2, W/N-66801, W/N-66802) | `2aa4f5b` | `task077-staget2` | protocol §7.8's table | §7.8 | TESTS-PASS (2035 passed), T-JOB-DONE ×5 |
 | G | `1cb5f79` | `task077-stageg` | `outputs/task077-gates-1/report.json` | `dbd9e71414aeec4bd2710c17586bb4bcd59bc7e137c6fd3807da19cac2e15727` | **G-NO-BAR**; Stage T **T-DONE** |
 | D, S | — | — | — | — | **not run** (G-NO-BAR) |
 
