@@ -13,7 +13,7 @@ tags:
 - lewm
 - apple-pnp
 - preregistration
-- draft
+- frozen
 sprint: ''
 depends_on:
 - "[[TASK-077]]"
@@ -43,7 +43,7 @@ roots and the offline aims before any closed loop; D and S carry TASK-077's bars
 non-inferiority within δ = 8/64, McNemar wins over N, L-shuf, L-mean and L-rand). "LeWM needed" is
 reported only.
 
-**The protocol (DRAFT, not frozen):**
+**The protocol (FROZEN after K0′-PASS, R18.22):**
 [`docs/experiments/apple_lewm_c1m_v2_pred_readout.md`](../../../docs/experiments/apple_lewm_c1m_v2_pred_readout.md).
 Rulings R18.1–R18.14 (`docs/DECISIONS.md`, decision 2026-10-07), decided by Claude under owner
 delegation (2026-09-30). The plan is `docs/PLAN.md`.
@@ -58,7 +58,7 @@ change it unless an L-PASS is followed by its own reviewed ruling.
       every forbidden range including 66000–68999; the reused artifacts' sha256s; W reads R-S and
       N reads R-N, never R8; gate-P aims built from p̂; the `"not evaluated"` sentinel; no
       privileged read in W or a twin), debug smokes, scale probes and R18.13's development dry run.
-- [ ] K0′ on a reported GO; K0′'s values in the frozen block.
+- [x] K0′ on a reported GO; K0′'s values in the frozen block.
 - [ ] The freeze merged on an independent reviewer's reported APPROVE.
 - [ ] Stages C′, R, D and S, each on its own reported GO, from a clean worktree of the merged
       revision, after a full `pytest` at that revision (G-tests).
@@ -73,3 +73,9 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   seed 66800 flagged `last_two_triggered`; W 56.88/64 offline, N 25.94, W − N +30.9, predictions
   not closed-loop counts; report sha256 `e3becdfa…aed5`). §15 questions 1–5 ruled;
   6 recommended. Next: K0′ on a reviewer's GO, then the freeze.
+- 2026-10-07: K0′ ran once on the reviewer's GO (#154, issuecomment-6047218319) at `931281a`:
+  **K0′-PASS** (report `outputs/task080-k0-1/report.json`, sha256 `a0939e3e…4c16`; evidence copy
+  `~/develop/emai/evidence/task080-k0/`). K′ 32/29/31/14/18/5 of 32 at 0/0.5/1/1.5/2/3 cm; pooled
+  K ∪ K′ 64/58/60/32/29/7 of 64; pooled τ_commit = 1.0 cm (not tightened); ceiling 32/32;
+  r_K′ = 459; no stop. The freeze PR (R18.22) writes these into the frozen block, sets STATUS
+  FROZEN and pins the block, the files and the protocol document. Next: Stage C′ on its own GO.

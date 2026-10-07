@@ -1,12 +1,13 @@
 """TASK-080 (``apple_lewm_c1m_v2_pred_readout``): LeWM's committed aim under C1-M, read by a
 readout fitted on W's predicted latents, on fresh roots.
 
-Protocol ``docs/experiments/apple_lewm_c1m_v2_pred_readout.md`` (STATUS DRAFT; rulings R18 in
-``docs/DECISIONS.md``, decision 2026-10-07, each decided by Claude under owner delegation,
-2026-09-30). This module is the protocol's **frozen block** as module constants (DRAFT until the
-freeze), with its statistics (salt 8206), the K0′, C′, R and S row ladders and the Stage-0 power
-simulation. TASK-077's modules (``lewm_c1m_v2*``) are imported, never edited: everything carried
-is read from them, and G-frozen checks that TASK-077's frozen block and pinned files are
+Protocol ``docs/experiments/apple_lewm_c1m_v2_pred_readout.md`` (STATUS FROZEN after K0′-PASS;
+rulings R18 in ``docs/DECISIONS.md``, decisions 2026-10-07, each decided by Claude under owner
+delegation, 2026-09-30). This module is the protocol's **frozen block** as module constants
+(FROZEN at the freeze, R18.22; its sha256 is pinned in ``tests/test_lewm_pr_v2.py`` and the
+manifest), with its statistics (salt 8206), the K0′, C′, R and S row ladders and the Stage-0
+power simulation. TASK-077's modules (``lewm_c1m_v2*``) are imported, never edited: everything
+carried is read from them, and G-frozen checks that TASK-077's frozen block and pinned files are
 unchanged.
 
 What changes from TASK-077 (protocol §0): W reads its predicted plate with **R-S**, a dual ridge
@@ -37,11 +38,11 @@ from embodied_jepa.contracts import ContractError
 
 PROTOCOL = "apple_lewm_c1m_v2_pred_readout"
 TASK = "TASK-080"
-STATUS = "DRAFT"
+STATUS = "FROZEN"
 DOCUMENT = "docs/experiments/apple_lewm_c1m_v2_pred_readout.md"
 MANIFEST = "benchmarks/manifests/apple-lewm-pr-v2.json"
 DELEGATED = "decided by Claude under owner delegation (2026-09-30)"
-RULINGS = "DECISIONS.md decision 2026-10-07, R18.1-R18.14 (Stage 0: R18.15-R18.21)"
+RULINGS = "DECISIONS.md decision 2026-10-07, R18.1-R18.14 (Stage 0: R18.15-R18.21; freeze: R18.22)"
 GuardError = pt.GuardError
 NOT_EVALUATED = lm.NOT_EVALUATED
 
@@ -310,7 +311,169 @@ K0_STOPS = {
     "palm_fast": "the median palm speed at 405 > 0.5 cm per step",
     "pooled_tau_undefined": "the pooled tau_commit is undefined (pooled level 0 < 56/64)",
 }
-K0_PRIME_MEASURED: dict | None = None  # written after K0′ runs, in the freeze PR
+K0_PRIME_MEASURED: dict | None = {
+    # Written after K0′ ran once, ending K0′-PASS (protocol §8 step 2 and §8.1; R18.22). The run:
+    # ``run_lewm_pr_v2.py k0 --output outputs/task080-k0-1 --log outputs/task080-k0-1.log
+    # --evidence <task076-evidence>`` at 931281a (clean tree; DRAFT frozen sha d3ebc26b... before
+    # this record was added), CPU only, 6 workers, without the GPU lock, in the worktree
+    # /home/huhn/develop/emai/worktrees/task080-k0 on the Linux PC, on the reviewer's reported GO
+    # (#154, issuecomment-6047218319). Every value below is copied from that report
+    # (outputs/task080-k0-1/report.json, sha256 a0939e3e...4c16).
+    "row": "K0′-PASS",
+    "report_sha256": "a0939e3eea7b695d1c3029e733970bcd123ea62db76192104c69479ad9314c16",
+    "revision": "931281a925e36f6b3e6e9e88f05ba2a0e8892a56",
+    "protocol_status_at_run": "DRAFT",
+    "frozen_sha256_at_run": "d3ebc26b3ad85006977481e4ab0a660aaf791af0fb8496fea0428bd5788754fe",
+    "seeds": (65000, 65031),
+    "tau_commit_cm": 1.0,
+    "tightened_below_task077": False,
+    "counts_k_prime": {"0.0": 32, "0.5": 29, "1.0": 31, "1.5": 14, "2.0": 18, "3.0": 5},
+    "failed_seeds": {
+        "0.0": [],
+        "0.5": [65008, 65014, 65024],
+        "1.0": [65001],
+        "1.5": [
+            65001,
+            65002,
+            65004,
+            65006,
+            65008,
+            65009,
+            65011,
+            65013,
+            65015,
+            65017,
+            65020,
+            65022,
+            65023,
+            65024,
+            65026,
+            65027,
+            65028,
+            65029,
+        ],
+        "2.0": [
+            65001,
+            65002,
+            65003,
+            65004,
+            65008,
+            65009,
+            65012,
+            65019,
+            65020,
+            65023,
+            65026,
+            65027,
+            65029,
+            65031,
+        ],
+        "3.0": [
+            65000,
+            65001,
+            65003,
+            65004,
+            65005,
+            65006,
+            65007,
+            65009,
+            65011,
+            65012,
+            65013,
+            65014,
+            65015,
+            65016,
+            65017,
+            65019,
+            65020,
+            65021,
+            65022,
+            65023,
+            65024,
+            65026,
+            65027,
+            65028,
+            65029,
+            65030,
+            65031,
+        ],
+    },
+    "landing_miss_cm_median": {
+        "0.0": 0.0751,
+        "0.5": 0.7464,
+        "1.0": 1.489,
+        "1.5": 2.2407,
+        "2.0": 2.9764,
+        "3.0": 4.4764,
+    },
+    "clip_binding_fraction": 0.0,
+    "fallbacks": 0,
+    "refused": 0,
+    "pooled": {
+        "counts_k": {"0.0": 32, "0.5": 29, "1.0": 29, "1.5": 18, "2.0": 11, "3.0": 2},
+        "counts_k_prime": {"0.0": 32, "0.5": 29, "1.0": 31, "1.5": 14, "2.0": 18, "3.0": 5},
+        "counts_pooled": {"0.0": 64, "0.5": 58, "1.0": 60, "1.5": 32, "2.0": 29, "3.0": 7},
+        "tau_commit_cm": 1.0,
+        "bar": 56,
+        "resets": 64,
+    },
+    "n_k_prime_0": 32,
+    "ceiling_failed_seeds": [],
+    "r_k_prime": 459,
+    "history": {
+        "palm_speed_405_cm_per_step": {"median": 0.0027703868621819895, "max": 0.0141141458940937},
+        "m2_405_cm": {"median": 0.002172692072816615, "max": 0.013545317066374676},
+        "remaining_405_cm_median": 6.516742886740665,
+    },
+    "stops": {
+        "ceiling_below_30": False,
+        "level0_below_bar": False,
+        "palm_fast": False,
+        "pooled_tau_undefined": False,
+        "r_late": False,
+    },
+    "run": {
+        "g_tests": "2066 passed, 37 skipped",
+        "g_repro": "8/8",
+        "render_disagreements": 0,
+        "seconds": 495.8,
+        "load_average_at_start": [0.67, 1.76],
+        "peak_tree_pss_gib": 8.08,
+        "workers": 6,
+    },
+}
+
+
+FREEZE_REMAP = {
+    # R18.19, R18.22: R18.13's dry run (development, optimistic, sets no bar; primary seed 66800,
+    # flagged last_two_triggered) re-mapped through the pooled K and K′ curve by
+    # ``run_lewm_pr_v2.py simulate --dryrun <dry run report> --k0-prime outputs/task080-k0-1/...``
+    # at 931281a (outputs/task080-simulate-k0p-1/report.json, sha256 5e97ac85...48cb; G-tests
+    # 2066 passed, 37 skipped). Predicted counts of 64 are predictions, never closed-loop counts.
+    "report_sha256": "5e97ac85daf23763b9c48e8a55a246f44e276eb1f3d3c6596636922ae0ad48cb",
+    "dry_run_report_sha256": "e3becdfad070cc96b7080feadd80f0b0496a18bdd88d9728fc636a7db9e1aed5",
+    "revision": "931281a925e36f6b3e6e9e88f05ba2a0e8892a56",
+    "predicted_counts_of_64": {
+        "W": 57.35,
+        "N": 28.36,
+        "L-shuf": 23.79,
+        "L-mean": 28.02,
+        "L-rand": 11.62,
+        "H-rule": 58.62,
+        "H-sysid": 54.49,
+    },
+    "predicted_counts_of_64_k_curve": {
+        "W": 56.88,
+        "N": 25.94,
+        "L-shuf": 21.24,
+        "L-mean": 25.54,
+        "L-rand": 8.54,
+        "H-rule": 58.5,
+        "H-sysid": 54.22,
+    },
+    "g_bar_power_at_w": 0.783,
+    "twin_power_min": 0.99946,  # N, independent coupling; every other cell is higher
+}
 
 
 def pooled_tau(k_counts: dict, k_prime_counts: dict) -> dict:
@@ -929,6 +1092,7 @@ def frozen_block() -> dict:
                 "stops": K0_STOPS,
             },
             "k0_prime_measured": K0_PRIME_MEASURED,
+            "freeze_remap": FREEZE_REMAP,
             "stage_r": {
                 "arms": R_ARMS,
                 "reported_arms": OFFLINE_REPORTED_ARMS,

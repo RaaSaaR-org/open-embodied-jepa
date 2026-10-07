@@ -63,6 +63,30 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-07 (c) — TASK-080 is frozen after K0′-PASS: pooled τ_commit = 1.0 cm (R18.22)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_c1m_v2_pred_readout.md](experiments/apple_lewm_c1m_v2_pred_readout.md) §8.1. The
+freeze takes effect when merged on an independent reviewer's reported APPROVE. No seed of D, S or F
+has been simulated; R7 is unchanged.
+
+- **R18.22 — K0′ and the freeze.** K0′ ran once on the reviewer's GO (#154,
+  issuecomment-6047218319) at `931281a`, CPU only, and ended **K0′-PASS** (report
+  `outputs/task080-k0-1/report.json`, sha256 `a0939e3e…4c16`): K′ (65000–65031) counted
+  32/29/31/14/18/5 of 32 at 0/0.5/1/1.5/2/3 cm; pooled with TASK-077's K, 64/58/60/32/29/7 of 64,
+  so **τ_commit = 1.0 cm** (not tightened); N_K′(0) = 32/32; r_K′ = 459 (r = 465 stands); median
+  palm speed at 405 0.00277 cm per step; no stop. `K0_PRIME_MEASURED` holds these values with the
+  failed seeds; STATUS = FROZEN; the frozen block's sha256 is pinned in the test and the manifest,
+  with 7 file pins (the four own files, the test file, TASK-077's and TASK-076's manifests) and
+  the protocol document's sha256. Once FROZEN the runner refuses a non-debug `k0` or `dryrun`.
+  Margins disclosed: the pooled 0.5 and 1.0 cm levels sit 2 and 4 above 56/64; K′'s curve is not
+  monotone (1.0 cm 31 against 0.5 cm 29; 2.0 cm 18 against 1.5 cm 14) and is used as measured.
+  The dry run re-mapped through the pooled curve (R18.19; development, optimistic, no bar;
+  seed 66800 flagged `last_two_triggered`; predictions, not closed-loop counts): W 57.35 of 64,
+  N 28.36, L-shuf 23.79, L-mean 28.02, L-rand 11.62, H-rule 58.62, H-sysid 54.49; G-bar's power
+  at W's rate 0.78. The binding risk stays G-bar and A1 (R18.18). Next: Stage C′, the fresh
+  corpus, on its own reported GO.
+
 ## Decision 2026-10-07 (b) — TASK-080 Stage 0: code, debug smokes, scale probes, R18.13's dry run and §15's open questions (R18.15–R18.21; protocol still DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is

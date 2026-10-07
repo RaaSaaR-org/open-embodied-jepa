@@ -52,13 +52,74 @@ def _calls(path: Path) -> set[str]:
 
 
 # ----- the frozen block, the manifest, TASK-077 carried ------------------------------------------
-def test_manifest_frozen_block_equals_the_module_and_draft_has_no_pin():
+def test_manifest_frozen_block_equals_the_module():
     manifest = json.loads(MANIFEST.read_text())
     assert manifest["frozen"] == json.loads(json.dumps(pr.frozen_block(), ensure_ascii=False))
     assert manifest["frozen_sha256"] == pr.frozen_sha256()
-    assert pr.STATUS == "DRAFT" and manifest["status"] == "DRAFT"
-    assert manifest["frozen_sha256_pin"] is None and pr.K0_PRIME_MEASURED is None
-    assert "STATUS: DRAFT" in DOC.read_text()
+
+
+# The frozen block's sha256, set at the freeze (protocol §8 step 3, R18.22) after K0′-PASS; the K0′
+# report is outputs/task080-k0-1/report.json, sha256 a0939e3e...4c16 (``pr.K0_PRIME_MEASURED``).
+FROZEN_SHA256_PIN = "0fc095dc947f0ac74ebf6d1c541098a1e6fec1897592256f97ac8962b97be064"
+
+
+def test_the_frozen_sha_pin_is_set_at_the_freeze():
+    """The freeze pins the frozen block; from then on the module's block may not change."""
+    manifest = json.loads(MANIFEST.read_text())
+    assert manifest["frozen_sha256_pin"] == FROZEN_SHA256_PIN == pr.frozen_sha256()
+    assert manifest["status"] == pr.STATUS == "FROZEN"
+    assert "**STATUS: FROZEN**" in DOC.read_text()
+    assert pr.K0_PRIME_MEASURED is not None and pr.K0_PRIME_MEASURED["row"] == "K0′-PASS"
+    run = _runner()
+    assert run.check_frozen_pin(manifest)["pin"] == FROZEN_SHA256_PIN
+    assert run.check_protocol_document(manifest)["sha256"] == manifest["protocol_document_sha256"]
+
+
+def test_the_freeze_pins_files_and_the_protocol_document():
+    import hashlib
+
+    manifest = json.loads(MANIFEST.read_text())
+    want = {*pr.OWN_FILES, "tests/test_lewm_pr_v2.py", pr.TASK077_MANIFEST, lm.TASK076_MANIFEST}
+    assert set(manifest["hashes"]) == want
+    for relative, sha in manifest["hashes"].items():
+        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == sha, relative
+    assert hashlib.sha256(DOC.read_bytes()).hexdigest() == manifest["protocol_document_sha256"]
+
+
+def test_k0_prime_measured_values_reproduce_k0_primes_decision():
+    """The frozen K0′ values recompute: the per-level counts from the failed seeds, the pooled
+    tau_commit over K and K′, the stops and the row (R18.22)."""
+    m = pr.K0_PRIME_MEASURED
+    assert m["report_sha256"] == (
+        "a0939e3eea7b695d1c3029e733970bcd123ea62db76192104c69479ad9314c16"
+    )
+    assert m["revision"].startswith("931281a") and m["protocol_status_at_run"] == "DRAFT"
+    seeds = pr.seeds_of("K")
+    assert list(m["seeds"]) == [seeds[0], seeds[-1]] == [65000, 65031]
+    counts = m["counts_k_prime"]
+    assert counts == {"0.0": 32, "0.5": 29, "1.0": 31, "1.5": 14, "2.0": 18, "3.0": 5}
+    for level, failed in m["failed_seeds"].items():
+        assert set(failed) <= set(seeds) and len(seeds) - len(failed) == counts[level]
+    assert sum(s not in m["ceiling_failed_seeds"] for s in seeds) == m["n_k_prime_0"] == 32
+    decision = pr.decide_k0_prime(
+        k_prime_counts=counts,
+        ceiling=m["n_k_prime_0"],
+        r_k=m["r_k_prime"],
+        palm_speed_median_cm=m["history"]["palm_speed_405_cm_per_step"]["median"],
+    )
+    assert decision["row"] == m["row"] == "K0′-PASS" and decision["stops"] == m["stops"]
+    assert decision["pooled"] == m["pooled"]
+    assert m["pooled"]["counts_k"] == pr.K_COUNTS
+    assert m["pooled"]["counts_pooled"] == {
+        "0.0": 64, "0.5": 58, "1.0": 60, "1.5": 32, "2.0": 29, "3.0": 7,
+    }  # fmt: skip
+    assert decision["tau_commit_cm"] == m["tau_commit_cm"] == 1.0
+    assert decision["tightened_below_task077"] is m["tightened_below_task077"] is False
+    assert m["r_k_prime"] <= pr.R_LATEST and pr.R_LATEST - m["r_k_prime"] == 6  # r's margin
+    pooled = m["pooled"]["counts_pooled"]
+    assert [pooled["0.5"] - pr.TAU_BAR_POOLED, pooled["1.0"] - pr.TAU_BAR_POOLED] == [2, 4]
+    run = _runner()
+    assert run.tau_curve() == (m["pooled"]["counts_pooled"], pr.POOLED_RESETS)
 
 
 def test_task077_is_carried_unchanged():
@@ -581,10 +642,33 @@ def test_the_preflight_refuses_gated_stages_while_draft(monkeypatch):
     monkeypatch.setattr(run.hz, "check_pins", lambda pins, *a: dict(pins))
     monkeypatch.setattr(run, "check_task077", lambda report: None)
     monkeypatch.setattr(run.hz, "tracked_tree_dirty", lambda *a: [])
+    monkeypatch.setattr(run.pr, "STATUS", "DRAFT")
+    monkeypatch.setattr(run, "check_frozen_pin", lambda manifest: {"status": "DRAFT"})
     for stage in ("corpus", "featurise", "rgate", "closed"):
         args = SimpleNamespace(stage=stage, debug=False, debug_skip_tests=False)
-        with pytest.raises(pt.GuardError, match="G-frozen"):
+        with pytest.raises(pt.GuardError, match="runs only after the freeze"):
             run.preflight({}, args)
+
+
+def test_the_preflight_refuses_k0_and_dryrun_once_frozen(monkeypatch):
+    """K0′ and the dry run ran once, before the freeze (R18.22); once FROZEN they are refused,
+    and the own pins and the protocol document are checked."""
+    run = _runner()
+    from types import SimpleNamespace
+
+    assert pr.STATUS == "FROZEN"
+    monkeypatch.setattr(run.rt, "assert_local_import", lambda *a, **k: None)
+    monkeypatch.setattr(run, "check_task077", lambda report: None)
+    monkeypatch.setattr(run.hz, "tracked_tree_dirty", lambda *a: [])
+    for stage in ("k0", "dryrun"):
+        report = {}
+        args = SimpleNamespace(stage=stage, debug=False, debug_skip_tests=False)
+        with pytest.raises(pt.GuardError, match="ran once before the freeze"):
+            run.preflight(report, args)
+        assert (
+            report["own_pins_at_preflight"] == len(json.loads(MANIFEST.read_text())["hashes"]) == 7
+        )
+        assert report["protocol_document_check"]["path"] == pr.DOCUMENT
 
 
 def test_stage_modules_import_without_torch_or_mujoco():
