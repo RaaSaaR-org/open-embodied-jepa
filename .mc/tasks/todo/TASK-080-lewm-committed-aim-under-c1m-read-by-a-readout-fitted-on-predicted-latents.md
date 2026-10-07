@@ -69,6 +69,7 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   nothing run. Open questions for the freeze are the protocol's §15.
 - 2026-10-07: Stage 0 (R18.15–R18.21; `docs/experiments/apple_lewm_c1m_v2_pred_readout_stage0.md`):
   new modules `lewm_pr_v2{,_runtime,_offline}.py` and `scripts/run_lewm_pr_v2.py`, DRAFT manifest,
-  29 tests, debug smokes (65900–65999), caps, and R18.13's dry run at `e4babc1` (development; W
-  56.88/64 offline, N 25.94, W − N +30.9; report sha256 `e3becdfa…aed5`). §15 questions 1–5 ruled;
+  31 tests, debug smokes (65900–65999), caps, and R18.13's dry run at `e4babc1` (development, optimistic, no bar;
+  seed 66800 flagged `last_two_triggered`; W 56.88/64 offline, N 25.94, W − N +30.9, predictions
+  not closed-loop counts; report sha256 `e3becdfa…aed5`). §15 questions 1–5 ruled;
   6 recommended. Next: K0′ on a reviewer's GO, then the freeze.

@@ -660,3 +660,31 @@ def test_closed_core_counts_refused_resets_and_moves_with_salt_8201(role):
         assert row == "L-PASS" and report["fields"]["determinism"]["ok"]
     else:
         assert row == "D-PASS"
+
+
+def test_stage_r_opens_gate_p_only_after_first_outcome_utc():
+    tree = ast.parse(RUNNER.read_text())
+    fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "stage_rgate")
+    lines = [ast.unparse(n) for n in fn.body]
+    stamp = next(i for i, x in enumerate(lines) if x.startswith("report['first_outcome_utc']"))
+    opened = [i for i, x in enumerate(lines) if "args.features" in x and "load_roots" in x]
+    fits = next(i for i, x in enumerate(lines) if "fit_phase(" in x)
+    assert opened and fits < stamp < min(opened)
+
+
+def test_the_closed_loop_workers_get_r_s_and_r_n_and_s_needs_d_pass(tmp_path):
+    run = _runner()
+    chain = {
+        "paths": {"r_plate": "rp.npz", "r8": "r8.npz", "mean_latent": "m.npy"},
+        "jobs": {f"{a}-66800": {"checkpoint": f"{a}.pt", "checkpoint_sha256": a,
+                                "metadata": {}} for a in ("W", "N")},
+    }  # fmt: skip
+    readouts = {n: {"path": f"{n}.npz", "sha256": n * 4} for n in ("r_s", "r_n")}
+    config = run.worker_config(chain, readouts=readouts, with_r8=True)
+    assert config["r_s"] == "r_s.npz" and config["r_n_sha256"] == "r_nr_nr_nr_n"
+    assert "r_s" not in run.worker_config(chain) and "r8" not in run.worker_config(chain)
+    argv = ["closed", "--cohort", "S", "--output", str(tmp_path / "s"), "--evidence", "e",
+            "--corpus", "c", "--corpus-sha256", "x", "--old-features", "f", "--old-fits", "g",
+            "--models", "m", "--stage-r", "r"]  # fmt: skip
+    with pytest.raises(SystemExit):
+        run.main(argv)

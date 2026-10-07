@@ -1158,6 +1158,10 @@ def stage_closed(report, args, fields: Fields, manifest) -> str:
     rows = tuple(pr.R_ROWS) if args.debug else ("R-PASS",)
     chain = old_chain(args, report, ())
     stage_r = completed(args.stage_r, rows, args.debug)
+    if args.cohort == "S" and not args.debug:  # Stage S only after D-PASS (§8 step 7)
+        stage_d = completed(args.stage_d, ("D-PASS",), False)
+        if stage_d.get("corpus_sha256") != stage_r.get("corpus_sha256"):
+            raise lp.GuardError("G-split: Stage D read another fresh corpus")
     fresh = open_fresh(args)
     if stage_r.get("corpus_sha256") != fresh["_sha256"]:
         raise lp.GuardError("G-split: Stage R read another fresh corpus")
@@ -1168,6 +1172,7 @@ def stage_closed(report, args, fields: Fields, manifest) -> str:
         pof.load_readout(readouts[name]["path"], readouts[name]["sha256"])
     config = worker_config(chain, readouts=readouts, with_r8=True)
     report["primary_seed"] = pr.PRIMARY_SEED
+    report["corpus_sha256"] = fresh["_sha256"]
     pool, co = sim_setup(report, args, manifest, config, int(args.workers or pr.WM_WORKERS))
     try:
         seeds = co.seeds(args.cohort)
@@ -1381,6 +1386,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--models", nargs="*", default=[], help="TASK-077's six job reports")
     parser.add_argument("--plan", help="TASK-077's Stage T plan report (G1's bars, reported)")
     parser.add_argument("--stage-r", help="Stage R's report (closed)")
+    parser.add_argument("--stage-d", help="Stage D's D-PASS report (closed --cohort S)")
     parser.add_argument("--cohort", choices=("D", "S"))
     parser.add_argument("--dryrun", help="simulate: the dry run's report")
     parser.add_argument("--k0-prime", help="simulate: K0′'s report (the pooled curve)")
@@ -1412,6 +1418,8 @@ def main(argv=None) -> int:
         parser.error("rgate needs --features and --plan")
     if args.stage == "closed" and not (args.cohort and args.stage_r):
         parser.error("closed needs --cohort and --stage-r")
+    if args.stage == "closed" and args.cohort == "S" and not args.debug and not args.stage_d:
+        parser.error("closed --cohort S needs --stage-d (Stage D's D-PASS)")
     (ROOT / "outputs").mkdir(exist_ok=True)
     if args.log:
         open_log(Path(args.log))

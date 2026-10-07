@@ -71,22 +71,24 @@ The protocol stays **DRAFT**; no seed of K′, D, S or F has been simulated; R7 
 
 - **R18.15 — Stage 0.** New modules only (`lewm_pr_v2.py`, `_runtime`, `_offline`,
   `scripts/run_lewm_pr_v2.py`; TASK-077's are imported, and its frozen block and 13 pins are
-  checked), the DRAFT manifest, 29 tests, debug smokes of every stage on 65900–65999, the caps
+  checked), the DRAFT manifest, 31 tests, debug smokes of every stage on 65900–65999, the caps
   (each ≥ 3.4 × its measured or scaled worst case) and R18.13's dry run. The dry run is
   development only and sets no bar: on TASK-077's 250 val roots, with R-S, R-N and R-L fitted on
-  the 1 745 train and old-gate roots and mapped through K0's curve, W's offline predicted count is
+  the 1 745 train and old-gate roots and mapped through K0's curve, W's offline predicted count
+  (primary seed 66800, flagged `last_two_triggered`) is
   56.88 of 64 (aim error 0.612 cm median), N 25.94, L-shuf 21.24, L-mean 25.54, L-rand 8.54,
   H-rule 58.50 and H-sysid 54.22 (reported); e_S 0.529–0.540 cm in val median on the three seeds
   (upper bounds 0.571–0.597), e_N 1.42–1.58, e_L lower bounds 2.09–2.10. Optimistic twice over
   (val selected the checkpoints; the fit roots' aims were built from the true plate).
 - **R18.16 — §15 question 1: the primary seed stays 66800** by the carried rule; the seeds' e_S on
   val differ by 0.011 cm, and a rule chosen now would be chosen after the numbers.
-- **R18.17 — question 2: the fit set stays all 1 995 old roots.** R-S's learning curves on val are
-  still falling at 1 745 roots, and cross-fitted R-S reads the old-gate roots (out of sample for
-  W) no worse than train within the seeds' spread.
+- **R18.17 — question 2: the fit set stays all 1 995 old roots.** R-S's learning curves on val do
+  not rise from 3/4 to all of the 1 745 roots (−0.113, −0.017 and −0.002 cm: still falling on
+  66800, nearly flat on 66801 and 66802); cross-fitted R-S reads the old-gate roots (out of sample
+  for W) better than train on 66800, worse by 0.056 cm on 66801 and equal on 66802.
 - **R18.18 — question 3: S stays 64 resets and A2 stays +7/64.** §10's trigger (W − N below about
-  +10/64) is not met: W − N is +30.9 of 64 offline (power of the twin tests ≥ 0.9998 at the dry
-  run's rates). The binding risk is G-bar (W 56.88 against 56; power about 0.72), which a larger
+  +10/64) is not met: W − N is +30.9 of 64 offline (development, optimistic; seed 66800 flagged
+  `last_two_triggered`; power of the twin tests ≥ 0.9997 at the dry run's rates). The binding risk is G-bar (W 56.88 against 56; power about 0.72), which a larger
   cohort at the same fraction does not fix (0.73 at 96 resets, 0.75 at 128). The freeze PR states
   this beside §10.
 - **R18.19 — question 4: τ_commit is the pooled K ∪ K′ rule** (the draft); W's offline aim errors

@@ -25,7 +25,7 @@ manifest) are imported, never edited: the runner checks TASK-077's frozen block 
 | `src/embodied_jepa/lewm_pr_v2_offline.py` | root loading, the roll-outs (S: W under the stand-in chunk; N: zero commands; L: W from the mean latent), the dual ridges with salt 8205 (`fit_readouts` refuses any fresh or TASK-080 root: G-fresh), the reported cross-fit (8204) and learning curve (8208), the offline aims' summary, the echo slope (§5.3 point 4), G1–G4 on fresh roots (reported; 8206, 8210), the fresh corpus store and its featurisation |
 | `scripts/run_lewm_pr_v2.py` | one invocation per stage: `tests`, `k0`, `corpus`, `featurise`, `rgate`, `closed`, `simulate`, `dryrun`; G-tests, G-sentinel, G-hash (TASK-077's artifacts by sha256: featurise and readouts reports, moments, R8, R-plate, the mean latent, `sysid.json`, the six checkpoints), G-frozen, G-fresh, G-privileged, G-memory, G-disk, G-quiet, G-GPU |
 | `benchmarks/manifests/apple-lewm-pr-v2.json` | DRAFT: the frozen block and its sha256; no pin |
-| `tests/test_lewm_pr_v2.py` | 29 tests (§2) |
+| `tests/test_lewm_pr_v2.py` | 31 tests (§2) |
 
 While DRAFT, the runner allows only `tests`, `simulate`, `k0` and `dryrun` (and `--debug` runs);
 after the freeze `k0` and `dryrun` are refused (they run once, before it).
@@ -44,7 +44,11 @@ plate); the controller form is TASK-077's except L-rand's salt; G-privileged sta
 `run_arm`; the sentinel; every row ladder in both directions (K0′, C′, R, D, S); the runner loads
 no other script, uses `install_guards`, `assert_local_import`, `gpu_guard` and the pins; DRAFT
 refuses the gated stages; `closed_core` on a fake pool (refused resets, L-shuf's foreign frame,
-the salt-8201 move). The full suite at `e4babc1`: 2 064 passed, 37 skipped.
+the salt-8201 move); Stage R writes `first_outcome_utc` after the fits and before it loads
+either fresh half; the closed-loop workers get R-S and R-N (and R8 only with H-read); `closed
+--cohort S` refuses to run without Stage D's D-PASS report (added after the #154 review, with the
+two tests before them; no dry-run code path changed). The full suite at `e4babc1`: 2 064 passed,
+37 skipped.
 
 ## 3. Debug smokes (debug seeds only; nothing read)
 
@@ -73,9 +77,9 @@ are kept, and none is the binding constraint.
 | K0′ | 7 200 | TASK-077 K0: 579 s for about 350 attempts (6 levels and 4 proxies × 32, 6 workers); K0′ runs 6 × 32 = 192; debug K0′ 92 s for 24 | ≤ 600 | ≥ 12 |
 | C′ | 7 200 | TASK-077 Stage C: 1 234 s for 2 000 roots; debug C′ 46 s for 4 roots (setup about 40 s); gate-P adds one CPU encoding per root | ≤ 700 | ≥ 10 |
 | R featurisation | 3 600 | TASK-077: 212.7 s for 1 995 roots; debug 7 s for 4 roots including G-anchor | ≤ 200 | ≥ 18 |
-| R (CPU) | 14 400 | the dry run is Stage R's own code at 1 745 fit and 250 evaluated roots: 3 312 s including G-tests (fits and cross-fit 739 s, readings 101 s, offline aims 2 081 s); Stage R adds 250 fit roots (×1.14 on the fits), a second evaluated half (+101 s), the learning curve on gate-P and G1–G4 (about 3 000 roll-outs, about 170 s) | ≤ 4 200 | ≥ 3.4 |
+| R (CPU) | 14 400 | the dry run is Stage R's own code at 1 745 fit and 250 evaluated roots: 3 312 s including G-tests (fits and cross-fit 739 s, readings 101 s, offline aims 2 073 s summed over the arms); Stage R adds 250 fit roots (×1.14 on the fits), a second evaluated half (+101 s), the learning curve on gate-P and G1–G4 (about 3 000 roll-outs, about 170 s) | ≤ 4 200 | ≥ 3.4 |
 | D | 7 200 | debug D: per-attempt medians W 15.5 s, N 7.0, L-shuf 13.7, L-mean 13.7, H-final 8.3 on 4 workers; 16 resets | ≤ 400 | ≥ 18 |
-| S | 21 600 | debug S: the ten arms' per-attempt medians sum to 86.6 s; 64 resets on 4 workers plus the determinism re-run | ≤ 1 600 | ≥ 13 |
+| S | 21 600 | debug S: the ten arms' per-attempt medians sum to 86.0 s; 64 resets on 4 workers plus the determinism re-run | ≤ 1 600 | ≥ 13 |
 | per attempt | 300 | the slowest debug attempt 16.0 s (W) | 16 | 18.8 |
 | dry run | 14 400 | measured | 3 312 | 4.3 |
 
@@ -90,7 +94,7 @@ G-bar's exact power is 0.593, 0.732, 0.856, 0.940, 0.982 and 1.000 at true rates
 0.906, 0.922, 0.9375 and 0.969, and the recomputed McNemar twin table reproduces §10's to within
 0.01 in every cell (for example 0.946 / 0.608 / 0.458 at W 0.875, N 0.70; 0.889 / 0.543 / 0.414 at
 W 0.906, N 0.75; nested / half / independent). At the dry run's predicted rates (§6) the twin
-tests' power is 0.9998 or more against every twin and coupling, and G-bar's is **0.72**.
+tests' power is 0.9997 or more (0.99976 the lowest) against every twin and coupling, and G-bar's is **0.72**.
 
 G-bar's power hardly depends on the cohort size near the bar (exact, at the same 87.5 % fraction):
 
@@ -155,12 +159,14 @@ than the rule's along the first axis.
 
 **Learning curves** (R-S fitted on nested 1/4, 1/2, 3/4 and all of the 1 745 fit roots, read on
 val, medians in cm): 0.810, 0.706, 0.653, 0.540 (66800); 0.787, 0.688, 0.546, 0.529 (66801);
-0.812, 0.602, 0.537, 0.535 (66802). Still falling. Cross-fitted over the fit roots (salt 8204),
+0.812, 0.602, 0.537, 0.535 (66802). From 3/4 to all of the roots they fall by 0.113, 0.017 and
+0.002 cm: still falling on 66800, nearly flat on 66801 and flat on 66802. Cross-fitted over the fit roots (salt 8204),
 R-S reads the old-gate roots (out of sample for W) at 0.529, 0.627, 0.592 cm and the train roots
 (in sample) at 0.576, 0.571, 0.593 cm.
 
-**Reading.** On development data the predicted-latent readout reads the plate well inside τ, N is
-far behind (W − N ≈ +31 of 64, three times §10's +10 threshold), and the binding margin is W's
+**Reading.** On development data (optimistic; primary seed 66800, flagged `last_two_triggered`) the
+predicted-latent readout reads the plate well inside τ, N is far behind (W − N ≈ +31 of 64, three
+times §10's +10 threshold), and the binding margin is W's
 own count against the 56/64 bar: 56.88 predicted, so G-bar's power at that rate is about 0.72,
 and the fresh-root gate A1 may fail if the fresh roots read only slightly worse.
 
@@ -176,13 +182,16 @@ preparation. The protocol's §15 carries them; the protocol stays DRAFT.
    that matters, and choosing on it now would be a choice made after the numbers. The flag stays
    beside every seed-66800 number.
 2. **The fit set (R18.17): all 1 995 old roots.** The R-S learning curves on val are still falling
-   at 1 745 roots (by 0.01–0.11 cm from 3/4 to all), and R-S cross-fitted reads the old-gate
-   roots, out of sample for W, no worse than train within the spread across seeds (0.53–0.63
-   against 0.57–0.59 cm). Adding val's 250 roots is a change from the decomposition record's
+   on one seed at 1 745 roots (from 3/4 to all of the roots: −0.113 cm on 66800, −0.017 on
+   66801, −0.002 on 66802, so nearly flat on two), and none rises. R-S cross-fitted reads the
+   old-gate roots, out of sample for W, at 0.529, 0.627 and 0.592 cm against 0.576, 0.571 and
+   0.593 on train: better on 66800, worse by 0.056 cm on 66801, equal on 66802; the fresh gate
+   measures the out-of-sample cost directly. Adding val's 250 roots is a change from the decomposition record's
    reading, disclosed.
 3. **The cohort size and A2 (R18.18): 64 resets and +7/64, unchanged.** The protocol's trigger
-   (§10: W − N below about +10/64) is not met: W − N is +30.9 of 64 offline, and every twin is
-   +21 or more behind W, so the twin tests are not the binding risk (power 0.9998 or more at the
+   (§10: W − N below about +10/64) is not met: W − N is +30.9 of 64 offline (development,
+   optimistic; primary seed 66800, flagged `last_two_triggered`), and every twin is +21 or more
+   behind W, so the twin tests are not the binding risk (power 0.9997 or more at the
    dry run's rates). The binding risk is G-bar: W's predicted count is 56.88 against 56, and a
    larger cohort at the same fraction does not help near the bar (power 0.72 at 64 resets, 0.73
    at 96, 0.75 at 128, at a true rate of 0.889). The freeze PR states this risk beside §10.

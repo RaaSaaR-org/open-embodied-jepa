@@ -664,8 +664,9 @@ models (§3). Disk: the fresh corpus about 0.3 GB of frames and about 3.2 GB of 
    still required.
 
 **Rulings at Stage 0 (R18.16–R18.21; [record](apple_lewm_c1m_v2_pred_readout_stage0.md) §7),
-informed by R18.13's dry run** (development; W's offline predicted count 56.88/64, N 25.94, W − N
-+30.9): 1 — the carried rule, 66800 (R18.16); 2 — all 1 995 old roots (R18.17); 3 — 64 resets and
+informed by R18.13's dry run** (development and optimistic, setting no bar; primary seed 66800,
+flagged `last_two_triggered`; W's offline predicted count 56.88/64, N 25.94, W − N +30.9; offline
+predicted counts are not closed-loop counts): 1 — the carried rule, 66800 (R18.16); 2 — all 1 995 old roots (R18.17); 3 — 64 resets and
 +7/64 unchanged, since W − N is far above +10/64; the binding risk is G-bar, which a larger cohort
 does not fix (R18.18); 4 — the pooled K ∪ K′ rule (R18.19); 5 — reported, not gated (R18.20);
 6 — a recommendation to the owner that a TASK-080 L-PASS counts as the equivalent row, not ruled
