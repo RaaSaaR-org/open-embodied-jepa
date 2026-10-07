@@ -311,10 +311,17 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       a resume mode that keeps completed jobs and checks their sha256s, and `--repeat`, which
       writes to a new folder. Validation losses are selection criteria, not results; no LeWM
       controller has run in closed loop.
-    - **Next:** this record's independent review and merge. Then, only when the owner frees the
-      GPU and a reported GO names the command, the remaining five jobs (about 25.6 h): **N-66800's
-      repeat, its last allowed attempt, since a second V ends TASK-077 INCONCLUSIVE**, then W and
-      N of 66801 and 66802 (R17.48). Then G, D and S, each on its own reported GO.
+    - **Stage T completed** at `2aa4f5b` on its reported GO (R17.49, protocol §7.8). N-66800's
+      repeat (its last allowed attempt) and W and N of 66801 and 66802 each ended T-JOB-DONE, so
+      all eight jobs are complete; T-DONE is decided by Stage G. Kept val criteria: W 0.350399,
+      0.364904 and 0.364660; N 0.741328, 0.729304 and 0.746241 (seeds 66800–66802). These are
+      selection criteria and raw latent MSEs, not success measures, and W's and N's are not
+      comparable as a success claim. W-66800's `last_two_triggered` is true (stated beside every
+      seed-66800 W-versus-N comparison), no N is flagged, and all three W curves have their raw
+      minimum at their last point. No closed loop has run.
+    - **Next:** this record's independent review and merge. Then Stage G (CPU, cap 7 200 s), from
+      a fresh worktree of the merge commit, with the command in §7.8, on its own reported GO.
+      Then D and S, each on its own reported GO.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
