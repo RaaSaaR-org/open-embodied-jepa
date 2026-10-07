@@ -81,8 +81,8 @@ no R18. TASK-078 and TASK-079 are reserved in PLAN.md, so this is TASK-080.
 - **R18.2 — reuse TASK-077's six Stage T checkpoints; no training.** The predictor passed G1–G4 on
   the then-unread gate split; G5 (a) failed on a readout fitted on encoded frames, and the
   decomposition record measured that a readout refitted on W's own predictions removes most of the
-  gap. Retraining the same recipe would test nothing new and cost about 31 h of GPU (113 131 s for
-  the six models). The val selection and the read gate split are handled by gating only on fresh
+  gap. Retraining the same recipe would test nothing new and cost about 31 h on the GPU queue
+  (113 131 s of wall time for the six model jobs). The val selection and the read gate split are handled by gating only on fresh
   roots that no fit, selection or calibration has seen; W-66800's `last_two_triggered` flag is
   stated beside every seed-66800 comparison. The primary seed is 66800 by TASK-077's rule (the
   lowest kept val criterion), carried so that no choice is made after the decomposition record.
@@ -103,9 +103,11 @@ no R18. TASK-078 and TASK-079 are reserved in PLAN.md, so this is TASK-080.
 - **R18.5 — the corpus-aim confound.** A stand-in chunk encodes its aim, which TASK-077's corpus
   built from the true plate, so R-S may read part of the plate from the aim's construction. Handled
   by: gating on gate-P only (the closed loop's aim construction); measuring the confound's size
-  (gate-P minus contrast-T, reported); a gated command-keyed check R3 (R-L, with no scene
-  information, must not read the plate within τ_commit: its lower bound > τ_commit); and the closed
-  loop itself, where every grid is built from p̂.
+  (gate-P minus contrast-T, reported; it can show only an effect of about p̂ − p, 0.148 cm); a
+  gated commands-alone screen R3 (R-L, with no scene information, must not read the plate within
+  τ_commit: its lower bound > τ_commit; a sufficient screen, not a full test of keying); the offline
+  aims A1–A2, which catch a readout that echoes each candidate's aim (with the per-root slope of
+  p̃(g) against g reported); and the closed loop itself, where every grid is built from p̂.
 - **R18.6 — K0′ and τ_commit.** 32 fresh resets (65000–65031) re-measure the ceiling, r and the palm
   speed, with TASK-077's stops (CAL-ESCALATE). τ_commit is TASK-076 K0's rule on the pooled 64 resets
   of K (TASK-077) and K′, every level up to it ≥ 56/64; the pooled curve maps the offline aims. A
@@ -134,7 +136,7 @@ no R18. TASK-078 and TASK-079 are reserved in PLAN.md, so this is TASK-080.
 - **R18.11 — power and compute.** G-bar 0.59–0.98 at true rates 0.875–0.9375; G-NI as TASK-077's
   Stage-0 simulation; the McNemar test against N, likely the binding twin under R-N, has power
   0.42–0.89 at W 0.906 and N 0.75 and 0.67–0.99 at N 0.70 (independent to nested outcomes), so
-  L-TWIN-NEAR is a live row. No training; about 3–4 h of CPU and a few minutes of GPU in all.
+  L-TWIN-NEAR is a live row. No training; about 3–5.5 h of CPU (§13's rows) and a few minutes of GPU in all.
 - **R18.12 — R7 is unchanged** by this draft; only a reviewed ruling after an L-PASS could change it.
   Proposed for the owner's PLAN: a TASK-080 L-PASS counts as TASK-079's "equivalent row"; TASK-078's
   pass and an owner ruling on Arena are still required.

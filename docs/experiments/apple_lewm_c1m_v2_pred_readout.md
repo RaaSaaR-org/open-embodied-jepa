@@ -160,7 +160,8 @@ trained in TASK-080.
   frozen in TASK-077; new seeds of the same recipe would give models of the same kind, and a
   changed recipe would be a different question that needs its own reason. None is indicated by
   the measurements.
-- **Cost.** The six models took 113 131 s of GPU (about 31.4 h, protocol §7.8) plus the two
+- **Cost.** The six model jobs took 113 131 s of wall time on the GPU queue (about 31.4 h, protocol
+  §7.8; the sum of the jobs' `total_seconds`, not pure GPU time) plus the two
   calibration jobs. Reuse costs nothing on the GPU except the fresh corpus's featurisation.
 
 **Against reuse, and how each point is handled.**
@@ -174,7 +175,8 @@ trained in TASK-080.
   the fresh roots.
 - **W-66800's `last_two_triggered` flag is true**, and all three W curves have their raw minimum at
   their last point (results §3, caveats 1 and 2). The models may be slightly under-trained. That
-  would, if anything, weaken W against N; it is disclosed beside every seed-66800 W-versus-N
+  would, if anything, weaken W against N (a reading, not a measurement, as results §3 says); it is
+  disclosed beside every seed-66800 W-versus-N
   number, as in TASK-077.
 - **The predictions on train roots are in sample for W.** R-S is fitted mostly on them (§4.2).
   The fresh-root gate (§9.4) measures exactly what that costs out of sample; the decomposition
@@ -183,7 +185,7 @@ trained in TASK-080.
 
 **The primary seed** for the offline aims and the closed loop is **66800**, by TASK-077's rule
 (§4.4: the W with the lowest kept val criterion, 0.350399), carried unchanged so that no choice
-here is made after the decomposition record's numbers (R18.8). Its flag is stated beside every
+here is made after the decomposition record's numbers (R18.2). Its flag is stated beside every
 seed-66800 comparison. (Open question 1, §15.)
 
 ## 4. The readouts on predicted latents (R18.3)
@@ -277,12 +279,24 @@ privileged read reaches any arm.
    decomposition record's val numbers (0.556–0.578 cm) also shows the fresh-root cost of the val
    selection with the aim construction held fixed (reported; different root sets, so it is a
    comparison of medians only).
-3. **A command-keyed check gates** (R3, §9.4): R-L, fitted on predictions from L-mean's mean latent
-   (no scene information) under the same stand-in chunks, must **not** read the plate within
-   τ_commit on gate-P (its lower bound > τ_commit), as O4's plate-hidden check did for the frame. If
-   the commands alone read the plate that well, the readout is keyed by the aim's construction and
+3. **A commands-alone screen gates** (R3, §9.4): R-L, fitted on predictions from L-mean's mean
+   latent (no scene information) under the same stand-in chunks, must **not** read the plate within
+   τ_commit on gate-P (its lower bound > τ_commit), as O4's plate-hidden check did for the frame. R3
+   is a sufficient screen, not a full test of keying: it asks only whether the commands alone read
+   the plate, not whether R-S leans on the commands given the scene. On gate-P the plate
+   information in the commands comes from p̂, which the closed loop also has legitimately; if the
+   commands alone read the plate within τ_commit, the prediction would add nothing measurable, and
    the row is R-COMMAND-KEYED (escalate, no clause).
-4. **The closed loop is the final check**: on cohort S, every grid is built from p̂, so a readout
+4. **The split detects only a small confound, and A1–A2 cover the larger threat.** gate-P and
+   contrast-T differ only by p̂ − p at 405 (about 0.148 cm in median), so their difference can show
+   an effect of about that size only. The larger threat is a readout that echoes each candidate's
+   own aim across the 147 candidates, which a one-aim-per-root reading cannot see. A1 and A2 read
+   the argmin over the whole grid, so such an echo shows up as missed offline aims, not as a pass.
+   **Reported in Stage R:** per gate-P root, the slope of the predicted plate p̃(g) against the aim
+   g across the candidates (a least-squares fit over the feasible grid), beside the slope κ = −0.5
+   that the rule's fixed-point form implies (g\* = (p − κh)/(1 − κ) is the fixed point of
+   g = p + κ(g − h)); a slope near 1 would be the echo.
+5. **The closed loop is the final check**: on cohort S, every grid is built from p̂, so a readout
    that relied on the true p would show up as missed bars, never as a pass.
 
 ## 6. Arms (carried from TASK-077 §5, with the readouts of §4)
@@ -340,8 +354,8 @@ unused rather than being taken over.
 
 **The search** (2026-10-07, at `edb603d`; R18.9). `git grep -w` over all 104 local and remote refs
 (paths `src`, `scripts`, `tests`, `configs`, `docs`, `benchmarks`, `.mc`): **65000–65999: only
-`65000`**, the GR00T release's training step in `docs/ARENA.md`, `docs/DECISIONS.md` and
-`docs/experiments/README.md`, not a seed. The working files of all 38 worktrees under
+`65000`**, the GR00T release's training step in `docs/ARENA.md`, `docs/DECISIONS.md`,
+`docs/experiments/README.md` and `.mc/tasks/todo/TASK-025-…`, not a seed. The working files of all 38 worktrees under
 `/home/huhn/develop/emai/worktrees/` add only `65000` (the same). Salts: no `82xx` value appears on
 any ref in `src`, `scripts`, `tests` or `configs`, nor in any worktree's `src` or `scripts`.
 (59000–62999 was avoided: seed-like values in manifests and docs, as C1-M's search found; 69000+ was
@@ -374,9 +388,10 @@ chat before the gated stage.
    N_K′(0); r_K′ and the palm speed at 405. **τ_commit for TASK-080** is TASK-076 K0's rule applied
    to the **pooled 64 resets of K and K′**: the largest level such that every level up to it
    reaches ≥ 56/64. The pooled τ curve is the one the offline aims map through.
-   - **Stops, all CAL-ESCALATE** (escalate, no clause; nothing is frozen): K′ level 0 < 28/32;
-     N_K′(0) < 30/32; r_K′ later than 465 or undefined; median palm speed at 405 > 0.5 cm per step;
-     the pooled τ_commit undefined.
+   - **Stops, all CAL-ESCALATE** (escalate, no clause; nothing is frozen): K′ level 0 < 28/32
+     (carried; implied by the next stop, since both count level 0); N_K′(0) < 30/32; r_K′ later
+     than 465 or undefined; median palm speed at 405 > 0.5 cm per step; the pooled τ_commit
+     undefined.
    - **If the pooled τ_commit falls to 0.5 cm**, every bar tied to it tightens with it (R1's bar
      becomes 0.5 cm, and the decomposition record's upper bounds of 0.61–0.64 cm would not meet
      it). That is the honest consequence of a measured tolerance and is not an escalation by
@@ -437,9 +452,9 @@ root's encoded 405 frame under the root's own stand-in chunk (zero commands for 
 | **R0** ceiling | the upper bound of the median error of R8 on the **encoded** frame at r ≤ τ_commit | (one; no model) | **measured** (τ_commit) |
 | **R1** precision | the upper bound of median e_S ≤ τ_commit | all three | **measured** (τ_commit; G5 (a)'s form with R-S in place of R8) |
 | **R2** against N | the upper bound of median e_S / median e_N (R-N on N's prediction; paired by root) < 1.0 | all three | **definitional** (G5 (b)'s form) |
-| **R3** not command-keyed | the **lower** bound of median e_L (R-L on W rolled from the mean latent under the same chunks) > τ_commit | all three | **measured** (O4's form against τ_commit) |
+| **R3** commands-alone screen | the **lower** bound of median e_L (R-L on W rolled from the mean latent under the same chunks) > τ_commit | all three | **measured** (O4's form against τ_commit) |
 | **A1** offline aims, the bar | W's predicted count ≥ 56/64 | primary (66800) | **measured** (the pooled τ curve) against G-bar's 56/64 |
-| **A2** offline aims, the twins | W's predicted count − each of N's, L-shuf's, L-mean's and L-rand's ≥ +7/64 | primary | **definitional**: +7/64 is the minimum separation at which G-N's McNemar test can pass at all (R17.15) |
+| **A2** offline aims, the twins | W's predicted count − each of N's, L-shuf's, L-mean's and L-rand's ≥ +7/64 | primary | **a necessary floor**, not definitional: +7/64 is the minimum number of discordant pairs at which the McNemar test can pass at all (R17.15); A2 applies it to differences of predicted counts, which are means, not discordant pairs |
 
 **The offline aims** (TASK-077 §7 step 7's form, carried): on every gate-P root's logged 405 state,
 each arm's own controller code with the stand-in chunks, the grid from the p̂ the collector logged,
@@ -507,8 +522,8 @@ ruling.
 ## 10. Power (R18.11)
 
 **G-bar** (exact binomial, P(X ≥ 56 of 64)): 0.59 at a true rate of 0.875, 0.73 at 0.89, 0.86 at
-0.906, 0.94 at 0.922, 0.98 at 0.9375 and > 0.99 at 0.969 (recomputed for this draft; TASK-077 §8.4
-has the same values).
+0.906, 0.94 at 0.922, 0.98 at 0.9375 and > 0.99 at 0.969 (recomputed for this draft; the values TASK-077 §8.4
+gives agree, and 0.922 is added here).
 
 **G-NI** is carried with its estimator, so TASK-077's Stage-0 simulation applies unchanged
 (R17.19): size at the margin 2.4–3.8 % with one comparator and 0.9–3.5 % with the better of two
@@ -539,7 +554,8 @@ about 0.70. N's offline predicted count under R-N is unknown today; if it lands 
 the probability of L-PASS is about one half at best, and a twin miss within noise (L-TWIN-NEAR) is a
 likely row. A2's +7/64 is the minimum at which the test can pass, not a power guarantee. The
 clause's false-fire probabilities at the boundaries are those of TASK-077's Stage 0 (2.3–3.1 % per
-twin at +7/64; 0.9–3.1 % for L-INFERIOR at δ), since the tests and estimators are unchanged.
+twin at +7/64, and 9–12 % if all four twins sat exactly at the boundary at once; 0.9–3.1 % for
+L-INFERIOR at δ), since the tests and estimators are unchanged.
 
 **The offline gate.** On 250 val roots the decomposition record's upper bounds sat 0.056–0.061 cm
 above medians of 0.556–0.578 cm; gate-P has as many roots (250). R1 therefore passes unless the
