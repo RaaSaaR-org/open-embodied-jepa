@@ -1188,6 +1188,9 @@ logs do not record the launch environment.
   - It kept cal-W, cal-N, plan and W-66800 from the first worktree, each at its pinned sha256.
   - It ran the five remaining jobs, each in its own `gpu_run.sh --wait --min-free-gib 8 --board`
     slot (lock log `~/.local/state/gpu/oej-gpu_run.log`, every slot `status 0`).
+  - Before N-66801, W-66802 and N-66802 the driver log shows "waiting for the GPU lock". Each of
+    those jobs started 18 s after the previous job's slot ended. The lock log records only this
+    project's slots, so what held the lock in between is not recorded.
 - **The driver log** `outputs/task077-staget2-driver.log` (sha256 `6d94c70d…8c10`) ends
   "Stage T: all eight jobs ended T-JOB-DONE; T-DONE is decided by Stage G (R17.24)".
 - **Nothing was paused or stopped.** No job ended V, and N-66800's repeat, its last allowed
@@ -1284,7 +1287,7 @@ the SSD evidence store `~/develop/emai/evidence/` (its README, section "TASK-077
   N-66800-1), 16 files.
 - **Resume:** `task077-staget2/outputs/` (tests, N-66800-2, W/N-66801, W/N-66802, the driver and
   step logs), 19 files.
-- **Manifests:** `_checksums/task077-staget.sha256` (sha256 `35970e88…8487`) and
+- **Manifests:** `_checksums/task077-staget.sha256` (sha256 `35970e88…0487`) and
   `_checksums/task077-staget2.sha256` (sha256 `cc148a2f…d063`). Both copies were verified
   against their sources and against the manifests.
 - **The originals stay in place.** Both worktrees are read only and are not removed until Stage G
@@ -1315,19 +1318,29 @@ uv run --no-sync python scripts/run_lewm_c1m_v2.py gates \
 
 - **What it is.** Stage G is a CPU stage with no GPU lock (`CUDA_VISIBLE_DEVICES` empty in its
   G-tests).
-  - The runner first runs the full suite itself (G-tests) and waits for G-quiet (at most 4 h).
-  - It then opens a pool of 4 world-model workers (`WM_WORKERS`) and computes the stand-in
-    chunks and the offline aims of §7 step 7, which are reported only.
+  - In `preflight()` the runner first waits for G-quiet (the 1- and 5-minute loads at most 2.0;
+    at most 4 h), then runs the full suite itself (G-tests).
+  - `stage_gates` then checks the plan and the six models and records the primary seed (§7.6's
+    rule). It needs the primary seed before the pool opens, because the offline aims use that
+    seed's W and N.
+  - It opens a pool of 4 world-model workers (`WM_WORKERS`) and computes the stand-in chunks and
+    the offline aims of §7 step 7, which are reported only.
   - After closing the pool, it computes G1–G5 on the 250 gate roots for each seed. It then
-    records the primary seed, `stage_t` (`decide_t`, the T-DONE row) and the row: H-GATE-FAIL,
-    G-NO-BAR or G-PASS (§8.2).
+    records `stage_t` (`decide_t`, the T-DONE row) and the row: H-GATE-FAIL, G-NO-BAR or G-PASS
+    (§8.2).
 - **Its cap is 7 200 s** (§10.3), against Stage 0's estimate of about 45 min, most of it the
   offline aims.
+  - The cap's clock starts before `preflight()` and is checked at the stage's end. **The G-quiet
+    wait and G-tests (about 3 min) count against it.** A G-quiet wait of more than about 1 h
+    would therefore let the stage run to its end and then end V on the cap, using Stage G's one
+    repeat. So the GO requires the 1- and 5-minute loads to be at most 2.0 at launch.
   - Its memory ceiling is 12 GiB of process-tree PSS.
   - The debug smoke peaked at 8.19 GiB (Stage 0 record). It ran with the same 4 workers, about
     1.7 GiB each.
-  - The 1.6 GB gate store is memory-mapped. It is read in full only in the per-seed gates, after
-    the pool has closed. That ordering is a reading of the code, not a measurement at scale.
+  - The 1.6 GB gate store is memory-mapped. Every gate feature file is hashed in full at the
+    start (R17.26). While the pool is open, the offline aims read only the 405 slice of the
+    8 × 8 features (about 25 MB). The per-seed gates read the windows, after the pool has closed.
+    That ordering is a reading of the code, not a measurement at scale.
 - **"All eight jobs".** Stage G reads the six model reports named in `--models` and the plan.
   - The calibration jobs enter only through the kept plan, which was checked against them on
     resume.
@@ -1343,8 +1356,9 @@ uv run --no-sync python scripts/run_lewm_c1m_v2.py gates \
   - Stage O's featurise and readouts reports and the corpus manifest unchanged since Stage T
     (`ad8974b2…43fb`).
   - The evidence root `task076-evidence` intact (G-repro checks it at run time).
-  - The machine: enough RAM for the 12 GiB ceiling plus its headroom, a load that lets G-quiet
-    pass, at least 10 GB of disk free, and no other TASK-077 stage running.
+  - The machine: enough RAM for the 12 GiB ceiling plus its headroom; the 1- and 5-minute loads
+    at most 2.0 at launch, since G-quiet's wait counts against the cap; at least 10 GiB of disk
+    free; and no other TASK-077 stage running.
   - The command above, verbatim, including the six `--models` paths in seed order W, N.
 - **A V of Stage G voids Stage G only.** It leaves one repeat after a recorded fix (§10.1). Vs in
   different stages do not add up (R17.16).
