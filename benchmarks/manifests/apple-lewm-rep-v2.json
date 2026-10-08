@@ -520,7 +520,7 @@
  },
  "note": "FROZEN (R21.17), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins this task's two code files, its test file and TASK-081's manifest (whose six pins and frozen block the runner checks too); protocol_document_sha256 is the protocol's sha256.",
  "protocol": "apple_lewm_seed_replication_v2",
- "protocol_document_sha256": "f5524e2ae1f3858c3470b0a6985b25b658369c234b66f058d9f22eecce9d4a9b",
+ "protocol_document_sha256": "d92face615c446c748d9fbaf4fa100c50dd7b1d9e24524eb034d8d91df429846",
  "status": "FROZEN",
  "task": "TASK-083"
 }

@@ -75,7 +75,8 @@ S (75200–75327) has been simulated. R7 is unchanged.
   manifest) and the protocol document's sha256. Applied with it, changing no bar: the Stage 0
   review's nits (W = 0.938's per-seed range 0.77–0.95, not 0.96; the record notes that the run
   shares one bootstrap index for both seeds, which moves the joint rate by at most 0.002; line
-  wraps). The freeze takes effect when merged on an independent reviewer's reported APPROVE.
+  wraps); the frozen block's `rulings` string now also names (p) and (q). The freeze takes effect
+  when merged on an independent reviewer's reported APPROVE.
 - **R21.18 — Stage S's plan.** One invocation of `closed --cohort S` on 75200–75327, CPU only, from
   a fresh clean worktree of the freeze's merge commit, on its own reported GO, with the inputs,
   caps (21 600 s; 300 s per attempt; 12 GiB PSS), launch-time checks and expected time (about

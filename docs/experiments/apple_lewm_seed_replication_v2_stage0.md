@@ -93,8 +93,8 @@ H-rule, H-sysid at 183/192 coupled halfway, C the better of the two by count. G-
 trial's (k+, k−) is its probability over the bootstrap: the share of 25 independent bootstraps
 (10 000 resamples each, as the run makes them) whose 2.5th percentile lies above −16; the two
 seeds' bootstraps are independent given the outcomes (the run shares one bootstrap index for both
-seeds; the fully dependent bound moves the joint rate by at most 0.002, Stage 0 review). Per-seed L-PASS rate (G-bar and G-NI) / both
-seeds, overlap · half · independent:
+seeds; the fully dependent bound moves the joint rate by at most 0.002, Stage 0 review). Per-seed
+L-PASS rate (G-bar and G-NI) / both seeds, overlap · half · independent:
 
 | p_C | W = 0.906 | W = 0.922 | W = 0.938 | W = 0.953 |
 |---|---|---|---|---|

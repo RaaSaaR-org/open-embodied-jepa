@@ -294,9 +294,12 @@ mkdir -p outputs && .venv/bin/python scripts/run_lewm_rep_v2.py closed --cohort 
   --evidence /home/huhn/develop/emai/worktrees/task076-evidence \
   --old-features /home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-featurise-1/features \
   --old-fits /home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-readouts-1/fits \
-  --models <TASK-077's six job reports: task077-staget/outputs/task077-t-W-66800-1, \
-            task077-staget2/outputs/task077-t-{N-66800-2,W-66801-1,N-66801-1,W-66802-1,N-66802-1}, \
-            each /report.json> \
+  --models /home/huhn/develop/emai/worktrees/task077-staget/outputs/task077-t-W-66800-1/report.json \
+    /home/huhn/develop/emai/worktrees/task077-staget2/outputs/task077-t-N-66800-2/report.json \
+    /home/huhn/develop/emai/worktrees/task077-staget2/outputs/task077-t-W-66801-1/report.json \
+    /home/huhn/develop/emai/worktrees/task077-staget2/outputs/task077-t-N-66801-1/report.json \
+    /home/huhn/develop/emai/worktrees/task077-staget2/outputs/task077-t-W-66802-1/report.json \
+    /home/huhn/develop/emai/worktrees/task077-staget2/outputs/task077-t-N-66802-1/report.json \
   --stage-r /home/huhn/develop/emai/worktrees/task080-stager/outputs/task080-rgate-1/report.json \
   > outputs/task083-s-1.stdout 2>&1
 ```
@@ -417,12 +420,12 @@ its two; #173 review, nit 2); H-sysid at 0.953 (62/64 and 121/128 pooled, 183/19
 W-66800, 118/128), 0.938 and 0.953 (TASK-081's planning rate). Nothing measured on 66801 or 66802
 in closed loop exists to plan from.
 
-**A draft computation, superseded by Stage 0's below** (for the draft only; scratch code, salt
-8599, 4 000 trials per cell, the reset-bootstrap G-NI estimator through `lewm_cp_v2.ni_passes`; H-rule drawn at p_C; each W[s]
-coupled to H-rule by the coupling, conditionally independent of the other W given H-rule; H-sysid
-coupled to H-rule halfway; C the better of the two by count; L-PASS taken as G-bar and G-NI, the
-twin tests' power being above 0.999 at TASK-081's twin rates). Per-seed L-PASS rate / both seeds
-L-PASS (REP-PASS), overlap · half · independent:
+**A draft computation, superseded by Stage 0's below** (for the draft only; scratch code, salt 8599,
+4 000 trials per cell, the reset-bootstrap G-NI estimator through `lewm_cp_v2.ni_passes`; H-rule
+drawn at p_C; each W[s] coupled to H-rule by the coupling, conditionally independent of the other W
+given H-rule; H-sysid coupled to H-rule halfway; C the better of the two by count; L-PASS taken as
+G-bar and G-NI, the twin tests' power being above 0.999 at TASK-081's twin rates). Per-seed L-PASS
+rate / both seeds L-PASS (REP-PASS), overlap · half · independent:
 
 | p_C (H-rule) | W = 0.906 | W = 0.922 | W = 0.938 | W = 0.953 |
 |---|---|---|---|---|
