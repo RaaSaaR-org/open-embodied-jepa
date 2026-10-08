@@ -4,7 +4,7 @@ aliases:
 - TASK-083
 title: "Replicate TASK-081's L-PASS with W's other two model seeds (66801, 66802) under C1-M"
 slug: replicate-task-081-s-l-pass-with-w-s-other-two-model-seeds
-status: todo
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -13,6 +13,8 @@ tags:
 - lewm
 - apple-pnp
 - preregistration
+- frozen
+- rep-pass
 - replication
 sprint: ''
 depends_on:
@@ -51,9 +53,16 @@ declared in advance. W-66800 runs on the same resets, reported only. No Stage D.
   on 75910–75913, power with salt 8502; record
   `docs/experiments/apple_lewm_seed_replication_v2_stage0.md` (merged with its PR)
 - [x] The freeze (R21.17–R21.18), independently reviewed and merged with its PR
-- [ ] Stage S once, on an independent reported GO, CPU only
-- [ ] Results PR with independently reviewed restatements; R7 changed by its own reviewed ruling
-  as §10 declares
+- [x] Stage S once, on an independent reported GO, CPU only: **REP-PASS** (R21.19)
+- [x] Results PR with independently reviewed restatements; R7 changed by its own reviewed ruling
+  as §10 declares (R21.20)
+
+## Outcome
+
+**REP-PASS** (R21.19): W[66801] 124/128 and W[66802] 120/128 each reached L-PASS on 128 fresh
+gated resets (75200–75327; H-rule 123/128, privileged ceiling 126/128; W-66800 reported only
+123/128); "LeWM needed" not shown. Results:
+`docs/experiments/apple_lewm_seed_replication_v2_results.md`. Closed (R21.21).
 
 ## Notes
 

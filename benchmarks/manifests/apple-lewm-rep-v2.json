@@ -519,8 +519,14 @@
   "tests/test_lewm_rep_v2.py": "6abb9ab031bbb02a4ffe30689edbfd9987ddeec1f7e4da983207f1c647527c1e"
  },
  "note": "FROZEN (R21.17), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins this task's two code files, its test file and TASK-081's manifest (whose six pins and frozen block the runner checks too); protocol_document_sha256 is the protocol's sha256.",
+ "outcome": "REP-PASS at Stage S: both seeds 66801 and 66802 L-PASS (124/128, 120/128; H-rule 123/128); 'LeWM needed' not shown; TASK-083 closed (R21.19-R21.21)",
  "protocol": "apple_lewm_seed_replication_v2",
- "protocol_document_sha256": "d92face615c446c748d9fbaf4fa100c50dd7b1d9e24524eb034d8d91df429846",
+ "protocol_document_sha256": "baa1911f005fda52d05b73f15c2ad7d85c199eb9e8375a70273aaafd7bbd87b8",
+ "results": {
+  "document": "docs/experiments/apple_lewm_seed_replication_v2_results.md",
+  "report_sha256": "b6f7c898cfb5a2f24f46ca6b8ff809a09f9b9e4c560e27a74e4b19949c56038e",
+  "revision": "fef0490224000e338b209ff6f07446a352795730"
+ },
  "status": "FROZEN",
  "task": "TASK-083"
 }

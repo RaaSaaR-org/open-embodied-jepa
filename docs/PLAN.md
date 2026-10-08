@@ -7,7 +7,7 @@ the original plan of record and is not rewritten. Rulings are in [DECISIONS.md](
 and outcomes are in the [experiment index](experiments/README.md).
 
 **Where we stand.** This is the canonical sentence (DECISIONS 2026-10-02, R7, as updated on
-2026-10-08 by R18.28, R18.31, R19.18 and R19.21), verbatim:
+2026-10-08 by R18.28, R18.31, R19.18 and R19.21 and on 2026-10-09 by R21.20), verbatim:
 
 > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa`
 > and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen
@@ -31,7 +31,7 @@ and outcomes are in the [experiment index](experiments/README.md).
 > mattered is not shown either: TASK-080's solver, run on the same resets and reported only, scored
 > 117/128 (paired difference +1/128, 95 % interval −5/128 to +7/128). TASK-080's earlier gated run
 > of the same model under the same condition with that solver (58/64 against H-rule's 63/64) stays
-> L-NEAR, and TASK-081's 128-reset cohort was chosen after that result. LeWM's only closed-loop
+> L-NEAR, and TASK-081's 128-reset cohort was chosen after that result. TASK-083 then replicated that L-PASS with the two other model seeds of the same training run (66801 and 66802, whose `last_two_triggered` flags are not set, although all three W training curves were lowest at their last point), under the same condition and with the same controller: on 128 further fresh gated resets (one run, simulation only) each reached L-PASS on its own, 124/128 (exact 95 % interval 0.922–0.991) and 120/128 (0.881–0.973), each ahead of its own action-blind twin, its scene-blind twins and a random aim by exact one-sided McNemar tests at p < 0.01, and each non-inferior within −16/128 to H-rule (123/128 on that cohort; paired differences +1/128, 95 % interval −5/128 to +7/128, and −3/128, −10/128 to +4/128). "LeWM needed" is not shown for either seed; on that cohort H-rule was not measurably better than either (both intervals include 0), the privileged ceiling scored 126/128, and W-66800, run on the same resets and reported only, scored 123/128. The three seeds share one training corpus, recipe and encoder, and the solver's effect remains not shown. LeWM's only closed-loop
 > Apple→Plate runs on v1 have 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T
 > successes are not project-learned results.
 
@@ -430,8 +430,11 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       baseline it is not expected (no headroom). Recommended: preregister under U-sat, retrain TASK-077's recipe on a new
       2 000-root corpus (about 31 h GPU for three seeds per arm, or about 10 h for one pair, plus
       4–7 h CPU). In parallel: the owner's TASK-079 ruling; two extra W seeds under C1-M (CPU only).
-    - **TASK-083 (in progress; R21): R19.23 (3a), TASK-081's L-PASS with W's two other model
-      seeds.** DRAFT preregistration
+    - **TASK-083 (done, REP-PASS; R21): R19.23 (3a), TASK-081's L-PASS with W's two other model
+      seeds.** **Stage S: REP-PASS** (R21.19; 128 fresh resets, one run, simulation only): W[66801]
+      124/128 and W[66802] 120/128 each L-PASS (H-rule 123/128, not measurably better; "LeWM
+      needed" not shown); R7 changed by R21.20; closed (R21.21).
+      [Results](experiments/apple_lewm_seed_replication_v2_results.md). DRAFT preregistration
       [apple_lewm_seed_replication_v2.md](experiments/apple_lewm_seed_replication_v2.md): seeds
       66801 and 66802 (each W with its own N, R-S and R-N; nothing trained) under C1-M with
       TASK-081's controller, arms and per-seed gates on one fresh 128-reset cohort (75200–75327);

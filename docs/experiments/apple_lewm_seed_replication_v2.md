@@ -5,8 +5,9 @@
 **`f6433a50da3fce017e79c6957f8884b748b39f4baf4b9391d1b907fa8dc8204e`** is pinned in
 `tests/test_lewm_rep_v2.py` and in the manifest (`benchmarks/manifests/apple-lewm-rep-v2.json`),
 with the manifest's four file pins and this document's sha256. **The freeze takes effect when it is
-merged on an independent reviewer's reported APPROVE.** Stage S still needs its own reported GO
-(§6.1); its plan is §6.4.
+merged on an independent reviewer's reported APPROVE.** Stage S's plan is §6.4 and its result
+§6.5. **Outcome: REP-PASS at Stage S** (R21.19); TASK-083 is closed (R21.21). Results:
+[apple_lewm_seed_replication_v2_results.md](apple_lewm_seed_replication_v2_results.md).
 
 History. The DRAFT (R21.1–R21.12, #173) was reviewed independently and revised after it. Stage 0
 (R21.13–R21.16, [record](apple_lewm_seed_replication_v2_stage0.md)) added the code, tests, debug
@@ -329,6 +330,18 @@ If the invocation ends in anything other than a §7.2/§7.3 row, nothing further
 case is ruled under §11 first. After S, the evidence is copied to
 `~/develop/emai/evidence/task083-stages/` with `SHA256SUMS`, and the results PR reports every arm
 (§6.1 step 4).
+
+### 6.5 Stage S's result: REP-PASS (R21.19)
+
+Stage S ran once on the reviewer's GO (#175, issuecomment-6068743705) at `fef0490`, CPU only,
+2026-10-08 20:47:08–22:02:00 UTC (4 491 s; in-run G-tests 2243 passed, 37 skipped; peak PSS
+9.48 GiB). Report `outputs/task083-s-1/report.json`, sha256
+`b6f7c898cfb5a2f24f46ca6b8ff809a09f9b9e4c560e27a74e4b19949c56038e`. Counted successes on
+75200–75327: W[66801] **124/128**, W[66802] **120/128**, H-rule 123 (C), H-sysid 121, the
+privileged H-final(commit) 126, L-rand 17; N, L-shuf, L-mean 51, 36, 60 (66801) and 62, 42, 56
+(66802); W[66800] 123 (reported only). Seed 66801 **L-PASS** (G-NI +1/128, [−5, +7]); seed 66802
+**L-PASS** (G-NI −3/128, [−10, +4]); every twin test p ≤ 1.0 × 10⁻¹⁴. **Combined row: REP-PASS.**
+"LeWM needed" not shown for either seed. Every §7.4 item is in the results document.
 
 ## 7. Gates, bars and rows
 

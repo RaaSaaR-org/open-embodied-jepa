@@ -63,6 +63,59 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (r) — TASK-083 Stage S ends REP-PASS: both other model seeds reach L-PASS; "LeWM needed" not shown; R7 is changed; TASK-083 closes (R21.19–R21.22)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_seed_replication_v2_results.md](experiments/apple_lewm_seed_replication_v2_results.md)
+(protocol §6.5). One run, 128 fresh gated resets (75200–75327), in simulation only, under the
+declared simulation-only plate condition C1-M; LeWM chooses only the single place aim committed at
+step 405, between P-3's learned pick and e9's scripted place.
+
+- **R21.19 — Stage S: REP-PASS.** Stage S ran once on the independent reviewer's reported GO (#175,
+  issuecomment-6068743705; a first NO-GO for main's integration run cancelled at its 20-min timeout
+  was cleared by a green rerun) at `fef0490`, in the worktree `task083-stages`, CPU only,
+  2026-10-08 20:47:08–22:02:00 UTC (4 491 s, cap 21 600; in-run G-tests 2243 passed, 37 skipped;
+  peak PSS 9.48 GiB; no render disagreement; no attempt refused before 405; W's determinism re-run
+  matched for both seeds). Counts (exact 95 %): **W[66801] 124/128** (0.922–0.991), N 51, L-shuf
+  36, L-mean 60; **W[66802] 120/128** (0.881–0.973), N 62, L-shuf 42, L-mean 56; shared L-rand 17,
+  **H-rule 123** (not learned, given the plate law; C, as 123 > H-sysid 121), H-final(commit) 126
+  (privileged). Seed 66801: G-bar pass; G-NI W − H-rule +1/128 (5 / 4), [−5, +7]; twin tests
+  p ≤ 2.0 × 10⁻²⁰; **L-PASS**. Seed 66802: G-bar pass; G-NI −3/128 (5 / 8), [−10, +4]; twin tests
+  p ≤ 1.0 × 10⁻¹⁴; **L-PASS**. Combined row **REP-PASS**; no clause. Secondary "LeWM needed":
+  not shown for either (p 0.50, 0.87); H-rule is not measurably better than either on this cohort
+  (both intervals include 0). Reported only: W[66800] 123/128 (W[66800] − H-rule 0, [−6, +6]);
+  W[66801] − W[66802] +4 [−2, +11], two-sided p 0.39. Report sha256 `b6f7c898…038e`; evidence
+  `~/develop/emai/evidence/task083-stages/` (`SHA256SUMS` `cdbebcd9…88f0`).
+- **R21.20 — R7 is changed, by this ruling, with §10's REP-PASS wording.** After R7's sentence
+  that TASK-081's 128-reset cohort was chosen after TASK-080's result, R7 now adds:
+
+  > TASK-083 then replicated that L-PASS with the two other model seeds of the same training run
+  > (66801 and 66802, whose `last_two_triggered` flags are not set, although all three W training
+  > curves were lowest at their last point), under the same condition and with the same
+  > controller: on 128 further fresh gated resets (one run, simulation only) each reached L-PASS
+  > on its own, 124/128 (exact 95 % interval 0.922–0.991) and 120/128 (0.881–0.973), each ahead of
+  > its own action-blind twin, its scene-blind twins and a random aim by exact one-sided McNemar
+  > tests at p < 0.01, and each non-inferior within −16/128 to H-rule (123/128 on that cohort;
+  > paired differences +1/128, 95 % interval −5/128 to +7/128, and −3/128, −10/128 to +4/128).
+  > "LeWM needed" is not shown for either seed; on that cohort H-rule was not measurably better
+  > than either (both intervals include 0), the privileged ceiling scored 126/128, and W-66800,
+  > run on the same resets and reported only, scored 123/128. The three seeds share one training
+  > corpus, recipe and encoder, and the solver's effect remains not shown.
+
+  Every earlier qualifier stays (TASK-081's one run, its flagged seed, its H-rule measurably better,
+  the solver's effect not shown, TASK-080's L-NEAR). It does not say that LeWM is needed, that
+  LeWM controls the whole task, that it beats hand-written control, that it works in Arena or on
+  hardware, or that the pipeline replicates beyond model seeds. Changed with it: AGENTS.md,
+  CLAUDE.md, README.md, docs/PLAN.md, docs/EVALUATION.md, docs/MVP_PLAN.md (a dated update) and
+  the experiment index. Frozen protocols, results documents and earlier rulings are not rewritten.
+- **R21.21 — TASK-083 closes with outcome REP-PASS.** The card moves to done; the manifest
+  records the outcome. No repeat of Stage S is planned. TASK-079's "equivalent row" stays unruled
+  (R19.22).
+- **R21.22 — next-step recommendation (recorded only, for the owner).** R19.23 (3)'s remaining
+  robustness items (broader C1-M conditions such as move radius, κ or commit step, and a
+  random-init floor for W), each preregistered; "LeWM needed" still requires a condition in which no
+  hand-written arm is given the plate law (TASK-082 closed at K0 without a test of it).
+
 ## Decision 2026-10-08 (q) — TASK-083 is frozen; Stage S's plan (R21.17–R21.18)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
