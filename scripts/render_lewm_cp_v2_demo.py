@@ -59,9 +59,13 @@ from embodied_jepa import lewm_planner_v2 as lp  # noqa: E402
 
 ARMS = ("W", "N", "H-rule")
 ARM_TEXT = {
-    "W": ("W: LeWM token predictor (model seed 66800)", "R-S readout, affine_local solver"),
-    "N": ("N: W's action-blind twin (control)", "same model family, actions zeroed"),
-    "H-rule": ("H-rule: hand-written rule (not learned)", "given the simulator's plate law"),
+    "W": (
+        "W: LeWM token predictor",
+        "model seed 66800, frozen DINOv2,",
+        "R-S readout, affine_local",
+    ),
+    "N": ("N: W's action-blind twin", "control: the predictor's action", "input is zeroed"),
+    "H-rule": ("H-rule: hand-written rule", "not learned; given the", "simulator's plate law"),
 }
 VIEW_W, VIEW_H, PANEL_W, ONBOARD_PX = 640, 480, 256, 224
 MIN_DISK_GIB = 10.0
@@ -239,9 +243,10 @@ class Recorder:
         return self.renderer.render().copy()
 
     def lines(self, t: int):
-        title, sub = ARM_TEXT[self.arm]
-        out = [(title, "bold"), (sub, "small"), (f"reset seed {self.seed} (debug)", "normal"),
-               (f"step {t}", "normal"), ("", "small")]  # fmt: skip
+        title, sub, sub2 = ARM_TEXT[self.arm]
+        out = [(title, "bold"), (sub, "small"), (sub2, "small"),
+               (f"reset seed {self.seed} (debug)", "normal"), (f"step {t}", "normal"),
+               ("", "small")]  # fmt: skip
         phase = phase_of(t)
         words, line = phase.split(), ""
         for w in words:  # wrap at about 30 characters
@@ -444,9 +449,10 @@ def main(argv=None) -> int:
         success = bool(record["success"])
         distance = record.get("final_distance_cm")
         if success:
-            banner = ("SUCCESS: apple at rest on the plate", (30, 130, 60))
+            d = "" if distance is None else f" ({distance:.1f} cm from centre)"
+            banner = (f"SUCCESS: apple at rest on the plate{d}", (30, 130, 60))
         else:
-            d = "" if distance is None else f" ({distance:.1f} cm from the plate centre)"
+            d = "" if distance is None else f" (apple {distance:.1f} cm from the plate centre)"
             banner = (f"MISS{d}", (170, 40, 40))
         if recorder.last is not None:
             t, onboard = recorder.last
