@@ -36,6 +36,13 @@ Prepared 2026-09-20 from PRD sections 1–21, updated with the user’s Mac-only
 > non-learned rule controller H-rule (63/64; W − H-rule −5/64, 95 % interval [−10, 0] against the
 > allocated −8/64), without being detectably inferior. Escalate, no clause, no claim; LeWM still
 > has no gated closed-loop Apple→Plate success. R7 was updated again (R18.31).
+>
+> **Update 2026-10-08 (TASK-081 Stage D).** TASK-081 keeps TASK-080's model and readout and
+> changes only the solver that commits W's aim. Its Stage D, a non-gating development cohort of 16
+> fresh resets (one run, simulation only), ended D-PASS: W 16/16, TASK-080's unchanged W 15/16,
+> the action-blind twin 5/16, the scene-blind twins 5/16 and 8/16, H-rule 16/16 and the privileged
+> ceiling 16/16. It is not a gated result; the gated Stage S has not run. R7's clause that LeWM's
+> only other counted closed-loop runs are on v1 was corrected (R19.18).
 
 ## Deliverable
 

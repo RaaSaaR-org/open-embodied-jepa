@@ -7,7 +7,7 @@ the original plan of record and is not rewritten. Rulings are in [DECISIONS.md](
 and outcomes are in the [experiment index](experiments/README.md).
 
 **Where we stand.** This is the canonical sentence (DECISIONS 2026-10-02, R7, as updated on
-2026-10-08 by R18.28 and R18.31), verbatim:
+2026-10-08 by R18.28, R18.31 and R19.18), verbatim:
 
 > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa`
 > and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen
@@ -26,9 +26,17 @@ and outcomes are in the [experiment index](experiments/README.md).
 > controller H-rule, which is given the simulator's plate law (63/64; paired difference −5/64, 95 %
 > interval −10/64 to 0 against the allocated margin of −8/64), without being detectably inferior
 > beyond that margin; the privileged look-ahead ceiling scored 62/64. The row is L-NEAR: escalate,
-> no claim, and no abandonment clause. LeWM therefore has no gated closed-loop Apple→Plate success,
-> and its only other closed-loop Apple→Plate runs whose counts are read are on v1, with 0 successes.
-> Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results.
+> no claim, and no abandonment clause. LeWM therefore has no gated closed-loop Apple→Plate success.
+> Its only other closed-loop Apple→Plate runs whose counts are read are on v1, with 0 successes, and
+> TASK-081's non-gating development runs on v2 (one run each, the same model seed and condition, in
+> simulation only), in which the same LeWM controller commits its aim with a local affine
+> fixed-point solver: on 64 development resets it reached 62/64, against 57/64 for TASK-080's solver
+> and 64/64 for H-rule (the solver was chosen among three variants after seeing their counts, so
+> 62/64 is optimistic), and on TASK-081's preregistered development cohort D (16 fresh resets)
+> 16/16, against 15/16 for TASK-080's solver, 5/16 for the action-blind twin, 5/16 and 8/16 for the
+> two scene-blind twins and 16/16 for both H-rule and the privileged look-ahead ceiling. These are
+> development counts, not gated results. Scripted-expert, privileged-ceiling, oracle and GR00T
+> successes are not project-learned results.
 
 (LeWM also ran in closed loop on the TASK-014 development reach pilot, a reach task, not
 Apple→Plate: its v2 target-space selector reached 1/5 goals, with intervals overlapping the 0/5
@@ -399,6 +407,10 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       affine_local, twins with the same solver, W-frozen reported only, τ_commit 1.0 cm carried (no
       K0, no Stage R), D 70100–70115 and S 70200–70327 (128 resets; G-bar 112/128, G-NI within
       16/128). Next: its independent review, then Stage 0 and the freeze, then D and S on their GOs.
+      **FROZEN** (R19.15). **Stage D: D-PASS** (R19.17; 16 development resets, one run, not
+      gated): W 16/16, W-frozen 15/16 (reported only), N 5/16, L-shuf 5/16, L-mean 8/16, H-rule
+      16/16 and the privileged H-final(commit) 16/16. R7 updated (R19.18). Next: Stage S on its own
+      GO (R19.19).
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
