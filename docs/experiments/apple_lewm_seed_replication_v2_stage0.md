@@ -92,8 +92,9 @@ each seed's W coupled to H-rule by the coupling and conditionally independent of
 H-rule, H-sysid at 183/192 coupled halfway, C the better of the two by count. G-NI's pass for a
 trial's (k+, k−) is its probability over the bootstrap: the share of 25 independent bootstraps
 (10 000 resamples each, as the run makes them) whose 2.5th percentile lies above −16; the two
-seeds' bootstraps are independent given the outcomes. Per-seed L-PASS rate (G-bar and G-NI) / both
-seeds, overlap · half · independent:
+seeds' bootstraps are independent given the outcomes (the run shares one bootstrap index for both
+seeds; the fully dependent bound moves the joint rate by at most 0.002, Stage 0 review). Per-seed
+L-PASS rate (G-bar and G-NI) / both seeds, overlap · half · independent:
 
 | p_C | W = 0.906 | W = 0.922 | W = 0.938 | W = 0.953 |
 |---|---|---|---|---|
@@ -102,7 +103,7 @@ seeds, overlap · half · independent:
 | 0.992 | 0.33/0.11 · 0.31/0.10 · 0.29/0.09 | 0.59/0.35 · 0.55/0.31 · 0.52/0.27 | 0.84/0.71 · 0.81/0.66 · 0.78/0.60 | 0.97/0.94 · 0.96/0.91 · 0.94/0.88 |
 
 So at W-66800's observed 0.922 each seed passes with probability **0.52–0.79** and both with
-**0.27–0.63**; at 0.938, 0.77–0.96 and 0.60–0.91; at 0.953, 0.94–1.00 and 0.88–0.99. **Size at the
+**0.27–0.63**; at 0.938, 0.77–0.95 and 0.60–0.91; at 0.953, 0.94–1.00 and 0.88–0.99. **Size at the
 margin** (W = C − δ): a seed's L-PASS rate (G-bar and G-NI, not G-NI alone as TASK-081 reported it)
 2.6–3.5 %, both seeds 0.09–0.16 %; L-INFERIOR's false fire at the margin 1.2–1.6 % per seed. G-bar's
 exact power: 0.908 at 0.906, 0.978 at 0.922, 0.998 at 0.938. The twin tests are not simulated

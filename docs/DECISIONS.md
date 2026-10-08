@@ -63,6 +63,26 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (q) — TASK-083 is frozen; Stage S's plan (R21.17–R21.18)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_seed_replication_v2.md](experiments/apple_lewm_seed_replication_v2.md) §6.4. No seed of
+S (75200–75327) has been simulated. R7 is unchanged.
+
+- **R21.17 — the freeze.** STATUS FROZEN; the frozen block `lewm_rep_v2.py` has sha256
+  `f6433a50…204e`, pinned in `tests/test_lewm_rep_v2.py` and the manifest, with four file pins
+  (`lewm_rep_v2.py`, `scripts/run_lewm_rep_v2.py`, `tests/test_lewm_rep_v2.py` and TASK-081's
+  manifest) and the protocol document's sha256. Applied with it, changing no bar: the Stage 0
+  review's nits (W = 0.938's per-seed range 0.77–0.95, not 0.96; the record notes that the run
+  shares one bootstrap index for both seeds, which moves the joint rate by at most 0.002; line
+  wraps); the frozen block's `rulings` string now also names (p) and (q). The freeze takes effect
+  when merged on an independent reviewer's reported APPROVE.
+- **R21.18 — Stage S's plan.** One invocation of `closed --cohort S` on 75200–75327, CPU only, from
+  a fresh clean worktree of the freeze's merge commit, on its own reported GO, with the inputs,
+  caps (21 600 s; 300 s per attempt; 12 GiB PSS), launch-time checks and expected time (about
+  79 min) of §6.4. The rows are §7.2 per seed and §7.3 combined; no clause; R7 changes only by its
+  own reviewed ruling with §10's wording.
+
 ## Decision 2026-10-08 (p) — TASK-083 Stage 0: code, debug smokes, scale, caps and power (R21.13–R21.16; protocol still DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30). The protocol stays DRAFT.** The record is
@@ -92,12 +112,12 @@ Every simulated attempt ran on debug seeds 75910–75913; nothing in them is rea
   G-memory 12 GiB against a 9.58 GiB peak.
 - **R21.16 — power.** `simulate-2` (report `0e138bb1…1e68`, salt 8502, 20 000 trials per cell,
   G-NI's pass averaged over 25 bootstraps per (k+, k−) cell): at W = 0.922 each seed reaches L-PASS
-  with probability 0.52–0.79 and both with 0.27–0.63; at 0.938, 0.77–0.96 and 0.60–0.91; at 0.953,
+  with probability 0.52–0.79 and both with 0.27–0.63; at 0.938, 0.77–0.95 and 0.60–0.91; at 0.953,
   0.94–1.00 and 0.88–0.99; the size at the margin is a seed's L-PASS rate of 2.6–3.5 % and
   0.09–0.16 % for both; L-INFERIOR's false fire at the margin 1.2–1.6 %. It supersedes `simulate-1`
   and the draft's table, which decided each cell with one bootstrap and so differed by up to 0.06 in
-  the half and independent couplings (Stage 0 review). No bar changes. Next: the freeze on an independent APPROVE,
-  then Stage S on its own reported GO. Evidence copies:
+  the half and independent couplings (Stage 0 review). No bar changes. Next: the freeze on an
+  independent APPROVE, then Stage S on its own reported GO. Evidence copies:
   `~/develop/emai/evidence/task083-stage0/` with `SHA256SUMS`.
 
 ## Decision 2026-10-08 (o) — TASK-083's DRAFT preregistration: TASK-081's L-PASS replicated with W's two other model seeds, 66801 and 66802, under C1-M (R21.1–R21.12; DRAFT)

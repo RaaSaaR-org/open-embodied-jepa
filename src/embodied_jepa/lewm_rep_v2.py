@@ -3,8 +3,8 @@ model seeds, 66801 and 66802, under C1-M, on one fresh cohort of 128 gated reset
 
 Protocol ``docs/experiments/apple_lewm_seed_replication_v2.md`` (rulings R21 in
 ``docs/DECISIONS.md``, decision 2026-10-08 (o), each decided by Claude under owner delegation,
-2026-09-30). This module is the protocol's **frozen block** as module constants (a candidate
-until the freeze pins its sha256 in ``tests/test_lewm_rep_v2.py`` and the manifest), with its
+2026-09-30). This module is the protocol's **frozen block** as module constants (FROZEN, R21.17:
+its sha256 is pinned in ``tests/test_lewm_rep_v2.py`` and the manifest), with its
 statistics (salt 8501), the per-seed ladder (TASK-081's, n = 128), the combined replication row and
 the Stage-0 power simulation (salt 8502).
 
@@ -38,11 +38,14 @@ from embodied_jepa.contracts import ContractError
 
 PROTOCOL = "apple_lewm_seed_replication_v2"
 TASK = "TASK-083"
-STATUS = "DRAFT"
+STATUS = "FROZEN"
 DOCUMENT = "docs/experiments/apple_lewm_seed_replication_v2.md"
 MANIFEST = "benchmarks/manifests/apple-lewm-rep-v2.json"
 DELEGATED = "decided by Claude under owner delegation (2026-09-30)"
-RULINGS = "DECISIONS.md decision 2026-10-08 (o), R21.1-R21.12"
+RULINGS = (
+    "DECISIONS.md decision 2026-10-08 (o), R21.1-R21.12 (Stage 0: (p), R21.13-R21.16; "
+    "freeze: (q), R21.17-R21.18)"
+)
 GuardError = pt.GuardError
 NOT_EVALUATED = lm.NOT_EVALUATED
 
@@ -610,7 +613,7 @@ STAGE0: dict = {  # the record: docs/experiments/apple_lewm_seed_replication_v2_
         "report_sha256": "0e138bb1564f3faa3ba7cb817be12c31b6796e2ebf656112918ecb439d371e68",
         "per_seed_pass_at_w_0922": [0.52, 0.79],  # over C 0.979-0.992 and the three couplings
         "both_pass_at_w_0922": [0.27, 0.63],
-        "per_seed_pass_at_w_0938": [0.77, 0.96],
+        "per_seed_pass_at_w_0938": [0.77, 0.95],
         "both_pass_at_w_0938": [0.60, 0.91],
         "per_seed_pass_at_w_0953": [0.94, 1.00],
         "both_pass_at_w_0953": [0.88, 0.99],

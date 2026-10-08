@@ -314,7 +314,7 @@
    "stage_r_report_sha256": "bedb896692a9718ac598fa93c5d7dcc199090bf4cfa13d14fa0bd0fc53848ea7",
    "stage_r_revision": "33cea5cf9c45d83e4f4bb81a1d6b9fa28390a38c"
   },
-  "rulings": "DECISIONS.md decision 2026-10-08 (o), R21.1-R21.12",
+  "rulings": "DECISIONS.md decision 2026-10-08 (o), R21.1-R21.12 (Stage 0: (p), R21.13-R21.16; freeze: (q), R21.17-R21.18)",
   "s": {
    "delta": 16,
    "determinism_resets": 4,
@@ -420,7 +420,7 @@
     ],
     "per_seed_pass_at_w_0938": [
      0.77,
-     0.96
+     0.95
     ],
     "per_seed_pass_at_w_0953": [
      0.94,
@@ -480,7 +480,7 @@
   "stages": [
    "S"
   ],
-  "status": "DRAFT",
+  "status": "FROZEN",
   "task": "TASK-083",
   "task077_frozen_sha256": "f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d",
   "task080_frozen_sha256": "0fc095dc947f0ac74ebf6d1c541098a1e6fec1897592256f97ac8962b97be064",
@@ -510,12 +510,17 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "4b73d1e5c7e83dbaf5306a929c05f067ba7c15bbc8f3a5c7e5a2f1603722d9ff",
- "frozen_sha256_pin": null,
- "hashes": {},
- "note": "DRAFT (R21): frozen is the frozen-block candidate; no pin, no file hashes and no protocol document pin until the freeze (merged on an independent reviewer's APPROVE).",
+ "frozen_sha256": "f6433a50da3fce017e79c6957f8884b748b39f4baf4b9391d1b907fa8dc8204e",
+ "frozen_sha256_pin": "f6433a50da3fce017e79c6957f8884b748b39f4baf4b9391d1b907fa8dc8204e",
+ "hashes": {
+  "benchmarks/manifests/apple-lewm-cp-v2.json": "141fae3ed7c61c637bae978a548daf5baafaa9e557105a3607915b449eaf39e0",
+  "scripts/run_lewm_rep_v2.py": "5e6d76ea72d697356ebc33abc773578119965e567d94dd70c263f07361b1cbdc",
+  "src/embodied_jepa/lewm_rep_v2.py": "35e275418e6505cc71226cb25ff49c7963b5f3e967edda63c728b8ca22bea173",
+  "tests/test_lewm_rep_v2.py": "6abb9ab031bbb02a4ffe30689edbfd9987ddeec1f7e4da983207f1c647527c1e"
+ },
+ "note": "FROZEN (R21.17), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins this task's two code files, its test file and TASK-081's manifest (whose six pins and frozen block the runner checks too); protocol_document_sha256 is the protocol's sha256.",
  "protocol": "apple_lewm_seed_replication_v2",
- "protocol_document_sha256": null,
- "status": "DRAFT",
+ "protocol_document_sha256": "d92face615c446c748d9fbaf4fa100c50dd7b1d9e24524eb034d8d91df429846",
+ "status": "FROZEN",
  "task": "TASK-083"
 }
