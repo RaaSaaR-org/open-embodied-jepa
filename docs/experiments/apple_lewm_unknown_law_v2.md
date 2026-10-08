@@ -8,6 +8,11 @@ smokes on 74800–74899, the scale probes and the power simulation that fixed δ
 S or the corpus has been simulated and no gated model has been trained.** Approving Stage 0
 approves neither K0 nor the freeze (§7.1).
 
+**K0 ended CAL-ESCALATE** (R20.23–R20.25, record
+[apple_lewm_unknown_law_v2_k0.md](apple_lewm_unknown_law_v2_k0.md)): τ_commit = 0 (0.5 cm reached
+55/64 against 56/64) and r_K = 466 > 465. Nothing is frozen, no later stage runs, and TASK-082
+closes without the clause. The text below is kept as written.
+
 - **Admitted by:** the TASK-082 design note
   ([apple_lewm_unknown_law_v2_design.md](apple_lewm_unknown_law_v2_design.md), DRAFT,
   R19.24–R19.25, #166), whose §7 recommends this preregistration.
@@ -16,7 +21,7 @@ approves neither K0 nor the freeze (§7.1).
   claim split and the random-choice test), R15 and R16 (C1-M), R17 (TASK-077, whose recipe is
   retrained here), R18 (TASK-080, whose readout and fresh-root gate are carried) and R19 (TASK-081,
   whose solver, cohort size and rows are carried).
-- **Task card:** `.mc/tasks/todo/TASK-082-lewm-under-a-plate-law-no-hand-written-arm-is-given.md`.
+- **Task card:** `.mc/tasks/done/TASK-082-lewm-under-a-plate-law-no-hand-written-arm-is-given.md`.
 - **Templates:** TASK-077 ([apple_lewm_c1m_v2.md](apple_lewm_c1m_v2.md)) for the corpus, the model,
   its training and its dynamics gates; TASK-080
   ([apple_lewm_c1m_v2_pred_readout.md](apple_lewm_c1m_v2_pred_readout.md)) for the readout on
