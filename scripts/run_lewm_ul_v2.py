@@ -1804,6 +1804,15 @@ def stage_cap(args) -> float:
     return ul.CAPS_SECONDS.get(STAGE_CAPS.get(args.stage, ""), 4 * 3600.0)
 
 
+def exclude_quiet_wait(clock, report: dict) -> None:
+    """R20.18: a stage's wall cap counts from the end of G-quiet's wait, which has its own cap
+    (4 h); the excluded seconds are recorded. (``simulate-1`` was voided by its 3 600 s cap after
+    a 73-minute wait for a quiet machine, with its computation complete.)"""
+    waited = float((report.get("quiet_machine") or {}).get("waited_seconds", 0.0))
+    clock.start += waited
+    report["stage_cap_excludes_quiet_wait_seconds"] = waited
+
+
 def run(args) -> dict:
     output = Path(args.output)
     if output.exists():
@@ -1838,6 +1847,7 @@ def run(args) -> dict:
     report["_watch"] = watch
     try:
         manifest = preflight(report, args)
+        exclude_quiet_wait(clock, report)
         outcome = RUNNERS[args.stage](report, args, fields, manifest)
         clock.check("the end of the stage")
         if hz.tracked_tree_dirty():

@@ -2,9 +2,11 @@
 
 **STATUS: DRAFT** (R20.1–R20.16, decided by Claude under owner delegation; nothing is frozen).
 This document is the preregistration the design note recommends; its independent review is
-recorded on its PR. **No seed of K, D, S or the corpus has been
-simulated, no model has been trained, and no code for it exists yet.** Approving this draft
-approves neither Stage 0 nor K0 nor the freeze (§7.1).
+recorded on its PR. **Stage 0 is done** (R20.17–R20.24, record
+[apple_lewm_unknown_law_v2_stage0.md](apple_lewm_unknown_law_v2_stage0.md)): the code, the debug
+smokes on 74800–74899, the scale probes and the power simulation that fixed δ. **No seed of K, D,
+S or the corpus has been simulated and no gated model has been trained.** Approving Stage 0
+approves neither K0 nor the freeze (§7.1).
 
 - **Admitted by:** the TASK-082 design note
   ([apple_lewm_unknown_law_v2_design.md](apple_lewm_unknown_law_v2_design.md), DRAFT,
@@ -176,8 +178,9 @@ Imported, not edited, with their pins checked (G-frozen, G-hash): TASK-077's mod
 `commit_precision_dev.py`; the design note's law and estimators in `plate_law_dev.py` and its worker
 hook `plate_law_dev_runtime.LawMotion` and `KrrAim`, **pinned at their sha256 at Stage 0** (they
 were written as development code; this protocol makes them frozen inputs, as TASK-081 did for
-`commit_precision_dev.py`). Provisional new modules: `lewm_ul_v2.py` (the frozen block),
-`lewm_ul_v2_runtime.py`, `lewm_ul_v2_offline.py`, `scripts/run_lewm_ul_v2.py`,
+`commit_precision_dev.py`). New modules (Stage 0, R20.17): `lewm_ul_v2.py` (the frozen block),
+`lewm_ul_v2_runtime.py`, `lewm_ul_v2_offline.py`, `lewm_ul_v2_train.py` (TASK-077's training loop
+copied verbatim, with this task's sampler salt 8409), `scripts/run_lewm_ul_v2.py`,
 `tests/test_lewm_ul_v2.py`, `benchmarks/manifests/apple-lewm-ul-v2.json`. The new runner may not
 load other scripts (`tests/test_no_runner_imports.py`).
 

@@ -1107,6 +1107,17 @@ def test_run_arm_refuses_task_truth_a_wrong_law_and_a_wrong_solver():
     run.run_arm(Pool(ok | {"task_truth_in_controller": 1}), [{"arm": "H-final"}], "H-final")
 
 
+def test_the_stage_cap_excludes_the_quiet_wait():
+    run = _runner()
+    clock = run.hz.Clock(10.0)
+    start = clock.start
+    report = {"quiet_machine": {"waited_seconds": 3600.0}}
+    run.exclude_quiet_wait(clock, report)
+    assert clock.start == start + 3600.0 and report["stage_cap_excludes_quiet_wait_seconds"] == 3600
+    clock.check("now")  # the wait does not count against the cap
+    run.exclude_quiet_wait(clock, {})
+
+
 def test_the_sentinel():
     run = _runner()
     report: dict = {}
