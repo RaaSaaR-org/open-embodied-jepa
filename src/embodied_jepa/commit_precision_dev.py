@@ -58,9 +58,10 @@ def iterate(g0, single, feasible, *, alpha, cap, tolerance_m, p_hat, h, a_lo, kn
         else:
             plate = np.asarray(single(g), np.float64)
             rollouts += 1
-        r = _residual(plate, g, p_hat, h, a_lo)
+        clipped = c1.clip_to_box(plate, p_hat, h, a_lo)
+        r = clipped - g
         evaluated.append((g.copy(), r))
-        nxt = g + float(alpha) * r
+        nxt = clipped if float(alpha) == 1.0 else g + float(alpha) * r
         if not feasible(nxt):
             stopped = True
             break

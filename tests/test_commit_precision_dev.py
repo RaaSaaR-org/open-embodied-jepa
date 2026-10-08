@@ -55,7 +55,7 @@ def test_alpha_one_is_the_frozen_controller():
         _fixed, variants, (targets, chunks, feasible, predict, chunk_of) = _variants(slope)
         g, log = wrt.choose_from_grid("W", P_HAT, H, targets, chunks, feasible, predict, chunk_of,
                                       tolerance_m=TOL, seed=0)  # fmt: skip
-        assert np.allclose(variants["frozen"]["g"], g, atol=1e-6)
+        assert np.array_equal(variants["frozen"]["g"], g)
         assert variants["frozen"]["converged"] == log["converged"]
 
 

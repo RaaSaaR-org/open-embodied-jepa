@@ -86,9 +86,11 @@ and Stage D report (`outputs/task080-d-1/report.json`, sha256 `1602447a…0611`)
    were capped (65104, 65105 and 65111), and all 16 resets succeeded.
 2. **The iterates oscillate; they do not drift away.** Consecutive refinement steps point in
    nearly opposite directions. The median over resets of the mean cosine between consecutive
-   steps is −0.84 on the capped resets and −0.85 on the converged ones. On capped resets the move
-   size either stalls at 0.3–0.9 cm (65212, 65214 and 65225 are 2-cycles, cosine −1.00) or grows
-   (65245: 0.26 → 2.18 cm; 65247: 0.61 → 1.61 cm; 65201 up to 3.77 cm).
+   steps is −0.84 on the capped resets and −0.85 on the converged ones (steps between refinement
+   iterates, not counting the first move from the grid argmin). On capped resets the move size
+   either stalls (65212, 65214 and 65225 are 2-cycles at 0.66–0.97 cm, cosine −1.00) or grows
+   (65245: 0.26 → 2.18 cm; 65247: 0.60 → 1.61 cm after its first move of 0.91 cm; 65201 up to
+   3.77 cm).
 3. **The coarse slope is not the cause.** Stage R's per-root least-squares slope of p̃(g) against
    g over the whole grid has a median matrix of about diag(−0.13, −0.41) and a trace/2 of −0.273
    on 249 gate-P roots. On the dry run's 250 val roots it is diag(−0.13, −0.42) and −0.275. That slope is negative and well inside
@@ -99,10 +101,10 @@ and Stage D report (`outputs/task080-d-1/report.json`, sha256 `1602447a…0611`)
 4. **What the cap commits.** The reference here is H-final(commit)'s aim on the same reset. That
    is the privileged look-ahead's converged aim, and it landed within 0.131 cm of the plate on
    every S reset. It is a better reference than the formula g\* = (p − κh)/(1 − κ), which every
-   arm misses by about 0.48 cm (H-final's own g\*-error is 0.478–0.517 cm) because the palm does
-   not end exactly at the aim. Against it:
+   arm misses by about 0.48 cm (H-final's own g\*-error has median 0.478 cm, p87.5 0.508 and max
+   0.517 cm) because the palm does not end exactly at the aim. Against it:
 
-   | S resets | W's committed aim (median, cm) | midpoint of the last two iterates | evaluated point with the smallest residual | H-rule's aim |
+   | S resets | W's committed aim (median, cm) | midpoint of the last two iterates | refinement iterate with the smallest residual (the grid argmin not counted; counted, as `bestres` does: 0.22 / 0.35) | H-rule's aim |
    |---|---:|---:|---:|---:|
    | 17 capped | **0.54** | 0.27 | 0.23 | 0.14 |
    | 47 converged | 0.29 | 0.31 | 0.35 | 0.12 |
@@ -117,7 +119,8 @@ and Stage D report (`outputs/task080-d-1/report.json`, sha256 `1602447a…0611`)
 6. **Ruled out as the cause on S:**
    - the box edge (no clipping);
    - an infeasible chunk (no stop);
-   - the box coordinate a (median 0.352 capped against 0.354 converged);
+   - the committed aim's box coordinate a (`a_true`, median 0.352 capped against 0.354
+     converged; the box's a at the decision gives 0.355 and 0.357);
    - p̂'s error at 405, measured as the distance between g\* computed from p̂ and from the true
      plate: median 0.085 cm capped against 0.113 cm converged;
    - κ itself (§2.2 point 3).
@@ -178,7 +181,10 @@ Not tried, recorded for the preregistration's choice:
   of the predictor, and a development worker. The worker is TASK-080's worker unchanged, with W's
   `choose` wrapped so that **every** variant's aim is computed at 405 from the same roll-outs and
   logged, and the attempt executes the variant its task names. The frozen variant is checked
-  against `choose_from_grid`'s aim and convergence on every call. The runner is
+  against `choose_from_grid`'s aim and convergence on every call; the check held on all 192 W
+  attempts. (After the run, the α = 1 step was changed to commit clip(p̃(g)) directly instead of
+  g + (clip(p̃(g)) − g), which is bit-exact by construction; no number here depends on it.) The
+  runner is
   `scripts/dev_commit_precision.py`. It uses TASK-080's runner as a library: `sim_preflight`, the
   sha256 checks of every reused artifact through `old_chain`, Stage R's R-S at its recorded
   sha256, and G-repro's P-readout refit. Tests: `tests/test_commit_precision_dev.py`.
@@ -250,8 +256,9 @@ distance from the plate at s1 = 525):
 - **affine_local helps everywhere.** It is better on converged resets too (0.235 against
   0.330 cm), as §2.3 predicted for a noise-averaging fit. Its aims never fell back to the argmin
   and never sat on the box edge. Its median residual |clip(p̃(g)) − g| at the committed aim is
-  0.28 cm (p87.5 0.60). The local J has median eigenvalues −0.58 and −0.42 on capped resets and
-  −0.51 and −0.38 on converged ones. Only 1 of 19 capped resets has an eigenvalue below −1. So at
+  0.28 cm (p87.5 0.60). The real parts of the local J's eigenvalues have medians −0.58 and
+  −0.42 on capped resets and −0.51 and −0.38 on converged ones (13 of 64 fits have a complex
+  pair). Only 1 of 19 capped resets has a real part below −1. So at
   the 2 cm scale W's prediction is a contraction; the trouble is below it.
 - **affine_global is worse** (0.412 cm). Fitting the whole 6 cm box costs more in curvature and
   bias than it gains in averaging.
@@ -282,11 +289,13 @@ multinomial probability of the passing cells. The couplings are as TASK-080 §10
 - "half": halfway between, in the discordant probabilities.
 
 The check reproduces S: (k+, k−) = (1, 6) fails at δn = 8. The size at the margin (W = C − δ) is
-3.4–4.0 % at n = 64, 2.6–3.6 % at 96 and 2.6–3.4 % at 128 (nominal 2.5 %; the percentile
+3.4–4.0 % at n = 64, 2.6–3.6 % at 96 and 2.8–3.4 % at 128 (nominal 2.5 %; the percentile
 bootstrap is slightly liberal at small n, as TASK-077's Stage-0 simulation also found).
 
 **Power of G-NI** (overlap / half / independent). C's planning rate is 0.984 (S's 63/64) or
-0.992 (S and development pooled, 127/128); δ = 8/64 of n:
+0.992 (S and development pooled, 127/128); δ = 8/64 of n. The table assumes a single comparator,
+C = H-rule; G-NI's C is the better of H-rule and H-sysid, which lowers power slightly (TASK-080
+§10):
 
 | n (δn) | C | W = 0.938 | W = 0.953 | W = 0.969 |
 |---|---|---|---|---|

@@ -390,7 +390,8 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       W's capped refinement oscillates on a predicted-plate map that is rough below about 1 cm;
       a development check (seeds 70000–70063, CPU, one run, not gated) found W:frozen 57/64,
       W:damped 58/64 and W:affine_local 62/64 (the fixed point of a local affine fit to W's own
-      grid predictions) against H-rule 64/64 and the privileged ceiling 63/64. Recommended: a
+      grid predictions; picked as the best of three executed variants after seeing them, so
+      optimistic) against H-rule 64/64 and the privileged ceiling 63/64. Recommended: a
       preregistration with that solver, no retraining, δ = 8/64 unchanged and n = 128 gated
       resets. (a) stays the documented alternative.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A

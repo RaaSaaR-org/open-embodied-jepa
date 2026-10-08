@@ -37,7 +37,9 @@ alternative (a task change).
 Diagnosis: W's single-evaluation refinement oscillates on a predicted-plate map that is rough
 below about 1 cm and, at its cap, commits one extreme of the oscillation. Development check
 (seeds 70000–70063, CPU, one run, not gated; R18.35): W:frozen 57/64, W:damped 58/64,
-W:affine_local 62/64 against H-rule 64/64 and the privileged H-final(commit) 63/64.
+W:affine_local 62/64 against H-rule 64/64 and the privileged H-final(commit) 63/64;
+affine_local was picked as the best of three executed variants after seeing them, so its 62/64
+is optimistic and needs fresh seeds.
 
 **The question for the preregistration.** Under C1-M, with W-66800 and R-S unchanged and only W's
 solver after the grid changed to affine_local (the clipped fixed point of a least-squares affine
