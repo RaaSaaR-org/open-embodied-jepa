@@ -346,6 +346,28 @@ def test_labelcheck_compares_every_trajectory_array():
     assert not run.compare_roots(a, b | {"executed_steps": 467})["identical"]
 
 
+def test_the_corpus_store_seals_and_reopens(tmp_path):
+    rng = np.random.default_rng(0)
+    arrays = {"frames": np.zeros((65, 112, 112, 3), np.uint8), "commands": np.zeros((64, 14)),
+              "plate": np.zeros((65, 2)), "palm": np.zeros((65, 2)),
+              "hidden_r": np.zeros((112, 112, 3), np.uint8), "target": rng.normal(size=2),
+              "state405": np.zeros(5), "apple_estimate": np.zeros(2), "last_grasp": np.zeros(2),
+              "p_hat405": np.zeros(2), "label_aim": np.ones(2),
+              "label_converged": np.asarray(True)}  # fmt: skip
+    entries = {s: ulo.write_root(tmp_path, s, arrays) for s in (1, 2, 3)}
+    with pytest.raises(FileExistsError):
+        ulo.write_root(tmp_path, 1, arrays)
+    with pytest.raises(ContractError):
+        ulo.write_root(tmp_path, 9, arrays | {"label_aim": np.full(2, np.nan)})
+    sealed = ulo.seal_corpus(tmp_path, entries, {"train": [1], "val": [2], "gate_p": [3]},
+                             {"debug": True})  # fmt: skip
+    manifest = ulo.open_corpus(tmp_path, sealed["sha256"])
+    assert manifest["split"] == {"train": [1], "val": [2], "gate_p": [3]}
+    assert manifest["aim_from"]["gate_p"] == "p_hat"
+    with pytest.raises(pt.GuardError):
+        ulo.open_corpus(tmp_path, "0" * 64)
+
+
 def test_decide_corpus_rows():
     split = ul.corpus_split(ul.seeds_of("corpus"))
     gate = split["gate_p"]

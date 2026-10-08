@@ -118,7 +118,7 @@ def open_corpus(folder, expected_sha256: str | None) -> dict:
     if expected_sha256 is not None and digest != expected_sha256:
         raise GuardError("G-split: the corpus manifest differs from its sealed sha256")
     manifest = json.loads(path.read_text())
-    if manifest.get("protocol") != ul.PROTOCOL or tuple(manifest["split"]) != ul.SPLITS:
+    if manifest.get("protocol") != ul.PROTOCOL or sorted(manifest["split"]) != sorted(ul.SPLITS):
         raise GuardError(f"G-split: not {ul.CORPUS_NAME}")
     if manifest.get("law") != json.loads(json.dumps(ul.LAW)):
         raise GuardError("G-law: the corpus was not collected under U-sat at the frozen parameters")
@@ -366,10 +366,11 @@ def readouts_core(feat, out, *, tau_commit_cm, r_plate, check=None) -> dict:
     falling = bool(guard["ci95"][0] > 0.0)
     kappa = ul.H_RULE_LAW["kappa"]
     open_form = tv["p_hat"] + kappa * (tv["g"] - tv["h405"])
-    full = np.concatenate([np.load(feat / f"full405_{s}.npy", mmap_mode="r") for s in
-                           ul.FIT_SPLITS])  # fmt: skip
-    stored = r_plate.predict(np.asarray(full, np.float64))
-    del full
+    stored = np.concatenate([
+        r_plate.predict(np.asarray(part[lo : lo + 128], np.float64))
+        for part in (np.load(feat / f"full405_{s}.npy", mmap_mode="r") for s in ul.FIT_SPLITS)
+        for lo in range(0, len(part), 128)
+    ]).reshape(-1, 2)  # fmt: skip
     admission = {
         "c_plate": c_plate,
         "prior_ratio": prior_ratio,
