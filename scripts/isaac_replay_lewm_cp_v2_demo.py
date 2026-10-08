@@ -243,7 +243,7 @@ def compose(args) -> int:
     composer = demo.Composer()
     vw, vh = demo.VIEW_W, demo.VIEW_H
     fps = int(args.fps)
-    isaac_report = json.loads((isaac_dir / "report.json").read_text())
+    isaac_report = json.loads((isaac_dir / "run" / "report.json").read_text())
 
     def label(img: Image.Image, text: str, y: int, colour=(255, 210, 120)) -> None:
         draw = ImageDraw.Draw(img)
