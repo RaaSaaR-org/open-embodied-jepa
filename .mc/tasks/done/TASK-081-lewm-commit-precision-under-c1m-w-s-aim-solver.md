@@ -4,7 +4,7 @@ aliases:
 - TASK-081
 title: "LeWM commit precision under C1-M: W's aim solver"
 slug: lewm-commit-precision-under-c1m-w-s-aim-solver
-status: todo
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -15,6 +15,7 @@ tags:
 - design-note
 - preregistration
 - frozen
+- l-pass
 sprint: ''
 depends_on:
 - "[[TASK-080]]"
@@ -72,12 +73,26 @@ reviewed ruling.
       `docs/experiments/apple_lewm_commit_precision_v2_stage0.md`; this card's third PR).
 - [x] The freeze merged on an independent reviewer's reported APPROVE (R19.15; this card's fourth
       PR; ticked in the PR, in force on merge).
-- [ ] Stages D and S, each on its own reported GO, from a clean worktree of the merged revision.
+- [x] Stages D and S, each on its own reported GO, from a clean worktree of the merged revision.
       Stage D: **D-PASS** (R19.17; W 16/16, W-frozen 15/16, N 5/16, L-shuf 5/16, L-mean 8/16,
-      H-rule 16/16, privileged H-final(commit) 16/16; development, not gated). Stage S: plan R19.19.
-- [ ] Results PR, with every restated number checked by an independent reviewer.
+      H-rule 16/16, privileged H-final(commit) 16/16; development, not gated). Stage S: **L-PASS**
+      (R19.20; W 118/128, H-rule 125/128, privileged H-final(commit) 126/128).
+- [x] Results PR, with every restated number checked by an independent reviewer.
 
 ## Notes
+- 2026-10-08: Stage S ran once on the reviewer's GO (#164, issuecomment-6055011674) at `e9c294f`
+  (worktree `task081-stages`), 07:35:43–08:31:01 UTC: **L-PASS** (R19.20; report sha256
+  `ded7e167…d097`; evidence copy `~/develop/emai/evidence/task081-stages/`). Counted successes on
+  the 128 gated resets 70200–70327 (one run, one model seed 66800 flagged `last_two_triggered`,
+  simulation only, C1-M): W 118/128, W-frozen 117 (reported only), N 73, L-shuf 39, L-mean 59,
+  L-rand 20, H-rule 125, H-sysid 121, H-final(commit) 126 (privileged); H-read 117 and H-now 6
+  (privileged, reported only). G-bar passes; the four McNemar tests pass (p ≤ 2.8 × 10⁻¹⁰); G-NI
+  passes against H-rule (W − H-rule −7/128, 95 % [−13, −2] against −16/128). The primary claim
+  "LeWM-driven closed-loop success"; "LeWM needed" not shown (p = 0.998; H-rule measurably
+  better); the solver's effect not shown (W − W-frozen +1/128, [−5, +7], p = 0.5). W's determinism
+  re-run matched on all four resets. R19.21 changes R7 (the reviewed ruling after an L-PASS).
+  Results document `docs/experiments/apple_lewm_commit_precision_v2_results.md`; **TASK-081 closes
+  with outcome L-PASS** (R19.22; R19.23 records a recommendation only). Card moved to done.
 - 2026-10-08: Stage D ran on #163's GO at `2a6b633` (report `b58ae61f…e920`): D-PASS; R7's last
   clause corrected (R19.18); Stage S's plan in protocol §6.6 (R19.19).
 - 2026-10-08: #162 (Stage 0) merged at `1ca1258`; the freeze (R19.15–R19.16) on branch

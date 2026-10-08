@@ -1152,8 +1152,129 @@
   "tests/test_lewm_cp_v2.py": "8744ca425aef9670c70e5ce76e0780482cab40a4ffd41139c3b7e5c0196e6288"
  },
  "note": "FROZEN (R19.15), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins this task's three code files, its test file, TASK-080's manifest (whose seven pins and frozen block the runner checks too) and the design note's solver file; protocol_document_sha256 is the protocol's sha256. No calibration stage ran (R19.4).",
+ "outcome": "L-PASS at Stage S: the primary claim 'LeWM-driven closed-loop success'; 'LeWM needed' not shown; the solver's effect not shown (reported only); TASK-081 closed (R19.20-R19.23)",
  "protocol": "apple_lewm_commit_precision_v2",
- "protocol_document_sha256": "6b0f832b889c8425fa3675e4d0965b1eec243ad76c4c853a6238bd03a6ef3022",
+ "protocol_document_sha256": "ed7d632da7490de0897833b13a3ff5d18408bbcede05080a4b8c4a085a3dc64c",
+ "results": {
+  "abandonment_clause_fires": false,
+  "claims": {
+   "primary_lewm_driven_closed_loop_success": true,
+   "secondary_lewm_needed": false
+  },
+  "document": "docs/experiments/apple_lewm_commit_precision_v2_results.md",
+  "next_step": "R19.23 (recommendation only): R18.32's direction (a), a condition in which no hand-written arm is given the plate law (a task change, design note first); an owner ruling on TASK-079's 'equivalent row' (proposed, not ruled); more model seeds, broader conditions and a random-init floor before any broader claim; no further solver work under C1-M",
+  "outcome": "L-PASS",
+  "primary_seed": 66800,
+  "primary_seed_last_two_triggered": true,
+  "r7_changed": "R19.21 (the reviewed ruling after an L-PASS, R18.12 and R19.10)",
+  "stage_s": {
+   "comparator": "H-rule",
+   "counts_of_128": {
+    "H-final": 126,
+    "H-now": 6,
+    "H-read": 117,
+    "H-rule": 125,
+    "H-sysid": 121,
+    "L-mean": 59,
+    "L-rand": 20,
+    "L-shuf": 39,
+    "N": 73,
+    "W": 118,
+    "W-frozen": 117
+   },
+   "determinism": {
+    "all_match": true,
+    "max_reading_diff_m": 0.0,
+    "max_target_diff_m": 0.0,
+    "rerun_successes": 4,
+    "resets": [
+     70200,
+     70201,
+     70202,
+     70203
+    ]
+   },
+   "g_bar": true,
+   "g_ni": {
+    "ci95": [
+     -13.0,
+     -2.0
+    ],
+    "detectably_inferior": false,
+    "difference": -7,
+    "only_comparator": 8,
+    "only_w": 1,
+    "passes": true
+   },
+   "refused_before_405_all_arms": [
+    70302
+   ],
+   "report": "task081-stages/outputs/task081-s-1/report.json",
+   "report_sha256": "ded7e167dafac35a531f58042a4fe95c5dd8ccebf225dd91955b8734230cd097",
+   "resets": [
+    70200,
+    70327
+   ],
+   "revision": "e9c294f",
+   "secondary_p": 0.998046875,
+   "solver_effect_reported_only": {
+    "ci95": [
+     -5.0,
+     7.0
+    ],
+    "difference": 1,
+    "only_w": 6,
+    "only_w_frozen": 5,
+    "p": 0.5
+   },
+   "twins": {
+    "L-mean": {
+     "difference": 59,
+     "only_twin": 6,
+     "only_w": 65,
+     "p": 6.660654380404268e-14,
+     "passes": true
+    },
+    "L-rand": {
+     "difference": 98,
+     "only_twin": 1,
+     "only_w": 99,
+     "p": 7.967495142732219e-29,
+     "passes": true
+    },
+    "L-shuf": {
+     "difference": 79,
+     "only_twin": 4,
+     "only_w": 83,
+     "p": 1.509423025915426e-20,
+     "passes": true
+    },
+    "N": {
+     "difference": 45,
+     "only_twin": 6,
+     "only_w": 51,
+     "p": 2.8380965633179045e-10,
+     "passes": true
+    }
+   }
+  },
+  "stages": [
+   {
+    "outcome": "D-PASS",
+    "report": "task081-staged/outputs/task081-d-1/report.json",
+    "report_sha256": "b58ae61f4751ada0eda3501e0971f2f5367bab2f8f798656172dfa540be1f920",
+    "revision": "2a6b633",
+    "stage": "D"
+   },
+   {
+    "outcome": "L-PASS",
+    "report": "task081-stages/outputs/task081-s-1/report.json",
+    "report_sha256": "ded7e167dafac35a531f58042a4fe95c5dd8ccebf225dd91955b8734230cd097",
+    "revision": "e9c294f",
+    "stage": "S"
+   }
+  ]
+ },
  "status": "FROZEN",
  "task": "TASK-081"
 }

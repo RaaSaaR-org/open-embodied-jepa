@@ -7,7 +7,7 @@ the original plan of record and is not rewritten. Rulings are in [DECISIONS.md](
 and outcomes are in the [experiment index](experiments/README.md).
 
 **Where we stand.** This is the canonical sentence (DECISIONS 2026-10-02, R7, as updated on
-2026-10-08 by R18.28, R18.31 and R19.18), verbatim:
+2026-10-08 by R18.28, R18.31, R19.18 and R19.21), verbatim:
 
 > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa`
 > and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen
@@ -15,27 +15,24 @@ and outcomes are in the [experiment index](experiments/README.md).
 > model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init
 > encoder control R-3 (one run, one training seed per arm, 40 resets, one camera at 112 px onboard,
 > a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed
-> nothing measurable), and cohort C is no longer held out. The first LeWM-driven closed loops on v2
-> whose counts are read are TASK-080's (one run, one model seed, in simulation only, under the
-> declared simulation-only plate condition C1-M), in which a LeWM token predictor on frozen DINOv2
-> features chose only the single place aim between P-3's learned pick and e9's scripted place. On
-> the non-gating development cohort D it reached 16/16 counted successes. On the gated cohort S it
-> reached 58/64, above the 56/64 bar and ahead of its action-blind twin (26/64), its two scene-blind
-> twins (21/64 and 30/64) and a random aim (11/64) by exact one-sided McNemar tests at p < 0.01, but
-> it failed the preregistered non-inferiority test against the non-learned hand-written rule
-> controller H-rule, which is given the simulator's plate law (63/64; paired difference −5/64, 95 %
-> interval −10/64 to 0 against the allocated margin of −8/64), without being detectably inferior
-> beyond that margin; the privileged look-ahead ceiling scored 62/64. The row is L-NEAR: escalate,
-> no claim, and no abandonment clause. LeWM therefore has no gated closed-loop Apple→Plate success.
-> Its only other closed-loop Apple→Plate runs whose counts are read are on v1, with 0 successes, and
-> TASK-081's non-gating development runs on v2 (one run each, the same model seed and condition, in
-> simulation only), in which the same LeWM controller commits its aim with a local affine
-> fixed-point solver: on 64 development resets it reached 62/64, against 57/64 for TASK-080's solver
-> and 64/64 for H-rule (the solver was chosen among three variants after seeing their counts, so
-> 62/64 is optimistic), and on TASK-081's preregistered development cohort D (16 fresh resets)
-> 16/16, against 15/16 for TASK-080's solver, 5/16 for the action-blind twin, 5/16 and 8/16 for the
-> two scene-blind twins and 16/16 for both H-rule and the privileged look-ahead ceiling. These are
-> development counts, not gated results. Scripted-expert, privileged-ceiling, oracle and GR00T
+> nothing measurable), and cohort C is no longer held out. LeWM's first gated closed-loop
+> Apple→Plate success is TASK-081's, on v2 (one run, one model seed whose `last_two_triggered`
+> training flag is set, in simulation only, under the declared simulation-only plate condition
+> C1-M), in which a LeWM token predictor on frozen DINOv2 features chose only the single place aim
+> between P-3's learned pick and e9's scripted place, committing it with a local affine fixed-point
+> solver. On 128 fresh gated resets it reached 118/128 counted successes (exact 95 % interval
+> 0.861–0.962), above the 112/128 bar, ahead of its action-blind twin (73/128), its two scene-blind
+> twins (39/128 and 59/128) and a random aim (20/128) by exact one-sided McNemar tests at p < 0.01,
+> and non-inferior within the allocated margin of −16/128 to the non-learned hand-written rule
+> controller H-rule, which is given the simulator's plate law (125/128; paired difference −7/128,
+> 95 % interval −13/128 to −2/128). The row is L-PASS, the preregistered primary claim "LeWM-driven
+> closed-loop success". "LeWM needed" is not shown: H-rule scored measurably higher than LeWM (the
+> interval excludes 0), and the privileged look-ahead ceiling scored 126/128. That the new solver
+> mattered is not shown either: TASK-080's solver, run on the same resets and reported only, scored
+> 117/128 (paired difference +1/128, 95 % interval −5/128 to +7/128). TASK-080's earlier gated run
+> of the same model under the same condition with that solver (58/64 against H-rule's 63/64) stays
+> L-NEAR, and TASK-081's 128-reset cohort was chosen after that result. LeWM's only closed-loop
+> Apple→Plate runs on v1 have 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T
 > successes are not project-learned results.
 
 (LeWM also ran in closed loop on the TASK-014 development reach pilot, a reach task, not
@@ -393,7 +390,7 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       note; candidate directions: (a) a condition in which no hand-written arm is given the plate
       law, declared as a task change; (b) W's commit precision, with the post-hoc
       refinement-cap observation as a hypothesis to preregister.
-    - **TASK-081 (todo; R18.33–R18.35): direction (b) first.** DRAFT design note
+    - **TASK-081 (done, L-PASS; R18.33–R18.35, R19): direction (b) first.** DRAFT design note
       [apple_lewm_commit_precision_v2_design.md](experiments/apple_lewm_commit_precision_v2_design.md):
       W's capped refinement oscillates on a predicted-plate map that is rough below about 1 cm;
       a development check (seeds 70000–70063, CPU, one run, not gated) found W:frozen 57/64,
@@ -409,8 +406,19 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       16/128). Next: its independent review, then Stage 0 and the freeze, then D and S on their GOs.
       **FROZEN** (R19.15). **Stage D: D-PASS** (R19.17; 16 development resets, one run, not
       gated): W 16/16, W-frozen 15/16 (reported only), N 5/16, L-shuf 5/16, L-mean 8/16, H-rule
-      16/16 and the privileged H-final(commit) 16/16. R7 updated (R19.18). Next: Stage S on its own
-      GO (R19.19).
+      16/16 and the privileged H-final(commit) 16/16. R7 updated (R19.18). **Stage S: L-PASS**
+      (R19.20; 128 fresh resets, one run, one flagged model seed, simulation only):
+      W 118/128 passed G-bar (112) and the four twin tests and was non-inferior to the non-learned
+      H-rule 125/128 within the allocated −16/128 (W − H-rule −7/128, 95 % [−13, −2]); "LeWM
+      needed" not shown (H-rule measurably better); the solver's effect not shown (W-frozen
+      117/128); privileged ceiling 126/128. R7 changed by R19.21; **TASK-081 closed** (R19.22).
+      [Results](experiments/apple_lewm_commit_precision_v2_results.md).
+    - **Next (R19.23, a recommendation only, for the owner).** (1) R18.32's direction (a), a
+      condition in which no hand-written arm is given the plate law (a task change, drafted first
+      as a design note), the only direction that can test "LeWM needed"; (2) an owner ruling on
+      whether this L-PASS counts as TASK-079's "equivalent row" (proposed, not ruled); (3) more
+      model seeds of W, broader conditions and a random-init floor before any broader claim;
+      (4) no further solver work under C1-M.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
@@ -448,7 +456,9 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
 - **GPU.** Isaac plus LeWM fine-tuning or re-training on Arena frames; to be estimated from
   TASK-077's measured times.
 - **Depends on.** TASK-077 L-PASS (or its equivalent row), TASK-078's pass, and an owner ruling on
-  Arena as a gated benchmark (it is development-only today, TASK-025).
+  Arena as a gated benchmark (it is development-only today, TASK-025). TASK-081 ended L-PASS
+  (R19.20); whether that counts as the "equivalent row" is proposed (R19.10, R19.22), not ruled,
+  and needs the owner's ruling.
 - **Stop.** A failure on Arena's own ceiling arm (scripted e9-arena with the true plate) voids the
   comparison. A failure of LeWM against Arena's perception twin ends the cross-simulator claim.
 

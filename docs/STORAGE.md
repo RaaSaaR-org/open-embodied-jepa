@@ -132,6 +132,15 @@ Stages D and S read the Stage R report and fits from these worktrees. Nothing re
 TASK-080 is closed, so they can be archived like the others (copy, checksum, MANIFEST row, verify
 before removing).
 
+**TASK-081's run worktrees** (closed 2026-10-08, L-PASS;
+[results](experiments/apple_lewm_commit_precision_v2_results.md) §1): `task081-design` (the
+design note's development check), `task081-staged` and `task081-stages`. Their reports, logs and
+stdouts are copied to the SSD evidence store
+(`~/develop/emai/evidence/task081-{dev,staged,stages}/`, sha256 manifests under `_checksums/`).
+TASK-081's Stages D and S read TASK-077's featurisation and fits (`task077-stageo`) and TASK-080's
+Stage R report and fits (`task080-stager`); with TASK-081 closed nothing reads them now, but any
+re-run or follow-up on W-66800 and R-S does, so archive them only with their checksums verified.
+
 ## Old path to archive path
 
 Results documents cite worktree paths on the SSD. Each worktree below was copied, every file

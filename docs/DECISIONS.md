@@ -63,6 +63,103 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (j) — TASK-081 Stage S ends L-PASS: the first gated LeWM-driven closed-loop success on v2; "LeWM needed" and the solver's effect are not shown; R7 is changed; TASK-081 closes (R19.20–R19.23)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_commit_precision_v2_results.md](experiments/apple_lewm_commit_precision_v2_results.md)
+(protocol [apple_lewm_commit_precision_v2.md](experiments/apple_lewm_commit_precision_v2.md)
+§6.7). Stage S is the gated cohort: 128 fresh resets, one run, one model seed (66800, flagged
+`last_two_triggered`), in simulation only, under the declared simulation-only plate condition C1-M;
+LeWM chooses only the single place aim committed at step 405, between P-3's learned pick and e9's
+scripted place.
+
+- **R19.20 — Stage S: L-PASS.** Stage S ran once on the reviewer's GO (#164,
+  issuecomment-6055011674) at `e9c294f`, in the worktree `task081-stages`, on the CPU,
+  07:35:43–08:31:01 UTC (3 318 s, cap 21 600; in-run G-tests 2123 passed, 37 skipped; peak PSS
+  9.76 GiB, cap 12; no G-repro render disagreement). Counted successes on 70200–70327 (exact 95 %
+  intervals): **W 118/128** (0.861–0.962), W-frozen 117/128 (TASK-080's W unchanged, reported
+  only), N 73/128, L-shuf 39/128, L-mean 59/128, L-rand 20/128, **H-rule 125/128** (not learned,
+  given the plate law), H-sysid 121/128 (not learned), H-final(commit) 126/128 (privileged
+  ceiling); reported only and privileged, H-read 117/128 and H-now 6/128. Reset 70302 was refused
+  before 405 in every arm (a guard refusal at step 223, before any grasp) and counts as a failure
+  in each. G-bar passes (118 ≥ 112); S-VOID-CEILING does not hold (126 ≥ 112); the four twin tests
+  pass (exact one-sided McNemar: W − N +45, discordant 51/6, p 2.8 × 10⁻¹⁰; W − L-shuf +79, 83/4,
+  p 1.5 × 10⁻²⁰; W − L-mean +59, 65/6, p 6.7 × 10⁻¹⁴; W − L-rand +98, 99/1, p 8.0 × 10⁻²⁹);
+  **G-NI passes**: against C = H-rule (125 > 121), W − C = −7/128, discordant 1/8, reset-bootstrap
+  95 % interval [−13, −2]/128, lower bound above −δ = −16/128 (δ an allocation, not calibrated).
+  The row is **L-PASS**, the primary claim "LeWM-driven closed-loop success"; the clause does not
+  fire. **Secondary "LeWM needed": not shown** (p = 0.998), and the interval's upper bound −2 < 0
+  means W is measurably below H-rule on this cohort, inside the allocated margin. **Reported only:
+  the solver's effect is not shown**: W − W-frozen = +1/128 (6/5, [−5, +7], p = 0.5); W-frozen,
+  TASK-080's solver, scored 117/128, which would itself have cleared G-bar, and post hoc (computed
+  for the results document, not preregistered) W-frozen − H-rule = −8/128 [−14, −2], also above
+  −16/128. W's median aim error against H-final(commit)'s aim was 0.295 cm [0.249, 0.333] against
+  W-frozen's 0.347 [0.301, 0.404]. W's nine failures that reached the place ended 4.02–4.51 cm from
+  the plate centre against the scorer's 4 cm radius; in the near-plate arms the apple rests about
+  3.3–3.6 cm from the centre in median. The determinism re-run matched on all four resets (the
+  log's "4/4" is its success count). Report sha256 `ded7e167…d097`; evidence copy
+  `~/develop/emai/evidence/task081-stages/` (report, log, empty stdout; manifest
+  `_checksums/task081-stages.sha256`, sha256 `0ec44911…e318`).
+- **R19.21 — R7 is changed after the L-PASS, by this ruling** (R18.12, R19.10: only a reviewed
+  ruling after an L-PASS may let R7 state a gated LeWM success). The v2 LeWM part now states the
+  gated success with its qualifiers: one run; one model seed, flagged; simulation only; the
+  declared simulation-only condition C1-M; LeWM choosing only the single place aim between P-3's
+  learned pick and e9's scripted place; frozen DINOv2 features; non-inferiority to H-rule within
+  an allocated margin while H-rule scored measurably higher; "LeWM needed" not shown; the solver's
+  effect not shown; TASK-080's gated L-NEAR standing; the 128-reset cohort chosen after it. It
+  does not say that LeWM controls the whole task, beats hand-written control, works in Arena or on
+  hardware, or that the solver change mattered. The development counts of TASK-080 and TASK-081
+  that R18.28, R18.31 and R19.18 listed are dropped from the sentence (they stay in those rulings
+  and the results documents); the sentence stays literally true without them. The sentence in
+  force from this ruling's merge, quoted verbatim and in full by the entry documents (R8.1):
+
+  > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
+  > (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an
+  > MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert
+  > e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40 for
+  > its random-init encoder control R-3 (one run, one training seed per arm, 40 resets, one camera
+  > at 112 px onboard, a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder
+  > pretraining contributed nothing measurable), and cohort C is no longer held out. LeWM's first
+  > gated closed-loop Apple→Plate success is TASK-081's, on v2 (one run, one model seed whose
+  > `last_two_triggered` training flag is set, in simulation only, under the declared
+  > simulation-only plate condition C1-M), in which a LeWM token predictor on frozen DINOv2 features
+  > chose only the single place aim between P-3's learned pick and e9's scripted place, committing
+  > it with a local affine fixed-point solver. On 128 fresh gated resets it reached 118/128 counted
+  > successes (exact 95 % interval 0.861–0.962), above the 112/128 bar, ahead of its action-blind
+  > twin (73/128), its two scene-blind twins (39/128 and 59/128) and a random aim (20/128) by exact
+  > one-sided McNemar tests at p < 0.01, and non-inferior within the allocated margin of −16/128 to
+  > the non-learned hand-written rule controller H-rule, which is given the simulator's plate law
+  > (125/128; paired difference −7/128, 95 % interval −13/128 to −2/128). The row is L-PASS, the
+  > preregistered primary claim "LeWM-driven closed-loop success". "LeWM needed" is not shown:
+  > H-rule scored measurably higher than LeWM (the interval excludes 0), and the privileged
+  > look-ahead ceiling scored 126/128. That the new solver mattered is not shown either: TASK-080's
+  > solver, run on the same resets and reported only, scored 117/128 (paired difference +1/128, 95 %
+  > interval −5/128 to +7/128). TASK-080's earlier gated run of the same model under the same
+  > condition with that solver (58/64 against H-rule's 63/64) stays L-NEAR, and TASK-081's 128-reset
+  > cohort was chosen after that result. LeWM's only closed-loop Apple→Plate runs on v1 have 0
+  > successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not
+  > project-learned results.
+
+  The TASK-014 note that follows R7's quote stays as written. Changed with it: AGENTS.md,
+  CLAUDE.md, README.md, docs/PLAN.md, docs/EVALUATION.md, docs/MVP_PLAN.md (a dated update) and
+  the experiment index. CONTRIBUTING.md does not quote the clause and stays true. Frozen
+  protocols, results documents and earlier decisions (R18.28's, R18.31's and R19.18's quotes
+  included) are not rewritten; the protocol's §13 records the change beside the frozen text.
+- **R19.22 — TASK-081 closes with outcome L-PASS.** The results document is the protocol's §6.1
+  step 5; the card moves to done; the manifest records the outcome and a results block. No repeat
+  of Stage S and no further gated run is planned. Proposed in R19.10 and still **not ruled**: that
+  this L-PASS counts as TASK-079's "TASK-077 L-PASS (or its equivalent row)"; adopting it needs the
+  owner's ruling, and TASK-078's pass and an owner ruling on Arena as a gated benchmark stay
+  required.
+- **R19.23 — next-step recommendation (recorded only, for the owner).** (1) R18.32's direction (a):
+  a condition in which no hand-written arm is given the plate law, declared as a task change and
+  drafted first as a design note with its own preregistration and fresh seeds; it is the only
+  direction here that can test "LeWM needed", since under C1-M H-rule is handed the simulator's law
+  and is measurably better than W. (2) TASK-079's precondition, by an owner ruling (R19.22).
+  (3) Before any broader claim, robustness of this result: more model seeds of W (66800 is
+  flagged), broader conditions (move radius, κ, commit step) and a random-init floor for W, each
+  preregistered. (4) No further solver work under C1-M: its effect was not shown on fresh seeds.
+
 ## Decision 2026-10-08 (i) — TASK-081 Stage D ends D-PASS; R7's last clause is corrected; Stage S's plan (R19.17–R19.19)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
@@ -2120,8 +2217,10 @@ No run was made for them.
   2026-10-08 (c)), which replaces the v2 LeWM clause with TASK-080 Stage D's development counts,
   **and again by R18.31** (decision 2026-10-08 (d)), which adds Stage S's gated counts and its
   L-NEAR row, **and a third time by R19.18** (decision 2026-10-08 (i)), which corrects its last
-  clause with TASK-081's development counts; the sentence in force is quoted in R19.18. The quote
-  below is R7 as adopted:
+  clause with TASK-081's development counts, **and a fourth time by R19.21** (decision 2026-10-08
+  (j)), the reviewed ruling after TASK-081's L-PASS, which states the first gated LeWM-driven
+  closed-loop success on v2 with its qualifiers; the sentence in force is quoted in R19.21. The
+  quote below is R7 as adopted:
 
   > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
   > (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an

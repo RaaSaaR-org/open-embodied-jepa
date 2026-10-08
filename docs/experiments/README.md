@@ -6,35 +6,31 @@ failures and negative results stay in them. Read each outcome with the caveats i
 document; the one-line outcomes below are pointers, not claims.
 
 **Status (canonical sentence, [DECISIONS.md](../DECISIONS.md), decision 2026-10-02, R7, as updated
-on 2026-10-08 by R18.28, R18.31 and R19.18).**
+on 2026-10-08 by R18.28, R18.31, R19.18 and R19.21).**
 Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa`
 and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen
 DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world model)
 scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init encoder
 control R-3 (one run, one training seed per arm, 40 resets, one camera at 112 px onboard, a narrow
 reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing
-measurable), and cohort C is no longer held out. The first LeWM-driven closed loops on v2 whose
-counts are read are TASK-080's (one run, one model seed, in simulation only, under the declared
-simulation-only plate condition C1-M), in which a LeWM token predictor on frozen DINOv2 features
-chose only the single place aim between P-3's learned pick and e9's scripted place. On the
-non-gating development cohort D it reached 16/16 counted successes. On the gated cohort S it reached
-58/64, above the 56/64 bar and ahead of its action-blind twin (26/64), its two scene-blind twins
-(21/64 and 30/64) and a random aim (11/64) by exact one-sided McNemar tests at p < 0.01, but it
-failed the preregistered non-inferiority test against the non-learned hand-written rule controller
-H-rule, which is given the simulator's plate law (63/64; paired difference −5/64, 95 % interval
-−10/64 to 0 against the allocated margin of −8/64), without being detectably inferior beyond that
-margin; the privileged look-ahead ceiling scored 62/64. The row is L-NEAR: escalate, no claim, and
-no abandonment clause. LeWM therefore has no gated closed-loop Apple→Plate success. Its only other
-closed-loop Apple→Plate runs whose counts are read are on v1, with 0 successes, and TASK-081's
-non-gating development runs on v2 (one run each, the same model seed and condition, in simulation
-only), in which the same LeWM controller commits its aim with a local affine fixed-point solver: on
-64 development resets it reached 62/64, against 57/64 for TASK-080's solver and 64/64 for H-rule
-(the solver was chosen among three variants after seeing their counts, so 62/64 is optimistic), and
-on TASK-081's preregistered development cohort D (16 fresh resets) 16/16, against 15/16 for
-TASK-080's solver, 5/16 for the action-blind twin, 5/16 and 8/16 for the two scene-blind twins and
-16/16 for both H-rule and the privileged look-ahead ceiling. These are development counts, not gated
-results. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned
-results.
+measurable), and cohort C is no longer held out. LeWM's first gated closed-loop Apple→Plate success
+is TASK-081's, on v2 (one run, one model seed whose `last_two_triggered` training flag is set, in
+simulation only, under the declared simulation-only plate condition C1-M), in which a LeWM token
+predictor on frozen DINOv2 features chose only the single place aim between P-3's learned pick and
+e9's scripted place, committing it with a local affine fixed-point solver. On 128 fresh gated resets
+it reached 118/128 counted successes (exact 95 % interval 0.861–0.962), above the 112/128 bar, ahead
+of its action-blind twin (73/128), its two scene-blind twins (39/128 and 59/128) and a random aim
+(20/128) by exact one-sided McNemar tests at p < 0.01, and non-inferior within the allocated margin
+of −16/128 to the non-learned hand-written rule controller H-rule, which is given the simulator's
+plate law (125/128; paired difference −7/128, 95 % interval −13/128 to −2/128). The row is L-PASS,
+the preregistered primary claim "LeWM-driven closed-loop success". "LeWM needed" is not shown:
+H-rule scored measurably higher than LeWM (the interval excludes 0), and the privileged look-ahead
+ceiling scored 126/128. That the new solver mattered is not shown either: TASK-080's solver, run on
+the same resets and reported only, scored 117/128 (paired difference +1/128, 95 % interval −5/128
+to +7/128). TASK-080's earlier gated run of the same model under the same condition with that solver
+(58/64 against H-rule's 63/64) stays L-NEAR, and TASK-081's 128-reset cohort was chosen after that
+result. LeWM's only closed-loop Apple→Plate runs on v1 have 0 successes. Scripted-expert,
+privileged-ceiling, oracle and GR00T successes are not project-learned results.
 
 Manifests are under [`benchmarks/manifests/`](../../benchmarks/manifests/). Run outputs are
 git-ignored and stay on the machine that made them; several finished run worktrees have been
@@ -45,7 +41,7 @@ not rewritten when its worktree is archived.
 
 | Task | Protocol | Results | Outcome (pointer only) | Manifest |
 |---|---|---|---|---|
-| TASK-081 | [apple_lewm_commit_precision_v2](apple_lewm_commit_precision_v2.md) (**FROZEN**, R19) ([Stage 0](apple_lewm_commit_precision_v2_stage0.md)) | – | Stage D **D-PASS** (R19.17; development, 16 resets, one run, not gated): W 16/16, W-frozen 15/16, N 5/16, L-shuf 5/16, L-mean 8/16, H-rule 16/16, privileged H-final(commit) 16/16; Stage S not run. W's solver after the grid becomes affine_local (the design note's tested variant; no retraining, no refit); twins carry it; W-frozen reported only; no K0 or offline gate; D 16 resets, S 128 resets with G-bar 112/128 and G-NI within 16/128 | `apple-lewm-cp-v2.json` (FROZEN) |
+| TASK-081 | [apple_lewm_commit_precision_v2](apple_lewm_commit_precision_v2.md) (**FROZEN**, R19) ([Stage 0](apple_lewm_commit_precision_v2_stage0.md)) | [results](apple_lewm_commit_precision_v2_results.md) | **L-PASS** at the gated Stage S (R19.20; 128 fresh resets, one run, one model seed flagged `last_two_triggered`, simulation only, C1-M; LeWM chooses only the place aim): W 118/128 (0.861–0.962) passed G-bar (112) and beat N 73, L-shuf 39, L-mean 59 and L-rand 20 (McNemar p < 0.01); G-NI passed against the non-learned H-rule 125/128 (W − H-rule −7/128, 95 % [−13, −2] against −16/128). The primary claim "LeWM-driven closed-loop success"; **"LeWM needed" not shown** (H-rule measurably better); **solver effect not shown** (W-frozen 117/128, W − W-frozen +1, [−5, +7]); privileged ceiling 126/128. Earlier: Stage D **D-PASS** (R19.17; development, 16 resets): W 16/16, W-frozen 15/16, N 5/16, L-shuf 5/16, L-mean 8/16, H-rule 16/16, privileged H-final(commit) 16/16. W's solver after the grid becomes affine_local (the design note's tested variant; no retraining, no refit); twins carry it; W-frozen reported only; no K0 or offline gate; D 16 resets, S 128 resets with G-bar 112/128 and G-NI within 16/128 | `apple-lewm-cp-v2.json` (FROZEN) |
 | TASK-080 | [apple_lewm_c1m_v2_pred_readout](apple_lewm_c1m_v2_pred_readout.md) (FROZEN, R18) ([Stage 0](apple_lewm_c1m_v2_pred_readout_stage0.md)) | [results](apple_lewm_c1m_v2_pred_readout_results.md) | **L-NEAR** at the gated Stage S (64 resets, one run, one model seed, simulation only): W 58/64 passed G-bar (56) and beat N 26, L-shuf 21, L-mean 30 and L-rand 11 (McNemar p < 0.01), but failed G-NI against the non-learned rule controller H-rule 63/64 (W − H-rule −5/64, 95 % [−10, 0] against −8/64; not detectably inferior); escalate, no clause, **no claim**; privileged ceiling 62/64. Earlier: K0′-PASS, CORPUS-SEALED, R-PASS offline, Stage D D-PASS (W 16/16, development) | `apple-lewm-pr-v2.json` (FROZEN) |
 | TASK-077 | [apple_lewm_c1m_v2](apple_lewm_c1m_v2.md) (FROZEN, R17) ([Stage 0](apple_lewm_c1m_v2_stage0.md)) | [results](apple_lewm_c1m_v2_results.md) | **G-NO-BAR** at Stage G (Stage T T-DONE): G1–G4 pass on all three seeds, G5 (a) fails on all three (predicted-plate readout 1.58–1.87 cm against τ_commit 1.0 cm); escalate, no clause; D and S not run, so no LeWM closed loop | `apple-lewm-c1m-v2.json` |
 | TASK-076 | [apple_plate_twin_v2](apple_plate_twin_v2.md) ([Stage 0](apple_plate_twin_v2_stage0.md)) | [results](apple_plate_twin_v2_results.md) | **TWIN-PASS** (H-twin 64/64 vs H-clock 51/64; random-init floor also 64/64; no world model); K-pred **PRED-INFEASIBLE** (cell A removed), so Branch B; no clause fires | `apple-plate-twin-v2.json` |
