@@ -70,7 +70,10 @@ is kept as written.
 simulated attempt ran on debug seeds 74800–74899 and every model was a 300-update debug model;
 nothing in them is read. No seed of K, D, S or the corpus has been simulated. R7 is unchanged.
 
-- **R20.17 — Stage 0's code (new modules only).** `lewm_ul_v2.py` (the frozen-block candidate),
+- **R20.17 — Stage 0's code (new modules only).** (After the #170 review: H-sysid's and
+  H-sysid-krr's clip-binding is read as their committed aim lying on the box boundary, the same
+  §9.6 reading as the other arms, with a test; the closed stage also records every job's
+  `last_two_triggered` and Stage G's predicted counts beside the S counts, §9.5 items 4–5.) `lewm_ul_v2.py` (the frozen-block candidate),
   `lewm_ul_v2_runtime.py`, `lewm_ul_v2_offline.py`, `lewm_ul_v2_train.py` (added to §2.2's list:
   TASK-077's training loop copied verbatim, a test comparing the source, with `WindowSampler` bound
   to a sampler on salt 8409), `scripts/run_lewm_ul_v2.py` (TASK-077's runner helpers copied
@@ -94,7 +97,16 @@ nothing in them is read. No seed of K, D, S or the corpus has been simulated. R7
   (40 roots, 40 converged labels), **labelcheck LABELS-UNCHANGED-DEBUG** (six roots, each collected
   with and without the labelling look-ahead: frames, commands, plate, palm, hidden render, target,
   405 state, p̂, executed steps and outcome bit-identical, so the label leaves a root's execution
-  unchanged as §4.3 requires), featurise FEATURISED-DEBUG, readouts O-NO-BAR-DEBUG, six GPU training
+  unchanged as §4.3 requires). After the #170 review the check was extended to gate-P's p̂ aim
+  (half the roots) and, from its second version on, to a third, unlabelled control collection: its
+  second run (`2b4fab9`, under a load of about 30 from other sessions) found one root (true-plate
+  aim) whose kept frames differed while every executed array and the outcome were bit-identical;
+  the cause is not established (that version did not record the difference's size; the look-ahead's
+  branches render nothing, and R17.21 recorded EGL renderer differences within a worker's
+  history); the third run (`154bdd5`, report `fb84a26f…a2d4`) found execution and observations
+  bit-identical in every labelled, unlabelled and control pair on 6 of 6 roots. The check's row now
+  gates the executed trajectory and reports every observation difference with its size beside the
+  control's. Then featurise FEATURISED-DEBUG, readouts O-NO-BAR-DEBUG, six GPU training
   jobs T-JOB-DONE-DEBUG (300 updates each, through `gpu_run.sh`), Stage G H-GATE-FAIL-DEBUG (every
   phase and 12 arms' offline aims), Stage D L-DEV-STOP-DEBUG and Stage S S-VOID-CEILING-DEBUG
   (all 15 arms, determinism re-run ok, in-run G-tests). Every candidate decision logged

@@ -69,6 +69,8 @@ at their revision (TESTS-PASS, 2 211 passed, 37 skipped).
 | k0 (74800–74803) | `2c861a1` | CAL-ESCALATE-DEBUG | 118 | 8.97 | every level, H-rule, H-now; the clip-binding check read p̂ on the 3 level-0 resets that reached 405 (0 outside) |
 | corpus (74830–74869) | `2c861a1` | CORPUS-SEALED-DEBUG | 99 | 9.53 | 40 roots, 0 excluded, 40 labels, all converged |
 | labelcheck (74870–74875) | `2c861a1` | **LABELS-UNCHANGED-DEBUG** | 62 | 9.45 | each root collected with and without the label: frames, commands, plate, palm, hidden render, target, 405 state, p̂, executed steps, termination and outcome **bit-identical on 6 of 6** |
+| labelcheck-2 (after the #170 review: half the roots on gate-P's p̂ aim) | `2b4fab9` | LABELS-CHANGED-DEBUG | 1 865 | 7.18 | root 74870 (true-plate aim): every executed array and the outcome bit-identical, **its kept frames not**; the version did not record the difference's size; the machine was under a load of about 30 from other sessions; cause not established (the look-ahead's branches render nothing; R17.21 recorded EGL renderer differences within a worker's history) |
+| labelcheck-3 (labelled, unlabelled, unlabelled control) | `154bdd5` | **LABELS-UNCHANGED-DEBUG** | 344 | 8.09 | 3 true-plate and 3 p̂ roots: execution **and** observations bit-identical in every labelled/unlabelled and control pair (report `fb84a26f…a2d4`); the row now gates the executed trajectory and reports each observation difference with its size |
 | featurise | `8232523` | FEATURISED-DEBUG | 11 | 1.48 | G-anchor 8.8e-5 (bound 1e-3) |
 | readouts | `8232523` | O-NO-BAR-DEBUG | 0.4 | – | 35 fit roots |
 | train × 6 (W, N of 74890–74892, 300 updates) | `8232523` | T-JOB-DONE-DEBUG | 54–56 | 2.6–2.7 | 0.167 s per update (median); 5.5 GiB GPU allocated |

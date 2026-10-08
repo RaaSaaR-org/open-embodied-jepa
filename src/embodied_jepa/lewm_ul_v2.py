@@ -1278,6 +1278,16 @@ STAGE0: dict = {  # the record: docs/experiments/apple_lewm_unknown_law_v2_stage
         "labelcheck": {"outcome": "LABELS-UNCHANGED-DEBUG", "roots": 6, "seconds": 61.9,
                        "identical": "frames, commands, plate, palm, hidden render, target, 405 "
                        "state, p-hat, executed steps, termination, outcome: bit-exact on 6 of 6"},
+        "labelcheck-2": {"outcome": "LABELS-CHANGED-DEBUG", "revision": "2b4fab9",
+                         "note": "half the roots on gate-P's p-hat aim; root 74870 (true-plate "
+                         "aim): every executed array and the outcome bit-identical, its kept "
+                         "frames not (sizes not recorded by that version); load about 30"},
+        "labelcheck-3": {"outcome": "LABELS-UNCHANGED-DEBUG", "revision": "154bdd5",
+                         "seconds": 344, "report_sha256": "fb84a26f7f0e9156e12363445b70bee3"
+                         "66cfeaae18bddfecdb1f920fdb3ea2d4",
+                         "note": "labelled, unlabelled and an unlabelled control on 6 roots (3 "
+                         "true-plate, 3 p-hat aims): execution and observations bit-identical in "
+                         "every pair"},
         "featurise": {"outcome": "FEATURISED-DEBUG", "seconds": 10.7,
                       "anchor_max_abs_difference": 8.76e-05},
         "readouts": {"outcome": "O-NO-BAR-DEBUG", "seconds": 0.4},
