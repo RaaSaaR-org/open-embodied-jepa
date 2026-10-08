@@ -1405,8 +1405,137 @@
   "tests/test_lewm_pr_v2.py": "932190400fc7fd09f82f61d972731dcbd545fb7e134ef9aef348049cb5a28be3"
  },
  "note": "FROZEN after K0′-PASS (R18.22), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins the stage's four own files, the test file, TASK-077's manifest (whose 13 pins and frozen block the runner checks too) and TASK-076's manifest (whose 84 pins the runner checks too); protocol_document_sha256 is the protocol's sha256. K0′'s report: outputs/task080-k0-1/report.json, sha256 a0939e3eea7b695d1c3029e733970bcd123ea62db76192104c69479ad9314c16.",
+ "outcome": "L-NEAR at Stage S; escalate, no clause, no claim; TASK-080 closed (R18.30-R18.32)",
  "protocol": "apple_lewm_c1m_v2_pred_readout",
- "protocol_document_sha256": "b454d6163cf2b36fb8408d27b6ac46735d2a9db0c5593d86e00cdbbf33c51b50",
+ "protocol_document_sha256": "bb1b2772d667904f4d2b61ec8f7a2cb4b234e0cac9c2b9554a8c5ef62862d2bd",
+ "results": {
+  "abandonment_clause_fires": false,
+  "claims": {
+   "primary_lewm_driven_closed_loop_success": false,
+   "secondary_lewm_needed": false
+  },
+  "document": "docs/experiments/apple_lewm_c1m_v2_pred_readout_results.md",
+  "next_step": "R18.32 (recommendation only): no repeat of Stage S with this design; escalate to the owner; any next LeWM task on v2 drafted first as a design note with its own preregistration and fresh seeds",
+  "outcome": "L-NEAR",
+  "primary_seed": 66800,
+  "r7_changed": "R18.31 (factual correction, a named exception to R18.12; no success claim)",
+  "stage_s": {
+   "comparator": "H-rule",
+   "counts_of_64": {
+    "H-final": 62,
+    "H-now": 1,
+    "H-read": 64,
+    "H-rule": 63,
+    "H-sysid": 62,
+    "L-mean": 30,
+    "L-rand": 11,
+    "L-shuf": 21,
+    "N": 26,
+    "W": 58
+   },
+   "determinism": {
+    "all_match": true,
+    "max_reading_diff_m": 0.0,
+    "max_target_diff_m": 0.0,
+    "rerun_successes": 3,
+    "resets": [
+     65200,
+     65201,
+     65202,
+     65203
+    ]
+   },
+   "g_bar": true,
+   "g_ni": {
+    "ci95": [
+     -10.0,
+     0.0
+    ],
+    "detectably_inferior": false,
+    "difference": -5,
+    "only_comparator": 6,
+    "only_w": 1,
+    "passes": false
+   },
+   "report": "task080-stages/outputs/task080-s-1/report.json",
+   "report_sha256": "53cfdec19d4c570cf50af00bf33fc236847b4e520cba4489e4991b8bf079393e",
+   "resets": [
+    65200,
+    65263
+   ],
+   "revision": "bfae0fa",
+   "secondary_p": 0.9921875,
+   "twins": {
+    "L-mean": {
+     "difference": 28,
+     "only_twin": 4,
+     "only_w": 32,
+     "p": 9.707873687148094e-07,
+     "passes": true
+    },
+    "L-rand": {
+     "difference": 47,
+     "only_twin": 1,
+     "only_w": 48,
+     "p": 8.881784197001252e-14,
+     "passes": true
+    },
+    "L-shuf": {
+     "difference": 37,
+     "only_twin": 4,
+     "only_w": 41,
+     "p": 4.6674415443703765e-09,
+     "passes": true
+    },
+    "N": {
+     "difference": 32,
+     "only_twin": 2,
+     "only_w": 34,
+     "p": 9.70612745732069e-09,
+     "passes": true
+    }
+   }
+  },
+  "stages": [
+   {
+    "outcome": "K0'-PASS",
+    "report": "task080-k0/outputs/task080-k0-1/report.json",
+    "report_sha256": "a0939e3eea7b695d1c3029e733970bcd123ea62db76192104c69479ad9314c16",
+    "revision": "931281a",
+    "stage": "K0'"
+   },
+   {
+    "corpus_manifest_sha256": "deebd83db6de53e23dbde0b921ae7f7c1cf79cb24c6dd27bfae066c2f5017c4e",
+    "outcome": "CORPUS-SEALED",
+    "report": "task080-stagec/outputs/task080-corpus-1/report.json",
+    "report_sha256": "63b085df119f59219c24057ad4f592a59d20f43ff5ca210c32fd0e570bf6b0ca",
+    "revision": "514110d",
+    "stage": "C'"
+   },
+   {
+    "outcome": "R-PASS",
+    "report": "task080-stager/outputs/task080-rgate-1/report.json",
+    "report_sha256": "bedb896692a9718ac598fa93c5d7dcc199090bf4cfa13d14fa0bd0fc53848ea7",
+    "revision": "33cea5c",
+    "stage": "R"
+   },
+   {
+    "outcome": "D-PASS",
+    "report": "task080-staged/outputs/task080-d-1/report.json",
+    "report_sha256": "1602447a08523f49d3924f6b38d10275a417d1ccd4a90bc8cd70d22ef79a0611",
+    "revision": "db34adc",
+    "stage": "D"
+   },
+   {
+    "outcome": "L-NEAR",
+    "report": "task080-stages/outputs/task080-s-1/report.json",
+    "report_sha256": "53cfdec19d4c570cf50af00bf33fc236847b4e520cba4489e4991b8bf079393e",
+    "revision": "bfae0fa",
+    "stage": "S"
+   }
+  ],
+  "w_66800_last_two_triggered": true
+ },
  "status": "FROZEN",
  "task": "TASK-080"
 }
