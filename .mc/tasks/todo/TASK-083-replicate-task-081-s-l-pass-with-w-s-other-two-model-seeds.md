@@ -4,7 +4,7 @@ aliases:
 - TASK-083
 title: "Replicate TASK-081's L-PASS with W's other two model seeds (66801, 66802) under C1-M"
 slug: replicate-task-081-s-l-pass-with-w-s-other-two-model-seeds
-status: in-progress
+status: todo
 priority: 1
 owner: ''
 projects: []
