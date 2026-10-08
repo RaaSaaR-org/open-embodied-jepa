@@ -676,6 +676,8 @@ def main(argv=None) -> int:
     ap.add_argument("--output", required=True)
     ap.add_argument("--socket", default=None, help="the server's cp.sock")
     ap.add_argument("--sham", action="store_true", help="host MuJoCo endpoint (plumbing check)")
+    ap.add_argument("--p-readout-cache", default=None, help="pickle of the refitted P readout")
+    ap.add_argument("--refit-only", action="store_true", help="refit, write the cache, exit")
     ap.add_argument("--evidence", required=True)
     ap.add_argument("--old-features", required=True)
     ap.add_argument("--old-fits", required=True)
@@ -695,7 +697,7 @@ def main(argv=None) -> int:
     out_dir = Path(args.output)
     if out_dir.exists():
         raise SystemExit(f"refusing: {out_dir} exists")
-    if (args.socket is None) == (not args.sham):
+    if not args.refit_only and (args.socket is None) == (not args.sham):
         raise SystemExit("give exactly one of --socket and --sham")
     if shutil.which("ffmpeg") is None:
         raise SystemExit("system ffmpeg is required")
@@ -729,13 +731,33 @@ def main(argv=None) -> int:
     config = rn.worker_config(chain, readouts=readouts, with_r8=True)
     config = {"torch_threads": cpv.WORKER_TORCH_THREADS,
               "p3_checkpoint": hz.p3_checkpoint(Path(args.evidence))} | config  # fmt: skip
-    pool = rn.Pool(int(args.workers), config)
-    try:
-        p_readout, encoder = hz.refit_p_readout(report, pool, Path(args.evidence), report["_run1"])
-    finally:
-        report["pool_close"] = pool.close()
-    report.pop("_run1", None)
-    log(f"P readout refitted ({time.monotonic() - started:.0f} s)")
+    import pickle
+
+    cache = None if args.p_readout_cache is None else Path(args.p_readout_cache)
+    if cache is not None and cache.exists():
+        from embodied_jepa import pretrained_encoder as pe
+
+        saved = pickle.loads(cache.read_bytes())
+        p_readout, encoder = saved["p_readout"], pe.load_pretrained()
+        report["p_readout_cache"] = {"path": str(cache), "sha256": demo.sha256_file(cache),
+                                     "refit_report": saved["refit_report"]}  # fmt: skip
+        log(f"P readout loaded from {cache}")
+    else:
+        pool = rn.Pool(int(args.workers), config)
+        try:
+            p_readout, encoder = hz.refit_p_readout(
+                report, pool, Path(args.evidence), report["_run1"]
+            )
+        finally:
+            report["pool_close"] = pool.close()
+        report.pop("_run1", None)
+        log(f"P readout refitted ({time.monotonic() - started:.0f} s)")
+        if cache is not None:
+            refit_report = json.loads(json.dumps(report.get("stages", {}), default=float))
+            cache.write_bytes(pickle.dumps({"p_readout": p_readout, "refit_report": refit_report}))
+    if args.refit_only:
+        (out_dir / "report.json").write_text(json.dumps(report, indent=1, default=float))
+        return 0
     cpr.worker_init(config)
     readers = Readers(p_readout, encoder)
     endpoint = (
