@@ -1,0 +1,1566 @@
+{
+ "protocol": "apple_lewm_unknown_law_v2",
+ "task": "TASK-082",
+ "status": "DRAFT",
+ "document": "docs/experiments/apple_lewm_unknown_law_v2.md",
+ "note": "DRAFT (Stage 0, R20.17-): the frozen block below is a candidate; frozen_sha256_pin is null until the freeze, which also fills hashes (this task's five own files, its test file, TASK-081's, TASK-080's and TASK-077's manifests, the pinned development files) and protocol_document_sha256, and is in force once merged on an independent reviewer's APPROVE.",
+ "carried": {
+  "task081_frozen_sha256": "77ccc6364624c7da9dcca1d09827a0f6a25a670a00392d488e7b0216e090705a",
+  "task080_frozen_sha256": "0fc095dc947f0ac74ebf6d1c541098a1e6fec1897592256f97ac8962b97be064",
+  "task077_frozen_sha256": "f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d",
+  "pinned_dev_files": {
+   "src/embodied_jepa/plate_law_dev.py": "0ad8e530e5e1fe5c77c2410af0a99e26281b0243b16a2af506e7815a964c49b2",
+   "src/embodied_jepa/plate_law_dev_runtime.py": "dad06107d1262bf62fdbb31e7976e34fdfd29ba7f4dc93ad9e5f2399315a361e",
+   "src/embodied_jepa/commit_precision_dev.py": "ba3c8d03f98ddaeb2d26fd13c4363995cb11492f02603eb8406ca42ef71f91f1"
+  },
+  "reused": {
+   "r_plate": "08bde901ca75ab0ee4bc1c74bf4da91117ba57c0491828d81bc9db921cc49eb9",
+   "task077_readouts_report_sha256": "452045d22c21b067c8bfe78cb72f4e842fc61f3c44a9e17b6fae860c244f8b78",
+   "task077_corpus_sha256": "ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb",
+   "task077_plan_report_sha256": "7c7147601c156a793c238e34d00ee74e9855f29d19e4ee0d653882335d67cdfb"
+  }
+ },
+ "frozen": {
+  "protocol": "apple_lewm_unknown_law_v2",
+  "task": "TASK-082",
+  "status": "DRAFT",
+  "delegated": "decided by Claude under owner delegation (2026-09-30)",
+  "rulings": "DECISIONS.md decision 2026-10-08 (l), R20.1-R20.16 (Stage 0: (m), R20.17-)",
+  "not_evaluated": "not evaluated",
+  "task081_frozen_sha256": "77ccc6364624c7da9dcca1d09827a0f6a25a670a00392d488e7b0216e090705a",
+  "task080_frozen_sha256": "0fc095dc947f0ac74ebf6d1c541098a1e6fec1897592256f97ac8962b97be064",
+  "task077_frozen_sha256": "f28e5e2cd23d110f40ff043c7308e0bb9b3b71f46a2a4b6940bc536cc5e3548d",
+  "manifests": [
+   "benchmarks/manifests/apple-lewm-cp-v2.json",
+   "benchmarks/manifests/apple-lewm-pr-v2.json",
+   "benchmarks/manifests/apple-lewm-c1m-v2.json"
+  ],
+  "pinned_dev_files": {
+   "src/embodied_jepa/plate_law_dev.py": "0ad8e530e5e1fe5c77c2410af0a99e26281b0243b16a2af506e7815a964c49b2",
+   "src/embodied_jepa/plate_law_dev_runtime.py": "dad06107d1262bf62fdbb31e7976e34fdfd29ba7f4dc93ad9e5f2399315a361e",
+   "src/embodied_jepa/commit_precision_dev.py": "ba3c8d03f98ddaeb2d26fd13c4363995cb11492f02603eb8406ca42ef71f91f1"
+  },
+  "own_files": [
+   "src/embodied_jepa/lewm_ul_v2.py",
+   "src/embodied_jepa/lewm_ul_v2_runtime.py",
+   "src/embodied_jepa/lewm_ul_v2_offline.py",
+   "src/embodied_jepa/lewm_ul_v2_train.py",
+   "scripts/run_lewm_ul_v2.py"
+  ],
+  "carried": {
+   "r_plate": "08bde901ca75ab0ee4bc1c74bf4da91117ba57c0491828d81bc9db921cc49eb9",
+   "task077_readouts_report_sha256": "452045d22c21b067c8bfe78cb72f4e842fc61f3c44a9e17b6fae860c244f8b78",
+   "task077_corpus_sha256": "ad8974b2a8b560bb974c6e0b4f90bd3f1fc79a535ebe46ef6c409bde7e4343fb",
+   "task077_plan_report_sha256": "7c7147601c156a793c238e34d00ee74e9855f29d19e4ee0d653882335d67cdfb"
+  },
+  "carried_plan": {
+   "updates": 95000,
+   "select_every": 4750,
+   "u_sat": {
+    "W": 46000,
+    "N": 38000
+   },
+   "wanted": 92000.0
+  },
+  "g1_bars": {
+   "rank": {
+    "bar": 0.12,
+    "floor": 0.1,
+    "relative": 0.12,
+    "reference": 0.2539868780820061,
+    "escalate": false
+   },
+   "std": {
+    "bar": 0.38,
+    "floor": 0.25,
+    "relative": 0.38,
+    "reference": 0.7738450290344542,
+    "escalate": false
+   }
+  },
+  "seed_block": [
+   72000,
+   74999
+  ],
+  "seed_ranges": {
+   "K": [
+    72400,
+    72463
+   ],
+   "D": [
+    72500,
+    72515
+   ],
+   "S": [
+    72600,
+    72727
+   ],
+   "corpus": [
+    72800,
+    74799
+   ]
+  },
+  "model_seeds": [
+   72360,
+   72361,
+   72362
+  ],
+  "reserved_ranges": [
+   [
+    72032,
+    72099
+   ],
+   [
+    72356,
+    72359
+   ],
+   [
+    72363,
+    72399
+   ],
+   [
+    72464,
+    72499
+   ],
+   [
+    72516,
+    72599
+   ],
+   [
+    72728,
+    72799
+   ]
+  ],
+  "debug_seeds": [
+   74800,
+   74899
+  ],
+  "debug_ranges": {
+   "K": [
+    74800,
+    74803
+   ],
+   "D": [
+    74810,
+    74813
+   ],
+   "S": [
+    74820,
+    74823
+   ],
+   "corpus": [
+    74830,
+    74869
+   ],
+   "labelcheck": [
+    74870,
+    74875
+   ]
+  },
+  "debug_model_seeds": [
+   74890,
+   74891,
+   74892
+  ],
+  "forbidden_ranges": {
+   "mvp_frozen_resets": [
+    20000,
+    20049
+   ],
+   "mechanics_probes": [
+    41000,
+    41101
+   ],
+   "earlier_train_val_test": [
+    42000,
+    42031
+   ],
+   "narrow_development": [
+    43000,
+    43004
+   ],
+   "final_cohort": [
+    44000,
+    44019
+   ],
+   "cohort_D_and_prior_ceilings": [
+    45000,
+    45207
+   ],
+   "cohort_C": [
+    45300,
+    45339
+   ],
+   "apple_look_v1_corpus": [
+    47000,
+    47199
+   ],
+   "apple_look_pilots": [
+    47900,
+    47931
+   ],
+   "apple_wide_v1_corpus_and_pilots": [
+    48000,
+    48999
+   ],
+   "grasp_closure_probes": [
+    49000,
+    49199
+   ],
+   "task067_block": [
+    46000,
+    46999
+   ],
+   "task068_to_070_block": [
+    50000,
+    50999
+   ],
+   "task071_072_block": [
+    51000,
+    52199
+   ],
+   "task073_block": [
+    53000,
+    53999
+   ],
+   "task074_design_probes": [
+    54700,
+    54999
+   ],
+   "task074_block": [
+    54000,
+    54999
+   ],
+   "task075_block": [
+    55000,
+    55999
+   ],
+   "arena_123": [
+    50200,
+    50231
+   ],
+   "task076_block": [
+    56000,
+    56999
+   ],
+   "c1_block": [
+    57000,
+    57999
+   ],
+   "r15_block": [
+    58000,
+    58999
+   ],
+   "c1m_block": [
+    63000,
+    64999
+   ],
+   "task077_block": [
+    66000,
+    68999
+   ],
+   "task080_block": [
+    65000,
+    65999
+   ],
+   "task081_development": [
+    70000,
+    70099
+   ],
+   "task081_block": [
+    70000,
+    71999
+   ],
+   "design_check_F": [
+    72000,
+    72031
+   ],
+   "design_corpus": [
+    72100,
+    72355
+   ],
+   "design_debug": [
+    74900,
+    74999
+   ]
+  },
+  "salts": {
+   "move": 8405,
+   "corpus_aim": 8406,
+   "corpus_split": 8407,
+   "tau_direction": 8408,
+   "sampler": 8409,
+   "folds": 8410,
+   "bootstrap": 8411,
+   "misc": 8412
+  },
+  "fold_keys": {
+   "outer": 1,
+   "inner": 2,
+   "learned_tier": 3,
+   "learning_curve": 4
+  },
+  "misc_keys": {
+   "l_rand": 1,
+   "wrong_commands": 2,
+   "power": 3
+  },
+  "used_salts": {
+   "design_note_move": 8401,
+   "design_note_corpus_aim": 8402,
+   "design_note_bootstrap": 8403,
+   "design_note_folds": 8404
+  },
+  "condition": {
+   "law": {
+    "name": "U-sat",
+    "dev_law": "sat",
+    "amplitude_m": 0.08,
+    "scale_m": 0.12,
+    "swirl_rad": 0.25,
+    "L": 2,
+    "s0": 405,
+    "s1": 525,
+    "form": "F(d) = -A tanh(|d|/D) R(Theta |d|/D) d/|d|, d = palm(t - L) - palm(405), held after s1 (plate_law_dev.sat_displacement)"
+   },
+   "h_rule_law": {
+    "name": "A",
+    "kappa": -0.5,
+    "L": 2,
+    "s0": 405,
+    "s1": 525
+   },
+   "commit_step": 405,
+   "move_step": 300,
+   "rho_cm": 4,
+   "family": "disc",
+   "redraw_radius_cm": 6,
+   "a_lo": -0.5,
+   "a_hi": 0.5,
+   "b_half_m": 0.03,
+   "read_step": 465,
+   "horizon": 60,
+   "grid": [
+    [
+     -0.5,
+     -0.03
+    ],
+    [
+     -0.5,
+     -0.02
+    ],
+    [
+     -0.5,
+     -0.01
+    ],
+    [
+     -0.5,
+     0.0
+    ],
+    [
+     -0.5,
+     0.01
+    ],
+    [
+     -0.5,
+     0.02
+    ],
+    [
+     -0.5,
+     0.03
+    ],
+    [
+     -0.45,
+     -0.03
+    ],
+    [
+     -0.45,
+     -0.02
+    ],
+    [
+     -0.45,
+     -0.01
+    ],
+    [
+     -0.45,
+     0.0
+    ],
+    [
+     -0.45,
+     0.01
+    ],
+    [
+     -0.45,
+     0.02
+    ],
+    [
+     -0.45,
+     0.03
+    ],
+    [
+     -0.4,
+     -0.03
+    ],
+    [
+     -0.4,
+     -0.02
+    ],
+    [
+     -0.4,
+     -0.01
+    ],
+    [
+     -0.4,
+     0.0
+    ],
+    [
+     -0.4,
+     0.01
+    ],
+    [
+     -0.4,
+     0.02
+    ],
+    [
+     -0.4,
+     0.03
+    ],
+    [
+     -0.35,
+     -0.03
+    ],
+    [
+     -0.35,
+     -0.02
+    ],
+    [
+     -0.35,
+     -0.01
+    ],
+    [
+     -0.35,
+     0.0
+    ],
+    [
+     -0.35,
+     0.01
+    ],
+    [
+     -0.35,
+     0.02
+    ],
+    [
+     -0.35,
+     0.03
+    ],
+    [
+     -0.3,
+     -0.03
+    ],
+    [
+     -0.3,
+     -0.02
+    ],
+    [
+     -0.3,
+     -0.01
+    ],
+    [
+     -0.3,
+     0.0
+    ],
+    [
+     -0.3,
+     0.01
+    ],
+    [
+     -0.3,
+     0.02
+    ],
+    [
+     -0.3,
+     0.03
+    ],
+    [
+     -0.25,
+     -0.03
+    ],
+    [
+     -0.25,
+     -0.02
+    ],
+    [
+     -0.25,
+     -0.01
+    ],
+    [
+     -0.25,
+     0.0
+    ],
+    [
+     -0.25,
+     0.01
+    ],
+    [
+     -0.25,
+     0.02
+    ],
+    [
+     -0.25,
+     0.03
+    ],
+    [
+     -0.2,
+     -0.03
+    ],
+    [
+     -0.2,
+     -0.02
+    ],
+    [
+     -0.2,
+     -0.01
+    ],
+    [
+     -0.2,
+     0.0
+    ],
+    [
+     -0.2,
+     0.01
+    ],
+    [
+     -0.2,
+     0.02
+    ],
+    [
+     -0.2,
+     0.03
+    ],
+    [
+     -0.15,
+     -0.03
+    ],
+    [
+     -0.15,
+     -0.02
+    ],
+    [
+     -0.15,
+     -0.01
+    ],
+    [
+     -0.15,
+     0.0
+    ],
+    [
+     -0.15,
+     0.01
+    ],
+    [
+     -0.15,
+     0.02
+    ],
+    [
+     -0.15,
+     0.03
+    ],
+    [
+     -0.1,
+     -0.03
+    ],
+    [
+     -0.1,
+     -0.02
+    ],
+    [
+     -0.1,
+     -0.01
+    ],
+    [
+     -0.1,
+     0.0
+    ],
+    [
+     -0.1,
+     0.01
+    ],
+    [
+     -0.1,
+     0.02
+    ],
+    [
+     -0.1,
+     0.03
+    ],
+    [
+     -0.05,
+     -0.03
+    ],
+    [
+     -0.05,
+     -0.02
+    ],
+    [
+     -0.05,
+     -0.01
+    ],
+    [
+     -0.05,
+     0.0
+    ],
+    [
+     -0.05,
+     0.01
+    ],
+    [
+     -0.05,
+     0.02
+    ],
+    [
+     -0.05,
+     0.03
+    ],
+    [
+     0.0,
+     -0.03
+    ],
+    [
+     0.0,
+     -0.02
+    ],
+    [
+     0.0,
+     -0.01
+    ],
+    [
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.01
+    ],
+    [
+     0.0,
+     0.02
+    ],
+    [
+     0.0,
+     0.03
+    ],
+    [
+     0.05,
+     -0.03
+    ],
+    [
+     0.05,
+     -0.02
+    ],
+    [
+     0.05,
+     -0.01
+    ],
+    [
+     0.05,
+     0.0
+    ],
+    [
+     0.05,
+     0.01
+    ],
+    [
+     0.05,
+     0.02
+    ],
+    [
+     0.05,
+     0.03
+    ],
+    [
+     0.1,
+     -0.03
+    ],
+    [
+     0.1,
+     -0.02
+    ],
+    [
+     0.1,
+     -0.01
+    ],
+    [
+     0.1,
+     0.0
+    ],
+    [
+     0.1,
+     0.01
+    ],
+    [
+     0.1,
+     0.02
+    ],
+    [
+     0.1,
+     0.03
+    ],
+    [
+     0.15,
+     -0.03
+    ],
+    [
+     0.15,
+     -0.02
+    ],
+    [
+     0.15,
+     -0.01
+    ],
+    [
+     0.15,
+     0.0
+    ],
+    [
+     0.15,
+     0.01
+    ],
+    [
+     0.15,
+     0.02
+    ],
+    [
+     0.15,
+     0.03
+    ],
+    [
+     0.2,
+     -0.03
+    ],
+    [
+     0.2,
+     -0.02
+    ],
+    [
+     0.2,
+     -0.01
+    ],
+    [
+     0.2,
+     0.0
+    ],
+    [
+     0.2,
+     0.01
+    ],
+    [
+     0.2,
+     0.02
+    ],
+    [
+     0.2,
+     0.03
+    ],
+    [
+     0.25,
+     -0.03
+    ],
+    [
+     0.25,
+     -0.02
+    ],
+    [
+     0.25,
+     -0.01
+    ],
+    [
+     0.25,
+     0.0
+    ],
+    [
+     0.25,
+     0.01
+    ],
+    [
+     0.25,
+     0.02
+    ],
+    [
+     0.25,
+     0.03
+    ],
+    [
+     0.3,
+     -0.03
+    ],
+    [
+     0.3,
+     -0.02
+    ],
+    [
+     0.3,
+     -0.01
+    ],
+    [
+     0.3,
+     0.0
+    ],
+    [
+     0.3,
+     0.01
+    ],
+    [
+     0.3,
+     0.02
+    ],
+    [
+     0.3,
+     0.03
+    ],
+    [
+     0.35,
+     -0.03
+    ],
+    [
+     0.35,
+     -0.02
+    ],
+    [
+     0.35,
+     -0.01
+    ],
+    [
+     0.35,
+     0.0
+    ],
+    [
+     0.35,
+     0.01
+    ],
+    [
+     0.35,
+     0.02
+    ],
+    [
+     0.35,
+     0.03
+    ],
+    [
+     0.4,
+     -0.03
+    ],
+    [
+     0.4,
+     -0.02
+    ],
+    [
+     0.4,
+     -0.01
+    ],
+    [
+     0.4,
+     0.0
+    ],
+    [
+     0.4,
+     0.01
+    ],
+    [
+     0.4,
+     0.02
+    ],
+    [
+     0.4,
+     0.03
+    ],
+    [
+     0.45,
+     -0.03
+    ],
+    [
+     0.45,
+     -0.02
+    ],
+    [
+     0.45,
+     -0.01
+    ],
+    [
+     0.45,
+     0.0
+    ],
+    [
+     0.45,
+     0.01
+    ],
+    [
+     0.45,
+     0.02
+    ],
+    [
+     0.45,
+     0.03
+    ],
+    [
+     0.5,
+     -0.03
+    ],
+    [
+     0.5,
+     -0.02
+    ],
+    [
+     0.5,
+     -0.01
+    ],
+    [
+     0.5,
+     0.0
+    ],
+    [
+     0.5,
+     0.01
+    ],
+    [
+     0.5,
+     0.02
+    ],
+    [
+     0.5,
+     0.03
+    ]
+   ],
+   "lookahead_tolerance_m": 0.0025,
+   "lookahead_max_iter": 10
+  },
+  "corpus": {
+   "name": "apple-ul-v2",
+   "roots": 2000,
+   "splits": [
+    "train",
+    "val",
+    "gate_p"
+   ],
+   "split_sizes": {
+    "train": 1500,
+    "val": 250,
+    "gate_p": 250
+   },
+   "debug_split_sizes": {
+    "train": 30,
+    "val": 5,
+    "gate_p": 5
+   },
+   "aim_from": {
+    "train": "true",
+    "val": "true",
+    "gate_p": "p_hat"
+   },
+   "fit_splits": [
+    "train",
+    "val"
+   ],
+   "frame_steps": [
+    403,
+    467
+   ],
+   "command_steps": [
+    403,
+    466
+   ],
+   "stop_step": 467,
+   "window_start_steps": [
+    403,
+    407
+   ],
+   "excluded_max_fraction": 0.02,
+   "unconverged_gate_max_fraction": 0.02
+  },
+  "model": {
+   "backend": "leworldmodel",
+   "config": {
+    "camera": "onboard_rgb",
+    "frozen_encoder": "dinov2_small_tokens",
+    "token_grid": 8,
+    "latent_dim": 24576,
+    "sigreg_weight": 0.0,
+    "max_horizon": 64
+   },
+   "train_horizon": 60,
+   "batch_size": 16,
+   "device_train": "cuda",
+   "device_eval": "cpu",
+   "selection_tolerance": 0.01
+  },
+  "budget": {
+   "calibration_runs": [],
+   "calibration_updates": 50000,
+   "calibration_select_every": 1000,
+   "saturation_tolerance": 0.01,
+   "factor": 2.0,
+   "step": 5000,
+   "min": 10000,
+   "cap": 100000,
+   "selection_points": 20,
+   "carried_updates": 95000,
+   "carried_select_every": 4750
+  },
+  "debug_train": {
+   "updates": 300,
+   "select_every": 30
+  },
+  "k0": {
+   "resets": 64,
+   "tau_levels_cm": [
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    3.0
+   ],
+   "tau_bar": 56,
+   "ceiling_min": 60,
+   "r_fraction_min": 56,
+   "r_latest": 465,
+   "palm_speed_limit_cm": 0.5,
+   "clip_outside_max": 4,
+   "reported": [
+    "H-rule",
+    "H-now"
+   ],
+   "stops": {
+    "level0_below_bar": "level 0 < 56/64 (tau_commit undefined)",
+    "tau_zero": "tau_commit = 0 (level 0 reaches 56/64 but 0.5 cm does not)",
+    "ceiling_below_60": "N_K(0) < 60/64",
+    "r_late": "r_K later than 465 or undefined (the recipe rolls out exactly 60 steps)",
+    "palm_fast": "the median palm speed at 405 > 0.5 cm per step",
+    "box_binds": "more than 4/64 level-0 ceiling aims outside the box built from p-hat and h"
+   },
+   "tau_below_1_ruling": "a tau_commit below 1.0 cm makes Stage T's GO a ruling point (proceed, or close TASK-082 as CAL-ESCALATE without the clause) before any training job (§7.2)"
+  },
+  "k0_measured": null,
+  "stage_o": {
+   "outer_folds": 5,
+   "inner_folds": 5,
+   "lambda_grid_relative": [
+    0.001,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+   ],
+   "fractions": [
+    0.25,
+    0.5,
+    0.75,
+    1.0
+   ],
+   "krr_lengths": [
+    0.5,
+    1.0,
+    2.0,
+    4.0
+   ],
+   "krr_lambdas": [
+    0.0001,
+    0.001,
+    0.01,
+    0.1
+   ],
+   "rows": {
+    "O-ARM-KEYED": "O4 fails: escalate, no clause",
+    "O-NO-BAR": "O1 or O3 fails: escalate, no clause (a still-falling curve says so)",
+    "O-PASS": "Stage O admits the stages that follow"
+   }
+  },
+  "stage_g": {
+   "thresholds": {
+    "G1_max_collapsed_fraction": 0.05,
+    "G2_max_ratio_upper": 0.8,
+    "G3_max_ratio_upper_exclusive": 1.0,
+    "G4_min_ratio_lower": 1.1
+   },
+   "reported_horizons": [
+    16,
+    30
+   ],
+   "comparative_resamples": 2000,
+   "r_arms": [
+    "W",
+    "N",
+    "L-shuf",
+    "L-mean",
+    "L-rand"
+   ],
+   "offline_reported_arms": [
+    "H-rule",
+    "H-sysid",
+    "H-sysid-krr",
+    "P-aim",
+    "H-rule-fit"
+   ],
+   "a1_bar": 112,
+   "a2_min_separation": 7,
+   "rows": {
+    "V": "the void rule: one repeat after a recorded fix",
+    "H-GATE-FAIL": "any of G1-G4 fails on any seed: escalate, no clause",
+    "R-VOID-CEILING": "R0 fails: escalate, no clause",
+    "R-COMMAND-KEYED": "R3 fails on any seed: escalate, no clause",
+    "R-NO-BAR": "R1 or R2 fails on any seed: escalate, no clause",
+    "A-NO-BAR": "A1 fails: escalate, no clause",
+    "A-TWIN": "A2 fails for any of N, L-shuf, L-mean, L-rand: escalate, no clause",
+    "G-PASS": "Stage D may get its GO"
+   }
+  },
+  "arms": {
+   "W": {
+    "what": "the primary seed's W from the encoded 405 frame, the p-hat-and-h grid, the stand-in chunks, read by R-S, committed by affine_local",
+    "privileged": false
+   },
+   "N": {
+    "what": "the primary seed's N, zero commands, read by R-N, committed by affine_local",
+    "privileged": false
+   },
+   "L-shuf": {
+    "what": "W from the logged 405 frame of W's attempt on the next reset that reached 405, this reset's candidate chunks, read by R-S, affine_local",
+    "privileged": false
+   },
+   "L-mean": {
+    "what": "W from the mean encoded 405 latent of this corpus's train split, read by R-S, affine_local",
+    "privileged": false
+   },
+   "L-rand": {
+    "what": "a uniform feasible grid candidate (salt 8412, sub-key 1), no solver",
+    "privileged": false
+   },
+   "H-rule": {
+    "what": "RuleCommit with C1-M's written law (kappa = -0.5, L = 2) on p-hat and h, its fixed point on the kinematic stand-in, clipped: a declared prior that is not the simulator's law",
+    "privileged": false
+   },
+   "H-sysid": {
+    "what": "SysidAim: TASK-077's linear form plate(r) ~ c + A p-hat + B h + C g refitted on this corpus's train split with R-plate's readings, inverted with lewm_next_c1.choose_aim, clipped",
+    "privileged": false
+   },
+   "H-final": {
+    "what": "H-final(commit): LookaheadAim at 405 in cloned state (branches under U-sat), unclipped; privileged, not learned",
+    "privileged": true
+   },
+   "H-sysid-krr": {
+    "what": "the RBF kernel ridge of plate(r) - p-hat on standardised (p-hat, h, g), length and lambda by 5-fold CV (salt 8410, sub-key 3), inverted with choose_aim, clipped; reported only (the learned tier)",
+    "privileged": false
+   },
+   "P-aim": {
+    "what": "a kernel ridge of the ceiling's logged aim, as g - p-hat, on standardised (p-hat, h), predicted once at 405 and clipped; no forward model, no solver; reported only (the learned tier)",
+    "privileged": false
+   },
+   "H-rule-fit": {
+    "what": "H-rule's form with kappa fitted on the train split (least squares of plate(r) - p-hat on g - h); reported only",
+    "privileged": false
+   },
+   "W-<seed>": {
+    "what": "the W of a non-primary model seed with its own R-S, the same controller as W; reported only (the seed spread)",
+    "privileged": false
+   },
+   "H-read": {
+    "what": "the look-ahead read by R8 from the frame rendered at r in the clone; privileged, reported only",
+    "privileged": true
+   },
+   "H-now": {
+    "what": "the true plate at 405; privileged, reported only",
+    "privileged": true
+   }
+  },
+  "solver": {
+   "name": "affine_local",
+   "code": "src/embodied_jepa/commit_precision_dev.py: affine_fixed_point, local_mask (sha256 ba3c8d03f98ddaeb2d26fd13c4363995cb11492f02603eb8406ca42ef71f91f1)",
+   "local_a_steps": 2,
+   "local_b_m": 0.02,
+   "max_points": 25,
+   "min_points": 4,
+   "det_min": 1e-06,
+   "fallback": "the grid argmin, on fewer than 4 points, |det(I - J)| < 1e-6 or an infeasible chunk at the clipped fixed point",
+   "logged_rollouts": 1,
+   "extra_refinement": false
+  },
+  "solver_of": {
+   "W": "affine_local",
+   "N": "affine_local",
+   "L-shuf": "affine_local",
+   "L-mean": "affine_local",
+   "L-rand": "none"
+  },
+  "readouts": {
+   "W": "r_s",
+   "L-shuf": "r_s",
+   "L-mean": "r_s",
+   "N": "r_n"
+  },
+  "twins": [
+   "N",
+   "L-shuf",
+   "L-mean",
+   "L-rand"
+  ],
+  "comparators": [
+   "H-rule",
+   "H-sysid"
+  ],
+  "learned_tier": [
+   "H-sysid-krr",
+   "P-aim"
+  ],
+  "d": {
+   "resets": 16,
+   "arms": [
+    "W",
+    "N",
+    "L-shuf",
+    "L-mean",
+    "H-final",
+    "H-rule",
+    "H-sysid"
+   ],
+   "reported": [
+    "H-rule",
+    "H-sysid"
+   ],
+   "bars": {
+    "W_min": 12,
+    "ceiling_min": 14,
+    "margin_min": 3
+   }
+  },
+  "s": {
+   "resets": 128,
+   "gating_arms": [
+    "W",
+    "N",
+    "L-shuf",
+    "L-mean",
+    "L-rand",
+    "H-rule",
+    "H-sysid",
+    "H-final"
+   ],
+   "reported_arms": [
+    "H-sysid-krr",
+    "P-aim",
+    "H-rule-fit",
+    "H-read",
+    "H-now"
+   ],
+   "bar_fraction": 0.875,
+   "g_bar": 112,
+   "delta_candidates": [
+    8,
+    12,
+    16
+   ],
+   "delta": 16,
+   "mcnemar_p": 0.01,
+   "min_separation": 7,
+   "determinism": [
+    4,
+    0.001,
+    0.006
+   ],
+   "rows": {
+    "V": "one repeat of the stage after a recorded fix",
+    "S-VOID-CEILING": "H-final(commit)(S) < 112/128: escalate, no clause, no claim",
+    "L-NO-GAIN": "for a twin, the McNemar test fails and W is detectably no better (upper bound of W - arm < +7 resets): the clause fires",
+    "L-INFERIOR": "W is detectably inferior beyond delta (upper bound of W - C < -delta): the clause fires",
+    "L-PASS": "G-bar, G-NI and the four McNemar tests pass: the primary claim, 'LeWM-driven closed-loop success'",
+    "L-TWIN-NEAR": "a McNemar test fails and every failed one is a miss within noise: escalate, no clause, no claim",
+    "L-NEAR": "G-NI fails, W not detectably inferior: escalate, no clause, no claim",
+    "L-BAR": "G-bar fails with G-NI and the tests passing: escalate, no clause, no claim"
+   }
+  },
+  "clause_rows": [
+   "L-INFERIOR",
+   "L-NO-GAIN"
+  ],
+  "no_clause_rows": [
+   "CAL-ESCALATE",
+   "CORPUS-ESCALATE",
+   "O-ARM-KEYED",
+   "O-NO-BAR",
+   "H-GATE-FAIL",
+   "R-VOID-CEILING",
+   "R-COMMAND-KEYED",
+   "R-NO-BAR",
+   "A-NO-BAR",
+   "A-TWIN",
+   "L-DEV-STOP",
+   "S-VOID-CEILING",
+   "L-TWIN-NEAR",
+   "L-NEAR",
+   "L-BAR",
+   "V",
+   "INCONCLUSIVE"
+  ],
+  "clause_scope": "LeWM aim selection with a single aim committed at 405 under the declared U-sat plate law (A = 8 cm, D = 12 cm, Theta = 0.25 rad, L = 2, s0 = 405, s1 = 525) on v2, with the declared post-pick plate move of radius rho* = 4 cm (disc), from onboard 112 px frozen DINOv2 pooled tokens, with TASK-066-family predictors trained on a corpus under that law",
+  "clause_narrowing": "a 4 x 4 pooled latent on a corpus larger than C1-M's 1 024 roots is not covered",
+  "clause_results_wording": "if the clause fires, the results document states the restored scope plainly: one 8 x 8 recipe, three seeds, read by a dual ridge fitted on its own stand-in predictions and committed by affine_local, closes under U-sat every other pooled grid (except that 4 x 4 case), every readout of the predicted latent and every post-grid solver for the committed aim from the grid's predictions, not only those that were run",
+  "never_closed": [
+   "C1-M and every result under it (TASK-081's L-PASS stands)",
+   "U-play, U-speed, U-cue, U-hist, a physical plate mechanism and every other law",
+   "other law parameters",
+   "necessity studies against learned baselines",
+   "the full unpooled token grid",
+   "history longer than one, action_chunk and predictor_step_embedding",
+   "a fine-tuned or another encoder",
+   "other views or resolutions",
+   "other commit steps, move distributions or radii",
+   "TASK-076's results",
+   "the LeWM backend",
+   "v2",
+   "the product goal"
+  ],
+  "caps_seconds": {
+   "K0": 7200.0,
+   "C": 14400.0,
+   "O_featurisation": 3600.0,
+   "O_readouts": 7200.0,
+   "T_job": 46800.0,
+   "G": 14400.0,
+   "D": 7200.0,
+   "S": 21600.0,
+   "per_attempt": 300.0,
+   "simulate": 3600.0,
+   "labelcheck": 3600.0
+  },
+  "cap_factor_min": 1.5,
+  "memory": {
+   "ceiling_gib": 12.0,
+   "train_ceiling_gib": 18.0,
+   "headroom_gib": 4.0,
+   "sample_seconds": 0.5,
+   "measure": "pss"
+  },
+  "disk_min_gib": 10.0,
+  "disk_min_start_gib": {
+   "C": 15.0,
+   "O": 25.0
+  },
+  "gpu": {
+   "min_free_gib": 8.0,
+   "who": "oej:task082-<stage>",
+   "require_lock": true
+  },
+  "sim_workers": 6,
+  "wm_workers": 4,
+  "worker_torch_threads": 1,
+  "thread_env": {
+   "MKL_DYNAMIC": "FALSE",
+   "OMP_NUM_THREADS": "6",
+   "MKL_NUM_THREADS": "6",
+   "OPENBLAS_NUM_THREADS": "16"
+  },
+  "quiet_machine": {
+   "max_load_average_1min": 2.0,
+   "max_load_average_5min": 2.0,
+   "rule": "os.getloadavg() at the stage's start: the 1- and 5-minute load averages are both at most 2.0 (the idle machine with the GPU's resident service measures about 0.1-0.4); otherwise G-quiet makes the stage V before any render"
+  },
+  "feature_anchor": {
+   "frames": 256,
+   "max_abs_pooled_difference": 0.001
+  },
+  "void_rule": {
+   "void": "any guard, crash, cap, stop signal or CUDA allocation failure makes a stage V; its report is kept with its sha256 and the cause disclosed",
+   "repeat": "at most one repeat per stage after a committed, pushed and recorded fix, on the same seeds in a new output directory; a second V of the same stage ends TASK-082 INCONCLUSIVE; Vs in different stages do not add up",
+   "stage_t": "each of Stage T's six jobs is voided and repeated on its own (R17.16); a second V of the same job ends TASK-082 INCONCLUSIVE",
+   "debug": "debug runs only on committed code, only on 74800-74899; nothing in them is read"
+  },
+  "g_law": "every attempt and root logs the law it ran under; the runner refuses a record whose law is not U-sat at the frozen parameters, and H-rule with any law other than C1-M's written kappa = -0.5",
+  "g_split": "every fit is on train (Stage O) or train + val (Stage G's readouts) only; val only selects; gate-P is opened only after Stage G's first_outcome_utc and never fitted on; the learned tier is fitted on train only",
+  "stages": [
+   "K0",
+   "C",
+   "O",
+   "T",
+   "G",
+   "D",
+   "S"
+  ],
+  "power": {
+   "trials": 20000,
+   "resamples_per_cell": 10000,
+   "couplings": [
+    "overlap",
+    "half",
+    "independent"
+   ],
+   "grid": {
+    "p_w": [
+     0.875,
+     0.906,
+     0.922,
+     0.938,
+     0.953
+    ],
+    "p_c": [
+     0.8,
+     0.85,
+     0.875
+    ],
+    "rule_gap": 0.1
+   },
+   "delta_rule": {
+    "power_min": 0.8,
+    "coupling": "half",
+    "size_max": 0.05,
+    "rule": "delta is the smallest of 8, 12 and 16/128 at which G-NI's power at W = C is >= 0.80 for every C in {0.80, 0.85, 0.875} under the half coupling, and the test's size at the margin (W = C - delta) is <= 5 % in every coupling; if none qualifies, delta = 16/128",
+    "size_reading": "the size at the margin is the larger of the single-comparator (H-sysid at C) and the better-of-two rates (the stricter reading, declared in R20.17)"
+   },
+   "twin_rates": {
+    "N": 0.5703125,
+    "L-shuf": 0.3046875,
+    "L-mean": 0.4609375,
+    "L-rand": 0.15625,
+    "N_strong": 0.75
+   }
+  },
+  "stage0": {
+   "smoke_root": "outputs/task082-smoke-1 in the task082-s0chain worktree (git-ignored); debug seeds 74800-74899 only; nothing in them is read",
+   "smoke_revisions": {
+    "k0, corpus, labelcheck": "2c861a1",
+    "the rest": "8232523"
+   },
+   "smokes": {
+    "k0": {
+     "outcome": "CAL-ESCALATE-DEBUG",
+     "seconds": 117.7,
+     "peak_tree_pss_gib": 8.97
+    },
+    "corpus": {
+     "outcome": "CORPUS-SEALED-DEBUG",
+     "roots": 40,
+     "excluded": 0,
+     "labels_converged": 40,
+     "seconds": 98.9,
+     "peak_tree_pss_gib": 9.53
+    },
+    "labelcheck": {
+     "outcome": "LABELS-UNCHANGED-DEBUG",
+     "roots": 6,
+     "seconds": 61.9,
+     "identical": "frames, commands, plate, palm, hidden render, target, 405 state, p-hat, executed steps, termination, outcome: bit-exact on 6 of 6"
+    },
+    "labelcheck-2": {
+     "outcome": "LABELS-CHANGED-DEBUG",
+     "revision": "2b4fab9",
+     "note": "half the roots on gate-P's p-hat aim; root 74870 (true-plate aim): every executed array and the outcome bit-identical, its kept frames not (sizes not recorded by that version); load about 30"
+    },
+    "labelcheck-3": {
+     "outcome": "LABELS-UNCHANGED-DEBUG",
+     "revision": "154bdd5",
+     "seconds": 344,
+     "report_sha256": "fb84a26f7f0e9156e12363445b70bee366cfeaae18bddfecdb1f920fdb3ea2d4",
+     "note": "labelled, unlabelled and an unlabelled control on 6 roots (3 true-plate, 3 p-hat aims): execution and observations bit-identical in every pair"
+    },
+    "featurise": {
+     "outcome": "FEATURISED-DEBUG",
+     "seconds": 10.7,
+     "anchor_max_abs_difference": 8.76e-05
+    },
+    "readouts": {
+     "outcome": "O-NO-BAR-DEBUG",
+     "seconds": 0.4
+    },
+    "train": {
+     "outcome": "T-JOB-DONE-DEBUG x 6 (W and N of 74890-74892, 300 updates)",
+     "seconds": [
+      53.7,
+      55.8
+     ],
+     "per_update_median_s": 0.167,
+     "gpu_max_allocated_gib": 5.48
+    },
+    "gates": {
+     "outcome": "H-GATE-FAIL-DEBUG",
+     "seconds": 131.5,
+     "peak_tree_pss_gib": 9.73
+    },
+    "closedD": {
+     "outcome": "L-DEV-STOP-DEBUG",
+     "seconds": 135.5,
+     "peak_tree_pss_gib": 9.36
+    },
+    "closedS": {
+     "outcome": "S-VOID-CEILING-DEBUG",
+     "seconds": 1135.5,
+     "peak_tree_pss_gib": 10.76,
+     "determinism_ok": true,
+     "g_tests": "2211 passed, 37 skipped (in-run)"
+    }
+   },
+   "seconds_per_attempt_max": {
+    "K0_planted": 8.58,
+    "corpus_root_with_label": 8.19,
+    "S_slowest_arm": 15.9
+   },
+   "scaled_worst_case_seconds": {
+    "K0": 910,
+    "C": 3100,
+    "O_featurisation": 500,
+    "O_readouts": 330,
+    "G": 6500,
+    "D": 600,
+    "S": 4600
+   },
+   "gscale": {
+    "report_sha256": "199e2704e927f538f9270456ebffc71a635829aa66b78d8586021b3384d08557",
+    "fit_seconds": 750.7,
+    "read_seconds": 101.2,
+    "dynamics_seconds": 157.6,
+    "offline_aims_scaled_seconds": 5201.6,
+    "worst_case_seconds": 6211.1,
+    "peak_tree_gib": 4.05
+   },
+   "simulate": {
+    "report_sha256": "dd1a22d8171e1daedda614d68ccbfb4a02dd4b2bb8e3595c0a71d32ded125efb",
+    "revision": "148a2b8",
+    "voided_first_run": "simulate-1 (d9625c7) voided by its 3 600 s cap after a 75-minute G-quiet wait; its power tables equal simulate-2's exactly (R20.18)",
+    "power_at_w_equal_c_half": {
+     "8": [
+      0.387,
+      0.462,
+      0.526
+     ],
+     "12": [
+      0.709,
+      0.792,
+      0.853
+     ],
+     "16": [
+      0.917,
+      0.96,
+      0.978
+     ]
+    },
+    "size_at_margin_max": {
+     "8": 0.0397,
+     "12": 0.0384,
+     "16": 0.0351
+    },
+    "l_inferior_at_margin_max": {
+     "8": 0.0249,
+     "12": 0.0222,
+     "16": 0.0237
+    }
+   },
+   "delta": {
+    "chosen": 16,
+    "rule": "R20.10",
+    "fallback": false
+   }
+  }
+ },
+ "frozen_sha256": "bb29b38bf841be87146a92a44cfa594a19aab13893c499cfce7118f643a339b9",
+ "frozen_sha256_pin": null,
+ "hashes": {},
+ "protocol_document_sha256": null
+}

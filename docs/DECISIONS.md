@@ -63,6 +63,74 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (m) — TASK-082 Stage 0: code, debug smokes, scale probes and δ = 16/128 by the declared rule (R20.17–R20.22; protocol still DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30). The protocol stays DRAFT.** The record is
+[apple_lewm_unknown_law_v2_stage0.md](experiments/apple_lewm_unknown_law_v2_stage0.md). Every
+simulated attempt ran on debug seeds 74800–74899 and every model was a 300-update debug model;
+nothing in them is read. No seed of K, D, S or the corpus has been simulated. R7 is unchanged.
+
+- **R20.17 — Stage 0's code (new modules only).** (After the #170 review: H-sysid's and
+  H-sysid-krr's clip-binding is read as their committed aim lying on the box boundary, the same
+  §9.6 reading as the other arms, with a test; the closed stage also records every job's
+  `last_two_triggered` and Stage G's predicted counts beside the S counts, §9.5 items 4–5.) `lewm_ul_v2.py` (the frozen-block candidate),
+  `lewm_ul_v2_runtime.py`, `lewm_ul_v2_offline.py`, `lewm_ul_v2_train.py` (added to §2.2's list:
+  TASK-077's training loop copied verbatim, a test comparing the source, with `WindowSampler` bound
+  to a sampler on salt 8409), `scripts/run_lewm_ul_v2.py` (TASK-077's runner helpers copied
+  verbatim, tested), `tests/test_lewm_ul_v2.py` (82 tests covering §7.1 step 2's list) and the
+  DRAFT manifest. Nothing hash-pinned is edited; TASK-081's `choose_affine_local` is imported and
+  called unchanged; U-sat is the design note's `LawMotion.target` (pinned). Implementation choices
+  within the protocol: the collector logs p̂ (R-plate's CPU reading of the 405 frame) on every
+  root, and every fit "with R-plate's readings" (H-sysid, H-sysid-krr, P-aim, H-rule-fit's κ) and
+  every offline aim reads that logged p̂ (R-plate was fitted on TASK-077's corpus, so these
+  readings are out of sample; the stored-token reading is reported beside it); fold assignments
+  take `default_rng([8410, sub-key])`; the size at the margin in δ's rule is read as the stricter
+  of the single-comparator and the better-of-two rates; a corpus root's label is TASK-076's
+  `LookaheadAim` (H-final(commit)'s settings) run once at 405 in cloned state.
+- **R20.18 — a stage's wall cap counts from the end of G-quiet's wait.** The first power run
+  (`simulate-1`, `d9625c7`) waited 75 minutes for a quiet machine (another session's Isaac jobs)
+  and was then voided by its 3 600 s cap with its computation complete. The wait has its own cap
+  (4 h) and is not the stage's work; the runner now starts the stage clock after it and records the
+  excluded seconds (a test). The repeat, `simulate-2` (`148a2b8`), produced power tables identical
+  to the voided run's. Development only; no gated stage had run.
+- **R20.19 — the debug smokes.** In order: K0 CAL-ESCALATE-DEBUG, Stage C CORPUS-SEALED-DEBUG
+  (40 roots, 40 converged labels), **labelcheck LABELS-UNCHANGED-DEBUG** (six roots, each collected
+  with and without the labelling look-ahead: frames, commands, plate, palm, hidden render, target,
+  405 state, p̂, executed steps and outcome bit-identical, so the label leaves a root's execution
+  unchanged as §4.3 requires). After the #170 review the check was extended to gate-P's p̂ aim
+  (half the roots) and, from its second version on, to a third, unlabelled control collection: its
+  second run (`2b4fab9`, under a load of about 30 from other sessions) found one root (true-plate
+  aim) whose kept frames differed while every executed array and the outcome were bit-identical;
+  the cause is not established (that version did not record the difference's size; the look-ahead's
+  branches render nothing, and R17.21 recorded EGL renderer differences within a worker's
+  history); the third run (`154bdd5`, report `fb84a26f…a2d4`) found execution and observations
+  bit-identical in every labelled, unlabelled and control pair on 6 of 6 roots. The check's row now
+  gates the executed trajectory and reports every observation difference with its size beside the
+  control's. Then featurise FEATURISED-DEBUG, readouts O-NO-BAR-DEBUG, six GPU training
+  jobs T-JOB-DONE-DEBUG (300 updates each, through `gpu_run.sh`), Stage G H-GATE-FAIL-DEBUG (every
+  phase and 12 arms' offline aims), Stage D L-DEV-STOP-DEBUG and Stage S S-VOID-CEILING-DEBUG
+  (all 15 arms, determinism re-run ok, in-run G-tests). Every candidate decision logged
+  affine_local (L-rand none) with no fallback; no task truth in any non-privileged arm; every record
+  carried the U-sat law. Two preflight Vs (G-memory while another session held 13 GiB; nothing
+  simulated) and one V from a manifest-order bug (fixed with a test) preceded the chain.
+- **R20.20 — δ = 16/128 by R20.10's rule.** `simulate-2` (report `dd1a22d8…5efb`; 20 000 trials
+  per cell, salt 8412 sub-key 3): G-NI's power at W = C (half coupling, C = 0.80 / 0.85 / 0.875)
+  0.387 / 0.462 / 0.526 at δ = 8, 0.709 / 0.792 / 0.853 at δ = 12, 0.917 / 0.960 / 0.978 at δ = 16;
+  the size at the margin at most 3.97 % for every δ; L-INFERIOR's false fire at the margin at most
+  2.49 %. Only 16/128 qualifies (not the fallback), so the rule does not tighten TASK-081's margin.
+  Reported: G-bar 0.566 / 0.908 / 0.978 / 0.9975 / 0.9999 at W = 0.875 … 0.953; the secondary
+  claim's power at C = 0.875 at most 0.38 with independent outcomes; every twin test ≥ 0.999 at
+  TASK-081's twin rates. δ enters the frozen block at the freeze.
+- **R20.21 — caps and memory.** Every provisional cap of §11 stands (scaled worst cases: K0
+  ≈ 910 s, C ≈ 3 100 s with the labelling look-ahead, G ≈ 6 500 s from the Stage G probe
+  `199e2704…8557`, D ≈ 600 s, S ≈ 4 600 s; slowest attempt 15.9 s; each cap ≥ 2.1 ×). The debug
+  Stage S peaked at 10.76 GiB PSS against the 12 GiB ceiling (its workers also hold the spread
+  seeds' W); Stage S keeps 4 workers, and the margin is disclosed.
+- **R20.22 — what is next.** K0 on its own reported GO (64 resets 72400–72463, CPU, from a clean
+  worktree of the merged revision, with ≥ 16 GiB of memory available and a quiet machine); then the
+  freeze with K0's values and δ = 16/128. Nothing known blocks K0. Evidence copies of the smokes and
+  probes: `~/develop/emai/evidence/task082-stage0/` with a sha256 manifest.
+
 ## Decision 2026-10-08 (l) — TASK-082's DRAFT preregistration: LeWM's committed aim under U-sat, a plate law no hand-written arm is given, with TASK-077's recipe retrained (R20; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30). DRAFT, not frozen.** The document is
