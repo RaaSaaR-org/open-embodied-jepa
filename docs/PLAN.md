@@ -7,7 +7,7 @@ the original plan of record and is not rewritten. Rulings are in [DECISIONS.md](
 and outcomes are in the [experiment index](experiments/README.md).
 
 **Where we stand.** This is the canonical sentence (DECISIONS 2026-10-02, R7, as updated on
-2026-10-08 by R18.28), verbatim:
+2026-10-08 by R18.28 and R18.31), verbatim:
 
 > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa`
 > and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen
@@ -15,16 +15,20 @@ and outcomes are in the [experiment index](experiments/README.md).
 > model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init
 > encoder control R-3 (one run, one training seed per arm, 40 resets, one camera at 112 px onboard,
 > a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed
-> nothing measurable), and cohort C is no longer held out. The first LeWM-driven closed loop on v2
-> whose counts are read is TASK-080's Stage D, a non-gating development cohort (one run, one model
-> seed, 16 resets, in simulation only, under the declared simulation-only plate condition C1-M): a
-> LeWM token predictor on frozen DINOv2 features chose the single place aim between P-3's learned
-> pick and e9's scripted place and reached 16/16 counted successes, against 8/16 for its
-> action-blind twin and 5/16 and 9/16 for its two scene-blind twins (the privileged look-ahead
-> ceiling also 16/16). That is a development result, not a gated one: TASK-080's gated Stage S has
-> not run, LeWM has no gated closed-loop Apple→Plate success, and its only other closed-loop
-> Apple→Plate runs whose counts are read are on v1, with 0 successes. Scripted-expert,
-> privileged-ceiling, oracle and GR00T successes are not project-learned results.
+> nothing measurable), and cohort C is no longer held out. The first LeWM-driven closed loops on v2
+> whose counts are read are TASK-080's (one run, one model seed, in simulation only, under the
+> declared simulation-only plate condition C1-M), in which a LeWM token predictor on frozen DINOv2
+> features chose only the single place aim between P-3's learned pick and e9's scripted place. On
+> the non-gating development cohort D it reached 16/16 counted successes. On the gated cohort S it
+> reached 58/64, above the 56/64 bar and ahead of its action-blind twin (26/64), its two scene-blind
+> twins (21/64 and 30/64) and a random aim (11/64) by exact one-sided McNemar tests at p < 0.01, but
+> it failed the preregistered non-inferiority test against the non-learned hand-written rule
+> controller H-rule, which is given the simulator's plate law (63/64; paired difference −5/64, 95 %
+> interval −10/64 to 0 against the allocated margin of −8/64), without being detectably inferior
+> beyond that margin; the privileged look-ahead ceiling scored 62/64. The row is L-NEAR: escalate,
+> no claim, and no abandonment clause. LeWM therefore has no gated closed-loop Apple→Plate success,
+> and its only other closed-loop Apple→Plate runs whose counts are read are on v1, with 0 successes.
+> Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results.
 
 (LeWM also ran in closed loop on the TASK-014 development reach pilot, a reach task, not
 Apple→Plate: its v2 target-space selector reached 1/5 goals, with intervals overlapping the 0/5
@@ -349,7 +353,7 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       against τ_commit = 1.0 cm; 0.34–0.38 of N's refit error), while the frozen R8 reads the same
       predictions at 2.86–3.41 cm. Optimistic reading (checkpoints selected on val; readouts
       mostly fitted on in-sample train predictions); not a gate or a closed-loop result.
-    - **Next: TASK-080, FROZEN**
+    - **TASK-080, closed L-NEAR**
       ([apple_lewm_c1m_v2_pred_readout.md](experiments/apple_lewm_c1m_v2_pred_readout.md),
       R18; frozen after K0′-PASS, R18.22: pooled K ∪ K′ τ_commit = 1.0 cm, ceiling 32/32,
       r_K′ = 459. Stage C′ CORPUS-SEALED, R18.23: 499 of 500 fresh roots kept, gate-P 249,
@@ -359,8 +363,12 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       at least 27.97 below W; predictions, not closed-loop counts). Stage D **D-PASS**, R18.27
       (non-gating development closed loop, 16 resets, one run, simulation only: W 16/16, N 8/16,
       L-shuf 5/16, L-mean 9/16, the privileged ceiling H-final(commit) 16/16; not the gated
-      result; R7 updated by R18.28). Stage S next (64 gated resets, every arm), on its own GO,
-      R18.29). Under C1-M, W's controller reads the plate
+      result; R7 updated by R18.28). Stage S **L-NEAR**, R18.30 (64 gated resets 65200–65263,
+      every arm, one run, simulation only: W 58/64 ≥ 56; W beat N 26, L-shuf 21, L-mean 30 and
+      L-rand 11 at McNemar p < 0.01; G-NI failed against the non-learned rule controller H-rule
+      63/64, W − H-rule −5/64, 95 % [−10, 0] against −8/64, not detectably inferior; privileged
+      ceiling 62/64; escalate, no clause, no claim; R7 updated by R18.31; TASK-080 closed,
+      R18.32, [results](experiments/apple_lewm_c1m_v2_pred_readout_results.md)). Under C1-M, W's controller reads the plate
       with R-S, a ridge fitted on W's own predicted latents under stand-in chunks over the 1 995
       old roots; N gets R-N, fitted the same way. TASK-077's six checkpoints are reused (no
       training). A fresh 500-root corpus (65300–65799) gives a gate split whose aims are built
@@ -369,8 +377,14 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       < 1, a commands-alone screen) and the offline aims (W's predicted count ≥ 56/64 and ≥ +7/64
       above every twin) before any closed loop. D and S carry TASK-077's bars and rows. **CPU**:
       about 3–5.5 h in all; **GPU**: the fresh corpus's featurisation only (minutes). TASK-079's
-      precondition (TASK-077 L-PASS) is not met; R18.12 proposes that a TASK-080 L-PASS counts as
-      its equivalent row.
+      precondition (TASK-077 L-PASS) is not met; R18.12 proposed that a TASK-080 L-PASS count as
+      its equivalent row, and TASK-080 ended L-NEAR, not L-PASS.
+    - **Next (R18.32, a recommendation only, for the owner).** No repeat of Stage S with this
+      design (any repeat needs fresh seeds and its own ruling; at W − H-rule = −5/64, G-NI's
+      simulated power is below one half). Any next LeWM task on v2 is drafted first as a design
+      note; candidate directions: (a) a condition in which no hand-written arm is given the plate
+      law, declared as a task change; (b) W's commit precision, with the post-hoc
+      refinement-cap observation as a hypothesis to preregister.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.

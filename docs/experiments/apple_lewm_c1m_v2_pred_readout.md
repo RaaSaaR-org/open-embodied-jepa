@@ -8,6 +8,9 @@ with the manifest's file pins and this document's sha256. **The freeze takes eff
 merged on an independent reviewer's reported APPROVE.** Each later stage (C′, R, D, S) still needs
 its own reported GO (§8). K0′'s record is §8.1, Stage C′'s §8.2, Stage R's plan §8.3,
 Stage R's result §8.4, Stage D's plan §8.5, Stage D's result §8.6 and Stage S's plan §8.7.
+**Results (§8 step 8):** [apple_lewm_c1m_v2_pred_readout_results.md](apple_lewm_c1m_v2_pred_readout_results.md).
+Stage S ended **L-NEAR** (W 58/64; G-bar and the four twin tests pass, G-NI fails against H-rule
+63/64; W not detectably inferior): escalate, no clause, no claim. TASK-080 closes there (R18.30–R18.32).
 
 History. The DRAFT (R18.1–R18.14) was reviewed independently (#153). Stage 0 (R18.15–R18.21,
 [Stage-0 record](apple_lewm_c1m_v2_pred_readout_stage0.md), #154) added the code, debug smokes on
@@ -17,8 +20,9 @@ writes its values into the frozen block. Stage C′ then sealed the fresh corpus
 Stage R ended R-PASS (§8.4, R18.25), an offline result: its predicted counts are predictions, not
 closed-loop counts. Stage D, the non-gating development closed loop on 16 resets, then ended
 D-PASS (§8.6, R18.27): W 16/16, N 8/16, L-shuf 5/16, L-mean 9/16, the privileged ceiling
-H-final(commit) 16/16; a development result, not the gated one. No seed of S or F has been
-simulated in closed loop. A later stage's GO approves that stage only.
+H-final(commit) 16/16; a development result, not the gated one. Until Stage S, no seed of S or F
+had been simulated in closed loop; Stage S then ran S's 64 resets once and ended L-NEAR (results
+document). A later stage's GO approves that stage only.
 
 - **Admitted by:** the TASK-077 decomposition record's row **D-READOUT**
   ([apple_lewm_c1m_v2_decomposition.md](apple_lewm_c1m_v2_decomposition.md) §2, R17.53–R17.54,
@@ -29,7 +33,7 @@ simulated in closed loop. A later stage's GO approves that stage only.
   **decided by Claude under owner delegation (2026-09-30)**. They build on R9.8 and R9.9 (the
   claim split and the random-choice test; [design note](apple_lewm_next_v2_design.md) §3), R15
   and R16 (C1-M), and R17 (TASK-077, whose protocol is the template here).
-- **Task card:** `.mc/tasks/todo/TASK-080-lewm-committed-aim-under-c1m-read-by-a-readout-fitted-on-predicted-latents.md`.
+- **Task card:** `.mc/tasks/done/TASK-080-lewm-committed-aim-under-c1m-read-by-a-readout-fitted-on-predicted-latents.md`.
 - **Template:** TASK-077's frozen protocol, [apple_lewm_c1m_v2.md](apple_lewm_c1m_v2.md). Where
   this document says "carried", the TASK-077 section named is in force unchanged; only the
   differences are written out here.

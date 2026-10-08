@@ -121,6 +121,17 @@ the SSD evidence store (`~/develop/emai/evidence/task077-stage{t,t2,g}/`, sha256
 and the six checkpoints from these worktrees, so keep them until that record is merged and they
 are archived like the others.
 
+**TASK-080's run worktrees** (closed 2026-10-08, L-NEAR;
+[results](experiments/apple_lewm_c1m_v2_pred_readout_results.md) §1): `task080-k0`,
+`task080-stagec` (the sealed fresh corpus), `task080-stager` (the fresh featurisation and the
+readout fits R-S, R-N and R-L), `task080-staged` and `task080-stages`. Their reports, logs and the
+Stage R fits are copied to the SSD evidence store
+(`~/develop/emai/evidence/task080-{k0,stagec,stager,staged,stages}/`, sha256 manifests under
+`_checksums/`); the fresh feature files (3.46 GB) are not copied and stay in `task080-stager`.
+Stages D and S read the Stage R report and fits from these worktrees. Nothing reads them now that
+TASK-080 is closed, so they can be archived like the others (copy, checksum, MANIFEST row, verify
+before removing).
+
 ## Old path to archive path
 
 Results documents cite worktree paths on the SSD. Each worktree below was copied, every file

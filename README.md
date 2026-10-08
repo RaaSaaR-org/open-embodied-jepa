@@ -6,7 +6,7 @@ A research framework for action-conditioned visual world models on a simulated U
 
 ## Status — 2026-10-08
 
-**Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init encoder control R-3 (one run, one training seed per arm, 40 resets, one camera at 112 px onboard, a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. The first LeWM-driven closed loop on v2 whose counts are read is TASK-080's Stage D, a non-gating development cohort (one run, one model seed, 16 resets, in simulation only, under the declared simulation-only plate condition C1-M): a LeWM token predictor on frozen DINOv2 features chose the single place aim between P-3's learned pick and e9's scripted place and reached 16/16 counted successes, against 8/16 for its action-blind twin and 5/16 and 9/16 for its two scene-blind twins (the privileged look-ahead ceiling also 16/16). That is a development result, not a gated one: TASK-080's gated Stage S has not run, LeWM has no gated closed-loop Apple→Plate success, and its only other closed-loop Apple→Plate runs whose counts are read are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results.** (This is the canonical status sentence; see [decision 2026-10-02, R7](docs/DECISIONS.md), as updated on 2026-10-08 by R18.28, for its scope.)
+**Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init encoder control R-3 (one run, one training seed per arm, 40 resets, one camera at 112 px onboard, a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. The first LeWM-driven closed loops on v2 whose counts are read are TASK-080's (one run, one model seed, in simulation only, under the declared simulation-only plate condition C1-M), in which a LeWM token predictor on frozen DINOv2 features chose only the single place aim between P-3's learned pick and e9's scripted place. On the non-gating development cohort D it reached 16/16 counted successes. On the gated cohort S it reached 58/64, above the 56/64 bar and ahead of its action-blind twin (26/64), its two scene-blind twins (21/64 and 30/64) and a random aim (11/64) by exact one-sided McNemar tests at p < 0.01, but it failed the preregistered non-inferiority test against the non-learned hand-written rule controller H-rule, which is given the simulator's plate law (63/64; paired difference −5/64, 95 % interval −10/64 to 0 against the allocated margin of −8/64), without being detectably inferior beyond that margin; the privileged look-ahead ceiling scored 62/64. The row is L-NEAR: escalate, no claim, and no abandonment clause. LeWM therefore has no gated closed-loop Apple→Plate success, and its only other closed-loop Apple→Plate runs whose counts are read are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results.** (This is the canonical status sentence; see [decision 2026-10-02, R7](docs/DECISIONS.md), as updated on 2026-10-08 by R18.28 and R18.31, for its scope.)
 
 On v1, the frozen unseen-pair
 benchmark recorded 0/50 on each of three training seeds for both backends — **0/150 per
@@ -128,10 +128,16 @@ loop.
   development closed loop on 16 resets, ended **D-PASS**: W 16/16 counted successes, the
   action-blind twin N 8/16, the scene-blind twins 5/16 and 9/16, and the privileged look-ahead
   ceiling 16/16. LeWM chooses only the single place aim, between P-3's learned pick and e9's
-  scripted place, under a plate law the simulator imposes (C1-M). It is one run, one model seed,
-  16 resets, simulation only, and not the gated result: the rule-based comparators did not run in
-  D, and the gated Stage S (64 resets, every arm) has not run
-  ([decision 2026-10-08 (c)](docs/DECISIONS.md), R18.27–R18.29).
+  scripted place, under a plate law the simulator imposes (C1-M). D was a development result
+  ([decision 2026-10-08 (c)](docs/DECISIONS.md), R18.27–R18.29). The gated **Stage S** (64 fresh
+  resets, every arm, one run, the same model seed, simulation only) ended **L-NEAR**, and TASK-080
+  is closed ([results](docs/experiments/apple_lewm_c1m_v2_pred_readout_results.md),
+  [decision 2026-10-08 (d)](docs/DECISIONS.md), R18.30–R18.32): W 58/64, above the 56/64 bar and
+  ahead of its action-blind twin (26/64), its scene-blind twins (21/64, 30/64) and a random aim
+  (11/64) by exact one-sided McNemar tests at p < 0.01, but it failed non-inferiority against the
+  non-learned rule controller H-rule, which is given the simulator's plate law (63/64; W − H-rule
+  −5/64, 95 % interval [−10, 0] against the allocated −8/64), without being detectably inferior.
+  L-NEAR is escalate, no clause, **no claim**; the privileged ceiling scored 62/64.
 - **Development only, not gated:** an opt-in white plate leaves TASK-075 at OBS-NONE (any colour
   effect on the offset's median error is bounded to about 0.90–1.11; 1 of 12 intervals excludes 1.0)
   ([white plate](docs/experiments/apple_white_plate_dev.md)). In Isaac Lab-Arena (TASK-025,

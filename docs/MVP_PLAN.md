@@ -29,6 +29,13 @@ Prepared 2026-09-20 from PRD sections 1–21, updated with the user’s Mac-only
 > chooses only the single place aim between P-3's pick and e9's scripted place, ended D-PASS with
 > W 16/16, its action-blind twin 8/16 and its scene-blind twins 5/16 and 9/16. It is not the gated
 > result; TASK-080's gated Stage S has not run. R7's sentence was updated accordingly (R18.28).
+>
+> **Update 2026-10-08 (later).** TASK-080's gated Stage S (64 fresh resets, one run, simulation
+> only) ended L-NEAR: W 58/64 passed the 56/64 bar and beat its action-blind, scene-blind and
+> random twins (exact one-sided McNemar p < 0.01), but failed non-inferiority against the
+> non-learned rule controller H-rule (63/64; W − H-rule −5/64, 95 % interval [−10, 0] against the
+> allocated −8/64), without being detectably inferior. Escalate, no clause, no claim; LeWM still
+> has no gated closed-loop Apple→Plate success. R7 was updated again (R18.31).
 
 ## Deliverable
 

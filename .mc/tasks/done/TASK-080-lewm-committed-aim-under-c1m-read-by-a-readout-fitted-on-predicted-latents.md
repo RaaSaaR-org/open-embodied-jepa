@@ -4,7 +4,7 @@ aliases:
 - TASK-080
 title: 'LeWM committed aim under C1-M, read by a readout fitted on predicted latents'
 slug: lewm-committed-aim-under-c1m-read-by-a-readout-fitted-on-predicted-latents
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -14,6 +14,7 @@ tags:
 - apple-pnp
 - preregistration
 - frozen
+- l-near
 sprint: ''
 depends_on:
 - "[[TASK-077]]"
@@ -60,9 +61,9 @@ change it unless an L-PASS is followed by its own reviewed ruling.
       privileged read in W or a twin), debug smokes, scale probes and R18.13's development dry run.
 - [x] K0′ on a reported GO; K0′'s values in the frozen block.
 - [x] The freeze merged on an independent reviewer's reported APPROVE (#155, `514110d`).
-- [ ] Stages C′, R, D and S, each on its own reported GO, from a clean worktree of the merged
+- [x] Stages C′, R, D and S, each on its own reported GO, from a clean worktree of the merged
       revision, after a full `pytest` at that revision (G-tests).
-- [ ] Results PR, with every restated number checked by an independent reviewer.
+- [x] Results PR, with every restated number checked by an independent reviewer.
 
 ## Notes
 - 2026-10-07: card opened under R18.1 on branch `docs/task080-prereg-draft`. DRAFT protocol only;
@@ -112,3 +113,16 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   README and the status docs follow). The record also takes #157's review nits 2–4. Stage S's
   plan is §8.7 (R18.29): one CPU `closed --cohort S` on 65200–65263, every arm, with `--stage-d`,
   on its own GO at the record's merge commit.
+- 2026-10-08: Stage S ran once on the reviewer's GO (#158, issuecomment-6051252854) at `bfae0fa`
+  (worktree `task080-stages`), 02:58:59–03:25:20 UTC: **L-NEAR** (R18.30; report sha256
+  `53cfdec1…393e`; evidence copy `~/develop/emai/evidence/task080-stages/`). Counted successes on
+  the 64 gated resets 65200–65263 (one run, one model seed 66800 flagged `last_two_triggered`,
+  simulation only): W 58/64, N 26, L-shuf 21, L-mean 30, L-rand 11, H-rule 63, H-sysid 62,
+  H-final(commit) 62 (privileged); H-read 64 and H-now 1 (privileged, reported only). G-bar passes;
+  the four McNemar tests pass (p ≤ 9.7 × 10⁻⁷); G-NI fails against H-rule (W − H-rule −5/64,
+  95 % [−10, 0] against −8/64; not detectably inferior). Escalate, no clause, no claim. W's
+  determinism re-run matched on all four resets (the log's "3/4" is its success count). R18.31
+  updates R7 with these counts (a factual correction, no claim). Results document
+  `docs/experiments/apple_lewm_c1m_v2_pred_readout_results.md`; **TASK-080 closes with outcome
+  L-NEAR** (R18.32, which records a recommendation only: no repeat of S with this design; any next
+  LeWM task on v2 drafted first as a design note). Card moved to done.
