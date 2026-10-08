@@ -84,3 +84,16 @@ def test_only_declared_variants_execute():
     assert set(cp.EXECUTABLE) <= set(cp.VARIANTS)
     with pytest.raises(ValueError):
         cp.run_task({"kind": "attempt", "variant": "cap30"})
+
+
+def test_ni_pass_table_matches_task080_stage_s():
+    # TASK-080 Stage S: W only 1, H-rule only 6, interval [-10, 0] -> G-NI fails at margin 8
+    table = cp.ni_pass_table(64, 8, k_max=12)
+    assert not table[1, 6]
+    assert table[0, 0] and table[3, 3]
+
+
+def test_ni_power_bounds():
+    table = cp.ni_pass_table(64, 8, k_max=30)
+    assert cp.ni_power(0.98, 0.98, "overlap", n=64, margin=8, table=table) == pytest.approx(1.0)
+    assert cp.ni_power(0.80, 0.98, "overlap", n=64, margin=8, table=table) < 0.2

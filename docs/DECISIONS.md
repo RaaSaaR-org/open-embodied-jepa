@@ -63,6 +63,44 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (e) — the next LeWM task pursues W's commit precision first; TASK-081's design note and development check (R18.33–R18.35)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_commit_precision_v2_design.md](experiments/apple_lewm_commit_precision_v2_design.md)
+(DRAFT design note; not a protocol, nothing frozen, nothing gated).
+
+- **R18.33 — direction (b) first.** Of R18.32's two directions, the next LeWM task on v2 pursues
+  (b), W's commit precision, first: it acts directly on the failure mode observed in TASK-080's
+  Stage S (W's misses against H-rule) and keeps the task, the condition and every artifact fixed.
+  (a), a condition in which no hand-written arm is given the plate law, stays the documented
+  alternative; it is a task change and needs its own design note. The work is tracked as
+  TASK-081 (todo).
+- **R18.34 — seeds and salts.** TASK-081 takes the block 70000–71999 (a search of all 112 local
+  and remote refs and every worktree's `src` and `scripts` found no integer in it used as a seed;
+  outside every range of `lewm_pr_v2.FORBIDDEN_RANGES` and TASK-080's block 65000–65999) and the
+  salts 8301–8312 (not found on any ref in `src`, `scripts`, `tests` or `configs`). 70000–70099
+  is development only; 70100–71999 is reserved for TASK-081's preregistration; any other use
+  needs its own ruling.
+- **R18.35 — the development check and the recommendation.** Diagnosis (post hoc on S and D, a
+  hypothesis): W's single-evaluation refinement g ← clip(p̃(g)) oscillates on a predicted-plate
+  map that is rough below about 1 cm (no clipping, no infeasible stop; consecutive steps
+  anti-parallel, median cosine −0.84 on capped resets), and at the cap commits one extreme of the
+  oscillation (on S, median aim error against H-final(commit)'s aim 0.54 cm on the 17 capped
+  resets against 0.29 cm on the 47 converged). The development check (seeds 70000–70063, CPU, one
+  run, W-66800 and R-S unchanged, report sha256 `febe7280…fb7f`) found the cap binding on 19 of
+  64 resets and, in closed loop, W:frozen 57/64, W:damped 58/64 and **W:affine_local 62/64**
+  (the clipped fixed point of a least-squares affine fit to W's own predictions over up to 25
+  grid points near the argmin; no extra roll-out), against H-rule 64/64 and the privileged
+  H-final(commit) 63/64; affine_local's median aim error against H-final's aim was 0.243 cm
+  [0.205, 0.322] against frozen's 0.382 [0.322, 0.473]; W:affine_local − H-rule −2/64
+  [−5, 0]. Development numbers, one run, and affine_local was the best of three executed
+  variants (selection). **Recommended:** preregister TASK-081 with W's solver changed to
+  affine_local (no retraining, no refit), the twins carrying the same solver, a reported-only
+  W-frozen arm, G-NI's estimator and δ = 8/64 unchanged (no change justified by a measurement;
+  a τ-calibrated margin would be tighter, about 6/64), and a gated cohort of n = 128 fresh resets
+  (G-NI power 0.93–0.99 at W = 0.953 against C = 0.984–0.992, against 0.72–0.86 at n = 64).
+  Not a preregistration and not a GO.
+
 ## Decision 2026-10-08 (d) — TASK-080 Stage S ends L-NEAR; R7 is updated; TASK-080 closes (R18.30–R18.32)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is

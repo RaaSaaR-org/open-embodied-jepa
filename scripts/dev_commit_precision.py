@@ -39,6 +39,8 @@ import sys  # noqa: E402
 import time  # noqa: E402
 from pathlib import Path  # noqa: E402
 
+import numpy as np  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
@@ -89,18 +91,98 @@ class DevPool(rg.BoundedPool):
         return out
 
 
+# ----- the summary (design note §4.3) ---------------------------------------------------------
+def _median_ci(values) -> dict:
+    v = np.asarray(values, np.float64)
+    rng = np.random.default_rng(np.random.SeedSequence([cp.POWER_SALT, 1, len(v)]))
+    boot = np.median(v[rng.integers(0, len(v), (10_000, len(v)))], axis=1)
+    return {
+        "median": float(np.median(v)),
+        "ci95": [float(x) for x in np.percentile(boot, [2.5, 97.5])],
+        "p87_5": float(np.percentile(v, 87.5)),
+        "max": float(v.max()),
+    }
+
+
+def analyse(report: dict) -> dict:
+    """Every variant's aim error against H-final(commit)'s aim on the same reset, its predicted
+    count through TASK-080's pooled tau curve, convergence, and the closed-loop counts."""
+    runs = report["runs"]
+    counts = dict(pr.K0_PRIME_MEASURED["pooled"]["counts_pooled"])
+    ref = {a["seed"]: np.asarray(a["commit"]["target"], np.float64) for a in runs["H-final"]}
+    seeds = [a["seed"] for a in runs["W:frozen"]]
+    logs = {}
+    for name in ("W:frozen", "W:damped", "W:affine_local"):
+        for a in runs[name]:
+            v = a["decisions"][0]["world_model"]["variants"]
+            if name == "W:frozen":
+                logs[a["seed"]] = v
+            elif json.dumps(v, sort_keys=True) != json.dumps(logs[a["seed"]], sort_keys=True):
+                raise lp.GuardError(f"the variants at 405 differ between runs on {a['seed']}")
+    out = {"resets": len(seeds), "variants": {}, "closed_loop": {}}
+    for v in cp.VARIANTS:
+        err = [100.0 * float(np.linalg.norm(np.asarray(logs[s][v]["g"]) - ref[s])) for s in seeds]
+        conv = [logs[s][v].get("converged") for s in seeds]
+        entry = {
+            "aim_error_vs_hfinal_cm": _median_ci(err),
+            "predicted_count_of_64": pr.predicted_count(err, counts, pr.POOLED_RESETS),
+            "rollouts_median": float(np.median([logs[s][v]["rollouts"] for s in seeds])),
+            "errors_cm": err,
+        }
+        if conv[0] is not None:
+            entry["not_converged"] = int(sum(not c for c in conv))
+        out["variants"][v] = entry
+    capped = [s for s in seeds if not logs[s]["frozen"]["converged"]]
+    out["frozen_capped_seeds"] = capped
+    for v in cp.VARIANTS:
+        e = dict(zip(seeds, out["variants"][v]["errors_cm"], strict=True))
+        out["variants"][v]["on_frozen_capped"] = (
+            _median_ci([e[s] for s in capped]) if capped else None
+        )
+        out["variants"][v]["on_frozen_converged"] = _median_ci(
+            [e[s] for s in seeds if s not in capped]
+        )
+    success = {n: [bool(a["success"]) for a in r] for n, r in runs.items()}
+    for n, r in runs.items():
+        miss = [
+            a["commit"]["landing_miss_cm"] for a in r if "landing_miss_cm" in a.get("commit", {})
+        ]
+        out["closed_loop"][n] = {"count": int(sum(success[n])), "n": len(r),
+                                 "landing_miss_cm": _median_ci(miss)}  # fmt: skip
+        if n.startswith("W:"):
+            out["closed_loop"][n]["minus_h_rule"] = pr.paired_interval(
+                success[n], success["H-rule"]
+            )
+            out["closed_loop"][n]["on_frozen_capped"] = int(
+                sum(a["success"] for a in r if a["seed"] in capped)
+            )
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--output", required=True)
-    ap.add_argument("--evidence", required=True)
-    ap.add_argument("--old-features", required=True)
-    ap.add_argument("--old-fits", required=True)
-    ap.add_argument("--models", nargs=6, required=True)
-    ap.add_argument("--stage-r", required=True)
+    ap.add_argument("--analyse", help="summarise an existing report.json and exit")
+    ap.add_argument("--output")
+    ap.add_argument("--evidence")
+    ap.add_argument("--old-features")
+    ap.add_argument("--old-fits")
+    ap.add_argument("--models", nargs=6)
+    ap.add_argument("--stage-r")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--first", type=int, default=DEV_SEEDS[0])
     ap.add_argument("--last", type=int, default=DEV_SEEDS[1])
     args = ap.parse_args(argv)
+    if args.analyse:
+        summary = analyse(json.loads(Path(args.analyse).read_text()))
+        target = Path(args.analyse).with_name("summary.json")
+        if target.exists():
+            raise SystemExit(f"refusing: {target} exists")
+        target.write_text(json.dumps(summary, indent=1))
+        print(f"wrote {target}")
+        return 0
+    for name in ("output", "evidence", "old_features", "old_fits", "models", "stage_r"):
+        if getattr(args, name) is None:
+            ap.error(f"--{name.replace('_', '-')} is required for a run")
     out_dir = Path(args.output)
     if out_dir.exists():
         raise SystemExit(f"refusing: {out_dir} exists")

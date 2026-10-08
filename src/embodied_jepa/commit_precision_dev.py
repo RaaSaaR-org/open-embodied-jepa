@@ -268,3 +268,62 @@ def run_task(task: dict) -> dict:
         out.pop("frame405", None)
         out.pop("corpus", None)
     return out
+
+
+# ----- G-NI's power at a cohort size (design note §5) --------------------------------------------
+POWER_SALT = 8301  # the design note's development salt (8301-8312 proposed for TASK-081)
+COUPLINGS = ("overlap", "half", "independent")
+
+
+def discordance(p_w: float, p_c: float, coupling: str) -> tuple[float, float]:
+    """(P(W succeeds and C fails), P(W fails and C succeeds)) for the marginal rates given:
+    "overlap" makes the outcomes as nested as the rates allow, "independent" independent, and
+    "half" is halfway between in both discordant probabilities."""
+    over = (max(p_w - p_c, 0.0), max(p_c - p_w, 0.0))
+    ind = (p_w * (1.0 - p_c), (1.0 - p_w) * p_c)
+    if coupling == "overlap":
+        return over
+    if coupling == "independent":
+        return ind
+    if coupling == "half":
+        return ((over[0] + ind[0]) / 2.0, (over[1] + ind[1]) / 2.0)
+    raise ValueError(coupling)
+
+
+def ni_pass_table(n: int, margin: int, *, resamples: int = 4000, k_max: int = 40) -> np.ndarray:
+    """pass[k+, k-]: whether TASK-080's G-NI estimator (the 2.5th percentile of the reset-bootstrap
+    sum of W - C, ``lewm_pr_v2.paired_interval``'s form) is > -margin, for k+ resets won by W only
+    and k- by C only out of n. The bootstrap sum depends on the resets only through (k+, k-)."""
+    rng = np.random.default_rng(np.random.SeedSequence([POWER_SALT, int(n), int(margin)]))
+    k_max = min(int(k_max), int(n))
+    table = np.zeros((k_max + 1, k_max + 1), bool)
+    for kp in range(k_max + 1):
+        for km in range(k_max + 1):
+            if kp + km > n:
+                continue
+            draws = rng.multinomial(n, [kp / n, km / n, (n - kp - km) / n], size=resamples)
+            lo = np.percentile(draws[:, 0] - draws[:, 1], 2.5)
+            table[kp, km] = lo > -margin
+    return table
+
+
+def ni_power(p_w: float, p_c: float, coupling: str, *, n: int, margin: int, table=None) -> float:
+    """P(G-NI passes) over the multinomial of (k+, k-) at the discordance of ``coupling``."""
+    from math import lgamma, log
+
+    table = ni_pass_table(n, margin) if table is None else table
+    q_p, q_m = discordance(p_w, p_c, coupling)
+    q_0 = 1.0 - q_p - q_m
+    total = 0.0
+    k_max = table.shape[0] - 1
+    for kp in range(k_max + 1):
+        for km in range(k_max + 1):
+            if kp + km > n or not table[kp, km]:
+                continue
+            if (q_p == 0 and kp) or (q_m == 0 and km) or (q_0 == 0 and kp + km < n):
+                continue
+            logp = lgamma(n + 1) - lgamma(kp + 1) - lgamma(km + 1) - lgamma(n - kp - km + 1)
+            logp += (kp * log(q_p) if kp else 0.0) + (km * log(q_m) if km else 0.0)
+            logp += (n - kp - km) * log(q_0) if n - kp - km else 0.0
+            total += float(np.exp(logp))
+    return total
