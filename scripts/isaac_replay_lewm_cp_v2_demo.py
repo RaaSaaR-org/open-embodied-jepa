@@ -274,8 +274,6 @@ def compose(args) -> int:
         draw.text((vw + 8, 48), "Isaac Sim (the same states, posed; no physics)",
                   font=composer.normal, fill=(255, 255, 255))  # fmt: skip
         label(canvas, LABEL, vh + 44)
-        draw = ImageDraw.Draw(canvas)
-        draw.text((8, vh + 44 + 24 - 2), "", font=composer.small)
         return np.asarray(canvas)
 
     def card() -> np.ndarray:
@@ -330,10 +328,9 @@ def compose(args) -> int:
             last = (t, iv, mv, ob)
         success, distance = bool(z["success"]), float(z["final_distance_cm"])
         if success:
-            banner = (f"SUCCESS (in MuJoCo): at rest on the plate, {distance:.1f} cm off centre",
-                      (30, 130, 60))  # fmt: skip
+            banner = (f"SUCCESS in MuJoCo: at rest, {distance:.1f} cm off centre", (30, 130, 60))
         else:
-            banner = (f"MISS (in MuJoCo): {distance:.1f} cm off the plate centre", (170, 40, 40))
+            banner = (f"MISS in MuJoCo: {distance:.1f} cm off the plate centre", (170, 40, 40))
         t, iv, mv, ob = last
         videos["isaac"].write(isaac_frame(iv, ob, lines_of(t), banner), int(2.5 * fps))
         videos["pair"].write(pair_frame(mv, iv, lines_of(t), banner), int(2.5 * fps))
