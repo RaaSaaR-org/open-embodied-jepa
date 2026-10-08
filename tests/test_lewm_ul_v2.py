@@ -329,22 +329,30 @@ def test_the_collector_uses_task_076s_lookahead_with_the_ceilings_settings():
     assert ul.LOOKAHEAD_MAX_ITER == c1.MAX_ITERATIONS
 
 
-def test_labelcheck_compares_every_trajectory_array():
+def test_labelcheck_compares_the_trajectory_and_reports_observations():
     run = _runner()
     base = {"frames": np.zeros((65, 2, 2, 3), np.uint8), "commands": np.ones((64, 14)),
-            "plate": np.ones((65, 2)), "palm": np.ones((65, 2)), "hidden_r": np.zeros(3),
-            "target": np.ones(2), "state405": np.ones(5), "p_hat405": np.ones(2)}  # fmt: skip
+            "plate": np.ones((65, 2)), "palm": np.ones((65, 2)),
+            "hidden_r": np.zeros((2, 2, 3), np.uint8), "target": np.ones(2),
+            "state405": np.ones(5), "p_hat405": np.ones(2)}  # fmt: skip
     a = {"seed": 1, "executed_steps": 468, "termination_reason": "step_limit", "success": False,
          "blocked": None, "corpus": base | {"labelled": True, "label_aim": np.ones(2),
                                            "label_converged": np.asarray(True)}}  # fmt: skip
-    b = {k: v for k, v in a.items()} | {"corpus": dict(base) | {"labelled": False}}
-    assert run.compare_roots(a, b)["identical"]
-    for key in ("commands", "plate", "frames"):
+    b = dict(a) | {"corpus": dict(base) | {"labelled": False}}
+    out = run.compare_roots(a, b)
+    assert out["identical"] and out["execution_identical"] and out["observations_identical"]
+    for key in ("commands", "plate", "palm", "target", "state405"):
         changed = dict(base)
         changed[key] = base[key] + 1
         out = run.compare_roots(a, b | {"corpus": changed})
-        assert not out["identical"] and not out[key]
-    assert not run.compare_roots(a, b | {"executed_steps": 467})["identical"]
+        assert not out["execution_identical"] and not out[key]["equal"], key
+    frames = base["frames"].copy()
+    frames[2, 0, 0, 0] = 3  # step 405, one pixel
+    out = run.compare_roots(a, b | {"corpus": dict(base) | {"frames": frames}})
+    assert out["execution_identical"] and not out["observations_identical"]
+    assert out["frames"]["steps_differing"] == [405] and out["frames"]["max_abs"] == 3.0
+    assert out["frames"]["elements_differing"] == 1
+    assert not run.compare_roots(a, b | {"executed_steps": 467})["execution_identical"]
 
 
 def test_the_corpus_store_seals_and_reopens(tmp_path):

@@ -935,11 +935,21 @@ def stage_corpus(report, args, fields: Fields, manifest) -> str:
         report["pool_close"] = pool.close()
 
 
+EXECUTION_KEYS = ("commands", "plate", "palm", "target", "state405")
+OBSERVATION_KEYS = ("frames", "hidden_r", "p_hat405")
+OUTCOME_KEYS = ("executed_steps", "termination_reason", "success", "blocked")
+
+
 def stage_labelcheck(report, args, fields: Fields, manifest) -> str:
-    """Stage 0 (§4.3, debug only): each labelcheck root collected twice, with and without the
-    labelling look-ahead; the executed trajectory (commands, plate and palm at every kept step,
-    the kept frames, the plate-hidden render, the committed aim, the executed steps and the
-    outcome) must be identical."""
+    """Stage 0 (§4.3, debug only): each labelcheck root collected three times: with the labelling
+    look-ahead, without it, and without it again (the control). The label must leave the root's
+    **executed trajectory** unchanged: the executed commands, the plate and palm at every kept
+    step, the committed aim, the 405 state, the executed steps, the termination and the outcome
+    (bit-exact). The rendered observations (the kept frames, the plate-hidden render, p-hat read
+    from the 405 frame) are compared too and every difference is reported with its size, beside
+    the control pair's: the EGL renderer is not bit-deterministic across a worker's history
+    (R17.21), and the look-ahead renders nothing (its branches use a blank renderer). Half the
+    roots build their aim from the true plate (train), half from p-hat (gate-P)."""
     r_plate = carried_r_plate(args, report)
     config = {"r_plate": r_plate["path"], "r_plate_sha256": r_plate["sha256"]}
     pool, co = sim_setup(report, args, manifest, config, int(args.workers or ul.SIM_WORKERS))
@@ -948,34 +958,62 @@ def stage_labelcheck(report, args, fields: Fields, manifest) -> str:
         # both aim constructions: even positions as train (true plate), odd as gate-P (p-hat)
         by = {int(s): ("train", "gate_p")[i % 2] for i, s in enumerate(seeds)}
         runs = {}
-        for label in (True, False):
+        for name, label in (("label", True), ("no_label", False), ("control", False)):
             tasks = attempt_tasks("collect-ul", seeds, co, corpus_task(by, label=label))
-            runs[label] = run_arm(pool, tasks, f"labelcheck label={label}")
-        pairs = [compare_roots(a, b) for a, b in zip(runs[True], runs[False], strict=True)]
-        fields.set("pairs", pairs)
-        same = all(p["identical"] for p in pairs)
+            runs[name] = run_arm(pool, tasks, f"labelcheck {name}")
+        pairs = [compare_roots(a, b) for a, b in zip(runs["label"], runs["no_label"], strict=True)]
+        control = [compare_roots(a, b) for a, b in
+                   zip(runs["no_label"], runs["control"], strict=True)]  # fmt: skip
+        for p, s in zip(pairs, seeds, strict=True):
+            p["aim_from"] = ul.AIM_FROM[by[int(s)]]
+        fields.set("pairs", {"label_vs_no_label": pairs, "control_no_label_twice": control})
+        same = all(p["execution_identical"] for p in pairs)
         row = "LABELS-UNCHANGED" if same else "LABELS-CHANGED"
-        fields.set("decision", {"row": row, "roots": len(pairs), "clause_fires": False})
+        fields.set("decision", {
+            "row": row, "roots": len(pairs), "clause_fires": False,
+            "observations_identical": int(sum(p["observations_identical"] for p in pairs)),
+            "control_observations_identical": int(sum(p["observations_identical"]
+                                                      for p in control)),
+            "rule": "the executed trajectory bit-exact on every root (observations reported)",
+        })  # fmt: skip
         return row
     finally:
         report["pool_close"] = pool.close()
 
 
-def compare_roots(with_label: dict, without: dict) -> dict:
-    """Whether two collections of one root executed the same trajectory (bit-exact arrays)."""
-    if with_label["seed"] != without["seed"]:
+def _difference(x, y) -> dict:
+    x, y = np.asarray(x), np.asarray(y)
+    if x.shape != y.shape:
+        return {"equal": False, "shape": [list(x.shape), list(y.shape)]}
+    diff = np.abs(x.astype(np.float64) - y.astype(np.float64))
+    out = {"equal": bool(not diff.any()), "max_abs": float(diff.max()) if diff.size else 0.0,
+           "elements_differing": int((diff > 0).sum())}  # fmt: skip
+    if x.ndim == 4:  # frames: which kept steps differ
+        steps = np.flatnonzero(diff.reshape(len(diff), -1).max(1) > 0)
+        out["steps_differing"] = [int(ul.FRAME_STEPS[0] + i) for i in steps]
+    return out
+
+
+def compare_roots(first: dict, second: dict) -> dict:
+    """Two collections of one root: the executed trajectory (bit-exact) and the observations,
+    each difference with its size."""
+    if first["seed"] != second["seed"]:
         raise lp.GuardError("labelcheck pairs the same roots")
-    a, b = with_label.get("corpus") or {}, without.get("corpus") or {}
-    out = {"seed": int(with_label["seed"]), "labelled": bool(a.get("labelled"))}
-    keys = ("frames", "commands", "plate", "palm", "hidden_r", "target", "state405", "p_hat405")
-    for key in keys:
+    a, b = first.get("corpus") or {}, second.get("corpus") or {}
+    out = {"seed": int(first["seed"]), "labelled": [bool(a.get("labelled")),
+                                                     bool(b.get("labelled"))]}  # fmt: skip
+    for key in (*EXECUTION_KEYS, *OBSERVATION_KEYS):
         if key in a and key in b:
-            out[key] = bool(np.array_equal(np.asarray(a[key]), np.asarray(b[key])))
+            out[key] = _difference(a[key], b[key])
         else:
-            out[key] = bool(key not in a and key not in b)
-    for key in ("executed_steps", "termination_reason", "success", "blocked"):
-        out[key] = with_label.get(key) == without.get(key)
-    out["identical"] = bool(all(v for k, v in out.items() if k not in ("seed", "labelled")))
+            out[key] = {"equal": bool(key not in a and key not in b)}
+    for key in OUTCOME_KEYS:
+        out[key] = {"equal": first.get(key) == second.get(key)}
+    out["execution_identical"] = bool(
+        all(out[k]["equal"] for k in (*EXECUTION_KEYS, *OUTCOME_KEYS))
+    )
+    out["observations_identical"] = bool(all(out[k]["equal"] for k in OBSERVATION_KEYS))
+    out["identical"] = out["execution_identical"] and out["observations_identical"]
     if a.get("labelled"):
         out["label_aim"] = np.asarray(a["label_aim"]).tolist()
         out["label_converged"] = bool(a["label_converged"])
