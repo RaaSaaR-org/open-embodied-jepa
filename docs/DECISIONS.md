@@ -63,6 +63,51 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (s) — TASK-084 (Phase 0): calibration on Meta's released JEPA-WM for Push-T, with its planner and ours, and a LeWM action-sensitivity baseline; protocol frozen at merge (R22.1–R22.9)
+
+**Decided by Claude under owner delegation (2026-09-30).** Phase 0 of the proposal
+[JEPA_ZERO_SHOT_PLAN.md](JEPA_ZERO_SHOT_PLAN.md) (#176), whose first item (record TASK-083, close
+the plate line) is done (#177). The protocol is
+[jepa_wms_pusht_calibration.md](experiments/jepa_wms_pusht_calibration.md); it is frozen when its
+PR merges.
+
+- **R22.1 — the task is Push-T.** Of the released JEPA-WM simulation checkpoints, Push-T is the
+  manipulation-like one whose evaluation needs no legacy stack (PointMaze needs mujoco-py 2.1,
+  Metaworld and RoboCasa their own installs), whose data is public (DINO-WM's OSF release; the
+  Hub dataset is gated for this account), and whose released number has a small spread.
+- **R22.2 — the number is 70.2 % (2.8)**, JEPA-WM, Push-T, CEM L2, arXiv 2512.24497 v1 Table 1
+  (and S5.1), unchanged in v4 (Table 2, Table 11); read from both PDFs. It averages three training
+  seeds and the last ten epochs at 96 episodes each; the released file is one checkpoint (epoch 50
+  of one run), so the comparison is a window, not equality.
+- **R22.3 — the checkpoint and runtime.** `jepa_wm_pusht.pth.tar` (sha256 `9beca3ea…aaaa0eb`),
+  upstream `13cf1d9`, in a separate Python 3.10 runtime with torch 2.7.0+cu128 under the ignored
+  `third_party/jepa-wms-runtime/`; the deviations of the protocol's §3.1 (one process, chunked
+  roll-outs because 300 samples do not fit in 16 GB, no decoder heads) apply to both arms.
+- **R22.4 — "ours" is `embodied_jepa.planning.CEMPlanner` unchanged**, with upstream's budget
+  (300 × 30, 10 elites, H = 6) behind a bridge that gives it upstream's planner interface, and a
+  declared action mapping: the first 10 of 14 normalised dimensions, scaled per raw dimension by
+  the train split's 99.5th-percentile |z|, b = (3.703, 3.301).
+- **R22.5 — episodes and seeds.** 96 paired episodes per arm (meta seeds 1–4 × 24), one GPU job
+  per arm and seed through `scripts/gpu_run.sh`; debug seeds 9901–9999; salts 8601 (part B) and
+  8602 (bootstrap).
+- **R22.6 — the gate and its rows** (first match): P0-VOID; **P0-PASS** if upstream's rate is
+  within ±10 points of 70.2, ours is at least 60.2 % (the plan's literal gate, one-sided) and ours
+  is at most 10 points below upstream's on the same episodes; **P0-PLANNER-GAP** if upstream
+  reproduces but either planner condition fails (fix our planner first, re-test on fresh seeds
+  under its own ruling); **P0-REPRO-FAIL** if upstream's own rate falls outside the window. Point
+  estimates decide; the paired interval, whether its lower bound clears −10, and the gate's
+  operating characteristics at n = 96 are reported. A seed's one allowed re-run is
+  `{arm}-s{seed}-r2` and counts only when the first run did not complete.
+- **R22.7 — part B, reported only.** TASK-077's W checkpoints for 66800–66802, on the val split of
+  `apple-c1m-v2` (the gate split is not opened): the G4 ratios and a 16-candidate ranking of the
+  executed commands at h ∈ {1, 2, 4, 8, 16, 30, 60}. It is the plain-LeWM reference for Phase 2,
+  gates nothing, and is not a closed-loop result.
+- **R22.8 — the plumbing before the freeze is disclosed** (protocol §6): debug-seed runs only,
+  including one with a wrong action scale (0/2) found and fixed before the freeze.
+- **R22.9 — R7 does not change.** TASK-084 is not an Apple→Plate experiment; whatever its row,
+  R7's canonical status sentence (as last changed by R21.20) stays as it is, and the plan's later
+  phases each need their own preregistration.
+
 ## Decision 2026-10-09 (r) — TASK-083 Stage S ends REP-PASS: both other model seeds reach L-PASS; "LeWM needed" not shown; R7 is changed; TASK-083 closes (R21.19–R21.22)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
