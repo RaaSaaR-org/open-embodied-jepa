@@ -41,9 +41,9 @@ the physics and renders every image a controller reads**.
   never used).
 - **Plumbing check** (`--sham`, `sham-1`): the same client against a host MuJoCo endpoint
   reproduced the MuJoCo demo's screen exactly on 71920 (W 3.0524 cm with the same aim, H-rule
-  3.4317 cm).
+  3.4317 cm). It ran at `e52b06d` (tracked tree clean; the client script was not yet committed).
 
-Run at `1f61162` (clean) with `isaaclab_arena:latest` `sha256:2588b526…`, under
+The Isaac runs ran at `1f61162` (clean) with `isaaclab_arena:latest` `sha256:2588b526…`, under
 `scripts/gpu_run.sh --wait --min-free-gib 8 --board --container oej-isaac-` via
 `scripts/isaac/run_lewm_cp_closedloop.sh`. Step A of the domain gap ran at `a8a2d58` (clean).
 Under Newton, Isaac took a median 0.03 s per control step and 0.22 s per render, and an attempt
@@ -62,8 +62,8 @@ physics (Newton). Errors against the true positions, median (min–max):
 | Mean absolute pixel difference Isaac vs MuJoCo | 26.7/255 | — |
 
 On Isaac's frames the P readout returns nearly the same apple for every seed (x 0.30–0.32,
-y −0.05 to −0.09 m against true y −0.16 to −0.20 m). R-plate's error is near the 3 cm line set for
-this check; P-3's apple estimate is far beyond it, so **P-3's pick was expected to fail** before step B.
+y −0.05 to −0.09 m against true y −0.16 to −0.20 m). R-plate's error is a few centimetres; P-3's apple
+estimate is off by about 11 cm, so **P-3's pick was expected to fail** before step B.
 At 405 in step B (the Newton e9-pick run) R-plate read the plate 1.9–3.2 cm off on Isaac's frame against
 0.07–0.33 cm on MuJoCo's render of the same state.
 
@@ -86,9 +86,10 @@ Labelled on every frame "VARIANT: e9's scripted privileged pick". All 8 grasped 
 | 71922 | no, 4.45 cm | 0.54 cm | 0.24 cm | **yes**, 3.60 cm | 2.11 cm |
 | 71923 | **yes**, 3.83 cm | 1.08 cm | 0.97 cm | no, 4.21 cm | 3.10 cm |
 
-W 2/4, H-rule 1/4 (non-evidence; four seeds). Every miss is a supported apple 4.0–4.6 cm from the
-plate centre, just outside the 4 cm disc, the same failure kind as e9 in Isaac/Newton
-(ISAAC_E9_REPLAY §2). In MuJoCo, with P-3's own pick, the same seeds gave W 4/4 (3.05–3.99 cm) and H-rule 4/4
+W 2/4, H-rule 1/4 (non-evidence; four seeds). Every miss ended 4.0–4.6 cm from the plate
+centre, just outside the 4 cm disc, which resembles e9's failures in Isaac/Newton (ISAAC_E9_REPLAY
+§2: supported on the plate, just outside the radius); this client did not keep the at-rest
+per-criterion detail, so whether these apples were supported is not recorded. In MuJoCo, with P-3's own pick, the same seeds gave W 4/4 (3.05–3.99 cm) and H-rule 4/4
 (2.86–3.98 cm) in the demo's screen, also non-evidence and also close to the 4 cm edge.
 
 **3. Diagnostic: P-3 with estimates from MuJoCo's rendering of the same Isaac state
@@ -116,11 +117,12 @@ the obvious candidate; that is untested. W's aim missed the plate's final positi
   so the learned pick fails in every attempt as specified. With MuJoCo-quality estimates it
   still grasped only 2 of 4 under Newton.
 - **W's aim transfers better than its inputs suggest.** With e9's pick, W's aim landed 0.3–1.1 cm
-  from where the plate ended although R-plate read the plate 2–3 cm off; reading MuJoCo's
+  from where the plate ended although R-plate read the plate 1.9–3.2 cm off; reading MuJoCo's
   frame of the same state would have moved W's aim by only 0.2–1.0 cm. H-rule, which uses
   R-plate's reading directly, missed by 2.0–3.1 cm. Four seeds; not a comparison.
-- **PhysX did worse than Newton** at the place (0/8 at rest against 3/8), consistent with the
-  earlier finding that PhysX lets the apple roll where MuJoCo and Newton stop it.
+- **PhysX did worse than Newton** at the place (0/8 at rest against 3/8). PhysX's missing rolling
+  friction is a candidate cause, untested (W 71923 ended 1.33 cm from the centre and still failed
+  the at-rest check).
 - **The place is the limiting step here**: in the Newton e9-pick runs e9's place left the apple
   3.3–4.6 cm from the plate centre, so a 1 cm aim error decides the 4 cm verdict, as for e9 alone
   in Isaac.
@@ -157,12 +159,16 @@ MuJoCo's rendering of the same state for comparison; the label above on every fr
 
 Each run directory also has the per-attempt clips, `report.json` (every attempt's outcome, the
 committed aim, the post-look and 405 domain-gap rows and W's counterfactual aim) and its own
-`SHA256SUMS`; `step_a_frames/` holds the Isaac and MuJoCo onboard frames of step A.
+`SHA256SUMS`; `step_a_frames/`, where present, holds the Isaac and MuJoCo onboard frames of
+that run's step A.
 
-Other development runs, not listed above: `isaac-newton-1` (client stalled in the P readout
-refit under heavy CPU contention from another job; stopped, own container stopped by hand; no
-video), `isaac-newton-2` (fewer BLAS threads broke the refit's G-repro check; it stopped itself;
-no video), and `isaac-newton-3` (step A above, plus a one-attempt check with its own short video:
+Other development runs, not listed above: `isaac-newton-1` and `isaac-newton-2` (empty
+directories, no video or report; per the operator's notes, not recorded in the evidence, the first
+client stalled in the P readout refit under heavy CPU contention from another job and was stopped,
+its own container stopped by hand, and in the second fewer BLAS threads broke the refit's G-repro
+check and it stopped itself), and `isaac-newton-3` (step A above, plus a one-attempt check with its own short video:
 W on 71920 stopped by the same guard refusal at step 223 as in `newton-p3-1`). `sham-1` is the
-plumbing check. `physx-e9pick-1` also recorded its own 4-seed step A under PhysX (consistent with
+plumbing check (with its own one-seed step A and a short video). `refit-1/report.json` is the
+`--refit-only` run that wrote `p_readout_refit-1.pkl`; the `srv-*` directories and
+`srv-*.server.log` hold each Isaac server's output. `physx-e9pick-1` also recorded its own 4-seed step A under PhysX (consistent with
 the table above; not tabulated here). The containers' asset caches (`home_cache`) were deleted after the runs.
