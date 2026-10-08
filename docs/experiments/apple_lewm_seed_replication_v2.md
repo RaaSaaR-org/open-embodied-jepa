@@ -1,9 +1,11 @@
 # Apple→Plate LeWM committed aim under C1-M: TASK-081's L-PASS replicated with W's two other model seeds (TASK-083)
 
-**STATUS: DRAFT** (R21.1–R21.12, decided by Claude under owner delegation; not frozen, nothing
-run; revised after #173's review). No seed of this task's block (75000–75999) has been simulated, nothing is trained and
-nothing is fitted. The freeze needs Stage 0 (§6.1) and an independent reviewer's reported APPROVE;
-the gated Stage S needs its own reported GO.
+**STATUS: DRAFT** (R21.1–R21.12, decided by Claude under owner delegation; not frozen; revised
+after #173's review). **Stage 0 done** (R21.13–R21.16,
+[record](apple_lewm_seed_replication_v2_stage0.md)): code, tests, debug smokes on 75910–75913
+only, scale and caps confirmed, power recomputed (§8). No seed of S (75200–75327) has been
+simulated, nothing is trained and nothing is fitted. The freeze needs an independent reviewer's
+reported APPROVE; the gated Stage S needs its own reported GO.
 
 - **Admitted by:** R19.23 (3) (DECISIONS 2026-10-08 (j)), a recommendation recorded for the owner:
   "before any broader claim, robustness of this result: more model seeds of W (66800 is flagged)
@@ -361,7 +363,7 @@ its two; #173 review, nit 2); H-sysid at 0.953 (62/64 and 121/128 pooled, 183/19
 W-66800, 118/128), 0.938 and 0.953 (TASK-081's planning rate). Nothing measured on 66801 or 66802
 in closed loop exists to plan from.
 
-**A draft computation** (for this draft only; scratch code, salt 8599, 4 000 trials per cell, the
+**A draft computation, superseded by Stage 0's below** (for the draft only; scratch code, salt 8599, 4 000 trials per cell, the
 reset-bootstrap G-NI estimator through `lewm_cp_v2.ni_passes`; H-rule drawn at p_C; each W[s]
 coupled to H-rule by the coupling, conditionally independent of the other W given H-rule; H-sysid
 coupled to H-rule halfway; C the better of the two by count; L-PASS taken as G-bar and G-NI, the
@@ -374,15 +376,26 @@ L-PASS (REP-PASS), overlap · half · independent:
 | 0.984 | 0.44/0.19 · 0.36/0.13 · 0.34/0.13 | 0.72/0.52 · 0.64/0.41 · 0.59/0.35 | 0.92/0.85 · 0.87/0.76 · 0.82/0.67 | 0.99/0.98 · 0.98/0.95 · 0.95/0.90 |
 | 0.992 | 0.32/0.11 · 0.28/0.08 · 0.27/0.08 | 0.60/0.36 · 0.54/0.29 · 0.50/0.25 | 0.84/0.71 · 0.80/0.64 · 0.76/0.59 | 0.97/0.95 · 0.96/0.91 · 0.94/0.88 |
 
-**Stated plainly:** if the other seeds' true rate equals W-66800's observed 118/128 (0.922), each
-seed passes with probability about 0.5–0.8 and **both pass with probability only about 0.25–0.62**
-(0.979 ≤ p_C ≤ 0.992). So REP-ONE or REP-NONE is a likely outcome even if the three seeds were
-equally good, and a non-pass at these rates is weak evidence against TASK-081's result; REP-PASS is
-likely (≥ 0.59) only if the true rate is about 0.938 or above. The cohort size is kept at 128 because the task is
+**Stated plainly** (Stage 0's figures): if the other seeds' true rate equals W-66800's observed
+118/128 (0.922), each seed passes with probability about 0.52–0.79 and **both pass with probability
+only about 0.27–0.63** (0.979 ≤ p_C ≤ 0.992). So REP-ONE or REP-NONE is a likely outcome even if the
+three seeds were equally good, and a non-pass at these rates is weak evidence against TASK-081's
+result; REP-PASS is likely (≥ 0.60) only if the true rate is about 0.938 or above. The cohort size is kept at 128 because the task is
 to replicate TASK-081's design exactly (its bar, margin and n); a larger cohort (256 resets would
 raise the per-seed rate at W = 0.922 to about 0.95) would be a different test, and is not chosen.
 The size at the margin and the L-INFERIOR false-fire rate are TASK-081's (2.6–3.6 % and 1.4–1.7 %
 per seed, Stage 0 record §4); Stage 0 recomputes them with this comparator.
+
+**Stage 0's recomputation** ([record](apple_lewm_seed_replication_v2_stage0.md) §4; salt 8502,
+20 000 trials per cell, G-NI's pass averaged over 25 bootstraps of 10 000 resamples per (k+, k−)
+cell, report `0e138bb1…1e68`): at W = 0.922 each seed passes with probability **0.52–0.79** and both
+with **0.27–0.63** (p_C 0.979–0.992, the three couplings); at W = 0.938, 0.77–0.96 and 0.60–0.91; at
+W = 0.953, 0.94–1.00 and 0.88–0.99. The size at the margin (W = C − δ) is a seed's L-PASS rate (G-bar
+and G-NI) of 2.6–3.5 %, and 0.09–0.16 % for both seeds; L-INFERIOR's false fire at the margin is
+1.2–1.6 % per seed. **The draft table above differs from it by up to 0.06** (the half coupling, and
+the independent one at p_C 0.992), more than simulation noise: the draft, like Stage 0's first run,
+decided each (k+, k−) cell with a single bootstrap, so cells at the boundary passed or failed
+outright. Stage 0's table supersedes it (Stage 0 review).
 
 ## 9. No abandonment clause (R21.5)
 
@@ -459,7 +472,7 @@ featurisation and no GPU. Disk: reports only (a few MB).
 ## 13. Risks, stated now
 
 - **Power** (§8): at W-66800's observed rate a replication passes on both seeds with probability
-  about 0.25–0.62; a REP-ONE or REP-NONE is likely even if nothing differs between seeds.
+  about 0.27–0.63; a REP-ONE or REP-NONE is likely even if nothing differs between seeds.
 - **H-rule is strong** (125/128 on TASK-081's S) and given the simulator's plate law.
 - **The scorer's margin is small** (TASK-081: most near-plate attempts rest 3.3–3.6 cm from the
   centre against a 4 cm radius), which adds noise to every count.
@@ -468,7 +481,7 @@ featurisation and no GPU. Disk: reports only (a few MB).
 - **Everything here is one condition imposed by the simulator (C1-M)**, one camera, one encoder,
   one corpus; nothing transfers as such to Arena or the real G1.
 
-## 14. Stage 0's open items (to be settled there, changing no bar)
+## 14. Stage 0's open items (settled in Stage 0's record §5; no bar changed)
 
 1. The caps from the debug smokes' scale.
 2. The power table recomputed with salt 8502 and 20 000 trials per cell, including the size at the
