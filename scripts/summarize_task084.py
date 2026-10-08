@@ -1,8 +1,9 @@
 """TASK-084 (Phase 0) part A: the decision from the eight run directories.
 
 Protocol: ``docs/experiments/jepa_wms_pusht_calibration.md`` §4. Reads
-``<runs>/{upstream,ours}-s{1,2,3,4}/{episodes.jsonl,summary.json}``, checks that both arms ran
-the same 96 episodes, and applies the first matching row of §4.5. Writes ``<output>`` (JSON) and
+``<runs>/{upstream,ours}-s{1,2,3,4}/{episodes.jsonl,summary.json}`` (or a seed's one allowed
+re-run ``-r2`` when the first did not complete), checks that both arms ran the same 96 episodes
+with one revision, and applies the first matching row of §4.5. Writes ``<output>`` (JSON) and
 refuses an existing file. NumPy only; runs in this repository's environment.
 """
 
@@ -23,6 +24,7 @@ ARMS = ("upstream", "ours")
 BOOTSTRAP_SALT = 8602
 RESAMPLES = 20_000
 CHECKPOINT_SHA256 = "9beca3eafe0739c3b3adb5d734fa435ccbda0fea8a65d53d4cccec176aaaa0eb"
+ACTION_SCALE = (3.703, 3.301)  # the bridge's b (protocol §4.1)
 
 
 def wilson(k: int, n: int, z: float = 1.959963984540054) -> list[float]:
@@ -42,28 +44,54 @@ def mcnemar_exact(b: int, c: int) -> float:
     return min(1.0, 2 * tail)
 
 
+def run_folder(runs: Path, arm: str, seed: int) -> tuple[Path, list[str]]:
+    """The run directory that counts: ``{arm}-s{seed}``, or its one allowed re-run
+    ``{arm}-s{seed}-r2`` when the first did not complete (protocol §4.3)."""
+    first, rerun = runs / f"{arm}-s{seed}", runs / f"{arm}-s{seed}-r2"
+    if rerun.exists():
+        if (first / "summary.json").exists():
+            return rerun, [f"{rerun.name} exists although {first.name} completed"]
+        return rerun, []
+    return first, []
+
+
 def load(runs: Path) -> dict:
-    data = {}
+    data: dict = {"void": []}
+    revisions = set()
     for arm in ARMS:
         rows = []
         for seed in META_SEEDS:
-            folder = runs / f"{arm}-s{seed}"
+            folder, problems = run_folder(runs, arm, seed)
+            data["void"] += problems
+            if not (folder / "summary.json").exists():
+                data["void"].append(f"{folder.name}: no completed run")
+                continue
             summary = json.loads((folder / "summary.json").read_text())
             if summary["arm"] != arm or int(summary["meta_seed"]) != seed:
-                raise SystemExit(f"{folder}: summary names another arm or seed")
+                data["void"].append(f"{folder.name}: summary names another arm or seed")
             if summary["checkpoint_sha256"] != CHECKPOINT_SHA256:
-                raise SystemExit(f"{folder}: another checkpoint")
+                data["void"].append(f"{folder.name}: another checkpoint")
+            if arm == "ours" and not np.allclose(
+                summary["action_scale_raw"], ACTION_SCALE, atol=1e-3
+            ):
+                data["void"].append(f"{folder.name}: another action scale")
+            revisions.add((summary["repository_revision"], summary["upstream_revision"]))
             episodes = [json.loads(line) for line in (folder / "episodes.jsonl").open()]
+            if len(episodes) != EPISODES_PER_SEED:
+                data["void"].append(f"{folder.name}: {len(episodes)} episodes")
             for e in episodes:
                 e["meta_seed"] = seed
             rows += episodes
         data[arm] = rows
+    if len(revisions) > 1:
+        data["void"].append(f"the runs used different revisions: {sorted(revisions)}")
+    data["revisions"] = sorted(revisions)
     return data
 
 
 def decide(data: dict) -> dict:
     expected = len(META_SEEDS) * EPISODES_PER_SEED
-    void = []
+    void = list(data.get("void", []))
     for arm in ARMS:
         if len(data[arm]) != expected:
             void.append(f"{arm} ran {len(data[arm])} of {expected} episodes")
@@ -88,7 +116,9 @@ def decide(data: dict) -> dict:
     c = int((~up & ours).sum())  # ours only
     p_up, p_ours, diff = 100 * k_up / n, 100 * k_ours / n, 100 * float(d.mean())
     g_repro = abs(p_up - PUBLISHED_PERCENT) <= WINDOW_POINTS
-    g_plan = diff >= -WINDOW_POINTS
+    g_plan_rel = diff >= -WINDOW_POINTS
+    g_plan_abs = p_ours >= PUBLISHED_PERCENT - WINDOW_POINTS
+    g_plan = g_plan_rel and g_plan_abs
     if g_repro and g_plan:
         row = "P0-PASS"
     elif g_repro:
@@ -99,6 +129,8 @@ def decide(data: dict) -> dict:
         "row": row,
         "G-REPRO": bool(g_repro),
         "G-PLAN": bool(g_plan),
+        "G-PLAN-REL": bool(g_plan_rel),
+        "G-PLAN-ABS": bool(g_plan_abs),
         "G-PLAN-clear (reported)": bool(100 * lo > -WINDOW_POINTS),
         "episodes": n,
         "upstream": {
@@ -115,7 +147,7 @@ def decide(data: dict) -> dict:
         "paired_bootstrap95_points": [100 * float(lo), 100 * float(hi)],
         "discordant": {"upstream_only": b, "ours_only": c},
         "mcnemar_exact_two_sided_p": mcnemar_exact(b, c),
-        "ours_minus_published_points (reported)": p_ours - PUBLISHED_PERCENT,
+        "ours_minus_published_points": p_ours - PUBLISHED_PERCENT,
         "upstream_minus_published_points": p_up - PUBLISHED_PERCENT,
         "per_seed": {
             str(s): {
@@ -130,6 +162,7 @@ def decide(data: dict) -> dict:
         "published_percent": PUBLISHED_PERCENT,
         "window_points": WINDOW_POINTS,
         "bootstrap": {"salt": BOOTSTRAP_SALT, "resamples": RESAMPLES},
+        "revisions": data.get("revisions"),
     }
 
 

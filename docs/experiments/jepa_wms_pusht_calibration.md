@@ -13,9 +13,10 @@ sentence (DECISIONS 2026-10-02, R7, as last updated by R21.20), whatever row it 
 - **A (gated).** On this machine (Linux PC, RTX 5080), does Meta's released JEPA-WM checkpoint for
   Push-T, run through Meta's own planning evaluation, reproduce the published Push-T success rate
   within 10 percentage points; and does this repository's planner, `embodied_jepa.planning.CEMPlanner`
-  ("ours"), reach within 10 points of Meta's planner with the same model, cost, episodes and
-  execution? The plan's gate: "our planner within about 10 points of the released result on one
-  task, else fix it first".
+  ("ours"), reach within 10 points of the released result (70.2 %) and within 10 points of Meta's
+  planner with the same model, cost, episodes and execution? The plan's gate: "our planner within
+  about 10 points of the released result on one task, else fix it first"; §4.5 keeps that literal
+  condition and adds the paired one.
 - **B (reported only).** How action-sensitive are our existing LeWM checkpoints (TASK-077's W,
   model seeds 66800–66802, the models TASK-080, TASK-081 and TASK-083 ran in closed loop) at short
   horizons, and how well do they rank the executed command sequence among alternatives? A baseline
@@ -34,7 +35,9 @@ sentence (DECISIONS 2026-10-02, R7, as last updated by R21.20), whatever row it 
   is trained with 3 seeds; at each epoch, e = 96 episodes are evaluated; success is averaged over
   the last n = 10 epochs and the three seeds; the parenthesis is the standard deviation across the
   last epochs' success rates. So 70.2 % is an average over 30 checkpoint evaluations, not the
-  success rate of one released checkpoint.
+  success rate of one released checkpoint. The paper defines the parenthesis for its
+  design-choice plots; that the same definition applies to Table 1's parentheses is our inference
+  (the table's caption does not restate it).
 - **Released checkpoint.** `jepa_wm_pusht.pth.tar` from Hugging Face `facebook/jepa-wms`
   (CC BY-NC 4.0), sha256 `9beca3ea…aaaa0eb` (equal to the Hub's LFS oid), 211 639 615 bytes. It
   loads as **epoch 50** of one training run (the loader's log); which training seed it is, the
@@ -48,9 +51,9 @@ sentence (DECISIONS 2026-10-02, R7, as last updated by R21.20), whatever row it 
   validation-split trajectory segment whose expert reaches the goal in 6 planning steps), so an
   episode is **one plan of 6 × 5 = 30 environment steps**, executed open loop. These match the
   paper's Table S4.1 / Table 10 row for Push-T.
-- **Success** (upstream `PushTWrapper.eval_state`, unchanged): after the 30 steps, the agent and
-  T-block position difference to the goal state is < 20 (pixels) and the block angle difference
-  < π/9.
+- **Success** (upstream `PushTWrapper.eval_state`, unchanged): after the 30 steps, the Euclidean
+  norm of the 4-vector difference (agent x, y and block x, y) to the goal state is < 20 (pixels)
+  and the block angle difference is < π/9.
 
 ## 3. Set-up (all of it in git-ignored `third_party/jepa-wms-runtime/`)
 
@@ -61,13 +64,15 @@ sentence (DECISIONS 2026-10-02, R7, as last updated by R21.20), whatever row it 
 | This repository on that path | `PYTHONPATH=<checkout>/src`; `embodied_jepa.planning` (with `contracts`, `constraints`) imports on Python 3.10 unchanged; nothing of upstream enters the core package |
 | Encoder | frozen DINOv2 ViT-S/14 as upstream loads it from torch hub: weights `dinov2_vits14_pretrain.pth`, sha256 `b938bf1b…0cd9`, **the same file this repository already pins** (DEPENDENCIES, TASK-063); hub code tree (`facebookresearch/dinov2` `main` at download time) sha256 `5c0d48ca…abbc9` over its sorted `*.py` hashes; the runner refuses other values |
 | Data | `pusht_noise` (DINO-WM's Push-T dataset). The `facebook/jepa-wms` Hub dataset is gated and this account has no access, so it is taken from DINO-WM's own OSF release (`osf.io/bmw48`, `pusht_noise.zip`, 2 785 304 515 bytes, the size the Hub lists), which upstream's README says it re-hosts unmodified; sha256 `442f5dee…2da08`, as OSF publishes it; the runner refuses another zip |
-| Device | the RTX 5080 (16 GB), fp32 as upstream's evaluation (no autocast, TF32 off) |
+| Device | the RTX 5080 (16 GB), fp32 as upstream's evaluation: no autocast; PyTorch's defaults, so matmul TF32 is off but cuDNN convolutions (DINOv2's patch embedding) may use TF32, and upstream sets `cudnn.benchmark = True`, so runs are not bit-reproducible (both arms alike) |
 
 ### 3.1 Deviations from upstream's evaluation (both arms equally)
 
 1. **One process instead of 8 GPUs.** Upstream's config runs 8 ranks with rank-shifted seeds; here
-   world size 1. Episode sampling is upstream's (its `local_generator`, seeded by `meta.seed`), but
-   the episodes are not the ones Meta evaluated; neither set is published.
+   world size 1. Episode sampling is upstream's (its `local_generator`, seeded by `meta.seed`), so
+   the episodes are largely not the ones Meta evaluated: if Meta ran this config with its
+   `meta.seed: 1`, its rank 0 drew the same first 12 episodes as our seed 1; the rest differ.
+   Neither set is published.
 2. **Chunked roll-outs.** One 300-sample roll-out needs more than the RTX 5080's 16 GB (it ran
    out of memory). The runner splits the sample axis of upstream's `EncPredWM.unroll` into chunks
    of 100 and concatenates; every sample's roll-out is independent of the others, so only memory
@@ -126,8 +131,11 @@ Plumbing smoke at the merged revision (both arms, debug seed 9902, 2 episodes), 
 gated jobs, one GPU job each through `scripts/gpu_run.sh --wait --min-free-gib 8 --board`, in the
 order upstream-s1, ours-s1, upstream-s2, ours-s2, …, ours-s4. One plan costs about 155 s on the
 RTX 5080 (plumbing), so a job is about 62 min and the run about 8.5 GPU-hours, the lock released
-between jobs. A job that fails for a reason outside the protocol (a crash, a lock timeout) is
-re-run once with the same seed into a new directory, recorded; a second failure voids the run.
+between jobs. A job that fails for a reason outside the protocol (a crash, a lock timeout) and
+therefore writes no `summary.json` is re-run once with the same seed into `{arm}-s{seed}-r2`,
+recorded; the decision script counts the re-run only when the first directory has no
+`summary.json`, and voids the run when a seed has no completed directory or a completed run was
+re-run.
 
 ### 4.4 Measurements
 
@@ -137,19 +145,32 @@ re-run once with the same seed into a new directory, recorded; a second failure 
 - the paired difference d = ours − upstream over the 96 episodes, with a paired bootstrap 95 %
   interval over episodes (20 000 resamples, salt 8602) and the exact two-sided McNemar p on the
   discordant pairs (reported);
-- per-seed counts, seconds per episode, and ours − 70.2 (reported).
+- per-seed counts, seconds per episode, and the revisions the runs used (all eight must share one
+  repository and one upstream revision, and every "ours" run the declared scale b, or the run is
+  void).
+
+Reported only: by construction of b, about 1 % of the train split's raw expert steps lie outside
+±b in at least one dimension (0.5 % per dimension), so some 30-step expert segments
+contain at least one step that "ours" cannot represent exactly (measured on non-overlapping
+30-step train windows: 15 %, since out-of-range steps cluster).
 
 ### 4.5 Rows (first match) and what each means
 
 | Row | Condition | Meaning and consequence |
 | --- | --- | --- |
 | **P0-VOID** | an arm has fewer than 96 episodes after the one allowed re-run, a hash check failed, or any episode's (initial, goal) differs between the arms | no row; the cause is recorded; a new run needs fresh meta seeds (5–8) and its own ruling |
-| **P0-PASS** | **G-REPRO**: upstream's rate is within ±10 points of 70.2 % (60.2 ≤ 100·p̂_up ≤ 80.2), **and G-PLAN**: 100·(p̂_ours − p̂_up) ≥ −10 | upstream's pipeline reproduces the published number within the window on this machine, and our planner is within 10 points of Meta's planner with the same model. Phase 0's planner gate is met; our planner may be used as is for Phase 3. Also reported: whether the paired interval's lower bound is above −10 ("clear") or only the point estimate is ("within on the point estimate only") |
-| **P0-PLANNER-GAP** | G-REPRO passes, G-PLAN fails | the pipeline reproduces, our planner does not: fix it first (candidate causes are listed in §4.1), in its own reviewed PR, and re-test both arms on fresh meta seeds 5–8 under its own ruling; Phase 3 does not start with the unfixed planner |
+| **P0-PASS** | **G-REPRO**: upstream's rate is within ±10 points of 70.2 % (60.2 ≤ 100·p̂_up ≤ 80.2), **and G-PLAN**, which is both **G-PLAN-ABS** (the plan's literal gate: 100·p̂_ours ≥ 60.2, one-sided, because scoring above the published number is not a planner defect) and **G-PLAN-REL** (100·(p̂_ours − p̂_up) ≥ −10 on the same 96 episodes) | upstream's pipeline reproduces the published number within the window on this machine, and our planner is within 10 points of the released result and of Meta's planner with the same model. Phase 0's planner gate is met; our planner may be used as is for Phase 3. Also reported: whether the paired interval's lower bound is above −10 ("clear") or only the point estimate is ("within on the point estimate only") |
+| **P0-PLANNER-GAP** | G-REPRO passes, G-PLAN fails (either part) | the pipeline reproduces, our planner does not meet the gate: fix it first (candidate causes are listed in §4.1), in its own reviewed PR, and re-test both arms on fresh meta seeds 5–8 under its own ruling; Phase 3 does not start with the unfixed planner |
 | **P0-REPRO-FAIL** | G-REPRO fails (either direction) | Meta's own planner does not reproduce the number here within the window, so the calibration target is not established on this machine; G-PLAN is still reported (it says whether ours matches theirs here) but the gate is not met. Investigate the runtime and the §3.1 deviations before anything relies on it |
 
 The window is about 2 standard errors at n = 96 (p ≈ 0.7: SE ≈ 4.7 points; the paired
-difference's SE is smaller when the arms agree on most episodes). The published number averages
+difference's SE is smaller when the arms agree on most episodes). Operating characteristics
+(binomial; for G-PLAN a simulation with upstream at 70 % and 20–30 % discordant episodes):
+G-REPRO passes with probability 0.97 at a true 70 %, 0.85 at 65 % or 75 %, and about 0.5 at 60 %
+or 80 %; G-PLAN passes with probability 0.95–0.97 when the planners are equal, about 0.34–0.36
+when ours is truly 10 points worse, and 0.05–0.08 when it is 15 points worse. So a pass does not
+exclude a deficit of up to about 10 points, and a fail at a true deficit near 0 is unlikely but
+possible (about 3–5 %). The published number averages
 30 checkpoint evaluations of three training runs, the released file is one checkpoint, and the
 episodes differ (§3.1), so a ±10-point window is the tolerance the plan named, not a test of
 equality.

@@ -91,10 +91,13 @@ PR merges.
   per arm and seed through `scripts/gpu_run.sh`; debug seeds 9901–9999; salts 8601 (part B) and
   8602 (bootstrap).
 - **R22.6 — the gate and its rows** (first match): P0-VOID; **P0-PASS** if upstream's rate is
-  within ±10 points of 70.2 and ours is at most 10 points below upstream's on the same episodes;
-  **P0-PLANNER-GAP** if only the second fails (fix our planner first, re-test on fresh seeds
+  within ±10 points of 70.2, ours is at least 60.2 % (the plan's literal gate, one-sided) and ours
+  is at most 10 points below upstream's on the same episodes; **P0-PLANNER-GAP** if upstream
+  reproduces but either planner condition fails (fix our planner first, re-test on fresh seeds
   under its own ruling); **P0-REPRO-FAIL** if upstream's own rate falls outside the window. Point
-  estimates decide; the paired interval and whether its lower bound clears −10 are reported.
+  estimates decide; the paired interval, whether its lower bound clears −10, and the gate's
+  operating characteristics at n = 96 are reported. A seed's one allowed re-run is
+  `{arm}-s{seed}-r2` and counts only when the first run did not complete.
 - **R22.7 — part B, reported only.** TASK-077's W checkpoints for 66800–66802, on the val split of
   `apple-c1m-v2` (the gate split is not opened): the G4 ratios and a 16-candidate ranking of the
   executed commands at h ∈ {1, 2, 4, 8, 16, 30, 60}. It is the plain-LeWM reference for Phase 2,
