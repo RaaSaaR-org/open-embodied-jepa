@@ -83,7 +83,7 @@ on the Linux PC (RTX 5080), with copies in the SSD evidence store. Times are UTC
 with `--stage-d` set to D's report (`b58ae61f…e920`, checked by the runner and by the GO), 07:35:43–
 08:31:01 UTC (3 318 s, cap 21 600; first outcome 07:39:17). In-run G-tests at `e9c294f`: 2123
 passed, 37 skipped, exit 0, tracked tree clean at start and end. Peak process-tree PSS 9.76 GiB
-(cap 12; RSS 11.18 GiB); disk free ≥ 62.9 GiB; 4 workers; G-quiet met without waiting. G-repro
+(cap 12; RSS 11.18 GiB); disk free ≥ 62.85 GiB; 4 workers; G-quiet met without waiting. G-repro
 (170 decoded train roots, test split not decoded): all eight checks true, **no** render or re-render
 disagreement. Frozen-block pin, protocol-document check (`6b0f832b…3022`) and TASK-080's document
 check (`bb1b2772…62bd`) matched; the solver file's sha256 `ba3c8d03…91f1` matched its pin. Evidence
@@ -228,9 +228,9 @@ selection caveat (the best of three executed variants).
 | arm | decisions | fallbacks | clipped | points in the fit (median) | rank < 3 | complex eigenvalue pairs | residual at the committed aim, median cm |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | W | 127 | 0 | 0 | 25 | 0 | 32 | 0.279 [0.238, 0.330] (max 1.026) |
-| N | 127 | 0 | 21 | 25 | 0 | 18 | 0.000 |
-| L-shuf | 127 | 0 | 33 | 25 | 0 | 32 | 0.252 |
-| L-mean | 127 | 0 | 11 | 25 | 0 | 41 | 0.176 |
+| N | 127 | 0 | 21 | 20 | 0 | 18 | 0.000 |
+| L-shuf | 127 | 0 | 33 | 20 | 0 | 32 | 0.252 |
+| L-mean | 127 | 0 | 11 | 20 | 0 | 41 | 0.176 |
 
 For W, the largest real part of J's eigenvalues had a median of −0.377 (max 0.145) and the
 smallest a median of −0.533 (32 decisions had a complex pair); the clip never bound and no fallback

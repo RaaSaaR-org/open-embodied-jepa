@@ -45,14 +45,17 @@ Prepared 2026-09-20 from PRD sections 1–21, updated with the user’s Mac-only
 > only other counted closed-loop runs are on v1 was corrected (R19.18).
 >
 > **Update 2026-10-08 (TASK-081 Stage S).** TASK-081's gated Stage S (128 fresh resets, one run,
-> one model seed, simulation only, under C1-M) ended L-PASS: LeWM, choosing only the single place
-> aim between P-3's pick and e9's scripted place, scored 118/128, passed the 112/128 bar, beat its
+> one model seed whose `last_two_triggered` training flag is set, simulation only, under the
+> declared simulation-only plate condition C1-M) ended L-PASS: a LeWM token predictor on frozen
+> DINOv2 features, choosing only the single place aim between P-3's pick and e9's scripted place,
+> scored 118/128, passed the 112/128 bar, beat its
 > action-blind, scene-blind and random twins (exact one-sided McNemar p < 0.01) and was
-> non-inferior to the non-learned rule controller H-rule (125/128) within the allocated −16/128
+> non-inferior to the non-learned rule controller H-rule (125/128) within the allocated (not calibrated) −16/128
 > (W − H-rule −7/128, 95 % interval [−13, −2]). This is the first gated LeWM-driven closed-loop
 > success on v2. "LeWM needed" is not shown (H-rule, given the simulator's plate law, is measurably
 > better), and the new solver's effect is not shown (TASK-080's solver scored 117/128 on the same
-> resets). R7 was changed by R19.21.
+> resets). TASK-080's gated L-NEAR stands as recorded, and TASK-081's 128-reset cohort was chosen
+> after it. R7 was changed by R19.21.
 
 ## Deliverable
 

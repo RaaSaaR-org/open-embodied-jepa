@@ -1206,6 +1206,7 @@
     "only_w": 1,
     "passes": true
    },
+   "protocol_document_sha256_checked_by_run": "6b0f832b889c8425fa3675e4d0965b1eec243ad76c4c853a6238bd03a6ef3022",
    "refused_before_405_all_arms": [
     70302
    ],
