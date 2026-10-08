@@ -7,7 +7,7 @@ Status: PROPOSAL (2026-10-08). This is a research-backed plan and recommendation
 Yes, continue with JEPA, but change the method. Stop the moving-plate line. Build one robot-grounded world model, trained once on broad G1+Dex3 play data, then plan short steps toward goals.
 
 - **No model does new tasks with zero training.** Not JEPA, not GR00T, not pi0. The realistic target is "train once on the robot, then no training per task". That is what Meta's V-JEPA 2-AC shows on Franka arms.
-- **Our 0/150 is expected, not a bug.** Flat goal-image planning over ~400 steps fails even for Meta's 1B-parameter model. Every working recipe uses short planning segments with subgoals.
+- **Our 0/150 per backend (TASK-020, frozen v1 benchmark) fits the literature.** Flat goal-image planning over ~400 steps fails even for Meta's 1B-parameter model. Every working recipe uses short planning segments with subgoals.
 - **The owner's idea is the best-supported fix.** Feeding in and predicting the robot's own state (joint angles, hand pose) and action consequences makes latents plannable in several 2026 papers. Those papers are mostly single-group preprints, so we treat them as hypotheses to test.
 - **Language comes on top later.** A language model turns "put the apple on the plate" into subgoals; JEPA plans each short step.
 - **Honest risk:** no published image-latent planner has worked with dual 14-D dexterous-hand actions. We start with one arm and a simplified grasp, and every phase has a stop rule.
@@ -19,16 +19,16 @@ LeWM works in simulation for one narrow job: predicting where a moving plate wil
 | Part of the task | Who does it | Status (MuJoCo sim) |
 | --- | --- | --- |
 | Grab the apple | P-3, a behaviour-cloning policy on frozen DINOv2 features (not LeWM) | 40/40 on held-out resets (TASK-072) |
-| Choose where to place | LeWM token predictor + plate readout + solver | 118/128 gated (TASK-081); TASK-083's replication with seeds 66801 and 66802 has run, and its reviewed results record is pending |
+| Choose where to place | LeWM token predictor + plate readout + solver | 118/128 gated (TASK-081; one run, one model seed, simulation only, under the declared plate condition C1-M); TASK-083, a replication with seeds 66801 and 66802, has no recorded result yet |
 | Carry and release | e9, a hand-written expert that reads simulator truth | scripted, not learned |
 
 What this does and does not show:
 
 - LeWM's predictions are good enough to act on: in TASK-081 its action-blind twin scored 73/128 and its scene-blind twins 39 and 59.
 - "LeWM needed" is not shown: a hand-written rule given the plate law scored 125/128.
-- The moving plate is an artificial condition. It was added because, with a still plate, a plain image readout scored 64/64 with no world model (TASK-076).
+- The moving plate is an artificial condition. LeWM tasks were required to use a plate the robot must predict because, when the plate's final position is visible, a plain image readout of it scored 64/64 with no world model (TASK-076, under TASK-074's 9 cm plate move; one run, one camera, one encoder).
 - LeWM planning the whole motion toward a goal image scored 0/150 per backend on the v1 benchmark (TASK-020).
-- In Isaac Sim the learned pick fails on Isaac's images (apple estimate about 11 cm off). With the scripted pick, W rested the apple on 2 of 4 debug seeds (development only, not evidence).
+- In Isaac Sim the learned pick fails on Isaac's images (apple estimate about 11 cm off). With the scripted pick, W rested the apple on 2 of 4 debug seeds under Newton and 0 of 4 under PhysX (development only, not evidence).
 - Nothing runs on the real robot; the hardware interface is mock-only.
 
 ## JEPA world models: what works today
@@ -37,13 +37,13 @@ Zero-shot JEPA robot control works only for short tasks on Franka arms with para
 
 | Work | What it shows | Numbers (with conditions) |
 | --- | --- | --- |
-| [V-JEPA 2-AC](https://arxiv.org/html/2506.09985) (Meta, 2025-06) | Frozen 1B video encoder + 300M action predictor, trained on <62 h unlabeled robot video; horizon-1 CEM to a goal image | Reach 100%; grasp cup 65%, box 25%; pick-and-place 80% / 65% only with 2 extra subgoal images; 10 trials per cell; 16 s per action on an RTX 4090 |
-| [HWM](https://arxiv.org/html/2604.03208v2) (FAIR/NYU, 2026-04) | Hierarchical latent planner | Flat V-JEPA 2-AC 0% on pick-and-place from the final goal; hierarchy 70% / 60%, with goal = image plus end-effector pose |
-| [Planning Limits of Latent WMs](https://arxiv.org/html/2609.39235) (2026-09) | Frozen-encoder WMs rank actions well only ~5–10 steps ahead | 92% at 5 steps, 41% at 20; bigger predictors do not fix it |
+| [V-JEPA 2-AC](https://arxiv.org/html/2506.09985) (Meta, 2025-06) | Frozen 1B video encoder + 300M action predictor, trained on ~62 h of unlabeled robot video (DROID); horizon-1 CEM to a goal image | Reach 100%; grasp cup 65%, box 25%; pick-and-place 80% / 65% only with 2 extra subgoal images; 10 trials per cell; 16 s per action on an RTX 4090 |
+| [HWM](https://arxiv.org/html/2604.03208v2) (FAIR/NYU, 2026-04) | Hierarchical latent planner | Flat V-JEPA 2-AC 0% on real pick-and-place (cup / box) from a single goal image; hierarchy 70% / 60%; end-effector proprioception is a model input |
+| [Planning Limits of Latent WMs](https://arxiv.org/html/2609.39235) (2026-09) | Frozen-encoder WMs rank actions well only ~5–10 steps ahead | Even with the true simulator as predictor, success falls from 92% to 41% as the target moves from 5 to 20 steps ahead of a 5-step rollout; an 81× larger predictor leaves the plannable range unchanged |
 | [JEPA-WMs study](https://arxiv.org/html/2512.24497v1) (Meta, 2025-12) | Design choices for planning | Frozen DINOv2 beats V-JEPA in sim; proprioception helps; CEM most robust; Push-T 70.2%, RoboCasa place 30.7% |
 | [LeWM](https://arxiv.org/html/2603.19312v1) (our backend, 2026-03) | 15M end-to-end JEPA, fast CEM | Simple sim scenes, ~25-step horizon, no real robot |
 | [AD-WM](https://arxiv.org/abs/2609.30264) (2026-09) | Inverse-dynamics / action-recovery losses make WMs plannable | Cube hard 3.7% → 52.0% vs LeWM; real Franka pick-and-place 42% → 71% (45 trials); single group |
-| [GAWM](https://arxiv.org/pdf/2609.03565) (2026-09) | Ground latents in robot state | Beats LeWM on 3 of 4 LeWM tasks (100/85/98/87 vs 87/86/96/74) |
+| [GAWM](https://arxiv.org/pdf/2609.03565) (2026-09) | Ground latents in robot state | Beats LeWM on 3 of 4 LeWM tasks (100/85/98/87 vs 87/86/96/74; LeWM's numbers copied from its paper, not re-run) |
 | [SAGE](https://arxiv.org/html/2607.17973) (2026-07) | Learned subgoals around a frozen LeWM | Push-T at 150 steps 4.7% → 64.7% |
 | [Hi-LeWM](https://arxiv.org/html/2607.12547v1) (2026-07) | Naive hierarchy on LeWM | Worse than flat (38.7% vs 52.7%); only a constrained version gains |
 | [D-JEPA](https://arxiv.org/pdf/2609.24749) (2026-09) | Latent L2 to goal misranks actions | LeWM top-4 ranking inverted 49% of the time |
@@ -55,12 +55,12 @@ Every working recipe shares three things: diverse task-agnostic interaction data
 
 ## Robot foundation models (VLAs) and world-model combos
 
-VLAs such as GR00T and pi0 are not zero-shot on a new robot or task. Their "zero-shot" means new scenes for robots and tasks already in their training data. GR00T scored 0% zero-shot on real G1 apple-to-plate.
+VLAs such as GR00T and pi0 are not zero-shot on a new robot or task. Their "zero-shot" means new scenes for robots and tasks already in their training data. The public G1 apple-to-plate numbers below are all for task-specific fine-tuned checkpoints.
 
 | Work | Role | Numbers (with conditions) |
 | --- | --- | --- |
-| [GR00T N1.6 G1 apple-to-plate](https://huggingface.co/cloudwalk-research/GR00T-N1.6-G1-PnPAppleToPlate) | Fine-tuned VLA on our task family, MuJoCo | 58% ± 15% (10 episodes); a community re-run got 5/10 after 102 demos |
-| [GR00T on real G1](https://docs.nvidia.com/learning/physical-ai/gr00t-e2e-workflow/latest/real-robot-workflow/real-deployment.html) | Same | Zero-shot 0%; fine-tuned 48%; bundled checkpoint 68% on 100 rollouts |
+| [GR00T N1.6 G1 apple-to-plate](https://huggingface.co/cloudwalk-research/GR00T-N1.6-G1-PnPAppleToPlate) | Community fine-tune of GR00T N1.6 on our task family, MuJoCo | 5/10 episodes after fine-tuning on 102 sim demos; the card reports difficulty reproducing NVIDIA's published G1 checkpoints |
+| [GR00T on real G1](https://docs.nvidia.com/learning/physical-ai/gr00t-e2e-workflow/latest/real-robot-workflow/real-deployment.html) | NVIDIA's tutorial, real G1 apple-to-plate | Bundled fine-tuned checkpoint 68% on 100 real rollouts (25 placements × 4); no zero-shot number reported |
 | [GR00T N1](https://arxiv.org/html/2503.14734) / [EgoScale](https://arxiv.org/html/2602.16710v1) | Humanoid VLA | N1 76.8% real with full demos; N1.5 zero-shot novel objects 15% |
 | [pi0.5](https://arxiv.org/html/2504.16054) | Scene generalisation, ~400 h data, ~100 homes | Works in unseen homes; parallel grippers only |
 | [OpenVLA-OFT](https://arxiv.org/html/2502.19645) | Fine-tuning recipe | LIBERO 97.1% with 500 demos per suite |
@@ -70,7 +70,7 @@ VLAs such as GR00T and pi0 are not zero-shot on a new robot or task. Their "zero
 | [ZeroDex](https://arxiv.org/html/2606.19340) (2026-06) | No world model: VLM subgoals + keypoints + motion generator | Dexterous single-step tasks 4–5/5; tiny n |
 | [LEGS](https://arxiv.org/html/2606.01458) (2026-05) | Gaussian-splat backgrounds over MuJoCo, G1+Dex3 | Real 5–10/10 per task; trained on 4×H100 |
 
-On our own task family, our results (P-3 40/40; LeWM 118/128) are not behind GR00T. By the owner's answer, GR00T plays no role in the plan. GWM and ZeroDex show the language layer wanted later: a VLM turns a command into subgoals.
+On our own task family, our simulation results (P-3 40/40; LeWM 118/128, each one run) are not obviously behind these GR00T numbers, though the setups, scorers and reset distributions differ and are not directly comparable. By the owner's answer, GR00T plays no role in the plan. GWM and ZeroDex show the language layer wanted later: a VLM turns a command into subgoals.
 
 ## What blocks zero-shot JEPA control, and the fixes
 
