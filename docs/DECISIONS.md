@@ -67,7 +67,7 @@ is kept as written.
 
 **Decided by Claude under owner delegation (2026-09-30). DRAFT, not frozen.** The document is
 [apple_lewm_seed_replication_v2.md](experiments/apple_lewm_seed_replication_v2.md) (STATUS DRAFT),
-with the task card TASK-083. It takes R19.23 (3)'s first item (more model seeds of W), which the
+with the task card TASK-083 (revised after #173's independent review). It takes R19.23 (3)'s first item (more model seeds of W), which the
 owner has been told will run. Nothing has been run for it: no seed of 75000–75999 has been
 simulated, nothing is trained and nothing is fitted. R7 is unchanged.
 
@@ -91,7 +91,10 @@ simulated, nothing is trained and nothing is fitted. R7 is unchanged.
 - **R21.4 — how the two seeds combine, declared now.** The replication claim is **REP-PASS: both
   seeds reach L-PASS individually**. It is the conjunction of two per-seed tests (an
   intersection–union test), so no multiplicity adjustment is needed or applied, and no joint test
-  is added. **REP-ONE** (exactly one seed L-PASS) and **REP-NONE** (neither) are "not replicated";
+  is added. **REP-ONE** (exactly one seed L-PASS) and **REP-NONE** (neither) are "not replicated",
+  stated factually (which seed passed, which did not, rows and counts), with the declared power's
+  caveat that one pass and one miss, or two misses, are likely even for equally good seeds, so a
+  non-pass shows a seed effect only through L-NO-GAIN or L-INFERIOR (#173 review, finding 1);
   REP-VOID-CEILING and V give no reading. Each seed is reported separately. The seeds' counts are
   never pooled or averaged into a test, and a seed is not rescued by the other seed, by W[66800] on
   this cohort or by TASK-081's earlier pass. No "at least one seed" statement is a claim. The two
@@ -104,9 +107,12 @@ simulated, nothing is trained and nothing is fitted. R7 is unchanged.
 - **R21.6 — what each row means for R7** (changed only by its own reviewed ruling after Stage S):
   REP-PASS adds the replication with each seed's count, interval and comparator difference, keeping
   every qualifier (simulation only, C1-M, the single place aim, frozen DINOv2 features, one corpus
-  and recipe, an allocated margin, "LeWM needed" as tested per seed); REP-ONE adds that the result
-  depends on the model seed (which passed, which did not, rows and counts); REP-NONE adds that it
-  did not replicate with either seed; in each, a seed at L-NO-GAIN or L-INFERIOR is described with
+  and recipe, an allocated margin, "LeWM needed" as tested per seed, the solver's effect not shown,
+  H-rule measurably better where its interval says so, and that all three W curves were lowest at
+  their last point beside the flags); REP-ONE adds, factually, which seed passed and which did not
+  (rows and counts), and that at the declared power this does not show whether seed or chance
+  caused the difference unless the other seed is L-NO-GAIN or L-INFERIOR; REP-NONE adds that it
+  did not replicate with either seed, with the same power caveat; in each, a seed at L-NO-GAIN or L-INFERIOR is described with
   "detectably", and W-66800's count on this cohort is stated, labelled reported only, whatever it
   is. REP-VOID-CEILING and V leave R7 unchanged. TASK-081's L-PASS stands as recorded in every
   row. TASK-079's "equivalent row" stays unruled.
@@ -114,7 +120,8 @@ simulated, nothing is trained and nothing is fitted. R7 is unchanged.
   (TASK-081 §6.2–6.3). Stage D is dropped: the controller form is unchanged and has passed
   TASK-081's S; the question is exactly whether other seeds pass the gated test, so a development
   stop could only withhold that measurement; Stage 0's debug smokes exercise both seeds' arms end
-  to end.
+  to end. A V in any pool voids the whole of Stage S, and its one repeat re-runs every pool and arm;
+  any repeat after a non-pass row needs fresh seeds and its own ruling (TASK-081 §7.2, carried).
 - **R21.8 — disclosures.** Seed 66800 was selected by TASK-077's rule (lowest kept validation
   criterion) before any closed loop, and every closed-loop development choice since (TASK-080's D
   and S, the design note's selection of affine_local after seeing three variants, TASK-081's
@@ -125,9 +132,10 @@ simulated, nothing is trained and nothing is fitted. R7 is unchanged.
   66801 and 66802; no offline aim (A1) was computed for them. W-66801's zero-command ratio is about
   2.5 × the others'. The three seeds share TASK-077's corpus, recipe, budget and encoder.
 - **R21.9 — power, stated before the run.** Draft computation (scratch, salt 8599; recomputed in
-  Stage 0 with salt 8502): at W = 0.922 (W-66800's 118/128) and H-rule 0.977–0.984, each seed
-  reaches L-PASS with probability about 0.59–0.81 and both with about 0.35–0.67; at W = 0.938,
-  0.82–0.96 and 0.67–0.93; at W = 0.953, ≥ 0.95 and ≥ 0.90. A non-pass at the observed rate is
+  Stage 0 with salt 8502): at W = 0.922 (W-66800's 118/128) and H-rule 0.979–0.992 (188/192
+  pooled, TASK-080's 63/64, TASK-081's planning rate), each seed reaches L-PASS with probability
+  about 0.50–0.79 and both with about 0.25–0.62; at W = 0.938, 0.76–0.96 and 0.59–0.92; at
+  W = 0.953, ≥ 0.94 and ≥ 0.88. A non-pass at the observed rate is
   therefore weak evidence against TASK-081's result. n stays 128 to replicate TASK-081's design
   exactly.
 - **R21.10 — seeds and salts.** Block **75000–75999** (fresh: no integer in it on any of 138 refs,
@@ -141,7 +149,8 @@ simulated, nothing is trained and nothing is fitted. R7 is unchanged.
   `src/embodied_jepa/lewm_rep_v2.py`, reusing TASK-081's worker `lewm_cp_v2_runtime` unchanged
   (it already takes the model seed and checkpoint from its configuration), with one pool per seed
   run one after another, the runner's carried functions copied verbatim (tested) and a new guard,
-  G-seed. No hash-pinned file is edited.
+  G-seed (each pool's configuration checked, and the checkpoint and readout sha256s each pool was
+  given logged beside its records). No hash-pinned file is edited.
 - **R21.12 — compute.** About 75–90 min of CPU for Stage S (about 133 s per reset over every arm
   on 4 workers, plus G-tests, G-repro and two determinism re-runs); no GPU, no training.
 

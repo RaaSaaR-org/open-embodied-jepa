@@ -1,7 +1,7 @@
 # Apple→Plate LeWM committed aim under C1-M: TASK-081's L-PASS replicated with W's two other model seeds (TASK-083)
 
 **STATUS: DRAFT** (R21.1–R21.12, decided by Claude under owner delegation; not frozen, nothing
-run). No seed of this task's block (75000–75999) has been simulated, nothing is trained and
+run; revised after #173's review). No seed of this task's block (75000–75999) has been simulated, nothing is trained and
 nothing is fitted. The freeze needs Stage 0 (§6.1) and an independent reviewer's reported APPROVE;
 the gated Stage S needs its own reported GO.
 
@@ -50,8 +50,10 @@ only:
 
 LeWM still makes **one decision**: the place aim committed at step 405, between P-3's learned pick
 (behaviour cloning, not a world model) and e9's scripted place primitive, under the declared
-simulation-only plate condition C1-M. The claim, if any, is "LeWM-driven aim selection at 405",
-replicated across model seeds of one training run; not "a LeWM policy".
+simulation-only plate condition C1-M. The per-seed claim, if any, is R9.8's primary claim,
+"LeWM-driven closed-loop success" (the name R7 uses), in which LeWM chooses only that aim; the
+replication claim is that it holds for each of the two other model seeds of one training run. It is
+not "a LeWM policy".
 
 ## 1. The question and the claims
 
@@ -313,8 +315,8 @@ salt is the same. W[66800] is read by no row.
 | **V** | the void rule (§11) | one repeat after a recorded fix |
 | **REP-VOID-CEILING** | S-VOID-CEILING (H-final(commit)(S) < 112/128) | no reading; R7 unchanged |
 | **REP-PASS** | both seeds L-PASS | **the replication claim**: TASK-081's L-PASS replicates across W's model seeds of this training run |
-| **REP-ONE** | exactly one seed L-PASS | **not replicated**: the result depends on the model seed |
-| **REP-NONE** | neither seed L-PASS | **not replicated** with either seed |
+| **REP-ONE** | exactly one seed L-PASS | **not replicated**: L-PASS with one seed (named, with its count) and not with the other (its row and count). At the declared power (§8) this does not show whether the difference comes from the seed or from chance, unless the other seed's row is L-NO-GAIN or L-INFERIOR |
+| **REP-NONE** | neither seed L-PASS | **not replicated** with either seed (their rows and counts). At the declared power a non-pass is weak evidence against TASK-081's result, unless a seed's row is L-NO-GAIN or L-INFERIOR |
 
 Rules declared now:
 - **No pooling to rescue a seed.** The two seeds' counts are never summed or averaged into a test;
@@ -353,9 +355,9 @@ Rules declared now:
 
 ## 8. Power (R21.9; recomputed in Stage 0 with salt 8502)
 
-**Planning rates.** C (H-rule) at **0.977** (TASK-080's and TASK-081's S pooled: 63/64 and 125/128,
-188/192) and **0.984** (the stricter used by TASK-081); H-sysid at 0.953 (62/64 and 121/128 pooled,
-183/192). W at the grid 0.906 (TASK-080's S rate for W-66800), **0.922** (TASK-081's S rate for
+**Planning rates.** C (H-rule) at **0.979** (TASK-080's and TASK-081's S pooled: 63/64 and 125/128,
+188/192), 0.984 (TASK-080's S alone, 63/64) and **0.992** (TASK-081's planning rate, the stricter of
+its two; #173 review, nit 2); H-sysid at 0.953 (62/64 and 121/128 pooled, 183/192). W at the grid 0.906 (TASK-080's S rate for W-66800), **0.922** (TASK-081's S rate for
 W-66800, 118/128), 0.938 and 0.953 (TASK-081's planning rate). Nothing measured on 66801 or 66802
 in closed loop exists to plan from.
 
@@ -368,14 +370,15 @@ L-PASS (REP-PASS), overlap · half · independent:
 
 | p_C (H-rule) | W = 0.906 | W = 0.922 | W = 0.938 | W = 0.953 |
 |---|---|---|---|---|
-| 0.977 | 0.56/0.32 · 0.45/0.21 · 0.41/0.19 | 0.81/0.67 · 0.71/0.51 · 0.65/0.44 | 0.96/0.93 · 0.91/0.83 · 0.86/0.74 | 1.00/1.00 · 0.99/0.98 · 0.97/0.94 |
+| 0.979 | 0.53/0.29 · 0.43/0.19 · 0.39/0.17 | 0.79/0.62 · 0.69/0.49 · 0.63/0.41 | 0.96/0.92 · 0.90/0.81 · 0.85/0.72 | 1.00/0.99 · 0.99/0.97 · 0.97/0.93 |
 | 0.984 | 0.44/0.19 · 0.36/0.13 · 0.34/0.13 | 0.72/0.52 · 0.64/0.41 · 0.59/0.35 | 0.92/0.85 · 0.87/0.76 · 0.82/0.67 | 0.99/0.98 · 0.98/0.95 · 0.95/0.90 |
+| 0.992 | 0.32/0.11 · 0.28/0.08 · 0.27/0.08 | 0.60/0.36 · 0.54/0.29 · 0.50/0.25 | 0.84/0.71 · 0.80/0.64 · 0.76/0.59 | 0.97/0.95 · 0.96/0.91 · 0.94/0.88 |
 
 **Stated plainly:** if the other seeds' true rate equals W-66800's observed 118/128 (0.922), each
-seed passes with probability about 0.6–0.8 and **both pass with probability only about 0.35–0.67**.
-So REP-ONE or REP-NONE is a likely outcome even if the three seeds were equally good, and a
-non-pass at these rates is weak evidence against TASK-081's result; REP-PASS is likely (≥ 0.67)
-only if the true rate is about 0.938 or above. The cohort size is kept at 128 because the task is
+seed passes with probability about 0.5–0.8 and **both pass with probability only about 0.25–0.62**
+(0.979 ≤ p_C ≤ 0.992). So REP-ONE or REP-NONE is a likely outcome even if the three seeds were
+equally good, and a non-pass at these rates is weak evidence against TASK-081's result; REP-PASS is
+likely (≥ 0.59) only if the true rate is about 0.938 or above. The cohort size is kept at 128 because the task is
 to replicate TASK-081's design exactly (its bar, margin and n); a larger cohort (256 resets would
 raise the per-seed rate at W = 0.922 to about 0.95) would be a different test, and is not chosen.
 The size at the margin and the L-INFERIOR false-fire rate are TASK-081's (2.6–3.6 % and 1.4–1.7 %
@@ -397,20 +400,24 @@ carried). Declared now, so that the ruling has no choice of wording to make afte
 
 - **REP-PASS.** R7 adds, after its TASK-081 sentence, that TASK-083 replicated the L-PASS with the
   two other model seeds of the same training run (66801 and 66802, whose `last_two_triggered`
-  flags are not set), each reaching L-PASS on its own on 128 further fresh gated resets under the
-  same condition, with each seed's count, exact interval and paired difference from the comparator
-  and its interval, and whether "LeWM needed" is shown for either. The qualifiers stay: simulation
-  only; C1-M; LeWM choosing only the single place aim between P-3's learned pick and e9's scripted
-  place; frozen DINOv2 features; one training corpus and recipe; non-inferiority within an
-  allocated margin. If H-rule is measurably better for a seed (the interval's upper bound below 0),
-  R7 says so for that seed. "One model seed" in R7's TASK-081 sentence then reads as TASK-081's
+  flags are not set, although all three W training curves were lowest at their last point), each
+  reaching L-PASS on its own on 128 further fresh gated resets under the same condition, with each
+  seed's count, exact interval and paired difference from the comparator and its interval, and
+  whether "LeWM needed" is shown for either. The qualifiers stay: simulation only; C1-M; LeWM
+  choosing only the single place aim between P-3's learned pick and e9's scripted place; frozen
+  DINOv2 features; one training corpus and recipe; non-inferiority within an allocated margin;
+  TASK-081's "the solver's effect is not shown". If H-rule is measurably better for a seed (the
+  interval's upper bound below 0), R7 says so for that seed, as it says it for 66800. "One model seed" in R7's TASK-081 sentence then reads as TASK-081's
   run, with the replication beside it; it does not become "three runs".
-- **REP-ONE.** R7 adds that a preregistered replication with the two other model seeds reached
-  L-PASS with one (its seed and count) and not with the other (its seed, row and count), so the
-  result depends on the model seed; TASK-081's L-PASS stands as recorded.
+- **REP-ONE.** R7 adds, factually, that a preregistered replication with the two other model seeds
+  reached L-PASS with one (its seed and count) and not with the other (its seed, row and count);
+  that at the declared power this does not show whether the difference comes from the seed or
+  from chance, unless the other seed's row is L-NO-GAIN or L-INFERIOR; and that TASK-081's L-PASS
+  stands as recorded (#173 review, finding 1).
 - **REP-NONE.** R7 adds that the replication with the two other model seeds did not reach L-PASS
-  with either (their rows and counts), so the gated success is shown for one model seed only and
-  did not replicate across seeds; TASK-081's L-PASS stands as recorded.
+  with either (their rows and counts), so the gated success is shown for one model seed only; that
+  at the declared power a non-pass is weak evidence against TASK-081's result unless a seed's row
+  is L-NO-GAIN or L-INFERIOR; and that TASK-081's L-PASS stands as recorded.
 - In REP-ONE and REP-NONE, a seed whose row is L-NO-GAIN or L-INFERIOR is stated with the word
   "detectably" (§7.3); the others as "not replicated within noise of the bar or margin".
 - **In every one of these rows, R7 also states W-66800's count on cohort S**, labelled reported
@@ -421,14 +428,20 @@ carried). Declared now, so that the ruling has no choice of wording to make afte
 
 ## 11. Void rule, guards and memory (carried from TASK-081 §10)
 
-- **Void and repeat:** one repeat of Stage S after a committed, pushed and recorded fix, on the
-  same seeds in a new output directory; a second V ends TASK-083 INCONCLUSIVE.
+- **Void and repeat:** a V in any pool voids the whole of Stage S; its one repeat, after a
+  committed, pushed and recorded fix, re-runs every pool and every arm on the same seeds in a new
+  output directory; a second V ends TASK-083 INCONCLUSIVE. Carried from TASK-081 §7.2: any repeat
+  after a non-pass row (REP-ONE, REP-NONE, or any seed's L-TWIN-NEAR, L-NEAR or L-BAR) needs fresh
+  seeds and its own ruling (#173 review, nit 5).
 - **Guards:** TASK-081 §10's list (G-tests in-run, G-sentinel, G-hash, G-frozen, G-repro, G-threads,
   G-quiet, G-privileged, G-finite, G-memory at 12 GiB process-tree PSS, G-disk at 10 GiB free,
   G-solver), with **G-frozen and G-hash extended** to TASK-081's frozen block and six file pins,
-  and **G-seed (new)**: each pool's configuration names exactly one model seed, its W and N
-  checkpoints and its R-S and R-N by content sha256, every candidate record carries that seed, and
-  the runner refuses a record whose seed or readout is not its pool's. **G-split here:** nothing is
+  and **G-seed (new)**: each pool's configuration names exactly one model seed, with that seed's
+  W and N checkpoints (each worker checks the file's sha256 when it loads it) and its R-S and R-N
+  by content and file sha256; the runner checks the configuration before it starts the pool, logs
+  the checkpoint and readout sha256s each pool was given beside the pool's records (worker records
+  carry the reset seed and arm, not the model seed; #173 review, nit 6), and refuses a candidate
+  record whose logged readout is not its arm's. **G-split here:** nothing is
   fitted; the runner refuses any closed-loop seed outside S's range. No GPU is used.
 - **Caps** (provisional; set at Stage 0 at ≥ 1.5 × the scaled worst case of the debug smokes):
   Stage S **21 600 s**, per attempt **300 s**. G-memory 12 GiB process-tree PSS (one pool at a
@@ -446,7 +459,7 @@ featurisation and no GPU. Disk: reports only (a few MB).
 ## 13. Risks, stated now
 
 - **Power** (§8): at W-66800's observed rate a replication passes on both seeds with probability
-  about one half; a REP-ONE or REP-NONE is likely even if nothing differs between seeds.
+  about 0.25–0.62; a REP-ONE or REP-NONE is likely even if nothing differs between seeds.
 - **H-rule is strong** (125/128 on TASK-081's S) and given the simulator's plate law.
 - **The scorer's margin is small** (TASK-081: most near-plate attempts rest 3.3–3.6 cm from the
   centre against a 4 cm radius), which adds noise to every count.
