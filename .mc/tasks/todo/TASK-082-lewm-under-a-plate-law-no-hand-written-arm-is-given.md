@@ -67,7 +67,10 @@ D 72500–72515, S 72600–72727, corpus 72800–74799, debug 74800–74899; sal
 - [x] DRAFT design note with a development feasibility check (R19.24–R19.25)
 - [x] Owner direction on the recommendation (or a ruling under delegation): R20.1–R20.16
 - [ ] DRAFT preregistration, independently reviewed, before any cohort seed is simulated (drafted, R20; review on its PR)
-- [ ] Stage 0, freeze, and the gated stages on their GOs
+- [x] Stage 0 (R20.17–R20.22): new modules, DRAFT manifest, tests, debug smokes on 74800–74899
+  (labelcheck LABELS-UNCHANGED), scale probes (caps confirmed), power simulation (δ = 16/128);
+  record `docs/experiments/apple_lewm_unknown_law_v2_stage0.md`
+- [ ] K0 on its reported GO, the freeze, and the gated stages on their GOs
 
 ## Notes
 

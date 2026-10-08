@@ -566,6 +566,12 @@ check's better hand-written arm on the true plate (H-sysid-true 28/32 = 0.875) a
 for the loss to p̂ (§3, caveat 1). The rule only ever tightens the margin relative to TASK-081.
 δ is an **allocation**; its label stays so.
 
+**Stage 0's result (R20.20): δ = 16/128.** G-NI's power at W = C under the half coupling was
+0.387 / 0.462 / 0.526 at δ = 8, 0.709 / 0.792 / 0.853 at δ = 12 and 0.917 / 0.960 / 0.978 at δ = 16
+(C = 0.80 / 0.85 / 0.875); the size at the margin was at most 3.97 % for every δ. Only 16/128
+qualifies, so the rule does not tighten TASK-081's margin (record §4). It enters the frozen block at
+the freeze.
+
 ### 9.3 Stage S, the gated rows (n = 128; TASK-081 §7.2 with this task's δ)
 
 - **G-bar:** W(S) ≥ **112/128** (τ_commit's bar fraction 0.875, TASK-076 G1's form; **carried**).
@@ -708,6 +714,12 @@ H-sysid it answers the design note's last open question (§8, "swirl and the box
 4. **The twin tests** at TASK-081's twin rates and at N = 0.75.
 5. **L-PASS** at the planning rates (the product of the parts under the overlap coupling).
 
+**Stage 0's numbers** ([record](apple_lewm_unknown_law_v2_stage0.md) §4, R20.20): δ = 16/128; G-bar
+0.566 / 0.908 / 0.978 / 0.9975 / 0.9999 at W = 0.875 … 0.953; G-NI at δ = 16 ≥ 0.97 for every
+W ≥ 0.906; the secondary claim's power at C = 0.875 is at most 0.38 with independent outcomes (0.88
+with overlapping ones at W = 0.953), at C = 0.85 0.41–0.94 at W = 0.938; every twin test ≥ 0.999 at
+TASK-081's twin rates; L-PASS's product equals G-bar's power at every planning rate.
+
 **The binding risks** are expected to be G-bar and the training (H-GATE-FAIL, R-NO-BAR), not G-NI: the
 comparators are weaker under U-sat than under C1-M. The secondary claim is expected to have low to
 moderate power unless W sits within about 0.03 of the ceiling. Stage 0's numbers replace these
@@ -738,6 +750,10 @@ readings in the freeze PR.
   freeze): K0 7 200 s; Stage C 14 400 s; Stage O featurisation 3 600 s and fits 7 200 s; each Stage T
   job 46 800 s (TASK-077's, carried: its six jobs took 17 180–21 301 s each); Stage G 14 400 s;
   Stage D 7 200 s; Stage S 21 600 s; per closed-loop attempt 300 s.
+  **Confirmed at Stage 0 (R20.21)**, each ≥ 1.5 × its scaled worst case: K0 ≈ 910 s (7.9 ×); C
+  ≈ 3 100 s with the labelling look-ahead (4.6 ×); O ≈ 500 s and 330 s; T carried; G ≈ 6 500 s from
+  the Stage G probe (2.2 ×); D ≈ 600 s; S ≈ 4 600 s (4.7 ×); the slowest attempt 15.9 s. Each stage's
+  cap counts from the end of G-quiet's bounded wait (R20.18).
 
 ## 12. The abandonment clause and its scope (R20.13)
 

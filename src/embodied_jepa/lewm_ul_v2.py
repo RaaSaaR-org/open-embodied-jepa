@@ -770,7 +770,7 @@ BAR_FRACTION = 0.875  # carried (tau_commit's bar fraction, TASK-076 G1's form)
 G_BAR = round(BAR_FRACTION * S_RESETS)  # 112 of 128
 DELTA_CANDIDATES = (8, 12, 16)  # of 128 (R20.10)
 DELTA_FALLBACK = 16  # TASK-081's allocation
-DELTA = 8  # of 128: fixed by R20.10's rule from Stage 0's power simulation (STAGE0["delta"])
+DELTA = 16  # of 128: fixed by R20.10's rule from Stage 0's power simulation (R20.20)
 MCNEMAR_P = lm.MCNEMAR_P  # 0.01
 MIN_SEPARATION = lm.MIN_SEPARATION  # 7: a count, independent of n
 DETERMINISM_RESETS = lm.DETERMINISM_RESETS  # W's re-run on S's first four resets
@@ -1267,7 +1267,49 @@ def check_sentinel(report: dict, evaluated: set[str], fields) -> list[str]:
 
 
 # ----- Stage 0 (filled by the Stage-0 PR; development only, debug seeds and synthetic data) -------
-STAGE0: dict = {}
+STAGE0: dict = {  # the record: docs/experiments/apple_lewm_unknown_law_v2_stage0.md (R20.17-R20.22)
+    "smoke_root": "outputs/task082-smoke-1 in the task082-s0chain worktree (git-ignored); debug "
+    "seeds 74800-74899 only; nothing in them is read",
+    "smoke_revisions": {"k0, corpus, labelcheck": "2c861a1", "the rest": "8232523"},
+    "smokes": {
+        "k0": {"outcome": "CAL-ESCALATE-DEBUG", "seconds": 117.7, "peak_tree_pss_gib": 8.97},
+        "corpus": {"outcome": "CORPUS-SEALED-DEBUG", "roots": 40, "excluded": 0,
+                   "labels_converged": 40, "seconds": 98.9, "peak_tree_pss_gib": 9.53},
+        "labelcheck": {"outcome": "LABELS-UNCHANGED-DEBUG", "roots": 6, "seconds": 61.9,
+                       "identical": "frames, commands, plate, palm, hidden render, target, 405 "
+                       "state, p-hat, executed steps, termination, outcome: bit-exact on 6 of 6"},
+        "featurise": {"outcome": "FEATURISED-DEBUG", "seconds": 10.7,
+                      "anchor_max_abs_difference": 8.76e-05},
+        "readouts": {"outcome": "O-NO-BAR-DEBUG", "seconds": 0.4},
+        "train": {"outcome": "T-JOB-DONE-DEBUG x 6 (W and N of 74890-74892, 300 updates)",
+                  "seconds": [53.7, 55.8], "per_update_median_s": 0.167,
+                  "gpu_max_allocated_gib": 5.48},
+        "gates": {"outcome": "H-GATE-FAIL-DEBUG", "seconds": 131.5, "peak_tree_pss_gib": 9.73},
+        "closedD": {"outcome": "L-DEV-STOP-DEBUG", "seconds": 135.5, "peak_tree_pss_gib": 9.36},
+        "closedS": {"outcome": "S-VOID-CEILING-DEBUG", "seconds": 1135.5,
+                    "peak_tree_pss_gib": 10.76, "determinism_ok": True,
+                    "g_tests": "2211 passed, 37 skipped (in-run)"},
+    },
+    "seconds_per_attempt_max": {"K0_planted": 8.58, "corpus_root_with_label": 8.19,
+                                "S_slowest_arm": 15.9},
+    "scaled_worst_case_seconds": {"K0": 910, "C": 3100, "O_featurisation": 500,
+                                  "O_readouts": 330, "G": 6500, "D": 600, "S": 4600},
+    "gscale": {"report_sha256": "199e2704e927f538f9270456ebffc71a635829aa66b78d8586021b3384d08557",
+               "fit_seconds": 750.7, "read_seconds": 101.2, "dynamics_seconds": 157.6,
+               "offline_aims_scaled_seconds": 5201.6, "worst_case_seconds": 6211.1,
+               "peak_tree_gib": 4.05},
+    "simulate": {
+        "report_sha256": "dd1a22d8171e1daedda614d68ccbfb4a02dd4b2bb8e3595c0a71d32ded125efb",
+        "revision": "148a2b8",
+        "voided_first_run": "simulate-1 (d9625c7) voided by its 3 600 s cap after a 73-minute "
+        "G-quiet wait; its power tables equal simulate-2's exactly (R20.18)",
+        "power_at_w_equal_c_half": {"8": [0.387, 0.462, 0.526], "12": [0.709, 0.792, 0.853],
+                                    "16": [0.917, 0.960, 0.978]},  # C = 0.80, 0.85, 0.875
+        "size_at_margin_max": {"8": 0.0397, "12": 0.0384, "16": 0.0351},
+        "l_inferior_at_margin_max": {"8": 0.0249, "12": 0.0222, "16": 0.0237},
+    },
+    "delta": {"chosen": 16, "rule": "R20.10", "fallback": False},
+}  # fmt: skip
 
 
 # ----- the frozen block ---------------------------------------------------------------------------
