@@ -430,6 +430,13 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       baseline it is not expected (no headroom). Recommended: preregister under U-sat, retrain TASK-077's recipe on a new
       2 000-root corpus (about 31 h GPU for three seeds per arm, or about 10 h for one pair, plus
       4–7 h CPU). In parallel: the owner's TASK-079 ruling; two extra W seeds under C1-M (CPU only).
+    - **TASK-083 (in progress; R21): R19.23 (3a), TASK-081's L-PASS with W's two other model
+      seeds.** DRAFT preregistration
+      [apple_lewm_seed_replication_v2.md](experiments/apple_lewm_seed_replication_v2.md): seeds
+      66801 and 66802 (each W with its own N, R-S and R-N; nothing trained) under C1-M with
+      TASK-081's controller, arms and per-seed gates on one fresh 128-reset cohort (75200–75327);
+      REP-PASS needs both seeds at L-PASS; no clause; R7's wording per row declared in advance;
+      CPU only, about 1.5 h. Next: review, Stage 0, the freeze, then S on its GO.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.

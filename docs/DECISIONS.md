@@ -63,6 +63,97 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (o) — TASK-083's DRAFT preregistration: TASK-081's L-PASS replicated with W's two other model seeds, 66801 and 66802, under C1-M (R21.1–R21.12; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30). DRAFT, not frozen.** The document is
+[apple_lewm_seed_replication_v2.md](experiments/apple_lewm_seed_replication_v2.md) (STATUS DRAFT),
+with the task card TASK-083 (revised after #173's independent review). It takes R19.23 (3)'s first item (more model seeds of W), which the
+owner has been told will run. Nothing has been run for it: no seed of 75000–75999 has been
+simulated, nothing is trained and nothing is fitted. R7 is unchanged.
+
+- **R21.1 — the task.** TASK-083 (the next free id; TASK-078 and TASK-079 keep their PLAN.md
+  reservations) re-runs TASK-081's gated Stage S with the W and N checkpoints of TASK-077's seeds
+  66801 and 66802, each W paired with its own seed's N and read by its own seed's R-S and R-N from
+  TASK-080's Stage R (report `bedb8966…48ea7`; R-S[66801] `1cc85203…dc81`, R-N[66801]
+  `206e664f…0243`, R-S[66802] `28abf388…f1a5`, R-N[66802] `33db51c9…d647`, by content sha256).
+  TASK-081's condition (C1-M), controller (affine_local after the grid), τ_commit (1.0 cm), arms,
+  gates, bar, margin and ladder are carried.
+- **R21.2 — arms.** Per seed s ∈ {66801, 66802}: W[s], N[s], L-shuf[s] (W[s]'s own foreign
+  frames), L-mean[s], all with affine_local. Shared, run once on the same resets and read by both
+  seeds' ladders: L-rand (TASK-081's salt 8303, carried, on fresh resets), H-rule, H-sysid and the
+  privileged H-final(commit). Reported only and read by no row: W[66800] (TASK-081's W unchanged)
+  on the same resets. Dropped: W-frozen, H-read and H-now (reported only in TASK-081 and read by no
+  row; R19.23 (4)).
+- **R21.3 — per-seed gates.** Each seed has TASK-081's §7.2 ladder unchanged (n = 128; G-bar
+  ≥ 112/128; G-NI lower bound > −16/128 against the better of H-rule and H-sysid on S, a tie to
+  H-rule, the same C for both seeds; the four exact one-sided McNemar tests at p < 0.01; R17.15's
+  +7 count; S-VOID-CEILING at H-final(commit) < 112/128, shared), with this task's bootstrap salt.
+- **R21.4 — how the two seeds combine, declared now.** The replication claim is **REP-PASS: both
+  seeds reach L-PASS individually**. It is the conjunction of two per-seed tests (an
+  intersection–union test), so no multiplicity adjustment is needed or applied, and no joint test
+  is added. **REP-ONE** (exactly one seed L-PASS) and **REP-NONE** (neither) are "not replicated",
+  stated factually (which seed passed, which did not, rows and counts), with the declared power's
+  caveat that one pass and one miss, or two misses, are likely even for equally good seeds, so a
+  non-pass shows a seed effect only through L-NO-GAIN or L-INFERIOR (#173 review, finding 1);
+  REP-VOID-CEILING and V give no reading. Each seed is reported separately. The seeds' counts are
+  never pooled or averaged into a test, and a seed is not rescued by the other seed, by W[66800] on
+  this cohort or by TASK-081's earlier pass. No "at least one seed" statement is a claim. The two
+  seeds share the comparator, L-rand and the ceiling on the same resets, so their rows are not
+  independent; this is stated beside every combined reading.
+- **R21.5 — no abandonment clause.** No row of TASK-083 fires a clause: TASK-081's L-PASS was the
+  first gated test of the controller; a replication tests that pass's robustness across model
+  seeds, so a failure narrows what R7 may say and closes no direction. A seed's L-NO-GAIN or
+  L-INFERIOR is recorded as a detectable failure to replicate.
+- **R21.6 — what each row means for R7** (changed only by its own reviewed ruling after Stage S):
+  REP-PASS adds the replication with each seed's count, interval and comparator difference, keeping
+  every qualifier (simulation only, C1-M, the single place aim, frozen DINOv2 features, one corpus
+  and recipe, an allocated margin, "LeWM needed" as tested per seed, the solver's effect not shown,
+  H-rule measurably better where its interval says so, and that all three W curves were lowest at
+  their last point beside the flags); REP-ONE adds, factually, which seed passed and which did not
+  (rows and counts), and that at the declared power this does not show whether seed or chance
+  caused the difference unless the other seed is L-NO-GAIN or L-INFERIOR; REP-NONE adds that it
+  did not replicate with either seed, with the same power caveat; in each, a seed at L-NO-GAIN or L-INFERIOR is described with
+  "detectably", and W-66800's count on this cohort is stated, labelled reported only, whatever it
+  is. REP-VOID-CEILING and V leave R7 unchanged. TASK-081's L-PASS stands as recorded in every
+  row. TASK-079's "equivalent row" stays unruled.
+- **R21.7 — no K0, corpus, Stage R or Stage D.** τ_commit is carried and nothing is fitted
+  (TASK-081 §6.2–6.3). Stage D is dropped: the controller form is unchanged and has passed
+  TASK-081's S; the question is exactly whether other seeds pass the gated test, so a development
+  stop could only withhold that measurement; Stage 0's debug smokes exercise both seeds' arms end
+  to end. A V in any pool voids the whole of Stage S, and its one repeat re-runs every pool and arm;
+  any repeat after a non-pass row needs fresh seeds and its own ruling (TASK-081 §7.2, carried).
+- **R21.8 — disclosures.** Seed 66800 was selected by TASK-077's rule (lowest kept validation
+  criterion) before any closed loop, and every closed-loop development choice since (TASK-080's D
+  and S, the design note's selection of affine_local after seeing three variants, TASK-081's
+  128-reset cohort chosen after TASK-080's L-NEAR) was made on 66800's runs; 66801 and 66802 have
+  never run in closed loop. Training flags: W-66801 and W-66802 `last_two_triggered` false (kept
+  71 250 and 80 750), W-66800 true; all three W curves have their raw minimum at the last point. R-S
+  on gate-P: 0.547 / 0.584 / 0.589 cm (66800 / 66801 / 66802), its learning curve still falling for
+  66801 and 66802; no offline aim (A1) was computed for them. W-66801's zero-command ratio is about
+  2.5 × the others'. The three seeds share TASK-077's corpus, recipe, budget and encoder.
+- **R21.9 — power, stated before the run.** Draft computation (scratch, salt 8599; recomputed in
+  Stage 0 with salt 8502): at W = 0.922 (W-66800's 118/128) and H-rule 0.979–0.992 (188/192
+  pooled, TASK-080's 63/64, TASK-081's planning rate), each seed reaches L-PASS with probability
+  about 0.50–0.79 and both with about 0.25–0.62; at W = 0.938, 0.76–0.96 and 0.59–0.92; at
+  W = 0.953, ≥ 0.94 and ≥ 0.88. A non-pass at the observed rate is
+  therefore weak evidence against TASK-081's result. n stays 128 to replicate TASK-081's design
+  exactly.
+- **R21.10 — seeds and salts.** Block **75000–75999** (fresh: no integer in it on any of 138 refs,
+  in any worktree's code, DECISIONS or `.mc`); S **75200–75327** (128 resets); debug
+  **75900–75999**; everything else reserved. Salts **8501** (every bootstrap), **8502** (Stage 0's
+  power), **8503–8512** reserved (none found on any ref or worktree). Carried: 8201 (the move draw)
+  and 8303 (L-rand).
+- **R21.11 — a new thin runner.** TASK-081's runner takes the model seed from its frozen block
+  (`PRIMARY_SEED = 66800`) and its cohorts from its own ranges, with no argument for either, and it
+  is hash-pinned; so Stage 0 adds `scripts/run_lewm_rep_v2.py` and the frozen block
+  `src/embodied_jepa/lewm_rep_v2.py`, reusing TASK-081's worker `lewm_cp_v2_runtime` unchanged
+  (it already takes the model seed and checkpoint from its configuration), with one pool per seed
+  run one after another, the runner's carried functions copied verbatim (tested) and a new guard,
+  G-seed (each pool's configuration checked, and the checkpoint and readout sha256s each pool was
+  given logged beside its records). No hash-pinned file is edited.
+- **R21.12 — compute.** About 75–90 min of CPU for Stage S (about 133 s per reset over every arm
+  on 4 workers, plus G-tests, G-repro and two determinism re-runs); no GPU, no training.
+
 ## Decision 2026-10-08 (n) — TASK-082 K0 ends CAL-ESCALATE (τ_commit = 0, r_K = 466); nothing is frozen; TASK-082 closes without the clause (R20.23–R20.25)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
