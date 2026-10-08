@@ -394,6 +394,11 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       optimistic) against H-rule 64/64 and the privileged ceiling 63/64. Recommended: a
       preregistration with that solver, no retraining, δ = 8/64 unchanged and n = 128 gated
       resets. (a) stays the documented alternative.
+      **DRAFT preregistration (R19.1–R19.11):**
+      [apple_lewm_commit_precision_v2.md](experiments/apple_lewm_commit_precision_v2.md): W with
+      affine_local, twins with the same solver, W-frozen reported only, τ_commit 1.0 cm carried (no
+      K0, no Stage R), D 70100–70115 and S 70200–70327 (128 resets; G-bar 112/128, G-NI within
+      16/128). Next: its independent review, then Stage 0 and the freeze, then D and S on their GOs.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
