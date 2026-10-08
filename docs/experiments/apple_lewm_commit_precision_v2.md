@@ -6,7 +6,9 @@ sha256 **`77ccc6364624c7da9dcca1d09827a0f6a25a670a00392d488e7b0216e090705a`** is
 `tests/test_lewm_cp_v2.py` and in the manifest (`benchmarks/manifests/apple-lewm-cp-v2.json`), with
 the manifest's six file pins and this document's sha256. **The freeze takes effect when it is
 merged on an independent reviewer's reported APPROVE.** Stage D and Stage S each still need their
-own reported GO (§6.1). Stage D's plan is §6.4, Stage D's result §6.5 and Stage S's plan §6.6.
+own reported GO (§6.1). Stage D's plan is §6.4, Stage D's result §6.5, Stage S's plan §6.6 and
+Stage S's result §6.7. **Outcome: L-PASS at Stage S** (R19.20); TASK-081 is closed (R19.22).
+Results: [apple_lewm_commit_precision_v2_results.md](apple_lewm_commit_precision_v2_results.md).
 
 History. The DRAFT (R19.1–R19.11, #161) was reviewed independently. Stage 0
 ([record](apple_lewm_commit_precision_v2_stage0.md), R19.12–R19.14, #162) added the code, debug
@@ -17,7 +19,10 @@ Stage S refuses a D-PASS report run under another frozen block. No seed of D or 
 simulated at the freeze. Stage D, the non-gating development closed loop on 16 fresh resets, then
 ended **D-PASS** (§6.5, R19.17): W 16/16, W-frozen 15/16 (reported only), N 5/16, L-shuf 5/16,
 L-mean 8/16, H-rule 16/16 (reported only) and the privileged H-final(commit) 16/16; a development
-result, not the gated one. No seed of S has been simulated. Stage S's plan is §6.6.
+result, not the gated one. Stage S's plan is §6.6. Stage S, the gated cohort of 128 fresh resets,
+then ended **L-PASS** (§6.7, R19.20): W 118/128, H-rule 125/128 (not learned), the privileged
+H-final(commit) 126/128; "LeWM needed" not shown, and the solver's effect not shown (W-frozen
+117/128, reported only).
 
 - **Admitted by:** the TASK-081 design note
   ([apple_lewm_commit_precision_v2_design.md](apple_lewm_commit_precision_v2_design.md), DRAFT,
@@ -560,6 +565,43 @@ If the invocation ends in anything other than a §7.2 row, nothing further is la
 is ruled under §10 first. The exact command is in the GO. After S, the results PR reports every arm
 (§6.1 step 5).
 
+### 6.7 Stage S's result: L-PASS (R19.20)
+
+Stage S ran once on the reviewer's GO (#164, issuecomment-6055011674) at `e9c294f`, in the
+worktree `task081-stages`, on the CPU, 07:35:43–08:31:01 UTC (3 318 s, cap 21 600; in-run G-tests
+2123 passed, 37 skipped; peak process-tree PSS 9.76 GiB, cap 12; no G-repro render
+disagreement). Report `outputs/task081-s-1/report.json`, sha256
+`ded7e167dafac35a531f58042a4fe95c5dd8ccebf225dd91955b8734230cd097`; evidence copy
+`~/develop/emai/evidence/task081-stages/`. Counted successes on 70200–70327 (exact 95 %
+intervals):
+
+| arm | successes | exact 95 % | W − arm (W only / arm only), 95 % interval |
+|---|---:|---|---|
+| **W** | **118** | 0.861–0.962 | – |
+| W-frozen (reported only) | 117 | 0.851–0.956 | +1 (6 / 5), [−5, +7] |
+| N | 73 | 0.480–0.657 | +45 (51 / 6), [+32, +58] |
+| L-shuf | 39 | 0.226–0.392 | +79 (83 / 4), [+66, +91] |
+| L-mean | 59 | 0.372–0.551 | +59 (65 / 6), [+46, +72] |
+| L-rand | 20 | 0.098–0.231 | +98 (99 / 1), [+88, +107] |
+| **H-rule** (not learned) | **125** | 0.933–0.995 | **−7 (1 / 8), [−13, −2]** |
+| H-sysid (not learned) | 121 | 0.891–0.978 | −3 (6 / 9), [−11, +4] |
+| H-final(commit) (privileged) | 126 | 0.945–0.998 | −8 (1 / 9), [−14, −2] |
+| H-read (privileged, reported only) | 117 | 0.851–0.956 | +1 (10 / 9), [−8, +10] |
+| H-now (privileged, reported only) | 6 | 0.017–0.099 | +112 (112 / 0), [+104, +119] |
+
+Reset 70302 was refused before 405 in every arm (a guard refusal at step 223, before any grasp)
+and counts as a failure in each. **Rows (§7.2, first match):** not V; S-VOID-CEILING does not hold
+(126 ≥ 112); L-NO-GAIN does not hold (every twin test passes: p 2.8 × 10⁻¹⁰, 1.5 × 10⁻²⁰,
+6.7 × 10⁻¹⁴, 8.0 × 10⁻²⁹ for N, L-shuf, L-mean, L-rand); L-INFERIOR does not hold (upper bound −2,
+above −16); **L-PASS holds**: G-bar 118 ≥ 112, G-NI against C = H-rule (125 > 121) with lower
+bound −13 above −16. The clause does not fire. Secondary "LeWM needed": W only 1, H-rule only 8, p = 0.998,
+**not shown**; the interval [−13, −2] lies below 0, so W is measurably below H-rule on this
+cohort, inside the allocated margin. **Solver effect (§7.3 item 2, reported only): not shown**;
+W − W-frozen +1/128, p = 0.5; W-frozen did not converge on 37 resets, where W scored 33 and
+W-frozen 32; W-frozen's 117/128 would itself have cleared G-bar. W's determinism re-run on
+70200–70203 matched on all four (differences 0.0; the log's "4/4" is its success count). Every
+§7.3 item, with the post-hoc reading of W-frozen against H-rule, is in the results document.
+
 ## 7. Gates, bars and rows
 
 Intervals are reset-clustered bootstrap percentile intervals, 10 000 resamples, 95 %, salt 8302,
@@ -785,6 +827,13 @@ No training, no featurisation and no GPU. Disk: reports only (TASK-080's S repor
   design note's check and D), labelled as non-gating development runs; "LeWM therefore has no
   gated closed-loop Apple→Plate success" is kept. The quote above is the clause as it stood at
   the freeze.
+- **Changed after Stage S's L-PASS (R19.21).** The reviewed ruling that §13's first item requires
+  replaced R7's v2 LeWM part with a statement of the gated success and its qualifiers (one run, one
+  flagged model seed, simulation only, C1-M, LeWM choosing only the single place aim, frozen DINOv2
+  features, non-inferiority within the allocated margin while H-rule scored measurably higher,
+  "LeWM needed" and the solver's effect not shown, TASK-080's L-NEAR standing, the 128-reset cohort
+  chosen after it). The quotes above are kept as frozen; the sentence in force is in R19.21. The
+  "equivalent row" proposal for TASK-079 stays proposed, not ruled (R19.22).
 
 ## 14. Open questions of the design note, resolved (R19.2–R19.10)
 
