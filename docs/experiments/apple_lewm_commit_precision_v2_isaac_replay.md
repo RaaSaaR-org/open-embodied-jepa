@@ -75,7 +75,9 @@ and the TASK-073 to TASK-081 runners and modules are unchanged).
      mounted at `/oej/in`.
 3. `scripts/isaac_replay_lewm_cp_v2_demo.py compose` (host).
    - It captions the Isaac frames as in the demo and adds the label "Isaac Sim kinematic replay
-     of MuJoCo episodes - not an Isaac run of the controller" to every frame.
+     of MuJoCo episodes, no Isaac physics - illustration only, not evidence" to every frame,
+     including the side-by-side ones. The intro card adds that it is not an Isaac run of the
+     controller.
    - It encodes two MP4s with the system `ffmpeg`: Isaac only, and MuJoCo | Isaac side by side.
 
 ## The rendered video
@@ -84,17 +86,19 @@ The video was rendered on 2026-10-08 on the Linux PC. The dump ran at revision `
 clean tree, on the CPU with EGL rendering, under `scripts/gpu_run.sh`. The Isaac render ran at
 `bbc83a8` in the `isaaclab_arena:latest` container (§1 of ARENA.md), under
 `scripts/gpu_run.sh --container oej-isaac-`. The only uncommitted file at that point was this
-note, which was untracked. The final compose ran at `67bd542`, with a clean tree apart from
-the same note.
+note, which was untracked. The final compose ran in review, after the branch was rebased onto
+main, at `e328b46` with a clean tree, from the same dump and Isaac frames (`dump`,
+`isaac-replay-1`); that commit only changed the per-frame label. Short hashes before the
+rebase name the branch's original commits.
 
 - **Files.** The outputs are in `~/develop/emai/evidence/task081-isaac-replay-video/`, which is
   not committed. `SHA256SUMS` there lists every file.
-  - `video/task081_lewm_isaac_replay_isaac.mp4`: 58.8 s at 896 × 480 px and 30 fps. It has the
-    same layout as the demo, with the Isaac view in place of MuJoCo's. The sha256 is
-    `6048c7c3ce527551b40f2e2020ada47165eb8295dd551826909facc190ff39c3`.
-  - `video/task081_lewm_isaac_replay_pair.mp4`: 58.8 s at 1280 × 546 px. MuJoCo is on the left
-    and Isaac on the right. The sha256 is
-    `3ac1f80ed0eed6229b387b5010af203e881823789aafe151012f868325f406f8`.
+  - `video-3/task081_lewm_isaac_replay_isaac.mp4`: 58.8 s at 896 × 480 px and 30 fps. It has
+    the same layout as the demo, with the Isaac view in place of MuJoCo's. The sha256 is
+    `b6d55190271e0e796669395057eb3e5102ff90577a283c5e6dc15e780fbc11dd`.
+  - `video-3/task081_lewm_isaac_replay_pair.mp4`: 58.8 s at 1280 × 546 px. MuJoCo is on the
+    left and Isaac on the right. The sha256 is
+    `e01e12db3ae01f1a4fef7046d8c54092d88df31871cf64511089b96b91a13ebe`.
 - **Outcomes.** All four re-run attempts matched the demo's outcome and distance: W on 71921
   at rest, 3.8 cm from the plate centre; W on 71920 at rest, 3.1 cm; N on 71920 a miss,
   4.5 cm; H-rule on 71920 at rest, 3.4 cm. These are debug seeds, and the counts are not
@@ -110,6 +114,10 @@ the same note.
     stopped by hand (its own container only). This is why rendering now uses Kit updates.
   - `isaac-probe-5` and `isaac-probe-6`: the camera candidates.
   - `video-draft-1`: an earlier compose whose outcome banner was too wide.
+  - `video`: the compose at `67bd542`. Its per-frame label said only "not an Isaac run of the
+    controller", so the side-by-side frames did not say "illustration only, not evidence";
+    superseded by `video-3`.
+  - `video-2`: the same compose as `video-3`, run before the label change was committed.
 
   The containers' asset download caches (`home_cache`, about 1.2 GB each) were deleted after
   the runs.
