@@ -14,7 +14,7 @@ Yes, continue with JEPA, but change the method. Stop the moving-plate line. Buil
 
 ## Where the project stands
 
-LeWM works in simulation for one narrow job: predicting where a moving plate will be and choosing the place aim once. Everything else in the loop is a separately trained policy or hand-written code.
+LeWM has one gated success in simulation, for one narrow job: predicting where a moving plate will be and choosing the place aim once. Everything else in the loop is a separately trained policy or hand-written code.
 
 | Part of the task | Who does it | Status (MuJoCo sim) |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ What this does and does not show:
 
 - LeWM's predictions are good enough to act on: in TASK-081 its action-blind twin scored 73/128 and its scene-blind twins 39 and 59.
 - "LeWM needed" is not shown: a hand-written rule given the plate law scored 125/128, measurably better (W − H-rule −7/128, 95 % interval −13 to −2). LeWM chooses only the single place aim, on frozen DINOv2 features, with one model seed (66800, flagged `last_two_triggered`).
-- The moving plate is an artificial condition. LeWM tasks were required to use a plate the robot must predict because, when the plate's final position is visible, a plain image readout of it scored 64/64 with no world model (TASK-076, under TASK-074's 9 cm plate move; one run, one camera, one encoder).
+- The moving plate is an artificial condition. DECISIONS R2 required later LeWM plate tasks to use a plate the robot must predict, because with a visible plate no world model is needed for the place; TASK-076 then confirmed it: a plain image readout of the plate scored 64/64 with no world model (under TASK-074's 9 cm plate move; one run, one camera, one encoder; the random-init floor also scored 64/64, the image-free clock prior 51/64).
 - LeWM planning the whole motion toward a goal image scored 0/150 per backend on the v1 benchmark (TASK-020).
 - In Isaac Sim the learned pick fails on Isaac's images (apple estimate about 11 cm off). With the scripted pick, W rested the apple on 2 of 4 debug seeds under Newton and 0 of 4 under PhysX (development only, not evidence).
 - Nothing runs on the real robot; the hardware interface is mock-only.
@@ -51,7 +51,7 @@ Zero-shot JEPA robot control works only for short tasks on Franka arms with para
 | [LePlanner](https://arxiv.org/pdf/2609.13845) (2026-09) | Amortized planner trained inside the WM | Matches CEM (92% Cube) with 20 vs 45 000 latent transitions |
 | [vjepa2 issue #169](https://github.com/facebookresearch/vjepa2/issues/169) | Released V-JEPA 2-AC in a new Isaac render | Stops cm above the cube, never grasps; anecdotal |
 
-Every working recipe shares three things: diverse task-agnostic interaction data on the same robot, robot state in the model or the goal, and short planning segments with subgoals. This project has had none of the three.
+Every working recipe shares three things: diverse task-agnostic interaction data on the same robot, robot state in the model or the goal, and short planning segments with subgoals. This project has not combined them: robot state was fused into the latent before (apple WM v2–v4, `state_fusion: true`; all four v4 arms failed their gates at TASK-054), but never with play data, short-segment subgoals or inverse-dynamics and joint-change losses.
 
 ## Robot foundation models (VLAs) and world-model combos
 
@@ -60,7 +60,7 @@ VLAs such as GR00T and pi0 are not zero-shot on a new robot or task. Their "zero
 | Work | Role | Numbers (with conditions) |
 | --- | --- | --- |
 | [GR00T N1.6 G1 apple-to-plate](https://huggingface.co/cloudwalk-research/GR00T-N1.6-G1-PnPAppleToPlate) | Community fine-tune of GR00T N1.6 on our task family, MuJoCo | 5/10 episodes after fine-tuning on 102 sim demos; the card reports difficulty reproducing NVIDIA's published G1 checkpoints |
-| [GR00T on real G1](https://docs.nvidia.com/learning/physical-ai/gr00t-e2e-workflow/latest/real-robot-workflow/real-deployment.html) | NVIDIA's tutorial, real G1 apple-to-plate | Bundled fine-tuned checkpoint 68% on 100 real rollouts (25 placements × 4); no zero-shot number reported |
+| [GR00T on real G1](https://docs.nvidia.com/learning/physical-ai/gr00t-e2e-workflow/latest/real-robot-workflow/real-deployment.html) | NVIDIA's tutorial, real G1 apple-to-plate | Bundled fine-tuned checkpoint (`nvidia/GR00T-N1.7-ApplePnP-V1`) 68% on 100 real rollouts (25 placements × 4); no zero-shot number reported |
 | [GR00T N1](https://arxiv.org/html/2503.14734) / [EgoScale](https://arxiv.org/html/2602.16710v1) | Humanoid VLA | N1 76.8% real with full demos; N1.5 zero-shot novel objects 15% |
 | [pi0.5](https://arxiv.org/html/2504.16054) | Scene generalisation, ~400 h data, ~100 homes | Works in unseen homes; parallel grippers only |
 | [OpenVLA-OFT](https://arxiv.org/html/2502.19645) | Fine-tuning recipe | LIBERO 97.1% with 500 demos per suite |
@@ -81,7 +81,7 @@ Six blockers explain our results. Each has a published fix we can test, though m
 | Horizon: latent WMs rank actions well only for targets ~5–10 steps ahead | 0/150 per backend with replanned CEM (horizon 4, up to 805 steps) toward one distant goal image, no subgoals; every model episode stopped by the joint-rate guard (TASK-020) | Subgoals and short segments ([HWM](https://arxiv.org/html/2604.03208v2), [SAGE](https://arxiv.org/html/2607.17973)); avoid naive hierarchy ([Hi-LeWM](https://arxiv.org/html/2607.12547v1)) |
 | Misleading cost: latent L2 to goal misranks actions | Apple-plate offset read only to 2–3 cm | Add a robot-pose term to cost and goal ([JEPA-WMs](https://arxiv.org/html/2512.24497v1)) |
 | Latents not grounded in robot state | Small objects and the hand poorly identifiable | Proprio input, joint-change heads, inverse-dynamics loss ([AD-WM](https://arxiv.org/abs/2609.30264), [GAWM](https://arxiv.org/pdf/2609.03565), [Strohm et al.](https://arxiv.org/abs/2610.03137)): the owner's "predict robot states" idea |
-| Data: every result uses tens to hundreds of hours of task-agnostic play on the same robot | Our corpora are scripted single-task demos with almost no failures | A MuJoCo play corpus with random, perturbed and failed behaviour ([PLDM](https://arxiv.org/abs/2502.14819)); optionally Unitree's [G1_Dex3 datasets](https://huggingface.co/datasets/unitreerobotics/G1_Dex3_ToastedBread_Dataset) |
+| Data: every result uses tens to hundreds of hours of task-agnostic play on the same robot | Our corpora are mostly scripted or expert-labelled single-task demos with few failures | A MuJoCo play corpus with random, perturbed and failed behaviour ([PLDM](https://arxiv.org/abs/2502.14819)); optionally Unitree's [G1_Dex3 datasets](https://huggingface.co/datasets/unitreerobotics/G1_Dex3_ToastedBread_Dataset) |
 | Dexterous 14-D actions: no published success | — | Start with one arm, one hand, a reduced grasp synergy ([DexWM](https://arxiv.org/abs/2512.13644)) |
 | Visual domain gap | Isaac transfer failed (11 cm apple error) | Fix the camera first; later real-to-sim appearance matching ([LEGS](https://arxiv.org/html/2606.01458)) |
 
@@ -116,7 +116,7 @@ Details that matter:
 
 1. **Phase 0** also runs an action-sensitivity probe on our existing LeWM checkpoints, as a baseline.
 2. **Phase 1** collects play data, not expert demos. Coverage and failures matter more than quality.
-3. **Phase 2** reuses the repo's off-by-default options (`state_fusion`, `readout_heads`); each arm gets its own preregistration, as now. With cloud GPUs allowed, a V-JEPA 2.1 encoder arm can be added.
+3. **Phase 2** reuses the repo's off-by-default options (`state_fusion`, `readout_heads`); plain `state_fusion` alone was tried in the apple WM line and did not pass, so it is a control arm here, not the fix. Each arm gets its own preregistration, as now. With cloud GPUs allowed, a V-JEPA 2.1 encoder arm can be added.
 4. **Phase 3** is the first honest zero-shot test. Baselines: hold, random, scripted IK reach and plain LeWM.
 5. **Phase 4** compares against P-3 (task-trained) and a VLM + IK baseline (ZeroDex-style), to show what JEPA adds.
 6. **Phase 5** adds language. The real robot enters once hardware is available, starting with offline checks on real camera images.
