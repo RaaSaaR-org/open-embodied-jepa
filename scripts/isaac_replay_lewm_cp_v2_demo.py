@@ -53,7 +53,10 @@ sys.path.insert(0, str(ROOT / "src"))
 
 CLIPS = (("W", 71921), ("W", 71920), ("N", 71920), ("H-rule", 71920))
 MIN_DISK_GIB = 10.0
-LABEL = "Isaac Sim kinematic replay of MuJoCo episodes - not an Isaac run of the controller"
+LABEL = (
+    "Isaac Sim kinematic replay of MuJoCo episodes, no Isaac physics - "
+    "illustration only, not evidence"
+)
 
 
 def _load(name: str, path: Path):
