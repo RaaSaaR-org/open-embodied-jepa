@@ -344,18 +344,21 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       ([apple_lewm_c1m_v2_pred_readout.md](experiments/apple_lewm_c1m_v2_pred_readout.md),
       R18; frozen after K0′-PASS, R18.22: pooled K ∪ K′ τ_commit = 1.0 cm, ceiling 32/32,
       r_K′ = 459. Stage C′ CORPUS-SEALED, R18.23: 499 of 500 fresh roots kept, gate-P 249,
-      contrast-T 250, manifest sha256 `deebd83d…7c4e`; nothing featurised or read yet; no seed of
-      D, S or F simulated. Stage R next, on its own GO, R18.24). Under C1-M, W's controller reads
-      the plate with R-S, a ridge fitted on W's own predicted latents under stand-in chunks over
-      the 1 995 old roots; N gets R-N, fitted the same way. TASK-077's six checkpoints are reused (no training). A fresh
-      500-root corpus (65300–65799) gives a gate split whose aims are built from R-plate's reading,
-      as in closed loop, plus a true-plate contrast half that measures the corpus-aim confound.
-      Stage R gates R-S on fresh roots (upper bound ≤ τ_commit, ratio to N < 1, a commands-alone
-      screen) and the offline aims (W's predicted count ≥ 56/64 and ≥ +7/64 above every twin)
-      before any closed loop. D and S carry TASK-077's bars and rows. **CPU**: about 3–5.5 h in all;
-      **GPU**: the fresh corpus's featurisation only (minutes). TASK-079's precondition
-      (TASK-077 L-PASS) is not met; R18.12 proposes that a TASK-080 L-PASS counts as its
-      equivalent row.
+      contrast-T 250, manifest sha256 `deebd83d…7c4e`. Stage R **R-PASS**, R18.25 (offline; on
+      gate-P, median e_S 0.547–0.589 cm, upper bounds 0.610–0.657 against τ_commit = 1.0 cm; W's
+      offline predicted count 56.92 of 64 against A1's 56, a margin under one reset; every twin
+      at least 27.97 below W; predictions, not closed-loop counts). No seed of D, S or F
+      simulated. Stage D next, on its own GO, R18.26). Under C1-M, W's controller reads the plate
+      with R-S, a ridge fitted on W's own predicted latents under stand-in chunks over the 1 995
+      old roots; N gets R-N, fitted the same way. TASK-077's six checkpoints are reused (no
+      training). A fresh 500-root corpus (65300–65799) gives a gate split whose aims are built
+      from R-plate's reading, as in closed loop, plus a true-plate contrast half that measures the
+      corpus-aim confound. Stage R gates R-S on fresh roots (upper bound ≤ τ_commit, ratio to N
+      < 1, a commands-alone screen) and the offline aims (W's predicted count ≥ 56/64 and ≥ +7/64
+      above every twin) before any closed loop. D and S carry TASK-077's bars and rows. **CPU**:
+      about 3–5.5 h in all; **GPU**: the fresh corpus's featurisation only (minutes). TASK-079's
+      precondition (TASK-077 L-PASS) is not met; R18.12 proposes that a TASK-080 L-PASS counts as
+      its equivalent row.
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.

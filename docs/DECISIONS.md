@@ -63,12 +63,51 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (b) — TASK-080 Stage R ends R-PASS; Stage D's plan (R18.25–R18.26)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_c1m_v2_pred_readout.md](experiments/apple_lewm_c1m_v2_pred_readout.md) §8.4 and
+§8.5. Stage R is offline: its predicted counts are predictions, not closed-loop counts. No seed of
+D, S or F has been simulated; no LeWM-driven controller has run in closed loop on v2 on a counted
+cohort; R7 is unchanged.
+
+- **R18.25 — Stage R: R-PASS.** Stage R ran once on the reviewer's GO (#156,
+  issuecomment-6048908259) at `33cea5c`, in the worktree `task080-stager`: `tests` TESTS-PASS (2070
+  passed, 37 skipped), `featurise` FEATURISED (58 s on the GPU under the lock; G-anchor 1.53 × 10⁻⁴,
+  bound 10⁻³), `rgate` 23:32:55–00:32:48 UTC (3 593 s, cap 14 400; peak PSS 9.73 GiB, cap 12). On
+  gate-P (249 roots), per seed 66800 / 66801 / 66802: R0's ceiling 0.455 [0.403, 0.504] cm; median
+  e_S 0.547 / 0.584 / 0.589 cm with upper bounds 0.610 / 0.657 / 0.643 (R1, ≤ 1.0); e_S / e_N 0.311
+  / 0.371 / 0.385 with upper bounds 0.357 / 0.434 / 0.438 (R2, < 1); e_L's lower bounds 2.125 /
+  2.214 / 2.174 cm (R3, > 1.0). Offline aims (primary seed 66800, flagged `last_two_triggered`): W
+  56.92 of 64 (A1, ≥ 56: **a margin of 0.92, under one reset**; the report gives the count as a
+  point; W's median aim error 0.637 [0.592, 0.677] cm; a root resample computed for the record, not
+  a gate, gives 55.84–57.88 with 4.6 % below 56), N 27.79, L-shuf 19.67, L-mean 28.95, L-rand 11.85
+  (A2, W − each ≥ +7: +27.97 to +45.06); H-rule 58.64 and H-sysid 53.93 reported. Reported only:
+  contrast-T passes every R form; the corpus-aim confound's intervals all include 0; the echo slope
+  is much nearer κI than I (no echo); G1–G4 pass on gate-P on all seeds. G-bar's power at W's
+  predicted rate (0.889) is about 0.73, so G-bar is Stage S's binding risk. Evidence copy
+  `~/develop/emai/evidence/task080-stager/` (reports, logs, stdout, fits; the 3.46 GB of features
+  stay in the worktree). This PR also takes #156's review nits (a)–(d): PLAN.md's long line
+  rewrapped; "nothing featurised or read" made exact (R-plate read every fresh root's 405 frame by
+  design; no Stage R readout had seen a fresh root) in §8.2, the C′ decision and the card, with the
+  log's `success` note; R18.24's `--corpus-sha256` scoped to `featurise` and `rgate`; §8.2's log
+  note gains the last 20-root chunk.
+- **R18.26 — Stage D's plan.** Stage D runs once, on its own reported GO at this record's merge
+  commit, from a fresh worktree of it: one CPU invocation, `closed --cohort D` on 65100–65115 with
+  arms W, N, L-shuf, L-mean and H-final(commit), reading Stage R's R-PASS report and the primary
+  seed's R-S and R-N fits from `task080-stager`; rows L-DEV-STOP (W < 12/16, H-final(commit)
+  < 14/16 or W − max(N, L-shuf, L-mean) < +3/16; escalate, no clause) or D-PASS; cap 7 200 s,
+  300 s per attempt. Stage D will be the first read closed loop of a LeWM-driven controller on v2;
+  its record must report D's counts as development results beside R7 and propose R7's factual
+  update as its own reviewed ruling (R18.12 keeps R7 unedited otherwise).
+
 ## Decision 2026-10-08 — TASK-080 Stage C′ ends CORPUS-SEALED; Stage R's plan (R18.23–R18.24)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
 [apple_lewm_c1m_v2_pred_readout.md](experiments/apple_lewm_c1m_v2_pred_readout.md) §8.2 and
-§8.3. No fresh root has been featurised or read; no seed of D, S or F has been simulated; R7 is
-unchanged.
+§8.3. No Stage R readout has been fitted on or evaluated against a fresh root (R-plate read their
+405 frames by design, §5.2; wording corrected in R18.25); no seed of D, S or F has been simulated;
+R7 is unchanged.
 
 - **R18.23 — Stage C′: CORPUS-SEALED.** Stage C′ ran once on the reviewer's GO (#155,
   issuecomment-6048275092) at `514110d`, CPU only, 22:37:16–22:45:01 UTC on 2026-10-07 (465 s),
@@ -83,12 +122,12 @@ unchanged.
 - **R18.24 — Stage R's plan, and #155's nits.** Stage R runs once on one reported GO at this
   record's merge commit, from a fresh clean worktree of it: `tests` (the G-tests record the GPU
   stage needs), then `featurise` through `scripts/gpu_run.sh --wait --min-free-gib 8 --board --who
-  oej:task080-featurise`, then `rgate` on the CPU, each with `--corpus-sha256 deebd83d…7c4e`; if
-  one ends in anything other than its expected outcome, nothing further runs until it is ruled
-  under §11. This PR also takes #155's review nits 1–3 (the §8.1 wording on which differences are
-  within noise, §14's τ_commit risk now noting K0′'s 1.0 cm, a PLAN.md line wrapped); nit 4 (the
-  pytest count's CUDA visibility) is answered on #155. Only the protocol document's sha256 pin in
-  the manifest changes; the frozen block and its pin do not.
+  oej:task080-featurise`, then `rgate` on the CPU, the last two with `--corpus-sha256 deebd83d…7c4e`
+  (scoped in R18.25); if one ends in anything other than its expected outcome, nothing further runs
+  until it is ruled under §11. This PR also takes #155's review nits 1–3 (the §8.1 wording on which
+  differences are within noise, §14's τ_commit risk now noting K0′'s 1.0 cm, a PLAN.md line
+  wrapped); nit 4 (the pytest count's CUDA visibility) is answered on #155. Only the protocol
+  document's sha256 pin in the manifest changes; the frozen block and its pin do not.
 
 ## Decision 2026-10-07 (c) — TASK-080 is frozen after K0′-PASS: pooled τ_commit = 1.0 cm (R18.22)
 

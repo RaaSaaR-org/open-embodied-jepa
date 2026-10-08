@@ -6,15 +6,17 @@ block is `src/embodied_jepa/lewm_pr_v2.py`; its sha256
 `tests/test_lewm_pr_v2.py` and in the manifest (`benchmarks/manifests/apple-lewm-pr-v2.json`),
 with the manifest's file pins and this document's sha256. **The freeze takes effect when it is
 merged on an independent reviewer's reported APPROVE.** Each later stage (C′, R, D, S) still needs
-its own reported GO (§8). K0′'s record is §8.1, Stage C′'s §8.2 and Stage R's plan §8.3.
+its own reported GO (§8). K0′'s record is §8.1, Stage C′'s §8.2, Stage R's plan §8.3,
+Stage R's result §8.4 and Stage D's plan §8.5.
 
 History. The DRAFT (R18.1–R18.14) was reviewed independently (#153). Stage 0 (R18.15–R18.21,
 [Stage-0 record](apple_lewm_c1m_v2_pred_readout_stage0.md), #154) added the code, debug smokes on
 65900–65999 only, the caps and R18.13's development dry run on TASK-077's val roots, which sets no
 bar; §15's questions 1–5 are ruled there. K0′ then ran once on a reported GO, and this freeze
-writes its values into the frozen block. Stage C′ then sealed the fresh corpus (§8.2, R18.23);
-no seed of D, S or F has been simulated, and no fresh root has been featurised or read. A later
-stage's GO approves that stage only.
+writes its values into the frozen block. Stage C′ then sealed the fresh corpus (§8.2, R18.23), and
+Stage R ended R-PASS (§8.4, R18.25), an offline result: its predicted counts are predictions, not
+closed-loop counts. No seed of D, S or F has been simulated, and no LeWM-driven controller has run
+in closed loop on a counted cohort. A later stage's GO approves that stage only.
 
 - **Admitted by:** the TASK-077 decomposition record's row **D-READOUT**
   ([apple_lewm_c1m_v2_decomposition.md](apple_lewm_c1m_v2_decomposition.md) §2, R17.53–R17.54,
@@ -524,10 +526,11 @@ with the command the GO named. It ran on the CPU with 6 workers and without the 
   one of the three renders differed from the other two in 4 pixels by at most 1 level, with equal
   states; the majority frame was used, as declared (TASK-077 §7.3 saw the same kind on two corpus
   seeds).
-- **The log** has one line per 60-root chunk of the form `fresh corpus 65300-65359: 0/60`. The
-  count is the collector attempts' `success` field, which a corpus attempt never sets because it
-  stops before the place; TASK-077's Stage C log reads the same (`corpus 67000-67059: 0/60`). It
-  is not an exclusion count.
+- **The log** has one line per 60-root chunk of the form `fresh corpus 65300-65359: 0/60`, and a
+  last line for the 20-root chunk, `fresh corpus 65780-65799: 0/20` (#156 review, nit d). The
+  count is the scorer's `success` field, which is false for every corpus attempt because the
+  attempt stops at `STOP_STEP`, before the place; TASK-077's Stage C log reads the same
+  (`corpus 67000-67059: 0/60`). It is not an exclusion count.
 - **Sealed manifest:** `outputs/task080-corpus-1/corpus/manifest.json` in that worktree
   (git-ignored; 499 root files and the manifest, 302 MB), sha256
   **`deebd83db6de53e23dbde0b921ae7f7c1cf79cb24c6dd27bfae066c2f5017c4e`**, with provenance
@@ -542,8 +545,12 @@ with the command the GO named. It ran on the CPU with 6 workers and without the 
   not; they stay in the `task080-stagec` worktree, which is not edited and must not be removed
   before TASK-080's results PR.
 
-Nothing in the corpus has been featurised or read: no readout has seen a fresh root, and gate-P
-opens only inside Stage R after `first_outcome_utc` (§8 step 5, §11 G-split).
+At this record (before Stage R), none of Stage R's readouts (R-S, R-N, R-L, R8) had been fitted on
+or evaluated against a fresh root, and no gate statistic had been computed; gate-P opens only
+inside Stage R after `first_outcome_utc` (§8 step 5, §11 G-split). By design (§5.2), R-plate
+read every fresh root's onboard 405 frame during collection: gate-P's aims are built from p̂, and
+both halves log `p_hat405`. (Wording corrected in R18.25, #156 review, nit b; it read "Nothing in
+the corpus has been featurised or read: no readout has seen a fresh root".)
 
 ### 8.3 Stage R's plan (R18.24)
 
@@ -569,6 +576,183 @@ its three invocations, in this order, each from the worktree root:
 If one of the three ends in anything other than its expected outcome (TESTS-PASS, FEATURISED,
 or a row of §9.4 for `rgate`), nothing further is launched and the case is ruled under §11 before
 anything else runs. The exact commands are in the GO.
+
+### 8.4 Stage R's result: R-PASS (R18.25)
+
+Stage R ran once, on the reviewer's reported GO (#156,
+<https://github.com/RaaSaaR-org/open-embodied-jepa/pull/156#issuecomment-6048908259>, posted
+23:26:58 UTC), at `33cea5c`, the record's merge commit, on a clean tree with STATUS FROZEN and the
+frozen sha `0fc095dc…be064`, in the worktree `/home/huhn/develop/emai/worktrees/task080-stager`,
+with the three commands the GO named, in order. **Everything below is offline**: readouts and
+offline aims on logged 405 states of fresh roots. **A predicted count is a prediction, not a
+closed-loop count; no closed loop of this task has run on a counted cohort, and no LeWM-driven
+controller has run in closed loop on v2 (Stage 0's four debug resets aside, which are not read).**
+
+| invocation | UTC (2026-10-07) | seconds (cap) | outcome | peak PSS (GiB) |
+|---|---|---:|---|---:|
+| `tests` (CPU, CUDA hidden) | 23:28:11–23:30:54 | 163 (–) | **TESTS-PASS**: 2070 passed, 37 skipped, at `33cea5c`, clean | 3.05 |
+| `featurise` (GPU, `gpu_run.sh --wait --min-free-gib 8 --board`, lock held) | 23:30:57–23:31:54 | 58 (3 600) | **FEATURISED**: gate-P 249, contrast-T 250 roots; G-anchor max \|Δ\| 1.53 × 10⁻⁴ on 256 frames (bound 10⁻³); GPU peak 0.49 GiB allocated, 0.55 GiB reserved | 1.54 |
+| `rgate` (CPU) | 23:32:55–00:32:48 (2026-10-08) | 3 593 (14 400) | **R-PASS** | 9.73 (RSS 11.14, 11 processes; cap 12) |
+
+- **Guards (`rgate`).** G-quiet: load 1.10 / 0.89 at the start (bar 2.0 / 2.0). In-run G-tests
+  passed at `33cea5c` on a clean tree (2070 passed, 37 skipped; 23:32:55–23:35:34). G-hash checked
+  TASK-076's 84 pins, TASK-077's 13 pins and this task's 7 own pins, with the protocol document's
+  pin `6ceca231…9849`; TASK-077's 21 old feature files (13.84 GB), its Stage O fits and the six
+  checkpoints matched; the 14 fresh feature files (3.46 GB) matched the featurise report. The
+  revision at the end was still `33cea5c` and the tracked tree stayed clean. No non-finite field.
+  G-split: the fits used only the 1 995 old roots (train 1 495, val 250, old gate 250);
+  `first_outcome_utc` was written at 23:50:31 UTC, after the fits and before gate-P and
+  contrast-T were opened. TASK-076's evidence root supplied the stand-in workers' P-3 checkpoint.
+- **The fits** (dual ridge, 5 inner folds, salt 8205; on the 1 995 old roots): R-S at λ_rel 0.001
+  on every seed, R-N at 0.001, R-L at 0.1. Their 5-fold cross-fitted medians on the old roots
+  (reported): R-S 0.556 / 0.574 / 0.591 cm, R-N 1.325 / 0.993 / 1.291 cm, R-L 2.434 / 2.430 /
+  2.434 cm (seeds 66800 / 66801 / 66802). The fits are in `outputs/task080-rgate-1/fits/`; their
+  content sha256s are in the report, and Stage D reads R-S and R-N of the primary seed from there.
+- **The log** holds the progress lines (three fit lines, seven offline-aim lines, the outcome) and,
+  besides them, MuJoCo EGL `__del__` tracebacks from the stand-in workers' interpreter teardown, as
+  in TASK-077's logs; they are not errors of the run.
+
+**The gates on gate-P (249 roots; h = 60; τ_commit = 1.0 cm).** Medians in cm with their 95 %
+root-bootstrap intervals (10 000 resamples, salt 8206) and 87.5th percentiles:
+
+| | seed 66800 (primary) | seed 66801 | seed 66802 |
+|---|---|---|---|
+| **R0** ceiling (R8 on the encoded frame at r; no model) | 0.455 [0.403, 0.504], p87.5 0.914 | (same) | (same) |
+| e_S (R-S on W's prediction) | 0.547 [0.497, **0.610**], p87.5 1.137 | 0.584 [0.517, **0.657**], p87.5 1.135 | 0.589 [0.536, **0.643**], p87.5 1.159 |
+| e_N (R-N on N's prediction) | 1.756 [1.608, 1.921], p87.5 3.269 | 1.574 [1.360, 1.753], p87.5 3.191 | 1.529 [1.381, 1.701], p87.5 3.058 |
+| e_L (R-L on W from the mean latent) | 2.329 [**2.125**, 2.542], p87.5 4.165 | 2.446 [**2.214**, 2.629], p87.5 4.132 | 2.402 [**2.174**, 2.621], p87.5 4.186 |
+| e_S / e_N (paired by root) | 0.311 [0.275, **0.357**] | 0.371 [0.319, **0.434**] | 0.385 [0.332, **0.438**] |
+| e_S − ceiling | +0.092 [0.029, 0.170] | +0.129 [0.054, 0.201] | +0.134 [0.064, 0.215] |
+| frozen R8 on W's prediction (reported) | 3.784 [3.452, 4.120] | 3.222 [2.826, 3.546] | 3.168 [2.898, 3.596] |
+
+- **R0** passes (upper bound 0.504 ≤ 1.0). **R1** passes on every seed (upper bounds 0.610, 0.657,
+  0.643 ≤ 1.0). **R2** passes on every seed (upper bounds 0.357, 0.434, 0.438 < 1.0). **R3** passes
+  on every seed (lower bounds 2.125, 2.214, 2.174 > 1.0): the commands alone, from the mean latent,
+  do not read the plate within τ_commit.
+- R-S on W's prediction stays 0.09–0.13 cm above the encoded ceiling in median, and each of those
+  differences' intervals excludes 0. Its 87.5th percentiles (1.135–1.159 cm) are above τ_commit;
+  the fraction of gate-P roots with e_S ≤ 1.5 cm is 0.960 / 0.940 / 0.940 (e_N 0.382 / 0.474 /
+  0.482; e_L 0.213 / 0.229 / 0.233), reported at 1.5 τ_commit.
+- The frozen R8 read the same predictions at 3.17–3.78 cm, as in the decomposition record (R8 was
+  fitted on encoded frames; it is used only for the ceiling).
+
+**The offline aims, A1 and A2** (primary seed 66800, flagged `last_two_triggered`: W-66800 selected
+one of its last two checkpoints and every W curve was lowest at its last point, TASK-077 results
+§3, caveats 1–2). Each arm's own controller code on gate-P's logged 405 states, with the grid from
+the logged p̂ and the stand-in chunks, no fallbacks (0 in every arm); the aim error against the
+rule's fixed point; the predicted count maps each root's error through the pooled K ∪ K′ τ curve
+(64 / 58 / 60 / 32 / 29 / 7 of 64 at 0 / 0.5 / 1 / 1.5 / 2 / 3 cm) and scales the mean to 64:
+
+| arm | median aim error (cm) [95 %] | p87.5 (cm) | clip-binding | predicted count of 64 | W − arm |
+|---|---|---:|---:|---:|---:|
+| **W** | 0.637 [0.592, 0.677] | 1.020 | 0.024 | **56.92** | – |
+| N | 2.118 [1.962, 2.315] | 3.046 | 0.165 | 27.79 | **+29.12** |
+| L-shuf | 2.894 [2.700, 3.064] | 4.056 | 0.378 | 19.67 | **+37.25** |
+| L-mean | 2.043 [1.852, 2.232] | 3.155 | 0.088 | 28.95 | **+27.97** |
+| L-rand | 6.918 [5.952, 8.156] | 14.061 | 0 | 11.85 | **+45.06** |
+| H-rule (hand-coded rule; reported) | 0.495 [0.485, 0.513] | 0.623 | 0.261 | 58.64 | −1.73 |
+| H-sysid (reported) | 0.749 [0.672, 0.872] | 1.402 | 0 | 53.93 | +2.99 |
+
+- **A1 passes by a thin margin: W's predicted count is 56.92 of 64 against the bar of 56, a margin
+  of 0.92 of 64 (less than one reset).** The report gives the predicted count as a point, without
+  an interval; its uncertainty in the report is that of W's aim errors (median 0.637 cm, 95 %
+  interval 0.592–0.677 cm; 87.5th percentile 1.020 cm; 33 of 249 roots above τ_commit). For this
+  record only, and not as a gate, the count was resampled by root from the report's per-root aim
+  errors through the same curve (10 000 resamples, salt 8206): **95 % interval 55.84–57.88 of 64,
+  with 4.6 % of the resamples below 56.** That interval does not include the τ curve's own
+  uncertainty (64 resets per level; the curve is not monotone, 58 at 0.5 cm and 60 at 1.0 cm).
+  The dry run, on TASK-077's val roots with aims from the true plate, had put W at 57.35 (§8.1); the
+  fresh gate-P roots read 0.43 lower.
+- **A2 passes for every twin by a wide margin** (+27.97 to +45.06 against +7). The closest twin is
+  L-mean (+27.97), then N (+29.12).
+- **What A1's margin means for Stage S.** At W's predicted rate, 56.92 / 64 ≈ 0.889, G-bar
+  (≥ 56 of 64) passes with probability about **0.73** (exact binomial; §10 and R18.18 had 0.78 at
+  the dry run's 0.896). The twin tests are not the binding risk at these offline counts. **G-bar is
+  the binding risk: at this rate it fails about one time in four.** H-rule's offline count (58.64)
+  sits above W's by 1.73 of 64, within G-NI's δ = 8/64 as a point; G-NI is a closed-loop test on
+  cohort S, not an offline one.
+
+**Reported only.**
+- **Contrast-T** (250 roots, aims from the true plate): ceiling 0.390 [0.356, 0.432]; e_S 0.512
+  [0.461, 0.568], 0.573 [0.527, 0.630], 0.542 [0.480, 0.607]; e_N 1.681, 1.452, 1.640; e_L 2.425,
+  2.435, 2.342; e_S / e_N 0.305 [0.267, 0.351], 0.394 [0.340, 0.458], 0.331 [0.291, 0.386]. Every
+  R-gate form would pass on contrast-T as well. Contrast-T's e_S medians (0.512–0.573 cm) are not
+  above the decomposition record's val medians (0.556–0.578 cm), so the val selection shows no
+  cost at the median on fresh roots (different root sets; a comparison of medians only).
+- **The corpus-aim confound** (§5.3 point 2): median e_S on gate-P minus contrast-T is +0.035
+  [−0.043, +0.121], +0.011 [−0.075, +0.082] and +0.047 [−0.039, +0.134] cm by seed. Every interval
+  includes 0; the split can detect only an effect of about p̂'s error (R-plate's error at 405 on
+  the fresh roots: 0.160 [0.146, 0.170] cm on gate-P, 0.154 [0.138, 0.169] cm on contrast-T), so
+  this bounds a small confound only, as §5.3 point 4 says.
+- **The echo slope** (§5.3 point 4; W, primary seed, 249 roots): the per-root 2 × 2 slope of W's
+  predicted plate against the aim over the feasible grid has median matrix
+  [[−0.126, 0.022], [−0.013, −0.410]], half-trace −0.273 [−0.283, −0.266]; its Frobenius distance
+  to κI (κ = −0.5) is 0.398 [0.391, 0.405] and to I (the echo) 1.815 [1.804, 1.829]. **The
+  predicted plate does not echo the aim**: its slope is negative, like the rule's κ, about a quarter
+  of κ in the first axis (−0.126) and close to κ in the second (−0.410).
+- **G1–G4 at h = 60 on gate-P** (TASK-077 §8.2's definitions and bars, reported, not gated): all
+  pass on all three seeds. G1's effective-rank ratio 0.284 / 0.278 / 0.281 (no collapsed
+  dimension); G2's ratio 0.140 / 0.144 / 0.142; G3's 0.346 / 0.370 / 0.379; G4's wrong-command
+  ratio 3.99 / 3.78 / 3.83 and zero-command ratio 6.42 / 15.74 / 6.13.
+- **The learning curve on gate-P** (R-S at 25 / 50 / 75 / 100 % of the 1 995 fit roots): 0.760 →
+  0.595 → 0.548 → 0.547 cm (66800), 0.791 → 0.673 → 0.619 → 0.584 (66801), 0.823 → 0.691 → 0.618
+  → 0.589 (66802). It is flat at the end for 66800 and still falling for 66801 and 66802; R-N falls
+  slowly (1.53–1.79 cm) and R-L is flat (2.32–2.45 cm).
+- p̂ recomputed from the stored CUDA tokens equals the collector's logged p̂ to within
+  3.1 × 10⁻⁵ cm.
+- Neither half had a stand-in-infeasible root.
+
+**Row: R-PASS** (first match; R0–R3, A1 and A2 all pass; no V). The clause does not fire, nothing
+is closed, and TASK-077's row is unchanged. **Stage D may get its GO** (§8 step 6).
+
+**Evidence.**
+- Reports (git-ignored, in the worktree): `outputs/task080-tests-1/report.json` (sha256
+  `acbe897d…7464`), `outputs/task080-featurise-1/report.json` (sha256 `cda16651…83f2`) and
+  `outputs/task080-rgate-1/report.json` (sha256
+  **`bedb896692a9718ac598fa93c5d7dcc199090bf4cfa13d14fa0bd0fc53848ea7`**), with their logs
+  (`task080-rgate-1.log` sha256 `836bdd4a…b98c`) and stdout captures (all three empty, 0 bytes, as
+  `--log` redirects the process after it opens).
+- A copy of the three reports, logs and stdout captures and of the nine fits is in
+  `~/develop/emai/evidence/task080-stager/` (18 files, 7.0 MB), with the manifest
+  `_checksums/task080-stager.sha256` (sha256 `ef2af17d…35d0`). The fresh feature files (14 files,
+  3.46 GB) are not copied, as TASK-077 Stage O's were not; they stay in the `task080-stager`
+  worktree, and the featurise report's `files_sha256` identifies them.
+- The `task080-stager` worktree is not edited and must not be removed before TASK-080's results
+  PR: Stage D and Stage S read its rgate report and fits.
+
+### 8.5 Stage D's plan (R18.26)
+
+Stage D runs once, on its own reported GO at this record's merge commit, from a fresh clean
+worktree of that commit (`scripts/new_worktree.sh /home/huhn/develop/emai/worktrees/task080-staged
+--run --from <merge sha>`). It is one invocation, from the worktree root, on the CPU (no GPU lock;
+the stage creates no CUDA context):
+
+- **`closed --cohort D`**: the 16 development resets **65100–65115**, arms **W, N, L-shuf,
+  L-mean and H-final(commit)** (§6), W and N reading R-S and R-N of the primary seed 66800 from
+  Stage R's fits (each checked against its content sha256 in the R-PASS report), with TASK-077's
+  six checkpoint reports, featurisation, Stage O fits and TASK-076's evidence root (G-repro). The
+  runner requires `--stage-r` to be a non-debug R-PASS report and the corpus sha256 to equal the
+  one Stage R read (G-split), and it runs its own in-run G-tests and G-quiet first, so no separate
+  `tests` record is needed (that is only for the GPU stage). Nothing is refitted on D.
+- **Rows (§8 step 6, §9.3):** **L-DEV-STOP** (escalate, no clause) if W < 12/16, or
+  H-final(commit) < 14/16, or W − max(N, L-shuf, L-mean) < +3/16; otherwise **D-PASS**, after
+  which Stage S may get its own GO. H-final(commit) is privileged (it looks ahead in cloned
+  simulator state) and is a ceiling, not a learned arm.
+- **Caps and resources (§11):** Stage D 7 200 s and 300 s per attempt (Stage 0 scaled D at
+  ≤ 400 s from debug medians of 7–16 s per attempt on 4 world-model workers); G-memory 12 GiB
+  process-tree PSS (debug D peaked at 9.3 GiB); MemAvailable at start ≥ the ceiling plus its
+  headroom; G-quiet load ≤ 2.0 / 2.0 at the start; G-disk ≥ 10 GiB free.
+- **What D is and is not.** D is a development cohort of 16 resets that gates only the GO of
+  Stage S; it is not a gated claim. It will be the first closed-loop run of a LeWM-driven
+  controller on v2 on a cohort whose counts are read (Stage 0's debug closed loops ran on four
+  debug resets and are not read): whatever its row, the clause of R7's canonical sentence that
+  says no LeWM-driven controller has run in closed loop on v2 will no longer be literally true once
+  D has run. R18.12 keeps R7 unedited by this task except through a reviewed ruling after an
+  L-PASS, so Stage D's record must state D's counts beside R7 as development results and propose
+  the factual wording that R7 needs as its own reviewed ruling.
+
+If the invocation ends in anything other than a §9.3 row, nothing further is launched and the case
+is ruled under §11 first. The exact command is in the GO.
 
 ## 9. Gates, bars and rows
 
