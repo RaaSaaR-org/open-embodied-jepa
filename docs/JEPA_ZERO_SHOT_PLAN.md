@@ -7,7 +7,7 @@ Status: PROPOSAL (2026-10-08). This is a research-backed plan and recommendation
 Yes, continue with JEPA, but change the method. Stop the moving-plate line. Build one robot-grounded world model, trained once on broad G1+Dex3 play data, then plan short steps toward goals.
 
 - **No model does new tasks with zero training.** Not JEPA, not GR00T, not pi0. The realistic target is "train once on the robot, then no training per task". That is what Meta's V-JEPA 2-AC shows on Franka arms.
-- **Our 0/150 per backend (TASK-020, frozen v1 benchmark) fits the literature.** Flat goal-image planning over ~400 steps fails even for Meta's 1B-parameter model. Every working recipe uses short planning segments with subgoals.
+- **Our 0/150 per backend (TASK-020, frozen v1 benchmark) fits the literature.** Replanned image-goal CEM toward a single distant goal image, with no subgoals, fails even for Meta's 1B-parameter model on pick-and-place. Every working recipe uses short planning segments with subgoals. (In TASK-020 every model episode was also stopped by the joint-rate guard, so the failure is confounded.)
 - **The owner's idea is the best-supported fix.** Feeding in and predicting the robot's own state (joint angles, hand pose) and action consequences makes latents plannable in several 2026 papers. Those papers are mostly single-group preprints, so we treat them as hypotheses to test.
 - **Language comes on top later.** A language model turns "put the apple on the plate" into subgoals; JEPA plans each short step.
 - **Honest risk:** no published image-latent planner has worked with dual 14-D dexterous-hand actions. We start with one arm and a simplified grasp, and every phase has a stop rule.
@@ -18,14 +18,14 @@ LeWM works in simulation for one narrow job: predicting where a moving plate wil
 
 | Part of the task | Who does it | Status (MuJoCo sim) |
 | --- | --- | --- |
-| Grab the apple | P-3, a behaviour-cloning policy on frozen DINOv2 features (not LeWM) | 40/40 on held-out resets (TASK-072) |
+| Grab the apple | P-3, a behaviour-cloning policy on frozen DINOv2 features (not LeWM) | 40/40 on cohort C (TASK-072; one run, one seed per arm; the random-init encoder control scored 39/40, so pretraining is not shown; cohort C is no longer held out) |
 | Choose where to place | LeWM token predictor + plate readout + solver | 118/128 gated (TASK-081; one run, one model seed, simulation only, under the declared plate condition C1-M); TASK-083, a replication with seeds 66801 and 66802, has no recorded result yet |
 | Carry and release | e9, a hand-written expert that reads simulator truth | scripted, not learned |
 
 What this does and does not show:
 
 - LeWM's predictions are good enough to act on: in TASK-081 its action-blind twin scored 73/128 and its scene-blind twins 39 and 59.
-- "LeWM needed" is not shown: a hand-written rule given the plate law scored 125/128.
+- "LeWM needed" is not shown: a hand-written rule given the plate law scored 125/128, measurably better (W − H-rule −7/128, 95 % interval −13 to −2). LeWM chooses only the single place aim, on frozen DINOv2 features, with one model seed (66800, flagged `last_two_triggered`).
 - The moving plate is an artificial condition. LeWM tasks were required to use a plate the robot must predict because, when the plate's final position is visible, a plain image readout of it scored 64/64 with no world model (TASK-076, under TASK-074's 9 cm plate move; one run, one camera, one encoder).
 - LeWM planning the whole motion toward a goal image scored 0/150 per backend on the v1 benchmark (TASK-020).
 - In Isaac Sim the learned pick fails on Isaac's images (apple estimate about 11 cm off). With the scripted pick, W rested the apple on 2 of 4 debug seeds under Newton and 0 of 4 under PhysX (development only, not evidence).
@@ -78,7 +78,7 @@ Six blockers explain our results. Each has a published fix we can test, though m
 
 | Blocker | Our symptom | Fix to test |
 | --- | --- | --- |
-| Horizon: latent WMs rank actions well only ~5–10 steps ahead | 0/150 with flat CEM over ~400 steps | Subgoals and short segments ([HWM](https://arxiv.org/html/2604.03208v2), [SAGE](https://arxiv.org/html/2607.17973)); avoid naive hierarchy ([Hi-LeWM](https://arxiv.org/html/2607.12547v1)) |
+| Horizon: latent WMs rank actions well only for targets ~5–10 steps ahead | 0/150 per backend with replanned CEM (horizon 4, up to 805 steps) toward one distant goal image, no subgoals; every model episode stopped by the joint-rate guard (TASK-020) | Subgoals and short segments ([HWM](https://arxiv.org/html/2604.03208v2), [SAGE](https://arxiv.org/html/2607.17973)); avoid naive hierarchy ([Hi-LeWM](https://arxiv.org/html/2607.12547v1)) |
 | Misleading cost: latent L2 to goal misranks actions | Apple-plate offset read only to 2–3 cm | Add a robot-pose term to cost and goal ([JEPA-WMs](https://arxiv.org/html/2512.24497v1)) |
 | Latents not grounded in robot state | Small objects and the hand poorly identifiable | Proprio input, joint-change heads, inverse-dynamics loss ([AD-WM](https://arxiv.org/abs/2609.30264), [GAWM](https://arxiv.org/pdf/2609.03565), [Strohm et al.](https://arxiv.org/abs/2610.03137)): the owner's "predict robot states" idea |
 | Data: every result uses tens to hundreds of hours of task-agnostic play on the same robot | Our corpora are scripted single-task demos with almost no failures | A MuJoCo play corpus with random, perturbed and failed behaviour ([PLDM](https://arxiv.org/abs/2502.14819)); optionally Unitree's [G1_Dex3 datasets](https://huggingface.co/datasets/unitreerobotics/G1_Dex3_ToastedBread_Dataset) |
