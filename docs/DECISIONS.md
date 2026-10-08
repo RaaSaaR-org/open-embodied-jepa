@@ -63,6 +63,38 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (p) — TASK-083 Stage 0: code, debug smokes, scale, caps and power (R21.13–R21.16; protocol still DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30). The protocol stays DRAFT.** The record is
+[apple_lewm_seed_replication_v2_stage0.md](experiments/apple_lewm_seed_replication_v2_stage0.md).
+Every simulated attempt ran on debug seeds 75910–75913; nothing in them is read. No seed of S
+(75200–75327) has been simulated. R7 is unchanged.
+
+- **R21.13 — Stage 0's code (new files only).** `lewm_rep_v2.py` (the frozen-block candidate),
+  `scripts/run_lewm_rep_v2.py` (TASK-081's runner pieces copied verbatim, tested by full source
+  lines; one worker pool per model seed in the order 66801, 66802, 66800, one alive at a time, each
+  closed in a `finally`), `tests/test_lewm_rep_v2.py` (28 tests) and the DRAFT manifest. TASK-081's
+  worker `lewm_cp_v2_runtime` is imported unchanged. Nothing hash-pinned is edited. Implementation
+  choices within the protocol: the shared arms run in the first pool; G-look's reference is carried
+  across pools; G-seed checks each pool's configuration before it starts, logs the checkpoint and
+  readout sha256s each pool was given, and refuses a candidate decision whose logged readout is not
+  its arm's; R8 stays in each pool's configuration, as in TASK-081's, though no arm here reads it.
+- **R21.14 — the debug smokes.** At `93dde1e` (kept on `prov/task083-stage0-smokes`; its code is
+  byte-identical after the rebase): `closedS-1` (G-tests skipped) and `closedS-2` (in-run G-tests
+  2241 passed, 37 skipped) both ended REP-VOID-CEILING-DEBUG (four debug resets cannot reach the
+  ceiling) with identical counts, every arm in every pool, W's determinism re-run matching for both
+  seeds, every candidate decision on affine_local with its arm's readout, the pools closed cleanly,
+  peak process-tree PSS 9.42 and 9.58 GiB.
+- **R21.15 — caps and memory.** 139.2 s per reset over every arm; Stage S scaled at about 4 740 s;
+  the provisional caps stand (21 600 s for S, 4.6 ×; 300 s per attempt, 19 × the slowest 15.4 s);
+  G-memory 12 GiB against a 9.58 GiB peak.
+- **R21.16 — power.** `simulate-1` (report `b88b0c0d…ecf4`, salt 8502, 20 000 trials per cell):
+  at W = 0.922 each seed reaches L-PASS with probability 0.54–0.79 and both with 0.30–0.63; at
+  0.938, 0.79–0.96 and 0.64–0.91; at 0.953, ≥ 0.95 and ≥ 0.90; the size at the margin is 2.4–3.6 %
+  per seed and 0.11–0.16 % for both. No bar changes. Next: the freeze on an independent APPROVE,
+  then Stage S on its own reported GO. Evidence copies:
+  `~/develop/emai/evidence/task083-stage0/` with `SHA256SUMS`.
+
 ## Decision 2026-10-08 (o) — TASK-083's DRAFT preregistration: TASK-081's L-PASS replicated with W's two other model seeds, 66801 and 66802, under C1-M (R21.1–R21.12; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30). DRAFT, not frozen.** The document is

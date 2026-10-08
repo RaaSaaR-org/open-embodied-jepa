@@ -46,9 +46,10 @@ declared in advance. W-66800 runs on the same resets, reported only. No Stage D.
 
 ## Acceptance Criteria
 
-- [ ] DRAFT preregistration, independently reviewed (APPROVE) and merged
-- [ ] Stage 0: frozen-block candidate, runner, tests, DRAFT manifest, debug smokes on 75900–75999,
-  power with salt 8502; reviewed and merged
+- [x] DRAFT preregistration, independently reviewed (APPROVE) and merged (#173)
+- [x] Stage 0 (R21.13–R21.16): frozen-block candidate, runner, tests, DRAFT manifest, debug smokes
+  on 75910–75913, power with salt 8502; record
+  `docs/experiments/apple_lewm_seed_replication_v2_stage0.md` (merged with its PR)
 - [ ] The freeze, independently reviewed and merged
 - [ ] Stage S once, on an independent reported GO, CPU only
 - [ ] Results PR with independently reviewed restatements; R7 changed by its own reviewed ruling

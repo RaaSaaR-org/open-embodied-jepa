@@ -542,7 +542,60 @@ def check_sentinel(report: dict, evaluated: set[str], fields) -> list[str]:
 
 
 # ----- Stage 0 (filled by the Stage-0 PR; development only) ---------------------------------------
-STAGE0: dict = {}
+STAGE0: dict = {  # the record: docs/experiments/apple_lewm_seed_replication_v2_stage0.md
+    "revision": "93dde1e",  # the smokes and the power run (code identical but for this record)
+    "smoke_root": "outputs/task083-* in the task083-stage0 worktree (git-ignored); debug seeds "
+    "75910-75913 only; nothing in them is read",
+    "smokes": {
+        "closedS-1": {
+            "outcome": "REP-VOID-CEILING-DEBUG",
+            "g_tests": "skipped (--debug-skip-tests)",
+            "seconds": 220,
+            "peak_tree_pss_gib": 9.42,
+            "determinism_ok": {"66801": True, "66802": True},
+            "report_sha256": "fddf99e2f7c61600ee2223f393d84b4361a2c13be4ecbb59b3565dd84aba9ef3",
+        },
+        "closedS-2": {
+            "outcome": "REP-VOID-CEILING-DEBUG",
+            "g_tests": "2241 passed, 37 skipped",
+            "seconds": 381,
+            "peak_tree_pss_gib": 9.58,
+            "determinism_ok": {"66801": True, "66802": True},
+            "same_counts_as_closedS-1": True,
+            "report_sha256": "cb4cdfa4162c5b0517739270b530a5e42e25396c9119a9542bf7ae98e33c23dc",
+        },
+    },
+    "seconds_per_attempt_median": {  # closedS-2 (4 debug resets, 4 workers)
+        "W[66801]": 13.80,
+        "N[66801]": 6.99,
+        "L-shuf[66801]": 14.13,
+        "L-mean[66801]": 13.99,
+        "W[66802]": 15.34,
+        "N[66802]": 6.93,
+        "L-shuf[66802]": 13.96,
+        "L-mean[66802]": 13.79,
+        "W[66800]": 15.32,
+        "L-rand": 8.21,
+        "H-rule": 4.47,
+        "H-sysid": 4.30,
+        "H-final": 7.98,
+    },
+    "seconds_per_attempt_max": 15.41,
+    "scaled_seconds": {"S": 4740},  # 139.2 s per reset x 128 / 4 + 210 before the first outcome
+    # + two determinism re-runs (about 30) + pool starts; the cap 21 600 is 4.6 x
+    "simulate": {
+        "report_sha256": "b88b0c0dcc6b368168c5ba5d4bcd2bd7c77d5bff48afd3f7e78118cf72e5ecf4",
+        "per_seed_pass_at_w_0922": [0.54, 0.79],  # over C 0.979-0.992 and the three couplings
+        "both_pass_at_w_0922": [0.30, 0.63],
+        "per_seed_pass_at_w_0938": [0.79, 0.96],
+        "both_pass_at_w_0938": [0.64, 0.91],
+        "per_seed_pass_at_w_0953": [0.95, 1.00],
+        "both_pass_at_w_0953": [0.90, 0.99],
+        "size_at_margin_per_seed": [0.024, 0.036],
+        "size_at_margin_both": [0.0011, 0.0016],
+        "l_inferior_at_margin_per_seed": [0.008, 0.014],
+    },
+}
 
 
 # ----- the frozen block ---------------------------------------------------------------------------
