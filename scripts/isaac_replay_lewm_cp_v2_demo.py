@@ -133,6 +133,7 @@ def dump(args) -> int:
         "tracked_tree_dirty": bool(hz.tracked_tree_dirty()),
         "argv": sys.argv[1:],
         "clips_requested": [list(c) for c in CLIPS],
+        "stages": {},
     }
     manifest = json.loads((ROOT / lm.TASK076_MANIFEST).read_text())
     rn.sim_preflight(report, args, manifest)
