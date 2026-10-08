@@ -1,7 +1,9 @@
 # Apple→Plate LeWM committed aim under C1-M: TASK-081's L-PASS replicated with W's two other model seeds (TASK-083)
 
-**STATUS: DRAFT** (R21.1–R21.12, decided by Claude under owner delegation; not frozen, nothing
-run; revised after #173's review). No seed of this task's block (75000–75999) has been simulated, nothing is trained and
+**STATUS: DRAFT** (R21.1–R21.12, decided by Claude under owner delegation; not frozen; revised
+after #173's review). **Stage 0 done** (R21.13–R21.16,
+[record](apple_lewm_seed_replication_v2_stage0.md)): code, tests, debug smokes on 75910–75913
+only, scale and caps confirmed, power recomputed (§8). No seed of this task's block (75000–75999) has been simulated, nothing is trained and
 nothing is fitted. The freeze needs Stage 0 (§6.1) and an independent reviewer's reported APPROVE;
 the gated Stage S needs its own reported GO.
 
@@ -384,6 +386,13 @@ raise the per-seed rate at W = 0.922 to about 0.95) would be a different test, a
 The size at the margin and the L-INFERIOR false-fire rate are TASK-081's (2.6–3.6 % and 1.4–1.7 %
 per seed, Stage 0 record §4); Stage 0 recomputes them with this comparator.
 
+**Stage 0's recomputation** ([record](apple_lewm_seed_replication_v2_stage0.md) §4; salt 8502,
+20 000 trials per cell, 10 000 resamples per (k+, k−) cell, report `b88b0c0d…ecf4`): at W = 0.922
+each seed passes with probability **0.54–0.79** and both with **0.30–0.63** (p_C 0.979–0.992, the
+three couplings); at W = 0.938, 0.79–0.96 and 0.64–0.91; at W = 0.953, ≥ 0.95 and ≥ 0.90. The size
+at the margin (W = C − δ) is 2.4–3.6 % per seed and 0.11–0.16 % for both; L-INFERIOR's false fire
+at the margin is 0.8–1.4 % per seed. The draft table above agrees within simulation noise.
+
 ## 9. No abandonment clause (R21.5)
 
 **No clause fires in TASK-083, on any row.** TASK-081's clause (fires on L-NO-GAIN or L-INFERIOR,
@@ -468,7 +477,7 @@ featurisation and no GPU. Disk: reports only (a few MB).
 - **Everything here is one condition imposed by the simulator (C1-M)**, one camera, one encoder,
   one corpus; nothing transfers as such to Arena or the real G1.
 
-## 14. Stage 0's open items (to be settled there, changing no bar)
+## 14. Stage 0's open items (settled in Stage 0's record §5; no bar changed)
 
 1. The caps from the debug smokes' scale.
 2. The power table recomputed with salt 8502 and 20 000 trials per cell, including the size at the
