@@ -555,7 +555,8 @@ def check_sentinel(report: dict, evaluated: set[str], fields) -> list[str]:
 
 # ----- Stage 0 (filled by the Stage-0 PR; development only) ---------------------------------------
 STAGE0: dict = {  # the record: docs/experiments/apple_lewm_seed_replication_v2_stage0.md
-    "revision": "93dde1e",  # the smokes and the power run (code identical but for this record)
+    "revision": "aca1f0e",  # closedS-3 and simulate-2 (the final code but for this record);
+    # closedS-1, closedS-2 and simulate-1 ran at 93dde1e (prov/task083-stage0-smokes)
     "smoke_root": "outputs/task083-* in the task083-stage0 worktree (git-ignored); debug seeds "
     "75910-75913 only; nothing in them is read",
     "smokes": {
@@ -576,6 +577,16 @@ STAGE0: dict = {  # the record: docs/experiments/apple_lewm_seed_replication_v2_
             "same_counts_as_closedS-1": True,
             "report_sha256": "cb4cdfa4162c5b0517739270b530a5e42e25396c9119a9542bf7ae98e33c23dc",
         },
+        "closedS-3": {
+            "revision": "aca1f0e",
+            "outcome": "REP-VOID-CEILING-DEBUG",
+            "g_tests": "2241 passed, 37 skipped",
+            "seconds": 384,
+            "peak_tree_pss_gib": 9.17,
+            "determinism_ok": {"66801": True, "66802": True},
+            "same_counts_as_closedS-1": True,
+            "report_sha256": "4c37259f91742bfe00cbc94e46476e783b6e2f1a44d6fbff0c0a0744d08d8ba6",
+        },
     },
     "seconds_per_attempt_median": {  # closedS-2 (4 debug resets, 4 workers)
         "W[66801]": 13.80,
@@ -595,17 +606,19 @@ STAGE0: dict = {  # the record: docs/experiments/apple_lewm_seed_replication_v2_
     "seconds_per_attempt_max": 15.41,
     "scaled_seconds": {"S": 4740},  # 139.2 s per reset x 128 / 4 + 210 before the first outcome
     # + two determinism re-runs (about 30) + pool starts; the cap 21 600 is 4.6 x
-    "simulate": {
-        "report_sha256": "b88b0c0dcc6b368168c5ba5d4bcd2bd7c77d5bff48afd3f7e78118cf72e5ecf4",
-        "per_seed_pass_at_w_0922": [0.54, 0.79],  # over C 0.979-0.992 and the three couplings
-        "both_pass_at_w_0922": [0.30, 0.63],
-        "per_seed_pass_at_w_0938": [0.79, 0.96],
-        "both_pass_at_w_0938": [0.64, 0.91],
-        "per_seed_pass_at_w_0953": [0.95, 1.00],
-        "both_pass_at_w_0953": [0.90, 0.99],
-        "size_at_margin_per_seed": [0.024, 0.036],
-        "size_at_margin_both": [0.0011, 0.0016],
-        "l_inferior_at_margin_per_seed": [0.008, 0.014],
+    "simulate": {  # simulate-2 at aca1f0e: G-NI averaged over 25 bootstrap replicates per cell
+        "report_sha256": "0e138bb1564f3faa3ba7cb817be12c31b6796e2ebf656112918ecb439d371e68",
+        "per_seed_pass_at_w_0922": [0.52, 0.79],  # over C 0.979-0.992 and the three couplings
+        "both_pass_at_w_0922": [0.27, 0.63],
+        "per_seed_pass_at_w_0938": [0.77, 0.96],
+        "both_pass_at_w_0938": [0.60, 0.91],
+        "per_seed_pass_at_w_0953": [0.94, 1.00],
+        "both_pass_at_w_0953": [0.88, 0.99],
+        "size_at_margin_per_seed": [0.026, 0.035],  # a seed's L-PASS rate (G-bar and G-NI)
+        "size_at_margin_both": [0.0009, 0.0016],
+        "l_inferior_at_margin_per_seed": [0.012, 0.016],
+        "superseded": "simulate-1 (b88b0c0d...ecf4, one bootstrap per cell) and the draft's "
+        "scratch table: a boundary cell passed or failed outright, moving cells by up to 0.06",
     },
 }
 
