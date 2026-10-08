@@ -63,6 +63,42 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (k) — TASK-082: direction (a), a plate law no hand-written arm is given; DRAFT design note and its development check (R19.24–R19.25)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_unknown_law_v2_design.md](experiments/apple_lewm_unknown_law_v2_design.md) (DRAFT
+design note; nothing in it is frozen or gated).
+
+- **R19.24 — direction (a) is pursued.** R19.23 (1) (R18.32's (a)) is taken: a condition in which
+  no hand-written arm is given the plate law, declared as a task change, drafted first as a design
+  note. The card is **TASK-082** (todo; TASK-078 and TASK-079 keep their PLAN.md reservations).
+  TASK-082 takes the seed block **72000–74999** (outside every forbidden range of TASK-081's list
+  and TASK-081's block 70000–71999; checked by `plate_law_dev.check_seed_ranges`, tested) and the
+  salts **8401–8412**. The design note's development check uses 72000–72031 (check cohort F),
+  72100–72355 (a 256-root corpus) and the debug range 74900–74999, with salts 8401–8404;
+  72356–74899 and 8405–8412 are left for a protocol, and any use needs its own ruling.
+- **R19.25 — the development check and the recommendation (recorded only, for the owner).** One
+  run, CPU only, no world model, at `ae680ca`, on 32 check resets with arms that read the true
+  plate, under C1-M with only the law after 405 replaced: **U-sat** (a saturating, swirling static
+  law) admits the privileged ceiling (H-final(commit) 32/32) and degrades the hand-written arms
+  (H-rule with C1-M's written law 23/32, ceiling − arm +9 [+4, +14]; linear H-sysid 28/32, +4
+  [+1, +8]), while a kernel-ridge sysid fitted on the same 256 roots recovers the ceiling (32/32,
+  aim error 0.072 cm in median); **U-play** (a hysteretic play operator) leaves H-rule and H-sysid
+  at 31/32. C1-M's own law in the same run: ceiling 30/32, H-rule 32/32, H-sysid 30/32. Report
+  sha256 `2b1dd16b…b58a`. Reading: under such laws "LeWM needed" in R9.8's sense (against the best
+  hand-written arm) becomes testable, but "LeWM needed" against a learned non-LeWM baseline on the
+  same corpus is not, because a flexible regression on (plate, palm, aim) already reaches the
+  ceiling; necessity against learned baselines needs a pixel-only consequence (design note §3.4).
+  **Recommended:** preregister TASK-082 under U-sat as a task change, with R9.8's primary claim
+  (G-NI against the better of H-rule and H-sysid on R-plate's reading), R9.8's secondary claim
+  reported with a power simulation in Stage 0, and a new reported tier against learned baselines
+  (kernel-ridge or MLP sysid and P-aim) as non-inferiority only; retrain TASK-077's recipe unchanged
+  on a new 2 000-root corpus, three seeds per arm (about 31 h on the GPU queue; one seed pair about
+  10 h), plus about 4–7 h of CPU. R19.23 (2) (TASK-079's precondition) stays an owner ruling with
+  no compute; R19.23 (3)'s two extra W seeds under C1-M need no training (R-S exists for 66801 and
+  66802) and about 20–30 min of CPU each after their own preregistration; a random-init floor for
+  W costs about 10 h of GPU for one seed pair. R7 is unchanged.
+
 ## Decision 2026-10-08 (j) — TASK-081 Stage S ends L-PASS: the first gated LeWM-driven closed-loop success on v2; "LeWM needed" and the solver's effect are not shown; R7 is changed; TASK-081 closes (R19.20–R19.23)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
