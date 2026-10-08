@@ -123,8 +123,9 @@ its predicted plate is read by a ridge fitted on its own predictions under the k
 commands, and the committed aim is affine_local's clipped fixed point". It would change R7's
 sentence only through its own reviewed ruling (§14).
 
-**What a secondary pass would show, and what it would not:** that, under U-sat, a learned model is
-needed to beat a hand-written rule with C1-M's written law and a linear system identification, and
+**What a secondary pass would show, and what it would not:** that, under U-sat, more than a
+hand-written rule with C1-M's written law and a fixed linear system identification is needed (a
+flexible learned model, or another model that represents the law's saturation and swirl), and
 that LeWM, from pixels, is one model that suffices. It would **not** show that LeWM is needed rather
 than any learned model (the reported tier is expected to tie W or beat it), nor anything beyond the
 two named comparator forms. Its wording must name them (design note §2, §7 item 4).
@@ -252,15 +253,21 @@ departures from TASK-066, unchanged). The backend swap stays one key.
   train and val roots build the box from the **true** plate p (TASK-077's collector, so the training
   distribution is the recipe's); **gate-P roots build it from p̂, R-plate's reading of the onboard
   405 frame** (CPU DINOv2 full tokens, as the closed loop computes it), as TASK-080's gate-P split
-  did. TASK-080 measured the confound's size at +0.035 cm in the median of e_S (gate-P minus
-  contrast-T; its record §8.4), so no contrast split is collected here; the closed loop remains the
+  did. TASK-080 measured the confound's size under C1-M (median e_S on gate-P minus contrast-T, its
+  record §8.4): +0.035 cm for the primary seed and +0.011 and +0.047 cm for the other two, every
+  interval including 0, which bounds only a small confound (TASK-080 §5.3 point 4); so no contrast
+  split is collected here; the closed loop remains the
   final check (TASK-080 §5.3 point 5).
 - **The ceiling's aim per root (new).** At 405, before the root's own aim is committed, H-final(commit)'s
   look-ahead (`LookaheadAim`, branches under U-sat) runs once **in cloned state** and its aim is
   logged; the root then continues with its own uniform aim. These labels are privileged corpus
   data: P-aim is fitted on the train roots' labels (§6.2), and gate-P's labels are the reference for
   Stage G's offline aim errors (§9.4). Stage 0 tests that a root's executed trajectory is identical
-  with and without the labelling pass.
+  with and without the labelling pass. **A label whose look-ahead does not converge** is the aim
+  H-final(commit) would commit in closed loop (its last iterate at its cap, as K0's and every closed
+  loop's ceiling commits), logged with a convergence flag; it is used like any other label, and the
+  number of unconverged labels per split is reported. More than 2 % unconverged labels in gate-P is
+  **CORPUS-ESCALATE** (the reference for A1 and A2 would then be unsettled on too many roots).
 - **Exclusions:** a root that does not reach 467 is excluded and counted. More than 2 % of all roots,
   or more than 2 % of gate-P, excluded is **CORPUS-ESCALATE** (escalate, no clause). The development
   corpus lost 1 of 256 roots under U-sat (a guard refusal before 405).
@@ -283,9 +290,12 @@ departures from TASK-066, unchanged). The backend swap stays one key.
   0.12, std 0.38) are **carried** from TASK-077's plan (§7.7 of that protocol), not re-measured.
   Reasons:
   - TASK-077's budget rule (U = 2 × the larger calibration saturation, rounded, capped at 100 000)
-    depends on the recipe and the corpus size, both unchanged. The law changes the plate's path after
-    405 only (median travel from 405 to s1 7.17 cm under U-sat against 8.71 cm under C1-M on the
-    development corpus).
+    depends on the measured saturation, so on the data as well as on the recipe and corpus size; a
+    re-measured U could differ. **But the cap bounds any increase:** U = 95 000 is within 5 % of the
+    100 000 cap, so a re-run calibration could raise U by at most 5 000 updates; it could only lower
+    it, which would not help W. The recipe and corpus size are unchanged, and the law changes the
+    plate's path after 405 only (median travel from 405 to s1 7.17 cm under U-sat against 8.71 cm
+    under C1-M on the development corpus).
   - The two calibration jobs cost about 5.2 h of GPU queue time (TASK-077's logged start and end
     times: 9 301 s and 9 590 s), about a sixth of Stage T, for numbers that would most likely land
     near the carried ones, at a cap that U already almost reaches.
@@ -332,17 +342,25 @@ from each root's logged 405 state (TASK-080 §4.1, carried).
 G-NI's comparator C is the better of H-rule and H-sysid on S (the larger count; a tie goes to
 H-rule). Choosing the better one after S is conservative for W.
 
-**Why the comparator set is hand-written only (R20.4; design note §8, first question).** R9.8 says
-"the best non-world-model arm". Three reasons keep G-NI on H-rule and H-sysid:
+**Why the comparator set is hand-written only, a declared narrowing of R9.8 (R20.4; design note
+§8, first question).** R9.8 says "the best non-world-model arm". P-aim is plainly a non-world-model
+arm, so keeping it out of G-NI **narrows R9.8's comparator set, and this is declared, not
+assumed**. The distinction drawn is the design note's: **a fixed, hand-chosen form** (H-rule's
+written law; H-sysid's linear form with seven coefficients, which is also a forward model on
+(p̂, h, g) fitted on the train split) **against a flexible learned regressor** (H-sysid-krr, a kernel
+ridge on the same inputs; P-aim, a kernel ridge onto the ceiling's aims). Reasons:
 - **Comparability.** TASK-077, TASK-080 and TASK-081 read R9.8's comparator as the better of these
-  two forms; keeping them makes the primary row comparable across the line, and the secondary claim
-  is R9.8's own "LeWM needed" against "the best hand-written arm".
-- **H-sysid-krr is itself a learned forward model** of the plate on (p̂, h, g), a low-dimensional
-  world model, so it is not plainly a "non-world-model arm".
-- **P-aim is model-free but trained on privileged labels** (the ceiling's aims, as P-3 is trained on
-  e9's privileged demonstrations), and it is a new arm with no development reading on p̂.
-Both learned arms are reported with the same δ and both directions of the McNemar test (§9.5), and
-the results document must state a detectable inferiority of W to either beside the row.
+  two fixed forms; keeping them makes the primary row comparable across the line, and the secondary
+  claim is R9.8's own "LeWM needed" against "the best hand-written arm".
+- **The flexible tier is expected to leave no headroom** (§1), so gating against it would turn the
+  primary claim into a necessity test against learned models, which the design note says needs a
+  pixel-only consequence and its own design (§3.4).
+- **P-aim is trained on privileged labels** (the ceiling's aims, as P-3 is trained on e9's privileged
+  demonstrations), and it is a new arm with no development reading on p̂.
+Both learned arms are reported with the same δ and both directions of the McNemar test (§9.5).
+**Any restatement of a TASK-082 result, primary or secondary, must say that G-NI was against the
+hand-written arms only and must state the learned tier's reading**, including a detectable
+inferiority of W to either learned arm (upper bound of W − arm < −δ) when it holds (§14).
 
 ### 6.2 The reported tier of learned non-LeWM baselines (new; reported only)
 
@@ -445,17 +463,25 @@ On K's 64 resets, every attempt under U-sat, at ρ\* = 4 cm (disc):
   median and maximum of |b| and of a. (Development, true plate: the ceiling's aim lay 0.95 cm
   sideways of the plate–palm line in median, 2.1 cm at most; design note §8.)
 - **Reported only:** H-rule (on p̂, C1-M's written law) and H-now on the same 64 resets, with their
-  paired differences from the ceiling; they size §10's planning rates and gate nothing.
+  paired differences from the ceiling; they are reported beside §10's table at the freeze and gate
+  nothing; δ is already fixed by Stage 0 (§9.2) and K0 changes no rule.
 - **Stops, all CAL-ESCALATE** (escalate, no clause; nothing is frozen): level 0 < 56/64 (τ_commit
   undefined); N_K(0) < 60/64 (TASK-077's 30/32 fraction); r_K later than 465 or undefined; median
   palm speed at 405 > 0.5 cm per step; **more than 4/64 ceiling aims outside the box** (an
-  allocation: beyond it the box itself, not the predictor, would bind the boxed arms on more resets
-  than the 16/128-scale margins tolerate).
+  allocation: beyond it the box itself, not the predictor, would bind the boxed arms on more than
+  about 8/128 resets, which is at or above the smallest δ that §9.2 can choose, so the box alone
+  could decide G-NI).
 - **K0-PASS:** τ_commit, the τ curve, N_K(0), r_K, the clip count and the reported arms enter the
   frozen block. About 512 attempts (384 planted plus 128 reported), about 15 min on 6 workers.
+- **τ_commit = 0** (level 0 reaches 56/64 but 0.5 cm does not) is also **CAL-ESCALATE**: O1, R0
+  and R1 would be unattainable.
 - **If τ_commit falls to 0.5 cm,** every bar tied to it tightens with it (O1, R0, R1, the τ curve);
   that is the honest consequence of a measured tolerance and not an escalation by itself
-  (TASK-080 §8 step 2's wording). G-bar's fraction 0.875 does not change.
+  (TASK-080 §8 step 2's wording). G-bar's fraction 0.875 does not change. **But because R1 would
+  then be likely to fail** (TASK-080's e_S upper bounds were 0.61–0.66 cm under C1-M) **and Stage T
+  costs about 31 GPU-hours, a τ_commit below 1.0 cm makes Stage T's GO a ruling point**: the freeze
+  PR states the risk, and Stage T's GO needs its own recorded ruling (proceed, or close TASK-082 as
+  CAL-ESCALATE without the clause) before any training job is launched. No bar changes either way.
 
 ### 7.3 Stage D (16 fresh resets 72500–72515)
 
@@ -529,7 +555,10 @@ ratio and difference forms). Every bar is labelled **measured**, **definitional*
 simulated**, by this rule: **δ is the smallest of 8/128, 12/128 and 16/128 at which G-NI's power at
 W = C is at least 0.80 for every C in {0.80, 0.85, 0.875} under the "half" coupling, and the test's
 size at the margin (W = C − δ) is at most 5 % in every coupling; if none qualifies, δ = 16/128**
-(TASK-081's allocation, carried as the fallback). The planning set for C spans the development
+(TASK-081's allocation, carried as the fallback). **A smaller δ cuts both ways:** it makes G-NI
+harder to pass and also makes L-INFERIOR (upper bound of W − C < −δ), and so the clause, easier to
+fire; Stage 0 reports L-INFERIOR's false-fire rate at the margin for every candidate δ beside the
+rule. The planning set for C spans the development
 check's better hand-written arm on the true plate (H-sysid-true 28/32 = 0.875) and two lower values
 for the loss to p̂ (§3, caveat 1). The rule only ever tightens the margin relative to TASK-081.
 δ is an **allocation**; its label stays so.
@@ -606,7 +635,7 @@ non-primary seeds' W (the offline readings of G-NI, of the secondary claim and o
 | row | condition | consequence |
 |---|---|---|
 | **V** | the void rule (§11) | one repeat after a recorded fix |
-| **H-GATE-FAIL** | any of G1–G4 fails on any seed | escalate, no clause (TASK-077's row; its declared remedies need their own preregistration) |
+| **H-GATE-FAIL** | any of G1–G4 fails on any seed | escalate, no clause (TASK-077's row; its declared remedies need their own preregistration). It precedes R-VOID-CEILING (TASK-080 had no dynamics gate, because its models were already gated): the models are new here, and a readout gate on a model that fails its dynamics gates is not informative |
 | **R-VOID-CEILING** | R0 fails | escalate, no clause |
 | **R-COMMAND-KEYED** | R3 fails on any seed | escalate, no clause |
 | **R-NO-BAR** | R1 or R2 fails on any seed | escalate, no clause |
@@ -770,7 +799,10 @@ backend; v2; the product goal.
   nothing in TASK-082 changes it until a reviewed ruling after a result.
 - **An L-PASS under U-sat** would need its own reviewed ruling before R7 states it, with every
   qualifier of R19.21 and the condition's name (a declared simulation-only law that no hand-written
-  arm is given; a task change; the recipe retrained).
+  arm is given; a task change; the recipe retrained). Its wording must also say that G-NI was
+  against the hand-written arms only (H-rule with C1-M's written law, the linear H-sysid), a declared
+  narrowing of R9.8, and state the learned tier's reading, including any detectable inferiority of W
+  to H-sysid-krr or P-aim.
 - **A secondary pass** ("LeWM needed" against H-rule with C1-M's written law and the linear H-sysid)
   would also need its own ruling, and its wording must name both comparator forms and the learned
   tier's reading; it would not make "LeWM needed" true in general.
@@ -787,7 +819,7 @@ backend; v2; the product goal.
 | T | **about 31.4 h on the GPU queue** | TASK-077's six model jobs at U = 95 000 took 113 131 s in all (17 180–21 301 s each); no calibration jobs (saves about 5.2 h) |
 | G | about 1.5–2.5 h CPU | TASK-080's Stage R (3 593 s: fits on 1 995 roots × 3 seeds, offline aims) and TASK-077's Stage G (2 369 s: G1–G4 on 250 roots × 6 models) |
 | D | about 15 min CPU | TASK-081's D: 512 s for seven arms |
-| S | about 1.5 h CPU | TASK-081's S: 3 318 s for eleven arms on 128 resets; four more cheap arms and two more W seeds add about 40 s per reset over 4 workers |
+| S | about 1.5 h CPU | TASK-081's S: 3 318 s for eleven arms on 128 resets; W-frozen is dropped, three cheap arms (H-sysid-krr, P-aim, H-rule-fit) and two more W seeds are added, about 30 s more per reset over 4 workers |
 | **total** | **about 31.5 h GPU and 5–7 h CPU**, about three to four days of wall time with the reviews and GOs | |
 
 Disk: frames and features as TASK-077 (about 1.2 GB of roots, 12.8 GB of 8 × 8 features, 0.8 GB of

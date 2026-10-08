@@ -93,19 +93,25 @@ R20 because R1–R19 are taken (no R20 label exists on any local or remote ref).
   gate**, and stated as a live chance rather than an expectation (development, true plate, one run,
   32 resets: ceiling 32/32, H-rule with C1-M's written law 23/32, linear H-sysid 28/32), with its
   power simulated in Stage 0. A primary pass never supports "LeWM needed"; a secondary pass would
-  say only that a learned model is needed against the two named hand-written forms under U-sat and
-  that LeWM, from pixels, suffices; it would not say that LeWM is needed rather than any learned
+  say only that more than the two named fixed forms is needed under U-sat (a flexible learned model,
+  or another model that represents the law) and that LeWM, from pixels, suffices; it would not say that LeWM is needed rather than any learned
   model.
-- **R20.4 — the comparators.** G-NI's comparator stays **hand-written only**: H-rule with **C1-M's
+- **R20.4 — the comparators; a declared narrowing of R9.8.** G-NI's comparator stays
+  **hand-written only** (fixed, hand-chosen forms, against flexible learned regressors; P-aim is
+  plainly a non-world-model arm, so this narrows R9.8's "best non-world-model arm" and is declared): H-rule with **C1-M's
   written law** (κ = −0.5), a declared prior that is wrong under U-sat, and H-sysid's linear form
   refitted on the new corpus's train split with R-plate's readings (the better on S, a tie to
-  H-rule). Reasons: comparability with TASK-077/080/081's reading of R9.8; the kernel-ridge sysid is
-  itself a learned low-dimensional forward model; P-aim is trained on privileged labels. **A
+  H-rule). Reasons: comparability with TASK-077/080/081's reading of R9.8; the flexible tier is
+  expected to leave no headroom, so gating on it would make the primary claim a necessity test
+  against learned models, which needs a pixel-only consequence (design note §3.4); P-aim is trained
+  on privileged labels. Any restatement of a TASK-082 result, primary or secondary, must say G-NI
+  was against the hand-written arms only and state the learned tier's reading. **A
   reported-only tier of learned non-LeWM baselines**: H-sysid-krr (the design note's RBF kernel
   ridge on (p̂, h, g), the primary learned baseline) and P-aim (a kernel ridge from (p̂, h) to the
   ceiling's logged aim, model-free), both fitted on the train split, reported with the same δ and the
   McNemar test in both directions; **"LeWM needed" against them is not expected** (H-sysid-krr
-  reached the ceiling from 256 roots in development, 32/32, aim error 0.072 cm in median), and a
+  reached the ceiling from 256 roots in development, 32/32 on the true plate, one run, 32 resets, not
+  gated; aim error 0.072 cm in median), and a
   detectable inferiority of W to either must be stated beside the row. No MLP baseline. **H-rule-fit**
   (κ fitted on the train split) is reported only, not in the gate.
 - **R20.5 — the model: TASK-077's recipe retrained unchanged, three seeds per arm, no calibration
@@ -114,16 +120,18 @@ R20 because R1–R19 are taken (no R20 label exists on any local or remote ref).
   batch 16, the selection rule, CPU predictions). The three-seed plan is taken (about 31.4 h on the
   GPU queue, TASK-077's measured 113 131 s for its six jobs); the note gives no argument for one
   pair. The budget **U = 95 000** and G1's calibrated bars (rank 0.12, std 0.38) are **carried** from
-  TASK-077's plan, not re-measured: the budget rule depends on the recipe and corpus size, both
-  unchanged, and the two calibration jobs would cost about 5.2 h. Disclosed: all three of TASK-077's
+  TASK-077's plan, not re-measured: U = 95 000 is within 5 % of the 100 000 cap, so a re-measured U
+  could rise by at most 5 000 updates; the recipe and corpus size are unchanged; and the two
+  calibration jobs would cost about 5.2 h. Disclosed: all three of TASK-077's
   W curves had their raw minimum at 95 000; G1's rank reference was measured on C1-M's val roots.
   The primary seed is the W with the lowest kept val criterion (carried rule), fixed before gate-P
   opens.
 - **R20.6 — the corpus `apple-ul-v2`.** 2 000 roots (72800–74799) under U-sat, TASK-077's collector
   and per-root record; splits fixed before collection (salt 8407): train 1 500, val 250, **gate-P
   250**. Train and val build the box from the true plate (the recipe's); gate-P builds it from p̂ (as
-  TASK-080's gate-P; TASK-080 measured the corpus-aim confound at +0.035 cm, so no contrast split is
-  collected). **New:** H-final(commit)'s aim is logged on every root by one look-ahead in cloned
+  TASK-080's gate-P; under C1-M TASK-080 measured the corpus-aim confound at +0.035, +0.011 and
+  +0.047 cm across its three seeds, every interval including 0, a bound on a small confound only, so
+  no contrast split is collected). **New:** H-final(commit)'s aim is logged on every root by one look-ahead in cloned
   state at 405, without changing the root's execution (tested in Stage 0): P-aim's labels and
   Stage G's reference aim. CORPUS-ESCALATE above 2 % excluded overall or in gate-P. R-plate
   (TASK-077 Stage O) is carried: the law acts only after 405.
@@ -132,8 +140,11 @@ R20 because R1–R19 are taken (no R20 label exists on any local or remote ref).
   ceiling (stop below 60/64); **the horizon coverage check** (r_K, the earliest step with ≥ 56/64
   attempts within 0.1 cm of plate(525); r = 465 is kept only if r_K ≤ 465, else CAL-ESCALATE); the
   palm-speed history check; **the aim-box clip-binding check** (the count of ceiling aims outside the
-  box built from p̂ and h; stop above 4/64, an allocation); H-rule and H-now reported only. All stops
-  are CAL-ESCALATE (no clause).
+  box built from p̂ and h; stop above 4/64, an allocation); H-rule and H-now reported only. All stops,
+  and τ_commit = 0, are CAL-ESCALATE (no clause). Unconverged ceiling labels in the corpus are logged
+  with a flag; more than 2 % in gate-P is CORPUS-ESCALATE. **A τ_commit below 1.0 cm makes Stage T's
+  GO a ruling point** (R1 would then likely fail, and Stage T costs about 31 GPU-hours): proceed, or
+  close as CAL-ESCALATE without the clause, by a recorded ruling before any training job.
 - **R20.8 — the readouts and Stage G.** R-S, R-N and R-L in TASK-080's form, refitted per seed on
   W's and N's own stand-in predictions over the 1 750 train and val roots; R8 only for R0 and H-read.
   Stage G opens gate-P once, after its `first_outcome_utc`: G1–G4 (TASK-077 §8.2, re-gated because
@@ -151,7 +162,8 @@ R20 because R1–R19 are taken (no R20 label exists on any local or remote ref).
   0.875); S-VOID-CEILING below 112/128; **δ fixed at the freeze by a declared rule**: the smallest of
   8, 12 and 16/128 at which G-NI's simulated power at W = C is ≥ 0.80 for every C in {0.80, 0.85,
   0.875} (half coupling) and the size at the margin is ≤ 5 % in every coupling, else 16/128 (an
-  allocation; the rule can only tighten TASK-081's margin); R17.15's "detectably" with its count +7;
+  allocation; the rule can only tighten TASK-081's margin, and a smaller δ also makes L-INFERIOR, and
+  so the clause, easier to fire, which Stage 0 reports per candidate δ); R17.15's "detectably" with its count +7;
   TASK-081's row ladder in its order (V, S-VOID-CEILING, L-NO-GAIN, L-INFERIOR, L-PASS, L-TWIN-NEAR,
   L-NEAR, L-BAR).
 - **R20.11 — seeds and salts.** Block 72000–74999 (R19.24), only from the ranges R19.24 left free:
@@ -182,8 +194,10 @@ R20 because R1–R19 are taken (no R20 label exists on any local or remote ref).
   TASK-081's, itself chosen after TASK-080's L-NEAR. H-rule's written law (C1-M's κ) is a declared
   choice.
 - **R20.15 — R7.** Unchanged by this draft. An L-PASS under U-sat, and separately a secondary pass,
-  would each need their own reviewed ruling before R7 states them; the wording of a secondary pass
-  must name H-rule's written law, H-sysid's linear form and the learned tier's reading. TASK-079's
+  would each need their own reviewed ruling before R7 states them; the wording of either must name
+  H-rule's written law and H-sysid's linear form, say that G-NI was against the hand-written arms only
+  (a declared narrowing of R9.8), and state the learned tier's reading, including any detectable
+  inferiority of W to H-sysid-krr or P-aim. TASK-079's
   precondition (R19.22) is unaffected.
 - **R20.16 — compute.** About 31.5 h of GPU (Stage T's six jobs about 31.4 h; featurisation about
   5 min) and 5–7 h of CPU (K0 about 15 min, C 1–1.5 h with the labelling look-ahead, O 20–40 min,
