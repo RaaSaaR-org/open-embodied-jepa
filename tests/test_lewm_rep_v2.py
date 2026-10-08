@@ -253,7 +253,10 @@ def test_power_pieces():
     assert low["both_pass"] < 0.3
     size = rep.rep_power(0.984 - 16 / 128, 0.984, "overlap", trials=400)
     assert max(size["per_seed_pass"]) < 0.1
-    assert rep._ni_bounds(0, 0) == (0.0, 0.0)
+    assert rep._ni_probabilities(0, 0) == (1.0, 0.0)
+    # a cell at the boundary passes in some bootstraps and not others (the review's case)
+    assert 0.0 < rep._ni_probabilities(1, 10)[0] < 1.0
+    assert rep._ni_probabilities(0, 30) == (0.0, 1.0)
     assert rep.PLANNING["C"] == (0.979, 0.984, 0.992)
 
 
@@ -415,6 +418,10 @@ def test_check_seed_records_refuses_another_readout():
         run.check_seed_records(ok, "N")
     with pytest.raises(pt.GuardError, match="G-seed"):
         run.check_seed_records([{"seed": 1, "decisions": [{"readout": "r8"}]}], "L-mean")
+    with pytest.raises(pt.GuardError, match="G-seed"):
+        run.check_seed_records([{"seed": 1, "decisions": [{"world_model": {}}]}], "W")
+    run.check_seed_records([{"seed": 1, "decisions": []}], "W")  # refused before 405
+    run.check_seed_records([{"seed": 1, "decisions": [{}]}], "L-rand")
 
 
 class _FakeCohort:

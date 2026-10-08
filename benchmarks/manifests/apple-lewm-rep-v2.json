@@ -251,6 +251,7 @@
     ],
     "sysid": 0.953125
    },
+   "replicates_per_cell": 25,
    "resamples_per_cell": 10000,
    "trials": 20000
   },
@@ -495,7 +496,7 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "92651d02c40e235e0e5dd3a4cd43153ee51503244970c17daf34b387d54f04d9",
+ "frozen_sha256": "32dbe2fea61cc8d328458032485fa4e47dbcf7b5d09bb14f2680cc37f043287b",
  "frozen_sha256_pin": null,
  "hashes": {},
  "note": "DRAFT (R21): frozen is the frozen-block candidate; no pin, no file hashes and no protocol document pin until the freeze (merged on an independent reviewer's APPROVE).",
