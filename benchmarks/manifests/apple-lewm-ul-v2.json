@@ -1511,7 +1511,7 @@
    "simulate": {
     "report_sha256": "dd1a22d8171e1daedda614d68ccbfb4a02dd4b2bb8e3595c0a71d32ded125efb",
     "revision": "148a2b8",
-    "voided_first_run": "simulate-1 (d9625c7) voided by its 3 600 s cap after a 73-minute G-quiet wait; its power tables equal simulate-2's exactly (R20.18)",
+    "voided_first_run": "simulate-1 (d9625c7) voided by its 3 600 s cap after a 75-minute G-quiet wait; its power tables equal simulate-2's exactly (R20.18)",
     "power_at_w_equal_c_half": {
      "8": [
       0.387,
@@ -1547,7 +1547,7 @@
    }
   }
  },
- "frozen_sha256": "2eacf030a4e788c3caf3562b1f3b957aa8e3de46ed2d1bc6b6cc6bc9696c7245",
+ "frozen_sha256": "cbb945141fb8d5955b16addf367d3b4d6d31857e5324b72f96fc31fd70f9db6e",
  "frozen_sha256_pin": null,
  "hashes": {},
  "protocol_document_sha256": null

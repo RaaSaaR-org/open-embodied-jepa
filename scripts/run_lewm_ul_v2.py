@@ -945,7 +945,8 @@ def stage_labelcheck(report, args, fields: Fields, manifest) -> str:
     pool, co = sim_setup(report, args, manifest, config, int(args.workers or ul.SIM_WORKERS))
     try:
         seeds = co.seeds("labelcheck")
-        by = {int(s): "train" for s in seeds}
+        # both aim constructions: even positions as train (true plate), odd as gate-P (p-hat)
+        by = {int(s): ("train", "gate_p")[i % 2] for i, s in enumerate(seeds)}
         runs = {}
         for label in (True, False):
             tasks = attempt_tasks("collect-ul", seeds, co, corpus_task(by, label=label))
@@ -1608,6 +1609,11 @@ def stage_closed(report, args, fields: Fields, manifest) -> str:
     primary = int(gates["fields"]["primary_seed"]["seed"])
     report["primary_seed"] = primary
     report["cohort"] = args.cohort
+    report["last_two_triggered"] = {f"{a}-{s}": bool(j["last_two_triggered"])
+                                    for (a, s), j in sorted(jobs.items())}  # fmt: skip
+    report["stage_g_predicted_counts_of_128"] = {
+        a: v["predicted_count_of_128"] for a, v in gates["fields"]["offline_aims"]["arms"].items()
+    }  # §9.5 item 5: predictions, never closed-loop counts
     saved = gates["fields"]["fits"]["seeds"]
     folder = Path(args.gates).parent / "fits"
     readouts = {}
@@ -1806,10 +1812,11 @@ def stage_cap(args) -> float:
 
 def exclude_quiet_wait(clock, report: dict) -> None:
     """R20.18: a stage's wall cap counts from the end of G-quiet's wait, which has its own cap
-    (4 h); the excluded seconds are recorded. (``simulate-1`` was voided by its 3 600 s cap after
-    a 73-minute wait for a quiet machine, with its computation complete.)"""
+    (4 h): the cap is extended by the waited seconds, which are recorded (``total_seconds`` stays
+    the wall time). ``simulate-1`` was voided by its 3 600 s cap after a 75-minute wait for a quiet
+    machine, with its computation complete."""
     waited = float((report.get("quiet_machine") or {}).get("waited_seconds", 0.0))
-    clock.start += waited
+    clock.cap += waited
     report["stage_cap_excludes_quiet_wait_seconds"] = waited
 
 

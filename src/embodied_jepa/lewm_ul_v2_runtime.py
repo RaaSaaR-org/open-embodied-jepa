@@ -360,6 +360,30 @@ class CollectUl(c1rt.GeometricAim):
         return g
 
 
+# ----- clip-binding (§9.6) -----------------------------------------------------------------------
+def on_box_boundary(g, p, h, *, tol: float = 1e-9) -> bool:
+    """Whether an aim lies on the boundary of the box built from ``p`` and ``h``. ``choose_aim``
+    (H-sysid, H-sysid-krr) ends every refinement with ``clip_to_box(prediction)``, so its committed
+    aim lies on the boundary exactly when that last clip bound."""
+    a, b = c1.to_box(g, p, h)
+    return bool(abs(a - ul.A_LO) <= tol or abs(a - ul.A_HI) <= tol
+                or abs(abs(b) - ul.B_HALF_M) <= tol)  # fmt: skip
+
+
+def committed_clipped(first: dict, target) -> bool:
+    """§9.6's clip-binding of one committed decision, the same reading for every arm: the
+    candidate arms' solver flag, H-rule's and P-aim's own flags, and for H-sysid and H-sysid-krr
+    (their ``sysid`` log carries no flag) whether the aim lies on the box built from their own
+    plate reading and the palm."""
+    if any(bool(first.get(key, {}).get("clipped", False)) for key in
+           ("world_model", "rule", "p_aim")):  # fmt: skip
+        return True
+    if "sysid" in first and first.get("box"):
+        box = first["box"]
+        return on_box_boundary(target, box["p"], box["h"])
+    return False
+
+
 # ----- the controllers ---------------------------------------------------------------------------
 def _common(task: dict):
     W = rtm._W
@@ -490,9 +514,7 @@ def run_attempt_task(task: dict) -> dict:
             "a_true": a,
             "b_true_m": b,
             "fallback": bool(first["fallback"]),
-            "clipped": bool(first.get("world_model", {}).get("clipped", False))
-            or bool(first.get("rule", {}).get("clipped", False))
-            or bool(first.get("p_aim", {}).get("clipped", False)),
+            "clipped": committed_clipped(first, target),
         }
         if "lookahead" in first:
             out["commit"]["lookahead_converged"] = bool(first["lookahead"].get("converged"))
@@ -597,7 +619,7 @@ def run_offline_aim_task(task: dict) -> dict:
                 return pl.krr_plate(model, p_hat, h, g)[0]
 
         g, log = c1.choose_aim(predict_plate, p_hat, h, ul.A_LO)
-        log = {"converged": bool(log["converged"]), "clipped": False}  # choose_aim clips
+        log = {"converged": bool(log["converged"]), "clipped": on_box_boundary(g, p_hat, h)}
         return {"key": task["key"], "arm": arm, "g": np.asarray(g).tolist(), "log": log}
     if arm == "P-aim":
         raw = p_aim_predict(krr_from_json(task["p_aim"]), p_hat, h)[0]

@@ -85,7 +85,7 @@ nothing in them is read. No seed of K, D, S or the corpus has been simulated. R7
   of the single-comparator and the better-of-two rates; a corpus root's label is TASK-076's
   `LookaheadAim` (H-final(commit)'s settings) run once at 405 in cloned state.
 - **R20.18 — a stage's wall cap counts from the end of G-quiet's wait.** The first power run
-  (`simulate-1`, `d9625c7`) waited 73 minutes for a quiet machine (another session's Isaac jobs)
+  (`simulate-1`, `d9625c7`) waited 75 minutes for a quiet machine (another session's Isaac jobs)
   and was then voided by its 3 600 s cap with its computation complete. The wait has its own cap
   (4 h) and is not the stage's work; the runner now starts the stage clock after it and records the
   excluded seconds (a test). The repeat, `simulate-2` (`148a2b8`), produced power tables identical
@@ -111,7 +111,7 @@ nothing in them is read. No seed of K, D, S or the corpus has been simulated. R7
   TASK-081's twin rates. δ enters the frozen block at the freeze.
 - **R20.21 — caps and memory.** Every provisional cap of §11 stands (scaled worst cases: K0
   ≈ 910 s, C ≈ 3 100 s with the labelling look-ahead, G ≈ 6 500 s from the Stage G probe
-  `199e2704…8557`, D ≈ 600 s, S ≈ 4 600 s; slowest attempt 15.9 s; each cap ≥ 2.2 ×). The debug
+  `199e2704…8557`, D ≈ 600 s, S ≈ 4 600 s; slowest attempt 15.9 s; each cap ≥ 2.1 ×). The debug
   Stage S peaked at 10.76 GiB PSS against the 12 GiB ceiling (its workers also hold the spread
   seeds' W); Stage S keeps 4 workers, and the margin is disclosed.
 - **R20.22 — what is next.** K0 on its own reported GO (64 resets 72400–72463, CPU, from a clean

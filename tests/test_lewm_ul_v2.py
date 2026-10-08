@@ -234,7 +234,8 @@ def test_g_law_refuses_a_record_not_under_u_sat():
 
 def test_h_rule_keeps_c1ms_written_law():
     assert ul.H_RULE_LAW["kappa"] == c1.RULE["kappa"] == -0.5 and ul.H_RULE_LAW["L"] == 2
-    assert urt.c1rt.RuleCommit.__init__ is not None
+    assert inspect.signature(urt.RuleFitCommit.__init__).parameters["kappa"].kind.name == (
+        "KEYWORD_ONLY")  # fmt: skip
     source = inspect.getsource(urt.run_offline_aim_task)
     assert 'ul.H_RULE_LAW["kappa"] if arm == "H-rule"' in source
     calls = []
@@ -500,6 +501,31 @@ def test_the_learned_tier_and_the_fitted_rule():
 
 
 # ----- K0 -----------------------------------------------------------------------------------------
+def test_clip_binding_is_read_the_same_way_for_every_arm():
+    inside = c1.from_box(0.3, 0.01, P_HAT, H)
+    edge_b = c1.clip_to_box(c1.from_box(0.3, 0.05, P_HAT, H), P_HAT, H, ul.A_LO)
+    edge_a = c1.clip_to_box(c1.from_box(0.7, 0.0, P_HAT, H), P_HAT, H, ul.A_LO)
+    assert not urt.on_box_boundary(inside, P_HAT, H)
+    assert urt.on_box_boundary(edge_b, P_HAT, H) and urt.on_box_boundary(edge_a, P_HAT, H)
+    box = {"p": P_HAT.tolist(), "h": H.tolist()}
+    sysid = {"sysid": {"converged": True}, "box": box}
+    assert urt.committed_clipped(sysid, edge_b) and not urt.committed_clipped(sysid, inside)
+    assert urt.committed_clipped({"world_model": {"clipped": True}}, inside)
+    assert urt.committed_clipped({"rule": {"clipped": True}}, inside)
+    assert urt.committed_clipped({"p_aim": {"clipped": True}}, inside)
+    assert not urt.committed_clipped({"world_model": {"clipped": False}}, edge_b)
+    # offline: H-sysid with a predictor that binds at b = +3 cm
+    coef = np.zeros((7, 2))
+    coef[0] = c1.from_box(0.2, 0.06, P_HAT, H)
+    out = urt.run_offline_aim_task({"arm": "H-sysid", "key": 0, "p_hat": P_HAT.tolist(),
+                                    "h": H.tolist(), "sysid_coef": coef.tolist()})  # fmt: skip
+    assert out["log"]["clipped"]
+    coef[0] = c1.from_box(0.2, 0.0, P_HAT, H)
+    out = urt.run_offline_aim_task({"arm": "H-sysid", "key": 0, "p_hat": P_HAT.tolist(),
+                                    "h": H.tolist(), "sysid_coef": coef.tolist()})  # fmt: skip
+    assert not out["log"]["clipped"]
+
+
 def test_k0_tau_and_stops_in_both_directions():
     ok = {"0.0": 64, "0.5": 60, "1.0": 57, "1.5": 40, "2.0": 30, "3.0": 10}
     tau = ul.decide_tau(ok)
@@ -842,7 +868,6 @@ def test_statistics_use_salt_8411():
     assert ul.paired_interval(a, b) == pr.paired_interval(a, b, salt=8411)
     v = rng.normal(size=50)
     assert ul.median_ci(v) == pr.median_ci(v, salt=8411)
-    assert ul.paired_interval(a, b)["ci95"] != cpv.paired_interval(a, b)["ci95"] or True
 
 
 # ----- power and delta's rule ---------------------------------------------------------------------
@@ -1113,7 +1138,9 @@ def test_the_stage_cap_excludes_the_quiet_wait():
     start = clock.start
     report = {"quiet_machine": {"waited_seconds": 3600.0}}
     run.exclude_quiet_wait(clock, report)
-    assert clock.start == start + 3600.0 and report["stage_cap_excludes_quiet_wait_seconds"] == 3600
+    assert clock.cap == 3610.0 and report["stage_cap_excludes_quiet_wait_seconds"] == 3600
+    assert clock.start == start  # total_seconds stays the wall time
+    clock.start -= 3605.0
     clock.check("now")  # the wait does not count against the cap
     run.exclude_quiet_wait(clock, {})
 

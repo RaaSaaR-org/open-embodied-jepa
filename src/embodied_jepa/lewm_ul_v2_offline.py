@@ -746,7 +746,9 @@ def aim_summary(results: list[dict], data, tau_counts: dict, resets: int) -> dic
 def echo_slopes(results: list[dict], data) -> dict:
     """Reported (§9.4): per root, the 2 x 2 least-squares slope A of W's predicted plate against
     the aim over the feasible grid (p~ = A g + c), beside U-sat's local Jacobian of the plate's
-    displacement at the root's ceiling label (the palm travel d = label - h, from the law)."""
+    displacement at the root's ceiling label, evaluated at the palm travel d = label - h (an
+    approximation, stated: it takes the palm to end at the aim, while the law reads the palm at
+    t - L along the place primitive's path)."""
     slopes, laws = [], []
     by_key = {r["key"]: r for r in results}
     for i in range(data["n"]):

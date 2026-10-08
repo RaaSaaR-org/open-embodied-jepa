@@ -2,7 +2,7 @@
 
 **STATUS: DRAFT** (R20.1–R20.16, decided by Claude under owner delegation; nothing is frozen).
 This document is the preregistration the design note recommends; its independent review is
-recorded on its PR. **Stage 0 is done** (R20.17–R20.24, record
+recorded on its PR. **Stage 0 is done** (R20.17–R20.22, record
 [apple_lewm_unknown_law_v2_stage0.md](apple_lewm_unknown_law_v2_stage0.md)): the code, the debug
 smokes on 74800–74899, the scale probes and the power simulation that fixed δ. **No seed of K, D,
 S or the corpus has been simulated and no gated model has been trained.** Approving Stage 0
@@ -715,7 +715,7 @@ H-sysid it answers the design note's last open question (§8, "swirl and the box
 5. **L-PASS** at the planning rates (the product of the parts under the overlap coupling).
 
 **Stage 0's numbers** ([record](apple_lewm_unknown_law_v2_stage0.md) §4, R20.20): δ = 16/128; G-bar
-0.566 / 0.908 / 0.978 / 0.9975 / 0.9999 at W = 0.875 … 0.953; G-NI at δ = 16 ≥ 0.97 for every
+0.566 / 0.908 / 0.978 / 0.9975 / 0.9999 at W = 0.875 … 0.953; G-NI at δ = 16 ≥ 0.969 for every
 W ≥ 0.906; the secondary claim's power at C = 0.875 is at most 0.38 with independent outcomes (0.88
 with overlapping ones at W = 0.953), at C = 0.85 0.41–0.94 at W = 0.938; every twin test ≥ 0.999 at
 TASK-081's twin rates; L-PASS's product equals G-bar's power at every planning rate.

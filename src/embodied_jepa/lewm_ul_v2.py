@@ -1301,7 +1301,7 @@ STAGE0: dict = {  # the record: docs/experiments/apple_lewm_unknown_law_v2_stage
     "simulate": {
         "report_sha256": "dd1a22d8171e1daedda614d68ccbfb4a02dd4b2bb8e3595c0a71d32ded125efb",
         "revision": "148a2b8",
-        "voided_first_run": "simulate-1 (d9625c7) voided by its 3 600 s cap after a 73-minute "
+        "voided_first_run": "simulate-1 (d9625c7) voided by its 3 600 s cap after a 75-minute "
         "G-quiet wait; its power tables equal simulate-2's exactly (R20.18)",
         "power_at_w_equal_c_half": {"8": [0.387, 0.462, 0.526], "12": [0.709, 0.792, 0.853],
                                     "16": [0.917, 0.960, 0.978]},  # C = 0.80, 0.85, 0.875

@@ -62,7 +62,7 @@ passed in every simulated stage) and TASK-077's R-plate (`task077-stageo/outputs
 task077-readouts-1/fits`, readouts report `452045d2…8b78`, content `08bde901…9eb9`). Worktree
 `task082-s0chain`; `outputs/task082-smoke-1/<stage>/report.json`. The GPU jobs ran through
 `scripts/gpu_run.sh --wait --min-free-gib 8 --board`, each in its own slot, after a `tests` record
-at their revision (TESTS-PASS, 2 210 passed, 37 skipped).
+at their revision (TESTS-PASS, 2 211 passed, 37 skipped).
 
 | stage | revision | outcome | seconds | peak PSS (GiB) | note |
 |---|---|---|---:|---:|---|
@@ -93,7 +93,7 @@ U-sat law (G-law).
 | C | **per root with the label: 5.8 s median, 8.2 s max** (the look-ahead's branches 600 steps in median, 840 at most); 0.61 MB per root | 2 000 roots at 8.2 s on 6 workers ≈ 2 730 s, + estimates, G-repro, G-tests ≈ **3 100 s** | 14 400 | 4.6 |
 | O featurisation | 40 roots in 11 s; TASK-077's probe 213 s for 1 995 | ≈ **500 s** | 3 600 | 7.2 |
 | O readouts | TASK-077's probe 285 s; the learned tier's kernel ridges about 3.6 s per fit (1 500 rows, 16 grid points × 5 folds) | ≈ **330 s** | 7 200 | 22 |
-| T (each job) | 0.167 s per update (debug); TASK-077's jobs 17 180–21 301 s | carried | 46 800 | ≥ 2.2 |
+| T (each job) | 0.167 s per update (debug); TASK-077's jobs 17 180–21 301 s | carried | 46 800 | 2.197 (vs 21 301 s) |
 | G | **gscale** (below): fits 751 s, gate-P readings 101 s, dynamics 158 s; offline aims scaled from the debug Stage G 5 202 s; stand-in chunks ≈ 83 s; G-tests ≈ 200 s | ≈ **6 500 s** | 14 400 | 2.2 |
 | D | 67 s of attempts per reset over seven arms | 16 resets on 4 workers ≈ 280 s, + setup, G-tests ≈ **600 s** | 7 200 | 12 |
 | S | 127 s of attempts per reset over 15 arms (the slowest attempt 15.9 s) | 128 resets on 4 workers ≈ 4 070 s, + determinism, setup, G-tests ≈ **4 600 s** | 21 600 | 4.7 |
@@ -119,7 +119,7 @@ thinner than TASK-081's; Stage S keeps 4 workers (R20.21).
 in-run G-tests), report sha256 `dd1a22d8…5efb`. 20 000 trials per cell; each (k+, k−) cell's G-NI
 decision from 10 000 multinomial resamples (salt 8412, sub-key 3). H-sysid at C and H-rule at
 C − 0.10, each coupled to W, C the better of the two per trial. The first run, `simulate-1` at
-`d9625c7`, was voided by its 3 600 s cap after a 73-minute G-quiet wait with its computation done;
+`d9625c7`, was voided by its 3 600 s cap after a 75-minute G-quiet wait with its computation done;
 its power tables equal `simulate-2`'s exactly (R20.18).
 
 **δ's rule.** G-NI's power at W = C under the half coupling (C = 0.80 / 0.85 / 0.875):
@@ -137,16 +137,16 @@ R20.17); every size is at most 3.97 %, so the reading changes nothing.
 **G-bar** (exact): 0.566 at W = 0.875, 0.908 at 0.906, 0.978 at 0.922, 0.9975 at 0.938, 0.9999 at
 0.953.
 
-**G-NI at δ = 16** with the better-of-two comparator (overlap / half / independent): ≥ 0.97 in every
+**G-NI at δ = 16** with the better-of-two comparator (overlap / half / independent): ≥ 0.969 in every
 cell with W ≥ 0.906 (≥ 0.99 with W ≥ 0.922); at W = 0.875, 1.00 / 0.98 / 0.83 for C = 0.875 and
-≥ 0.93 otherwise.
+≥ 0.927 otherwise.
 
 **The secondary claim** (W > C, exact one-sided McNemar p < 0.01; overlap / half / independent):
 
 | W | C = 0.80 | C = 0.85 | C = 0.875 |
 |---|---|---|---|
 | 0.875 | 0.86 / 0.30 / 0.19 | 0.04 / 0.03 / 0.02 | 0.00 / 0.00 / 0.01 |
-| 0.906 | 0.99 / 0.65 / 0.45 | 0.58 / 0.19 / 0.12 | 0.11 / 0.05 / 0.04 |
+| 0.906 | 0.99 / 0.65 / 0.45 | 0.57 / 0.19 / 0.12 | 0.11 / 0.05 / 0.04 |
 | 0.922 | 1.00 / 0.81 / 0.63 | 0.83 / 0.36 / 0.24 | 0.39 / 0.14 / 0.10 |
 | 0.938 | 1.00 / 0.92 / 0.80 | 0.94 / 0.58 / 0.41 | 0.70 / 0.30 / 0.21 |
 | 0.953 | 1.00 / 0.97 / 0.91 | 0.98 / 0.77 / 0.61 | 0.88 / 0.51 / 0.38 |
