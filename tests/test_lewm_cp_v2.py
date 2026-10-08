@@ -56,7 +56,7 @@ def test_manifest_frozen_block_equals_the_module():
     assert manifest["status"] == cpv.STATUS
 
 
-def test_a_draft_carries_no_pin():
+def test_a_draft_carries_no_pin():  # STATUS is FROZEN since R19.15; kept for the DRAFT case
     manifest = json.loads(MANIFEST.read_text())
     if cpv.STATUS == "DRAFT":
         assert manifest["frozen_sha256_pin"] is None and manifest["hashes"] == {}
@@ -500,9 +500,9 @@ def test_stage_d_report_must_be_this_tasks_d_pass(tmp_path):
     from types import SimpleNamespace
 
     good = {"task": "TASK-081", "protocol": cpv.PROTOCOL, "outcome": "D-PASS", "debug": False,
-            "cohort": "D"}  # fmt: skip
+            "cohort": "D", "frozen_sha256_at_run": cpv.frozen_sha256()}  # fmt: skip
     for bad in ({"task": "TASK-080"}, {"outcome": "L-DEV-STOP"}, {"debug": True},
-                {"cohort": "S"}):  # fmt: skip
+                {"cohort": "S"}, {"frozen_sha256_at_run": "0" * 64}):  # fmt: skip
         path = tmp_path / f"{len(list(tmp_path.iterdir()))}.json"
         path.write_text(json.dumps(good | bad))
         with pytest.raises(pt.GuardError):
@@ -631,3 +631,36 @@ def test_stage_modules_import_without_torch_or_mujoco():
         "assert 'torch' not in sys.modules and 'mujoco' not in sys.modules\n"
     )
     subprocess.run([sys.executable, "-c", code], check=True, cwd=ROOT)
+
+
+def test_exact_intervals_and_pairs():
+    assert cpv.exact_interval(16, 16)[0] == pytest.approx(0.794, abs=0.001)
+    lo, hi = cpv.exact_interval(58, 64)
+    assert (round(lo, 3), round(hi, 3)) == (0.807, 0.965)  # TASK-080's W on S
+    out = cpv.counts_and_pairs(_outcomes())
+    assert out["counts"]["W"]["count"] == 120 and "W" not in out["w_minus_arm"]
+    assert out["w_minus_arm"]["H-rule"]["difference"] == -4
+
+
+# The frozen block's sha256, set at the freeze (R19.15).
+FROZEN_SHA256_PIN = "77ccc6364624c7da9dcca1d09827a0f6a25a670a00392d488e7b0216e090705a"
+
+
+def test_the_frozen_sha_pin_is_set_at_the_freeze():
+    manifest = json.loads(MANIFEST.read_text())
+    assert manifest["frozen_sha256_pin"] == FROZEN_SHA256_PIN == cpv.frozen_sha256()
+    assert manifest["status"] == cpv.STATUS == "FROZEN"
+    assert "**STATUS: FROZEN**" in (ROOT / cpv.DOCUMENT).read_text()
+    run = _runner()
+    assert run.check_frozen_pin(manifest)["pin"] == FROZEN_SHA256_PIN
+    assert run.check_protocol_document(manifest)["sha256"] == manifest["protocol_document_sha256"]
+
+
+def test_the_freeze_pins_files_and_the_protocol_document():
+    import hashlib
+
+    manifest = json.loads(MANIFEST.read_text())
+    want = {*cpv.OWN_FILES, "tests/test_lewm_cp_v2.py", cpv.TASK080_MANIFEST, cpv.SOLVER_FILE}
+    assert set(manifest["hashes"]) == want
+    for relative, sha in manifest["hashes"].items():
+        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == sha, relative

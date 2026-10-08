@@ -14,6 +14,7 @@ tags:
 - apple-pnp
 - design-note
 - preregistration
+- frozen
 sprint: ''
 depends_on:
 - "[[TASK-080]]"
@@ -67,11 +68,14 @@ R18.31). This task does not change it unless an L-PASS is followed by its own re
       W-frozen, δ, cohort size, seeds 70100–71999, rows and clause).
 - [x] Stage 0: code in new modules, frozen block, manifest, tests, debug smokes (R19.12–R19.14,
       `docs/experiments/apple_lewm_commit_precision_v2_stage0.md`; this card's third PR).
-- [ ] The freeze merged on an independent reviewer's reported APPROVE.
+- [x] The freeze merged on an independent reviewer's reported APPROVE (R19.15; this card's fourth
+      PR; ticked in the PR, in force on merge).
 - [ ] Stages D and S, each on its own reported GO, from a clean worktree of the merged revision.
 - [ ] Results PR, with every restated number checked by an independent reviewer.
 
 ## Notes
+- 2026-10-08: #162 (Stage 0) merged at `1ca1258`; the freeze (R19.15–R19.16) on branch
+  `feat/task081-freeze`, frozen sha `77ccc636…705a`; Stage D's plan in protocol §6.4.
 - 2026-10-08: Stage 0 on branch `feat/task081-stage0`: code, 43 tests, debug smokes on
   71900–71999 only, caps and power (salt 8304, report `5043c3ab…a56c`); frozen-block candidate
   `857a3078…32ef`; nothing of D or S simulated.

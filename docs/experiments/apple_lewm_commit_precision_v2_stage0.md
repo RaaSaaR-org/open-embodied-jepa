@@ -49,7 +49,7 @@ and six job reports, TASK-080's Stage R report. CPU, 4 world-model workers, no G
 | run | revision | outcome | seconds | peak PSS (GiB) | note |
 |---|---|---|---:|---:|---|
 | closedD-1 | `19e3e83` | V | 22 | – | `KeyError: 'stages'`: the report lacked the record TASK-076's harness writes into; fixed in `2faf9e5` |
-| closedD-2 | `2faf9e5` | L-DEV-STOP-DEBUG | 121 | 9.38 | every D arm ran; on 4 debug resets the +3 margin stop is expected to bind |
+| closedD-2 | `2faf9e5` | L-DEV-STOP-DEBUG | 121 | 9.38 | every D arm ran; on 4 debug resets all three D stops bound (expected at n = 4; #162 review N-3) |
 | closedS-1 | `2faf9e5` | V | 162 | – | in-run G-tests passed (2120 passed, 37 skipped); then G-plan refused the `--stage-d` given (closedD-2, not D-PASS-DEBUG), as designed |
 | closedS-2 | `2faf9e5` | S-VOID-CEILING-DEBUG | 160 | 9.40 | every S arm and the determinism re-run (ok); on 4 resets H-final < 112 always |
 | closedD-3 | `9c82b97` | L-DEV-STOP-DEBUG | 121 | 9.49 | the final code (the fit's design rank logged); the same counts as closedD-2 |
@@ -104,7 +104,9 @@ coupled to W as H-rule is and conditionally independent of it; C the better of t
 - **G-bar** (exact): 0.566 at 0.875, 0.759 at 0.89, 0.908 at 0.906, 0.978 at 0.922, **0.9975** at
   0.938 and 0.9999 at 0.953 (#161 review, nit N1: 0.938 is 0.9975, not "≥ 0.998").
 - **The twin tests** (exact McNemar, p < 0.01, 128 pairs): ≥ 0.9997 in every coupling at W 0.906
-  against N 26/64 and L-mean 30/64 (TASK-080's S rates), and against a twin at 0.60.
+  against N 26/64 and L-mean 30/64 (TASK-080's S rates), and against a twin at 0.60 (computed
+  for those cells; power falls monotonically in the twin's rate, so it holds for L-shuf and
+  L-rand too; #162 review N-4).
 
 ## 5. What Stage 0 does not do
 

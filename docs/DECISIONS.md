@@ -63,6 +63,29 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (h) — TASK-081 is frozen without a calibration stage; Stage D's plan (R19.15–R19.16)
+
+**Decided by Claude under owner delegation (2026-09-30).** The protocol
+[apple_lewm_commit_precision_v2.md](experiments/apple_lewm_commit_precision_v2.md) becomes
+**FROZEN** once this ruling's PR is merged on an independent reviewer's reported APPROVE. #162
+(Stage 0) merged at `1ca1258` on an independent APPROVE at `eecb3b2` (no blocking finding). No seed
+of D (70100–70115) or S (70200–70327) has been simulated.
+
+- **R19.15 — the freeze.** No calibration stage runs (R19.4), so nothing is measured between Stage 0
+  and the freeze. STATUS FROZEN; the frozen block's sha256
+  `77ccc6364624c7da9dcca1d09827a0f6a25a670a00392d488e7b0216e090705a` is pinned in the test file and
+  the manifest, with six file pins (this task's three code files, its test file, TASK-080's
+  manifest and `commit_precision_dev.py`) and the protocol document's sha256. #162's review is
+  applied: the runner now computes every arm's exact 95 % interval and every arm's paired
+  difference from W (§7.3 item 1, reported only; N-2); Stage S refuses a D-PASS report run under
+  another frozen block (N-6); the rulings text names (g) and (h) (N-5); the Stage-0 record's
+  wording is corrected (N-3, N-4); the smokes' revisions `2faf9e5` and `19e3e83` are kept reachable
+  by the tags `provenance/task081-stage0-2faf9e5` and `provenance/task081-stage0-19e3e83` (N-1). No
+  bar, row, seed or arm changes.
+- **R19.16 — Stage D's plan** (protocol §6.4): one `closed --cohort D` invocation on 70100–70115, on
+  the CPU, from a fresh clean worktree of the freeze's merge commit, on its own reported GO; rows
+  L-DEV-STOP or D-PASS; cap 7 200 s. Its record makes R7's factual correction (R19.10, R19.14).
+
 ## Decision 2026-10-08 (g) — TASK-081 Stage 0: code, debug smokes, caps and power; #161's review nits (R19.12–R19.14; protocol still DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is

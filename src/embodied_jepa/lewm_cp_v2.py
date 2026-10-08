@@ -38,11 +38,14 @@ from embodied_jepa.contracts import ContractError
 
 PROTOCOL = "apple_lewm_commit_precision_v2"
 TASK = "TASK-081"
-STATUS = "DRAFT"
+STATUS = "FROZEN"
 DOCUMENT = "docs/experiments/apple_lewm_commit_precision_v2.md"
 MANIFEST = "benchmarks/manifests/apple-lewm-cp-v2.json"
 DELEGATED = "decided by Claude under owner delegation (2026-09-30)"
-RULINGS = "DECISIONS.md decision 2026-10-08 (f), R19.1-R19.11"
+RULINGS = (
+    "DECISIONS.md decision 2026-10-08 (f), R19.1-R19.11 (Stage 0: (g), R19.12-R19.14; "
+    "freeze: (h), R19.15)"
+)
 GuardError = pt.GuardError
 NOT_EVALUATED = lm.NOT_EVALUATED
 
@@ -318,6 +321,38 @@ def decide_d(counts: dict) -> dict:
         raise ContractError(f"Stage D needs the counts of {missing}")
     out = pr.decide_d({a: counts[a] for a in lm.D_ARMS})
     return out | {"reported_only": {a: counts[a] for a in D_REPORTED}}
+
+
+def _binom_cdf(k: int, n: int, p: float) -> float:
+    return float(sum(math.comb(n, i) * p**i * (1 - p) ** (n - i) for i in range(0, k + 1)))
+
+
+def exact_interval(k: int, n: int, level: float = 0.95) -> list[float]:
+    """The exact (Clopper-Pearson) two-sided interval of a binomial count k of n, by bisection."""
+    k, n, a = int(k), int(n), (1.0 - level) / 2.0
+
+    def solve(f):
+        lo, hi = 0.0, 1.0
+        for _ in range(100):
+            mid = (lo + hi) / 2.0
+            lo, hi = (mid, hi) if f(mid) else (lo, mid)
+        return (lo + hi) / 2.0
+
+    lower = 0.0 if k == 0 else solve(lambda p: 1.0 - _binom_cdf(k - 1, n, p) < a)
+    upper = 1.0 if k == n else solve(lambda p: _binom_cdf(k, n, p) > a)
+    return [lower, upper]
+
+
+def counts_and_pairs(outcomes: dict) -> dict:
+    """§7.3 item 1, reported only: every arm's count with its exact 95 % interval, and every
+    arm's paired difference from W with its discordant counts and interval (salt 8302)."""
+    w = np.asarray(outcomes["W"], bool)
+    counts = {
+        a: {"count": int(np.sum(v)), "n": len(v), "ci95": exact_interval(int(np.sum(v)), len(v))}
+        for a, v in outcomes.items()
+    }
+    pairs = {a: paired_interval(w, v) for a, v in outcomes.items() if a != "W"}
+    return {"counts": counts, "w_minus_arm": pairs}
 
 
 def solver_effect(w, w_frozen) -> dict:
