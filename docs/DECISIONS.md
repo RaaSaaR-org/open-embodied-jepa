@@ -63,6 +63,40 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (n) — TASK-082 K0 ends CAL-ESCALATE (τ_commit = 0, r_K = 466); nothing is frozen; TASK-082 closes without the clause (R20.23–R20.25)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_unknown_law_v2_k0.md](experiments/apple_lewm_unknown_law_v2_k0.md). K0 calibrates
+privileged and hand-written arms only; no world model, learned controller or LeWM arm ran, and
+nothing in it is a learned or LeWM result. R7 is unchanged.
+
+- **R20.23 — the run.** K0 ran once at `c0b2df6` on the independent pre-launch review's reported
+  "K0 GO at c0b2df6dedfa61cb091a021382e6f1e3aea3f03a" (#170, issuecomment-6063308314), from a clean
+  worktree of the merged revision (`task082-k0`), on cohort K (72400–72463, 64 resets) under U-sat,
+  CPU only with 6 workers, after another session's Isaac jobs had released their memory (25.6 GiB
+  available at start; peak process-tree PSS 9.67 GiB against 12 GiB), with in-run G-tests (2 213
+  passed, 37 skipped), in 797 s against the 7 200 s cap; 0 refusals, 0 fallbacks. Report
+  `outputs/task082-k0-1/report.json`, sha256 `ceeece61…956c`; evidence copy
+  `~/develop/emai/evidence/task082-k0/` with `SHA256SUMS`.
+- **R20.24 — the row is CAL-ESCALATE (escalate, no clause).** The τ curve (counted successes of 64
+  at planted errors of 0, 0.5, 1, 1.5, 2 and 3 cm): **64, 55, 55, 34, 22, 21**, so **τ_commit = 0**
+  (0.5 cm is one success below the 56/64 bar; its 9 failures and 1.0 cm's 9 are disjoint resets).
+  **r_K = 466**, one step after the frozen r = 465. Both are §7.2 stops. The others did not fire:
+  N_K(0) = 64/64; median palm speed at 405 0.0039 cm per step; **0/64** ceiling aims outside the box
+  (|b| 1.17 cm in median, 2.29 cm at most). Reported only: H-rule (C1-M's written law, on p̂; not
+  learned) 54/64, ceiling − H-rule +10/64 (95 % interval +5 to +16); H-now 1/64. One run, 64
+  resets, simulation only; both stops miss by one unit, so this is the declared reading of this
+  draw, not a tolerance known to within a reset. The τ < 1.0 cm ruling point for Stage T's GO is not
+  reached (it belongs to a K0-PASS at 0.5 cm; τ_commit = 0 is itself CAL-ESCALATE).
+- **R20.25 — what follows.** Nothing is frozen and no later stage (C, O, T, G, D, S) is launched;
+  K's seeds are spent, K0 is not repeated, and neither pre-declared stop is relaxed after the fact.
+  **TASK-082 closes at K0 as CAL-ESCALATE, without the clause**; nothing in its scope is closed or
+  refuted, since no LeWM model was trained or run under U-sat. Recommendation only: a successor is a
+  new task with its own design note, preregistration, review and fresh seeds, which would need a
+  horizon covering U-sat's settling (h ≥ 61, a recipe change and retrain) and a commit tolerance
+  that holds at the measured τ curve (a law with less landing amplification, or bars declared for
+  τ_commit = 0.5 cm from the start with R1's risk stated).
+
 ## Decision 2026-10-08 (m) — TASK-082 Stage 0: code, debug smokes, scale probes and δ = 16/128 by the declared rule (R20.17–R20.22; protocol still DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30). The protocol stays DRAFT.** The record is

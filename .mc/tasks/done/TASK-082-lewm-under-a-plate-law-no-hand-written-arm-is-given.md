@@ -2,9 +2,9 @@
 id: TASK-082
 aliases:
 - TASK-082
-title: "LeWM under a plate law no hand-written arm is given (direction (a))"
+title: LeWM under a plate law no hand-written arm is given (direction (a))
 slug: lewm-under-a-plate-law-no-hand-written-arm-is-given
-status: todo
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -21,6 +21,7 @@ due_date: ''
 created: 2026-10-08
 updated: 2026-10-08
 ---
+
 
 # LeWM under a plate law no hand-written arm is given (direction (a))
 
@@ -70,9 +71,17 @@ D 72500–72515, S 72600–72727, corpus 72800–74799, debug 74800–74899; sal
 - [x] Stage 0 (R20.17–R20.22): new modules, DRAFT manifest, tests, debug smokes on 74800–74899
   (labelcheck LABELS-UNCHANGED), scale probes (caps confirmed), power simulation (δ = 16/128);
   record `docs/experiments/apple_lewm_unknown_law_v2_stage0.md`
-- [ ] K0 on its reported GO, the freeze, and the gated stages on their GOs
+- [x] K0 on its reported GO (R20.23–R20.25; record `docs/experiments/apple_lewm_unknown_law_v2_k0.md`):
+  **CAL-ESCALATE**, no clause. τ curve 64, 55, 55, 34, 22, 21 of 64 (τ_commit = 0: 0.5 cm one
+  below 56/64) and r_K = 466 > 465; ceiling 64/64, palm speed 0.0039 cm/step, 0/64 aims outside
+  the box; H-rule 54/64 and H-now 1/64 reported. One run, 64 resets, privileged and hand-written
+  arms only, simulation only. Report sha256 `ceeece61…956c`; evidence
+  `~/develop/emai/evidence/task082-k0/`.
+- [ ] ~~The freeze and the gated stages~~ — not reached: nothing is frozen and TASK-082 closes at
+  K0 without the clause (R20.25). No LeWM model was trained or run under U-sat.
 
 ## Notes
 
 Parallel options from R19.23, not part of this card: TASK-079's precondition (an owner ruling, no
 compute) and two extra W seeds under C1-M (CPU only; R-S already exists for 66801 and 66802).
+%% mc-links: [[TASK-081]] %%
