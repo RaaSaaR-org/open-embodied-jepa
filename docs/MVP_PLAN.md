@@ -8,7 +8,7 @@ Prepared 2026-09-20 from PRD sections 1–21, updated with the user’s Mac-only
 > longer the primary control line: CEM over the world-model cost is abandoned in favour of
 > behaviour cloning with the world model as a critic. The current position, what is
 > demonstrated and what has been ruled out are summarised in the
-> [README status section](../README.md#status--2026-10-02); the decision and its evidence
+> [README status section](../README.md#status--2026-10-08); the decision and its evidence
 > are in [DECISIONS.md](DECISIONS.md). The milestone table below is kept as the original
 > plan of record and is not rewritten.
 >
@@ -23,6 +23,12 @@ Prepared 2026-09-20 from PRD sections 1–21, updated with the user’s Mac-only
 > its random-init encoder control, so TASK-072 M2 is M2-FAIL on G3. No LeWM-driven controller has
 > run in closed loop on v2 yet. The canonical status sentence is in [DECISIONS.md](DECISIONS.md)
 > (decision 2026-10-02, R7), and the next task is TASK-076.
+>
+> **Update 2026-10-08.** The first LeWM-driven closed loop on v2 whose counts are read has run:
+> TASK-080's Stage D, a non-gating development cohort of 16 resets in simulation, in which LeWM
+> chooses only the single place aim between P-3's pick and e9's scripted place, ended D-PASS with
+> W 16/16, its action-blind twin 8/16 and its scene-blind twins 5/16 and 9/16. It is not the gated
+> result; TASK-080's gated Stage S has not run. R7's sentence was updated accordingly (R18.28).
 
 ## Deliverable
 

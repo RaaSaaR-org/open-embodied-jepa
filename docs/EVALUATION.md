@@ -63,7 +63,7 @@ separate benchmark: v2 numbers are never pooled with v1 numbers.
   numbers elsewhere that were scored with it are flagged, not rewritten. A learned-policy success
   in TASK-071/072 is counted as at rest after a latched grasp and a latched place (owner rulings
   T71-R1 and T71-R2).
-- **Results on v2 so far.** Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init encoder control R-3, so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. No LeWM-driven controller has run in closed loop on v2 yet; LeWM's only closed-loop Apple→Plate runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results. (See DECISIONS 2026-10-02, R7, for scope.) The privileged scripted expert e9 passed the TASK-070 gate
+- **Results on v2 so far.** Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init encoder control R-3 (one run, one training seed per arm, 40 resets, one camera at 112 px onboard, a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. The first LeWM-driven closed loop on v2 whose counts are read is TASK-080's Stage D, a non-gating development cohort (one run, one model seed, 16 resets, in simulation only, under the declared simulation-only plate condition C1-M): a LeWM token predictor on frozen DINOv2 features chose the single place aim between P-3's learned pick and e9's scripted place and reached 16/16 counted successes, against 8/16 for its action-blind twin and 5/16 and 9/16 for its two scene-blind twins (the privileged look-ahead ceiling also 16/16). That is a development result, not a gated one: TASK-080's gated Stage S has not run, LeWM has no gated closed-loop Apple→Plate success, and its only other closed-loop Apple→Plate runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results. (See DECISIONS 2026-10-02, R7, as updated on 2026-10-08 by R18.28, for scope.) The privileged scripted expert e9 passed the TASK-070 gate
   (32/32 at rest with the plate exact, 30/32 at 1.0 cm plate error); that is a scripted-expert
   result.
 - **LeWM-oriented tasks on v2.** TASK-073 (a LeWM critic for P-3's aim) ended S-NO-CONDITION at
@@ -77,7 +77,11 @@ separate benchmark: v2 numbers are never pooled with v1 numbers.
   [results](experiments/apple_plate_twin_v2_results.md)). TASK-077 (a LeWM 8 × 8 token predictor
   choosing a committed place aim under C1-M) stopped at its offline Stage G with G-NO-BAR: its
   dynamics gates passed, but the plate readout on its predicted latent missed τ_commit, so its
-  closed loop did not run ([results](experiments/apple_lewm_c1m_v2_results.md)).
+  closed loop did not run ([results](experiments/apple_lewm_c1m_v2_results.md)). TASK-080 (the
+  same models with a plate readout fitted on W's predicted latents) passed its offline gate on
+  fresh roots, and its non-gating development Stage D (16 resets) ended D-PASS: W 16/16, N 8/16,
+  the scene-blind twins 5/16 and 9/16, the privileged ceiling 16/16; the gated Stage S has not run
+  ([protocol](experiments/apple_lewm_c1m_v2_pred_readout.md) §8.6; DECISIONS 2026-10-08 (c)).
 - **There is still no primary control line.** A behaviour-cloning result on v2 is not a return to
   behaviour cloning as the project's control approach; the product goal is LeWM on G1 + dual
   Dex3.

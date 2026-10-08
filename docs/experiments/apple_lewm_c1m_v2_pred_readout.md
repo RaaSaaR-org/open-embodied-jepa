@@ -7,7 +7,7 @@ block is `src/embodied_jepa/lewm_pr_v2.py`; its sha256
 with the manifest's file pins and this document's sha256. **The freeze takes effect when it is
 merged on an independent reviewer's reported APPROVE.** Each later stage (C′, R, D, S) still needs
 its own reported GO (§8). K0′'s record is §8.1, Stage C′'s §8.2, Stage R's plan §8.3,
-Stage R's result §8.4 and Stage D's plan §8.5.
+Stage R's result §8.4, Stage D's plan §8.5, Stage D's result §8.6 and Stage S's plan §8.7.
 
 History. The DRAFT (R18.1–R18.14) was reviewed independently (#153). Stage 0 (R18.15–R18.21,
 [Stage-0 record](apple_lewm_c1m_v2_pred_readout_stage0.md), #154) added the code, debug smokes on
@@ -15,8 +15,10 @@ History. The DRAFT (R18.1–R18.14) was reviewed independently (#153). Stage 0 (
 bar; §15's questions 1–5 are ruled there. K0′ then ran once on a reported GO, and this freeze
 writes its values into the frozen block. Stage C′ then sealed the fresh corpus (§8.2, R18.23), and
 Stage R ended R-PASS (§8.4, R18.25), an offline result: its predicted counts are predictions, not
-closed-loop counts. No seed of D, S or F has been simulated, and no LeWM-driven controller has run
-in closed loop on a counted cohort. A later stage's GO approves that stage only.
+closed-loop counts. Stage D, the non-gating development closed loop on 16 resets, then ended
+D-PASS (§8.6, R18.27): W 16/16, N 8/16, L-shuf 5/16, L-mean 9/16, the privileged ceiling
+H-final(commit) 16/16; a development result, not the gated one. No seed of S or F has been
+simulated in closed loop. A later stage's GO approves that stage only.
 
 - **Admitted by:** the TASK-077 decomposition record's row **D-READOUT**
   ([apple_lewm_c1m_v2_decomposition.md](apple_lewm_c1m_v2_decomposition.md) §2, R17.53–R17.54,
@@ -35,8 +37,10 @@ in closed loop on a counted cohort. A later stage's GO approves that stage only.
   the LeWM place in Arena); this task is TASK-080, the next free number (checked on 2026-10-07:
   no card, branch or document uses TASK-080).
 
-The canonical status sentence (DECISIONS 2026-10-02, R7), verbatim. **This protocol does not change
-it** (R18.12):
+The canonical status sentence (DECISIONS 2026-10-02, R7), verbatim **as it stood at the
+freeze**. This protocol did not change it (R18.12) until Stage D's record: **R18.28** (decision
+2026-10-08 (c)) replaces its v2 LeWM clause with Stage D's development counts, as a named
+exception to R18.12 (§8.6). The quote below is kept as frozen:
 
 > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
 > (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an
@@ -676,9 +680,12 @@ rule's fixed point; the predicted count maps each root's error through the poole
 - **Contrast-T** (250 roots, aims from the true plate): ceiling 0.390 [0.356, 0.432]; e_S 0.512
   [0.461, 0.568], 0.573 [0.527, 0.630], 0.542 [0.480, 0.607]; e_N 1.681, 1.452, 1.640; e_L 2.425,
   2.435, 2.342; e_S / e_N 0.305 [0.267, 0.351], 0.394 [0.340, 0.458], 0.331 [0.291, 0.386]. Every
-  R-gate form would pass on contrast-T as well. Contrast-T's e_S medians (0.512–0.573 cm) are not
-  above the decomposition record's val medians (0.556–0.578 cm), so the val selection shows no
-  cost at the median on fresh roots (different root sets; a comparison of medians only).
+  R-gate form would pass on contrast-T as well. Seed by seed against the decomposition record's
+  val medians (0.578 / 0.564 / 0.556 cm), contrast-T's e_S medians are 0.066 lower (66800), 0.009
+  higher (66801) and 0.014 lower (66802); as ranges, 0.512–0.573 cm is not above 0.556–0.578 cm.
+  So the val selection shows no consistent cost at the median on fresh roots (different root sets;
+  a comparison of medians only). Reworded in R18.27 after #157's review: the earlier sentence held
+  for the ranges, not seed by seed.
 - **The corpus-aim confound** (§5.3 point 2): median e_S on gate-P minus contrast-T is +0.035
   [−0.043, +0.121], +0.011 [−0.075, +0.082] and +0.047 [−0.039, +0.134] cm by seed. Every interval
   includes 0; the split can detect only an effect of about p̂'s error (R-plate's error at 405 on
@@ -753,6 +760,184 @@ the stage creates no CUDA context):
 
 If the invocation ends in anything other than a §9.3 row, nothing further is launched and the case
 is ruled under §11 first. The exact command is in the GO.
+
+### 8.6 Stage D's result: D-PASS (R18.27)
+
+Stage D ran once, on the reviewer's reported GO (#157,
+<https://github.com/RaaSaaR-org/open-embodied-jepa/pull/157#issuecomment-6050425196>, posted
+01:41:24 UTC), at `db34adc`, the record's merge commit, on a clean tree with STATUS FROZEN and the
+frozen sha `0fc095dc…be064`, in the worktree `/home/huhn/develop/emai/worktrees/task080-staged`,
+with the command the GO named, once. **D is a non-gating development cohort of 16 resets, one run,
+one model seed, in simulation only. It gates only the GO of Stage S and is not the gated result.**
+It is the first LeWM-driven closed loop on v2 whose counts are read (R18.28 below; Stage 0's debug
+closed loops ran on debug seeds and are not read). In every arm, P-3's learned pick and e9's
+scripted place are the same; the arms differ only in the single place aim committed at step 405,
+under the declared simulation-only condition C1-M.
+
+| | UTC (2026-10-08) | seconds |
+|---|---|---:|
+| start; G-quiet passed (load 0.15 / 0.15, bar 2.0 / 2.0) | 01:42:36 | – |
+| in-run G-tests: 2070 passed, 37 skipped, at `db34adc`, clean | 01:42:36–01:45:21 | 163 |
+| G-repro (8 of 8 checks; 170 train roots decoded, no test split) | – | 42 |
+| `first_outcome_utc` | 01:46:05 | – |
+| arms, in order (log): W, N, L-shuf, L-mean, H-final(commit) done at | 01:47:03, 01:47:30, 01:48:27, 01:49:22, 01:49:54 | – |
+| end, report written: **D-PASS** | 01:49:55 | **439** (cap 7 200) |
+
+- **Guards.** G-hash checked TASK-076's 84 pins, TASK-077's 13 pins and this task's 7 own pins,
+  with the protocol document's pin `96298e16…0ecc`; the six checkpoints matched their sha256s; the
+  runner accepted the Stage R report the GO named (`bedb8966…48ea7`) as a non-debug R-PASS report
+  that read the same sealed corpus (`deebd83d…7c4e`; G-split); R-S and R-N of seed 66800 loaded
+  against their content sha256s. The revision at the end was still `db34adc` and the tracked tree
+  stayed clean. No non-finite field. G-memory:
+  peak process-tree PSS 9.70 GiB (RSS 11.17 GiB, 9 processes; cap 12), MemAvailable 24.6 GiB at
+  the start. G-disk: at least 64.3 GiB free throughout. Threads as pinned (MKL and OMP 6, OpenBLAS
+  16), 4 world-model workers. No render disagreement between arms and no render retry. Every
+  attempt ran its 725 steps to `policy_complete`; the post-pick plate move was applied on every
+  attempt, under the reactive rule κ = −0.5, L = 2; no contact with the plate before s1 was
+  recorded on any attempt. Every attempt passed the privileged
+  read check, with 0 task-truth reads in any controller. No determinism re-run is part of D
+  (`"not evaluated"`).
+- **The GO's G-quiet note.** The frozen block's G-quiet text says a busy machine "makes the stage
+  V before any render"; the code instead polls for up to 4 h before raising. The machine was quiet
+  at launch (load 0.15 / 0.15), so the stage did not wait. This is a wording mismatch only; the
+  frozen block is not edited, and Stage S's GO repeats the launch-time load check.
+
+**Counts** (counted success: the apple at rest on the plate under `apple_at_rest_v0` after a
+latched grasp and a latched place, T71-R1/R2). Exact binomial 95 % intervals on 16 resets are
+wide:
+
+| arm | count | 95 % (exact) | W − arm | resets W only / arm only |
+|---|---:|---|---:|---|
+| **W** (R-S, seed 66800, flagged `last_two_triggered`) | **16/16** | 0.794–1.000 | – | – |
+| N (action-blind; R-N) | 8/16 | 0.247–0.753 | +8 | 8 / 0 |
+| L-shuf (scene-blind; R-S) | 5/16 | 0.110–0.587 | +11 | 11 / 0 |
+| L-mean (scene-blind; R-S) | 9/16 | 0.299–0.802 | +7 | 7 / 0 |
+| H-final(commit) (**privileged** look-ahead ceiling, not learned) | 16/16 | 0.794–1.000 | 0 | 0 / 0 |
+
+**Rows (§8 step 6, §9.3).** W 16 ≥ 12; H-final(commit) 16 ≥ 14; W − max(N, L-shuf, L-mean) = 16 −
+9 = **+7 ≥ +3**. No stop holds: **D-PASS**, `clause_fires` false. Every twin's success is also a
+W success on the same reset (no reset where a twin succeeded and W failed). D runs no McNemar
+test; those discordant counts are reported, not tested, and D's bars are not S's.
+
+**The committed aims.** The aim error is the commit target's distance from the rule's fixed point
+g\* = (p − κh)/(1 − κ) at 405 (the quantity Stage R's offline aims mapped through the τ curve);
+the landing miss is its distance from where the plate actually was at s1 = 525:
+
+| arm | median aim error (cm) | p87.5 | max | aims > τ_commit | median landing miss (cm) | p87.5 | clip-binding | fallbacks | refused before 405 | seconds per attempt (median / max) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| W | 0.546 | 0.782 | 1.108 | 1 of 16 | 0.475 | 1.049 | 0 | 0 | 0 | 13.85 / 16.00 |
+| N | 2.313 | 2.779 | 3.679 | 14 of 16 | 3.234 | 3.930 | 0 | 0 | 0 | 6.77 / 7.06 |
+| L-shuf | 2.748 | 3.862 | 4.237 | 15 of 16 | 4.213 | 5.663 | 0.25 | 0 | 0 | 14.02 / 14.55 |
+| L-mean | 1.964 | 3.460 | 3.633 | 13 of 16 | 2.596 | 4.616 | 0 | 0 | 0 | 13.92 / 14.35 |
+| H-final(commit) | 0.456 | 0.505 | 0.511 | 0 of 16 | 0.085 | 0.111 | 0 | 0 | 0 | 7.74 / 8.31 |
+
+- W's one aim above τ_commit (65112, 1.108 cm) still succeeded. W's refinement converged on 13 of
+  16 resets and stopped at the 10-refinement cap on 3 (65104, 65105, 65111), all of which
+  succeeded. In W, N and both scene-blind twins all 147 grid candidates were feasible on every
+  reset. W's decision took 9.7 s in median (148–157 roll-outs per decision).
+- H-final(commit)'s aims sit 0.41–0.51 cm from the analytic fixed point but land within 0.12 cm
+  of the plate at s1: the fixed point g\* is the rule's idealisation, and the look-ahead aims at the
+  plate the simulator actually produces. W's landing misses (median 0.475 cm) are close to its
+  aim errors.
+- The twins' successes come with aim errors up to 3.27 cm (L-shuf on 65104) and 2.56 cm (L-mean on
+  65111): the success tolerance is looser than τ_commit at some resets, as the τ curve's 32/64 at
+  1.5 cm and 29/64 at 2 cm already show.
+- L-shuf on 65111 ended at rest on the plate without a latched place, so it is not counted. On
+  four L-shuf resets (65103, 65108, 65110, 65113) the apple ended 1.16–1.72 m from the plate.
+
+**Per reset** (S = counted success, – = not; the number is the aim error in cm):
+
+| reset | W | N | L-shuf | L-mean | H-final(commit) |
+|---|---|---|---|---|---|
+| 65100 | S 0.53 | – 2.50 | – 0.89 | S 1.32 | S 0.47 |
+| 65101 | S 0.54 | – 2.34 | – 2.93 | S 0.92 | S 0.42 |
+| 65102 | S 0.77 | S 0.48 | – 2.56 | S 1.15 | S 0.51 |
+| 65103 | S 0.25 | S 1.77 | – 3.89 | S 2.51 | S 0.50 |
+| 65104 | S 0.74 | – 2.98 | S 3.27 | – 3.63 | S 0.45 |
+| 65105 | S 0.77 | – 2.28 | – 2.01 | – 2.25 | S 0.43 |
+| 65106 | S 0.55 | S 1.16 | – 1.25 | S 1.58 | S 0.42 |
+| 65107 | S 0.21 | S 1.46 | S 2.48 | S 1.67 | S 0.41 |
+| 65108 | S 0.60 | S 2.05 | – 2.93 | S 1.18 | S 0.51 |
+| 65109 | S 0.56 | – 2.47 | S 4.24 | – 3.28 | S 0.46 |
+| 65110 | S 0.49 | S 2.51 | – 2.48 | – 0.78 | S 0.51 |
+| 65111 | S 0.86 | – 2.50 | – 3.03 | S 2.56 | S 0.50 |
+| 65112 | S 1.11 | S 1.15 | – 3.86 | – 3.45 | S 0.45 |
+| 65113 | S 0.44 | S 0.59 | – 3.38 | S 0.77 | S 0.51 |
+| 65114 | S 0.23 | – 3.68 | S 2.48 | – 3.54 | S 0.45 |
+| 65115 | S 0.38 | – 2.75 | S 1.50 | – 2.69 | S 0.45 |
+
+**What D does and does not show.**
+- It does not test G-bar, G-NI or any McNemar test: those are Stage S's, on 64 fresh resets. 16/16
+  on 16 resets is compatible with any true rate from about 0.79 upward; Stage R's offline prediction
+  for W (56.92 of 64, about 0.889) is inside that range, so D neither confirms nor refutes it, and
+  G-bar's power at that predicted rate is still about 0.73 (§8.4).
+- The non-inferiority comparators, H-rule (the hand-coded rule) and H-sysid, and L-rand did not run
+  in D. Whether W is as good as a rule that knows the law is S's G-NI question; offline, H-rule
+  read 1.73 of 64 above W (§8.4).
+- The ceiling H-final(commit) also scored 16/16, so D does not separate W from the privileged
+  ceiling either.
+- Everything is one model seed (66800, flagged `last_two_triggered`: W-66800 selected one of its
+  last two checkpoints), one camera, one encoder, one condition imposed by the simulator (C1-M), in
+  MuJoCo only.
+
+**Beside R7** (§8.5): the canonical sentence's clause "No LeWM-driven controller has run in
+closed loop on v2 yet; LeWM's only closed-loop Apple→Plate runs are on v1, with 0 successes" is
+no longer true. R18.28 ([DECISIONS.md](../DECISIONS.md), decision 2026-10-08 (c)) replaces it
+with D's counts, labelled as a development result, as its own ruling and as a named exception to
+R18.12. The quote at the top of this document is R7 as it stood when the protocol was frozen.
+
+**Row: D-PASS.** The clause does not fire, nothing is closed, and TASK-077's row is unchanged.
+**Stage S may get its GO** (§8 step 7, §8.7).
+
+**Evidence.**
+- Report (git-ignored, in the worktree): `outputs/task080-d-1/report.json`, sha256
+  **`1602447a08523f49d3924f6b38d10275a417d1ccd4a90bc8cd70d22ef79a0611`**; log
+  `outputs/task080-d-1.log` (sha256 `13af1196…0662`; the five arm lines and the outcome, nothing
+  else); stdout capture `outputs/task080-d-1.stdout` (empty, 0 bytes, as `--log` redirects the
+  process after it opens).
+- A copy of the three is in `~/develop/emai/evidence/task080-staged/` with the manifest
+  `_checksums/task080-staged.sha256` (sha256 `dabbfac8…6f75`), verified against the source and
+  the copy.
+- The `task080-staged` worktree is not edited and must not be removed before TASK-080's results
+  PR: Stage S reads its D-PASS report (`--stage-d`).
+
+### 8.7 Stage S's plan (R18.29)
+
+Stage S runs once, on its own reported GO at this record's merge commit, from a fresh clean
+worktree of that commit (`scripts/new_worktree.sh /home/huhn/develop/emai/worktrees/task080-stages
+--run --from <merge sha>`). It is one invocation, from the worktree root, on the CPU (no GPU lock;
+the stage creates no CUDA context):
+
+- **`closed --cohort S`**: the 64 gated resets **65200–65263**, every arm of §6 once per reset,
+  paired: **W, N, L-shuf, L-mean, L-rand, H-rule, H-sysid, H-final(commit), H-read and H-now**
+  (H-read and H-now reported only; H-final, H-read and H-now are privileged), then TASK-077's
+  determinism re-run of W on S's first four resets (reading 0.1 cm, commit target 0.6 cm, success
+  identical; a difference is a G-determinism guard error). The inputs are D's: the six checkpoint
+  reports, TASK-077's featurisation and Stage O fits, TASK-076's evidence root, the sealed corpus at
+  `deebd83d…7c4e` and the Stage R report, **plus `--stage-d` set to the D-PASS report above**: the
+  runner refuses any `--stage-d` that is not a non-debug D-PASS report, or that read another
+  corpus. The GO also checks that report's sha256 (`1602447a…0611`) before launch, which the runner
+  does not.
+- **Rows:** §9.5, first match (V, S-VOID-CEILING, L-NO-GAIN, L-INFERIOR, L-PASS, L-TWIN-NEAR,
+  L-NEAR, L-BAR). Only L-NO-GAIN and L-INFERIOR fire the clause (§12). L-PASS is the primary claim,
+  "LeWM-driven closed-loop success", and only it lets R7 state a gated LeWM result.
+- **Caps and resources (§11):** Stage S 21 600 s and 300 s per attempt (Stage 0 scaled S at
+  ≤ 1 600 s); G-memory 12 GiB process-tree PSS (debug S peaked at 9.7 GiB, D at 9.70 GiB);
+  MemAvailable at start ≥ 16 GiB; G-quiet load ≤ 2.0 / 2.0 at the start; G-disk ≥ 10 GiB free.
+- **Expected time.** From D's per-attempt medians and debug S's for the five arms D did not run
+  (about 84 s per reset over the ten arms), 64 resets on 4 workers take about 23 min, plus the
+  determinism re-run, G-tests (about 165 s) and G-repro (about 42 s): **about 25–35 min**.
+- **Launch-time checks** (the GO lists them): the worktree's HEAD is the merge commit with a clean
+  tracked tree and no `outputs/task080-s*` anywhere; the 1- and 5-minute load averages ≤ 2.0 and no
+  other heavy CPU job running or about to start (`hz.Clock` starts before G-quiet's wait, so a long
+  wait counts against the cap); MemAvailable ≥ 16 GiB; ≥ 10 GiB free; the Stage R report
+  `bedb8966…48ea7` and its fits unchanged; the D report `1602447a…0611`; no seed of 65200–65263
+  simulated before.
+
+If the invocation ends in anything other than a §9.5 row, nothing further is launched and the case
+is ruled under §11 first. The exact command is in the GO. After S, the results PR reports every arm
+with privileged arms labelled, and an independent reviewer checks every restated number (§8
+step 8).
 
 ## 9. Gates, bars and rows
 

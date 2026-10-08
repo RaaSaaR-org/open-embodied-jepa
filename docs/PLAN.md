@@ -6,20 +6,29 @@ own preregistration and review, and every outcome below is open. [MVP_PLAN.md](M
 the original plan of record and is not rewritten. Rulings are in [DECISIONS.md](DECISIONS.md),
 and outcomes are in the [experiment index](experiments/README.md).
 
-**Where we stand.** This is the canonical sentence (DECISIONS 2026-10-02, R7), verbatim:
+**Where we stand.** This is the canonical sentence (DECISIONS 2026-10-02, R7, as updated on
+2026-10-08 by R18.28), verbatim:
 
-> Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
-> (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an
-> MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert
-> e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40
-> for its random-init encoder control R-3 (one run, one training seed per arm, 40 resets, one
-> camera at 112 px onboard, a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3
-> (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. No
-> LeWM-driven controller has run in closed loop on v2 yet; LeWM's only closed-loop Apple→Plate
-> runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and GR00T
-> successes are not project-learned results. (LeWM also ran in closed loop on
-> the TASK-014 development reach pilot, a reach task, not Apple→Plate: its v2 target-space
-> selector reached 1/5 goals, with intervals overlapping the 0/5 controls.)
+> Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend (`native_jepa`
+> and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an MLP on a frozen
+> DINOv2 readout, trained on demonstrations from the privileged scripted expert e9; not a world
+> model) scored 40/40 counted successes on the held-out cohort C against 39/40 for its random-init
+> encoder control R-3 (one run, one training seed per arm, 40 resets, one camera at 112 px onboard,
+> a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3 (encoder pretraining contributed
+> nothing measurable), and cohort C is no longer held out. The first LeWM-driven closed loop on v2
+> whose counts are read is TASK-080's Stage D, a non-gating development cohort (one run, one model
+> seed, 16 resets, in simulation only, under the declared simulation-only plate condition C1-M): a
+> LeWM token predictor on frozen DINOv2 features chose the single place aim between P-3's learned
+> pick and e9's scripted place and reached 16/16 counted successes, against 8/16 for its
+> action-blind twin and 5/16 and 9/16 for its two scene-blind twins (the privileged look-ahead
+> ceiling also 16/16). That is a development result, not a gated one: TASK-080's gated Stage S has
+> not run, LeWM has no gated closed-loop Apple→Plate success, and its only other closed-loop
+> Apple→Plate runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and
+> GR00T successes are not project-learned results.
+
+(LeWM also ran in closed loop on the TASK-014 development reach pilot, a reach task, not
+Apple→Plate: its v2 target-space selector reached 1/5 goals, with intervals overlapping the 0/5
+controls.)
 
 **What the last four tasks taught.**
 - **TASK-073 (S-NO-CONDITION).** Under a mid-episode plate shift, privileged look-ahead added at
@@ -347,8 +356,11 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       contrast-T 250, manifest sha256 `deebd83d…7c4e`. Stage R **R-PASS**, R18.25 (offline; on
       gate-P, median e_S 0.547–0.589 cm, upper bounds 0.610–0.657 against τ_commit = 1.0 cm; W's
       offline predicted count 56.92 of 64 against A1's 56, a margin under one reset; every twin
-      at least 27.97 below W; predictions, not closed-loop counts). No seed of D, S or F
-      simulated. Stage D next, on its own GO, R18.26). Under C1-M, W's controller reads the plate
+      at least 27.97 below W; predictions, not closed-loop counts). Stage D **D-PASS**, R18.27
+      (non-gating development closed loop, 16 resets, one run, simulation only: W 16/16, N 8/16,
+      L-shuf 5/16, L-mean 9/16, the privileged ceiling H-final(commit) 16/16; not the gated
+      result; R7 updated by R18.28). Stage S next (64 gated resets, every arm), on its own GO,
+      R18.29). Under C1-M, W's controller reads the plate
       with R-S, a ridge fitted on W's own predicted latents under stand-in chunks over the 1 995
       old roots; N gets R-N, fitted the same way. TASK-077's six checkpoints are reused (no
       training). A fresh 500-root corpus (65300–65799) gives a gate split whose aims are built
