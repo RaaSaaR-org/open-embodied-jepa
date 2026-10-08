@@ -354,6 +354,7 @@ def main(argv=None) -> int:
         "argv": sys.argv[1:] if argv is None else list(argv),
         "seeds": list(seeds),
         "selection_rule": select_clips.__doc__,
+        "stages": {},
     }
     manifest = json.loads((ROOT / lm.TASK076_MANIFEST).read_text())
     rn.sim_preflight(report, args, manifest)
