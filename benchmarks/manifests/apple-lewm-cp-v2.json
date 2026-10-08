@@ -1015,7 +1015,89 @@
    "W": "affine_local",
    "W-frozen": "frozen"
   },
-  "stage0": null,
+  "stage0": {
+   "revision": "2faf9e5",
+   "scaled_seconds": {
+    "D": 510,
+    "S": 3420
+   },
+   "seconds_per_attempt_max": 15.6,
+   "seconds_per_attempt_median": {
+    "H-final": 7.99,
+    "H-now": 4.21,
+    "H-read": 8.16,
+    "H-rule": 4.49,
+    "H-sysid": 4.31,
+    "L-mean": 13.75,
+    "L-rand": 6.65,
+    "L-shuf": 13.91,
+    "N": 7.01,
+    "W": 15.56,
+    "W-frozen": 13.97
+   },
+   "simulate": {
+    "g_ni_better_of_two_at_c_0992": {
+     "0.906": [
+      0.326,
+      0.283,
+      0.263
+     ],
+     "0.922": [
+      0.592,
+      0.537,
+      0.496
+     ],
+     "0.938": [
+      0.848,
+      0.797,
+      0.763
+     ],
+     "0.953": [
+      0.973,
+      0.952,
+      0.934
+     ],
+     "0.969": [
+      0.999,
+      0.998,
+      0.995
+     ]
+    },
+    "l_inferior_at_margin_single": [
+     0.014,
+     0.017
+    ],
+    "report_sha256": "5043c3aba4a9a3c1646336c65b7ff7963f4f78f83393f6b509ea43e07186a56c",
+    "size_at_margin_single": [
+     0.026,
+     0.036
+    ],
+    "twins_min": 0.9997
+   },
+   "smoke_root": "outputs/task081-smoke-* in the task081-stage0 worktree (git-ignored); debug seeds 71900-71999 only; nothing in them is read",
+   "smokes": {
+    "closedD-1": {
+     "outcome": "V",
+     "reason": "KeyError 'stages' (the report lacked the record the harness writes; fixed in 2faf9e5)",
+     "revision": "19e3e83"
+    },
+    "closedD-2": {
+     "outcome": "L-DEV-STOP-DEBUG",
+     "peak_tree_pss_gib": 9.38,
+     "seconds": 121
+    },
+    "closedS-1": {
+     "outcome": "V",
+     "reason": "G-plan refused a --stage-d report that was not D-PASS-DEBUG (the guard, as designed); its in-run G-tests passed: 2120 passed, 37 skipped"
+    },
+    "closedS-2": {
+     "determinism_ok": true,
+     "outcome": "S-VOID-CEILING-DEBUG",
+     "peak_tree_pss_gib": 9.4,
+     "seconds": 160
+    }
+   }
+  },
   "stages": [
    "D",
    "S"
@@ -1052,7 +1134,7 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "7d80321b3a4d0a24ba0420a73e74ed9756f48d6e2cb97e1c928ba42bffaa8e62",
+ "frozen_sha256": "d8c40c45b897f6009ace35f34d429f807cc526de5a03f5b33251618b4ee79af8",
  "frozen_sha256_pin": null,
  "hashes": {},
  "note": "DRAFT (Stage 0, R19.12-): the frozen block below is a candidate; frozen_sha256_pin is null until the freeze, which also fills hashes (this task's three own files, its test file, TASK-080's manifest and the solver file) and protocol_document_sha256, and is in force once merged on an independent reviewer's APPROVE.",

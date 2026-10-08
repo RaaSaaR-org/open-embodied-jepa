@@ -73,13 +73,15 @@ def choose_affine_local(arm, p_hat, h, targets, chunks, feasible, predict, chunk
     g, jac = cpd.affine_fixed_point(targets[index][mask], plates[mask], p_hat=p_hat, h=h,
                                     a_lo=a_lo)  # fmt: skip
     reason, unclipped = None, None
+    design = np.hstack([targets[index][mask], np.ones((points, 1))])
+    rank = int(np.linalg.matrix_rank(design)) if points else 0  # reported (a rank below 3 is
+    # a collinear neighbourhood, where lstsq returns the minimum-norm fit; the solver is unchanged)
     if jac is None:
         reason = "fewer_than_4_points"
     elif g is None:
         reason = "near_singular"
     else:
-        x = np.hstack([targets[index][mask], np.ones((points, 1))])
-        coef, *_ = np.linalg.lstsq(x, plates[mask], rcond=None)
+        coef, *_ = np.linalg.lstsq(design, plates[mask], rcond=None)
         unclipped = np.linalg.solve(np.eye(2) - coef[:2].T, coef[2])
     commands_g, ok = (None, False) if g is None else chunk_of(g)
     if g is not None and not ok:
@@ -96,6 +98,7 @@ def choose_affine_local(arm, p_hat, h, targets, chunks, feasible, predict, chunk
         "grid_best": list(lm.GRID[best]),
         "grid_best_score_cm": 100.0 * float(scores[j]),
         "points": points,
+        "design_rank": rank,
         "jacobian": None if jac is None else np.asarray(jac).tolist(),
         "eigenvalues_real": None if eig is None else [float(v) for v in np.real(eig)],
         "eigenvalues_complex": None if eig is None else bool(np.any(np.abs(np.imag(eig)) > 0)),

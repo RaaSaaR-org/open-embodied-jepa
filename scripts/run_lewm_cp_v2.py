@@ -783,6 +783,7 @@ def reported(records: dict, *, n: int) -> dict:
                 "fallbacks": reasons,
                 "clipped": int(sum(bool(g.get("clipped")) for g in logs)),
                 "points": _stats([g.get("points") for g in logs]),
+                "rank_below_3": int(sum(g.get("design_rank", 3) < 3 for g in logs)),
                 "residual_cm": _stats([g.get("residual_cm") for g in logs]),
                 "eigenvalue_real_min": _stats([min(e) for e in eig]),
                 "eigenvalue_real_max": _stats([max(e) for e in eig]),

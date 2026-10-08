@@ -582,7 +582,60 @@ def check_sentinel(report: dict, evaluated: set[str], fields) -> list[str]:
 
 
 # ----- Stage 0 (filled by the Stage-0 PR; development only) ---------------------------------------
-STAGE0: dict | None = None
+STAGE0: dict = {  # the record: docs/experiments/apple_lewm_commit_precision_v2_stage0.md
+    "revision": "2faf9e5",  # the smokes and the power run; tree-identical to 5bb9579 (rebased)
+    "smoke_root": "outputs/task081-smoke-* in the task081-stage0 worktree (git-ignored); debug "
+    "seeds 71900-71999 only; nothing in them is read",
+    "smokes": {
+        "closedD-1": {
+            "outcome": "V",
+            "revision": "19e3e83",
+            "reason": "KeyError 'stages' (the "
+            "report lacked the record the harness writes; fixed in 2faf9e5)",
+        },
+        "closedD-2": {"outcome": "L-DEV-STOP-DEBUG", "seconds": 121, "peak_tree_pss_gib": 9.38},
+        "closedS-1": {
+            "outcome": "V",
+            "reason": "G-plan refused a --stage-d report that was not "
+            "D-PASS-DEBUG (the guard, as designed); its in-run G-tests passed: 2120 "
+            "passed, 37 skipped",
+        },
+        "closedS-2": {
+            "outcome": "S-VOID-CEILING-DEBUG",
+            "seconds": 160,
+            "peak_tree_pss_gib": 9.40,
+            "determinism_ok": True,
+        },
+    },
+    "seconds_per_attempt_median": {  # debug S (4 resets, 4 workers)
+        "W": 15.56,
+        "W-frozen": 13.97,
+        "N": 7.01,
+        "L-shuf": 13.91,
+        "L-mean": 13.75,
+        "L-rand": 6.65,
+        "H-rule": 4.49,
+        "H-sysid": 4.31,
+        "H-final": 7.99,
+        "H-read": 8.16,
+        "H-now": 4.21,
+    },
+    "seconds_per_attempt_max": 15.6,
+    "scaled_seconds": {"D": 510, "S": 3420},  # attempts on 4 workers plus G-tests and G-repro
+    "simulate": {
+        "report_sha256": "5043c3aba4a9a3c1646336c65b7ff7963f4f78f83393f6b509ea43e07186a56c",
+        "g_ni_better_of_two_at_c_0992": {  # overlap / half / independent, 20 000 trials
+            "0.906": [0.326, 0.283, 0.263],
+            "0.922": [0.592, 0.537, 0.496],
+            "0.938": [0.848, 0.797, 0.763],
+            "0.953": [0.973, 0.952, 0.934],
+            "0.969": [0.999, 0.998, 0.995],
+        },
+        "size_at_margin_single": [0.026, 0.036],  # G-NI passes at W = C - delta
+        "l_inferior_at_margin_single": [0.014, 0.017],  # the clause's false fire at W = C - delta
+        "twins_min": 0.9997,  # at TASK-080's twin rates and N at 0.60, every coupling
+    },
+}
 
 
 # ----- the frozen block ---------------------------------------------------------------------------

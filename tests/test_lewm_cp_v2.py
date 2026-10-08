@@ -184,6 +184,7 @@ def test_affine_local_recovers_a_linear_maps_fixed_point():
     fixed, targets, chunks, feasible, predict, chunk_of = _setup([[-0.3, 0.1], [0.05, -0.6]])
     g, log = cpr.choose_affine_local("W", P_HAT, H, targets, chunks, feasible, predict, chunk_of)
     assert np.linalg.norm(g - fixed) < 1e-9 and log["points"] == 25 and not log["clipped"]
+    assert log["design_rank"] == 3
     assert max(log["eigenvalues_real"]) < 0
 
 
