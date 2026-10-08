@@ -46,7 +46,8 @@ the physics and renders every image a controller reads**.
 Run at `1f61162` (clean) with `isaaclab_arena:latest` `sha256:2588b526…`, under
 `scripts/gpu_run.sh --wait --min-free-gib 8 --board --container oej-isaac-` via
 `scripts/isaac/run_lewm_cp_closedloop.sh`. Step A of the domain gap ran at `a8a2d58` (clean).
-Isaac took a median 0.03 s per control step and 0.22 s per render; an attempt ran in 3.5–5 min.
+Under Newton, Isaac took a median 0.03 s per control step and 0.22 s per render, and an attempt
+that reached the place ran in 3.4–5.2 min; under PhysX, 0.18 s per step and 5.6–5.9 min.
 
 ## Step A: the domain gap, offline (8 debug seeds)
 
@@ -110,7 +111,7 @@ the obvious candidate; that is untested. W's aim missed the plate's final positi
 ## What this says (development reading only)
 
 - **The loop runs end to end in Isaac** with Isaac physics and Isaac-rendered onboard frames, at
-  about 4 minutes per attempt.
+  about 4 minutes per attempt under Newton (about 6 under PhysX).
 - **P-3 does not transfer.** Its post-look apple estimate is about 11 cm off on Isaac's frames,
   so the learned pick fails in every attempt as specified. With MuJoCo-quality estimates it
   still grasped only 2 of 4 under Newton.
@@ -120,8 +121,9 @@ the obvious candidate; that is untested. W's aim missed the plate's final positi
   R-plate's reading directly, missed by 2.0–3.1 cm. Four seeds; not a comparison.
 - **PhysX did worse than Newton** at the place (0/8 at rest against 3/8), consistent with the
   earlier finding that PhysX lets the apple roll where MuJoCo and Newton stop it.
-- **The place is the limiting step here**: e9's place lands the apple 3–4.6 cm from the plate
-  centre, so a 1 cm aim error decides the 4 cm verdict, as for e9 alone in Isaac.
+- **The place is the limiting step here**: in the Newton e9-pick runs e9's place left the apple
+  3.3–4.6 cm from the plate centre, so a 1 cm aim error decides the 4 cm verdict, as for e9 alone
+  in Isaac.
 
 ## Caveats
 
