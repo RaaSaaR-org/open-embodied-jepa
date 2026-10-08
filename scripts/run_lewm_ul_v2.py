@@ -871,7 +871,8 @@ def stage_corpus(report, args, fields: Fields, manifest) -> str:
             tasks = attempt_tasks("collect-ul", part, co, corpus_task(by))
             for r in run_arm(pool, tasks, f"corpus {part[0]}-{part[-1]}"):
                 seconds.append(float(r["seconds"]))
-                branch.append((r.get("kpred") or {}).get("lookahead_branch_steps"))
+                label = ((r.get("decisions") or [{}])[0] or {}).get("label") or {}
+                branch.append(label.get("branch_steps"))
                 arrays = r.get("corpus") or {"complete": False, "why": "blocked"}
                 if r["blocked"] is not None or not arrays["complete"]:
                     excluded[int(r["seed"])] = (
