@@ -780,7 +780,7 @@ under the declared simulation-only condition C1-M.
 | in-run G-tests: 2070 passed, 37 skipped, at `db34adc`, clean | 01:42:36–01:45:21 | 163 |
 | G-repro (8 of 8 checks; 170 train roots decoded, no test split) | – | 42 |
 | `first_outcome_utc` | 01:46:05 | – |
-| arms, in order (log): W, N, L-shuf, L-mean, H-final(commit) done at | 01:47:03, 01:47:30, 01:48:27, 01:49:22, 01:49:54 | – |
+| arms, in order (log lines, converted from local time): W, N, L-shuf, L-mean, H-final(commit) done at | 01:47:03, 01:47:30, 01:48:27, 01:49:22, 01:49:54 | – |
 | end, report written: **D-PASS** | 01:49:55 | **439** (cap 7 200) |
 
 - **Guards.** G-hash checked TASK-076's 84 pins, TASK-077's 13 pins and this task's 7 own pins,
@@ -839,7 +839,7 @@ the landing miss is its distance from where the plate actually was at s1 = 525:
   of the plate at s1: the fixed point g\* is the rule's idealisation, and the look-ahead aims at the
   plate the simulator actually produces. W's landing misses (median 0.475 cm) are close to its
   aim errors.
-- The twins' successes come with aim errors up to 3.27 cm (L-shuf on 65104) and 2.56 cm (L-mean on
+- The twins' successes come with aim errors up to 4.24 cm (L-shuf on 65109) and 2.56 cm (L-mean on
   65111): the success tolerance is looser than τ_commit at some resets, as the τ curve's 32/64 at
   1.5 cm and 29/64 at 2 cm already show.
 - L-shuf on 65111 ended at rest on the plate without a latched place, so it is not counted. On

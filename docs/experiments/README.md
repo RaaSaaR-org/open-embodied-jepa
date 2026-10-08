@@ -21,8 +21,8 @@ pick and e9's scripted place and reached 16/16 counted successes, against 8/16 f
 action-blind twin and 5/16 and 9/16 for its two scene-blind twins (the privileged look-ahead
 ceiling also 16/16). That is a development result, not a gated one: TASK-080's gated Stage S has
 not run, LeWM has no gated closed-loop Apple→Plate success, and its only other closed-loop
-Apple→Plate runs are on v1, with 0 successes. Scripted-expert, privileged-ceiling, oracle and
-GR00T successes are not project-learned results.
+Apple→Plate runs whose counts are read are on v1, with 0 successes. Scripted-expert,
+privileged-ceiling, oracle and GR00T successes are not project-learned results.
 
 Manifests are under [`benchmarks/manifests/`](../../benchmarks/manifests/). Run outputs are
 git-ignored and stay on the machine that made them; several finished run worktrees have been

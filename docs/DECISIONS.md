@@ -119,12 +119,13 @@ simulated.
   > counted successes, against 8/16 for its action-blind twin and 5/16 and 9/16 for its two
   > scene-blind twins (the privileged look-ahead ceiling also 16/16). That is a development result,
   > not a gated one: TASK-080's gated Stage S has not run, LeWM has no gated closed-loop Apple→Plate
-  > success, and its only other closed-loop Apple→Plate runs are on v1, with 0 successes.
-  > Scripted-expert, privileged-ceiling, oracle and GR00T successes are not project-learned results.
+  > success, and its only other closed-loop Apple→Plate runs whose counts are read are on v1, with 0
+  > successes. Scripted-expert, privileged-ceiling, oracle and GR00T successes are not
+  > project-learned results.
 
-  The TASK-014 note that follows R7's quote below stays as written. Changed with it: CLAUDE.md,
-  README.md (status section, now dated 2026-10-08, with its links), CONTRIBUTING.md, docs/PLAN.md,
-  docs/EVALUATION.md, docs/MVP_PLAN.md (a dated update) and the experiment index. Frozen
+  The TASK-014 note that follows R7's quote below stays as written. Changed with it: AGENTS.md,
+  CLAUDE.md, README.md (status section, now dated 2026-10-08, with its links), CONTRIBUTING.md,
+  docs/PLAN.md, docs/EVALUATION.md, docs/MVP_PLAN.md (a dated update) and the experiment index. Frozen
   protocols, results documents and earlier decisions are not rewritten; their "no LeWM closed
   loop" statements were true when written.
 - **R18.29 — Stage S's plan.** Stage S runs once, on its own reported GO at this record's merge
