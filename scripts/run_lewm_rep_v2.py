@@ -716,12 +716,15 @@ def check_seed_config(config: dict, seed: int) -> None:
 
 
 def check_seed_records(records: list[dict], arm: str) -> None:
-    """G-seed on the records: each candidate decision read its arm's declared readout."""
+    """G-seed on the records: each decision of an arm with a declared readout logged exactly that
+    readout (a missing one is refused); records refused before 405 have no decisions."""
     want = rep.READOUTS.get(arm)
+    if want is None:
+        return
     for r in records:
         for d in r.get("decisions") or []:
             got = d.get("readout")
-            if want is not None and got not in (None, want):
+            if got != want:
                 raise lp.GuardError(f"G-seed: {arm} seed {r['seed']} read {got!r}, not {want!r}")
 
 
@@ -737,7 +740,7 @@ def seed_arms(pool, co, seeds, model_seed: int, common: dict, records: dict) -> 
     records[tag] = w
     reached = [lm.reached_405(r) for r in w]
     foreign = {}
-    for i, s in enumerate(seeds):
+    for i, s in enumerate(seeds if "L-shuf" in arms else ()):  # only where L-shuf runs
         j = lm.foreign_reached(i, reached)
         if j is None and reached[i]:
             raise lp.GuardError("G-frames: no other reset reached 405 for L-shuf's frame")

@@ -444,19 +444,28 @@ PLANNING = {"C": (0.979, 0.984, 0.992), "sysid": 183 / 192, "W": (0.906, 0.922, 
 POWER_COUPLINGS = ("overlap", "half", "independent")
 POWER_RESAMPLES = BOOTSTRAP_RESAMPLES
 POWER_TRIALS = 20_000
+POWER_REPLICATES = 25  # independent bootstraps per (k+, k-) cell, averaged (#174 review)
 _NI_CACHE: dict = {}
-_UP_CACHE: dict = {}
 
 
-def _ni_bounds(kp: int, km: int, *, n: int = S_RESETS) -> tuple[float, float]:
-    """The reset-bootstrap 2.5th and 97.5th percentiles of W - C for (k+, k-): a multinomial draw
-    (salt 8502, one stream per cell)."""
+def _ni_probabilities(kp: int, km: int, *, n: int = S_RESETS) -> tuple[float, float]:
+    """For (k+, k-) resets won by W only and by C only: the probability, over the bootstrap's own
+    randomness, that G-NI passes (the 2.5th percentile of the reset-bootstrap W - C, 10 000
+    resamples, is above -delta) and that L-INFERIOR holds (the 97.5th is below -delta). Each of
+    ``POWER_REPLICATES`` replicates is one bootstrap as the run makes it, a multinomial draw of the
+    resampled counts (salt 8502, one stream per cell and replicate). A single draw per cell would
+    make a cell at the boundary pass or fail outright, which moves the power by up to 0.06
+    (Stage 0's first computation; the #174 review)."""
     key = (int(kp), int(km), int(n))
     if key not in _NI_CACHE:
-        rng = np.random.default_rng(np.random.SeedSequence([SALTS["power"], 1, *key]))
-        draws = rng.multinomial(n, [kp / n, km / n, (n - kp - km) / n], size=POWER_RESAMPLES)
-        d = draws[:, 0] - draws[:, 1]
-        _NI_CACHE[key] = (float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5)))
+        lower, upper = [], []
+        for r in range(POWER_REPLICATES):
+            rng = np.random.default_rng(np.random.SeedSequence([SALTS["power"], 1, *key, r]))
+            draws = rng.multinomial(n, [kp / n, km / n, (n - kp - km) / n], size=POWER_RESAMPLES)
+            d = draws[:, 0] - draws[:, 1]
+            lower.append(float(np.percentile(d, 2.5)) > -DELTA)
+            upper.append(float(np.percentile(d, 97.5)) < -DELTA)
+        _NI_CACHE[key] = (float(np.mean(lower)), float(np.mean(upper)))
     return _NI_CACHE[key]
 
 
@@ -466,7 +475,9 @@ def rep_power(p_w: float, p_c: float, coupling: str, *, p_sysid: float = PLANNIN
     at ``p_w``, coupled to H-rule by ``coupling`` and conditionally independent of the other W
     given H-rule; H-sysid coupled to H-rule halfway; C the better of the two by count (a tie to
     H-rule). A seed passes when G-bar and G-NI pass (the twin tests' power is above 0.999 at
-    TASK-081's twin rates and is not simulated). Also each seed's L-INFERIOR rate."""
+    TASK-081's twin rates and is not simulated); G-NI's pass is its probability over the
+    bootstrap (:func:`_ni_probabilities`), the two seeds' bootstraps independent given the
+    outcomes. Also each seed's L-INFERIOR rate."""
     from embodied_jepa import commit_precision_dev as cpd
 
     rng = np.random.default_rng(np.random.SeedSequence([SALTS["power"], 2, int(index)]))
@@ -478,17 +489,17 @@ def rep_power(p_w: float, p_c: float, coupling: str, *, p_sysid: float = PLANNIN
     passes, inferior = [], []
     for w in ws:
         kp, km = (w & ~c).sum(1), (~w & c).sum(1)
-        bounds = np.array([_ni_bounds(a, b, n=n) for a, b in zip(kp, km, strict=True)])
-        passes.append((bounds[:, 0] > -DELTA) & (w.sum(1) >= G_BAR))
-        inferior.append(bounds[:, 1] < -DELTA)
-    both = passes[0] & passes[1]
+        prob = np.array([_ni_probabilities(a, b, n=n) for a, b in zip(kp, km, strict=True)])
+        passes.append(prob[:, 0] * (w.sum(1) >= G_BAR))
+        inferior.append(prob[:, 1])
+    a, b = passes
     return {
         "p_w": p_w, "p_c": p_c, "p_sysid": p_sysid, "coupling": coupling, "n": n,
-        "trials": trials,
+        "trials": trials, "replicates": POWER_REPLICATES,
         "per_seed_pass": [float(p.mean()) for p in passes],
-        "both_pass": float(both.mean()),
-        "exactly_one": float((passes[0] ^ passes[1]).mean()),
-        "neither": float((~passes[0] & ~passes[1]).mean()),
+        "both_pass": float((a * b).mean()),
+        "exactly_one": float((a * (1 - b) + b * (1 - a)).mean()),
+        "neither": float(((1 - a) * (1 - b)).mean()),
         "per_seed_l_inferior": [float(i.mean()) for i in inferior],
     }  # fmt: skip
 
@@ -512,6 +523,7 @@ def power_tables(*, trials: int = POWER_TRIALS) -> dict:
         "g_bar": {str(r): cpv.g_bar_power(r) for r in PLANNING["W"]},
         "trials": trials,
         "resamples_per_cell": POWER_RESAMPLES,
+        "replicates_per_cell": POWER_REPLICATES,
     }
 
 
@@ -672,6 +684,7 @@ def frozen_block() -> dict:
                 "couplings": POWER_COUPLINGS,
                 "trials": POWER_TRIALS,
                 "resamples_per_cell": POWER_RESAMPLES,
+                "replicates_per_cell": POWER_REPLICATES,
             },
             "stage0": STAGE0,
         }
