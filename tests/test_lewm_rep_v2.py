@@ -554,3 +554,27 @@ def test_stage_modules_import_without_torch_or_mujoco():
         "assert 'torch' not in sys.modules and 'mujoco' not in sys.modules\n"
     )
     subprocess.run([sys.executable, "-c", code], check=True, cwd=ROOT)
+
+
+# The frozen block's sha256, set at the freeze (R21.17).
+FROZEN_SHA256_PIN = "f6433a50da3fce017e79c6957f8884b748b39f4baf4b9391d1b907fa8dc8204e"
+
+
+def test_the_frozen_sha_pin_is_set_at_the_freeze():
+    manifest = json.loads(MANIFEST.read_text())
+    assert manifest["frozen_sha256_pin"] == FROZEN_SHA256_PIN == rep.frozen_sha256()
+    assert manifest["status"] == rep.STATUS == "FROZEN"
+    assert "**STATUS: FROZEN**" in (ROOT / rep.DOCUMENT).read_text()
+    run = _runner()
+    assert run.check_frozen_pin(manifest)["pin"] == FROZEN_SHA256_PIN
+    assert run.check_protocol_document(manifest)["sha256"] == manifest["protocol_document_sha256"]
+
+
+def test_the_freeze_pins_files_and_the_protocol_document():
+    import hashlib
+
+    manifest = json.loads(MANIFEST.read_text())
+    want = {*rep.OWN_FILES, "tests/test_lewm_rep_v2.py", rep.TASK081_MANIFEST}
+    assert set(manifest["hashes"]) == want
+    for relative, sha in manifest["hashes"].items():
+        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == sha, relative

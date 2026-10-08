@@ -1,11 +1,19 @@
 # Apple→Plate LeWM committed aim under C1-M: TASK-081's L-PASS replicated with W's two other model seeds (TASK-083)
 
-**STATUS: DRAFT** (R21.1–R21.12, decided by Claude under owner delegation; not frozen; revised
-after #173's review). **Stage 0 done** (R21.13–R21.16,
-[record](apple_lewm_seed_replication_v2_stage0.md)): code, tests, debug smokes on 75910–75913
-only, scale and caps confirmed, power recomputed (§8). No seed of S (75200–75327) has been
-simulated, nothing is trained and nothing is fitted. The freeze needs an independent reviewer's
-reported APPROVE; the gated Stage S needs its own reported GO.
+**STATUS: FROZEN** (R21.17, decided by Claude under owner delegation). The frozen block is
+`src/embodied_jepa/lewm_rep_v2.py`; its sha256
+**`f6433a50da3fce017e79c6957f8884b748b39f4baf4b9391d1b907fa8dc8204e`** is pinned in
+`tests/test_lewm_rep_v2.py` and in the manifest (`benchmarks/manifests/apple-lewm-rep-v2.json`),
+with the manifest's four file pins and this document's sha256. **The freeze takes effect when it is
+merged on an independent reviewer's reported APPROVE.** Stage S still needs its own reported GO
+(§6.1); its plan is §6.4.
+
+History. The DRAFT (R21.1–R21.12, #173) was reviewed independently and revised after it. Stage 0
+(R21.13–R21.16, [record](apple_lewm_seed_replication_v2_stage0.md)) added the code, tests, debug
+smokes on 75910–75913 only, the scale and caps and the power simulation (revised after its review:
+G-NI's pass averaged over bootstrap replicates). The freeze (R21.17) set STATUS FROZEN and applied
+the Stage 0 review's nits (a rounding at W = 0.938, the shared bootstrap index, line wraps); no bar
+changed. No seed of S (75200–75327) has been simulated, nothing is trained and nothing is fitted.
 
 - **Admitted by:** R19.23 (3) (DECISIONS 2026-10-08 (j)), a recommendation recorded for the owner:
   "before any broader claim, robustness of this result: more model seeds of W (66800 is flagged)
@@ -273,6 +281,52 @@ withhold that measurement, and a seed's failure is a result to report, not a rea
 the debug smokes of Stage 0 run both seeds' W, N and twins end to end, which tests the mechanics a
 D would otherwise exercise. The cost of one Stage S is about 1.5 h of CPU (§12).
 
+### 6.4 Stage S's plan (R21.18)
+
+Stage S runs once, on its own reported GO at the freeze's merge commit, from a fresh clean worktree
+of that commit (`scripts/new_worktree.sh /home/huhn/develop/emai/worktrees/task083-stages --run
+--from <merge sha>`). It is one invocation, from the worktree root, on the CPU (no GPU lock; the
+stage creates no CUDA context):
+
+```
+mkdir -p outputs && .venv/bin/python scripts/run_lewm_rep_v2.py closed --cohort S \
+  --output outputs/task083-s-1 --log outputs/task083-s-1.log \
+  --evidence /home/huhn/develop/emai/worktrees/task076-evidence \
+  --old-features /home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-featurise-1/features \
+  --old-fits /home/huhn/develop/emai/worktrees/task077-stageo/outputs/task077-readouts-1/fits \
+  --models <TASK-077's six job reports: task077-staget/outputs/task077-t-W-66800-1, \
+            task077-staget2/outputs/task077-t-{N-66800-2,W-66801-1,N-66801-1,W-66802-1,N-66802-1}, \
+            each /report.json> \
+  --stage-r /home/huhn/develop/emai/worktrees/task080-stager/outputs/task080-rgate-1/report.json \
+  > outputs/task083-s-1.stdout 2>&1
+```
+
+- **What runs:** cohort S, 75200–75327 (128 resets), every arm of §4 once per reset, paired: the
+  shared L-rand, H-rule, H-sysid and H-final(commit) in the first pool; W, N, L-shuf and L-mean of
+  66801, then of 66802, each in its own pool with W's determinism re-run on S's first four resets;
+  then W[66800] (reported only). The inputs are TASK-081's (TASK-076's evidence root, TASK-077's
+  featurisation, Stage O fits and six job reports) and TASK-080's Stage R report
+  (`bedb8966…48ea7`), whose `fits/` folder holds R-S and R-N of all three seeds; the runner checks
+  each by content and file sha256 (G-seed).
+- **Rows:** §7.2 per seed and §7.3's combined row. No row fires a clause (§9). Only REP-PASS is
+  the replication claim, and only its own reviewed ruling may change R7, with the wording §10
+  declares for whichever row results.
+- **Caps and resources (§11):** Stage S 21 600 s and 300 s per attempt; G-memory 12 GiB
+  process-tree PSS (Stage 0 peak 9.58 GiB); MemAvailable ≥ 16 GiB at the start; G-quiet load
+  ≤ 2.0 / 2.0 at the start; G-disk ≥ 10 GiB free.
+- **Expected time:** about 4 740 s (79 min) from Stage 0's scale (§12), far under the cap. The
+  stage clock starts before G-quiet's wait, so a long wait counts against the cap.
+- **Launch-time checks** (the GO lists them): the worktree's HEAD is the merge commit with a clean
+  tracked tree and no `outputs/task083-s-*` anywhere; the 1- and 5-minute load averages ≤ 2.0 and
+  no other heavy CPU job running or about to start; MemAvailable ≥ 16 GiB; ≥ 10 GiB free; the
+  Stage R report `bedb8966…48ea7` and its `fits/` unchanged; no seed of 75200–75327 simulated
+  before.
+
+If the invocation ends in anything other than a §7.2/§7.3 row, nothing further is launched and the
+case is ruled under §11 first. After S, the evidence is copied to
+`~/develop/emai/evidence/task083-stages/` with `SHA256SUMS`, and the results PR reports every arm
+(§6.1 step 4).
+
 ## 7. Gates, bars and rows
 
 Intervals are reset-clustered bootstrap percentile intervals, 10 000 resamples, 95 %, salt 8501,
@@ -363,8 +417,8 @@ its two; #173 review, nit 2); H-sysid at 0.953 (62/64 and 121/128 pooled, 183/19
 W-66800, 118/128), 0.938 and 0.953 (TASK-081's planning rate). Nothing measured on 66801 or 66802
 in closed loop exists to plan from.
 
-**A draft computation, superseded by Stage 0's below** (for the draft only; scratch code, salt 8599, 4 000 trials per cell, the
-reset-bootstrap G-NI estimator through `lewm_cp_v2.ni_passes`; H-rule drawn at p_C; each W[s]
+**A draft computation, superseded by Stage 0's below** (for the draft only; scratch code, salt
+8599, 4 000 trials per cell, the reset-bootstrap G-NI estimator through `lewm_cp_v2.ni_passes`; H-rule drawn at p_C; each W[s]
 coupled to H-rule by the coupling, conditionally independent of the other W given H-rule; H-sysid
 coupled to H-rule halfway; C the better of the two by count; L-PASS taken as G-bar and G-NI, the
 twin tests' power being above 0.999 at TASK-081's twin rates). Per-seed L-PASS rate / both seeds
@@ -389,7 +443,7 @@ per seed, Stage 0 record §4); Stage 0 recomputes them with this comparator.
 **Stage 0's recomputation** ([record](apple_lewm_seed_replication_v2_stage0.md) §4; salt 8502,
 20 000 trials per cell, G-NI's pass averaged over 25 bootstraps of 10 000 resamples per (k+, k−)
 cell, report `0e138bb1…1e68`): at W = 0.922 each seed passes with probability **0.52–0.79** and both
-with **0.27–0.63** (p_C 0.979–0.992, the three couplings); at W = 0.938, 0.77–0.96 and 0.60–0.91; at
+with **0.27–0.63** (p_C 0.979–0.992, the three couplings); at W = 0.938, 0.77–0.95 and 0.60–0.91; at
 W = 0.953, 0.94–1.00 and 0.88–0.99. The size at the margin (W = C − δ) is a seed's L-PASS rate (G-bar
 and G-NI) of 2.6–3.5 %, and 0.09–0.16 % for both seeds; L-INFERIOR's false fire at the margin is
 1.2–1.6 % per seed. **The draft table above differs from it by up to 0.06** (the half coupling, and
