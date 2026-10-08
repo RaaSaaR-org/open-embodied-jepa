@@ -71,6 +71,18 @@ All pilot images, trajectories and newly trained checkpoints are generated local
 
 The opt-in `jepa-wms` extra adds timm1.0.19 (Apache-2.0, exact wheel hash in uv.lock); torch/einops and timm's normal dependencies remain optional. The real upstream encoder/predictor source is separately fetched at `13cf1d9c7e476f53c17714d2e0f1dc239a883ce0`, verified against every imported file and the root notices, never bundled or copied into this Apache core. Conservatively retain CC BY-NC 4.0 terms for all imported modules: one predictor file's MIT header conflicts with the root CC license. No weights, pretrained encoders or datasets are adopted. See [the audit and CPU conformance report](experiments/jepa_wms_spike.md) for exact provenance, deviations from the full upstream recipe and reproduction commands. This optional adapter establishes software compatibility only; its performance and any resulting checkpoint's redistribution terms remain unverified.
 
+## Released JEPA-WM Push-T checkpoint and DINO-WM Push-T data (TASK-084, 2026-10-09)
+
+Run-time only, for the Phase 0 calibration ([protocol](experiments/jepa_wms_pusht_calibration.md)); nothing is bundled, copied or redistributed, and the core package does not import any of it.
+
+| Item | Source, revision, hash | Terms |
+| --- | --- | --- |
+| Upstream evaluation code | `facebookresearch/jepa-wms` at `13cf1d9c7e476f53c17714d2e0f1dc239a883ce0` (the TASK-024 pin), cloned into ignored `third_party/jepa-wms-runtime/jepa-wms` | CC BY-NC 4.0 (as above) |
+| Checkpoint `jepa_wm_pusht.pth.tar` | Hugging Face `facebook/jepa-wms`, sha256 `9beca3eafe0739c3b3adb5d734fa435ccbda0fea8a65d53d4cccec176aaaa0eb` | model card `cc-by-nc-4.0`; not redistributed |
+| Push-T data `pusht_noise.zip` | DINO-WM's OSF release (`osf.io/bmw48`), sha256 `442f5dee246edf670964ed7bdecd248683cd6d00580fa0e4d458abb53f92da08` as OSF publishes it (the Hub mirror `facebook/jepa-wms` is gated) | DINO-WM's release; Push-T environment MIT (Chi et al.); not redistributed |
+| Encoder | the DINOv2 ViT-S/14 file below (same sha256), loaded through torch hub `facebookresearch/dinov2` code (tree hash in the protocol) | Apache-2.0 |
+| Runtime | separate Python 3.10 venv with torch 2.7.0+cu128 and upstream's dependency list minus the PointMaze/Metaworld/RoboCasa stacks; not in `uv.lock` | each package's own licence |
+
 ## Pretrained DINOv2 ViT-S/14 encoder (TASK-063, reviewed 2026-09-26)
 
 The first adopted pretrained weights. They are used only as a **frozen** feature extractor in the
