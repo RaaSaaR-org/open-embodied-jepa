@@ -70,6 +70,7 @@ args.output.mkdir(parents=True)
 app = AppLauncher(args).app
 
 import numpy as np  # noqa: E402
+import omni.kit.app  # noqa: E402
 import omni.replicator.core as rep  # noqa: E402
 import omni.usd  # noqa: E402
 from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR  # noqa: E402
@@ -90,7 +91,7 @@ APPLE_DIAMETER = 0.054  # our apple: sphere r 0.027
 PLATE_DIAMETER = 0.142  # our plate: rim at r 0.067 + capsule r 0.004
 PLATE_BOTTOM_BELOW_BODY = 0.006  # our plate base: cylinder half-height 0.006 below the body
 SCORER_RADIUS = 0.04
-DEFAULT_CAMERAS = [(1.30, -0.45, 0.55, 0.42, -0.03, 0.02)]
+DEFAULT_CAMERAS = [(0.05, -0.65, 0.65, 0.50, -0.03, -0.05)]  # over the right arm (isaac-probe-6)
 
 
 def quat_mul(a, b):
@@ -157,11 +158,11 @@ def xform(stage, path: str, pos=(0.0, 0.0, 0.0), scale=None):
     return x
 
 
-def world_bbox(prim):
-    cache = UsdGeom.BBoxCache(
-        Usd.TimeCode.Default(), [UsdGeom.Tokens.default_, UsdGeom.Tokens.render]
-    )
-    box = cache.ComputeWorldBound(prim).ComputeAlignedRange()
+def relative_bbox(prim, ancestor):
+    """The AABB of ``prim`` (its own transform included) in ``ancestor``'s frame."""
+    purposes = [UsdGeom.Tokens.default_, UsdGeom.Tokens.render]
+    cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), purposes)
+    box = cache.ComputeRelativeBound(prim, ancestor).ComputeAlignedRange()
     return np.array(box.GetMin(), float), np.array(box.GetMax(), float)
 
 
@@ -170,10 +171,11 @@ def referenced_object(stage, path: str, url: str, *, size: float, size_axes, anc
     ``size_axes`` is ``size`` and recentred: ``anchor`` 'centre' puts the AABB centre at the
     pose, 'bottom' puts the AABB bottom centre there."""
     outer = UsdGeom.Xform.Define(stage, path)
-    holder = UsdGeom.Xform.Define(stage, f"{path}/asset")
-    holder.GetPrim().GetReferences().AddReference(url)
+    fit = UsdGeom.Xform.Define(stage, f"{path}/fit")  # our rescale and recentring
+    asset = UsdGeom.Xform.Define(stage, f"{path}/fit/asset")  # the reference, untouched
+    asset.GetPrim().GetReferences().AddReference(url)
     app.update()
-    lo, hi = world_bbox(holder.GetPrim())
+    lo, hi = relative_bbox(asset.GetPrim(), fit.GetPrim())
     extent = float(np.max((hi - lo)[list(size_axes)]))
     if not np.isfinite(extent) or extent <= 0:
         raise RuntimeError(f"{url}: empty bounding box {lo} {hi}")
@@ -181,10 +183,8 @@ def referenced_object(stage, path: str, url: str, *, size: float, size_axes, anc
     centre = (lo + hi) / 2
     if anchor == "bottom":
         centre[2] = lo[2]
-    xf = UsdGeom.Xformable(holder)
-    xf.ClearXformOpOrder()
-    xf.AddTranslateOp(UsdGeom.XformOp.PrecisionDouble).Set(Gf.Vec3d(*(-s * centre)))
-    xf.AddScaleOp(UsdGeom.XformOp.PrecisionDouble).Set(Gf.Vec3d(s, s, s))
+    fit.AddTranslateOp(UsdGeom.XformOp.PrecisionDouble).Set(Gf.Vec3d(*(-s * centre)))
+    fit.AddScaleOp(UsdGeom.XformOp.PrecisionDouble).Set(Gf.Vec3d(s, s, s))
     return Posable(outer.GetPrim()), {"url": url, "aabb_extent": (hi - lo).tolist(), "scale": s}
 
 
@@ -247,8 +247,13 @@ def place_camera(pose, eye, target):
     pose.set(eye, (q.GetReal(), im[0], im[1], im[2]))
 
 
+def say(msg: str) -> None:
+    print(f"[replay] {msg}", flush=True)
+
+
 def main() -> None:
     started = time.monotonic()
+    say("building the stage")
     ctx = omni.usd.get_context()
     stage = ctx.get_stage()
     UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
@@ -263,6 +268,7 @@ def main() -> None:
         if prim.IsValid():
             prim.SetActive(False)
             deactivated.append(rel)
+    say(f"background loaded; deactivated {deactivated}")
     if args.dome > 0:
         UsdLux.DomeLight.Define(stage, "/World/replay_dome").CreateIntensityAttr(float(args.dome))
 
@@ -280,6 +286,7 @@ def main() -> None:
                                           size=PLATE_DIAMETER, size_axes=(0, 1),
                                           anchor="bottom")  # fmt: skip
     aim, ring = build_markers(stage)
+    say(f"robot and objects loaded: apple {apple_info}, plate {plate_info}")
 
     files = sorted(args.input.glob("*.npz"))
     if args.clips:
@@ -341,19 +348,29 @@ def main() -> None:
     annot = rep.AnnotatorRegistry.get_annotator("rgb")
     annot.attach([product])
 
+    kit = omni.kit.app.get_app()
+
     def render() -> np.ndarray:
-        try:
-            rep.orchestrator.step(rt_subframes=int(args.subframes), pause_timeline=False)
-        except TypeError:
-            rep.orchestrator.step(rt_subframes=int(args.subframes))
+        # Kit updates with the timeline stopped: Replicator's orchestrator.step waits for a
+        # playing timeline (it hung in isaac-probe-4), and no physics must run anyway.
+        for _ in range(int(args.subframes)):
+            kit.update()
         data = np.asarray(annot.get_data())
+        if data.ndim != 3:
+            raise RuntimeError(f"no RGB data yet (shape {data.shape})")
         return data[..., :3].astype(np.uint8)
 
     z0 = first
     pose_frame(z0, 0, int(z0["t"][0]))
+    say(f"{len(bodies)} bodies posed; render product ready; warming up")
     t_warm = time.monotonic()
-    for _ in range(int(args.warmup)):
-        render()
+    for k in range(int(args.warmup)):
+        try:
+            img = render()
+            if k % 10 == 0:
+                say(f"warm-up render {k}: mean {img.mean():.1f}")
+        except RuntimeError as exc:
+            say(f"warm-up render {k}: {exc}")
     record = {
         "what": "Isaac kinematic replay of MuJoCo episodes (illustration only; no physics)",
         "usd": args.usd,
@@ -409,6 +426,13 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
+    except BaseException:
+        import traceback
+
+        traceback.print_exc()  # Kit's close exits the process before a traceback would print
+        sys.stdout.flush()
+        sys.stderr.flush()
+        raise
     finally:
         sys.stdout.flush()
         app.close()
