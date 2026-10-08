@@ -153,7 +153,7 @@ class Composer:
         )
         if banner is not None:
             text, colour = banner
-            draw.rectangle((0, 0, VIEW_W, 44), fill=colour)
+            draw.rectangle((0, 0, VIEW_W + PANEL_W, 44), fill=colour)
             draw.text((12, 8), text, font=self.big, fill=(255, 255, 255))
         return np.asarray(canvas, np.uint8)
 
