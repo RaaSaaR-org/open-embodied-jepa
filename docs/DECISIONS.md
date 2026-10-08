@@ -63,6 +63,88 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (i) — TASK-081 Stage D ends D-PASS; R7's last clause is corrected; Stage S's plan (R19.17–R19.19)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_commit_precision_v2.md](experiments/apple_lewm_commit_precision_v2.md) §6.5 and §6.6.
+Stage D is a non-gating development cohort of 16 fresh resets (one run, one model seed, simulation
+only); it gates only Stage S's GO and is not the gated result. No seed of S (70200–70327) has been
+simulated.
+
+- **R19.17 — Stage D: D-PASS.** Stage D ran once on the reviewer's GO (#163,
+  issuecomment-6054000652) at `2a6b633`, in the worktree `task081-staged`, on the CPU,
+  06:38:15–06:46:47 UTC (512 s, cap 7 200; in-run G-tests 2123 passed, 37 skipped; peak PSS
+  9.41 GiB, cap 12). Counted successes on 70100–70115: **W 16/16**, W-frozen 15/16 (TASK-080's W
+  unchanged, reported only), N 5/16, L-shuf 5/16, L-mean 8/16, H-final(commit) 16/16 (privileged
+  ceiling, not learned) and H-rule 16/16 (non-learned, given the plate law; reported only in D). W
+  ≥ 12, H-final ≥ 14 and W − max(N, L-shuf, L-mean) = +8 ≥ +3, so no stop holds; `clause_fires`
+  false. Every twin success is also a W success on the same reset (W only: 11 against N, 11
+  against L-shuf, 8 against L-mean; reported, not tested). W − W-frozen = +1 (discordant 1 / 0,
+  interval [0, +3], exact one-sided McNemar p = 0.5; reported only): W-frozen did not converge on
+  9 resets, where W scored 9/9 and W-frozen 8/9. W's median aim error against H-final(commit)'s aim
+  is 0.262 cm (max 0.688), W-frozen's 0.321 (max 1.742), N's 2.190, L-shuf's 2.763, L-mean's
+  1.718, H-rule's 0.098; no fallback in any arm and no reset refused before 405. The exact 95 %
+  interval of 16/16 is 0.794–1.000, so D neither confirms nor refutes the planning rate 0.95;
+  H-sysid and L-rand did not run in D, and G-bar, G-NI and the McNemar tests are Stage S's. One
+  G-repro re-render disagreement (TASK-072 seed 51344; one of three renders differed by one level
+  in 4 pixels, equal states) was resolved by the carried render-majority rule and is not a V.
+  Report sha256 `b58ae61f…e920`; evidence copy `~/develop/emai/evidence/task081-staged/` (report,
+  log, empty stdout; manifest `_checksums/task081-staged.sha256`, sha256 `1954ee22…6f33`).
+- **R19.18 — R7's last clause is corrected, as a third named exception to R18.12** (R19.10,
+  R19.14). R18.31's sentence ended "LeWM therefore has no gated closed-loop Apple→Plate success,
+  and its only other closed-loop Apple→Plate runs whose counts are read are on v1, with 0
+  successes." The second half stopped being literally true when the design note's development
+  check (R18.35) read W's closed-loop counts on v2 seeds 70000–70063, and Stage D adds more. This
+  is a factual correction, not a success claim: the first half is kept, both TASK-081 counts are
+  labelled as non-gating development runs, the design-note count carries its selection caveat,
+  and only an L-PASS with its own reviewed ruling could let R7 state a gated LeWM success (R18.12).
+  The design note's two-seed smoke (70090–70091) and the debug smokes test mechanics; their counts
+  are not read (as R18.28 ruled for debug loops). The sentence in force from this ruling's merge,
+  quoted verbatim and in full by the entry documents (R8.1):
+
+  > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
+  > (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an
+  > MLP on a frozen DINOv2 readout, trained on demonstrations from the privileged scripted expert
+  > e9; not a world model) scored 40/40 counted successes on the held-out cohort C against 39/40
+  > for its random-init encoder control R-3 (one run, one training seed per arm, 40 resets, one
+  > camera at 112 px onboard, a narrow reset distribution), so TASK-072 M2 is M2-FAIL on G3
+  > (encoder pretraining contributed nothing measurable), and cohort C is no longer held out. The
+  > first LeWM-driven closed loops on v2 whose counts are read are TASK-080's (one run, one model
+  > seed, in simulation only, under the declared simulation-only plate condition C1-M), in which a
+  > LeWM token predictor on frozen DINOv2 features chose only the single place aim between P-3's
+  > learned pick and e9's scripted place. On the non-gating development cohort D it reached 16/16
+  > counted successes. On the gated cohort S it reached 58/64, above the 56/64 bar and ahead of
+  > its action-blind twin (26/64), its two scene-blind twins (21/64 and 30/64) and a random aim
+  > (11/64) by exact one-sided McNemar tests at p < 0.01, but it failed the preregistered
+  > non-inferiority test against the non-learned hand-written rule controller H-rule, which is
+  > given the simulator's plate law (63/64; paired difference −5/64, 95 % interval −10/64 to 0
+  > against the allocated margin of −8/64), without being detectably inferior beyond that margin;
+  > the privileged look-ahead ceiling scored 62/64. The row is L-NEAR: escalate, no claim, and no
+  > abandonment clause. LeWM therefore has no gated closed-loop Apple→Plate success. Its only
+  > other closed-loop Apple→Plate runs whose counts are read are on v1, with 0 successes, and
+  > TASK-081's non-gating development runs on v2 (one run each, the same model seed and condition,
+  > in simulation only), in which the same LeWM controller commits its aim with a local affine
+  > fixed-point solver: on 64 development resets it reached 62/64, against 57/64 for TASK-080's
+  > solver and 64/64 for H-rule (the solver was chosen among three variants after seeing their
+  > counts, so 62/64 is optimistic), and on TASK-081's preregistered development cohort D (16
+  > fresh resets) 16/16, against 15/16 for TASK-080's solver, 5/16 for the action-blind twin, 5/16
+  > and 8/16 for the two scene-blind twins and 16/16 for both H-rule and the privileged look-ahead
+  > ceiling. These are development counts, not gated results. Scripted-expert, privileged-ceiling,
+  > oracle and GR00T successes are not project-learned results.
+
+  The TASK-014 note that follows R7's quote stays as written. Changed with it: AGENTS.md,
+  CLAUDE.md, README.md (with a TASK-081 bullet), docs/PLAN.md, docs/EVALUATION.md,
+  docs/MVP_PLAN.md (a dated update) and the experiment index. CONTRIBUTING.md's summary does not
+  quote the clause and stays true, so it is not changed. Frozen protocols, results documents and
+  earlier decisions (R18.28's and R18.31's quotes included) are not rewritten; the protocol's §13
+  records the correction beside the frozen text.
+- **R19.19 — Stage S's plan** (protocol §6.6): one `closed --cohort S` invocation on 70200–70327,
+  every arm of §4, with W's determinism re-run on 70200–70203, on the CPU, from a fresh clean
+  worktree of this record's merge commit, on its own reported GO, with `--stage-d` set to D's
+  report (`b58ae61f…e920`); rows §7.2; cap 21 600 s; expected about 55–65 min. The protocol
+  document's pin in the manifest is updated for this record's edits (the manifest is not among the
+  frozen file pins; the frozen block and its six file pins are unchanged).
+
 ## Decision 2026-10-08 (h) — TASK-081 is frozen without a calibration stage; Stage D's plan (R19.15–R19.16)
 
 **Decided by Claude under owner delegation (2026-09-30).** The protocol
@@ -2037,7 +2119,9 @@ No run was made for them.
   [mvp_results.md](experiments/mvp_results.md). **Updated on 2026-10-08 by R18.28** (decision
   2026-10-08 (c)), which replaces the v2 LeWM clause with TASK-080 Stage D's development counts,
   **and again by R18.31** (decision 2026-10-08 (d)), which adds Stage S's gated counts and its
-  L-NEAR row; the sentence in force is quoted in R18.31. The quote below is R7 as adopted:
+  L-NEAR row, **and a third time by R19.18** (decision 2026-10-08 (i)), which corrects its last
+  clause with TASK-081's development counts; the sentence in force is quoted in R19.18. The quote
+  below is R7 as adopted:
 
   > Learned Apple→Plate on the frozen v1 MVP benchmark (TASK-020) is 0/150 per backend
   > (`native_jepa` and LeWM). On `apple-to-plate-v2`, the behaviour-cloning/DAgger policy P-3 (an

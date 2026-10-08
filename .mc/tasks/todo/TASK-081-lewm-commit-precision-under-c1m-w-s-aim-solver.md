@@ -58,7 +58,9 @@ within δ = 8/64 against the better of H-rule and H-sysid, and the four twin tes
 gated resets? Seeds 70100–71999 (R18.34), salts 8301–8312.
 
 Learned Apple→Plate status: see `docs/DECISIONS.md` decision 2026-10-02, R7 (as updated by
-R18.31). This task does not change it unless an L-PASS is followed by its own reviewed ruling.
+R18.31 and R19.18). R19.18 corrected its last clause with this task's development counts (a
+factual correction, not a success claim); a gated LeWM success needs an L-PASS followed by its own
+reviewed ruling.
 
 ## Acceptance Criteria
 - [x] DRAFT design note with the diagnosis, candidate fixes, a development feasibility check on
@@ -71,9 +73,13 @@ R18.31). This task does not change it unless an L-PASS is followed by its own re
 - [x] The freeze merged on an independent reviewer's reported APPROVE (R19.15; this card's fourth
       PR; ticked in the PR, in force on merge).
 - [ ] Stages D and S, each on its own reported GO, from a clean worktree of the merged revision.
+      Stage D: **D-PASS** (R19.17; W 16/16, W-frozen 15/16, N 5/16, L-shuf 5/16, L-mean 8/16,
+      H-rule 16/16, privileged H-final(commit) 16/16; development, not gated). Stage S: plan R19.19.
 - [ ] Results PR, with every restated number checked by an independent reviewer.
 
 ## Notes
+- 2026-10-08: Stage D ran on #163's GO at `2a6b633` (report `b58ae61f…e920`): D-PASS; R7's last
+  clause corrected (R19.18); Stage S's plan in protocol §6.6 (R19.19).
 - 2026-10-08: #162 (Stage 0) merged at `1ca1258`; the freeze (R19.15–R19.16) on branch
   `feat/task081-freeze`, frozen sha `77ccc636…705a`; Stage D's plan in protocol §6.4.
 - 2026-10-08: Stage 0 on branch `feat/task081-stage0`: code, 43 tests, debug smokes on

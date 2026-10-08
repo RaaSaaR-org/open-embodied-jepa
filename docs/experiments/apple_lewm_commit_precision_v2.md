@@ -6,7 +6,7 @@ sha256 **`77ccc6364624c7da9dcca1d09827a0f6a25a670a00392d488e7b0216e090705a`** is
 `tests/test_lewm_cp_v2.py` and in the manifest (`benchmarks/manifests/apple-lewm-cp-v2.json`), with
 the manifest's six file pins and this document's sha256. **The freeze takes effect when it is
 merged on an independent reviewer's reported APPROVE.** Stage D and Stage S each still need their
-own reported GO (§6.1). Stage D's plan is §6.4.
+own reported GO (§6.1). Stage D's plan is §6.4, Stage D's result §6.5 and Stage S's plan §6.6.
 
 History. The DRAFT (R19.1–R19.11, #161) was reviewed independently. Stage 0
 ([record](apple_lewm_commit_precision_v2_stage0.md), R19.12–R19.14, #162) added the code, debug
@@ -14,7 +14,10 @@ smokes on 71900–71999 only, the caps and the power simulation; its candidate b
 `857a3078…32ef`. The freeze (R19.15) set STATUS FROZEN and applied #162's review: per-arm exact
 intervals and every arm's paired difference from W are computed by the runner (§7.3 item 1), and
 Stage S refuses a D-PASS report run under another frozen block. No seed of D or S had been
-simulated at the freeze.
+simulated at the freeze. Stage D, the non-gating development closed loop on 16 fresh resets, then
+ended **D-PASS** (§6.5, R19.17): W 16/16, W-frozen 15/16 (reported only), N 5/16, L-shuf 5/16,
+L-mean 8/16, H-rule 16/16 (reported only) and the privileged H-final(commit) 16/16; a development
+result, not the gated one. No seed of S has been simulated. Stage S's plan is §6.6.
 
 - **Admitted by:** the TASK-081 design note
   ([apple_lewm_commit_precision_v2_design.md](apple_lewm_commit_precision_v2_design.md), DRAFT,
@@ -29,8 +32,9 @@ simulated at the freeze.
   says "carried", the TASK-080 section named is in force unchanged (and through it TASK-077's);
   only the differences are written out here.
 
-The canonical status sentence (DECISIONS 2026-10-02, R7, as updated by R18.28 and R18.31) is not
-changed by this draft. It is quoted verbatim and in full in DECISIONS.md (R18.31). Its v2 LeWM part
+The canonical status sentence (DECISIONS 2026-10-02, R7, as updated by R18.28 and R18.31) was not
+changed by this draft. (Stage D's record corrects its last clause, R19.18, §6.5 and §13; the
+paragraph below is kept as frozen.) It is quoted verbatim and in full in DECISIONS.md (R18.31). Its v2 LeWM part
 says that TASK-080's W reached 58/64 on the gated cohort S, failed the preregistered
 non-inferiority test against the non-learned rule controller H-rule (63/64), and that the row is
 L-NEAR. §13 records one factual issue with its last clause.
@@ -360,6 +364,202 @@ stage creates no CUDA context):
 If the invocation ends in anything other than a §7.1 row, nothing further is launched and the case
 is ruled under §10 first. The exact command is in the GO.
 
+### 6.5 Stage D's result: D-PASS (R19.17)
+
+Stage D ran once, on the reviewer's reported GO (#163,
+<https://github.com/RaaSaaR-org/open-embodied-jepa/pull/163#issuecomment-6054000652>), at
+`2a6b633`, the freeze's merge commit, on a clean tracked tree with STATUS FROZEN and the frozen
+sha `77ccc636…705a`, in the worktree `/home/huhn/develop/emai/worktrees/task081-staged`, with the
+command the GO named, once. **D is a non-gating development cohort of 16 fresh resets
+(70100–70115), one run, one model seed (W-66800, flagged `last_two_triggered`), in simulation
+only. It gates only the GO of Stage S and is not the gated result.** In every arm, P-3's learned
+pick and e9's scripted place are the same; the arms differ only in the single place aim committed
+at step 405, under the declared simulation-only condition C1-M.
+
+| | UTC (2026-10-08) | seconds |
+|---|---|---:|
+| start; G-quiet passed (load 0.13 / 0.18, bar 2.0 / 2.0) | 06:38:15 | – |
+| in-run G-tests: 2123 passed, 37 skipped, at `2a6b633`, clean | 06:38:15–06:41:00 | 164 |
+| G-repro (8 of 8 checks; 170 train roots decoded, no test split) | – | 42 |
+| `first_outcome_utc` | 06:41:45 | – |
+| arms, in order (log lines, converted from local time): W, W-frozen, N, L-shuf, L-mean, H-final(commit), H-rule done at | 06:42:41, 06:43:38, 06:44:06, 06:45:00, 06:45:55, 06:46:28, 06:46:46 | – |
+| end, report written: **D-PASS** | 06:46:47 | **512** (cap 7 200; scaled estimate about 510) |
+
+- **Guards.** G-frozen: the frozen block at run time was `77ccc636…705a`, equal to the pin.
+  G-hash checked this task's 6 own pins with the protocol document's pin `5d91a177…e7f5`,
+  TASK-080's 7 pins and its protocol document (`bb1b2772…`), TASK-077's 13 pins and TASK-076's 84
+  pins; the solver file `commit_precision_dev.py` matched `ba3c8d03…91f1`; the six checkpoints
+  matched their sha256s; the Stage R report the GO named (`bedb8966…48ea7`) was accepted, and R-S
+  and R-N of seed 66800 loaded against their content sha256s. The revision at the end was still
+  `2a6b633` and the tracked tree stayed clean. No non-finite field. G-memory: peak process-tree PSS
+  9.41 GiB (RSS 10.88 GiB, 9 processes; cap 12), MemAvailable 24.7 GiB at the start. G-disk: at
+  least 62.5 GiB free throughout. Threads as pinned (MKL and OMP 6, OpenBLAS 16), 4 world-model
+  workers; the pool closed cleanly (4 joined, none killed). No render disagreement between arms
+  and no render retry. Every attempt ran its 725 steps to `policy_complete`; the post-pick plate
+  move was applied on every attempt; no contact with the plate before s1 was recorded on any
+  attempt; no attempt was refused before 405. `task_truth_in_controller` was 0 on every attempt
+  and every attempt passed the privileged-read check (G-privileged). G-solver passed: every W, N,
+  L-shuf and L-mean decision logged affine_local, and every W-frozen decision TASK-080's solver
+  (`frozen`). No determinism
+  re-run is part of D (`"not evaluated"`).
+- **One G-repro re-render disagreement, resolved by its majority rule.** In G-repro's re-render
+  of the carried TASK-072 run-1 seeds, seed 51344's three renders gave two identical frames and a
+  third differing by one level in 4 pixels, with equal simulator states; the majority frame was
+  used and all 8 reproduction checks passed. This is the carried `render_majority` mitigation, the
+  same case TASK-080's Stage S recorded for seed 51533; it is not a V and it touches no cohort-D
+  frame (`render_disagreements` for D is empty).
+
+**Counts** (counted success: the apple at rest on the plate under `apple_at_rest_v0` after a
+latched grasp and a latched place, T71-R1/R2). Exact binomial 95 % intervals on 16 resets are
+wide. The paired difference's interval is the reset-bootstrap percentile interval (salt 8302):
+
+| arm | count | 95 % (exact) | W − arm [95 %] | resets W only / arm only |
+|---|---:|---|---|---|
+| **W** (affine_local, R-S, seed 66800) | **16/16** | 0.794–1.000 | – | – |
+| W-frozen (TASK-080's W unchanged; **reported only**) | 15/16 | 0.698–0.998 | +1 [0, +3] | 1 / 0 |
+| N (action-blind; R-N) | 5/16 | 0.110–0.587 | +11 [+7, +14] | 11 / 0 |
+| L-shuf (scene-blind; R-S) | 5/16 | 0.110–0.587 | +11 [+7, +14] | 11 / 0 |
+| L-mean (scene-blind; R-S) | 8/16 | 0.247–0.753 | +8 [+4, +12] | 8 / 0 |
+| H-final(commit) (**privileged** look-ahead ceiling, not learned) | 16/16 | 0.794–1.000 | 0 [0, 0] | 0 / 0 |
+| H-rule (non-learned, given the plate law; **reported only** in D) | 16/16 | 0.794–1.000 | 0 [0, 0] | 0 / 0 |
+
+**Rows (§6.1 step 3, §7.1).** W 16 ≥ 12; H-final(commit) 16 ≥ 14; W − max(N, L-shuf, L-mean) =
+16 − 8 = **+8 ≥ +3**. No stop holds: **D-PASS**, `clause_fires` false. Every twin's success is
+also a W success on the same reset. D runs no McNemar test; the discordant counts are reported,
+not tested, and D's bars are not S's.
+
+**The solver's effect (§7.3 item 2, reported only).** W − W-frozen = +1/16 (discordant 1 / 0;
+interval [0, +3]; exact one-sided McNemar p = 0.5). W-frozen's refinement did not converge (was
+capped) on 9 of 16 resets (70100, 70102, 70105, 70106, 70110, 70111, 70112, 70114, 70115); on
+those, W scored 9/9 and W-frozen 8/9 (its one failure, 70111, ended with a latched place but 4.5 cm from
+the centre, outside the scorer's 4 cm radius). On 16 resets this neither confirms nor refutes the
+design note's development hypothesis; it gates nothing.
+
+**The committed aims** (§7.3 item 3). Aim error is the commit target's distance from
+H-final(commit)'s committed aim on the same reset; the fixed-point error is the distance from the
+rule's fixed point g\*; the landing miss is the distance from the plate at s1 = 525. The τ-curve
+count is a prediction through TASK-080's pooled τ curve, not a count:
+
+| arm | aim error median [95 %] | p87.5 | max | fixed-point error median / max | landing miss median / p87.5 / max | τ-curve prediction | clip-binding | s per attempt (median / max) |
+|---|---|---:|---:|---|---|---:|---:|---|
+| W | 0.262 [0.154, 0.324] | 0.519 | 0.688 | 0.577 / 0.795 | 0.353 / 0.735 / 1.076 | 14.77 | 0 | 13.50 / 15.53 |
+| W-frozen | 0.321 [0.186, 0.439] | 0.745 | 1.742 | 0.537 / 1.232 | 0.446 / 1.203 / 2.552 | 14.58 | 0 | 14.10 / 14.43 |
+| N | 2.190 [1.574, 2.528] | 2.577 | 3.369 | 2.356 / 3.670 | 3.319 / 3.804 / 5.150 | 6.46 | 0.0625 | 6.75 / 7.01 |
+| L-shuf | 2.763 [1.780, 3.630] | 4.077 | 5.206 | 2.705 / 4.773 | 4.281 / 6.011 / 7.788 | 5.51 | 0.1875 | 13.66 / 13.87 |
+| L-mean | 1.718 [1.471, 2.259] | 3.002 | 3.441 | 1.957 / 3.774 | 2.541 / 4.518 / 5.310 | 6.88 | 0 | 13.61 / 13.78 |
+| H-final(commit) | 0 (its own aim) | – | – | 0.477 / 0.513 | 0.103 / 0.119 / 0.128 | 14.60 | 0 | 8.23 / 8.43 |
+| H-rule | 0.098 [0.075, 0.164] | 0.185 | 0.203 | 0.473 / 0.577 | 0.175 / 0.254 / 0.296 | 14.70 | 0.25 | 4.46 / 4.53 |
+
+- **affine_local's diagnostics** (§7.3 item 5). W: no fallback, no clipped aim, a median of 25 points
+  in the fit (all 147 grid candidates were feasible on every reset in W, N, L-shuf and L-mean), median
+  residual at the committed aim 0.227 cm (max 1.334), real parts of J's eigenvalues with medians
+  −0.535 and −0.323, two resets with a complex pair; W's decision took 9.3 s in median (148
+  roll-outs). N, being action-blind, predicts the same plate for every aim, so its fit's J is 0
+  and its fixed point is the constant prediction (residual 0), as §3.1 expected. L-shuf clipped 3
+  aims, N 1, L-mean none; no arm fell back.
+- **The final distance** (§7.3 item 4). The apple's median final distance from the plate centre
+  over all 16 attempts was 3.38 cm for W, 3.48 for W-frozen, 3.34 for H-rule and 3.42 for
+  H-final(commit) (maxima 3.87, 4.52, 3.84 and 3.97); 6–7 of 16 attempts of each of W, W-frozen, H-rule and H-final(commit) ended
+  between 3.5 and 4.5 cm, within 0.5 cm of the scorer's 4 cm radius. So counts near the boundary
+  depend on more than the aim, as §12 states. Three L-shuf attempts ended 0.25–1.48 m from the
+  plate (70111, 70105, 70101); L-shuf on 70104 ended at rest 2.4 cm from the centre without a
+  latched place, so it is not counted.
+
+**Per reset** (S = counted success, – = not; the number is the aim error against H-final(commit),
+in cm):
+
+| reset | W | W-frozen | N | L-shuf | L-mean | H-final(commit) | H-rule |
+|---|---|---|---|---|---|---|---|
+| 70100 | S 0.08 | S 0.31 | – 1.79 | S 1.52 | – 1.49 | S | S 0.01 |
+| 70101 | S 0.07 | S 0.08 | S 1.02 | – 3.16 | – 1.29 | S | S 0.16 |
+| 70102 | S 0.26 | S 0.47 | S 1.94 | – 4.14 | S 3.00 | S | S 0.09 |
+| 70103 | S 0.15 | S 0.37 | – 3.37 | – 1.78 | – 1.57 | S | S 0.20 |
+| 70104 | S 0.39 | S 0.33 | – 2.56 | – 3.63 | – 1.85 | S | S 0.17 |
+| 70105 | S 0.10 | S 0.16 | S 0.63 | – 3.84 | S 2.19 | S | S 0.07 |
+| 70106 | S 0.26 | S 0.35 | S 0.68 | – 4.07 | – 3.03 | S | S 0.07 |
+| 70107 | S 0.23 | S 0.04 | – 2.53 | S 2.76 | – 2.19 | S | S 0.05 |
+| 70108 | S 0.65 | S 0.28 | – 2.31 | S 0.15 | S 1.50 | S | S 0.10 |
+| 70109 | S 0.10 | S 0.20 | – 2.16 | – 1.89 | S 1.27 | S | S 0.14 |
+| 70110 | S 0.50 | S 0.44 | – 2.13 | S 3.42 | – 2.05 | S | S 0.13 |
+| 70111 | S 0.32 | – 1.74 | – 2.29 | – 5.21 | S 2.47 | S | S 0.06 |
+| 70112 | S 0.69 | S 1.02 | S 0.66 | – 2.76 | – 3.44 | S | S 0.19 |
+| 70113 | S 0.26 | S 0.10 | – 2.57 | – 1.25 | S 1.59 | S | S 0.10 |
+| 70114 | S 0.23 | S 0.19 | – 2.22 | S 1.52 | S 0.91 | S | S 0.09 |
+| 70115 | S 0.32 | S 0.71 | – 2.64 | – 2.19 | S 1.37 | S | S 0.18 |
+
+**What D does and does not show.**
+- It does not test G-bar, G-NI or any McNemar test: those are Stage S's, on 128 fresh resets.
+  16/16 on 16 resets is compatible with any true rate from about 0.79 upward (the exact interval),
+  so D neither confirms nor refutes the planning rate 0.95 (§8).
+- H-rule (16/16) and the privileged ceiling (16/16) tie W here; D does not separate W from either.
+  Whether W is non-inferior to the better of H-rule and H-sysid within 16/128 is S's G-NI; H-sysid
+  and L-rand did not run in D.
+- Everything is one model seed (66800, flagged `last_two_triggered`: W-66800 selected one of its
+  last two checkpoints), one camera, one encoder, one condition imposed by the simulator (C1-M), in
+  MuJoCo only.
+
+**Beside R7** (§13). R7's clause "its only other closed-loop Apple→Plate runs whose counts are read
+are on v1, with 0 successes" was no longer true after the design note's development check, and D
+adds further read v2 counts. **R19.18** ([DECISIONS.md](../DECISIONS.md), decision 2026-10-08 (i))
+replaces it with a factual statement of TASK-081's development counts (the design note's check and
+D), labelled as non-gating development runs; the statement that LeWM has no gated closed-loop
+Apple→Plate success is kept.
+
+**Row: D-PASS.** The clause does not fire, nothing is closed. **Stage S may get its GO** (§6.1
+step 4, §6.6).
+
+**Evidence.**
+- Report (git-ignored, in the worktree): `outputs/task081-d-1/report.json`, sha256
+  **`b58ae61f4751ada0eda3501e0971f2f5367bab2f8f798656172dfa540be1f920`**; log
+  `outputs/task081-d-1.log` (sha256 `835ecd29…5c8c`; the seven arm lines and the outcome, nothing
+  else); stdout capture `outputs/task081-d-1.stdout` (empty, 0 bytes, as `--log` redirects the
+  process after it opens).
+- A copy of the three is in `~/develop/emai/evidence/task081-staged/` with the manifest
+  `_checksums/task081-staged.sha256` (sha256 `1954ee22…6f33`), verified against the source and the
+  copy.
+- The `task081-staged` worktree is not edited and must not be removed before TASK-081's results
+  PR: Stage S reads its D-PASS report (`--stage-d`).
+
+### 6.6 Stage S's plan (R19.19)
+
+Stage S runs once, on its own reported GO at this record's merge commit, from a fresh clean
+worktree of that commit (`scripts/new_worktree.sh /home/huhn/develop/emai/worktrees/task081-stages
+--run --from <merge sha>`). It is one invocation, from the worktree root, on the CPU (no GPU lock;
+the stage creates no CUDA context):
+
+- **`closed --cohort S`**: the 128 gated resets **70200–70327**, every arm of §4 once per reset,
+  paired: **W, W-frozen, N, L-shuf, L-mean, L-rand, H-rule, H-sysid, H-final(commit), H-read and
+  H-now** (W-frozen, H-read and H-now reported only; H-final, H-read and H-now privileged), then
+  TASK-077's determinism re-run of W on S's first four resets (reading 0.1 cm, commit target
+  0.6 cm, success identical; a difference is a G-determinism guard error). The inputs are D's: the
+  six checkpoint reports, TASK-077's featurisation and Stage O fits, TASK-076's evidence root and
+  TASK-080's Stage R report, **plus `--stage-d` set to the D-PASS report above**; the runner refuses
+  any `--stage-d` that is not this task's non-debug D-PASS report run under the same frozen block.
+  The GO also checks that report's sha256 (`b58ae61f…e920`) before launch, which the runner does
+  not.
+- **Rows:** §7.2, first match (V, S-VOID-CEILING, L-NO-GAIN, L-INFERIOR, L-PASS, L-TWIN-NEAR,
+  L-NEAR, L-BAR). Only L-NO-GAIN and L-INFERIOR fire the clause (§9). L-PASS is the primary claim,
+  "LeWM-driven closed-loop success", and only it, with its own reviewed ruling, lets R7 state a
+  gated LeWM result (§13).
+- **Caps and resources (§10):** Stage S 21 600 s and 300 s per attempt; G-memory 12 GiB
+  process-tree PSS (D peaked at 9.41 GiB, the debug smokes at 9.49); MemAvailable at start
+  ≥ 16 GiB; G-quiet load ≤ 2.0 / 2.0 at the start; G-disk ≥ 10 GiB free.
+- **Expected time.** From D's per-attempt medians and Stage 0's for the four arms D did not run
+  (L-rand 6.53, H-sysid 4.28, H-read 8.08 and H-now 4.16 s; §11), about 97 s per reset over the
+  eleven arms; 128 resets on 4 workers take about 52 min, plus the determinism re-run and D's
+  measured overhead before the first outcome (210 s: G-tests, G-repro, the P readout's refit):
+  **about 55–65 min**, far under the cap.
+- **Launch-time checks** (the GO lists them): the worktree's HEAD is the merge commit with a clean
+  tracked tree and no `outputs/task081-s*` anywhere; the 1- and 5-minute load averages ≤ 2.0 and no
+  other heavy CPU job running or about to start (`hz.Clock` starts before G-quiet's wait, so a long
+  wait counts against the cap); MemAvailable ≥ 16 GiB; ≥ 10 GiB free; the Stage R report
+  `bedb8966…48ea7` and its fits unchanged; the D report `b58ae61f…e920`; no seed of 70200–70327
+  simulated before.
+
+If the invocation ends in anything other than a §7.2 row, nothing further is launched and the case
+is ruled under §10 first. The exact command is in the GO. After S, the results PR reports every arm
+(§6.1 step 5).
+
 ## 7. Gates, bars and rows
 
 Intervals are reset-clustered bootstrap percentile intervals, 10 000 resamples, 95 %, salt 8302,
@@ -580,6 +780,11 @@ No training, no featurisation and no GPU. Disk: reports only (TASK-080's S repor
   R18.31's list), so its correction is a cross-document edit made once, by the main session with
   Stage D's record, rather than twice; the discrepancy is recorded here, in R19.10 and in R19.14
   until then.
+- **Corrected at Stage D's record (R19.18).** After D-PASS (§6.5), R7's last clause was replaced
+  in every file that quotes R7, by a factual statement of TASK-081's development counts (the
+  design note's check and D), labelled as non-gating development runs; "LeWM therefore has no
+  gated closed-loop Apple→Plate success" is kept. The quote above is the clause as it stood at
+  the freeze.
 
 ## 14. Open questions of the design note, resolved (R19.2–R19.10)
 
