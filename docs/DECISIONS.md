@@ -102,8 +102,9 @@ R20 because R1–R19 are taken (no R20 label exists on any local or remote ref).
   written law** (κ = −0.5), a declared prior that is wrong under U-sat, and H-sysid's linear form
   refitted on the new corpus's train split with R-plate's readings (the better on S, a tie to
   H-rule). Reasons: comparability with TASK-077/080/081's reading of R9.8; the flexible tier is
-  expected to leave no headroom, so gating on it would make the primary claim a necessity test
-  against learned models, which needs a pixel-only consequence (design note §3.4); P-aim is trained
+  expected to leave no headroom, so gating on it would demand parity with a learned low-dimensional
+  model that the development check puts at the ceiling, which R9.8's primary claim does not ask for;
+  P-aim is trained
   on privileged labels. Any restatement of a TASK-082 result, primary or secondary, must say G-NI
   was against the hand-written arms only and state the learned tier's reading. **A
   reported-only tier of learned non-LeWM baselines**: H-sysid-krr (the design note's RBF kernel
@@ -133,7 +134,9 @@ R20 because R1–R19 are taken (no R20 label exists on any local or remote ref).
   +0.047 cm across its three seeds, every interval including 0, a bound on a small confound only, so
   no contrast split is collected). **New:** H-final(commit)'s aim is logged on every root by one look-ahead in cloned
   state at 405, without changing the root's execution (tested in Stage 0): P-aim's labels and
-  Stage G's reference aim. CORPUS-ESCALATE above 2 % excluded overall or in gate-P. R-plate
+  Stage G's reference aim; an unconverged label is the ceiling's committed last iterate, flagged, and
+  more than 2 % unconverged in gate-P is CORPUS-ESCALATE. CORPUS-ESCALATE also above 2 % excluded
+  overall or in gate-P. R-plate
   (TASK-077 Stage O) is carried: the law acts only after 405.
 - **R20.7 — K0 under U-sat, on 64 fresh resets (72400–72463).** τ_commit by TASK-080's pooled rule
   at n = 64 (the largest planted level up to which every level reaches ≥ 56/64; salt 8408); the
@@ -141,8 +144,7 @@ R20 because R1–R19 are taken (no R20 label exists on any local or remote ref).
   attempts within 0.1 cm of plate(525); r = 465 is kept only if r_K ≤ 465, else CAL-ESCALATE); the
   palm-speed history check; **the aim-box clip-binding check** (the count of ceiling aims outside the
   box built from p̂ and h; stop above 4/64, an allocation); H-rule and H-now reported only. All stops,
-  and τ_commit = 0, are CAL-ESCALATE (no clause). Unconverged ceiling labels in the corpus are logged
-  with a flag; more than 2 % in gate-P is CORPUS-ESCALATE. **A τ_commit below 1.0 cm makes Stage T's
+  and τ_commit = 0, are CAL-ESCALATE (no clause). **A τ_commit below 1.0 cm makes Stage T's
   GO a ruling point** (R1 would then likely fail, and Stage T costs about 31 GPU-hours): proceed, or
   close as CAL-ESCALATE without the clause, by a recorded ruling before any training job.
 - **R20.8 — the readouts and Stage G.** R-S, R-N and R-L in TASK-080's form, refitted per seed on

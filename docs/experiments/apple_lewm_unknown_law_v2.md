@@ -292,8 +292,8 @@ departures from TASK-066, unchanged). The backend swap stays one key.
   - TASK-077's budget rule (U = 2 × the larger calibration saturation, rounded, capped at 100 000)
     depends on the measured saturation, so on the data as well as on the recipe and corpus size; a
     re-measured U could differ. **But the cap bounds any increase:** U = 95 000 is within 5 % of the
-    100 000 cap, so a re-run calibration could raise U by at most 5 000 updates; it could only lower
-    it, which would not help W. The recipe and corpus size are unchanged, and the law changes the
+    100 000 cap, so a re-run calibration could raise U by at most 5 000 updates; otherwise it could
+    only lower it, which would not help W. The recipe and corpus size are unchanged, and the law changes the
     plate's path after 405 only (median travel from 405 to s1 7.17 cm under U-sat against 8.71 cm
     under C1-M on the development corpus).
   - The two calibration jobs cost about 5.2 h of GPU queue time (TASK-077's logged start and end
@@ -352,9 +352,9 @@ ridge on the same inputs; P-aim, a kernel ridge onto the ceiling's aims). Reason
 - **Comparability.** TASK-077, TASK-080 and TASK-081 read R9.8's comparator as the better of these
   two fixed forms; keeping them makes the primary row comparable across the line, and the secondary
   claim is R9.8's own "LeWM needed" against "the best hand-written arm".
-- **The flexible tier is expected to leave no headroom** (§1), so gating against it would turn the
-  primary claim into a necessity test against learned models, which the design note says needs a
-  pixel-only consequence and its own design (§3.4).
+- **The flexible tier is expected to leave no headroom** (§1): gating on it would demand parity with
+  a learned low-dimensional model that the development check puts at the ceiling, which R9.8's
+  primary claim does not ask for, and the line's comparability would be lost.
 - **P-aim is trained on privileged labels** (the ceiling's aims, as P-3 is trained on e9's privileged
   demonstrations), and it is a new arm with no development reading on p̂.
 Both learned arms are reported with the same δ and both directions of the McNemar test (§9.5).
