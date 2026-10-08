@@ -634,6 +634,8 @@ def stage_d_report(args, debug: bool) -> dict:
         or report.get("cohort") != "D"
     ):
         raise lp.GuardError(f"G-plan: {args.stage_d} is not this task's {want} report")
+    if not debug and report.get("frozen_sha256_at_run") != cpv.frozen_sha256():
+        raise lp.GuardError("G-plan: Stage D ran under another frozen block")
     return {"path": str(Path(args.stage_d).resolve()), "sha256": hz.sha256_file(args.stage_d)}
 
 
@@ -725,7 +727,7 @@ def _stats(values) -> dict:
 def reported(records: dict, *, n: int) -> dict:
     """§7.3, reported only: the solver's effect, aim errors against H-final(commit)'s aim, the
     tau-curve predictions, the final-distance distributions and affine_local's diagnostics."""
-    out: dict = {}
+    out: dict = cpv.counts_and_pairs({a: successes(r) for a, r in records.items()})
     if "W-frozen" in records:
         w, wf = successes(records["W"]), successes(records["W-frozen"])
         capped = [

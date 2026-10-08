@@ -1,13 +1,20 @@
 # Apple→Plate LeWM committed aim under C1-M, solved as the fixed point of a local affine fit to W's own predictions (TASK-081)
 
-**STATUS: DRAFT.** Nothing in this document is frozen, and no seed of D or S (§5) has been
-simulated. **Stage 0 is done** ([record](apple_lewm_commit_precision_v2_stage0.md), R19.12–R19.14):
-the code, debug smokes on 71900–71999 only, the caps and the power simulation; the frozen-block
-candidate's sha256 is `857a3078…32ef` (DRAFT). The sequence is TASK-080's (§6): this draft's independent review; Stage 0 (code, frozen
-block candidate, manifest, tests, debug smokes, the power simulation); the freeze, merged on an
-independent reviewer's reported APPROVE; then Stage D and Stage S, each on its own reported GO;
-then the results PR. **No calibration stage runs before the freeze** (no K0, no corpus, no offline
-gate; §6.2, §6.3), so the freeze follows Stage 0 directly.
+**STATUS: FROZEN** (R19.15, decided by Claude under owner delegation; no calibration stage, so
+the freeze follows Stage 0 directly). The frozen block is `src/embodied_jepa/lewm_cp_v2.py`; its
+sha256 **`77ccc6364624c7da9dcca1d09827a0f6a25a670a00392d488e7b0216e090705a`** is pinned in
+`tests/test_lewm_cp_v2.py` and in the manifest (`benchmarks/manifests/apple-lewm-cp-v2.json`), with
+the manifest's six file pins and this document's sha256. **The freeze takes effect when it is
+merged on an independent reviewer's reported APPROVE.** Stage D and Stage S each still need their
+own reported GO (§6.1). Stage D's plan is §6.4.
+
+History. The DRAFT (R19.1–R19.11, #161) was reviewed independently. Stage 0
+([record](apple_lewm_commit_precision_v2_stage0.md), R19.12–R19.14, #162) added the code, debug
+smokes on 71900–71999 only, the caps and the power simulation; its candidate block was
+`857a3078…32ef`. The freeze (R19.15) set STATUS FROZEN and applied #162's review: per-arm exact
+intervals and every arm's paired difference from W are computed by the runner (§7.3 item 1), and
+Stage S refuses a D-PASS report run under another frozen block. No seed of D or S had been
+simulated at the freeze.
 
 - **Admitted by:** the TASK-081 design note
   ([apple_lewm_commit_precision_v2_design.md](apple_lewm_commit_precision_v2_design.md), DRAFT,
@@ -327,6 +334,31 @@ re-measured, because:
   false-stop channel without protecting anything G-bar, G-NI and the twin tests do not.
 - **The paired W-frozen arm** replaces the offline before-and-after comparison: it measures the
   solver's effect on the same fresh resets in closed loop (§7.3).
+
+### 6.4 Stage D's plan (R19.16)
+
+Stage D runs once, on its own reported GO at the freeze's merge commit, from a fresh clean worktree
+of that commit (`scripts/new_worktree.sh /home/huhn/develop/emai/worktrees/task081-staged --run
+--from <merge sha>`). It is one invocation, from the worktree root, on the CPU (no GPU lock; the
+stage creates no CUDA context):
+
+- **`closed --cohort D`**: the 16 development resets **70100–70115**, arms **W, W-frozen, N,
+  L-shuf, L-mean, H-final(commit) and H-rule** (W-frozen and H-rule reported only), W and its
+  twins reading R-S and N reading R-N of the primary seed 66800 from TASK-080's Stage R fits (the
+  report checked at `bedb8966…48ea7`, R-S and R-N at their content sha256s), with TASK-077's six
+  job reports, featurisation and Stage O fits and TASK-076's evidence root (G-repro). The runner
+  runs its own G-quiet and in-run G-tests first. Nothing is fitted or tuned on D.
+- **Rows (§7.1):** **L-DEV-STOP** (escalate, no clause) if W < 12/16, H-final(commit) < 14/16 or
+  W − max(N, L-shuf, L-mean) < +3/16; otherwise **D-PASS**, after which Stage S may get its own GO.
+- **Caps and resources (§10):** 7 200 s for the stage (scaled about 510 s) and 300 s per attempt;
+  G-memory 12 GiB process-tree PSS (debug peak 9.49 GiB); MemAvailable ≥ 16 GiB at the start;
+  G-quiet load ≤ 2.0 / 2.0; G-disk ≥ 10 GiB free.
+- **What D is and is not.** A development cohort of 16 resets that gates only Stage S's GO; not a
+  gated claim. Its record makes R7's factual correction (§13, R19.10, R19.14) as its own ruling,
+  adding D's counts as development results.
+
+If the invocation ends in anything other than a §7.1 row, nothing further is launched and the case
+is ruled under §10 first. The exact command is in the GO.
 
 ## 7. Gates, bars and rows
 
