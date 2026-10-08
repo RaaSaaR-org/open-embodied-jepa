@@ -56,6 +56,13 @@ Prepared 2026-09-20 from PRD sections 1–21, updated with the user’s Mac-only
 > better), and the new solver's effect is not shown (TASK-080's solver scored 117/128 on the same
 > resets). TASK-080's gated L-NEAR stands as recorded, and TASK-081's 128-reset cohort was chosen
 > after it. R7 was changed by R19.21.
+>
+> **Update 2026-10-09 (TASK-083 Stage S).** A preregistered replication with W's two other model
+> seeds of the same training run (66801 and 66802), same condition and controller, 128 further
+> fresh gated resets, one run, simulation only, ended REP-PASS: each seed reached L-PASS on its own
+> (124/128 and 120/128; H-rule 123/128, paired differences +1/128 [−5, +7] and −3/128 [−10, +4]).
+> "LeWM needed" is not shown; the three seeds share one corpus, recipe and encoder. R7 was changed
+> by R21.20.
 
 ## Deliverable
 
