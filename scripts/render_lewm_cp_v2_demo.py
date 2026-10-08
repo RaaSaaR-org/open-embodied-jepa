@@ -449,10 +449,10 @@ def main(argv=None) -> int:
         success = bool(record["success"])
         distance = record.get("final_distance_cm")
         if success:
-            d = "" if distance is None else f" ({distance:.1f} cm from centre)"
-            banner = (f"SUCCESS: apple at rest on the plate{d}", (30, 130, 60))
+            d = "" if distance is None else f", {distance:.1f} cm off centre"
+            banner = (f"SUCCESS: at rest on the plate{d}", (30, 130, 60))
         else:
-            d = "" if distance is None else f" (apple {distance:.1f} cm from the plate centre)"
+            d = "" if distance is None else f": {distance:.1f} cm off the plate centre"
             banner = (f"MISS{d}", (170, 40, 40))
         if recorder.last is not None:
             t, onboard = recorder.last
