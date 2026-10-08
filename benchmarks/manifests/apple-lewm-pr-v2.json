@@ -1406,7 +1406,7 @@
  },
  "note": "FROZEN after K0′-PASS (R18.22), in force once merged on an independent reviewer's APPROVE: frozen_sha256_pin is the frozen block's sha256; hashes pins the stage's four own files, the test file, TASK-077's manifest (whose 13 pins and frozen block the runner checks too) and TASK-076's manifest (whose 84 pins the runner checks too); protocol_document_sha256 is the protocol's sha256. K0′'s report: outputs/task080-k0-1/report.json, sha256 a0939e3eea7b695d1c3029e733970bcd123ea62db76192104c69479ad9314c16.",
  "protocol": "apple_lewm_c1m_v2_pred_readout",
- "protocol_document_sha256": "6ceca2315e25a9509fb9b51f0235ab0cf630c29b74866751ecd78c58be309849",
+ "protocol_document_sha256": "96298e1694ae0feda8445715d7d39f6acd1659f152a29449fa9312a636e40ecc",
  "status": "FROZEN",
  "task": "TASK-080"
 }

@@ -83,8 +83,19 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   **CORPUS-SEALED** (R18.23; protocol §8.2). 499 of 500 roots kept (65688, gate-P, excluded as
   `no_decision`; 0.2 % overall, 0.4 % gate-P, 0 % contrast-T; bar 2 %); gate-P 249, contrast-T
   250. Sealed manifest sha256 `deebd83db6de53e23dbde0b921ae7f7c1cf79cb24c6dd27bfae066c2f5017c4e`;
-  report sha256 `63b085df…f0ca`; evidence copy `~/develop/emai/evidence/task080-stagec/`. Nothing
-  featurised or read. Stage R's plan is §8.3 (R18.24): `tests`, then `featurise` through
+  report sha256 `63b085df…f0ca`; evidence copy `~/develop/emai/evidence/task080-stagec/`. No
+  Stage R readout fitted on or evaluated against a fresh root yet (R-plate read their 405 frames by
+  design; wording corrected in R18.25). Stage R's plan is §8.3 (R18.24): `tests`, then `featurise` through
   `gpu_run.sh`, then `rgate`, on one reported GO at the record's merge commit. The record PR also
   fixes #155's review nits 1–3 (protocol §8.1 and §14 wording, a PLAN.md line); the protocol
   document's sha256 is re-pinned in the manifest.
+- 2026-10-08: Stage R ran once on the reviewer's GO (#156, issuecomment-6048908259) at `33cea5c`
+  (worktree `task080-stager`): TESTS-PASS, FEATURISED, then **R-PASS** (R18.25; protocol §8.4;
+  rgate report sha256 `bedb8966…8ea7`; evidence copy `~/develop/emai/evidence/task080-stager/`).
+  Offline only. Gate-P (249 roots), seeds 66800/66801/66802: median e_S 0.547/0.584/0.589 cm
+  (upper bounds 0.610/0.657/0.643, R1 bar 1.0); e_S/e_N 0.311/0.371/0.385 (upper bounds < 0.44);
+  e_L lower bounds 2.13–2.21 cm (R3 > 1.0); ceiling 0.455 cm. Offline predicted counts (predictions,
+  not closed-loop counts; seed 66800, `last_two_triggered`): W 56.92/64 (A1 ≥ 56: margin 0.92, under
+  one reset), N 27.79, L-shuf 19.67, L-mean 28.95, L-rand 11.85; H-rule 58.64, H-sysid 53.93. The
+  record also takes #156's review nits (a)–(d). Stage D's plan is §8.5 (R18.26): one CPU
+  `closed --cohort D` on 65100–65115 on its own GO at the record's merge commit.
