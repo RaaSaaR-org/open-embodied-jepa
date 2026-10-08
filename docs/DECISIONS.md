@@ -63,6 +63,38 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (g) — TASK-081 Stage 0: code, debug smokes, caps and power; #161's review nits (R19.12–R19.14; protocol still DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[apple_lewm_commit_precision_v2_stage0.md](experiments/apple_lewm_commit_precision_v2_stage0.md).
+The protocol ([apple_lewm_commit_precision_v2.md](experiments/apple_lewm_commit_precision_v2.md))
+stays **DRAFT**; no seed of D (70100–70115) or S (70200–70327) has been simulated; R7 is unchanged.
+#161 (the DRAFT) merged on an independent reviewer's APPROVE at `33edc80` with nine non-blocking
+nits.
+
+- **R19.12 — Stage 0.** New modules only (`lewm_cp_v2.py`, `lewm_cp_v2_runtime.py`,
+  `scripts/run_lewm_cp_v2.py`), the DRAFT manifest and 43 tests; TASK-080's runner pieces are copied
+  verbatim and tested against their source, because new runners may not load other scripts. The
+  affine_local runtime equals the design note's tested variant on synthetic predictors, every
+  fallback included; W-frozen equals TASK-080's controller. Debug smokes on 71900–71999 only
+  (nothing read): closedD-2, closedS-2 and closedD-3 ran every arm with its solver (one V from a
+  missing report record, fixed; one V from the G-plan guard refusing a non-D-PASS report, as
+  designed). Caps kept: D 7 200 s (scaled about 510 s), S 21 600 s (about 3 420 s), 300 s per
+  attempt (slowest 15.6 s); peak PSS 9.49 GiB of 12. Frozen-block candidate `857a3078…32ef`.
+- **R19.13 — power, and nits N1–N6, N8, N9 applied.** With the better-of-two comparator (salt 8304),
+  G-NI's power at W 0.953 against C 0.992 is 0.93–0.97 (0.26–0.43 at TASK-080's W rate, 0.906); the
+  size at the margin 2.6–3.6 %; the clause's false-fire rate at the margin (L-INFERIOR) 1.4–1.7 %
+  (N2: a different tail from the size); G-bar's power at 0.938 is 0.9975 (N1: R19.8's "≥ 0.998" is
+  corrected here, not rewritten). The protocol's wording is corrected for N3 (the seed search's
+  hits are block declarations), N4 (which code implements which step), N5 (A1 and A2 are not
+  re-tested for the new solver), N6 (where R7 ends) and N9 (H-sysid keeps its own solver); N8 is
+  met by logging the fit's design rank (reported only; the solver is unchanged).
+- **R19.14 — N7: R7's correction stays with Stage D's record.** The reviewer suggested fixing R7's
+  "only other … on v1" clause earlier. It stays as R19.10 rules: the sentence is quoted verbatim in
+  the repository's instruction and entry files (R18.31's list), so it is corrected once, by the main
+  session with Stage D's record and D's own development counts, rather than twice. Until then the
+  discrepancy is recorded in R19.10, here and in protocol §13.
+
 ## Decision 2026-10-08 (f) — TASK-081's DRAFT preregistration: W's committed aim solved as the fixed point of a local affine fit, on 128 fresh gated resets (R19; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30). DRAFT, not frozen.** The document is

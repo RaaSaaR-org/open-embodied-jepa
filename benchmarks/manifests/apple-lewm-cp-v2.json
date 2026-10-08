@@ -1086,6 +1086,13 @@
      "peak_tree_pss_gib": 9.38,
      "seconds": 121
     },
+    "closedD-3": {
+     "note": "the final code (the design rank logged); the same counts as closedD-2",
+     "outcome": "L-DEV-STOP-DEBUG",
+     "peak_tree_pss_gib": 9.49,
+     "revision": "9c82b97",
+     "seconds": 121
+    },
     "closedS-1": {
      "outcome": "V",
      "reason": "G-plan refused a --stage-d report that was not D-PASS-DEBUG (the guard, as designed); its in-run G-tests passed: 2120 passed, 37 skipped"
@@ -1134,7 +1141,7 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "d8c40c45b897f6009ace35f34d429f807cc526de5a03f5b33251618b4ee79af8",
+ "frozen_sha256": "857a3078764230e344b6a4b9acd5ce50c1980932b63e6a422c32119ede6c32ef",
  "frozen_sha256_pin": null,
  "hashes": {},
  "note": "DRAFT (Stage 0, R19.12-): the frozen block below is a candidate; frozen_sha256_pin is null until the freeze, which also fills hashes (this task's three own files, its test file, TASK-080's manifest and the solver file) and protocol_document_sha256, and is in force once merged on an independent reviewer's APPROVE.",

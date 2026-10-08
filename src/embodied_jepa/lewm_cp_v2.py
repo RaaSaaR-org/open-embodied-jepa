@@ -606,6 +606,13 @@ STAGE0: dict = {  # the record: docs/experiments/apple_lewm_commit_precision_v2_
             "peak_tree_pss_gib": 9.40,
             "determinism_ok": True,
         },
+        "closedD-3": {
+            "outcome": "L-DEV-STOP-DEBUG",
+            "revision": "9c82b97",
+            "seconds": 121,
+            "peak_tree_pss_gib": 9.49,
+            "note": "the final code (the design rank logged); the same counts as closedD-2",
+        },
     },
     "seconds_per_attempt_median": {  # debug S (4 resets, 4 workers)
         "W": 15.56,
