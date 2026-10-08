@@ -24,7 +24,7 @@ LeWM has one gated success in simulation, for one narrow job: predicting where a
 
 What this does and does not show:
 
-- LeWM's predictions are good enough to act on: in TASK-081 its action-blind twin scored 73/128 and its scene-blind twins 39 and 59.
+- In TASK-081, W's aim (118/128) beat its action-blind twin (73/128) and its scene-blind twins (39 and 59).
 - "LeWM needed" is not shown: a hand-written rule given the plate law scored 125/128, measurably better (W − H-rule −7/128, 95 % interval −13 to −2). LeWM chooses only the single place aim, on frozen DINOv2 features, with one model seed (66800, flagged `last_two_triggered`).
 - The moving plate is an artificial condition. DECISIONS R2 required later LeWM plate tasks to use a plate the robot must predict, because with a visible plate no world model is needed for the place; TASK-076 then confirmed it: a plain image readout of the plate scored 64/64 with no world model (under TASK-074's 9 cm plate move; one run, one camera, one encoder; the random-init floor also scored 64/64, the image-free clock prior 51/64).
 - LeWM planning the whole motion toward a goal image scored 0/150 per backend on the v1 benchmark (TASK-020).
@@ -51,7 +51,7 @@ Zero-shot JEPA robot control works only for short tasks on Franka arms with para
 | [LePlanner](https://arxiv.org/pdf/2609.13845) (2026-09) | Amortized planner trained inside the WM | Matches CEM (92% Cube) with 20 vs 45 000 latent transitions |
 | [vjepa2 issue #169](https://github.com/facebookresearch/vjepa2/issues/169) | Released V-JEPA 2-AC in a new Isaac render | Stops cm above the cube, never grasps; anecdotal |
 
-Every working recipe shares three things: diverse task-agnostic interaction data on the same robot, robot state in the model or the goal, and short planning segments with subgoals. This project has not combined them: robot state was fused into the latent before (apple WM v2–v4, `state_fusion: true`; all four v4 arms failed their gates at TASK-054), but never with play data, short-segment subgoals or inverse-dynamics and joint-change losses.
+Every working recipe shares three things: diverse task-agnostic interaction data on the same robot, robot state in the model or the goal, and short planning segments with subgoals. This project has not combined them: robot state was fused into the latent before (apple WM v2–v4, `state_fusion` with `readout_heads`; all four v4 arms failed their gates at TASK-054), but never with play data, short-segment subgoals or inverse-dynamics and joint-change losses.
 
 ## Robot foundation models (VLAs) and world-model combos
 
@@ -70,7 +70,7 @@ VLAs such as GR00T and pi0 are not zero-shot on a new robot or task. Their "zero
 | [ZeroDex](https://arxiv.org/html/2606.19340) (2026-06) | No world model: VLM subgoals + keypoints + motion generator | Dexterous single-step tasks 4–5/5; tiny n |
 | [LEGS](https://arxiv.org/html/2606.01458) (2026-05) | Gaussian-splat backgrounds over MuJoCo, G1+Dex3 | Real 5–10/10 per task; trained on 4×H100 |
 
-On our own task family, our simulation results (P-3 40/40; LeWM 118/128, each one run) are not obviously behind these GR00T numbers, though the setups, scorers and reset distributions differ and are not directly comparable. By the owner's answer, GR00T plays no role in the plan. GWM and ZeroDex show the language layer wanted later: a VLM turns a command into subgoals.
+On our own task family, our simulation results (P-3 40/40; the P-3 pick + LeWM aim + e9 place chain 118/128, each one run) are not obviously behind these GR00T numbers, though the setups, scorers and reset distributions differ and are not directly comparable. By the owner's answer, GR00T plays no role in the plan. GWM and ZeroDex show the language layer wanted later: a VLM turns a command into subgoals.
 
 ## What blocks zero-shot JEPA control, and the fixes
 
@@ -79,7 +79,7 @@ Six blockers explain our results. Each has a published fix we can test, though m
 | Blocker | Our symptom | Fix to test |
 | --- | --- | --- |
 | Horizon: latent WMs rank actions well only for targets ~5–10 steps ahead | 0/150 per backend with replanned CEM (horizon 4, up to 805 steps) toward one distant goal image, no subgoals; every model episode stopped by the joint-rate guard (TASK-020) | Subgoals and short segments ([HWM](https://arxiv.org/html/2604.03208v2), [SAGE](https://arxiv.org/html/2607.17973)); avoid naive hierarchy ([Hi-LeWM](https://arxiv.org/html/2607.12547v1)) |
-| Misleading cost: latent L2 to goal misranks actions | Apple-plate offset read only to 2–3 cm | Add a robot-pose term to cost and goal ([JEPA-WMs](https://arxiv.org/html/2512.24497v1)) |
+| Misleading cost: latent L2 to goal misranks actions | Apple-plate offset read only to about 2–3.4 cm (TASK-075) | Add a robot-pose term to cost and goal ([JEPA-WMs](https://arxiv.org/html/2512.24497v1)) |
 | Latents not grounded in robot state | Small objects and the hand poorly identifiable | Proprio input, joint-change heads, inverse-dynamics loss ([AD-WM](https://arxiv.org/abs/2609.30264), [GAWM](https://arxiv.org/pdf/2609.03565), [Strohm et al.](https://arxiv.org/abs/2610.03137)): the owner's "predict robot states" idea |
 | Data: every result uses tens to hundreds of hours of task-agnostic play on the same robot | Our corpora are mostly scripted or expert-labelled single-task demos with few failures | A MuJoCo play corpus with random, perturbed and failed behaviour ([PLDM](https://arxiv.org/abs/2502.14819)); optionally Unitree's [G1_Dex3 datasets](https://huggingface.co/datasets/unitreerobotics/G1_Dex3_ToastedBread_Dataset) |
 | Dexterous 14-D actions: no published success | — | Start with one arm, one hand, a reduced grasp synergy ([DexWM](https://arxiv.org/abs/2512.13644)) |
@@ -116,7 +116,7 @@ Details that matter:
 
 1. **Phase 0** also runs an action-sensitivity probe on our existing LeWM checkpoints, as a baseline.
 2. **Phase 1** collects play data, not expert demos. Coverage and failures matter more than quality.
-3. **Phase 2** reuses the repo's off-by-default options (`state_fusion`, `readout_heads`); plain `state_fusion` alone was tried in the apple WM line and did not pass, so it is a control arm here, not the fix. Each arm gets its own preregistration, as now. With cloud GPUs allowed, a V-JEPA 2.1 encoder arm can be added.
+3. **Phase 2** reuses the repo's off-by-default options (`state_fusion`, `readout_heads`); `state_fusion` together with `readout_heads` was tried in apple WM v2–v4 and every arm failed its gate set (v4 at TASK-054), so that combination is a control arm here, not the fix. Each arm gets its own preregistration, as now. With cloud GPUs allowed, a V-JEPA 2.1 encoder arm can be added.
 4. **Phase 3** is the first honest zero-shot test. Baselines: hold, random, scripted IK reach and plain LeWM.
 5. **Phase 4** compares against P-3 (task-trained) and a VLM + IK baseline (ZeroDex-style), to show what JEPA adds.
 6. **Phase 5** adds language. The real robot enters once hardware is available, starting with offline checks on real camera images.
