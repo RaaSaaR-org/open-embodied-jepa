@@ -63,6 +63,150 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-08 (l) — TASK-082's DRAFT preregistration: LeWM's committed aim under U-sat, a plate law no hand-written arm is given, with TASK-077's recipe retrained (R20; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30). DRAFT, not frozen.** The document is
+[apple_lewm_unknown_law_v2.md](experiments/apple_lewm_unknown_law_v2.md) (STATUS DRAFT), with the
+task card TASK-082. It applies R19.25's recommendation (the design note
+[apple_lewm_unknown_law_v2_design.md](experiments/apple_lewm_unknown_law_v2_design.md) §7). Nothing
+has been run for it: no seed of its ranges has been simulated and no model trained. The labels are
+R20 because R1–R19 are taken (no R20 label exists on any local or remote ref). R7 is unchanged.
+
+- **R20.1 — form and sequence.** A DRAFT protocol; its independent review; Stage 0 (new modules
+  only, the frozen-block candidate, the DRAFT manifest, tests, debug smokes on 74800–74899, scale
+  probes, the power simulation that fixes δ); K0 on its own GO; the freeze with K0's values and δ,
+  merged on an independent reviewer's reported APPROVE; then Stage C, Stage O, Stage T (six jobs),
+  Stage G, Stage D and Stage S, each on its own reported GO; then the results PR. Approving this
+  draft approves neither Stage 0, K0 nor the freeze.
+- **R20.2 — the condition U-sat, declared a task change.** C1-M with only the plate's law after 405
+  replaced by the design note's U-sat law: F(d) = −A tanh(|d|/D) R(Θ |d|/D) d/|d|, d = palm(t − L) −
+  palm(405), A = 8 cm, D = 12 cm, Θ = 0.25 rad, L = 2, from 405 to s1 = 525 (`plate_law_dev`'s
+  `sat`, parameters fixed before the development check). It is declared a task change under R2 (the
+  target must still be predicted: H-now 2/32 under U-sat in the development check); no result under
+  it reaches back over TASK-077, TASK-080 or TASK-081. U-play is not taken (it left H-rule and
+  H-sysid at 31/32 on the true plate). Disclosed: U-sat was chosen over U-play after the
+  development check had read the hand-written arms' counts under both laws.
+- **R20.3 — the claims.** Primary: R9.8's "LeWM-driven closed-loop success" (G-bar 112/128; G-NI
+  against the better of H-rule and H-sysid on S within δ; W beats N, L-shuf, L-mean and L-rand by
+  exact one-sided McNemar tests at p < 0.01). Secondary: R9.8's "LeWM needed", W detectably better
+  than that better hand-written arm (exact one-sided McNemar p < 0.01), **reported only, never a
+  gate**, and stated as a live chance rather than an expectation (development, true plate, one run,
+  32 resets: ceiling 32/32, H-rule with C1-M's written law 23/32, linear H-sysid 28/32), with its
+  power simulated in Stage 0. A primary pass never supports "LeWM needed"; a secondary pass would
+  say only that more than the two named fixed forms is needed under U-sat (a flexible learned model,
+  or another model that represents the law) and that LeWM, from pixels, suffices; it would not say that LeWM is needed rather than any learned
+  model.
+- **R20.4 — the comparators; a declared narrowing of R9.8.** G-NI's comparator stays
+  **hand-written only** (fixed, hand-chosen forms, against flexible learned regressors; P-aim is
+  plainly a non-world-model arm, so this narrows R9.8's "best non-world-model arm" and is declared): H-rule with **C1-M's
+  written law** (κ = −0.5), a declared prior that is wrong under U-sat, and H-sysid's linear form
+  refitted on the new corpus's train split with R-plate's readings (the better on S, a tie to
+  H-rule). Reasons: comparability with TASK-077/080/081's reading of R9.8; the flexible tier is
+  expected to leave no headroom, so gating on it would demand parity with a learned low-dimensional
+  model that the development check puts at the ceiling, which R9.8's primary claim does not ask for;
+  P-aim is trained
+  on privileged labels. Any restatement of a TASK-082 result, primary or secondary, must say G-NI
+  was against the hand-written arms only and state the learned tier's reading. **A
+  reported-only tier of learned non-LeWM baselines**: H-sysid-krr (the design note's RBF kernel
+  ridge on (p̂, h, g), the primary learned baseline) and P-aim (a kernel ridge from (p̂, h) to the
+  ceiling's logged aim, model-free), both fitted on the train split, reported with the same δ and the
+  McNemar test in both directions; **"LeWM needed" against them is not expected** (H-sysid-krr
+  reached the ceiling from 256 roots in development, 32/32 on the true plate, one run, 32 resets, not
+  gated; aim error 0.072 cm in median), and a
+  detectable inferiority of W to either must be stated beside the row. No MLP baseline. **H-rule-fit**
+  (κ fitted on the train split) is reported only, not in the gate.
+- **R20.5 — the model: TASK-077's recipe retrained unchanged, three seeds per arm, no calibration
+  jobs.** W and N, model seeds 72360–72362, on the new corpus's train split, with TASK-077 §4.1–§4.4
+  unchanged (8 × 8 pooled frozen DINOv2 tokens of the onboard 112 px frame, history one, T = 60,
+  batch 16, the selection rule, CPU predictions). The three-seed plan is taken (about 31.4 h on the
+  GPU queue, TASK-077's measured 113 131 s for its six jobs); the note gives no argument for one
+  pair. The budget **U = 95 000** and G1's calibrated bars (rank 0.12, std 0.38) are **carried** from
+  TASK-077's plan, not re-measured: U = 95 000 is within 5 % of the 100 000 cap, so a re-measured U
+  could rise by at most 5 000 updates; the recipe and corpus size are unchanged; and the two
+  calibration jobs would cost about 5.2 h. Disclosed: all three of TASK-077's
+  W curves had their raw minimum at 95 000; G1's rank reference was measured on C1-M's val roots.
+  The primary seed is the W with the lowest kept val criterion (carried rule), fixed before gate-P
+  opens.
+- **R20.6 — the corpus `apple-ul-v2`.** 2 000 roots (72800–74799) under U-sat, TASK-077's collector
+  and per-root record; splits fixed before collection (salt 8407): train 1 500, val 250, **gate-P
+  250**. Train and val build the box from the true plate (the recipe's); gate-P builds it from p̂ (as
+  TASK-080's gate-P; under C1-M TASK-080 measured the corpus-aim confound at +0.035, +0.011 and
+  +0.047 cm across its three seeds, every interval including 0, a bound on a small confound only, so
+  no contrast split is collected). **New:** H-final(commit)'s aim is logged on every root by one look-ahead in cloned
+  state at 405, without changing the root's execution (tested in Stage 0): P-aim's labels and
+  Stage G's reference aim; an unconverged label is the ceiling's committed last iterate, flagged, and
+  more than 2 % unconverged in gate-P is CORPUS-ESCALATE. CORPUS-ESCALATE also above 2 % excluded
+  overall or in gate-P. R-plate
+  (TASK-077 Stage O) is carried: the law acts only after 405.
+- **R20.7 — K0 under U-sat, on 64 fresh resets (72400–72463).** τ_commit by TASK-080's pooled rule
+  at n = 64 (the largest planted level up to which every level reaches ≥ 56/64; salt 8408); the
+  ceiling (stop below 60/64); **the horizon coverage check** (r_K, the earliest step with ≥ 56/64
+  attempts within 0.1 cm of plate(525); r = 465 is kept only if r_K ≤ 465, else CAL-ESCALATE); the
+  palm-speed history check; **the aim-box clip-binding check** (the count of ceiling aims outside the
+  box built from p̂ and h; stop above 4/64, an allocation); H-rule and H-now reported only. All stops,
+  and τ_commit = 0, are CAL-ESCALATE (no clause). **A τ_commit below 1.0 cm makes Stage T's
+  GO a ruling point** (R1 would then likely fail, and Stage T costs about 31 GPU-hours): proceed, or
+  close as CAL-ESCALATE without the clause, by a recorded ruling before any training job.
+- **R20.8 — the readouts and Stage G.** R-S, R-N and R-L in TASK-080's form, refitted per seed on
+  W's and N's own stand-in predictions over the 1 750 train and val roots; R8 only for R0 and H-read.
+  Stage G opens gate-P once, after its `first_outcome_utc`: G1–G4 (TASK-077 §8.2, re-gated because
+  the models are new) on all three seeds, R0–R3 on all three seeds, A1 (W's predicted count
+  ≥ 112/128 through K0's τ curve) and A2 (W − each twin ≥ +7) on the primary seed. The offline aim
+  error is measured against the root's logged ceiling aim (U-sat has no closed-form fixed point).
+  Rows: V, H-GATE-FAIL, R-VOID-CEILING, R-COMMAND-KEYED, R-NO-BAR, A-NO-BAR, A-TWIN, G-PASS; none
+  fires the clause.
+- **R20.9 — the arms and the solver.** W, N, L-shuf, L-mean with **affine_local** (TASK-081 §3,
+  unchanged); L-rand; H-rule; H-sysid (its own solver); H-final(commit) (privileged ceiling).
+  Reported only: H-sysid-krr, P-aim, H-rule-fit, the two non-primary seeds' W (the seed spread,
+  R19.23 (3)), and the privileged H-read and H-now.
+- **R20.10 — cohort, bars, δ and rows.** D: 16 resets (72500–72515) with TASK-080's stops
+  (L-DEV-STOP or D-PASS). S: **128 fresh resets (72600–72727)**; G-bar 112/128 (carried fraction
+  0.875); S-VOID-CEILING below 112/128; **δ fixed at the freeze by a declared rule**: the smallest of
+  8, 12 and 16/128 at which G-NI's simulated power at W = C is ≥ 0.80 for every C in {0.80, 0.85,
+  0.875} (half coupling) and the size at the margin is ≤ 5 % in every coupling, else 16/128 (an
+  allocation; the rule can only tighten TASK-081's margin, and a smaller δ also makes L-INFERIOR, and
+  so the clause, easier to fire, which Stage 0 reports per candidate δ); R17.15's "detectably" with its count +7;
+  TASK-081's row ladder in its order (V, S-VOID-CEILING, L-NO-GAIN, L-INFERIOR, L-PASS, L-TWIN-NEAR,
+  L-NEAR, L-BAR).
+- **R20.11 — seeds and salts.** Block 72000–74999 (R19.24), only from the ranges R19.24 left free:
+  model seeds 72360–72362, K 72400–72463, D 72500–72515, S 72600–72727, corpus 72800–74799, debug
+  74800–74899; the rest of 72032–72099 and 72356–74899 is reserved. The design note's ranges
+  (72000–72031, 72100–72355, 74900–74999) and salts 8401–8404 are not reused. Salts: 8405 the move
+  draw, 8406 the corpus aims, 8407 the split, 8408 K0's planted direction, 8409 the window sampler,
+  8410 every fold assignment (sub-keys), 8411 every bootstrap, 8412 L-rand, G4's permutation and
+  Stage 0's power simulations (sub-keys). The search (126 refs, 60 worktrees) found only block
+  declarations.
+- **R20.12 — power.** Stage 0 simulates G-bar, G-NI for δ ∈ {8, 12, 16}/128 with the better-of-two
+  comparator (size at the margin, L-INFERIOR's false-fire rate), the secondary claim's McNemar test,
+  the twin tests and L-PASS, over W ∈ {0.875, 0.906, 0.922, 0.938, 0.953} and C ∈ {0.80, 0.85,
+  0.875} (salt 8412, sub-key 3); its numbers replace the draft's readings in the freeze PR. Expected
+  binding risks: G-bar and the training gates, not G-NI.
+- **R20.13 — the clause.** It fires on L-NO-GAIN or L-INFERIOR only, never on the secondary claim or
+  the learned tier. **Its scope is new** (a task change): LeWM aim selection with a single aim
+  committed at 405 under the declared U-sat law on v2, with the declared 4 cm post-pick move, from
+  onboard 112 px frozen DINOv2 pooled tokens, with TASK-066-family predictors trained on a corpus
+  under that law; TASK-077's 4 × 4 narrowing kept. If it fires, every other pooled grid (except that
+  4 × 4 case), every readout of the predicted latent and every post-grid solver closes under U-sat.
+  C1-M and its results, every other law, necessity studies against learned baselines, and the rest
+  of TASK-081's "does not close" list stay open.
+- **R20.14 — disclosed: chosen after TASK-081.** The condition U-sat and the 128-reset cohort size
+  were chosen after TASK-081's L-PASS; U-sat was chosen over U-play after the development check read
+  the hand-written arms' counts under both laws (a choice of condition favourable to the secondary
+  claim, made in the open; every gated count comes from fresh seeds); the 128-reset size is
+  TASK-081's, itself chosen after TASK-080's L-NEAR. H-rule's written law (C1-M's κ) is a declared
+  choice.
+- **R20.15 — R7.** Unchanged by this draft. An L-PASS under U-sat, and separately a secondary pass,
+  would each need their own reviewed ruling before R7 states them; the wording of either must name
+  H-rule's written law and H-sysid's linear form, say that G-NI was against the hand-written arms only
+  (a declared narrowing of R9.8), and state the learned tier's reading, including any detectable
+  inferiority of W to H-sysid-krr or P-aim. TASK-079's
+  precondition (R19.22) is unaffected.
+- **R20.16 — compute.** About 31.5 h of GPU (Stage T's six jobs about 31.4 h; featurisation about
+  5 min) and 5–7 h of CPU (K0 about 15 min, C 1–1.5 h with the labelling look-ahead, O 20–40 min,
+  G 1.5–2.5 h, D about 15 min, S about 1.5 h); three to four days of wall time with reviews and GOs.
+  Provisional caps (set at Stage 0): K0 7 200 s, C 14 400 s, O 3 600 s and 7 200 s, each T job
+  46 800 s, G 14 400 s, D 7 200 s, S 21 600 s, 300 s per attempt.
+
 ## Decision 2026-10-08 (k) — TASK-082: direction (a), a plate law no hand-written arm is given; DRAFT design note and its development check (R19.24–R19.25)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
