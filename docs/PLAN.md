@@ -419,6 +419,17 @@ design note under R9.8 of DECISIONS 2026-10-04, not a protocol).
       whether this L-PASS counts as TASK-079's "equivalent row" (proposed, not ruled); (3) more
       model seeds of W, broader conditions and a random-init floor before any broader claim;
       (4) no further solver work under C1-M.
+    - **TASK-082 (todo; R19.24–R19.25): direction (a), a plate law no hand-written arm is given.**
+      DRAFT design note
+      [apple_lewm_unknown_law_v2_design.md](experiments/apple_lewm_unknown_law_v2_design.md):
+      C1-M with only the law after 405 replaced. Development check (seeds 72000–72355 of the block
+      72000–74999, CPU, no world model, one run, true-plate arms): **U-sat** (saturating, swirling)
+      ceiling 32/32, H-rule with C1-M's written law 23/32, linear H-sysid 28/32, a kernel-ridge
+      sysid on 256 roots 32/32; **U-play** (hysteretic) leaves H-rule and H-sysid at 31/32.
+      "LeWM needed" becomes testable against hand-written arms; against a learned non-LeWM
+      baseline it is not expected (no headroom). Recommended: preregister under U-sat, retrain TASK-077's recipe on a new
+      2 000-root corpus (about 31 h GPU for three seeds per arm, or about 10 h for one pair, plus
+      4–7 h CPU). In parallel: the owner's TASK-079 ruling; two extra W seeds under C1-M (CPU only).
 - **PRED-NONE.** The tested rule left no room for prediction, and K-pred's clause closes it. A
   different action-dependent condition then needs new evidence of a different kind, as the clause
   says.
