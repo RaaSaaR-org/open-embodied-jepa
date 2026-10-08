@@ -83,6 +83,12 @@ SCORER_RADIUS_M = 0.04
 WALL_SECONDS = 3600.0
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+VARIANT = {
+    ("p3", "isaac"): "pick: P-3 (learned), estimates from Isaac's frame",
+    ("p3", "mujoco"): "DIAGNOSTIC: P-3's estimates from MuJoCo's render",
+    ("e9", "isaac"): "VARIANT: e9's scripted privileged pick",
+    ("e9", "mujoco"): "VARIANT: e9's scripted privileged pick",
+}
 THIRD = {"eye": (1.2147, -0.3529, 1.275), "target": (0.42, -0.14, 0.80), "fovy": 45.0}
 
 
@@ -458,7 +464,8 @@ def phase_of(t: int, pick: str) -> str:
 
 
 class Recorder:
-    def __init__(self, robot, composer, video, *, arm, seed, stride, pick, physics):
+    def __init__(self, robot, composer, video, *, arm, seed, stride, pick, physics, variant=""):
+        self.variant = variant
         self.robot, self.composer, self.video = robot, composer, video
         self.arm, self.seed, self.stride, self.pick = arm, int(seed), int(stride), pick
         self.physics = physics
@@ -477,7 +484,7 @@ class Recorder:
         sim = self.robot.sim
         plate = np.asarray(sim.model.body("plate").pos[:2], float)
         title, sub = ARM_TEXT.get(self.arm, (self.arm, ""))
-        out = [(title, "bold"), (sub, "small"),
+        out = [(title, "bold"), (sub, "small"), (self.variant, "small"),
                (f"debug seed {self.seed}, step {t}, physics: {self.physics}", "small")]  # fmt: skip
         words, line = phase_of(t, self.pick).split(), ""
         for w in words:
@@ -574,7 +581,7 @@ def install_hooks(box: dict, readers) -> None:
     prt.PredReadoutAim.__call__ = counterfactual
 
 
-def install_estimates(box: dict, readers) -> None:
+def install_estimates(box: dict, readers, source: str = "isaac") -> None:
     """Replace the post-look frame check by P-3's estimates from Isaac's post-look frame."""
     from embodied_jepa import first_policy_v2_runtime as rt2
     from embodied_jepa import wm_critic_v2_runtime as rtm
@@ -582,7 +589,8 @@ def install_estimates(box: dict, readers) -> None:
     def post_look(robot, task, frame):
         frame = np.asarray(frame, np.uint8)
         row, _mj = gap_row(readers, robot, frame, estimates=True)
-        task["estimates"] = row["p3_estimates_isaac"]
+        task["estimates"] = row[f"p3_estimates_{source}"]  # "mujoco": a labelled diagnostic
+        box["estimates_used"] = list(task["estimates"])
         box["gap_post_look"] = row
         return {"isaac_post_look": True}
 
@@ -687,6 +695,13 @@ def main(argv=None) -> int:
     ap.add_argument("--seeds", type=int, nargs="*", default=[])
     ap.add_argument("--arms", nargs="+", default=["W", "H-rule"])
     ap.add_argument("--pick", choices=("p3", "e9"), default="p3")
+    ap.add_argument(
+        "--estimates-source",
+        choices=("isaac", "mujoco"),
+        default="isaac",
+        help="P-3's post-look estimates from Isaac's frame, or (diagnostic) from MuJoCo's "
+        "rendering of the same Isaac state",
+    )
     ap.add_argument("--physics-label", default="Isaac")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--stride", type=int, default=3)
@@ -722,6 +737,7 @@ def main(argv=None) -> int:
         "tracked_tree_dirty": bool(hz.tracked_tree_dirty()),
         "argv": sys.argv[1:] if argv is None else list(argv),
         "pick": args.pick,
+        "estimates_source": args.estimates_source,
         "stages": {},
     }
     manifest = json.loads((ROOT / lm.TASK076_MANIFEST).read_text())
@@ -767,7 +783,7 @@ def main(argv=None) -> int:
     robot = make_robot(endpoint)
     rtm._W["robot"] = robot
     box: dict = {"robot": robot}
-    install_estimates(box, readers)
+    install_estimates(box, readers, args.estimates_source)
     install_hooks(box, readers)
     if args.pick == "e9":
         install_e9_pick(box)
@@ -804,6 +820,8 @@ def main(argv=None) -> int:
             ("", "normal"),
             ("Right: Isaac's onboard frame (read) and MuJoCo's rendering of the same", "small"),
             ("Isaac state (not read, shown for the domain gap).", "small"),
+            ("", "normal"),
+            ("Variant: " + VARIANT[(args.pick, args.estimates_source)], "bold"),
         ]), 6 * args.fps)  # fmt: skip
         video.close()
         parts.append(intro)
@@ -818,15 +836,17 @@ def main(argv=None) -> int:
                 tau_commit_cm=cpv.TAU_COMMIT_CM, a_lo=cpv.A_LO,
             )[0]  # fmt: skip
             task["wall_seconds"] = WALL_SECONDS
-            for key in ("gap405", "frame405_mujoco", "counterfactual", "gap_post_look"):
+            for key in ("gap405", "frame405_mujoco", "counterfactual", "gap_post_look",
+                        "estimates_used"):  # fmt: skip
                 box.pop(key, None)
             video = recorder = None
             name = f"{len(parts):02d}_{arm}_{seed}"
             if not args.no_video:
                 video = Video(out_dir / f"{name}.mp4", composer.size, args.fps)
+                variant = VARIANT[(args.pick, args.estimates_source)]
                 recorder = Recorder(robot, composer, video, arm=arm, seed=seed,
                                     stride=args.stride, pick=args.pick,
-                                    physics=args.physics_label)  # fmt: skip
+                                    physics=args.physics_label, variant=variant)  # fmt: skip
             box["recorder"] = recorder
             t0 = time.monotonic()
             error = None
@@ -851,7 +871,7 @@ def main(argv=None) -> int:
                 "gap_post_look": box.get("gap_post_look"),
                 "gap405": box.get("gap405"),
                 "counterfactual_405": box.get("counterfactual"),
-                "estimates_used": task.get("estimates"),
+                "estimates_used": box.get("estimates_used"),
                 "renders": robot.sim.renders,
                 "plate_pushes": robot.sim.plate_pushes,
             }
