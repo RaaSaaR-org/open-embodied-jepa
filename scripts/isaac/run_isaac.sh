@@ -23,6 +23,8 @@
 # ~/models/isaaclab_arena -> /models/isaaclab_arena (the GR00T tutorial's /models layout; its
 # client config asserts the model path exists but loads no weights). Not /models itself: the
 # image's entrypoint chowns /models under `set -e`.
+# ISAAC_INPUT_DIR, if set, is mounted read-only at /oej/in (a script's host-side inputs, e.g.
+# the state dump of replay_kinematic_arena.py) and recorded in <out-dir>/input_mount.txt.
 # If your login shell predates your docker group membership, run it via `sg docker -c`.
 set -euo pipefail
 SCRIPT=${1:?usage: run_isaac.sh <script.py> <out-dir> [args]}
@@ -37,6 +39,10 @@ MJCF_DIR=${MJCF_DIR:-$REPO/third_party/unitree_mujoco/unitree_robots/g1}
   echo "missing MJCF directory $MJCF_DIR (third_party not linked? run scripts/fetch_assets.py)" >&2
   exit 1
 }
+if [ -n "${ISAAC_INPUT_DIR:-}" ] && [ ! -d "$ISAAC_INPUT_DIR" ]; then
+  echo "ISAAC_INPUT_DIR=$ISAAC_INPUT_DIR is not a directory" >&2
+  exit 1
+fi
 if [ -n "${ISAAC_MODELS_DIR:-}" ] && [ ! -d "$ISAAC_MODELS_DIR" ]; then
   echo "ISAAC_MODELS_DIR=$ISAAC_MODELS_DIR is not a directory" >&2
   exit 1
@@ -70,6 +76,10 @@ else
   echo "none (no assets/isaac)" > "$OUT/usd_mount.txt"
 fi
 [ -n "${ISAAC_MODELS_DIR:-}" ] && USD_MOUNT+=(-v "$(cd -- "$ISAAC_MODELS_DIR" && pwd -P):/models/$(basename -- "$ISAAC_MODELS_DIR"):ro")
+if [ -n "${ISAAC_INPUT_DIR:-}" ]; then
+  USD_MOUNT+=(-v "$(cd -- "$ISAAC_INPUT_DIR" && pwd -P):/oej/in:ro")
+  (cd -- "$ISAAC_INPUT_DIR" && pwd -P) > "$OUT/input_mount.txt"
+fi
 
 nvidia-smi --query-compute-apps=timestamp,pid,process_name,used_memory \
   --format=csv,noheader -lms 1000 > "$OUT/gpu_apps.csv" &
