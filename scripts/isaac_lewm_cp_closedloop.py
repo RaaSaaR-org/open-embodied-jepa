@@ -433,7 +433,7 @@ class Composer:
         if banner is not None:
             text, colour = banner
             draw.rectangle((0, 0, VIEW_W, 40), fill=colour)
-            draw.text((10, 7), text, font=self.big, fill=(255, 255, 255))
+            draw.text((10, 10), text, font=self.bold, fill=(255, 255, 255))
         return np.asarray(canvas, np.uint8)
 
     def card(self, lines) -> np.ndarray:
@@ -890,6 +890,9 @@ def main(argv=None) -> int:
                     banner = (f"AT REST ON THE PLATE{dd} (Isaac state)", (30, 130, 60))
                 else:
                     dd = "" if d is None else f": {d:.1f} cm off the plate centre"
+                    why = record.get("termination_reason")
+                    if d is None and why:
+                        dd = f": stopped at step {record.get('executed_steps')} ({why})"
                     banner = (f"MISS{dd} (Isaac state)", (170, 40, 40))
                 if recorder.last is not None:
                     robot.sim.want_third = True
