@@ -855,6 +855,7 @@ def run(args) -> dict:
         "cohort": args.cohort,
         "debug": bool(args.debug),
         "outcome": None,
+        "stages": {},
         "argv": sys.argv[1:],
         "paths": {"output": str(output.resolve())},
         "started_utc": hz.utc(),
