@@ -58,11 +58,13 @@ The right-hand panel shows the onboard 112 px frame that the controllers read.
 - **Encoding.** Frames are encoded with the system `ffmpeg`. No dependency was added.
 
 Each run writes its outputs, `report.json` and `SHA256SUMS` to a new directory and refuses to
-reuse an existing one. The first run went to `~/develop/emai/evidence/task081-demo-video/`, which
+reuse an existing one. The video below is in `~/develop/emai/evidence/task081-demo-video/`, which
 is not committed.
 
 ## The rendered video
 
+Earlier renders differed only in caption layout and were discarded; one render attempt stopped
+at the cohort-frame render guard (G-frame, a 17-pixel one-level difference) and was re-run.
 The video was rendered on 2026-10-08 at script revision `8e37870`, with a clean tree, on the
 Linux PC, on the CPU with EGL rendering, under `scripts/gpu_run.sh`.
 
