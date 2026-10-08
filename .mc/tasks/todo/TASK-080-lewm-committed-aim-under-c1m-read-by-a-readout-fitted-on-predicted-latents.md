@@ -85,8 +85,9 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   250. Sealed manifest sha256 `deebd83db6de53e23dbde0b921ae7f7c1cf79cb24c6dd27bfae066c2f5017c4e`;
   report sha256 `63b085df…f0ca`; evidence copy `~/develop/emai/evidence/task080-stagec/`. No
   Stage R readout fitted on or evaluated against a fresh root yet (R-plate read their 405 frames by
-  design; wording corrected in R18.25). Stage R's plan is §8.3 (R18.24): `tests`, then `featurise` through
-  `gpu_run.sh`, then `rgate`, on one reported GO at the record's merge commit. The record PR also
+  design; wording corrected in R18.25). Stage R's plan is §8.3 (R18.24): `tests`, then
+  `featurise` through `gpu_run.sh`, then `rgate`, on one reported GO at the record's merge
+  commit. The record PR also
   fixes #155's review nits 1–3 (protocol §8.1 and §14 wording, a PLAN.md line); the protocol
   document's sha256 is re-pinned in the manifest.
 - 2026-10-08: Stage R ran once on the reviewer's GO (#156, issuecomment-6048908259) at `33cea5c`
@@ -94,8 +95,20 @@ change it unless an L-PASS is followed by its own reviewed ruling.
   rgate report sha256 `bedb8966…8ea7`; evidence copy `~/develop/emai/evidence/task080-stager/`).
   Offline only. Gate-P (249 roots), seeds 66800/66801/66802: median e_S 0.547/0.584/0.589 cm
   (upper bounds 0.610/0.657/0.643, R1 bar 1.0); e_S/e_N 0.311/0.371/0.385 (upper bounds < 0.44);
-  e_L lower bounds 2.13–2.21 cm (R3 > 1.0); ceiling 0.455 cm. Offline predicted counts (predictions,
-  not closed-loop counts; seed 66800, `last_two_triggered`): W 56.92/64 (A1 ≥ 56: margin 0.92, under
-  one reset), N 27.79, L-shuf 19.67, L-mean 28.95, L-rand 11.85; H-rule 58.64, H-sysid 53.93. The
+  e_L lower bounds 2.12–2.21 cm (R3 > 1.0; corrected from 2.13 in R18.27); ceiling 0.455 cm.
+  Offline predicted counts (predictions, not closed-loop counts; seed 66800,
+  `last_two_triggered`): W 56.92/64 (A1 ≥ 56: margin 0.92, under one reset), N 27.79, L-shuf
+  19.67, L-mean 28.95, L-rand 11.85; H-rule 58.64, H-sysid 53.93. The
   record also takes #156's review nits (a)–(d). Stage D's plan is §8.5 (R18.26): one CPU
   `closed --cohort D` on 65100–65115 on its own GO at the record's merge commit.
+- 2026-10-08: Stage D ran once on the reviewer's GO (#157, issuecomment-6050425196) at `db34adc`
+  (worktree `task080-staged`), 01:42:36–01:49:55 UTC: **D-PASS** (R18.27; protocol §8.6; report
+  sha256 `1602447a…0611`; evidence copy `~/develop/emai/evidence/task080-staged/`). Counted
+  successes on the 16 development resets 65100–65115: W 16/16, N 8/16, L-shuf 5/16, L-mean 9/16,
+  H-final(commit) 16/16 (privileged ceiling). W − max twin = +7 (bar +3). W's median aim error
+  0.546 cm; no fallback or refusal. A non-gating development result (one run, one model seed,
+  simulation only), not the gated one. It is the first LeWM-driven closed loop on v2 whose counts
+  are read, so R18.28 updates R7's v2 LeWM clause as a named exception to R18.12 (CLAUDE.md,
+  README and the status docs follow). The record also takes #157's review nits 2–4. Stage S's
+  plan is §8.7 (R18.29): one CPU `closed --cohort S` on 65200–65263, every arm, with `--stage-d`,
+  on its own GO at the record's merge commit.
