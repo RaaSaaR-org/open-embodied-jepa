@@ -37,14 +37,13 @@ from __future__ import annotations
 
 import os
 
-os.environ.update(
-    {
-        "MKL_DYNAMIC": "FALSE",
-        "OMP_NUM_THREADS": "6",
-        "MKL_NUM_THREADS": "6",
-        "OPENBLAS_NUM_THREADS": "16",
-    }
-)
+for _key, _value in {  # overridable: the machine may be shared (BLAS oversubscription)
+    "MKL_DYNAMIC": "FALSE",
+    "OMP_NUM_THREADS": "6",
+    "MKL_NUM_THREADS": "6",
+    "OPENBLAS_NUM_THREADS": "16",
+}.items():
+    os.environ.setdefault(_key, _value)
 
 import argparse  # noqa: E402
 import dataclasses  # noqa: E402
