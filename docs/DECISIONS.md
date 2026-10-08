@@ -76,7 +76,8 @@ design note; nothing in it is frozen or gated).
   and TASK-081's block 70000–71999; checked by `plate_law_dev.check_seed_ranges`, tested) and the
   salts **8401–8412**. The design note's development check uses 72000–72031 (check cohort F),
   72100–72355 (a 256-root corpus) and the debug range 74900–74999, with salts 8401–8404;
-  72356–74899 and 8405–8412 are left for a protocol, and any use needs its own ruling.
+  72032–72099, 72356–74899 and 8405–8412 are left for a protocol, and any use needs its own
+  ruling.
 - **R19.25 — the development check and the recommendation (recorded only, for the owner).** One
   run, CPU only, no world model, at `ae680ca`, on 32 check resets with arms that read the true
   plate, under C1-M with only the law after 405 replaced: **U-sat** (a saturating, swirling static
@@ -87,8 +88,8 @@ design note; nothing in it is frozen or gated).
   at 31/32. C1-M's own law in the same run: ceiling 30/32, H-rule 32/32, H-sysid 30/32. Report
   sha256 `2b1dd16b…b58a`. Reading: under such laws "LeWM needed" in R9.8's sense (against the best
   hand-written arm) becomes testable, but "LeWM needed" against a learned non-LeWM baseline on the
-  same corpus is not, because a flexible regression on (plate, palm, aim) already reaches the
-  ceiling; necessity against learned baselines needs a pixel-only consequence (design note §3.4).
+  same corpus is not expected to be shown, because a flexible regression on (plate, palm, aim)
+  already reaches the ceiling and leaves no headroom; necessity against learned baselines needs a pixel-only consequence (design note §3.4).
   **Recommended:** preregister TASK-082 under U-sat as a task change, with R9.8's primary claim
   (G-NI against the better of H-rule and H-sysid on R-plate's reading), R9.8's secondary claim
   reported with a power simulation in Stage 0, and a new reported tier against learned baselines

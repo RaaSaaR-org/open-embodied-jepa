@@ -46,7 +46,8 @@ measurably better.
 (`plate_twin_v2.palm_driven_xy`): after the commit step 405 the plate moves by
 κ (palm(t − L) − palm(405)), κ = −0.5, L = 2, until s1 = 525. H-rule is handed that law and
 solves its fixed point on the kinematic stand-in; H-sysid fits a 7-coefficient linear model of the
-plate on (plate, palm, aim), which contains the law exactly. A learned world model can at best
+plate on (plate, palm, aim), which contains the law's linear form (its residual comes only from the
+palm not ending exactly at the aim: 0.545 cm in median offline, §4.2). A learned world model can at best
 tie arms that already hold the law. R19.23 (1) therefore asks for a condition in which **no
 hand-written arm is given the law**, declared as a task change.
 
@@ -60,7 +61,8 @@ Three comparisons are possible. They differ in what the comparator is allowed to
 | learned, non-LeWM | **H-sysid-krr / -mlp**: a flexible regression of plate(s1) on (p̂, h, g), fitted on the **same corpus** as W, inverted with W's controller form; **P-aim**: a model-free regression from (p̂, h) to the privileged ceiling's aim on the same corpus resets (behaviour cloning, as P-3 is) | the same corpus and the same run-time inputs as W, but a hand-chosen low-dimensional state (R-plate's reading p̂, the palm h, the aim g) | not in R9.8; proposed here as a **reported** tier |
 | privileged | H-final(commit), H-now | the simulator | the ceiling and the "plate must be predicted" check |
 
-**The honest test of necessity is the second tier, and this task family cannot pass it.** The
+**The honest test of necessity is the second tier, and this task family is not expected to pass
+it.** The
 decision is a single committed aim. Under any plate law whose outcome is a deterministic function
 of the plate at 405, the palm at 405 and the aim (a static law, or a history-dependent one driven
 by e9's deterministic primitive), a flexible regressor on (p̂, h, g) fitted on the same corpus is a
@@ -145,7 +147,7 @@ Both are later options; neither is checked here.
 - **Laws:** `c1m` (C1-M's own rule, the within-run reference), `sat` (U-sat), `play` (U-play).
 - **Seeds (R19.24):** check cohort F = 72000–72031 (every arm under every law, the same 32 resets
   in the same order); corpus = 72100–72355 (256 roots, the same roots and aims under every law);
-  debug 74900–74999 (mechanics only). The block 72000–74999 lies outside every forbidden range of
+  debug 74900–74999 (mechanics only); 72032–72099 and 72356–74899 are unused. The block 72000–74999 lies outside every forbidden range of
   TASK-081's list and outside TASK-081's block 70000–71999 (`plate_law_dev.check_seed_ranges`,
   tested). **Salts:** 8401 the move draw (C1-M's disc rule at ρ = 4 cm, with a fresh salt), 8402
   the corpus's uniform box aims, 8403 every bootstrap, 8404 the sysid folds; 8405–8412 are reserved
@@ -212,7 +214,8 @@ the same reset (median with bootstrap interval, 87.5th percentile, maximum).
 the commit step under every law, as reset 70302 did in TASK-081): the
 collector's uniform box aims succeeded on 38/256 (U-sat), 53/256 (U-play) and 38/256 (C1-M). The
 plate moved 7.17 cm (U-sat), 7.63 cm (U-play) and 8.71 cm (C1-M) from 405 to s1 in median over the
-corpus; the palm travelled 18.92 cm in median. Cross-fitted offline errors of plate(s1), median
+corpus; the aim lay 18.92 cm from the palm at 405 in median (|g − h|, the commanded travel, the same
+under every law because the roots and aims are). Cross-fitted offline errors of plate(s1), median
 [95 %] / 87.5th percentile in cm:
 
 | law | linear sysid | kernel ridge | C1-M's rule, open form p + κ (g − h) |
@@ -235,7 +238,8 @@ which is why it is exact under C1-M in closed loop while the open form is not.)
 - **A learned low-dimensional baseline recovers the ceiling under U-sat from 256 roots**
   (H-sysid-krr 32/32, aim error 0.072 cm in median on the true plate; for scale, W's was 0.295 cm
   under C1-M in TASK-081 on R-plate's reading, so the two are not like for like). This is the measured form of §2's argument: under these laws a flexible regression on
-  (p, h, g) is enough, so "LeWM needed" against learned baselines is not testable here.
+  (p, h, g) is enough, so against learned baselines there is no headroom left and "LeWM needed"
+  is not expected to be shown here.
 - **The linear sysid's degradation under U-sat is real but thin.** Its offline error (0.325 cm) is
   even below its C1-M value (0.545 cm); its closed-loop loss comes from the tail (87.5th
   percentile aim error 0.72 cm, maximum 1.05 cm, against τ_commit = 1.0 cm in C1-M). With R-plate's
@@ -279,7 +283,7 @@ which is why it is exact under C1-M in closed loop while the open form is not.)
 |---|---|
 | Stage 0 (code, tests, debug smokes, G-NI and secondary power simulations) | CPU, minutes per smoke |
 | K0 under U-sat (τ_commit, r, ceiling, proxies on 32 resets) | about 10–15 min CPU (TASK-077: 9.7 min) |
-| C, 2 000 roots | about 30 min CPU (TASK-077: 20–23 min; §4's corpus ran at 0.84–0.94 s of wall time per root on 6 workers) |
+| C, 2 000 roots | about 30 min CPU (TASK-077's estimate was 20–23 min, scaled from 100 debug roots; §4's corpus ran at 0.84–0.94 s of wall time per root on 6 workers) |
 | P-aim's labels (H-final(commit) on the train roots) | about 1 h CPU (10–12 s per attempt on 6 workers) |
 | O, featurisation | 10–30 min GPU |
 | T, W and N × 3 seeds | **about 31 h on the GPU queue** (one seed pair: about 10 h) |
@@ -324,7 +328,8 @@ which is why it is exact under C1-M in closed loop while the open form is not.)
      freeze; it is a live chance, not an expectation;
    - a new reported tier: W against the learned non-LeWM baselines (H-sysid-krr or -mlp, P-aim) on
      the same corpus, as non-inferiority only, with the statement that **"LeWM needed" against
-     learned baselines is not testable under this law** (§2, §4.3: H-sysid-krr 32/32 from 256 roots).
+     learned baselines is not expected under this law**, since they leave no headroom (§2, §4.3:
+     H-sysid-krr 32/32 from 256 roots).
 3. **Retrain TASK-077's recipe unchanged on a new 2 000-root corpus**, three seeds per arm (about
    31 h of GPU), with seed 66800's role (primary, gating) taken by a declared new primary seed and
    the other two run in closed loop as reported arms. That also gives the seed-to-seed spread that

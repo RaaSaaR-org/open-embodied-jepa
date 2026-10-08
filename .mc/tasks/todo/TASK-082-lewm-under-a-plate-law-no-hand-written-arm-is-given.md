@@ -36,14 +36,15 @@ Development check (R19.25; seeds 72000–72355, CPU, no world model, one run, tr
 under **U-sat** (C1-M with a saturating, swirling law after 405) the privileged ceiling scored
 32/32, H-rule with C1-M's written law 23/32, the linear H-sysid 28/32 and a kernel-ridge sysid on
 256 roots 32/32; **U-play** (hysteretic) left H-rule and H-sysid at 31/32. "LeWM needed" becomes
-testable against hand-written arms (R9.8), not against a learned non-LeWM baseline.
+testable against hand-written arms (R9.8); against a learned non-LeWM baseline it is not
+expected (no headroom).
 
 **Recommended next step:** a preregistration under U-sat: R9.8's primary claim with G-NI against
 the better of H-rule and H-sysid on R-plate's reading; R9.8's secondary claim reported, with its
 power simulated in Stage 0; a reported tier against learned baselines (kernel-ridge or MLP sysid,
 P-aim) as non-inferiority only. TASK-077's recipe retrained unchanged on a new 2 000-root corpus,
 three seeds per arm (about 31 h on the GPU queue; one pair about 10 h), plus about 4–7 h of CPU.
-Seed block 72000–74999 (72356–74899 free for the protocol), salts 8401–8412 (8405–8412 free).
+Seed block 72000–74999 (72032–72099 and 72356–74899 free for the protocol), salts 8401–8412 (8405–8412 free).
 
 ## Acceptance Criteria
 
