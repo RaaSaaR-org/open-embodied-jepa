@@ -153,6 +153,7 @@ simulated, nothing is trained and nothing is fitted. R7 is unchanged.
   given logged beside its records). No hash-pinned file is edited.
 - **R21.12 — compute.** About 75–90 min of CPU for Stage S (about 133 s per reset over every arm
   on 4 workers, plus G-tests, G-repro and two determinism re-runs); no GPU, no training.
+
 ## Decision 2026-10-08 (n) — TASK-082 K0 ends CAL-ESCALATE (τ_commit = 0, r_K = 466); nothing is frozen; TASK-082 closes without the clause (R20.23–R20.25)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
