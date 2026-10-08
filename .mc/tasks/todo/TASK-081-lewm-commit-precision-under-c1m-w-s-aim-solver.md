@@ -63,14 +63,20 @@ R18.31). This task does not change it unless an L-PASS is followed by its own re
 - [x] DRAFT design note with the diagnosis, candidate fixes, a development feasibility check on
       development seeds only, G-NI's power and the margin/cohort discussion (this card's first
       PR).
-- [ ] DRAFT preregistration reviewed independently (solver, arms including a reported-only
+- [x] DRAFT preregistration reviewed independently (solver, arms including a reported-only
       W-frozen, δ, cohort size, seeds 70100–71999, rows and clause).
-- [ ] Stage 0: code in new modules, frozen block, manifest, tests, debug smokes.
+- [x] Stage 0: code in new modules, frozen block, manifest, tests, debug smokes (R19.12–R19.14,
+      `docs/experiments/apple_lewm_commit_precision_v2_stage0.md`; this card's third PR).
 - [ ] The freeze merged on an independent reviewer's reported APPROVE.
 - [ ] Stages D and S, each on its own reported GO, from a clean worktree of the merged revision.
 - [ ] Results PR, with every restated number checked by an independent reviewer.
 
 ## Notes
+- 2026-10-08: Stage 0 on branch `feat/task081-stage0`: code, 43 tests, debug smokes on
+  71900–71999 only, caps and power (salt 8304, report `5043c3ab…a56c`); frozen-block candidate
+  `857a3078…32ef`; nothing of D or S simulated.
+- 2026-10-08: #161 (the DRAFT) merged at `74a4674` on an independent reviewer's APPROVE at
+  `33edc80` (nine non-blocking nits, applied or answered in R19.13–R19.14).
 - 2026-10-08: DRAFT preregistration written on branch `docs/task081-prereg` (R19.1–R19.11,
   DECISIONS 2026-10-08 (f)); nothing simulated.
 - 2026-10-08: card opened under R18.33–R18.35 on branch `docs/task081-commit-precision-design`.

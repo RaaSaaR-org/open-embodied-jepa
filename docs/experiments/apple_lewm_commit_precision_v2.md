@@ -1,7 +1,9 @@
 # Apple→Plate LeWM committed aim under C1-M, solved as the fixed point of a local affine fit to W's own predictions (TASK-081)
 
-**STATUS: DRAFT.** Nothing in this document is frozen, and no seed of its ranges (§5) has been
-simulated. The sequence is TASK-080's (§6): this draft's independent review; Stage 0 (code, frozen
+**STATUS: DRAFT.** Nothing in this document is frozen, and no seed of D or S (§5) has been
+simulated. **Stage 0 is done** ([record](apple_lewm_commit_precision_v2_stage0.md), R19.12–R19.14):
+the code, debug smokes on 71900–71999 only, the caps and the power simulation; the frozen-block
+candidate's sha256 is `857a3078…32ef` (DRAFT). The sequence is TASK-080's (§6): this draft's independent review; Stage 0 (code, frozen
 block candidate, manifest, tests, debug smokes, the power simulation); the freeze, merged on an
 independent reviewer's reported APPROVE; then Stage D and Stage S, each on its own reported GO;
 then the results PR. **No calibration stage runs before the freeze** (no K0, no corpus, no offline
@@ -169,11 +171,15 @@ TASK-080 §6 (W and the scene-blind twins read R-S, N reads R-N):
    roll-out of the committed aim's chunk is made **for the log only** (its residual
    |clip(p̃(g)) − g|); it never changes the aim.
 
-There is no refinement loop, no tolerance and no cap. τ_commit/4 is used only by W-frozen. Steps 4–6
-are `commit_precision_dev.affine_fixed_point` and `local_mask` at their pinned sha256 (§2.2), the
-code the design note's development check executed; the Stage-0 runtime wraps them and its tests
-check equality with the design note's `all_variants(...)["affine_local"]` on synthetic predictors,
-including every fallback.
+There is no refinement loop, no tolerance and no cap. τ_commit/4 is used only by W-frozen. Step 3
+is `commit_precision_dev.local_mask`, and steps 4–5 with the first two fallbacks of step 6 are
+`commit_precision_dev.affine_fixed_point`, both at their pinned sha256 (§2.2); the infeasible-chunk
+fallback and the logged roll-out follow the affine_local branch of the design note's
+`all_variants`. That is the code the design note's development check executed; the Stage-0
+runtime wraps it, and its tests check equality with `all_variants(...)["affine_local"]` on
+synthetic predictors, including every fallback. Stage 0 also logs the fit's design rank (a rank
+below 3, a collinear neighbourhood, makes `lstsq` return its minimum-norm fit; reported only, the
+solver is unchanged; #161 review, nit N8).
 
 **For N** the predicted plate is the same for every candidate (zero commands), so the fit gives
 J = 0 up to rounding and g_fp = clip(p̃): the same aim TASK-080's refinement reached for N after
@@ -212,6 +218,8 @@ one step. N's solver therefore changes nothing material; it is declared, not ass
 | **H-read**, **H-now** | reported only, as TASK-080 §6; **privileged** | R8 (H-read) | – |
 
 Infeasible candidates are dropped for every arm alike. Each arm's clip-binding fraction is reported.
+H-sysid keeps TASK-080's solver (`lewm_next_c1.choose_aim`, its own grid and refinement on the
+fitted law); only W and the three twins change solver (#161 review, nit N9).
 The non-inferiority comparator C is the better of H-rule and H-sysid on S (a tie goes to H-rule).
 W-frozen is **not** a comparator and not a twin: no row reads it.
 
@@ -243,8 +251,10 @@ block 65000–65999; Stage 0's test re-checks this in code.
 70000–71999 used as a seed on any of 112 local and remote refs or in any worktree's `src` and
 `scripts`) and the salts 8301–8312 (not found on any ref in `src`, `scripts`, `tests` or
 `configs`). Re-checked for this draft: `git grep -w` for 70100, 70115, 70200, 70327, 71900, 71999
-and 8302–8305 in `src`, `scripts`, `tests`, `configs`, `benchmarks`, `docs` and `.mc` finds only
-the task card's "70100–71999". No R19 label exists on any local or remote ref.
+and 8302–8305 in `src`, `scripts`, `tests`, `configs`, `benchmarks`, `docs` and `.mc` finds no
+seed use; the hits are block declarations only (the task card's and R18.34's "70100–71999", the
+design note, and `scripts/dev_commit_precision.py`'s `DEV_BLOCK = (70000, 71999)`; #161 review,
+nit N3). No R19 label existed on any local or remote ref.
 
 ## 6. Stages and the staged GO flow
 
@@ -302,8 +312,9 @@ re-measured, because:
 
 **Decided: no Stage R.** Reasons:
 - **Nothing is fitted.** TASK-080's Stage R existed to test a new readout (R-S) on fresh roots
-  before any closed loop. R-S, R-N, W and N are unchanged and their R-PASS stands (R1–R3 do not
-  depend on the solver).
+  before any closed loop. R-S, R-N, W and N are unchanged, and R0–R3 of their R-PASS do not
+  depend on the solver. A1 and A2 were computed with the frozen solver and are **not re-tested**
+  for affine_local (#161 review, nit N5); the closed loop measures the solver directly.
 - **An offline check on fresh roots is not cheap enough to be worth its proxy.** TASK-080's fresh
   corpus has been read; a fresh one needs a new privileged collection (a Stage C with its own rows)
   plus every arm's offline aims, about an hour of CPU and a stage of its own. Its output would be a
@@ -394,7 +405,8 @@ note's two development readings of affine_local (the τ-curve prediction 60.72/6
 closed-loop 62/64 = 0.969, the latter carrying the selection caveat).
 
 **G-bar** (exact binomial, P(X ≥ 112 of 128)): 0.57 at a true rate of 0.875, 0.76 at 0.89, 0.91 at
-0.906, 0.98 at 0.922, ≥ 0.998 at 0.938 and > 0.999 at 0.953 (computed for this draft).
+0.906, 0.98 at 0.922, 0.9975 at 0.938 and > 0.999 at 0.953 (computed for this draft; the 0.938
+value corrected from "≥ 0.998", #161 review, nit N1).
 
 **G-NI** (the design note's §5 table, one comparator C = H-rule, salt 8301, 4 000 resamples per
 (k+, k−) cell; overlap / half / independent couplings), n = 128, δn = 16:
@@ -406,12 +418,31 @@ closed-loop 62/64 = 0.969, the latter carrying the selection caveat).
 
 At n = 64 the same cells read 0.52–0.66 (W 0.938) and 0.72–0.86 (W 0.953): the larger cohort is
 justified by power at the development rate, not by S's outcome (R18.35). The size at the margin
-(W = C − δ) is 2.8–3.4 % at n = 128 (nominal 2.5 %), which is also the L-INFERIOR false-fire
-probability at the margin. G-NI's real comparator is the better of H-rule and H-sysid, which lowers
+(W = C − δ) is 2.8–3.4 % at n = 128 (nominal 2.5 %) in the design note's computation; the
+L-INFERIOR false-fire probability at the margin is a different tail, computed in Stage 0 (below;
+#161 review, nit N2). G-NI's real comparator is the better of H-rule and H-sysid, which lowers
 power slightly; **Stage 0 recomputes this table with salt 8304, 10 000 resamples per cell and the
 better-of-two comparator** (H-sysid at its TASK-080 S rate, 62/64), and adds rows at W = 0.906
 (TASK-080's S rate) and W = 0.922, where G-NI's power is expected to be low: a W that the solver did
 not improve is unlikely to pass.
+
+**Stage 0's recomputation** ([record](apple_lewm_commit_precision_v2_stage0.md) §4; salt 8304,
+20 000 trials per cell, 10 000 resamples per (k+, k−) cell, report `5043c3ab…a56c`). With the
+better-of-two comparator (H-sysid at 62/64), n = 128, δ = 16, overlap / half / independent:
+
+| W | C (H-rule) = 0.984 | C (H-rule) = 0.992 |
+|---|---|---|
+| 0.906 | 0.43 / 0.36 / 0.32 | 0.33 / 0.28 / 0.26 |
+| 0.922 | 0.71 / 0.62 / 0.57 | 0.59 / 0.54 / 0.50 |
+| 0.938 | 0.93 / 0.86 / 0.81 | 0.85 / 0.80 / 0.76 |
+| 0.953 | 0.99 / 0.98 / 0.95 | 0.97 / 0.95 / 0.93 |
+| 0.969 | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 |
+
+The single-comparator values agree with the design note's table to within 0.01. At the planning
+rates G-NI's power is **0.93–0.97**; at TASK-080's S rate for W (0.906) it is 0.26–0.43. The size
+at the margin is **2.6–3.6 %**, and **the clause's false-fire rate at the margin (L-INFERIOR with
+W = C − δ) is 1.4–1.7 %**. The twin tests' power is ≥ 0.9997 in every coupling at TASK-080's twin
+rates and against a twin at 0.60.
 
 **The twin tests.** At TASK-080's S rates (N 26/64, L-shuf 21/64, L-mean 30/64, L-rand 11/64) and
 W ≥ 0.9, the exact one-sided McNemar test at p < 0.01 on 128 paired resets has power above 0.999 in
@@ -466,9 +497,10 @@ several stand-in chunks per aim (a change to the controller's inputs, design not
   D-PASS report of this task. **G-solver (new):** every W, N, L-shuf and L-mean attempt logs its
   solver, and the runner refuses a record whose solver is not the arm's declared one (W-frozen's is
   TASK-080's `choose`; the others' affine_local). No GPU is used.
-- **Caps** are set by Stage 0's debug smokes at ≥ 1.5 × the measured or scaled worst case and
-  written into the frozen block before the freeze. Provisional, from TASK-080's measured times
-  (§11): Stage D 7 200 s, Stage S 21 600 s, per closed-loop attempt 300 s.
+- **Caps** (set at Stage 0, R19.12; each ≥ 1.5 × its scaled worst case from the debug smokes):
+  Stage D **7 200 s** (scaled about 510 s), Stage S **21 600 s** (scaled about 3 420 s), per
+  closed-loop attempt **300 s** (slowest debug attempt 15.6 s). G-memory: debug peak 9.49 GiB
+  process-tree PSS against 12 GiB.
 
 ## 11. Compute estimate (R19.11)
 
@@ -500,16 +532,22 @@ No training, no featurisation and no GPU. Disk: reports only (TASK-080's S repor
   (R18.12's rule, carried). It is proposed, not ruled, that a TASK-081 L-PASS count as TASK-079's
   "TASK-077 L-PASS (or its equivalent row)" precondition in PLAN.md, as R18.21 proposed for
   TASK-080; TASK-078's pass and an owner ruling on Arena stay required.
-- **A factual issue with R7's last clause, recorded now.** R7 (as updated by R18.31) ends "LeWM
-  therefore has no gated closed-loop Apple→Plate success, and its only other closed-loop
-  Apple→Plate runs whose counts are read are on v1, with 0 successes." The design note's
+- **A factual issue with R7's last clause, recorded now.** R7's v2 LeWM part (as updated by
+  R18.31) ends "LeWM therefore has no gated closed-loop Apple→Plate success, and its only other
+  closed-loop Apple→Plate runs whose counts are read are on v1, with 0 successes." (R7 itself ends
+  with the "Scripted-expert … not project-learned results" sentence; #161 review, nit N6.) The design note's
   development check (R18.35) ran W in closed loop on v2 on seeds 70000–70063 and its counts were
   read (W:frozen 57/64, W:damped 58/64, W:affine_local 62/64), so the "only other … on v1" clause is
   no longer literally true. It is a statement about development runs, not a success claim, and the
   first part ("no gated closed-loop Apple→Plate success") stays true. **Decided (R19.10):** the
   correction is made once, in Stage D's record, which adds TASK-081's own development counts in
   the same way R18.28 did for TASK-080; until then this section and R19.10 record the discrepancy.
-  If Stage D does not run, the correction is made in TASK-081's closing PR.
+  If Stage D does not run, the correction is made in TASK-081's closing PR. **Kept at Stage 0
+  (R19.14; #161 review, nit N7, which suggested an earlier fix):** the sentence is quoted verbatim
+  in the repository's instruction and entry files (AGENTS.md, CLAUDE.md, README.md and others,
+  R18.31's list), so its correction is a cross-document edit made once, by the main session with
+  Stage D's record, rather than twice; the discrepancy is recorded here, in R19.10 and in R19.14
+  until then.
 
 ## 14. Open questions of the design note, resolved (R19.2–R19.10)
 
