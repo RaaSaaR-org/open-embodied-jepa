@@ -13,6 +13,7 @@ tags:
 - lewm
 - apple-pnp
 - design-note
+- preregistration
 sprint: ''
 depends_on:
 - "[[TASK-080]]"
@@ -41,6 +42,14 @@ W:affine_local 62/64 against H-rule 64/64 and the privileged H-final(commit) 63/
 affine_local was picked as the best of three executed variants after seeing them, so its 62/64
 is optimistic and needs fresh seeds.
 
+**The preregistration (DRAFT, R19.1–R19.11):**
+[`docs/experiments/apple_lewm_commit_precision_v2.md`](../../../docs/experiments/apple_lewm_commit_precision_v2.md).
+W's solver after the grid becomes affine_local (no retraining, no refit; R-S and R-N from TASK-080's
+Stage R); the twins carry the same solver; W-frozen (TASK-080's W) is reported only; no K0, corpus or
+offline gate (τ_commit 1.0 cm carried); D 16 resets (70100–70115) with TASK-080's stops; S 128
+resets (70200–70327) with G-bar 112/128, G-NI within δ = 16/128 against the better of H-rule and
+H-sysid, and the four McNemar tests; debug 71900–71999; salts 8302–8304.
+
 **The question for the preregistration.** Under C1-M, with W-66800 and R-S unchanged and only W's
 solver after the grid changed to affine_local (the clipped fixed point of a least-squares affine
 fit to W's own grid predictions near the argmin), does W reach R9.8's primary claim (G-bar, G-NI
@@ -62,6 +71,8 @@ R18.31). This task does not change it unless an L-PASS is followed by its own re
 - [ ] Results PR, with every restated number checked by an independent reviewer.
 
 ## Notes
+- 2026-10-08: DRAFT preregistration written on branch `docs/task081-prereg` (R19.1–R19.11,
+  DECISIONS 2026-10-08 (f)); nothing simulated.
 - 2026-10-08: card opened under R18.33–R18.35 on branch `docs/task081-commit-precision-design`.
   Development check at `3a24abb` (report `outputs/task081-dev-1/report.json`, sha256
   `febe7280…fb7f`; evidence copy `~/develop/emai/evidence/task081-dev/`). Nothing gated was run;
