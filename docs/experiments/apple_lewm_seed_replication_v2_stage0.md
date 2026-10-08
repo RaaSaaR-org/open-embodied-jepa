@@ -16,6 +16,10 @@ been simulated.
 | `tests/test_lewm_rep_v2.py` | 28 tests (below) |
 | `benchmarks/manifests/apple-lewm-rep-v2.json` | the DRAFT manifest: the frozen-block candidate and its sha256, no pin, no file pins |
 
+The frozen-block candidate's sha256 at this record's commit is
+**`4b73d1e5c7e83dbaf5306a929c05f067ba7c15bbc8f3a5c7e5a2f1603722d9ff`** (STATUS DRAFT, with
+`STAGE0` filled in); the freeze sets STATUS FROZEN, which changes it, and pins the result.
+
 The worker is TASK-081's `lewm_cp_v2_runtime`, imported unchanged: it takes the model seed, the
 checkpoint path and sha256 and the readouts from its configuration, so a seed is chosen by
 configuration only. Nothing of TASK-076, TASK-077, TASK-080 or TASK-081 is edited.
@@ -38,7 +42,8 @@ gives 0.861–0.962); the power pieces; the runner's carried copies, its guards 
 other script; its refusals (misused flags, `closed` while DRAFT, a Stage R report that is not
 TASK-080's, a swapped readout file or sha256 for a seed); `seed_worker_config` for 66800 equal to
 TASK-081's `worker_config`, and for 66801 and 66802 that seed's W, N, R-S and R-N, a wrong pairing
-refused; `check_seed_records`; **`closed_core` with fake pools**: the pools opened and closed in
+refused; `check_seed_records` (a decision of an arm with a declared readout must log exactly that
+readout; a missing one is refused); **`closed_core` with fake pools**: the pools opened and closed in
 order 66801, 66802, 66800, the shared arms once in the first pool, each seed's W, N, L-shuf,
 L-mean and determinism re-run in its own pool, L-shuf's foreign frame from that seed's own W on the
 next reset that reached 405, W[66800] alone in the third pool, the combined row REP-PASS on a
@@ -47,18 +52,21 @@ import without torch or MuJoCo.
 
 ## 2. Debug smokes (debug seeds 75910–75913; nothing is read)
 
-Both at `93dde1e` (the code on the branch `prov/task083-stage0-smokes`; after the rebase onto the
-reviewed protocol its code files are byte-identical at `ee9dd91`), from the worktree
-`task083-stage0`, CPU only, 4 workers, on a quiet machine:
+From the worktree `task083-stage0`, CPU only, 4 workers, on a quiet machine. `closedS-1` and
+`closedS-2` ran at `93dde1e` (kept on the branch `prov/task083-stage0-smokes`; after the rebase
+onto the reviewed protocol its code files are byte-identical at `ee9dd91`); `closedS-3` ran at
+`aca1f0e`, the code after the Stage 0 review's fixes (G-seed refuses a missing readout; L-shuf's
+foreign frames computed only where L-shuf runs; the power's replicates):
 
-| smoke | G-tests | outcome | seconds | peak tree PSS | report sha256 |
-|---|---|---|---:|---:|---|
-| `closedS-1` | skipped (`--debug-skip-tests`) | REP-VOID-CEILING-DEBUG | 220 | 9.42 GiB | `fddf99e2…a9ef3` |
-| `closedS-2` | 2241 passed, 37 skipped | REP-VOID-CEILING-DEBUG | 381 | 9.58 GiB | `cb4cdfa4…c23dc` |
+| smoke | revision | G-tests | outcome | seconds | peak tree PSS | report sha256 |
+|---|---|---|---|---:|---:|---|
+| `closedS-1` | `93dde1e` | skipped (`--debug-skip-tests`) | REP-VOID-CEILING-DEBUG | 220 | 9.42 GiB | `fddf99e2…a9ef3` |
+| `closedS-2` | `93dde1e` | 2241 passed, 37 skipped | REP-VOID-CEILING-DEBUG | 381 | 9.58 GiB | `cb4cdfa4…c23dc` |
+| `closedS-3` | `aca1f0e` | 2241 passed, 37 skipped | REP-VOID-CEILING-DEBUG | 384 | 9.17 GiB | `4c37259f…8ba6` |
 
 Every arm ran on every debug reset in every pool, in the declared order (L-rand, H-rule, H-sysid,
 H-final, then W, N, L-shuf, L-mean and W's determinism re-run for 66801 and for 66802, then
-W[66800]). Both smokes gave the same counts; W's determinism re-run matched for both seeds; every
+W[66800]). All three smokes gave the same counts; W's determinism re-run matched for both seeds; every
 candidate decision logged affine_local (L-rand none) and the arm's own readout (`r_s` or `r_n`);
 each pool logged the W and N checkpoint sha256s and the R-S and R-N content and file sha256s it was
 given, each equal to the frozen block; the three pools closed cleanly (4 joined, none killed, each);
@@ -74,33 +82,46 @@ That is **139.2 s per reset**; 128 resets on 4 workers ≈ 4 455 s, plus the 210
 outcome (G-tests, G-repro, the P readout's refit, the cohort's frames), the two determinism re-runs
 (about 30 s) and two further pool starts: **about 4 740 s (79 min)**. The provisional caps stand:
 Stage S **21 600 s** (4.6 × the scaled estimate) and **300 s** per attempt (19 × the slowest).
-G-memory: peak 9.58 GiB process-tree PSS against 12 GiB, one pool alive at a time.
+G-memory: peak 9.58 GiB process-tree PSS (9.17 GiB in `closedS-3`) against 12 GiB, one pool alive
+at a time.
 
-## 4. Power (§8; salt 8502; report `b88b0c0d…ecf4`)
+## 4. Power (§8; salt 8502; report `0e138bb1…1e68`)
 
-`simulate-1` at `93dde1e` (in-run G-tests 2241 passed, 37 skipped; 20 000 trials per cell, 10 000
-resamples per (k+, k−) cell), with each seed's W coupled to H-rule by the coupling and
-conditionally independent of the other W given H-rule, H-sysid at 183/192 coupled halfway, C the
-better of the two by count. Per-seed L-PASS rate (G-bar and G-NI) / both seeds, overlap · half ·
-independent:
+`simulate-2` at `aca1f0e` (in-run G-tests 2241 passed, 37 skipped; 20 000 trials per cell), with
+each seed's W coupled to H-rule by the coupling and conditionally independent of the other W given
+H-rule, H-sysid at 183/192 coupled halfway, C the better of the two by count. G-NI's pass for a
+trial's (k+, k−) is its probability over the bootstrap: the share of 25 independent bootstraps
+(10 000 resamples each, as the run makes them) whose 2.5th percentile lies above −16; the two
+seeds' bootstraps are independent given the outcomes. Per-seed L-PASS rate (G-bar and G-NI) / both
+seeds, overlap · half · independent:
 
 | p_C | W = 0.906 | W = 0.922 | W = 0.938 | W = 0.953 |
 |---|---|---|---|---|
-| 0.979 | 0.52/0.28 · 0.47/0.22 · 0.39/0.16 | 0.79/0.63 · 0.73/0.53 · 0.63/0.41 | 0.95/0.91 · 0.92/0.84 · 0.85/0.73 | 1.00/0.99 · 0.99/0.98 · 0.97/0.94 |
-| 0.984 | 0.45/0.20 · 0.42/0.18 · 0.35/0.13 | 0.72/0.53 · 0.67/0.45 · 0.60/0.37 | 0.93/0.86 · 0.89/0.79 · 0.84/0.70 | 0.99/0.99 · 0.98/0.96 · 0.96/0.93 |
-| 0.992 | 0.33/0.11 · 0.33/0.11 · 0.31/0.10 | 0.59/0.35 · 0.58/0.34 · 0.55/0.30 | 0.84/0.71 · 0.83/0.68 · 0.80/0.64 | 0.97/0.94 · 0.96/0.93 · 0.95/0.90 |
+| 0.979 | 0.52/0.28 · 0.45/0.20 · 0.40/0.17 | 0.79/0.63 · 0.71/0.50 · 0.63/0.42 | 0.95/0.91 · 0.91/0.82 · 0.85/0.73 | 1.00/0.99 · 0.99/0.97 · 0.97/0.93 |
+| 0.984 | 0.45/0.20 · 0.39/0.16 · 0.35/0.13 | 0.72/0.53 · 0.65/0.42 · 0.59/0.36 | 0.93/0.86 · 0.88/0.77 · 0.83/0.69 | 0.99/0.98 · 0.98/0.96 · 0.96/0.92 |
+| 0.992 | 0.33/0.11 · 0.31/0.10 · 0.29/0.09 | 0.59/0.35 · 0.55/0.31 · 0.52/0.27 | 0.84/0.71 · 0.81/0.66 · 0.78/0.60 | 0.97/0.94 · 0.96/0.91 · 0.94/0.88 |
 
-So at W-66800's observed 0.922 each seed passes with probability **0.54–0.79** and both with
-**0.30–0.63**; at 0.938, 0.79–0.96 and 0.64–0.91; at 0.953, ≥ 0.95 and ≥ 0.90. The draft's scratch
-table (4 000 trials, salt 8599) agrees within simulation noise. **Size at the margin** (W = C − δ):
-a seed's L-PASS rate 2.4–3.6 %, both seeds 0.11–0.16 %; L-INFERIOR's false fire at the margin
-0.8–1.4 % per seed. G-bar's exact power: 0.908 at 0.906, 0.978 at 0.922, 0.998 at 0.938. The twin
-tests are not simulated (TASK-081 Stage 0: ≥ 0.9997 at TASK-080's twin rates).
+So at W-66800's observed 0.922 each seed passes with probability **0.52–0.79** and both with
+**0.27–0.63**; at 0.938, 0.77–0.96 and 0.60–0.91; at 0.953, 0.94–1.00 and 0.88–0.99. **Size at the
+margin** (W = C − δ): a seed's L-PASS rate (G-bar and G-NI, not G-NI alone as TASK-081 reported it)
+2.6–3.5 %, both seeds 0.09–0.16 %; L-INFERIOR's false fire at the margin 1.2–1.6 % per seed. G-bar's
+exact power: 0.908 at 0.906, 0.978 at 0.922, 0.998 at 0.938. The twin tests are not simulated
+(TASK-081 Stage 0: ≥ 0.9997 at TASK-080's twin rates).
+
+**Superseded, and why.** `simulate-1` (at `93dde1e`, report `b88b0c0d…ecf4`) and the draft's
+scratch table (4 000 trials, salt 8599) each decided G-NI for a (k+, k−) cell with **one**
+bootstrap draw, so a cell at the boundary passed or failed outright, and which cells flipped
+depended on the salt (for example (1, 10) failed in the draft and passed in `simulate-1`; the run's
+own estimator puts its lower bound at −16, a fail). Those cells carry much of the mass in the half
+and independent couplings, so the two tables differ by up to 0.06 there, more than simulation noise
+(Stage 0 review). Averaging over 25 bootstraps per cell estimates the pass probability the run
+faces; `simulate-2` lies between the two and supersedes both.
 
 ## 5. Open items of the protocol's §14, settled
 
 1. **Caps:** confirmed (§3).
-2. **Power:** recomputed (§4); the protocol's §8 quotes it.
+2. **Power:** recomputed (§4) with G-NI averaged over bootstrap replicates; the protocol's §8
+   quotes it and keeps the draft table only as superseded.
 3. **The pools' order:** 66801, 66802, then W[66800]'s, one alive at a time; peak 9.58 GiB.
 
 ## 6. What is next

@@ -377,7 +377,7 @@
    "name": "affine_local"
   },
   "stage0": {
-   "revision": "93dde1e",
+   "revision": "aca1f0e",
    "scaled_seconds": {
     "S": 4740
    },
@@ -399,42 +399,43 @@
    },
    "simulate": {
     "both_pass_at_w_0922": [
-     0.3,
+     0.27,
      0.63
     ],
     "both_pass_at_w_0938": [
-     0.64,
+     0.6,
      0.91
     ],
     "both_pass_at_w_0953": [
-     0.9,
+     0.88,
      0.99
     ],
     "l_inferior_at_margin_per_seed": [
-     0.008,
-     0.014
+     0.012,
+     0.016
     ],
     "per_seed_pass_at_w_0922": [
-     0.54,
+     0.52,
      0.79
     ],
     "per_seed_pass_at_w_0938": [
-     0.79,
+     0.77,
      0.96
     ],
     "per_seed_pass_at_w_0953": [
-     0.95,
+     0.94,
      1.0
     ],
-    "report_sha256": "b88b0c0dcc6b368168c5ba5d4bcd2bd7c77d5bff48afd3f7e78118cf72e5ecf4",
+    "report_sha256": "0e138bb1564f3faa3ba7cb817be12c31b6796e2ebf656112918ecb439d371e68",
     "size_at_margin_both": [
-     0.0011,
+     0.0009,
      0.0016
     ],
     "size_at_margin_per_seed": [
-     0.024,
-     0.036
-    ]
+     0.026,
+     0.035
+    ],
+    "superseded": "simulate-1 (b88b0c0d...ecf4, one bootstrap per cell) and the draft's scratch table: a boundary cell passed or failed outright, moving cells by up to 0.06"
    },
    "smoke_root": "outputs/task083-* in the task083-stage0 worktree (git-ignored); debug seeds 75910-75913 only; nothing in them is read",
    "smokes": {
@@ -460,6 +461,19 @@
      "report_sha256": "cb4cdfa4162c5b0517739270b530a5e42e25396c9119a9542bf7ae98e33c23dc",
      "same_counts_as_closedS-1": true,
      "seconds": 381
+    },
+    "closedS-3": {
+     "determinism_ok": {
+      "66801": true,
+      "66802": true
+     },
+     "g_tests": "2241 passed, 37 skipped",
+     "outcome": "REP-VOID-CEILING-DEBUG",
+     "peak_tree_pss_gib": 9.17,
+     "report_sha256": "4c37259f91742bfe00cbc94e46476e783b6e2f1a44d6fbff0c0a0744d08d8ba6",
+     "revision": "aca1f0e",
+     "same_counts_as_closedS-1": true,
+     "seconds": 384
     }
    }
   },
@@ -496,7 +510,7 @@
   "wm_workers": 4,
   "worker_torch_threads": 1
  },
- "frozen_sha256": "32dbe2fea61cc8d328458032485fa4e47dbcf7b5d09bb14f2680cc37f043287b",
+ "frozen_sha256": "4b73d1e5c7e83dbaf5306a929c05f067ba7c15bbc8f3a5c7e5a2f1603722d9ff",
  "frozen_sha256_pin": null,
  "hashes": {},
  "note": "DRAFT (R21): frozen is the frozen-block candidate; no pin, no file hashes and no protocol document pin until the freeze (merged on an independent reviewer's APPROVE).",

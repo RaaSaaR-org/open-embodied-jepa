@@ -81,17 +81,22 @@ Every simulated attempt ran on debug seeds 75910–75913; nothing in them is rea
   its arm's; R8 stays in each pool's configuration, as in TASK-081's, though no arm here reads it.
 - **R21.14 — the debug smokes.** At `93dde1e` (kept on `prov/task083-stage0-smokes`; its code is
   byte-identical after the rebase): `closedS-1` (G-tests skipped) and `closedS-2` (in-run G-tests
-  2241 passed, 37 skipped) both ended REP-VOID-CEILING-DEBUG (four debug resets cannot reach the
+  2241 passed, 37 skipped); after the Stage 0 review's fixes (G-seed refuses a missing readout;
+  L-shuf's frames only where L-shuf runs; the power's replicates), `closedS-3` at `aca1f0e` (G-tests
+  2241 passed). All three ended REP-VOID-CEILING-DEBUG (four debug resets cannot reach the
   ceiling) with identical counts, every arm in every pool, W's determinism re-run matching for both
   seeds, every candidate decision on affine_local with its arm's readout, the pools closed cleanly,
-  peak process-tree PSS 9.42 and 9.58 GiB.
+  peak process-tree PSS 9.42, 9.58 and 9.17 GiB.
 - **R21.15 — caps and memory.** 139.2 s per reset over every arm; Stage S scaled at about 4 740 s;
   the provisional caps stand (21 600 s for S, 4.6 ×; 300 s per attempt, 19 × the slowest 15.4 s);
   G-memory 12 GiB against a 9.58 GiB peak.
-- **R21.16 — power.** `simulate-1` (report `b88b0c0d…ecf4`, salt 8502, 20 000 trials per cell):
-  at W = 0.922 each seed reaches L-PASS with probability 0.54–0.79 and both with 0.30–0.63; at
-  0.938, 0.79–0.96 and 0.64–0.91; at 0.953, ≥ 0.95 and ≥ 0.90; the size at the margin is 2.4–3.6 %
-  per seed and 0.11–0.16 % for both. No bar changes. Next: the freeze on an independent APPROVE,
+- **R21.16 — power.** `simulate-2` (report `0e138bb1…1e68`, salt 8502, 20 000 trials per cell,
+  G-NI's pass averaged over 25 bootstraps per (k+, k−) cell): at W = 0.922 each seed reaches L-PASS
+  with probability 0.52–0.79 and both with 0.27–0.63; at 0.938, 0.77–0.96 and 0.60–0.91; at 0.953,
+  0.94–1.00 and 0.88–0.99; the size at the margin is a seed's L-PASS rate of 2.6–3.5 % and
+  0.09–0.16 % for both; L-INFERIOR's false fire at the margin 1.2–1.6 %. It supersedes `simulate-1`
+  and the draft's table, which decided each cell with one bootstrap and so differed by up to 0.06 in
+  the half and independent couplings (Stage 0 review). No bar changes. Next: the freeze on an independent APPROVE,
   then Stage S on its own reported GO. Evidence copies:
   `~/develop/emai/evidence/task083-stage0/` with `SHA256SUMS`.
 
