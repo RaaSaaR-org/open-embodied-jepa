@@ -64,7 +64,7 @@ physics (Newton). Errors against the true positions, median (min–max):
 On Isaac's frames the P readout returns nearly the same apple for every seed (x 0.30–0.32,
 y −0.05 to −0.09 m against true y −0.16 to −0.20 m). R-plate's error is near the 3 cm line set for
 this check; P-3's apple estimate is far beyond it, so **P-3's pick was expected to fail** before step B.
-At 405 in step B (e9-pick runs) R-plate read the plate 1.9–3.2 cm off on Isaac's frame against
+At 405 in step B (the Newton e9-pick run) R-plate read the plate 1.9–3.2 cm off on Isaac's frame against
 0.07–0.33 cm on MuJoCo's render of the same state.
 
 ## Step B: closed loop (debug seeds 71920–71923)
@@ -159,9 +159,10 @@ Each run directory also has the per-attempt clips, `report.json` (every attempt'
 committed aim, the post-look and 405 domain-gap rows and W's counterfactual aim) and its own
 `SHA256SUMS`; `step_a_frames/` holds the Isaac and MuJoCo onboard frames of step A.
 
-Development runs that did not produce a video: `isaac-newton-1` (client stalled in the P readout
-refit under heavy CPU contention from another job; stopped, own container stopped by hand),
-`isaac-newton-2` (fewer BLAS threads broke the refit's G-repro check; it stopped itself), and
-`isaac-newton-3` (step A above, plus a one-attempt check: W on 71920 stopped by the same guard
-refusal at step 223 as in `newton-p3-1`). `sham-1` is the
-plumbing check. The containers' asset caches (`home_cache`) were deleted after the runs.
+Other development runs, not listed above: `isaac-newton-1` (client stalled in the P readout
+refit under heavy CPU contention from another job; stopped, own container stopped by hand; no
+video), `isaac-newton-2` (fewer BLAS threads broke the refit's G-repro check; it stopped itself;
+no video), and `isaac-newton-3` (step A above, plus a one-attempt check with its own short video:
+W on 71920 stopped by the same guard refusal at step 223 as in `newton-p3-1`). `sham-1` is the
+plumbing check. `physx-e9pick-1` also recorded its own 4-seed step A under PhysX (consistent with
+the table above; not tabulated here). The containers' asset caches (`home_cache`) were deleted after the runs.
