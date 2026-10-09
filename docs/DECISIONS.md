@@ -63,6 +63,63 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (u) — Phase 1: TASK-085's play corpus `play-v1` and TASK-086's real-data pre-step, DRAFT preregistrations (R23.1–R23.15; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30).** Phase 1 of the proposal
+[JEPA_ZERO_SHOT_PLAN.md](JEPA_ZERO_SHOT_PLAN.md), after TASK-084's P0-PASS (R22.11). The protocols
+are [play_corpus_v1.md](experiments/play_corpus_v1.md) (frozen at its Stage 0 merge) and
+[real_g1_dex3_prestep.md](experiments/real_g1_dex3_prestep.md) (frozen at its converter merge).
+
+- **R23.1 — TASK-085 is the play corpus, TASK-086 the real-data pre-step;** two tasks, so either
+  can close without the other.
+- **R23.2 — scene.** v1/v2's fixed-pelvis G1 and table; four movable objects (apple, cube, banana,
+  can) with v2's contact, plus the static plate; 1–4 objects per episode at random, the rest parked
+  out of view; so the corpus is not Apple→Plate-specific.
+- **R23.3 — one arm, one hand.** Right arm and right Dex3 grasp are played; the left arm's commands
+  are 0 and its grasp −1 in every step; the 14-D schema and `configs/g1_sim_action.json` are
+  unchanged (20 Hz); every request is projected by the embodiment's own backtracking and the
+  executed action is stored.
+- **R23.4 — play policy.** A privileged scripted mixture: scripted 0.40, perturbed 0.35, random
+  0.25; pick-and-place (e9's pick recipe), push, poke and wander skills; deliberate failures (miss,
+  early close, drop, no close, abort) in 35 % of picks; AR(1) action noise and perturbation bursts.
+  It is a collector, never a learned result.
+- **R23.5 — camera and state.** Onboard 112 px only, no wrist camera (storage on a fixed disk
+  budget; one camera for Phase 2's arms); the 43-joint position and velocity state, the physical
+  action, and a per-episode sidecar with palm poses, joint targets and object truth for labels
+  (never a model input).
+- **R23.6 — size.** 3 200 episodes of up to 400 commands (≈ 15.8 h, ≈ 11.5 GB expected) in 32
+  shards; a shard does not start below 12 GiB free; G-SIZE requires ≥ 10 h.
+- **R23.7 — splits, seeds, salts.** By episode within each shard (5 val, 5 test per shard); corpus
+  seeds 850000–853199, development 85000–85999, debug 86000–86099, salts 8501 (policy) and 8502
+  (split).
+- **R23.8 — the Phase 3 test workspace and the gate** (train split): object region x 0.30–0.46,
+  y −0.28 to −0.04 (24 cells of 4 cm), hand region x 0.24–0.44, y −0.30 to −0.02, z 0.06–0.26 in
+  the pelvis frame (175 cells); G-SIZE ≥ 10 h, G-HAND ≥ 95 % of hand cells with ≥ 200 frames,
+  G-OBJ (every object cell ≥ 20 starts; ≥ 90 % with ≥ 10 contact episodes), G-MOVE ≥ 20 % of
+  episodes move an object; rows P1-VOID / P1-PASS / P1-FAIL; no abandonment clause. The regions and
+  the G-HAND / G-OBJ counts were set after development coverage on seeds 85000–85191, disclosed in
+  §11; the 20 % bar is the plan's.
+- **R23.9 — R7 does not change** for TASK-085 or TASK-086, whatever their rows.
+- **R23.10 — real-data sources.** Unitree's 13 G1_Dex3 sets (Apache-2.0; GraspSquare dropped if
+  byte-identical to BlockStacking) and NVIDIA GR00T-Teleop-G1 (CC-BY-4.0) are training-eligible;
+  NVIDIA GR00T-N1.7-AppleToPlate (CC-BY-4.0) is a held-out real-image test set only; Humanoid
+  Everyday G1 is not used while its license is unresolved; mncai's set is not used.
+- **R23.11 — download budget.** States and actions of every eligible set (≈ 0.75 GB); video only
+  for GR00T-Teleop-G1, AppleToPlate and one PickApple camera; raw downloads deleted after
+  conversion, revisions and hashes kept.
+- **R23.12 — conversion.** Joint names mapped by name; 20 Hz by nearest frame; palm deltas from
+  the measured state by our G1 forward kinematics, scaled by 1.5 cm and 0.06 rad; grasp by
+  projection onto our open→closed synergy; out-of-range steps flagged and cut, never clipped;
+  images centre-cropped to 112 px under their own key `real_head_rgb`.
+- **R23.13 — stop rule.** R-RANGE: drop the arm if more than half of the pooled converted steps
+  have any |a_i| > 1. R-GRASP: drop it if, pooled, either hand's median grasp residual exceeds
+  0.15 rad or more than 25 % of its frames project outside [−0.25, 1.25]. Rows R-VOID /
+  R-DROP-RANGE / R-DROP-GRASP / R-KEEP.
+- **R23.14 — splits.** By source episode per set (5 % val, 5 % test, salt 8603); AppleToPlate
+  entirely held out.
+- **R23.15 — scope.** Conversion is not evidence that real data helps a model tested in
+  simulation; that is Phase 3's question.
+
 ## Decision 2026-10-09 (t) — TASK-084 ends P0-PASS: Meta's released JEPA-WM reproduces on Push-T and our CEM planner meets the Phase 0 gate; part B's baseline recorded; R7 does not change; TASK-084 closes (R22.10–R22.13)
 
 **Decided by Claude under owner delegation (2026-09-30).** The record is
