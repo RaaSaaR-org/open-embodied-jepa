@@ -136,7 +136,8 @@ are [play_corpus_v1.md](experiments/play_corpus_v1.md) (frozen at its Stage 0 me
   R-DROP-RANGE / R-DROP-GRASP / R-KEEP.
 - **R23.14 — splits.** By source episode per set (max(1, floor(5 %)) val and test, salt 8603,
   `heldout_combinations=()`); AppleToPlate held out by leaving its store unsealed and marking it in
-  the corpus manifest. No real data was converted before the bars were set (protocol §6).
+  the corpus manifest. As far as the record shows, no real data was converted before the bars
+  were set (protocol §6).
 - **R23.15 — scope.** Conversion is not evidence that real data helps a model tested in
   simulation; that is Phase 3's question.
 

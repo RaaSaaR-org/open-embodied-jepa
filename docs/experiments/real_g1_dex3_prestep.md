@@ -112,6 +112,14 @@ revisions, feature names). As far as the record shows, no real set was converted
 kinematics, palm delta or grasp projection was computed on real data, before the bars of §5 were
 set. They are declared choices, not calibrated ones.
 
+Converter development after the draft was approved (#182 at `afa9c74`) and before this
+protocol was frozen: the code path was exercised on two GR00T-Teleop-G1 episodes and two Unitree
+PickApple episodes (development only). What was seen: the converter runs end to end, the Teleop
+frames look right after cropping, and 2 Teleop episodes yielded 5 stored segments, so some steps
+were flagged; PickApple's episode-0 metadata statistics show the left thumb_0 joint held near
+0.52 rad (our synergy holds it at 0). No pooled fraction or residual was computed or looked at,
+and the bars of §5 were not changed.
+
 ## 7. What this does not show
 
 Converting is not evidence that real data helps a world model tested in simulation (the plan's
