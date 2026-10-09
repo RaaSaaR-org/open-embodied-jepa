@@ -1,7 +1,7 @@
 # TASK-087 — Phase 2: robot-grounded LeWM on `play-v1`, offline
 
-**Status: DRAFT** (R24.1–R24.14, decided by Claude under owner delegation). It is frozen when its
-Stage 0 PR merges; after that nothing in §2–§10 changes without its own reviewed ruling.
+**Status: FROZEN when the Stage 0 PR merges** (R24.1–R24.19, decided by Claude under owner
+delegation); after that merge nothing in §2–§10 changes without its own reviewed ruling.
 This is Phase 2 of the proposal [JEPA_ZERO_SHOT_PLAN.md](../JEPA_ZERO_SHOT_PLAN.md)
 ("Robot-grounded LeWM, offline"), on the play corpus `play-v1` (TASK-085, P1-PASS, R23.24). The
 plan's second data arm (sim play + open real G1 / Dex3 data) was dropped at TASK-086
@@ -355,3 +355,39 @@ projection.
 - **R24.13** — disk and evidence as §12; the TASK-086 stores may be deleted only when needed and
   recorded.
 - **R24.14** — R7 does not change, whatever the row.
+
+## 15. Stage 0 record (R24.15–R24.19)
+
+- **Code** (opt-in; no registry entry; `import embodied_jepa` unchanged and torch-free, checked by
+  a test): `src/embodied_jepa/grounded_wm.py` (constants, tables, statistics, δ, rows; NumPy),
+  `grounded_wm_data.py` (corpus reading, featurisation, the projection, the stores, the sampler;
+  NumPy at import), `grounded_wm_model.py` (the arms; torch); scripts `featurise_task087.py`,
+  `train_task087.py`, `evaluate_task087.py` and the stage runner `run_task087.sh` (one
+  `gpu_run.sh` lock per job); `tests/test_grounded_wm.py` (29 tests: windows stay inside episodes,
+  the root rule, the wrong and candidate tables use other episodes and are fixed, ties count
+  against, the cluster bootstrap, the statistics on a known predictor, the budget rule, δ, the
+  criteria and every row, the projection against a direct PCA, the stores and the sampler, every
+  arm's loss and roll-out, the roll-out reads only the start state, S carries the state slot after
+  the final LayerNorm, N ignores commands, chunk-independent prediction). No existing file changes.
+- **Evaluation device (decided here, before the freeze):** V and E run on the RTX 5080 under
+  `gpu_run.sh` with the repository's strict deterministic CUDA set-up, in chunks of 2 048 roots. On
+  the CPU the 18 models' roll-outs were estimated (from operation counts, not measured) at
+  roughly 1–2 h; on the GPU the smoke took seconds.
+- **Debug smoke** (debug seeds 87901–87902, not results; `outputs/task087-smoke/` in the Stage 0
+  worktree): Stage F on 12 fit-sample train episodes and 3 val episodes (0.953 of the
+  standardised variance and 0.869 of the frame-to-frame change variance kept at k = 192, about
+  0.6 s per episode); every arm for 400 updates on that store (31–37 ms per update; parameters
+  P and N 3.12 M, S 3.18 M, C 3.97 M, I 6.27 M, G 6.39 M; peak CUDA allocation 1.7 GB); the val
+  report and a test evaluation with val standing in for test (row logic exercised; with 400
+  updates on 12 episodes P does not beat copy-last, so the smoke's row is P2-PLAIN-INVALID, as
+  expected of an untrained model). The smoke showed the case §9 guards against: G's
+  inverse-dynamics head read its *predicted* pairs (R² 0.48) far better than encoded pairs
+  (−0.48).
+- **Determinism:** P-87901 trained twice for 400 updates gave identical weights (state sha256
+  `ad8ed85a2219…` both times).
+- **Projection of cost:** about 35 min for Stage F; at about 31–37 ms per update, U = 40 000 would
+  take about 7 h for the 18 jobs, inside R24.6's 14 h.
+- **R24.15–R24.19** — the Stage 0 code above (R24.15); the evaluation device (R24.16); the smoke
+  and determinism results are not evidence (R24.17); frozen at this PR's merge, the gated stages
+  run at the merged revision from a clean tree with evidence in `~/develop/emai/evidence/task087-*`
+  (R24.18); R7 does not change (R24.19).

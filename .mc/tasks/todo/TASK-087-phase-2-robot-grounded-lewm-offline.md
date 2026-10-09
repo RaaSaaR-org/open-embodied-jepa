@@ -41,7 +41,7 @@ Offline only; not an Apple→Plate experiment; R7 does not change.
 
 ## Acceptance Criteria
 
-- [ ] DRAFT preregistration independently reviewed and merged
+- [x] DRAFT preregistration independently reviewed (APPROVE at 497a551) and merged (#187)
 - [ ] Stage 0 code, tests and debug smoke; independently reviewed and merged (freezes it)
 - [ ] Stages F, B, T, V, F′, E run at the frozen revision; evidence under
   `~/develop/emai/evidence/task087-*` with `SHA256SUMS`
