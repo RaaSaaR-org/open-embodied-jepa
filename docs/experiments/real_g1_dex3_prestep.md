@@ -1,7 +1,7 @@
 # TASK-086 — Phase 1 real-data pre-step: license check and conversion of open real G1 + Dex3 data
 
-**Status: DRAFT** (R23.10–R23.15, decided by Claude under owner delegation). It is frozen when the
-converter PR (§8) merges; after that, nothing in §2–§6 changes without its own reviewed ruling.
+**Status: FROZEN when the converter PR merges** (R23.10–R23.15, R23.20–R23.22, decided by Claude
+under owner delegation). It is frozen when the converter PR (§8) merges; after that, nothing in §2–§6 changes without its own reviewed ruling.
 This is the pre-step that [JEPA_ZERO_SHOT_PLAN.md](../JEPA_ZERO_SHOT_PLAN.md#open-real-g1-data)
 puts in front of Phase 2's "sim play + open real G1/Dex3 data" arm; the play corpus itself is
 TASK-085 ([play_corpus_v1.md](play_corpus_v1.md)).
@@ -130,3 +130,15 @@ Phase 3 decides that), and real teleoperation is task demonstration data, not pl
 The converter and its tests come in one PR, frozen at merge; the run follows on the merged
 revision on CPU. Evidence (download manifest with revisions and hashes, license record, conversion
 report, `SHA256SUMS`) goes to `~/develop/emai/evidence/task086-*/`.
+
+## 9. Converter (R23.20–R23.22)
+
+`src/embodied_jepa/real_g1_convert.py` (NumPy at import; MuJoCo forward kinematics, PyAV and
+PyArrow lazily), `scripts/convert_real_g1.py` (`download`: pins each repository to the revision
+it resolves and checks every file's sha256 against the Hub's LFS oid; `convert`: measures every
+set, writes the stores, the report and `data/real-g1-v1/corpus.json` with each store's manifest
+hash), `tests/test_real_g1_convert.py`. Two implementation details the text above leaves open:
+AppleToPlate's state names are not joint names, so its joints come from its `modality.json`
+groups in the order of NVIDIA's Teleop set (an assumption for the held-out set only, outside the
+decision); the `action`-target variant is computed and reported but never stored. The download
+refuses to start a set below 12 GiB free.
