@@ -108,8 +108,11 @@ def main(argv=None) -> int:
     rt.assert_local_import(ROOT, report)
     rt.gpu_guard(report, min_free_gib=4.0, require_lock=args.debug is None)
     corpus = Path(args.corpus)
-    report["corpus_json_sha256"] = gd.sha256_file(corpus / "corpus.json")
+    report["corpus_check"] = gd.verify_corpus(corpus)  # §2: TASK-085's hashes; raises
     episodes = gd.corpus_episodes(corpus, check_counts=args.debug is None)
+    name = "report.json" if args.stage == "trainval" else "report_test.json"
+    if args.stage == "test" and (out / name).exists():
+        raise SystemExit(f"refusing to overwrite {out / name}")
     t0 = time.monotonic()
     if args.stage == "trainval":
         if out.exists():
@@ -183,7 +186,6 @@ def main(argv=None) -> int:
     report["disk_free_gib_after"] = free_gib(corpus.parent)
     report["finished_utc"] = utc()
     report["outcome"] = "F-DONE" if args.stage == "trainval" else "FT-DONE"
-    name = "report.json" if args.stage == "trainval" else "report_test.json"
     path = out / name
     if path.exists():
         raise SystemExit(f"refusing to overwrite {path}")

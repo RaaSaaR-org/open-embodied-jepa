@@ -427,3 +427,26 @@ def test_core_import_stays_light():
         "assert 'torch' not in sys.modules and 'mujoco' not in sys.modules"
     )
     subprocess.run([sys.executable, "-c", code], check=True, cwd=ROOT)
+
+
+def test_store_files_are_rehashed(tmp_path):
+    w = gd.SplitWriter(tmp_path, "val", 10)
+    ep = {
+        "episode_id": "play-0",
+        "state": np.zeros((10, gw.STATE_DIM), np.float32),
+        "actions": np.zeros((10, gw.ACTION_DIM), np.float32),
+        "palm": np.zeros((10, 3), np.float32),
+    }
+    w.add(ep, np.zeros((10, gw.TOKENS, gw.K), np.float32), shard="shard-00", seed=0)
+    files = {"val": w.close()}
+    assert len(gd.verify_store_files(tmp_path, files, ("val",))) == 5
+    np.save(tmp_path / "palm_val.npy", np.ones((10, 3), np.float32))
+    with pytest.raises(ContractError):
+        gd.verify_store_files(tmp_path, files, ("val",))
+
+
+def test_corpus_check_refuses_another_corpus_json(tmp_path):
+    (tmp_path / "corpus.json").write_text('{"shards": []}')
+    with pytest.raises(ContractError):
+        gd.verify_corpus(tmp_path)
+    assert gd.verify_corpus(tmp_path, pinned=None)["shards"] == {}

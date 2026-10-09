@@ -62,6 +62,9 @@ def load_models(paths, features_report_sha256, *, debug, device):
         arm, seed = rep["arm"], int(rep["seed"])
         gw.check_model_seed(seed, debug=debug)
         ckpt = torch.load(path / "model.pt", map_location="cpu", weights_only=True)
+        here = gm.implementation_sha256()
+        if ckpt["implementation_sha256"] != here or rep["implementation_sha256"] != here:
+            raise rt.GuardError(f"G-implementation: {path} was trained by other code")
         model = gm.GroundedWM(arm, config=ckpt["config"])
         model.load_state_dict(ckpt["state_dict"])
         model.to(device).eval()
@@ -165,6 +168,11 @@ def main(argv=None) -> int:
     feat = Path(args.features)
     feat_sha = gd.sha256_file(feat / "report.json")
     report["features_report_sha256"] = feat_sha
+    feat_report = json.loads((feat / "report.json").read_text())
+    if not args.debug:
+        report["store_files_verified"] = gd.verify_store_files(
+            feat, feat_report["files_sha256"], ("train", "val")
+        )
     eval_split = args.split
     if args.split == "test":
         if args.val_report is None or args.val_report_sha256 is None:
@@ -183,6 +191,9 @@ def main(argv=None) -> int:
             if ft.get("outcome") != "FT-DONE" or ft["val_report_sha256"] != args.val_report_sha256:
                 raise rt.GuardError("G-test: the test features were not made after this val report")
             report["test_features_report_sha256"] = gd.sha256_file(feat / "report_test.json")
+            report["test_store_files_verified"] = gd.verify_store_files(
+                feat, ft["files_sha256"], ("test",)
+            )
         elif args.debug:
             eval_split = "val"  # smoke: val stands in for test
         else:
@@ -204,6 +215,14 @@ def main(argv=None) -> int:
     report["models"] = {
         f"{a}-{s}": {k: v for k, v in m.items() if k != "model"} for (a, s), m in models.items()
     }
+    expected = {(a, s) for a in gw.ARMS for s in gw.MODEL_SEEDS}
+    if not args.debug and set(models) != expected:
+        raise rt.GuardError("G-models: every arm and seed of §5 must be evaluated, nothing else")
+    if args.split == "test":
+        val_ckpts = {k: v["checkpoint_sha256"] for k, v in val_report["models"].items()}
+        here = {k: v["checkpoint_sha256"] for k, v in report["models"].items()}
+        if val_ckpts != here:
+            raise rt.GuardError("G-models: the test checkpoints differ from the val report's")
     seeds = sorted({s for _, s in models})
     t0 = time.monotonic()
     errors, preds8 = {}, {}
@@ -225,12 +244,12 @@ def main(argv=None) -> int:
         f"{a}-{s}": gw.summarise(e, weights, level) for (a, s), e in errors.items()
     }
     if args.split == "val":
-        if all(("P", s) in errors for s in gw.MODEL_SEEDS) and not args.debug:
+        if not args.debug:
             val_true = {
                 s: {h: errors[("P", s)][h]["true"] for h in gw.GATE_HORIZONS}
                 for s in gw.MODEL_SEEDS
             }
-        else:  # smoke: the debug seeds stand in
+        else:  # smoke only: the debug seeds stand in
             ps = [s for a, s in errors if a == "P"]
             mapping = dict(zip(gw.MODEL_SEEDS, (ps * 3)[:3], strict=True))
             val_true = {

@@ -56,6 +56,38 @@ def corpus_episodes(corpus, *, check_counts: bool = True) -> dict:
     return out
 
 
+def verify_corpus(corpus, *, pinned: str | None = gw.CORPUS_JSON_SHA256) -> dict:
+    """§2: corpus.json against TASK-085's recorded sha256 and every shard's manifest hash
+    against corpus.json (``DatasetStore`` also re-hashes every file of a shard when it opens)."""
+    corpus = Path(corpus)
+    got = sha256_file(corpus / "corpus.json")
+    if pinned is not None and got != pinned:
+        raise ContractError(f"G-corpus: corpus.json sha256 {got[:12]} != TASK-085's")
+    record = json.loads((corpus / "corpus.json").read_text())
+    checked = {}
+    for row in record["shards"]:
+        name = f"shard-{int(row['shard']):02d}"
+        store = _store(corpus / name)
+        if store.manifest_hash != row["manifest_hash"]:
+            raise ContractError(f"G-corpus: {name} manifest differs from corpus.json")
+        checked[name] = row["manifest_hash"]
+    return {"corpus_json_sha256": got, "pinned": pinned is not None, "shards": checked}
+
+
+def verify_store_files(folder, files_sha256: dict, splits) -> dict:
+    """Re-hash a feature store's files against the feature report (Stages T, V, E)."""
+    folder = Path(folder)
+    out = {}
+    for split in splits:
+        for key, want in files_sha256[split].items():
+            name = {"episodes": f"episodes_{split}.json"}.get(key, f"{key}_{split}.npy")
+            got = sha256_file(folder / name)
+            if got != want:
+                raise ContractError(f"G-features: {name} differs from the feature report")
+            out[name] = got
+    return out
+
+
 def fit_sample(train_episodes) -> list:
     return [e for e in train_episodes if e[2] % gw.FIT_SAMPLE_MODULUS == 0]
 

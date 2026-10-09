@@ -20,6 +20,8 @@ TASK = "TASK-087"
 # ----- data (§2) ----------------------------------------------------------------------------------
 CORPUS = "data/play-v1"
 CORPUS_SHARDS = 32
+# sha256 of data/play-v1/corpus.json in TASK-085's evidence (task085-run/SHA256SUMS)
+CORPUS_JSON_SHA256 = "06551467725c6dba42e1fcc48576307be8f1fab3e736be5d2268a969d5cb7596"
 SPLIT_COUNTS = {"train": 2874, "val": 160, "test": 160}
 CAMERA = "onboard_rgb"
 # The right arm's 7 and the right Dex3's 7 joints (names in g1_dex3_proprio_v0), positions then
@@ -342,6 +344,8 @@ def summarise(errors: dict, weights, level: float = REPORT_LEVEL) -> dict:
             "top1": mean_stat(rank == 0, weights, level),
             "normalised_rank": mean_stat(rank / (CANDIDATES - 1), weights, level),
             "acc": float(np.sum(e["true"])),
+            "sum_wrong": float(np.sum(e["wrong"])),
+            "separation": float(np.sum(e["wrong"]) - np.sum(e["true"])),
             "mean_true_error": float(np.mean(e["true"])),
             "mean_copy_error": float(np.mean(e["copy"])),
         }

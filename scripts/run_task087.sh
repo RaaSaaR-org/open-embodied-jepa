@@ -11,7 +11,8 @@
 #
 # Paths: features outputs/task087-features, models checkpoints/task087-run, reports and logs
 # under outputs/task087-run. Every job refuses an existing output, so a finished job is skipped
-# by the train loop (its report exists) and a failed one must be re-run by hand as -r2.
+# by the train loop (its report exists); a started but unfinished one stops the loop and may be
+# re-run once by hand as <arm>-<seed>-r2 (train_task087.py enforces that).
 set -euo pipefail
 cd "$(git -C "$(dirname -- "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 
@@ -21,6 +22,15 @@ MODELS=checkpoints/task087-run
 RUN=outputs/task087-run
 GPU=(scripts/gpu_run.sh --wait --min-free-gib 8 --board --)
 mkdir -p "$RUN"
+
+# The completed job of every arm and seed: <arm>-<seed>, or its -r2 when the first did not finish.
+completed() {
+  for seed in 87100 87101 87102; do for arm in P S G C I N; do
+    if [ -e "$MODELS/$arm-$seed/report.json" ]; then echo "$MODELS/$arm-$seed"
+    elif [ -e "$MODELS/$arm-$seed-r2/report.json" ]; then echo "$MODELS/$arm-$seed-r2"
+    else echo "missing $arm-$seed" >&2; return 1; fi
+  done; done
+}
 
 [ -z "$(git status --porcelain --untracked-files=no)" ] || { echo "tracked tree is dirty" >&2; exit 1; }
 
@@ -39,6 +49,7 @@ case "${1:-}" in
       for arm in P S G C I N; do
         out="$MODELS/$arm-$seed"
         [ -e "$out/report.json" ] && { echo "skip $arm-$seed (done)"; continue; }
+        [ -e "$out" ] && { echo "$arm-$seed did not complete; re-run it once by hand as $out-r2" >&2; exit 1; }
         "${GPU[@]}" $PY scripts/train_task087.py --features "$FEAT" --arm "$arm" --seed "$seed" \
           --updates "$U" --select-every "$EVERY" --cap-seconds "$CAP" --output "$out" \
           </dev/null 2>&1 | tee -a "$RUN/train-$arm-$seed.log"
@@ -46,7 +57,7 @@ case "${1:-}" in
     done ;;
   val)
     "${GPU[@]}" $PY scripts/evaluate_task087.py --features "$FEAT" --split val \
-      --models "$MODELS"/*-871* --output "$RUN/val_report.json" </dev/null 2>&1 | tee -a "$RUN/val.log"
+      --models $(completed) --output "$RUN/val_report.json" </dev/null 2>&1 | tee -a "$RUN/val.log"
     sha256sum "$RUN/val_report.json" | tee -a "$RUN/val.log" ;;
   features-test)
     "${GPU[@]}" $PY scripts/featurise_task087.py --stage test --output "$FEAT" --workers 8 \
@@ -54,7 +65,7 @@ case "${1:-}" in
       </dev/null 2>&1 | tee -a "$RUN/features-test.log" ;;
   test)
     "${GPU[@]}" $PY scripts/evaluate_task087.py --features "$FEAT" --split test \
-      --models "$MODELS"/*-871* --output "$RUN/test_report.json" \
+      --models $(completed) --output "$RUN/test_report.json" \
       --val-report "$RUN/val_report.json" --val-report-sha256 "${2:?val report sha256}" \
       </dev/null 2>&1 | tee -a "$RUN/test.log" ;;
   *) sed -n '2,15p' "$0" >&2; exit 2 ;;

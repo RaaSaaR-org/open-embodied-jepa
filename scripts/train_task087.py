@@ -74,6 +74,10 @@ def main(argv=None) -> int:
     out = Path(args.output)
     if out.exists():
         raise SystemExit(f"refusing to overwrite {out}")
+    if out.name.endswith("-r2"):
+        first = out.with_name(out.name[: -len("-r2")])
+        if (first / "report.json").exists() or not (first / "started.json").exists():
+            raise SystemExit("an -r2 run is allowed only after an incomplete first run")
     gw.check_model_seed(args.seed, debug=args.debug)
     if args.probe and (args.arm != "P" or args.seed != gw.PROBE_SEED):
         raise SystemExit("the probe is P with seed 87900")
@@ -104,6 +108,8 @@ def main(argv=None) -> int:
         rt.gpu_guard(report, min_free_gib=4.0, require_lock=strict)
         report["determinism"] = devices.configure_determinism("cuda", strict=True)
         report["accelerator"] = devices.accelerator_info("cuda")
+    out.mkdir(parents=True)
+    (out / "started.json").write_text(json.dumps({"started_utc": report["started_utc"]}))
     feat_dir = Path(args.features)
     feat_report_path = feat_dir / "report.json"
     feat_report = json.loads(feat_report_path.read_text())
@@ -114,6 +120,10 @@ def main(argv=None) -> int:
         raise rt.GuardError("G-features: the feature report differs from the recorded one")
     if strict and (feat_report.get("debug") or feat_report.get("outcome") != "F-DONE"):
         raise rt.GuardError("G-features: not a real F-DONE feature store")
+    if strict:
+        report["store_files_verified"] = gd.verify_store_files(
+            feat_dir, feat_report["files_sha256"], ("train", "val")
+        )
     train = gd.FeatureStore(feat_dir, "train")
     val = gd.FeatureStore(feat_dir, "val")
     val_roots, _ = val.roots()
@@ -196,7 +206,6 @@ def main(argv=None) -> int:
         true1 = gw.latent_error(pred[1], copy[3][1])
         copy1 = gw.latent_error(copy[0], copy[3][1])
         report["probe_copy_ratio_h1_val"] = float(true1.sum() / copy1.sum())
-    out.mkdir(parents=True)
     checkpoint = {
         "state_dict": {k: v.cpu() for k, v in model.state_dict().items()},
         "arm": args.arm,
