@@ -4,7 +4,7 @@ aliases:
 - TASK-085
 title: 'Phase 1: MuJoCo play corpus play-v1 (right arm + right Dex3 hand; random, perturbed and failed play)'
 slug: phase-1-mujoco-play-corpus-one-arm-one-dex3-hand
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -14,6 +14,7 @@ tags:
 - data
 - preregistration
 - phase-1
+- p1-pass
 sprint: ''
 depends_on:
 - "[[TASK-084]]"
@@ -42,9 +43,18 @@ Not an Apple→Plate experiment and not a learned result; R7 does not change.
 ## Acceptance Criteria
 
 - [x] DRAFT preregistration independently reviewed (APPROVE at afa9c74) and merged (#182)
-- [ ] Stage 0: collector module, runner, gate script, tests, debug smoke (86000–86015);
+- [x] Stage 0: collector module, runner, gate script, tests, debug smoke (86000–86015);
   independently reviewed and merged (freezes the protocol)
-- [ ] Corpus `data/play-v1` collected on the merged revision; evidence under
+- [x] Corpus `data/play-v1` collected on the merged revision; evidence under
   `~/develop/emai/evidence/task085-*` with `SHA256SUMS`
-- [ ] Results document and DECISIONS entry with the measured row, reviewed and merged; R7
+- [x] Results document and DECISIONS entry with the measured row, reviewed and merged; R7
   unchanged, stated explicitly
+
+## Outcome
+
+**P1-PASS** (R23.23–R23.26). #182 (DRAFT, `52ac559`), #183 (Stage 0, frozen, `3ee2557`), the run
+at `3ee2557`: 3 194 of 3 200 episodes stored, 16.06 h, 12.3 GB in `data/play-v1/`; G-HAND 97.7 %,
+G-OBJ min 61 starts / 100 % contact cells, G-MOVE 55.9 %. Evidence
+`~/develop/emai/evidence/task085-run/`. Results:
+[play_corpus_v1_results.md](../../../docs/experiments/play_corpus_v1_results.md). A scripted
+collector, not a learned result; R7 unchanged.
