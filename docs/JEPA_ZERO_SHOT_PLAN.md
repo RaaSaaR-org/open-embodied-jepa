@@ -81,7 +81,7 @@ Six blockers explain our results. Each has a published fix we can test, though m
 | Horizon: latent WMs rank actions well only for targets ~5–10 steps ahead | 0/150 per backend with replanned CEM (horizon 4, up to 805 steps) toward one distant goal image, no subgoals; every model episode stopped by the joint-rate guard (TASK-020) | Subgoals and short segments ([HWM](https://arxiv.org/html/2604.03208v2), [SAGE](https://arxiv.org/html/2607.17973)); avoid naive hierarchy ([Hi-LeWM](https://arxiv.org/html/2607.12547v1)) |
 | Misleading cost: latent L2 to goal misranks actions | Apple-plate offset read only to about 2–3.4 cm (TASK-075) | Add a robot-pose term to cost and goal ([JEPA-WMs](https://arxiv.org/html/2512.24497v1)) |
 | Latents not grounded in robot state | Small objects and the hand poorly identifiable | Proprio input, joint-change heads, inverse-dynamics loss ([AD-WM](https://arxiv.org/abs/2609.30264), [GAWM](https://arxiv.org/pdf/2609.03565), [Strohm et al.](https://arxiv.org/abs/2610.03137)): the owner's "predict robot states" idea |
-| Data: every result uses tens to hundreds of hours of task-agnostic play on the same robot | Our corpora are mostly scripted or expert-labelled single-task demos with few failures | A MuJoCo play corpus with random, perturbed and failed behaviour ([PLDM](https://arxiv.org/abs/2502.14819)); optionally Unitree's [G1_Dex3 datasets](https://huggingface.co/datasets/unitreerobotics/G1_Dex3_ToastedBread_Dataset) |
+| Data: every result uses tens to hundreds of hours of task-agnostic play on the same robot | Our corpora are mostly scripted or expert-labelled single-task demos with few failures | A MuJoCo play corpus with random, perturbed and failed behaviour ([PLDM](https://arxiv.org/abs/2502.14819)); as an extra arm, open real G1 + Dex3 teleoperation data (see [Open real G1 data](#open-real-g1-data)) |
 | Dexterous 14-D actions: no published success | — | Start with one arm, one hand, a reduced grasp synergy ([DexWM](https://arxiv.org/abs/2512.13644)) |
 | Visual domain gap | Isaac transfer failed (11 cm apple error) | Fix the camera first; later real-to-sim appearance matching ([LEGS](https://arxiv.org/html/2606.01458)) |
 
@@ -99,6 +99,50 @@ Recommended: B, then A, with C as the language layer on top later. D and E do no
 | D. Continue moving-plate / selector line | More LeWM-picks-an-aim conditions | Very low; per-task and artificial | Ongoing | Months without progress | No, stop |
 | E. Switch to GR00T or behaviour cloning | Fine-tune a VLA or extend BC | None in the owner's sense; every task needs demos | Cloud GPUs | Abandons JEPA | No |
 
+## Open real G1 data
+
+Question from the owner (2026-10-09): should Phases 1–2 also use public real data from our robot type (Unitree G1 + Dex3-1), not only MuJoCo play data? Short answer: yes, as an extra arm, not as a replacement. About 40 hours of real G1 + Dex3 teleoperation are public (about 26 h of it under a clear Apache-2.0 or CC-BY-4.0 license, counting Unitree's duplicate set once), one set is our exact task, and the conversion to our action schema is mechanical. But it is task demonstration data, not play, so it cannot replace the play corpus, and nobody has shown that real data helps a world model tested in simulation.
+
+Numbers below were read on 2026-10-09 from each dataset's card and its `meta/info.json` through the Hugging Face API; hours are total frames ÷ fps. Only metadata and one 33 MB parquet file (Unitree PickApple, states and actions) were downloaded.
+
+### Real G1 with Dex3-1 hands (usable)
+
+| Dataset | License | Format | Size | Tasks | Cameras | State / action | Fit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [Unitree G1_Dex3_* (13 sets)](https://huggingface.co/datasets?search=unitreerobotics%2FG1_Dex3) | Apache-2.0 | LeRobot v3.0, AV1 video | 3,152 episodes, ≈24.0 h, 30 Hz | One task per set: 7 single-object picks, among them [PickApple](https://huggingface.co/datasets/unitreerobotics/G1_Dex3_PickApple_Dataset) ("Put the apple into the plate.", 201 episodes, ≈1.4 h), plus block stacking, pouring, toast, packaging, object placement | Head stereo pair 640×480; 6 of 13 sets also both wrists 640×480 | 28-D absolute joint positions: 2 × 7 arm + 2 × 7 hand; no end-effector pose, no waist | Best fit: same arms and hands, permissive license, our format family |
+| [Humanoid Everyday, G1 part](https://huggingface.co/datasets/USC-PSI-Lab/Humanoid-Everyday-G1) | Unclear: GitHub README says MIT, the full dataset's HF card says Apache-2.0, the G1 repo has no license tag | LeRobot v2.1 | 4,064 episodes, 247 tasks, ≈16.5 h, 30 Hz | Everyday manipulation, interaction and loco-manipulation | Egocentric RealSense D435, 640×480 RGB (depth in the full set) | Arm 14, hand 14 (Dex3), legs; variable-length vectors | Good if the license is confirmed; broadest task variety |
+| [NVIDIA GR00T-Teleop-G1](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-Teleop-G1) | CC-BY-4.0 | LeRobot v2.1 | Card: 1,000 trajectories; the four folders' metadata: 1,095 episodes, ≈1.7 h, 20 Hz | Pick one of four fruits and place it on the plate | One ego view, 640×480 | 43-D whole-body joints; hand joints named like Dex3 (thumb 0–2, index 0–1, middle 0–1) | Good: close to our task, small |
+| [NVIDIA GR00T-N1.7-AppleToPlate](https://huggingface.co/datasets/nvidia/GR00T-N1.7-AppleToPlate) | CC-BY-4.0 | LeRobot v2.1 | 402 episodes, ≈1.6 h, 30 Hz | "move the apple to the plate", real G1, XR teleoperation | One ego view, 640×480 | 43-D whole-body joints, 7 per hand (hand model not named in card or metadata) | Our exact task: keep it as a real-image test set, not training data |
+| [mncai G1_Dex3_Trash_LocoManipulation](https://huggingface.co/datasets/mncai/G1_Dex3_Trash_LocoManipulation) | Apache-2.0 | LeRobot v2.1 | 118 episodes, ≈61 min, 50 Hz | Walk, kneel, pick a trash bag, bin it; left hand only | Head D435i, 640×480 | 43-D joints + 14-D wrist pose | Poor: whole-body walking; but 37 episodes contain deliberate failed grasps and recovery |
+
+Data quality notes from the check: Unitree's GraspSquare set has the same episode and frame counts and the same README text as BlockStacking, and its task string reads "camera packaging", so it is probably a duplicate; the PickApple README shows an older v2.1 / 4-camera block while its `meta/info.json` is v3.0 with 2 cameras; in PickApple, two state rows (episodes 103 and 193) hold impossible values (−1151.6 and 428.9) in one right-hand joint; hand joint order differs between sets and between left and right, so mapping must go by name. None of these cards says whether failed attempts were removed; they are teleoperated task demonstrations.
+
+### Other hands and simulated G1 (not recommended now)
+
+- **Other Unitree hands (real):** 26 Inspire whole-body sets with metadata (≈65 h; 3 more have none), 8 + 29 BrainCo sets (≈15 h + ≈70 h) and 108 Dex1 two-finger gripper sets (≈311 h, among them the [DiverseManip](https://huggingface.co/datasets/unitreerobotics/G1_Dex1_DiverseManip_SingleArm_128x128) sets that Unitree describes as a diversity dataset for world models). Different hands, so hand actions do not transfer; the arm and camera parts could. Many newer Unitree sets have no README or license tag; treat them as unlicensed until Unitree says otherwise.
+- **Simulated G1:** NVIDIA's [GR00T-X-Embodiment-Sim](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim) folder `unitree_g1.LMPnPAppleToPlateDC` (MuJoCo, 102 trajectories per card, 50 Hz, apple to plate while walking, CC-BY-4.0) and Isaac Lab-Arena sets ([static pick-and-place](https://huggingface.co/datasets/nvidia/Arena-G1-Static-PickNPlace-Task), [loco-manipulation](https://huggingface.co/datasets/nvidia/Arena-G1-Loco-Manipulation-Task); their cards and metadata disagree on episode counts). Small, other simulators and other renderers; they add little over our own MuJoCo play corpus.
+- About 100 small community G1 + Dex3 repositories exist on Hugging Face, many copies of Unitree's sets; not checked.
+
+### Precedent
+
+- [V-JEPA 2-AC](https://arxiv.org/html/2506.09985) trained its action-conditioned predictor on less than 62 h of unlabeled real DROID video from one robot type, with a 7-D end-effector-delta action; no simulated data in that stage.
+- [DexWM](https://arxiv.org/html/2512.13644) pretrained on 829 h of human egocentric video (EgoDex) plus about 100 h of DROID (parallel gripper), then fine-tuned on about 4 h of random exploration in simulation (RoboCasa), and grasped with a real Franka + Allegro hand: mixing embodiments and real with sim data worked for a latent world model, in one group's work.
+- [Sim-and-Real Co-Training](https://arxiv.org/abs/2503.24361) (2025) reports that adding simulation data raised real-world policy success by an average of 38 %, on an arm and a humanoid; that is for policies, not world models.
+
+### Fit with our pipeline, and the conversion
+
+| Our side | Real data | Conversion |
+| --- | --- | --- |
+| Action `ee_delta_grasp_v0` (`contracts.py`): per arm 6-D end-effector delta, plus one grasp scalar per hand, normalized to [−1, 1] by 1.5 cm and 0.06 rad per 0.05 s step (`configs/g1_sim_action.json`) | Absolute joint targets (28-D or 43-D) at 20–50 Hz | Resample to 20 Hz; forward kinematics with our G1 MJCF (same joint names) to the `*_ee` site; difference consecutive poses; scale. Steps outside [−1, 1] are flagged and their windows dropped, never clipped. For Unitree's 28-D sets assume waist = 0 and record it. |
+| Grasp: one scalar per hand that interpolates 7 Dex3 joints between our open and closed synergy (`embodiment.py`) | 7 Dex3 joint angles per hand | Project onto the open→closed line, by joint name; keep the residual so poorly fitting grasps can be excluded |
+| State: joint positions and velocities | Positions only | Velocities by finite difference; missing joints marked invalid |
+| Camera: one torso-mounted render, 75° vertical field of view, 112 px | Real head or ego camera, 640×480, different mount, field of view, lighting and background | Centre-crop and resize to 112 px. The viewpoint cannot be matched; store it under its own camera key and treat it as a second domain. The head cameras (Unitree, D435) are the closest match to a later real G1. |
+| Storage: local LeRobot v3 profile with PNG frames in Parquet and a JEPA manifest (`data.py`) | LeRobot v3.0 with AV1 video (Unitree) or v2.1 with H.264 | One-off converter: decode, resize, write PNG, record source repository, revision and file hashes in the manifest; split by episode |
+
+What real data can and cannot give: real images, real hand-object contact and real arm motion on our exact robot, and the visual domain a later real G1 sees. It cannot give play data or failures (except the mncai set), its actions cannot be replayed in our simulator, and the Phase 3 test is in simulation, so any gain must show there.
+
+**Recommendation.** Add one arm, "sim play + open real G1/Dex3 data", next to "sim play only". Train both in Phase 2 with the same budget and compare them at Phase 3. Before Phase 2, a short pre-step (about one week): confirm licenses (use Apache-2.0 and CC-BY-4.0 sets only; ask the Humanoid Everyday authors; skip unlicensed sets), convert the 12 distinct Unitree G1_Dex3 sets plus NVIDIA GR00T-Teleop-G1, and Humanoid Everyday G1 if cleared, and hold out NVIDIA GR00T-N1.7-AppleToPlate as a real-image test set. The pre-step's stop rule: if most converted steps fall outside [−1, 1], or the grasp projection fits badly, drop the arm and record why.
+
 ## Recommended plan
 
 Six gated phases take about five months to a first zero-shot pick-and-place in simulation. Each phase has a stop rule, so a dead end costs weeks, not months. The first zero-shot claim comes in Phase 3, around week 15. Week counts are estimates for one person with AI agents; bars are examples to be fixed in each phase's preregistration.
@@ -106,16 +150,16 @@ Six gated phases take about five months to a first zero-shot pick-and-place in s
 | Phase | Weeks | Goal | Gate (stop rule) |
 | --- | --- | --- | --- |
 | 0. Close and calibrate | 1–2 | Record TASK-083 and close the plate line; reproduce Meta's jepa-wms numbers on this machine | Our planner within about 10 points of the released result on one task, else fix it first |
-| 1. Play corpus | 3–6 | One arm and one hand; 10–50 sim hours of random, perturbed and failed behaviour, full robot state logged | Covers the test workspace and at least 20% of episodes move an object |
-| 2. Robot-grounded LeWM, offline | 7–11 | Plain LeWM vs + robot state vs + joint-change and inverse-dynamics losses, on frozen DINOv2 tokens | A grounded version beats plain LeWM on action sensitivity and short-step ranking on all seeds |
-| **3. Zero-shot reach and grasp** | 12–15 | Short-horizon planning to new image + pose goals never used in training | Example bars: reach 80%, grasp-and-lift 40%; stop JEPA planning if reach stays under 50% after one fix |
+| 1. Play corpus | 3–6 | One arm and one hand; 10–50 sim hours of random, perturbed and failed behaviour, full robot state logged. In parallel, the open-real-data pre-step: check licenses and convert the open real G1 + Dex3 sets ([Open real G1 data](#open-real-g1-data)) | Covers the test workspace and at least 20% of episodes move an object; the real-data arm is dropped if most converted steps fall outside the action range |
+| 2. Robot-grounded LeWM, offline | 7–11 | Plain LeWM vs + robot state vs + joint-change and inverse-dynamics losses, on frozen DINOv2 tokens; the best variant trained twice, on sim play only and on sim play + open real G1/Dex3 data | A grounded version beats plain LeWM on action sensitivity and short-step ranking on all seeds; the data arms are compared at Phase 3, not here |
+| **3. Zero-shot reach and grasp** | 12–15 | Short-horizon planning to new image + pose goals never used in training; both data arms (sim only, sim + real) on the same resets | Example bars: reach 80%, grasp-and-lift 40%; stop JEPA planning if reach stays under 50% after one fix |
 | 4. Pick-and-place with subgoals | 16–21 | Scripted subgoals first, then learned subgoals from the play corpus; JEPA checks each step and re-plans | Clearly beats subgoal-following without a world model; learned subgoals reach half of scripted |
 | 5. Language commands | after Phase 4 | A vision-language model turns a command into subgoals; JEPA plans each short step | New commands and object layouts succeed with no per-task training |
 
 Details that matter:
 
 1. **Phase 0** also runs an action-sensitivity probe on our existing LeWM checkpoints, as a baseline.
-2. **Phase 1** collects play data, not expert demos. Coverage and failures matter more than quality.
+2. **Phase 1** collects play data, not expert demos. Coverage and failures matter more than quality. Open real G1 + Dex3 data is an added arm, not a substitute: it is task demonstrations, mostly without failures.
 3. **Phase 2** reuses the repo's off-by-default options (`state_fusion`, `readout_heads`); `state_fusion` together with `readout_heads` was tried in apple WM v2–v4 and every arm failed its gate set (v4 at TASK-054), so that combination is a control arm here, not the fix. Each arm gets its own preregistration, as now. With cloud GPUs allowed, a V-JEPA 2.1 encoder arm can be added.
 4. **Phase 3** is the first honest zero-shot test. Baselines: hold, random, scripted IK reach and plain LeWM.
 5. **Phase 4** compares against P-3 (task-trained) and a VLM + IK baseline (ZeroDex-style), to show what JEPA adds.
@@ -186,3 +230,18 @@ Pages opened by the research agents on 2026-10-08. Most 2026 entries are preprin
 - [VIRAL](https://arxiv.org/html/2511.15200)
 - [LEGS](https://arxiv.org/html/2606.01458)
 - [Unitree G1_Dex3 ToastedBread dataset](https://huggingface.co/datasets/unitreerobotics/G1_Dex3_ToastedBread_Dataset)
+
+Added 2026-10-09 for [Open real G1 data](#open-real-g1-data) (cards and `meta/info.json` read through the Hugging Face API):
+
+- [Unitree datasets on Hugging Face](https://huggingface.co/unitreerobotics) (205 dataset repositories listed on 2026-10-09)
+- [Unitree G1_Dex3_PickApple_Dataset](https://huggingface.co/datasets/unitreerobotics/G1_Dex3_PickApple_Dataset)
+- [Unitree G1_Dex1_DiverseManip_SingleArm_128x128](https://huggingface.co/datasets/unitreerobotics/G1_Dex1_DiverseManip_SingleArm_128x128)
+- [Humanoid Everyday (GitHub)](https://github.com/physical-superintelligence-lab/Humanoid-Everyday), [paper](https://arxiv.org/abs/2510.08807), [full dataset](https://huggingface.co/datasets/USC-PSI-Lab/humanoid-everyday), [G1 part](https://huggingface.co/datasets/USC-PSI-Lab/Humanoid-Everyday-G1)
+- [NVIDIA PhysicalAI-Robotics-GR00T-Teleop-G1](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-Teleop-G1)
+- [NVIDIA GR00T-N1.7-AppleToPlate](https://huggingface.co/datasets/nvidia/GR00T-N1.7-AppleToPlate)
+- [mncai G1_Dex3_Trash_LocoManipulation](https://huggingface.co/datasets/mncai/G1_Dex3_Trash_LocoManipulation)
+- [NVIDIA PhysicalAI-Robotics-GR00T-X-Embodiment-Sim](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim)
+- [NVIDIA Arena-G1-Static-PickNPlace-Task](https://huggingface.co/datasets/nvidia/Arena-G1-Static-PickNPlace-Task)
+- [NVIDIA Arena-G1-Loco-Manipulation-Task](https://huggingface.co/datasets/nvidia/Arena-G1-Loco-Manipulation-Task)
+- [DexWM (HTML, data section)](https://arxiv.org/html/2512.13644)
+- [Sim-and-Real Co-Training](https://arxiv.org/abs/2503.24361)
