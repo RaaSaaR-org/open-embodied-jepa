@@ -41,7 +41,7 @@ Not an Apple→Plate experiment and not a learned result; R7 does not change.
 
 ## Acceptance Criteria
 
-- [ ] DRAFT preregistration independently reviewed (APPROVE) and merged
+- [x] DRAFT preregistration independently reviewed (APPROVE at afa9c74) and merged (#182)
 - [ ] Stage 0: collector module, runner, gate script, tests, debug smoke (86000–86015);
   independently reviewed and merged (freezes the protocol)
 - [ ] Corpus `data/play-v1` collected on the merged revision; evidence under

@@ -1,7 +1,8 @@
 # TASK-085 — Phase 1: the MuJoCo play corpus `play-v1` (one arm, one Dex3 hand)
 
-**Status: DRAFT** (R23.1–R23.9, decided by Claude under owner delegation). It is frozen when the
-Stage 0 PR (§12) merges; after that, nothing in §2–§10 changes without its own reviewed ruling.
+**Status: FROZEN when the Stage 0 PR merges** (R23.1–R23.9 and R23.16–R23.19, decided by Claude
+under owner delegation). After that merge nothing in §2–§10 changes without its own reviewed
+ruling. Stage 0's record is §14.
 This is Phase 1 of the proposal [JEPA_ZERO_SHOT_PLAN.md](../JEPA_ZERO_SHOT_PLAN.md) ("Play
 corpus"). Its real-data pre-step is a separate task, TASK-086
 ([real_g1_dex3_prestep.md](real_g1_dex3_prestep.md)).
@@ -215,3 +216,28 @@ The Linux PC; MuJoCo on CPU, frames rendered with NVIDIA EGL on the RTX 5080 (as
 corpus), the job under `scripts/gpu_run.sh --wait --min-free-gib 8 --board`; the GL renderer
 string is recorded. Phase 3 renders with the same renderer or declares the difference. Frames are
 not bit-identical across renderers.
+
+## 14. Stage 0 record (R23.16–R23.19)
+
+At `858ff13` (the Stage 0 commit, clean tree), NVIDIA EGL (`NVIDIA Corporation / NVIDIA GeForce
+RTX 5080/PCIe/SSE2 / 4.6.0 NVIDIA 595.91.07`), under `gpu_run.sh`. Code:
+`src/embodied_jepa/play_corpus.py`, `scripts/collect_play_corpus.py`,
+`scripts/measure_play_corpus.py`, `tests/test_play_corpus.py` (layouts, split rule, policy
+bounds, gate arithmetic and rows, the core-import check; a graphics opt-in round trip that also
+checks that one seed gives identical actions and frames twice). Evidence:
+`~/develop/emai/evidence/task085-stage0/` with `SHA256SUMS`.
+
+| Debug run | Seeds | Stored episodes | Commands (mean) | Ended early | Bytes per command | Wall time |
+| --- | --- | --- | --- | --- | --- | --- |
+| smoke, 2 shards × 8, 2 workers | 86000–86015 | 16 / 16 | 6 364 (398) | 2 | 10 601 | 23.6 s |
+| scale, 10 shards × 8, 10 workers | 86016–86095 | 80 / 80 | 28 398 (355) | 20 | 10 680 | 27.8 s |
+
+Both ran the whole path (storage, sidecars, splits 1 / 1 / rest, the gate script); their rows
+(P1-FAIL on G-SIZE, G-HAND, G-OBJ) are what a debug-sized corpus gives and are not evidence.
+Every early end was a right-hand joint passing the 5 rad/s velocity stop (thumb_1 in 20 of 22).
+Reported only, the 60 scale train episodes: an object moved in 73 %, a lift in 17 %, grasp contact
+in 33 %.
+
+**Projection and the two Stage 0 knobs (R23.17).** At 355 commands and 10.7 KB per command, 3 200
+episodes give ≈ 15.8 h and ≈ 12.1 GB in ≈ 15 min with 12 workers; with 39 GB free and TASK-086's
+≈ 7 GB, ≥ 12 GiB stays free. The episode count stays **3 200** and the disk floor **12 GiB**.
