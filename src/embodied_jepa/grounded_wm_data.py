@@ -135,21 +135,36 @@ def load_episode(corpus, shard: str, episode_id: str) -> dict:
     }
 
 
-def _load_worker(args):
-    return load_episode(*args)
+def iter_episodes(corpus, episodes, *, workers: int = 8, ahead: int | None = None):
+    """Yield loaded episodes in order, decoding in a process pool with at most ``ahead``
+    (default 2 x workers) episodes in flight beyond the one being handed over.
 
-
-def iter_episodes(corpus, episodes, *, workers: int = 8):
-    """Yield loaded episodes in order, decoding in a process pool."""
+    ``Pool.imap`` has no such bound: in Stage F's first attempt the decoders ran far ahead of the
+    GPU and the queued episodes (about 15 MB each) filled memory and swap."""
     jobs = [(str(corpus), shard, eid) for shard, eid, _ in episodes]
     if workers <= 1:
         for job in jobs:
             yield load_episode(*job)
         return
     import multiprocessing as mp
+    from collections import deque
 
+    ahead = 2 * int(workers) if ahead is None else int(ahead)
+    if ahead < 1:
+        raise ContractError("ahead must be positive")
     with mp.get_context("spawn").Pool(workers) as pool:
-        yield from pool.imap(_load_worker, jobs, chunksize=2)
+        pending: deque = deque()
+        queue = iter(jobs)
+        for job in queue:
+            pending.append(pool.apply_async(load_episode, job))
+            if len(pending) >= ahead:
+                break
+        while pending:
+            result = pending.popleft().get()
+            job = next(queue, None)
+            if job is not None:
+                pending.append(pool.apply_async(load_episode, job))
+            yield result
 
 
 # ----- the frozen encoder ------------------------------------------------------------------------
