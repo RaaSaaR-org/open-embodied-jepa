@@ -400,3 +400,22 @@ projection.
   and determinism results are not evidence (R24.17); frozen at this PR's merge, the gated stages
   run at the merged revision from a clean tree with evidence in `~/develop/emai/evidence/task087-*`
   (R24.18); R7 does not change (R24.19).
+
+## 16. Run record so far (R24.20)
+
+- **Stage F, attempt 1** (at `dab7475`, 2026-10-09 17:15–18:05 UTC, under the GPU lock): pass A
+  completed (705 fit-sample episodes; 0.9433 of the standardised variance kept at k = 192); pass B
+  stalled at 1 of 2 874 train episodes because the decoder pool (`Pool.imap`) buffered decoded
+  episodes without bound: the main process reached 12.2 GB resident, swap filled and the machine
+  sat at 62 % I/O wait. It was stopped by hand; the partial `latents_train.npy` was deleted after
+  its listing, the log and the projection were kept in
+  `~/develop/emai/evidence/task087-stagef-attempt1/` (`SHA256SUMS`). No feature from it is used.
+- **The fix** (this PR): `iter_episodes` keeps at most 2 × workers episodes in flight beyond the
+  one handed over, in order (a test pins the bound and the order). On 80 + 20 debug episodes
+  the whole featurisation then peaked at 1.7 GB resident. That check ran without the GPU lock
+  (about 100 s of GPU use; the board showed no other holder) — a process slip, recorded here.
+  No rule of §2–§10 changes: this is an implementation fix of Stage F's reader.
+- **R24.20** — Stage F runs again, once, at this fix's merged revision, writing
+  `outputs/task087-features` from scratch; its projection must equal attempt 1's (same fit sample,
+  same code path for pass A) and the report records the comparison. Every later stage runs at
+  that revision. R7 does not change.

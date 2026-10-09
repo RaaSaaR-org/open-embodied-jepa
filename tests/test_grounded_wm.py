@@ -450,3 +450,41 @@ def test_corpus_check_refuses_another_corpus_json(tmp_path):
     with pytest.raises(ContractError):
         gd.verify_corpus(tmp_path)
     assert gd.verify_corpus(tmp_path, pinned=None)["shards"] == {}
+
+
+def test_iter_episodes_bounds_the_look_ahead(monkeypatch):
+    """At most ``ahead`` episodes are submitted beyond the one being consumed, in order."""
+    submitted, consumed = [], []
+
+    class Done:
+        def __init__(self, value):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+    class FakePool:
+        def __init__(self, n):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def apply_async(self, fn, args):
+            submitted.append(args[2])
+            assert len(submitted) - len(consumed) <= 3 + 1  # ahead + the one handed over
+            return Done({"episode_id": args[2]})
+
+    class Ctx:
+        Pool = FakePool
+
+    import multiprocessing
+
+    monkeypatch.setattr(multiprocessing, "get_context", lambda _: Ctx)
+    episodes = [("shard-00", f"play-{i}", i) for i in range(10)]
+    for ep in gd.iter_episodes("corpus", episodes, workers=2, ahead=3):
+        consumed.append(ep["episode_id"])
+    assert consumed == [f"play-{i}" for i in range(10)] == submitted

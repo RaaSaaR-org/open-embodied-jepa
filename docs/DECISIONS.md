@@ -63,6 +63,18 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (ab) — TASK-087 Stage F's first attempt ran out of memory; the decoder's look-ahead is bounded and Stage F runs again (R24.20)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grounded_lewm_v1.md §16](experiments/grounded_lewm_v1.md).
+
+- **R24.20 — Stage F re-runs once** at the fix's merged revision: attempt 1 (at `dab7475`)
+  stalled in pass B when `Pool.imap` buffered decoded episodes without bound (12.2 GB resident,
+  swap full) and was stopped by hand; its partial store was deleted after its record
+  (`~/develop/emai/evidence/task087-stagef-attempt1/`). The fix bounds the look-ahead to 2 ×
+  workers; no protocol rule changes. The re-run's projection is compared with attempt 1's. Every
+  later stage runs at the fix's revision. R7 does not change.
+
 ## Decision 2026-10-09 (aa) — TASK-087 Stage 0: code, debug smoke and determinism; the evaluation runs on the GPU; the protocol is frozen at this merge (R24.15–R24.19)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
