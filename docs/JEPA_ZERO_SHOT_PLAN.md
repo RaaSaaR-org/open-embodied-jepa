@@ -14,18 +14,18 @@ Yes, continue with JEPA, but change the method. Stop the moving-plate line. Buil
 
 ## Where the project stands
 
-LeWM has one gated success in simulation, for one narrow job: predicting where a moving plate will be and choosing the place aim once. Everything else in the loop is a separately trained policy or hand-written code.
+LeWM has gated successes in simulation (TASK-081, replicated with two more model seeds of the same training run in TASK-083) for one narrow job: predicting where a moving plate will be and choosing the place aim once. Everything else in the loop is a separately trained policy or hand-written code.
 
 | Part of the task | Who does it | Status (MuJoCo sim) |
 | --- | --- | --- |
 | Grab the apple | P-3, a behaviour-cloning policy on frozen DINOv2 features (not LeWM) | 40/40 on cohort C (TASK-072; one run, one seed per arm; the random-init encoder control scored 39/40, so pretraining is not shown; cohort C is no longer held out) |
-| Choose where to place | LeWM token predictor + plate readout + solver | 118/128 gated (TASK-081; one run, one model seed, simulation only, under the declared plate condition C1-M); TASK-083, a replication with seeds 66801 and 66802, has no recorded result yet |
+| Choose where to place | LeWM token predictor + plate readout + solver | 118/128 gated (TASK-081; one run, one model seed, simulation only, under the declared plate condition C1-M); TASK-083 (REP-PASS) replicated it with W's other two model seeds on 128 fresh gated resets: 124/128 (66801) and 120/128 (66802), each L-PASS (H-rule 123/128 on that cohort, not measurably better than either); one run, simulation only, C1-M, one corpus, recipe and encoder; "LeWM needed" not shown |
 | Carry and release | e9, a hand-written expert that reads simulator truth | scripted, not learned |
 
 What this does and does not show:
 
 - In TASK-081, W's aim (118/128) beat its action-blind twin (73/128) and its scene-blind twins (39 and 59).
-- "LeWM needed" is not shown: a hand-written rule given the plate law scored 125/128, measurably better (W − H-rule −7/128, 95 % interval −13 to −2). LeWM chooses only the single place aim, on frozen DINOv2 features, with one model seed (66800, flagged `last_two_triggered`).
+- "LeWM needed" is not shown: in TASK-081 a hand-written rule given the plate law scored 125/128, measurably better (W − H-rule −7/128, 95 % interval −13 to −2); in TASK-083 it was not measurably better or worse than either seed, and "LeWM needed" is not shown for either. LeWM chooses only the single place aim, on frozen DINOv2 features; TASK-081 used one model seed (66800, flagged `last_two_triggered`), and the three seeds share one training corpus, recipe and encoder. The solver's effect is not shown.
 - The moving plate is an artificial condition. DECISIONS R2 required later LeWM plate tasks to use a plate the robot must predict, because with a visible plate no world model is needed for the place; TASK-076 then confirmed it: a plain image readout of the plate scored 64/64 with no world model (under TASK-074's 9 cm plate move; one run, one camera, one encoder; the random-init floor also scored 64/64, the image-free clock prior 51/64).
 - LeWM planning the whole motion toward a goal image scored 0/150 per backend on the v1 benchmark (TASK-020).
 - In Isaac Sim the learned pick fails on Isaac's images (apple estimate about 11 cm off). With the scripted pick, W rested the apple on 2 of 4 debug seeds under Newton and 0 of 4 under PhysX (development only, not evidence).
