@@ -76,7 +76,7 @@ is kept as written.
   G-OBJ every object cell ≥ 61 starts and 100 % ≥ 10 contact episodes, G-MOVE 55.9 % (≥ 20 %).
   The bars were close to pass-by-construction (protocol §10); P1-PASS is coverage and interaction,
   not evidence of useful play data. Reported only: lift 10.4 %, grasp contact 21.4 %, 19.6 % of
-  episodes ended early on the 5 rad/s velocity stop. A scripted collector, not a learned result.
+  train episodes ended early, almost all on the 5 rad/s velocity stop. A scripted collector, not a learned result.
 - **R23.25 — R7 does not change.**
 - **R23.26 — TASK-085 closes.** Phase 2 may preregister on `play-v1` train and val; test stays
   unopened.

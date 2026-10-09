@@ -36,7 +36,7 @@ question.
   skipped or excluded; no re-run.
 - 3 200 seeds (850000–853199): **3 194 stored**, 6 discarded as shorter than 50 commands, 0
   errors. Splits 2 874 train / 160 val / 160 test (5 / 5 per shard).
-- `data/play-v1/` (git-ignored, on the SSD): 12.3 GB. Free disk after the run: 27 GB.
+- `data/play-v1/` (git-ignored, on the SSD): 12.3 GB (`df` read 27 GB free on `/` right after the run; not in the evidence files).
 - Evidence: `~/develop/emai/evidence/task085-run/` (collector log, per-shard reports,
   `corpus.json`, `gate_report.json`), `SHA256SUMS` sha256 `5950abf6…12bd`.
 
