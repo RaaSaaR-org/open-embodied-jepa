@@ -384,7 +384,16 @@ projection.
   inverse-dynamics head read its *predicted* pairs (R² 0.48) far better than encoded pairs
   (−0.48).
 - **Determinism:** P-87901 trained twice for 400 updates gave identical weights (state sha256
-  `ad8ed85a2219…` both times).
+  `ad8ed85a2219…` both times), and again in the re-run smoke after the review fixes.
+- **Review of #188 (fixed before the freeze):** Stage F now checks `corpus.json` against
+  TASK-085's recorded sha256 (`06551467…7596`) and every shard's manifest hash against it; Stages
+  T, V and E re-hash the feature store's files; evaluation refuses a checkpoint written by other
+  code (implementation sha256); Stage V refuses anything but the 18 models of §5, and Stage E
+  refuses checkpoints other than the val report's; a started but unfinished job stops the runner
+  and may be re-run once as `-r2`. Reported-only details fixed here: the §9 inverse-dynamics
+  probe fits on every fifth transition of the fit-sample episodes (about 40 000 pairs, for host
+  memory) and chooses its penalty on the val roots' first transitions; each model's Σ wrong,
+  Σ true and their difference are reported. The whole smoke was re-run after these fixes.
 - **Projection of cost:** about 35 min for Stage F; at about 31–37 ms per update, U = 40 000 would
   take about 7 h for the 18 jobs, inside R24.6's 14 h.
 - **R24.15–R24.19** — the Stage 0 code above (R24.15); the evaluation device (R24.16); the smoke
