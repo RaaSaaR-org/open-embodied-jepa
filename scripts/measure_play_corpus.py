@@ -44,6 +44,7 @@ def measure(corpus: Path, *, debug: bool = False) -> dict:
     actions = {s: [] for s in ("train", "val", "test")}
     bytes_total = 0
     shards = []
+    seen_seeds: set = set()
     for entry in summary["shards"]:
         if entry["status"] not in ("complete", "exists-complete"):
             shards.append({"shard": entry["shard"], "status": entry["status"]})
@@ -56,8 +57,28 @@ def measure(corpus: Path, *, debug: bool = False) -> dict:
             continue
         if entry.get("manifest_hash") and store.manifest_hash != entry["manifest_hash"]:
             void.append(f"shard {entry['shard']}: manifest hash differs from corpus.json")
-        if store.manifest["provenance"].get("revision") != summary["revision"]:
+        prov = store.manifest["provenance"]
+        if prov.get("revision") != summary["revision"]:
             void.append(f"shard {entry['shard']}: revision differs")
+        if (prov.get("policy_salt"), prov.get("split_salt")) != (pc.POLICY_SALT, pc.SPLIT_SALT):
+            void.append(f"shard {entry['shard']}: salts differ")
+        args = summary["args"]
+        expected = set(
+            pc.shard_seeds(entry["shard"], first=args["first_seed"], size=args["shard_size"])
+        )
+        seeds_here = [row["metadata"]["seed"] for row in store.manifest["episodes"]]
+        if not set(seeds_here) <= expected or len(set(seeds_here)) != len(seeds_here):
+            void.append(f"shard {entry['shard']}: seeds outside the shard or duplicated")
+        if seen_seeds & set(seeds_here):
+            void.append(f"shard {entry['shard']}: seeds duplicated across shards")
+        seen_seeds.update(seeds_here)
+        rule = pc.split_assignment(seeds_here, n_val=args["n_val"], n_test=args["n_test"])
+        frozen = {
+            k: sorted(int(e.split("-")[1]) for e in store.manifest["splits"][k])
+            for k in ("train", "val", "test")
+        }
+        if frozen != rule:
+            void.append(f"shard {entry['shard']}: frozen splits differ from the rule")
         split_of = {eid: name for name, ids in store.manifest["splits"].items() for eid in ids}
         bytes_total += sum(p.stat().st_size for p in root.rglob("*") if p.is_file())
         shards.append(
@@ -165,6 +186,9 @@ def measure(corpus: Path, *, debug: bool = False) -> dict:
         "void_reasons": void,
         "splits": split_reports,
         "bytes": bytes_total,
+        "discarded_short": sum(e.get("discarded_short", 0) for e in summary["shards"]),
+        "errors": sum(e.get("errors", 0) for e in summary["shards"]),
+        "error_types": sorted({t for e in summary["shards"] for t in e.get("error_types", [])}),
         "shards": shards,
         "reported": {
             "train_by_mode": {

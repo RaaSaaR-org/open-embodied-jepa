@@ -219,20 +219,8 @@ def _play_simulation_class():
 
 
 def _yaw_quat(yaw, name):
-    base = np.array([1.0, 0, 0, 0])
-    if name == "banana":
-        base = np.array([0.70710678, 0, 0.70710678, 0])
-    q = np.array([np.cos(yaw / 2), 0, 0, np.sin(yaw / 2)])
-    w1, x1, y1, z1 = q
-    w2, x2, y2, z2 = base
-    return np.array(
-        [
-            w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2,
-            w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
-            w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
-            w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2,
-        ]
-    )
+    """Body quaternion: a yaw about world z. Lying shapes (the banana) are laid by their geom."""
+    return np.array([np.cos(yaw / 2), 0.0, 0.0, np.sin(yaw / 2)])
 
 
 def make_play_robot(*, image_size=112):
@@ -414,15 +402,15 @@ class PlayPolicy:
         q = [Waypoint(hover, -1.0, int(rng.integers(50, 80)), yaw)]
         if failure == "early_close":
             q.append(Waypoint(hover, closure, int(rng.integers(15, 25)), yaw))
-        q += [
+        q.append(
             Waypoint(
                 aim, close if failure == "early_close" else -1.0, int(rng.integers(40, 60)), yaw
-            ),
-            Waypoint(aim, close, int(rng.integers(25, 40)), yaw),
-        ]
-        if failure == "abort":
+            )
+        )
+        if failure == "abort":  # leave for a random point right after the descent
             self.queue = q + [Waypoint(self._random_hand_point(), -1.0, 30, yaw)]
             return
+        q.append(Waypoint(aim, close, int(rng.integers(25, 40)), yaw))
         q.append(Waypoint(aim + [0, 0, lift], close, int(rng.integers(40, 70)), yaw))
         transfer = np.r_[dest, max(aim[2] + lift, place_z + 0.03)]
         if failure == "drop":

@@ -171,7 +171,10 @@ def test_short_episode_round_trip(tmp_path):
     ep = pc.run_episode(robot, 86099, commands=60)
     a = pc.run_episode(robot, 86099, commands=60)
     assert np.array_equal(ep["actions"], a["actions"])
-    assert np.array_equal(ep["frames"], a["frames"])
+    assert np.array_equal(ep["states"], a["states"])
+    assert np.array_equal(ep["object_position"], a["object_position"])
+    # NVIDIA EGL is not bit-reproducible: a few pixels may differ by one level
+    assert np.abs(ep["frames"].astype(int) - a["frames"]).max() <= 1
     n = len(ep["actions"])
     assert ep["frames"].shape == (n + 1, 112, 112, 3) and ep["states"].shape[0] == n + 1
     assert np.all(ep["actions"][:, :6] == 0) and np.all(ep["actions"][:, 12] == -1)
@@ -191,3 +194,60 @@ def test_short_episode_round_trip(tmp_path):
     side = pc.load_sidecar(tmp_path / "shard", row)
     assert np.array_equal(side["palms"], ep["palms"])
     assert metadata["facts"] == pc.episode_facts(side)
+
+
+@render
+def test_scene_objects_rest_as_declared():
+    robot = pc.make_play_robot()
+    layout = {
+        "plate": [0.48, -0.05],
+        "objects": {
+            "apple": [0.30, -0.25],
+            "cube": [0.40, -0.25],
+            "banana": [0.32, -0.12],
+            "can": [0.45, -0.20],
+        },
+        "yaw": {"banana": 0.7},
+    }
+    robot.reset(1, layout=layout)
+    hold = np.zeros(14, np.float32)
+    hold[12:] = -1
+    for _ in range(pc.SETTLE_COMMANDS):
+        robot.observe()
+        robot.execute(hold)
+    truth = robot.sim.play_truth()
+    for i, name in enumerate(pc.OBJECT_NAMES):
+        z = truth["position"][i][2]
+        assert abs(z - (pc.TABLE_TOP_Z + pc.OBJECTS[name]["rest"])) < 0.004, (name, z)
+    q = truth["quat"][pc.OBJECT_NAMES.index("banana")]
+    # the capsule axis (geom z after the geom quat) must be horizontal
+    w, x, y, z = q
+    body = np.array(
+        [
+            [1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
+            [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
+            [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)],
+        ]
+    )
+    axis = body @ np.array([1.0, 0.0, 0.0])  # geom quat (90 deg about y) maps geom z to body x
+    assert abs(axis[2]) < 0.1
+
+
+@render
+def test_truncated_episode_keeps_t_plus_one_frames(monkeypatch):
+    robot = pc.make_play_robot()
+    original = robot.project_candidates
+    calls = {"n": 0}
+
+    def failing(request):
+        calls["n"] += 1
+        if calls["n"] > 30:
+            raise ContractError("measured joint velocity limit exceeded")
+        return original(request)
+
+    monkeypatch.setattr(robot, "project_candidates", failing)
+    ep = pc.run_episode(robot, 86098, commands=60)
+    assert len(ep["actions"]) == 30 and ep["stop_reason"].startswith("projection")
+    for key in ("frames", "states", "timestamps", "palms", "targets", "object_position"):
+        assert len(ep[key]) == 31, key
+    assert np.allclose(np.diff(ep["timestamps"]), 0.05)

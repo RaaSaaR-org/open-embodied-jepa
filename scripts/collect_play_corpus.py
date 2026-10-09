@@ -46,6 +46,15 @@ def renderer_string() -> str:
 
 
 def run_shard(job: dict) -> dict:
+    report = _run_shard(job)
+    path = Path(job["out"]) / "reports" / f"shard-{job['shard']:02d}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if report["status"] not in ("exists-complete", "exists-excluded") and not path.exists():
+        pc.write_json(path, report)
+    return report
+
+
+def _run_shard(job: dict) -> dict:
     from embodied_jepa.data import DatasetStore
 
     shard, seeds, out = job["shard"], job["seeds"], Path(job["out"])
@@ -57,7 +66,13 @@ def run_shard(job: dict) -> dict:
             return report
         manifest = json.loads((root / "meta/jepa_manifest.json").read_text())
         if manifest.get("splits") is not None:
-            report["status"] = "exists-complete"
+            existing = DatasetStore(root)
+            report.update(
+                status="exists-complete",
+                stored=len(existing.manifest["episodes"]),
+                manifest_hash=existing.manifest_hash,
+                splits={k: len(v) for k, v in existing.manifest["splits"].items()},
+            )
             return report
         raise FileExistsError(f"incomplete shard exists, inspect before recovery: {root}")
     free = pc.free_gib(out)
@@ -92,8 +107,13 @@ def run_shard(job: dict) -> dict:
         row = {"seed": seed}
         try:
             ep = pc.run_episode(robot, seed, commands=job["commands"])
-        except Exception as error:  # a MuJoCo error discards the episode (protocol §5)
-            row.update(status="error", error=repr(error), seconds=time.time() - t0)
+        except Exception as error:  # discards the episode (protocol §5); type recorded
+            row.update(
+                status="error",
+                error=repr(error),
+                error_type=type(error).__name__,
+                seconds=time.time() - t0,
+            )
             report["episodes"].append(row)
             continue
         commands = len(ep["actions"])
@@ -130,6 +150,7 @@ def run_shard(job: dict) -> dict:
         splits={k: len(v) for k, v in split.items()},
         seconds=time.time() - started,
     )
+    robot.close()
     return report
 
 
@@ -190,10 +211,6 @@ def main(argv=None) -> int:
     reports.sort(key=lambda r: r["shard"])
     reports_dir = out / "reports"
     reports_dir.mkdir(exist_ok=True)
-    for report in reports:
-        path = reports_dir / f"shard-{report['shard']:02d}.json"
-        if not path.exists():
-            pc.write_json(path, report)
     summary = {
         "task": "TASK-085",
         "protocol": "docs/experiments/play_corpus_v1.md",
@@ -205,8 +222,22 @@ def main(argv=None) -> int:
         "args": vars(args),
         "seconds": time.time() - started,
         "renderers": sorted({r.get("renderer", "") for r in reports} - {""}),
+        "policy_salt": pc.POLICY_SALT,
+        "split_salt": pc.SPLIT_SALT,
         "shards": [
-            {k: r.get(k) for k in ("shard", "status", "stored", "manifest_hash", "splits", "seeds")}
+            {
+                **{
+                    k: r.get(k)
+                    for k in ("shard", "status", "stored", "manifest_hash", "splits", "seeds")
+                },
+                "discarded_short": sum(
+                    e.get("status") == "discarded-short" for e in r.get("episodes", [])
+                ),
+                "errors": sum(e.get("status") == "error" for e in r.get("episodes", [])),
+                "error_types": sorted(
+                    {e["error_type"] for e in r.get("episodes", []) if "error_type" in e}
+                ),
+            }
             for r in reports
         ],
     }
