@@ -4,7 +4,7 @@ aliases:
 - TASK-086
 title: 'Phase 1 real-data pre-step: license check and conversion of open real G1 + Dex3 data'
 slug: phase-1-real-g1-dex3-data-pre-step
-status: in-progress
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -15,6 +15,7 @@ tags:
 - licensing
 - preregistration
 - phase-1
+- r-drop-grasp
 sprint: ''
 depends_on:
 - "[[TASK-084]]"
@@ -43,8 +44,17 @@ Not an Apple→Plate experiment and not a learned result; R7 does not change.
 ## Acceptance Criteria
 
 - [x] DRAFT preregistration independently reviewed (APPROVE at afa9c74) and merged (#182)
-- [ ] Converter, tests and license record; independently reviewed and merged (freezes it)
-- [ ] Downloads within the disk budget, conversion run, evidence under
+- [x] Converter, tests and license record; independently reviewed and merged (freezes it)
+- [x] Downloads within the disk budget, conversion run, evidence under
   `~/develop/emai/evidence/task086-*` with `SHA256SUMS`
-- [ ] Results (R-KEEP / R-DROP-RANGE / R-DROP-GRASP / R-VOID) and DECISIONS entry, reviewed and
+- [x] Results (R-KEEP / R-DROP-RANGE / R-DROP-GRASP / R-VOID) and DECISIONS entry, reviewed and
   merged; R7 unchanged
+
+## Outcome
+
+**R-DROP-GRASP** (R23.27–R23.30). #182 (DRAFT), #184 (converter, frozen, `f3f71b7`), the run at
+`f3f71b7`: pooled R-RANGE 5.5 % (passes), R-GRASP median residual 0.487 / 0.461 rad (fails the
+0.15 bar). The real-data arm is dropped for Phase 2. Evidence
+`~/develop/emai/evidence/task086-run/`. Results:
+[real_g1_dex3_prestep_results.md](../../../docs/experiments/real_g1_dex3_prestep_results.md).
+Open item for the owner: the Humanoid Everyday G1 license (authors not asked).

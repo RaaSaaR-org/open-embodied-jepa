@@ -63,6 +63,27 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (y) — TASK-086 ends R-DROP-GRASP: the open real G1 + Dex3 arm is dropped for Phase 2; R7 does not change; TASK-086 closes (R23.27–R23.30)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[real_g1_dex3_prestep_results.md](experiments/real_g1_dex3_prestep_results.md); protocol frozen at
+`f3f71b7` (#184).
+
+- **R23.27 — the run.** Every declared set downloaded at a pinned revision with its expected
+  license tag (3.4 GB raw, deleted after conversion), converted at `f3f71b7`; evidence
+  `~/develop/emai/evidence/task086-run/` (`SHA256SUMS` `4f1aef32…e83c`).
+- **R23.28 — R-DROP-GRASP.** Pooled over the 13 training-eligible sets (3 946 episodes, 23.0 h
+  converted): R-RANGE 5.5 % of valid steps with an arm |a| > 1 (bar 0.5, passes); R-GRASP median
+  residual 0.487 rad left and 0.461 rad right (bar 0.15, fails). The arm "sim play + open real
+  G1/Dex3 data" is dropped; Phase 2 is planned on sim play only. Reported only: NVIDIA
+  GR00T-Teleop-G1 alone fits the synergy (0.095 / 0.109 rad); every Unitree set is at
+  0.33–0.57 rad; GraspSquare is byte-for-byte BlockStacking in decoded states and actions; all
+  Unitree PickApple episodes are labelled "Pick up the red cup on the table."; the held-out
+  AppleToPlate set did not convert under the assumed joint layout (0 segments kept).
+- **R23.29 — R7 does not change.**
+- **R23.30 — TASK-086 closes.** A Teleop-only real arm or a per-provider Unitree hand mapping
+  would each need its own preregistration and ruling; neither is decided here.
+
 ## Decision 2026-10-09 (x) — TASK-085 ends P1-PASS: the play corpus `play-v1` (16.1 h) covers the declared test workspace and moves an object in 56 % of train episodes; R7 does not change; TASK-085 closes (R23.23–R23.26)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
