@@ -92,6 +92,7 @@ is kept as written.
 - **R23.21 — frozen** at this merge; the run uses the merged revision on CPU, evidence in
   `~/develop/emai/evidence/task086-run/`.
 - **R23.22 — R7 does not change.**
+
 ## Decision 2026-10-09 (v) — TASK-085 Stage 0: collector, debug smoke and scale probe; the protocol is frozen at this merge (R23.16–R23.19)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
