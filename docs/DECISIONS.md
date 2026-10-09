@@ -63,6 +63,24 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (x) — TASK-085 ends P1-PASS: the play corpus `play-v1` (16.1 h) covers the declared test workspace and moves an object in 56 % of train episodes; R7 does not change; TASK-085 closes (R23.23–R23.26)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[play_corpus_v1_results.md](experiments/play_corpus_v1_results.md); protocol frozen at `3ee2557`
+(#183).
+
+- **R23.23 — the run.** At `3ee2557`, NVIDIA EGL under one GPU lock, 1 025 s: 3 194 of 3 200
+  episodes stored (6 too short, 0 errors), 2 874 / 160 / 160, 12.3 GB in `data/play-v1/`; evidence
+  `~/develop/emai/evidence/task085-run/` (`SHA256SUMS` `5950abf6…12bd`).
+- **R23.24 — P1-PASS.** G-SIZE 16.06 h (≥ 10), G-HAND 97.7 % of hand cells ≥ 200 frames (≥ 95 %),
+  G-OBJ every object cell ≥ 61 starts and 100 % ≥ 10 contact episodes, G-MOVE 55.9 % (≥ 20 %).
+  The bars were close to pass-by-construction (protocol §10); P1-PASS is coverage and interaction,
+  not evidence of useful play data. Reported only: lift 10.4 %, grasp contact 21.4 %, 19.6 % of
+  train episodes ended early, almost all on the 5 rad/s velocity stop. A scripted collector, not a learned result.
+- **R23.25 — R7 does not change.**
+- **R23.26 — TASK-085 closes.** Phase 2 may preregister on `play-v1` train and val; test stays
+  unopened.
+
 ## Decision 2026-10-09 (w) — TASK-086's converter; the protocol is frozen at this merge (R23.20–R23.22)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
@@ -74,6 +92,7 @@ is kept as written.
 - **R23.21 — frozen** at this merge; the run uses the merged revision on CPU, evidence in
   `~/develop/emai/evidence/task086-run/`.
 - **R23.22 — R7 does not change.**
+
 ## Decision 2026-10-09 (v) — TASK-085 Stage 0: collector, debug smoke and scale probe; the protocol is frozen at this merge (R23.16–R23.19)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
