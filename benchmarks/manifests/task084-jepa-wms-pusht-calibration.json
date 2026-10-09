@@ -5,19 +5,49 @@
   "frozen_revision": "176258b14f2743a00c5dd8806348bb7e2255fc4b",
   "outcome": "P0-PASS",
   "part_a": {
-    "published": {"source": "arXiv 2512.24497 v1 Table 1 / v4 Table 2", "percent": 70.2, "sd": 2.8},
+    "published": {
+      "source": "arXiv 2512.24497 v1 Table 1 / v4 Table 2",
+      "percent": 70.2,
+      "sd": 2.8
+    },
     "upstream_revision": "13cf1d9c7e476f53c17714d2e0f1dc239a883ce0",
-    "checkpoint": {"file": "jepa_wm_pusht.pth.tar", "sha256": "9beca3eafe0739c3b3adb5d734fa435ccbda0fea8a65d53d4cccec176aaaa0eb"},
+    "checkpoint": {
+      "file": "jepa_wm_pusht.pth.tar",
+      "sha256": "9beca3eafe0739c3b3adb5d734fa435ccbda0fea8a65d53d4cccec176aaaa0eb"
+    },
     "dataset_zip_sha256": "442f5dee246edf670964ed7bdecd248683cd6d00580fa0e4d458abb53f92da08",
     "dinov2_weights_sha256": "b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9",
     "dinov2_hub_code_sha256": "5c0d48cae201d8c81d185589ecad6fd85d3cee63365a20b71ed7ce3f863abbc9",
-    "meta_seeds": [1, 2, 3, 4],
+    "meta_seeds": [
+      1,
+      2,
+      3,
+      4
+    ],
     "episodes_per_arm": 96,
-    "upstream": {"successes": 67, "wilson95_percent": [59.99, 78.07]},
-    "ours": {"successes": 83, "wilson95_percent": [78.20, 91.91]},
+    "upstream": {
+      "successes": 67,
+      "wilson95_percent": [
+        59.99,
+        78.07
+      ]
+    },
+    "ours": {
+      "successes": 83,
+      "wilson95_percent": [
+        78.2,
+        91.91
+      ]
+    },
     "ours_minus_upstream_points": 16.67,
-    "paired_bootstrap95_points": [7.29, 26.04],
-    "discordant": {"upstream_only": 4, "ours_only": 20},
+    "paired_bootstrap95_points": [
+      7.29,
+      26.04
+    ],
+    "discordant": {
+      "upstream_only": 4,
+      "ours_only": 20
+    },
     "decision_json_sha256": "d50c62b32764f61944e7e76d982636a9ecadd56267de41743a63d4af37d2d7f9",
     "evidence": "~/develop/emai/evidence/task084-run/",
     "evidence_sha256sums_sha256": "7754187889369e15dc8b35fd228c27cac5a800a6009eb6b55e5f1d1582a4bf9a",
@@ -32,7 +62,8 @@
       "66800": "891d26640e82ab8fce62c32b7d4a7a9eba99ae1babb8614777c668fe498876b8",
       "66801": "27aeadab1476e5097b550f2a17c5de36ef1ea3c75852f4556eab0d54773ec193",
       "66802": "ba2614ec271525e0ca9f3a5980afd080e2ae00302e145d96adb0f13cc6ef97b4"
-    }
+    },
+    "evidence_sha256sums_sha256": "4656c1b5f761fc1b5fd423cd5d4409570fb46498758c0af98156d8636fe416c4"
   },
   "r7_changed": false
 }

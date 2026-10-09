@@ -80,7 +80,7 @@ normalised rank 0.5.
 | 2 | 1.10 · 1.10 · 1.09 | 1.77 · 11.5 · 3.18 | 0.48 · 0.50 · 0.49 | 0.160 · 0.184 · 0.232 | 0.212 · 0.220 · 0.217 |
 | 4 | 1.13 · 1.13 · 1.13 | 2.09 · 14.8 · 4.96 | 0.41 · 0.42 · 0.42 | 0.292 · 0.308 · 0.376 | 0.161 · 0.145 · 0.139 |
 | 8 | 1.37 · 1.36 · 1.36 | 2.65 · 18.1 · 5.73 | 0.29 · 0.30 · 0.30 | 0.440 · 0.396 · 0.428 | 0.099 · 0.101 · 0.081 |
-| 16 | 1.84 · 1.74 · 1.77 | 3.93 · 17.8 · 5.06 | 0.19 · 0.20 · 0.20 | 0.700 · 0.608 · 0.656 | 0.030 · 0.053 · 0.038 |
+| 16 | 1.84 · 1.74 · 1.77 | 3.93 · 17.7 · 5.06 | 0.19 · 0.20 · 0.20 | 0.700 · 0.608 · 0.656 | 0.030 · 0.053 · 0.038 |
 | 30 | 2.80 · 2.67 · 2.66 | 5.95 · 16.6 · 5.47 | 0.14 · 0.15 · 0.15 | 0.916 · 0.876 · 0.900 | 0.006 · 0.010 · 0.008 |
 | 60 | 3.77 · 3.59 · 3.66 | 6.79 · 16.2 · 6.15 | 0.15 · 0.15 · 0.15 | 0.924 · 0.900 · 0.940 | 0.005 · 0.007 · 0.004 |
 
@@ -96,7 +96,7 @@ What this baseline says, within its scope:
   among 16 on 14–19 % of roots (about 2–3 × chance). The discrimination grows with the horizon:
   about 40–44 % top-1 at h = 8 and 88–94 % at h = 30–60, where whole 30–60-step command
   sequences, not single steps, are being told apart.
-- **The zero-command ratio differs widely between seeds** (1.43–7.15 at h = 1, 6.2–16.2 at
+- **The zero-command ratio differs widely between seeds** (1.43–7.15 at h = 1, 6.1–16.2 at
   h = 60), while the wrong-command ratio and the ranking agree closely. An all-zero command
   sequence is probably far from the corpus's executed commands (not checked here), so this ratio
   says more about how a model extrapolates than about how it uses actions; the wrong-command ratio
