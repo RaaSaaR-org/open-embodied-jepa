@@ -63,6 +63,23 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (aa) — TASK-087 Stage 0: code, debug smoke and determinism; the evaluation runs on the GPU; the protocol is frozen at this merge (R24.15–R24.19)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grounded_lewm_v1.md §15](experiments/grounded_lewm_v1.md).
+
+- **R24.15 — Stage 0 code:** `grounded_wm.py`, `grounded_wm_data.py`, `grounded_wm_model.py`
+  (opt-in; `import embodied_jepa` stays torch-free), the featurise, train and evaluate scripts, the
+  stage runner `run_task087.sh` (one GPU lock per job) and 31 tests; no existing file changes.
+- **R24.16 — evaluation device:** Stages V and E run on the RTX 5080 under `gpu_run.sh` with the
+  strict deterministic CUDA set-up (decided before the freeze; the protocol left it open).
+- **R24.17 — the debug smoke and determinism check are not evidence:** every stage ran end to end
+  on 12 + 3 episodes with debug seeds; one job trained twice gave identical weights; 31–37 ms per
+  update; the smoke's P2-PLAIN-INVALID row is an untrained model's.
+- **R24.18 — frozen** at this PR's merge; the gated stages run at the merged revision from a clean
+  tree; evidence in `~/develop/emai/evidence/task087-*`.
+- **R24.19 — R7 does not change.**
+
 ## Decision 2026-10-09 (z) — TASK-087 (Phase 2): robot-grounded LeWM on `play-v1`, offline; DRAFT preregistration (R24.1–R24.14; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30).** Phase 2 of
