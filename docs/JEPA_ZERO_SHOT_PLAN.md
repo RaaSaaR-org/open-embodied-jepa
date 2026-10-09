@@ -19,7 +19,7 @@ LeWM has gated successes in simulation (TASK-081, replicated with two more model
 | Part of the task | Who does it | Status (MuJoCo sim) |
 | --- | --- | --- |
 | Grab the apple | P-3, a behaviour-cloning policy on frozen DINOv2 features (not LeWM) | 40/40 on cohort C (TASK-072; one run, one seed per arm; the random-init encoder control scored 39/40, so pretraining is not shown; cohort C is no longer held out) |
-| Choose where to place | LeWM token predictor + plate readout + solver | 118/128 gated (TASK-081; one run, one model seed, simulation only, under the declared plate condition C1-M); TASK-083 (REP-PASS) replicated it with W's other two model seeds on 128 fresh gated resets: 124/128 (66801) and 120/128 (66802), each L-PASS (H-rule 123/128 on that cohort, not measurably better than either); one run per seed, simulation only, C1-M, one corpus, recipe and encoder; "LeWM needed" not shown |
+| Choose where to place | LeWM token predictor + plate readout + solver | 118/128 gated (TASK-081; one run, one model seed, simulation only, under the declared plate condition C1-M); TASK-083 (REP-PASS) replicated it with W's other two model seeds on 128 fresh gated resets: 124/128 (66801) and 120/128 (66802), each L-PASS (H-rule 123/128 on that cohort, not measurably better than either); one run, simulation only, C1-M, one corpus, recipe and encoder; "LeWM needed" not shown |
 | Carry and release | e9, a hand-written expert that reads simulator truth | scripted, not learned |
 
 What this does and does not show:
