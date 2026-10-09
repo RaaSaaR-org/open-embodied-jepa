@@ -69,7 +69,7 @@ is kept as written.
 [play_corpus_v1.md §14](experiments/play_corpus_v1.md).
 
 - **R23.16 — Stage 0 code** (`play_corpus.py`, `collect_play_corpus.py`, `measure_play_corpus.py`,
-  tests) at `858ff13`; debug smoke (86000–86015) and scale probe (86016–86095) ran the whole path;
+  tests) at `858ff13` (code identical to `8ff66c5`); debug smoke (86000–86015) and scale probe (86016–86095) ran the whole path;
   their P1-FAIL rows are debug-sized and not evidence.
 - **R23.17 — knobs unchanged:** 3 200 episodes, 12 GiB disk floor (projection ≈ 15.8 h,
   ≈ 12.1 GB, ≈ 15 min).

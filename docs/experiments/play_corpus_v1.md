@@ -219,7 +219,8 @@ not bit-identical across renderers.
 
 ## 14. Stage 0 record (R23.16–R23.19)
 
-At `858ff13` (the Stage 0 commit, clean tree), NVIDIA EGL (`NVIDIA Corporation / NVIDIA GeForce
+At `858ff13` (the Stage 0 commit before its rebase onto `52ac559`; its `src`, `scripts` and `tests`
+are identical to `8ff66c5`, this PR's code commit), clean tree, NVIDIA EGL (`NVIDIA Corporation / NVIDIA GeForce
 RTX 5080/PCIe/SSE2 / 4.6.0 NVIDIA 595.91.07`), under `gpu_run.sh`. Code:
 `src/embodied_jepa/play_corpus.py`, `scripts/collect_play_corpus.py`,
 `scripts/measure_play_corpus.py`, `tests/test_play_corpus.py` (layouts, split rule, policy
