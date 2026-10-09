@@ -79,8 +79,8 @@ Stage 0 PR merges. The rulings R24.1–R24.14 are listed in its §14. In short:
   model seeds each (87100–87102), paired windows, one architecture and budget.
 - **Gate** (R24.10): on the untouched test split, an eligible arm beats P of the same seed on
   action sensitivity (wrong / true) and top-1 of 16 candidate command sequences at h = 1, 4 and 8,
-  on all three seeds, with an accuracy margin δ measured from P's val seed spread and a copy-last
-  floor; rows P2-VOID / P2-PLAIN-INVALID / P2-PASS / P2-SHORT / P2-FAIL. No bar is a guessed
+  on all three seeds, with an accuracy margin δ measured on val by the gate's own bootstrap
+  statistic over pairs of P's seeds, and a copy-last floor; rows P2-VOID / P2-PLAIN-INVALID / P2-PASS / P2-SHORT / P2-FAIL. No bar is a guessed
   absolute number.
 - **Stop rule** (R24.11): P2-FAIL takes S and G off Phase 3's table; nothing else closes.
 - **R24.14 — R7 does not change**, whatever the row: this is an offline world-model comparison,

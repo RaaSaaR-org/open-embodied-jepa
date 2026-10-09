@@ -27,8 +27,8 @@ step and 40–44 % at eight.
   manifest hash checked against TASK-085's evidence). Splits as frozen: train 2 874, val 160,
   test 160 episodes. **Train** fits everything (features' normalisation and projection, state
   and label moments, the models). **Val** selects checkpoints and sets δ (§6.4). **Test** is not
-  read, decoded or featurised until the gated evaluation (Stage E, §9), after the val report is
-  written and hashed.
+  read, decoded or featurised until Stage F′ (§12), which starts only after the val report is
+  written and its sha256 recorded.
 - **Frames:** `onboard_rgb`, 112 × 112, 20 Hz; T stored commands, T + 1 frames per episode.
 - **Actions:** the stored executed `ee_delta_grasp_v0` actions (14-D, normalised to [−1, 1]). The
   left arm's six dimensions (constant 0) and left grasp (constant −1) stay in the input; models
@@ -85,26 +85,48 @@ width), depth 4, 4 heads of 48, MLP width 768, `pred_proj` hidden width 768.
 | **N** — no action | latent, actions replaced by 0 | latent loss | floor (trained) |
 | **copy-last** | — | — | floor (the start latent at every horizon) |
 
-- **S, recursion.** At the start frame the state token is the embedding of the measured state;
-  at later steps of a roll-out it is the predictor's own output in the state slot (after
-  `pred_proj`), carried forward unsupervised. No future robot state is ever read.
-- **G, recursion and losses.** The state slot's output goes through a head (MLP 192 → 256 → 28)
-  that predicts the change of the standardised state; the next step's state token is the
-  embedding of the current state plus that change. **Joint-change loss:** mean squared error of
-  the predicted change against the measured change, in standardised units, weight 1.
-  **Inverse-dynamics loss** (AD-WM's action recovery): an MLP (2 × 16 × 192 → 512 → 7) reads the
-  input latent and the *predicted* next latent of every step and predicts the executed action's
-  seven played dimensions (right arm 6–11, right grasp 13); mean squared error, weight 1. Applied
-  to predicted latents, so it shapes the predictor; the frozen encoder cannot change.
+The two training passes of §5 are a **teacher-forced** pass (every frame t of the window
+predicts frame t + 1 from the encoded latent of t) and a **recursive** pass (an 8-step roll-out
+from the window's first frame on the model's own predictions). Measured robot state of later
+frames is used **in training only**, where this list says; at evaluation (§7) a roll-out reads the
+root's encoded latent and the root's measured state and nothing later.
+
+- **S.** Teacher-forced: the state token of frame t is the embedding of the measured state at t.
+  Recursive: at the first step the embedding of the measured state at the window's first frame;
+  at later steps the predictor's own output in the state slot at the previous step (after the
+  transformer's final LayerNorm; `pred_proj` acts on the 16 visual tokens only), carried forward
+  and never supervised. No loss reads the state slot.
+- **G.** The state slot's output goes through a head (MLP 192 → 256 → 28) that predicts the
+  change of the standardised state. Teacher-forced: the state token of frame t is the embedding of
+  the measured state at t, and the head's output is compared with the measured change from t to
+  t + 1. Recursive: the first state token embeds the measured state at the first frame; the
+  predicted state of step k + 1 is the predicted state of step k plus the head's change (the
+  measured state at step 0), and the next state token is its embedding; it is compared with the
+  measured state at step k + 1. **Joint-change loss:** the mean of the two mean squared errors
+  (teacher-forced changes, recursive states), in standardised units, weight 1.
+  **Inverse-dynamics loss** (AD-WM's action recovery): an MLP (2 × 16 × 192 → 512 → 7) reads an
+  input latent and the *predicted* next latent and predicts the executed action's seven played
+  dimensions (right arm 6–11, right grasp 13). Teacher-forced pairs: (encoded latent of t,
+  prediction of t + 1 from it). Recursive pairs: (the latent the step started from — the encoded
+  first frame at step 0, the previous prediction later — and the step's prediction). The loss is
+  the mean of the two pairs' mean squared errors, weight 1. Applied to predicted latents, so it
+  shapes the predictor; the frozen encoder cannot change.
 - **C, adapted.** The repository's `state_fusion` adds a learned state embedding to the latent and
   makes the fused latent the prediction target; here the target must stay the shared visual
-  latent (§3), so the embedding is added to the input tokens only (the start frame, and every
-  teacher-forced frame). `readout_heads` regressed declared physical readouts; here the readout
-  is the right palm position, from encoded and predicted latents (MLP 3 072 → 256 → 3), weight 1.
-  C is a control: it cannot produce the pass row.
-- **I** is G's inverse-dynamics loss on P, without state. It is reported to separate the loss from
+  latent (§3), so the embedding is added to the input tokens only: teacher-forced, the embedding
+  of the measured state at t is added to every token of frame t; recursive, it is added (the
+  measured state at the first frame) at the first step only, and nothing is added at later steps.
+  `readout_heads` regressed declared physical readouts; here the readout is the right palm
+  position (a training label from the sidecar), read from the encoded latents of every window
+  frame and from the recursive predictions (MLP 3 072 → 256 → 3); the loss is the sum of the two
+  mean squared errors in standardised units, weight 1. C is a control: it cannot produce the pass
+  row.
+- **I** is G's inverse-dynamics loss (both pair kinds) on P, without state. It is reported to separate the loss from
   the state input; it cannot produce the pass row.
-- Loss weights are 1 and were not tuned; no arm has a hyper-parameter search.
+- Loss weights are 1 and were not tuned; no arm has a hyper-parameter search. S, G and C carry
+  extra parameters (the state embedding and heads) and G and I extra compute per update; the
+  update budget U is the same for every arm and is set from P (§6.1). Per-arm parameter counts
+  are reported.
 
 ## 5. Training (identical for every trained arm)
 
@@ -119,6 +141,8 @@ width), depth 4, 4 heads of 48, MLP width 768, `pred_proj` hidden width 768.
 - **Updates U** (equal for every arm) by the rule of §6.1; selection every U / 20 updates.
 - **Model seeds** 87100, 87101, 87102 for every trained arm (3 per arm, 18 jobs). Each model is
   initialised under `torch.manual_seed(seed)`.
+- Selection checkpoints are kept in host memory (as TASK-077's trainer); only the kept checkpoint
+  is written.
 - **Device:** the RTX 5080, one `scripts/gpu_run.sh --wait --min-free-gib 8 --board` invocation
   per job (the lock is released between jobs), the repository's deterministic CUDA set-up
   (`devices.py`). A job that exceeds its cap (§6.1) stops; it may be re-run once, as
@@ -150,11 +174,15 @@ Before the test split is read, every kept model is evaluated on the val roots wi
 statistics, and the val report is written and its sha256 recorded in the task file and the run
 log. Val numbers are not gated: val selected the checkpoints.
 
-### 6.4 δ, the accuracy margin, measured on val
+### 6.4 δ, the accuracy margin, measured on val with the gate's own statistic
 
-For h ∈ {1, 4, 8}: δ_h = max / min − 1 of P's three seeds' val true-command latent error at h
-(from the val report). It is the measured seed-to-seed spread of plain LeWM's accuracy and is the
-only margin in the gate; it is fixed before the test split is opened.
+For h ∈ {1, 4, 8}: on the val roots, for each ordered pair (i, j) of P's three seeds (i ≠ j, six
+pairs), compute the statistic that (c) uses on test — the upper 97.5 % cluster-bootstrap bound
+(over val episodes, §7's bootstrap with salt 8713) of acc_h(P_i) / acc_h(P_j). δ_h is the largest
+of the six, minus 1 (0 if that is negative). It is how far the gate's upper bound reaches when two
+equally trained plain models are compared, so an arm as accurate as another plain seed passes (c)
+by construction of the bar. It is the only margin in the gate, is written into the val report and
+is fixed before the test split is opened.
 
 ## 7. Statistics (Stage E, test split)
 
@@ -164,7 +192,9 @@ only margin in the gate; it is fixed before the test split is opened.
   once (salt 8711). **Candidates:** for each root, its own commands and those of 15 roots from
   other episodes (distinct, drawn once, salt 8712). The same tables serve every arm and seed.
 - For each arm, seed and h ∈ {1, 2, 4, 8, 16}, every model rolls out from the root's encoded latent
-  (and, for S, G and C, the root's measured state):
+  (and, for S, G and C, the root's measured state) — under the root's own commands, the wrong
+  commands and every candidate alike — and every error is measured against **the root's own**
+  encoded latent h steps later:
   - **action sensitivity** `sens_h` = Σ_roots wrong-command latent error at h / Σ_roots
     true-command latent error at h (TASK-084's wrong / true, ratio of sums);
   - **short-step ranking** `top1_h`: each candidate is scored by the latent error at h against the
@@ -174,7 +204,9 @@ only margin in the gate; it is fixed before the test split is opened.
     error at h; zero / true is reported.
 - **Intervals:** a cluster bootstrap over **test episodes** (10 000 resamples, salt 8713); ratio of
   sums per resample; paired differences on the same resamples. Gate intervals are two-sided
-  **97.5 %** (Bonferroni over the two eligible arms); the others are reported at 95 %.
+  **97.5 %**: the claim is that S *or* G passes, so the per-arm level is Bonferroni-corrected over
+  the two eligible arms; within an arm the conditions are conjunctive (all must hold), which needs
+  no correction. The others are reported at 95 %.
 
 ## 8. Gate and rows (first match)
 
@@ -212,14 +244,18 @@ What each row leads to (the plan's stop rule for this phase):
 
 **Why these bars.** Every bar is relative to measured floors or spreads, not a guessed absolute
 number (the lesson of TASK-074, whose readout bar sat below the readout's own measured error):
-(a) and (b) compare with plain LeWM on the same roots and seeds; (c)'s margin is plain LeWM's
-measured seed spread on val; (d) and row 2 use the copy-last and no-action floors. Requiring all
+(a) and (b) compare with plain LeWM on the same roots and seeds; (c)'s margin is how far the same
+upper bound reaches between two equally trained plain seeds on val (§6.4); (d) and row 2 use the copy-last and no-action floors. Requiring all
 three seeds and all three horizons is conjunctive and therefore strict; with 160 test episodes
 the per-seed intervals are expected to be narrow for the latent errors and wider for top-1, which
 is a proportion over a few thousand roots clustered in 160 episodes.
 
 ## 9. Reported only (no gate)
 
+- The absolute separation Σ wrong-command error − Σ true-command error per arm and its paired
+  difference to P: wrong / true rises when the true-command error falls, so an arm with state
+  input could gain on (a) through accuracy alone; the separation shows whether wrong commands are
+  also told apart in absolute terms.
 - Every statistic at h ∈ {2, 16} (16 is outside the training horizon), zero / true, the normalised
   rank, and all of §7 for C, I and N.
 - **Collapse diagnostic:** the effective rank (exponential of the entropy of the normalised
@@ -230,10 +266,18 @@ is a proportion over a few thousand roots clustered in 160 episodes.
   own over the first h steps (to 10⁻⁶; no model can rank those) — the ranking ceiling is one minus
   it; and an inverse-dynamics probe (ridge on the train fit sample, its penalty chosen on val) from
   encoded (z_t, z_{t+1}) to the seven played action dimensions, its R² on test — how much of one
-  command is visible in one encoded frame pair.
+  command is visible in one encoded frame pair. The ranking ceiling is reported separately for
+  roots at start frame 0 and for later roots.
 - G's joint-change error against no change at h, C's palm readout error, G's and I's
-  inverse-dynamics R² on encoded and on predicted pairs.
-- Per-update time, GPU memory, `last_two_triggered`, kept updates.
+  inverse-dynamics R² on encoded and on predicted pairs. A predicted-pair R² well above the
+  encoded-pair probe's R² would mean the inverse-dynamics loss has put action information into the
+  predicted latent beyond what frames show.
+- **How a G pass is worded (fixed now).** If G produces P2-PASS or P2-SHORT and I also meets
+  (a)–(d) on all seeds at the same horizons, the result says the gain is not shown to need the
+  state input (the inverse-dynamics loss alone may carry it); if the predicted-pair R² exceeds the
+  encoded-pair probe's, the result says the sensitivity gain may partly be action information
+  placed in the prediction rather than better dynamics. Neither changes the row.
+- Per-update time, GPU memory, parameter counts, `last_two_triggered`, kept updates.
 
 ## 10. Seeds and salts
 
@@ -261,8 +305,10 @@ other joint position has std ≤ 0.006 rad. No model was trained before this dra
   twice, identical weights). Smoke numbers are not results.
 - **Frozen** when the Stage 0 PR merges; the gated stages run at the merged revision from a clean
   tree.
-- **Stages after the freeze:** F (featurise train and val; one GPU job), B (the budget probe,
-  §6.1), T (18 jobs), V (the val report; δ), then F′ (featurise test with the frozen projection,
+- **Stages after the freeze:** F (featurise train and val; one GPU job in two passes: pass A
+  featurises the fit sample and fits the standardisation and projection, pass B featurises every
+  train and val episode again and writes the projected latents, so no unprojected store is
+  written), B (the budget probe, §6.1, which also reports P's copy ratio at h = 1 on val), T (18 jobs), V (the val report; δ), then F′ (featurise test with the frozen projection,
   its hash checked) and E (the gated evaluation and the row).
 - **Disk:** about 24 GB free before this task; features about 7 GB; nothing is written while `/`
   has less than 10 GiB free (the run stops and records it). The converted real-data stores of
@@ -279,6 +325,9 @@ It is offline: a better ranking against the true future frame is not a planner (
 not have that frame) and not a closed loop. One corpus (scripted play, right arm and hand,
 simulation), one camera at 112 px, one encoder, one pooling and projection, one architecture and
 budget, three seeds; a pass is evidence for this grounding on this data, not in general. The
+grounded arms have more parameters (state embedding, heads) and, for G and I, more compute per
+update than P at the same number of updates; a pass does not separate grounding from that extra
+capacity. The
 latent errors are comparable across arms only because every arm shares the frozen encoder and
 projection.
 
@@ -296,7 +345,8 @@ projection.
 - **R24.6** — U by the probe rule of §6.1; escalation above 14 h of GPU time.
 - **R24.7** — selection on val by the true-command criterion, tolerance 1 %; `last_two_triggered`
   is a flag only.
-- **R24.8** — δ_h from P's val spread, fixed before the test split is opened.
+- **R24.8** — δ_h from the gate's own bootstrap statistic over pairs of P's seeds on val (§6.4),
+  fixed before the test split is opened.
 - **R24.9** — test roots, wrong-command and candidate tables, statistics and the cluster bootstrap
   as §7; 97.5 % gate intervals.
 - **R24.10** — the gate and rows as §8; P2-PASS needs all seeds at h = 1, 4 and 8.
