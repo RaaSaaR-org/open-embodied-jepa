@@ -63,6 +63,17 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (w) — TASK-086's converter; the protocol is frozen at this merge (R23.20–R23.22)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[real_g1_dex3_prestep.md §6, §9](experiments/real_g1_dex3_prestep.md).
+
+- **R23.20 — the converter and runner** as §9 (two passes, per-set exclusion above 0.5, the
+  protocol's NVIDIA revisions enforced, splits over source episodes that keep a segment);
+  development on 2 + 2 episodes disclosed in §6; the bars of §5 unchanged.
+- **R23.21 — frozen** at this merge; the run uses the merged revision on CPU, evidence in
+  `~/develop/emai/evidence/task086-run/`.
+- **R23.22 — R7 does not change.**
 ## Decision 2026-10-09 (v) — TASK-085 Stage 0: collector, debug smoke and scale probe; the protocol is frozen at this merge (R23.16–R23.19)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
@@ -136,7 +147,8 @@ are [play_corpus_v1.md](experiments/play_corpus_v1.md) (frozen at its Stage 0 me
   R-DROP-RANGE / R-DROP-GRASP / R-KEEP.
 - **R23.14 — splits.** By source episode per set (max(1, floor(5 %)) val and test, salt 8603,
   `heldout_combinations=()`); AppleToPlate held out by leaving its store unsealed and marking it in
-  the corpus manifest. No real data was converted before the bars were set (protocol §6).
+  the corpus manifest. As far as the record shows, no real data was converted before the bars
+  were set (protocol §6).
 - **R23.15 — scope.** Conversion is not evidence that real data helps a model tested in
   simulation; that is Phase 3's question.
 

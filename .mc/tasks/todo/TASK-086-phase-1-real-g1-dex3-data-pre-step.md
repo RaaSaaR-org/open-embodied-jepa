@@ -42,7 +42,7 @@ Not an Apple→Plate experiment and not a learned result; R7 does not change.
 
 ## Acceptance Criteria
 
-- [ ] DRAFT preregistration independently reviewed (APPROVE) and merged
+- [x] DRAFT preregistration independently reviewed (APPROVE at afa9c74) and merged (#182)
 - [ ] Converter, tests and license record; independently reviewed and merged (freezes it)
 - [ ] Downloads within the disk budget, conversion run, evidence under
   `~/develop/emai/evidence/task086-*` with `SHA256SUMS`

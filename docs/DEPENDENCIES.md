@@ -67,6 +67,21 @@ SDK2 Python revision `9c519023d188bfe4643d326868474878ab515ed8`, SDK2 C++ `c7538
 
 All pilot images, trajectories and newly trained checkpoints are generated locally from this implementation and the pinned robot assets. Artifact manifests retain producer, source/data/action hashes and simulator provenance. No pretrained weights are used. Large payloads remain local and are not published by pushing this source repository; mesh/source license obligations remain applicable to any future dataset or checkpoint distribution.
 
+## Open real G1 + Dex3 datasets (TASK-086, 2026-10-09)
+
+Downloaded only by `scripts/convert_real_g1.py download` into the git-ignored `data/real-g1-raw/`,
+pinned to the revision resolved at download; revisions, file sha256 and any `LICENSE`/`NOTICE`
+files are recorded in `data/real-g1-raw/downloads.json` and the task's evidence. Converted
+corpora under `data/real-g1-v1/` are local and not published.
+
+- Unitree `unitreerobotics/G1_Dex3_*_Dataset` (12 sets used; GraspSquare excluded): Apache-2.0
+  (dataset tags). Keep any NOTICE file with redistributed derivatives.
+- NVIDIA `nvidia/PhysicalAI-Robotics-GR00T-Teleop-G1`: CC-BY-4.0. Attribution: "PhysicalAI-Robotics-GR00T-Teleop-G1,
+  NVIDIA Corporation, CC BY 4.0"; converted (cropped, resized, re-encoded) for this project.
+- NVIDIA `nvidia/GR00T-N1.7-AppleToPlate`: CC-BY-4.0 (repository `LICENCE` file is the CC BY 4.0
+  text). Attribution as above; held out as a real-image test set only.
+- Not used: `USC-PSI-Lab/Humanoid-Everyday-G1` (license unresolved), `mncai/G1_Dex3_Trash_LocoManipulation`.
+
 ## Optional JEPA-WMs adapter (TASK-024, 2026-09-21)
 
 The opt-in `jepa-wms` extra adds timm1.0.19 (Apache-2.0, exact wheel hash in uv.lock); torch/einops and timm's normal dependencies remain optional. The real upstream encoder/predictor source is separately fetched at `13cf1d9c7e476f53c17714d2e0f1dc239a883ce0`, verified against every imported file and the root notices, never bundled or copied into this Apache core. Conservatively retain CC BY-NC 4.0 terms for all imported modules: one predictor file's MIT header conflicts with the root CC license. No weights, pretrained encoders or datasets are adopted. See [the audit and CPU conformance report](experiments/jepa_wms_spike.md) for exact provenance, deviations from the full upstream recipe and reproduction commands. This optional adapter establishes software compatibility only; its performance and any resulting checkpoint's redistribution terms remain unverified.
