@@ -4,7 +4,7 @@ aliases:
 - TASK-084
 title: 'Phase 0: calibrate on Meta''s released JEPA-WM (Push-T) with its planner and ours; LeWM action-sensitivity baseline'
 slug: phase-0-calibrate-on-meta-s-released-jepa-wm-and-baseline-lewm-action-sensitivity
-status: in-progress
+status: done
 priority: 1
 owner: ''
 projects: []
@@ -15,6 +15,7 @@ tags:
 - planning
 - preregistration
 - phase-0
+- p0-pass
 sprint: ''
 depends_on:
 - "[[TASK-083]]"
@@ -22,6 +23,7 @@ due_date: ''
 created: 2026-10-09
 updated: 2026-10-09
 ---
+
 
 
 # Phase 0: calibrate on Meta's released JEPA-WM (Push-T) with its planner and ours; LeWM action-sensitivity baseline
@@ -43,13 +45,21 @@ Not an Apple→Plate experiment; R7 does not change.
 
 ## Acceptance Criteria
 
-- [ ] Preregistration, runner, decision script, part B probe and tests, independently reviewed
-  (APPROVE) and merged
-- [ ] Smoke at the merged revision (both arms, debug seed 9902), then part A's eight jobs (96
+- [x] Preregistration, runner, decision script, part B probe and tests, independently reviewed
+  (APPROVE) and merged (#178, `176258b`)
+- [x] Smoke at the merged revision (both arms, debug seed 9902), then part A's eight jobs (96
   paired episodes per arm) and part B, evidence under `~/develop/emai/evidence/task084-*` with
   `SHA256SUMS`
-- [ ] Results document and DECISIONS entry with the measured row, independently reviewed and
+- [x] Results document and DECISIONS entry with the measured row, independently reviewed and
   merged; R7 unchanged, stated explicitly
 
 ## Outcome
+
+**P0-PASS** (R22.10–R22.13). Part A: Meta's released Push-T JEPA-WM with Meta's planner 67/96
+(69.8 %, Wilson 60.0–78.1 %) against the published 70.2 %; `embodied_jepa.planning.CEMPlanner`
+83/96 on the same 96 episodes (ours − upstream +16.7 points, paired 95 % [+7.3, +26.0]; not a
+preregistered superiority claim). Part B (reported only): W-66800..66802 wrong/true 1.04 at h = 1,
+top-1 of 16 at h = 1 14–19 %, at h = 60 90–94 %. Evidence `~/develop/emai/evidence/task084-run/`,
+`task084-probe/`. R7 unchanged. Results:
+[`jepa_wms_pusht_calibration_results.md`](../../../docs/experiments/jepa_wms_pusht_calibration_results.md).
 %% mc-links: [[TASK-083]] %%

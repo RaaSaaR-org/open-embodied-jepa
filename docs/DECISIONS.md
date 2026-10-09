@@ -63,6 +63,37 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (t) — TASK-084 ends P0-PASS: Meta's released JEPA-WM reproduces on Push-T and our CEM planner meets the Phase 0 gate; part B's baseline recorded; R7 does not change; TASK-084 closes (R22.10–R22.13)
+
+**Decided by Claude under owner delegation (2026-09-30).** The record is
+[jepa_wms_pusht_calibration_results.md](experiments/jepa_wms_pusht_calibration_results.md); the
+protocol, frozen at `176258b` (#178), is
+[jepa_wms_pusht_calibration.md](experiments/jepa_wms_pusht_calibration.md).
+
+- **R22.10 — part A: P0-PASS.** At `176258b`, on the RTX 5080, 96 paired episodes per arm (meta
+  seeds 1–4 × 24; no re-run; same episodes in both arms): Meta's planner with Meta's released
+  Push-T checkpoint **67/96 (69.8 %, Wilson 95 % 60.0–78.1 %)** against the published 70.2 %
+  (G-REPRO, −0.4 points); `embodied_jepa.planning.CEMPlanner` behind the declared bridge
+  **83/96 (86.5 %, 78.2–91.9 %)** (G-PLAN-ABS ≥ 60.2 % and G-PLAN-REL ≥ upstream − 10 both
+  pass; ours − upstream +16.7 points, paired bootstrap 95 % [+7.3, +26.0], 20 vs 4 discordant,
+  exact McNemar p = 0.0015, reported). `decision.json` sha256 `d50c62b3…d7f9`; evidence
+  `~/develop/emai/evidence/task084-run/` (`SHA256SUMS` `77541878…a4bf9a`). "Ours is better" was
+  not preregistered and is not claimed; why it scored higher was not tested. One released
+  checkpoint, one task (a 2-D pusher), one planning setting, simulation only.
+- **R22.11 — TASK-084 closes with P0-PASS.** The plan's "else fix it first" does not apply; our
+  CEM planner may be used as is where the plan needs one. Phase 1 needs its own preregistration
+  and ruling.
+- **R22.12 — R7 does not change.** TASK-084 is not an Apple→Plate experiment; R7's canonical
+  sentence stays as R21.20 left it. Nothing in AGENTS.md, CLAUDE.md or README's status sentence
+  changes.
+- **R22.13 — part B is recorded as the plain-LeWM baseline, reported only.** On the 250 val roots
+  of `apple-c1m-v2`, TASK-077's W checkpoints (66800–66802) are action-sensitive at every horizon
+  but weakly at short ones: wrong / true commands 1.04 at h = 1 (each seed's interval
+  [1.03, 1.05]), 1.36–1.37 at h = 8 and 3.6–3.8 at h = 60; the executed command sequence ranks
+  first among 16 on 14–19 % of roots at h = 1 (chance 6.25 %), 40–44 % at h = 8 and 90–94 % at
+  h = 60. The val roots were used for checkpoint selection; offline only; not a planning result.
+  Report sha256 `abd88f74…c799`, evidence `~/develop/emai/evidence/task084-probe/`.
+
 ## Decision 2026-10-09 (s) — TASK-084 (Phase 0): calibration on Meta's released JEPA-WM for Push-T, with its planner and ours, and a LeWM action-sensitivity baseline; protocol frozen at merge (R22.1–R22.9)
 
 **Decided by Claude under owner delegation (2026-09-30).** Phase 0 of the proposal
