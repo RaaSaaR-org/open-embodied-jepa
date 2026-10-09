@@ -35,8 +35,8 @@ episodes (the plan's Phase 1 gate)?
   `apply_v2_scene`, which checks it is the v1 apple.
 - **Layout per episode.** Plate xy uniform in x ∈ [0.30, 0.52], y ∈ [−0.30, −0.02] (world m).
   k ∈ {1, 2, 3, 4} objects uniformly, a uniform random subset of the four, each at a uniform xy in
-  x ∈ [0.26, 0.54], y ∈ [−0.34, 0.00] with ≥ 1 cm clearance between collision radii (plate
-  included), uniform yaw. Objects not on the table are parked on the floor behind the robot, out of
+  the **reset region** x ∈ [0.26, 0.54], y ∈ [−0.34, 0.00] (world) with ≥ 1 cm clearance between
+  collision radii (plate included), uniform yaw. Objects not on the table are parked on the floor behind the robot, out of
   the onboard view.
 
 ## 3. Robot, actions, control rate
@@ -61,9 +61,10 @@ episodes are wander only.
 - **pick_place** (e9's pick recipe): pick a random on-table object; palm target = object centre +
   (−1.5, 0, 5.2) cm (e9's palm offset) + aim noise N(0, 0.8 cm) in x, y (0.4 cm in z); hover 8 cm
   above for 50–79 commands; descend 40–59; close to a closure U(0.85, 1.0) for 25–39; lift by
-  U(10, 20) cm in 40–69; carry to the plate (0.4) or a uniform point of the object region (0.6),
-  clamped into e9's right-arm reach sphere (r 0.485 m, `RestingPlaceExpert.release_pose`); lower,
-  open, retreat. **Deliberate failures** per pick: none 0.65, *miss* (aim moved 4–8 cm in a random
+  U(10, 20) cm in 40–69; carry to a destination: the plate centre (0.4) or a uniform point of the
+  reset region (0.6), plus e9's palm offset (−1.5 cm in x) and N(0, 1 cm) noise in x and y, then
+  clamped into e9's right-arm reach sphere (r 0.485 m, `RestingPlaceExpert.release_pose`, which
+  also sets the lowest reachable palm height there); lower, open, retreat. **Deliberate failures** per pick: none 0.65, *miss* (aim moved 4–8 cm in a random
   direction) 0.10, *early_close* (close at hover) 0.07, *drop* (open mid-carry) 0.08, *no_close*
   (descend and carry with the hand open) 0.05, *abort* (leave for a random point after the
   descent) 0.05.
@@ -71,19 +72,21 @@ episodes are wander only.
   in a random horizontal direction, hand opening U(−1, 0.3).
 - **poke:** hover above an object, touch down (−1 to +2 cm about the palm target) with the hand
   U(−1, 0) closed, retreat.
-- **wander:** 2–5 random points in the hand region of §9 (widened by 4–6 cm), 15–44 commands each,
-  random grasp levels.
+- **wander:** 2–5 random palm points, uniform in x ∈ [0.20, 0.52], y ∈ [−0.36, −0.02],
+  z ∈ [0.00, 0.28] (pelvis frame), 15–44 commands each, palm yaw U(±0.5 rad) per point, grasp −1
+  or U(−1, 1) with equal probability.
 - **Tracking law.** Scripted skills use e9's law: arm command = (target − palm) / 1.5 cm, clipped
   at ±0.4; wander uses half gain, clipped at ±0.6. Orientation is driven to e9's palm-down
-  orientation turned by a per-skill yaw U(±0.2 rad) (random mode: an orientation drifting as an
-  AR(1) process, clipped at ±0.6 rad per axis), commands clipped at ±0.8. The requested grasp
+  orientation turned by a yaw (U(±0.2 rad) per pick, push or poke; U(±0.5 rad) per wander point;
+  in random mode instead an orientation drifting as an AR(1) process, clipped at ±0.6 rad per
+  axis), commands clipped at ±0.8. The requested grasp
   moves at most 0.2 per command.
 - **Noise.** AR(1) action noise on the six arm dimensions (coefficient 0.85, stationary standard
   deviation 0.10 / 0.25 / 0.45 normalized units in scripted / perturbed / random; rotation
   dimensions at half that). Perturbed episodes add bursts: started with probability 1/60 per
   command, 8–19 commands long, a constant N(0, 0.7) offset (rotation × 0.4). The arm command is
   clipped to [−1, 1] before projection.
-- Randomness: `numpy.random.default_rng([8501, seed])` per episode (layout, mode, skills, noise).
+- Randomness: `numpy.random.default_rng([8701, seed])` per episode (layout, mode, skills, noise).
 
 ## 5. Episodes and size
 
@@ -91,7 +94,8 @@ episodes are wander only.
   then **up to 400 commands (20 s), 401 frames**.
 - An episode ends early, *truncated*, when the projection is infeasible or raises (the 5 rad/s
   measured-velocity stop), or when a command is rejected; the frame observed before the failed
-  command is dropped so every stored action was executed. It is stored if it holds ≥ 50 commands,
+  command is replaced by a fresh observation of the same state, so every stored action was
+  executed and T stored actions have T + 1 frames. It is stored if it holds ≥ 50 commands,
   else discarded and counted. An exception from MuJoCo discards the episode and is counted; the
   shard continues. No episode is terminated (no task end).
 - **3 200 episode seeds**, 850000–853199, in **32 shards of 100** (shard s holds 850000 + 100 s …
@@ -109,11 +113,12 @@ episodes are wander only.
 - **Robot state (model inputs):** `observation.state` = positions and velocities of all 43
   actuated joints (`g1_dex3_proprio_v0`), plus the physical action (`action.physical`).
 - **Sidecar per episode** `play/<episode_id>.npz` (its sha256 in the episode metadata): requested
-  actions; both palm poses (`*_ee` site, pelvis frame, position and rotation) and the commanded
-  joint targets at every frame; per object, world position, quaternion, linear velocity, and robot,
-  hand and grasp contact flags (grasp = thumb plus index or middle in contact); plate position;
-  the skill index per frame. Object truth is for labels and gates only and must never be a model
-  input.
+  actions and whether the projection reduced them; both palm poses (`*_ee` site, pelvis frame,
+  position and rotation) and the commanded joint targets at every frame; per object, world
+  position, quaternion, linear velocity, and robot, hand and grasp contact flags (grasp = thumb
+  plus index or middle in contact); plate position; the skill index per frame. **Everything in the
+  sidecar is labels only and never a model input** (the requested actions, too, are computed from
+  privileged object truth).
 - Episode metadata: seed, layout, mode, skill and failure log, stop reason, per-episode facts
   (§10). A corpus manifest `data/play-v1/corpus.json` lists shards with their manifest hashes,
   seeds, salts, counts, code revision and the renderer string.
@@ -122,16 +127,23 @@ episodes are wander only.
 
 ## 7. Splits
 
-By episode, frozen inside each shard with `freeze_split_assignments` (no held-out pairing): rank
-the shard's stored episodes by sha256 of `"8502:<seed>"`; the lowest 5 are **val**, the next 5
-**test**, the rest **train** (2 880 / 160 / 160 if nothing is lost). Phase 2 trains on train and
-selects on val; test is not opened until a later preregistration uses it.
+By episode, frozen inside each shard with `freeze_split_assignments` (`heldout_combinations=()`):
+rank the shard's stored episodes by sha256 of `"8702:<seed>"`; the lowest 5 are **val**, the next
+5 **test**, the rest **train** (2 880 / 160 / 160 if nothing is lost). A corpus shard with fewer
+than 11 stored episodes is left unsealed, recorded and excluded. Debug shards (§12) use 1 val and
+1 test. Phase 2 trains on train and selects on val; test is not opened until a later
+preregistration uses it.
+
+play-v1 contains apple-to-plate carries (the apple is one of the four objects and 40 % of carries
+go to the plate), so it cannot back any later claim that relies on the v1 held-out (apple, plate)
+pairing.
 
 ## 8. Seeds and salts
 
-Development 85000–85999 (used before this draft: 85000–85191 and 85100–85147, §11); Stage 0
-debug 86000–86099; corpus 850000–853199; policy salt 8501; split salt 8502. Later tasks do not
-reuse these as reset seeds.
+Development 85000–85999 (used before this draft: 85000–85191 and 85100–85147, §11, with policy
+salt 8501, which TASK-083 had already used; the corpus uses fresh salts); Stage 0 debug
+86000–86099; corpus 850000–853199; policy salt **8701**; split salt **8702**. Later tasks do not
+reuse these seeds or salts.
 
 ## 9. The Phase 3 test workspace (for the coverage gate)
 
@@ -163,6 +175,12 @@ measurement; **P1-PASS** if all four gates pass; **P1-FAIL** otherwise, naming t
 P1-PASS lets Phase 2 preregister on train and val. P1-FAIL escalates: one top-up or policy change
 needs its own ruling; there is no abandonment clause (nothing is closed).
 
+These bars are not demanding: G-HAND and G-OBJ were set after the development coverage (§11),
+and the hand region's floor sits where this collector's palm-down grasp bottoms out, so they are
+close to pass-by-construction, and G-MOVE's 20 % (the plan's) is well below the development 57 %.
+They check that the corpus covers the declared workspace, not that it is good play data; the
+results document says so.
+
 **Reported only:** lifted episodes (an object ≥ 3 cm above its start with grasp contact), grasp
 contact, per mode / skill / failure type; truncation reasons; per-dimension action mean and
 spread, the share of saturated (|a| ≥ 0.99) and projection-reduced commands; per-object facts;
@@ -187,7 +205,7 @@ These are development readings, not results.
 Stage 0 (its own PR): the module, the runner `scripts/collect_play_corpus.py` (shards in parallel
 processes; one GPU lock for the job, §13), the coverage and gate script
 `scripts/measure_play_corpus.py`, tests, and a debug smoke on 86000–86015 (two shards of 8)
-through storage, splits and the gate script. Stage 0 may change only the episode count and the
+through storage, splits (1 val, 1 test per debug shard) and the gate script. Stage 0 may change only the episode count and the
 disk floor of §5, each by a recorded rule; anything else needs a ruling. The protocol is frozen at
 the Stage 0 merge.
 

@@ -85,38 +85,43 @@ are [play_corpus_v1.md](experiments/play_corpus_v1.md) (frozen at its Stage 0 me
   It is a collector, never a learned result.
 - **R23.5 — camera and state.** Onboard 112 px only, no wrist camera (storage on a fixed disk
   budget; one camera for Phase 2's arms); the 43-joint position and velocity state, the physical
-  action, and a per-episode sidecar with palm poses, joint targets and object truth for labels
-  (never a model input).
+  action, and a per-episode sidecar with palm poses, joint targets, requested actions and object
+  truth, all of it labels only (never a model input).
 - **R23.6 — size.** 3 200 episodes of up to 400 commands (≈ 15.8 h, ≈ 11.5 GB expected) in 32
   shards; a shard does not start below 12 GiB free; G-SIZE requires ≥ 10 h.
-- **R23.7 — splits, seeds, salts.** By episode within each shard (5 val, 5 test per shard); corpus
-  seeds 850000–853199, development 85000–85999, debug 86000–86099, salts 8501 (policy) and 8502
-  (split).
+- **R23.7 — splits, seeds, salts.** By episode within each shard (5 val, 5 test per shard; debug
+  shards 1 and 1; a corpus shard with fewer than 11 stored episodes is left unsealed and
+  excluded); corpus seeds 850000–853199, development 85000–85999, debug 86000–86099, fresh salts
+  8701 (policy) and 8702 (split) (development ran with 8501, which TASK-083 had used).
 - **R23.8 — the Phase 3 test workspace and the gate** (train split): object region x 0.30–0.46,
-  y −0.28 to −0.04 (24 cells of 4 cm), hand region x 0.24–0.44, y −0.30 to −0.02, z 0.06–0.26 in
-  the pelvis frame (175 cells); G-SIZE ≥ 10 h, G-HAND ≥ 95 % of hand cells with ≥ 200 frames,
+  y −0.28 to −0.04 in world xy (24 cells of 4 cm), hand region x 0.24–0.44, y −0.30 to −0.02,
+  z 0.06–0.26 in the pelvis frame (175 cells); G-SIZE ≥ 10 h, G-HAND ≥ 95 % of hand cells with ≥ 200 frames,
   G-OBJ (every object cell ≥ 20 starts; ≥ 90 % with ≥ 10 contact episodes), G-MOVE ≥ 20 % of
   episodes move an object; rows P1-VOID / P1-PASS / P1-FAIL; no abandonment clause. The regions and
   the G-HAND / G-OBJ counts were set after development coverage on seeds 85000–85191, disclosed in
-  §11; the 20 % bar is the plan's.
+  §11, so these gates are close to pass-by-construction; the 20 % bar is the plan's.
 - **R23.9 — R7 does not change** for TASK-085 or TASK-086, whatever their rows.
-- **R23.10 — real-data sources.** Unitree's 13 G1_Dex3 sets (Apache-2.0; GraspSquare dropped if
-  byte-identical to BlockStacking) and NVIDIA GR00T-Teleop-G1 (CC-BY-4.0) are training-eligible;
+- **R23.10 — real-data sources.** Unitree's 12 distinct G1_Dex3 sets (Apache-2.0; GraspSquare
+  excluded as the suspected duplicate of BlockStacking) and NVIDIA GR00T-Teleop-G1 (CC-BY-4.0, one
+  set) are training-eligible;
   NVIDIA GR00T-N1.7-AppleToPlate (CC-BY-4.0) is a held-out real-image test set only; Humanoid
-  Everyday G1 is not used while its license is unresolved; mncai's set is not used.
+  Everyday G1 is not used while its license is unresolved (its authors have not been asked; an
+  open item for the owner); mncai's set is not used.
 - **R23.11 — download budget.** States and actions of every eligible set (≈ 0.75 GB); video only
   for GR00T-Teleop-G1, AppleToPlate and one PickApple camera; raw downloads deleted after
   conversion, revisions and hashes kept.
-- **R23.12 — conversion.** Joint names mapped by name; 20 Hz by nearest frame; palm deltas from
+- **R23.12 — conversion.** Joint names mapped by name; 20 Hz by linear interpolation of joints
+  (images by nearest frame); palm deltas from
   the measured state by our G1 forward kinematics, scaled by 1.5 cm and 0.06 rad; grasp by
   projection onto our open→closed synergy; out-of-range steps flagged and cut, never clipped;
   images centre-cropped to 112 px under their own key `real_head_rgb`.
 - **R23.13 — stop rule.** R-RANGE: drop the arm if more than half of the pooled converted steps
-  have any |a_i| > 1. R-GRASP: drop it if, pooled, either hand's median grasp residual exceeds
+  have any arm |a_i| > 1 (12 arm dimensions). R-GRASP: drop it if, pooled, either hand's median grasp residual exceeds
   0.15 rad or more than 25 % of its frames project outside [−0.25, 1.25]. Rows R-VOID /
   R-DROP-RANGE / R-DROP-GRASP / R-KEEP.
-- **R23.14 — splits.** By source episode per set (5 % val, 5 % test, salt 8603); AppleToPlate
-  entirely held out.
+- **R23.14 — splits.** By source episode per set (max(1, floor(5 %)) val and test, salt 8603,
+  `heldout_combinations=()`); AppleToPlate held out by leaving its store unsealed and marking it in
+  the corpus manifest. No real data was converted before the bars were set (protocol §6).
 - **R23.15 — scope.** Conversion is not evidence that real data helps a model tested in
   simulation; that is Phase 3's question.
 
