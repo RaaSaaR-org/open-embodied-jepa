@@ -70,7 +70,7 @@ is kept as written.
 
 - **R24.15 — Stage 0 code:** `grounded_wm.py`, `grounded_wm_data.py`, `grounded_wm_model.py`
   (opt-in; `import embodied_jepa` stays torch-free), the featurise, train and evaluate scripts, the
-  stage runner `run_task087.sh` (one GPU lock per job) and 29 tests; no existing file changes.
+  stage runner `run_task087.sh` (one GPU lock per job) and 31 tests; no existing file changes.
 - **R24.16 — evaluation device:** Stages V and E run on the RTX 5080 under `gpu_run.sh` with the
   strict deterministic CUDA set-up (decided before the freeze; the protocol left it open).
 - **R24.17 — the debug smoke and determinism check are not evidence:** every stage ran end to end

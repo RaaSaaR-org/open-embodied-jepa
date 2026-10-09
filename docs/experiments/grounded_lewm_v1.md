@@ -363,12 +363,12 @@ projection.
   `grounded_wm_data.py` (corpus reading, featurisation, the projection, the stores, the sampler;
   NumPy at import), `grounded_wm_model.py` (the arms; torch); scripts `featurise_task087.py`,
   `train_task087.py`, `evaluate_task087.py` and the stage runner `run_task087.sh` (one
-  `gpu_run.sh` lock per job); `tests/test_grounded_wm.py` (29 tests: windows stay inside episodes,
+  `gpu_run.sh` lock per job); `tests/test_grounded_wm.py` (31 tests: windows stay inside episodes,
   the root rule, the wrong and candidate tables use other episodes and are fixed, ties count
   against, the cluster bootstrap, the statistics on a known predictor, the budget rule, δ, the
   criteria and every row, the projection against a direct PCA, the stores and the sampler, every
   arm's loss and roll-out, the roll-out reads only the start state, S carries the state slot after
-  the final LayerNorm, N ignores commands, chunk-independent prediction). No existing file changes.
+  the final LayerNorm, N ignores commands, chunk-independent prediction, store re-hashing, the corpus check). No existing file changes.
 - **Evaluation device (decided here, before the freeze):** V and E run on the RTX 5080 under
   `gpu_run.sh` with the repository's strict deterministic CUDA set-up, in chunks of 2 048 roots. On
   the CPU the 18 models' roll-outs were estimated (from operation counts, not measured) at
