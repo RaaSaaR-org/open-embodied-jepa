@@ -63,6 +63,21 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (v) — TASK-085 Stage 0: collector, debug smoke and scale probe; the protocol is frozen at this merge (R23.16–R23.19)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[play_corpus_v1.md §14](experiments/play_corpus_v1.md).
+
+- **R23.16 — Stage 0 code** (`play_corpus.py`, `collect_play_corpus.py`, `measure_play_corpus.py`,
+  tests) at `cfb2364`; debug smoke (86000–86015) and scale probe (86016–86095) ran the whole path;
+  their P1-FAIL rows are debug-sized and not evidence. Review found the banana standing upright
+  and *abort* closing before leaving; both fixed before these runs.
+- **R23.17 — knobs unchanged:** 3 200 episodes, 12 GiB disk floor (projection ≈ 15.8 h,
+  ≈ 12.2 GB, ≈ 15 min).
+- **R23.18 — frozen** at this PR's merge; the corpus run uses the merged revision, under
+  `gpu_run.sh`, with evidence in `~/develop/emai/evidence/task085-run/`.
+- **R23.19 — R7 does not change.**
+
 ## Decision 2026-10-09 (u) — Phase 1: TASK-085's play corpus `play-v1` and TASK-086's real-data pre-step, DRAFT preregistrations (R23.1–R23.15; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30).** Phase 1 of the proposal

@@ -1,7 +1,8 @@
 # TASK-085 — Phase 1: the MuJoCo play corpus `play-v1` (one arm, one Dex3 hand)
 
-**Status: DRAFT** (R23.1–R23.9, decided by Claude under owner delegation). It is frozen when the
-Stage 0 PR (§12) merges; after that, nothing in §2–§10 changes without its own reviewed ruling.
+**Status: FROZEN when the Stage 0 PR merges** (R23.1–R23.9 and R23.16–R23.19, decided by Claude
+under owner delegation). After that merge nothing in §2–§10 changes without its own reviewed
+ruling. Stage 0's record is §14.
 This is Phase 1 of the proposal [JEPA_ZERO_SHOT_PLAN.md](../JEPA_ZERO_SHOT_PLAN.md) ("Play
 corpus"). Its real-data pre-step is a separate task, TASK-086
 ([real_g1_dex3_prestep.md](real_g1_dex3_prestep.md)).
@@ -87,6 +88,11 @@ episodes are wander only.
   command, 8–19 commands long, a constant N(0, 0.7) offset (rotation × 0.4). The arm command is
   clipped to [−1, 1] before projection.
 - Randomness: `numpy.random.default_rng([8701, seed])` per episode (layout, mode, skills, noise).
+- Parameters this section does not list (poke and push phase lengths and heights, the hold and
+  move lengths of *early_close*, *drop* and *abort*, the place, carry and retreat heights, the
+  random-mode orientation drift, the noise state starting at 0) are those of `play_corpus.py` at
+  the frozen revision. Wander's 0.10 weight applies whether or not objects are on the table; with
+  no object on the table every skill is wander.
 
 ## 5. Episodes and size
 
@@ -100,7 +106,7 @@ episodes are wander only.
   shard continues. No episode is terminated (no task end).
 - **3 200 episode seeds**, 850000–853199, in **32 shards of 100** (shard s holds 850000 + 100 s …
   850000 + 100 s + 99). Expected ≈ 15.8 h and ≈ 11.5 GB (development: mean 356 stored commands,
-  9.8 KB per PNG frame). 15.8 h sits inside the plan's 10–50 h; the size is set by the disk: on 39
+  9.8 KB per PNG frame; §14 updates this to ≈ 12.2 GB). 15.8 h sits inside the plan's 10–50 h; the size is set by the disk: on 39
   GB free, with ≥ 10 GB to keep free and room for TASK-086, ≈ 12 GB is the budget. **Disk rule:**
   a shard does not start while `/` has < 12 GiB free; skipped shards are recorded and the corpus
   is what was written (G-SIZE then decides).
@@ -113,7 +119,8 @@ episodes are wander only.
 - **Robot state (model inputs):** `observation.state` = positions and velocities of all 43
   actuated joints (`g1_dex3_proprio_v0`), plus the physical action (`action.physical`).
 - **Sidecar per episode** `play/<episode_id>.npz` (its sha256 in the episode metadata): requested
-  actions and whether the projection reduced them; both palm poses (`*_ee` site, pelvis frame,
+  actions and whether the executed action differs from the request (projection or execution
+  clipping); both palm poses (`*_ee` site, pelvis frame,
   position and rotation) and the commanded joint targets at every frame; per object, world
   position, quaternion, linear velocity, and robot, hand and grasp contact flags (grasp = thumb
   plus index or middle in contact); plate position; the skill index per frame. **Everything in the
@@ -215,3 +222,37 @@ The Linux PC; MuJoCo on CPU, frames rendered with NVIDIA EGL on the RTX 5080 (as
 corpus), the job under `scripts/gpu_run.sh --wait --min-free-gib 8 --board`; the GL renderer
 string is recorded. Phase 3 renders with the same renderer or declares the difference. Frames are
 not bit-identical across renderers.
+
+## 14. Stage 0 record (R23.16–R23.19)
+
+At `cfb2364` (this PR's code commit, clean tree), NVIDIA EGL (`NVIDIA Corporation / NVIDIA GeForce
+RTX 5080/PCIe/SSE2 / 4.6.0 NVIDIA 595.91.07`), under `gpu_run.sh`. Code:
+`src/embodied_jepa/play_corpus.py`, `scripts/collect_play_corpus.py`,
+`scripts/measure_play_corpus.py`, `tests/test_play_corpus.py` (layouts, split rule, policy
+bounds, gate arithmetic and rows, the core-import check; graphics opt-in: a storage round trip,
+same seed twice giving identical actions, states and object positions, the objects' resting
+heights and the banana lying flat, and T + 1 frames after an early end). Evidence:
+`~/develop/emai/evidence/task085-stage0/` (`SHA256SUMS` sha256 `112a746d…8ca666`).
+
+| Debug run | Seeds | Stored episodes | Commands (mean) | Ended early | Bytes per command | Wall time |
+| --- | --- | --- | --- | --- | --- | --- |
+| smoke, 2 shards × 8, 2 workers | 86000–86015 | 16 / 16 | 6 342 (396) | 2 | 10 614 | 24.5 s |
+| scale, 10 shards × 8, 10 workers | 86016–86095 | 80 / 80 | 28 494 (356) | 21 | 10 695 | 28.7 s |
+
+Both ran the whole path (storage, sidecars, splits 1 / 1 / rest, the gate script with its seed,
+split and salt checks; no void reason, no error, no discard); their rows (P1-FAIL on G-SIZE,
+G-HAND, G-OBJ) are what a debug-sized corpus gives and are not evidence. Every early end was a
+right-hand joint passing the 5 rad/s velocity stop (thumb_1 in 21 of 23). Reported only, the 60
+scale train episodes: an object moved in 68 %, a lift in 18 %, grasp contact in 32 %.
+
+**Found in review and fixed before this record** (the superseded first runs are kept in
+`~/develop/emai/evidence/task085-stage0-superseded-upright-banana/`): the banana's body
+quaternion repeated its geom's 90° turn, so it stood upright (and the §11 development episodes
+had it upright too); *abort* closed the hand before leaving, against §4. Rendering note: NVIDIA
+EGL is not bit-reproducible here; the same seed twice gave identical physics, and one frame of 61
+differed by one level in 6 pixels.
+
+**Projection and the two Stage 0 knobs (R23.17).** At 356 commands and 10.7 KB per command, 3 200
+episodes give ≈ 15.8 h and ≈ 12.2 GB (this replaces §5's ≈ 11.5 GB) in ≈ 15 min with 12 workers;
+with 39 GB free and TASK-086's ≈ 7 GB, ≥ 12 GiB stays free. The episode count stays **3 200** and
+the disk floor **12 GiB**.
