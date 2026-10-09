@@ -63,6 +63,29 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-09 (z) — TASK-087 (Phase 2): robot-grounded LeWM on `play-v1`, offline; DRAFT preregistration (R24.1–R24.14; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30).** Phase 2 of
+[JEPA_ZERO_SHOT_PLAN.md](JEPA_ZERO_SHOT_PLAN.md), after P1-PASS (R23.24) and R-DROP-GRASP (R23.28).
+The protocol is [grounded_lewm_v1.md](experiments/grounded_lewm_v1.md); it is frozen when its
+Stage 0 PR merges. The rulings R24.1–R24.14 are listed in its §14. In short:
+
+- **Sim play only** (R24.1): no Teleop-only real arm now; revisited only if Phase 3 suggests it.
+- **Latent** (R24.2): frozen DINOv2 ViT-S/14 tokens pooled to 4 × 4, standardised and projected
+  to 192 components per token on a train-only fit sample; every arm predicts the same latent.
+- **Arms** (R24.4): plain LeWM P; + robot state S; + state, joint-change and inverse-dynamics
+  losses G (S and G eligible); state fusion + readout heads C (control, the recipe that failed in
+  apple WM v2–v4); inverse dynamics only I (reported); no-action N and copy-last (floors). Three
+  model seeds each (87100–87102), paired windows, one architecture and budget.
+- **Gate** (R24.10): on the untouched test split, an eligible arm beats P of the same seed on
+  action sensitivity (wrong / true) and top-1 of 16 candidate command sequences at h = 1, 4 and 8,
+  on all three seeds, with an accuracy margin δ measured from P's val seed spread and a copy-last
+  floor; rows P2-VOID / P2-PLAIN-INVALID / P2-PASS / P2-SHORT / P2-FAIL. No bar is a guessed
+  absolute number.
+- **Stop rule** (R24.11): P2-FAIL takes S and G off Phase 3's table; nothing else closes.
+- **R24.14 — R7 does not change**, whatever the row: this is an offline world-model comparison,
+  not an Apple→Plate or closed-loop experiment.
+
 ## Decision 2026-10-09 (y) — TASK-086 ends R-DROP-GRASP: the open real G1 + Dex3 arm is dropped for Phase 2; R7 does not change; TASK-086 closes (R23.27–R23.30)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
