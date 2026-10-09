@@ -70,7 +70,7 @@ is kept as written.
 `f3f71b7` (#184).
 
 - **R23.27 — the run.** Every declared set downloaded at a pinned revision with its expected
-  license tag (3.4 GB raw, deleted after conversion), converted at `f3f71b7`; evidence
+  license tag (≈ 3.5 GB raw, deleted after conversion), converted at `f3f71b7`; evidence
   `~/develop/emai/evidence/task086-run/` (`SHA256SUMS` `4f1aef32…e83c`).
 - **R23.28 — R-DROP-GRASP.** Pooled over the 13 training-eligible sets (3 946 episodes, 23.0 h
   converted): R-RANGE 5.5 % of valid steps with an arm |a| > 1 (bar 0.5, passes); R-GRASP median

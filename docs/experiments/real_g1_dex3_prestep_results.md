@@ -21,13 +21,13 @@ expected license tag), R-RANGE passes, R-GRASP fails on both hands, so the row i
 **R-DROP-GRASP**: the plan's "sim play + open real G1/Dex3 data" arm is dropped for Phase 2.
 `conversion_report.json` sha256 `264956e7…dd48`.
 
-**Why.** The arm motion converts well: 94.5 % of valid steps are inside the action range (the
+**Why.** The arm motion converts well: 94.5 % of valid steps are inside the arm range (the
 99th percentile of |a| per arm dimension is 0.41–1.36). The grasp does not: our one-scalar Dex3
 synergy (open → closed line in `configs/g1_sim_action.json`) leaves a median residual of
-0.33–0.57 rad on every Unitree set, about three times the bar. NVIDIA's GR00T-Teleop-G1 alone
+0.33–0.57 rad on every Unitree set, two to four times the bar. NVIDIA's GR00T-Teleop-G1 alone
 fits (0.095 left, 0.109 right), but the pooled rule is dominated by Unitree's 1.53 M of 1.66 M
 steps. The likely cause, not tested here: Unitree's hand joints do not follow our synergy's line
-(the plan's development reading saw PickApple's left thumb_0 held near 0.52 rad, where the
+(converter development, protocol §6, saw PickApple's left thumb_0 held near 0.52 rad, where the
 synergy holds 0), whether by teleoperation style or by a joint-zero or sign convention we did not
 check.
 
@@ -35,7 +35,7 @@ check.
 
 - Downloads 2026-10-09 at `f3f71b7`, each repository pinned to the revision it resolved (NVIDIA's
   two at the protocol's revisions); the Hub rate-limited the first attempt (HTTP 429), the retry
-  downloaded every set. Large files checked against the Hub's sha256. 3.4 GB raw, deleted after
+  downloaded every set. Large files checked against the Hub's sha256. ≈ 3.5 GB raw (3.3 GiB by the recorded file sizes), deleted after
   conversion (protocol §3); revisions, file hashes, licenses (`LICENCE` for AppleToPlate; no
   NOTICE files in the Unitree sets) in `downloads.json`.
 - Conversion on CPU in the run worktree, both passes completed, exit 0.
@@ -77,7 +77,7 @@ check.
   GB; Unitree PickApple 408 segments from 142 source episodes (128 / 7 / 7), 0.9 GB; manifest
   hashes in `data/real-g1-v1/corpus.json`.
 - **The held-out AppleToPlate set did not convert:** under the assumed joint layout (§9), 34 646
-  of 114 022 resampled frames (30 %) were invalid (a joint more than 0.1 rad outside its range) and
+  of 114 424 resampled frames (30 %) were invalid (a joint more than 0.1 rad outside its range) and
   every valid step had a grasp outside [−1, 1], so no segment was kept and its store is empty. The
   layout assumption is the likely cause; not diagnosed. It was outside the decision.
 
