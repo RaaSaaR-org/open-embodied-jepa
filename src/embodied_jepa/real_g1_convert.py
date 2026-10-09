@@ -57,8 +57,11 @@ def map_names(names, *, provider: str) -> list[str | None]:
     if provider == "unitree":
         table = unitree_name_map()
         return [table.get(n) for n in names]
-    if provider == "nvidia":
-        return list(names)
+    if provider == "nvidia":  # our names; legs are ignored (our pelvis is fixed)
+        return [
+            None if n is None or ("_hip_" in n or "_knee_" in n or "_ankle_" in n) else n
+            for n in names
+        ]
     raise ValueError(f"unknown provider {provider}")
 
 
@@ -69,6 +72,7 @@ def resample(q: np.ndarray, valid: np.ndarray, source_fps: float):
     Returns (q20, valid20, image_index): image_index is the nearest source frame,
     floor(s + 0.5) with s = k * source_fps / 20."""
     n = len(q)
+    q = np.where(np.isfinite(q), q, 0.0)  # invalid frames are masked below; keep NaN out
     ratio = source_fps / TARGET_FPS
     count = int(np.floor((n - 1) / ratio)) + 1
     s = np.arange(count) * ratio
@@ -179,9 +183,13 @@ class Converted:
     grasp_out: np.ndarray  # [K-1] any grasp outside [-1, 1]
     t: np.ndarray  # [K, 2] synergy position (left, right)
     residual: np.ndarray  # [K, 2] RMS residual (rad)
-    state: np.ndarray
-    state_mask: np.ndarray
+    q20: np.ndarray  # [K, J] resampled source joints (columns as ``names``)
+    names: list
     image_index: np.ndarray
+
+    def state(self, kin, start: int, end: int):
+        """State for frames start..end; velocities by finite differences inside the slice."""
+        return kin.state(self.names, self.q20[start : end + 1])
 
 
 def convert_episode(kin: Kinematics, names, q: np.ndarray, source_fps: float) -> Converted:
@@ -210,9 +218,8 @@ def convert_episode(kin: Kinematics, names, q: np.ndarray, source_fps: float) ->
     grasp_out = (np.abs(actions[:, 12:]) > 1).any(axis=1)
     frames_ok = valid[:-1] & valid[1:]
     flagged = arm_out | grasp_out | ~frames_ok
-    state, mask = kin.state(known, q20)
     return Converted(
-        actions, valid, flagged, arm_out, grasp_out, t, residual, state, mask, image_index
+        actions, valid, flagged, arm_out, grasp_out, t, residual, q20, known, image_index
     )
 
 
@@ -244,6 +251,11 @@ def episode_stats(c: Converted) -> dict:
 
 def decide(pooled: dict, *, void: str = "") -> dict:
     """R-VOID, R-DROP-RANGE, R-DROP-GRASP or R-KEEP (first match)."""
+    if not void and (
+        pooled["valid_steps"] == 0
+        or not all(np.isfinite(pooled[f"{s}_median_residual"]) for s in ("left", "right"))
+    ):
+        void = "nothing measured"
     range_fraction = pooled["arm_out"] / max(pooled["valid_steps"], 1)
     poor = {}
     for side in ("left", "right"):

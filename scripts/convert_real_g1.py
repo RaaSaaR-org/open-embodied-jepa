@@ -68,6 +68,7 @@ SOURCES = {
         "provider": "nvidia",
         "license": "cc-by-4.0",
         "role": "train",
+        "protocol_revision": "0d7bdd06e6",
         "patterns": ["README*", "LICEN*", "NOTICE*", "*/meta/**", "*/data/**", "*/videos/**"],
         "video": True,
     },
@@ -76,6 +77,7 @@ SOURCES = {
         "provider": "nvidia",
         "license": "cc-by-4.0",
         "role": "holdout",
+        "protocol_revision": "d89c126a71",
         "patterns": BASE + ["data/**", "videos/**"],
         "video": True,
     },
@@ -83,6 +85,7 @@ SOURCES = {
 # AppleToPlate's state names are not joint names: its modality.json groups and, inside a group,
 # the order of NVIDIA's Teleop set (arm in MJCF order; hand index, middle, thumb). An assumption
 # for the held-out set only; it is outside the decision.
+WAIST = ["waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint"]
 NVIDIA_GROUP_ORDER = {
     "arm": [f"{p}_joint" for _, p in rc.ARM_PARTS],
     "hand": [
@@ -121,6 +124,11 @@ def download(raw: Path, names, floor_gib: float) -> dict:
             "gated": info.gated,
             "role": spec["role"],
         }
+        pinned = spec.get("protocol_revision")
+        if pinned and not info.sha.startswith(pinned):
+            entry["status"] = f"not-downloaded: head {info.sha[:10]} is not the protocol's {pinned}"
+            record[name] = entry
+            continue
         if info.gated or f"license:{spec['license']}" not in tags:
             entry["status"] = "not-downloaded: gated or license tag differs"
             record[name] = entry
@@ -213,12 +221,8 @@ def load_nvidia(root: Path):
         names = info["features"]["observation.state"]["names"]
         if len(names) != 43 or not all(str(n).endswith("_joint") for n in names):
             modality = json.loads((folder / "meta/modality.json").read_text())["state"]
-            names = [None] * 43
-            for group, span in modality.items():
-                side, kind = group.split("_", 1)
-                if kind in NVIDIA_GROUP_ORDER:
-                    for i, part in enumerate(NVIDIA_GROUP_ORDER[kind]):
-                        names[span["start"] + i] = f"{side}_{part}"
+            names = names_from_modality(modality, 43)
+        names = rc.map_names(names, provider="nvidia")
         tasks = {}
         for line in (folder / "meta/tasks.jsonl").read_text().splitlines():
             if line.strip():
@@ -249,6 +253,25 @@ def load_nvidia(root: Path):
             )
 
 
+def names_from_modality(modality: dict, width: int) -> list:
+    """Joint names from GR00T modality groups (state groups only; legs ignored)."""
+    names = [None] * width
+    for group, span in modality.items():
+        if span.get("original_key", "observation.state") != "observation.state":
+            continue
+        if group == "waist":
+            parts = WAIST
+        elif "_" in group and group.split("_", 1)[1] in NVIDIA_GROUP_ORDER:
+            side, kind = group.split("_", 1)
+            parts = [f"{side}_{p}" for p in NVIDIA_GROUP_ORDER[kind]]
+        else:
+            continue  # legs and anything else: not used
+        if span["end"] - span["start"] != len(parts):
+            raise ValueError(f"modality group {group} has {span['end'] - span['start']} joints")
+        names[span["start"] : span["end"]] = parts
+    return names
+
+
 def frames_at(video: dict, indices: np.ndarray, fps: float) -> np.ndarray:
     """Decode the source frames at ``indices`` (episode-relative), resized to 112 px."""
     import av
@@ -259,6 +282,8 @@ def frames_at(video: dict, indices: np.ndarray, fps: float) -> np.ndarray:
     last = max(wanted)
     with av.open(str(video["path"])) as container:
         stream = container.streams.video[0]
+        if stream.average_rate and abs(float(stream.average_rate) - fps) > 0.01:
+            raise ValueError(f"{video['path']}: video {float(stream.average_rate)} fps != {fps}")
         start = min(wanted) / fps
         container.seek(int(max(start - 1.0, 0) / stream.time_base), stream=stream)
         for frame in container.decode(stream):
@@ -327,81 +352,125 @@ class Pool:
         return out
 
 
-def convert(raw: Path, out: Path, names, limit=None) -> dict:
+def _schema(kin):
     from embodied_jepa.contracts import StateSchema
-    from embodied_jepa.data import DatasetStore, Episode
 
-    downloads = json.loads((raw / "downloads.json").read_text())
-    kin = rc.Kinematics()
-    schema = StateSchema(
+    # Our 43 joints; only the arm and hand joints are required (legs and waist may be missing).
+    required = tuple(
+        (
+            "_hip_" not in n
+            and "_knee_" not in n
+            and "_ankle_" not in n
+            and not n.startswith("waist_")
+        )
+        for n in kin.joint_names
+    )
+    return StateSchema(
         tuple(f"{n}.position" for n in kin.joint_names)
         + tuple(f"{n}.velocity" for n in kin.joint_names),
         ("rad",) * len(kin.joint_names) + ("rad/s",) * len(kin.joint_names),
-        "g1_dex3_proprio_v0",
+        "g1_dex3_proprio_v0_real",
+        required + required,
     )
+
+
+def _loader(spec):
+    return load_unitree if spec["provider"] == "unitree" else load_nvidia
+
+
+def measure(raw: Path, names, kin, limit=None) -> dict:
+    """Pass 1: every converted step of every downloaded set (no images)."""
+    downloads = json.loads((raw / "downloads.json").read_text())
     pooled, pooled_target = Pool(), Pool()
-    report = {"sets": {}, "stores": {}}
+    report = {"sets": {}}
     for name in names:
         spec, dl = SOURCES[name], downloads.get(name, {})
         if dl.get("status") != "downloaded":
             report["sets"][name] = {"status": dl.get("status", "missing")}
             continue
-        root = raw / name
-        loader = load_unitree if spec["provider"] == "unitree" else load_nvidia
-        per, per_target = Pool(), Pool()
-        store = None
-        store_episodes, sessions = [], []
-        tasks = {}
-        started = time.time()
-        for n_ep, (key, task, jnames, state, action, fps, video) in enumerate(loader(root)):
+        per, per_target, tasks, started = Pool(), Pool(), {}, time.time()
+        for n_ep, (_, task, jnames, state, action, fps, _) in enumerate(_loader(spec)(raw / name)):
             if limit and n_ep >= limit:
                 break
             tasks[task] = tasks.get(task, 0) + 1
             c = rc.convert_episode(kin, jnames, state, fps)
-            per.add(c)
             ct = rc.convert_episode(kin, jnames, action, fps)
+            per.add(c)
             per_target.add(ct)
             if spec["role"] == "train":
                 pooled.add(c)
                 pooled_target.add(ct)
-            want_store = (
-                spec["video"] and video is not None and spec["role"] in ("train", "holdout")
-            )
-            if not want_store:
-                continue
-            segs = rc.segments(c.flagged)
-            if not segs:
-                continue
-            if store is None:
-                store = DatasetStore.create(
-                    out / name,
-                    fps=rc.TARGET_FPS,
-                    state_schema=schema,
-                    action_manifest=kin.manifest,
-                    provenance={
-                        "task": "TASK-086",
-                        "protocol": "docs/experiments/real_g1_dex3_prestep.md",
-                        "repo": spec["repo"],
-                        "revision": dl["revision"],
-                        "license": spec["license"],
-                        "role": spec["role"],
-                        "camera": rc.CAMERA,
-                        "converter": "real_g1_convert v0",
-                    },
-                )
-            lo, hi = segs[0][0], segs[-1][1]
-            images = frames_at(video, c.image_index[lo : hi + 1], fps)
-            for s, e in segs:
-                eid = f"{name}-{key.replace('/', '-')}-{s:05d}"
-                episode = Episode(
-                    episode_id=eid,
+        summary = per.summary()
+        report["sets"][name] = {
+            "role": spec["role"],
+            "status": "measured",
+            "state": summary,
+            "action_target": per_target.summary(),
+            "tasks": tasks,
+            "episodes": sum(tasks.values()),
+            "seconds": time.time() - started,
+            "excluded_range": spec["role"] == "train"
+            and summary["arm_out_fraction"] > rc.RANGE_BAR,
+            "waist": "0 (not in the source)" if spec["provider"] == "unitree" else "from data",
+        }
+    report["pooled_train_eligible"] = pooled.summary()
+    report["pooled_action_target"] = pooled_target.summary()
+    void = [
+        f"{n} not downloaded"
+        for n, spec in SOURCES.items()
+        if spec["role"] == "train" and downloads.get(n, {}).get("status") != "downloaded"
+    ]
+    report["decision"] = rc.decide(pooled.summary(), void="; ".join(void))
+    return report
+
+
+def write_store(raw: Path, out: Path, name: str, kin, revision: str, limit=None) -> dict:
+    """Pass 2: one DatasetStore for a set with video (train sealed, holdout unsealed)."""
+    from embodied_jepa.data import DatasetStore, Episode
+
+    spec = SOURCES[name]
+    schema = _schema(kin)
+    store = DatasetStore.create(
+        out / name,
+        fps=rc.TARGET_FPS,
+        state_schema=schema,
+        action_manifest=kin.manifest,
+        provenance={
+            "task": "TASK-086",
+            "protocol": "docs/experiments/real_g1_dex3_prestep.md",
+            "repo": spec["repo"],
+            "revision": revision,
+            "license": spec["license"],
+            "role": spec["role"],
+            "camera": rc.CAMERA,
+            "waist": "0 (not in the source)" if spec["provider"] == "unitree" else "from data",
+            "converter": "real_g1_convert v0",
+        },
+    )
+    sessions = []
+    for n_ep, (key, task, jnames, state, _, fps, video) in enumerate(_loader(spec)(raw / name)):
+        if limit and n_ep >= limit:
+            break
+        if video is None:
+            continue
+        c = rc.convert_episode(kin, jnames, state, fps)
+        segs = rc.segments(c.flagged)
+        if not segs:
+            continue
+        lo, hi = segs[0][0], segs[-1][1]
+        images = frames_at(video, c.image_index[lo : hi + 1], fps)
+        for s, e in segs:
+            values, mask = c.state(kin, s, e)
+            store.write_episode(
+                Episode(
+                    episode_id=f"{name}-{key.replace('/', '-')}-{s:05d}",
                     session_id=f"{name}-{key}",
                     task=task or name,
                     object_id=f"real_{name}",
                     container_id="real",
                     observations={rc.CAMERA: images[s - lo : e - lo + 1]},
-                    robot_states=c.state[s : e + 1],
-                    state_mask=c.state_mask[s : e + 1],
+                    robot_states=values,
+                    state_mask=mask,
                     actions=c.actions[s:e].astype(np.float32),
                     timestamps=np.arange(s, e + 1, dtype=np.float64) / rc.TARGET_FPS,
                     state_schema=schema,
@@ -415,46 +484,25 @@ def convert(raw: Path, out: Path, names, limit=None) -> dict:
                         ],
                     },
                 )
-                store.write_episode(episode)
-                store_episodes.append(eid)
-            sessions.append(key)
-        entry = {
-            "role": spec["role"],
-            "state": per.summary(),
-            "action_target": per_target.summary(),
-            "tasks": tasks,
-            "seconds": time.time() - started,
-        }
-        if store is not None:
-            if spec["role"] == "train":
-                keys = sorted(set(sessions))
-                split = rc.split_for(spec["repo"], keys)
-                assign = {f"{name}-{s}": k for k, v in split.items() for s in v}
-                by_split = {"train": [], "val": [], "test": [], "holdout": []}
-                for row in store.manifest["episodes"]:
-                    by_split[assign[row["session_id"]]].append(row["episode_id"])
-                store.freeze_split_assignments(
-                    by_split,
-                    provenance={"rule": "protocol §4", "salt": rc.SPLIT_SALT},
-                    heldout_combinations=(),
-                )
-                entry["splits"] = {k: len(v) for k, v in split.items()}
-            else:
-                entry["splits"] = "unsealed: real_test_holdout"
-            report["stores"][name] = {
-                "episodes": len(store_episodes),
-                "manifest_hash": store.manifest_hash,
-                "role": "real_test_holdout" if spec["role"] == "holdout" else "train",
-            }
-        report["sets"][name] = entry
-    report["pooled_train_eligible"] = pooled.summary()
-    report["pooled_action_target"] = pooled_target.summary()
-    void = []
-    for name, spec in SOURCES.items():
-        if spec["role"] == "train" and downloads.get(name, {}).get("status") != "downloaded":
-            void.append(f"{name} not downloaded")
-    report["decision"] = rc.decide(pooled.summary(), void="; ".join(void))
-    return report
+            )
+        sessions.append(key)
+    entry = {"episodes": len(store.manifest["episodes"]), "source_episodes": len(sessions)}
+    if spec["role"] == "train":
+        split = rc.split_for(spec["repo"], sorted(set(sessions)))
+        assign = {f"{name}-{k}": part for part, keys in split.items() for k in keys}
+        by_split = {"train": [], "val": [], "test": [], "holdout": []}
+        for row in store.manifest["episodes"]:
+            by_split[assign[row["session_id"]]].append(row["episode_id"])
+        store.freeze_split_assignments(
+            by_split,
+            provenance={"rule": "protocol §4, §9", "salt": rc.SPLIT_SALT},
+            heldout_combinations=(),
+        )
+        entry.update(role="train", splits={k: len(v) for k, v in split.items()})
+    else:
+        entry.update(role="real_test_holdout", splits="unsealed")
+    entry["manifest_hash"] = store.manifest_hash
+    return entry
 
 
 def duplicate_check(raw: Path) -> dict:
@@ -499,10 +547,26 @@ def main(argv=None) -> int:
     if report_path.exists():
         raise SystemExit(f"refusing to overwrite {report_path}")
     out.mkdir(parents=True, exist_ok=True)
-    report = convert(raw, out, names, limit=args.limit)
-    if "unitree-graspsquare" in names and "unitree-blockstacking" in names:
-        report["graspsquare_vs_blockstacking"] = duplicate_check(raw)
+    kin = rc.Kinematics()
+    report = measure(raw, names, kin, limit=args.limit)
     report["downloads_sha256"] = sha256(raw / "downloads.json")
+    write_json(report_path.with_suffix(".measure.json"), report)  # kept if pass 2 fails
+    try:
+        if "unitree-graspsquare" in names and "unitree-blockstacking" in names:
+            report["graspsquare_vs_blockstacking"] = duplicate_check(raw)
+    except Exception as error:  # reported only
+        report["graspsquare_vs_blockstacking"] = {"error": repr(error)}
+    downloads = json.loads((raw / "downloads.json").read_text())
+    report["stores"] = {}
+    for name in names:
+        spec, entry = SOURCES[name], report["sets"].get(name, {})
+        if not spec["video"] or entry.get("status") != "measured":
+            continue
+        if spec["role"] not in ("train", "holdout") or entry.get("excluded_range"):
+            continue
+        report["stores"][name] = write_store(
+            raw, out, name, kin, downloads[name]["revision"], limit=args.limit
+        )
     write_json(report_path, report)
     corpus = out / "corpus.json"
     if not corpus.exists():

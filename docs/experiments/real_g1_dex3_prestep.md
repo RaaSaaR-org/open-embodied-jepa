@@ -75,7 +75,8 @@ again.
   the source task string, `object_id` = `real_<set>`, `container_id` = `real`. Sets without
   downloaded video get **no store** (an episode needs a camera); they are measured (§5) only.
 - **Splits** by source episode, per set: rank by sha256 of `"8603:<repo>:<folder>/<episode>"`;
-  n_val = n_test = max(1, floor(0.05 n)) of the n source episodes, the rest train; sealed with
+  n_val = n_test = max(1, floor(0.05 n)) of the n source episodes that keep at least one stored
+  segment (so no split of a sealed store is empty), the rest train; sealed with
   `freeze_split_assignments` and `heldout_combinations=()` (so no apple→plate set is forced into
   holdout). **AppleToPlate** is held out by leaving its store **unsealed** (the store cannot seal
   without train, val and test) and marking it `real_test_holdout` in the corpus manifest
@@ -134,11 +135,27 @@ report, `SHA256SUMS`) goes to `~/develop/emai/evidence/task086-*/`.
 ## 9. Converter (R23.20–R23.22)
 
 `src/embodied_jepa/real_g1_convert.py` (NumPy at import; MuJoCo forward kinematics, PyAV and
-PyArrow lazily), `scripts/convert_real_g1.py` (`download`: pins each repository to the revision
-it resolves and checks every file's sha256 against the Hub's LFS oid; `convert`: measures every
-set, writes the stores, the report and `data/real-g1-v1/corpus.json` with each store's manifest
-hash), `tests/test_real_g1_convert.py`. Two implementation details the text above leaves open:
-AppleToPlate's state names are not joint names, so its joints come from its `modality.json`
-groups in the order of NVIDIA's Teleop set (an assumption for the held-out set only, outside the
-decision); the `action`-target variant is computed and reported but never stored. The download
-refuses to start a set below 12 GiB free.
+PyArrow lazily), `scripts/convert_real_g1.py`, `tests/test_real_g1_convert.py`.
+
+- **download** pins each repository to the revision it resolves; for the two NVIDIA sets that
+  must be the revision in §2 (otherwise the set is not downloaded). Large (LFS) files are checked
+  against the Hub's sha256; every file's sha256 is recorded. A set below 12 GiB free, gated, or
+  without the expected license tag is not downloaded.
+- **convert** runs in two passes. Pass 1 measures every downloaded set from states and actions
+  alone and writes `<report>.measure.json` first, so a later failure cannot lose it; a
+  training-eligible set whose own arm out-of-range fraction exceeds 0.5 is marked
+  `excluded_range` (§5) and gets no store. Pass 2 writes a store for each set with video (train
+  sets sealed, AppleToPlate unsealed), then the report and `data/real-g1-v1/corpus.json` with each
+  store's manifest hash.
+- Details the text above leaves open: R-RANGE's denominator is the steps whose two frames are
+  valid (steps touching an invalid frame are counted separately); NVIDIA's leg joints are ignored
+  like Unitree's (not in the invalid-frame check, masked in the state); AppleToPlate's joints come
+  from the `observation.state` groups of its `modality.json` (waist yaw, roll, pitch; arms in MJCF
+  order; hands index, middle, thumb, the order of NVIDIA's Teleop set), an assumption for the
+  held-out set only, outside the decision; Unitree's waist is 0 and recorded as such in each
+  store's provenance and the report; the stored state uses schema `g1_dex3_proprio_v0_real`
+  (our 43 joints, arm and hand required, legs and waist optional); velocities are finite
+  differences inside each stored segment; split keys are `<folder>/<episode>` for NVIDIA's Teleop
+  folders and the zero-padded episode index for Unitree; a decoded video must report the data's
+  frame rate; the `action`-target variant is measured and reported, never stored; a pooled
+  measurement with no valid step is R-VOID.

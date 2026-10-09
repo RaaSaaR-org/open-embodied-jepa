@@ -108,10 +108,53 @@ def test_grasp_projection_and_palm_deltas():
     assert np.allclose(conv.actions[:, :6], 0, atol=1e-9)
     assert np.abs(conv.actions[:, 6:9]).max() > 0
     assert np.allclose(conv.actions[:, 12:], -1)
-    assert conv.state_mask[0, kin.joint_names.index("right_elbow_joint")]
-    assert not conv.state_mask[0, kin.joint_names.index("left_knee_joint")]
+    values, mask = conv.state(kin, 1, 3)
+    assert values.shape == (3, 2 * len(kin.joint_names))
+    j = kin.joint_names.index("right_elbow_joint")
+    assert mask[0, j] and not mask[0, kin.joint_names.index("left_knee_joint")]
+    assert np.allclose(values[:, len(kin.joint_names) + j], 0.2)  # 0.01 rad per 50 ms
     # an out-of-range joint invalidates its frame and flags both neighbouring steps
     qs[2, -1] = 10.0
     conv = rc.convert_episode(kin, names, qs, 20.0)
     assert not conv.valid[2] and conv.flagged[1] and conv.flagged[2] and not conv.flagged[0]
     json.dumps(rc.episode_stats(conv))
+
+
+def test_gr00t_modality_groups_map_to_our_names(monkeypatch):
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts/convert_real_g1.py"
+    spec = importlib.util.spec_from_file_location("convert_real_g1", path)
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, "convert_real_g1", module)
+    spec.loader.exec_module(module)
+    modality = {
+        "left_leg": {"start": 0, "end": 6},
+        "right_leg": {"start": 6, "end": 12},
+        "waist": {"start": 12, "end": 15},
+        "left_arm": {"start": 15, "end": 22},
+        "right_arm": {"start": 22, "end": 29},
+        "left_hand": {"start": 29, "end": 36},
+        "right_hand": {"start": 36, "end": 43},
+        "left_wrist_pose": {"start": 0, "end": 7, "original_key": "observation.eef_pose"},
+    }
+    names = module.names_from_modality(modality, 43)
+    assert names[:12] == [None] * 12
+    assert names[12:15] == ["waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint"]
+    assert names[15] == "left_shoulder_pitch_joint" and names[28] == "right_wrist_yaw_joint"
+    assert names[29] == "left_hand_index_0_joint" and names[42] == "right_hand_thumb_2_joint"
+    assert len({n for n in names if n}) == 31
+    # NVIDIA's named legs are ignored as well
+    assert rc.map_names(["left_hip_pitch_joint", "waist_yaw_joint"], provider="nvidia") == [
+        None,
+        "waist_yaw_joint",
+    ]
+
+
+def test_resample_keeps_nan_out_of_valid_frames():
+    q = np.array([[0.0], [np.nan], [2.0], [3.0]])
+    valid = np.isfinite(q[:, 0])
+    q20, v20, _ = rc.resample(q, valid, 20.0)
+    assert np.isfinite(q20).all() and v20.tolist() == [True, False, True, True]

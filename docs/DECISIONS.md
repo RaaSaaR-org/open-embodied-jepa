@@ -68,8 +68,9 @@ is kept as written.
 **Decided by Claude under owner delegation (2026-09-30).** Record:
 [real_g1_dex3_prestep.md §6, §9](experiments/real_g1_dex3_prestep.md).
 
-- **R23.20 — the converter and runner** as §9; development on 2 + 2 episodes disclosed in §6; the
-  bars of §5 unchanged.
+- **R23.20 — the converter and runner** as §9 (two passes, per-set exclusion above 0.5, the
+  protocol's NVIDIA revisions enforced, splits over source episodes that keep a segment);
+  development on 2 + 2 episodes disclosed in §6; the bars of §5 unchanged.
 - **R23.21 — frozen** at this merge; the run uses the merged revision on CPU, evidence in
   `~/develop/emai/evidence/task086-run/`.
 - **R23.22 — R7 does not change.**
