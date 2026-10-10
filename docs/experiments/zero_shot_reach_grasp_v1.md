@@ -436,7 +436,7 @@ sha256 `0f9cade1…df25`).
   commands), although their palm came within 1 cm of the current subgoal's palm on most resets;
   grasp contact occurred on 1 (P), 5 (G), 9 (G-lat) and 2 (G-pose) of 16; median maximum rise
   0.2–0.3 cm. Several G-family grasp episodes ended "stopped" (G 3, G-lat 1, G-pose 4; the
-  measured-velocity stop), as did 3 of ik's.
+  measured-velocity stop), as did 3 of ik's, 3 of ik-nopress's and 1 of random's.
 - Planning about 0.9 s per command with 6 processes sharing the GPU; reach runs about 7 min and
   grasp runs about 18 min per 16 resets, so Stage S's projection stays at about 8 GPU hours.
 - **No defect was found**: every run completed under the rules at one revision from a clean tree,
