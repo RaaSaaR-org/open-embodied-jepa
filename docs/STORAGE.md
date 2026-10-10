@@ -108,18 +108,16 @@ while TASK-076 is open**; `scripts/remove_worktree.sh` does not apply to it.
 `outputs/` holds the post-freeze reports of Stages O, D, K-pred (M-a, M-b) and S/U and the
 closed-loop readouts (`task076-O-1/r_plate*.npz`), which the workers loaded by absolute path; the
 results document cites their sha256 ([apple_plate_twin_v2_results.md](experiments/apple_plate_twin_v2_results.md) §1).
-K0's report is in the main checkout's `outputs/task076-k0-1`. Now that TASK-076 is closed, keep
-the run worktree, K0's report and the `--evidence` root until they are archived like the others
-(copy, checksum, MANIFEST row, verify before removing).
+K0's report is in the main checkout's `outputs/task076-k0-1`. The run worktree was archived on
+2026-10-10 (below); K0's report and the `--evidence` root are still only on the SSD.
 
 **TASK-077's run worktrees** (closed 2026-10-07, G-NO-BAR; [results](experiments/apple_lewm_c1m_v2_results.md)
 §1): `task077-k0`, `task077-corpus`, `task077-corpus2` (the sealed corpus), `task077-stageo`
 (the featurisation and Stage O's fits), `task077-staget` and `task077-staget2` (the eight Stage T
 jobs and their checkpoints) and `task077-stageg`. Stage T's and Stage G's outputs are copied to
 the SSD evidence store (`~/develop/emai/evidence/task077-stage{t,t2,g}/`, sha256 manifests under
-`_checksums/`). The decomposition record that R17.51 recommends reads the featurisation, the fits
-and the six checkpoints from these worktrees, so keep them until that record is merged and they
-are archived like the others.
+`_checksums/`). `task077-k0`, `task077-corpus`, `task077-corpus2` and `task077-stageo` were archived on
+2026-10-10 and `task077-staget`, `task077-staget2` and `task077-stageg` removed (below).
 
 **TASK-080's run worktrees** (closed 2026-10-08, L-NEAR;
 [results](experiments/apple_lewm_c1m_v2_pred_readout_results.md) §1): `task080-k0`,
@@ -128,9 +126,8 @@ readout fits R-S, R-N and R-L), `task080-staged` and `task080-stages`. Their rep
 Stage R fits are copied to the SSD evidence store
 (`~/develop/emai/evidence/task080-{k0,stagec,stager,staged,stages}/`, sha256 manifests under
 `_checksums/`); the fresh feature files (3.46 GB) are not copied and stay in `task080-stager`.
-Stages D and S read the Stage R report and fits from these worktrees. Nothing reads them now that
-TASK-080 is closed, so they can be archived like the others (copy, checksum, MANIFEST row, verify
-before removing).
+Stages D and S read the Stage R report and fits from these worktrees. On 2026-10-10 `task080-stagec` and `task080-stager` were archived (the
+feature files' second copy is on the USB disk only, not in the SSD evidence store) and the other three removed (below).
 
 **TASK-081's run worktrees** (closed 2026-10-08, L-PASS;
 [results](experiments/apple_lewm_commit_precision_v2_results.md) §1): `task081-design` (the
@@ -139,7 +136,64 @@ stdouts are copied to the SSD evidence store
 (`~/develop/emai/evidence/task081-{dev,staged,stages}/`, sha256 manifests under `_checksums/`).
 TASK-081's Stages D and S read TASK-077's featurisation and fits (`task077-stageo`) and TASK-080's
 Stage R report and fits (`task080-stager`); with TASK-081 closed nothing reads them now, but any
-re-run or follow-up on W-66800 and R-S does, so archive them only with their checksums verified.
+re-run or follow-up on W-66800 and R-S does, so archive them only with their checksums verified. Done on 2026-10-10 (below); the three
+TASK-081 worktrees themselves held nothing beyond the evidence store and were removed.
+
+## Cleanup of 2026-10-10
+
+`/` had 28.3 GB free (94 %) before this pass. The Phase 3 run (TASK-088) was running, so nothing
+it reads was touched: `worktrees/task088-stage0`, `worktrees/task087-run` (TASK-087's checkpoints
+and `outputs/task087-features`), the main checkout's `data/play-v1`, `.venv`, `checkpoints/` and
+`third_party/` (lerobot, le-wm, dinov2-small, unitree_mujoco, jepa-wms, `jepa-wms-runtime`), the
+GPU lock and `worktrees/task076-evidence`.
+
+- **Removed, nothing archived (53 worktrees).** Every worktree whose ignored content was only
+  caches, `.venv/`, `.mc/data/` index files and symlinks, or outputs whose every file's sha256
+  is already in `~/develop/emai/evidence/`, removed with `git worktree remove` (no `--force`):
+  the review, prereg, freeze, record and results worktrees of TASK-076 to TASK-086, plus
+  `task077-stageg`, `task077-staget`, `task077-staget2`, `task077-decomp`, `task080-k0`,
+  `task080-staged`, `task080-stages`, `task081-design`, `task081-staged`, `task081-stages`,
+  `task082-k0`, `task083-stage0`, `task083-stages`, `task084-run`, `task085-run`, `task086-run`,
+  `fix-ci-pr-a`, `task076-prereg-draft` and `wt-task076-freeze-prep`. The list is
+  `archive/removed-worktrees-2026-10-10.txt` on the disk and
+  `evidence/_archive-extras/removed-worktrees-2026-10-10.txt`. Their 38 merged local branches
+  were deleted (`deleted-local-branches-2026-10-10.txt` in both places, `name sha #PR`; every
+  tip is a merged PR's head on GitHub). The local branch `ci/integration-timeout-30` holds an
+  unpushed commit (`abaafdb`, the macOS-timeout change, needs the `workflow` token scope) and was
+  kept; its patch is in `archive/patches/ci-integration-timeout-30/` and
+  `evidence/_archive-extras/patches/ci-integration-timeout-30/`.
+- **Archived, SSD originals kept (30 worktrees).** `task076-run`, `task076-stage0`,
+  `task077-{k0,corpus,corpus2,cprobe,freeze,memfix,prereg,stage0,stageo,stageo-prep,staget-prep}`,
+  `task080-{stage0,stagec,stager}`, `task081-stage0`, `task082-{design,s0chain,s0run,stage0}`,
+  `task085-{prereg,stage0}`, `task087-stage0`, `c1-feasibility`, `c1m-run`, `c1m-debug`,
+  `next-direction-r15`, `arena-e9b` and `/home/huhn/develop/emai/oej-isaac-newton`. Each was
+  copied to `archive/worktrees/<name>/` (without `.venv/`, tool caches, symlinks and the
+  Isaac/Omniverse `home_cache/` directories), every file re-read from the disk after the copy and
+  matched; 23.1 GB, one split file (`task077-stageo`'s `features8_train.npy`, 9.55 GB). The
+  failing disk is not the only copy of anything cited: their `outputs/`, `data/`,
+  `checkpoints/`, `assets/isaac/` and two untracked files (3.0 GB) are also on the SSD at
+  **`/home/huhn/develop/emai/evidence/worktrees/<name>/`**, mirroring the worktree's paths
+  (manifests `evidence/_checksums/worktrees/<name>.sha256`). Only on the disk: TASK-077's and
+  TASK-080's frozen-DINOv2 feature arrays (`outputs/task0{77,80}-featurise-1/features/`, 13.8 GB
+  and 3.5 GB; regenerable featurisation output, their reports, logs and fits are on the SSD) and
+  Stage 0 smoke/debug files of 10 MB or more (`task077-stage0`, `task082-s0chain`,
+  `task087-stage0`; 2.4 GB). The rows are in the disk's `MANIFEST.md`, "Third pass". **Removing
+  these 30 worktrees from the SSD is left to the owner** (it was not permitted in this session);
+  until then read them in place. Once removed, an old path
+  `/home/huhn/develop/emai/worktrees/<name>/X` maps to `evidence/worktrees/<name>/X` (outputs) or
+  `archive/worktrees/<name>/X` (everything). The `tail -F` process in `oej-isaac-newton` (pid
+  260505) only reads a log; it does not block archiving.
+- **Second copies of data on the disk, SSD originals kept:** `datasets/real-g1-v1/` (TASK-086's
+  converted stores, unused since R23.28, 2.0 GB; the protocol allows deleting the SSD copy if
+  space is needed, recorded) and `datasets/jepa-wms-runtime-downloads/` (TASK-084's pinned
+  `pusht_noise.zip` and checkpoint). `third_party/jepa-wms-runtime/dset/` (7.0 GB) matches the
+  pinned zip member for member (CRC-32 of all 18 718 files, none extra), so it can be deleted and
+  regenerated with `unzip -q downloads/pusht_noise.zip -d dset`; it was not deleted. (The
+  `downloads/SHA256SUMS` file lists another value for the zip; the zip on disk has the runner's
+  pin, `442f5dee…2da08`.)
+- After this pass `/` had about 30 GB free. Removing the 30 archived worktrees would free about
+  30 GB more (28.6 GiB by `du`, with files hard-linked to kept checkouts counted against those),
+  and deleting `real-g1-v1` and `jepa-wms-runtime/dset` about 9 GB.
 
 ## Old path to archive path
 
@@ -222,8 +276,8 @@ symlinks them from there (`scripts/new_worktree.sh --run` links `data/`) rather 
 
 ### Not archived
 
-Still only on the SSD, as of 2026-10-04 (a snapshot; run `git worktree list` in the main checkout
-for the current set):
+Still only on the SSD, as of 2026-10-04 (a snapshot, superseded by the cleanup of 2026-10-10
+above; run `git worktree list` in the main checkout for the current set):
 
 - the main checkout;
 - `arena-e9b` (PR #123; a run is in progress in it);
@@ -243,10 +297,8 @@ The review and PR worktrees `docs-review`, `fix-ci-review`, `followup-nits`, `to
 `storage-archive-2` held no evidence of their own (every HEAD is on GitHub) and were removed with
 `scripts/remove_worktree.sh` on 2026-10-04, without archiving.
 
-Still pending, on the SSD: `/home/huhn/develop/emai/oej-isaac-newton` (2.8 GB,
-`feat/task-025-isaac-newton`). A process (pid 260505,
-`tail -F .../outputs/isaac-newton-scripted-dev-3/log.txt`) still holds a file inside it open, as on
-2026-10-04, so it has not been archived; archive it the same way once that process ends.
+`/home/huhn/develop/emai/oej-isaac-newton` (`feat/task-025-isaac-newton`) was archived on
+2026-10-10 (above; its 2.8 GB were mostly `home_cache/`, not archived).
 
 ## Restore
 
