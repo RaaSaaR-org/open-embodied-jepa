@@ -380,7 +380,8 @@ while writing the code:
   "timeout" 15 (one stopped). Evidence `~/develop/emai/evidence/task088-stage0/` (`SHA256SUMS`
   sha256 `bcf1eff5…c952`; `k0/summary-k0.json` sha256 `7328099b…05df`).
 - **Debug smoke** (debug seeds, not results; P-87100's runs at `3232b4f`, most others at
-  `1e15280`, G-lat on reach re-run by hand at `4536418`, P-87101 from a dirty tree): every arm on 4 reach and 4 grasp debug
+  `1e15280` and several of those from a dirty tree (ik, ik-nopress, hold, random, G-pose, G and
+  G-lat on grasp, P-87101), G-lat on reach re-run by hand at `4536418`; debug runs may be dirty): every arm on 4 reach and 4 grasp debug
   resets — reach: P-87100 3 / 4, G 4 / 4, G-lat 4 / 4, G-pose 4 / 4, P-87101 2 / 2, ik 4 / 4,
   ik-nopress 4 / 4, hold and random 0 / 4; grasp: every world-model arm 0 / 4 (each timed out of
   hover, pre-grasp and grasp; at most one episode with any grasp contact), ik 2 / 4, ik-nopress
@@ -432,11 +433,14 @@ sha256 `0f9cade1…df25`).
   3.7 cm (P), against 0.1 cm for ik. P against random: 14 discordant resets to 0 (exact one-sided
   McNemar p = 6 × 10⁻⁵). P against G: 0 and 2 discordant (p = 0.5); not separated.
 - **Grasp.** No world-model arm lifted an object (0 / 16 each). They almost never met the subgoal
-  switch (P left the hover subgoal by "reached" once; every other subgoal timed out after 100
-  commands), although their palm came within 1 cm of the current subgoal's palm on most resets;
+  switch: P left the hover subgoal by "reached" once and G-lat the pre-grasp subgoal once; every
+  other subgoal was left by the 100-command timeout, or the episode stopped on the grasp subgoal.
+  Their palm came within 1 cm of the current subgoal's palm at some step on 12 (P), 13 (G), 15
+  (G-lat) and 6 (G-pose) of 16 resets;
   grasp contact occurred on 1 (P), 5 (G), 9 (G-lat) and 2 (G-pose) of 16; median maximum rise
   0.2–0.3 cm. Several G-family grasp episodes ended "stopped" (G 3, G-lat 1, G-pose 4; the
-  measured-velocity stop), as did 3 of ik's, 3 of ik-nopress's and 1 of random's.
+  measured-velocity stop), as did 3 of ik's and 3 of ik-nopress's; random's one stopped episode
+  was "projection infeasible".
 - Planning about 0.9 s per command with 6 processes sharing the GPU; reach runs about 7 min and
   grasp runs about 18 min per 16 resets, so Stage S's projection stays at about 8 GPU hours.
 - **No defect was found**: every run completed under the rules at one revision from a clean tree,
