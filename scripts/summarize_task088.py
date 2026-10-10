@@ -128,6 +128,7 @@ def main(argv=None) -> int:
             ("G-87100", "random"),
             ("ik", "P-87100"),
             ("ik", "G-87100"),
+            ("ik", "ik-nopress"),
         ):
             if first in files and second in files:
                 pairs[f"{first} vs {second}"] = paired(files[first], files[second])
