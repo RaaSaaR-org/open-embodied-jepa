@@ -39,8 +39,8 @@ Protocol: [zero_shot_reach_grasp_v1.md](../../docs/experiments/zero_shot_reach_g
 ## Acceptance criteria
 
 - [x] DRAFT preregistration reviewed independently and merged (#191, `2271667`)
-- [ ] Stage 0: code, tests, λ, debug smoke, K0 calibration and bars; reviewed; protocol frozen at merge
-- [ ] Stage D (development) run and recorded
+- [x] Stage 0: code, tests, λ, debug smoke, K0 calibration and bars; reviewed; protocol frozen at merge (#192, `028e6f3`)
+- [x] Stage D (development) run and recorded (§16)
 - [ ] Independent GO posted as a PR comment before Stage S
 - [ ] Stage S (gated, 64 + 64) run; results document, row and DECISIONS ruling reviewed and merged
 - [ ] Evidence in `~/develop/emai/evidence/task088-*/` with `SHA256SUMS`; two MP4s (one reach, one grasp)
