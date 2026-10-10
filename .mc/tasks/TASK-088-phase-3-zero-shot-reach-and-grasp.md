@@ -38,7 +38,7 @@ Protocol: [zero_shot_reach_grasp_v1.md](../../docs/experiments/zero_shot_reach_g
 
 ## Acceptance criteria
 
-- [ ] DRAFT preregistration reviewed independently and merged
+- [x] DRAFT preregistration reviewed independently and merged (#191, `2271667`)
 - [ ] Stage 0: code, tests, λ, debug smoke, K0 calibration and bars; reviewed; protocol frozen at merge
 - [ ] Stage D (development) run and recorded
 - [ ] Independent GO posted as a PR comment before Stage S

@@ -1,7 +1,7 @@
 # TASK-088 — Phase 3: zero-shot reach and grasp-and-lift by short-horizon planning
 
-**Status: DRAFT** (R25.1–R25.16, decided by Claude under owner delegation). It is **frozen when
-its Stage 0 PR merges**; after that merge nothing in §2–§10 changes without its own reviewed
+**Status: FROZEN at the merge of its Stage 0 PR** (R25.1–R25.21, decided by Claude under owner
+delegation; Stage 0's record is §15); after that merge nothing in §2–§10 changes without its own reviewed
 ruling. Stage 0 may fix only what §13 lists, each by a recorded rule.
 This is Phase 3 of the proposal [JEPA_ZERO_SHOT_PLAN.md](../JEPA_ZERO_SHOT_PLAN.md) ("Zero-shot
 reach and grasp"), after TASK-087's P2-FAIL ([grounded_lewm_v1_results.md](grounded_lewm_v1_results.md),
@@ -113,8 +113,9 @@ separate G's image and pose terms.
 
 All arms run on exactly the same goals and resets (paired). Per reach episode at most **150**
 commands (7.5 s); per grasp episode at most **400** (20 s): three subgoal timeouts of 100 (§5.3)
-still leave 100 commands on the last subgoal, enough for §6.2's 20-command hold. An episode ends at success (§6), at
-"stopped" (§3) or at the budget.
+still leave 100 commands on the last subgoal, enough for §6.2's 20-command hold. A reach episode runs its whole budget
+(so success at 3 and 8 cm and the final distance can be read; success is when the dwell is first
+complete); a grasp episode ends at success. Either ends early at "stopped" (§3).
 
 ### 5.1 World-model arms (CEM)
 
@@ -124,7 +125,7 @@ still leave 100 commands on the last subgoal, enough for §6.2's 20-command hold
   [−1, 1], no candidate projection; replanned from scratch every command (MPC), the first action
   of the best candidate executed (§3). CEM seed `8803·10⁷ + reset seed`, fixed per episode and the
   same for every arm. (TASK-084 used 300 samples, H = 6 and 30 iterations; 10 iterations here keep
-  Stage S at about 6 GPU hours, §13.)
+  Stage S at about 8 GPU hours, §15.)
 - **The model contract** (`zero_shot_runtime.PlannerModel`): `predict` rolls every candidate out
   from the encoded current frame (and, for G, the measured 28-D state) with the TASK-087
   predictor; `distance` returns per candidate and step
@@ -189,7 +190,8 @@ refuses any other (arm, model seed, cohort) combination.
   start height** *and* in grasp contact with the right hand (thumb plus index or middle, as
   `play-v1`'s sidecar defines it) for **20 consecutive commands** (1 s). The start height is the
   target's height after the reset and settle, the same in the demonstrator's run and in every arm's
-  episode (the runner checks it). Reported: maximum rise,
+  episode (the runner checks it to 10⁻⁶ m; a mismatch stops the run, which makes the row Z3-VOID).
+  Reported: maximum rise,
   any grasp contact, the subgoals reached and how (reached or timeout).
 - τ = 5 cm, the dwells and the 5 cm lift were set in code before any world-model closed loop was
   run (§12).
@@ -228,7 +230,7 @@ K0 also reports, per arm, how each grasp subgoal was left (reached or timed out)
   1. **Z3-VOID** — a run did not complete under the rules, a goal, checkpoint, projection or seed
      check failed, or a cohort was run twice.
   2. **Z3-PASS** — reach k ≥ max(⌈bar_reach × 64⌉, 32) **and** grasp k ≥ ⌈bar_grasp × 64⌉.
-  3. **Z3-REACH** — reach meets its bar, grasp does not.
+  3. **Z3-REACH** — reach k ≥ max(⌈bar_reach × 64⌉, 32) (as in row 2), grasp below its bar.
   4. **Z3-LOW** — reach below its bar, but P or G reaches at least 32 / 64 (50 %).
   5. **Z3-STOP-CANDIDATE** — P and G both reach fewer than 32 / 64.
 
@@ -316,14 +318,12 @@ while writing the code:
   and the per-run process count, each recorded.
 - **Frozen** at the Stage 0 merge; D and S run at the merged revision from a clean tree, each run
   one `scripts/gpu_run.sh --wait --min-free-gib 8 --board` job.
-- **Runtime estimate** (from the debug runs): about 8 planned commands a second over all
-  processes; Stage S about 6 GPU hours at most (reach 8 model runs × 64 × ≤ 150, grasp 4 × 64 ×
-  ≤ 400 commands), Stage D about 2.
+- **Runtime estimate:** Stage S about 8 GPU hours, Stage D about 2 (§15).
 - **Disk:** about 16 GB free; nothing is written below 10 GiB free (the runner refuses). Outputs
   in `outputs/task088-*` of the run worktree; evidence in `~/develop/emai/evidence/task088-*/`
   with `SHA256SUMS`. The TASK-087 checkpoints and features are read, never written.
 
-## 14. Rulings this document records (R25.1–R25.16, DRAFT; decided by Claude under owner delegation)
+## 14. Rulings this document records (R25.1–R25.16; decided by Claude under owner delegation)
 
 - **R25.1** — R24.23 is adopted: P is the primary model, G the second arm; the one-step wrong /
   true ratio is not a gate.
@@ -347,3 +347,64 @@ while writing the code:
 - **R25.14** — the reported-only quantities of §10, including the two MP4s.
 - **R25.15** — Stage 0, freeze, runtime and evidence as §13.
 - **R25.16** — R7 does not change, whatever the row.
+
+## 15. Stage 0 record (R25.17–R25.21)
+
+- **Code** (opt-in; no registry entry; `import embodied_jepa` stays torch- and MuJoCo-free, checked
+  by a test): `src/embodied_jepa/zero_shot.py` (cohorts, layouts, the demonstrators, scorers, the
+  switch, hold / random / ik / ik-nopress, λ, bars, rows; NumPy at import),
+  `src/embodied_jepa/zero_shot_runtime.py` (the encoder, the checkpoint loader with its
+  guards, `PlannerModel` behind `CEMPlanner`'s contract, the episode loop; torch),
+  `scripts/run_task088.py` (goals, λ, run, video), `scripts/summarize_task088.py`,
+  `scripts/run_task088_stage.sh` (one `gpu_run.sh` job per run; only gpu_run's refusal to start,
+  exit 76, is retried) and `tests/test_zero_shot.py` (27 tests; one graphics opt-in). No existing
+  file changes, so TASK-087's implementation hash, which the loader checks, is unchanged.
+- **λ** (`run_task088.py lambda` at `f87ac37`, clean tree): **2.0552** for every G seed
+  (latent MSE 3.856, standardised joint-position MSE 1.876, 9 941 pairs).
+- **K0** (calibration cohorts, at `f87ac37`, clean tree, NVIDIA EGL, under the GPU lock):
+
+  | Cohort | ik | ik-nopress | hold | random | rejected goal draws |
+  | --- | --- | --- | --- | --- | --- |
+  | reach (88000–88031) | 32 / 32 | 32 / 32 | 0 / 32 | 0 / 32 | 11 |
+  | grasp (88100–88131) | 24 / 32 | 24 / 32 | 0 / 32 | 0 / 32 | 25 |
+
+  **Bars by §7's rule: reach min(0.80, 0.9 × 1.00) = 0.80 → 52 / 64; grasp min(0.40, 0.9 × 0.75)
+  = 0.40 → 26 / 64** (`zero_shot.BARS`). Both are the plan's example bars; ik's rates are above
+  them with margin. Reported: ik and ik-nopress succeeded on exactly the same 24 grasp resets
+  (the press changed the step counts on 13, never the outcome): with the four-subgoal design the
+  grasp subgoal's palm is already below where the palm stops while open, so following it presses
+  anyway; §12's 26-vs-7 contrast was e9's three-subgoal recipe with the target frozen. Accepted
+  grasp targets: can 15, apple 9, cube 8, **banana 0** (the demonstrator never lifted the banana,
+  so the grasp cohort has no banana); ik by object: can 14 / 15, cube 8 / 8, apple 2 / 9. Every
+  ik grasp left the hover and pre-grasp subgoals by "reached"; the grasp subgoal by "reached" 16,
+  "timeout" 15 (one stopped). Evidence `~/develop/emai/evidence/task088-stage0/` (`SHA256SUMS`
+  sha256 `bcf1eff5…c952`; `k0/summary-k0.json` sha256 `7328099b…05df`).
+- **Debug smoke** (debug seeds, not results; most runs at `1e15280`, G-lat on reach re-run by hand
+  at `4536418`, P-87101 from a dirty tree): every arm on 4 reach and 4 grasp debug
+  resets — reach: P-87100 3 / 4, G 4 / 4, G-lat 4 / 4, G-pose 4 / 4, P-87101 2 / 2, ik 4 / 4,
+  ik-nopress 4 / 4, hold and random 0 / 4; grasp: every world-model arm 0 / 4 (each timed out of
+  hover, pre-grasp and grasp; at most one episode with any grasp contact), ik 2 / 4, ik-nopress
+  3 / 4, hold and random 0 / 4. Planning about 0.5–0.7 s per command with 4 processes sharing the
+  GPU. A replayed reach (P-87100, debug 88902) reproduced the run's palm distances exactly
+  (`video`), so the MP4s are replays of the recorded commands.
+- **Fixed in Stage 0, before the freeze:** reach episodes now run their whole 150-command budget
+  (the smoke stopped them at success, which made success at 3 cm unreadable: ik showed 0 / 4 at
+  3 cm only because it stopped at 5 cm); grasp still ends at success. K0's success counts do not
+  depend on this (success is when the dwell first completes). A gpu_run refusal (another GPU
+  user) skipped one smoke run, re-run by hand; the stage runner now retries refusals only.
+- **After the first review of this PR** (non-blocking items, fixed before the merge): K0 cohorts
+  refuse world-model arms and the replication seeds run on `gated-reach` only (`check_run`); runs
+  refuse a λ other than the frozen 2.0552 and goal files made at another revision; the gated
+  summary computes §8's Z3-VOID from the run files (every run present, 64 episodes on the cohort's
+  seeds, one revision, clean trees, λ); a CPU test checks that controllers get only the task and
+  the subgoals. `summary-k0.json` predates the ik / ik-nopress pair; the "same 24 resets" reading
+  is from the raw run files.
+- **Knobs:** the CEM iteration count stays **10** and the process count is 8 (baselines) and 6
+  (world-model arms) per run. Projection from the smoke: Stage S about **8 GPU hours** (reach 8
+  runs × 64 × 150 commands, grasp 4 × 64 × ≤ 400, about 1 s per command per process at 6
+  processes), Stage D about 2; inside §13's 30-hour limit, so nothing changes.
+- **R25.17** — the Stage 0 code above. **R25.18** — λ = 2.0552. **R25.19** — the bars: reach
+  0.80 (52 / 64, and ≥ 32 / 64), grasp 0.40 (26 / 64). **R25.20** — the smoke is not evidence;
+  frozen at this PR's merge; D and S run at the merged revision from a clean tree with
+  `scripts/run_task088_stage.sh`, evidence in `~/develop/emai/evidence/task088-*`. **R25.21** —
+  R7 does not change.

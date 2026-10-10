@@ -63,6 +63,25 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-10 (ae) — TASK-088 Stage 0: code, λ, K0 calibration and the bars; the protocol is frozen at this merge (R25.17–R25.21)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[zero_shot_reach_grasp_v1.md §15](experiments/zero_shot_reach_grasp_v1.md).
+
+- **R25.17 — Stage 0 code:** `zero_shot.py`, `zero_shot_runtime.py`, `run_task088.py`,
+  `summarize_task088.py`, `run_task088_stage.sh` and 27 tests (opt-in; `import embodied_jepa`
+  unchanged; no existing file changes).
+- **R25.18 — λ = 2.0552** by §5.1's rule on TASK-087's val store.
+- **R25.19 — the bars.** K0 on 32 + 32 calibration resets: the ik follower 32 / 32 (reach) and
+  24 / 32 (grasp), so reach 0.80 (52 / 64, and at least 32 / 64) and grasp 0.40 (26 / 64), the
+  plan's example bars. Reported: ik without the press also 24 / 32, on the same resets; hold and
+  random 0 everywhere; the demonstrator lifted no banana, so the grasp cohort has none.
+- **R25.20 — frozen** at this PR's merge; the smoke (every arm on debug seeds; world-model arms
+  0 / 4 on debug grasp) is not evidence; reach episodes run their whole budget (fixed in Stage 0);
+  D and S run at the merged revision from a clean tree, evidence in
+  `~/develop/emai/evidence/task088-*`.
+- **R25.21 — R7 does not change.**
+
 ## Decision 2026-10-10 (ad) — TASK-088 (Phase 3): zero-shot reach and grasp-and-lift by short-horizon planning; DRAFT preregistration (R25.1–R25.16; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30).** Phase 3 of
@@ -77,8 +96,9 @@ Stage 0 PR merges. The rulings R25.1–R25.16 are listed in its §14. In short:
   objects on fresh layouts in TASK-085's test object region; goals made by a privileged scripted
   demonstrator on the same reset, as an image plus the robot's own goal pose (proprioception,
   allowed); grasp as four image + pose subgoals. Object truth never reaches a controller or cost.
-- **Planner** (R25.6): `CEMPlanner` unchanged, H = 8, 300 samples, 10 iterations, replanned every
-  command (reach ≤ 150, grasp ≤ 400 commands); cost latent MSE (P) or latent + λ · joint-position MSE (G), λ by a fixed val rule.
+- **Planner** (R25.6): `CEMPlanner` unchanged, H = 8, 300 samples, 10 iterations, replanned
+  every command (reach ≤ 150, grasp ≤ 400 commands); cost latent MSE (P) or latent + λ ·
+  joint-position MSE (G), λ by a fixed val rule.
 - **Baselines** (R25.7): hold, random, a scripted IK follower of the goal poses with e9's press (the
   calibration ceiling) and the same follower without the press (reported).
 - **Success** (R25.9): reach within 5 cm for 10 consecutive commands; lift ≥ 5 cm with grasp
