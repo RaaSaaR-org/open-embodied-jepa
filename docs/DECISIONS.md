@@ -63,6 +63,19 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-10 (af) — TASK-088 Stage D (development): reach 14/16 (P) and 16/16 (G), grasp 0/16 for every world-model arm; Stage S runs as frozen after an independent GO (R25.22–R25.24)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[zero_shot_reach_grasp_v1.md §16](experiments/zero_shot_reach_grasp_v1.md).
+
+- **R25.22 — Stage D** at `028e6f3` (frozen, clean tree), 16 + 16 development resets, not gated:
+  reach P 14/16, G 16/16, G-lat 16/16, G-pose 14/16, ik 16/16, hold and random 0/16; grasp every
+  world-model arm 0/16 (subgoal switches almost never met; timeouts), ik 12/16, ik-nopress 11/16.
+  Development only; one model seed; simulation.
+- **R25.23 — no defect found;** Stage S (64 + 64) runs as frozen after an independent GO posted on
+  the Stage D PR.
+- **R25.24 — R7 does not change.**
+
 ## Decision 2026-10-10 (ae) — TASK-088 Stage 0: code, λ, K0 calibration and the bars; the protocol is frozen at this merge (R25.17–R25.21)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
