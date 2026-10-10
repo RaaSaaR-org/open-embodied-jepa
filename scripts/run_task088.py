@@ -213,6 +213,8 @@ def _controller(arm, model_seed, episode_seed, cache):
         return zs.RandomController(episode_seed)
     if arm == "ik":
         return zs.IKController()
+    if arm == "ik-nopress":
+        return zs.IKController(press=False)
     from embodied_jepa import zero_shot_runtime as zr
 
     model_arm, w_lat, w_pose = zs.MODEL_ARMS[arm]
@@ -254,14 +256,8 @@ def _run_worker(job):
 
 def cmd_run(args) -> int:
     report = base_report(args, args.cohort)
-    if args.arm in zs.MODEL_ARMS:
-        if args.model_seed not in zs.MODEL_SEEDS:
-            raise rt.GuardError("G-model-seed: one of TASK-087's model seeds")
-        name = f"{args.arm}-{args.model_seed}"
-    else:
-        if args.model_seed is not None:
-            raise rt.GuardError("baseline arms take no model seed")
-        name = args.arm
+    zs.check_run(args.cohort, args.arm, args.model_seed)
+    name = f"{args.arm}-{args.model_seed}" if args.arm in zs.MODEL_ARMS else args.arm
     out = Path(args.output) / args.cohort / f"{name}.json"
     if out.exists():
         raise rt.GuardError(f"refusing to overwrite {out}")

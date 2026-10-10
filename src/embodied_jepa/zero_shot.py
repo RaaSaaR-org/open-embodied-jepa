@@ -373,7 +373,7 @@ REACH_DWELL = 10  # consecutive control steps (0.5 s)
 REACH_REPORT_TOLERANCES = (0.03, 0.05, 0.08)
 LIFT_HEIGHT = 0.05  # m above the object's start height
 LIFT_DWELL = 20  # consecutive control steps (1 s) lifted and in grasp contact
-BUDGET = {"reach": 150, "grasp": 300}
+BUDGET = {"reach": 150, "grasp": 400}  # grasp: 3 x the timeout + 100 on the last subgoal
 SUBGOAL_TIMEOUT = 100
 SWITCH_PALM = 0.01
 SWITCH_HAND_RMS = 0.15
@@ -476,8 +476,11 @@ class IKController:
 
     name = "ik"
 
-    def __init__(self):
+    def __init__(self, press: bool = True):
         self.grasp = -1.0
+        self.press = press
+        if not press:
+            self.name = "ik-nopress"
 
     def act(self, robot, observation, goal, index):
         p = proprio(robot, observation)
@@ -485,7 +488,7 @@ class IKController:
         want = 1.0 if synergy_grasp(robot, g["state28"][7:14]) > 0 else -1.0
         self.grasp = float(np.clip(want, self.grasp - GRASP_RAMP, self.grasp + GRASP_RAMP))
         target = np.asarray(g["palm"], float).copy()
-        if goal["task"] == "grasp" and SUBGOALS[index] == "grasp":
+        if self.press and goal["task"] == "grasp" and SUBGOALS[index] == "grasp":
             target[2] -= PRESS_DEPTH  # e9's press: the palm is commanded below where it stops
         return tracking_action(robot, p["palm"], p["rotation"], target, g["rotation"], self.grasp)
 
@@ -500,13 +503,26 @@ MODEL_ARMS = {
     "G-lat": ("G", 1.0, 0.0),
     "G-pose": ("G", 0.0, 1.0),
 }
-BASELINE_ARMS = ("hold", "random", "ik")
-GATED_RUNS = (
-    [("P", s) for s in MODEL_SEEDS]
-    + [("G", s) for s in MODEL_SEEDS]
-    + [("G-lat", PRIMARY_SEED), ("G-pose", PRIMARY_SEED)]
-    + [(a, None) for a in BASELINE_ARMS]
-)
+BASELINE_ARMS = ("hold", "random", "ik", "ik-nopress")
+REPLICATION_SEEDS = (87101, 87102)  # P and G, on reach only (§5.4)
+
+
+def check_run(cohort: str, arm: str, model_seed) -> None:
+    """§5.4: which (arm, model seed) runs a cohort admits."""
+    if arm in BASELINE_ARMS:
+        if model_seed is not None:
+            raise ContractError("baseline arms take no model seed")
+        return
+    if arm not in MODEL_ARMS:
+        raise ContractError(f"unknown arm {arm}")
+    if model_seed == PRIMARY_SEED:
+        return
+    if model_seed in REPLICATION_SEEDS and arm in ("P", "G"):
+        if cohort_task(cohort) == "reach" or cohort.startswith("debug"):
+            return
+    raise ContractError(f"{arm}-{model_seed} is not a run of {cohort}")
+
+
 CEM = {"horizon": 8, "samples": 300, "iterations": 10, "elites": 30, "minimum_std": 0.05}
 
 
@@ -567,7 +583,9 @@ def row(results: dict, bars: dict, *, void: str = "") -> dict:
     n = {t: len(results[t]["P"]) for t in TASKS}
     k = {t: int(sum(results[t]["P"])) for t in TASKS}
     kg = {t: int(sum(results[t]["G"])) for t in TASKS}
+    # the plan's stop level takes precedence: a reach pass needs at least half (§8)
     need = {t: bar_count(bars[t], n[t]) for t in TASKS}
+    need["reach"] = max(need["reach"], bar_count(STOP_REACH, n["reach"]))
     if void:
         name = "Z3-VOID"
     elif k["reach"] >= need["reach"] and k["grasp"] >= need["grasp"]:
@@ -616,7 +634,7 @@ def pose_lambda(latents, states, episodes, state_mean, state_scale, *, pairs=LAM
     i = rng.integers(0, total, pairs)
     j = rng.integers(0, total, pairs)
     keep = owner[i] != owner[j]
-    i, j = np.sort(i[keep]), j[keep]
+    i, j = i[keep], j[keep]
     lat = np.asarray(latents[i], np.float32) - np.asarray(latents[j], np.float32)
     lat_mse = float((lat.astype(np.float64) ** 2).mean())
     scale = np.maximum(np.asarray(state_scale, np.float64), 1e-12)

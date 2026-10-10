@@ -164,7 +164,12 @@ def test_controllers_read_no_object_truth():
     robot = _NoTruthRobot()
     goal = {"task": "grasp", "subgoals": _subgoals()}
     goal["subgoals"][2]["state28"][7:14] = robot.manifest["right_closed_rad"]
-    for controller in (zs.HoldController(), zs.RandomController(1), zs.IKController()):
+    for controller in (
+        zs.HoldController(),
+        zs.RandomController(1),
+        zs.IKController(),
+        zs.IKController(press=False),
+    ):
         for index in range(4):
             action = controller.act(robot, _Obs(), goal, index)
             assert action.shape == (14,) and np.all(np.abs(action) <= 1)
@@ -339,8 +344,39 @@ def test_goals_and_ik_episode_end_to_end():
         out = zr.run_episode(robot, goal, zs.IKController())
         assert out["success"] and out["steps"] <= zs.BUDGET["reach"]
         out = zr.run_episode(robot, goal, zs.HoldController())
+        g2 = zs.make_goal(robot, "grasp", 88951)
+        zr.run_episode(robot, g2, zs.HoldController())  # checks the scorer's start height
         assert not out["success"] and out["steps"] == zs.BUDGET["reach"]
         g = zs.make_goal(robot, "grasp", 88950)
         assert len(g["subgoals"]) == len(zs.SUBGOALS)
     finally:
         robot.close()
+
+
+def test_check_run_limits_replications_to_reach():
+    zs.check_run("gated-reach", "P", 87101)
+    zs.check_run("gated-grasp", "G-pose", 87100)
+    zs.check_run("gated-grasp", "ik-nopress", None)
+    for cohort, arm, seed in (
+        ("gated-grasp", "P", 87101),
+        ("gated-reach", "G-lat", 87102),
+        ("gated-reach", "ik", 87100),
+        ("gated-reach", "P", 87999),
+    ):
+        with pytest.raises(ContractError):
+            zs.check_run(cohort, arm, seed)
+
+
+def test_reach_pass_needs_the_stop_level():
+    bars = {"reach": 0.45, "grasp": 0.1}
+    assert zs.row(_results(30, 64), bars)["row"] == "Z3-STOP-CANDIDATE"
+    assert zs.row(_results(32, 64), bars)["row"] == "Z3-PASS"
+
+
+def test_ik_nopress_does_not_press():
+    robot = _NoTruthRobot()
+    goal = {"task": "grasp", "subgoals": _subgoals()}
+    for sg in goal["subgoals"]:
+        sg["palm"] = np.array([0.3, -0.15, 0.07])
+    c = zs.IKController(press=False)
+    assert c.name == "ik-nopress" and c.act(robot, _Obs(), goal, 2)[8] == 0

@@ -175,10 +175,18 @@ def run_episode(robot, goal: dict, controller, *, record_actions=True) -> dict:
     task = goal["task"]
     zs.reset(robot, goal["layout"])
     if hasattr(controller, "set_goal"):
-        controller.set_goal(goal)
+        controller.set_goal({"task": task, "subgoals": goal["subgoals"]})
+    # controllers get the task and the (sub)goals' images and poses only, never the layout,
+    # target or start height (object truth)
+    seen = {"task": task, "subgoals": goal["subgoals"]}
     switch = zs.SubgoalSwitch(goal["subgoals"])
     sim = robot.sim
     index_obj = zs._target_index(goal["layout"]) if task == "grasp" else None
+    start_z_error = None
+    if task == "grasp":  # the scorer's start height is the demonstrator's settled reset
+        start_z_error = float(sim.play_truth()["position"][index_obj][2] - goal["target_z0"])
+        if abs(start_z_error) > 1e-6:
+            raise ContractError(f"target start height differs from the goal's: {start_z_error}")
     distances, rise, contact, subgoal_index, applied, costs, seconds = [], [], [], [], [], [], []
     stop_reason, success_step = "", -1
     t_start = time.perf_counter()
@@ -188,7 +196,7 @@ def run_episode(robot, goal: dict, controller, *, record_actions=True) -> dict:
         index = (
             switch.update(p["palm"], p["state28"][7:14], p["rotation"]) if task == "grasp" else 0
         )
-        request = controller.act(robot, observation, goal, index)
+        request = controller.act(robot, observation, seen, index)
         try:
             action = zs.execute(robot, request)
         except zs.Stopped as error:
@@ -231,6 +239,8 @@ def run_episode(robot, goal: dict, controller, *, record_actions=True) -> dict:
         d = np.asarray(distances) if distances else np.array([np.inf])
         out["final_distance"] = float(d[-1])
         out["min_distance"] = float(d.min())
+        _, rotation = robot.ee_pose("right")
+        out["final_rotation_error"] = zs.rotation_angle(rotation, goal["subgoals"][0]["rotation"])
         out["success_at"] = {
             str(t): zs.reach_success(distances, t) for t in zs.REACH_REPORT_TOLERANCES
         }
