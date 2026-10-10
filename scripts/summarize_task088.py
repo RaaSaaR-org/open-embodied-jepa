@@ -94,6 +94,36 @@ def paired(a: dict, b: dict) -> dict:
     }
 
 
+def gated_void(runs: Path) -> str:
+    """§8 row 1, as far as the run files show it: every run of §5.4 present, complete (64
+    episodes, the cohort's seeds), at one revision, from a clean tree, on one goal file."""
+    reasons, revisions = [], set()
+    expected = {
+        "gated-reach": [f"{a}-87100" for a in zs.MODEL_ARMS]
+        + [f"{a}-{s}" for a in ("P", "G") for s in zs.REPLICATION_SEEDS]
+        + list(zs.BASELINE_ARMS),
+        "gated-grasp": [f"{a}-87100" for a in zs.MODEL_ARMS] + list(zs.BASELINE_ARMS),
+    }
+    for cohort, names in expected.items():
+        for name in names:
+            path = runs / cohort / f"{name}.json"
+            if not path.exists():
+                reasons.append(f"{cohort}/{name} missing")
+                continue
+            r = load(path)
+            revisions.add(r["revision"])
+            if r["tracked_tree_dirty"]:
+                reasons.append(f"{cohort}/{name} dirty tree")
+            seeds = [e["seed"] for e in r["episodes"]]
+            if seeds != list(zs.COHORTS[cohort]) or len(seeds) != zs.GATED_EPISODES:
+                reasons.append(f"{cohort}/{name} incomplete")
+            if r.get("lambda") is not None and abs(r["lambda"] - zs.LAMBDA) > 1e-4:
+                reasons.append(f"{cohort}/{name} lambda")
+    if len(revisions) > 1:
+        reasons.append(f"revisions {sorted(revisions)}")
+    return "; ".join(reasons)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs", required=True)
@@ -158,7 +188,7 @@ def main(argv=None) -> int:
                 "P": [e["success"] for e in files["P-87100"]["episodes"]],
                 "G": [e["success"] for e in files["G-87100"]["episodes"]],
             }
-        summary["row"] = zs.row(res, zs.BARS)
+        summary["row"] = zs.row(res, zs.BARS, void=gated_void(runs))
     out = runs / f"summary-{args.stage}.json"
     out.write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
     for cohort, c in summary["cohorts"].items():

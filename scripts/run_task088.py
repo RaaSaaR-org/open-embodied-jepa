@@ -263,6 +263,9 @@ def cmd_run(args) -> int:
         raise rt.GuardError(f"refusing to overwrite {out}")
     out.parent.mkdir(parents=True, exist_ok=True)
     goals, goals_sha = load_goals(args.goals, args.cohort)
+    grev = json.loads((Path(args.goals) / f"goals-{args.cohort}.json").read_text())["revision"]
+    if not args.cohort.startswith("debug") and grev != report["revision"]:
+        raise rt.GuardError("G-goals: the goals were made at another revision")
     if args.limit:
         if not args.cohort.startswith("debug"):
             raise rt.GuardError("--limit is for debug cohorts only")
@@ -271,6 +274,8 @@ def cmd_run(args) -> int:
     if args.arm in zs.MODEL_ARMS and zs.MODEL_ARMS[args.arm][2] > 0:
         lrep = json.loads((Path(args.lambda_file)).read_text())
         lam = float(lrep["per_seed"][str(args.model_seed)]["lambda"])
+        if abs(lam - zs.LAMBDA) > 1e-4:
+            raise rt.GuardError(f"G-lambda: {lam} differs from the frozen {zs.LAMBDA}")
         report["lambda"] = lam
         report["lambda_file_sha256"] = sha256(args.lambda_file)
     report |= {

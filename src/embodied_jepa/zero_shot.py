@@ -515,10 +515,12 @@ def check_run(cohort: str, arm: str, model_seed) -> None:
         return
     if arm not in MODEL_ARMS:
         raise ContractError(f"unknown arm {arm}")
+    if cohort.startswith("k0"):
+        raise ContractError("K0 runs the baselines only (§7)")
     if model_seed == PRIMARY_SEED:
         return
     if model_seed in REPLICATION_SEEDS and arm in ("P", "G"):
-        if cohort_task(cohort) == "reach" or cohort.startswith("debug"):
+        if cohort == "gated-reach" or cohort.startswith("debug"):
             return
     raise ContractError(f"{arm}-{model_seed} is not a run of {cohort}")
 
@@ -653,3 +655,5 @@ def pose_lambda(latents, states, episodes, state_mean, state_scale, *, pairs=LAM
 # K0 (Stage 0 record, protocol §15): ik reached 32/32 (reach) and 24/32 (grasp) on the calibration
 # cohorts, so bar = min(0.80, 0.9 x 1.0) and min(0.40, 0.9 x 0.75): 52/64 and 26/64.
 BARS: dict = {"reach": 0.80, "grasp": 0.40}
+LAMBDA = 2.0552  # §5.1's rule on TASK-087's val store (Stage 0, R25.18); runs check it to 1e-4
+GATED_EPISODES = 64

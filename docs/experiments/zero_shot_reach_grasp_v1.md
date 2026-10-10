@@ -125,7 +125,7 @@ complete); a grasp episode ends at success. Either ends early at "stopped" (§3)
   [−1, 1], no candidate projection; replanned from scratch every command (MPC), the first action
   of the best candidate executed (§3). CEM seed `8803·10⁷ + reset seed`, fixed per episode and the
   same for every arm. (TASK-084 used 300 samples, H = 6 and 30 iterations; 10 iterations here keep
-  Stage S at about 6 GPU hours, §13.)
+  Stage S at about 8 GPU hours, §15.)
 - **The model contract** (`zero_shot_runtime.PlannerModel`): `predict` rolls every candidate out
   from the encoded current frame (and, for G, the measured 28-D state) with the TASK-087
   predictor; `distance` returns per candidate and step
@@ -323,7 +323,7 @@ while writing the code:
   in `outputs/task088-*` of the run worktree; evidence in `~/develop/emai/evidence/task088-*/`
   with `SHA256SUMS`. The TASK-087 checkpoints and features are read, never written.
 
-## 14. Rulings this document records (R25.1–R25.16, DRAFT; decided by Claude under owner delegation)
+## 14. Rulings this document records (R25.1–R25.16; decided by Claude under owner delegation)
 
 - **R25.1** — R24.23 is adopted: P is the primary model, G the second arm; the one-step wrong /
   true ratio is not a gate.
@@ -357,7 +357,7 @@ while writing the code:
   guards, `PlannerModel` behind `CEMPlanner`'s contract, the episode loop; torch),
   `scripts/run_task088.py` (goals, λ, run, video), `scripts/summarize_task088.py`,
   `scripts/run_task088_stage.sh` (one `gpu_run.sh` job per run; only gpu_run's refusal to start,
-  exit 76, is retried) and `tests/test_zero_shot.py` (26 tests; one graphics opt-in). No existing
+  exit 76, is retried) and `tests/test_zero_shot.py` (27 tests; one graphics opt-in). No existing
   file changes, so TASK-087's implementation hash, which the loader checks, is unchanged.
 - **λ** (`run_task088.py lambda` at `f87ac37`, clean tree): **2.0552** for every G seed
   (latent MSE 3.856, standardised joint-position MSE 1.876, 9 941 pairs).
@@ -379,7 +379,8 @@ while writing the code:
   ik grasp left the hover and pre-grasp subgoals by "reached"; the grasp subgoal by "reached" 16,
   "timeout" 15 (one stopped). Evidence `~/develop/emai/evidence/task088-stage0/` (`SHA256SUMS`
   sha256 `bcf1eff5…c952`; `k0/summary-k0.json` sha256 `7328099b…05df`).
-- **Debug smoke** (debug seeds, `3232b4f`, not results): every arm on 4 reach and 4 grasp debug
+- **Debug smoke** (debug seeds, not results; most runs at `1e15280`, G-lat on reach re-run by hand
+  at `4536418`, P-87101 from a dirty tree): every arm on 4 reach and 4 grasp debug
   resets — reach: P-87100 3 / 4, G 4 / 4, G-lat 4 / 4, G-pose 4 / 4, P-87101 2 / 2, ik 4 / 4,
   ik-nopress 4 / 4, hold and random 0 / 4; grasp: every world-model arm 0 / 4 (each timed out of
   hover, pre-grasp and grasp; at most one episode with any grasp contact), ik 2 / 4, ik-nopress
@@ -391,6 +392,13 @@ while writing the code:
   3 cm only because it stopped at 5 cm); grasp still ends at success. K0's success counts do not
   depend on this (success is when the dwell first completes). A gpu_run refusal (another GPU
   user) skipped one smoke run, re-run by hand; the stage runner now retries refusals only.
+- **After the first review of this PR** (non-blocking items, fixed before the merge): K0 cohorts
+  refuse world-model arms and the replication seeds run on `gated-reach` only (`check_run`); runs
+  refuse a λ other than the frozen 2.0552 and goal files made at another revision; the gated
+  summary computes §8's Z3-VOID from the run files (every run present, 64 episodes on the cohort's
+  seeds, one revision, clean trees, λ); a CPU test checks that controllers get only the task and
+  the subgoals. `summary-k0.json` predates the ik / ik-nopress pair; the "same 24 resets" reading
+  is from the raw run files.
 - **Knobs:** the CEM iteration count stays **10** and the process count is 8 (baselines) and 6
   (world-model arms) per run. Projection from the smoke: Stage S about **8 GPU hours** (reach 8
   runs × 64 × 150 commands, grasp 4 × 64 × ≤ 400, about 1 s per command per process at 6

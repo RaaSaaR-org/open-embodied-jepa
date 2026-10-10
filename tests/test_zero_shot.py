@@ -380,3 +380,45 @@ def test_ik_nopress_does_not_press():
         sg["palm"] = np.array([0.3, -0.15, 0.07])
     c = zs.IKController(press=False)
     assert c.name == "ik-nopress" and c.act(robot, _Obs(), goal, 2)[8] == 0
+
+
+class _Recorder:
+    name = "rec"
+
+    def __init__(self):
+        self.seen = []
+
+    def act(self, robot, observation, goal, index):
+        self.seen.append(goal)
+        return zs.HOLD.copy()
+
+
+def test_run_episode_hands_controllers_no_object_truth(monkeypatch, torch_mod):
+    from embodied_jepa import zero_shot_runtime as zr
+
+    class Sim:
+        def play_truth(self):
+            return {"position": np.zeros((4, 3)), "grasp_contact": np.zeros(4, bool)}
+
+    class Robot(_NoTruthRobot):
+        sim = Sim()
+
+        def observe(self):
+            return _Obs()
+
+        def ee_pose(self, side, *, data=None):  # the scorer reads the live pose
+            return np.array([0.3, -0.15, 0.07]), np.eye(3)
+
+    monkeypatch.setattr(zs, "reset", lambda robot, layout: None)
+    monkeypatch.setattr(zs, "execute", lambda robot, request: request)
+    goal = {
+        "task": "grasp",
+        "seed": 1,
+        "layout": {"target": "apple"},
+        "target_z0": 0.0,
+        "subgoals": _subgoals(),
+    }
+    rec = _Recorder()
+    out = zr.run_episode(Robot(), goal, rec)
+    assert out["steps"] == zs.BUDGET["grasp"]
+    assert all(set(g) == {"task", "subgoals"} for g in rec.seen)

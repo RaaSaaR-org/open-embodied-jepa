@@ -69,7 +69,7 @@ is kept as written.
 [zero_shot_reach_grasp_v1.md §15](experiments/zero_shot_reach_grasp_v1.md).
 
 - **R25.17 — Stage 0 code:** `zero_shot.py`, `zero_shot_runtime.py`, `run_task088.py`,
-  `summarize_task088.py`, `run_task088_stage.sh` and 26 tests (opt-in; `import embodied_jepa`
+  `summarize_task088.py`, `run_task088_stage.sh` and 27 tests (opt-in; `import embodied_jepa`
   unchanged; no existing file changes).
 - **R25.18 — λ = 2.0552** by §5.1's rule on TASK-087's val store.
 - **R25.19 — the bars.** K0 on 32 + 32 calibration resets: the ik follower 32 / 32 (reach) and
