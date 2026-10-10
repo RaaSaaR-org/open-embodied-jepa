@@ -127,7 +127,7 @@ Stage R fits are copied to the SSD evidence store
 (`~/develop/emai/evidence/task080-{k0,stagec,stager,staged,stages}/`, sha256 manifests under
 `_checksums/`); the fresh feature files (3.46 GB) are not copied and stay in `task080-stager`.
 Stages D and S read the Stage R report and fits from these worktrees. On 2026-10-10 `task080-stagec` and `task080-stager` were archived (the
-feature files only on the USB disk) and the other three removed (below).
+feature files' second copy is on the USB disk only, not in the SSD evidence store) and the other three removed (below).
 
 **TASK-081's run worktrees** (closed 2026-10-08, L-PASS;
 [results](experiments/apple_lewm_commit_precision_v2_results.md) §1): `task081-design` (the
