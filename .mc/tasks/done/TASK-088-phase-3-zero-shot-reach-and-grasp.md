@@ -4,12 +4,13 @@ aliases:
 - TASK-088
 title: 'Phase 3: zero-shot reach and grasp-and-lift by short-horizon planning'
 slug: phase-3-zero-shot-reach-and-grasp
-status: in-progress
+status: done
 priority: 2
 owner: ''
 projects: []
 customers: []
 tags:
+- z3-reach
 - world-model
 - lewm
 - planning
@@ -27,13 +28,13 @@ updated: 2026-10-10
 
 ## Description
 
-Phase 3 of [JEPA_ZERO_SHOT_PLAN.md](../../docs/JEPA_ZERO_SHOT_PLAN.md): CEM planning
+Phase 3 of [JEPA_ZERO_SHOT_PLAN.md](../../../docs/JEPA_ZERO_SHOT_PLAN.md): CEM planning
 (`embodied_jepa.planning.CEMPlanner`) over TASK-087's world models (plain LeWM P primary, G second
 arm; R24.23 adopted) to new image + pose goals on fresh resets, for reach and grasp-and-lift of
 `play-v1`'s objects with G1's right arm and right Dex3 in MuJoCo. Baselines hold, random and a
 scripted IK follower. Not Apple→Plate; R7 does not change.
 
-Protocol: [zero_shot_reach_grasp_v1.md](../../docs/experiments/zero_shot_reach_grasp_v1.md)
+Protocol: [zero_shot_reach_grasp_v1.md](../../../docs/experiments/zero_shot_reach_grasp_v1.md)
 (DRAFT, R25.1–R25.16; frozen at the Stage 0 PR's merge).
 
 ## Acceptance criteria
@@ -41,9 +42,9 @@ Protocol: [zero_shot_reach_grasp_v1.md](../../docs/experiments/zero_shot_reach_g
 - [x] DRAFT preregistration reviewed independently and merged (#191, `2271667`)
 - [x] Stage 0: code, tests, λ, debug smoke, K0 calibration and bars; reviewed; protocol frozen at merge (#192, `028e6f3`)
 - [x] Stage D (development) run and recorded (§16)
-- [ ] Independent GO posted as a PR comment before Stage S
-- [ ] Stage S (gated, 64 + 64) run; results document, row and DECISIONS ruling reviewed and merged
-- [ ] Evidence in `~/develop/emai/evidence/task088-*/` with `SHA256SUMS`; two MP4s (one reach, one grasp)
+- [x] Independent GO posted as a PR comment before Stage S (#193)
+- [x] Stage S (gated, 64 + 64) run; results document, row (Z3-REACH) and DECISIONS ruling (ag) reviewed and merged
+- [x] Evidence in `~/develop/emai/evidence/task088-*/` with `SHA256SUMS`; two MP4s (one reach, one grasp)
 
 ## Notes
 
