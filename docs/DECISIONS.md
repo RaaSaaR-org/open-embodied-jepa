@@ -63,6 +63,34 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-10 (ad) — TASK-088 (Phase 3): zero-shot reach and grasp-and-lift by short-horizon planning; DRAFT preregistration (R25.1–R25.16; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30).** Phase 3 of
+[JEPA_ZERO_SHOT_PLAN.md](JEPA_ZERO_SHOT_PLAN.md), after TASK-087's P2-FAIL (R24.22). The protocol is
+[zero_shot_reach_grasp_v1.md](experiments/zero_shot_reach_grasp_v1.md); it is frozen when its
+Stage 0 PR merges. The rulings R25.1–R25.16 are listed in its §14. In short:
+
+- **R24.23 adopted** (R25.1): plain LeWM P (seed 87100) is the primary model, G the second arm;
+  the one-step wrong / true ratio is not a gate. TASK-087's checkpoints are reused unchanged
+  (R25.2).
+- **Tasks and goals** (R25.3–R25.5): reach (palm to a goal pose) and grasp-and-lift of `play-v1`'s
+  objects on fresh layouts in TASK-085's test object region; goals made by a privileged scripted
+  demonstrator on the same reset, as an image plus the robot's own goal pose (proprioception,
+  allowed); grasp as four image + pose subgoals. Object truth never reaches a controller or cost.
+- **Planner** (R25.6): `CEMPlanner` unchanged, H = 8, 300 samples, 10 iterations, replanned every
+  command (reach ≤ 150, grasp ≤ 400 commands); cost latent MSE (P) or latent + λ · joint-position MSE (G), λ by a fixed val rule.
+- **Baselines** (R25.7): hold, random, a scripted IK follower of the goal poses with e9's press (the
+  calibration ceiling) and the same follower without the press (reported).
+- **Success** (R25.9): reach within 5 cm for 10 consecutive commands; lift ≥ 5 cm with grasp
+  contact for 20 consecutive commands; no latching of transient crossings.
+- **Bars** (R25.10): min(the plan's 0.80 / 0.40, 0.9 × the IK follower's rate on 32 + 32
+  calibration resets), fixed before the freeze.
+- **Stages and rows** (R25.11–R25.12): development Stage D (16 + 16), an independent GO, then
+  gated Stage S on 64 + 64 fresh resets; rows Z3-VOID / Z3-PASS / Z3-REACH / Z3-LOW /
+  Z3-STOP-CANDIDATE on P; the plan's stop rule (reach under 50 % for P and G → one fix, then stop
+  JEPA planning).
+- **R25.16 — R7 does not change**, whatever the row: this is not an Apple→Plate experiment.
+
 ## Decision 2026-10-10 (ac) — TASK-087 ends P2-FAIL: the grounded arms beat plain LeWM at h = 4 and 8 on every seed but not on one-step sensitivity; S and G are not carried into Phase 3 as "the grounded model"; R7 does not change; TASK-087 closes (R24.21–R24.25)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
