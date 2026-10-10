@@ -221,9 +221,10 @@ def run_episode(robot, goal: dict, controller, *, record_actions=True) -> dict:
             )
             flags = [r >= zs.LIFT_HEIGHT and c for r, c in zip(rise, contact, strict=True)]
             done = zs.dwell_reached(flags, zs.LIFT_DWELL)
-        if done >= 0:
+        if done >= 0 and success_step < 0:
             success_step = done
-            break
+            if task == "grasp":
+                break  # reach runs its whole budget, so 3 / 8 cm and the final distance are read
     out = {
         "seed": goal["seed"],
         "task": task,

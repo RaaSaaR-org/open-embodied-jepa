@@ -77,8 +77,9 @@ Stage 0 PR merges. The rulings R25.1–R25.16 are listed in its §14. In short:
   objects on fresh layouts in TASK-085's test object region; goals made by a privileged scripted
   demonstrator on the same reset, as an image plus the robot's own goal pose (proprioception,
   allowed); grasp as four image + pose subgoals. Object truth never reaches a controller or cost.
-- **Planner** (R25.6): `CEMPlanner` unchanged, H = 8, 300 samples, 10 iterations, replanned every
-  command (reach ≤ 150, grasp ≤ 400 commands); cost latent MSE (P) or latent + λ · joint-position MSE (G), λ by a fixed val rule.
+- **Planner** (R25.6): `CEMPlanner` unchanged, H = 8, 300 samples, 10 iterations, replanned
+  every command (reach ≤ 150, grasp ≤ 400 commands); cost latent MSE (P) or latent + λ ·
+  joint-position MSE (G), λ by a fixed val rule.
 - **Baselines** (R25.7): hold, random, a scripted IK follower of the goal poses with e9's press (the
   calibration ceiling) and the same follower without the press (reported).
 - **Success** (R25.9): reach within 5 cm for 10 consecutive commands; lift ≥ 5 cm with grasp

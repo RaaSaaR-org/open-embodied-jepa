@@ -189,7 +189,8 @@ refuses any other (arm, model seed, cohort) combination.
   start height** *and* in grasp contact with the right hand (thumb plus index or middle, as
   `play-v1`'s sidecar defines it) for **20 consecutive commands** (1 s). The start height is the
   target's height after the reset and settle, the same in the demonstrator's run and in every arm's
-  episode (the runner checks it). Reported: maximum rise,
+  episode (the runner checks it to 10⁻⁶ m; a mismatch stops the run, which makes the row Z3-VOID).
+  Reported: maximum rise,
   any grasp contact, the subgoals reached and how (reached or timeout).
 - τ = 5 cm, the dwells and the 5 cm lift were set in code before any world-model closed loop was
   run (§12).
@@ -228,7 +229,7 @@ K0 also reports, per arm, how each grasp subgoal was left (reached or timed out)
   1. **Z3-VOID** — a run did not complete under the rules, a goal, checkpoint, projection or seed
      check failed, or a cohort was run twice.
   2. **Z3-PASS** — reach k ≥ max(⌈bar_reach × 64⌉, 32) **and** grasp k ≥ ⌈bar_grasp × 64⌉.
-  3. **Z3-REACH** — reach meets its bar, grasp does not.
+  3. **Z3-REACH** — reach k ≥ max(⌈bar_reach × 64⌉, 32) (as in row 2), grasp below its bar.
   4. **Z3-LOW** — reach below its bar, but P or G reaches at least 32 / 64 (50 %).
   5. **Z3-STOP-CANDIDATE** — P and G both reach fewer than 32 / 64.
 

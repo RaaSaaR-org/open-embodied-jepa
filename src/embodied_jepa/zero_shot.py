@@ -650,4 +650,6 @@ def pose_lambda(latents, states, episodes, state_mean, state_scale, *, pairs=LAM
 
 
 # ----- the bars (§7): set by the Stage 0 record from K0, frozen with the protocol -----------------
-BARS: dict | None = None
+# K0 (Stage 0 record, protocol §15): ik reached 32/32 (reach) and 24/32 (grasp) on the calibration
+# cohorts, so bar = min(0.80, 0.9 x 1.0) and min(0.40, 0.9 x 0.75): 52/64 and 26/64.
+BARS: dict = {"reach": 0.80, "grasp": 0.40}
