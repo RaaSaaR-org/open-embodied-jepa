@@ -63,6 +63,31 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-10 (ag) — TASK-088 Stage S ends Z3-REACH: plain LeWM reaches new image goals 53/64 (bar 52), G 62/64; grasp-and-lift 0/64 for every world-model arm; Phase 4 is not admitted; R7 does not change; TASK-088 closes (R25.25–R25.29)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[zero_shot_reach_grasp_v1_results.md](experiments/zero_shot_reach_grasp_v1_results.md); protocol
+frozen at `028e6f3` (#192), Stage D at #193 with an independent GO.
+
+- **R25.25 — the run.** At `028e6f3` (clean tree), RTX 5080, one GPU lock per run, 2026-10-10
+  09:59–18:36 UTC, 64 + 64 fresh gated resets, every run of §5.4, no refusal, error or re-run;
+  the automatic void check found nothing. Evidence `~/develop/emai/evidence/task088-gated/`
+  (`SHA256SUMS` `cdb3a39b…900f`), with the two replay MP4s.
+- **R25.26 — Z3-REACH.** Reach: P-87100 **53/64** (exact 95 % 0.713–0.911; bar 52/64), G-87100
+  **62/64** (0.892–0.996), G-lat 57, G-pose 54, P-87101/87102 55 and 54, G-87101/87102 63 and 63,
+  the scripted IK follower 64, hold and random 0. G beat P on the same resets (9 to 0 discordant,
+  p = 0.004). Grasp-and-lift: **0/64 for P, G, G-lat and G-pose** (0.000–0.056; bar 26/64); the
+  follower 50/64, hold and random 0. Simulation only, one model seed gated, one scene and camera;
+  P's reach margin is one reset; P ignored the goal's palm orientation (median error 0.84 rad);
+  "LeWM needed" is not shown (the follower, given the same goal poses, does at least as well).
+- **R25.27 — the escalation.** Phase 4 is not preregistered on this result. The next task is
+  grasp-focused and preregistered separately; recommendation only: an offline diagnosis of whether
+  P's or G's predictions separate a closing-and-lifting hand from an open hand at the object over
+  the planning horizon, then a closed-loop grasp test with a change of a different kind (horizon or
+  grasp-phase cost, or more grasp data); G is the better reach planner here.
+- **R25.28 — R7 does not change.** Not an Apple→Plate experiment.
+- **R25.29 — TASK-088 closes.** Nothing is abandoned.
+
 ## Decision 2026-10-10 (af) — TASK-088 Stage D (development): reach 14/16 (P) and 16/16 (G), grasp 0/16 for every world-model arm; Stage S runs as frozen after an independent GO (R25.22–R25.24)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
