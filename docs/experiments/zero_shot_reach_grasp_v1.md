@@ -47,6 +47,8 @@ recommendation as its ruling (R25.1, decided by Claude under owner delegation).*
   (fixed now, before any closed loop on it is read); 87101 and 87102 are run on reach as
   reported-only replications (§5.4). S, C, I and N are not used.
 - The one-step wrong / true ratio is not a gate here; nothing offline is.
+- **One data arm.** The plan's second data arm (sim play + open real G1 / Dex3 data) was dropped
+  at TASK-086 (R-DROP-GRASP, R23.28), so both models here were trained on simulated play only.
 
 ## 3. Scene, robot and resets
 
@@ -110,7 +112,8 @@ separate G's image and pose terms.
 ## 5. Arms
 
 All arms run on exactly the same goals and resets (paired). Per reach episode at most **150**
-commands (7.5 s); per grasp episode at most **300** (15 s). An episode ends at success (§6), at
+commands (7.5 s); per grasp episode at most **400** (20 s): three subgoal timeouts of 100 (§5.3)
+still leave 100 commands on the last subgoal, enough for §6.2's 20-command hold. An episode ends at success (§6), at
 "stopped" (§3) or at the budget.
 
 ### 5.1 World-model arms (CEM)
@@ -121,7 +124,7 @@ commands (7.5 s); per grasp episode at most **300** (15 s). An episode ends at s
   [−1, 1], no candidate projection; replanned from scratch every command (MPC), the first action
   of the best candidate executed (§3). CEM seed `8803·10⁷ + reset seed`, fixed per episode and the
   same for every arm. (TASK-084 used 300 samples, H = 6 and 30 iterations; 10 iterations here keep
-  the run inside about a day of GPU time, §13.)
+  Stage S at about 6 GPU hours, §13.)
 - **The model contract** (`zero_shot_runtime.PlannerModel`): `predict` rolls every candidate out
   from the encoded current frame (and, for G, the measured 28-D state) with the TASK-087
   predictor; `distance` returns per candidate and step
@@ -132,8 +135,8 @@ commands (7.5 s); per grasp episode at most **300** (15 s). An episode ends at s
 - **λ** is fixed by a rule, not tuned: the mean latent MSE over 10 000 pairs of val frames from
   different `play-v1` val episodes (salt 8806) divided by the mean standardised joint-position MSE
   over the same pairs, so both terms have the same mean on unrelated frames. On TASK-087's val
-  store it is **λ = 2.0385** (the same for every G seed, which share the train moments; recorded
-  by `run_task088.py lambda`).
+  store it is **λ = 2.055** (the same for every G seed, which share the train moments; recorded
+  by `run_task088.py lambda`; the value is recomputed and recorded by Stage 0).
 
 | Arm | Model | w_lat | w_pose | Role |
 | --- | --- | --- | --- | --- |
@@ -153,7 +156,12 @@ commands (7.5 s); per grasp episode at most **300** (15 s). An episode ends at s
   is above 0, else −1, ramped by 0.2 a command; on the grasp subgoal it commands the palm 5 cm
   below the goal palm (e9's press, §12). It reads proprioception and the goal pose only, no image
   and no object truth. It is the **calibration ceiling** (§7): a hand-written controller with the
-  same goal information, not a learned result.
+  same goal information, not a learned result. **Its press is knowledge the goal does not carry**
+  (§12: without it the hand closes beside the object); a world-model planner would have to find
+  the downward push from its model of `play-v1`'s picks, which all pressed (the play policy uses
+  e9's recipe).
+- **ik-nopress:** the same follower without the press (reported only, in K0, D and S): what
+  following the goal poses alone does.
 
 ### 5.3 Subgoal switching (grasp; every arm alike)
 
@@ -165,18 +173,23 @@ kept to the end. The rule reads proprioception and the goal pose only.
 
 ### 5.4 Runs
 
-Gated cohorts (§8): reach — P, G, G-lat, G-pose, P-87101, P-87102, G-87101, G-87102, ik, hold,
-random; grasp — P, G, G-lat, G-pose, ik, hold, random.
+Gated cohorts (§8): reach — P, G, G-lat, G-pose, P-87101, P-87102, G-87101, G-87102, ik,
+ik-nopress, hold, random; grasp — P, G, G-lat, G-pose, ik, ik-nopress, hold, random. The runner
+refuses any other (arm, model seed, cohort) combination.
 
 ## 6. Success (scorer: simulator truth, after every executed command)
 
 - **6.1 Reach:** success when the right palm (`right_ee` site, pelvis frame) has been within
   **τ = 5 cm** of the goal palm for **10 consecutive commands** (0.5 s). A shorter crossing never
-  counts (TASK-067's lesson: no latching of transient crossings). Reported: success at 3 and 8 cm
-  with the same dwell, the final and minimum distance.
+  counts (TASK-067's lesson: no latching of transient crossings). The palm's orientation is not
+  scored (it is part of the goal image and pose, so the planners aim at it, but reach success is
+  position only). Reported: success at 3 and 8 cm with the same dwell, the final and minimum
+  distance, and the final orientation error.
 - **6.2 Grasp-and-lift:** success when the target's centre has been at least **5 cm above its
   start height** *and* in grasp contact with the right hand (thumb plus index or middle, as
-  `play-v1`'s sidecar defines it) for **20 consecutive commands** (1 s). Reported: maximum rise,
+  `play-v1`'s sidecar defines it) for **20 consecutive commands** (1 s). The start height is the
+  target's height after the reset and settle, the same in the demonstrator's run and in every arm's
+  episode (the runner checks it). Reported: maximum rise,
   any grasp contact, the subgoals reached and how (reached or timeout).
 - τ = 5 cm, the dwells and the 5 cm lift were set in code before any world-model closed loop was
   run (§12).
@@ -184,13 +197,19 @@ random; grasp — P, G, G-lat, G-pose, ik, hold, random.
 ## 7. Calibration K0 and the bars (Stage 0, before the freeze)
 
 TASK-074's lesson: bars must be achievable by something given the same information. **K0** runs
-ik, hold and random on 32 + 32 **calibration resets** (reach 88000–88031, grasp 88100–88131;
+ik, ik-nopress, hold and random on 32 + 32 **calibration resets** (reach 88000–88031, grasp 88100–88131;
 never used again) before the freeze. For each task:
 
 **bar = min(the plan's example bar, 0.9 × ik's K0 success rate)**; the plan's bars are reach 0.80
 and grasp-and-lift 0.40. The bar counts on the gated cohort are **⌈bar × 64⌉**, written into §8 by
 the Stage 0 record. If ik's K0 rate is below 0.5 on a task, that task's bar is not set and the
 task escalates to a ruling before the freeze (the task, not the model, would be in doubt).
+**Which follower sets the bar (fixed now):** ik, the follower with e9's press. It is the stronger
+reference for what these goals allow; since the bar is capped at the plan's 0.40 for grasp, the
+press can only *raise* the grasp bar towards the plan's value, never above it. ik-nopress is
+reported beside it, so the record shows how much of the ceiling is the hand-written press. The
+reach bar is never below the plan's stop level: a reach pass also needs at least 32 / 64 (§8).
+K0 also reports, per arm, how each grasp subgoal was left (reached or timed out).
 
 ## 8. Stages, cohorts and rows
 
@@ -208,10 +227,13 @@ task escalates to a ruling before the freeze (the task, not the model, would be 
 - **Rows** (first match), on the primary arm **P** (model seed 87100); k = P's successes:
   1. **Z3-VOID** — a run did not complete under the rules, a goal, checkpoint, projection or seed
      check failed, or a cohort was run twice.
-  2. **Z3-PASS** — reach k ≥ ⌈bar_reach × 64⌉ **and** grasp k ≥ ⌈bar_grasp × 64⌉.
+  2. **Z3-PASS** — reach k ≥ max(⌈bar_reach × 64⌉, 32) **and** grasp k ≥ ⌈bar_grasp × 64⌉.
   3. **Z3-REACH** — reach meets its bar, grasp does not.
   4. **Z3-LOW** — reach below its bar, but P or G reaches at least 32 / 64 (50 %).
   5. **Z3-STOP-CANDIDATE** — P and G both reach fewer than 32 / 64.
+
+  Rows 4 and 5 use "P **or** G" deliberately: the plan's stop rule is about JEPA planning, not one
+  model, so the line stops only when neither the primary nor the second arm reaches half.
 - **The second arm G** is reported against the same bars ("G meets the reach / grasp bar"); it does
   not change the row. G against P: paired exact two-sided McNemar test, reported.
 - **What each row leads to (the plan's stop rule):** Z3-PASS — Phase 4 may be preregistered.
@@ -266,8 +288,13 @@ while writing the code:
   this hand grasps only while pressed down, which a target equal to the reached pose does not do.
   The ik follower therefore commands its palm 5 cm below the goal palm on the grasp subgoal. A
   fourth subgoal (pre-grasp, open) was added so that a follower does not close while descending.
-  After these changes ik scored 34 / 50 on debug grasp and 16 / 16 on debug reach; hold and random
-  0 / 16 on both.
+  After these changes ik scored 34 / 50 on debug grasp (with a 300-command budget) and 16 / 16 on
+  debug reach; hold and random 0 / 16 on both.
+- **Review of this draft (#191)** found that three subgoal timeouts could use up the whole grasp
+  budget (now 400), that the bar's ceiling presses (ik-nopress added, the choice stated in §7), a
+  pairing bug in λ's pair draw (fixed; λ moved from 2.0385 to 2.055), that controllers were handed
+  the whole goal record (they now get only the task and the subgoals' images and poses), and that
+  the reach bar could fall below the stop level (a reach pass now also needs 32 / 64).
 - **World-model plumbing:** P-87100 ran 4 debug reach episodes (3 / 4 met the 5 cm criterion;
   minimum distances 2.5–4.9 cm; about 0.36–0.64 s of planning per command with 4 processes) and
   G-87100 8 debug grasp episodes (0 / 8; no hover subgoal reached within its 100 commands; about
@@ -290,7 +317,8 @@ while writing the code:
 - **Frozen** at the Stage 0 merge; D and S run at the merged revision from a clean tree, each run
   one `scripts/gpu_run.sh --wait --min-free-gib 8 --board` job.
 - **Runtime estimate** (from the debug runs): about 8 planned commands a second over all
-  processes; Stage S about 4–5 GPU hours, Stage D about 1.5.
+  processes; Stage S about 6 GPU hours at most (reach 8 model runs × 64 × ≤ 150, grasp 4 × 64 ×
+  ≤ 400 commands), Stage D about 2.
 - **Disk:** about 16 GB free; nothing is written below 10 GiB free (the runner refuses). Outputs
   in `outputs/task088-*` of the run worktree; evidence in `~/develop/emai/evidence/task088-*/`
   with `SHA256SUMS`. The TASK-087 checkpoints and features are read, never written.
@@ -307,12 +335,14 @@ while writing the code:
 - **R25.5** — the goal pose (the robot's own joint state and palm pose at the goal) is
   proprioception and may be read by controllers and costs; object truth never is (§4).
 - **R25.6** — the planner, its budget and the cost as §5.1; λ by its rule.
-- **R25.7** — the baselines hold, random and the ik follower (with e9's press) as §5.2.
+- **R25.7** — the baselines hold, random, the ik follower (with e9's press; it sets the bar) and
+  ik-nopress (reported) as §5.2.
 - **R25.8** — subgoal switching as §5.3.
 - **R25.9** — success as §6 (5 cm with 10 commands' dwell; 5 cm lift with grasp contact for 20).
 - **R25.10** — K0 and the bar rule as §7.
 - **R25.11** — Stage D (development), an independent GO, then Stage S (64 + 64) as §8.
-- **R25.12** — rows and the stop rule as §8, on P-87100; G reported against the same bars.
+- **R25.12** — rows and the stop rule as §8, on P-87100 (a reach pass also needs 32 / 64); G
+  reported against the same bars.
 - **R25.13** — seeds and salts as §9.
 - **R25.14** — the reported-only quantities of §10, including the two MP4s.
 - **R25.15** — Stage 0, freeze, runtime and evidence as §13.
