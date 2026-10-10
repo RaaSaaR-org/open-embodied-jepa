@@ -60,12 +60,15 @@ contact for 20 consecutive commands; targets cube 32, can 18, apple 13, banana 1
 | ik (ceiling) | 50 / 64 | 0.660–0.875 | 62 | 6.6 cm (median) | 64 | 2 |
 | ik-nopress | 50 / 64 | 0.660–0.875 | 61 | 6.6 cm (median) | 64 | 4 |
 | hold | 0 / 64 | 0.000–0.056 | 0 | 0 | 1 | 0 |
-| random | 0 / 64 | 0.000–0.056 | 0 | 0 | 2 | 0 |
+| random | 0 / 64 | 0.000–0.056 | 0 | 0 / 0.7 cm | 2 | 0 |
 
 Subgoal switching (§5.3): the world-model arms left the hover subgoal by its 100-command timeout on
 64 / 64 resets each; only P (2) and G (1) ever left a subgoal (pre-grasp) by "reached". ik left
 hover and pre-grasp by "reached" on 64 / 64 and the grasp subgoal on 30. ik by object: cube 29 / 32,
 can 17 / 18, apple 4 / 13, banana 0 / 1. ik and ik-nopress differ on 2 resets (1 each way).
+
+Why grasp episodes stopped: G 1 "projection infeasible" and 2 measured-velocity stops, G-pose 2
+and 4, ik 0 and 2, ik-nopress 0 and 4.
 
 Planning: about 0.95 s (P) and 1.0 s (G) per command with 6 processes sharing the GPU.
 
@@ -75,8 +78,8 @@ Planning: about 0.95 s (P) and 1.0 s (G) per command with 6 processes sharing th
   task-agnostic play and never on reaching, brought the palm within 5 cm of new goal poses, given
   as an image, on 53 of 64 fresh resets (and 55 and 54 with its two other model seeds). The margin
   over the bar is one reset. At 3 cm it reached 38 / 64, and it largely ignored the goal's palm
-  orientation (median final error 0.84 rad, about 48°): the latent cost places the palm, it does
-  not turn it.
+  orientation (median final error 0.84 rad, about 48°, against 1.07 for hold and 0.16 for G): the
+  latent cost places the palm and turns it far less than G does.
 - **G reaches better than P** on the same resets (62 against 53; 9 discordant resets, all in G's
   favour, p = 0.004), and its two other seeds reach 63 / 64. Most of the gain is not the pose term:
   G with the image cost alone (G-lat) reached 57, G with the pose cost alone (G-pose) 54. So the

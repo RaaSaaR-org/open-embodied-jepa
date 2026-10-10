@@ -35,7 +35,7 @@ arm; R24.23 adopted) to new image + pose goals on fresh resets, for reach and gr
 scripted IK follower. Not Apple→Plate; R7 does not change.
 
 Protocol: [zero_shot_reach_grasp_v1.md](../../../docs/experiments/zero_shot_reach_grasp_v1.md)
-(DRAFT, R25.1–R25.16; frozen at the Stage 0 PR's merge).
+(FROZEN at `028e6f3`, R25.1–R25.24; results R25.25–R25.29, row Z3-REACH).
 
 ## Acceptance criteria
 
