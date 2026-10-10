@@ -63,6 +63,35 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-10 (ac) — TASK-087 ends P2-FAIL: the grounded arms beat plain LeWM at h = 4 and 8 on every seed but not on one-step sensitivity; S and G are not carried into Phase 3 as "the grounded model"; R7 does not change; TASK-087 closes (R24.21–R24.25)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grounded_lewm_v1_results.md](experiments/grounded_lewm_v1_results.md); protocol frozen at
+`dab7475` (#188), Stage F's reader fixed at `bcda883` (#189, R24.20).
+
+- **R24.21 — the run.** At `bcda883` (clean tree), RTX 5080, one GPU lock per job: Stage F re-run
+  (projection identical to attempt 1's; 0.943 of the variance kept), the probe (U = 60 000, the
+  rule's cap), 18 training jobs (≈ 10 GPU hours, none failed or re-run), the val report (sha256
+  `dbc05e79…ac38`, recorded before the test split was read), Stage F′ and Stage E on 5 634 test
+  roots in 160 episodes. Evidence `~/develop/emai/evidence/task087-{stagef,probe,val,test}/`, each
+  with `SHA256SUMS`; `test_report.json` sha256 `aed62c91…ca18`.
+- **R24.22 — P2-FAIL.** S and G meet every criterion against P at h = 4 and h = 8 on all three
+  seeds (e.g. G top-1 0.70 vs 0.64 at h = 4, 0.80–0.82 vs 0.74 at h = 8; G sens 1.86–1.90 vs
+  1.75–1.80 at h = 8), but at h = 1 both fail (a): their wrong / true ratio is below P's (G Δsens
+  −0.007 to −0.016, every 97.5 % interval below 0). G's top-1 at h = 1 is higher on every seed
+  (0.40–0.41 vs 0.35, Δ +0.056 to +0.068, intervals above 0), and its accuracy is better. Plain LeWM
+  passed every validity check. Reported only: G's and I's inverse-dynamics heads read the commands
+  from predicted latents with R² ≈ 0.98 against 0.58 for an encoded-pair probe, so part of G's gain
+  may be action information placed in the prediction (§9's fixed wording); S, without that loss,
+  gains similarly at h ≥ 4. C (the v2–v4 recipe) is worse than copy-last at h = 1.
+- **R24.23 — the stop rule applies.** S and G, as specified, are not carried into Phase 3 as "the
+  grounded model". Recommendation only, for the next ruling: Phase 3's preregistration should take
+  plain LeWM on `play-v1` (P) as its primary model, may declare G as a second arm because it ranks
+  the executed commands better at every horizon, and should not use the one-step wrong / true ratio
+  as a gate without calibrating what it measures when state is an input. Nothing else closes.
+- **R24.24 — R7 does not change.** Offline only; not an Apple→Plate or closed-loop result.
+- **R24.25 — TASK-087 closes.**
+
 ## Decision 2026-10-09 (ab) — TASK-087 Stage F's first attempt ran out of memory; the decoder's look-ahead is bounded and Stage F runs again (R24.20)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
