@@ -83,7 +83,7 @@ is kept as written.
   passed every validity check. Reported only: G's and I's inverse-dynamics heads read the commands
   from predicted latents with R² ≈ 0.98 against 0.58 for an encoded-pair probe, so part of G's gain
   may be action information placed in the prediction (§9's fixed wording); S, without that loss,
-  gains similarly at h ≥ 4. C (the v2–v4 recipe) is worse than copy-last at h = 1.
+  gains similarly at h = 4 and 8. C (the v2–v4 recipe) is worse than copy-last at h = 1.
 - **R24.23 — the stop rule applies.** S and G, as specified, are not carried into Phase 3 as "the
   grounded model". Recommendation only, for the next ruling: Phase 3's preregistration should take
   plain LeWM on `play-v1` (P) as its primary model, may declare G as a second arm because it ranks

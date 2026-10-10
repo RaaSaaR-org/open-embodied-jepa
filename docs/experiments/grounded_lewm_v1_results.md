@@ -62,7 +62,7 @@ falls; in absolute terms, too, the gap between wrong and true commands is smalle
 h = 1 (reported Σ wrong − Σ true, per root: G −0.002 to −0.004 against P, every interval below
 0). Our reading, not tested here: with the joint velocities as input, the next frame is largely
 predictable from the robot's own motion, so the one-step prediction leans less on the command.
-At h ≥ 4 the opposite holds: the gap grows by +0.008 to +0.041 per root for S and G on every seed.
+At h = 4 and 8 the opposite holds: the gap grows by +0.008 to +0.041 per root for S and G on every seed (at h = 16, outside the training horizon, it grows for G but falls for S on two seeds).
 
 ## 3. Reported only
 
@@ -126,8 +126,10 @@ At h ≥ 4 the opposite holds: the gap grows by +0.008 to +0.041 per root for S 
   hit its cap; the val curves were still falling slowly), three seeds.
 - The grounded arms have more parameters (G twice P's) and G and I more compute per update; a gain
   is not separated from capacity.
-- The h = 1 failure is a failure of the ratio statistic the protocol chose, read literally; the
-  same models rank the executed commands first more often than P at h = 1 (G). Both facts stand.
+- The h = 1 failure is not only an artefact of the ratio: the absolute gap between wrong- and
+  true-command errors is also smaller than P's at h = 1 (G on every seed, S on two). The same G
+  models nevertheless rank the executed commands first more often than P at h = 1. Both facts
+  stand.
 
 ## 6. What changes
 
