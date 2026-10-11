@@ -482,3 +482,63 @@ debug layouts; never counted), a prototype of §5 (not the Stage 0 code) ran und
   nothing. **R26.22** — frozen at this PR's merge; Stage A, BD and BS run at the merged revision
   from a clean tree with `scripts/run_task089_stage.sh`, evidence in
   `~/develop/emai/evidence/task089-*`. **R26.23** — R7 does not change.
+
+## 17. Stage A record (gated, offline; R26.24–R26.26)
+
+At `c40919d` (the frozen revision, clean tree), NVIDIA EGL, `scripts/run_task089_stage.sh a`, one
+GPU lock per step, 2026-10-11 03:09–03:15 UTC. λ recomputed 2.0552 (9 941 pairs, every G seed). 64
+roots on the cohort's seeds 890000–890063 (55 rejected draws; targets apple 22, can 21, cube 21,
+banana 0); the bitwise root check held on every branch. Evidence
+`~/develop/emai/evidence/task089-a/` (`SHA256SUMS` sha256 `9b4e8953…6c98`; `summary-a.json` sha256
+`26acfe8e…86c1`; `a1-a-roots.json` `fd3337c1…04f9`; `a2-a-roots.json` `f9d9aa3e…57bb`).
+
+**Row: A-PASS(step-mean).** A1 passes for G-87100 at h = 8 and h = 16 (both qualifying), and the
+first candidate, the step-averaged cost, meets A2's bars. Part B runs with the step-averaged cost.
+The clause does not fire.
+
+**A1** (wins of 64; gated bars from A-K0 in brackets; exact one-sided McNemar against the
+action-shuffled control):
+
+| Model (cost) | h | close-vs-open | lift-vs-release | lift-vs-stay | shuffled wins | A1 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **G-87100** (latent + pose) | 8 | **64** [61] | **64** [61] | **64** [59] | 27, 31, 31 | **pass** |
+| **G-87100** (latent + pose) | 16 | **64** [61] | **64** [61] | **64** [61] | 33, 29, 31 | **pass** |
+| G-87101, G-87102 | 8, 16 | 64 | 64 | 64 | 28–36 | pass |
+| P-87100 (latent) | 8 | 64 [58] | 18 (not gated) | 64 [59] | 28, 33, 27 | pass |
+| P-87100 (latent) | 16 | 64 [58] | **50** [52] | 64 [61] | 31, 32, 35 | **fail** |
+| P-87101 | 8 / 16 | 64 / 64 | 29 (n.g.) / 57 | 64 / 64 | | pass / pass |
+| P-87102 | 8 / 16 | 62 / 64 | 36 (n.g.) / 52 | 64 / 64 | | pass / pass |
+| G-lat-87100 (latent) | 8 / 16 | 62 / 64 | 15 (n.g.) / 52 | 64 / 64 | | pass / pass |
+| N-87100 | 8, 16 | 0 (ties) | 0 | 0 | 0 | — |
+
+Every McNemar p for a passing cell is below 10⁻⁵ except P-87102's and G-lat's lift-vs-release at
+h = 16 (p = 0.006 and 9 × 10⁻⁵). 64 / 64 has an exact 95 % interval of 0.944–1.000. Reported only:
+the ceiling on these roots (G's cost 63–64 of 64 everywhere; the latent cost 62, 32 and 63 at h = 8
+and 63, 56 and 64 at h = 16); wins under the step-averaged cost (G 64 everywhere; P 63, 15 and 64).
+Within the 16 branch commands the lift branch raised the target by at least 5 cm on 21 of 64 roots
+(median maximum rise 3.0 cm); no other branch did.
+
+**A2** (first planned command, of 64; bars 48 and above TASK-088's setting at p < 0.01):
+
+| Setting | G-87100 close@R1 | G-87100 lift@R2 | meets | P-87100 close@R1 | P-87100 lift@R2 |
+| --- | --- | --- | --- | --- | --- |
+| base (TASK-088) | 4 | 17 | — | 11 | 12 |
+| **step-mean** | **62** | **61** | **yes** (p ≈ 10⁻¹⁷, 10⁻¹³) | 17 | 31 |
+| h16 | 5 | 12 | no | 8 | 6 |
+| held | 64 | 64 | yes (not reached by the rule) | 38 | 33 |
+
+**What this says, and what it does not.** G's predictions separate a closing from an open hand and
+a lifting from a releasing or staying hand at the object exactly as often as the simulator's own
+frames do under G's cost (every root, three model seeds, h = 8 and 16); plain P separates closing
+and staying, but at h = 16 not lifting-while-closed from lifting-while-opening as often as its
+latent ceiling allows. With TASK-088's last-step cost the planner's first command at these roots
+rarely closes (4 of 64) or lifts closed (17); averaging the cost over the horizon makes it do so on
+62 and 61. This is offline, on the demonstrator's own states (palm exactly at the aim), and wins
+partly reflect the robot's own predicted joints (G's pose term); it does not show that a closed
+loop grasps. The debug smoke of §16 (0 / 8 for G with this change) is the reason for caution.
+
+- **R26.24** — Stage A is recorded: row **A-PASS(step-mean)**; G-87100 passes A1 at h = 8 and 16,
+  and the step-averaged cost meets A2 (62 and 61 of 64).
+- **R26.25** — Part B runs as frozen with the step-averaged cost: Stage BD (development; started at
+  `c40919d` from a clean tree right after Stage A's summary), then an independent GO, then Stage BS.
+- **R26.26** — R7 does not change.
