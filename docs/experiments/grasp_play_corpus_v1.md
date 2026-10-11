@@ -11,8 +11,8 @@ IK follower lifted 48 / 64. Reported only: G-chg-87101 lifted 8 / 64 and G-chg-8
 "the first world-model grasp-and-lifts on gated resets here, below the bar". That run was
 simulation only, with one scene and camera and one model seed gated, and "LeWM needed" is not shown.
 TASK-089's abandonment clause fired (R26.33). It closed CEM planning of grasp-and-lift over
-TASK-087's checkpoints. Per R26.34, "the next grasp step changes the data (more grasp-and-lift in
-the play corpus) or the model". This task takes the **data** option.
+TASK-087's checkpoints. Per R26.34, "The next grasp step changes the data or the model, as §9 says:
+for example more grasp-and-lift in the play corpus …". This task takes the **data** option.
 
 **This is not an Apple→Plate experiment.** It plans grasp-and-lifts of the play scene's objects
 with G1's right arm and right Dex3, in MuJoCo only. **R7's canonical status sentence does not change,
@@ -78,7 +78,8 @@ This is a new module. TASK-085's `play_corpus.py` and its constants are not edit
 - **Policy salt 9003.** play-v1p uses `play_policy_v0` with TASK-085's policy salt 8701 on its own
   new seeds.
 
-**What the factor is, honestly.** It is a bundle: skill mix, mode mix, hold and retry. It is one
+**What the factor is, honestly.** It is a bundle: skill mix (including no poke; `play_policy_v0`
+draws poke at 0.10), mode mix, hold and retry. It is one
 *kind* of change, more and longer scripted grasp-and-lift by the same pick recipe. It is not a
 single knob, and the task cannot say which part of the bundle mattered.
 
@@ -92,6 +93,16 @@ single knob, and the task cannot say which part of the bundle mattered.
   - the uniform window sampler over all valid (episode, start) pairs of the combined train set;
   - batch 64, AdamW at lr 3e-4, gradient clip 1.0;
   - **U = 60 000 updates**, TASK-087's checkpoint-selection rule and tolerance.
+- **State standardisation pinned.** G standardises its 28-D state (and palm) input by train moments
+  (`FeatureStore.moments()`, set with `set_moments`), and the planner's pose term and A-K0's
+  ceiling cost use the same standardisation. With the code unchanged, each combined train set would
+  give its own moments, so the two arms' inputs and their λ-weighted costs would differ from each
+  other and from the setting where λ = 2.0552 was calibrated (R25.18). So **every new model (G and
+  N, both corpora) is given `play-v1` train's state and palm moments, TASK-087's**, not its own
+  corpus's. The training driver computes them from `play-v1`'s train store and checks the resulting
+  `state_mean`, `state_scale`, `palm_mean` and `palm_scale` buffers against TASK-087's G-87100
+  checkpoint's bitwise; each Stage T report and each closed-loop run records their sha256. A-K0's ceiling cost uses the same moments. The combined-set moments are computed and
+  reported only.
 - **Selection set.** Both corpora's models select on **the same** val windows: `play-v1` val plus
   the val episodes of both new collections (160 + 160 + 160). Neither arm selects on a val set the
   other lacks.
@@ -106,9 +117,10 @@ single knob, and the task cannot say which part of the bundle mattered.
   the stop rule and the success scorer. Success means the target is ≥ 5 cm above its start height
   and in grasp contact for 20 consecutive commands. Crossings are not latched.
 
-Under TASK-087's rule, the training budget did not saturate. The cap bound and the val curves were
-still falling, and doubling the data under the same U halves how often each window is seen. Both
-new arms share this equally, so it does not bias the composition comparison. `last_two_triggered`
+Under TASK-087's rule, the training budget did not saturate. The cap bound and "the val curves
+were still falling slowly" ([grounded_lewm_v1_results.md](grounded_lewm_v1_results.md)), and
+doubling the data under the same U halves how often each window is seen. Both new arms share the
+same budget; whether undertraining interacts with composition is not tested. `last_two_triggered`
 is recorded per model and **is not an escalation**. TASK-074's train stage escalated twice on its budget rules and never reached its
 gates; this task does not repeat that.
 
@@ -124,8 +136,8 @@ gates; this task does not repeat that.
 The same model seed is used for both corpora. The initialisation and the sampler seed's derivation
 are therefore shared, and seed i of M-v2g is paired with seed i of M-v1p.
 
-**All three seeds are gated, pooled.** TASK-089's three seeds lifted 0, 8 and 7 of 64, and its
-gated seed was the weakest; the protocol had fixed it before any closed loop. A single gated seed is
+**All three seeds are gated, pooled.** TASK-089's three seeds lifted 0, 8 and 7 of 64 (8 and 7
+reported only, replication runs, below the bar), and its gated seed was the weakest; the protocol had fixed it before any closed loop. A single gated seed is
 fragile, so the primary count here is the sum over three seeds × 64 resets.
 
 **M-v1 is a control re-run on fresh resets, not a new variant.** It is TASK-087's checkpoints under
@@ -143,7 +155,7 @@ height with grasp contact (thumb plus index or middle), TASK-085's lift definiti
 frame.
 
 - **C1, enrichment of the added episodes:** the lift-window share of play-v2g's added train
-  episodes must be **≥ 3×** that of play-v1p's added train episodes.
+  episodes must be **≥ 2.5×** that of play-v1p's added train episodes.
 - **C2, enrichment of the training set:** the lift-window share of play-v2g's combined train set
   (`play-v1` train plus the additions) must be **≥ 1.75×** that of play-v1p's combined train set.
 - **C3, the size control matches `play-v1`:** play-v1p's added train episodes must have a
@@ -158,12 +170,21 @@ frame.
   - the mode and skill counts;
   - the collector's retry count and retry lift rate.
 
-**The bars are declared, not calibrated.** They are set from a rough estimate. Removing random
-mode and raising pick_place's weight should give about 1.3 × 1.5. The hold should give about 1.5
-more lift-state steps per lift. Together that is roughly 3× in the added episodes and roughly 2× in
-the combined set. Stage 0's debug collection (§14) measures both on debug seeds. If either debug
-ratio falls below its bar, the collector or the bar is revised **at the freeze**, with the debug
-readings disclosed, and never after.
+**The bars are declared, not calibrated.** They are set from a rough estimate, not a measurement.
+Removing random mode and raising pick_place's weight should give about 1.35 × 1.55 (from TASK-085's
+per-mode lift rates). The hold should give about 1.5 more lift-state steps per lift. Together that
+is roughly 3× in the added episodes, so C1 is set below that point estimate, at 2.5×. Because the
+two halves of each combined set are about equal in size, C2's 1.75× is the combined-set equivalent
+of C1's 2.5× ((1 + 2.5) / 2); C2 is the binding bar for what the model sees.
+
+Stage 0's debug collection (§14) measures both ratios on debug seeds: **300** episodes of
+`play_policy_grasp_v0` (930000–930299) and 100 of `play_policy_v0` (930300–930399). The debug C1
+ratio uses `play-v1` train's lift-window share as its denominator (2 874 episodes of the same
+policy; the 100 `play_policy_v0` debug episodes check C3's direction only), with an
+episode-bootstrap 95 % interval. **Revision rule:** if the debug C1 or C2 point ratio is below its
+bar, the collector or the bar is revised **at the freeze**, with the debug readings disclosed, and
+never after. A debug ratio whose interval merely includes the bar is disclosed and is not by itself
+a reason to revise.
 
 **C-FAIL** (any of C1–C3 fails) stops the task before any GPU training and escalates. No clause
 fires, because the hypothesis was not tested.
@@ -198,7 +219,8 @@ TASK-087's episode bootstrap:
   definition) is above 1, with the lower bound above 1;
 - **(iii)** for seed 90100, its roll-out error is below its corpus's N twin's.
 
-**E-FAIL:** an M-v2g or M-v1p model fails (i)–(iii). The task escalates and no clause fires.
+**E-FAIL:** any M-v2g or M-v1p model fails any of (i)–(iii) that applies to it ((iii) applies to
+seed 90100 only). The task escalates and no clause fires.
 
 **Reported:** the roll-out error on lift windows and on grasp-contact windows separately, for M-v1,
 M-v1p and M-v2g.
@@ -212,7 +234,14 @@ A1 win rule and the A2 single CEM call.
 - **A-K0** (Stage 0, before the freeze) builds 32 calibration roots, 90000–90031. Only the simulator
   ceiling is computed on them; no model runs. The gating and bars follow TASK-089 §5.4: a
   comparison is gated when its ceiling is ≥ 0.75, and its bar is `0.5 + 0.9 × (ceiling − 0.5)`.
-  A2's bars are declared: close@R1 and lift@R2 each ≥ 48 / 64.
+  The ceiling's pose term uses `play-v1` train's pinned state moments (§2.2). **If h = 8 does not
+  qualify** under TASK-089 §5.4's rule (G's close-vs-open and at least one R2 comparison gated at
+  h = 8), the row is **A-CEILING**: the task escalates to a ruling before the freeze, and no clause
+  fires.
+  A2's bars are declared: close@R1 and lift@R2 each ≥ 48 / 64. TASK-089's second A2 condition
+  (above TASK-088's last-step setting on the same roots, exact one-sided McNemar at p < 0.01) is
+  **dropped**: it served TASK-089's selection among cost settings, and here the setting is already
+  selected and A′ only checks that nothing regressed.
 - **Stage A′** runs on 64 fresh roots, 903000–903063, for every model in §3:
   - A1 with G's cost, at h = 8 and 16;
   - A2 with the step-averaged cost;
@@ -223,8 +252,11 @@ comparison and passed A2 (62 and 61 of 64). So A′ cannot show that new data he
 that the new models have not lost what TASK-087's had. A′ passes for a model when it meets TASK-089
 §5.5's pass rule at h = 8 and A2's two bars.
 
-**A′-FAIL:** M-v2g fails A′ on two or more of its three seeds. The task escalates and no clause
-fires.
+**A′-FAIL:** M-v2g fails A′ on two or more of its three seeds, **or** M-v1p fails A′ on two or more
+of its three seeds (a regressed control could otherwise be "beaten" in the closed loop). The task
+escalates and no clause fires. Below that, a seed that fails A′ alone stays in its arm's pooled
+count; its A′ result is reported beside its closed-loop count. M-v1's A′ results are reported
+only.
 
 **Reported only (diagnostics adopted from the model-first design, §15):**
 
@@ -240,10 +272,12 @@ fires.
   - Reported: AUROC with a root-bootstrap interval, for M-v1, M-v1p and M-v2g.
   - Use: offline only. Simulator truth is the label of an offline probe here. It never enters a
     model input or a planning cost.
-- **Latent-only wins.** The latent-only (G-lat) win rates on lift-vs-release and lift-vs-stay, where
-  TASK-089's latent ceiling was at chance at h = 8 (32 / 64).
-- **Rise in the branches.** The lift branch's rise within 16 commands. In TASK-089, "the lift
-  branch raised the target by at least 5 cm on 21 of 64 roots".
+- **Latent-only wins.** The latent-only (G-lat) win rates on lift-vs-release and lift-vs-stay. On
+  lift-vs-release, TASK-089's latent cost on real frames was at chance at h = 8 (32 / 64); on
+  lift-vs-stay its latent ceiling was 63 / 64.
+- **Rise in the branches.** The lift branch's rise within 16 commands. In TASK-089's Stage A
+  record ([zero_shot_grasp_v1.md](zero_shot_grasp_v1.md)), "the lift branch raised the target by
+  at least 5 cm on 21 of 64 roots".
 
 ## 7. Closed loop
 
@@ -267,29 +301,50 @@ fires.
     unless r < 0.445. If r < 0.30 the bar is not set and the task escalates.
   - BD can show a defect, but by itself it changes no knob of §2–§7.
 - **GO:** an independent reviewer posts GO (or NO-GO) on BD's record before Stage BS.
-- **Stage BS (gated):** 64 fresh resets, 904000–904063, disjoint from TASK-088's and TASK-089's
-  cohorts. Every arm of §7.1 runs at the frozen revision from a clean tree.
-- **Notation.** k_g is M-v2g's pooled successes of 192 (three seeds × 64 resets), and k_c is
-  M-v1p's. The **pooled bar** is 3 × ⌈bar × 64⌉, which is 78 / 192 at bar 0.40.
-- **Paired tests** are exact one-sided McNemar tests at p < 0.01 over the 192 (seed index, reset)
-  pairs. M-v2g seed i is paired with M-v1p seed i, and every seed is paired with random and hold on
-  the same reset. The three pairs that share a reset are not independent, so a reset-cluster
-  bootstrap 95 % interval of the paired difference is reported beside every test.
-- **Power:** not claimed in this DRAFT. Stage 0 records a simulation-based power estimate for the
-  composition test at plausible rates.
+- **Stage BS (gated):** n = 64 fresh resets, 904000–904063, disjoint from TASK-088's and
+  TASK-089's cohorts; n = 128 (904000–904127) if Stage 0's power rule below enlarges it. Every arm
+  of §7.1 runs at the frozen revision from a clean tree.
+- **Notation.** k_g is M-v2g's pooled successes of 3n (three seeds × n resets; 192 at n = 64), and
+  k_c is M-v1p's. The **pooled bar** is 3 × ⌈bar × n⌉, which is 78 / 192 at bar 0.40 and n = 64.
+  The **per-seed floor** is ⌈⌈bar × n⌉ / 2⌉, which is 13 / 64 at bar 0.40 and n = 64.
+- **Gating tests are at the reset level**, because the three seeds of an arm share each reset and
+  only the n resets are independent. For each reset r, let G_r be M-v2g's successes over its three
+  seeds (0–3), C_r M-v1p's, and R_r random's (0 or 1).
+  - "M-v2g beats M-v1p": an exact one-sided sign-flip permutation test at p < 0.01 over the n
+    per-reset differences d_r = G_r − C_r (the exact null distribution of Σ d_r under independent
+    sign flips of the nonzero d_r, computed by enumeration/convolution, not sampled).
+  - "M-v2g beats random": the same test over d_r = G_r − 3 R_r.
+  - This removes the arbitrary pairing of seed i with seed i and the triple reuse of random's
+    outcomes.
+- **Reported beside every test, not gating except as named in row 5:** the exact one-sided McNemar
+  test over the 3n (seed index, reset) pairs, and a reset-cluster bootstrap 95 % percentile interval
+  of the pooled rate difference (k_g − k_c) / 3n (10 000 resamples of the n resets, salt 9006).
+- **Power.** The declared alternative is per-seed success rates of 0.42 for M-v2g against 0.25 for
+  M-v1p. Stage 0 estimates the reset-level test's power at it by simulation, with independent
+  per-arm, per-reset logit effects of SD 0, 1 and 2, and records all three. **If the power at SD 1
+  is below 0.80 with n = 64, Stage BS uses n = 128** (904000–904127). If it is below 0.80 at
+  n = 128 too, this is disclosed and escalated to a ruling before the freeze.
 - **Rows** (first match):
   1. **B-VOID** — a run did not complete under the rules, a check failed (goal, checkpoint,
-     implementation hash, λ, seed or feature store), or a cohort was run twice.
-  2. **B-PASS** — k_g ≥ the pooled bar, **and** M-v2g beats random, **and** M-v2g beats M-v1p.
-  3. **B-COMP** — M-v2g beats M-v1p, but k_g is below the pooled bar or M-v2g does not beat
-     random. The composition helped, but the bar was missed. The task escalates; no clause fires.
-  4. **B-SIZE** — k_g ≥ the pooled bar and M-v2g beats random, but it does not beat M-v1p. More data
-     of either kind may help, but the composition is not shown. **The clause fires** (§9). Whether
-     this admits anything further is for a ruling.
-  5. **B-FAIL** — M-v2g does not beat M-v1p, and either k_g is below the pooled bar or M-v2g does
-     not beat random. **The clause fires** (§9).
+     implementation hash, pinned state moments, λ, seed or feature store), or a cohort was run
+     twice.
+  2. **B-PASS** — k_g ≥ the pooled bar, **and** every M-v2g seed ≥ the per-seed floor, **and**
+     M-v2g beats random, **and** M-v2g beats M-v1p.
+  3. **B-COMP** — M-v2g beats M-v1p, but k_g is below the pooled bar, a seed is below the per-seed
+     floor, or M-v2g does not beat random. The composition helped, but the bar was missed. The task
+     escalates; no clause fires.
+  4. **B-SIZE** — k_g ≥ the pooled bar and M-v2g beats random, but it does not beat M-v1p. Recorded
+     as **size, not composition**: more data of either kind may help, and the composition is not
+     shown. The task escalates; **no clause fires**. B-SIZE does not by itself admit a Phase 4
+     preregistration; that is for a ruling.
+  5. **B-FAIL** — M-v2g does not beat M-v1p, k_g is below the pooled bar or M-v2g does not beat
+     random, **and** the reset-cluster bootstrap 95 % upper bound of (k_g − k_c) / 3n is below
+     δ = +0.10. **The clause fires** (§9).
+  6. **B-UNDER** — as B-FAIL, but that upper bound is ≥ δ: the cohort cannot rule out a composition
+     gain of δ. The task escalates; no clause fires.
 - **Reported with every row:**
-  - each seed's count with its exact 95 % interval;
+  - each seed's count with its exact 95 % interval (a restatement of B-PASS quotes each seed's
+    count, not only the pooled one);
   - M-v2g against M-v1, and M-v1p against M-v1 (the "more data" readings);
   - ik against M-v2g;
   - per-object results;
@@ -311,12 +366,14 @@ fires.
 | C-FAIL | Stage C fails | escalate; no clause |
 | T-VOID | a training job fails a check or runs twice | fix under its own ruling |
 | E-FAIL | Stage E fails | escalate; no clause |
-| A′-FAIL | Stage A′ fails | escalate; no clause |
+| A-CEILING | A-K0: h = 8 does not qualify (Stage 0, before the freeze) | escalate; no clause |
+| A′-FAIL | Stage A′ fails (§6.2) | escalate; no clause |
 | B-VOID | §7.2 row 1 | fix under its own ruling |
 | B-PASS | §7.2 row 2 | admits a Phase 4 preregistration |
 | B-COMP | §7.2 row 3 | escalate; no clause |
-| B-SIZE | §7.2 row 4 | the clause fires |
+| B-SIZE | §7.2 row 4 | escalate; no clause |
 | B-FAIL | §7.2 row 5 | the clause fires |
+| B-UNDER | §7.2 row 6 | escalate; no clause |
 
 - After any VOID, the defect is fixed under its own reviewed ruling, and the stage runs again on
   fresh seeds named by that ruling. A voided cohort is never re-run.
@@ -326,7 +383,7 @@ fires.
 
 ## 9. Abandonment clause
 
-**Fires on B-SIZE or B-FAIL.**
+**Fires on B-FAIL only.**
 
 **It closes:** adding more scripted grasp-and-lift play to `play-v1` (e9's pick recipe run more
 often, held longer or retried, as `play_policy_grasp_v0` does) as the grasp fix, under TASK-087's
@@ -347,8 +404,9 @@ needs its own preregistration.
 - reach planning (TASK-088's Z3-REACH stands);
 - Phase 4 as a goal, and the product goal.
 
-**Neither does it fire on** C-FAIL, E-FAIL, A′-FAIL or B-COMP. M-v1's counts and the replication of
-TASK-089's seeds are recorded with the clause, not as a way around R26.33.
+**Neither does it fire on** C-FAIL, A-CEILING, E-FAIL, A′-FAIL, B-COMP, B-SIZE or B-UNDER.
+M-v1's counts and the replication of TASK-089's seeds are recorded with the clause, not as a way
+around R26.33.
 
 ## 10. Seeds and salts
 
@@ -360,8 +418,9 @@ TASK-089's seeds are recorded with the clause, not as a way around R26.33.
 | A-K0 roots | 90000–90031 |
 | Stage A′ roots | 903000–903063 |
 | Stage BD resets | 90200–90231 |
-| Stage BS resets | 904000–904063 |
-| Debug (plumbing and the Stage 0 collector check; never counted) | 90900–90999 |
+| Stage BS resets | 904000–904063 (904000–904127 if §7.2's power rule enlarges BS) |
+| Stage 0 debug collection (never counted) | 930000–930299 (`play_policy_grasp_v0`), 930300–930399 (`play_policy_v0`) |
+| Debug (plumbing and smoke; never counted) | 90900–90999 |
 
 **Salts:**
 
@@ -371,11 +430,12 @@ TASK-089's seeds are recorded with the clause, not as a way around R26.33.
   - **9003**: `play_policy_grasp_v0`'s policy salt;
   - **9004**: the readability probe's folds;
   - **9005**: the new collections' split rank;
-  - 9006: reserved.
+  - **9006**: the reset-cluster bootstrap of §7.2.
 - play-v1p uses TASK-085's policy salt 8701.
 
 **Checked:** `git grep -w` on every remote branch over `src/`, `scripts/`, `docs/`, `.mc/` and
-`tests/` finds no use of these ranges or salts. There are two exceptions, neither of them a seed or
+`tests/` finds no use of these ranges or salts (904064–904127 and 930000–930399 re-checked over the
+same paths plus `benchmarks/`). There are two exceptions, neither of them a seed or
 salt use:
 
 - 90000 appears as the exclusive end bound of TASK-089's `range(89950, 90000)`;
@@ -389,7 +449,10 @@ Labels 900000–901999 are TASK-077's and are avoided.
   latent, one training recipe and budget, one planner. The added data comes from the same privileged
   scripted pick recipe as `play-v1`, so the model sees more of one demonstrator's grasps, not
   different grasps.
-- **The bundle.** §2.1's changes act together. A B-PASS would not say which of them mattered.
+- **The bundle.** §2.1's changes act together (skill mix including no poke, mode mix, hold,
+  retry). A B-PASS would not say which of them mattered.
+- **Pooled seeds.** The pooled count can hide a weak seed; the per-seed floor limits this, and every
+  restatement quotes each seed's count.
 - **Cohort bias.** Goals come from TASK-088's scripted demonstrator, so the cohort is biased to
   layouts a scripted pick can do (no banana).
 - **What the model cannot see.** The model has no object, contact or tactile input. If the gap is in
@@ -413,17 +476,23 @@ closed-loop run.
 | --- | --- |
 | Collection, 2 × 3 200 episodes (TASK-085: 1 025 s for 3 200 with 12 workers) | about 0.6 h |
 | Featurisation of 6 400 episodes (TASK-087's Stage F: 1 804 s for 3 034) | about 1.1 h |
-| Training, 8 jobs at 31–37 min | about 4.5–5 h |
+| Training, 8 jobs at 31–37 min (TASK-087, stores on the SSD; see the disk note below) | about 4.5–5 h |
 | Stage E, A-K0 and Stage A′ | about 2 h |
 | Stage BD, 3 world-model runs × 32 resets plus baselines | about 2 h |
-| Stage BS, 9 world-model runs × 64 resets (TASK-089: 5.7 h for 5 × 64) | about 10–11 h |
+| Stage BS, 9 world-model runs × 64 resets (TASK-089's Stage BS, every arm with five world-model runs × 64, ran 2026-10-11 05:07–10:46 UTC: R26.31, `~/develop/emai/evidence/task089-bs/stage.log`) | about 10–11 h (about double at n = 128) |
 | **Total** | **about 20–22 GPU hours**, and about 5–7 days wall-clock with reviews and rulings |
 
 **Disk.** About 25 GB for the two collections (TASK-085: 12.3 GB per 3 194 episodes), about 14 GB
 for the new feature stores, and small checkpoints. All large artifacts live on the data disk
 (`/mnt/data/emai/projects/open-embodied-jepa/{data,checkpoints,outputs}`). They are reached through
 the repository's `data/`, `checkpoints/` and `outputs/` links, because TASK-087's code and
-`run_task087.sh` use repo-relative paths. Before any stage runs, Stage 0 checks two things. First,
+`run_task087.sh` use repo-relative paths. **The data disk is rotational** (`/mnt/data` is an HDD),
+while TASK-087's 31–37 ms per update was measured with stores on the SSD. `FeatureStore` memory-maps
+the latents by default and each update gathers 64 random windows of 9 frames, so a cold read from
+the HDD costs a seek per window. The training driver therefore opens each combined train store with
+`mmap=False` (about 12.8 GB of latents per arm, against 30 GB of RAM, one training job at a time
+under the lock), or stages the store on the SSD; Stage 0's smoke times ms per update on the real
+path and records which. Before any stage runs, Stage 0 checks two things. First,
 that those links resolve to the data disk. Second, that `play-v1`, TASK-087's feature report,
 projection and 18 checkpoints still verify by sha256 after the move. The runner refuses to write
 below 10 GiB free.
@@ -449,9 +518,10 @@ within 8 cm of the object centre.
 | Windows: containing a lift state of the apple | 0.76 % |
 
 So most closed-hand steps are away from any object. The script is
-`/tmp/claude-1000/task090-scratch/steps.py`. Stage 0 copies it to
-`~/develop/emai/evidence/task090-prototype/` with its output and re-runs it as the frozen Stage C
-label script's check on `play-v1`. No GPU job, collection or training was run for this draft.
+`/tmp/claude-1000/task090-scratch/steps.py` (ephemeral); **its output was not stored**, and the
+shares above are copied from its console output. Stage 0 copies the script to
+`~/develop/emai/evidence/task090-prototype/`, re-runs it there with its output saved, and checks the
+frozen Stage C label script against it on `play-v1` before the label script is frozen. No GPU job, collection or training was run for this draft.
 
 ## 14. Stage 0, freeze and what Stage 0 may change
 
@@ -471,17 +541,20 @@ stay as they are:
 
 **Stage 0 also runs:**
 
-- a debug collection of 100 episodes per policy on debug seeds, with the Stage C ratios measured on
-  it and disclosed;
+- a debug collection of 300 `play_policy_grasp_v0` and 100 `play_policy_v0` episodes on the debug
+  collection seeds (§10), with the Stage C ratios and their intervals measured as §4 says and
+  disclosed;
 - the path and hash checks of §12;
 - A-K0;
-- a debug smoke of every arm;
+- a debug smoke of every arm, including a timed training smoke on the real store path;
 - the power estimate of §7.2.
 
 **Stage 0 may change only:**
 
 - the per-run process count;
 - the collector or the Stage C bars, if the debug ratios fall short (§4);
+- the BS cohort size, only by §7.2's power rule (64 → 128);
+- the train store's location (data disk or SSD) and mmap mode;
 - the dropping of M-v1's 87101 and 87102 runs, if the smoke projects Stage BS above 14 GPU hours.
 
 Each such change is recorded. The protocol is frozen at the Stage 0 merge. Every later stage runs at
@@ -525,23 +598,25 @@ prediction. R27.2 chose data-first, for five reasons:
 - **R27.3** — the changed factor is corpus composition at equal size, play-v2g against play-v1p
   (§2).
 - **R27.4** — `play_policy_grasp_v0` as §2.1. `play_policy_v0` stays frozen.
-- **R27.5** — everything in §2.2 is held fixed, including the pinned projection, U = 60 000, the
-  common selection set and λ = 2.0552 for every arm.
+- **R27.5** — everything in §2.2 is held fixed, including the pinned projection, `play-v1` train's
+  state and palm moments for every new model and the planner cost, U = 60 000, the common selection
+  set and λ = 2.0552 for every arm.
 - **R27.6** — `last_two_triggered` is reported, not an escalation (§2.2).
 - **R27.7** — the models and seeds of §3, with all three M-v2g seeds gated and pooled. M-v1 is a
   reported control re-run that cannot carry a claim.
-- **R27.8** — Stage C, the data gate: C1 ≥ 3×, C2 ≥ 1.75× and C3 within ±25 %. The bars are
-  declared and may be revised only at the freeze (§4).
+- **R27.8** — Stage C, the data gate: C1 ≥ 2.5×, C2 ≥ 1.75× and C3 within ±25 %. The bars are
+  declared and may be revised only at the freeze, from a 300-episode debug collection (§4).
 - **R27.9** — Stage T (§5).
 - **R27.10** — Stage E (§6.1).
-- **R27.11** — A-K0 and Stage A′ as a no-regression gate, with the reported readability probe and
-  diagnostics (§6.2).
+- **R27.11** — A-K0 (with the A-CEILING row) and Stage A′ as a no-regression gate on both M-v2g
+  and M-v1p, with the reported readability probe and diagnostics (§6.2).
 - **R27.12** — the closed-loop arms (§7.1).
-- **R27.13** — the bar min(0.40, 0.9 × r) and the pooled bar 3 × ⌈bar × 64⌉ (§7.2).
+- **R27.13** — the bar min(0.40, 0.9 × r), the pooled bar 3 × ⌈bar × n⌉, the per-seed floor
+  ⌈⌈bar × n⌉ / 2⌉, reset-level exact sign-flip tests at p < 0.01, and the power rule (§7.2).
 - **R27.14** — Stage BD, an independent GO, then Stage BS (§7.2).
-- **R27.15** — the rows: C-FAIL, T-VOID, E-FAIL, A′-FAIL, B-VOID, B-PASS, B-COMP, B-SIZE and B-FAIL
-  (§7.2, §8).
-- **R27.16** — the abandonment clause (§9).
+- **R27.15** — the rows: C-FAIL, T-VOID, E-FAIL, A-CEILING, A′-FAIL, B-VOID, B-PASS, B-COMP,
+  B-SIZE, B-FAIL and B-UNDER (§7.2, §8).
+- **R27.16** — the abandonment clause, firing on B-FAIL only (§9).
 - **R27.17** — seeds and salts (§10).
 - **R27.18** — reported quantities, the determinism re-run and the two MP4s (§7.2).
 - **R27.19** — Stage 0, the freeze, and what Stage 0 may change. Runtime, disk, paths and evidence

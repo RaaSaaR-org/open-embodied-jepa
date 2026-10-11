@@ -36,8 +36,9 @@ additions to `play-v1` train: play-v2g (3 200 episodes from a new grasp-enriched
 G recipe, latent, projection and budget, and TASK-089's step-averaged CEM planner, are held fixed.
 A data gate (Stage C) before training, validity (E) and no-regression (A′) offline gates, then
 Stage BD, an independent GO and the gated Stage BS: all three M-v2g seeds pooled must reach
-3 × ⌈bar × 64⌉ (bar min(0.40, 0.9 × ik's BD rate)), beat random and beat M-v1p (exact one-sided
-McNemar, p < 0.01). Not Apple→Plate; R7 does not change.
+3 × ⌈bar × n⌉ (bar min(0.40, 0.9 × ik's BD rate); n = 64, or 128 by Stage 0's power rule), each
+seed ⌈⌈bar × n⌉ / 2⌉, and beat random and M-v1p (exact one-sided sign-flip tests over per-reset
+differences, p < 0.01). Not Apple→Plate; R7 does not change.
 
 Protocol: [grasp_play_corpus_v1.md](../../../docs/experiments/grasp_play_corpus_v1.md) (DRAFT,
 R27.1–R27.20).
@@ -45,7 +46,7 @@ R27.1–R27.20).
 ## Acceptance criteria
 
 - [ ] DRAFT preregistration reviewed independently and merged
-- [ ] Stage 0: collector, label script, training driver, planner loader, tests; debug collection with the Stage C ratios disclosed; path and hash checks after the data-disk move; A-K0; debug smoke; power estimate; reviewed; protocol frozen at merge
+- [ ] Stage 0: collector, label script, training driver (pinned `play-v1` moments; store mmap/location), planner loader, tests; 300 + 100 episode debug collection with the Stage C ratios disclosed; path and hash checks after the data-disk move; A-K0 (A-CEILING if h = 8 does not qualify); timed debug smoke; power estimate and BS size; reviewed; protocol frozen at merge
 - [ ] Collection (play-v1p, play-v2g) and Stage C recorded; C-FAIL stops before training
 - [ ] Featurisation and Stage T (8 jobs) recorded
 - [ ] Stage E and Stage A′ recorded
@@ -57,8 +58,8 @@ R27.1–R27.20).
 ## Notes
 
 - Seeds: play-v1p 910000–913199, play-v2g 920000–923199, model 90100–90102, A-K0 90000–90031,
-  A′ 903000–903063, BD 90200–90231, BS 904000–904063, debug 90900–90999; salts 9002–9005 (9006
-  reserved; 9001 skipped).
+  A′ 903000–903063, BD 90200–90231, BS 904000–904063 (904000–904127 if enlarged), debug
+  90900–90999, Stage 0 debug collection 930000–930399; salts 9002–9006 (9001 skipped).
 - Large artifacts on `/mnt/data/emai/projects/open-embodied-jepa/` through the repo's links.
-- If the clause fires (B-SIZE or B-FAIL), the declared next step is the model-first design (a
+- If the clause fires (B-FAIL only), the declared next step is the model-first design (a
   grasp-outcome head), with its own preregistration.
