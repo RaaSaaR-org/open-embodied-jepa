@@ -1,7 +1,7 @@
 # TASK-089 — zero-shot grasp-and-lift: an offline diagnosis (Part A), then a closed-loop test with one declared change (Part B)
 
 **Status: FROZEN at the merge of its Stage 0 PR** (R26.1–R26.23, decided by Claude under owner
-delegation; the owner said "go" on 2026-10-11; the DRAFT was reviewed and merged at #197; Stage 0's
+delegation; the owner said "go" on 2026-10-11; the DRAFT was reviewed and merged at #197, `5a7c82a`; Stage 0's
 record is §16). After that merge nothing in §2–§11 changes without its own reviewed ruling.
 
 This is the grasp-focused task that DECISIONS R25.27 recommends after TASK-088 closed **Z3-REACH**
