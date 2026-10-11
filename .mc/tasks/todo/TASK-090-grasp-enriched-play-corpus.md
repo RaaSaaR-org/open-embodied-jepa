@@ -1,0 +1,64 @@
+---
+id: TASK-090
+aliases:
+- TASK-090
+title: 'Grasp-enriched play corpus: retrain grounded LeWM on more scripted grasp-and-lift, against an equal-size control, then closed-loop grasp-and-lift'
+slug: grasp-enriched-play-corpus
+status: todo
+priority: 2
+owner: ''
+projects: []
+customers: []
+tags:
+- world-model
+- lewm
+- data
+- planning
+- preregistration
+- phase-3
+sprint: ''
+depends_on:
+- "[[TASK-089]]"
+due_date: ''
+created: 2026-10-12
+updated: 2026-10-12
+---
+
+# Grasp-enriched play corpus: retrain grounded LeWM on more scripted grasp-and-lift, against an equal-size control, then closed-loop grasp-and-lift
+
+## Description
+
+The data option of DECISIONS R26.34 after TASK-089 closed A-PASS(step-mean) → B-FAIL (G-chg-87100
+0/64, exact 95 % 0.000–0.056, bar 26/64; replication seeds 8/64 and 7/64, reported only; simulation
+only, one model seed gated; "LeWM needed" not shown; the clause fired, R26.33). Two equal-size
+additions to `play-v1` train: play-v2g (3 200 episodes from a new grasp-enriched collector,
+`play_policy_grasp_v0`) and play-v1p (3 200 episodes from the unchanged `play_policy_v0`). TASK-087's
+G recipe, latent, projection and budget, and TASK-089's step-averaged CEM planner, are held fixed.
+A data gate (Stage C) before training, validity (E) and no-regression (A′) offline gates, then
+Stage BD, an independent GO and the gated Stage BS: all three M-v2g seeds pooled must reach
+3 × ⌈bar × 64⌉ (bar min(0.40, 0.9 × ik's BD rate)), beat random and beat M-v1p (exact one-sided
+McNemar, p < 0.01). Not Apple→Plate; R7 does not change.
+
+Protocol: [grasp_play_corpus_v1.md](../../../docs/experiments/grasp_play_corpus_v1.md) (DRAFT,
+R27.1–R27.20).
+
+## Acceptance criteria
+
+- [ ] DRAFT preregistration reviewed independently and merged
+- [ ] Stage 0: collector, label script, training driver, planner loader, tests; debug collection with the Stage C ratios disclosed; path and hash checks after the data-disk move; A-K0; debug smoke; power estimate; reviewed; protocol frozen at merge
+- [ ] Collection (play-v1p, play-v2g) and Stage C recorded; C-FAIL stops before training
+- [ ] Featurisation and Stage T (8 jobs) recorded
+- [ ] Stage E and Stage A′ recorded
+- [ ] Stage BD recorded, the bar set; independent GO posted before Stage BS
+- [ ] Stage BS run; results document, row and DECISIONS rulings reviewed and merged
+- [ ] Evidence in `~/develop/emai/evidence/task090-*/` with `SHA256SUMS`; two MP4s (one success if any, one failure)
+- [ ] CLAUDE.md entry points and the plan's Progress table updated
+
+## Notes
+
+- Seeds: play-v1p 910000–913199, play-v2g 920000–923199, model 90100–90102, A-K0 90000–90031,
+  A′ 903000–903063, BD 90200–90231, BS 904000–904063, debug 90900–90999; salts 9002–9005 (9006
+  reserved; 9001 skipped).
+- Large artifacts on `/mnt/data/emai/projects/open-embodied-jepa/` through the repo's links.
+- If the clause fires (B-SIZE or B-FAIL), the declared next step is the model-first design (a
+  grasp-outcome head), with its own preregistration.
