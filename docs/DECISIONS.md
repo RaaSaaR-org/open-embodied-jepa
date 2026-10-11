@@ -63,6 +63,44 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-11 (ah) — TASK-089: zero-shot grasp-and-lift, an offline diagnosis (Part A) gating a closed-loop test with one declared change (Part B); DRAFT preregistration (R26.1–R26.18; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30; the owner said "go" on 2026-10-11).** The
+grasp-focused task R25.27 recommends after TASK-088's Z3-REACH. Protocol:
+[zero_shot_grasp_v1.md](experiments/zero_shot_grasp_v1.md); frozen when its Stage 0 PR merges. The
+rulings R26.1–R26.18 are listed in its §15. In short:
+
+- **R26.1–R26.2** — R25.27 is followed: Part A offline first, Part B only if A admits it. G-87100
+  is the primary model (R25.27's recommendation), P-87100 the second arm; TASK-087's checkpoints
+  unchanged; λ = 2.0552.
+- **R26.3–R26.5** — Part A on fresh branched grasp windows: from the demonstrator's open-at-object
+  (R1) and closed-at-object (R2) states, 16-command branches (close / open; lift / release / stay).
+  A1: does the model's goal cost prefer the true branch as often as the same cost on real frames
+  (the measured ceiling), and more than an action-shuffled control? A2: does one CEM call at the
+  root choose to close and lift (first planned command)?
+- **R26.6** — the candidate changes for Part B, in order: (1) a step-averaged cost (a grasp-phase
+  cost), (2) H = 16, (3) a held grasp channel (outside R25.27's list, admitted last). More grasp data
+  is the recommendation if the task ends without a pass, not a candidate.
+- **R26.7–R26.8** — A-K0 (32 calibration roots, simulator only) gates the comparisons whose ceiling
+  is at least 0.75 and sets bars `0.5 + 0.9 × (ceiling − 0.5)`; A-FAIL is judged only on horizons
+  where the ceiling gates close-vs-open and an R2 comparison (else A-CEILING, no clause); A2's bars (48 / 64 and above
+  TASK-088's setting) are declared; the first candidate meeting A1 and A2 for G is Part B's change.
+- **R26.9–R26.12** — Part B: G-chg (primary), P-chg, G-base (control), ik (ceiling), ik-nopress,
+  hold, random, two replication seeds; the bar min(0.40, 0.9 × ik's Stage BD rate), which is the
+  declared 0.40 unless ik's rate falls below 0.445 (escalation below 0.30); Stage BD (32
+  development resets), an independent GO, Stage BS (64 gated resets). Rows A-VOID, A-CEILING,
+  A-FAIL, A-PLAN, A-PASS(k) → B-VOID, B-PASS, B-LOW, B-FAIL. "LeWM needed" is not claimed by any row.
+- **R26.13** — the abandonment clause fires on A-FAIL or B-FAIL and closes CEM planning of
+  grasp-and-lift over TASK-087's checkpoints; LeWM, DINOv2, `play-v1`, CEM, reach planning and the
+  product goal stay open.
+- **R26.14–R26.17** — seeds 89000–89131, 890000–891063, debug 89900–89999, salt 8901; every GPU
+  use under `scripts/gpu_run.sh`, per job.
+- **R26.18 — R7 does not change**, whatever the row.
+
+Disclosed development (12 debug roots, §13): the predictions separated close from open at h = 8
+for P and G as the real frames did, but with TASK-088's setting the planner's first grasp command
+closed on 2 % (R1) and 29 % (R2) of G's plans, against 94 % and 94 % with the step-averaged cost.
+
 ## Decision 2026-10-10 (ag) — TASK-088 Stage S ends Z3-REACH: plain LeWM reaches new image goals 53/64 (bar 52), G 62/64; grasp-and-lift 0/64 for every world-model arm; Phase 4 is not admitted; R7 does not change; TASK-088 closes (R25.25–R25.29)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
