@@ -25,7 +25,7 @@ USB disk.
                                     (checksums/run-logs.sha256)
         patches/<branch>/           git format-patch of local-only commits that could not be pushed
         deleted-remote-branches-<date>.txt   origin branches deleted after their PRs merged
-      datasets/                     large corpora (empty for now)
+      datasets/                     real-g1-v1/ (USB-only since 2026-10-11), jepa-wms-runtime-downloads/
       checkpoints/                  model checkpoints (empty for now)
       runs/                         generated run outputs (empty for now)
 ```
@@ -177,23 +177,57 @@ GPU lock and `worktrees/task076-evidence`.
   TASK-080's frozen-DINOv2 feature arrays (`outputs/task0{77,80}-featurise-1/features/`, 13.8 GB
   and 3.5 GB; regenerable featurisation output, their reports, logs and fits are on the SSD) and
   Stage 0 smoke/debug files of 10 MB or more (`task077-stage0`, `task082-s0chain`,
-  `task087-stage0`; 2.4 GB). The rows are in the disk's `MANIFEST.md`, "Third pass". **Removing
-  these 30 worktrees from the SSD is left to the owner** (it was not permitted in this session);
-  until then read them in place. Once removed, an old path
-  `/home/huhn/develop/emai/worktrees/<name>/X` maps to `evidence/worktrees/<name>/X` (outputs) or
-  `archive/worktrees/<name>/X` (everything). The `tail -F` process in `oej-isaac-newton` (pid
-  260505) only reads a log; it does not block archiving.
+  `task087-stage0`; 2.4 GB). The rows are in the disk's `MANIFEST.md`, "Third pass". The 30
+  worktrees were removed from the SSD on 2026-10-11 (see "Removal of 2026-10-11" below): an old
+  path `/home/huhn/develop/emai/worktrees/<name>/X` (or `/home/huhn/develop/emai/oej-isaac-newton/X`)
+  maps to `evidence/worktrees/<name>/X` (outputs) or `archive/worktrees/<name>/X` (everything).
 - **Second copies of data on the disk, SSD originals kept:** `datasets/real-g1-v1/` (TASK-086's
   converted stores, unused since R23.28, 2.0 GB; the protocol allows deleting the SSD copy if
   space is needed, recorded) and `datasets/jepa-wms-runtime-downloads/` (TASK-084's pinned
   `pusht_noise.zip` and checkpoint). `third_party/jepa-wms-runtime/dset/` (7.0 GB) matches the
   pinned zip member for member (CRC-32 of all 18 718 files, none extra), so it can be deleted and
-  regenerated with `unzip -q downloads/pusht_noise.zip -d dset`; it was not deleted. (The
+  regenerated with `unzip -q downloads/pusht_noise.zip -d dset`; it was not deleted then. (The
   `downloads/SHA256SUMS` file lists another value for the zip; the zip on disk has the runner's
   pin, `442f5dee…2da08`.)
 - After this pass `/` had about 30 GB free. Removing the 30 archived worktrees would free about
   30 GB more (28.6 GiB by `du`, with files hard-linked to kept checkouts counted against those),
   and deleting `real-g1-v1` and `jepa-wms-runtime/dset` about 9 GB.
+
+### Removal of 2026-10-11
+
+With the owner's explicit "yes" on 2026-10-11, the SSD originals of the items archived above were
+deleted; `/` went from 28 GB to 65 GB free. TASK-089's worktrees, `task087-run`, `task088-stage0`,
+the main checkout's other `data/` stores, `checkpoints/` and `outputs/` were not touched.
+
+- **The 30 archived worktrees** (list above), removed with `git worktree remove --force`
+  (`oej-isaac-newton` lived at `/home/huhn/develop/emai/oej-isaac-newton`); their branches were
+  kept. Their `outputs/`, `data/`, `checkpoints/`, `assets/isaac/` and the two untracked files now
+  exist on the SSD only as evidence, at `evidence/worktrees/<name>/`; the full copies (every
+  regular file, including the USB-only feature arrays and Stage 0 files above) exist only on the
+  USB disk, at `archive/worktrees/<name>/`. `task077-k0`'s USB copy is from an earlier pass; its
+  SSD evidence manifest is `evidence/_checksums/worktrees/task077-k0.sha256`. To restore one,
+  re-create the worktree at its recorded HEAD (`git worktree add --detach <path> <sha>`, after
+  `git fetch origin refs/pull/<N>/head` if the commit is not local), then copy its ignored files
+  back from `evidence/worktrees/<name>/` (check from inside that folder with
+  `sha256sum -c --quiet ../../_checksums/worktrees/<name>.sha256`), or from
+  `archive/worktrees/<name>/` for the USB-only files (check with the disk's
+  `checksums/<name>.sha256`; re-join a split file with `cat <file>.part-* > <file>` and compare it
+  with the whole-file sha256 in its `MANIFEST.md` row).
+- **`data/real-g1-v1`** (2.0 GB; TASK-086's converted stores, unused since R23.28) is now
+  USB-only, at `datasets/real-g1-v1/` on the disk. Restore with
+  `cp -r /media/huhn/INTENSO/emai/open-embodied-jepa/datasets/real-g1-v1 data/`, then check with
+  `cd data/real-g1-v1 && sha256sum -c --quiet /media/huhn/INTENSO/emai/open-embodied-jepa/archive/checksums/datasets-real-g1-v1.sha256`.
+- **`third_party/jepa-wms-runtime/dset/`** (7.0 GB) was deleted. The pinned zip it was extracted
+  from stays on the SSD in `third_party/jepa-wms-runtime/downloads/` (second copy on the disk at
+  `datasets/jepa-wms-runtime-downloads/`). Before re-running TASK-084
+  (`scripts/run_jepa_wms_calibration.py`, which reads `dset/` through `JEPAWM_DSET`), regenerate
+  it: in `third_party/jepa-wms-runtime/`, check that `sha256sum downloads/pusht_noise.zip` gives
+  the runner's pin (`442f5dee…2da08`, not the value in `downloads/SHA256SUMS`), then run
+  `unzip -q downloads/pusht_noise.zip -d dset`. The 2026-10-10 check found the extracted tree
+  identical to the zip member for member. If `downloads/` is lost, copy it back from the disk
+  first and check it with the disk's `checksums/datasets-jepa-wms-runtime-downloads.sha256`.
+- The leftover worktree `storage-cleanup-4` (branch `docs/storage-cleanup-2026-10-10`, merged as
+  #194; nothing untracked but an empty `.venv/`) was removed and its local branch deleted.
 
 ## Old path to archive path
 
