@@ -198,11 +198,14 @@ def build_root(robot, seed: int) -> dict:
     raise ContractError(f"no root for seed {seed}: {rejected}")
 
 
-def shuffled_deal(seed: int, root: str, true_actions, alt_actions):
-    """A1's action-shuffled control (salt 8901): the 2 x 16 commands of a comparison's two
-    branches pooled and dealt at random into two 16-command sequences."""
+def shuffled_deal(seed: int, comparison: int, true_actions, alt_actions):
+    """A1's action-shuffled control: the 2 x 16 commands of one comparison's two branches pooled
+    and dealt at random into two 16-command sequences (generator keyed by salt 8901, the root seed
+    and the comparison's index 0-2)."""
+    if comparison not in range(len(COMPARISONS)):
+        raise ContractError(f"no comparison {comparison}")
     pool = np.concatenate([np.asarray(true_actions), np.asarray(alt_actions)])
-    rng = np.random.default_rng([SALTS["shuffle"], int(seed), ROOTS.index(root)])
+    rng = np.random.default_rng([SALTS["shuffle"], int(seed), int(comparison)])
     order = rng.permutation(len(pool))
     return pool[order[:WINDOW]], pool[order[WINDOW:]]
 
@@ -253,16 +256,17 @@ def k0_bars(ceiling: dict) -> dict:
     return out
 
 
-def ceiling_row(bars: dict) -> bool:
-    """A-CEILING (§5.4, §8): close-vs-open or both R2 comparisons ungated for G's cost at h = 8 and
-    at h = 16."""
+def qualifying(bars: dict, h) -> bool:
+    """§5.4: h qualifies when, for G's cost family, close-vs-open and at least one R2 comparison
+    are gated at it."""
     names = [comparison_name(c) for c in COMPARISONS]
+    b = bars["latent+pose"][str(h)]
+    return bool(b[names[0]]["gated"] and (b[names[1]]["gated"] or b[names[2]]["gated"]))
 
-    def usable(h):
-        b = bars["latent+pose"][str(h)]
-        return b[names[0]]["gated"] and (b[names[1]]["gated"] or b[names[2]]["gated"])
 
-    return not any(usable(h) for h in HORIZONS)
+def ceiling_row(bars: dict) -> bool:
+    """A-CEILING (§5.4, §8): no horizon qualifies."""
+    return not any(qualifying(bars, h) for h in HORIZONS)
 
 
 def a1_pass(family_bars: dict, model_wins: dict, shuffled_wins: dict, n: int) -> dict:
@@ -316,7 +320,8 @@ def a2_meets(candidate: dict, base: dict) -> dict:
 
 
 def select_change(a1_by_h: dict, a2: dict) -> str | None:
-    """§6: the first candidate whose horizon's A1 passes for G-87100 and whose A2 bars are met."""
+    """§6: the first candidate whose horizon qualifies and A1 passes there for G-87100 (both in
+    ``a1_by_h[h]``, False for a horizon that does not qualify) and whose A2 bars are met."""
     for cand in CANDIDATES:
         if a1_by_h[SETTING_HORIZON[cand]] and a2[cand]["meets"]:
             return cand
@@ -324,7 +329,8 @@ def select_change(a1_by_h: dict, a2: dict) -> str | None:
 
 
 def a_row(*, void: str = "", ceiling: bool = False, a1_by_h: dict, change) -> str:
-    """§8 rows 1-5 (first match)."""
+    """§8 rows 1-5 (first match). ``a1_by_h[h]`` is True only when h qualifies and A1 passes for
+    G-87100 there, so A-FAIL is judged on qualifying horizons only."""
     if void:
         return "A-VOID"
     if ceiling:
@@ -366,10 +372,13 @@ def check_run(cohort: str, arm: str, model_seed) -> None:
     raise ContractError(f"{arm}-{model_seed} is not a run of {cohort}")
 
 
+B_ESCALATE_RATE = 0.30
+
+
 def b_bar(ik_successes: int, n: int):
-    """§7.2: min(0.40, 0.9 x ik's Stage BD rate); None (escalate) when that rate is below 0.5."""
+    """§7.2: min(0.40, 0.9 x ik's Stage BD rate); None (escalate) when that rate is below 0.30."""
     rate = ik_successes / n
-    if rate < 0.5:
+    if rate < B_ESCALATE_RATE:
         return None
     return min(PLAN_GRASP_BAR, 0.9 * rate)
 
