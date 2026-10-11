@@ -63,6 +63,36 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-11 (al) — TASK-089 ends B-FAIL after A-PASS(step-mean): the models see the grasp and the step-averaged cost makes the planner close, but the primary seed lifts 0 / 64 (bar 26); the abandonment clause fires; R7 does not change; TASK-089 closes (R26.31–R26.36)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[zero_shot_grasp_v1_results.md](experiments/zero_shot_grasp_v1_results.md); protocol frozen at
+`c40919d` (#198), Stage A at #199, Stage BD at #200 with an independent GO.
+
+- **R26.31 — the run.** Stage BS at `c40919d` (clean tree), 64 fresh gated resets
+  891000–891063, every arm of §7.1, one GPU lock per run, 2026-10-11 05:07–10:46 UTC; no refusal,
+  error or re-run; the void checks found nothing. Evidence `~/develop/emai/evidence/task089-bs/`
+  (`SHA256SUMS` `7266621e…d1da`) with three replay MP4s.
+- **R26.32 — B-FAIL.** G-chg-87100 (G, CEM with the step-averaged cost) **0 / 64** (exact 95 %
+  0.000–0.056; bar 26 / 64), not above random (0 / 64); G-base-87100 0 / 64, P-chg-87100 0 / 64; the
+  IK follower 48 / 64 (0.626–0.850), ik-nopress 46 / 64. Reported only: G-chg-87101 **8 / 64**
+  (0.056–0.232) and G-chg-87102 **7 / 64** (0.045–0.212), the first world-model grasp-and-lifts on
+  gated resets here, below the bar. With the change G closed the hand on the grasp and lift subgoals
+  (70–79 % of commands) and touched the target on 39 of 64, but the primary seed lifted nothing.
+  Part A had passed: G's predictions separated closing and lifting from open and non-lifting hands
+  on 64 of 64 roots (offline). Simulation only, one scene and camera, one model seed gated; "LeWM
+  needed" is not shown.
+- **R26.33 — the abandonment clause fires** (protocol §9): CEM planning of grasp-and-lift over
+  TASK-087's checkpoints (trained on `play-v1` as collected) is closed; no further planner, cost,
+  horizon or action-parametrisation variant over these checkpoints is preregistered for grasping
+  without new evidence of a different kind. Not closed: LeWM, DINOv2, `play-v1` as a base, CEM in
+  general, reach planning (TASK-088's Z3-REACH stands), Phase 4 as a goal, and the product goal.
+- **R26.34 — recommendation only:** Phase 4 is not admitted; the next grasp step changes the data
+  (more grasp-and-lift in the play corpus) or the model (one trained to predict the grasp's outcome),
+  with its own preregistration; the step-averaged cost and the offline probes can be reused.
+- **R26.35 — R7 does not change.** Not an Apple→Plate experiment.
+- **R26.36 — TASK-089 closes.**
+
 ## Decision 2026-10-11 (ak) — TASK-089 Stage BD (development): G with the step-averaged cost lifts 2 of 32 (the first world-model grasp-and-lifts here), G-base and P-chg 0, the IK follower 28; the Stage BS bar is 26 / 64; Stage BS runs as frozen after an independent GO (R26.27–R26.30)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
