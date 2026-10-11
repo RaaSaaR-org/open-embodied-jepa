@@ -528,8 +528,8 @@ Within the 16 branch commands the lift branch raised the target by at least 5 cm
 | held | 64 | 64 | yes (not reached by the rule) | 38 | 33 |
 
 **What this says, and what it does not.** G's predictions separate a closing from an open hand and
-a lifting from a releasing or staying hand at the object exactly as often as the simulator's own
-frames do under G's cost (every root, three model seeds, h = 8 and 16); plain P separates closing
+a lifting from a releasing or staying hand at the object on every root (three model seeds, h = 8
+and 16), at least as often as the simulator's own frames do under G's cost (63–64 of 64); plain P separates closing
 and staying, but at h = 16 not lifting-while-closed from lifting-while-opening as often as its
 latent ceiling allows. With TASK-088's last-step cost the planner's first command at these roots
 rarely closes (4 of 64) or lifts closed (17); averaging the cost over the horizon makes it do so on
