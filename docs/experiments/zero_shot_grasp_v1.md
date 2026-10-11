@@ -1,8 +1,8 @@
 # TASK-089 — zero-shot grasp-and-lift: an offline diagnosis (Part A), then a closed-loop test with one declared change (Part B)
 
-**Status: DRAFT** (R26.1–R26.18, decided by Claude under owner delegation; the owner said "go" on
-2026-10-11). It is frozen at the merge of its Stage 0 PR; after that nothing in §2–§11 changes
-without its own reviewed ruling. Stage 0 may fix only what §14 lists, each by a recorded rule.
+**Status: FROZEN at the merge of its Stage 0 PR** (R26.1–R26.23, decided by Claude under owner
+delegation; the owner said "go" on 2026-10-11; the DRAFT was reviewed and merged at #197; Stage 0's
+record is §16). After that merge nothing in §2–§11 changes without its own reviewed ruling.
 
 This is the grasp-focused task that DECISIONS R25.27 recommends after TASK-088 closed **Z3-REACH**
 ([zero_shot_reach_grasp_v1_results.md](zero_shot_reach_grasp_v1_results.md): reach P 53/64 and
@@ -400,3 +400,69 @@ debug layouts; never counted), a prototype of §5 (not the Stage 0 code) ran und
 - **R26.16** — Stage 0 and the freeze (§14).
 - **R26.17** — runtime, disk and evidence (§12): every GPU use under `gpu_run.sh`, per job.
 - **R26.18** — R7 does not change, whatever the row.
+
+## 16. Stage 0 record (R26.19–R26.23)
+
+- **Code** (opt-in; no registry entry; `import embodied_jepa` stays torch- and MuJoCo-free, checked
+  by a test): `src/embodied_jepa/zero_shot_grasp.py` (cohorts, the roots and branches re-run from
+  TASK-088's demonstrator, A1's wins, gating, bars and pass rule, the shuffled deal, A2's measures
+  and bars, the selection rule, Part B's arms, bar and rows; NumPy at import),
+  `src/embodied_jepa/zero_shot_grasp_runtime.py` (the step-averaged and held-grasp wrappers around
+  TASK-088's `PlannerModel`, the H = 16 planner, A1's roll-out and ceiling costs through the
+  planner's own `distance`, A2's single CEM call, Part B's controller), `scripts/run_task089.py`
+  (lambda, roots, ceiling, a1, a2, goals, run, video), `scripts/summarize_task089.py`,
+  `scripts/run_task089_stage.sh` (one `gpu_run.sh` job per step; only gpu_run's refusal, exit 76, is
+  retried) and `tests/test_zero_shot_grasp.py` (15 tests; one graphics opt-in, which checks that a
+  root's demonstrator draw equals `zero_shot.make_grasp_goal`'s on the same seed). No existing file
+  changes: TASK-087's implementation hash and TASK-088's frozen code are untouched.
+- **The re-run root check** (review nit of #197) is bitwise: the 28-D measured state at the root,
+  re-run from the reset with the same commands, must equal the recorded subgoal state exactly
+  (`numpy.array_equal`). It held on every root built so far (8 debug, 32 calibration).
+- **A-K0** (calibration roots 89000–89031, at `72a766e`, clean tree, NVIDIA EGL, under the GPU
+  lock; 40 rejected draws; targets can 17, cube 9, apple 6, banana 0 — the demonstrator lifts no
+  banana, as in TASK-088): the simulator ceiling's win rates (of 32) and the bars by §5.4's rule,
+  frozen as `zero_shot_grasp.K0_CEILING` / `A1_BARS`:
+
+  | Cost family | h | close-vs-open | lift-vs-release | lift-vs-stay |
+  | --- | --- | --- | --- | --- |
+  | latent + pose (G) | 8 | 1.000 → 61 / 64 | 1.000 → 61 / 64 | 0.969 → 59 / 64 |
+  | latent + pose (G) | 16 | 1.000 → 61 / 64 | 1.000 → 61 / 64 | 1.000 → 61 / 64 |
+  | latent (P, G-lat) | 8 | 0.938 → 58 / 64 | 0.469: **not gated** | 0.969 → 59 / 64 |
+  | latent (P, G-lat) | 16 | 0.938 → 58 / 64 | 0.844 → 52 / 64 | 1.000 → 61 / 64 |
+
+  Both horizons qualify for G's cost, so the row cannot be A-CEILING. On real frames the latent cost
+  alone does not tell "lift while opening" from "lift while closed" 8 commands ahead (0.469); with
+  the pose term it always does. Evidence `~/develop/emai/evidence/task089-stage0/` (`SHA256SUMS`
+  sha256 `293cb6f1…1864`; `k0/summary-k0.json` sha256 `c8a84453…6f22`; `k0/ceiling-k0-roots.json`
+  sha256 `57138e1d…28a5`).
+- **λ** is TASK-088's 2.0552; Stage A recomputes it and the runner refuses another value.
+- **Debug smoke** (debug seeds, not results; runs at `07affcd` and `72a766e`, debug runs may be
+  dirty):
+  - Part A on 8 debug roots (89900–89907; 17 rejected draws). A1 wins of 8 at h = 8 / 16: G-87100,
+    G-87101, G-87102 8 on every comparison; P-87100 close 8 / 8, release 4 / 7, stay 8 / 8;
+    G-lat release 2 / 6; N 0 everywhere (ties). A2 (close@R1, lift@R2 of 8) for G: base 1, 4;
+    step-mean 7, 8; h16 0, 3; held 8, 8. For P: base 3, 0; step-mean 3, 6; h16 2, 0; held 5, 6.
+  - Part B on 8 debug resets (89950–89957; goals for the 50 debug seeds with 43 rejected draws),
+    with the step-averaged cost given by hand (`--setting`, debug only): ik 7 / 8, ik-nopress
+    7 / 8, hold and random 0 / 8; **G-chg 0 / 8, G-base 0 / 8, P-chg 0 / 8**. With the change, G's
+    hand stayed open on the approach and closed on the grasp and lift subgoals (share of commands
+    above 0.5: hover 0.00, pre-grasp 0.00, grasp 0.75, lift 0.81, against 0.00 and 0.03 for G-base
+    on grasp and lift), and it left the pre-grasp subgoal by "reached" on 6 of 8 resets (G-base
+    0); but it touched the target with the grasp contact on 3 and never lifted it (maximum rise
+    0.6 cm); 2 of its episodes and 2 of G-base's ended on the measured-velocity stop. P-chg closed
+    on 6 % of grasp-phase commands. Planning about 0.65 s per command with 4 processes.
+  - These smoke numbers were read after the protocol was reviewed and merged (#197) and change
+    nothing in §2–§11: the rule selects Part B's change from Stage A, and Part B's row is read on
+    fresh gated resets. They are disclosed because they make a B-LOW or B-FAIL more likely than
+    the DRAFT's §13 suggested.
+- **Knobs:** the process count stays 8 (baselines) and 6 (world-model arms) per run, and the
+  replication runs stay. Projection from the smoke: Stage A under 1 GPU hour; Stage BD about
+  1.5 GPU hours (3 world-model runs × 32 × at most 400 commands); Stage BS about 5–6 (5 runs × 64);
+  H = 16 would double a run. Inside §14's 20-hour limit, so nothing changes.
+- **Review nits of #197** applied here: §7.1's ik row now says its Stage BD rate enters the bar rule
+  (it does not set the bar by itself); §6 says where the owner's brief is recorded.
+- **R26.19** — the Stage 0 code above. **R26.20** — A-K0 and the bars in the table above; both
+  horizons qualify. **R26.21** — the debug smoke is not evidence; it is disclosed and changes
+  nothing. **R26.22** — frozen at this PR's merge; Stage A, BD and BS run at the merged revision
+  from a clean tree with `scripts/run_task089_stage.sh`, evidence in
+  `~/develop/emai/evidence/task089-*`. **R26.23** — R7 does not change.

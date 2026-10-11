@@ -407,4 +407,20 @@ def clause_fires(row: str) -> bool:
 
 
 # ----- the bars (§5.4, §7.2): written by the Stage 0 and Stage BD records ------------------------
-A1_BARS: dict | None = None  # set from A-K0 by the Stage 0 record, frozen with the protocol
+# A-K0 (Stage 0 record, protocol §16): the simulator ceiling's win rates on the 32 calibration
+# roots 89000-89031 (ceiling-k0-roots.json at 72a766e); the bars follow by §5.4's rule.
+K0_CEILING = {
+    "latent": {
+        "16": {"R1:close-vs-open": 0.9375, "R2:lift-vs-release": 0.84375, "R2:lift-vs-stay": 1.0},
+        "8": {
+            "R1:close-vs-open": 0.9375,
+            "R2:lift-vs-release": 0.46875,
+            "R2:lift-vs-stay": 0.96875,
+        },
+    },
+    "latent+pose": {
+        "16": {"R1:close-vs-open": 1.0, "R2:lift-vs-release": 1.0, "R2:lift-vs-stay": 1.0},
+        "8": {"R1:close-vs-open": 1.0, "R2:lift-vs-release": 1.0, "R2:lift-vs-stay": 0.96875},
+    },
+}
+A1_BARS: dict | None = k0_bars(K0_CEILING)

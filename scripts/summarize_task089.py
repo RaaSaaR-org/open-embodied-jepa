@@ -78,14 +78,16 @@ def _count(items):
 def stage_a(args):
     if zg.A1_BARS is None:
         raise SystemExit("A1_BARS is not frozen (Stage 0 record)")
-    d = Path(args.runs)
-    a1, a2, roots = load(d / "a1-a-roots.json"), load(d / "a2-a-roots.json"), None
-    roots = load(d / "roots-a-roots.json")
-    n = len(zg.COHORTS["a-roots"])
-    problems = common_checks([a1, a2, roots], "a-roots", n)
-    if [r["seed"] for r in roots["roots"]] != list(zg.COHORTS["a-roots"]):
+    d, cohort = Path(args.runs), args.cohort or "a-roots"
+    a1, a2f = load(d / f"a1-{cohort}.json"), load(d / f"a2-{cohort}.json")
+    roots = load(d / f"roots-{cohort}.json")
+    n = a1["n"] if cohort.startswith("debug") else len(zg.COHORTS[cohort])
+    problems = common_checks([a1, a2f, roots], cohort, n)
+    if not cohort.startswith("debug") and [r["seed"] for r in roots["roots"]] != list(
+        zg.COHORTS[cohort]
+    ):
         problems.append("roots are not exactly the cohort's seeds")
-    for f in (a1, a2):
+    for f in (a1, a2f):
         if f["roots_sha256"] != a1["roots_sha256"]:
             problems.append("A1 and A2 read different roots")
     bars = zg.A1_BARS
@@ -110,7 +112,7 @@ def stage_a(args):
     g = arms["G-87100"]
     a1_by_h = {h: bool(zg.qualifying(bars, h) and g[str(h)]["pass"]) for h in zg.HORIZONS}
     a2 = {}
-    for model, by_setting in a2["a2"].items():
+    for model, by_setting in a2f["a2"].items():
         a2[model] = {}
         base = {k: np.asarray(by_setting["base"][k]) for k in ("close_R1", "lift_R2")}
         for setting, v in by_setting.items():
@@ -130,7 +132,7 @@ def stage_a(args):
         }
     return {
         "stage": "a",
-        "cohort": "a-roots",
+        "cohort": cohort,
         "n": n,
         "row": row,
         "selected_change": change,
@@ -201,23 +203,23 @@ def _targets(d, cohort):
 
 
 def stage_bd(args):
-    runs = _runs(args.runs, "bd-grasp")
-    n = len(zg.COHORTS["bd-grasp"])
-    problems = common_checks(list(runs.values()), "bd-grasp", n)
+    cohort = args.cohort or "bd-grasp"
+    runs = _runs(args.runs, cohort)
+    n = runs["ik"]["n"] if cohort.startswith("debug") else len(zg.COHORTS[cohort])
+    problems = common_checks(list(runs.values()), cohort, n)
     ik = runs["ik"]["successes"]
     bar = zg.b_bar(ik, n)
-    targets, goals = _targets(args.runs, "bd-grasp")
+    targets, goals = _targets(args.runs, cohort)
     return {
         "stage": "bd",
-        "cohort": "bd-grasp",
+        "cohort": cohort,
         "n": n,
         "arms": _arm_table(runs, n),
         "ik_successes": ik,
         "bar": bar,
         "bar_count_of_64": None if bar is None else zg.bar_count(bar, 64),
         "escalate": bar is None,
-        "change": {r.get("change") for r in runs.values()}
-        and sorted({r.get("change") for r in runs.values()}),
+        "change": sorted({r.get("change") for r in runs.values()}),
         "targets": _count(targets.values()),
         "rejected_draws": goals["rejections"],
         "problems": problems,
@@ -293,10 +295,12 @@ def main(argv=None) -> int:
     p.add_argument("--stage", required=True, choices=("k0", "a", "bd", "bs"))
     p.add_argument("--runs", required=True)
     p.add_argument("--bd-summary")
+    p.add_argument("--cohort", help="a debug cohort, for smokes (stages a and bd)")
     args = p.parse_args(argv)
     fn = {"k0": stage_k0, "a": stage_a, "bd": stage_bd, "bs": stage_bs}[args.stage]
     summary = fn(args)
-    out = Path(args.runs) / f"summary-{args.stage}.json"
+    tag = f"{args.stage}-{args.cohort}" if args.cohort else args.stage
+    out = Path(args.runs) / f"summary-{tag}.json"
     if out.exists():
         raise SystemExit(f"refusing to overwrite {out}")
     out.write_text(json.dumps(summary, indent=1, sort_keys=True, default=str) + "\n")

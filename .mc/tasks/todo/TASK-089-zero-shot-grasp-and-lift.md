@@ -4,7 +4,7 @@ aliases:
 - TASK-089
 title: 'Zero-shot grasp-and-lift: offline diagnosis (Part A), then a closed loop with one declared change (Part B)'
 slug: zero-shot-grasp-and-lift
-status: todo
+status: in-progress
 priority: 2
 owner: ''
 projects: []
@@ -22,6 +22,7 @@ due_date: ''
 created: 2026-10-11
 updated: 2026-10-11
 ---
+
 
 # Zero-shot grasp-and-lift: offline diagnosis (Part A), then a closed loop with one declared change (Part B)
 
@@ -53,3 +54,4 @@ R26.1–R26.18).
 
 - Seeds 89000–89031 (A-K0), 890000–890063 (Stage A), 89100–89131 (BD), 891000–891063 (BS),
   89900–89999 (debug); salt 8901 (8902 reserved); TASK-088's salts 8801–8804 reused with new seeds.
+%% mc-links: [[TASK-088]] %%

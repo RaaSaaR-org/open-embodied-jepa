@@ -63,6 +63,27 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-11 (ai) — TASK-089 Stage 0: code, A-K0's ceiling and bars, the debug smoke; the protocol is frozen at this merge (R26.19–R26.23)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[zero_shot_grasp_v1.md §16](experiments/zero_shot_grasp_v1.md).
+
+- **R26.19 — Stage 0 code:** `zero_shot_grasp.py`, `zero_shot_grasp_runtime.py`,
+  `run_task089.py`, `summarize_task089.py`, `run_task089_stage.sh` and 15 tests (opt-in;
+  `import embodied_jepa` unchanged; no existing file changes).
+- **R26.20 — A-K0's bars.** On 32 calibration roots the simulator ceiling of G's cost (latent +
+  pose) separated every pair of branches on 31–32 of 32, so every comparison is gated for G at
+  h = 8 and 16 (bars 59–61 of 64) and both horizons qualify; the latent cost alone does not
+  separate lift-while-opening from lift-while-closed at h = 8 (15 / 32), so that comparison is not
+  gated for P there.
+- **R26.21 — the debug smoke** is not evidence and changes nothing. Disclosed: with the
+  step-averaged cost G's planner closed the hand on the grasp and lift subgoals of 8 debug resets
+  (on 75 % and 81 % of commands, against 0 % and 3 % with TASK-088's cost), but lifted nothing
+  (0 / 8; G-base and P-chg also 0 / 8; the IK follower 7 / 8).
+- **R26.22 — frozen** at this PR's merge; Stage A, BD and BS run at the merged revision from a
+  clean tree, evidence in `~/develop/emai/evidence/task089-*`.
+- **R26.23 — R7 does not change.**
+
 ## Decision 2026-10-11 (ah) — TASK-089: zero-shot grasp-and-lift, an offline diagnosis (Part A) gating a closed-loop test with one declared change (Part B); DRAFT preregistration (R26.1–R26.18; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30; the owner said "go" on 2026-10-11).** The
@@ -78,7 +99,8 @@ rulings R26.1–R26.18 are listed in its §15. In short:
   A1: does the model's goal cost prefer the true branch as often as the same cost on real frames
   (the measured ceiling), and more than an action-shuffled control? A2: does one CEM call at the
   root choose to close and lift (first planned command)?
-- **R26.6** — the candidate changes for Part B, in order: (1) a step-averaged cost (a grasp-phase
+- **R26.6** — the candidate changes for Part B, in order (the owner's brief of 2026-10-11 asks for
+  the cheapest change that Part A supports): (1) a step-averaged cost (a grasp-phase
   cost), (2) H = 16, (3) a held grasp channel (outside R25.27's list, admitted last). More grasp data
   is the recommendation if the task ends without a pass, not a candidate.
 - **R26.7–R26.8** — A-K0 (32 calibration roots, simulator only) gates the comparisons whose ceiling

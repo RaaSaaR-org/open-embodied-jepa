@@ -269,3 +269,14 @@ def test_root_reproduces_the_demonstrator():
     for key, b in r["branches"].items():
         assert b["actions"].shape == (16, 14) and b["frames"].shape == (16, 112, 112, 3), key
     assert max(r["branches"]["R2/lift"]["rise"]) > max(r["branches"]["R2/stay"]["rise"])
+
+
+def test_frozen_k0_bars():
+    """The Stage 0 record (§16): every comparison is gated for G's cost at both horizons; P's latent
+    cost leaves lift-vs-release ungated at h = 8; both horizons qualify."""
+    b = zg.A1_BARS
+    assert all(v["gated"] for h in ("8", "16") for v in b["latent+pose"][h].values())
+    assert not b["latent"]["8"][NAMES[1]]["gated"] and b["latent"]["16"][NAMES[1]]["gated"]
+    assert zg.qualifying(b, 8) and zg.qualifying(b, 16) and not zg.ceiling_row(b)
+    assert zg.bar_count(b["latent+pose"]["8"][NAMES[0]]["bar"], 64) == 61
+    assert zg.bar_count(b["latent+pose"]["8"][NAMES[2]]["bar"], 64) == 59
