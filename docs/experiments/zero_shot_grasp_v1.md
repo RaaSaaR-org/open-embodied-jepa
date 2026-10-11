@@ -572,13 +572,16 @@ depends on the review. Goals: 32 (89100–89131; 29 rejected draws; targets can 
   and closes it on the grasp and lift subgoals; it left the pre-grasp subgoal by "reached" on 14 of
   32 resets (hover on 9; the grasp subgoal never by "reached"), touched the target with grasp
   contact on 17 and lifted it on 2 (both cans, maximum rise 7.9 and 8.3 cm; every other episode
-  rose at most 1.0 cm). These are the first grasp-and-lifts by a world-model planner in this
+  rose at most 1.02 cm). These are the first grasp-and-lifts by a world-model planner in this
   project, on development resets: 2 of 32 is far below the bar (26 of 64 on BS), and G-base and
-  P-chg lifted nothing. 5 G-chg episodes ended on the measured-velocity stop.
-- Planning about 0.98 s per command (G, P) with 6 processes; a world-model run took 2 081–2 177 s
+  P-chg lifted nothing. 5 G-chg episodes were stopped (4 on the measured-velocity stop, 1
+  "projection infeasible"), and 3 of G-base's (1 and 2).
+- Planning about 0.98 s per command (G) and 0.93 s (P) with 6 processes; a world-model run took 2 081–2 177 s
   for 32 resets, so Stage BS (5 runs × 64) projects to about 6 GPU hours.
 - **No defect was found**: every run completed under the rules at one revision from a clean tree,
   the goal digests and the scorer's start-height check held, one change (step-mean) throughout.
+  (Every run report's `change` field names the selected change, also for G-base and the
+  baselines; G-base's episodes record `setting: base`, which is what it ran.)
 - **R26.27** — Stage BD is recorded as development: G-chg 2 / 32, G-base 0 / 32, P-chg 0 / 32,
   ik 28 / 32; not gated, not a claim. **R26.28** — the Stage BS bar is 0.40 (26 / 64).
   **R26.29** — Stage BS runs as frozen after an independent GO posted on this PR. **R26.30** — R7
