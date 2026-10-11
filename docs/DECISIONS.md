@@ -63,6 +63,19 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-11 (ak) — TASK-089 Stage BD (development): G with the step-averaged cost lifts 2 of 32 (the first world-model grasp-and-lifts here), G-base and P-chg 0, the IK follower 28; the Stage BS bar is 26 / 64; Stage BS runs as frozen after an independent GO (R26.27–R26.30)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[zero_shot_grasp_v1.md §18](experiments/zero_shot_grasp_v1.md); at `c40919d`, 32 development
+resets, evidence `~/develop/emai/evidence/task089-bd/`.
+
+- **R26.27 — Stage BD** (not gated): G-chg-87100 2 / 32 (exact 95 % 0.008–0.208; grasp contact on
+  17), G-base-87100 0 / 32, P-chg-87100 0 / 32, ik 28 / 32 (0.710–0.965), ik-nopress 28 / 32, hold and
+  random 0 / 32. Development only; one model seed; simulation.
+- **R26.28 — the bar** = min(0.40, 0.9 × 28 / 32) = 0.40, 26 / 64 on Stage BS.
+- **R26.29 — no defect;** Stage BS (64) runs as frozen after an independent GO on this PR.
+- **R26.30 — R7 does not change.**
+
 ## Decision 2026-10-11 (aj) — TASK-089 Stage A ends A-PASS(step-mean): G's predictions separate closing and lifting from open and non-lifting hands at the object as the real frames do; the step-averaged cost makes the planner close and lift at those states; Part B runs with it (R26.24–R26.26)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
