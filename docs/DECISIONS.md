@@ -63,6 +63,67 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-12 (am) — TASK-090: a grasp-enriched play corpus against an equal-size control, TASK-087's recipe and TASK-089's planner held fixed; the data option of R26.34 is chosen over the model option; DRAFT preregistration (R27.1–R27.20; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30).** The next grasp step after TASK-089's
+B-FAIL (R26.32–R26.34). Protocol: [grasp_play_corpus_v1.md](experiments/grasp_play_corpus_v1.md);
+frozen when its Stage 0 PR merges. The rulings R27.1–R27.20 are listed in its §16. In short:
+
+- **R27.1–R27.2** — R26.34's data option is taken, as a fresh preregistration that R26.33 admits
+  (new data, new checkpoints; no planner, cost, horizon or action-parametrisation variant over
+  TASK-087's checkpoints). Two designs were drafted; data-first is chosen over model-first (a
+  grasp-outcome head with a cost term) because it was the owner-facing recommendation, the data is
+  upstream of both (lift-state windows are about 3 % of `play-v1`'s training windows, a development
+  reading not recorded or gated), it needs no ruling on a cost over a learned prediction of
+  simulator truth, and its equal-size control separates content from amount. The model-first design
+  is the declared next step if the clause fires. Grafted from it: the measured-ceiling-first rule
+  and a proprio-only floor as a reported readability probe (not a cost), a "beats the unchanged
+  control" condition inside the pass, a NEAR-style escalation row (B-COMP), and all seeds gated.
+- **R27.3–R27.6** — the changed factor is corpus composition at equal size: play-v2g (`play-v1`
+  train + 3 200 episodes from a new `play_policy_grasp_v0`: no random mode, pick_place 0.85, no
+  poke, a lifted hold of 40–80 commands, one retry; failure weights, pick recipe, velocity stop and
+  embodiment unchanged) against play-v1p (`play-v1` train + 3 200 episodes from the unchanged
+  `play_policy_v0`). The pinned projection, `play-v1` train's state and palm moments (TASK-087's) for
+  every new model and the planner cost, TASK-087's G code (implementation hash unchanged),
+  U = 60 000, a common selection set and TASK-089's step-averaged planner with λ = 2.0552 are held
+  fixed;
+  `last_two_triggered` is reported, not an escalation.
+- **R27.7** — M-v2g (primary) and M-v1p, seeds 90100–90102, all three gated and pooled; N twins on
+  seed 90100 for validity; TASK-087's G-87100–87102 re-run as a reported control that carries no
+  claim.
+- **R27.8–R27.11** — Stage C, a data gate before training (lift-window share of the added episodes
+  ≥ 2.5× the control's, of the combined set ≥ 1.75×, the control within ±25 % of `play-v1`;
+  declared, revisable only at the freeze from a disclosed 300-episode debug collection); Stage T
+  (8 jobs); Stage E (validity); A-K0 (with an A-CEILING row) and Stage A′ (TASK-089's Part A as a
+  no-regression gate on both M-v2g and M-v1p, with the readability probe reported).
+- **R27.12–R27.15** — closed loop: Stage BD (32 development resets) sets bar = min(0.40, 0.9 × ik's
+  rate); an independent GO; Stage BS on n = 64 fresh gated resets (128 if Stage 0's power estimate
+  at the declared alternative 0.42 against 0.25 is below 0.80). B-PASS needs M-v2g's pooled count
+  ≥ 3 × ⌈bar × n⌉ of 3n, every seed ≥ ⌈⌈bar × n⌉ / 2⌉, and to beat random and M-v1p by exact
+  one-sided sign-flip tests over the n per-reset differences of summed successes at p < 0.01 (the
+  three seeds share each reset, so pooled McNemar over the 3n pairs and a reset-cluster bootstrap
+  interval are reported only). Rows C-FAIL, T-VOID, E-FAIL, A-CEILING, A′-FAIL, B-VOID, B-PASS,
+  B-COMP, B-SIZE (met the bar but did not beat M-v1p: size, not composition; escalate, no clause),
+  B-FAIL and B-UNDER (as B-FAIL, but the bootstrap upper bound of the rate difference is ≥ +0.10;
+  escalate, no clause). "LeWM needed" is not claimed by any row; B-PASS admits a Phase 4
+  preregistration, it does not preregister it.
+- **R27.16** — the abandonment clause fires on B-FAIL only and closes adding more scripted
+  grasp-and-lift play of this collector's kind to `play-v1` as the grasp fix under TASK-087's
+  recipe and TASK-089's planner; the next step is then a model change. Not closed: LeWM, DINOv2,
+  CEM, `play-v1` and play-v2g as bases, other kinds of data, model changes, reach planning, Phase 4
+  as a goal, the product goal.
+- **R27.17–R27.19** — seeds: model 90100–90102, A-K0 90000–90031, BD 90200–90231, debug
+  90900–90999, A′ 903000–903063, BS 904000–904063 (904000–904127 if enlarged), play-v1p
+  910000–913199, play-v2g 920000–923199, Stage 0 debug collection 930000–930399; salts 9002–9006; Stage 0 and the freeze; about 20–22 GPU hours (estimate), every GPU use under
+  `scripts/gpu_run.sh`, per job; large artifacts on the data disk through the repository's links,
+  with `play-v1` and TASK-087's artifacts re-verified by sha256 after the move.
+- **R27.20 — R7 does not change**, whatever the row.
+
+Disclosed development (§13): a read-only measurement of `play-v1`'s step and window shares over the
+train sidecars, not recorded or gated (its output was not stored; Stage 0 re-runs it); it shaped the
+design and the Stage C bars. No collection,
+training or GPU job was run for this draft.
+
 ## Decision 2026-10-11 (al) — TASK-089 ends B-FAIL after A-PASS(step-mean): the models see the grasp and the step-averaged cost makes the planner close, but the primary seed lifts 0 / 64 (bar 26); the abandonment clause fires; R7 does not change; TASK-089 closes (R26.31–R26.36)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
