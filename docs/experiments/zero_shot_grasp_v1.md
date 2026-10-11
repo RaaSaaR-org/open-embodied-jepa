@@ -514,7 +514,9 @@ action-shuffled control):
 Every McNemar p for a passing cell is below 10⁻⁵ except P-87102's and G-lat's lift-vs-release at
 h = 16 (p = 0.006 and 9 × 10⁻⁵). 64 / 64 has an exact 95 % interval of 0.944–1.000. Reported only:
 the ceiling on these roots (G's cost 63–64 of 64 everywhere; the latent cost 62, 32 and 63 at h = 8
-and 63, 56 and 64 at h = 16); wins under the step-averaged cost (G 64 everywhere; P 63, 15 and 64).
+and 63, 56 and 64 at h = 16); wins under the step-averaged cost (G-87100 64 everywhere; P-87100 63, 15 and 64). N's ties hold by
+construction (its actions are zeroed). G-87102's checkpoint carries TASK-087's `last_two_triggered`
+flag.
 Within the 16 branch commands the lift branch raised the target by at least 5 cm on 21 of 64 roots
 (median maximum rise 3.0 cm); no other branch did.
 
@@ -523,7 +525,7 @@ Within the 16 branch commands the lift branch raised the target by at least 5 cm
 | Setting | G-87100 close@R1 | G-87100 lift@R2 | meets | P-87100 close@R1 | P-87100 lift@R2 |
 | --- | --- | --- | --- | --- | --- |
 | base (TASK-088) | 4 | 17 | — | 11 | 12 |
-| **step-mean** | **62** | **61** | **yes** (p ≈ 10⁻¹⁷, 10⁻¹³) | 17 | 31 |
+| **step-mean** | **62** | **61** | **yes** (p < 10⁻¹⁷, < 10⁻¹³) | 17 | 31 |
 | h16 | 5 | 12 | no | 8 | 6 |
 | held | 64 | 64 | yes (not reached by the rule) | 38 | 33 |
 
@@ -533,8 +535,10 @@ and 16), at least as often as the simulator's own frames do under G's cost (63�
 and staying, but at h = 16 not lifting-while-closed from lifting-while-opening as often as its
 latent ceiling allows. With TASK-088's last-step cost the planner's first command at these roots
 rarely closes (4 of 64) or lifts closed (17); averaging the cost over the horizon makes it do so on
-62 and 61. This is offline, on the demonstrator's own states (palm exactly at the aim), and wins
-partly reflect the robot's own predicted joints (G's pose term); it does not show that a closed
+62 and 61. This is offline, on the demonstrator's own states (palm exactly at the aim), and G's
+wins rest partly, and for lift-vs-release at h = 8 wholly, on the robot's own predicted joints (G's
+pose term): there the latent cost on real frames is at chance (32 of 64) and G-lat wins 15; and only
+21 of the 64 lift branches raised the object 5 cm within 16 commands. It does not show that a closed
 loop grasps. The debug smoke of §16 (0 / 8 for G with this change) is the reason for caution.
 
 - **R26.24** — Stage A is recorded: row **A-PASS(step-mean)**; G-87100 passes A1 at h = 8 and 16,
@@ -542,3 +546,43 @@ loop grasps. The debug smoke of §16 (0 / 8 for G with this change) is the reaso
 - **R26.25** — Part B runs as frozen with the step-averaged cost: Stage BD (development; started at
   `c40919d` from a clean tree right after Stage A's summary), then an independent GO, then Stage BS.
 - **R26.26** — R7 does not change.
+
+## 18. Stage BD record (development, not gated; R26.27–R26.30)
+
+At `c40919d` (the frozen revision, clean tree), NVIDIA EGL, `scripts/run_task089_stage.sh bd` with
+Stage A's summary (A-PASS(step-mean); the runner checked its revision), one GPU lock per run,
+2026-10-11 03:15–05:03 UTC. Stage BD was started right after Stage A's summary was written, before
+the Stage A record (#199) was reviewed; the protocol allows that (it is development) and no knob
+depends on the review. Goals: 32 (89100–89131; 29 rejected draws; targets can 16, cube 10, apple
+6, banana 0). Evidence `~/develop/emai/evidence/task089-bd/` (`SHA256SUMS` sha256
+`b72db5d7…4e60`; `summary-bd.json` sha256 `2dc0e9c4…d01e`).
+
+| Arm | grasp-and-lift (32) | exact 95 % | grasp contact | stopped | share of commands > 0.5 (grasp, lift phase) |
+| --- | --- | --- | --- | --- | --- |
+| **G-chg-87100** (step-averaged cost) | **2** | 0.008–0.208 | 17 | 5 | 0.73, 0.83 |
+| G-base-87100 (TASK-088's cost) | 0 | 0.000–0.109 | 4 | 3 | 0.00, 0.04 |
+| P-chg-87100 (step-averaged cost) | 0 | 0.000–0.109 | 2 | 0 | 0.23, 0.42 |
+| ik | 28 | 0.710–0.965 | 32 | 0 | 0.85, 1.00 |
+| ik-nopress | 28 | 0.710–0.965 | 32 | 0 | 0.84, 1.00 |
+| hold, random | 0 | 0.000–0.109 | 0 | 0 | |
+
+- **The bar.** ik's BD rate r = 28 / 32 = 0.875, so bar = min(0.40, 0.9 × 0.875) = **0.40, 26 / 64**
+  on Stage BS (the declared value; ik's rate does not bind), no escalation.
+- **What BD shows.** With the step-averaged cost, G's planner keeps the hand open on the approach
+  and closes it on the grasp and lift subgoals; it left the pre-grasp subgoal by "reached" on 14 of
+  32 resets (hover on 9; the grasp subgoal never by "reached"), touched the target with grasp
+  contact on 17 and lifted it on 2 (both cans, maximum rise 7.9 and 8.3 cm; every other episode
+  rose at most 1.02 cm). These are the first grasp-and-lifts by a world-model planner in this
+  project, on development resets: 2 of 32 is far below the bar (26 of 64 on BS), and G-base and
+  P-chg lifted nothing. 5 G-chg episodes were stopped (4 on the measured-velocity stop, 1
+  "projection infeasible"), and 3 of G-base's (1 and 2).
+- Planning about 0.98 s per command (G) and 0.93 s (P) with 6 processes; a world-model run took 2 081–2 177 s
+  for 32 resets, so Stage BS (5 runs × 64) projects to about 6 GPU hours.
+- **No defect was found**: every run completed under the rules at one revision from a clean tree,
+  the goal digests and the scorer's start-height check held, one change (step-mean) throughout.
+  (Every run report's `change` field names the selected change, also for G-base and the
+  baselines; G-base's episodes record `setting: base`, which is what it ran.)
+- **R26.27** — Stage BD is recorded as development: G-chg 2 / 32, G-base 0 / 32, P-chg 0 / 32,
+  ik 28 / 32; not gated, not a claim. **R26.28** — the Stage BS bar is 0.40 (26 / 64).
+  **R26.29** — Stage BS runs as frozen after an independent GO posted on this PR. **R26.30** — R7
+  does not change.
