@@ -63,6 +63,23 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-11 (aj) — TASK-089 Stage A ends A-PASS(step-mean): G's predictions separate closing and lifting from open and non-lifting hands at the object as the real frames do; the step-averaged cost makes the planner close and lift at those states; Part B runs with it (R26.24–R26.26)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[zero_shot_grasp_v1.md §17](experiments/zero_shot_grasp_v1.md); at `c40919d` (frozen, clean tree),
+64 fresh roots, evidence `~/develop/emai/evidence/task089-a/`.
+
+- **R26.24 — A-PASS(step-mean).** A1: G-87100 (latent + pose cost) won every comparison on 64 of 64
+  roots at h = 8 and 16 (exact 95 % 0.944–1.000; bars 59–61; action-shuffled control 27–33 of 64),
+  as did G-87101 and G-87102; P-87100 passed at h = 8 and failed at h = 16 (lift-vs-release 50
+  against 52); N tied everywhere. A2 (first planned command): G with TASK-088's cost closed at R1 on
+  4 and lifted closed at R2 on 17 of 64; with the step-averaged cost on 62 and 61; with H = 16 on
+  5 and 12. Offline, on the demonstrator's own states, partly the robot's own predicted joints; not
+  a closed-loop result.
+- **R26.25 — Part B runs as frozen** with the step-averaged cost: Stage BD (development), an
+  independent GO, Stage BS (64 gated resets).
+- **R26.26 — R7 does not change.**
+
 ## Decision 2026-10-11 (ai) — TASK-089 Stage 0: code, A-K0's ceiling and bars, the debug smoke; the protocol is frozen at this merge (R26.19–R26.23)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
