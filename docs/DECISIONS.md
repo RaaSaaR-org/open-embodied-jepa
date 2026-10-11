@@ -82,10 +82,12 @@ rulings R26.1–R26.18 are listed in its §15. In short:
   cost), (2) H = 16, (3) a held grasp channel (outside R25.27's list, admitted last). More grasp data
   is the recommendation if the task ends without a pass, not a candidate.
 - **R26.7–R26.8** — A-K0 (32 calibration roots, simulator only) gates the comparisons whose ceiling
-  is at least 0.75 and sets bars `0.5 + 0.9 × (ceiling − 0.5)`; A2's bars (48 / 64 and above
+  is at least 0.75 and sets bars `0.5 + 0.9 × (ceiling − 0.5)`; A-FAIL is judged only on horizons
+  where the ceiling gates close-vs-open and an R2 comparison (else A-CEILING, no clause); A2's bars (48 / 64 and above
   TASK-088's setting) are declared; the first candidate meeting A1 and A2 for G is Part B's change.
-- **R26.9–R26.12** — Part B: G-chg (primary), P-chg, G-base (control), ik (sets the bar
-  min(0.40, 0.9 × its Stage BD rate)), ik-nopress, hold, random, two replication seeds; Stage BD (32
+- **R26.9–R26.12** — Part B: G-chg (primary), P-chg, G-base (control), ik (ceiling), ik-nopress,
+  hold, random, two replication seeds; the bar min(0.40, 0.9 × ik's Stage BD rate), which is the
+  declared 0.40 unless ik's rate falls below 0.445 (escalation below 0.30); Stage BD (32
   development resets), an independent GO, Stage BS (64 gated resets). Rows A-VOID, A-CEILING,
   A-FAIL, A-PLAN, A-PASS(k) → B-VOID, B-PASS, B-LOW, B-FAIL. "LeWM needed" is not claimed by any row.
 - **R26.13** — the abandonment clause fires on A-FAIL or B-FAIL and closes CEM planning of

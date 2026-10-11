@@ -28,8 +28,8 @@ data). So:
   run once at those states, choose to close and lift, under TASK-088's cost and under the candidate
   changes of §6?
 - **Part B (closed loop, only if Part A admits it):** with the one change Part A selects, does CEM
-  over G grasp and lift `play-v1`'s objects on fresh gated resets, at the bar the IK follower's
-  development rate sets?
+  over G grasp and lift `play-v1`'s objects on fresh gated resets, at the bar of §7.2
+  (the plan's 0.40, lowered only if the IK follower's development rate is below 0.445)?
 
 "Zero-shot" means as in TASK-088: no training, fine-tuning or selection on this task, its goals or
 its resets; TASK-087's checkpoints are used unchanged.
@@ -37,19 +37,24 @@ its resets; TASK-087's checkpoints are used unchanged.
 ## 2. What TASK-088's records already show (read before this draft, reported)
 
 From TASK-088's gated grasp run files (`~/develop/emai/evidence/task088-gated/gated-grasp/`,
-read-only), per subgoal phase, median over the 64 resets of each arm's executed right-grasp command
-(−1 open, +1 closed; the command is an absolute synergy target):
+read-only; the computation is `an088b.py` in `~/develop/emai/evidence/task089-prototype/`): the
+executed right-grasp command (−1 open, +1 closed; an absolute synergy target) per subgoal phase.
+The first four columns are the **median over resets of each episode's mean command in that phase**;
+the last is the **share of all commands in the phase, pooled over the resets, above 0.5**. Every
+arm has 64 resets in each phase except the lift phase of G (61), G-pose (59) and ik (62), whose
+other episodes ended (stopped, or for ik succeeded) before it.
 
-| Arm | hover | pre-grasp | grasp | lift | share of grasp-phase commands > 0.5 |
+| Arm | hover | pre-grasp | grasp | lift | pooled share > 0.5 (grasp phase, lift phase) |
 | --- | --- | --- | --- | --- | --- |
-| P-87100 | −0.07 | −0.29 | 0.05 | 0.12 | 0.01 (grasp), 0.07 (lift) |
-| G-87100 | 0.06 | −0.16 | −0.30 | −0.08 | 0.00, 0.00 |
-| G-lat-87100 | −0.17 | −0.23 | 0.04 | 0.10 | 0.01, 0.02 |
-| G-pose-87100 | −0.06 | 0.10 | −0.32 | −0.15 | 0.00, 0.00 |
-| ik | −1.00 | −0.98 | 0.90 | 1.00 | 0.92, 1.00 |
+| P-87100 | −0.07 | −0.29 | +0.05 | +0.12 | 0.08, 0.16 |
+| G-87100 | +0.06 | −0.16 | −0.30 | −0.08 | 0.01, 0.10 |
+| G-lat-87100 | −0.17 | −0.23 | +0.04 | +0.10 | 0.09, 0.15 |
+| G-pose-87100 | −0.06 | +0.10 | −0.32 | −0.15 | 0.02, 0.04 |
+| ik | −1.00 | −0.98 | +0.90 | +1.00 | 0.88, 1.00 |
 
-So the world-model arms never commanded a closed hand for long: their grasp command stayed near the
-CEM's initial mean of 0, a half-closed hand. Whether that is because the models cannot predict what
+So the world-model arms rarely commanded a closed hand: their typical grasp command stayed near the
+CEM's initial mean of 0, a half-closed hand, and at most 16 % of their lift-phase commands were
+above 0.5. Whether that is because the models cannot predict what
 closing does, or because the planner does not use what they predict, is Part A's question.
 
 ## 3. Models and cost (reused, not retrained)
@@ -60,8 +65,8 @@ closing does, or because the planner does not use what they predict, is Part A's
   DINOv2 ViT-S/14 tokens of the onboard 112 px frame, 4 × 4 pooled, projected to `[16, 192]`).
 - **Primary model: G-87100** (+ state token, joint-change and inverse-dynamics losses), with
   TASK-088's G cost: latent MSE + λ · standardised joint-position MSE of the 14 right arm and hand
-  joints, **λ = 2.0552** (TASK-088's R25.18; recomputed and checked). R25.27 recommended G as the
-  default model of this task because it reached better than P in TASK-088 (62 against 53 of 64,
+  joints, **λ = 2.0552** (TASK-088's R25.18; recomputed and checked). TASK-088's results document
+  (§6, R25.27) recommends G as the default model of this task, because it reached better than P (62 against 53 of 64,
   9 to 0 discordant, p = 0.004); this task adopts it (R26.2).
 - **Second arm: P-87100** (plain LeWM, latent MSE only), reported against the same bars, so that
   plain and grounded are compared on the same states and resets.
@@ -100,7 +105,10 @@ layout, yaw and acceptance; a draw it rejects is replaced as there). On the acce
 
 From each root, 16-command **branches** are run in the simulator from the same state (the episode is
 re-run from its reset with the same commands, which MuJoCo reproduces exactly, then branched), each
-with e9's tracking law and the grasp ramped by 0.2 a command as the demonstrator does:
+with e9's tracking law (arm command (target − palm) / 1.5 cm clipped at 0.4, so a lift moves the
+palm at most 0.6 cm a command; the target itself is not ramped) and the grasp ramped by 0.2 a command,
+as the demonstrator does. No branch presses beyond the demonstrator: its close phase targets the
+aim, which the palm reaches open at R1:
 
 | Root | Branch | Palm target | Grasp | Role |
 | --- | --- | --- | --- | --- |
@@ -111,8 +119,10 @@ with e9's tracking law and the grasp ramped by 0.2 a command as the demonstrator
 | R2 | stay | the aim | +1 | alternative: closed but not lifted |
 
 Every branch's executed commands, its frames (onboard, 112 px) and measured states at steps 1–16,
-and the target's rise and grasp contact are stored. A root whose branch is stopped by the
-embodiment is replaced like a rejected draw (and counted).
+and the target's rise and grasp contact are stored. Before each branch the re-run's state at the
+root is checked to equal the demonstrator's recorded state there (the pre-grasp subgoal's 28-D
+state for R1, the grasp subgoal's for R2); a mismatch stops the run (A-VOID). A root whose branch is
+stopped by the embodiment is replaced like a rejected draw (and counted).
 
 **The goal** of each comparison is the subgoal the planner was given there in TASK-088: at R1 the
 grasp subgoal (the frame and pose at the end of the close), at R2 the lift subgoal (the end of the
@@ -128,13 +138,16 @@ For a cost family c (G's: latent + λ · pose; P's and G-lat's: latent only), a 
 against the goal, where prediction_h of a branch is the model's roll-out from the root's encoded
 frame (and, for G, its measured 28-D state) under that branch's executed commands, read at step h.
 Ties are not wins. The three comparisons are R1 close-vs-open, R2 lift-vs-release and R2
-lift-vs-stay. The **win rate** is wins / roots.
+lift-vs-stay. The **win rate** is wins / roots. A1 is read on the per-step cost at h (the cost
+TASK-088's planner reads at its last step); the same wins with the step-averaged cost of §6 (the mean
+over h = 1 … 8) are reported beside it, not gated.
 
 - **Ceiling (measured, non-learned):** the same win rate with the simulator in place of the model:
   c computed on the encoded real frame (and the measured state) at step h of each branch.
 - **Controls:**
-  - *action-shuffled*: the 32 commands of the two branches of a root are pooled and dealt at random
-    (salt 8901, per root) into two 16-command sequences; the model's win rate of the first over the
+  - *action-shuffled*: for each comparison separately, the 32 commands of its two branches are
+    pooled and dealt at random (generator keyed by salt 8901, the root seed and the comparison's
+    index 0–2) into two 16-command sequences; the model's win rate of the first over the
     second is a floor (expected one half). Paired against the model's win indicator per root.
   - *no-action*: N-87100 (actions zeroed), whose predictions cannot depend on the commands, so every
     comparison is a tie (0 wins). A plumbing check, reported.
@@ -148,7 +161,8 @@ TASK-088's setting and for each candidate change of §6. Measured on the **first
 the one MPC executes:
 
 - **close@R1**: its right grasp > 0.5;
-- **lift@R2**: its right grasp > 0.5 **and** its arm z command (dimension 8) > 0.
+- **lift@R2**: its right grasp > 0.5 **and** its right arm's vertical command (dimension 8, the right
+  palm's dz) > 0.
 
 P-87100 with its cost is run the same way, reported. The rates are over the gated roots.
 
@@ -162,9 +176,11 @@ family, comparison and horizon. Then, fixed in the Stage 0 record:
   (24 / 32): the cost, on real frames, separates those branches. A comparison below that is reported
   only (a planner cannot be asked to separate what the cost on real frames does not).
 - Its **bar** is `0.5 + 0.9 × (ceiling − 0.5)`, as a count `⌈bar × 64⌉` of 64 gated roots.
-- **If close-vs-open, or both R2 comparisons, are not gated for G's cost at h = 8 and at h = 16,**
-  the row is **A-CEILING** (§8): the latent and pose cost does not see the grasp on real frames,
-  and the task escalates to a ruling before the freeze.
+- A horizon is **qualifying** when, for G's cost family, close-vs-open **and** at least one R2
+  comparison are gated at it. **If neither h = 8 nor h = 16 qualifies,** the row is **A-CEILING**
+  (§8): the latent and pose cost does not see the grasp on real frames at any one horizon, and the
+  task escalates to a ruling before the freeze. A-FAIL (§8) is judged only on qualifying horizons,
+  so a ceiling problem can never fire the clause.
 
 **A2's bars are declared, not calibrated** (they are a selection rule, not a claim): close@R1 and
 lift@R2 each at least **48 / 64** (0.75) **and** above TASK-088's setting on the same roots (exact
@@ -176,15 +192,16 @@ and lift on every such root by construction, and TASK-088's setting did so rarel
 **Stage A** (after the freeze, from a clean tree at the frozen revision): 64 fresh roots (§10);
 A1 for G-87100 (primary), P-87100, G-lat-87100, N-87100, the action-shuffled control and the
 ceiling, at h = 8 and 16; A1 also for G and P with model seeds 87101 and 87102 (reported); A2 as
-§5.3. A1 **passes at h** for a model when close-vs-open and at least one R2 comparison are gated at
+§5.3. Stage A also computes the ceiling on its own roots; it is reported only (the gate and the bars
+are A-K0's). A1 **passes at h** for a model when close-vs-open and at least one R2 comparison are gated at
 h for its cost family, and every comparison gated at h has at least its bar's count of wins **and**
 beats the action-shuffled control (exact one-sided McNemar on the per-root win indicators,
 p < 0.01).
 
 ## 6. The candidate changes for Part B, in order
 
-R25.27 named a longer horizon, a grasp-phase cost, or more grasp data, and asked for the cheapest
-that Part A supports. More grasp data means a new corpus and retraining; it is not a candidate here
+R25.27 named a longer horizon, a grasp-phase cost, or more grasp data; the owner's brief for this
+task (2026-10-11) asks for the cheapest one that Part A supports. More grasp data means a new corpus and retraining; it is not a candidate here
 (it is the recommendation if this task ends without a pass, §9). The candidates need no retraining:
 
 1. **Step-averaged cost (a grasp-phase cost):** on every subgoal of a grasp episode, the planning
@@ -199,8 +216,8 @@ that Part A supports. More grasp data means a new corpus and retraining; it is n
    unchanged; the cost as TASK-088's). An action-parametrisation change, outside R25.27's list;
    admitted as the last candidate by R26.6.
 
-**Selection rule:** the Part B change is the **first** candidate, in this order, for which (i) A1
-passes for G-87100 at the candidate's horizon (h = 8 for 1 and 3, h = 16 for 2) and (ii) A2's two
+**Selection rule:** the Part B change is the **first** candidate, in this order, for which (i) the
+candidate's horizon is qualifying (§5.4) and A1 passes for G-87100 at it (h = 8 for 1 and 3, h = 16 for 2) and (ii) A2's two
 bars are met for G-87100 under that candidate. Exactly one change goes into Part B. Each is
 implemented around TASK-088's `PlannerModel` and `CEMPlanner` without changing either.
 
@@ -227,10 +244,13 @@ unchanged.
 ### 7.2 Stages, bar and rows
 
 - **Stage BD — development, not gated** (32 resets, §10): every arm of §7.1 except the
-  replications. Its numbers are read and recorded; **ik's success rate r on BD sets the bar:
-  bar = min(0.40, 0.9 × r)** (0.40 is the plan's example grasp bar, used in TASK-088). If r < 0.5
-  the bar is not set and the task escalates to a ruling before Stage BS. BD can show a defect (a fix
-  needs its own ruling) but changes no knob of §2–§7 by itself.
+  replications. Its numbers are read and recorded; **the bar is bar = min(0.40, 0.9 × r)**, with r
+  ik's success rate on BD and 0.40 the plan's example grasp bar (used in TASK-088). **What sets it,
+  honestly:** ik's earlier rates (TASK-088: 24/32, 12/16, 50/64) give 0.9 × r ≥ 0.67, so the rule
+  returns the declared 0.40 unless ik does markedly worse on BD; ik's rate binds only when
+  0.9 × r < 0.40 (r below 0.445, at most 14 of 32). If r < 0.30 (at most 9 of 32) the bar is not set
+  and the task escalates to a ruling before Stage BS (the goals, not the planners, would be in
+  doubt). BD can show a defect (a fix needs its own ruling) but changes no knob of §2–§7 by itself.
 - **GO:** an independent reviewer reads BD's record and posts **GO** (or NO-GO) as a PR comment
   before Stage BS starts.
 - **Stage BS — gated:** 64 fresh resets (§10), every arm of §7.1, at the frozen revision from a
@@ -242,8 +262,9 @@ unchanged.
   2. **B-PASS** — k ≥ ⌈bar × 64⌉ **and** G-chg beats random (exact one-sided McNemar, p < 0.01).
   3. **B-LOW** — below the bar, but G-chg beats random (p < 0.01).
   4. **B-FAIL** — G-chg does not beat random.
-- **Reported with every row:** G-chg against G-base (exact one-sided McNemar: did the change
-  matter), P-chg against G-chg (two-sided), ik against G-chg, per-object results, grasp contact,
+- **Reported with every row:** G-chg against G-base (exact one-sided McNemar, p < 0.01: whether
+  the change itself mattered; a B-PASS without it shows that G-chg grasps, not that the change is
+  why), P-chg against G-chg (two-sided), ik against G-chg, per-object results, grasp contact,
   maximum rise, subgoals reached or timed out, executed grasp commands per phase (as §2), stopped
   episodes, planning seconds, and the replication seeds. Exact (Clopper–Pearson) 95 % intervals
   for every count.
@@ -256,17 +277,21 @@ unchanged.
 
 1. **A-VOID** — a Stage A check failed (a root, branch, checkpoint, λ or seed check, a cohort run
    twice, a dirty tree).
-2. **A-CEILING** (Stage 0) — §5.4's ceiling leaves close-vs-open or both R2 comparisons ungated for
-   G's cost at both horizons: escalate before the freeze; no clause.
-3. **A-FAIL** — A1 fails for G-87100 at h = 8 and at h = 16: the predictions do not separate the
-   grasp as the real frames do. No Part B; **the abandonment clause fires** (§9).
-4. **A-PLAN** — A1 passes at some horizon, but no candidate meets the selection rule: the
+2. **A-CEILING** (Stage 0) — no horizon qualifies (§5.4): escalate before the freeze; no clause.
+3. **A-FAIL** — A1 fails for G-87100 at every qualifying horizon (§5.4): the predictions do not
+   separate the grasp as the real frames do. No Part B; **the abandonment clause fires** (§9).
+4. **A-PLAN** — A1 passes at some qualifying horizon, but no candidate meets the selection rule: the
    predictions separate the grasp but the planner, under every candidate, does not choose it.
    Escalate; no Part B; no clause.
 5. **A-PASS(k)** — candidate k is selected; Part B runs with it, and the task's row is then Part
    B's (B-VOID, B-PASS, B-LOW or B-FAIL).
 
-Escalations (A-CEILING, A-PLAN, B-LOW, ik's BD rate below 0.5) go to a ruling in
+After **A-VOID** or **B-VOID** the defect is fixed under its own reviewed ruling and the stage
+runs again on fresh seeds named by that ruling (a voided cohort is never re-run). After a **NO-GO**
+on Stage BD, the reviewer's defect is fixed under its own ruling and Stage BD is recorded again on
+fresh development seeds before a new GO.
+
+Escalations (A-CEILING, A-PLAN, B-LOW, ik's BD rate below 0.30) go to a ruling in
 `docs/DECISIONS.md`; each closes the task with a recommendation unless the ruling says otherwise.
 B-PASS admits a Phase 4 preregistration (pick-and-place with subgoals); it does not preregister it.
 
@@ -295,7 +320,11 @@ One scene, one arm and hand, one camera at 112 px, simulation only, one encoder 
 corpus, one model seed gated (two more reported), one planner. Goals come from a scripted
 demonstrator, so they are reachable by construction and the cohort is biased to layouts a scripted
 pick can do (TASK-088: 57 rejected draws for 64 goals); the grasp subgoal's pose places the palm at
-the object, so success does not show that a planner localised the object from the image. Part A's
+the object, so success does not show that a planner localised the object from the image. Every
+A1 comparison also differs in the robot's own commanded motion, so a win can come from predicting
+the hand's and arm's own consequences (G's pose term reads predicted joints directly) rather than
+the object; lift-vs-stay and lift-vs-release are the comparisons where the object's rise differs,
+and the branches' recorded rise and contact are reported beside the wins. Part A's
 roots are on the demonstrator's own trajectory (palm exactly at the aim), which a closed loop
 reaches only approximately. A B-PASS would be the first world-model grasp-and-lift in this project,
 on these terms only; "LeWM needed" is not shown by any row.
@@ -328,8 +357,9 @@ debug layouts; never counted), a prototype of §5 (not the Stage 0 code) ran und
   the step-averaged cost on 94 % and 94 %; with the held grasp on 100 % and 100 %. P was lower
   throughout (step-averaged 23 % and 56 %, held 48 % and 42 %).
 - These numbers shaped the candidate list, its order (the step-averaged cost first, as the one in
-  R25.27's list that the probe supports) and the choice of G as primary; they are not results.
-  Stage A runs on fresh roots.
+  R25.27's list that the probe supports), A2's 48 / 64 bar (set after seeing these rates) and the
+  choice of G as primary; they are not results. Stage A runs on fresh roots. The prototype's
+  scripts and outputs are kept in `~/develop/emai/evidence/task089-prototype/` (`SHA256SUMS`).
 
 ## 14. Stage 0, freeze and what Stage 0 may change
 
@@ -359,7 +389,8 @@ debug layouts; never counted), a prototype of §5 (not the Stage 0 code) ran und
   `0.5 + 0.9 × (ceiling − 0.5)`; A2's bars declared.
 - **R26.8** — Stage A as §5.5 and the selection rule (§6).
 - **R26.9** — Part B's arms (§7.1).
-- **R26.10** — Part B's bar from ik's Stage BD rate: min(0.40, 0.9 × r), escalation if r < 0.5.
+- **R26.10** — Part B's bar min(0.40, 0.9 × r) with r ik's Stage BD rate: the declared 0.40 unless
+  r < 0.445; escalation if r < 0.30.
 - **R26.11** — Stage BD, an independent GO, Stage BS (§7.2).
 - **R26.12** — the rows (§7.2, §8).
 - **R26.13** — the abandonment clause (§9).

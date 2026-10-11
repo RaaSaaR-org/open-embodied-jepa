@@ -33,7 +33,7 @@ TASK-087's G and P (seed 87100) predict a lower goal cost for closing and liftin
 or non-lifting hand at the object, against the simulator's measured ceiling, and does CEM, run once
 there, choose to close and lift? Part B, only if Part A admits it: a closed-loop grasp-and-lift
 test on fresh gated resets with the one change Part A selects (step-averaged cost, H = 16 or a held
-grasp channel), the bar from the IK follower's development rate. Not Apple→Plate; R7 does not
+grasp channel), the bar min(0.40, 0.9 × the IK follower's development rate). Not Apple→Plate; R7 does not
 change.
 
 Protocol: [zero_shot_grasp_v1.md](../../../docs/experiments/zero_shot_grasp_v1.md) (DRAFT,
