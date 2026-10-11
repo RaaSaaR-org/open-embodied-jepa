@@ -201,7 +201,8 @@ p < 0.01).
 ## 6. The candidate changes for Part B, in order
 
 R25.27 named a longer horizon, a grasp-phase cost, or more grasp data; the owner's brief for this
-task (2026-10-11) asks for the cheapest one that Part A supports. More grasp data means a new corpus and retraining; it is not a candidate here
+task (2026-10-11; recorded in DECISIONS (ah) and the TASK-089 MC task) asks for the cheapest one
+that Part A supports. More grasp data means a new corpus and retraining; it is not a candidate here
 (it is the recommendation if this task ends without a pass, §9). The candidates need no retraining:
 
 1. **Step-averaged cost (a grasp-phase cost):** on every subgoal of a grasp episode, the planning
@@ -236,7 +237,7 @@ unchanged.
 | **G-chg** | G-87100 | the selected change, G's cost | **primary** |
 | P-chg | P-87100 | the selected change, P's cost | second arm (plain against grounded), reported against the bar |
 | G-base | G-87100 | TASK-088's setting | control: what the change adds, on the same resets |
-| ik | — | TASK-088's IK follower with e9's press | ceiling; **sets the bar** |
+| ik | — | TASK-088's IK follower with e9's press | ceiling; its Stage BD rate enters the bar rule (§7.2) |
 | ik-nopress | — | the same without the press | reported |
 | hold, random | — | TASK-088's | floors |
 | G-chg-87101, G-chg-87102 | G-87101 / 87102 | the selected change | replication, gated cohort only, reported |

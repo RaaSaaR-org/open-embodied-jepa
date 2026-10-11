@@ -330,6 +330,7 @@ def cmd_a1(args) -> int:
             kind: {str(h): {zg.comparison_name(c): [] for c in zg.COMPARISONS} for h in zg.HORIZONS}
             for kind in ("model", "shuffled")
         }
+        res["step_mean"] = {zg.comparison_name(c): [] for c in zg.COMPARISONS}
         for r in rep["roots"]:
             s = r["seed"]
             for comp in zg.COMPARISONS:
@@ -337,14 +338,17 @@ def cmd_a1(args) -> int:
                 rl, rs = enc[f"{s}/{root}"], data[f"{s}/{root}/state28"]
                 gl, gs = enc[f"{s}/goal/{root}"], data[f"{s}/subgoal{zg.ROOT_GOAL[root]}/state28"]
                 ta, aa = data[f"{s}/{root}/{t}/actions"], data[f"{s}/{root}/{a}/actions"]
-                d1, d2 = zg.shuffled_deal(s, root, ta, aa)
+                d1, d2 = zg.shuffled_deal(s, zg.COMPARISONS.index(comp), ta, aa)
                 costs = zgr.rollout_costs(pm, rl, rs, gl, gs, np.stack([ta, aa, d1, d2]))
+                c = zg.comparison_name(comp)
                 for h in zg.HORIZONS:
-                    c = zg.comparison_name(comp)
                     res["model"][str(h)][c].append(bool(zg.wins(costs[0, h - 1], costs[1, h - 1])))
                     res["shuffled"][str(h)][c].append(
                         bool(zg.wins(costs[2, h - 1], costs[3, h - 1]))
                     )
+                # reported only: the step-averaged cost (mean over h = 1..8)
+                mean8 = costs[:, :8].mean(1)
+                res["step_mean"][c].append(bool(zg.wins(mean8[0], mean8[1])))
         arms[f"{arm}-{seed}"] = res
     report |= {
         "roots_sha256": roots_sha,
