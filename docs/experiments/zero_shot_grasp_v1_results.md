@@ -47,13 +47,13 @@ contact for 20 consecutive commands (TASK-088's scorer). Exact 95 % intervals.
   discordant reset (p = 1); ik against G-chg-87100: 48 to 0 (p = 3.6 × 10⁻¹⁵). Reported only:
   G-chg-87101 and G-chg-87102 against random 8 to 0 and 7 to 0 (p = 0.004 and 0.008); they share 3
   successful resets (12 resets in their union), and the IK follower lifted on 9 of those 12.
-- The primary arm's highest rise was 3.5 cm (reset 891031); the replications' successes raised the
-  target by 6.8–11.8 cm at most. Their 20-command lift dwell completed at commands 157–347. No world-model arm left the grasp subgoal
+- The primary arm's highest rise was 3.5 cm (reset 891031); the replications' successes raised
+  the target by 6.8–11.8 cm at most. Their 20-command lift dwell completed at commands 157–347. No world-model arm left the grasp subgoal
   by "reached" except G-chg-87101 (6) and G-chg-87102 (5); ik did on 29.
 - Stopped episodes were the measured-velocity stop or "projection infeasible" (G-chg-87100 7 and 1,
   G-chg-87102 14 and 1, ik 4 and 0). G-87102's checkpoint carries TASK-087's `last_two_triggered`
   flag; 87100's and 87101's do not.
-- Planning about 0.97–1.01 s per command with 6 processes; world-model runs 3 623–4 321 s each.
+- Planning about 0.95–1.01 s per command with 6 processes; world-model runs 3 623–4 321 s each.
 - **Bar:** 0.40, 26 / 64, from ik's Stage BD rate 28 / 32 (min(0.40, 0.9 × 0.875); the declared
   value, ik's rate did not bind).
 
@@ -93,9 +93,11 @@ development resets) gave G-chg 2 / 32, G-base 0, P-chg 0, ik 28.
   - `task089-gated-grasp-G-chg-87100-891031-failure.mp4` — the primary arm's failure that came
     closest (largest rise, 3.5 cm), gated;
   - `task089-gated-grasp-G-chg-87101-891016-success.mp4` — a replication success (the one whose
-    success step is nearest the replication's median), gated cohort, reported arm;
+    success step is nearest the replication's median, 277.5; 891016 at 305 and 891038 at 250 tie,
+    and the lower seed was taken), gated cohort, reported arm;
   - `task089-dev-grasp-G-chg-87100-89118-success.mp4` — a Stage BD (development) success of the
-    primary model, not gated.
+    primary model, not gated (the shorter of BD's two successful episodes, 295 commands against
+    342 for 89114).
 - Every GPU use ran under `scripts/gpu_run.sh --wait --min-free-gib 8 --board`, one job per run;
   the replays ran under their own locks between runs.
 

@@ -83,9 +83,10 @@ is kept as written.
   on 64 of 64 roots (offline). Simulation only, one scene and camera, one model seed gated; "LeWM
   needed" is not shown.
 - **R26.33 — the abandonment clause fires** (protocol §9): CEM planning of grasp-and-lift over
-  TASK-087's checkpoints is closed; no further planner, cost, horizon or action-parametrisation
-  variant over these checkpoints is preregistered for grasping without new evidence of a different
-  kind. LeWM, DINOv2, `play-v1` as a base, CEM, reach planning and the product goal stay open.
+  TASK-087's checkpoints (trained on `play-v1` as collected) is closed; no further planner, cost,
+  horizon or action-parametrisation variant over these checkpoints is preregistered for grasping
+  without new evidence of a different kind. Not closed: LeWM, DINOv2, `play-v1` as a base, CEM in
+  general, reach planning (TASK-088's Z3-REACH stands), Phase 4 as a goal, and the product goal.
 - **R26.34 — recommendation only:** Phase 4 is not admitted; the next grasp step changes the data
   (more grasp-and-lift in the play corpus) or the model (one trained to predict the grasp's outcome),
   with its own preregistration; the step-averaged cost and the offline probes can be reused.
