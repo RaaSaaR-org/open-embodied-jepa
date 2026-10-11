@@ -418,7 +418,8 @@ debug layouts; never counted), a prototype of §5 (not the Stage 0 code) ran und
 - **The re-run root check** (review nit of #197) is bitwise: the 28-D measured state at the root,
   re-run from the reset with the same commands, must equal the recorded subgoal state exactly
   (`numpy.array_equal`). It held on every root built so far (8 debug, 32 calibration).
-- **A-K0** (calibration roots 89000–89031, at `72a766e`, clean tree, NVIDIA EGL, under the GPU
+- **A-K0** (calibration roots 89000–89031, at `72a766e` (kept reachable as the branch
+  `run/task089-k0`; the same code as this PR's Stage 0 code commit before its rebase), clean tree, NVIDIA EGL, under the GPU
   lock; 40 rejected draws; targets can 17, cube 9, apple 6, banana 0 — the demonstrator lifts no
   banana, as in TASK-088): the simulator ceiling's win rates (of 32) and the bars by §5.4's rule,
   frozen as `zero_shot_grasp.K0_CEILING` / `A1_BARS`:
