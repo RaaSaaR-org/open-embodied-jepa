@@ -65,7 +65,7 @@ def git(*args) -> str:
     ).stdout.strip()
 
 
-def base_report(cohort=None) -> dict:
+def base_report(cohort=None, *, clean=False) -> dict:
     dirty = bool(git("status", "--porcelain", "--untracked-files=no"))
     report = {
         "task": zg.TASK,
@@ -78,7 +78,7 @@ def base_report(cohort=None) -> dict:
         "cohort": cohort,
     }
     rt.assert_local_import(ROOT, report)
-    if cohort is not None and not cohort.startswith("debug") and dirty:
+    if (clean or (cohort is not None and not cohort.startswith("debug"))) and dirty:
         raise rt.GuardError("G-clean: non-debug cohorts run from a clean tracked tree")
     free = shutil.disk_usage("/").free / 2**30
     report["disk_free_gib"] = free
@@ -117,7 +117,7 @@ def same_revision(report, path):
 def cmd_lambda(args) -> int:
     import torch
 
-    report = base_report()
+    report = base_report(clean=True)
     out = Path(args.output) / "lambda.json"
     refuse_existing(out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -511,6 +511,8 @@ def selected_change(args, cohort):
         row = summary["row"]
         if not row.startswith("A-PASS(") or summary.get("cohort") != "a-roots":
             raise rt.GuardError(f"G-change: Part B needs A-PASS on Stage A, not {row}")
+        if not cohort.startswith("debug") and summary.get("revision") != git("rev-parse", "HEAD"):
+            raise rt.GuardError("G-change: Stage A ran at another revision")
         return summary["selected_change"], sha256(args.change_file)
     if cohort.startswith("debug") and args.setting:
         return args.setting, None

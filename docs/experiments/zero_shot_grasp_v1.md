@@ -437,8 +437,9 @@ debug layouts; never counted), a prototype of §5 (not the Stage 0 code) ran und
   sha256 `293cb6f1…1864`; `k0/summary-k0.json` sha256 `c8a84453…6f22`; `k0/ceiling-k0-roots.json`
   sha256 `57138e1d…28a5`).
 - **λ** is TASK-088's 2.0552; Stage A recomputes it and the runner refuses another value.
-- **Debug smoke** (debug seeds, not results; runs at `07affcd` and `72a766e`, debug runs may be
-  dirty):
+- **Debug smoke** (debug seeds, not results; the debug roots were built at `440a7b6` with the
+  Stage 0 modules not yet committed, the other debug runs at `07affcd` and `72a766e`; debug runs may
+  be dirty):
   - Part A on 8 debug roots (89900–89907; 17 rejected draws). A1 wins of 8 at h = 8 / 16: G-87100,
     G-87101, G-87102 8 on every comparison; P-87100 close 8 / 8, release 4 / 7, stay 8 / 8;
     G-lat release 2 / 6; N 0 everywhere (ties). A2 (close@R1, lift@R2 of 8) for G: base 1, 4;
@@ -447,11 +448,12 @@ debug layouts; never counted), a prototype of §5 (not the Stage 0 code) ran und
     with the step-averaged cost given by hand (`--setting`, debug only): ik 7 / 8, ik-nopress
     7 / 8, hold and random 0 / 8; **G-chg 0 / 8, G-base 0 / 8, P-chg 0 / 8**. With the change, G's
     hand stayed open on the approach and closed on the grasp and lift subgoals (share of commands
-    above 0.5: hover 0.00, pre-grasp 0.00, grasp 0.75, lift 0.81, against 0.00 and 0.03 for G-base
+    above 0.5: hover 0.00, pre-grasp 0.00, grasp 0.75, lift 0.81, against 0.00 and 0.02 for G-base
     on grasp and lift), and it left the pre-grasp subgoal by "reached" on 6 of 8 resets (G-base
     0); but it touched the target with the grasp contact on 3 and never lifted it (maximum rise
-    0.6 cm); 2 of its episodes and 2 of G-base's ended on the measured-velocity stop. P-chg closed
-    on 6 % of grasp-phase commands. Planning about 0.65 s per command with 4 processes.
+    0.6 cm); 2 of its episodes ended on the measured-velocity stop, and 2 of G-base's (one
+    velocity stop, one "projection infeasible"). P-chg closed on 6 % of grasp-phase commands.
+    Planning about 0.65 s per command with 4 processes.
   - These smoke numbers were read after the protocol was reviewed and merged (#197) and change
     nothing in §2–§11: the rule selects Part B's change from Stage A, and Part B's row is read on
     fresh gated resets. They are disclosed because they make a B-LOW or B-FAIL more likely than
@@ -460,6 +462,19 @@ debug layouts; never counted), a prototype of §5 (not the Stage 0 code) ran und
   replication runs stay. Projection from the smoke: Stage A under 1 GPU hour; Stage BD about
   1.5 GPU hours (3 world-model runs × 32 × at most 400 commands); Stage BS about 5–6 (5 runs × 64);
   H = 16 would double a run. Inside §14's 20-hour limit, so nothing changes.
+- **Phase alignment (review of #198).** The subgoal switch is updated before each command, and the
+  command of the step on which it switches already serves the next subgoal, so subgoal k ≥ 1 is
+  served by exactly its recorded step count and the first subgoal by one fewer. §2's table (in the
+  merged DRAFT) assigned one command per switch to the earlier subgoal. Recomputed with the right
+  alignment (`summarize_task089._phase_share`; the evidence copy of `an088b.py` is the original),
+  the changes are at most 0.02 and change no reading: G hover +0.07 (§2: +0.06) and lift-phase
+  share 0.09 (0.10); G-lat grasp +0.03 (+0.04); G-pose grasp −0.31 (−0.32); ik pre-grasp −1.00
+  (−0.98), grasp +0.88 (+0.90) and grasp-phase share 0.87 (0.88). §2 is context, not a gated
+  quantity; it stays as merged, with this correction recorded here.
+- **Guards added after the review of #198:** the Stage BS summary refuses (VOID) a Stage BD summary
+  that is not a clean `bd-grasp` summary at the same revision; Part B's runner refuses a Stage A
+  summary made at another revision; `lambda` needs a clean tree, and the Stage A summary checks
+  `lambda.json` (value, revision, clean).
 - **Review nits of #197** applied here: §7.1's ik row now says its Stage BD rate enters the bar rule
   (it does not set the bar by itself); §6 says where the owner's brief is recorded.
 - **R26.19** — the Stage 0 code above. **R26.20** — A-K0 and the bars in the table above; both

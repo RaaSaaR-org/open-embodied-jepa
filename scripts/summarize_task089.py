@@ -80,6 +80,12 @@ def stage_a(args):
         raise SystemExit("A1_BARS is not frozen (Stage 0 record)")
     d, cohort = Path(args.runs), args.cohort or "a-roots"
     a1, a2f = load(d / f"a1-{cohort}.json"), load(d / f"a2-{cohort}.json")
+    if not cohort.startswith("debug"):
+        lam = load(d / "lambda.json")
+        if any(abs(v["lambda"] - zs.LAMBDA) > 1e-4 for v in lam["per_seed"].values()):
+            raise SystemExit("lambda differs from the frozen value")
+        if lam["revision"] != a1["revision"] or lam["tracked_tree_dirty"]:
+            raise SystemExit("lambda was computed at another revision or from a dirty tree")
     roots = load(d / f"roots-{cohort}.json")
     n = a1["n"] if cohort.startswith("debug") else len(zg.COHORTS[cohort])
     problems = common_checks([a1, a2f, roots], cohort, n)
@@ -184,9 +190,12 @@ def _phase_share(eps):
         a = np.asarray(e["applied"])
         if not len(a):
             continue
+        # the switch is updated before each command, and the command of the step on which it
+        # switches already serves the next subgoal: subgoal 0 gets steps - 1 commands
         seq = []
         for i, s in enumerate(e["switches"]):
             seq += [i] * s["steps"]
+        seq = seq[1:]
         seq += [len(e["switches"])] * (len(a) - len(seq))
         seq = np.asarray(seq[: len(a)])
         for k in range(4):
@@ -232,6 +241,10 @@ def stage_bs(args):
     n = len(zg.COHORTS["bs-grasp"])
     bd = load(args.bd_summary)
     problems = common_checks(list(runs.values()), "bs-grasp", n)
+    if bd.get("cohort") != "bd-grasp" or bd.get("problems") or bd.get("stage") != "bd":
+        problems.append("the BD summary is not a clean Stage BD summary")
+    if runs and bd.get("revision") != next(iter(runs.values()))["revision"]:
+        problems.append("Stage BD ran at another revision")
     need = {"G-chg-87100", "P-chg-87100", "G-base-87100", "ik", "ik-nopress", "hold", "random"}
     missing = need - set(runs)
     if missing:
