@@ -23,8 +23,6 @@ created: 2026-10-11
 updated: 2026-10-11
 ---
 
-
-
 # Zero-shot grasp-and-lift: offline diagnosis (Part A), then a closed loop with one declared change (Part B)
 
 ## Description
