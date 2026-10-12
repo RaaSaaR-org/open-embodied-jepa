@@ -2,7 +2,7 @@
 
 **Status: FROZEN at the merge of its Stage 0 PR** (R27.1–R27.28, decided by Claude under owner
 delegation, 2026-09-30; the DRAFT was reviewed and merged at #202, `664df1e`; Stage 0's record is
-§17). After that merge nothing in §2–§11 changes without its own reviewed ruling. Stage 0 changed,
+§17; the collection and Stage C record, C-PASS, is §18). After that merge nothing in §2–§11 changes without its own reviewed ruling. Stage 0 changed,
 as §14 allows and §17 records: Stage C's C1 and C2 bars (§4, R27.21), Stage BS's size (n = 128,
 §7.2, R27.22) and Stage T's store mode (§12, R27.24).
 
@@ -831,3 +831,86 @@ features `data/task090-debug-features-{grasp,v0}`, the debug models
   seed or salt use; §1 quotes TASK-085's lift share without quote marks; §7.2 says the "beats
   random" sign-flip test is approximate (conservative); §7.2 says B-SIZE does not apply the
   per-seed floor because it carries no claim.
+
+## 18. Collection and Stage C record (gated, CPU; R27.29–R27.31; decided by Claude under owner delegation)
+
+At `53f0b72` (the frozen revision, clean tracked tree), worktree `worktrees/task090-run`,
+`scripts/run_task090_stage.sh collect` then `scripts/run_task090_stage.sh c`, 2026-10-12. The two
+collections each ran as one `scripts/gpu_run.sh` job (NVIDIA EGL, RTX 5080, 12 workers): play-v2g
+11:42–12:08 UTC (1 533 s), play-v1p 12:08–12:28 UTC (1 258 s; the stage waited about 2 min for the
+lock first). Stage C's labels and gate ran on the CPU at 12:28:56–12:29:25 UTC (29 s). Nothing in
+the frozen code, seeds, salts or bars was changed. Evidence `~/develop/emai/evidence/task090-c/`
+(`SHA256SUMS` sha256 `9ff11727…c7ac`, 77 files; `stage-c.json` `9610ce6f…82d8`; labels
+`labels-play-v1-train.json` `dcf4306d…600d`, `labels-play-v2g-train.json` `69ad0765…742c`,
+`labels-play-v1p-train.json` `be60d244…7c8e`; `stage-c-intervals.json` `20b8b545…b877`; the
+collectors' manifests and per-shard reports under `collect-play-{v2g,v1p}/`). The corpora are
+`data/play-v2g` (11 GB) and `data/play-v1p` (12 GB) on the data disk.
+
+**The collections.** Every one of the 32 shards of each collection completed and was sealed by the
+per-shard split rule (salt 9005); no episode raised an error.
+
+| Corpus | Seeds | Policy (salt) | Stored | Discarded short (< 50 commands) | Train / val / test | `corpus.json` sha256 |
+| --- | --- | --- | --- | --- | --- | --- |
+| play-v2g | 920000–923199 | `play_policy_grasp_v0` (9003) | 3 199 | 1 (922373, a velocity stop at command 49) | 2 879 / 160 / 160 | `9cf51db3…b06a` |
+| play-v1p | 910000–913199 | `play_policy_v0` (8701) | 3 197 | 3 (910198, 910795, 913159: projection infeasible) | 2 877 / 160 / 160 | `4935ef49…c19d` |
+
+The test splits were not read.
+
+**Row: C-PASS.** Each check is measured by the frozen label script (`measure_task090.py`) over the
+train episodes' sidecars (every sidecar's sha256 checked against its manifest). The row is decided
+on the point ratios, as `grasp_corpus_wm.stage_c` and §4 say. The intervals are episode-bootstrap
+95 % percentile intervals (10 000 resamples, each of the three episode sets resampled
+independently, generator seeded 910000). They are **reported only**: they were computed after the
+gate by `stage_c_intervals.py`, which is stored with the evidence and is not part of the frozen
+code, with the same formulas as the frozen function.
+
+| Check | Bar | Measured | 95 % interval (reported) | Pass |
+| --- | --- | --- | --- | --- |
+| C1: play-v2g added / play-v1p added | ≥ 2.0 | **2.383** | 2.080–2.736 | yes |
+| C2: combined play-v2g set / combined play-v1p set | ≥ 1.5 | **1.693** | 1.560–1.840 | yes |
+| C3: play-v1p added / `play-v1` train | 0.75–1.25 | **1.045** | 0.893–1.228 | yes |
+
+Lift-window shares, as pooled window counts: `play-v1` train 3.142 % (32 066 of 1 020 470 windows,
+2 874 episodes; the same count as Stage 0's prototype check), play-v2g added train 7.826 %
+(76 818 of 981 555, 2 879 episodes) and play-v1p added train 3.284 % (33 829 of 1 030 186, 2 877
+episodes). The full-size readings sit near Stage 0's debug points (C1 2.31, C2 1.64). C3, which
+Stage 0 flagged as a real risk from its 100-episode debug reading (0.50), reads 1.045. So the debug
+reading was low by chance, as R27.21 judged likely.
+
+**Reported (§4)** (the train episodes of each set; play-v1 train / play-v1p added / play-v2g added):
+
+- **Lift episodes (anything lifted):** 299 (10.4 %), 320 (11.1 %) and 617 (21.4 %). Per object
+  (apple, cube, can, banana): 65, 119, 111, 4 / 73, 138, 106, 3 / 145, 257, 202, 13.
+- **Lift windows per object** (apple, cube, can, banana): 7 740, 12 306, 11 598, 422 /
+  9 526, 14 503, 9 759, 41 / 18 623, 32 297, 24 750, 1 148.
+- **Window shares:** grasp-contact windows 4.65 %, 4.84 % and 10.78 %. Closed-hand-near-object
+  windows 0.84 %, 0.92 % and 1.89 %.
+- **Lift states and rise:** the share of lift states with a rise ≥ 5 cm is 83.5 %, 83.4 % and
+  85.0 %. The per-episode maximum rise has p90 0.69, 0.67 and 0.92 cm, and p99 16.1, 15.9 and
+  18.6 cm (the median is 0 in all three).
+- **Early ends:** 564, 523 and 806. Most were the measured-velocity stop at
+  `right_hand_thumb_1_joint` (469, 453 and 774); projection infeasible accounts for 16, 13 and 9.
+- **Modes:** scripted 1 128 / 1 202 / 1 617, perturbed 1 042 / 1 025 / 1 262, random 704 / 650 / 0.
+- **Skill log entries:** pick_place 2 762 / 2 865 / 3 205; pick_retry – / – / 1 811; push 1 272 /
+  1 283 / 412; wander 3 490 / 3 314 / 206; poke 521 / 508 / 0.
+- **play-v2g's collector checks:** the first-attempt lift check passed on 439 of 2 250 picks that
+  reached it (19.5 %), so it retried 1 811 times. 593 retries reached their own check, and 62 of
+  those lifted (10.5 %).
+
+**What this says, and what it does not.** The data gate passes at the bars revised by Stage 0
+(R27.21). In its added train episodes, play-v2g holds about 2.4× the lift windows of the
+equal-size control. Its combined training set holds about 1.7× those of the control's combined
+set. The control's added episodes match `play-v1` train within the ±25 % band. As §11 says, this
+is weaker than the DRAFT's designed 3× and 2×. Every restatement of a B row quotes C1 2.38 and
+C2 1.69 beside it. This is a data measurement only. It is not a model, offline or closed-loop
+result, and it shows nothing about whether training on play-v2g changes grasping. Most of the extra lift
+comes from the pick recipe's own success rate: first attempts lift 19.5 % of the time and retries
+10.5 %. More lifting episodes also end early on the thumb's velocity stop (806 against 523), which
+§11 discloses.
+
+- **R27.29** — Collection and Stage C are recorded: row **C-PASS** (C1 2.383 ≥ 2.0, C2 1.693 ≥ 1.5,
+  C3 1.045 within 0.75–1.25). The intervals are reported only.
+- **R27.30** — Featurisation and Stage T may run as frozen (`run_task090_stage.sh features`, then
+  `t`, at `53f0b72` from a clean tree, one GPU lock per job) **only after this record is reviewed
+  and merged**. This record starts neither.
+- **R27.31** — R7 does not change.
