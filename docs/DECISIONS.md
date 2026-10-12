@@ -63,6 +63,26 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-12 (ao) — TASK-090 collection and Stage C end C-PASS: play-v2g's added train episodes hold 2.38× the lift windows of the equal-size control, 1.69× in the combined training sets, and the control matches `play-v1` (R27.29–R27.31)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_play_corpus_v1.md §18](experiments/grasp_play_corpus_v1.md).
+
+- **R27.29 — row C-PASS.** At the frozen revision `53f0b72` from a clean tree, the two collections
+  ran as frozen: play-v2g, 3 199 of 3 200 episodes stored (2 879 train), and play-v1p, 3 197 stored
+  (2 877 train), with no errors and the test splits not read. On the train episodes the frozen
+  label script measured lift-window shares of 7.826 % (play-v2g added), 3.284 % (play-v1p added)
+  and 3.142 % (`play-v1` train). That gives **C1 2.383** (bar ≥ 2.0), **C2 1.693** (bar ≥ 1.5)
+  and **C3 1.045** (band 0.75–1.25), so all three pass. The episode-bootstrap 95 % intervals
+  (2.080–2.736, 1.560–1.840 and 0.893–1.228) are reported only. They were computed after the gate
+  by a script stored with the evidence, outside the frozen code. Stage 0's C3 debug reading of
+  0.50 (R27.21) did not recur at full size. The enrichment remains weaker than the DRAFT's design
+  (§11): every B-row restatement quotes C1 2.38 and C2 1.69. Evidence
+  `~/develop/emai/evidence/task090-c/` (`SHA256SUMS` `9ff11727…c7ac`).
+- **R27.30 — featurisation and Stage T run as frozen only after this record is reviewed and
+  merged.** No GPU training has started.
+- **R27.31 — R7 does not change.**
+
 ## Decision 2026-10-12 (an) — TASK-090 Stage 0: code, the debug collection and Stage C's revised bars, A-K0, Stage BS at n = 128, the debug smoke; the protocol is frozen at this merge (R27.21–R27.28)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:

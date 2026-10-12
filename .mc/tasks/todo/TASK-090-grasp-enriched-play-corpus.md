@@ -41,13 +41,14 @@ seed ⌈⌈bar × n⌉ / 2⌉, and beat random and M-v1p (exact one-sided sign-f
 differences, p < 0.01). Not Apple→Plate; R7 does not change.
 
 Protocol: [grasp_play_corpus_v1.md](../../../docs/experiments/grasp_play_corpus_v1.md) (FROZEN
-at Stage 0's merge, R27.1–R27.28; Stage 0's record is its §17).
+at Stage 0's merge, R27.1–R27.28; Stage 0's record is its §17; the collection and Stage C
+record is its §18).
 
 ## Acceptance criteria
 
 - [x] DRAFT preregistration reviewed independently and merged (#202)
-- [ ] Stage 0: collector, label script, training driver (pinned `play-v1` moments; store mmap/location), planner loader, tests; 300 + 100 episode debug collection with the Stage C ratios disclosed; path and hash checks after the data-disk move; A-K0 (A-CEILING if h = 8 does not qualify); timed debug smoke; power estimate and BS size; reviewed; protocol frozen at merge
-- [ ] Collection (play-v1p, play-v2g) and Stage C recorded; C-FAIL stops before training
+- [x] Stage 0: collector, label script, training driver (pinned `play-v1` moments; store mmap/location), planner loader, tests; 300 + 100 episode debug collection with the Stage C ratios disclosed; path and hash checks after the data-disk move; A-K0 (A-CEILING if h = 8 does not qualify); timed debug smoke; power estimate and BS size; reviewed; protocol frozen at merge (#203)
+- [x] Collection (play-v1p, play-v2g) and Stage C recorded; C-FAIL stops before training (C-PASS, §18, R27.29–R27.31)
 - [ ] Featurisation and Stage T (8 jobs) recorded
 - [ ] Stage E and Stage A′ recorded
 - [ ] Stage BD recorded, the bar set; independent GO posted before Stage BS
@@ -66,3 +67,8 @@ at Stage 0's merge, R27.1–R27.28; Stage 0's record is its §17).
   M-v1's 87101 and 87102 dropped from Stage BS.
 - If the clause fires (B-FAIL only), the declared next step is the model-first design (a
   grasp-outcome head), with its own preregistration.
+- Collection and Stage C (R27.29–R27.31, 2026-10-12, at `53f0b72`): play-v2g 3 199 stored
+  (train 2 879), play-v1p 3 197 (train 2 877); row **C-PASS**: C1 2.383 (bar 2.0; reported 95 %
+  2.080–2.736), C2 1.693 (bar 1.5; 1.560–1.840), C3 1.045 (0.75–1.25; 0.893–1.228). Evidence
+  `~/develop/emai/evidence/task090-c/`. Featurisation and Stage T wait until this record is reviewed
+  and merged (R27.30).
