@@ -78,9 +78,12 @@ is kept as written.
   - **What runs.** Offline only: no training, no closed loop and no test split. It runs at code
     revision `53f0b72` in the `task090-run` tree, from a clean tracked tree.
   - **Analysis script.** Any analysis code is a non-frozen development script under `scripts/`
-    (as `stage_c_intervals.py` was for §18). It calls the frozen root sampler and TASK-089's A2
-    code (setting `step-mean`, `zs.CEM`, λ = 2.0552) with the seeds below; it changes no frozen
-    module.
+    (as `stage_c_intervals.py` was for §18). It calls the frozen root sampler (`zg.build_root`)
+    and TASK-089's A2 code (`zgr.wrap` with setting `step-mean`, λ = 2.0552), and builds the CEM
+    planner exactly as `zgr.make_planner` does (`zs.CEM` and TASK-088's bounds) but with the seeds
+    below. It keeps the whole 8-step plan, because `first_planned` returns only the first command
+    and fixes the seed. At the A2 seed, the plan's first command must equal `first_planned`'s on
+    every root; if it does not, D-A2 stops and is reported. It changes no frozen module.
   - **Evidence.** In `~/develop/emai/evidence/task090-da2/`, with `SHA256SUMS`.
 - **R27.38 — roots and seeds.**
   - **Roots.** 64 development roots, **seeds 905000–905063**, drawn by A′'s root sampler (the
@@ -99,10 +102,12 @@ is kept as written.
   right-grasp channel (`GRASP_DIM`, index 13) is > 0.5, as A2's close@R1 defines it.
   - **(a)** close@R1 of the first planned command, at the A2 CEM seed: A2 replicated on these
     roots. lift@R2 is recorded and reported only.
-  - **(b)** the first step k (1 … 8) of the 8-step CEM plan at R1 at which the hand command
-    closes, and the share of roots that close by k ≤ 2, k ≤ 4 and k ≤ 8.
+  - **(b)** at the A2 CEM seed, the first step k (1 … 8) of the 8-step CEM plan at R1 at which
+    the hand command closes, and the share of roots that close by k ≤ 2, k ≤ 4 and k ≤ 8. A root
+    whose plan never closes has no k and counts as not closing by k ≤ 8.
   - **(c)** close@R1 under the four additional CEM seeds, to measure planner variance.
-  - **(d)** the mean of the right-grasp channel over roots, per plan step, at R1.
+  - **(d)** at the A2 CEM seed, the mean of the right-grasp channel over roots, per plan step,
+    at R1.
 - **R27.40 — the reading, declared before D-A2 runs.**
   - **Definitions.**
     - The *A2-failing models* are the three that failed close@R1 at A′: G-v2g-90100, G-v1p-90100
@@ -113,12 +118,12 @@ is kept as written.
   - **Readings,** checked in this order. The coordinator set this order at review: it changes the
     original ruling's wording, which checked D-REPLICATE-FAIL last.
     1. **D-REPLICATE-FAIL:** (a) does not reproduce A′'s pattern on these roots: an A2-failing
-       model scores ≥ 48 / 64 on close@R1, or another model scores < 48 / 64. Then the other
+       model scores ≥ 48 / 64 on close@R1, or any of the other six models scores < 48 / 64. Then the other
        readings are not interpretable. D-REPLICATE-FAIL is recorded alone, and (b)–(d) are
        reported only.
     2. **D-CEM:** for any A2-failing model, close@R1 varies across CEM seeds by ≥ 16 / 64.
     3. **D-TIMING:** otherwise, each A2-failing model closes by k ≤ 4 on ≥ 48 / 64 roots.
-    4. **D-COST:** otherwise, if they close by k ≤ 8 on fewer than 48 / 64 roots.
+    4. **D-COST:** otherwise, if any A2-failing model closes by k ≤ 8 on fewer than 48 / 64 roots.
     5. **D-NONE:** none of the above applies, for example the failing models close by k ≤ 8 on
        ≥ 48 roots but not by k ≤ 4. The next step is ruled from the record.
   - **Recommendations.** Each reading only recommends a next step; none is a claim.
