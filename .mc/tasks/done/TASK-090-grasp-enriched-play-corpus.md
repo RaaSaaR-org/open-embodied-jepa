@@ -4,7 +4,7 @@ aliases:
 - TASK-090
 title: 'Grasp-enriched play corpus: retrain grounded LeWM on more scripted grasp-and-lift, against an equal-size control, then closed-loop grasp-and-lift'
 slug: grasp-enriched-play-corpus
-status: in-progress
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -21,7 +21,7 @@ depends_on:
 - "[[TASK-089]]"
 due_date: ''
 created: 2026-10-12
-updated: 2026-10-12
+updated: 2026-10-13
 ---
 
 # Grasp-enriched play corpus: retrain grounded LeWM on more scripted grasp-and-lift, against an equal-size control, then closed-loop grasp-and-lift
@@ -42,7 +42,9 @@ differences, p < 0.01). Not Apple→Plate; R7 does not change.
 
 Protocol: [grasp_play_corpus_v1.md](../../../docs/experiments/grasp_play_corpus_v1.md) (FROZEN
 at Stage 0's merge, R27.1–R27.28; Stage 0's record is its §17; the collection and Stage C
-record is its §18; featurisation, Stage T, E and A′ (ending A′-FAIL) are its §19).
+record is its §18; featurisation, Stage T, E and A′ (ending A′-FAIL) are its §19; the D-A2
+development record is its §20). **Closed at A′-FAIL** (R27.45, DECISIONS (as)); the next task is
+TASK-091.
 
 ## Acceptance criteria
 
@@ -51,10 +53,12 @@ record is its §18; featurisation, Stage T, E and A′ (ending A′-FAIL) are it
 - [x] Collection (play-v1p, play-v2g) and Stage C recorded; C-FAIL stops before training (C-PASS, §18, R27.29–R27.31)
 - [x] Featurisation and Stage T (8 jobs) recorded (F-DONE, T-DONE, §19, R27.32)
 - [x] Stage E and Stage A′ recorded (E-PASS; **A′-FAIL**, §19, R27.33–R27.34: escalate, no clause; BD and BS not run)
-- [ ] Stage BD recorded, the bar set; independent GO posted before Stage BS
-- [ ] Stage BS run; results document, row and DECISIONS rulings reviewed and merged
-- [ ] Evidence in `~/develop/emai/evidence/task090-*/` with `SHA256SUMS`; two MP4s (one success if any, one failure)
-- [ ] CLAUDE.md entry points and the plan's Progress table updated
+- [x] Escalation ruling after A′-FAIL (R27.36–R27.41, #207) and the D-A2 development record (D-TIMING, R27.42–R27.44, #208)
+- [x] Closing ruling (R27.45, DECISIONS (as)): TASK-090 closes at A′-FAIL; the plan's Progress table updated
+- [ ] ~~Stage BD recorded, the bar set; independent GO posted before Stage BS~~ — not run; TASK-090 closed at A′-FAIL (R27.45); carried to TASK-091 on fresh resets
+- [ ] ~~Stage BS run; results document, row and DECISIONS rulings reviewed and merged~~ — not run (R27.45); carried to TASK-091
+- [x] Evidence in `~/develop/emai/evidence/task090-*/` with `SHA256SUMS` (no MP4s: no closed loop ran)
+- [x] CLAUDE.md entry points (TASK-090's scripts and modules were already listed at Stage 0)
 
 ## Notes
 
@@ -88,3 +92,12 @@ record is its §18; featurisation, Stage T, E and A′ (ending A′-FAIL) are it
   step ≤ 4 on 64 / 64 roots. Recommendation only: a new preregistration (TASK-091) with a corrected
   A2 definition or planner setting, on fresh roots; the next task is ruled separately. A′-FAIL
   stands. About 0.26 GPU h. Evidence `~/develop/emai/evidence/task090-da2/`.
+- **Closed (R27.45, DECISIONS (as), 2026-10-13; decided by Claude under owner delegation).** The
+  final row is **A′-FAIL** (R27.34): escalate, no clause. Stage BD and Stage BS were never run, no
+  closed loop ran, and nothing compares the two corpora on grasping. The §9 clause did not fire,
+  and nothing in its scope is closed or refuted. R7 does not change. D-A2's D-TIMING (development,
+  not gated) is the reason for the next task, TASK-091 (R27.46–R27.54): A2 redefined as the
+  planned close within the plan (k ≤ 4) on fresh roots, then TASK-090's closed loop unchanged on
+  fresh resets, with the same checkpoints and corpora. TASK-090's cohorts 90200–90231 and
+  904000–904127 stay declared and unrun and are not reused.
+%% mc-links: [[TASK-089]] %%

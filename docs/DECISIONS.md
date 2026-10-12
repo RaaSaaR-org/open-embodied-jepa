@@ -63,6 +63,92 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-13 (as) — TASK-090 closes at A′-FAIL; the next task is TASK-091: TASK-090's A′ on fresh roots with A2's close bar redefined as the planned close within the plan (k ≤ 4), then TASK-090's closed loop unchanged on fresh resets, with the same checkpoints and planner; DRAFT preregistration (R27.45–R27.54; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30).** Protocol (DRAFT):
+[grasp_play_corpus_v1_planned_close.md](experiments/grasp_play_corpus_v1_planned_close.md).
+It follows R27.43's recommendation after D-A2 read D-TIMING (R27.42; development, not gated, one
+run, offline, simulation only, 64 roots 905000–905063).
+
+- **R27.45 — TASK-090 closes.**
+  - **Final row.** **A′-FAIL** (R27.34): escalate, no clause.
+  - **Not run.** Stage BD and Stage BS were never run, so no closed loop ran and nothing compares
+    the two corpora on grasping.
+  - **Clause.** The §9 clause did not fire, and nothing in its scope is closed or refuted.
+  - **Why a next task.** D-A2's D-TIMING (development, not gated) is the reason for the next task.
+  - TASK-090 moves to done in `.mc`. **R7 does not change.**
+- **R27.46 — the next task is TASK-091, the "corrected A2 definition" branch of R27.43, not a
+  planner change.**
+  - **What stays frozen.** TASK-089's step-averaged CEM planner (λ = 2.0552, receding horizon,
+    executing the first command) and everything else in TASK-090 §2–§7. So no planner change
+    confounds the composition comparison of M-v2g against M-v1p (R27.50's deferral confound
+    remains).
+  - **Rationale.** A2 counted only the first planned command, while every model plans the close by
+    step ≤ 4 (D-A2: all nine G models on 64 / 64 roots; development). Whether a receding-horizon
+    controller actually closes and lifts is exactly what the closed loop measures. So the gate
+    checks the planned close within the plan, and the closed loop decides.
+- **R27.47 — reuse, no retraining.**
+  - **Checkpoints.** TASK-090's six G and two N checkpoints and TASK-087's three G checkpoints,
+    unchanged, at the hashes recorded in TASK-090 §19.2 and TASK-087's record, under TASK-090's
+    loader guards.
+  - **Data.** TASK-090's corpora and feature stores.
+  - **Carried over, not re-run.** C-PASS, T-DONE and E-PASS.
+- **R27.48 — Stage A″, a no-regression gate.** It is TASK-090's A′ on 64 fresh roots,
+  906000–906063.
+  - **The redefined close bar.** The A2-seed plan's grasp channel (dim 13) is > 0.5 at some plan
+    step k ≤ 4, on ≥ 48 / 64 roots. The plan's first command must equal `first_planned`'s bitwise.
+  - **Kept.** lift@R2 ≥ 48 / 64 stays a bar. A1 (A-K0's bars, 61 / 64) is unchanged, and so is the
+    A′-FAIL rule, as A″-FAIL: either corpus failing on ≥ 2 of 3 seeds escalates, with no clause.
+  - **Reported.** close@R1 (the first command).
+  - **Disclosed.** **The k ≤ 4 threshold was chosen after seeing D-A2's development numbers on
+    905000–905063.** That is why A″ uses fresh roots and is a no-regression gate only. No claim
+    rests on it.
+- **R27.49 — the closed loop is TASK-090 §7 on fresh resets.**
+  - **Unchanged.** Stage BD, the GO and Stage BS keep the same arms (M-v1 87100 only in BS,
+    R27.25), the bar min(0.40, 0.9 × r), n = 128 (R27.22's power rule; not recomputed), the pooled
+    bar and per-seed floor, the reset-level exact sign-flip tests at p < 0.01 and rows
+    B-VOID…B-UNDER.
+  - **Fresh resets.** BD uses **90300–90331** and BS **907000–907127**, disjoint from TASK-090's
+    declared but unrun 90200–90231 and 904000–904127. Those are not reused.
+  - **Clause.** TASK-090 §9 is carried over with its scope unchanged and fires on B-FAIL only. M-v1's
+    counts and the replication of TASK-089's seeds are recorded with the clause, not as a way
+    around R26.33.
+- **R27.50 — deferral is reported, and the risk is named.**
+  - **Reported only.** The executed closing commands before first contact per episode; the
+    command at which the executed grasp channel first exceeds 0.5 in the grasp phase; and, if
+    Stage 0 can read it without changing the plan, the planned close step on each re-plan.
+  - **The risk.** A plan that closes at step 3 on each re-plan may defer closing indefinitely in
+    closed loop. BD shows it and BS counts it.
+  - **No change allowed.** No planner knob may change after the freeze.
+  - **A confound, disclosed.** The late-planning seeds are two of M-v1p's and one of M-v2g's. So
+    deferral, if it lowers success, would favour "M-v2g beats M-v1p" for a reason that is not
+    composition. Every restatement of a B-PASS or B-COMP quotes this.
+- **R27.51 — seeds and salts.**
+  - **Seeds.** A″ 906000–906063, BD 90300–90331, BS 907000–907127 (split into two jobs of 64
+    resets), debug 90700–90799. No new model seed and no new salt (TASK-088's 8801–8804 and
+    TASK-090's 9002, 9004 and 9006 are reused with the new seeds).
+  - **Checked.** On all remote branches, over `src/`, `scripts/`, `docs/`, `.mc/`, `tests/`,
+    `benchmarks/` and `configs/`, no number falls in these ranges. In
+    `~/develop/emai/evidence/`, the only tokens in them are decimal fractions and training-update
+    counts, not seeds. Stage 0 repeats the check.
+- **R27.52 — budget and process.**
+  - **Budget.** A″ under 1 GPU hour, BD about 2 hours and BS about 15.5 GPU hours (R27.25's
+    projection), about 19–20 GPU hours in all.
+  - **Per-job cap.** The 7 200 s figure of R27.24's training-job cap (TASK-087's rule) is
+    extended here to every GPU job, so each BS world-model run
+    (about 2.2 h at 128 resets) is split into two 64-reset jobs. A job that reaches the cap is
+    B-VOID in Stage BS and A″-VOID in Stage A″; in Stage BD (not gated) it is recorded and the job
+    is run again on fresh development seeds named by a ruling.
+  - **GPU sharing.** The shared GPU lock applies, one `gpu_run.sh --wait` job each. So does the V2D
+    agreement: BOARD.md's Requests are checked before each job, and V2D is told before BD and BS.
+  - **Worktree.** `worktrees/task087-run` stays until TASK-091 closes.
+- **R27.53 — status.** The protocol is **DRAFT** in this PR. A Stage 0 PR (the code for the
+  redefined A2 measure and the deferral counters, the seed and hash checks, a timed debug smoke)
+  follows and freezes it at its merge, as TASK-090's did. Gated runs only after that freeze, and
+  BS only after an independent GO on BD's record.
+- **R27.54 — R7 does not change**, whatever row TASK-091 ends in. TASK-091 is not an Apple→Plate
+  experiment.
+
 ## Decision 2026-10-12 (ar) — TASK-090 D-A2 (development, not gated) reads D-TIMING: the A2-failing models mostly plan the close at step 2–4 of the plan, stably across CEM seeds; A′-FAIL stands (R27.42–R27.44)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
