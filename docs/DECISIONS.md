@@ -63,6 +63,30 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-12 (ar) — TASK-090 D-A2 (development, not gated) reads D-TIMING: the A2-failing models plan the close at step 2–4 of the plan, stably across CEM seeds; A′-FAIL stands (R27.42–R27.44)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_play_corpus_v1.md §20](experiments/grasp_play_corpus_v1.md).
+
+- **R27.42 — D-A2 reads D-TIMING.** D-A2 is a development reading, not gated, and changes no row.
+  - **Run.** At `53f0b72` from a clean tree, on 64 roots (905000–905063), for the nine G
+    checkpoints. At the A2 seed every plan's first command equalled `zgr.first_planned`'s bitwise.
+  - **Readings,** checked in R27.40's order:
+    1. **D-REPLICATE-FAIL does not apply.** The A2-failing models score 0, 2 and 15 on close@R1,
+       and the other six score 57–64.
+    2. **D-CEM does not apply.** The largest spread across the five CEM seeds for a failing model
+       is 5 / 64, below 16.
+    3. **D-TIMING applies.** Each failing model closes by plan step k ≤ 4 on 64 / 64 roots
+       (G-v2g-90100 at step 3 or 4, G-v1p-90100 mostly at 3, G-v1p-90102 mostly at 2).
+  - **Not a claim.** It does not show that a later close grasps in closed loop. A′-FAIL (R27.34)
+    stands.
+  - **Cost and incident.** About 0.27 GPU hours. One roots job crashed in the script's own report
+    code and was re-run with byte-identical arrays; this is disclosed in §20.
+- **R27.43 — recommendation only.** By R27.40's mapping, D-TIMING recommends a new preregistration
+  (TASK-091) with a corrected A2 definition or planner setting, on fresh roots. The next task is
+  ruled separately.
+- **R27.44 — R7 does not change.**
+
 ## Decision 2026-10-12 (aq) — TASK-090 escalation after A′-FAIL: the task stays open, the row stands, BD and BS do not run; a development-only diagnosis of A2 (D-A2) with a reading declared before it runs (R27.36–R27.41)
 
 **Decided by Claude under owner delegation (2026-09-30)**, as the escalation ruling that §8 of
