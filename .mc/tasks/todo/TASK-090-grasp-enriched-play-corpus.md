@@ -4,7 +4,7 @@ aliases:
 - TASK-090
 title: 'Grasp-enriched play corpus: retrain grounded LeWM on more scripted grasp-and-lift, against an equal-size control, then closed-loop grasp-and-lift'
 slug: grasp-enriched-play-corpus
-status: todo
+status: in-progress
 priority: 2
 owner: ''
 projects: []
@@ -40,12 +40,12 @@ Stage BD, an independent GO and the gated Stage BS: all three M-v2g seeds pooled
 seed ⌈⌈bar × n⌉ / 2⌉, and beat random and M-v1p (exact one-sided sign-flip tests over per-reset
 differences, p < 0.01). Not Apple→Plate; R7 does not change.
 
-Protocol: [grasp_play_corpus_v1.md](../../../docs/experiments/grasp_play_corpus_v1.md) (DRAFT,
-R27.1–R27.20).
+Protocol: [grasp_play_corpus_v1.md](../../../docs/experiments/grasp_play_corpus_v1.md) (FROZEN
+at Stage 0's merge, R27.1–R27.28; Stage 0's record is its §17).
 
 ## Acceptance criteria
 
-- [ ] DRAFT preregistration reviewed independently and merged
+- [x] DRAFT preregistration reviewed independently and merged (#202)
 - [ ] Stage 0: collector, label script, training driver (pinned `play-v1` moments; store mmap/location), planner loader, tests; 300 + 100 episode debug collection with the Stage C ratios disclosed; path and hash checks after the data-disk move; A-K0 (A-CEILING if h = 8 does not qualify); timed debug smoke; power estimate and BS size; reviewed; protocol frozen at merge
 - [ ] Collection (play-v1p, play-v2g) and Stage C recorded; C-FAIL stops before training
 - [ ] Featurisation and Stage T (8 jobs) recorded
@@ -58,8 +58,11 @@ R27.1–R27.20).
 ## Notes
 
 - Seeds: play-v1p 910000–913199, play-v2g 920000–923199, model 90100–90102, A-K0 90000–90031,
-  A′ 903000–903063, BD 90200–90231, BS 904000–904063 (904000–904127 if enlarged), debug
+  A′ 903000–903063, BD 90200–90231, BS 904000–904127 (enlarged by Stage 0's power rule, R27.22), debug
   90900–90999, Stage 0 debug collection 930000–930399; salts 9002–9006 (9001 skipped).
 - Large artifacts on `/mnt/data/emai/projects/open-embodied-jepa/` through the repo's links.
+- Stage 0 (R27.21–R27.28): Stage C's bars revised to C1 ≥ 2.0, C2 ≥ 1.5 (debug points 2.31 and
+  1.64 below the declared 2.5 and 1.75); A-K0 passes at h = 8; Stage BS n = 128; Stage T in memory;
+  M-v1's 87101 and 87102 dropped from Stage BS.
 - If the clause fires (B-FAIL only), the declared next step is the model-first design (a
   grasp-outcome head), with its own preregistration.
