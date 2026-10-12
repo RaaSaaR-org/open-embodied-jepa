@@ -837,8 +837,8 @@ features `data/task090-debug-features-{grasp,v0}`, the debug models
 At `53f0b72` (the frozen revision, clean tracked tree), worktree `worktrees/task090-run`,
 `scripts/run_task090_stage.sh collect` then `scripts/run_task090_stage.sh c`, 2026-10-12. The two
 collections each ran as one `scripts/gpu_run.sh` job (NVIDIA EGL, RTX 5080, 12 workers): play-v2g
-11:42–12:08 UTC (1 533 s), play-v1p 12:08–12:28 UTC (1 258 s; the stage waited about 2 min for the
-lock first). Stage C's labels and gate ran on the CPU at 12:28:56–12:29:25 UTC (29 s). Nothing in
+about 11:42:11–12:07:44 UTC (1 533 s; the stage started at 11:40:29 UTC and waited about 2 min for
+the lock first), play-v1p 12:07:44–12:28:46 UTC (1 258 s, no wait). Stage C's labels and gate ran on the CPU at 12:28:56–12:29:25 UTC (29 s). Nothing in
 the frozen code, seeds, salts or bars was changed. Evidence `~/develop/emai/evidence/task090-c/`
 (`SHA256SUMS` sha256 `9ff11727…c7ac`, 77 files; `stage-c.json` `9610ce6f…82d8`; labels
 `labels-play-v1-train.json` `dcf4306d…600d`, `labels-play-v2g-train.json` `69ad0765…742c`,
@@ -873,7 +873,7 @@ code, with the same formulas as the frozen function.
 Lift-window shares, as pooled window counts: `play-v1` train 3.142 % (32 066 of 1 020 470 windows,
 2 874 episodes; the same count as Stage 0's prototype check), play-v2g added train 7.826 %
 (76 818 of 981 555, 2 879 episodes) and play-v1p added train 3.284 % (33 829 of 1 030 186, 2 877
-episodes). The full-size readings sit near Stage 0's debug points (C1 2.31, C2 1.64). C3, which
+episodes). The full-size readings sit near Stage 0's debug points (C1 2.31, C2 1.64), although those are not like-for-like: the debug C1 used `play-v1` train as its denominator and the debug C2 was a projection to equal-size additions. C3, which
 Stage 0 flagged as a real risk from its 100-episode debug reading (0.50), reads 1.045. So the debug
 reading was low by chance, as R27.21 judged likely.
 

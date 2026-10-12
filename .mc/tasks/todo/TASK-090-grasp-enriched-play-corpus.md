@@ -70,4 +70,5 @@ record is its §18).
 - Collection and Stage C (R27.29–R27.31, 2026-10-12, at `53f0b72`): play-v2g 3 199 stored
   (train 2 879), play-v1p 3 197 (train 2 877); row **C-PASS**: C1 2.383 (bar 2.0; reported 95 %
   2.080–2.736), C2 1.693 (bar 1.5; 1.560–1.840), C3 1.045 (0.75–1.25; 0.893–1.228). Evidence
-  `~/develop/emai/evidence/task090-c/`. Featurisation and Stage T wait for this record's review.
+  `~/develop/emai/evidence/task090-c/`. Featurisation and Stage T wait until this record is reviewed
+  and merged (R27.30).
