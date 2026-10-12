@@ -405,3 +405,20 @@ def test_core_import_stays_light():
         "assert 'torch' not in sys.modules and 'mujoco' not in sys.modules"
     )
     subprocess.run([sys.executable, "-c", code], check=True, cwd=ROOT)
+
+
+def test_train_driver_enforces_stage0_knobs():
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import train_task090 as t
+    finally:
+        sys.path.pop(0)
+    t.check_frozen_knobs(gc.TRAIN_MMAP, gc.TRAIN_CAP_SECONDS)
+    assert gc.TRAIN_MMAP is False and gc.TRAIN_CAP_SECONDS == 7200
+    with pytest.raises(SystemExit):
+        t.check_frozen_knobs(not gc.TRAIN_MMAP, gc.TRAIN_CAP_SECONDS)
+    with pytest.raises(SystemExit):
+        t.check_frozen_knobs(gc.TRAIN_MMAP, 99999)
+    with pytest.raises(SystemExit):  # the real entry point refuses a wrong cap before any work
+        t.main(["--corpus", "play-v2g", "--arm", "G", "--seed", "90100", "--cap-seconds", "1",
+                "--output", str(ROOT / "nonexistent-task090-out")])  # fmt: skip

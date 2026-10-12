@@ -82,8 +82,11 @@ is kept as written.
   bars would be met in 15 % and 7.5 % of resampled draws. The bars become C1 ≥ 2.0 and C2 ≥ 1.5
   ((1 + C1) / 2), by the DRAFT's own derivation; C3 stays ±25 % (the 100-episode v0 direction
   reading was 0.50, 0.12–1.00, resting on 5 lifting episodes; `play_policy_v0`'s code is
-  unchanged since `play-v1`). Disclosed cost: the manipulation is about 2.3× lift windows in the
-  added episodes and 1.6× in the training set, not the designed 3× and 2×.
+  unchanged since `play-v1`, so chance is the likely reading, binomial P ≈ 0.045, but a C-FAIL on C3
+  is a real risk and would stop the task before GPU training). Disclosed cost: the manipulation is
+  about 2.3× lift windows in the added episodes and 1.6× in the training set, not the designed 3×
+  and 2×; every B-row restatement quotes Stage C's measured C1 and C2, and a fired clause rests on
+  that weaker enrichment (§11).
 - **R27.22 — Stage BS uses n = 128 (904000–904127)**: the reset-level test's power at the declared
   alternative was 0.727 at n = 64 with SD 1 logit effects (0.974 at n = 128). Pooled bar 156 / 384
   and per-seed floor 26 / 128 at bar 0.40.

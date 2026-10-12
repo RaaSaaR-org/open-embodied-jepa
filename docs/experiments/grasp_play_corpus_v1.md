@@ -474,6 +474,13 @@ Labels 900000–901999 are TASK-077's and are avoided.
 - **What a pass shows.** A B-PASS would be the first gated world-model grasp-and-lift at the plan's
   bar in this project, on these terms only.
 
+- **The manipulation is weaker than designed.** The DRAFT designed for about 3× the lift windows
+  in the added episodes and about 2× in the training set. Stage 0 measured about 2.3× and 1.6× on
+  debug episodes (§17), and the bars were revised to C1 ≥ 2.0 and C2 ≥ 1.5 (R27.21). Any
+  restatement of a B row quotes Stage C's measured C1 and C2 beside it. If the clause fires (§9),
+  its closure of "more scripted grasp-and-lift of this kind" rests on this weaker enrichment, not
+  on the designed one.
+
 ## 12. Runtime, disk, paths and evidence
 
 **GPU.** Every GPU use is one `scripts/gpu_run.sh --wait --min-free-gib 8 --board` job, with the
@@ -490,7 +497,7 @@ closed-loop run.
 | Stage E, A-K0 and Stage A′ | about 2 h |
 | Stage BD, 3 world-model runs × 32 resets plus baselines | about 2 h |
 | Stage BS, 9 world-model runs × 64 resets (TASK-089's Stage BS, every arm with five world-model runs × 64, ran 2026-10-11 05:07–10:46 UTC: R26.31, `~/develop/emai/evidence/task089-bs/stage.log`) | about 10–11 h (about double at n = 128) |
-| **Total** | **about 20–22 GPU hours**, and about 5–7 days wall-clock with reviews and rulings |
+| **Total** | **about 20–22 GPU hours** as drafted; about 25–27 after Stage 0's n = 128 (§17, R27.22, R27.25); about 5–7 days wall-clock with reviews and rulings |
 
 **Disk.** About 25 GB for the two collections (TASK-085: 12.3 GB per 3 194 episodes), about 14 GB
 for the new feature stores, and small checkpoints. All large artifacts live on the data disk
@@ -588,7 +595,7 @@ prediction. R27.2 chose data-first, for five reasons:
 4. **Attribution is clean.** The size control separates "what the data contains" from "how much
    data there is". The model-first design could only compare against TASK-087's checkpoints.
 5. **The odds are similar, and the cost is acceptable.** The drafters judged a gated pass at about
-   15–25 % (data-first) and 10–15 % (model-first); these are judgements, not measurements. This design costs about 20–22 GPU hours against about 13–15, and it yields a reusable
+   15–25 % (data-first) and 10–15 % (model-first); these are judgements, not measurements. This design costs about 20–22 GPU hours (about 25–27 after Stage 0, §17) against about 13–15, and it yields a reusable
    corpus either way.
 
 **Taken from the model-first design:**
@@ -666,7 +673,9 @@ features `data/task090-debug-features-{grasp,v0}`, the debug models
   `model.pt` against its report, each report byte-identical to its copy in
   `evidence/task087-val`). Disclosed: TASK-087's feature store itself was never on the moved
   directories; it lives in TASK-087's run worktree (`worktrees/task087-run/outputs/`, on the SSD),
-  and Stage T reads `play-v1`'s part of each combined store from there in place.
+  and Stage T reads `play-v1`'s part of each combined store from there in place. **That worktree
+  (`/home/huhn/develop/emai/worktrees/task087-run`) must not be archived or removed until TASK-090
+  closes**; Stage T, E, A′, BD and BS read its feature store and projection.
 - **§2.2's moments check:** the buffers `set_moments` makes from `play-v1` train's moments equal
   G-87100's `state_mean`, `state_scale`, `palm_mean` and `palm_scale` bitwise (sha256
   `1e960227…81b5c` both). The training driver repeats the check before training and on the kept
@@ -712,9 +721,15 @@ features `data/task090-debug-features-{grasp,v0}`, the debug models
   rate (17 % of first attempts lift), which §2.1 holds fixed; changing it would be a different
   collector, designed after seeing debug data. The bars are re-set by the DRAFT's own derivation
   applied to the measurement: **C1 ≥ 2.0** (below the debug point 2.31, as 2.5 was below the
-  estimated 3) and **C2 ≥ 1.5 = (1 + C1) / 2**; C3 stays at ±25 % (projected 0.85–1.18, met in 99 %
-  of draws). At the revised bars the projection meets C1 in 98 % and C2 in 98 % of draws (an
-  optimistic projection: the 300 debug episodes stand in for the policy). **What this costs:** the
+  estimated 3) and **C2 ≥ 1.5 = (1 + C1) / 2**; C3 stays at ±25 %, unrevised (§4's revision rule
+  covers C1 and C2 only). **C3 is a real risk.** The projection's C3 (0.85–1.18) draws play-v1p
+  from `play-v1` train itself, so it assumes what C3 tests and is not evidence for it. The direct
+  debug reading, 0.50 (0.12–1.00), is outside ±25 %: 5 of 100 debug v0 episodes lifted
+  something against 10.4 % of `play-v1` train (binomial P(X ≤ 5 | 100, 0.104) ≈ 0.045). The code is
+  unchanged, so chance is the likely reading, but a C-FAIL on C3 is possible; it stops the task
+  before any GPU training (§4, §8), and no clause fires. At the revised bars the projection meets C1 in 98 % and C2 in 98 % of draws (an
+  optimistic projection: the 300 debug episodes stand in for the policy, and C3's projected draws
+  are circular, as above). **What this costs:** the
   manipulation is weaker than designed: about 2.3× the lift windows in the added episodes and
   about 1.6× in the training set, not about 3× and 2×. A null result (B-FAIL) is therefore a
   weaker statement about composition than the DRAFT anticipated; the clause's scope (§9) is
@@ -753,14 +768,16 @@ features `data/task090-debug-features-{grasp,v0}`, the debug models
   memory-mapped, 40.7 ms (mean 43.2, p90 47.3) with only 0.6 GB on the HDD (a real store puts
   about 6.4 GB there). So Stage T uses `mmap=False` (`TRAIN_MMAP`); no store is staged on the SSD.
   The per-job cap is TASK-087's rule, 3 × seconds per update × U, with 40 ms: 7 200 s
-  (`TRAIN_CAP_SECONDS`).
+  (`TRAIN_CAP_SECONDS`). `train_task090.py` enforces both in non-debug runs.
 - **R27.25 — M-v1's 87101 and 87102 runs are dropped from Stage BS, by §14's rule; the process
   counts are unchanged** (8 for baselines, 6 for world-model arms). TASK-089's Stage BS world-model
   runs took 3 623–4 321 s per 64 resets at 6 processes (planning 0.95–1.01 s per command); the
   smoke's took 0.89–0.91 s per command. At n = 128 a world-model run is about 2.2 GPU hours, so the
   nine runs of §7.1 project to about 20 GPU hours, above 14. Without the two dropped runs, seven
   runs project to about 15.5 GPU hours (plus a few minutes of baselines, goals and the
-  four-reset determinism re-run): still above 14, disclosed; §14 allows no other change. M-v1's
+  four-reset determinism re-run): still above 14, disclosed. §14's 14 GPU hours is the trigger for
+  this drop, not a cap on Stage BS; of §14's knobs only the process count could still change, and
+  it stays (more processes would contend for the one GPU and not shorten the run). M-v1's
   closed-loop reading in Stage BS is 87100 alone (its "more data" comparisons scale its per-reset
   successes by 3); Stage BD and Stage A′ keep their M-v1 runs.
 - **R27.26 — readings of points the DRAFT left open** (each the reading closest to TASK-089's

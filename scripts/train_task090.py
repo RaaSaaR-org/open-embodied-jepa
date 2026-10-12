@@ -79,6 +79,15 @@ def feature_report(folder: Path, *, debug: bool) -> tuple[dict, str]:
     return rep, gd.sha256_file(folder / "report.json")
 
 
+def check_frozen_knobs(mmap: bool, cap_seconds: float) -> None:
+    """Stage T's store mode and per-job cap are Stage 0's (R27.24); non-debug runs use exactly
+    them."""
+    if bool(mmap) != gc.TRAIN_MMAP:
+        raise SystemExit(f"Stage T uses mmap={gc.TRAIN_MMAP} (R27.24)")
+    if float(cap_seconds) != float(gc.TRAIN_CAP_SECONDS):
+        raise SystemExit(f"Stage T's cap is {gc.TRAIN_CAP_SECONDS:.0f} s (R27.24)")
+
+
 def evict(paths) -> None:
     """Drop the files' pages from the page cache (cold reads for the timed smoke)."""
     for p in paths:
@@ -114,6 +123,7 @@ def main(argv=None) -> int:
             raise SystemExit("Stage T uses U = 60 000 and TASK-087's selection points (§2.2)")
         if args.features_dir or args.evict or args.time_only:
             raise SystemExit("--features-dir, --evict and --time-only are debug-only")
+        check_frozen_knobs(args.mmap, args.cap_seconds)
     if args.updates % args.select_every:
         raise SystemExit("updates must be a multiple of select_every")
     import torch
