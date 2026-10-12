@@ -80,8 +80,9 @@ run, offline, simulation only, 64 roots 905000–905063).
 - **R27.46 — the next task is TASK-091, the "corrected A2 definition" branch of R27.43, not a
   planner change.**
   - **What stays frozen.** TASK-089's step-averaged CEM planner (λ = 2.0552, receding horizon,
-    executing the first command) and everything else in TASK-090 §2–§7. The composition
-    comparison of M-v2g against M-v1p therefore stays unconfounded.
+    executing the first command) and everything else in TASK-090 §2–§7. So no planner change
+    confounds the composition comparison of M-v2g against M-v1p (R27.50's deferral confound
+    remains).
   - **Rationale.** A2 counted only the first planned command, while every model plans the close by
     step ≤ 4 (D-A2: all nine G models on 64 / 64 roots; development). Whether a receding-horizon
     controller actually closes and lifts is exactly what the closed loop measures. So the gate
@@ -109,7 +110,9 @@ run, offline, simulation only, 64 roots 905000–905063).
     B-VOID…B-UNDER.
   - **Fresh resets.** BD uses **90300–90331** and BS **907000–907127**, disjoint from TASK-090's
     declared but unrun 90200–90231 and 904000–904127. Those are not reused.
-  - **Clause.** TASK-090 §9 is carried over verbatim in its scope and fires on B-FAIL only.
+  - **Clause.** TASK-090 §9 is carried over with its scope unchanged and fires on B-FAIL only. M-v1's
+    counts and the replication of TASK-089's seeds are recorded with the clause, not as a way
+    around R26.33.
 - **R27.50 — deferral is reported, and the risk is named.**
   - **Reported only.** The executed closing commands before first contact per episode; the
     command at which the executed grasp channel first exceeds 0.5 in the grasp phase; and, if
@@ -131,9 +134,11 @@ run, offline, simulation only, 64 roots 905000–905063).
 - **R27.52 — budget and process.**
   - **Budget.** A″ under 1 GPU hour, BD about 2 hours and BS about 15.5 GPU hours (R27.25's
     projection), about 19–20 GPU hours in all.
-  - **Per-job cap.** The 7 200 s cap (R27.24) applies to every GPU job, so each BS world-model run
+  - **Per-job cap.** The 7 200 s figure of R27.24's training-job cap (TASK-087's rule) is
+    extended here to every GPU job, so each BS world-model run
     (about 2.2 h at 128 resets) is split into two 64-reset jobs. A job that reaches the cap is
-    B-VOID.
+    B-VOID in Stage BS and A″-VOID in Stage A″; in Stage BD (not gated) it is recorded and the job
+    is run again on fresh development seeds named by a ruling.
   - **GPU sharing.** The shared GPU lock applies, one `gpu_run.sh --wait` job each. So does the V2D
     agreement: BOARD.md's Requests are checked before each job, and V2D is told before BD and BS.
   - **Worktree.** `worktrees/task087-run` stays until TASK-091 closes.

@@ -24,7 +24,6 @@ created: 2026-10-12
 updated: 2026-10-13
 ---
 
-
 # Grasp-enriched play corpus: retrain grounded LeWM on more scripted grasp-and-lift, against an equal-size control, then closed-loop grasp-and-lift
 
 ## Description

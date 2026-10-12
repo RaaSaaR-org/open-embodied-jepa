@@ -10,8 +10,7 @@ closed at **A′-FAIL** (R27.34, R27.45): escalate, no clause. Its Stage BD and 
 run, so no closed loop ran and nothing compared the two corpora on grasping. The development
 diagnosis D-A2 (§20 there, R27.42) then read **D-TIMING**. That reading is development only, not
 gated: one run, offline, simulation only, on 64 roots 905000–905063. In it, the three A2-failing
-models (G-v2g-90100, G-v1p-90100, G-v1p-90102) did not close on the first planned command, but
-planned the close at step 2–4 of the 8-step plan, stably across five CEM seeds (largest spread
+models (G-v2g-90100, G-v1p-90100, G-v1p-90102) mostly did not close on the first planned command, but mostly planned the close at step 2–4 of the 8-step plan, stably across five CEM seeds (largest spread
 5 / 64). All nine G models closed by plan step k ≤ 4 on 64 / 64 roots.
 
 **This is not an Apple→Plate experiment.** It plans grasp-and-lifts of the play scene's objects
@@ -45,6 +44,7 @@ the **planned close within the plan**, and the closed loop decides (R27.46).
 | Closed loop | Stage BD, GO and Stage BS as TASK-090 §7, **on fresh resets** (§5) | TASK-090 §7 |
 | Reported only | adds receding-horizon deferral measures (§5.3) | new |
 | Rows | A″-FAIL, then TASK-090's B rows (§6) | TASK-090 §7.2, §8 |
+| Per-job cap | 7 200 s on every GPU job (the figure of R27.24's training cap, extended here); BS world-model runs split into two 64-reset jobs; a cap hit is B-VOID in BS and A″-VOID in A″, and in BD the job is recorded and re-run on fresh development seeds (§5.4, §6) | new |
 | Abandonment clause | TASK-090 §9 in its scope, on B-FAIL only (§7) | TASK-090 §9 |
 
 No planner knob, no cost term, no horizon and no λ changes. That holds now and after the freeze,
@@ -83,7 +83,7 @@ reported only, as at A′.
 **A2, redefined.** The A2 CEM call is unchanged: one call at each R1 and R2 root, CEM seed
 `cem_seed(root) = 8803 · 10⁷ + root`, step-averaged cost and λ = 2.0552. What changes is that the
 whole normalised 8-step plan is kept, not only its first command, as D-A2 did. Its first command
-must equal `first_planned`'s bitwise on every root. If it does not, A″ stops and is reported.
+must equal `first_planned`'s bitwise on every root. If it does not, A″ stops: row A″-VOID (§6).
 "Closes" means the plan's right-grasp channel (`GRASP_DIM`, index 13) is > 0.5.
 
 - **close≤4@R1 (the redefined close bar):** the A2-seed plan at R1 closes at some plan step
@@ -181,19 +181,21 @@ may show the risk. BD by itself changes no knob (§2).
 
 ### 5.4 Per-job cap
 
-Every GPU job is limited to 7 200 s (R27.24's per-job cap, applied here to every job). One BS
+Every GPU job is limited to 7 200 s: the figure of R27.24's training-job cap (TASK-087's rule), extended here to every GPU job. One BS
 world-model run over 128 resets projects to about 2.2 GPU hours (R27.25), above the cap. So each
 BS world-model run is split into two jobs of 64 resets, 907000–907063 and 907064–907127. They use
 the same arm, model and frozen code, and their outputs are combined into one run before any
 summary. TASK-089's 64-reset world-model runs took 3 623–4 321 s. A job that reaches the cap stops,
 and its run did not complete under the rules, which is B-VOID (TASK-090 §7.2, row 1). Stage 0's
-smoke times per-command planning and may split the jobs further (§12).
+smoke times per-command planning and may split the jobs further (§12). A cap hit in Stage BD,
+which is not gated, is recorded, and that job is run again on fresh development seeds named by a
+ruling, under the same rules, as after a NO-GO; it is not a B-VOID of Stage BS.
 
 ## 6. Rows of the task, in order
 
 | Row | When | Next step |
 | --- | --- | --- |
-| A″-VOID | a check of §4 fails (checkpoint, implementation hash, pinned moments, feature report, λ, seed, or the first command against `first_planned`) | fix under its own ruling; re-run on fresh roots named by that ruling |
+| A″-VOID | a check of §4 fails (checkpoint, implementation hash, pinned moments, feature report, λ, seed, or the first command against `first_planned`), a job did not complete under the rules (including reaching the 7 200 s cap), or a root set was run twice | fix under its own ruling; re-run on fresh roots named by that ruling |
 | A″-FAIL | §4's rule | escalate; no clause |
 | B-VOID | TASK-090 §7.2 row 1 | fix under its own ruling |
 | B-PASS | TASK-090 §7.2 row 2 | admits a Phase 4 preregistration |
@@ -233,7 +235,8 @@ outcome (contact and object rise) over the planning horizon, the model-first des
 - Phase 4 as a goal, and the product goal.
 
 **It does not fire on** A″-VOID, A″-FAIL, B-VOID, B-COMP, B-SIZE or B-UNDER. TASK-090's A′-FAIL
-fired nothing (R27.45), and this task's own A″ result fires nothing either.
+fired nothing (R27.45), and this task's own A″ result fires nothing either. M-v1's counts and
+the replication of TASK-089's seeds are recorded with the clause, not as a way around R26.33.
 
 ## 8. Seeds and salts
 
@@ -280,12 +283,17 @@ rejected draws are further attempts under the same seed, so each range is the wh
   shows it: that would be a planner change, which R27.46 excludes and which R26.33's clause on
   TASK-087's checkpoints also bears on. If deferral sinks the closed loop, the row records it.
 - **The deferral risk is not balanced across the arms.** Two of M-v1p's three seeds
-  (G-v1p-90100, G-v1p-90102) and one of M-v2g's (G-v2g-90100) planned the close late at A′ and in
-  D-A2 (development). If late planned closes lower closed-loop success, M-v1p's pooled count is hit
+  (G-v1p-90100, G-v1p-90102) and one of M-v2g's (G-v2g-90100) failed close@R1 at A′ and, in D-A2
+  (development, not gated), planned the close later in the plan (G-v1p-90102 mostly at step 2, the
+  other two mostly at step 3–4). If late planned closes lower closed-loop success, M-v1p's pooled count is hit
   on more seeds, which favours "M-v2g beats M-v1p" for a reason unrelated to the composition. A
   B-PASS or B-COMP would not separate the two causes. The per-seed counts and §5.3's per-seed
   deferral measures are reported so that a reader can see whether the comparison tracks the late
   seeds. They do not correct for it. Any restatement of a B-PASS or B-COMP quotes this caveat.
+  The confound can also act the other way: if deferral sinks G-v2g-90100, it can push k_g below
+  the pooled bar, giving B-FAIL (the clause fires) or B-UNDER for a planner-timing reason rather
+  than a data reason. Any restatement of a B-FAIL or B-UNDER therefore quotes §5.3's per-seed
+  deferral measures beside it.
 - **A″'s threshold is post hoc.** k ≤ 4 was chosen after seeing D-A2's development numbers (§4).
   A″ passing on fresh roots is a no-regression check, not evidence.
 - **First-command A2 did not predict closed loop before.** In TASK-089, G-87100 met the
@@ -358,7 +366,8 @@ are not edited. It adds:
 - **Scripts** `scripts/{run,summarize}_task091.py` and `scripts/run_task091_stage.sh` (A″, BD and
   BS, with each BS world-model run split into jobs of 64 resets).
 - **Tests:** the redefined A2 measure on synthetic plans, the A″ pass and fail rules, the seed
-  ranges and their disjointness from TASK-090's, the deferral counters, the job split and recombine,
+  ranges and their disjointness from TASK-090's, the deferral counters, the job split and recombine (on debug seeds, a split run's per-reset
+  outcomes must equal an unsplit run's bitwise),
   and the core-import check.
 
 **Stage 0 also runs:**
@@ -388,7 +397,8 @@ the merged revision from a clean tree.
 - **R27.46** — **The next task is TASK-091**, R27.43's mapped recommendation, taking the
   "corrected A2 definition" branch, **not a planner change**. TASK-089's step-averaged CEM
   (λ = 2.0552, receding horizon, executing the first command) and everything else in TASK-090
-  §2–§7 stay frozen, so the composition comparison M-v2g against M-v1p stays unconfounded.
+  §2–§7 stay frozen, so no planner change confounds the composition comparison M-v2g against M-v1p (the deferral
+  confound of R27.50 and §9 remains).
   Rationale: A2 counted only the first planned command, while every model plans the close by step
   ≤ 4 (D-A2, development). Whether a receding-horizon controller actually closes and lifts is
   exactly what the closed loop measures. So the gate checks the planned close within the plan, and
@@ -407,7 +417,7 @@ the merged revision from a clean tree.
 - **R27.49** — **The closed loop** (§5). Stage BD, the GO and Stage BS run exactly as TASK-090 §7:
   the same arms, bar rule, n = 128, reset-level sign-flip tests and rows B-VOID…B-UNDER. They run
   on fresh resets: BD 90300–90331 and BS 907000–907127, disjoint from TASK-090's declared but unrun
-  90200–90231 and 904000–904127. The §9 clause is carried over in its scope, verbatim, and fires
+  90200–90231 and 904000–904127. The §9 clause is carried over with its scope unchanged, and fires
   on B-FAIL only (§7).
 - **R27.50** — **Deferral is reported, and the risk is named** (§5.3, §9). Reported only: closing
   commands executed before first contact; the first executed close in the grasp phase; and, if
@@ -419,8 +429,8 @@ the merged revision from a clean tree.
   907000–907127 and debug 90700–90799. There is no new model seed and no new salt. The uniqueness
   check over all remote branches and the evidence is recorded, and Stage 0 repeats it.
 - **R27.52** — **Budget and process** (§10). A″ takes under 1 GPU hour, BD about 2 hours and BS
-  about 15.5 GPU hours (R27.25). The per-job 7 200 s cap (R27.24) applies to every job, so each BS
-  world-model run is split into two 64-reset jobs (§5.4). The shared GPU lock applies, one
+  about 15.5 GPU hours (R27.25). The 7 200 s figure of R27.24's training-job cap applies to every
+  GPU job, so each BS world-model run is split into two 64-reset jobs (§5.4). The shared GPU lock applies, one
   `gpu_run.sh --wait` job each, and so does the V2D agreement: BOARD.md's Requests are checked
   before each job. `worktrees/task087-run` stays until TASK-091 closes.
 - **R27.53** — **Status.** This protocol is DRAFT in this PR. A Stage 0 PR follows (§12) and freezes

@@ -30,12 +30,12 @@ updated: 2026-10-13
 
 R27.43's recommendation after TASK-090 closed at **A′-FAIL** (R27.34; escalate, no clause; BD and
 BS never ran). Its development diagnosis D-A2 read **D-TIMING** (R27.42; development, not gated,
-one run, offline, simulation only, on 64 roots 905000–905063): the three A2-failing models plan
-the close at step 2–4 of the 8-step plan, and all nine G models close by plan step ≤ 4 on 64/64
+one run, offline, simulation only, on 64 roots 905000–905063): the three A2-failing models mostly
+plan the close at step 2–4 of the 8-step plan, and all nine G models close by plan step ≤ 4 on 64/64
 roots. TASK-091 takes the "corrected A2 definition" branch, not a planner change (R27.46).
 TASK-089's step-averaged CEM planner (λ = 2.0552, receding horizon, first command executed) and
-everything else in TASK-090 §2–§7 stay frozen, so the comparison of M-v2g with M-v1p stays
-unconfounded. It reuses TASK-090's checkpoints and corpora unchanged (no retraining).
+everything else in TASK-090 §2–§7 stay frozen, so no planner change confounds the comparison of M-v2g with M-v1p (R27.50's deferral confound
+remains). It reuses TASK-090's checkpoints and corpora unchanged (no retraining).
 
 - **Stage A″** (a no-regression gate, offline) is TASK-090's A′ on 64 fresh roots (906000–906063),
   with A2's close bar redefined: "the A2-seed plan's grasp channel (dim 13) > 0.5 at some plan
