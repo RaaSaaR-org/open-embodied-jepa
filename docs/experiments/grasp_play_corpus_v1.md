@@ -1210,7 +1210,7 @@ claims nothing. It does not show:
 - why these three models plan the close later;
 - that the A′-FAIL row is wrong. A′-FAIL stands as recorded.
 
-**Compute.** About 0.27 GPU hours, within R27.41's 1 hour budget:
+**Compute.** About 0.26 GPU hours, within R27.41's 1 hour budget:
 
 | Job | Time |
 | --- | --- |

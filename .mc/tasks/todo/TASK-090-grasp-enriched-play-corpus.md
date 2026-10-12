@@ -87,4 +87,4 @@ record is its §18; featurisation, Stage T, E and A′ (ending A′-FAIL) are it
   the others 57–64), with a CEM-seed spread of at most 5 / 64. The failing models close by plan
   step ≤ 4 on 64 / 64 roots. Recommendation only: a new preregistration (TASK-091) with a corrected
   A2 definition or planner setting, on fresh roots; the next task is ruled separately. A′-FAIL
-  stands. About 0.27 GPU h. Evidence `~/develop/emai/evidence/task090-da2/`.
+  stands. About 0.26 GPU h. Evidence `~/develop/emai/evidence/task090-da2/`.
