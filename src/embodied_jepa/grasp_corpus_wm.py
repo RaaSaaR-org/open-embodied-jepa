@@ -44,6 +44,15 @@ COHORTS = {
 ROOT_COHORTS = ("debug-roots", "k0-roots", "a-roots")
 GRASP_COHORTS = ("debug-grasp", "bd-grasp", "bs-grasp")
 CORPORA = ("play-v2g", "play-v1p")
+# §7.1-§7.2: the closed-loop model arms and the seeds each cohort admits. M-v1's 87101 and 87102
+# runs are dropped from BS by Stage 0 if its smoke projects BS above 14 GPU hours (§14).
+CLOSED_LOOP_ARMS = {"M-v2g": "play-v2g", "M-v1p": "play-v1p", "M-v1": "play-v1"}
+BD_SEEDS = {"M-v2g": (90100,), "M-v1p": (90100,), "M-v1": (87100,)}
+BS_M_V1_SEEDS = (87100, 87101, 87102)
+BS_SEEDS = {"M-v2g": MODEL_SEEDS, "M-v1p": MODEL_SEEDS, "M-v1": BS_M_V1_SEEDS}
+# Stage T's store mode and per-job cap (§12, §14): set by Stage 0's timed smoke
+TRAIN_MMAP = False
+TRAIN_CAP_SECONDS = 3 * 0.040 * 60_000
 CORPUS_TAG = {"play-v2g": "v2g", "play-v1p": "v1p"}
 
 

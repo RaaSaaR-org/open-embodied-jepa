@@ -49,9 +49,9 @@ DISK_FLOOR_GIB = 10.0
 DATA_DISK = Path("/mnt/data/emai/projects/open-embodied-jepa")
 CORPUS_DIRS = {"play-v1": "data/play-v1", "play-v2g": "data/play-v2g", "play-v1p": "data/play-v1p"}
 # §7.1: the closed-loop arms; model arms -> (model source, the seeds a gated cohort admits)
-MODEL_ARMS = {"M-v2g": "play-v2g", "M-v1p": "play-v1p", "M-v1": "play-v1"}
-BD_SEEDS = {"M-v2g": (90100,), "M-v1p": (90100,), "M-v1": (87100,)}
-BS_SEEDS = {"M-v2g": gc.MODEL_SEEDS, "M-v1p": gc.MODEL_SEEDS, "M-v1": (87100, 87101, 87102)}
+MODEL_ARMS = gc.CLOSED_LOOP_ARMS
+BD_SEEDS = gc.BD_SEEDS
+BS_SEEDS = gc.BS_SEEDS
 DETERMINISM = ("M-v2g", 90100, 4)
 
 
