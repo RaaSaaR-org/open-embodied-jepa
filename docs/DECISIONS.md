@@ -110,19 +110,21 @@ is kept as written.
     - G-v1-87101 failed A′ on lift@R2, not close@R1, so for close@R1 it counts as passing.
     - "Varies across CEM seeds" is the maximum minus the minimum of close@R1 over the five CEM
       seeds (the A2 seed and the four of R27.38).
-  - **Readings,** checked in this order:
-    1. **D-CEM:** for any A2-failing model, close@R1 varies across CEM seeds by ≥ 16 / 64.
-    2. **D-TIMING:** otherwise, each A2-failing model closes by k ≤ 4 on ≥ 48 / 64 roots.
-    3. **D-COST:** otherwise, if they close by k ≤ 8 on fewer than 48 / 64 roots.
-    4. **D-REPLICATE-FAIL:** (a) does not reproduce A′'s pattern on these roots: an A2-failing model
-       scores ≥ 48 / 64 on close@R1, or another model scores < 48 / 64. It is reported as such.
+  - **Readings,** checked in this order. The coordinator set this order at review: it changes the
+    original ruling's wording, which checked D-REPLICATE-FAIL last.
+    1. **D-REPLICATE-FAIL:** (a) does not reproduce A′'s pattern on these roots: an A2-failing
+       model scores ≥ 48 / 64 on close@R1, or another model scores < 48 / 64. Then the other
+       readings are not interpretable. D-REPLICATE-FAIL is recorded alone, and (b)–(d) are
+       reported only.
+    2. **D-CEM:** for any A2-failing model, close@R1 varies across CEM seeds by ≥ 16 / 64.
+    3. **D-TIMING:** otherwise, each A2-failing model closes by k ≤ 4 on ≥ 48 / 64 roots.
+    4. **D-COST:** otherwise, if they close by k ≤ 8 on fewer than 48 / 64 roots.
+    5. **D-NONE:** none of the above applies, for example the failing models close by k ≤ 8 on
+       ≥ 48 roots but not by k ≤ 4. The next step is ruled from the record.
   - **Recommendations.** Each reading only recommends a next step; none is a claim.
     - **D-CEM or D-TIMING** recommends a new preregistration (TASK-091) with a corrected A2
       definition or planner setting, on fresh roots.
     - **D-COST** recommends a model-side change.
-  - **Not covered by the order.** If no reading applies (for example the failing models close by
-    k ≤ 8 on ≥ 48 roots but not by k ≤ 4), that is recorded as **D-NONE**, and the next step is
-    ruled from the record.
   - **What follows.** The next task is ruled after D-A2 is recorded.
 - **R27.41 — budget and process.**
   - **Budget.** At most 1 GPU hour, with one GPU lock per job. A′'s roots and all nine models'

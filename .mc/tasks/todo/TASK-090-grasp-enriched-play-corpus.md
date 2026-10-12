@@ -80,5 +80,5 @@ record is its §18; featurisation, Stage T, E and A′ (ending A′-FAIL) are it
 - Escalation ruling (R27.36–R27.41, DECISIONS (aq)): TASK-090 stays open, A′-FAIL stands, BD
   and BS do not run, no clause, R7 unchanged. Next is D-A2, a development-only diagnosis of A2 on
   the nine G checkpoints. It uses 64 roots on seeds 905000–905063 and the A2 CEM seed plus four
-  more (salt 9007), at `53f0b72`, within ≤ 1 GPU h. Its readings, declared in order: D-CEM,
-  D-TIMING, D-COST, D-REPLICATE-FAIL (otherwise D-NONE). It runs after the ruling is merged.
+  more (salt 9007), at `53f0b72`, within ≤ 1 GPU h. Its readings, declared in order: D-REPLICATE-FAIL
+  (alone if it applies), D-CEM, D-TIMING, D-COST, D-NONE. It runs after the ruling is merged.
