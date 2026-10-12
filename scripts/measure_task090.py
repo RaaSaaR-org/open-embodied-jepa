@@ -268,6 +268,26 @@ def cmd_debug(args) -> int:
     return 0
 
 
+def cmd_project(args) -> int:
+    """Reported only: Stage C at full size by resampling (the declared and the revised bars)."""
+    report = base()
+    out = Path(args.output)
+    if out.exists():
+        raise SystemExit(f"refusing to overwrite {out}")
+    v1rep, v1 = _rows(args.v1, split="train")
+    _, grasp = _rows(args.grasp, split="all")
+    check_v1(v1rep)
+    report["inputs"] = {"v1": gd.sha256_file(args.v1), "grasp": gd.sha256_file(args.grasp)}
+    report["declared"] = gc.project_stage_c(
+        v1, grasp, bars={"C1": 2.5, "C2": 1.75, "C3": gc.C3_BAND}
+    )
+    report["frozen"] = gc.project_stage_c(v1, grasp)
+    report["finished_utc"] = utc()
+    gc.write_json(out, report)
+    print(json.dumps({k: report[k] for k in ("declared", "frozen")}, indent=1))
+    return 0
+
+
 def cmd_stage_c(args) -> int:
     report = base()
     out = Path(args.output)
@@ -320,6 +340,10 @@ def main(argv=None) -> int:
     de.add_argument("--grasp", required=True)
     de.add_argument("--v0", required=True)
     de.add_argument("--output", required=True)
+    pj = sub.add_parser("project")
+    pj.add_argument("--v1", required=True)
+    pj.add_argument("--grasp", required=True)
+    pj.add_argument("--output", required=True)
     sc = sub.add_parser("stage-c")
     sc.add_argument("--v1", required=True)
     sc.add_argument("--v2g", required=True)
@@ -330,6 +354,7 @@ def main(argv=None) -> int:
         "labels": cmd_labels,
         "prototype": cmd_prototype,
         "debug": cmd_debug,
+        "project": cmd_project,
         "stage-c": cmd_stage_c,
     }[args.command](args)
 

@@ -174,9 +174,12 @@ def share(rows) -> float:
     return float(sum(r["lift_windows"] for r in rows) / w) if w else float("nan")
 
 
-# Stage C's bars (§4; declared, revisable only at the freeze by the Stage 0 record)
-C1_BAR = 2.5
-C2_BAR = 1.75
+# Stage C's bars (§4). Declared 2.5 and 1.75; revised at the freeze by the Stage 0 record
+# (R27.21) because the debug collection's point ratios fell below them (§4's revision rule):
+# C1 >= 2.0 and C2 >= 1.5 = (1 + C1) / 2, the DRAFT's derivation. C3 is unchanged.
+DECLARED_BARS = {"C1": 2.5, "C2": 1.75}
+C1_BAR = 2.0
+C2_BAR = 1.5
 C3_BAND = 0.25
 
 
@@ -754,3 +757,46 @@ def write_json(path, value) -> None:
     if path.exists():
         raise FileExistsError(f"refusing to overwrite {path}")
     path.write_text(json.dumps(value, indent=1, sort_keys=True, allow_nan=True) + "\n")
+
+
+def project_stage_c(
+    v1_train, debug_grasp, *, added=2880, resamples=2000, seed=930001, bars=None
+) -> dict:
+    """Reported only (Stage 0): Stage C's ratios at full size, by resampling. play-v2g's added
+    train episodes are drawn from the debug grasp episodes, play-v1p's from ``play-v1`` train
+    (the same policy, whose code is unchanged), ``added`` each; play-v1 train is resampled too.
+    Returns each ratio's median and 95 % range and the share of draws that meet the bars."""
+    bars = bars or {"C1": C1_BAR, "C2": C2_BAR, "C3": C3_BAND}
+    rng = np.random.default_rng(seed)
+    l1 = np.array([r["lift_windows"] for r in v1_train], np.float64)
+    w1 = np.array([r["windows"] for r in v1_train], np.float64)
+    lg = np.array([r["lift_windows"] for r in debug_grasp], np.float64)
+    wg = np.array([r["windows"] for r in debug_grasp], np.float64)
+    draws = {"C1": [], "C2": [], "C3": []}
+    for _ in range(resamples):
+        i1 = rng.integers(0, len(l1), len(l1))
+        ip = rng.integers(0, len(l1), added)
+        ig = rng.integers(0, len(lg), added)
+        a1, b1 = l1[i1].sum(), w1[i1].sum()
+        ap, bp = l1[ip].sum(), w1[ip].sum()
+        ag, bg = lg[ig].sum(), wg[ig].sum()
+        draws["C1"].append((ag / bg) / (ap / bp))
+        draws["C2"].append(((a1 + ag) / (b1 + bg)) / ((a1 + ap) / (b1 + bp)))
+        draws["C3"].append((ap / bp) / (a1 / b1))
+    out = {}
+    for k, v in draws.items():
+        v = np.asarray(v)
+        q = np.percentile(v, [2.5, 50, 97.5])
+        if k == "C3":
+            meets = np.mean((v >= 1 - bars["C3"]) & (v <= 1 + bars["C3"]))
+        else:
+            meets = np.mean(v >= bars[k])
+        out[k] = {
+            "median": float(q[1]),
+            "range95": [float(q[0]), float(q[2])],
+            "share_meeting_bar": float(meets),
+        }
+    out["bars"] = bars
+    out["resamples"] = resamples
+    out["added"] = added
+    return out
