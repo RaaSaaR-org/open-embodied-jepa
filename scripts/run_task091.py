@@ -800,15 +800,11 @@ def cmd_run(args) -> int:
     if not record and not debug:
         raise rt.GuardError("--no-plan-record is for debug cohorts only")
     name = run_name(args.arm, args.model_seed, determinism=args.determinism, part=part)
-    out = Path(args.output) / args.cohort / f"{name}.json"
+    if args.suffix and not debug:
+        raise rt.GuardError("--suffix is for debug cohorts only")
+    out = Path(args.output) / args.cohort / f"{name}{args.suffix or ''}.json"
     if out.exists():
         raise rt.GuardError(f"refusing to overwrite {out}")
-    if args.suffix:
-        if not debug:
-            raise rt.GuardError("--suffix is for debug cohorts only")
-        out = out.with_name(f"{name}{args.suffix}.json")
-        if out.exists():
-            raise rt.GuardError(f"refusing to overwrite {out}")
     pins = _feature_pins() if args.arm in pcl.CLOSED_LOOP_ARMS else None
     report |= {
         "arm": args.arm,
