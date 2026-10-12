@@ -82,3 +82,9 @@ record is its §18; featurisation, Stage T, E and A′ (ending A′-FAIL) are it
   the nine G checkpoints. It uses 64 roots on seeds 905000–905063 and the A2 CEM seed plus four
   more (salt 9007), at `53f0b72`, within ≤ 1 GPU h. Its readings, declared in order: D-REPLICATE-FAIL
   (alone if it applies), D-CEM, D-TIMING, D-COST, D-NONE. It runs after the ruling is merged.
+- D-A2 (development, not gated; R27.42–R27.44, §20, 2026-10-12, at `53f0b72`): reading
+  **D-TIMING**. It reproduced A′'s close@R1 pattern on 905000–905063 (failing models 0, 2 and 15;
+  the others 57–64), with a CEM-seed spread of at most 5 / 64. The failing models close by plan
+  step ≤ 4 on 64 / 64 roots. Recommendation only: a new preregistration (TASK-091) with a corrected
+  A2 definition or planner setting, on fresh roots; the next task is ruled separately. A′-FAIL
+  stands. About 0.26 GPU h. Evidence `~/develop/emai/evidence/task090-da2/`.

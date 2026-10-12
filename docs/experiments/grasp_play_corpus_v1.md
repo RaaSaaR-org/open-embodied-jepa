@@ -1120,3 +1120,111 @@ about 10 min. Wall-clock from the start of featurisation to the end of A′ was 
   and Stage BS are not run. The escalation's ruling (§8: it closes the task with a recommendation
   unless it says otherwise) is not made in this record.
 - **R27.35** — R7 does not change.
+
+## 20. D-A2 development record (not gated; R27.42–R27.44; decided by Claude under owner delegation)
+
+D-A2 is the development-only diagnosis of A2 that the escalation ruling R27.36–R27.41 (#207)
+declared, with its reading order fixed before it ran.
+
+- **Status.** It is **not gated**: its counts are development readings, not results. It does not
+  amend A′-FAIL (R27.34), the frozen gates, the bars or the roots.
+- **Run conditions.** 2026-10-12, 21:10–21:26 UTC. The code was the run tree `worktrees/task090-run`
+  at `53f0b72`, clean tracked tree, every report recording that revision. There were two GPU jobs
+  (roots, then the measurement), each one `scripts/gpu_run.sh` lock, with no measurable lock wait.
+- **Analysis script.** `scripts/dev_task090_da2.py`, added by this PR; it is not frozen. The run
+  used a byte-identical copy in the evidence folder (sha256 `a8c3838f…a4ba`). It changes no frozen
+  module.
+  - It builds roots with `zg.build_root`.
+  - It loads the nine G checkpoints under the existing guards and wraps them with `zgr.wrap`
+    (`step-mean`, λ = 2.0552).
+  - It builds the CEM planner as `zgr.make_planner` builds it, but with an explicit seed, and keeps
+    the whole 8-step plan.
+- **First-command check.** At the A2 seed, every plan's first command equalled
+  `zgr.first_planned`'s bitwise, on every root (R1 and R2) of every model.
+
+**Roots.** 64 roots on 905000–905063, drawn by A′'s sampler:
+
+- 67 draws were rejected;
+- targets: can 24, cube 23, apple 17, banana 0;
+- `roots-da2.json` sha256 `c55f5672…2299`, arrays `1c2f292e…2d36`.
+
+**Incident (disclosed).** The first roots job crashed after writing its arrays, in the script's
+own report code: it summed the lists of rejected draws instead of their lengths. The script was
+fixed and the roots job re-run on the same seeds; that is the only change between the two copies.
+The crashed job's arrays are byte-identical to the re-run's (both `1c2f292e…2d36`). They are kept
+as `crash1-*` with the crashed script and its log. The crash cost about 1 GPU minute.
+
+**Results** (64 roots; "closes" means the plan's right-grasp channel, index 13, is > 0.5):
+
+| Model | (a) close@R1 | lift@R2 (reported) | (b) close by k ≤ 2 / 4 / 8 | (b) first closing step k | (c) close@R1, five CEM seeds | spread |
+| --- | --- | --- | --- | --- | --- | --- |
+| **G-v2g-90100** (A2-failing) | **0** | 56 | 0 / 64 / 64 | 3 on 42, 4 on 22 | 0, 0, 0, 0, 0 | 0 |
+| G-v2g-90101 | 60 | 56 | 64 / 64 / 64 | 1 on 60, 2 on 4 | 60, 59, 61, 61, 60 | 2 |
+| G-v2g-90102 | 57 | 63 | 64 / 64 / 64 | 1 on 57, 2 on 7 | 57, 54, 57, 54, 54 | 3 |
+| **G-v1p-90100** (A2-failing) | **2** | 62 | 8 / 64 / 64 | 1 on 2, 2 on 6, 3 on 48, 4 on 8 | 2, 2, 0, 2, 2 | 2 |
+| G-v1p-90101 | 60 | 63 | 64 / 64 / 64 | 1 on 60, 2 on 4 | 60, 63, 61, 61, 60 | 3 |
+| **G-v1p-90102** (A2-failing) | **15** | 61 | 64 / 64 / 64 | 1 on 15, 2 on 49 | 15, 13, 12, 14, 17 | 5 |
+| G-v1-87100 | 64 | 64 | 64 / 64 / 64 | 1 on 64 | 64, 64, 62, 61, 61 | 3 |
+| G-v1-87101 | 64 | 39 | 64 / 64 / 64 | 1 on 64 | 64, 64, 64, 64, 64 | 0 |
+| G-v1-87102 | 64 | 57 | 64 / 64 / 64 | 1 on 64 | 64, 62, 64, 63, 63 | 2 |
+
+No plan of any model failed to close within its 8 steps. The CEM seeds are listed with the A2
+seed first, then j = 1 … 4.
+
+**(d), the mean right-grasp channel per plan step at R1** (steps 1 … 8, A2 seed):
+
+| Model | Step 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| G-v2g-90100 | −0.15 | 0.22 | 0.52 | 0.74 | 0.94 | 0.91 | 0.87 | 0.75 |
+| G-v2g-90101 | 0.80 | 0.84 | 0.96 | 0.98 | 0.91 | 0.91 | 0.88 | 0.70 |
+| G-v2g-90102 | 0.75 | 0.82 | 0.94 | 0.97 | 0.88 | 0.85 | 0.84 | 0.65 |
+| G-v1p-90100 | −0.23 | 0.33 | 0.61 | 0.80 | 0.95 | 0.91 | 0.78 | 0.59 |
+| G-v1p-90101 | 0.83 | 0.86 | 0.91 | 0.96 | 0.88 | 0.78 | 0.82 | 0.64 |
+| G-v1p-90102 | 0.40 | 0.84 | 0.97 | 0.90 | 0.80 | 0.86 | 0.89 | 0.68 |
+| G-v1-87100 | 0.80 | 0.75 | 0.90 | 0.97 | 0.79 | 0.79 | 0.73 | 0.63 |
+| G-v1-87101 | 0.98 | 0.97 | 0.97 | 0.89 | 0.73 | 0.72 | 0.77 | 0.71 |
+| G-v1-87102 | 0.91 | 0.93 | 0.89 | 0.96 | 0.74 | 0.70 | 0.75 | 0.63 |
+
+**Reading: D-TIMING**, checked in R27.40's order:
+
+1. **D-REPLICATE-FAIL does not apply.** The three A2-failing models score 0, 2 and 15 on (a), all
+   below 48. The other six score 57–64, all at least 48. A′'s pattern is therefore reproduced on
+   these roots. Reported only: lift@R2 also reproduces G-v1-87101's lower count, 39 here against
+   37 at A′.
+2. **D-CEM does not apply.** The largest spread across the five CEM seeds among the A2-failing
+   models is 5 / 64, below the 16 / 64 threshold.
+3. **D-TIMING applies.** Every A2-failing model closes by k ≤ 4 on 64 / 64 roots (bar 48).
+
+**What this says, and what it does not.** In the three A2-failing models, the planned close comes
+later in the 8-step plan:
+
+- G-v2g-90100 closes at step 3 or 4;
+- G-v1p-90100 closes mostly at step 3;
+- G-v1p-90102 closes mostly at step 2.
+
+For these three, A2's first-command count does not see a close planned a few steps later. This is
+stable across the five CEM seeds. As R27.40 declares, D-TIMING only recommends a next step and
+claims nothing. It does not show:
+
+- that a later close would grasp in closed loop;
+- why these three models plan the close later;
+- that the A′-FAIL row is wrong. A′-FAIL stands as recorded.
+
+**Compute.** About 0.26 GPU hours, within R27.41's 1 hour budget:
+
+| Job | Time |
+| --- | --- |
+| Crashed roots job | about 1 min |
+| Roots | 62 s |
+| Measurement (nine models, about 87 s each) | 786 s |
+
+**Evidence:** `~/develop/emai/evidence/task090-da2/` (`SHA256SUMS` sha256 `b2cd034c…3c7c`;
+`measure-da2.json` `0cbb7723…ef46`; `roots-da2.json` `c55f5672…2299`; the logs, the script copy
+and the `crash1-*` files).
+
+- **R27.42** — D-A2 is recorded as a development reading, **D-TIMING**. It is not gated and changes
+  no row: A′-FAIL (R27.34) stands.
+- **R27.43** — By R27.40's mapping, D-TIMING recommends a new preregistration (TASK-091) with a
+  corrected A2 definition or planner setting, on fresh roots. This record makes that
+  recommendation only. The next task is ruled separately.
+- **R27.44** — R7 does not change.
