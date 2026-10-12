@@ -16,7 +16,6 @@ part that is missing makes the stage VOID.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import math
 import sys
@@ -30,26 +29,85 @@ sys.path.insert(0, str(ROOT / "src"))
 from embodied_jepa import grasp_corpus_wm as gc  # noqa: E402
 from embodied_jepa import grasp_corpus_wm_planned_close as pcl  # noqa: E402
 from embodied_jepa import zero_shot as zs  # noqa: E402
+from embodied_jepa import zero_shot_grasp as zg  # noqa: E402
 
 
-def _frozen_summarizer():
-    bad = [k for k, ok in pcl.frozen_files_check(ROOT).items() if not ok]
-    if bad:
-        raise SystemExit(f"these frozen files differ from their pins: {bad}")
-    spec = importlib.util.spec_from_file_location(
-        "summarize_task090_frozen", ROOT / "scripts" / "summarize_task090.py"
-    )
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+# ----- TASK-090's summary helpers (scripts/summarize_task090.py at 53f0b72), copied -----------
+def load(path):
+    return json.loads(Path(path).read_text())
 
 
-s090 = _frozen_summarizer()
-load, interval, _count = s090.load, s090.interval, s090._count
+def interval(k, n):
+    lo, hi = zs.exact_interval(int(k), int(n))
+    return [round(lo, 3), round(hi, 3)]
+
+
+def _count(items):
+    out = {}
+    for x in items:
+        out[x] = out.get(x, 0) + 1
+    return out
+
+
+def _phase_share(eps):
+    """TASK-089's executed grasp share per subgoal phase (its review-corrected alignment)."""
+    pooled = {k: [] for k in range(4)}
+    for e in eps:
+        a = np.asarray(e["applied"])
+        if not len(a):
+            continue
+        seq = []
+        for i, s in enumerate(e["switches"]):
+            seq += [i] * s["steps"]
+        seq = seq[1:]
+        seq += [len(e["switches"])] * (len(a) - len(seq))
+        seq = np.asarray(seq[: len(a)])
+        for k in range(4):
+            pooled[k] += list(a[seq == k, zg.GRASP_DIM])
+    return {
+        zs.SUBGOALS[k]: (float(np.mean(np.asarray(v) > 0.5)) if v else None)
+        for k, v in pooled.items()
+    }
+
+
+def _common_checks_090(reports, cohort, n_expected=None):
+    problems = []
+    revisions = {r["revision"] for r in reports}
+    if len(revisions) != 1:
+        problems.append(f"revisions differ: {sorted(revisions)}")
+    if not str(cohort).startswith("debug") and any(r["tracked_tree_dirty"] for r in reports):
+        problems.append("a run was made from a dirty tree")
+    if n_expected is not None:
+        for r in reports:
+            if r.get("n", n_expected) != n_expected:
+                problems.append(f"{r.get('arm', 'report')}: n = {r.get('n')}")
+    return problems
+
+
+def _arm_table_090(runs):
+    table = {}
+    for name, r in runs.items():
+        eps = r["episodes"]
+        k = int(sum(e["success"] for e in eps))
+        table[name] = {
+            "successes": k,
+            "n": len(eps),
+            "interval": interval(k, len(eps)),
+            "grasp_contact": int(sum(e["any_grasp_contact"] for e in eps)),
+            "max_rise_median_m": float(np.median([e["max_rise"] for e in eps])),
+            "final_subgoal": _count([e["final_subgoal"] for e in eps]),
+            "stopped": int(sum(bool(e["stop_reason"]) for e in eps)),
+            "plan_seconds_mean": float(
+                np.mean([e["plan_seconds_mean"] for e in eps if "plan_seconds_mean" in e] or [0.0])
+            ),
+            "wall_seconds": float(r["seconds"]),
+            "grasp_phase_share_closed": _phase_share(eps),
+        }
+    return table
 
 
 def common_checks(reports, cohort, n_expected=None):
-    problems = s090.common_checks(reports, cohort, n_expected)
+    problems = _common_checks_090(reports, cohort, n_expected)
     for r in reports:
         if r.get("task") != pcl.TASK:
             problems.append(f"{r.get('arm', 'report')}: not a TASK-091 report")
@@ -202,7 +260,7 @@ def _split_checks(runs, parts, cohort, debug):
 
 
 def _arm_table(runs):
-    return s090._arm_table(
+    return _arm_table_090(
         {k: v for k, v in runs.items() if not v.get("determinism_rerun")}
     )  # fmt: skip
 

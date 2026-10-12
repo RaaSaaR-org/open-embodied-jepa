@@ -14,17 +14,18 @@ under ``scripts/gpu_run.sh --wait --min-free-gib 8 --board`` and stops at the 7 
   ``combine --cohort C --arm A --model-seed S --runs DIR``;
   ``video --result FILE --goals DIR --seed N --output FILE.mp4``: the closed loop (§5).
 
-TASK-090's frozen runner and modules are imported, never edited, and checked against their pins
-before anything runs. Non-debug cohorts need a clean tracked tree; every report records the
-revision; every file is refused if it exists, and a non-debug cohort's roots, goals or run is
-refused if the ledger (``outputs/task091-ledger``) shows it was started before (§6: a root set or
-cohort run twice is VOID).
+TASK-090's frozen modules are imported, never edited, and checked against their pins before
+anything runs; TASK-090's runner code that this runner needs is in
+``embodied_jepa.grasp_corpus_wm_planned_close_run`` (no script loads another, audit F16). Non-debug
+cohorts need a clean tracked tree; every report records the revision; every file is refused if it
+exists, and a non-debug cohort's roots, goals or run is refused if the ledger
+(``outputs/task091-ledger``) shows it was started before (§6: a root set or cohort run twice is
+VOID).
 """
 
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import multiprocessing as mp
 import re
@@ -41,30 +42,19 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from embodied_jepa import grasp_corpus_wm as gc  # noqa: E402
 from embodied_jepa import grasp_corpus_wm_planned_close as pcl  # noqa: E402
+from embodied_jepa import grasp_corpus_wm_planned_close_run as prun  # noqa: E402
 from embodied_jepa import run_tools as rt  # noqa: E402
 from embodied_jepa import zero_shot as zs  # noqa: E402
 from embodied_jepa import zero_shot_grasp as zg  # noqa: E402
 
-
-def _frozen_runner():
-    """TASK-090's frozen ``scripts/run_task090.py`` of this checkout, as a module (its guards,
-    report and helpers); checked against its pin first."""
-    bad = [k for k, ok in pcl.frozen_files_check(ROOT).items() if not ok]
-    if bad:
-        raise rt.GuardError(f"G-frozen: these frozen files differ from their pins: {bad}")
-    spec = importlib.util.spec_from_file_location(
-        "run_task090_frozen", ROOT / "scripts" / "run_task090.py"
-    )
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-r090 = _frozen_runner()
-utc, log, sha, git = r090.utc, r090.log, r090.sha, r090.git
+utc, log, sha, write_json = prun.utc, prun.log, prun.sha, prun.write_json
 LEDGER = ROOT / "outputs" / "task091-ledger"
 EXIT_CAP = 4
 EXIT_VOID = 3
+
+
+def git(*args) -> str:
+    return prun.git(ROOT, *args)
 
 
 class CapHit(Exception):
@@ -77,19 +67,8 @@ def _alarm(signum, frame):
 
 def base_report(cohort=None, *, clean=False, gpu=True) -> dict:
     """TASK-090's ``base_report`` (revision, clean-tree, local-import, disk and GPU-lock guards)
-    with TASK-091's task, protocol and frozen-file check."""
-    report = r090.base_report(cohort, clean=clean, gpu=gpu)
-    report |= {
-        "task": pcl.TASK,
-        "protocol": pcl.PROTOCOL,
-        "frozen_files_match": all(pcl.frozen_files_check(ROOT).values()),
-        "job_cap_seconds": pcl.JOB_CAP_SECONDS,
-    }
-    return report
-
-
-def write_json(path, value) -> None:
-    r090.write_json(path, value)
+    with TASK-091's task, protocol and frozen-file check (``grasp_corpus_wm_planned_close_run``)."""
+    return prun.base_report(ROOT, cohort, clean=clean, gpu=gpu)
 
 
 def ledger_claim(key: str) -> None:
@@ -151,17 +130,14 @@ def cmd_verify(args) -> int:
     if path.exists():
         raise rt.GuardError(f"refusing to overwrite {path}")
     report = base_report(gpu=False)
-    # TASK-090's own check, unchanged (it writes its own report)
+    # TASK-090's own check (its verify, copied), written to its own file
     t0 = time.monotonic()
-    code = r090.cmd_verify(
-        argparse.Namespace(
-            output=str(out / "verify-task090-checks.json"),
-            main_checkout=args.main_checkout,
-            task087_evidence=args.task087_evidence,
-        )
-    )
+    sub = prun.verify_task090(ROOT, args.main_checkout, args.task087_evidence)
+    write_json(out / "verify-task090-checks.json", sub)
+    code = 0 if sub["all_pass"] else 1
     report["task090_verify"] = {
-        "exit": code,
+        "all_pass": sub["all_pass"],
+        "checks": sub["checks"],
         "file": "verify-task090-checks.json",
         "sha256": sha(out / "verify-task090-checks.json"),
         "seconds": time.monotonic() - t0,
@@ -230,15 +206,8 @@ CHECK_RANGES = {
     "bs-grasp": range(907000, 907128),
     "debug": range(90700, 90800),
 }
-OWN_FILES = (
-    "docs/experiments/grasp_play_corpus_v1_planned_close.md",
-    "src/embodied_jepa/grasp_corpus_wm_planned_close.py",
-    "src/embodied_jepa/grasp_corpus_wm_planned_close_runtime.py",
-    "scripts/run_task091.py",
-    "scripts/summarize_task091.py",
-    "scripts/run_task091_stage.sh",
-    "tests/test_grasp_corpus_planned_close.py",
-)
+# TASK-091's own files: its protocol, MC task, modules, scripts and tests (by name), and DECISIONS
+OWN_MARKERS = ("task091", "TASK-091", "planned_close", "grasp_play_corpus_v1_planned_close")
 
 
 def _in_ranges(number: int) -> list[str]:
@@ -274,7 +243,7 @@ def cmd_seeds(args) -> int:
                     hits.setdefault(file, {}).setdefault(m.group(1), set()).add(branch)
     classified = {"own": {}, "other": {}}
     for file, nums in hits.items():
-        own = file in OWN_FILES or "TASK-091" in file or file == "docs/DECISIONS.md"
+        own = any(m in file for m in OWN_MARKERS) or file == "docs/DECISIONS.md"
         kind = "own" if own else "other"
         classified[kind][file] = {n: sorted(b) for n, b in nums.items()}
     # the evidence: tokens in the ranges, with their context, for reading
@@ -401,7 +370,7 @@ def load_roots(folder, cohort, revision):
 
 def _feature_pins() -> dict:
     """The real feature reports (every TASK-091 cohort, debug included, uses the real models)."""
-    pins = r090._feature_pins(None)
+    pins = prun.feature_pins(ROOT)
     if pins != pcl.FEATURE_REPORTS_SHA256:
         raise rt.GuardError(f"G-features: feature reports {pins} are not the pinned ones")
     return pins
@@ -462,11 +431,11 @@ def cmd_a_second(args) -> int:
             if not args.cohort.startswith("debug"):
                 raise rt.GuardError("--limit is for debug cohorts only")
             rep = dict(rep, roots=rep["roots"][: args.limit])
-        enc = r090._encoded(gr.encoder("cuda"), data, rep)
+        enc = prun.encoded(gr.encoder("cuda"), data, rep)
         pins = _feature_pins()
         report["feature_reports_sha256"] = pins
-        pms, _ = r090._pin_model_pms()
-        report["ceiling"] = r090._ceiling(pms, enc, data, rep)
+        pms, _ = prun.pin_model_pms()
+        report["ceiling"] = prun.ceiling(pms, enc, data, rep)
         seeds_r = [r["seed"] for r in rep["roots"]]
         folds = gc.probe_folds(np.repeat(seeds_r, 5))
         branches = [("R1", "close"), ("R1", "open"), ("R2", "lift"), ("R2", "release"),
@@ -520,7 +489,7 @@ def cmd_a_second(args) -> int:
                         gl = enc[f"{s}/goal/{root}"]
                         gs = data[f"{s}/subgoal{zg.ROOT_GOAL[root]}/state28"]
                         ta, aa = data[f"{s}/{root}/{t}/actions"], data[f"{s}/{root}/{a}/actions"]
-                        d1, d2 = r090.shuffled_deal(s, ci, ta, aa)
+                        d1, d2 = prun.shuffled_deal(s, ci, ta, aa)
                         costs = zgr.rollout_costs(pm, rl, rs, gl, gs, np.stack([ta, aa, d1, d2]))
                         c = zg.comparison_name(comp)
                         for h in zg.HORIZONS:

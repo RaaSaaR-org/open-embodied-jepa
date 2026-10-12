@@ -500,3 +500,23 @@ def test_split_run_equals_unsplit_per_reset():
         for a, b in zip(whole, parts, strict=True):
             assert a["applied"] == b["applied"] and a["success"] == b["success"], arm
             assert a["distances"] == b["distances"] and a["rise"] == b["rise"], arm
+
+
+def test_copied_runner_helpers_equal_task090s():
+    """The runner code copied from TASK-090's frozen runner behaves as the frozen runner's."""
+    from embodied_jepa import grasp_corpus_wm_planned_close_run as prun
+
+    r090 = _script("run_task090")
+    rng = np.random.default_rng(0)
+    for seed, comp in ((906000, 0), (906063, 2), (90700, 1)):
+        t, a = rng.normal(size=(16, 14)), rng.normal(size=(16, 14))
+        for x, y in zip(prun.shuffled_deal(seed, comp, t, a), r090.shuffled_deal(seed, comp, t, a),
+                        strict=True):  # fmt: skip
+            assert np.array_equal(x, y)
+    assert prun.DATA_DISK == r090.DATA_DISK and prun.CORPUS_DIRS == r090.CORPUS_DIRS
+    assert prun.DISK_FLOOR_GIB == r090.DISK_FLOOR_GIB
+    code = (
+        "import sys, embodied_jepa.grasp_corpus_wm_planned_close_run;"
+        "assert 'torch' not in sys.modules and 'mujoco' not in sys.modules"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True, cwd=ROOT)
