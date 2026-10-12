@@ -212,7 +212,8 @@ def reported(rows) -> dict:
         "skills": dict(skills),
         "lift_checks": len(checks),
         "first_attempt_lifted": sum(c["lifted"] for c in checks if c["attempt"] == 0),
-        "retries": len(retries),
+        "retries_triggered": int(skills.get("pick_retry", 0)),
+        "retry_checks": len(retries),
         "retry_lifted": sum(c["lifted"] for c in retries),
         "retry_lift_rate": (sum(c["lifted"] for c in retries) / len(retries)) if retries else None,
     }

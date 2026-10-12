@@ -63,6 +63,43 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-12 (an) — TASK-090 Stage 0: code, the debug collection and Stage C's revised bars, A-K0, Stage BS at n = 128, the debug smoke; the protocol is frozen at this merge (R27.21–R27.28)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_play_corpus_v1.md §17](experiments/grasp_play_corpus_v1.md).
+
+- **Stage 0 code:** `play_corpus_grasp.py`, `grasp_corpus_wm.py`, `grasp_corpus_wm_runtime.py`,
+  `scripts/{collect,measure,train,run,summarize}_task090.py`, `run_task090_stage.sh` and 21 tests
+  (opt-in; `import embodied_jepa` unchanged; no existing file changes, so TASK-087's
+  implementation hash is unchanged). §12's checks passed after the data-disk move (`play-v1`,
+  TASK-087's feature report, store files, projection and 18 checkpoints), and the pinned `play-v1`
+  moments equal G-87100's buffers bitwise. The frozen label script matches the re-run development
+  script of §13 exactly (32 066 lift windows of 1 020 470 on `play-v1` train, 3.14 %).
+- **R27.21 — Stage C's bars revised at the freeze; collector unchanged.** On 300 debug
+  `play_policy_grasp_v0` episodes the lift-window share was 7.26 % against `play-v1` train's
+  3.14 %: debug C1 2.31 (episode-bootstrap 95 % 1.68–3.03; bar 2.5) and C2 1.64 (1.33–1.99; bar
+  1.75), both points below their bars, so §4's revision rule applies; at full size the declared
+  bars would be met in 15 % and 7.5 % of resampled draws. The bars become C1 ≥ 2.0 and C2 ≥ 1.5
+  ((1 + C1) / 2), by the DRAFT's own derivation; C3 stays ±25 % (the 100-episode v0 direction
+  reading was 0.50, 0.12–1.00, resting on 5 lifting episodes; `play_policy_v0`'s code is
+  unchanged since `play-v1`). Disclosed cost: the manipulation is about 2.3× lift windows in the
+  added episodes and 1.6× in the training set, not the designed 3× and 2×.
+- **R27.22 — Stage BS uses n = 128 (904000–904127)**: the reset-level test's power at the declared
+  alternative was 0.727 at n = 64 with SD 1 logit effects (0.974 at n = 128). Pooled bar 156 / 384
+  and per-seed floor 26 / 128 at bar 0.40.
+- **R27.23 — A-K0:** G's ceiling won every comparison on 32 / 32 at h = 8 and 16 (bars 61 / 64), so
+  h = 8 qualifies; frozen as `K0_CEILING` / `A1_BARS`.
+- **R27.24 — Stage T reads its combined store into memory** (37.0 ms per update against 40.7 ms
+  memory-mapped, from a cold cache); per-job cap 7 200 s.
+- **R27.25 — M-v1's 87101 and 87102 runs are dropped from Stage BS** (§14: nine runs at n = 128
+  project to about 20 GPU hours; seven to about 15.5, still above 14, disclosed). Process counts
+  unchanged.
+- **R27.26** — readings of points the DRAFT left open (hold and retry details, Stage C windows,
+  Stage E and A′ details, store paths, debug seeds), listed in §17.
+- **R27.27 — the debug smoke is not evidence** and changes nothing.
+- **R27.28 — frozen** at this PR's merge; later stages run at the merged revision from a clean tree,
+  evidence in `~/develop/emai/evidence/task090-*`. **R7 does not change.**
+
 ## Decision 2026-10-12 (am) — TASK-090: a grasp-enriched play corpus against an equal-size control, TASK-087's recipe and TASK-089's planner held fixed; the data option of R26.34 is chosen over the model option; DRAFT preregistration (R27.1–R27.20; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30).** The next grasp step after TASK-089's

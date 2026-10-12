@@ -32,7 +32,7 @@ SALTS = {"shuffle": 9002, "policy": 9003, "probe": 9004, "split": 9005, "bootstr
 MODEL_SEEDS = (90100, 90101, 90102)
 N_SEED = 90100
 DEBUG_MODEL_SEEDS = range(90900, 90910)  # plumbing and smoke only
-BS_N = 64  # Stage 0's power rule (§7.2) sets this; see the Stage 0 record
+BS_N = 128  # Stage 0's power rule (§7.2): power 0.727 < 0.80 at n = 64, SD 1 (R27.22)
 COHORTS = {
     "debug-roots": range(90910, 90950),
     "debug-grasp": range(90950, 91000),
@@ -45,12 +45,16 @@ ROOT_COHORTS = ("debug-roots", "k0-roots", "a-roots")
 GRASP_COHORTS = ("debug-grasp", "bd-grasp", "bs-grasp")
 CORPORA = ("play-v2g", "play-v1p")
 # §7.1-§7.2: the closed-loop model arms and the seeds each cohort admits. M-v1's 87101 and 87102
-# runs are dropped from BS by Stage 0 if its smoke projects BS above 14 GPU hours (§14).
+# runs are dropped from BS by Stage 0 if its smoke projects BS above 14 GPU hours (§14). They
+# are (R27.25): at n = 128 nine world-model runs project to about 20 GPU hours.
 CLOSED_LOOP_ARMS = {"M-v2g": "play-v2g", "M-v1p": "play-v1p", "M-v1": "play-v1"}
 BD_SEEDS = {"M-v2g": (90100,), "M-v1p": (90100,), "M-v1": (87100,)}
-BS_M_V1_SEEDS = (87100, 87101, 87102)
+BS_M_V1_SEEDS = (87100,)
 BS_SEEDS = {"M-v2g": MODEL_SEEDS, "M-v1p": MODEL_SEEDS, "M-v1": BS_M_V1_SEEDS}
-# Stage T's store mode and per-job cap (§12, §14): set by Stage 0's timed smoke
+# Stage T's store mode and per-job cap (§12, §14), set by Stage 0's timed smoke (R27.24): on the
+# real store path, read into memory 37.0 ms per update (median), memory-mapped from a cold page
+# cache 40.7 ms (mean 43.2, p90 47.3) with only a 0.6 GB part on the HDD; the cap is TASK-087's
+# rule, 3 x seconds per update x U, with the smoke's median rounded up to 40 ms
 TRAIN_MMAP = False
 TRAIN_CAP_SECONDS = 3 * 0.040 * 60_000
 CORPUS_TAG = {"play-v2g": "v2g", "play-v1p": "v1p"}
@@ -452,9 +456,23 @@ def a_prime_row(passes: dict) -> dict:
     return {"row": "A′-FAIL" if bad else "A′-PASS", "fails": fails, "failing_arms": bad}
 
 
-# A-K0's simulator ceiling (Stage 0 record): {family: {h: {comparison: rate}}}; set at the freeze
-K0_CEILING: dict | None = None
-A1_BARS: dict | None = None
+# A-K0 (Stage 0 record, R27.23): the simulator ceiling's win rates on the 32 calibration roots
+# 90000-90031 (ceiling-k0-roots.json at 23d01ce, clean tree); the bars follow by TASK-089 §5.4.
+K0_CEILING = {
+    "latent": {
+        "8": {
+            "R1:close-vs-open": 0.90625,
+            "R2:lift-vs-release": 0.5625,
+            "R2:lift-vs-stay": 0.96875,
+        },
+        "16": {"R1:close-vs-open": 0.96875, "R2:lift-vs-release": 0.84375, "R2:lift-vs-stay": 1.0},
+    },
+    "latent+pose": {
+        "8": {"R1:close-vs-open": 1.0, "R2:lift-vs-release": 1.0, "R2:lift-vs-stay": 1.0},
+        "16": {"R1:close-vs-open": 1.0, "R2:lift-vs-release": 1.0, "R2:lift-vs-stay": 1.0},
+    },
+}
+A1_BARS: dict | None = zg.k0_bars(K0_CEILING)
 
 
 # ----- readability probe (§6.2, reported) --------------------------------------------------------
