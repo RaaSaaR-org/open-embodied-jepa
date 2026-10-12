@@ -3,7 +3,9 @@
 **Status: FROZEN at the merge of its Stage 0 PR** (R27.1–R27.28, decided by Claude under owner
 delegation, 2026-09-30; the DRAFT was reviewed and merged at #202, `664df1e`; Stage 0's record is
 §17; the collection and Stage C record, C-PASS, is §18; featurisation, Stage T, E and A′, ending
-A′-FAIL, are §19). After that merge nothing in §2–§11 changes without its own reviewed ruling. Stage 0 changed,
+A′-FAIL, are §19; the D-A2 development record, D-TIMING, is §20). **TASK-090 is closed at A′-FAIL**
+(R27.45, DECISIONS (as)); Stage BD and Stage BS were never run. Its next task, TASK-091, is
+preregistered in [grasp_play_corpus_v1_planned_close.md](grasp_play_corpus_v1_planned_close.md). After that merge nothing in §2–§11 changes without its own reviewed ruling. Stage 0 changed,
 as §14 allows and §17 records: Stage C's C1 and C2 bars (§4, R27.21), Stage BS's size (n = 128,
 §7.2, R27.22) and Stage T's store mode (§12, R27.24).
 
