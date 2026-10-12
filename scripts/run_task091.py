@@ -223,7 +223,7 @@ def cmd_verify(args) -> int:
 
 
 # ----- §8: the seed uniqueness check -----------------------------------------------------------
-SEED_PATTERN = re.compile(r"(?<![0-9.])(90[37][0-9]{2}|90[67][0-9]{3})(?![0-9])")
+SEED_PATTERN = re.compile(r"(?<![0-9A-Za-z.])(90[37][0-9]{2}|90[67][0-9]{3})(?![0-9A-Za-z])")
 CHECK_RANGES = {
     "a2-roots": range(906000, 906064),
     "bd-grasp": range(90300, 90332),
