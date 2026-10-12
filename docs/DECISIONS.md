@@ -63,6 +63,80 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-12 (aq) — TASK-090 escalation after A′-FAIL: the task stays open, the row stands, BD and BS do not run; a development-only diagnosis of A2 (D-A2) with a reading declared before it runs (R27.36–R27.41)
+
+**Decided by Claude under owner delegation (2026-09-30)**, as the escalation ruling that §8 of
+[grasp_play_corpus_v1.md](experiments/grasp_play_corpus_v1.md) calls for after R27.34.
+
+- **R27.36 — TASK-090 stays open; the row stands.** A′-FAIL (R27.34) stands as recorded. The
+  frozen protocol's gates, bars and roots are not amended. Stage BD and Stage BS do not run under
+  this preregistration. No clause fires. **R7 does not change.**
+- **R27.37 — D-A2, a development diagnosis of A2.** It is **not gated**, and its counts are
+  development readings, not results.
+  - **Models.** It uses the nine existing G checkpoints: TASK-090's G-v2g-9010{0,1,2} and
+    G-v1p-9010{0,1,2}, and TASK-087's G-8710{0,1,2}. All are loaded under the existing guards.
+  - **What runs.** Offline only: no training, no closed loop and no test split. It runs at code
+    revision `53f0b72` in the `task090-run` tree, from a clean tracked tree.
+  - **Analysis script.** Any analysis code is a non-frozen development script under `scripts/`
+    (as `stage_c_intervals.py` was for §18). It calls the frozen root sampler (`zg.build_root`)
+    and TASK-089's A2 code (`zgr.wrap` with setting `step-mean`, λ = 2.0552), and builds the CEM
+    planner exactly as `zgr.make_planner` does (`zs.CEM` and TASK-088's bounds) but with the seeds
+    below. It keeps the whole 8-step plan, because `first_planned` returns only the first command
+    and fixes the seed. At the A2 seed, the plan's first command must equal `first_planned`'s on
+    every root; if it does not, D-A2 stops and is reported. It changes no frozen module.
+  - **Evidence.** In `~/develop/emai/evidence/task090-da2/`, with `SHA256SUMS`.
+- **R27.38 — roots and seeds.**
+  - **Roots.** 64 development roots, **seeds 905000–905063**, drawn by A′'s root sampler (the
+    `a-roots` builder, its rejection rule and its branches unchanged, only the seed range new). A
+    root's rejected draws are further attempts under the same seed, so the 64 seeds are the
+    whole range used.
+  - **Disjointness.** The range is disjoint from every range in the protocol's §10. That includes
+    A′'s 903000–903063, BS's 904000–904127 (and BD's 90200–90231), A-K0's 90000–90031, the
+    collections' 910000–913199 and 920000–923199, the debug collection's 930000–930399 and TASK-077's
+    labels 900000–901999. `git grep` over `src/`, `scripts/`, `docs/`, `.mc/`, `tests/` and
+    `benchmarks/` on every remote branch finds no use of 905000–905999.
+  - **CEM seeds.** The A2 seed is TASK-088's `cem_seed(root) = 8803 · 10⁷ + root`. The four
+    additional CEM seeds are `9007 · 10⁷ + j · 10⁶ + root` for j = 1 … 4, with **salt 9007**,
+    which is new: `git grep -w 9007` on every remote branch finds no use.
+- **R27.39 — what is measured, per model, on the 64 roots.** "Closes" means the normalised plan's
+  right-grasp channel (`GRASP_DIM`, index 13) is > 0.5, as A2's close@R1 defines it.
+  - **(a)** close@R1 of the first planned command, at the A2 CEM seed: A2 replicated on these
+    roots. lift@R2 is recorded and reported only.
+  - **(b)** at the A2 CEM seed, the first step k (1 … 8) of the 8-step CEM plan at R1 at which
+    the hand command closes, and the share of roots that close by k ≤ 2, k ≤ 4 and k ≤ 8. A root
+    whose plan never closes has no k and counts as not closing by k ≤ 8.
+  - **(c)** close@R1 under the four additional CEM seeds, to measure planner variance.
+  - **(d)** at the A2 CEM seed, the mean of the right-grasp channel over roots, per plan step,
+    at R1.
+- **R27.40 — the reading, declared before D-A2 runs.**
+  - **Definitions.**
+    - The *A2-failing models* are the three that failed close@R1 at A′: G-v2g-90100, G-v1p-90100
+      and G-v1p-90102.
+    - G-v1-87101 failed A′ on lift@R2, not close@R1, so for close@R1 it counts as passing.
+    - "Varies across CEM seeds" is the maximum minus the minimum of close@R1 over the five CEM
+      seeds (the A2 seed and the four of R27.38).
+  - **Readings,** checked in this order. The coordinator set this order at review: it changes the
+    original ruling's wording, which checked D-REPLICATE-FAIL last.
+    1. **D-REPLICATE-FAIL:** (a) does not reproduce A′'s pattern on these roots: an A2-failing
+       model scores ≥ 48 / 64 on close@R1, or any of the other six models scores < 48 / 64. Then the other
+       readings are not interpretable. D-REPLICATE-FAIL is recorded alone, and (b)–(d) are
+       reported only.
+    2. **D-CEM:** for any A2-failing model, close@R1 varies across CEM seeds by ≥ 16 / 64.
+    3. **D-TIMING:** otherwise, each A2-failing model closes by k ≤ 4 on ≥ 48 / 64 roots.
+    4. **D-COST:** otherwise, if any A2-failing model closes by k ≤ 8 on fewer than 48 / 64 roots.
+    5. **D-NONE:** none of the above applies, for example the failing models close by k ≤ 8 on
+       ≥ 48 roots but not by k ≤ 4. The next step is ruled from the record.
+  - **Recommendations.** Each reading only recommends a next step; none is a claim.
+    - **D-CEM or D-TIMING** recommends a new preregistration (TASK-091) with a corrected A2
+      definition or planner setting, on fresh roots.
+    - **D-COST** recommends a model-side change.
+  - **What follows.** The next task is ruled after D-A2 is recorded.
+- **R27.41 — budget and process.**
+  - **Budget.** At most 1 GPU hour, with one GPU lock per job. A′'s roots and all nine models'
+    A1 and A2 took about 7 min. D-A2 runs A2's single CEM call five times per root and model, and
+    no A1. If it would exceed the budget, it stops and is reported.
+  - **Order.** D-A2 runs only after this ruling is reviewed and merged.
+
 ## Decision 2026-10-12 (ap) — TASK-090 featurisation, Stage T and Stage E pass; Stage A′ ends A′-FAIL: the size control's first planned command fails to close at R1 on two of three seeds (the treatment's on one); the task escalates, no clause fires, BD and BS do not run (R27.32–R27.35)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
