@@ -2,7 +2,8 @@
 
 **Status: FROZEN at the merge of its Stage 0 PR** (R27.1–R27.28, decided by Claude under owner
 delegation, 2026-09-30; the DRAFT was reviewed and merged at #202, `664df1e`; Stage 0's record is
-§17; the collection and Stage C record, C-PASS, is §18). After that merge nothing in §2–§11 changes without its own reviewed ruling. Stage 0 changed,
+§17; the collection and Stage C record, C-PASS, is §18; featurisation, Stage T, E and A′, ending
+A′-FAIL, are §19). After that merge nothing in §2–§11 changes without its own reviewed ruling. Stage 0 changed,
 as §14 allows and §17 records: Stage C's C1 and C2 bars (§4, R27.21), Stage BS's size (n = 128,
 §7.2, R27.22) and Stage T's store mode (§12, R27.24).
 
@@ -914,3 +915,207 @@ comes from the pick recipe's own success rate: first attempts lift 19.5 % of the
   `t`, at `53f0b72` from a clean tree, one GPU lock per job) **only after this record is reviewed
   and merged**. This record starts neither.
 - **R27.31** — R7 does not change.
+
+## 19. Featurisation, Stage T, Stage E and Stage A′ record (gated, offline; R27.32–R27.35; decided by Claude under owner delegation)
+
+**Run conditions.** These stages ran on 2026-10-12, after §18 was merged (#205, `9304842`; R27.30):
+
+- **Revision.** The code ran at the frozen revision `53f0b72`, from a clean tracked tree: the run
+  worktree `worktrees/task090-run` was detached to `53f0b72`. Every run report records
+  `53f0b72` and `tracked_tree_dirty: false`.
+- **Commands.** `scripts/run_task090_stage.sh` ran `features`, then `t`, then `e`, then `a`. Each
+  GPU use was one `scripts/gpu_run.sh` job under the shared lock.
+- **No changes.** Nothing in the frozen code, seeds, salts, bars or thresholds was changed.
+- **A-K0 input.** Stage A′ read A-K0's frozen ceiling, Stage 0's `k0/ceiling-k0-roots.json`
+  (sha256 `7de45892…98bd`).
+- **Stage T's evidence directory.** The stage script reads Stage C's row from
+  `<out>/stage-c.json`. Stage T's evidence directory therefore holds a byte-identical copy of §18's
+  `stage-c.json` (sha256 `9610ce6f…82d8`), so that §18's evidence directory was not written to.
+
+**Row: A′-FAIL.**
+
+- **What failed.** M-v1p failed A′ on two of its three seeds (90100 and 90102), and §6.2's rule
+  makes that an A′-FAIL. M-v2g failed on one seed (90100). Every failure is in A2's
+  first-planned-command close count at R1; A1 passed for every model.
+- **Consequences.** The task escalates and **no clause fires** (§6.2, §8, §9). Stage BD and Stage
+  BS did not run, and no closed loop ran.
+- **Earlier stages.** Featurisation completed (F-DONE), Stage T ended T-DONE and Stage E ended
+  E-PASS.
+
+### 19.1 Featurisation (F-DONE)
+
+Each collection's train and val splits were featurised with the pinned projection (`c196fc48…`);
+the test splits were not read. Wall-clock with the lock held:
+
+| Store | Train / val episodes | Seconds | `report.json` sha256 |
+| --- | --- | --- | --- |
+| `data/task090-features-v2g` (6.3 GB) | 2 879 / 160 | 1 263 | `d8afb236…e988` |
+| `data/task090-features-v1p` (6.6 GB) | 2 877 / 160 | 1 296 | `00625a44…822e` |
+
+Evidence: `~/develop/emai/evidence/task090-f/` (`SHA256SUMS` sha256 `7528a26f…235b`).
+
+### 19.2 Stage T (T-DONE)
+
+Eight jobs ran, one lock each, at 14:18–19:19 UTC.
+
+- **Settings.** Each job used U = 60 000, an in-memory store (`mmap=False`, R27.24) and the
+  7 200 s cap.
+- **Checks.** `summarize_task090.py --stage t` found no problems. In every job, the identity,
+  implementation-hash, pinned-moments, outcome and update-count checks held.
+- **Moments.** Every model's state and palm buffers have sha256 `1e960227…81b5c`, the same as
+  G-87100's (§2.2).
+- **Feature reports.** Every model records the three feature-report hashes `play-v1`
+  `f5648a35…7eae`, play-v2g `d8afb236…e988` and play-v1p `00625a44…822e`.
+
+| Model | Kept update | Val criterion | `last_two_triggered` | Seconds | ms / update (median) | Checkpoint sha256 |
+| --- | --- | --- | --- | --- | --- | --- |
+| G-v2g-90100 | 51 000 | 0.3700 | no | 2 400 | 36.9 | `6ca90525…c375` |
+| G-v2g-90101 | 48 000 | 0.3709 | no | 2 343 | 36.9 | `21332224…68ed` |
+| G-v2g-90102 | 57 000 | 0.3718 | yes | 2 264 | 36.9 | `129994c9…6ad9` |
+| G-v1p-90100 | 60 000 | 0.3675 | yes | 2 264 | 36.3 | `1a8a2991…63b2` |
+| G-v1p-90101 | 57 000 | 0.3692 | yes | 2 268 | 36.4 | `eab00cf2…cfeb` |
+| G-v1p-90102 | 48 000 | 0.3726 | no | 2 260 | 36.5 | `c594eeb6…1495` |
+| N-v2g-90100 | 45 000 | 0.4416 | no | 1 913 | 30.9 | `c0ee2a02…a04c` |
+| N-v1p-90100 | 54 000 | 0.4439 | no | 1 915 | 31.0 | `26efc846…5e5e` |
+
+Four of the six G models selected one of their last two checkpoints. As §2.2 declares, this is
+reported and is not an escalation. Checkpoints are in `checkpoints/task090-run/` on the data disk.
+Evidence: `~/develop/emai/evidence/task090-t/` (`SHA256SUMS` sha256 `00674603…7217`;
+`t/summary-t.json` `f31fd704…f224`; the eight reports and training logs).
+
+### 19.3 Stage E (E-PASS)
+
+- **Windows.** Stage E ran on the common val windows (§2.2, R27.26 (5)): 480 val episodes and
+  16 760 roots, of which 995 are lift windows and 1 392 grasp-contact windows.
+- **Intervals.** TASK-087's episode-cluster bootstrap at the 97.5 % level.
+- **Result.** Every G model passes (i) and (ii) at h = 4 and h = 8, and both 90100 models pass
+  (iii).
+- **Reported only.** λ recomputed by R25.18's rule over the new G models is 1.9027 (9 985 pairs);
+  λ stays 2.0552 (§2.2).
+- **Timing.** 19:19:08–19:19:48 UTC.
+
+| Model | copy ratio h = 4 | h = 8 | sensitivity h = 4 | h = 8 | (iii) G / N upper h = 4, 8 | error h = 8: all, lift, contact windows |
+| --- | --- | --- | --- | --- | --- | --- |
+| G-v2g-90100 | 0.680 (0.671–0.689) | 0.587 (0.577–0.598) | 1.503 (1.486–1.521) | 1.858 (1.835–1.880) | 0.869, 0.776 | 0.471, 0.419, 0.438 |
+| G-v2g-90101 | 0.682 (0.673–0.691) | 0.588 (0.578–0.598) | 1.488 (1.473–1.504) | 1.809 (1.790–1.829) | — | 0.471, 0.419, 0.435 |
+| G-v2g-90102 | 0.684 (0.675–0.694) | 0.590 (0.579–0.600) | 1.502 (1.485–1.519) | 1.834 (1.814–1.854) | — | 0.472, 0.427, 0.443 |
+| G-v1p-90100 | 0.676 (0.666–0.686) | 0.582 (0.570–0.594) | 1.508 (1.494–1.523) | 1.872 (1.853–1.891) | 0.859, 0.765 | 0.466, 0.422, 0.440 |
+| G-v1p-90101 | 0.678 (0.667–0.688) | 0.587 (0.576–0.599) | 1.553 (1.536–1.569) | 1.883 (1.864–1.902) | — | 0.471, 0.428, 0.444 |
+| G-v1p-90102 | 0.686 (0.675–0.697) | 0.590 (0.578–0.602) | 1.551 (1.536–1.568) | 1.901 (1.880–1.922) | — | 0.473, 0.431, 0.449 |
+| G-v1-87100 (reported) | 0.693 | 0.599 | 1.504 | 1.840 | — | 0.480, 0.438, 0.456 |
+| G-v1-87101 (reported) | 0.692 | 0.597 | 1.530 | 1.873 | — | 0.479, 0.435, 0.451 |
+| G-v1-87102 (reported) | 0.687 | 0.593 | 1.557 | 1.887 | — | 0.475, 0.439, 0.455 |
+| N-v2g-90100 | 0.787 | 0.765 | 1.000 | 1.000 | — | 0.613, 0.509, 0.541 |
+| N-v1p-90100 | 0.792 | 0.770 | 1.000 | 1.000 | — | 0.617, 0.524, 0.553 |
+
+On the reported roll-out errors, both new corpora's models sit slightly below TASK-087's
+(0.466–0.473 against 0.475–0.480 at h = 8). On lift and contact windows, M-v2g and M-v1p are
+within about 0.01 of each other. Evidence: `~/develop/emai/evidence/task090-e/` (`SHA256SUMS`
+sha256 `b34ad102…77a6`; `stage-e.json` `c27e894b…f1cb`; `summary-e.json` `88bef626…c72c`).
+
+### 19.4 Stage A′ (A′-FAIL)
+
+**Roots.** 64 roots on 903000–903063, at 19:20:10–19:21:23 UTC:
+
+- 68 draws were rejected;
+- targets: cube 25, can 24, apple 15, banana 0;
+- `roots-a-roots.json` sha256 `fed2e576…c075`; arrays `4932d2b2…36fe`.
+
+**Run.** Stage A′ itself ran at 19:21:28–19:27:30 UTC.
+
+**Ceiling on these roots** (reported; wins of 64 on close-vs-open, lift-vs-release and
+lift-vs-stay):
+
+- G's cost: 64, 64, 63 at h = 8 and 64, 64, 64 at h = 16;
+- latent only: 58, 38, 62 at h = 8 and 62, 58, 64 at h = 16.
+
+**A1 at h = 8 and A2.** Bars:
+
+- A1: A-K0's, 61 / 64 on each comparison (`A1_BARS`). Every comparison's exact one-sided McNemar
+  p against the action-shuffled control is below 2 × 10⁻⁹.
+- A2: close@R1 and lift@R2 each ≥ 48 / 64.
+
+| Model | A1 h = 8 (wins of 64) | shuffled wins | A1 h = 16 (reported) | A2 close@R1 | A2 lift@R2 | A′ |
+| --- | --- | --- | --- | --- | --- | --- |
+| G-v2g-90100 | 64, 64, 64 | 30, 30, 26 | 64, 64, 64 | **0** | 58 | **fail** |
+| G-v2g-90101 | 64, 64, 64 | 27, 31, 25 | 64, 64, 64 | 60 | 55 | pass |
+| G-v2g-90102 | 64, 64, 64 | 30, 28, 27 | 64, 64, 64 | 57 | 63 | pass |
+| G-v1p-90100 | 64, 64, 64 | 29, 29, 26 | 64, 64, 64 | **1** | 63 | **fail** |
+| G-v1p-90101 | 64, 64, 64 | 25, 35, 27 | 64, 64, 64 | 60 | 62 | pass |
+| G-v1p-90102 | 64, 64, 63 | 27, 34, 27 | 64, 64, 63 | **20** | 56 | **fail** |
+| G-v1-87100 (reported) | 64, 64, 64 | 25, 32, 26 | 64, 64, 64 | 63 | 64 | pass |
+| G-v1-87101 (reported) | 64, 64, 64 | 25, 32, 28 | 64, 64, 64 | 64 | **37** | fail |
+| G-v1-87102 (reported) | 64, 64, 64 | 26, 27, 27 | 64, 64, 64 | 64 | 59 | pass |
+
+The N twins win none of the comparisons (0 of 64, as in TASK-089), because their predictions do
+not depend on the action.
+
+**Reported only:**
+
+- **Latent-only wins** (G-lat, lift-vs-release and lift-vs-stay at h = 8):
+  - M-v2g: 29, 47, 28 and 64, 64, 64;
+  - M-v1p: 47, 23, 27 and 64, 64, 64;
+  - M-v1: 16, 16, 18 and 64, 64, 64.
+- **Latent-only at h = 16:** M-v2g 53, 60, 44; M-v1p 56, 45, 55; M-v1 47, 48, 49 (lift-vs-release).
+- **Lift-branch rise.** Within the 16 branch commands, the lift branch raised the target by at
+  least 5 cm on 14 of 64 roots.
+- **The readability probe** (AUROC, root-bootstrap 95 % interval; positives 16 at h = 8 and 32 at
+  h = 16):
+
+  | Probe | h = 8 | h = 16 |
+  | --- | --- | --- |
+  | Ceiling (encoded frame plus state) | 0.803 (0.693–0.922) | 0.817 (0.734–0.907) |
+  | Proprio floor (state alone) | 0.974 (0.933–1.000) | 0.970 (0.952–0.985) |
+  | Models' predicted latent and state | 0.740–0.809 | 0.776–0.880 |
+
+  The floor scores above the ceiling, so, with 16 and 32 positives, this probe reads the outcome
+  from the state more easily than from the frame. No model's interval separates from another's.
+
+**Evidence:** `~/develop/emai/evidence/task090-a/` (`SHA256SUMS` sha256 `b5dd0dab…43ee`;
+`a-prime-a-roots.json` `88b4101e…f19f`; `summary-a.json` `a12e265d…13ae`).
+
+**What this says, and what it does not.**
+
+- **A1 holds everywhere.** Every new model separates a closing from an open hand, and a lifting
+  from a releasing or staying hand, at the object on every root under G's cost, as TASK-087's
+  models do. A1 regressed nowhere.
+- **A2 is where it fails.** A single step-averaged CEM call's first command at R1 did not close
+  for the 90100 model of either corpus (0 and 1 of 64), nor often for G-v1p-90102 (20 of 64).
+  The same code closed on 63 and 64 of 64 for TASK-087's checkpoints.
+- **The control regressed more than the treatment.** Both arms' failures sit at the same
+  root-level A2 check, and the size control regressed on two seeds. §6.2 declares this case an
+  A′-FAIL because a regressed control could otherwise be beaten in the closed loop.
+- **Unexplained.** Why the first planned command does not close for these models is not tested
+  here. A1 shows that their costs rank closing over opening. A2 asks whether CEM's first command
+  of an 8-step plan closes, which the step-averaged cost can also satisfy by closing later in the
+  horizon. Any reading of that is a hypothesis, not a finding.
+- **Not a statement about composition.** Nothing here compares play-v2g with play-v1p on
+  grasping: the closed loop never ran.
+
+### 19.5 Compute
+
+GPU time with the lock held, from collection through Stage A′:
+
+| Step | GPU time |
+| --- | --- |
+| Collection (§18) | 0.78 h |
+| Featurisation | 0.71 h |
+| Stage T | 4.90 h |
+| Stage E | under 1 min |
+| Roots and Stage A′ | 0.12 h |
+| **Total** | **about 6.5 h** |
+
+That total is within §12's estimate for these stages. Lock waits behind other users came to
+about 10 min. Wall-clock from the start of featurisation to the end of A′ was 13:25–19:28 UTC.
+
+- **R27.32** — Featurisation and Stage T are recorded: F-DONE and **T-DONE**. All eight jobs passed
+  their checks. `last_two_triggered` is set for G-v2g-90102, G-v1p-90100 and G-v1p-90101 and
+  reported (§2.2).
+- **R27.33** — Stage E is recorded: **E-PASS**. Every G model passes (i) and (ii) at h = 4 and 8,
+  and both 90100 models pass (iii).
+- **R27.34** — Stage A′ is recorded: row **A′-FAIL**. M-v1p fails A′ on two seeds (90100: A2
+  close@R1 1 / 64; 90102: 20 / 64) and M-v2g on one (90100: 0 / 64), against the 48 / 64 bar;
+  A1 passes for every model. By §6.2 and §8 the task escalates and **no clause fires**. Stage BD
+  and Stage BS are not run. The escalation's ruling (§8: it closes the task with a recommendation
+  unless it says otherwise) is not made in this record.
+- **R27.35** — R7 does not change.

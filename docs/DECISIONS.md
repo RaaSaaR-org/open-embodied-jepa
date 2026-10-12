@@ -63,6 +63,40 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-12 (ap) — TASK-090 featurisation, Stage T and Stage E pass; Stage A′ ends A′-FAIL: the size control's first planned command fails to close at R1 on two of three seeds (the treatment's on one); the task escalates, no clause fires, BD and BS do not run (R27.32–R27.35)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_play_corpus_v1.md §19](experiments/grasp_play_corpus_v1.md).
+
+**Run conditions.** At the frozen revision `53f0b72`, from a clean tree, one GPU lock per job, after
+§18 was merged.
+
+- **R27.32 — F-DONE and T-DONE.** Both new collections' train and val splits were featurised with
+  the pinned projection. The eight Stage T jobs ran at U = 60 000, in memory, under the 7 200 s
+  cap, and every check held (identity, implementation hash, pinned moments sha256
+  `1e960227…81b5c`, feature reports, update count). `last_two_triggered` is set for
+  G-v2g-90102, G-v1p-90100 and G-v1p-90101; it is reported and is not an escalation (§2.2).
+- **R27.33 — E-PASS.** On the common val windows (480 episodes, 16 760 roots), every new G model
+  meets (i), copy ratio upper bound below 1 (0.594–0.602 at h = 8), and (ii), sensitivity lower
+  bound above 1 (1.79–1.88 at h = 8), at h = 4 and 8. Both 90100 models meet (iii) against their
+  corpus's N twin.
+- **R27.34 — A′-FAIL.** On 64 roots (903000–903063), A1 at h = 8 passes for every model (64 / 64
+  on each comparison, except G-v1p-90102's 63 on lift-vs-stay; bar 61). A2's close@R1 count falls
+  below 48 / 64 for G-v1p-90100 (1), G-v1p-90102 (20) and G-v2g-90100 (0).
+  - **Why this is the row.** M-v1p fails A′ on two of three seeds, which §6.2 defines as
+    A′-FAIL.
+  - **Consequences.** The task escalates and **no clause fires**. Stage BD and Stage BS do not
+    run. No closed loop ran, and nothing compares the two corpora on grasping.
+  - **Reported only.** TASK-087's 87100 and 87102 pass A′ on the same roots and 87101 fails it
+    (lift@R2 37). The readability probe's proprio floor (AUROC 0.97) sits above its frame ceiling
+    (0.80–0.82).
+  - **Not decided here.** Why the first planned command does not close for these models is not
+    tested. The escalation's ruling (§8) is not made in this record.
+- **R27.35 — R7 does not change.**
+
+GPU time from collection through A′: about 6.5 h. Evidence `~/develop/emai/evidence/task090-{f,t,e,a}/`,
+each with `SHA256SUMS`.
+
 ## Decision 2026-10-12 (ao) — TASK-090 collection and Stage C end C-PASS: play-v2g's added train episodes hold 2.38× the lift windows of the equal-size control, 1.69× in the combined training sets, and the control matches `play-v1` (R27.29–R27.31)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
