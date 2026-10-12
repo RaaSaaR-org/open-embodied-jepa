@@ -76,4 +76,4 @@ record is its §18; featurisation, Stage T, E and A′ (ending A′-FAIL) are it
   E-PASS, then **A′-FAIL**. A1 passed for every model; A2 close@R1 fell below 48 / 64 for
   G-v1p-90100 (1), G-v1p-90102 (20) and G-v2g-90100 (0), so M-v1p failed on two seeds. The task
   escalates with no clause; Stage BD and BS do not run; the escalation's ruling is pending. Evidence
-  `~/develop/emai/evidence/task090-{f,t,e,a}/`; about 6.5 GPU hours through A′.
+  `~/develop/emai/evidence/task090-{f,t,e,a}/`; about 6.7 GPU hours through A′.

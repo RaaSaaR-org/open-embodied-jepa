@@ -956,7 +956,7 @@ Evidence: `~/develop/emai/evidence/task090-f/` (`SHA256SUMS` sha256 `7528a26f…
 
 ### 19.2 Stage T (T-DONE)
 
-Eight jobs ran, one lock each, at 14:18–19:19 UTC.
+Eight jobs ran, one lock each, at 14:16–19:19 UTC.
 
 - **Settings.** Each job used U = 60 000, an in-memory store (`mmap=False`, R27.24) and the
   7 200 s cap.
@@ -978,7 +978,7 @@ Eight jobs ran, one lock each, at 14:18–19:19 UTC.
 | N-v2g-90100 | 45 000 | 0.4416 | no | 1 913 | 30.9 | `c0ee2a02…a04c` |
 | N-v1p-90100 | 54 000 | 0.4439 | no | 1 915 | 31.0 | `26efc846…5e5e` |
 
-Four of the six G models selected one of their last two checkpoints. As §2.2 declares, this is
+Three of the six G models (G-v2g-90102, G-v1p-90100, G-v1p-90101) selected one of their last two checkpoints. As §2.2 declares, this is
 reported and is not an escalation. Checkpoints are in `checkpoints/task090-run/` on the data disk.
 Evidence: `~/develop/emai/evidence/task090-t/` (`SHA256SUMS` sha256 `00674603…7217`;
 `t/summary-t.json` `f31fd704…f224`; the eight reports and training logs).
@@ -1082,8 +1082,9 @@ not depend on the action.
 - **A2 is where it fails.** A single step-averaged CEM call's first command at R1 did not close
   for the 90100 model of either corpus (0 and 1 of 64), nor often for G-v1p-90102 (20 of 64).
   The same code closed on 63 and 64 of 64 for TASK-087's checkpoints.
-- **The control regressed more than the treatment.** Both arms' failures sit at the same
-  root-level A2 check, and the size control regressed on two seeds. §6.2 declares this case an
+- **The control failed on more seeds than the treatment** (2 of 3 against 1 of 3; M-v1's own
+  87101 also fails A′ on these roots, at lift@R2). With three seeds per arm this is not a
+  difference between the corpora. Both arms' failures sit at the same A2 check. §6.2 declares this case an
   A′-FAIL because a regressed control could otherwise be beaten in the closed loop.
 - **Unexplained.** Why the first planned command does not close for these models is not tested
   here. A1 shows that their costs rank closing over opening. A2 asks whether CEM's first command
@@ -1099,11 +1100,11 @@ GPU time with the lock held, from collection through Stage A′:
 | Step | GPU time |
 | --- | --- |
 | Collection (§18) | 0.78 h |
-| Featurisation | 0.71 h |
-| Stage T | 4.90 h |
+| Featurisation | 0.76 h |
+| Stage T | 5.02 h |
 | Stage E | under 1 min |
 | Roots and Stage A′ | 0.12 h |
-| **Total** | **about 6.5 h** |
+| **Total** | **about 6.7 h** |
 
 That total is within §12's estimate for these stages. Lock waits behind other users came to
 about 10 min. Wall-clock from the start of featurisation to the end of A′ was 13:25–19:28 UTC.

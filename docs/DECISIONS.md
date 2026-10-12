@@ -94,7 +94,7 @@ is kept as written.
     tested. The escalation's ruling (§8) is not made in this record.
 - **R27.35 — R7 does not change.**
 
-GPU time from collection through A′: about 6.5 h. Evidence `~/develop/emai/evidence/task090-{f,t,e,a}/`,
+GPU time from collection through A′: about 6.7 h. Evidence `~/develop/emai/evidence/task090-{f,t,e,a}/`,
 each with `SHA256SUMS`.
 
 ## Decision 2026-10-12 (ao) — TASK-090 collection and Stage C end C-PASS: play-v2g's added train episodes hold 2.38× the lift windows of the equal-size control, 1.69× in the combined training sets, and the control matches `play-v1` (R27.29–R27.31)
