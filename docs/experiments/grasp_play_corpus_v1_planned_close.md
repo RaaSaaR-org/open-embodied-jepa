@@ -5,7 +5,8 @@ delegation, 2026-10-13; DECISIONS (as) and (at); the DRAFT was reviewed and merg
 `940de4e`; Stage 0's record is §14). After that merge nothing in §2–§11 changes without its own
 reviewed ruling. Stage 0 changed none of the three items §12 allows it to change (R27.56): the
 process counts stay, the BS split stays at two 64-reset jobs per world-model run, and §5.3's third
-deferral measure is kept. No gated stage (A″, BD, BS) has run.
+deferral measure is kept. **Stage A″ ran once and ended A″-PASS** (§15, R27.61–R27.64);
+Stage BD and Stage BS have not run.
 
 This is the next task that R27.43 recommends. TASK-090 ([grasp_play_corpus_v1.md](grasp_play_corpus_v1.md))
 closed at **A′-FAIL** (R27.34, R27.45): escalate, no clause. Its Stage BD and Stage BS were never
@@ -586,3 +587,110 @@ pass above checked the result against the first.
   GO on BD's record), evidence in `~/develop/emai/evidence/task091-*`. The V2D session is told
   before BD and before BS.
 - **R27.60 — R7 does not change.**
+
+## 15. Stage A″ record (R27.61–R27.64; decided by Claude under owner delegation)
+
+**Run conditions.** Stage A″ ran once on 2026-10-13 (10:39–10:50 UTC) with
+`scripts/run_task091_stage.sh a outputs/task091-a`, at the frozen revision `dbab1a5` (the merge
+of #210), from a clean tracked tree in a fresh worktree (`worktrees/task091-run`, its `data/`,
+`checkpoints/` and `outputs/` linked to the data disk as in the main checkout). Before any job
+claimed the cohort ledger, the CPU checks ran at the same revision and passed:
+`run_task091.py verify` (`all_pass: true`: TASK-090's §12 check, the eleven checkpoints, the
+three feature reports, the pinned moments, the implementation hash, λ and the frozen files) and
+`run_task091.py seeds` (106 remote branches; no number in 906000–906063, 907000–907127,
+90300–90331 or 90700–90799 outside TASK-091's own files; in the evidence the only tokens are the
+same 12 TASK-077 update counts as at Stage 0), and the 19 Stage 0 tests (18 passed, 1 graphics
+opt-in skip). This order answers the review's note (c) on #210 in practice: a guard failure could
+not burn the A″ cohort, because the guards had passed before the ledger was claimed. BOARD.md's
+Requests had no `- v2d:` line before either job. Each job took the shared lock with
+`gpu_run.sh --wait` (about 1.5 minutes' wait behind a V2D job). Evidence:
+`~/develop/emai/evidence/task091-a/` (`SHA256SUMS`): the roots, the A″ report, the summary, the
+checks, the stage log, the two ledger entries and the `gpu_run` log lines.
+
+**Jobs and GPU time.** The roots job (64 roots, 906000–906063, 83 rejected draws; targets: cube
+29, apple 18, can 16, banana 1) took 68 s; the A″ job took 566 s. Neither reached the 7 200 s
+cap, both reports are `completed: true`, and no plan's first command differed from
+`first_planned`'s (`first_command_mismatches: []`). In total about 0.18 GPU hours (634 s).
+
+**The row, as `summarize_task091.py --stage a` printed it:**
+`{'row': 'A″-PASS', 'void_reason': '', 'fails': {'v2g': 0, 'v1p': 1}, 'failing_arms': []}`.
+The summary lists no problems.
+
+**Per model** (64 roots; A1 at h = 8 with G's cost, bar 61 / 64 on each of the three
+comparisons; close≤4@R1 and lift@R2, bar 48 / 64; close@R1 reported only):
+
+| Model | A1 h = 8 (close-vs-open / lift-vs-release / lift-vs-stay) | close≤4@R1 | lift@R2 | close@R1 (reported) | A″ |
+| --- | --- | --- | --- | --- | --- |
+| G-v2g-90100 | 64 / 64 / 64 | 64 | 56 | 0 | pass |
+| G-v2g-90101 | 64 / 64 / 64 | 64 | 52 | 53 | pass |
+| G-v2g-90102 ¹ | 64 / 64 / 64 | 64 | 61 | 55 | pass |
+| G-v1p-90100 ¹ | 64 / 64 / 64 | 64 | 61 | 3 | pass |
+| G-v1p-90101 ¹ | 64 / 64 / 64 | 64 | 63 | 60 | pass |
+| G-v1p-90102 | 64 / 64 / **59** | 64 | 59 | 11 | **fail (A1)** |
+| G-v1-87100 (reported) | 64 / 64 / 64 | 64 | 61 | 63 | pass |
+| G-v1-87101 (reported) | 64 / 64 / 64 | 64 | **34** | 64 | fail (lift@R2) |
+| G-v1-87102 (reported) ¹ | 64 / 64 / 64 | 64 | 57 | 63 | pass |
+
+¹ `last_two_triggered` set (reported, §3).
+
+- **Why this is the row.** M-v2g fails A″ on none of its three seeds and M-v1p on one
+  (G-v1p-90102), so neither arm fails on two or more seeds, which is §4's A″-FAIL rule. The checks
+  of §4 all hold, so the row is not A″-VOID. A″ passes.
+- **G-v1p-90102's failure is on A1, not on the redefined bar.** Its lift-vs-stay comparison at
+  h = 8 won on 59 of 64 roots, below A-K0's bar of 61 (at A′, on other roots, it won 63). It met
+  close≤4@R1 (64) and lift@R2 (59). By §4, that seed stays in M-v1p's pooled count in the closed
+  loop, and its A″ result is reported beside its closed-loop count. M-v1's results are reported
+  only; G-v1-87101 fails lift@R2 again (34; 37 at A′, 39 at D-A2).
+- **Reported, the plan at R1.** Every G model's A2-seed plan closed by plan step k ≤ 4 on 64 / 64
+  roots, and none never closed. The first closing step: G-v2g-90100 at k = 3 on 40 roots and
+  k = 4 on 24; G-v1p-90100 at k = 1, 2, 3, 4 on 3, 3, 45, 13; G-v1p-90102 at k = 1 on 11 and
+  k = 2 on 53; the other six models at k = 1 on 53–64. Share closing by k ≤ 2: 0 / 64
+  (G-v2g-90100), 6 / 64 (G-v1p-90100), 61–64 / 64 for the rest. The mean right-grasp channel per
+  plan step is in the summary (`mean_grasp_per_step_R1`).
+- **Reported, the controls and probes.** The action-shuffled control at h = 8 won 26–37 of 64 on
+  each comparison for every G model. The N twins' latent-only wins at h = 8 are 0 on all three
+  comparisons. The ceiling on A″'s roots (latent+pose, h = 8): 64 / 63 / 64. The readability
+  probe's proprio floor (AUROC 0.98 at h = 8 and 16) sits above its frame ceiling (0.84 at h = 8,
+  0.76 at h = 16), as at A′. The scripted lift branch at R2 rose by at least 5 cm (its maximum
+  rise) on 18 of 64 roots.
+
+**What this is and is not.** One run, offline, simulation only, on 64 fresh roots. A″ is a
+first-command and plan check, a **no-regression gate only** (§4): its close bar's threshold
+k ≤ 4 was chosen after D-A2's development numbers, and a pass was expected from them. It is not a
+closed-loop result. It does not show that any model closes, grasps or lifts in closed loop, and
+no claim of this task rests on it. Whether a receding-horizon controller that plans the close at
+step 3–4 on each re-plan actually closes (the deferral risk of R27.50 and §9, which falls on
+G-v2g-90100 and G-v1p-90100 here) is what Stage BD and Stage BS measure. R7 does not change.
+
+**Known notes from the review of #210, unchanged at the freeze** (disclosed here; none was acted
+on, because the code is frozen):
+
+- (a) A first-command mismatch stops A″ after the model with the mismatch, not at the first plan;
+  the row (A″-VOID) is the same. No mismatch occurred.
+- (b) A missing report makes the summarizer crash instead of writing a VOID summary; a
+  hand-written VOID record under a ruling would cover it. Both reports were present.
+- (c) The A″ job claims the ledger before its cheap guards (`load_roots`, the feature pins), so a
+  guard failure would burn the cohort. Mitigated in this run by passing `verify` and the seed
+  check first; no guard failed.
+- (d) The cap's self-stop timer starts at job entry, not process start (a gap of seconds, bounded
+  by the `timeout` backstop). Neither job came near the cap.
+- (e) A BD re-run after a cap hit or a NO-GO needs a new cohort entry, so it is necessarily a
+  post-freeze code change under its own ruling.
+- (f) Stage 0's GPU log has a 23rd job (the render tests at `d61115b`, 39 s) outside §14's
+  window; "22 jobs" holds for that window.
+
+**Next.** By R27.59, Stage BD runs next (`scripts/run_task091_stage.sh bd`, development resets
+90300–90331), after the V2D session is told; Stage BS runs only after an independent GO on BD's
+record. Neither has run.
+
+- **R27.61 — Stage A″ is recorded.** The checks passed before the cohort was claimed; the stage
+  ran once at `dbab1a5` from a clean tree, in two jobs (68 s and 566 s, about 0.18 GPU h), with no
+  first-command mismatch and no cap hit.
+- **R27.62 — A″-PASS.** The summarizer's row is `A″-PASS` (`fails: {'v2g': 0, 'v1p': 1}`).
+  Every G model met close≤4@R1 (64 / 64) and lift@R2 (52–63; G-v1-87101's 34 is reported only);
+  G-v1p-90102 failed A1 at h = 8 (lift-vs-stay 59 < 61) and stays in M-v1p's pooled count, with
+  its A″ result reported beside its closed-loop count. A no-regression gate only: one run,
+  offline, simulation only; not a closed-loop result.
+- **R27.63 — Stage BD is next** (R27.59), after the V2D session is told; BS only after an
+  independent GO on BD's record.
+- **R27.64 — R7 does not change.**
