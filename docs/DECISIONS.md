@@ -70,7 +70,7 @@ is kept as written.
 
 - **R27.55 — Stage 0 is recorded.**
   - **Code.** Opt-in modules `grasp_corpus_wm_planned_close{,_runtime,_run}.py`, scripts
-    `{run,summarize}_task091.py` and `run_task091_stage.sh`, and 22 tests. No existing file
+    `{run,summarize}_task091.py` and `run_task091_stage.sh`, and 19 tests. No existing file
     changes; TASK-090's frozen files are checked against sha256 pins before any job runs.
     TASK-090's runner helpers that TASK-091 needs are copied into a module, because audit rule
     F16 forbids a new runner to load another script.

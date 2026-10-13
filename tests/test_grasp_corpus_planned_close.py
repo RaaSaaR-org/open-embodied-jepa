@@ -446,6 +446,11 @@ def test_runner_guards_without_a_gpu(monkeypatch, tmp_path):
     assert r.run_name("M-v2g", 90100, part=(1, 2)) == "M-v2g-90100.part1of2"
     assert r.run_name("ik", None) == "ik"
     assert r.run_name("M-v2g", 90100, determinism=True) == "M-v2g-90100-determinism"
+    import shutil
+    from collections import namedtuple
+
+    usage = namedtuple("usage", "total used free")
+    monkeypatch.setattr(shutil, "disk_usage", lambda p: usage(2**50, 0, 2**50))  # no data/ in CI
     with pytest.raises(r.rt.GuardError):  # not under the GPU lock
         monkeypatch.delenv(r.rt.GPU_LOCK_ENV, raising=False)
         r.main(["run", "--cohort", "debug-grasp", "--arm", "ik", "--goals", str(tmp_path),

@@ -476,7 +476,7 @@ TASK-088's, TASK-089's and TASK-090's frozen code are untouched):
 - `scripts/run_task091.py` (`verify`, `seeds`, `roots`, `a-second`, `goals`, `run` with `--part`,
   `combine`, `video`), `scripts/summarize_task091.py` (stages `a`, `bd`, `bs`, and Stage 0's
   `timing`), `scripts/run_task091_stage.sh` (`a`, `bd`, `bs`) and
-  `tests/test_grasp_corpus_planned_close.py` (22 tests, one graphics opt-in).
+  `tests/test_grasp_corpus_planned_close.py` (19 tests, one graphics opt-in).
 
 **§12's checks** (`verify/verify-task091.json`, all pass; at `7c49117`, clean tree):
 
