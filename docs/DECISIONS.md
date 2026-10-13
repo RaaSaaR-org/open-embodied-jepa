@@ -63,6 +63,47 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-13 (at) — TASK-091 Stage 0: code, hash and seed checks, and a debug smoke; Stage 0 changes none of the three items it may change; the protocol is frozen at the Stage 0 PR's merge (R27.55–R27.60)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_play_corpus_v1_planned_close.md §14](experiments/grasp_play_corpus_v1_planned_close.md).
+
+- **R27.55 — Stage 0 is recorded.**
+  - **Code.** Opt-in modules `grasp_corpus_wm_planned_close{,_runtime,_run}.py`, scripts
+    `{run,summarize}_task091.py` and `run_task091_stage.sh`, and 22 tests. No existing file
+    changes; TASK-090's frozen files are checked against sha256 pins before any job runs.
+    TASK-090's runner helpers that TASK-091 needs are copied into a module, because audit rule
+    F16 forbids a new runner to load another script.
+  - **Checks.** TASK-090's §12 check, the eleven checkpoints of §3 against TASK-090 §19.2's and
+    TASK-087's hashes, the three feature reports, the projection, the pinned moments, λ and the
+    implementation hash all pass. The seed check over all 105 remote branches finds no use of
+    906000–906063, 907000–907127, 90300–90331 or 90700–90799 outside TASK-091's own files; in
+    the evidence the only tokens are TASK-077's training-update counts 90300 and 90700.
+  - **Debug smoke** (debug seeds; debug, not results). A″ ran on 8 debug roots for all eleven
+    models, and every A2-seed plan's first command equalled `first_planned`'s bitwise. Every
+    closed-loop arm ran on 6 debug resets, with §5.3's measures recorded. A split run equalled the
+    unsplit run per reset bitwise, and the plan recorder left every executed command bitwise
+    unchanged.
+  - **Compute.** About 0.52 GPU hours in 22 jobs.
+- **R27.56 — Stage 0 changes none of §12's three items.**
+  - **Process counts** stay: 8 for baselines, 6 for world-model runs, 4 for the determinism re-run.
+  - **BS split** stays at two 64-reset jobs per world-model run. At 6 processes a world-model run
+    took 1.08–1.09 s per command per process, so a 64-reset job projects to at most 4 814 s at the
+    full 400-command budget, below the 5 400 s trigger.
+  - **§5.3's third measure is kept,** because reading the plan leaves the executed commands
+    bitwise unchanged.
+  - **Projection.** A″ about 0.25 GPU h; BD at most about 2.3; BS about 14–17 at TASK-089's rate,
+    at most about 19.
+- **R27.57 — readings of points the DRAFT left open** (§14 lists them): the debug split of
+  90700–90799; A″ reads A-K0's frozen `A1_BARS` and stops at the first first-command mismatch;
+  §5.3's counting conventions; the cap's self-stop, VOID on any incomplete or unmatched report, and
+  the ledger against a cohort run twice; the BOARD.md wait for a `- v2d:` request.
+- **R27.58 — the debug smoke is not evidence.** It changes nothing in §2–§11.
+- **R27.59 — frozen at the Stage 0 PR's merge.** A″, BD and BS run at the merged revision from a
+  clean tree with `scripts/run_task091_stage.sh`; BS only after an independent GO on BD's record.
+  The V2D session is told before BD and before BS.
+- **R27.60 — R7 does not change.**
+
 ## Decision 2026-10-13 (as) — TASK-090 closes at A′-FAIL; the next task is TASK-091: TASK-090's A′ on fresh roots with A2's close bar redefined as the planned close within the plan (k ≤ 4), then TASK-090's closed loop unchanged on fresh resets, with the same checkpoints and planner; DRAFT preregistration (R27.45–R27.54; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30).** Protocol (DRAFT):
