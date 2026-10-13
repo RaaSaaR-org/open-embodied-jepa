@@ -651,8 +651,8 @@ comparisons; close≤4@R1 and lift@R2, bar 48 / 64; close@R1 reported only):
   each comparison for every G model. The N twins' latent-only wins at h = 8 are 0 on all three
   comparisons. The ceiling on A″'s roots (latent+pose, h = 8): 64 / 63 / 64. The readability
   probe's proprio floor (AUROC 0.98 at h = 8 and 16) sits above its frame ceiling (0.84 at h = 8,
-  0.76 at h = 16), as at A′. The scripted lift branch at R2 rose by at least 5 cm (its maximum
-  rise) on 18 of 64 roots.
+  0.76 at h = 16), as at A′. The scripted lift branch's maximum rise at R2 was at least 5 cm on
+  18 of 64 roots.
 
 **What this is and is not.** One run, offline, simulation only, on 64 fresh roots. A″ is a
 first-command and plan check, a **no-regression gate only** (§4): its close bar's threshold
@@ -687,7 +687,8 @@ record. Neither has run.
   ran once at `dbab1a5` from a clean tree, in two jobs (68 s and 566 s, about 0.18 GPU h), with no
   first-command mismatch and no cap hit.
 - **R27.62 — A″-PASS.** The summarizer's row is `A″-PASS` (`fails: {'v2g': 0, 'v1p': 1}`).
-  Every G model met close≤4@R1 (64 / 64) and lift@R2 (52–63; G-v1-87101's 34 is reported only);
+  Every G model met close≤4@R1 (64 / 64), and every gated G model met lift@R2 (52–63; the
+  reported-only G-v1-87101 scored 34);
   G-v1p-90102 failed A1 at h = 8 (lift-vs-stay 59 < 61) and stays in M-v1p's pooled count, with
   its A″ result reported beside its closed-loop count. A no-regression gate only: one run,
   offline, simulation only; not a closed-loop result.
