@@ -88,4 +88,14 @@ Protocol: [grasp_play_corpus_v1_planned_close.md](../../../docs/experiments/gras
   h = 8 (lift-vs-stay 59 < 61) and stays in M-v1p's pooled count. One run, offline, simulation
   only; a no-regression gate, not a closed-loop result. About 0.18 GPU h (68 s + 566 s). Evidence
   `~/develop/emai/evidence/task091-a/` (`SHA256SUMS`). Next: Stage BD (tell V2D first).
+- 2026-10-13, Stage BD (branch `docs/task091-bd`; R27.65–R27.68, DECISIONS (av); protocol §16):
+  ran once at `dbab1a5` from a clean tree in `worktrees/task091-run`, after `verify`, the seed
+  check and the tests passed. Development, 32 resets 90300–90331, one run, simulation only, not
+  gated. ik 26 / 32 sets the bar at 0.40 (BS pooled bar 156 / 384, per-seed floor 26 / 128).
+  M-v2g-90100 5 / 32, M-v1p-90100 3 / 32, M-v1-87100 2 / 32 (reported), ik-nopress 24 / 32,
+  hold 0 / 32, random 0 / 32. Deferral (reported only): M-v2g-90100 closed in the grasp phase on
+  every episode (median command 10); about half its grasp-phase re-plans planned the close at
+  step 1. Both BD world-model seeds are late planners (§9's confound). No cap hit; 8 jobs,
+  5 873 s (about 1.63 GPU h). Evidence `~/develop/emai/evidence/task091-bd/` (`SHA256SUMS`).
+  Next: an independent GO or NO-GO on this record; BS only after GO (tell V2D first).
 %% mc-links: [[TASK-090]] %%

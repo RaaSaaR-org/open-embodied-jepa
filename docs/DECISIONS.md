@@ -63,6 +63,74 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-13 (av) — TASK-091 Stage BD (development, not gated): ik 26 / 32 sets the bar at 0.40 (pooled bar at BS 156 / 384, per-seed floor 26 / 128); M-v2g-90100 5 / 32, M-v1p-90100 3 / 32, M-v1-87100 2 / 32, hold and random 0 / 32; no cap hit, no problem; Stage BS waits for an independent GO (R27.65–R27.68)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_play_corpus_v1_planned_close.md §16](experiments/grasp_play_corpus_v1_planned_close.md).
+
+**Run conditions.** Once, at the frozen revision `dbab1a5` (#210's merge, where A″ ran; `main`
+at `cff67c5` differs only in docs, and BS's summarizer requires BD and BS at one revision), from a
+clean tree, `scripts/run_task091_stage.sh bd`, one GPU lock per job, no `- v2d:` request on
+BOARD.md before any job; the V2D session was told first. `verify` (all pass) and the seed check
+(107 branches, no hits outside TASK-091's files) and the Stage 0 tests (18 passed, 1 graphics
+skip) passed before the cohort ledger was claimed.
+
+- **R27.65 — Stage BD is recorded.** Resets 90300–90331 (31 rejected draws; can 15, cube 11,
+  apple 6). Eight jobs, 5 873 s (about 1.63 GPU h): the world-model runs took 2 061 s
+  (M-v2g-90100), 1 674 s (M-v1p-90100) and 2 079 s (M-v1-87100); no cap hit, every report
+  complete. The summarizer printed, verbatim:
+
+  ```
+  {
+   "stage": "bd",
+   "row": null,
+   "bar": 0.4,
+   "problems": []
+  }
+  ```
+
+- **R27.66 — The bar is 0.40.** ik 26 / 32 (r = 0.8125 ≥ 0.30; 0.9 × r = 0.73), so the bar is
+  the declared 0.40; at n = 128 the pooled bar is 156 / 384 and the per-seed floor 26 / 128. BD
+  has no row.
+  - **Counts** (of 32; exact 95 % intervals): ik 26 (0.636–0.928), ik-nopress 24 (0.566–0.885),
+    hold 0 and random 0 (0–0.109), **M-v2g-90100 5 (0.053–0.328)**, **M-v1p-90100 3
+    (0.020–0.250)**, M-v1-87100 2 (0.008–0.208, reported only). Grasp contact 23, 18 and 21 of 32
+    for the world-model arms (ik 32); median maximum rise 0.70, 0.32 and 0.45 cm (ik 6.6 cm);
+    velocity stops 1, 11 and 3 (ik 1); all 11 of M-v1p-90100's stops came in the grasp subgoal, 9
+    before any contact (the reports do not log which joint tripped).
+  - **§5.3's deferral measures** (reported only; per reset, medians), M-v2g-90100 / M-v1p-90100 /
+    M-v1-87100: closing commands before first contact (episodes with contact) 1 / 1 / 2, episodes
+    with no contact 9 / 14 / 11; first executed close in the grasp phase at command 10 / 8 / 9
+    (never in the grasp phase 0 / 1 / 3); share of grasp-phase re-plans planning the close at
+    step 1, 0.50 / 0.53 / 0.59 (pooled 0.545 / 0.546 / 0.619); longest run of re-plans with
+    k > 1, 5 / 4.5 / 3 (maxima 58 / 100 / 5, the two long ones on reset 90319). M-v2g-90100
+    closed in the grasp phase on every episode (at most at its 22nd command). Its median first
+    executed close came at command 10, against 8 and 9 for the other two arms; that deferral
+    caused the gap, or lowers success, is not shown by 32 resets. The projection's joint-rate
+    limit moves the executed grasp channel by about 0.18 per command, so from an open hand a
+    close cannot register before about grasp-phase command 8–9 (observed minimum 7; p10 8 in every
+    arm): medians of 10, 8 and 9 are about 0–2 commands after the earliest possible, not 8–10
+    commands of deferral. A step-1 planned close is not an executed close: on reset 90319
+    M-v1-87100 planned the close at step 1 on 46 % of re-plans but never executed one, because its
+    requests alternated close and open and the rate limit never let the channel build up.
+  - **The named confound (§9).** Both world-model seeds in BD are late planners (G-v2g-90100,
+    M-v2g's one late seed of three; G-v1p-90100, one of M-v1p's two of three), so BD cannot show
+    how that imbalance acts at BS. A BS B-PASS or B-COMP is restated with §9's caveat; a B-FAIL
+    or B-UNDER with the per-seed deferral measures beside it.
+  - **Not a claim.** A development cohort of 32 resets, one run, simulation only, not gated, not
+    Stage BS; not a prediction of BS. M-v2g-90100's 5 / 32 is below the bar and below the BS
+    per-seed floor's rate (26 / 128); the other two M-v2g seeds did not run in BD. Every
+    restatement quotes TASK-090 Stage C's C1 2.38 and C2 1.69. No MP4 was made in BD (the stage
+    script makes none).
+- **R27.67 — Stage BS waits for an independent GO** on BD's record (R27.59). The GO review
+  decides GO or NO-GO before BS; BD can show a defect, whose fix needs its own ruling, but it
+  changes no knob by itself, and §9 forbids a planner change to counter deferral. The bar rule
+  does not escalate (r ≥ 0.30). After a NO-GO, BD is recorded again on fresh development seeds
+  named by a ruling. This entry does not decide GO. BS, if it runs, runs at `dbab1a5`.
+- **R27.68 — R7 does not change.**
+
+Evidence `~/develop/emai/evidence/task091-bd/` (`SHA256SUMS`).
+
 ## Decision 2026-10-13 (au) — TASK-091 Stage A″ ends A″-PASS: every G model plans the close by step 4 at R1 on 64 / 64 fresh roots and meets lift@R2; G-v1p-90102 fails A1 at h = 8 alone, so no arm fails on two seeds; a no-regression gate only, not a closed-loop result; Stage BD is next (R27.61–R27.64)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
