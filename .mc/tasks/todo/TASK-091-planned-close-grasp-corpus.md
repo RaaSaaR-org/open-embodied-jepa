@@ -54,8 +54,8 @@ Protocol: [grasp_play_corpus_v1_planned_close.md](../../../docs/experiments/gras
 ## Acceptance criteria
 
 - [x] DRAFT preregistration reviewed independently and merged (#209, `940de4e`)
-- [ ] Stage 0: frozen code for the redefined A2 measure (the full 8-step plan at the A2 seed, its first command checked bitwise against `first_planned`), the new cohorts and the deferral measures; seed checks; checkpoint and feature-store hash checks; debug smoke and per-job timing; reviewed; protocol frozen at merge
-- [ ] Stage A″ recorded (A″-FAIL escalates, no clause)
+- [x] Stage 0: frozen code for the redefined A2 measure (the full 8-step plan at the A2 seed, its first command checked bitwise against `first_planned`), the new cohorts and the deferral measures; seed checks; checkpoint and feature-store hash checks; debug smoke and per-job timing; reviewed; protocol frozen at merge
+- [x] Stage A″ recorded (A″-FAIL escalates, no clause)
 - [ ] Stage BD recorded, the bar set; independent GO posted before Stage BS
 - [ ] Stage BS run; results document, row and DECISIONS rulings reviewed and merged
 - [ ] Evidence in `~/develop/emai/evidence/task091-*/` with `SHA256SUMS`; two MP4s (one success if any, one failure)
@@ -80,4 +80,12 @@ Protocol: [grasp_play_corpus_v1_planned_close.md](../../../docs/experiments/gras
   BS split 2 × 64, third deferral measure kept); worst 64-reset job projects to 4 814 s. About
   0.52 GPU h. Evidence `~/develop/emai/evidence/task091-stage0/` (`SHA256SUMS`). The protocol is
   frozen at the Stage 0 PR's merge; A″ runs next (`scripts/run_task091_stage.sh a`).
+- 2026-10-13, Stage A″ (branch `docs/task091-a`; R27.61–R27.64, DECISIONS (au); protocol §15):
+  ran once at `dbab1a5` (#210's merge) from a clean tree in `worktrees/task091-run`, after
+  `verify` and the seed check passed. Row **A″-PASS** (summarizer: `fails: {'v2g': 0, 'v1p': 1}`).
+  On 64 roots 906000–906063: close≤4@R1 64 / 64 for all nine G models; lift@R2 52–63 for the six
+  new G models (G-v1-87101 34, reported only); close@R1 reported 0–64. G-v1p-90102 fails A1 at
+  h = 8 (lift-vs-stay 59 < 61) and stays in M-v1p's pooled count. One run, offline, simulation
+  only; a no-regression gate, not a closed-loop result. About 0.18 GPU h (68 s + 566 s). Evidence
+  `~/develop/emai/evidence/task091-a/` (`SHA256SUMS`). Next: Stage BD (tell V2D first).
 %% mc-links: [[TASK-090]] %%

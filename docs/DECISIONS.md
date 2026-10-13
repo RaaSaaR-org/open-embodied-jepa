@@ -63,6 +63,43 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-13 (au) — TASK-091 Stage A″ ends A″-PASS: every G model plans the close by step 4 at R1 on 64 / 64 fresh roots and meets lift@R2; G-v1p-90102 fails A1 at h = 8 alone, so no arm fails on two seeds; a no-regression gate only, not a closed-loop result; Stage BD is next (R27.61–R27.64)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_play_corpus_v1_planned_close.md §15](experiments/grasp_play_corpus_v1_planned_close.md).
+
+**Run conditions.** Once, at the frozen revision `dbab1a5` (#210's merge), from a clean tree,
+`scripts/run_task091_stage.sh a`, one GPU lock per job, no `- v2d:` request on BOARD.md. `verify`
+(all pass) and the seed check (106 branches, no hits outside TASK-091's files) ran and passed
+before the cohort ledger was claimed (the review's note (c) on #210).
+
+- **R27.61 — Stage A″ is recorded.** Roots 906000–906063 (83 rejected draws), two jobs of 68 s and
+  566 s (about 0.18 GPU h), no cap hit, both reports complete, and every A2-seed plan's first
+  command equal to `first_planned`'s bitwise.
+- **R27.62 — A″-PASS.** The summarizer printed
+  `{'row': 'A″-PASS', 'void_reason': '', 'fails': {'v2g': 0, 'v1p': 1}, 'failing_arms': []}`.
+  - **Per model** (of 64; bars: A1 61 per comparison, close≤4@R1 and lift@R2 48):
+    close≤4@R1 is 64 for all nine G models. lift@R2: G-v2g-90100 56, -90101 52, -90102 61;
+    G-v1p-90100 61, -90101 63, -90102 59; reported only, G-v1-87100 61, -87101 34, -87102 57.
+    close@R1 (reported only): G-v2g 0, 53, 55; G-v1p 3, 60, 11; G-v1 63, 64, 63.
+  - **Per seed.** M-v2g passes A″ on 90100, 90101 and 90102. M-v1p passes on 90100 and 90101 and
+    fails on 90102, on A1 at h = 8 (lift-vs-stay 59 < 61; every other A1 count 64), not on the
+    redefined bars. By §4 that seed stays in M-v1p's pooled count, with its A″ result reported
+    beside its closed-loop count. M-v1 (reported only): 87100 and 87102 pass, 87101 fails
+    lift@R2 (34).
+  - **Not a claim.** One run, offline, simulation only. A″ is a first-command and plan check and a
+    no-regression gate only; its k ≤ 4 threshold was read off D-A2's development numbers and a
+    pass was expected. It is not a closed-loop result and does not show that any model closes,
+    grasps or lifts in closed loop. G-v2g-90100 and G-v1p-90100 still plan the close mostly at
+    step 3–4 (close@R1 0 and 3), which is R27.50's deferral risk; BD and BS measure it.
+  - **Known, unchanged at the freeze.** The review's optional items (a)–(f) on #210 stay as they
+    were (§15 lists them); none affected this run.
+- **R27.63 — Stage BD is next** (R27.59): `scripts/run_task091_stage.sh bd` on 90300–90331, after
+  the V2D session is told; Stage BS only after an independent GO on BD's record.
+- **R27.64 — R7 does not change.**
+
+Evidence `~/develop/emai/evidence/task091-a/` (`SHA256SUMS`).
+
 ## Decision 2026-10-13 (at) — TASK-091 Stage 0: code, hash and seed checks, and a debug smoke; Stage 0 changes none of the three items it may change; the protocol is frozen at the Stage 0 PR's merge (R27.55–R27.60)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
