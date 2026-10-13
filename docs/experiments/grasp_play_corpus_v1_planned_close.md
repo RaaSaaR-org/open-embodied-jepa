@@ -710,7 +710,8 @@ the same revision and passed: `run_task091.py verify` (`all_pass: true` in both
 checkpoints, the `last_two_triggered` flags, the three feature reports, the pinned moments, the
 implementation hash, λ and the frozen files), `run_task091.py seeds` (107 remote branches; no
 number in TASK-091's ranges outside TASK-091's own files; in the evidence the same 12 TASK-077
-update counts as before), and the 19 Stage 0 tests (18 passed, 1 graphics opt-in skip). The V2D
+update counts as before), and the 19 Stage 0 tests (18 passed, 1 graphics opt-in skip; that test log is not archived in the
+evidence). The V2D
 session was told before the run. BOARD.md's Requests had no `- v2d:` line before any of the eight
 jobs, and no job waited for the lock. Evidence: `~/develop/emai/evidence/task091-bd/`
 (`SHA256SUMS`): the goals, the seven run reports, the summary, the checks, the stage log, the
@@ -757,6 +758,9 @@ rise is the maximum target rise; "stopped" is the embodiment's measured-joint-ve
   grasp phase 0.47 (M-v2g-90100), 0.56 (M-v1p-90100), 0.73 (M-v1-87100), 0.86 (ik); lift phase
   0.79–0.81 for the world-model arms, 1.0 for ik. Final subgoal reached: the lift subgoal (3) on
   31, 21 and 29 resets; the rest ended in the grasp subgoal (2).
+- **Velocity stops.** All 11 of M-v1p-90100's stops came in the grasp subgoal, 9 before any
+  contact; the run reports do not log which joint tripped. The stop is the embodiment's frozen
+  5 rad/s rule (§2), a declared failure, not a harness defect.
 
 **§5.3's deferral measures** (reported only; no row reads them; per reset over the 32 episodes;
 medians with the 10th–90th percentiles):
@@ -773,13 +777,21 @@ medians with the 10th–90th percentiles):
 
 - **Reading, reported only.** M-v2g-90100 did not put the close off indefinitely: every one of its
   episodes closed in the grasp phase (median at its 10th command, at most its 22nd); M-v1p-90100
-  never closed in the grasp phase on 1 reset and M-v1-87100 on 3. Across arms the longest runs of
-  re-plans planning the close later than step 1 are about 4–6 re-plans long on most resets. One
+  never closed in the grasp phase on 1 reset and M-v1-87100 on 3. The longest runs of re-plans
+  planning the close later than step 1 are about 4–6 re-plans long on most resets for M-v2g-90100
+  and M-v1p-90100, and 3–4 (maximum 5) for M-v1-87100. One
   reset per new arm had a long run (58 for M-v2g-90100, 100 for M-v1p-90100, on reset 90319 for
   both). On about half of the grasp-phase re-plans of M-v2g-90100 and M-v1p-90100 the plan closes
   at step 1 (A″'s R1 plan at the A2 seed closed at step 1 on 0 / 64 and 3 / 64 roots for these two
-  models; that is a different state and a different measure). M-v2g-90100's first executed close
-  came a command or two later than M-v1-87100's and M-v1p-90100's (median 10 against 9 and 8); on
+  models; that is a different state and a different measure). M-v2g-90100's median first executed
+  close came at command 10, against 9 for M-v1-87100 and 8 for M-v1p-90100. The projection's
+  joint-rate limit moves the executed grasp channel by about 0.18 per command, so from an open hand
+  a close cannot register before about grasp-phase command 8–9 (observed minimum 7; p10 8 in every
+  arm): these medians are about 0–2 commands after the earliest possible, not 8–10 commands of
+  deferral, and that deferral caused any gap is not shown. A step-1 planned close is not an
+  executed close: on reset 90319 M-v1-87100 planned the close at step 1 on 46 % of re-plans but
+  never executed one (its requests alternated close and open, and the rate limit never let the
+  channel build up); on
   reset 90319, M-v1p-90100 never closed in the grasp phase, and M-v2g-90100 first closed at its 9th
   grasp-phase command but planned the close later than step 1 on all but 3 % of its grasp-phase
   re-plans there (both failed). Whether that lowers success is not shown by 32 resets. On the five

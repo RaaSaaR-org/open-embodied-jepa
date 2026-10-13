@@ -96,15 +96,23 @@ skip) passed before the cohort ledger was claimed.
     hold 0 and random 0 (0–0.109), **M-v2g-90100 5 (0.053–0.328)**, **M-v1p-90100 3
     (0.020–0.250)**, M-v1-87100 2 (0.008–0.208, reported only). Grasp contact 23, 18 and 21 of 32
     for the world-model arms (ik 32); median maximum rise 0.70, 0.32 and 0.45 cm (ik 6.6 cm);
-    velocity stops 1, 11 and 3 (ik 1).
+    velocity stops 1, 11 and 3 (ik 1); all 11 of M-v1p-90100's stops came in the grasp subgoal, 9
+    before any contact (the reports do not log which joint tripped).
   - **§5.3's deferral measures** (reported only; per reset, medians), M-v2g-90100 / M-v1p-90100 /
     M-v1-87100: closing commands before first contact (episodes with contact) 1 / 1 / 2, episodes
     with no contact 9 / 14 / 11; first executed close in the grasp phase at command 10 / 8 / 9
     (never in the grasp phase 0 / 1 / 3); share of grasp-phase re-plans planning the close at
     step 1, 0.50 / 0.53 / 0.59 (pooled 0.545 / 0.546 / 0.619); longest run of re-plans with
     k > 1, 5 / 4.5 / 3 (maxima 58 / 100 / 5, the two long ones on reset 90319). M-v2g-90100
-    closed in the grasp phase on every episode (at most at its 22nd command); deferral delayed
-    its executed close by a command or two, and 32 resets do not show whether that lowers success.
+    closed in the grasp phase on every episode (at most at its 22nd command). Its median first
+    executed close came at command 10, against 8 and 9 for the other two arms; that deferral
+    caused the gap, or lowers success, is not shown by 32 resets. The projection's joint-rate
+    limit moves the executed grasp channel by about 0.18 per command, so from an open hand a
+    close cannot register before about grasp-phase command 8–9 (observed minimum 7; p10 8 in every
+    arm): medians of 10, 8 and 9 are about 0–2 commands after the earliest possible, not 8–10
+    commands of deferral. A step-1 planned close is not an executed close: on reset 90319
+    M-v1-87100 planned the close at step 1 on 46 % of re-plans but never executed one, because its
+    requests alternated close and open and the rate limit never let the channel build up.
   - **The named confound (§9).** Both world-model seeds in BD are late planners (G-v2g-90100,
     M-v2g's one late seed of three; G-v1p-90100, one of M-v1p's two of three), so BD cannot show
     how that imbalance acts at BS. A BS B-PASS or B-COMP is restated with §9's caveat; a B-FAIL
