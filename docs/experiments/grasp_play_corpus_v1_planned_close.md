@@ -1,9 +1,11 @@
 # TASK-091 — the planned close within the plan: TASK-090's A′ on fresh roots with A2 redefined, then TASK-090's closed-loop grasp-and-lift comparison on fresh resets
 
-**Status: DRAFT** (R27.45–R27.54, decided by Claude under owner delegation, 2026-10-13; DECISIONS
-(as)). A Stage 0 PR follows: it adds the code for the redefined A2 measure, checks the seeds and
-runs a debug smoke. The protocol is frozen at that PR's merge, as TASK-090's was (§12). No gated
-stage runs before that freeze.
+**Status: FROZEN at the merge of its Stage 0 PR** (R27.45–R27.60, decided by Claude under owner
+delegation, 2026-10-13; DECISIONS (as) and (at); the DRAFT was reviewed and merged at #209,
+`940de4e`; Stage 0's record is §14). After that merge nothing in §2–§11 changes without its own
+reviewed ruling. Stage 0 changed none of the three items §12 allows it to change (R27.56): the
+process counts stay, the BS split stays at two 64-reset jobs per world-model run, and §5.3's third
+deferral measure is kept. No gated stage (A″, BD, BS) has run.
 
 This is the next task that R27.43 recommends. TASK-090 ([grasp_play_corpus_v1.md](grasp_play_corpus_v1.md))
 closed at **A′-FAIL** (R27.34, R27.45): escalate, no clause. Its Stage BD and Stage BS were never
@@ -437,3 +439,150 @@ the merged revision from a clean tree.
   it at its merge, as TASK-090's did. Gated runs (A″, BD, BS) take place only after that freeze,
   BS only after an independent GO on BD's record.
 - **R27.54** — **R7 does not change**, whatever the row.
+
+## 14. Stage 0 record (R27.55–R27.60; decided by Claude under owner delegation)
+
+Stage 0 ran on 2026-10-12/13 (23:14–00:03 UTC) in the worktree of the Stage 0 PR (branch
+`feat/task091-stage0`, from `940de4e`), every GPU use one `scripts/gpu_run.sh --wait` job under
+the shared lock, BOARD.md's Requests read before each job (no `- v2d:` line was present at any
+of them). Evidence: `~/develop/emai/evidence/task091-stage0/` (`SHA256SUMS`; the smoke's outputs
+are copied there from `outputs/task091-stage0/` on the data disk). **Everything below on debug
+seeds is debug plumbing, not a result, and is not read as an outcome of any stage.**
+
+**Code** (opt-in; no registry entry; `import embodied_jepa` stays torch- and MuJoCo-free, checked
+by a test; no existing file changes, so TASK-087's implementation hash `e2ec0096…49b1` and
+TASK-088's, TASK-089's and TASK-090's frozen code are untouched):
+
+- `src/embodied_jepa/grasp_corpus_wm_planned_close.py` (NumPy at import): §8's cohorts and the
+  debug split of 90700–90799 (roots 90700–90739, resets 90740–90799); the pins of the eleven
+  checkpoints (§3, the full hashes of TASK-090 §19.2's table and TASK-087's reports), the three
+  feature reports, the moments and λ; the sha256 pins of TASK-090's frozen files at `53f0b72`
+  (`grasp_corpus_wm*`, `zero_shot*`, `planning.py`, `run_task090.py`, `summarize_task090.py`),
+  checked before any job runs; A″'s measure (`a2_second`), pass rule and rows (A″-VOID, A″-FAIL,
+  A″-PASS); the bitwise first-command check; the 7 200 s cap, the 5 400 s split trigger, the BS
+  job split and the recombination of split runs (`combine_parts`); §5.3's deferral measures and
+  their per-arm summary. The bars, sign-flip tests, bootstrap and B rows are TASK-090's
+  `grasp_corpus_wm` functions, unchanged.
+- `src/embodied_jepa/grasp_corpus_wm_planned_close_runtime.py`: the A2 plan (`zgr.wrap` and
+  `zgr.make_planner(root, 8)`, the very call `first_planned` makes, keeping the whole plan) and
+  the recording controller (TASK-089's `ChangeController`, built as TASK-090's `gr.controller`
+  builds it, whose planner is wrapped by a recorder that returns the planner's plan object
+  untouched and keeps its right-grasp channel per step).
+- `src/embodied_jepa/grasp_corpus_wm_planned_close_run.py`: the parts of TASK-090's frozen runner
+  that TASK-091's runner needs (its report and guards, `verify`, the feature pins, the encoded
+  roots, the ceiling and the shuffled deal), copied, because the project's audit rule F16
+  (`tests/test_no_runner_imports.py`) forbids a new runner to load another script. A test checks
+  the copied shuffled deal against the frozen runner's on fresh draws.
+- `scripts/run_task091.py` (`verify`, `seeds`, `roots`, `a-second`, `goals`, `run` with `--part`,
+  `combine`, `video`), `scripts/summarize_task091.py` (stages `a`, `bd`, `bs`, and Stage 0's
+  `timing`), `scripts/run_task091_stage.sh` (`a`, `bd`, `bs`) and
+  `tests/test_grasp_corpus_planned_close.py` (19 tests, one graphics opt-in).
+
+**§12's checks** (`verify/verify-task091.json`, all pass; at `7c49117`, clean tree):
+
+- TASK-090's own §12 check, run by the copied code (`verify/verify-task090-checks.json`): the
+  `data/`, `checkpoints/` and `outputs/` links resolve to the data disk; `play-v1` re-verifies
+  (every shard re-hashed); TASK-087's feature report `f5648a35…7eae`, store files and projection
+  `c196fc48…e33f`; its 18 checkpoints against their reports and the evidence copies; the pinned
+  moments equal G-87100's buffers bitwise (`1e960227…81b5c`); TASK-087's implementation hash.
+- TASK-090's eight checkpoints: each `model.pt` equals its report's sha256 and §19.2's pin, each
+  report is byte-identical to its copy in `evidence/task090-t/t/`, and each records the three
+  feature reports and the pinned moments. The `last_two_triggered` flags are set for exactly
+  G-v2g-90102, G-v1p-90100 and G-v1p-90101 (reported, §3).
+- TASK-087's G-87100, G-87101 and G-87102 equal their pins; the feature reports are
+  `play-v1` `f5648a35…7eae`, play-v2g `d8afb236…e988`, play-v1p `00625a44…822e`; λ = 2.0552; the
+  frozen files equal their pins.
+
+**§8's seed check at this revision** (`seeds-check.json`; `git fetch`, then all 105 remote
+branches and this branch, over `src/`, `scripts/`, `docs/`, `.mc/`, `tests/`, `benchmarks/` and
+`configs/`): no number in 906000–906063, 907000–907127, 90300–90331 or 90700–90799 appears in any
+file other than TASK-091's own (this protocol, its `.mc` task, `docs/DECISIONS.md` (as) and the
+Stage 0 code). In the evidence the only tokens in these ranges are the update counts 90300 and
+90700 in TASK-077's training curves (12 occurrences in six `report.json` files); decimal fractions
+are not counted as tokens. A first run of the check (kept as `seeds-check-hexpattern.json`) also
+counted digit runs inside hex hashes (for example `…e0c90716cd…` in a revision); its pattern was
+fixed before the recorded run.
+
+**Debug smoke** (debug seeds and the real checkpoints; at `df5941f`, the recorder comparison at
+`5620808`, and a second pass at `7c49117`; **debug, not results**):
+
+- **A″ on 8 debug roots** (90700–90707; 10 rejected draws; all eleven models). Every A2-seed plan's
+  first command equalled `first_planned`'s bitwise, at R1 and R2 of every root, for all nine G
+  models. The redefined measure ran: every G model's plan closed by k ≤ 4 on 8 / 8 roots at R1;
+  the first command closed on 0–8 of 8 (G-v2g-90100 0, G-v1p-90100 1, G-v1p-90102 4, the others
+  8). The row printed is A″-FAIL, as expected and meaningless on 8 roots: A1's bars are counts of
+  64 (61 / 64), so no model can pass on 8 roots.
+- **Closed loop on 6 debug resets** (90740–90745; 12 rejected draws): ik 5 / 6, ik-nopress 5 / 6,
+  hold 0 / 6, random 0 / 6, M-v2g-90100 0 / 6, M-v1p-90100 1 / 6, M-v1-87100 0 / 6. The BD
+  summary (bar from ik's rate) and an MP4 replay (one debug episode; the replay matched the run's
+  palm distances) worked.
+- **§5.3's measures** were recorded for every world-model episode, and the summary reports their
+  distribution per arm (debug, not read).
+- **The split equals the unsplit run, per reset, bitwise** (`compare-smoke.json`): M-v2g-90100 run
+  as two jobs of three resets each and combined gives the same executed commands, success,
+  distances, rise, contact, plan logs and deferral measures as the unsplit run on all six resets.
+  The graphics opt-in test does the same for the random and ik arms on three debug resets.
+- **§5.3's third measure leaves the executed commands unchanged** (`compare-smoke.json`):
+  M-v2g-90100 with the recorder against TASK-090's `gr.controller` without it, on the first three
+  resets: executed commands, success, distances, rise, contact and costs equal bitwise.
+- **The second pass** (`compare-smoke2.json`; after moving the runner helpers into the module for
+  F16): A″ on the same 8 debug roots (re-drawn, arrays equal) gives equal A1 wins, plans, A2
+  measures, ceiling and probes, and ik and M-v2g-90100 on the first two debug resets give equal
+  episodes.
+
+**Timing and the job split** (`smoke/summary-timing-debug-grasp.json`). At 6 processes a
+world-model run's wall time per command per process was 1.075–1.094 s (planning 0.868–0.892 s of
+it); at 3 processes 0.544 s. With every episode at the full 400 commands (an upper bound: successes
+and velocity stops end episodes early), a 64-reset job at 6 processes projects to at most 4 814 s,
+below the 5 400 s trigger and the 7 200 s cap. TASK-089's measured 64-reset runs took
+3 623–4 321 s.
+
+| Stage | Jobs | Projection |
+| --- | --- | --- |
+| A″ | roots, then one measurement job | about 0.25 GPU h (8 debug roots: 28 s and 75 s) |
+| BD | goals, 4 baselines, 3 world-model runs of 32 resets (one job each, at most about 2 600 s) | at most about 2.3 GPU h |
+| BS | goals, 4 baselines, 7 world-model runs as 14 jobs of 64 resets (each at most about 4 800 s), the determinism re-run | about 14–17 GPU h at TASK-089's rate, at most about 19 |
+
+**Compute.** Stage 0 used about 0.52 GPU hours in 22 jobs (no lock wait) and a few CPU minutes
+(the two `verify` runs, the seed checks and the tests).
+
+**Incidents (disclosed; debug only).** The smoke script passed `--suffix -norecord`, which
+argparse read as a flag; the recorder comparison then hit a runner bug (the overwrite check used
+the name before the suffix). Both were fixed (`5620808`) and that comparison re-run; nothing else
+was re-run. The full test suite then caught the runner loading TASK-090's runner (F16), so its
+helpers were moved into `grasp_corpus_wm_planned_close_run.py` (`7c49117`) and the second smoke
+pass above checked the result against the first.
+
+- **R27.55 — Stage 0 is recorded.** The code, the hash checks and the seed check are as above;
+  every check passes.
+- **R27.56 — Stage 0 changes none of §12's three items.** The per-run process counts stay (8 for
+  baselines, 6 for world-model runs, 4 for the determinism re-run). The BS split stays at two
+  64-reset jobs per world-model run (907000–907063, 907064–907127): the worst projected job is
+  4 814 s at the full budget, below 5 400 s. §5.3's third measure is kept: reading the plan
+  leaves every executed command bitwise unchanged.
+- **R27.57 — readings of points the DRAFT left open** (each the reading closest to TASK-090's
+  code):
+  1. Debug seeds: roots 90700–90739, resets 90740–90799 (inside §8's debug range). Debug runs use
+     the real checkpoints of §3 (there are no debug models).
+  2. A″ reads A1's bars from A-K0's frozen `A1_BARS`; it needs no ceiling file. It keeps both
+     A2-seed plans (R1 and R2); lift@R2 reads the R2 plan's first command. It stops at the first
+     plan whose first command differs from `first_planned` (A″-VOID).
+  3. §5.3 (1): "before first contact" counts the commands issued while no contact had been
+     observed, up to and including the command after which contact is first seen; "executed" is
+     the applied command (after the embodiment's projection); the requested count is reported
+     beside it. (2): the grasp phase is the commands whose controller call planned for the grasp
+     subgoal (index 2), and the index is 1-based from its first command. (3): a plan that never
+     closes counts as k > 1 in the longest run, and the median k is over plans that close.
+  4. The cap: each job stops itself at 7 200 s and writes its report marked `completed: false`,
+     `cap_hit: true` (exit 4); `timeout(1)` 5 minutes later is a backstop. A summary that finds an
+     incomplete report, a part without its combined run or a combined run without its parts is
+     VOID. "Run twice" is enforced by a ledger (`outputs/task091-ledger/`) that a non-debug
+     cohort's roots, goals or run claim once.
+  5. BOARD.md: while the Requests section has a `- v2d:` line not marked `[handled]`, the stage
+     script waits up to 15 minutes before taking the lock with `gpu_run.sh --wait`.
+- **R27.58 — the debug smoke is not evidence.** It changes nothing in §2–§11.
+- **R27.59 — frozen at this PR's merge.** Stage A″, BD and BS run at the merged revision from a
+  clean tree with `scripts/run_task091_stage.sh` (`a`, then `bd`; `bs` only after an independent
+  GO on BD's record), evidence in `~/develop/emai/evidence/task091-*`. The V2D session is told
+  before BD and before BS.
+- **R27.60 — R7 does not change.**

@@ -4,7 +4,7 @@ aliases:
 - TASK-091
 title: 'Planned close within the plan: TASK-090''s A′ on fresh roots with A2 redefined, then its closed-loop grasp-and-lift comparison on fresh resets'
 slug: planned-close-grasp-corpus
-status: todo
+status: in-progress
 priority: 2
 owner: ''
 projects: []
@@ -23,6 +23,7 @@ due_date: ''
 created: 2026-10-13
 updated: 2026-10-13
 ---
+
 
 # Planned close within the plan: TASK-090's A′ on fresh roots with A2 redefined, then its closed-loop grasp-and-lift comparison on fresh resets
 
@@ -52,7 +53,7 @@ Protocol: [grasp_play_corpus_v1_planned_close.md](../../../docs/experiments/gras
 
 ## Acceptance criteria
 
-- [ ] DRAFT preregistration reviewed independently and merged
+- [x] DRAFT preregistration reviewed independently and merged (#209, `940de4e`)
 - [ ] Stage 0: frozen code for the redefined A2 measure (the full 8-step plan at the A2 seed, its first command checked bitwise against `first_planned`), the new cohorts and the deferral measures; seed checks; checkpoint and feature-store hash checks; debug smoke and per-job timing; reviewed; protocol frozen at merge
 - [ ] Stage A″ recorded (A″-FAIL escalates, no clause)
 - [ ] Stage BD recorded, the bar set; independent GO posted before Stage BS
@@ -70,4 +71,13 @@ Protocol: [grasp_play_corpus_v1_planned_close.md](../../../docs/experiments/gras
 - Budget: A″ under 1 GPU h; BD about 2 h; BS about 15.5 GPU h (R27.25's projection). Every GPU job
   stays under the 7 200 s per-job cap and takes one `gpu_run.sh --wait` lock, and BOARD.md's
   Requests are checked before each job.
+- 2026-10-13, Stage 0 (branch `feat/task091-stage0`; R27.55–R27.60, DECISIONS (at); protocol §14):
+  code `grasp_corpus_wm_planned_close{,_runtime,_run}.py`, `scripts/{run,summarize}_task091.py`,
+  `scripts/run_task091_stage.sh`, `tests/test_grasp_corpus_planned_close.py`. Hash checks and
+  the seed check pass; debug smoke on 90700–90799 (debug, not results): A″ first-command check
+  bitwise on all plans, every closed-loop arm runs, split = unsplit per reset bitwise, the plan
+  recorder leaves executed commands bitwise unchanged. Stage 0 changes nothing of §12 (processes,
+  BS split 2 × 64, third deferral measure kept); worst 64-reset job projects to 4 814 s. About
+  0.52 GPU h. Evidence `~/develop/emai/evidence/task091-stage0/` (`SHA256SUMS`). The protocol is
+  frozen at the Stage 0 PR's merge; A″ runs next (`scripts/run_task091_stage.sh a`).
 %% mc-links: [[TASK-090]] %%
