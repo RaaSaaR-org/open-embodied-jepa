@@ -124,3 +124,11 @@ closed at A‴-FAIL).
   development-calibrated executed-measure gate; D-FLAT or D-WORSE → a planner-side rate
   projection under R26.33, with its own ruling and prereg. It runs after this PR merges; its
   record is a second PR (§18, DECISIONS (bb)).
+- 2026-10-14, D-RATE record (branch `docs/task092-drate-record`; R27.107–R27.110, DECISIONS (bb);
+  protocol §18): **D-VOID** (development, not gated). The M-req run stopped at model load before
+  any episode, because the driver ran outside the run tree and the frozen loader resolves
+  `third_party/le-wm` relative to the working directory. M-v1 did not run, so there are no counts.
+  Resets 90810–90841 are spent. Ruled (R27.109): **D-RATE′** on fresh resets 90850–90881, with
+  everything else unchanged, and two tested guards (the run tree as working directory, and a
+  preflight that loads both models before any ledger claim). It runs after this PR is merged.
+  GPU 21 s. Evidence `~/develop/emai/evidence/task092-drate/`.

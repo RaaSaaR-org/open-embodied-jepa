@@ -63,6 +63,46 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-14 (bb) — D-RATE ends D-VOID: the M-req run stopped at model load before any episode (the driver ran from the wrong working directory, so the frozen loader did not find `third_party/le-wm`); M-v1 did not run; no counts; resets 90810–90841 are spent; D-RATE′ is authorised on fresh resets 90850–90881 with a working-directory guard and a model-load preflight before any ledger claim (R27.107–R27.110)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_rate_aware_wm_v1.md §18](experiments/grasp_rate_aware_wm_v1.md). This is development
+only, not gated, and makes no claim.
+
+**Run conditions.** The jobs ran after #217's merge (`c2e21d4`). The run tree was
+`worktrees/task092-drate`, clean, at `64e87f0`. The script was `scripts/dev_task092_drate.py`,
+sha256 `50cfd42f…cff6`. Each job took one `gpu_run.sh --wait --board` lock, after a BOARD.md
+Requests check that found no `- v2d:` line.
+
+- **R27.107 — D-RATE is recorded as D-VOID** (§17.3 rule 1).
+  - `goals` completed: 32 goals on 90810–90841, 35 rejected draws, 14 s.
+  - `run --arm M-req` claimed its ledger key. Its workers stopped while loading the model, with
+    `LeWM source missing`, before any episode. The job exited with status 1 after 7 s, and no
+    run report was written.
+  - The driver then stopped, so M-v1 did not run.
+  - **Cause.** The frozen LeWM loader resolves `third_party/le-wm` relative to the working
+    directory. The driver ran from the checkout that holds the development script, not from the
+    run tree as `run_task092_stage.sh` does. This is an operator error. The frozen code and the
+    models are not at fault.
+  - **Result.** There are no counts and no measures. The summary printed D-VOID.
+- **R27.108 — Resets 90810–90841 are spent and are not re-run** (§17.3). The ledger entries stay.
+- **R27.109 — D-RATE′ is authorised** (the coordinator's ruling under owner delegation).
+  - **Resets: 90850–90881**, 32 fresh development resets (cohort `dev-drate2`). The seed check
+    found no token on any of 113 remote-tracking refs and only decimal fractions in the evidence.
+    90810–90841 are not reused.
+  - **Unchanged from R27.101–R27.105:** the arms, the revision, the planner and λ, the rule and
+    its thresholds, the measures, the routing, the GPU rules, and the order (it runs once, after
+    this PR is merged).
+  - **Two guards are added to the development script.**
+    - It changes into the run tree and refuses unless `third_party/le-wm` resolves there.
+    - Before the frozen runner is called, so before any ledger key is claimed, it loads both
+      models and the encoder in a spawned process, and refuses to start if either load fails.
+    - Both guards are tested (`tests/test_dev_task092_drate.py`). No frozen module changes.
+- **R27.110 — R7 does not change.** TASK-092 stays closed at A‴-FAIL.
+
+GPU: 21 s (two jobs). Evidence `~/develop/emai/evidence/task092-drate/` (`SHA256SUMS` sha256
+`a62ef82d…90efe`).
+
 ## Decision 2026-10-14 (ba) — TASK-092 closes at A‴-FAIL as recorded, no clause; one development-only closed-loop reading, D-RATE (M-req-87100 against M-v1-87100 on 32 fresh resets 90810–90841; not gated, not Stage BD, no claim), is authorised with its reading rule declared before it runs (R27.100–R27.106)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:

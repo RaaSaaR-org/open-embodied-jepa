@@ -1,28 +1,37 @@
-"""TASK-092 D-RATE: one development-only closed-loop reading (DECISIONS (ba), R27.100-R27.106;
-protocol docs/experiments/grasp_rate_aware_wm_v1.md §17). Not gated, not Stage BD, no claim; its
-counts are development readings, not results.
+"""TASK-092 D-RATE′: one development-only closed-loop reading (DECISIONS (ba), R27.100-R27.106,
+and (bb), R27.109; protocol docs/experiments/grasp_rate_aware_wm_v1.md §17-§18). Not gated, not
+Stage BD, no claim; its counts are development readings, not results. D-RATE itself (cohort
+``dev-drate``, resets 90810-90841) ended D-VOID before any episode (R27.107); its resets are spent.
 
 It runs TASK-092's frozen closed-loop code path (``scripts/run_task092.py`` ``goals`` and ``run``,
-the path Stage BD uses) from a run tree that must be a clean tree at ``64e87f0`` (``--run-tree``
-or ``DRATE_RUN_TREE``), and changes no frozen module. The only addition is one development
-cohort, ``dev-drate`` = resets **90810-90841** (32), registered in the imported modules at run
-time, which admits exactly two runs: M-req-87100 (Stage T's G-req checkpoint) and M-v1-87100
-(TASK-087's G). Its name does not start with ``debug``, so the runner's non-debug guards apply
-unchanged: clean tracked tree, the 7 200 s cap, the exact seed set, the goals' revision, and the
-once-only ledger (``outputs/task092-ledger``). The planner, λ, the CEM settings and the
-checkpoints are the frozen ones. Every report carries a ``development`` field naming this
-script and its sha256.
+the path Stage BD uses) from a run tree that must be a clean tree at ``64e87f0``
+(``DRATE_RUN_TREE``), and changes no frozen module. The only addition is one development cohort,
+``dev-drate2`` = resets **90850-90881** (32), registered in the imported modules at run time, which
+admits exactly two runs: M-req-87100 (Stage T's G-req checkpoint) and M-v1-87100 (TASK-087's G).
+Its name does not start with ``debug``, so the runner's non-debug guards apply unchanged: clean
+tracked tree, the 7 200 s cap, the exact seed set, the goals' revision, and the once-only ledger
+(``outputs/task092-ledger``). The planner, λ, the CEM settings and the checkpoints are the frozen
+ones. Every report carries a ``development`` field naming this script, its sha256 and revision.
+
+Two guards added after D-RATE's D-VOID (R27.109):
+
+* **Run tree as working directory.** ``goals`` and ``run`` change into the run tree first (the
+  frozen LeWM loader resolves ``third_party/le-wm`` relative to the working directory) and refuse
+  to start if ``third_party/le-wm`` is not a directory there.
+* **Preflight.** Before the runner is called, and so before any ledger key is claimed, both models
+  (M-req-87100 and M-v1-87100) and the encoder are loaded on CUDA in a spawned process (as the
+  runner's workers load them); if either fails, the command refuses to start.
 
 * ``goals --output DIR`` and ``run --arm {M-req,M-v1} --goals DIR --output DIR``: the runner's own
-  subcommands on ``dev-drate`` (``--model-seed 87100`` and ``--workers 6`` are added, as in BD).
+  subcommands on ``dev-drate2`` (``--model-seed 87100`` and ``--workers 6`` are added, as in BD).
   Each is one job under ``scripts/gpu_run.sh --wait --min-free-gib 8 --board``.
 * ``summary --runs DIR --t-summary FILE``: R27.102-R27.103's reading (CPU): successes, grasp
   contact, maximum rise, the executed-close timing and the clipped share for both arms, and the row
-  D-MOVES / D-FLAT / D-WORSE from the paired difference, in that declared order.
+  D-VOID / D-MOVES / D-WORSE / D-FLAT from the paired difference, in that declared order.
 
     T=/home/huhn/develop/emai/worktrees/task092-drate
-    MUJOCO_GL=egl DRATE_RUN_TREE=$T scripts/gpu_run.sh --wait --min-free-gib 8 --board -- \\
-        $T/.venv/bin/python scripts/dev_task092_drate.py goals --output <evidence>
+    cd $T && MUJOCO_GL=egl DRATE_RUN_TREE=$T scripts/gpu_run.sh --wait --min-free-gib 8 --board \\
+        -- $T/.venv/bin/python <checkout>/scripts/dev_task092_drate.py goals --output <evidence>
 """
 
 from __future__ import annotations
@@ -36,17 +45,21 @@ from pathlib import Path
 
 RUN_TREE = Path(os.environ.get("DRATE_RUN_TREE", "/home/huhn/develop/emai/worktrees/task092-drate"))
 REVISION = "64e87f0"
-COHORT = "dev-drate"
-SEEDS = range(90810, 90842)
+NAME = "D-RATE′"
+COHORT = "dev-drate2"
+SEEDS = range(90850, 90882)
+SPENT = range(90810, 90842)  # D-RATE's resets (R27.108); never used again
 RUNS = (("M-req", 87100), ("M-v1", 87100))
+FAMILIES = {"M-req": "G-req", "M-v1": "G-v1"}  # ra.CLOSED_LOOP_ARMS
 WORKERS = 6
 MOVES, WORSE = 4, -4  # R27.102: D-MOVES if diff >= +4; D-WORSE if <= -4; else D-FLAT (|diff| <= 3)
+LEWM_SOURCE = Path("third_party") / "le-wm"  # as models/lewm.py resolves it (relative to cwd)
 
-sys.path.insert(0, str(RUN_TREE / "scripts"))
-sys.path.insert(0, str(RUN_TREE / "src"))
-import run_task092 as run  # noqa: E402  (the frozen runner; it puts RUN_TREE/src first)
+SELF_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
-from embodied_jepa import grasp_rate_aware as ra  # noqa: E402
+
+class Refused(SystemExit):
+    """A guard of this script refused to start; nothing was claimed."""
 
 
 def _main_revision() -> str | None:
@@ -65,41 +78,97 @@ def _main_revision() -> str | None:
         return None
 
 
-SELF_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
-
-# ----- the one addition: the development cohort ------------------------------------------------
-ra.COHORTS[COHORT] = SEEDS
-ra.GRASP_COHORTS = (*ra.GRASP_COHORTS, COHORT)
-_check_run = ra.check_run
-
-
-def _check_run_drate(cohort, arm, model_seed, *, debug_req_seed=None):
-    if cohort == COHORT and (arm, model_seed) not in RUNS:
-        raise ra.ContractError(f"{arm}-{model_seed} is not a run of {COHORT}")
-    return _check_run(cohort, arm, model_seed, debug_req_seed=debug_req_seed)
-
-
-ra.check_run = _check_run_drate
-_base_report = run.base_report
+# ----- guards added after D-RATE's D-VOID (R27.109) ---------------------------------------------
+def enter_run_tree(run_tree: Path = RUN_TREE) -> Path:
+    """Make the run tree the working directory (inherited by the runner's spawned workers) and
+    refuse unless the LeWM source resolves there as the frozen loader resolves it."""
+    tree = Path(run_tree).resolve()
+    if not tree.is_dir():
+        raise Refused(f"G-cwd: run tree {tree} does not exist")
+    os.chdir(tree)
+    if Path.cwd().resolve() != tree or not LEWM_SOURCE.is_dir():
+        raise Refused(f"G-cwd: {LEWM_SOURCE} is not a directory under the run tree {tree}")
+    return tree
 
 
-def _base_report_drate(cohort=None, **kw):
-    report = _base_report(cohort, **kw)
-    report["development"] = {
-        "name": "D-RATE",
-        "rulings": "DECISIONS (ba) R27.100-R27.106",
-        "gated": False,
-        "script": "scripts/dev_task092_drate.py",
-        "script_sha256": SELF_SHA256,
-        "script_revision": _main_revision(),
-    }
-    return report
+def _load_in_child(family: str, seed: int) -> dict:
+    """Load one model and the encoder exactly as the runner's workers do (spawned child)."""
+    from embodied_jepa import devices
+    from embodied_jepa import grasp_corpus_wm_runtime as gr
+    from embodied_jepa import grasp_rate_aware_runtime as rr
+
+    devices.configure_determinism("cuda", strict=False)
+    _, info = rr.load_family(family, seed, "cuda")
+    gr.encoder("cuda")
+    return {"checkpoint_sha256": (info or {}).get("checkpoint_sha256")}
 
 
-run.base_report = _base_report_drate
+def spawned_load(family: str, seed: int) -> dict:
+    import multiprocessing as mp
+
+    with mp.get_context("spawn").Pool(1) as pool:
+        return pool.apply(_load_in_child, (family, seed))
 
 
-def _guard_tree() -> None:
+def preflight(load=spawned_load, runs=RUNS, families=None) -> dict:
+    """Load every model of the reading; refuse to start if any load fails (R27.109). ``families``
+    is the frozen ``ra.CLOSED_LOOP_ARMS`` after ``install()`` (what the workers load)."""
+    families = FAMILIES if families is None else families
+    loaded, failed = {}, {}
+    for arm, seed in runs:
+        try:
+            loaded[f"{arm}-{seed}"] = load(families[arm], seed)
+        except Exception as error:  # noqa: BLE001
+            failed[f"{arm}-{seed}"] = f"{type(error).__name__}: {error}"
+    if failed:
+        raise Refused(f"G-preflight: model load failed, nothing claimed: {failed}")
+    print(json.dumps({"preflight": loaded}), flush=True)
+    return loaded
+
+
+# ----- the frozen runner, with the one addition (the development cohort) ----------------------
+def install(run_tree: Path = RUN_TREE):
+    """Import the frozen runner from the run tree and register the development cohort."""
+    sys.path.insert(0, str(Path(run_tree) / "scripts"))
+    sys.path.insert(0, str(Path(run_tree) / "src"))
+    import run_task092 as run  # the frozen runner; it puts RUN_TREE/src first
+
+    from embodied_jepa import grasp_rate_aware as ra
+
+    if getattr(ra, "_drate_installed", False):
+        return run, ra
+    if set(SEEDS) & set(SPENT):
+        raise Refused("D-RATE's spent resets are not reused (R27.108)")
+    ra.COHORTS[COHORT] = SEEDS
+    ra.GRASP_COHORTS = (*ra.GRASP_COHORTS, COHORT)
+    check_run = ra.check_run
+
+    def check_run_drate(cohort, arm, model_seed, *, debug_req_seed=None):
+        if cohort == COHORT and (arm, model_seed) not in RUNS:
+            raise ra.ContractError(f"{arm}-{model_seed} is not a run of {COHORT}")
+        return check_run(cohort, arm, model_seed, debug_req_seed=debug_req_seed)
+
+    ra.check_run = check_run_drate
+    base_report = run.base_report
+
+    def base_report_drate(cohort=None, **kw):
+        report = base_report(cohort, **kw)
+        report["development"] = {
+            "name": NAME,
+            "rulings": "DECISIONS (ba) R27.100-R27.106, (bb) R27.109",
+            "gated": False,
+            "script": "scripts/dev_task092_drate.py",
+            "script_sha256": SELF_SHA256,
+            "script_revision": _main_revision(),
+        }
+        return report
+
+    run.base_report = base_report_drate
+    ra._drate_installed = True
+    return run, ra
+
+
+def _guard_tree(run) -> None:
     head = run.git("rev-parse", "HEAD")
     if not head.startswith(REVISION):
         raise run.rt.GuardError(f"G-revision: the run tree is at {head}, not {REVISION}")
@@ -107,9 +176,9 @@ def _guard_tree() -> None:
         raise run.rt.GuardError("G-clean: the run tree is dirty")
 
 
-# ----- summary (R27.102) -----------------------------------------------------------------------
+# ----- summary (R27.102-R27.103) ----------------------------------------------------------------
 def summary(runs_dir: Path, t_summary: Path) -> dict:
-    sys.path.insert(0, str(RUN_TREE / "scripts"))
+    run, _ = install()
     import summarize_task092 as st
 
     allr, _ = st._runs(runs_dir, COHORT)
@@ -130,14 +199,14 @@ def summary(runs_dir: Path, t_summary: Path) -> dict:
             problems.append(f"{name}: revision {r.get('revision')}")
         if r.get("goals_sha256") != run.sha(runs_dir / f"goals-{COHORT}.json"):
             problems.append(f"{name}: goals differ")
-        if (r.get("development") or {}).get("name") != "D-RATE":
-            problems.append(f"{name}: not a D-RATE report")
+        if (r.get("development") or {}).get("name") != NAME:
+            problems.append(f"{name}: not a {NAME} report")
     req = runs.get("M-req-87100", {})
     want = t.get("models", {}).get("G-req-87100", {}).get("checkpoint_sha256")
     if want is None or (req.get("model") or {}).get("checkpoint_sha256") != want:
         problems.append("M-req-87100: not Stage T's G-req checkpoint")
     out = {
-        "name": "D-RATE",
+        "name": NAME,
         "development_only": True,
         "gated": False,
         "cohort": COHORT,
@@ -167,7 +236,7 @@ def summary(runs_dir: Path, t_summary: Path) -> dict:
     return out
 
 
-def main(argv=None) -> int:
+def main(argv=None, *, run_tree: Path = RUN_TREE, load=spawned_load, runner=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv[:1] == ["summary"]:
         p = argparse.ArgumentParser()
@@ -182,14 +251,23 @@ def main(argv=None) -> int:
         path.write_text(json.dumps(s, indent=1, sort_keys=True) + "\n")
         print(json.dumps({k: s.get(k) for k in ("row", "k_req", "k_v1", "problems")}))
         return 0
-    _guard_tree()
+    if argv[:1] not in (["goals"], ["run"]):
+        raise SystemExit("usage: dev_task092_drate.py {goals,run,summary} ...")
+    for flag in ("--output", "--goals"):  # caller-relative paths, before the chdir below
+        if flag in argv[:-1]:
+            i = argv.index(flag) + 1
+            argv[i] = str(Path(argv[i]).resolve())
+    enter_run_tree(run_tree)  # G-cwd, before anything is imported from the run tree
+    families = None
+    if runner is None:
+        run, ra = install(run_tree)
+        _guard_tree(run)
+        runner = run.main
+        families = ra.CLOSED_LOOP_ARMS
+    preflight(load, families=families)  # G-preflight, before the runner claims any ledger key
     if argv[:1] == ["goals"]:
-        return run.main(argv + ["--cohort", COHORT, "--workers", "8"])
-    if argv[:1] == ["run"]:
-        return run.main(
-            argv + ["--cohort", COHORT, "--model-seed", "87100", "--workers", str(WORKERS)]
-        )
-    raise SystemExit("usage: dev_task092_drate.py {goals,run,summary} ...")
+        return runner(argv + ["--cohort", COHORT, "--workers", "8"])
+    return runner(argv + ["--cohort", COHORT, "--model-seed", "87100", "--workers", str(WORKERS)])
 
 
 if __name__ == "__main__":
