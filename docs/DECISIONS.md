@@ -72,7 +72,7 @@ gated stage ran; Stage P's roots and the BD and BS resets were not touched.
 
 - **R27.132 — Stage 0 is recorded and ends S0-PASS.**
   - **Code.** Opt-in modules `grasp_rate_projected{,_runtime}.py`, scripts
-    `{run,summarize}_task093.py` and `run_task093_stage.sh`, and 25 tests. No existing file
+    `{run,summarize}_task093.py` and `run_task093_stage.sh`, and 27 tests. No existing file
     changes except CLAUDE.md's entry points; `planning.py`, `embodiment.py`, the action manifest
     and TASK-087–TASK-092's files are checked against sha256 pins before any job runs.
   - **Equivalence.** Against `robot.project_candidates` on 40 debug states (zero and non-zero
@@ -88,7 +88,7 @@ gated stage ran; Stage P's roots and the BD and BS resets were not touched.
   - **Checks.** Hashes, λ, the rate limit, CEM and every frozen file pass. The seed check over 116
     remote-tracking refs finds no use of 916000–918999, 91900–91999 or 9011 outside TASK-093's
     files; the evidence tokens are TASK-077's update index 91900 and frame offsets in TASK-087's
-    episode table, none a seed.
+    episode table, none a seed. G-87102's checkpoint has `last_two_triggered: true`.
   - **Power** (20 000 simulations, 0.15 against 0.05): 0.988, 0.976 and 0.915 at n = 128 and SD 0,
     1 and 2. B-FAIL rates at SD 1 (20 000 simulations): 0.486 at 0.10 vs 0.05, 0.190 at 0.12 vs
     0.05, 0.229 at 0.15 vs 0.08, 0.021 at 0.15 vs 0.05.
@@ -105,8 +105,17 @@ gated stage ran; Stage P's roots and the BD and BS resets were not touched.
   two 64-reset jobs (projection 4 873 s ≤ 5 400 s); n stays 128.
 - **R27.135 — readings of points the DRAFT left open** (protocol §16.7): the debug split, the
   rate-set check as the |Δg| bound, T₀ from `_projection_targets`, the random reference's draw
-  order, the references' unused channels, the name S0-PASS, the row simulation's random at 0 and
-  its generator tag, and the request-terms measures on the first command.
+  order, the name S0-PASS, the row simulation's random at 0 and its generator tag, and the
+  request-terms measures on the first command. Also:
+  - the deterministic references (open/release, closed-vertical-−1, maximum-rate) keep every
+    unused channel at 0 and the left grasp at −1; the random reference draws every channel from
+    N(0, 1) clipped to TASK-088's bounds (left arm and left grasp fixed);
+  - Stage P's plumbing checks also require every M-v1 plan to equal TASK-091's `pr.a2_plan`
+    bitwise (the control is the recorded A2 planner); a mismatch is a P-VOID. It held on all 384
+    calibration root calls;
+  - after review, the runners claim the ledger only after the roots or goals are loaded and
+    checked and the G checkpoints and the DINOv2 encoder are loaded (a CPU test checks the order);
+    a stage whose job exits VOID is still summarised. No Stage 0 number depends on this.
 - **R27.136 — the debug smoke is not evidence;** the development calibration counts are not a
   Stage P result.
 - **R27.137 — frozen at the Stage 0 PR's merge.** Stages P, BD and BS run at the merged revision

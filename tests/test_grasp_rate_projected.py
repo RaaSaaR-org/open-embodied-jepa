@@ -459,3 +459,69 @@ def test_summarizer_needs_prior_stages(tmp_path):
                  ["--stage", "p", "--runs", str(tmp_path)]):  # fmt: skip
         res = subprocess.run([sys.executable, str(script), *argv], capture_output=True, text=True)
         assert res.returncode != 0
+
+
+def _runner():
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import run_task093 as runner
+    finally:
+        sys.path.remove(str(ROOT / "scripts"))
+    return runner
+
+
+class _Claimed(Exception):
+    pass
+
+
+def _record_order(runner, monkeypatch):
+    calls = []
+    monkeypatch.setattr(runner, "base_report", lambda *a, **k: {"revision": "r"})
+    monkeypatch.setattr(runner, "_lambda_check", lambda: None)
+    monkeypatch.setattr(runner, "_manifest", lambda: {})
+    monkeypatch.setattr(
+        runner, "_load_model", lambda s: calls.append(f"model-{s}") or {"checkpoint_sha256": "x"}
+    )
+    monkeypatch.setattr(runner, "_load_encoder", lambda: calls.append("encoder") or {})
+
+    def claim(key):
+        calls.append(f"ledger:{key}")
+        raise _Claimed
+
+    monkeypatch.setattr(runner, "ledger_claim", claim)
+    return calls
+
+
+def test_plans_claims_the_ledger_only_after_roots_and_model_loads(monkeypatch, tmp_path):
+    """R27.107's class of defect: a guard or a load failing after the claim would spend the
+    cohort. The claim must come after the roots, the G checkpoints and the encoder."""
+    runner = _runner()
+    calls = _record_order(runner, monkeypatch)
+    monkeypatch.setattr(
+        runner, "load_roots", lambda *a, **k: calls.append("roots") or ({"roots": []}, {}, "s")
+    )
+    args = runner.main.__globals__["argparse"].Namespace(
+        cohort="p-roots", roots=str(tmp_path), output=str(tmp_path), limit=None,
+        stage_p_smoke=False, cap_seconds=None)  # fmt: skip
+    with pytest.raises(_Claimed):
+        runner.cmd_plans(args)
+    claim = calls.index("ledger:plans-p-roots")
+    assert calls[-1] == "ledger:plans-p-roots"
+    for need in ("roots", "encoder", "model-87100", "model-87101", "model-87102"):
+        assert calls.index(need) < claim, calls
+
+
+def test_run_claims_the_ledger_only_after_goals_and_model_loads(monkeypatch, tmp_path):
+    runner = _runner()
+    calls = _record_order(runner, monkeypatch)
+    monkeypatch.setattr(runner, "load_goals", lambda *a, **k: calls.append("goals") or (
+        [{"seed": s} for s in rp.COHORTS["bd-grasp"]], "s"))  # fmt: skip
+    args = runner.main.__globals__["argparse"].Namespace(
+        cohort="bd-grasp", arm="M-proj", model_seed=87100, goals=str(tmp_path),
+        output=str(tmp_path), workers=6, part=None, limit=None, determinism=False,
+        suffix=None, cap_seconds=None)  # fmt: skip
+    with pytest.raises(_Claimed):
+        runner.cmd_run(args)
+    claim = calls.index("ledger:run-bd-grasp-M-proj-87100")
+    for need in ("goals", "encoder", "model-87100"):
+        assert calls.index(need) < claim, calls

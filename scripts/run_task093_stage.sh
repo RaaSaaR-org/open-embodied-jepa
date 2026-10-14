@@ -52,6 +52,18 @@ gpu() {
     sleep 60
   done
 }
+# A job that exits VOID (3: a plumbing or equivalence check failed) does not stop the stage
+# before its summary: the stage records the VOID, summarises, and then exits 3 itself.
+VOID=0
+gpuv() {
+  local code=0
+  gpu "$@" || code=$?
+  if [ "$code" -eq 3 ]; then
+    echo "[$(date -u +%FT%TZ)] job exited VOID (3): $*" >&2; VOID=3
+  elif [ "$code" -ne 0 ]; then
+    exit "$code"
+  fi
+}
 WM_ARMS() {  # arm:seed pairs of a cohort, from the frozen tables
   rp "t = r.BD_SEEDS if '$1' == 'bd' else r.BS_SEEDS; print(' '.join(f'{a}:{s}' for a in ('M-proj', 'M-v1') for s in t[a]))"
 }
@@ -59,7 +71,7 @@ case "$STAGE" in
   p)
     S0=${3:?Stage 0 summary}
     gpu "${PY[@]}" roots --cohort p-roots --output "$OUT" --workers 8
-    gpu "${PY[@]}" plans --cohort p-roots --roots "$OUT" --output "$OUT"
+    gpuv "${PY[@]}" plans --cohort p-roots --roots "$OUT" --output "$OUT"
     "$PYB" scripts/summarize_task093.py --stage p --runs "$OUT" --s0-summary "$S0" ;;
   bd)
     PS=${3:?Stage P summary}
@@ -68,7 +80,7 @@ case "$STAGE" in
       gpu "${PY[@]}" run --cohort bd-grasp --arm "$a" --goals "$OUT" --output "$OUT" --workers 8
     done
     for pair in $(WM_ARMS bd); do
-      gpu "${PY[@]}" run --cohort bd-grasp --arm "${pair%%:*}" --model-seed "${pair##*:}" \
+      gpuv "${PY[@]}" run --cohort bd-grasp --arm "${pair%%:*}" --model-seed "${pair##*:}" \
         --goals "$OUT" --output "$OUT" --workers 6
     done
     "$PYB" scripts/summarize_task093.py --stage bd --runs "$OUT" --p-summary "$PS" ;;
@@ -80,16 +92,17 @@ case "$STAGE" in
     done
     for pair in $(WM_ARMS bs); do
       for i in $(seq 1 "$PARTS"); do
-        gpu "${PY[@]}" run --cohort bs-grasp --arm "${pair%%:*}" --model-seed "${pair##*:}" \
+        gpuv "${PY[@]}" run --cohort bs-grasp --arm "${pair%%:*}" --model-seed "${pair##*:}" \
           --part "$i/$PARTS" --goals "$OUT" --output "$OUT" --workers 6
       done
       "$PYB" scripts/run_task093.py combine --cohort bs-grasp --arm "${pair%%:*}" \
         --model-seed "${pair##*:}" --runs "$OUT"
     done
-    gpu "${PY[@]}" run --cohort bs-grasp --arm M-proj --model-seed 87100 --determinism \
+    gpuv "${PY[@]}" run --cohort bs-grasp --arm M-proj --model-seed 87100 --determinism \
       --goals "$OUT" --output "$OUT" --workers 4
     "$PYB" scripts/summarize_task093.py --stage bs --runs "$OUT" --bd-summary "$BD" \
       --p-summary "$PS" ;;
   *) sed -n '2,14p' "$0" >&2; exit 2 ;;
 esac
+[ "$VOID" -ne 0 ] && { echo "STAGE-$STAGE-VOID" >&2; exit "$VOID"; }
 echo "STAGE-$STAGE-DONE"

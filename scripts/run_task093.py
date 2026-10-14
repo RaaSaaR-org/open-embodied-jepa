@@ -156,14 +156,29 @@ def ledger_claim(key: str) -> None:
         raise rt.GuardError(f"G-twice: {key} was started before ({path})") from error
 
 
-def preflight(seeds) -> dict:
-    """Load every model a job needs (on the CPU) before any ledger claim (R27.109)."""
+def _load_model(seed: int) -> dict:
     from embodied_jepa import grasp_rate_projected_runtime as rr
 
-    out = {}
-    for s in seeds:
-        _, info = rr.load_model(int(s), "cpu")
-        out[f"G-v1-{s}"] = info["checkpoint_sha256"]
+    _, info = rr.load_model(int(seed), "cpu")
+    return info
+
+
+def _load_encoder() -> dict:
+    """TASK-087's frozen DINOv2 encoder and its pinned projection (on the CPU)."""
+    from embodied_jepa import grasp_corpus_wm_runtime as gr
+
+    enc = gr.encoder("cpu")
+    digest = getattr(enc.featuriser, "digest", None)
+    if digest != gr.ENCODER_DIGEST:
+        raise rt.GuardError("G-encoder: not TASK-087's DINOv2 encoder")
+    return {"featuriser_digest": digest}
+
+
+def preflight(seeds) -> dict:
+    """Load every model a job needs -- the G checkpoints and the DINOv2 encoder with its
+    projection -- on the CPU before any ledger claim (R27.109)."""
+    out = {f"G-v1-{s}": _load_model(s)["checkpoint_sha256"] for s in seeds}
+    out["encoder"] = _load_encoder()
     return out
 
 
@@ -606,17 +621,13 @@ def load_roots(folder, cohort, revision):
 # ----- plans: §6.1's calibration, Stage P and the smoke ----------------------------------------
 def cmd_plans(args) -> int:
     """One CEM call per root at R1 and at R2 with the A2 seed for M-proj and M-v1 on each seed:
-    the executed measures C8@R1 and H8@R2, the plumbing checks (every M-proj plan in the rate set
-    and its own projection; both arms' first-iteration samples identical; every M-v1 plan equal
-    to ``pr.a2_plan``'s bitwise), P-MECH, the requests beyond the limit and TASK-089's request
-    measures (reported), and the references. On cal-roots this is §6.1's calibration (bars and
-    degeneracy checks); on p-roots it is Stage P's gate with the frozen bars."""
-    from embodied_jepa import devices
-    from embodied_jepa import grasp_corpus_wm_planned_close_runtime as pr
-    from embodied_jepa import grasp_corpus_wm_runtime as gr
-    from embodied_jepa import grasp_rate_projected_runtime as rr
-    from embodied_jepa import play_corpus as pc
-
+    the executed measures C8@R1 and H8@R2, the plumbing checks (every M-proj plan's grasp steps
+    within |Δg| <= 2/11 + 1e-6 from the root's grasp; both arms' first-iteration samples
+    identical; every M-v1 plan equal to ``pr.a2_plan``'s bitwise), P-MECH, the requests beyond
+    the limit and TASK-089's request measures (reported), and the references. On cal-roots this
+    is §6.1's calibration (bars and degeneracy checks); on p-roots it is Stage P's gate with the
+    frozen bars. The roots are loaded and checked, and every model is loaded, before the ledger
+    claim."""
     if args.cohort not in rp.ROOT_COHORTS:
         raise rt.GuardError(f"{args.cohort} is not a root cohort")
     debug = args.cohort.startswith("debug")
@@ -631,16 +642,22 @@ def cmd_plans(args) -> int:
         raise rt.GuardError(f"refusing to overwrite {out}")
     _lambda_check()
     manifest = _manifest()
+    rep, data, roots_sha = load_roots(args.roots, args.cohort, report["revision"])
+    if args.limit:
+        if not debug:
+            raise rt.GuardError("--limit is for debug cohorts only")
+        rep = dict(rep, roots=rep["roots"][: args.limit])
     report["preflight"] = preflight(rp.MODEL_SEEDS)
-    if not debug:
+    if not debug:  # the claim comes last: after every guard, the roots and the model loads
         ledger_claim(f"plans-{args.cohort}")
     with Job(out, report, _cap(args)) as job:
+        from embodied_jepa import devices
+        from embodied_jepa import grasp_corpus_wm_planned_close_runtime as pr
+        from embodied_jepa import grasp_corpus_wm_runtime as gr
+        from embodied_jepa import grasp_rate_projected_runtime as rr
+        from embodied_jepa import play_corpus as pc
+
         devices.configure_determinism("cuda", strict=False)
-        rep, data, roots_sha = load_roots(args.roots, args.cohort, report["revision"])
-        if args.limit:
-            if not debug:
-                raise rt.GuardError("--limit is for debug cohorts only")
-            rep = dict(rep, roots=rep["roots"][: args.limit])
         robot = pc.make_play_robot()
         geometry = rp.RateGeometry.from_robot(robot)
         robot.close()

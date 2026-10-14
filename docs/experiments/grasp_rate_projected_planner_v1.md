@@ -760,6 +760,11 @@ false`, and every job ran in the worktree root, where `third_party/le-wm` is):
 - `0055acd` (Stage P's bars written into `grasp_rate_projected.P_BARS`): the debug Stage P smoke,
   every debug closed-loop run, the determinism re-run and the opt-in render tests.
 - The record commit changes documentation only.
+- The review fixes (after every Stage 0 run; no Stage 0 number depends on them) reorder
+  `cmd_plans` so the ledger claim comes after `load_roots` and after the model loads, add TASK-087's
+  DINOv2 encoder (with its digest check) to the preflight of `plans` and `run`, let
+  `run_task093_stage.sh` summarise a stage whose job exited VOID, and correct a comment and a
+  docstring. The Stage 0 reports record the earlier module and runner hashes.
 
 ### 16.1 Code
 
@@ -783,19 +788,24 @@ false`, and every job ran in the worktree root, where `third_party/le-wm` is):
 - `scripts/run_task093.py` (`verify`, `seeds`, `power`, `rows`, `equivalence`, `roots`, `plans`,
   `smoke-checks`, `goals`, `run`, `combine`, `video`), `scripts/summarize_task093.py` (stages 0, p,
   bd, bs, timing) and `scripts/run_task093_stage.sh` (stages p, bd, bs). Every job refuses another
-  working directory or a missing `third_party/le-wm` (R27.107's lesson) and loads its models before
-  any ledger claim.
-- `tests/test_grasp_rate_projected.py`, 25 tests: the projector against `_prepare_side` bitwise
-  with zero and non-zero arm deltas (no rendering), against `robot.project_candidates` bitwise
-  (graphics opt-in), the cumulative clip on synthetic sequences, the hook contract, the empty
-  interval, the identity-projector pairing and the shared first-iteration samples, the runtime
-  planner's configuration, the measures and references, the bar rule and degeneracy checks on
-  synthetic counts, the frozen bars, the P and S0 rows, the B rows against TASK-090's, the
-  closed-loop equivalence measure (bitwise), the request measure, the power rule and row-rate
-  plumbing, the seed ranges and their disjointness with earlier tasks, the admitted runs, the
-  frozen-file pins, the core-import check, the working-directory guard and the summarizer's
-  refusals. The whole suite: 2 455 passed, 34 skipped (graphics opt-in, MPS unavailable and the LeRobot-source opt-in; at `0055acd`); with
-  `JEPA_TEST_RENDER=1` this file's 25 pass.
+  working directory or a missing `third_party/le-wm` (R27.107's lesson). Before any ledger claim,
+  `plans` loads and checks its roots and `run` its goals, and both load their G checkpoints and
+  TASK-087's DINOv2 encoder with its projection (preflight, on the CPU); a CPU test fails if a claim
+  comes first. A job that exits VOID does not stop `run_task093_stage.sh` before its summary; the
+  stage then exits VOID itself.
+- `tests/test_grasp_rate_projected.py`, 27 tests: the projector against `_prepare_side` bitwise with
+  zero and non-zero arm deltas (no rendering), against `robot.project_candidates` bitwise (graphics
+  opt-in), the cumulative clip on synthetic sequences, the hook contract, the empty interval, the
+  identity-projector pairing and the shared first-iteration samples, the runtime planner's
+  configuration, the measures and references, the bar rule and degeneracy checks on synthetic
+  counts, the frozen bars, the P and S0 rows, the B rows against TASK-090's, the closed-loop
+  equivalence measure (bitwise), the request measure, the power rule and row-rate plumbing, the seed
+  ranges and their disjointness with earlier tasks, the admitted runs, the frozen-file pins, the
+  core-import check, the working-directory guard, the ledger claim's place after the roots or goals
+  and the model loads, and the summarizer's refusals. The whole suite at the review head: 2 457
+  passed, 34 skipped (graphics opt-in, MPS unavailable and the LeRobot-source opt-in; 2 455 and 34
+  at `0055acd`); with `JEPA_TEST_RENDER=1` this file's 25 tests of `0055acd` passed (the two added
+  after review are CPU-only).
 - No existing file changes except CLAUDE.md's entry points and this record.
 
 ### 16.2 Checks
@@ -843,13 +853,20 @@ command's first step is clipped from the same T₀ by the same formula, as the s
 - **Degeneracy checks: all pass.** (a) open/release 0 / 64 on both, and closed-vertical-−1 0 / 64
   on H8. (b) random 0 ≤ 19 on C8 and 6 ≤ 24 on H8. (c) the control's median 51 and 64, both
   ≥ 16.
+- **Executed path.** §6.1 calls a projected plan's executed path "the plan itself"; the code
+  re-projects the stored plan, which can differ from it by about one float32 ulp (about 10⁻⁷,
+  §16.2). C8's 10⁻⁶ slack absorbs this; H8's > 0.5 test could change only for a path value within
+  about 10⁻⁷ of 0.5.
+- **G-87102's checkpoint has `last_two_triggered: true`** (TASK-087's training flag, recorded in
+  `plans-cal-roots.json`); G-87100's and G-87101's do not.
 - **Reported, development only** (not a gate): on these roots M-proj-87100's C8 (36) is below
   bar_C8, and the other five M-proj counts are at or above their bars. So a Stage P seed failing
   alone (which does not make P-FAIL) is plausible on the evidence of these roots.
 - **P-MECH (reported)**, mean |predicted − executed hand synergy| over steps 1–8 at R1: M-proj
-  0.285, 0.293 and 0.282; M-v1 0.461, 0.517 and 0.411. At step 8 the mean executed grasp is
-  0.37–0.43 for both arms, while G predicts 0.07–0.11 under M-proj's plans and 0.59–0.64 under
-  M-v1's. So under projection G predicts a hand that closes more *slowly* than executed, where
+  0.285, 0.292 and 0.282; M-v1 0.461, 0.517 and 0.411. At step 8 the mean executed grasp is
+  0.37–0.43 under M-proj's plans and 0.34–0.45 under M-v1's, while G predicts 0.07–0.11 under
+  M-proj's plans and 0.59–0.64 under M-v1's. So (development roots, reported only) under
+  projection G predicts a hand that closes more *slowly* than executed, where
   under its own unprojected plans it predicts one that closes faster.
 - **M-proj's requests (reported):** 490–503 of 512 requested grasp steps at R1 and 173–226 of 512
   at R2 lie beyond the limit from the executed path. The refit on requests drifts towards
@@ -894,9 +911,14 @@ values; nothing escalates.
 
 ### 16.5 Debug smoke (debug seeds only; never counted; not evidence)
 
-- **Stage P plumbing** on 6 debug roots (91940–91945, 1 rejected draw) with the frozen bars: every
-  check ran, the gate and row were computed (P-VOID on these debug files, because the debug roots
-  were made at an earlier revision; that is the revision check working).
+- **Stage P plumbing** on 6 debug roots (91940–91945, 1 rejected draw). The evidence holds two
+  debug Stage P summaries, both P-VOID and both plumbing only:
+  - `debug/summary-p-smoke.json` read the second debug `plans` file (at `c7cf7f4`, run before the
+    bars were frozen and without the gate) with roots made at `c18bdae`. It is P-VOID on the mixed
+    revisions and because its bars are not the frozen ones.
+  - `debug/p-smoke/summary-p-smoke.json` read the `--stage-p-smoke` run at `0055acd` with the
+    frozen bars. Every check ran and the gate and row were computed. It is P-VOID only because the
+    debug roots were made at an earlier revision, which is the revision check working.
 - **Closed loop** on 6 debug resets (91960–91965, 3 rejected draws): ik 4 / 6, ik-nopress 4 / 6,
   hold 0 / 6, random 0 / 6, M-v1-87100 0 / 6 (one episode stopped by the joint-velocity guard),
   M-proj-87100 0 / 6 (run as two 3-reset jobs, combined). The **determinism re-run** of M-proj on
@@ -938,7 +960,12 @@ re-run). Total about 13–16 GPU h, as §10.
     targets;
   - the random reference draws R1's sequence and then R2's from `default_rng([9011, root seed])`,
     N(0, 1) clipped to TASK-088's bounds;
-  - the references keep every unused channel at 0 and the left grasp at −1;
+  - the deterministic references (open/release, closed-vertical-−1, maximum-rate) keep every
+    unused channel at 0 and the left grasp at −1; the random reference draws every channel from
+    N(0, 1) clipped to TASK-088's bounds (left arm and left grasp fixed);
+  - Stage P's plumbing checks also require every M-v1 plan to equal TASK-091's `pr.a2_plan`
+    bitwise (the control is the recorded A2 planner); a mismatch is a P-VOID. It held on all 384
+    calibration root calls;
   - "S0-PASS" names the absence of S0-ESCALATE;
   - the row-rate simulation puts random at 0 successes, as the DRAFT's `rows.py` did, with its own
     generator tag (93);

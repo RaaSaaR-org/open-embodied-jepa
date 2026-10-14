@@ -683,7 +683,7 @@ POWER_TARGET = gc.POWER_TARGET  # 0.80
 POWER_SIMS = 20_000
 ROW_GRID = ((0.10, 0.05), (0.12, 0.05), (0.15, 0.05), (0.15, 0.08))
 ROW_BAR = zg.PLAN_GRASP_BAR  # 0.40, the plan's bar (the BD bar is at most this)
-ROW_SEED = 93  # a fixed tag in the row simulation's generator (declared here, R27.133)
+ROW_SEED = 93  # a fixed tag in the row simulation's generator (declared here, R27.135)
 
 
 def power_rule(rows: list[dict]) -> dict:
