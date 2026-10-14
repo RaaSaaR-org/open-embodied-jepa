@@ -620,7 +620,9 @@ def cmd_plans(args) -> int:
     if args.cohort not in rp.ROOT_COHORTS:
         raise rt.GuardError(f"{args.cohort} is not a root cohort")
     debug = args.cohort.startswith("debug")
-    stage_p = args.cohort == "p-roots"
+    if args.stage_p_smoke and not debug:
+        raise rt.GuardError("--stage-p-smoke is for debug cohorts only")
+    stage_p = args.cohort == "p-roots" or bool(args.stage_p_smoke)
     if stage_p and rp.P_BARS is None:
         raise rt.GuardError("G-bars: Stage P needs the bars frozen at Stage 0")
     report = base_report(args.cohort)
@@ -1203,6 +1205,7 @@ def main(argv=None) -> int:
     pl.add_argument("--roots", required=True)
     pl.add_argument("--output", required=True)
     pl.add_argument("--limit", type=int)
+    pl.add_argument("--stage-p-smoke", action="store_true", help="debug: Stage P's gate and row")
     pl.add_argument("--cap-seconds", type=int)
     sc = sub.add_parser("smoke-checks")
     sc.add_argument("--roots", required=True)
