@@ -569,7 +569,9 @@ def cmd_stage_r(args) -> int:
             del model
         n_model, n_info = rr.load_v1(87100, "cuda", arm="N")
         infos["N-v1-87100"] = n_info
-        ln, _ = rr.rollout_at(
+        from embodied_jepa import grounded_wm_model as gm
+
+        ln = gm.predict_at(  # N predicts no state: TASK-087's latent roll-out
             n_model, x["start"], x["commands"], x["states"], gc.E_HORIZONS, device="cuda"
         )
         n_err = {h: gw.latent_error(ln[h], x["targets"][h]) for h in gc.E_HORIZONS}
