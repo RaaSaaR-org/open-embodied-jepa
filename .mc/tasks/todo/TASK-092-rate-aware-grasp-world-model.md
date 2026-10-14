@@ -91,4 +91,4 @@ Protocol: [grasp_rate_aware_wm_v1.md](../../../docs/experiments/grasp_rate_aware
 - `worktrees/task087-run` (TASK-087's feature store and projection) must not be archived or
   removed until TASK-092 closes.
 - The development evidence behind the DRAFT is `~/develop/emai/evidence/task092-prototype/`
-  (`SHA256SUMS` sha256 `9d9c3fa9…d1e8`).
+  (`SHA256SUMS` sha256 `fd972ef4…910c`, regenerated after the review of #214).

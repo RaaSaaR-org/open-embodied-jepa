@@ -70,7 +70,8 @@ is kept as written.
 grasp step is a model change with its own preregistration.
 
 **Why this change (development, not gated; protocol §1.2 and §11).** CPU only, at `64dad40`;
-scripts and outputs in `~/develop/emai/evidence/task092-prototype/` (`SHA256SUMS`).
+scripts and outputs in `~/develop/emai/evidence/task092-prototype/` (`SHA256SUMS` sha256
+`fd972ef4…910c`, regenerated after the review of #214).
 
 - The right-grasp channel is rate-limited to 2 / 11 per command (`embodiment.py`,
   `_prepare_side`), so from an open hand a close registers at about the 9th command. No executed
@@ -108,6 +109,14 @@ scripts and outputs in `~/develop/emai/evidence/task092-prototype/` (`SHA256SUMS
   (ρ_ctrl − 1). The measured ceiling is 1, and ρ_ctrl is the paired control's ratio on the same
   roots. R2: no regression under the executed commands, within δ measured from the control seeds.
   E: TASK-090's validity checks. R-PREMISE applies if a control's ratio is below 2.
+  - **Attainability** (development, CPU, 826 val R-roots, after the review of #214). Each control
+    was wrapped with a clip around the grasp inferred from its hand joints.
+  - The wrapped ratios were 0.996–1.004 (upper bounds), far below the val bars of 2.60–3.11, so
+    the bar stands.
+  - But the wrapper's executed-command hand error is 6.6–7.4 times the bare control's, so R1
+    alone can be met degenerately, and R1 and R2 are gated together.
+  - On val, R2's margins are δ_L = 0.013 and δ_H = 0.51; the hand-state margin is loose.
+  - Stage 0 repeats both measurements and records them.
 - **R27.79 — Stage A‴.** TASK-091's A″ on fresh roots 908000–908063, as a no-regression gate.
 - **R27.80 — closed loop.** BD 90400–90431, an independent GO, then BS on n = 128,
   909000–909127. The bar is min(0.40, 0.9 r) (pooled 156 / 384, floor 26 / 128 at 0.40), with
@@ -116,11 +125,17 @@ scripts and outputs in `~/develop/emai/evidence/task092-prototype/` (`SHA256SUMS
 - **R27.81 — power.** The declared alternative is 0.15 against 0.05 per seed. Power at n = 128 is
   0.98 at SD 1 (development, 2 000 simulations). Stage 0 recomputes it.
 - **R27.82 — rows**, in the protocol's §7 order.
+  - A‴-FAIL counts the G-req seeds that fail R1, R2 or A‴ together, so the closed loop never runs
+    with fewer than two clean seeds.
+  - B-FAIL needs all three: M-req does not beat M-v1; k_g is below the pooled bar or M-req does
+    not beat random; and the upper bound is below δ.
+  - A T-VOID on a completed job is not replaced by a fresh model seed without a ruling that keeps
+    M-v1's pairing.
 - **R27.83 — the clause** fires on B-FAIL only. It closes rate-equivalent request augmentation of
   the grasp channel as the grasp fix under TASK-087's recipe, latent and corpus and TASK-089's
   planner. The other model changes, arm-channel feasibility, planner-side projection, the corpora,
   reach, Phase 4 and the product goal stay open.
-- **R27.84 — seeds and salts.** Checked on 109 remote branches and in the evidence: A‴
+- **R27.84 — seeds and salts.** Checked on 109 remote-tracking refs and in the evidence: A‴
   908000–908063, BD 90400–90431, BS 909000–909127, debug 90500–90599, new salts 9008 and 9009
   (9007 is D-A2's).
 - **R27.85 — budget.** About 17 GPU h: Stage T 1.9, BD 1.2 and BS 12.8, the rest under 1. Every job

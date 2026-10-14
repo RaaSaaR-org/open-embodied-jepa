@@ -43,9 +43,10 @@ Every number below is quoted with the qualifiers of its record. The records are 
   2.0 × 0.05 / 0.55 = **2 / 11 ≈ 0.182 per command** (`embodiment.py`, `_prepare_side`, the
   "grasp rate" clip after the arm IK; `configs/g1_sim_action.json`). From an open hand (−1) the
   executed channel first exceeds 0.5 at about the 9th closing command. TASK-091's deferral
-  measures show exactly this: the median first executed close in the grasp phase came at command
-  8–10 in every world-model arm (p10 8; observed minimum 7), "about 0–2 commands after the earliest
-  possible".
+  measures are consistent with this: in Stage BS (one run, simulation only) the median first
+  executed close in the grasp phase came at command 8–10 in every world-model arm, and in Stage BD
+  (development, 32 resets, three world-model arms) the p10 was 8 in every arm and the observed
+  minimum 7, "about 0–2 commands after the earliest possible".
 - **A planned close is not an executed close.** On reset 90319 (TASK-091 Stage BD, development)
   M-v1-87100 planned the close at step 1 on 46 % of its re-plans but never executed one: "its
   requests alternated close and open, and the rate limit never let the channel build up".
@@ -57,10 +58,10 @@ Every number below is quoted with the qualifiers of its record. The records are 
   robot's own predicted joints (G's pose term)": the latent cost on real frames is at chance
   there (32 / 64) and G-lat wins 15 / 64. And the branches A1 compares are executed, rate-feasible
   command sequences.
-- **Prediction quality near contact, under recorded commands.** TASK-090 Stage E (common val
-  windows): G's h = 8 roll-out error on lift windows (0.419–0.431) and on grasp-contact windows
+- **Prediction quality near contact, under recorded commands.** TASK-090 Stage E (one run, offline,
+  simulation only; common val windows): G's h = 8 roll-out error on lift windows (0.419–0.431) and on grasp-contact windows
   (0.435–0.449) is not higher than on all windows (0.466–0.473); TASK-087's G 0.435–0.439 and
-  0.451–0.456. TASK-087: G's state head predicts the standardised right arm and hand state with
+  0.451–0.456. TASK-087 Stage E (one run, offline, simulation only): G's state head predicts the standardised right arm and hand state with
   MSE 0.012–0.013 at h = 1 and 0.036–0.037 at h = 16 under the executed commands. TASK-090 A′'s
   readability probe (reported only; 16 positives at h = 8): the outcome "the target is in a lift
   state at h" reads from the models' predicted latent and state at AUROC 0.740–0.809, from the
@@ -86,8 +87,8 @@ The planner does not query the models under the commands the corpus contains.
   off the training support (|Δg| > 2 / 11 against the previous executed or planned grasp), only
   **11–25 % of chosen plans** are wholly on it, and the grasp of the executed first command was
   clipped by the rate limit on **69–88 % of grasp-phase commands**. Successful episodes had a
-  lower off-support share (median 0.14–0.36) than failed ones (0.24–0.44), a correlation that
-  shorter, successful episodes confound.
+  lower off-support share (median 0.14–0.36; the upper end is M-v1-87100's single success) than
+  failed ones (0.24–0.44), a correlation that shorter, successful episodes confound.
 - **What the models predict there.** On 826 val roots of `play-v1` whose eight executed grasp
   commands contain at least one at-limit step, each model was rolled out (CPU only) under three
   command sequences that **the embodiment executes identically**: the executed one; a *saturated*
@@ -276,13 +277,43 @@ executed actions only; no model was run on test for this draft).
   G-req removes at least three quarters of its control's excess over the ceiling. If ρ_ctrl,i is
   below 2 on the test roots, the premise of §1.2 does not hold there: the row is R-PREMISE
   (§7), before any closed loop.
+
+  **Attainability (Stage 0, reported, val, CPU).** Before the freeze, Stage 0 measures the ratio
+  H_sat / H_exec at h = 8 on the 826 val R-roots for each control G-i wrapped with an *inferred
+  clip*. At each roll-out step the request is clipped to ± 2 / 11 around the grasp inferred
+  (`zero_shot.synergy_grasp`'s least squares on the synergy line) from the measured hand joints at
+  step 1, and from G-i's own predicted hand joints afterwards. This measures how well the previous
+  target can be recovered from the joints G-req sees. If any seed's upper bound exceeds that seed's
+  R1 bar computed on val, the bar is not attainable from the hand state, and the draft escalates
+  before the freeze. The wrapper is an offline reference only, never an arm or a planner setting.
+
+  **The reference, measured for this draft** (development, CPU only, `r1_reference.py`, §11):
+
+  | Control | ρ_ctrl on val (97.5 % interval) | R1 bar on val | Inferred-clip ratio (97.5 % interval) | Inferred-clip H_exec (bare control's) |
+  | --- | --- | --- | --- | --- |
+  | G-87100 | 7.59 (4.56–14.97) | 2.65 | 0.999 (0.997–1.003) | 0.327 (0.044) |
+  | G-87101 | 9.45 (5.45–19.23) | 3.11 | 1.001 (0.998–1.004) | 0.350 (0.050) |
+  | G-87102 | 7.39 (4.07–16.73) | 2.60 | 0.999 (0.996–1.003) | 0.372 (0.055) |
+
+  The ratio's bar is attainable from the hand state: every upper bound is far below its bar, so
+  the bar is not re-derived. But the reference reaches a ratio near 1 by being equally wrong for
+  both sequences. Its H_exec is 6.6–7.4 times the bare control's, so it would fail R2 by far. The
+  joint angles lag the synergy target: the inferred previous grasp is within 2 / 11 of the
+  executed one on 88 % of val frames (median error 0.002, p90 0.235). **So R1 alone can be met
+  degenerately, and R1 and R2 are gated together.** No reference shows that both can be met at
+  once; only training G-req can. That is a declared risk (§10), not a reason to change the bar.
 - **R2, no regression under the recorded commands.** δ is measured on the same roots from the
   three control seeds, as TASK-087 §6.4 measured it on val: the largest, over the six ordered pairs
   (i, j) with i ≠ j, of the upper 97.5 % bound of the ratio X(G-i) / X(G-j), minus 1 (0 if
   negative). It is computed once for
   the latent error on all 5 634 test roots (δ_L) and once for the hand-state MSE on R-roots (δ_H).
   **Bars: the upper bound of L_exec(G-req-i) / L_exec(G-i) ≤ 1 + δ_L, and of
-  H_exec(G-req-i) / H_exec(G-i) ≤ 1 + δ_H.**
+  H_exec(G-req-i) / H_exec(G-i) ≤ 1 + δ_H.** Measured the same way on val for this draft
+  (development, `r2_delta_val.py`, §11): δ_L = 0.013 and δ_H = 0.51. So R2's latent margin is
+  tight, but its hand-state margin is loose: a G-req whose executed-command hand error is up to
+  about 1.5 times its control's passes. Stage 0 repeats the val measurement and records it. The
+  test values set the bars. H_sat(G-req-i) / H_exec(G-i), the saturated error against the
+  control's executed-command error, is reported beside R1 and R2.
 - **E, validity** (TASK-090 §6.1's checks, on the same test roots): (i) roll-out error below
   copy-last at h = 4 and 8 (upper bound of the ratio < 1); (ii) action sensitivity (TASK-087's
   wrong-command / true-command ratio with TASK-087's wrong table, salt 8711) with lower bound > 1
@@ -348,8 +379,8 @@ The machinery of TASK-090 §7 and TASK-091 §5, with M-req in M-v2g's place and 
      clause.
   4. **B-BAR** — k_g ≥ the pooled bar and M-req beats random, but M-req does not beat M-v1. The bar
      is met, but not because of the change. Escalate; no clause; no Phase 4 by itself.
-  5. **B-FAIL** — M-req does not beat M-v1, k_g is below the pooled bar or M-req does not beat
-     random, **and** the bootstrap 95 % upper bound of (k_g − k_c) / 384 is below **δ = +0.10**.
+  5. **B-FAIL** — M-req does not beat M-v1, **and** (k_g is below the pooled bar or M-req does
+     not beat random), **and** the bootstrap 95 % upper bound of (k_g − k_c) / 384 is below **δ = +0.10**.
      **The clause fires** (§8).
   6. **B-UNDER** — as B-FAIL, but that upper bound is ≥ δ. Escalate; no clause.
 - **Reported with every row:** each seed's count with its exact 95 % interval; ik against M-req;
@@ -368,13 +399,13 @@ The machinery of TASK-090 §7 and TASK-091 §5, with M-req in M-v2g's place and 
 
 | Row | When | Next step |
 | --- | --- | --- |
-| T-VOID | §6.1 | fix under its own ruling; re-run on the same seeds only if the job did not complete |
+| T-VOID | §6.1 | fix under its own ruling; re-run on the same model seeds only if the job did not complete. A completed job that failed a check is not replaced by a fresh model seed without a ruling that also says how M-v1's pairing (§4.2) is kept, since fresh seeds break it |
 | R-VOID | a Stage R check fails (checkpoint, hashes, roots, the equivalence check of §13) | fix under its own ruling |
 | R-PREMISE | any control seed's ρ_ctrl,i < 2 on the test roots | escalate; no clause: §1.2's mismatch does not hold on held-out roots |
 | E-FAIL | any G-req seed fails E | escalate; no clause |
-| R-FAIL | two or more G-req seeds fail R1 or R2 | escalate; no clause: the augmentation did not install rate fidelity without regression, so H2 was not tested |
+| R-FAIL | two or more G-req seeds fail R1 or R2 (A‴-FAIL then also counts a seed that failed R together with one that fails A‴) | escalate; no clause: the augmentation did not install rate fidelity without regression, so H2 was not tested |
 | A‴-VOID | as TASK-091's A″-VOID, on A‴ | fix under its own ruling; fresh roots |
-| A‴-FAIL | two or more G-req seeds fail A‴ | escalate; no clause |
+| A‴-FAIL | two or more G-req seeds fail R1, R2 or A‴, counted together (a seed failing any of them counts once) | escalate; no clause |
 | B-VOID … B-UNDER | §6.4 | as §6.4 |
 
 - A G-req seed that fails R or A‴ alone stays in M-req's pooled count; its results are reported
@@ -430,7 +461,9 @@ bootstrap). A root's or reset's rejected draws are further attempts under the sa
 
 **Checked (DRAFT, 2026-10-14).**
 
-- **Remote branches.** On all 109 remote branches, over `src/`, `scripts/`, `docs/`, `.mc/`,
+- **Remote branches.** On all 109 remote-tracking refs (`git for-each-ref refs/remotes` after
+  `git fetch`, 2026-10-14; the count includes stale tracking refs, and `git ls-remote --heads origin`
+  lists fewer), over `src/`, `scripts/`, `docs/`, `.mc/`,
   `tests/`, `benchmarks/` and `configs/`, `git grep` finds no token in 908000–909999,
   90400–90599, 9008 or 9009. 9007 is D-A2's salt (TASK-090 §20), so it is skipped. The nearest
   ranges in use are TASK-091's 906000–906063 and 907000–907127, TASK-090's 903000–905063 and
@@ -456,8 +489,11 @@ bootstrap). A root's or reset's rejected draws are further attempts under the sa
   arm requests were reduced (`plan_log` keeps the grasp only). The contact gap (39–87 against 122)
   may come from the arm, the latent's resolution or the cost, which this task does not change.
 - **The model must infer the previous grasp target.** The 28-D state holds the hand joints, which
-  track the synergy target with a lag; the target itself is not an input. If G-req cannot infer
-  it, R1 fails (R-FAIL, no clause).
+  track the synergy target with a lag; the target itself is not an input. On val, the grasp
+  inferred from the measured joints is within 2 / 11 of the executed one on 88 % of frames (§6.2,
+  development). If G-req cannot infer it, R1 or R2 fails (R-FAIL, no clause).
+- **R2's hand-state margin is loose.** On val δ_H = 0.51 (development), so R2 tolerates a hand error
+  up to about 1.5 times the control's under recorded commands.
 - **A flat cost over equivalent requests.** A rate-aware model gives the same prediction for every
   request beyond the limit, so CEM's choice among them is arbitrary. That changes nothing executed,
   but the off-support share of §6.4 is then not a measure of success; it is reported only.
@@ -474,7 +510,8 @@ bootstrap). A root's or reset's rejected draws are further attempts under the sa
 
 All of it is development, **not gated**, at `64dad40`, CPU only (no GPU job, simulation, rendering
 or training was run for this draft). Scripts and outputs are in
-`~/develop/emai/evidence/task092-prototype/` (`SHA256SUMS` sha256 `9d9c3fa9…d1e8`).
+`~/develop/emai/evidence/task092-prototype/` (`SHA256SUMS` sha256 `fd972ef4…910c`). The last four
+scripts were added after the independent review of #214, at `32ff61c`.
 
 - `grasp_steps.py`: the executed grasp steps of `play-v1` train (TASK-087's feature store) and a
   first CEM iteration's candidates (§1.2).
@@ -483,6 +520,11 @@ or training was run for this draft). Scripts and outputs are in
   (150 episodes) of `play-v1` (§1.2). The table in §1.2 is its output. Val, not test, was used so
   that Stage R's test roots stay unseen by any model run.
 - `power.out`: §6.4's power figures (2 000 simulations).
+- `count_r_roots.py`: Stage R's root and R-root counts on `play-v1` test, from `actions_test.npy`
+  and `episodes_test.json` only (no latent, state or model read) (§6.2).
+- `power.py`: the command that produced `power.out` (re-run, output identical).
+- `r1_reference.py`: R1's inferred-clip attainability reference on the 826 val R-roots (§6.2).
+- `r2_delta_val.py`: R2's δ_L and δ_H measured on val (§6.2).
 
 These numbers chose the candidate, R1's form and the declared alternative. R1's bar is not read
 off them: it is a declared fraction of the paired control's excess, measured again on the test
@@ -543,6 +585,11 @@ stay as they are:
 - **the pairing check:** TASK-087's driver and the new driver with p = 0, each for 300 updates on
   debug seed 87900, must give bitwise-identical weights; and with p = 0.5 the first batch differs
   only in index 13 of at-limit steps;
+- **the pairing check against the historical run:** the new driver with p = 0 on model seed 87100
+  up to the first selection point (3 000 updates). Its val criterion there must equal the value
+  recorded in TASK-087's G-87100 report. This ties the pairing to the actual G-87100, not only to
+  the debug seed (a few GPU minutes);
+- the inferred-clip attainability reference of §6.2 R1, and R2's δ on val;
 - §9's seed checks and the hash checks (TASK-087's checkpoints, feature report and projection,
   N-87100);
 - the power simulation of §6.4 with 20 000 simulations;
@@ -578,9 +625,11 @@ revision from a clean tree.
   sign-flip tests and rows B-VOID, B-PASS, B-GAIN, B-BAR, B-FAIL (δ = +0.10), B-UNDER.
 - **R27.81** — **Power** (§6.4): declared alternative 0.15 against 0.05; n = 128 (power 0.98 at
   SD 1, development); Stage 0 recomputes it.
-- **R27.82** — **Rows** (§7) and their order.
+- **R27.82** — **Rows** (§7) and their order. A‴-FAIL counts G-req seeds failing R1, R2 or A‴
+  together, so the closed loop never runs with fewer than two clean seeds. A T-VOID on a completed
+  job is not replaced by a fresh model seed without a ruling on pairing.
 - **R27.83** — **The abandonment clause** (§8): fires on B-FAIL only, with the scope stated there.
-- **R27.84** — **Seeds and salts** (§9), checked on 109 remote branches and in the evidence; new
+- **R27.84** — **Seeds and salts** (§9), checked on 109 remote-tracking refs and in the evidence; new
   salts 9008 and 9009.
 - **R27.85** — **Budget** (§12): about 17 GPU h, every job under the 7 200 s cap and the shared
   lock; `worktrees/task087-run` stays until TASK-092 closes.
