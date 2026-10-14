@@ -662,7 +662,7 @@ TASK-087's `predict_at`, since N predicts no state) and the CLAUDE.md entry (`66
 at `67837c8`. The debug roots, A‴ and every closed-loop smoke run ran at `66595ab`. The references
 and the debug Stage R ran at `c1ccf47`. The historical pairing run and the debug model ran from a
 dirty tracked tree (`tracked_tree_dirty: true`; the uncommitted change was the CLAUDE.md
-entry-point line, made while the smoke ran and committed unchanged as `66595ab`, whose diff touches
+entry-point line, made during the pairing and debug-model runs (before the smoke) and committed unchanged as `66595ab`, whose diff touches
 CLAUDE.md only). The TASK-092 module sha256 they record equal the merged ones, and
 `train_task092.py` is unchanged from `67837c8` to the merge. Every other Stage 0 report is from a
 clean tree.
