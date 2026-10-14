@@ -101,14 +101,19 @@ ran before any ledger was claimed.
     closing at about the rate the clip allows, while G-v1 predicts it closing about twice as
     fast.
   - **Post-hoc reading, reported only, not gated, row unchanged.** The two bars count plan
-    requests with grasp > 0.5. A rate-aware model leaves every request beyond the limit
-    equivalent (§10's "flat cost" risk), and G-req's mean step-1 request at R1 was −0.31 to 0.43,
-    against 0.80–0.98 for G-v1. In executed (post-clip) terms the bars do not separate the
-    families:
+    requests with grasp > 0.5. The clip makes every request beyond the limit equivalent (§10
+    declared this "flat cost" risk for §6.4's off-support share; it did not apply it to A‴'s
+    request bars, which §6.3 kept as declared), and G-req's mean step-1 request at R1 was −0.31 to 0.43,
+    against 0.80–0.98 for G-v1. In executed (post-clip) terms over the first four steps at R1
+    and the first command at R2, the bars do not separate the families:
     - at R1, plans close at the maximum rate through step 4 on 64, 64 and 63 of 64 roots for
       G-req and 64 / 64 for G-v1;
     - at R2, the first command keeps the executed grasp > 0.5 with z > 0 on 64 / 64 for all six
-      models.
+      models. This half cannot fail (the root's grasp is 1.0, so one clipped step leaves it
+      ≥ 0.818 whatever the request); only z > 0 is informative;
+    - over eight steps at R1, the stricter count (maximum rate through step 8) was 54, 38 and 23
+      for G-req against 44, 56 and 53 for G-v1: two G-req seeds close at the maximum rate less
+      often than G-v1.
 - **R27.98 — The escalation needs its own ruling;** this entry does not make it.
   - **Recommendation (not a decision):** close TASK-092 at A‴-FAIL as recorded. A follow-up
     should preregister an offline gate on executed plan measures, on fresh roots, before it

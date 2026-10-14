@@ -844,7 +844,8 @@ recorded commands. The summarizer printed `{"stage": "r", "row": "R-PASS", "prob
   5.42–6.45 for G-v1. L_sat / L_exec on R-roots was 1.004–1.007 for G-req and 1.072–1.106 for
   G-v1. TASK-090's six G models had H_sat / H_exec of 13.6–24.4 and L_sat / L_exec of 1.06–1.12.
   The control's ratio on test (15.0–20.3) is about twice its val value (7.4–9.5, §15.3). R1's
-  bars come from the test values, as §6.2 declares.
+  bars come from the test values, as §6.2 declares. R-PASS does not depend on the larger test
+  ρ_ctrl: G-req's R1 upper bounds (1.06–1.10) would also pass the val-derived bars (2.60–3.11).
 - **Reading.** Offline, on held-out roots, G-req predicts the right-hand state under
   execution-identical saturated requests about as well as under the recorded commands. Its
   ratio is about 1, against 15–20 for its paired control, and it shows no regression under
@@ -855,7 +856,7 @@ recorded commands. The summarizer printed `{"stage": "r", "row": "R-PASS", "prob
 ### 16.3 Stage A‴ — A‴-FAIL
 
 Two jobs: roots took 69 s and the six models took 388 s, 457 s in all (about 0.13 GPU h). The
-roots were 908000–908063, with 85 rejected draws (apple 22, can 17, cube 25). There was no cap
+roots were 908000–908063 (64 roots; targets apple 22, can 17, cube 25), with 85 rejected draws. There was no cap
 hit, every report was complete, and every A2-seed plan's first command equalled `first_planned`'s
 bitwise. The summarizer printed `{"stage": "a", "row": "A‴-FAIL", "problems": []}`, with
 `failing_seeds: [87100, 87101, 87102]`.
@@ -873,7 +874,8 @@ A1's columns are close-vs-open, lift-vs-release and lift-vs-stay at R1 and R2. E
 A1 at h = 8 and 16. Every G-req seed fails close≤4@R1, lift@R2 or both, so by §7 (R27.82) three
 G-req seeds fail R1, R2 or A‴ counted together, and the row is **A‴-FAIL**: escalate, no clause.
 M-v1's results are those of the control and carry no claim. G-v1-87101's lift@R2 of 43 is again below
-the bar, as at TASK-091's A″ (34).
+the bar, as at TASK-091's A″ (34). G-v1-87102 carries `last_two_triggered: true` from TASK-087;
+no G-req model and no other G-v1 model is flagged.
 
 **Reported (§6.3).**
 
@@ -882,7 +884,10 @@ the bar, as at TASK-091's A″ (34).
   latent + pose won 64 / 64 on every comparison.
 - **Readability probe** (positives 23 at h = 8, 42 at h = 16). AUROC at h = 8 was 0.929, 0.881
   and 0.954 for G-req and 0.909, 0.906 and 0.951 for G-v1. No interval separates the two
-  families.
+  families. The proprio floor (state alone) read 0.9996 at h = 8 and 0.968 at h = 16, above every
+  model, and the ceiling (encoded frame plus state) 0.921 and 0.899.
+- **Lift branch's rise:** the scripted lift branch's maximum rise at R2 was at least 5 cm on 21 / 64
+  roots at h = 16.
 - **Plan grasp at R1, mean over 64 roots, steps 1–8.** The executed grasp is the same for every
   model up to step 4: −0.818, −0.636, −0.455, −0.273, −0.091, … (the maximum rate from the open
   hand). The *predicted* hand synergy differs. G-req predicts the hand closing at about that
@@ -894,8 +899,7 @@ the bar, as at TASK-091's A″ (34).
 **Post-hoc reading (development, reported only, not gated; it changes no row).** This was run
 after the row was printed, by a script that reads A‴'s own report
 (`~/develop/emai/evidence/task092-a/post-hoc/`). close≤4@R1 and lift@R2 count plan *requests* with
-grasp > 0.5. The clip makes every request beyond the limit equivalent, which is §10's "flat
-cost" risk. So a rate-aware model has no reason to request > 0.5 when a smaller request executes
+grasp > 0.5. The clip makes every request beyond the limit equivalent (§10 declared this "flat cost" risk for §6.4's off-support share; it did not apply it to A‴'s request bars, which §6.3 kept as declared). So a rate-aware model has no reason to request > 0.5 when a smaller request executes
 the same. G-req's mean step-1 request at R1 was −0.31, 0.43 and 0.17, against 0.80–0.98 for G-v1.
 In *executed* terms (requests through the rate clip from the root's grasp):
 
@@ -904,7 +908,9 @@ In *executed* terms (requests through the rate clip from the root's grasp):
 - at R2, the first command keeps the executed grasp > 0.5 with z > 0 on 64 / 64 for all six
   models.
 
-So these bars do not separate the two families in executed terms. A‴'s request-level bars,
+At R2 the executed half of this reading cannot fail: the root's grasp is 1.0, so one rate-clipped step leaves the executed grasp ≥ 1 − 2/11 = 0.818 > 0.5 whatever the request (the minimum over all six models is 0.818); only its z > 0 part is informative. At R1, "maximum rate through step 4" holds for any request at or above the max-rate path. The same script's stricter count, maximum rate through step 8, was 54, 38 and 23 for G-req against 44, 56 and 53 for G-v1.
+
+So in executed terms over the first four steps at R1 and the first command at R2 these bars do not separate the two families; over eight steps at R1 two G-req seeds close at the maximum rate less often than G-v1. A‴'s request-level bars,
 inherited from TASK-091 for models without the augmentation (§6.3), may not measure planning
 for a rate-aware model. This reading was not declared before the run. Executed measures from the
 demonstrator's grasp are not closed-loop measures, and the row stands as printed.
@@ -925,8 +931,11 @@ cohort was started twice. There were no incidents. The checkpoints are in
   lift@R2 or both, and A1 passes everywhere. By §7 the task escalates and **the clause does not
   fire**. **Stage BD and Stage BS do not run.** H2 was not tested.
 - **R27.98 — The escalation needs its own ruling**, which this entry does not make. For that
-  ruling, this entry records the post-hoc reading of §16.3: A‴'s request-level bars do not
-  separate the families in executed terms. Changing a gate after seeing its result would need
+  ruling, this entry records the post-hoc reading of §16.3: in executed terms over the first four
+  steps at R1 and the first command at R2 (where the executed grasp cannot fall below 0.818, so
+  only z > 0 is informative), A‴'s request-level bars do not separate the families; over eight
+  steps at R1 two G-req seeds close at the maximum rate less often than G-v1 (54, 38, 23 against
+  44, 56, 53). Changing a gate after seeing its result would need
   that ruling to say so and to justify it against §6.3 and §7. It would also need a fresh
   cohort, because A‴'s roots have been read.
   - **Recommendation (not a decision):** close TASK-092 at A‴-FAIL as recorded. Any follow-up

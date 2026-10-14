@@ -58,8 +58,8 @@ so G-req is exactly paired with the unchanged G. The stages are:
 This is not Apple→Plate. R7 does not change.
 
 Protocol: [grasp_rate_aware_wm_v1.md](../../../docs/experiments/grasp_rate_aware_wm_v1.md)
-(FROZEN at #215; DRAFT R27.74–R27.88; DECISIONS (ax); frozen at the Stage 0 PR's merge, Stage 0 record
-§15, R27.89–R27.94, DECISIONS (ay)).
+(DRAFT R27.74–R27.88, DECISIONS (ax); FROZEN at the Stage 0 merge #215, Stage 0 record §15,
+R27.89–R27.94, DECISIONS (ay); Stage T, R and A‴ record §16, R27.95–R27.99, DECISIONS (az)).
 
 ## Acceptance criteria
 
@@ -103,7 +103,9 @@ Protocol: [grasp_rate_aware_wm_v1.md](../../../docs/experiments/grasp_rate_aware
     0.99–1.02 against ρ_ctrl 15.0–20.3, with no R2 regression and E passed.
   - **A‴-FAIL.** close≤4@R1 was 44 / 51 / 36 and lift@R2 55 / 35 / 24, against bars of 48; A1
     passed for every model.
-  - A post-hoc reading (reported only) finds that the request-level bars do not separate the
-    families in executed terms.
+  - A post-hoc reading (reported only) finds that, in executed terms over the first four steps
+    at R1 and the first command at R2 (whose executed-grasp half cannot fail), the request-level
+    bars do not separate the families; over eight steps at R1 two G-req seeds close at the
+    maximum rate less often than G-v1 (54 / 38 / 23 against 44 / 56 / 53).
   - Escalated with no clause; BD and BS do not run; the escalation needs its own ruling. GPU
     about 2.0 h. Evidence `~/develop/emai/evidence/task092-{t,r,a}/` (`SHA256SUMS`).
