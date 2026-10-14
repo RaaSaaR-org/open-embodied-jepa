@@ -63,6 +63,41 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-14 (bf) — TASK-093 Stage P ends P-PASS (M-proj's C8@R1 39, 48, 54 against 39 and H8@R2 58, 61, 58 against 48 of 64; one run, offline, 64 gated roots); Stage BD (development, 32 resets) sets the bar at 0.40 with ik 21 / 32, M-proj-87100 0 / 32 and M-v1-87100 0 / 32; Stage BS waits for an independent GO (R27.139–R27.146)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_rate_projected_planner_v1.md §17–§18](experiments/grasp_rate_projected_planner_v1.md).
+Evidence: `~/develop/emai/evidence/task093-p/` (`SHA256SUMS` sha256 `9446499b…e2cd`) and
+`~/develop/emai/evidence/task093-bd/` (`SHA256SUMS` sha256 `08452d04…ab6f`). Both stages ran
+once at the frozen revision `4d3491e` (#221's merge) from a clean tree in
+`worktrees/task093-run`, with `scripts/run_task093_stage.sh`, every job under
+`gpu_run.sh --wait --board` after a BOARD.md check. Stage BS has not run.
+
+- **R27.139 — Stage P is recorded** (roots 917000–917063, 62 rejected draws; two jobs, 281 s; no
+  cap hit, no VOID exit, no problem in the summary).
+- **R27.140 — P-PASS.** M-proj's C8@R1 39, 48, 54 (bar 39) and H8@R2 58, 61, 58 (bar 48) of 64
+  on G-87100, 87101, 87102 (G-87102 `last_two_triggered`): every seed passes, G-87100 at the C8
+  bar exactly. Reported: M-v1's C8@R1 43, 55, 54 and H8@R2 62, 64, 62; P-MECH M-proj 0.286,
+  0.285, 0.290 against M-v1 0.450, 0.514, 0.405. One run, offline, simulation only, 64 gated
+  roots; a no-regression gate, not a closed-loop result.
+- **R27.141 — Stage BD runs next** at the same revision.
+- **R27.142 — Stage BD is recorded** (resets 91900–91931, 28 rejected draws; seven jobs, 4 203 s,
+  about 1.17 GPU h; no cap hit, every report complete, no problem in the summary). One job waited
+  120 s for a V2D request on BOARD.md; the V2D session was not told separately before BD, a
+  disclosed deviation from §10 and R27.137 that affects no result, and it is told explicitly before
+  BS.
+- **R27.143 — The bar is 0.40.** ik 21 / 32 (r = 0.656 ≥ 0.30), so BD-ESCALATE does not apply;
+  at BS the pooled bar is 156 / 384 and the per-seed floor 26 / 128. Counts, development only
+  (one run, 32 resets, one model seed per world-model arm, simulation only; exact 95 %
+  intervals): M-proj-87100 0 / 32 (0.000–0.109), M-v1-87100 0 / 32 (0.000–0.109), ik 21 / 32
+  (0.468–0.814), ik-nopress 21 / 32, hold 0 / 32, random 0 / 32. BD shows no difference between
+  the arms on these resets and is not a prediction of BS.
+- **R27.144 — the projector equivalence held in closed loop** (development): M-proj-87100's
+  applied channel 13 equalled its request on all 11 650 commands; M-v1-87100's differed on 6 803
+  of 11 659.
+- **R27.145 — Stage BS waits for an independent GO** on §18 (R27.137); nothing of §2–§12 changes.
+- **R27.146 — R7 does not change.** TASK-093 is not an Apple→Plate experiment.
+
 ## Decision 2026-10-14 (be) — TASK-093 Stage 0 ends S0-PASS: the projector is bitwise the embodiment's grasp clip and the executed commands, every degeneracy check passes, Stage P's bars are C8@R1 ≥ 39 and H8@R2 ≥ 48 of 64, n = 128 stands (power 0.976); the protocol is frozen at the Stage 0 PR's merge (R27.132–R27.138)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
