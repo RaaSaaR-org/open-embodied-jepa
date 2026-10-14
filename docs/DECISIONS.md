@@ -63,6 +63,107 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-14 (bd) — the planner-side fix after D-RATE′ is TASK-093: R26.33's condition is met for one variant only, grasp-channel rate projection of CEM's candidates over TASK-087's unchanged G; an executed-measure offline gate calibrated on development roots, then the closed loop against the unprojected planner at n = 128; DRAFT preregistration (R27.115–R27.131; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30).** Protocol (DRAFT):
+[grasp_rate_projected_planner_v1.md](experiments/grasp_rate_projected_planner_v1.md). It follows
+R27.104 and R27.113: after D-FLAT, the next step is a planner-side rate projection, which falls
+under R26.33 and needs its own ruling and preregistration. This entry makes both.
+
+**Why this is admitted under R26.33** (protocol §1–§2). R26.33 fired on closed-loop counts after
+an offline diagnosis on executed, rate-feasible branches. The evidence since then is of a
+different kind. It measures the interface between the planner and the model:
+
+- the planner queries G off its grasp-rate training support (TASK-092 §1.2; development);
+- there, G's right-hand-state error is 15.0, 20.3 and 15.1 times its error under the recorded
+  commands (TASK-092 Stage R; one run, offline, simulation only, 821 held-out roots);
+- under its own plans, G predicts a hand that closes about twice as fast as it can (TASK-092 A‴
+  record, reported);
+- in closed loop, 0.47 of M-v1-87100's chosen plan steps were off support, and the clip changed
+  0.78 of its grasp-phase first commands (D-RATE′; development, one run, simulation only, 32
+  resets).
+
+The base rate is near the floor. The unprojected G scored 0, 8 and 7 of 64 in TASK-089 BS (one
+run, simulation only) and 1 / 128 for 87100 in TASK-091 BS (reported only). The IK follower
+scored 82 / 128 there.
+
+- **R27.115 — R26.33's condition ("new evidence of a different kind") is met for exactly one
+  variant:** grasp-channel rate projection of CEM's candidates over TASK-087's checkpoints. It is
+  the one change that the measured mechanism names. Tie-breaking, full-embodiment (IK)
+  projection, other horizons or λ, and the held and h = 16 settings are not admitted. R26.33 is
+  otherwise neither widened nor narrowed.
+- **R27.116 — no other closed scope covers it.** R27.71 closes added scripted play, and this task
+  adds no data. TASK-092 §8 did not fire and leaves planner-side projection open. TASK-062,
+  TASK-065 and TASK-054 do not apply.
+- **R27.117 — TASK-093 is that variant.** The ranking of protocol §3 is recorded. These are not
+  taken:
+  - tie-breaking towards feasible requests: it does not touch G-v1's wrong costs;
+  - full-embodiment projection: likely far above the job cap, and two changes at once;
+  - projection plus G-req: under projection every query is on support, where Stage R's R2 found
+    G-req within δ of G-v1; about 6.4 GPU h for little information;
+  - projection over TASK-090's checkpoints: the evidence was measured on TASK-087's G.
+- **R27.118 — the projector.**
+  - It clips the right-grasp channel cumulatively over the 8-step plan, from the embodiment's last
+    accepted hand targets, with `_prepare_side`'s own per-joint formula (2 / 11 per command).
+  - It is used through `CEMPlanner`'s existing `projector` hook (`project_candidates=True`): the
+    projected candidates are scored, the elites are refitted on the requests as the existing code
+    does, and the projected plan is executed.
+  - `planning.py` and `embodiment.py` are not edited. The copied formula is checked bitwise
+    against the embodiment's own projection at Stage 0.
+- **R27.119 — everything else is frozen:** TASK-087's G-87100–87102, the latent, the step-averaged
+  cost, λ = 2.0552, CEM (H = 8, 300 samples, 10 iterations, 30 elites), the goals, the 400-command
+  budget and the scorer.
+- **R27.120 — arms.** M-proj (G ×3, projected) is primary and pooled. M-v1 (the same checkpoints,
+  unprojected) is the gated control and a control re-run. With the same CEM seed its first
+  iteration draws the same samples. ik, ik-nopress, hold and random keep their roles. G-req is
+  not an arm.
+- **R27.121 — Stage 0 calibrates the offline gate on development roots 916000–916063.**
+  - The measures are executed: C8@R1 (the plan closes at the maximum rate through step 8) and
+    H8@R2 (the executed grasp stays above 0.5 for eight steps, and the first vertical command is
+    above 0).
+  - The bar rule is min(48, ⌈0.75 × the control's median development count⌉) of 64.
+  - The degeneracy checks: an open or release reference must score 0, a random reference at most
+    half the bar, and the control at least 16 / 64.
+  - A failed check is S0-ESCALATE, before the freeze.
+- **R27.122 — Stage P** runs on fresh roots 917000–917063. P-FAIL (two or more M-proj seeds below
+  a bar) escalates with no clause. P-MECH (predicted against executed hand) is reported only.
+- **R27.123 — the closed loop.**
+  - BD on 91900–91931, with the bar min(0.40, 0.9 r) from ik's BD rate; it escalates if r < 0.30.
+  - An independent GO.
+  - BS with n = 128 on 918000–918127, two jobs per run, with a determinism re-run.
+  - The reset-level exact sign-flip tests at p < 0.01.
+  - Rows B-VOID, B-PASS, B-GAIN, B-BAR, B-FAIL (δ = +0.10) and B-UNDER. The pooled bar is
+    156 / 384 and the per-seed floor 26 / 128 at 0.40.
+- **R27.124 — power** (development, 4 000 simulations, TASK-090's code). At the declared
+  alternative, 0.15 against 0.05 per seed, the power is 0.97 at SD 1 and n = 128.
+  - The smallest effect detected at about 0.80 is 0.05 → 0.12 (0.79).
+  - 0.05 → 0.10 is not reliably detected (0.49; n = 256 would give 0.86 at about twice BS's cost).
+  - At a control rate of 0.08, 0.15 is detected with power 0.63.
+  - n = 128 stands, because a per-seed 0.10 would end in B-GAIN either way. Stage 0 recomputes the
+    table with 20 000 simulations.
+- **R27.125 — rows**, in protocol §7's order: S0-ESCALATE, P-VOID, P-FAIL, BD-ESCALATE, then the B
+  rows.
+- **R27.126 — the clause** fires on B-FAIL only. It closes grasp-channel rate projection of CEM's
+  candidates as the grasp fix under TASK-089's step-averaged planner, over TASK-087's G and
+  TASK-092's G-req checkpoints, and its variants. These stay open:
+  - full-embodiment projection, which stays under R26.33;
+  - the untested model changes of TASK-092 §2;
+  - the corpora and other data kinds;
+  - LeWM, DINOv2 and CEM in general;
+  - reach, Phase 4 and the product goal.
+- **R27.127 — seeds and salts.** Checked on 114 remote-tracking refs and in the evidence: Stage 0
+  roots 916000–916063, Stage P 917000–917063, BD 91900–91931, BS 918000–918127 and debug
+  91940–91999. The new salt is 9011.
+- **R27.128 — budget:** about 13–16 GPU h, with a ceiling of about 18; BS is about 11–14 of it.
+  Every job runs under the 7 200 s cap and the shared lock, and BOARD.md's Requests are checked.
+  `worktrees/task087-run` stays until TASK-093 closes.
+- **R27.129 — disclosed development** (protocol §12): code reading, the power table and the seed
+  checks only, CPU only. Evidence `~/develop/emai/evidence/task093-draft/` (`SHA256SUMS` sha256
+  `0e8991c2…533a`).
+- **R27.130 — status.** DRAFT in this PR. A Stage 0 PR freezes it at its merge. Gated stages run
+  only after that, and BS only after an independent GO on BD's record.
+- **R27.131 — R7 does not change**, whatever row TASK-093 ends in. Not Apple→Plate.
+
 ## Decision 2026-10-14 (bc) — D-RATE′ ends D-FLAT: M-req-87100 0 / 32 and M-v1-87100 0 / 32 on resets 90850–90881, no discordant resets; development, one run, simulation only, 32 resets, not gated; the next step is a planner-side rate projection under R26.33, with its own ruling and preregistration (R27.111–R27.114)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
