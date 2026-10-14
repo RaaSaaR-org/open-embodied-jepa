@@ -3,7 +3,9 @@
 **Status: FROZEN at the Stage 0 PR's merge** (R27.74–R27.88 as the DRAFT, #214; Stage 0 record
 §15, R27.89–R27.94; decided by Claude under owner delegation, 2026-10-14; DECISIONS (ax), (ay)).
 Stage 0 changes none of the three items §13 lets it change. Every later stage runs at the merged
-revision from a clean tree with `scripts/run_task092_stage.sh`.
+revision from a clean tree with `scripts/run_task092_stage.sh`. **Stage T (T-DONE), Stage R (R-PASS)
+and Stage A‴ (A‴-FAIL) ran at `64e87f0` (§16, R27.95–R27.99); A‴-FAIL is a stop row, so Stage BD
+and Stage BS did not run, and the task escalates (no clause).**
 
 This is the model change that R27.71 names. TASK-091 ([grasp_play_corpus_v1_planned_close.md](grasp_play_corpus_v1_planned_close.md))
 closed at **B-FAIL** (R27.70, R27.72) and its §7 clause fired (R27.71). The clause closes more
@@ -792,3 +794,154 @@ budget (12 jobs × 4 786 s), plus baselines and the determinism re-run. Total ab
   revision from a clean tree with `scripts/run_task092_stage.sh`; BS only after an independent GO
   on BD's record. The V2D session is told before Stage T, BD and BS.
 - **R27.94 — R7 does not change.**
+
+## 16. Stage T, Stage R and Stage A‴ record (R27.95–R27.99; decided by Claude under owner delegation)
+
+**Run conditions.** Each stage ran once, in order, at the frozen revision `64e87f0` (#215's merge),
+from a clean tracked tree in a fresh detached worktree (`worktrees/task092-run`), with
+`scripts/run_task092_stage.sh t`, `r` and `a`. Each GPU use was one `gpu_run.sh --wait --board` job.
+BOARD.md's Requests had no `- v2d:` line before any job. `verify` passed every item
+(feature reports, store files, projection, TASK-087's and TASK-090's checkpoints, moments,
+implementation hash, λ, rate limit, frozen files), and the seed check passed (111 branches; no
+hit outside TASK-092's files; the 22 evidence tokens are the ones of §15.2, none a seed). Both ran
+before any ledger was claimed. Every report records `tracked_tree_dirty: false` and revision
+`64e87f0`. **A‴ ended A‴-FAIL, a stop row (§7), so Stage BD and Stage BS did not run.**
+
+### 16.1 Stage T — T-DONE
+
+Three jobs, 2 227 s, 2 243 s and 2 243 s (6 713 s, about 1.86 GPU h). No cap hit, and every check of
+§6.1 passed. The summarizer printed `{"stage": "t", "row": "T-DONE", "problems": []}`.
+
+| Model | Checkpoint sha256 | Kept update | Val criterion | `last_two_triggered` | Windows changed | Steps replaced |
+| --- | --- | --- | --- | --- | --- | --- |
+| G-req-87100 | `bc08bf68…0799` | 45 000 | 0.40704 | false | 296 688 (7.7 %) | 1 089 711 (3.5 %) |
+| G-req-87101 | `d40bdf1c…1643` | 51 000 | 0.40668 | false | 296 372 (7.7 %) | 1 085 833 (3.5 %) |
+| G-req-87102 | `b52ad504…fe98` | 54 000 | 0.40518 | false | 296 480 (7.7 %) | 1 087 559 (3.5 %) |
+
+There were 3 840 000 windows and 30 720 000 steps per job. About half the windows were selected
+(p = 0.5), and about 2.17 M steps were at the limit, of which half were replaced, as §15.5's debug
+dose projected. The module sha256 are the merged ones (`61d5b912…`, `e1639e7f…`).
+
+### 16.2 Stage R — R-PASS
+
+One job, 15 s. The roots match §6.2 (5 634 roots in 160 episodes; 821 R-roots in 154 episodes).
+The equivalence checks passed: the saturated and random requests are executed identically to the
+recorded commands. The summarizer printed `{"stage": "r", "row": "R-PASS", "problems": []}`.
+
+- **δ on test:** δ_L = **0.0143**, δ_H = **0.556** (val: 0.0133 and 0.513).
+- **Per seed** (h = 8, 97.5 % intervals; one run, offline, simulation only, `play-v1` test):
+
+| Seed | ρ_ctrl (G-v1) | R1 bar | ρ_req (upper) | R2 latent ratio (upper; bar) | R2 hand ratio (upper; bar) | H_sat(G-req) / H_exec(G-v1) | E | R |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 87100 | 15.02 (10.10–25.19) | 4.505 | 1.015 (1.101) | 1.0023 (1.0045; 1.0143) | 0.970 (1.165; 1.556) | 0.984 | pass | **pass** |
+| 87101 | 20.29 (13.94–32.22) | 5.823 | 0.991 (1.062) | 1.0035 (1.0058; 1.0143) | 0.973 (1.143; 1.556) | 0.964 | pass | **pass** |
+| 87102 | 15.06 (10.67–22.96) | 4.514 | 1.016 (1.101) | 1.0074 (1.0120; 1.0143) | 0.922 (1.118; 1.556) | 0.937 | pass | **pass** |
+
+- **E** holds for every seed. Copy-last ratio upper bounds were 0.58 at h = 8 and 0.68–0.69 at
+  h = 4. Action-sensitivity lower bounds were 1.81–1.86 at h = 8 and 1.43–1.45 at h = 4.
+  G-req-87100 against N-87100 had upper bounds 0.762 at h = 8 and 0.858 at h = 4.
+- **Reported only.** Under random requests, H_rnd / H_exec was 1.008–1.023 for G-req and
+  5.42–6.45 for G-v1. L_sat / L_exec on R-roots was 1.004–1.007 for G-req and 1.072–1.106 for
+  G-v1. TASK-090's six G models had H_sat / H_exec of 13.6–24.4 and L_sat / L_exec of 1.06–1.12.
+  The control's ratio on test (15.0–20.3) is about twice its val value (7.4–9.5, §15.3). R1's
+  bars come from the test values, as §6.2 declares. R-PASS does not depend on the larger test
+  ρ_ctrl: G-req's R1 upper bounds (1.06–1.10) would also pass the val-derived bars (2.60–3.11).
+- **Reading.** Offline, on held-out roots, G-req predicts the right-hand state under
+  execution-identical saturated requests about as well as under the recorded commands. Its
+  ratio is about 1, against 15–20 for its paired control, and it shows no regression under
+  the recorded commands. This is one run, offline, simulation only. It shows the augmentation
+  installed rate fidelity in the model's predictions. It does not show anything about the
+  closed loop.
+
+### 16.3 Stage A‴ — A‴-FAIL
+
+Two jobs: roots took 69 s and the six models took 388 s, 457 s in all (about 0.13 GPU h). The
+roots were 908000–908063 (64 roots; targets apple 22, can 17, cube 25), with 85 rejected draws. There was no cap
+hit, every report was complete, and every A2-seed plan's first command equalled `first_planned`'s
+bitwise. The summarizer printed `{"stage": "a", "row": "A‴-FAIL", "problems": []}`, with
+`failing_seeds: [87100, 87101, 87102]`.
+
+| Model | A1 h = 8 (of 64; shuffled) | A1 h = 16 | close≤4@R1 (bar 48) | lift@R2 (bar 48) | close@R1 (reported) | close by k ≤ 2 / 4 / 8 | A‴ |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| G-req-87100 | 64 / 64 / 64 (32, 31, 34) | 64 / 64 / 64 | **44** | 55 | 11 | 38 / 44 / 64 | **fail** |
+| G-req-87101 | 64 / 64 / 64 (34, 31, 33) | 64 / 64 / 64 | 51 | **35** | 36 | 41 / 51 / 64 | **fail** |
+| G-req-87102 | 64 / 64 / 64 (33, 32, 34) | 64 / 64 / 64 | **36** | **24** | 26 | 32 / 36 / 57 (7 never) | **fail** |
+| G-v1-87100 | 64 / 64 / 64 (34, 34, 34) | 64 / 64 / 64 | 64 | 60 | 60 | 63 / 64 / 64 | pass |
+| G-v1-87101 | 64 / 64 / 64 (33, 38, 32) | 64 / 64 / 64 | 64 | 43 | 64 | 64 / 64 / 64 | fail (reported) |
+| G-v1-87102 | 64 / 64 / 64 (36, 32, 29) | 64 / 64 / 64 | 64 | 56 | 62 | 64 / 64 / 64 | pass |
+
+A1's columns are close-vs-open, lift-vs-release and lift-vs-stay at R1 and R2. Every model passes
+A1 at h = 8 and 16. Every G-req seed fails close≤4@R1, lift@R2 or both, so by §7 (R27.82) three
+G-req seeds fail R1, R2 or A‴ counted together, and the row is **A‴-FAIL**: escalate, no clause.
+M-v1's results are those of the control and carry no claim. G-v1-87101's lift@R2 of 43 is again below
+the bar, as at TASK-091's A″ (34). G-v1-87102 carries `last_two_triggered: true` from TASK-087;
+no G-req model and no other G-v1 model is flagged.
+
+**Reported (§6.3).**
+
+- **Latent-only wins at h = 8** for lift-vs-release were 25, 30 and 30 for G-req and 18, 23 and
+  15 for G-v1. The ceiling's latent-only lift-vs-release at h = 8 was 33 / 64. The ceiling with
+  latent + pose won 64 / 64 on every comparison.
+- **Readability probe** (positives 23 at h = 8, 42 at h = 16). AUROC at h = 8 was 0.929, 0.881
+  and 0.954 for G-req and 0.909, 0.906 and 0.951 for G-v1. No interval separates the two
+  families. The proprio floor (state alone) read 0.9996 at h = 8 and 0.968 at h = 16, above every
+  model, and the ceiling (encoded frame plus state) 0.921 and 0.899.
+- **Lift branch's rise:** the scripted lift branch's maximum rise at R2 was at least 5 cm on 21 / 64
+  roots at h = 16.
+- **Plan grasp at R1, mean over 64 roots, steps 1–8.** The executed grasp is the same for every
+  model up to step 4: −0.818, −0.636, −0.455, −0.273, −0.091, … (the maximum rate from the open
+  hand). The *predicted* hand synergy differs. G-req predicts the hand closing at about that
+  rate: −0.98, −0.87, −0.68, −0.47, −0.27, −0.07, 0.10, 0.26 for 87100, and likewise for the
+  other two seeds. G-v1 predicts it closing about twice as fast: −0.69, −0.31, 0.10, 0.46, 0.62,
+  0.67, 0.67, 0.61 for 87100, again likewise for the others. This is the effect §6.3 asked the
+  record to show. G-req's plans predict a hand that closes at the rate it can. G-v1's do not.
+
+**Post-hoc reading (development, reported only, not gated; it changes no row).** This was run
+after the row was printed, by a script that reads A‴'s own report
+(`~/develop/emai/evidence/task092-a/post-hoc/`). close≤4@R1 and lift@R2 count plan *requests* with
+grasp > 0.5. The clip makes every request beyond the limit equivalent (§10 declared this "flat cost" risk for §6.4's off-support share; it did not apply it to A‴'s request bars, which §6.3 kept as declared). So a rate-aware model has no reason to request > 0.5 when a smaller request executes
+the same. G-req's mean step-1 request at R1 was −0.31, 0.43 and 0.17, against 0.80–0.98 for G-v1.
+In *executed* terms (requests through the rate clip from the root's grasp):
+
+- at R1, the plan closes at the maximum rate through step 4 on 64, 64 and 63 of 64 roots for
+  G-req and on 64 / 64 for G-v1;
+- at R2, the first command keeps the executed grasp > 0.5 with z > 0 on 64 / 64 for all six
+  models.
+
+At R2 the executed half of this reading cannot fail: the root's grasp is 1.0, so one rate-clipped step leaves the executed grasp ≥ 1 − 2/11 = 0.818 > 0.5 whatever the request (the minimum over all six models is 0.818); only its z > 0 part is informative. At R1, "maximum rate through step 4" holds for any request at or above the max-rate path. The same script's stricter count, maximum rate through step 8, was 54, 38 and 23 for G-req against 44, 56 and 53 for G-v1.
+
+So in executed terms over the first four steps at R1 and the first command at R2 these bars do not separate the two families; over eight steps at R1 two G-req seeds close at the maximum rate less often than G-v1. A‴'s request-level bars,
+inherited from TASK-091 for models without the augmentation (§6.3), may not measure planning
+for a rate-aware model. This reading was not declared before the run. Executed measures from the
+demonstrator's grasp are not closed-loop measures, and the row stands as printed.
+
+### 16.4 GPU and incidents
+
+GPU: Stage T 6 713 s, Stage R 15 s, Stage A‴ 457 s; 7 185 s in total (about 2.0 GPU h, six jobs,
+below §15.6's projection). No job waited for a v2d request, none was refused or re-run, and no
+cohort was started twice. There were no incidents. The checkpoints are in
+`checkpoints/task092-run/G-req-<seed>` on the data disk.
+
+### 16.5 Rulings (R27.95–R27.99)
+
+- **R27.95 — Stage T is recorded: T-DONE** (§16.1).
+- **R27.96 — Stage R is recorded: R-PASS** on all three seeds (§16.2). This is one run, offline,
+  simulation only, and not a closed-loop result.
+- **R27.97 — Stage A‴ is recorded: A‴-FAIL** (§16.3). All three G-req seeds fail close≤4@R1,
+  lift@R2 or both, and A1 passes everywhere. By §7 the task escalates and **the clause does not
+  fire**. **Stage BD and Stage BS do not run.** H2 was not tested.
+- **R27.98 — The escalation needs its own ruling**, which this entry does not make. For that
+  ruling, this entry records the post-hoc reading of §16.3: in executed terms over the first four
+  steps at R1 and the first command at R2 (where the executed grasp cannot fall below 0.818, so
+  only z > 0 is informative), A‴'s request-level bars do not separate the families; over eight
+  steps at R1 two G-req seeds close at the maximum rate less often than G-v1 (54, 38, 23 against
+  44, 56, 53). Changing a gate after seeing its result would need
+  that ruling to say so and to justify it against §6.3 and §7. It would also need a fresh
+  cohort, because A‴'s roots have been read.
+  - **Recommendation (not a decision):** close TASK-092 at A‴-FAIL as recorded. Any follow-up
+    should preregister its offline gate on executed (post-clip) plan measures before it runs.
+    G-req's checkpoints, which passed R, stay available for that.
+- **R27.99 — R7 does not change.**
+
+Evidence: `~/develop/emai/evidence/task092-t/`, `task092-r/` and `task092-a/` (`SHA256SUMS`
+sha256 `19aacdc2…b265`, `61763e8c…8b1a` and `5b7c4fc1…9bdc`).

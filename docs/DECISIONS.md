@@ -63,6 +63,66 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-14 (az) — TASK-092 Stage T ends T-DONE; Stage R ends R-PASS (G-req's saturated / executed hand-state ratio about 1 against its control's 15–20, no regression); Stage A‴ ends A‴-FAIL (every G-req seed fails close≤4@R1, lift@R2 or both; A1 passes everywhere); the task escalates, no clause; BD and BS do not run; one run, offline, simulation only (R27.95–R27.99)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_rate_aware_wm_v1.md §16](experiments/grasp_rate_aware_wm_v1.md).
+
+**Run conditions.** Each stage ran once, in order, at the frozen revision `64e87f0` (#215's merge),
+from a clean tree in a fresh detached worktree, with `scripts/run_task092_stage.sh t`, `r` and `a`.
+Each GPU use took one `gpu_run.sh --wait --board` lock. BOARD.md had no `- v2d:` request before
+any job. `verify` (all pass) and the seed check (111 branches, no hits outside TASK-092's files)
+ran before any ledger was claimed.
+
+- **R27.95 — Stage T: T-DONE.**
+  - Three jobs, 2 227 s, 2 243 s and 2 243 s, with no cap hit and every check passed.
+  - Kept updates 45 000, 51 000 and 54 000; val criteria 0.4070, 0.4067 and 0.4052;
+    `last_two_triggered` false on all three.
+  - Augmentation: 7.7 % of windows and 3.5 % of steps changed, as Stage 0's debug dose
+    projected.
+- **R27.96 — Stage R: R-PASS on all three seeds.** This is `play-v1` test, h = 8, 821 R-roots,
+  with 97.5 % intervals.
+  - **R1.** ρ_req was 1.015, 0.991 and 1.016 (upper bounds 1.101, 1.062 and 1.101), against R1
+    bars of 4.505, 5.823 and 4.514. Those bars come from the paired controls' ρ_ctrl of 15.02,
+    20.29 and 15.06, about twice the val values.
+  - **R2.** Latent ratio upper bounds were 1.0045–1.0120 (bar 1 + δ_L = 1.0143). Hand ratio upper
+    bounds were 1.118–1.165 (bar 1 + δ_H = 1.556).
+  - **E** passed for every seed.
+  - **Not a claim.** This is one run, offline, simulation only. The augmentation installed rate
+    fidelity in the predictions. Nothing about the closed loop follows.
+- **R27.97 — Stage A‴: A‴-FAIL.** Roots 908000–908063 (85 rejected draws); two jobs, 69 s and
+  388 s. Bars are 48 of 64.
+  - **close≤4@R1:** G-req 44, 51 and 36; G-v1 64, 64 and 64.
+  - **lift@R2:** G-req 55, 35 and 24; G-v1 60, 43 and 56.
+  - **A1** passed for all six models at h = 8 and 16.
+  - All three G-req seeds fail, so by §7 the task escalates. **The clause does not fire. Stage BD
+    and Stage BS do not run, and H2 was not tested.**
+  - As §6.3 asked, the plans' predicted hand synergy at R1 shows G-req predicting the hand
+    closing at about the rate the clip allows, while G-v1 predicts it closing about twice as
+    fast.
+  - **Post-hoc reading, reported only, not gated, row unchanged.** The two bars count plan
+    requests with grasp > 0.5. The clip makes every request beyond the limit equivalent (§10
+    declared this "flat cost" risk for §6.4's off-support share; it did not apply it to A‴'s
+    request bars, which §6.3 kept as declared), and G-req's mean step-1 request at R1 was −0.31 to 0.43,
+    against 0.80–0.98 for G-v1. In executed (post-clip) terms over the first four steps at R1
+    and the first command at R2, the bars do not separate the families:
+    - at R1, plans close at the maximum rate through step 4 on 64, 64 and 63 of 64 roots for
+      G-req and 64 / 64 for G-v1;
+    - at R2, the first command keeps the executed grasp > 0.5 with z > 0 on 64 / 64 for all six
+      models. This half cannot fail (the root's grasp is 1.0, so one clipped step leaves it
+      ≥ 0.818 whatever the request); only z > 0 is informative;
+    - over eight steps at R1, the stricter count (maximum rate through step 8) was 54, 38 and 23
+      for G-req against 44, 56 and 53 for G-v1: two G-req seeds close at the maximum rate less
+      often than G-v1.
+- **R27.98 — The escalation needs its own ruling;** this entry does not make it.
+  - **Recommendation (not a decision):** close TASK-092 at A‴-FAIL as recorded. A follow-up
+    should preregister an offline gate on executed plan measures, on fresh roots, before it
+    runs. Re-reading A‴ under a changed bar would be a post-hoc gate change.
+- **R27.99 — R7 does not change.**
+
+GPU: 7 185 s in total (Stage T 6 713, R 15, A‴ 457), about 2.0 GPU h. No incident. Evidence
+`~/develop/emai/evidence/task092-t/`, `task092-r/` and `task092-a/` (`SHA256SUMS`).
+
 ## Decision 2026-10-14 (ay) — TASK-092 Stage 0: code, pairing, hash and seed checks, val references, power and a debug smoke; Stage 0 changes none of the three items it may change; the protocol is frozen at the Stage 0 PR's merge (R27.89–R27.94)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
