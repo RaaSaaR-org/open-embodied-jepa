@@ -63,6 +63,89 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-14 (aw) — TASK-091 Stage BS ends B-FAIL: M-v2g 22 / 384 (8, 8, 6 of 128) against M-v1p 26 / 384 (11, 7, 8), pooled bar 156 / 384 and per-seed floor 26 / 128 not met, "M-v2g beats M-v1p" p = 0.767, bootstrap upper bound +0.023 below δ = +0.10; ik 82 / 128; the §7 clause fires; TASK-091 closes; one run, simulation only (R27.69–R27.73)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_play_corpus_v1_planned_close.md §17](experiments/grasp_play_corpus_v1_planned_close.md).
+
+**Run conditions.** The stage ran once, after an independent reviewer posted GO on BD's record
+(#212). It ran at the frozen revision `dbab1a5`, the revision of A″ and BD, from a clean tree in
+`worktrees/task091-run`, with `scripts/run_task091_stage.sh bs`, one GPU lock per job. The V2D
+session was told first. Two `- v2d:` requests on BOARD.md were honoured: the stage waited 5 minutes
+and 1 minute. `verify` (all pass) and the seed check (108 branches, no hits outside TASK-091's
+files) passed before the cohort ledger was claimed. The Stage 0 tests were not re-run before BS;
+they ran before BD at the same revision.
+
+- **R27.69 — Stage BS is recorded.** Resets 907000–907127 (151 rejected draws; apple 47, can 41,
+  cube 37, banana 3). There were 20 jobs, 53 260 s in all, about **14.8 GPU h**: each world-model
+  run took two 64-reset jobs of 3 184–4 218 s, and the determinism re-run took 287 s. **No cap
+  hit.** Every run and part report is complete. The determinism re-run of M-v2g-90100 on
+  907000–907003 matched bitwise. Two MP4 replays (M-v2g-90100, success 907025 and failure 907000)
+  matched the run's palm distances; they are not counted. The summarizer printed, verbatim:
+
+  ```
+  {
+   "stage": "bs",
+   "row": "B-FAIL",
+   "bar": 0.4,
+   "problems": []
+  }
+  ```
+
+- **R27.70 — B-FAIL** (TASK-090 §7.2 row 5).
+  - **Counts** (of 128; exact 95 % intervals): **M-v2g-90100 8 (0.027–0.119), M-v2g-90101 8
+    (0.027–0.119), M-v2g-90102 6 (0.017–0.099)**; M-v1p-90100 11 (0.044–0.149), M-v1p-90101 7
+    (0.022–0.109), M-v1p-90102 8 (0.027–0.119); M-v1-87100 1 (0.000–0.043, reported only); ik 82
+    (0.551–0.723), ik-nopress 78 (0.519–0.694), hold 0 and random 0 (0.000–0.028).
+  - **Pooled.** k_g = **22 / 384** (0.036–0.085) against the pooled bar **156 / 384**: not met.
+    k_c = 26 / 384 (0.045–0.098). The per-seed floor is **26 / 128**, and no M-v2g seed meets it.
+  - **Gating tests** (reset-level exact one-sided sign-flip): "M-v2g beats M-v1p", p = 0.767, not
+    met. "M-v2g beats random", p = 1.9 × 10⁻⁶, met. Reset-cluster bootstrap of (k_g − k_c) / 384
+    (salt 9006): −0.010, 95 % −0.047 to **+0.023**. The upper bound is below δ = +0.10, so the
+    row is B-FAIL, not B-UNDER. Reported only: the pooled McNemar test, p = 0.774. M-v2g against
+    M-v1-87100, p = 7.1 × 10⁻⁴ (+0.049, 95 % +0.021 to +0.081). M-v1p against M-v1-87100,
+    p = 2.5 × 10⁻⁵ (+0.060, +0.031 to +0.091). ik against M-v2g, p = 1.4 × 10⁻²³.
+  - **Per-seed deferral measures (§5.3, reported only, beside the B-FAIL as §9 requires).**
+    Medians per reset for M-v2g-90100 / -90101 / -90102 / M-v1p-90100 / -90101 / -90102:
+    - first executed close in the grasp phase at command 10 / 8 / 9 / 8 / 9 / 10;
+    - never closed in the grasp phase on 7 / 14 / 8 / 10 / 17 / 5 resets;
+    - share of grasp-phase re-plans that plan the close at step 1: 0.49 / 0.54 / 0.56 / 0.52 /
+      0.64 / 0.53;
+    - median planned close step 2 / 1 / 1 / 1 / 1 / 1;
+    - longest run of re-plans with k > 1: 5 / 4 / 3 / 5 / 4 / 4 (maxima 36 / 10 / 88 / 100 / 18 /
+      38);
+    - episodes with no grasp contact: 70 / 89 / 68 / 41 / 75 / 57.
+
+    The joint-rate limit means a close cannot register before about grasp-phase command 8–9, so
+    those medians are about 0–2 commands after the earliest possible.
+  - **Confound in the opposite direction (§9).** §9's risk is that deferral sinks G-v2g-90100 and
+    pushes k_g below the bar for a planner-timing reason. G-v2g-90100 is the latest planner here
+    (median k 2) and scored 8 / 128. That equals G-v2g-90101 (8) and is above G-v2g-90102 (6),
+    neither of which was a late planner at A′/D-A2. All three M-v2g seeds are below a third of the per-seed
+    floor. The M-v1p seeds labelled late at A′/D-A2 scored 11 and 8, its early seed 7. In this one run the counts do
+    not order by planning time. This does not show that planner timing played no part.
+  - **Short of ik.** Grasp contact on 39–87 of 128 resets per world-model seed (ik 122). Median
+    maximum rise 0.18–0.34 cm (ik 6.2 cm). Velocity stops 13–45 per seed (ik 12).
+  - **Qualifiers.** One run, simulation only, 128 fresh gated resets, one scene, camera, encoder,
+    recipe and planner; seeds are pooled. TASK-090 Stage C's C1 2.38 and C2 1.69 are quoted with
+    every restatement. "LeWM needed" is not claimed. Phase 4 is not admitted.
+- **R27.71 — The §7 clause fires** (TASK-090 §9, scope unchanged). It closes "adding more
+  scripted grasp-and-lift play to `play-v1` (e9's pick recipe run more often, held longer or
+  retried, as `play_policy_grasp_v0` does) as the grasp fix, under TASK-087's recipe and latent
+  and TASK-089's step-averaged planner. After it fires, no further variant of this kind is
+  preregistered for grasping without new evidence of a different kind. That covers the skill mix,
+  mode mix, hold length, retries, target weighting or added amount of this collector." The next
+  grasp step is then a model change, for example a model trained to predict the grasp's outcome
+  over the planning horizon (TASK-090 §15's model-first design), with its own preregistration. Not
+  closed: LeWM, DINOv2 and CEM; `play-v1` and play-v2g as bases; other kinds of data (real G1
+  data, a different demonstrator or pick recipe, other sensors); model changes; reach planning
+  (Z3-REACH stands); Phase 4 as a goal; the product goal.
+- **R27.72 — TASK-091 closes at B-FAIL** with this record's merge. This entry chooses no next
+  task.
+- **R27.73 — R7 does not change** (R27.54).
+
+Evidence `~/develop/emai/evidence/task091-bs/` (`SHA256SUMS`).
+
 ## Decision 2026-10-13 (av) — TASK-091 Stage BD (development, not gated): ik 26 / 32 sets the bar at 0.40 (pooled bar at BS 156 / 384, per-seed floor 26 / 128); M-v2g-90100 5 / 32, M-v1p-90100 3 / 32, M-v1-87100 2 / 32, hold and random 0 / 32; no cap hit, no problem; Stage BS waits for an independent GO (R27.65–R27.68)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
