@@ -683,7 +683,7 @@ def cmd_plans(args) -> int:
                         problems.append(f"G-v1-{seed} root {s} {root}: M-v1 plan != a2_plan")
                     if first_p != first_c:
                         problems.append(f"G-v1-{seed} root {s} {root}: first samples differ")
-                    if not rp.in_rate_set(geometry, plan_p, root):
+                    if not rp.in_rate_set(plan_p, root):
                         problems.append(f"G-v1-{seed} root {s} {root}: M-proj off the rate set")
                     for arm, plan, req, first in (("M-proj", plan_p, req_p, first_p),
                                                   ("M-v1", plan_c, req_c, first_c)):  # fmt: skip

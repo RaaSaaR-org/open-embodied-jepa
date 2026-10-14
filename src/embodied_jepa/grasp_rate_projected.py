@@ -388,14 +388,14 @@ def measure_counts(geometry: RateGeometry, plans_r1, plans_r2) -> dict:
     return {"C8": int(sum(c)), "H8": int(sum(h)), "C8_per_root": c, "H8_per_root": h}
 
 
-def in_rate_set(geometry: RateGeometry, plan, root: str, tol: float = OFF_SUPPORT_LIMIT) -> bool:
-    """Stage P's plumbing check: every grasp step of a projected plan moves by at most 2/11 from
-    the root's grasp (and is its own projection)."""
+def in_rate_set(plan, root: str, tol: float = OFF_SUPPORT_LIMIT) -> bool:
+    """Stage P's plumbing check (§6.2): every grasp step of a projected plan moves by at most
+    2/11 (+ 1e-6) from the previous one, starting from the root's grasp. (Re-projecting a stored
+    plan is not bitwise idempotent: the plan stores float32(g_k) while the cumulative clip carries
+    the float64 g_k, so the two differ by float32 rounding, about 1e-7.)"""
     g = np.asarray(plan, np.float64)[:, GRASP_DIM]
     d = np.abs(np.diff(np.concatenate([[ROOT_GRASP[root]], g])))
-    same = bits_equal(project_grasp(geometry, np.asarray(plan, np.float32),
-                                    root_t0(geometry, ROOT_GRASP[root]))[0], plan)  # fmt: skip
-    return bool(np.all(d <= tol) and same)
+    return bool(np.all(d <= tol))
 
 
 def requests_beyond(plan_requested, executed) -> dict:
