@@ -311,7 +311,12 @@ executed actions only; no model was run on test for this draft).
   H_exec(G-req-i) / H_exec(G-i) ≤ 1 + δ_H.** Measured the same way on val for this draft
   (development, `r2_delta_val.py`, §11): δ_L = 0.013 and δ_H = 0.51. So R2's latent margin is
   tight, but its hand-state margin is loose: a G-req whose executed-command hand error is up to
-  about 1.5 times its control's passes. Stage 0 repeats the val measurement and records it. The
+  about 1.5 times its control's passes. Stage 0 repeats the val measurement and records it.
+  Together, R1 and R2 bound the saturated error by H_sat(G-req-i) ≤ (1 + 0.25 (ρ_ctrl,i − 1)) ×
+  (1 + δ_H) × H_exec(G-i). On val that is about 3.9–4.7 times the control's executed-command
+  error, against the control's own 7.4–9.5, so the jointly guaranteed reduction of the saturated
+  error's excess is about 55 %, not the 75 % R1 states in ratio terms. δ_H is not tightened: it
+  is the measured seed-to-seed spread. The
   test values set the bars. H_sat(G-req-i) / H_exec(G-i), the saturated error against the
   control's executed-command error, is reported beside R1 and R2.
 - **E, validity** (TASK-090 §6.1's checks, on the same test roots): (i) roll-out error below
@@ -589,7 +594,12 @@ stay as they are:
   up to the first selection point (3 000 updates). Its val criterion there must equal the value
   recorded in TASK-087's G-87100 report. This ties the pairing to the actual G-87100, not only to
   the debug seed (a few GPU minutes);
-- the inferred-clip attainability reference of §6.2 R1, and R2's δ on val;
+- the inferred-clip attainability reference of §6.2 R1, R2's δ on val, and a grasp-blind
+  reference (each control G-i with index 13 held at the step-1 inferred grasp for both sequences;
+  its R1 ratio is 1 by construction), reporting each reference's H_exec / H_exec(G-i) against
+  1 + δ_H, so the record shows that R2 excludes both degenerate ways of meeting R1. (Review of
+  #214, development, val: 15.1–19.0, lower bounds 8.3–11.3, against 1.51; script archived in
+  `~/develop/emai/evidence/task092-review214/`.)
 - §9's seed checks and the hash checks (TASK-087's checkpoints, feature report and projection,
   N-87100);
 - the power simulation of §6.4 with 20 000 simulations;
