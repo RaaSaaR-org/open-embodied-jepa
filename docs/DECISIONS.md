@@ -63,6 +63,55 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-14 (ay) — TASK-092 Stage 0: code, pairing, hash and seed checks, val references, power and a debug smoke; Stage 0 changes none of the three items it may change; the protocol is frozen at the Stage 0 PR's merge (R27.89–R27.94)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_rate_aware_wm_v1.md §15](experiments/grasp_rate_aware_wm_v1.md). Evidence:
+`~/develop/emai/evidence/task092-stage0/` (`SHA256SUMS` sha256 `2b517483…0a86`). No gated stage ran and no model read
+`play-v1` test.
+
+- **R27.89 — Stage 0 is recorded.**
+  - **Code.** Opt-in modules `grasp_rate_aware{,_runtime}.py`, scripts
+    `{train,run,summarize}_task092.py` and `run_task092_stage.sh`, and 24 tests. No existing file
+    changes except CLAUDE.md's entry points; TASK-087's, TASK-090's and TASK-091's files are
+    checked against sha256 pins before any job runs.
+  - **Pairing.** TASK-087's driver and TASK-092's driver with p = 0 give bitwise-identical weights
+    after 300 updates on debug seed 87900. With p = 0.5 the first batch differs only in index 13
+    of at-limit steps (30 of 52). On model seed 87100 with p = 0, the val criterion at update
+    3 000 equals G-87100's recorded value bitwise (0.5292273672193022).
+  - **Checks.** TASK-087's three G checkpoints and N-87100, both feature reports and every store
+    file, the projection, the moments, the implementation hash, TASK-090's six G checkpoints, λ,
+    the rate limit and every frozen file pass. The seed check over 110 remote-tracking refs finds
+    no use of 908000–909999, 90400–90599, 9008 or 9009 outside TASK-092's files; the evidence
+    tokens are update counts, a byte count, an `arm_out` count and frame offsets, none a seed.
+  - **References on val** (826 R-roots; development, not gated). The inferred-clip ratios are
+    0.999–1.001 (upper bounds 1.003–1.004) and the grasp-blind ratio is 1.000, both within the
+    val R1 bars 2.60–3.11. Their executed-command hand errors are 6.7–7.4 and 15.1–19.0 times the
+    bare control's (lower bounds 3.9–4.8 and 8.3–11.3), above 1 + δ_H = 1.51, so R2 excludes
+    both degenerate ways of meeting R1. δ_L = 0.0133 and δ_H = 0.513 on val, as the DRAFT
+    measured.
+  - **Power** (20 000 simulations, 0.15 against 0.05): 0.988, 0.976 and 0.915 at n = 128 and
+    SD 0, 1 and 2.
+  - **Debug smoke** (debug seeds 90500–90599 and debug model seed 87901; debug, not results): a
+    3 000-update G-req job (0.0366 s per update; 7.7 % of windows changed by the augmentation),
+    Stage R on val, A‴ on 8 debug roots (every first command equal to `first_planned`'s bitwise)
+    and every closed-loop arm on 6 debug resets; the debug M-req's determinism re-run matched its
+    split run bitwise.
+  - **Compute.** 0.39 GPU h in 19 jobs, under the shared lock after a BOARD.md check.
+- **R27.90 — Stage 0 changes none of §13's three items.** Process counts stay 8, 6 and 4. The BS
+  split stays two 64-reset jobs: at 6 processes a world-model run took 1.088 s per command per
+  process, so a 64-reset job projects to at most 4 786 s at the full budget, below 5 400 s. n stays
+  128. Projected budget about 15–19 GPU h (Stage T about 1.9, BD about 1.2, BS about 11–16).
+- **R27.91 — readings of points the DRAFT left open** (protocol §15.7): the debug split, the
+  pairing comparison, the augmenter's draw order, R1's bar from ρ_ctrl's point value, Stage R's
+  root-count check (a mismatch is R-VOID), the A‴ executed-grasp start and the rate measures'
+  start grasp.
+- **R27.92 — the debug smoke is not evidence.** It changes nothing in §2–§12.
+- **R27.93 — frozen at the Stage 0 PR's merge.** Stages T, R, A‴, BD and BS run at the merged
+  revision from a clean tree with `scripts/run_task092_stage.sh`; BS only after an independent GO
+  on BD's record. The V2D session is told before Stage T, BD and BS.
+- **R27.94 — R7 does not change.** TASK-092 is not an Apple→Plate experiment.
+
 ## Decision 2026-10-14 (ax) — the model change after TASK-091's clause is TASK-092: train TASK-087's G with rate-equivalent grasp requests (G-req), gate it offline on rate fidelity against its paired control, then TASK-091's closed loop against the unchanged G with the planner frozen; DRAFT preregistration (R27.74–R27.88; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30).** Protocol (DRAFT):
