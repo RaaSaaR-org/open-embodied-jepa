@@ -1,8 +1,9 @@
 # TASK-092 — a rate-aware grounded world model: train G to predict what the embodiment executes for any grasp request, then TASK-091's closed-loop grasp-and-lift comparison against the unchanged G
 
-**Status: DRAFT** (R27.74–R27.88, decided by Claude under owner delegation, 2026-10-14;
-DECISIONS (ax)). A Stage 0 PR (§13) follows and freezes this protocol at its merge, as TASK-090's
-and TASK-091's did. Nothing runs gated before that freeze.
+**Status: FROZEN at the Stage 0 PR's merge** (R27.74–R27.88 as the DRAFT, #214; Stage 0 record
+§15, R27.89–R27.94; decided by Claude under owner delegation, 2026-10-14; DECISIONS (ax), (ay)).
+Stage 0 changes none of the three items §13 lets it change. Every later stage runs at the merged
+revision from a clean tree with `scripts/run_task092_stage.sh`.
 
 This is the model change that R27.71 names. TASK-091 ([grasp_play_corpus_v1_planned_close.md](grasp_play_corpus_v1_planned_close.md))
 closed at **B-FAIL** (R27.70, R27.72) and its §7 clause fired (R27.71). The clause closes more
@@ -649,3 +650,145 @@ revision from a clean tree.
   only after that, and BS only after an independent GO on BD's record.
 - **R27.88** — **R7 does not change**, whatever row TASK-092 ends in. TASK-092 is not an
   Apple→Plate experiment.
+
+## 15. Stage 0 record (R27.89–R27.94; decided by Claude under owner delegation)
+
+Everything below is Stage 0: checks, references on **val** and a debug smoke on debug seeds. No
+gated stage ran, no model read `play-v1` test, and nothing here is evidence of any outcome.
+Evidence: `~/develop/emai/evidence/task092-stage0/` (`SHA256SUMS` sha256 `2b517483…0a86`). Code at `bc95576`, with two
+fixes (`67837c8`: a reported train-split reading; `c1ccf47`: Stage R rolls N-87100 out with
+TASK-087's `predict_at`, since N predicts no state) and the CLAUDE.md entry (`66595ab`). Revisions, from the reports and `gpu_run.log`: `verify` ran at `bc95576`. The first-batch check,
+`seeds`, `power`, both 87900 pairing runs, the historical 87100 pairing run and the debug model ran
+at `67837c8`. The debug roots, A‴ and every closed-loop smoke run ran at `66595ab`. The references
+and the debug Stage R ran at `c1ccf47`. The historical pairing run and the debug model ran from a
+dirty tracked tree (`tracked_tree_dirty: true`; the uncommitted change was the CLAUDE.md
+entry-point line, made during the pairing and debug-model runs (before the smoke) and committed unchanged as `66595ab`, whose diff touches
+CLAUDE.md only). The TASK-092 module sha256 they record equal the merged ones, and
+`train_task092.py` is unchanged from `67837c8` to the merge. Every other Stage 0 report is from a
+clean tree.
+
+### 15.1 Code
+
+- `src/embodied_jepa/grasp_rate_aware.py` (NumPy at import): the at-limit rule (|Δg| within 10⁻⁴
+  of 2 / 11, the half-width checked against `configs/g1_sim_action.json`), the equivalence sets,
+  the augmenter (`SeedSequence([9008, m])`; per batch one uniform per window, then one per step,
+  whatever p is), Stage R's root filter, saturated and random requests (salt 9009), measures, δ,
+  bars and rows, the A‴ and task rows, the B rows of §6.4, the reported rate measures, the power
+  recompute, the cohorts and seeds, and sha256 pins of every earlier file TASK-092 imports
+  (TASK-087's model, data and driver code, TASK-090's frozen files, TASK-091's modules and
+  scripts). Every runner refuses to start when one of them differs.
+- `src/embodied_jepa/grasp_rate_aware_runtime.py` (torch): `GReqWM`, TASK-087's `GroundedWM`
+  with the loss split (augmented input to `step` and `rollout`, executed actions to the inverse
+  head; otherwise TASK-087's loss line for line); the guarded G-req loader (T-JOB-DONE, kind
+  `job`, checkpoint hash, TASK-087's implementation hash, the TASK-092 module hashes recorded at
+  training, p and salt, the feature report, the pinned moments); Stage R's roll-outs; the two
+  references.
+- `scripts/train_task092.py` (Stage T; `--pairing` and `--debug` kinds), `scripts/run_task092.py`
+  (`verify`, `seeds`, `power`, `pairing-batch`, `references`, `stage-r`, `roots`, `a-third`,
+  `goals`, `run`, `combine`, `video`), `scripts/summarize_task092.py` (stages t, r, a, bd, bs,
+  timing; the BD and BS summaries are VOID unless Stage T ended T-DONE, Stage R R-PASS and Stage A‴
+  A‴-PASS, each cleanly, and every M-req run used Stage T's G-req checkpoint by sha256) and
+  `scripts/run_task092_stage.sh` (stages t, r, a, bd, bs).
+- `tests/test_grasp_rate_aware.py`, 25 tests: the at-limit rule and the equivalence sets; p = 0
+  bitwise and p = 0.5 changing only index 13 of at-limit steps; the augmenter's stream and salt;
+  the sampler unchanged by the augmenter; `GReqWM`'s parameters, loss and gradients equal TASK-087's
+  bitwise when the input equals the executed actions, and its predictor and inverse target read
+  the right tensors; Stage R's equivalence checks, δ, R1 and R2 (including the degenerate R1
+  that R2 excludes); the R, A‴ and B rows; the rate measures; the power rule; the seed ranges; the
+  frozen-file pins; the training driver's refusals; the summarizer's BD/BS prerequisites; the
+  core-import check. The whole suite: 2 421 passed, 33 skipped (graphics opt-in).
+- No existing file changes except CLAUDE.md's entry points and this record.
+
+### 15.2 Checks
+
+| Check | Result |
+| --- | --- |
+| **Pairing, debug seed 87900, 300 updates** | TASK-087's driver and TASK-092's driver with p = 0 give **bitwise-identical weights** (state sha256 `2d20d913…31c4` both) and the same val criterion (0.7744575799350353) |
+| **First batch, seed 87900** | p = 0: bitwise the executed actions. p = 0.5: 30 of 52 at-limit steps changed (31 of 64 windows drawn), nothing outside index 13, no step that is not at the limit; the clip maps every drawn request back within 6.5 × 10⁻⁸ |
+| **Pairing against the historical run, seed 87100, p = 0, 3 000 updates** | val criterion **0.5292273672193022**, equal bitwise to G-87100's recorded value at update 3 000 (report sha256 `4bc6a14c…4641`) |
+| **Hashes** (`verify`) | TASK-087's G-87100–87102 and N-87100 against their pins, reports and evidence copies; the train/val and test feature reports (`f5648a35…7eae`, test `a6c380ff…d650`) and every store file; the projection; the pinned moments; TASK-087's implementation hash; TASK-090's six G checkpoints and three feature reports; λ = 2.0552; the rate limit; every frozen file: **all pass** |
+| **Seeds** (`seeds`, 110 remote-tracking refs and HEAD) | no token in 908000–909999, 90400–90599, 9008 or 9009 outside TASK-092's own files. In the evidence (22 tokens): TASK-077's training-update counts 90400 and 90500, a byte count (90536), an `arm_out` count (90406) and frame offsets in TASK-087's episode table (90585, 908352–909982); none is a seed |
+| **Train split** (reported) | largest executed |Δg| 0.181818 (the limit); 7.26 % of steps at it, as §1.2 |
+
+### 15.3 References on val (§6.2, §13; GPU, at `c1ccf47`, clean tree)
+
+On the 826 val R-roots (150 episodes; 5 643 val roots), with the execution-identical requests
+checked (the clip maps saturated and random requests back onto the executed grasps):
+
+| Control | ρ_ctrl (97.5 %) | R1 bar on val | Inferred clip: ratio (97.5 %); H_exec / bare H_exec (97.5 %) | Grasp-blind: ratio; H_exec / bare H_exec (97.5 %) |
+| --- | --- | --- | --- | --- |
+| G-87100 | 7.590 (4.564–14.969) | 2.648 | 0.999 (0.997–1.003); 7.41 (4.81–14.15) | 1.000; 19.00 (11.34–38.36) |
+| G-87101 | 9.447 (5.453–19.230) | 3.112 | 1.001 (0.998–1.004); 6.95 (4.23–13.72) | 1.000; 16.56 (9.51–34.11) |
+| G-87102 | 7.386 (4.069–16.731) | 2.597 | 0.999 (0.996–1.003); 6.73 (3.93–15.14) | 1.000; 15.07 (8.31–35.08) |
+
+- **R2's δ on val:** δ_L = **0.0133**, δ_H = **0.513** (the DRAFT's values, reproduced).
+- Both references meet R1's ratio bar on val (every upper bound ≤ its bar), and **R2 excludes
+  both**: every lower bound of H_exec / bare H_exec (3.93–11.34) is above 1 + δ_H = 1.513. So R2
+  rules out both degenerate ways of meeting R1, as §13 asks the record to show.
+- The grasp inferred from the measured joints is within 2 / 11 of the executed one on 88.2 % of
+  val frames (median error 0.0023, p90 0.235).
+- The ratios equal the DRAFT's CPU measurements (§6.2) to three decimals. The R1 bars on test are
+  set by Stage R from the test roots.
+
+### 15.4 Power (§6.4, 20 000 simulations)
+
+At the declared alternative (0.15 against 0.05 per seed), the reset-level sign-flip test's power
+is **0.988, 0.976 and 0.915** at n = 128 and SD 0, 1 and 2 (n = 64: 0.789, 0.707, 0.560). The
+power at SD 1 is above 0.80, so **n = 128 stands**; no escalation.
+
+### 15.5 Debug smoke (debug seeds only; never counted; not evidence)
+
+- **Training.** A G-req job on debug model seed 87901 (TASK-087's debug range), p = 0.5, 3 000
+  updates: 0.0366 s per update (median; 115 s), the in-memory store loaded in 0.6 s from the page
+  cache. Augmentation: 96 037 of 192 000 windows selected, **14 738 (7.7 %) changed**, 54 230 of
+  109 198 at-limit steps replaced (3.5 % of all steps). Only windows with an at-limit step change,
+  as §4.1 declares. About 15 % of sampled windows hold an eligible at-limit step, so about 92 % of
+  training windows (not half) stay exactly as recorded, and 3.5 % of all steps are replaced. This
+  is a declared risk (§10): if so small a dose does not teach the clip within U, R1 fails (R-FAIL,
+  no clause). p is declared, not tuned, and Stage 0 does not change it.
+- **Stage R on val** with that debug model in all three G-req slots (13 s; test not read): the
+  plumbing ran end to end, with the equivalence checks passing and TASK-090's six models reported.
+  Its row, E-FAIL (E (iii) at h = 4 against N-87100, upper bound 1.114), is that of a 3 000-update
+  debug model, not a result; so are its ratio of 1.038 and its R2 failure. The first attempt
+  stopped at N-87100's roll-out (N predicts no state); fixed in `c1ccf47`, re-run.
+- **A‴** on 8 debug roots (90500–90507, 9 rejected draws) for all six models: every A2-seed plan's
+  first command equalled `first_planned`'s bitwise; the executed plan grasp and predicted hand
+  synergy were recorded.
+- **Closed loop** on 6 debug resets (90540–90545): ik 6 / 6, ik-nopress 5 / 6, hold 0 / 6, random
+  0 / 6, M-v1-87100 1 / 6, the debug M-req 1 / 6 (run as two 3-reset jobs, combined). The
+  determinism re-run of the debug M-req on the first four resets matched the combined run
+  **bitwise** (applied commands and outcomes), across a different job split and process count.
+  The deferral and rate measures were recorded on every world-model episode.
+- **Timing.** At 6 processes M-v1-87100 took **1.088 s per command per process**, so a 64-reset
+  BS job projects to at most **4 786 s** at the full 400-command budget, below the 5 400 s
+  trigger (TASK-091's smoke: 1.08–1.09). A Stage T job projects to about 60 000 × 0.0366 s plus
+  20 val selections, about 37–39 min (TASK-087's G jobs took 2 222–2 229 s).
+- **GPU use:** 19 jobs, **0.39 GPU h**, all under `gpu_run.sh --wait --board` after a BOARD.md
+  check (no `- v2d:` request was present). Two jobs stopped at once and were re-run: `references`
+  refused a dirty tree (a CLAUDE.md edit, committed) and the Stage R crash above.
+
+### 15.6 Projected budget
+
+Stage T about 1.9 GPU h; Stage R under 0.1; Stage A‴ about 0.2; Stage BD about 1.2; Stage BS
+about 11–14 at TASK-091's measured 3 184–4 218 s per 64-reset job, at most about 16 at the full
+budget (12 jobs × 4 786 s), plus baselines and the determinism re-run. Total about 15–19 GPU h.
+
+### 15.7 Rulings (R27.89–R27.94)
+
+- **R27.89 — Stage 0 is recorded** (§15.1–§15.5): every check of §13 passes; the pairing is
+  bitwise on debug seed 87900 and against G-87100's recorded val criterion at update 3 000.
+- **R27.90 — Stage 0 changes none of §13's three items.** Process counts stay 8 for baselines, 6
+  for world-model runs, 4 for the determinism re-run. The BS split stays two 64-reset jobs
+  (projection 4 786 s ≤ 5 400 s). n stays 128 (power 0.976 at SD 1).
+- **R27.91 — readings of points the DRAFT left open:** the debug split 90500–90539 (roots) and
+  90540–90599 (resets); the pairing's state comparison by TASK-087's `state_sha256`; the per-batch
+  draw order of the augmenter; ρ_ctrl's point value sets R1's bar; R-PREMISE reads ρ_ctrl's point
+  value; L_sat / L_exec is reported on R-roots; Stage R's §6.2 root counts (5 634 roots, 160
+  episodes, 821 R-roots, 154 episodes) are checked and a mismatch is R-VOID; the plan's executed
+  grasp in A‴ starts from the demonstrator's grasp before each root (−1 at R1, +1 at R2); the
+  rate measures take the settled open hand (−1) as the first previous grasp.
+- **R27.92 — the debug smoke is not evidence** and changes nothing in §2–§12.
+- **R27.93 — frozen at the Stage 0 PR's merge.** Stage T, R, A‴, BD and BS run at the merged
+  revision from a clean tree with `scripts/run_task092_stage.sh`; BS only after an independent GO
+  on BD's record. The V2D session is told before Stage T, BD and BS.
+- **R27.94 — R7 does not change.**

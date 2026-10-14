@@ -58,12 +58,14 @@ so G-req is exactly paired with the unchanged G. The stages are:
 This is not Apple→Plate. R7 does not change.
 
 Protocol: [grasp_rate_aware_wm_v1.md](../../../docs/experiments/grasp_rate_aware_wm_v1.md)
-(**DRAFT**, R27.74–R27.88; DECISIONS (ax)).
+(**DRAFT**, R27.74–R27.88; DECISIONS (ax); frozen at the Stage 0 PR's merge, Stage 0 record
+§15, R27.89–R27.94, DECISIONS (ay)).
 
 ## Acceptance criteria
 
-- [ ] DRAFT preregistration reviewed independently and merged
-- [ ] Stage 0, reviewed, with the protocol frozen at its merge. It covers:
+- [x] DRAFT preregistration reviewed independently and merged (#214)
+- [ ] Stage 0, reviewed, with the protocol frozen at its merge (Stage 0 PR open; record §15,
+  evidence `~/develop/emai/evidence/task092-stage0/`). It covers:
   - opt-in modules for the augmentation, the loss subclass, the training driver, the guarded
     loader, Stage R, A‴ and the rows;
   - the pairing check (p = 0 gives TASK-087's weights bitwise on debug seed 87900);
@@ -77,7 +79,7 @@ Protocol: [grasp_rate_aware_wm_v1.md](../../../docs/experiments/grasp_rate_aware
 - [ ] Stage BS run; the record, row and DECISIONS rulings reviewed and merged
 - [ ] Evidence in `~/develop/emai/evidence/task092-*/` with `SHA256SUMS`, and two MP4s (one
   success if any, one failure)
-- [ ] CLAUDE.md entry points and the plan's Progress table updated
+- [ ] CLAUDE.md entry points (added at Stage 0) and the plan's Progress table updated
 
 ## Notes
 
