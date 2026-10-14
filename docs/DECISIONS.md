@@ -72,13 +72,15 @@ is kept as written.
 
 - **R27.89 — Stage 0 is recorded.**
   - **Code.** Opt-in modules `grasp_rate_aware{,_runtime}.py`, scripts
-    `{train,run,summarize}_task092.py` and `run_task092_stage.sh`, and 24 tests. No existing file
+    `{train,run,summarize}_task092.py` and `run_task092_stage.sh`, and 25 tests. No existing file
     changes except CLAUDE.md's entry points; TASK-087's, TASK-090's and TASK-091's files are
     checked against sha256 pins before any job runs.
   - **Pairing.** TASK-087's driver and TASK-092's driver with p = 0 give bitwise-identical weights
     after 300 updates on debug seed 87900. With p = 0.5 the first batch differs only in index 13
     of at-limit steps (30 of 52). On model seed 87100 with p = 0, the val criterion at update
-    3 000 equals G-87100's recorded value bitwise (0.5292273672193022).
+    3 000 equals G-87100's recorded value bitwise (0.5292273672193022); the historical run and the
+    debug model ran at `67837c8` from a dirty tracked tree (the uncommitted CLAUDE.md entry line,
+    committed as `66595ab`; §15).
   - **Checks.** TASK-087's three G checkpoints and N-87100, both feature reports and every store
     file, the projection, the moments, the implementation hash, TASK-090's six G checkpoints, λ,
     the rate limit and every frozen file pass. The seed check over 110 remote-tracking refs finds

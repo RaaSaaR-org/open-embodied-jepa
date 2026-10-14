@@ -657,7 +657,15 @@ Everything below is Stage 0: checks, references on **val** and a debug smoke on 
 gated stage ran, no model read `play-v1` test, and nothing here is evidence of any outcome.
 Evidence: `~/develop/emai/evidence/task092-stage0/` (`SHA256SUMS` sha256 `2b517483…0a86`). Code at `bc95576`, with two
 fixes (`67837c8`: a reported train-split reading; `c1ccf47`: Stage R rolls N-87100 out with
-TASK-087's `predict_at`, since N predicts no state) and the CLAUDE.md entry (`66595ab`).
+TASK-087's `predict_at`, since N predicts no state) and the CLAUDE.md entry (`66595ab`). Revisions, from the reports and `gpu_run.log`: `verify` ran at `bc95576`. The first-batch check,
+`seeds`, `power`, both 87900 pairing runs, the historical 87100 pairing run and the debug model ran
+at `67837c8`. The debug roots, A‴ and every closed-loop smoke run ran at `66595ab`. The references
+and the debug Stage R ran at `c1ccf47`. The historical pairing run and the debug model ran from a
+dirty tracked tree (`tracked_tree_dirty: true`; the uncommitted change was the CLAUDE.md
+entry-point line, made while the smoke ran and committed unchanged as `66595ab`, whose diff touches
+CLAUDE.md only). The TASK-092 module sha256 they record equal the merged ones, and
+`train_task092.py` is unchanged from `67837c8` to the merge. Every other Stage 0 report is from a
+clean tree.
 
 ### 15.1 Code
 
@@ -678,15 +686,17 @@ TASK-087's `predict_at`, since N predicts no state) and the CLAUDE.md entry (`66
 - `scripts/train_task092.py` (Stage T; `--pairing` and `--debug` kinds), `scripts/run_task092.py`
   (`verify`, `seeds`, `power`, `pairing-batch`, `references`, `stage-r`, `roots`, `a-third`,
   `goals`, `run`, `combine`, `video`), `scripts/summarize_task092.py` (stages t, r, a, bd, bs,
-  timing) and `scripts/run_task092_stage.sh` (stages t, r, a, bd, bs).
-- `tests/test_grasp_rate_aware.py`, 24 tests: the at-limit rule and the equivalence sets; p = 0
+  timing; the BD and BS summaries are VOID unless Stage T ended T-DONE, Stage R R-PASS and Stage A‴
+  A‴-PASS, each cleanly, and every M-req run used Stage T's G-req checkpoint by sha256) and
+  `scripts/run_task092_stage.sh` (stages t, r, a, bd, bs).
+- `tests/test_grasp_rate_aware.py`, 25 tests: the at-limit rule and the equivalence sets; p = 0
   bitwise and p = 0.5 changing only index 13 of at-limit steps; the augmenter's stream and salt;
   the sampler unchanged by the augmenter; `GReqWM`'s parameters, loss and gradients equal TASK-087's
   bitwise when the input equals the executed actions, and its predictor and inverse target read
   the right tensors; Stage R's equivalence checks, δ, R1 and R2 (including the degenerate R1
   that R2 excludes); the R, A‴ and B rows; the rate measures; the power rule; the seed ranges; the
-  frozen-file pins; the training driver's refusals; the core-import check. The whole suite: 2 420
-  passed, 33 skipped (graphics opt-in).
+  frozen-file pins; the training driver's refusals; the summarizer's BD/BS prerequisites; the
+  core-import check. The whole suite: 2 421 passed, 33 skipped (graphics opt-in).
 - No existing file changes except CLAUDE.md's entry points and this record.
 
 ### 15.2 Checks
@@ -732,7 +742,10 @@ power at SD 1 is above 0.80, so **n = 128 stands**; no escalation.
   updates: 0.0366 s per update (median; 115 s), the in-memory store loaded in 0.6 s from the page
   cache. Augmentation: 96 037 of 192 000 windows selected, **14 738 (7.7 %) changed**, 54 230 of
   109 198 at-limit steps replaced (3.5 % of all steps). Only windows with an at-limit step change,
-  as §4.1 declares.
+  as §4.1 declares. About 15 % of sampled windows hold an eligible at-limit step, so about 92 % of
+  training windows (not half) stay exactly as recorded, and 3.5 % of all steps are replaced. This
+  is a declared risk (§10): if so small a dose does not teach the clip within U, R1 fails (R-FAIL,
+  no clause). p is declared, not tuned, and Stage 0 does not change it.
 - **Stage R on val** with that debug model in all three G-req slots (13 s; test not read): the
   plumbing ran end to end, with the equivalence checks passing and TASK-090's six models reported.
   Its row, E-FAIL (E (iii) at h = 4 against N-87100, upper bound 1.114), is that of a 3 000-update

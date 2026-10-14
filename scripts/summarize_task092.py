@@ -347,6 +347,33 @@ def _split_checks(runs, parts, cohort, debug):
     return problems
 
 
+def prior_checks(args, runs) -> list[str]:
+    """Non-debug BD and BS: Stage R ended R-PASS and Stage A‴ A‴-PASS (both clean), and every
+    M-req run used Stage T's G-req checkpoint (by sha256)."""
+    problems = []
+    for flag, stage, row in (("r_summary", "r", "R-PASS"), ("a_summary", "a", "A‴-PASS")):
+        path = getattr(args, flag)
+        if not path:
+            problems.append(f"no Stage {stage} summary")
+            continue
+        rec = load(path)
+        if rec.get("stage") != stage or rec.get("row") != row or rec.get("problems"):
+            problems.append(f"Stage {stage} did not end {row} cleanly")
+    if not args.t_summary:
+        return problems + ["no Stage T summary"]
+    t = load(args.t_summary)
+    if t.get("row") != "T-DONE":
+        problems.append("Stage T did not end T-DONE")
+    for name, r in runs.items():
+        if r.get("arm") != "M-req":
+            continue
+        want = t.get("models", {}).get(f"G-req-{r['model_seed']}", {}).get("checkpoint_sha256")
+        got = (r.get("model") or {}).get("checkpoint_sha256")
+        if want is None or got != want:
+            problems.append(f"{name}: not Stage T's G-req checkpoint")
+    return problems
+
+
 def stage_bd(args):
     cohort = args.cohort or "bd-grasp"
     debug = cohort.startswith("debug")
@@ -365,6 +392,7 @@ def stage_bd(args):
         need |= set(ra.BASELINE_ARMS)
         if need - set(runs):
             problems.append(f"missing runs: {sorted(need - set(runs))}")
+        problems += prior_checks(args, runs)
     ik = runs["ik"]["successes"]
     bar = ra.b_bar(ik, n)
     g = load(Path(args.runs) / f"goals-{cohort}.json")
@@ -407,6 +435,7 @@ def stage_bs(args):
         for r in runs.values():
             if [e["seed"] for e in r["episodes"]] != list(ra.COHORTS[cohort]):
                 problems.append(f"{r['arm']}: not the cohort's seeds")
+        problems += prior_checks(args, allr)
     seeds = args.model_seeds or list(ra.MODEL_SEEDS)
     need = {f"M-req-{s}" for s in seeds} | {f"M-v1-{s}" for s in ra.MODEL_SEEDS}
     need |= set(ra.BASELINE_ARMS)
@@ -547,6 +576,7 @@ def main(argv=None) -> int:
     parser.add_argument("--r-summary")
     parser.add_argument("--a-summary")
     parser.add_argument("--bd-summary")
+    parser.add_argument("--t-summary", help="BD and BS: Stage T's summary (checkpoint hashes)")
     parser.add_argument("--cohort", help="debug cohorts only (smoke)")
     parser.add_argument("--model-seeds", type=int, nargs="+", help="debug only")
     parser.add_argument("--only", nargs="+", help="debug only: the runs to summarise")
@@ -554,7 +584,8 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if args.cohort and not args.cohort.startswith("debug"):
         raise SystemExit("--cohort is for debug cohorts only")
-    if (args.model_seeds or args.only or args.name) and not (args.cohort or args.r_file):
+    debug_r = args.stage == "r" and args.r_file is not None
+    if (args.model_seeds or args.only or args.name) and not (args.cohort or debug_r):
         raise SystemExit("--model-seeds, --only and --name are for debug runs only")
     if args.stage == "timing" and not args.cohort:
         raise SystemExit("timing is Stage 0's, on a debug cohort")
@@ -562,8 +593,12 @@ def main(argv=None) -> int:
         raise SystemExit("Stage A‴ needs Stage R's summary (§7: R and A‴ failures count together)")
     if args.stage == "bs" and not args.bd_summary:
         raise SystemExit("Stage BS needs the Stage BD summary")
-    if args.stage == "bs" and not args.cohort and not (args.a_summary and args.r_summary):
-        raise SystemExit("Stage BS needs Stage R's and A‴'s summaries (reported beside each seed)")
+    if (
+        args.stage in ("bd", "bs")
+        and not args.cohort
+        and not (args.a_summary and args.r_summary and args.t_summary)
+    ):
+        raise SystemExit("Stages BD and BS need Stage T's, R's and A‴'s summaries (§7 order)")
     fn = {"t": stage_t, "r": stage_r, "a": stage_a, "bd": stage_bd, "bs": stage_bs,
           "timing": stage_timing}[args.stage]  # fmt: skip
     summary = fn(args)

@@ -387,15 +387,22 @@ def test_b_rows_first_match():
 def test_b_under_when_the_interval_reaches_delta():
     n = 128
     rnd = np.zeros(n, bool)
-    c = _arms(n, [0.05, 0.05, 0.05], 2)
-    g = c.copy()
-    # M-req a little better than M-v1 on a few resets: not significant, but the bootstrap's upper
-    # bound may reach +0.10 only with a larger gain; construct one that does
-    g[:, :20] = True
+    g = np.zeros((3, n), bool)
+    c = np.zeros((3, n), bool)
+    g[:, :15] = True  # M-req on 15 resets, M-v1 on 9 others: not significant, wide interval
+    c[:, 15:24] = True
     row = ra.b_row(g, c, rnd, 0.40)
-    if not row["beats_v1"]:
-        assert row["row"] == ("B-UNDER" if row["bootstrap_rate_difference"]["ci"][1] >= 0.10
-                              else "B-FAIL")  # fmt: skip
+    assert not row["beats_v1"]
+    assert row["bootstrap_rate_difference"]["ci"][1] >= ra.DELTA
+    assert row["row"] == "B-UNDER" and not ra.clause_fires(row["row"])
+    # at the pooled bar but not beating random, nor M-v1: the bracket of §6.4.5 gives B-FAIL
+    g = np.zeros((3, n), bool)
+    g[:, :60] = True
+    rnd = np.zeros(n, bool)
+    rnd[:60] = True
+    row = ra.b_row(g, g.copy(), rnd, 0.40)
+    assert row["at_pooled_bar"] and not row["beats_random"] and not row["beats_v1"]
+    assert row["row"] == "B-FAIL" and ra.clause_fires(row["row"])
 
 
 def test_rate_measures():
@@ -519,3 +526,32 @@ def test_training_driver_refuses_non_frozen_settings():
         mod.check_kind(type("P2", (pairing,), {"p": 0.5}))
     debug = type("D", (A,), {"debug": True, "seed": 87900, "p": 0.0, "updates": 300})
     assert mod.check_kind(debug) == "debug"
+
+
+def test_summarizer_bd_bs_require_clean_prior_rows_and_stage_t_checkpoints(tmp_path):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "summarize_task092_t", ROOT / "scripts" / "summarize_task092.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    def write(name, value):
+        path = tmp_path / name
+        path.write_text(json.dumps(value))
+        return str(path)
+
+    t = write("t.json", {"row": "T-DONE", "models": {"G-req-87100": {"checkpoint_sha256": "aa"}}})
+    r = write("r.json", {"stage": "r", "row": "R-PASS", "problems": []})
+    a = write("a.json", {"stage": "a", "row": "A‴-PASS", "problems": []})
+    args = type("A", (), {"t_summary": t, "r_summary": r, "a_summary": a})
+    runs = {"M-req-87100": {"arm": "M-req", "model_seed": 87100,
+                            "model": {"checkpoint_sha256": "aa"}}}  # fmt: skip
+    assert mod.prior_checks(args, runs) == []
+    runs["M-req-87100"]["model"]["checkpoint_sha256"] = "bb"
+    assert mod.prior_checks(args, runs) == ["M-req-87100: not Stage T's G-req checkpoint"]
+    bad_a = write("a2.json", {"stage": "a", "row": "A‴-FAIL", "problems": []})
+    args2 = type("B", (args,), {"a_summary": bad_a})
+    assert "Stage a did not end A‴-PASS cleanly" in mod.prior_checks(args2, {})
+    assert "no Stage T summary" in mod.prior_checks(type("C", (args,), {"t_summary": None}), {})

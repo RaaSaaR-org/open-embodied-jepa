@@ -5,8 +5,10 @@
 #   scripts/run_task092_stage.sh t <out>                        Stage T (three training jobs)
 #   scripts/run_task092_stage.sh r <out>                        Stage R (play-v1 test)
 #   scripts/run_task092_stage.sh a <out> <summary-r.json>       Stage A‴ (roots 908000-908063)
-#   scripts/run_task092_stage.sh bd <out>                       Stage BD (development)
-#   scripts/run_task092_stage.sh bs <out> <summary-bd.json> <summary-r.json> <summary-a.json>
+#   scripts/run_task092_stage.sh bd <out> <summary-t.json> <summary-r.json> <summary-a.json>
+#                                                               Stage BD (development)
+#   scripts/run_task092_stage.sh bs <out> <summary-bd.json> <summary-t.json> <summary-r.json>
+#                                   <summary-a.json>
 #                                                               Stage BS (gated; after GO)
 # Stage T writes the checkpoints to checkpoints/task092-run/G-req-<seed> and its summary to <out>.
 # Every output file is refused if it exists, and the runner's ledger refuses a cohort run twice.
@@ -74,6 +76,7 @@ case "$STAGE" in
     gpu "${PY[@]}" a-third --cohort a3-roots --roots "$OUT" --output "$OUT"
     "$PYB" scripts/summarize_task092.py --stage a --runs "$OUT" --r-summary "$RS" ;;
   bd)
+    TS=${3:?Stage T summary}; RS=${4:?Stage R summary}; AS=${5:?Stage A‴ summary}
     gpu "${PY[@]}" goals --cohort bd-grasp --output "$OUT" --workers 8
     for a in ik ik-nopress hold random; do
       gpu "${PY[@]}" run --cohort bd-grasp --arm "$a" --goals "$OUT" --output "$OUT" --workers 8
@@ -82,9 +85,11 @@ case "$STAGE" in
       gpu "${PY[@]}" run --cohort bd-grasp --arm "${pair%%:*}" --model-seed "${pair##*:}" \
         --goals "$OUT" --output "$OUT" --workers 6
     done
-    "$PYB" scripts/summarize_task092.py --stage bd --runs "$OUT" ;;
+    "$PYB" scripts/summarize_task092.py --stage bd --runs "$OUT" --t-summary "$TS" \
+      --r-summary "$RS" --a-summary "$AS" ;;
   bs)
-    BD=${3:?Stage BD summary}; RS=${4:?Stage R summary}; AS=${5:?Stage A‴ summary}
+    BD=${3:?Stage BD summary}; TS=${4:?Stage T summary}; RS=${5:?Stage R summary}
+    AS=${6:?Stage A‴ summary}
     gpu "${PY[@]}" goals --cohort bs-grasp --output "$OUT" --workers 8
     for a in ik ik-nopress hold random; do
       gpu "${PY[@]}" run --cohort bs-grasp --arm "$a" --goals "$OUT" --output "$OUT" --workers 8
@@ -100,7 +105,7 @@ case "$STAGE" in
     gpu "${PY[@]}" run --cohort bs-grasp --arm M-req --model-seed 87100 --determinism \
       --goals "$OUT" --output "$OUT" --workers 4
     "$PYB" scripts/summarize_task092.py --stage bs --runs "$OUT" --bd-summary "$BD" \
-      --r-summary "$RS" --a-summary "$AS" ;;
-  *) sed -n '2,14p' "$0" >&2; exit 2 ;;
+      --t-summary "$TS" --r-summary "$RS" --a-summary "$AS" ;;
+  *) sed -n '2,16p' "$0" >&2; exit 2 ;;
 esac
 echo "STAGE-$STAGE-DONE"
