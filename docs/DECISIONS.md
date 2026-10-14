@@ -63,6 +63,89 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-14 (ax) — the model change after TASK-091's clause is TASK-092: train TASK-087's G with rate-equivalent grasp requests (G-req), gate it offline on rate fidelity against its paired control, then TASK-091's closed loop against the unchanged G with the planner frozen; DRAFT preregistration (R27.74–R27.88; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30).** Protocol (DRAFT):
+[grasp_rate_aware_wm_v1.md](experiments/grasp_rate_aware_wm_v1.md). It follows R27.71: the next
+grasp step is a model change with its own preregistration.
+
+**Why this change (development, not gated; protocol §1.2 and §11).** CPU only, at `64dad40`;
+scripts and outputs in `~/develop/emai/evidence/task092-prototype/` (`SHA256SUMS` sha256
+`fd972ef4…910c`, regenerated after the review of #214).
+
+- The right-grasp channel is rate-limited to 2 / 11 per command (`embodiment.py`,
+  `_prepare_side`), so from an open hand a close registers at about the 9th command. No executed
+  grasp step in `play-v1` train exceeds that limit; 7.3 % sit at it.
+- TASK-089's planner samples without candidate projection. In TASK-091 Stage BS's run reports (one
+  run, simulation only), 28–45 % of the chosen plans' grasp steps per world-model seed lie beyond
+  the limit, only 11–25 % of chosen plans are wholly within it, and the rate clip changed the grasp
+  of 69–88 % of grasp-phase executed commands.
+- On 826 `play-v1` val roots, under grasp requests the embodiment executes identically to the
+  recorded ones, the nine G models of TASK-087 and TASK-090 predict the right-hand state about 7–11
+  times worse at h = 8 than under the recorded commands (standardised MSE 0.29–0.52 against
+  0.042–0.055). G's pose term reads exactly these joints.
+- That the mismatch causes the closed-loop failures (grasp contact on 39–87 of 128 against ik's
+  122; median rise 0.18–0.34 cm against 6.2 cm; TASK-091, one run, simulation only) is a
+  hypothesis, not shown.
+
+- **R27.74 — the next grasp step is TASK-092, G-req.** Ranked against a grasp-outcome head with a
+  cost term (2nd: thin positives, inherits the off-support error, and needs a ruling on simulator
+  truth in the cost), a hand-crop or higher-resolution latent (3rd: needs a re-rendered corpus,
+  weaker link) and a contact-weighted loss (4th: close in effect to TASK-091's enrichment). Each
+  candidate is outside the TASK-062, TASK-065, R26.33 and R27.71 scopes.
+- **R27.75 — the planner stays frozen** (TASK-089's step-averaged CEM, λ = 2.0552, no candidate
+  projection). Planner-side projection would also remove the mismatch. It is a planner change,
+  under R26.33 for TASK-087's checkpoints. It is neither taken nor closed here.
+- **R27.76 — training.** TASK-087's G recipe, corpus (`play-v1` train), latent, budget
+  (U = 60 000), selection and moments. Model seeds 87100–87102 are reused, so G-req and TASK-087's
+  G share their initialisation and windows. On half of the windows (p = 0.5, declared), each
+  at-limit grasp step's input becomes a request drawn uniformly from those the clip maps onto it
+  (salt 9008). The targets, including the inverse-dynamics target, stay the executed ones.
+- **R27.77 — arms.** M-req (G-req ×3) is primary and pooled. M-v1 (TASK-087's G ×3, unchanged) is
+  the gated control. ik, ik-nopress, hold and random keep their roles. M-v1 is a control re-run, not
+  a variant under R26.33.
+- **R27.78 — Stage R**, offline on `play-v1` test (821 roots with an at-limit step). R1: the
+  upper bound of G-req's saturated / executed hand-state ratio at h = 8 must be ≤ 1 + 0.25 ×
+  (ρ_ctrl − 1). The measured ceiling is 1, and ρ_ctrl is the paired control's ratio on the same
+  roots. R2: no regression under the executed commands, within δ measured from the control seeds.
+  E: TASK-090's validity checks. R-PREMISE applies if a control's ratio is below 2.
+  - **Attainability** (development, CPU, 826 val R-roots, after the review of #214). Each control
+    was wrapped with a clip around the grasp inferred from its hand joints.
+  - The wrapped ratios were 0.996–1.004 (upper bounds), far below the val bars of 2.60–3.11, so
+    the bar stands.
+  - But the wrapper's executed-command hand error is 6.6–7.4 times the bare control's, so R1
+    alone can be met degenerately, and R1 and R2 are gated together.
+  - On val, R2's margins are δ_L = 0.013 and δ_H = 0.51; the hand-state margin is loose.
+  - Stage 0 repeats both measurements and records them.
+- **R27.79 — Stage A‴.** TASK-091's A″ on fresh roots 908000–908063, as a no-regression gate.
+- **R27.80 — closed loop.** BD 90400–90431, an independent GO, then BS on n = 128,
+  909000–909127. The bar is min(0.40, 0.9 r) (pooled 156 / 384, floor 26 / 128 at 0.40), with
+  reset-level sign-flip tests. Rows: B-VOID, B-PASS, B-GAIN, B-BAR, B-FAIL (δ = +0.10) and
+  B-UNDER.
+- **R27.81 — power.** The declared alternative is 0.15 against 0.05 per seed. Power at n = 128 is
+  0.98 at SD 1 (development, 2 000 simulations). Stage 0 recomputes it.
+- **R27.82 — rows**, in the protocol's §7 order.
+  - A‴-FAIL counts the G-req seeds that fail R1, R2 or A‴ together, so the closed loop never runs
+    with fewer than two clean seeds.
+  - B-FAIL needs all three: M-req does not beat M-v1; k_g is below the pooled bar or M-req does
+    not beat random; and the upper bound is below δ.
+  - A T-VOID on a completed job is not replaced by a fresh model seed without a ruling that keeps
+    M-v1's pairing.
+- **R27.83 — the clause** fires on B-FAIL only. It closes rate-equivalent request augmentation of
+  the grasp channel as the grasp fix under TASK-087's recipe, latent and corpus and TASK-089's
+  planner. The other model changes, arm-channel feasibility, planner-side projection, the corpora,
+  reach, Phase 4 and the product goal stay open.
+- **R27.84 — seeds and salts.** Checked on 109 remote-tracking refs and in the evidence: A‴
+  908000–908063, BD 90400–90431, BS 909000–909127, debug 90500–90599, new salts 9008 and 9009
+  (9007 is D-A2's).
+- **R27.85 — budget.** About 17 GPU h: Stage T 1.9, BD 1.2 and BS 12.8, the rest under 1. Every job
+  runs under the 7 200 s cap and the shared lock, and BOARD.md's Requests are checked.
+  `worktrees/task087-run` stays until TASK-092 closes.
+- **R27.86 — disclosed development** is recorded (protocol §11).
+- **R27.87 — status.** DRAFT in this PR. A Stage 0 PR freezes it at its merge. Gated stages run
+  only after that, and BS only after an independent GO.
+- **R27.88 — R7 does not change**, whatever row TASK-092 ends in. Not Apple→Plate.
+
 ## Decision 2026-10-14 (aw) — TASK-091 Stage BS ends B-FAIL: M-v2g 22 / 384 (8, 8, 6 of 128) against M-v1p 26 / 384 (11, 7, 8), pooled bar 156 / 384 and per-seed floor 26 / 128 not met, "M-v2g beats M-v1p" p = 0.767, bootstrap upper bound +0.023 below δ = +0.10; ik 82 / 128; the §7 clause fires; TASK-091 closes; one run, simulation only (R27.69–R27.73)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
