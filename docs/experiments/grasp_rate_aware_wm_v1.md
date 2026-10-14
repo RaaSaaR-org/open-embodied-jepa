@@ -1164,3 +1164,80 @@ driver and its log, the `gpu_run` lines, copies of the two ledger entries, and
     and left the ledger unchanged.
   - No frozen module changes.
 - **R27.110 — R7 does not change.** TASK-092 stays closed at A‴-FAIL (R27.100).
+
+## 19. D-RATE′ record: D-FLAT, 0 / 32 against 0 / 32 (R27.111–R27.114; decided by Claude under owner delegation)
+
+**Development, one run, simulation only, 32 resets, not gated, no claim (§17.2, R27.109).
+32 resets cannot establish an effect (§17.3).** TASK-092 stays closed at A‴-FAIL.
+
+**Run conditions.** The reading ran once, after #218's merge (`d8aa02b`). It used
+`scripts/dev_task092_drate.py` (sha256 `39ace6cc…`, revision `d8aa02b`) with the run tree
+`worktrees/task092-drate`, clean at `64e87f0`, as the working directory, and absolute evidence
+paths.
+
+- **Board and lock.** Before each of the three jobs, BOARD.md's `## Requests` held no `- v2d:`
+  line. V2D had acknowledged the run beforehand. Each job took one `gpu_run.sh --wait --board`
+  lock.
+- **Preflight.** It ran before each job and so before any ledger claim. Both models loaded each
+  time: M-req-87100 `bc08bf68…0799` (Stage T's G-req) and M-v1-87100 `17921a7f…f273`.
+- **Goals.** 32 goals on 90850–90881 (apple 9, can 6, cube 17), 31 rejected draws, 17 s.
+- **Run reports.** Both completed under the cap. Each is at `64e87f0` from a clean tree and
+  carries the `development` field. M-req's checkpoint is Stage T's.
+- **Summary.** It printed `{"row": "D-FLAT", "k_req": 0, "k_v1": 0, "problems": []}`.
+
+**Row: D-FLAT** (§17.3). d = 0 − 0 = 0. There are no discordant resets (0 M-req only, 0 M-v1
+only). No arm succeeded, so the reading sits at the floor and cannot separate the two models in
+either direction. For comparison only, TASK-091's BD gave M-v1-87100 2 / 32 on other resets.
+
+**Reported for both arms** (R27.103; development, one run, simulation only, 32 resets):
+
+| Measure | M-req-87100 | M-v1-87100 |
+| --- | --- | --- |
+| Successes (exact 95 % interval) | 0 / 32 (0.000–0.109) | 0 / 32 (0.000–0.109) |
+| Grasp contact (episodes) | 16 | 20 |
+| Maximum rise, median (max; episodes ≥ 5 cm) | 0.29 cm (5.4 cm; 1) | 0.19 cm (1.3 cm; 0) |
+| Final subgoal reached (0 / 2 / 3) | 1 / 1 / 30 | 0 / 1 / 31 |
+| Stopped episodes | 3 | 1 |
+| Executed close, first in grasp phase (median; p10–p90; none) | 9 (8–11; 1, grasp phase not reached) | 9 (8–11; 0) |
+| Closing commands before first contact, with contact (median; p90) | 2.5 (37.5) | 1 (67.4) |
+| Plans' close step: share k = 1, pooled | 0.61 | 0.60 |
+| Longest run of re-plans with k > 1 (median; max) | 5 (8) | 3 (7) |
+| **Share of grasp-phase first commands whose grasp the clip changed** | **0.72** | **0.78** |
+| Share of all first commands clipped | 0.62 | 0.58 |
+| Share of chosen plan steps off the training support | 0.56 | 0.47 |
+| Plans wholly on support | 0.008 | 0.095 |
+| Executed grasp share closed, grasp / lift phase | 0.82 / 0.85 | 0.74 / 0.81 |
+| Planning seconds per command (mean) | 1.00 | 1.01 |
+
+**Reading (reported only).** Both arms close in the grasp phase at about the same executed
+command (median 9 for each). G-req's planner still chooses plans whose grasp steps exceed the
+rate limit on most steps: 56 % of plan steps are off support, and the clip changed the first grasp
+on 72 % of grasp-phase commands. Neither arm scored a counted success; M-req's one rise above
+5 cm (5.4 cm, reset 90850) was in an episode stopped by the projection's joint-velocity guard. In
+this reading, G-req's rate fidelity in its predictions (Stage R) did not show up as plans that
+respect the rate limit: its share of plan steps off support (0.56) was not lower than M-v1's
+(0.47). That is consistent with §16.3's flat-cost reading, but one run of 32 resets with no
+success cannot establish it, and it does not show that the planner causes the grasp failures.
+
+**GPU.** Three jobs of 21 s, 2 155 s and 2 237 s, 4 413 s in all (about 1.23 GPU h, under the
+ceiling of about 1.5). There was no v2d wait, no cap hit and no incident. The GR00T server,
+`/mnt/data/emai/{archive,models,cache}` and the earlier worktrees were not touched.
+
+**Evidence.** `~/develop/emai/evidence/task092-drate2/` holds the goals, both run reports, the
+summary, the driver and its log, the `gpu_run` lines and copies of the three ledger entries.
+`SHA256SUMS` has sha256 `d1bc12e2…b457`.
+
+### 19.1 Rulings (R27.111–R27.114)
+
+- **R27.111 — D-RATE′ is recorded: D-FLAT.** M-req-87100 scored 0 / 32 and M-v1-87100 0 / 32,
+  d = 0, with no discordant resets (development, one run, simulation only, 32 resets, not gated).
+- **R27.112 — D-FLAT is not a finding of no effect and closes nothing** (§17.3). Both arms were at
+  0, so the reading could not show a difference in either direction. G-req's checkpoints stay
+  available, §8's clause does not fire, and R26.33's scope is neither widened nor narrowed.
+- **R27.113 — The next step follows §17.4 (R27.104): a planner-side fix, projecting CEM's
+  candidates onto the rate limit.** It is a planner variant under R26.33, so it needs its own
+  ruling (which must say whether it is admitted and on which checkpoints) and its own
+  preregistration. This entry makes neither. The reported clip and off-support shares above
+  (0.72–0.78 and 0.47–0.56) are development readings that such a preregistration may cite as
+  motivation, not as bars.
+- **R27.114 — R7 does not change.** TASK-092 stays closed at A‴-FAIL (R27.100).
