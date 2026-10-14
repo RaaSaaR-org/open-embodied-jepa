@@ -58,13 +58,13 @@ so G-req is exactly paired with the unchanged G. The stages are:
 This is not Apple→Plate. R7 does not change.
 
 Protocol: [grasp_rate_aware_wm_v1.md](../../../docs/experiments/grasp_rate_aware_wm_v1.md)
-(**DRAFT**, R27.74–R27.88; DECISIONS (ax); frozen at the Stage 0 PR's merge, Stage 0 record
+(FROZEN at #215; DRAFT R27.74–R27.88; DECISIONS (ax); frozen at the Stage 0 PR's merge, Stage 0 record
 §15, R27.89–R27.94, DECISIONS (ay)).
 
 ## Acceptance criteria
 
 - [x] DRAFT preregistration reviewed independently and merged (#214)
-- [ ] Stage 0, reviewed, with the protocol frozen at its merge (Stage 0 PR open; record §15,
+- [x] Stage 0, reviewed, with the protocol frozen at its merge (#215; record §15,
   evidence `~/develop/emai/evidence/task092-stage0/`). It covers:
   - opt-in modules for the augmentation, the loss subclass, the training driver, the guarded
     loader, Stage R, A‴ and the rows;
@@ -72,9 +72,9 @@ Protocol: [grasp_rate_aware_wm_v1.md](../../../docs/experiments/grasp_rate_aware
   - the seed and hash checks;
   - the power recomputed with 20 000 simulations;
   - a timed debug smoke on 90500–90599.
-- [ ] Stage T recorded (T-VOID on a failed check or a cap hit)
-- [ ] Stage R recorded (R-PREMISE, E-FAIL or R-FAIL escalate, with no clause)
-- [ ] Stage A‴ recorded (A‴-FAIL escalates, with no clause)
+- [x] Stage T recorded (T-VOID on a failed check or a cap hit): T-DONE (§16.1)
+- [x] Stage R recorded (R-PREMISE, E-FAIL or R-FAIL escalate, with no clause): R-PASS (§16.2)
+- [x] Stage A‴ recorded (A‴-FAIL escalates, with no clause): **A‴-FAIL** (§16.3); BD and BS do not run
 - [ ] Stage BD recorded, the bar set, and an independent GO posted before Stage BS
 - [ ] Stage BS run; the record, row and DECISIONS rulings reviewed and merged
 - [ ] Evidence in `~/develop/emai/evidence/task092-*/` with `SHA256SUMS`, and two MP4s (one
@@ -94,3 +94,16 @@ Protocol: [grasp_rate_aware_wm_v1.md](../../../docs/experiments/grasp_rate_aware
   removed until TASK-092 closes.
 - The development evidence behind the DRAFT is `~/develop/emai/evidence/task092-prototype/`
   (`SHA256SUMS` sha256 `fd972ef4…910c`, regenerated after the review of #214).
+- 2026-10-14, Stage T, Stage R and Stage A‴ (branch `docs/task092-t-r-a`; R27.95–R27.99, DECISIONS
+  (az); protocol §16). Each ran once at `64e87f0` from a clean tree, after `verify` and the seed
+  check passed, with no `- v2d:` request on BOARD.md.
+  - **T-DONE:** three jobs, 6 713 s, kept updates 45 000 / 51 000 / 54 000, `last_two_triggered`
+    false.
+  - **R-PASS** on all three seeds (one run, offline, simulation only, `play-v1` test). ρ_req was
+    0.99–1.02 against ρ_ctrl 15.0–20.3, with no R2 regression and E passed.
+  - **A‴-FAIL.** close≤4@R1 was 44 / 51 / 36 and lift@R2 55 / 35 / 24, against bars of 48; A1
+    passed for every model.
+  - A post-hoc reading (reported only) finds that the request-level bars do not separate the
+    families in executed terms.
+  - Escalated with no clause; BD and BS do not run; the escalation needs its own ruling. GPU
+    about 2.0 h. Evidence `~/develop/emai/evidence/task092-{t,r,a}/` (`SHA256SUMS`).
