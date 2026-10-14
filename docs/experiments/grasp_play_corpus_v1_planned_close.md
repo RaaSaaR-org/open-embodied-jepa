@@ -933,8 +933,8 @@ stop; the executed-close share is the share of executed commands in that phase w
   §7.2 row 5), not B-UNDER.
 - **Reported tests** (TASK-090 §7.2): M-v2g against M-v1-87100 (×3), sign-flip p = 7.1 × 10⁻⁴,
   bootstrap +0.049 (95 % +0.021 to +0.081); M-v1p against M-v1-87100 (×3), p = 2.5 × 10⁻⁵,
-  +0.060 (+0.031 to +0.091). Both of TASK-090's added play sets did better than `play-v1` alone,
-  each against one M-v1 seed. ik against M-v2g (ik ×3 per reset), p = 1.4 × 10⁻²³.
+  +0.060 (+0.031 to +0.091). M-v2g and M-v1p each scored above M-v1-87100 (reported only; one
+  M-v1 seed; the arms differ in corpus size as well as composition). ik against M-v2g (ik ×3 per reset), p = 1.4 × 10⁻²³.
 
 **§5.3's deferral measures, per seed** (reported only; no row reads them; per reset over the 128
 episodes; medians with p90 and max). §9 requires them beside any restatement of a B-FAIL.

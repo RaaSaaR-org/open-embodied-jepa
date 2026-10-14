@@ -121,8 +121,8 @@ they ran before BD at the same revision.
   - **Confound in the opposite direction (§9).** §9's risk is that deferral sinks G-v2g-90100 and
     pushes k_g below the bar for a planner-timing reason. G-v2g-90100 is the latest planner here
     (median k 2) and scored 8 / 128. That equals G-v2g-90101 (8) and is above G-v2g-90102 (6),
-    neither of which is a late planner. All three M-v2g seeds are below a third of the per-seed
-    floor. The late M-v1p seeds scored 11 and 8, its early seed 7. In this one run the counts do
+    neither of which was a late planner at A′/D-A2. All three M-v2g seeds are below a third of the per-seed
+    floor. The M-v1p seeds labelled late at A′/D-A2 scored 11 and 8, its early seed 7. In this one run the counts do
     not order by planning time. This does not show that planner timing played no part.
   - **Short of ik.** Grasp contact on 39–87 of 128 resets per world-model seed (ik 122). Median
     maximum rise 0.18–0.34 cm (ik 6.2 cm). Velocity stops 13–45 per seed (ik 12).

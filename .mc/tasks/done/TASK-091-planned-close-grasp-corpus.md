@@ -4,7 +4,7 @@ aliases:
 - TASK-091
 title: 'Planned close within the plan: TASK-090''s A′ on fresh roots with A2 redefined, then its closed-loop grasp-and-lift comparison on fresh resets'
 slug: planned-close-grasp-corpus
-status: in-progress
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -57,9 +57,9 @@ Protocol: [grasp_play_corpus_v1_planned_close.md](../../../docs/experiments/gras
 - [x] Stage 0: frozen code for the redefined A2 measure (the full 8-step plan at the A2 seed, its first command checked bitwise against `first_planned`), the new cohorts and the deferral measures; seed checks; checkpoint and feature-store hash checks; debug smoke and per-job timing; reviewed; protocol frozen at merge
 - [x] Stage A″ recorded (A″-FAIL escalates, no clause)
 - [x] Stage BD recorded, the bar set; independent GO posted before Stage BS
-- [ ] Stage BS run; results document, row and DECISIONS rulings reviewed and merged
+- [x] Stage BS run; results document, row and DECISIONS rulings reviewed and merged
 - [x] Evidence in `~/develop/emai/evidence/task091-*/` with `SHA256SUMS`; two MP4s (one success if any, one failure)
-- [ ] CLAUDE.md entry points and the plan's Progress table updated
+- [x] CLAUDE.md entry points and the plan's Progress table updated
 
 ## Notes
 
