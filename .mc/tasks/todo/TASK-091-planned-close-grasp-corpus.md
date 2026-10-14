@@ -56,9 +56,9 @@ Protocol: [grasp_play_corpus_v1_planned_close.md](../../../docs/experiments/gras
 - [x] DRAFT preregistration reviewed independently and merged (#209, `940de4e`)
 - [x] Stage 0: frozen code for the redefined A2 measure (the full 8-step plan at the A2 seed, its first command checked bitwise against `first_planned`), the new cohorts and the deferral measures; seed checks; checkpoint and feature-store hash checks; debug smoke and per-job timing; reviewed; protocol frozen at merge
 - [x] Stage A″ recorded (A″-FAIL escalates, no clause)
-- [ ] Stage BD recorded, the bar set; independent GO posted before Stage BS
+- [x] Stage BD recorded, the bar set; independent GO posted before Stage BS
 - [ ] Stage BS run; results document, row and DECISIONS rulings reviewed and merged
-- [ ] Evidence in `~/develop/emai/evidence/task091-*/` with `SHA256SUMS`; two MP4s (one success if any, one failure)
+- [x] Evidence in `~/develop/emai/evidence/task091-*/` with `SHA256SUMS`; two MP4s (one success if any, one failure)
 - [ ] CLAUDE.md entry points and the plan's Progress table updated
 
 ## Notes
@@ -98,4 +98,16 @@ Protocol: [grasp_play_corpus_v1_planned_close.md](../../../docs/experiments/gras
   step 1. Both BD world-model seeds are late planners (§9's confound). No cap hit; 8 jobs,
   5 873 s (about 1.63 GPU h). Evidence `~/develop/emai/evidence/task091-bd/` (`SHA256SUMS`).
   Next: an independent GO or NO-GO on this record; BS only after GO (tell V2D first).
+- 2026-10-14, Stage BS (branch `docs/task091-bs`; R27.69–R27.73, DECISIONS (aw); protocol §17):
+  ran once after the independent GO on #212, at `dbab1a5` from a clean tree in
+  `worktrees/task091-run`, after `verify` and the seed check passed. 128 gated resets
+  907000–907127, one run, simulation only. Row **B-FAIL** (summarizer `problems: []`): M-v2g
+  22 / 384 (8, 8, 6 of 128) against M-v1p 26 / 384 (11, 7, 8); pooled bar 156 / 384 and per-seed
+  floor 26 / 128 not met; "M-v2g beats M-v1p" p = 0.767; "beats random" p = 1.9e-6; bootstrap
+  upper bound +0.023 < δ = +0.10. ik 82 / 128, M-v1-87100 1 / 128 (reported). Determinism re-run
+  matched; no cap hit; 20 jobs, 53 260 s (about 14.8 GPU h). Per-seed deferral measures in §17
+  (late-planning seeds did not score lower in this run; that timing played no part is not shown).
+  C1 2.38 and C2 1.69 apply. The §7 clause fires (scope unchanged); TASK-091 closes with the
+  record's merge (R27.72); R7 unchanged. Evidence `~/develop/emai/evidence/task091-bs/`
+  (`SHA256SUMS`, two MP4s).
 %% mc-links: [[TASK-090]] %%
