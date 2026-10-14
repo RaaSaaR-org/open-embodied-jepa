@@ -63,6 +63,54 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-14 (ba) — TASK-092 closes at A‴-FAIL as recorded, no clause; one development-only closed-loop reading, D-RATE (M-req-87100 against M-v1-87100 on 32 fresh resets 90810–90841; not gated, not Stage BD, no claim), is authorised with its reading rule declared before it runs (R27.100–R27.106)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_rate_aware_wm_v1.md §17](experiments/grasp_rate_aware_wm_v1.md). This entry makes the
+ruling R27.98 left open. It weighs the #216 review's alternatives: (a) a development-only BD is
+taken, as D-RATE; (b) an executed-measure gate is carried into the D-MOVES branch; (c) a powered
+closed-loop gate is not taken now, and D-MOVES leads to it; (d) a planner-side fix is the D-FLAT
+and D-WORSE branch and stays under R26.33.
+
+- **R27.100 — TASK-092 closes at A‴-FAIL as recorded** (R27.97). The clause does not fire, and
+  nothing in its scope is closed. The MC task moves to done. G-req's checkpoints are kept.
+- **R27.101 — D-RATE is authorised.** It is one development-only closed-loop reading: **not
+  gated, not Stage BD, and it carries no claim.** It cannot change §16's rows or reopen the task.
+  - **Arms:** M-req-87100 (Stage T's G-req) against M-v1-87100 (TASK-087's G). No baseline arm.
+  - **Resets:** **90810–90841**, 32 fresh development resets (cohort `dev-drate`). BD's
+    90400–90431 stay unused. The seed check found no token in 90810–90841 on any of 111
+    remote-tracking refs (`git grep -w`, after `git fetch --all`), and the only evidence matches
+    are decimal fractions.
+  - **Code:** TASK-092's own closed-loop path (`run_task092.py` `goals` and `run`, as BD) at the
+    frozen revision `64e87f0`, from a clean tree in a fresh worktree. The planner, λ and the
+    checkpoint pins are frozen. The development script `scripts/dev_task092_drate.py` registers
+    only the cohort and edits no frozen module. The runner's non-debug guards (clean tree, cap,
+    seed set, goals' revision, once-only ledger) apply unchanged.
+  - **GPU:** three jobs, each under one `gpu_run.sh --wait --board` lock after a BOARD.md
+    Requests check (wait while a `- v2d:` line is present). Projected about 1.2 GPU h; ceiling
+    about 1.5. Evidence `~/develop/emai/evidence/task092-drate/` with `SHA256SUMS`.
+- **R27.102 — The reading rule is declared before the run.** With d = k_req − k_v1, in this
+  order: **D-VOID** (a run incomplete or a check failed; no re-run), **D-MOVES** (d ≥ +4),
+  **D-WORSE** (d ≤ −4), **D-FLAT** (−3 ≤ d ≤ +3). **32 resets cannot establish an effect**: no test
+  is run, and at rates near 0.15 and 0.05 the standard deviation of d is about 2.4 successes. The
+  row only routes the next step.
+- **R27.103 — Reported for both arms:** successes with exact 95 % intervals, grasp contact,
+  maximum rise and final subgoal, the executed-close timing (TASK-091 §5.3's measures, with the
+  first executed close in the grasp phase), the share of grasp-phase first commands whose grasp
+  the rate clip changed (and over all commands), the off-support plan-step share, stopped
+  episodes, planning seconds and the discordant resets.
+- **R27.104 — The next step follows the row.**
+  - **D-MOVES:** the next preregistration is a powered closed-loop test of G-req with an offline
+    gate on executed (post-clip) plan measures. The gate is checked for degeneracy and calibrated
+    on development roots, not on A‴'s roots or D-RATE's resets.
+  - **D-FLAT or D-WORSE:** the next step is a planner-side fix, projecting CEM's candidates onto
+    the rate limit. It falls under R26.33, so it needs its own ruling and preregistration.
+  - **D-VOID:** a ruling.
+- **R27.105 — Order and record.** D-RATE runs once, after this ruling's PR is merged. Its record
+  (§18, DECISIONS (bb)) is a second PR. Every restated number carries "development, one run,
+  simulation only, 32 resets".
+- **R27.106 — R7 does not change.**
+
 ## Decision 2026-10-14 (az) — TASK-092 Stage T ends T-DONE; Stage R ends R-PASS (G-req's saturated / executed hand-state ratio about 1 against its control's 15–20, no regression); Stage A‴ ends A‴-FAIL (every G-req seed fails close≤4@R1, lift@R2 or both; A1 passes everywhere); the task escalates, no clause; BD and BS do not run; one run, offline, simulation only (R27.95–R27.99)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:

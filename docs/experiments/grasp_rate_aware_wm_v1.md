@@ -6,6 +6,8 @@ Stage 0 changes none of the three items §13 lets it change. Every later stage r
 revision from a clean tree with `scripts/run_task092_stage.sh`. **Stage T (T-DONE), Stage R (R-PASS)
 and Stage A‴ (A‴-FAIL) ran at `64e87f0` (§16, R27.95–R27.99); A‴-FAIL is a stop row, so Stage BD
 and Stage BS did not run, and the task escalates (no clause).**
+**Closed at A‴-FAIL by the escalation ruling (§17, R27.100–R27.106); one development-only
+closed-loop reading, D-RATE, is authorised there (not gated, no claim).**
 
 This is the model change that R27.71 names. TASK-091 ([grasp_play_corpus_v1_planned_close.md](grasp_play_corpus_v1_planned_close.md))
 closed at **B-FAIL** (R27.70, R27.72) and its §7 clause fired (R27.71). The clause closes more
@@ -945,3 +947,130 @@ cohort was started twice. There were no incidents. The checkpoints are in
 
 Evidence: `~/develop/emai/evidence/task092-t/`, `task092-r/` and `task092-a/` (`SHA256SUMS`
 sha256 `19aacdc2…b265`, `61763e8c…8b1a` and `5b7c4fc1…9bdc`).
+
+## 17. Escalation ruling: TASK-092 closes at A‴-FAIL; one development-only closed-loop reading, D-RATE (R27.100–R27.106; decided by Claude under owner delegation)
+
+R27.98 left the escalation to its own ruling. This section makes it. It changes no row, gate,
+number or frozen file of §6–§16, and it does not reopen the task.
+
+### 17.1 The alternatives weighed
+
+The #216 review listed four alternatives beside R27.98's recommendation:
+
+- **(a) A development-only BD.** Run M-req-87100 against M-v1-87100 on 32 fresh development
+  resets, not gated, to see whether rate fidelity moves the closed loop at all. **Taken, as D-RATE
+  (§17.2).** It is cheap (about 1.2 GPU h), and it is the only one of the four that reads the
+  closed loop before the next preregistration is written.
+- **(b) An executed-measure gate.** **Carried into the D-MOVES branch (§17.4).** Any later offline
+  gate on executed (post-clip) plan measures is checked for degeneracy before it is frozen (§16.3:
+  the R2 half of the post-hoc reading cannot fail), and its bars are calibrated on development
+  roots, not on A‴'s roots, which have been read.
+- **(c) Go straight to a powered closed-loop gate.** **Not taken now.** Whether that is worth its
+  cost (BS's 128 resets were projected at about 13 GPU h) is what D-RATE is for. D-MOVES leads to
+  it.
+- **(d) A planner-side fix.** **Not taken now; it is the D-FLAT and D-WORSE branch (§17.4).** It
+  stays under R26.33 and needs its own ruling and preregistration.
+
+### 17.2 D-RATE: what it is and what it is not
+
+- **Development only.** D-RATE is **not gated**, it is **not Stage BD** (BD's resets 90400–90431
+  stay unused and BD's row and bar do not apply), and it **carries no claim**. It cannot change
+  §16's rows, reopen TASK-092, fire or bypass §8's clause, or set a bar for a later task. Its
+  counts are development readings and are restated only with "development, one run, simulation
+  only, 32 resets".
+- **Arms.** Exactly two world-model runs: **M-req-87100** (Stage T's G-req checkpoint,
+  `bc08bf68…0799`) and **M-v1-87100** (TASK-087's G). No baseline arm runs; ik, hold and random
+  are not needed for the reading, which is the paired difference only.
+- **Resets.** **90810–90841** (32 fresh development resets, cohort `dev-drate`). Checked on
+  2026-10-14 after `git fetch --all`: on all 111 remote-tracking refs, over `src/`, `scripts/`,
+  `docs/`, `.mc/`, `tests/`, `benchmarks/` and `configs/`, `git grep -w` finds no token in
+  90810–90841 (90800 appears only as TASK-091's exclusive range end `range(90700, 90800)`). In
+  `~/develop/emai/evidence/` the only matches are decimal fractions (for example `2.90811`), not
+  seeds. The range lies between TASK-091's debug range (90700–90799) and TASK-092's A‴ roots
+  (908000–908063), and is disjoint from every range of §9.
+- **Code path.** TASK-092's own closed-loop path, the one Stage BD uses: `scripts/run_task092.py`
+  `goals` and `run`, at the **frozen revision `64e87f0`**, from a clean tracked tree in a fresh
+  detached worktree (`worktrees/task092-drate`). The planner (TASK-089's step-averaged CEM,
+  `zs.CEM`), λ, the model loaders and their hash pins are the frozen ones; `_lambda_check` and the
+  frozen-file check run as in BD. `--workers 6` for the world-model runs and 8 for goals, as in BD.
+- **The one addition.** `scripts/dev_task092_drate.py` (development, not frozen code; added by
+  this ruling's PR) imports that runner from the run tree and registers one cohort, `dev-drate` =
+  90810–90841, which admits only the two runs above. It edits no frozen module. Because the
+  cohort's name does not start with `debug`, the runner's non-debug guards apply unchanged: a
+  clean tracked tree, the 7 200 s per-job cap, the exact seed set, the goals' revision, and the
+  once-only ledger (`outputs/task092-ledger`: `goals-dev-drate`, `run-dev-drate-M-req-87100`,
+  `run-dev-drate-M-v1-87100`). Every report carries a `development` field with the script's
+  sha256. Its `summary` subcommand reads the two runs with the frozen summarizer's own helpers
+  (`_arm_table`, `_deferral_and_rate`, `common_checks`) and prints the row of §17.3.
+- **GPU.** Three jobs (goals, M-req, M-v1), each under one `scripts/gpu_run.sh --wait
+  --min-free-gib 8 --board` lock; before each job BOARD.md's `## Requests` is read and the job
+  waits while a `- v2d:` line is present. Projected about 1.2 GPU h (TASK-091's BD world-model runs
+  on 32 resets took 1 674–2 079 s each); the ceiling is about 1.5 GPU h. The GR00T server,
+  `/mnt/data/emai/{archive,models,cache}` and the existing worktrees are not touched.
+- **Evidence.** `~/develop/emai/evidence/task092-drate/` with `SHA256SUMS`.
+- **Order.** D-RATE runs only after this ruling's PR is merged. Its record goes in a second PR.
+
+### 17.3 Reading rule (declared before the run)
+
+Let k_req and k_v1 be the successes of M-req-87100 and M-v1-87100 on the 32 resets (TASK-089's
+success definition, as BD), and d = k_req − k_v1. In this order:
+
+1. **D-VOID** — a run did not complete under the cap, a guard or check failed (revision, clean
+   tree, seeds, goals, checkpoint or frozen-file hash, λ), or the summary reports a problem. The
+   resets are not re-run; another reading needs its own ruling.
+2. **D-MOVES** — d ≥ **+4**.
+3. **D-WORSE** — d ≤ **−4**.
+4. **D-FLAT** — otherwise, that is −3 ≤ d ≤ +3.
+
+**32 resets cannot establish an effect.** No test is run and no row is a finding. At per-arm rates
+near TASK-091's (M-v1 0.05, a hoped-for M-req 0.15), the standard deviation of d at n = 32 is about
+2.4 successes, so even ±4 is under two standard deviations, and BD-sized readings have moved
+before (TASK-091's M-v2g-90100 led M-v1p-90100 5 to 3 of 32 in BD and trailed it 8 to 11 of
+128 in BS). The row
+only routes the next step (§17.4).
+
+**Reported for both arms** (from the runs' episodes and `plan_log`, as §6.4 lists): successes
+with the exact 95 % interval; grasp contact; maximum rise (median) and final subgoal reached;
+the executed-close timing (TASK-091 §5.3's measure 2, the first executed close in the grasp
+phase, its distribution and the episodes that never close there, with measures 1 and 3 beside
+it); **the share of grasp-phase first commands whose grasp the rate clip changed**, the same over
+all commands, and the share of chosen plan steps off the training support; stopped episodes and
+planning seconds; the discordant resets (M-req only, M-v1 only). Targets and rejected draws are
+recorded.
+
+### 17.4 Next-step implication of each row
+
+- **D-MOVES.** The next preregistration is a **powered closed-loop test of G-req** against the
+  unchanged G, with an **offline gate on executed (post-clip) plan measures**. That gate is
+  checked for degeneracy before it is frozen (a measure that cannot fail, like §16.3's executed
+  R2 half, is not a gate) and its bars are calibrated on development roots (from ik and G-v1),
+  never on A‴'s roots or on D-RATE's resets.
+- **D-FLAT or D-WORSE.** The next step is a **planner-side fix: projecting CEM's candidates onto
+  the rate limit** (2 / 11 per command on the right-grasp channel) before they are scored. It is a
+  planner variant and falls under **R26.33**, so it needs its own ruling (which must say whether it
+  is admitted and on which checkpoints) and its own preregistration.
+- **D-VOID.** Recorded; the next step is a ruling.
+
+None of these preregisters anything, and D-RATE's counts are never a bar or a baseline for a
+gated stage.
+
+### 17.5 Rulings (R27.100–R27.106)
+
+- **R27.100 — TASK-092 closes at A‴-FAIL as recorded** (§16, R27.97). The clause (§8) does not
+  fire; nothing in its scope is closed. The MC task moves to done. G-req's checkpoints
+  (`checkpoints/task092-run/G-req-<seed>`) are kept.
+- **R27.101 — D-RATE is authorised** as one development-only closed-loop reading (§17.2): not
+  gated, not Stage BD, no claim; M-req-87100 against M-v1-87100 on resets 90810–90841 at `64e87f0`
+  through `scripts/dev_task092_drate.py`, with the planner and λ frozen.
+- **R27.102 — Its reading rule is declared before it runs** (§17.3): D-VOID, D-MOVES (d ≥ +4),
+  D-WORSE (d ≤ −4), D-FLAT (|d| ≤ 3), in that order. 32 resets cannot establish an effect.
+- **R27.103 — Its reported measures are those of §17.3** for both arms, including the
+  executed-close timing and the clipped share.
+- **R27.104 — The next step follows the row** (§17.4): D-MOVES → a powered closed-loop
+  preregistration of G-req with a degeneracy-checked, development-calibrated executed-measure
+  offline gate; D-FLAT or D-WORSE → a planner-side rate projection, under R26.33, with its own
+  ruling and preregistration.
+- **R27.105 — Order and record.** D-RATE runs after this ruling's PR is merged, once, under the GPU
+  rules of §17.2; its record (§18, DECISIONS (bb)) is a second PR, with every restated number
+  carrying "development, one run, simulation only, 32 resets".
+- **R27.106 — R7 does not change.**

@@ -4,7 +4,7 @@ aliases:
 - TASK-092
 title: 'Rate-aware grounded world model: train G on rate-equivalent grasp requests, gate it on rate fidelity, then the closed-loop grasp-and-lift comparison against the unchanged G'
 slug: rate-aware-grasp-world-model
-status: todo
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -59,7 +59,8 @@ This is not Apple→Plate. R7 does not change.
 
 Protocol: [grasp_rate_aware_wm_v1.md](../../../docs/experiments/grasp_rate_aware_wm_v1.md)
 (DRAFT R27.74–R27.88, DECISIONS (ax); FROZEN at the Stage 0 merge #215, Stage 0 record §15,
-R27.89–R27.94, DECISIONS (ay); Stage T, R and A‴ record §16, R27.95–R27.99, DECISIONS (az)).
+R27.89–R27.94, DECISIONS (ay); Stage T, R and A‴ record §16, R27.95–R27.99, DECISIONS (az); escalation ruling §17, R27.100–R27.106, DECISIONS (ba):
+closed at A‴-FAIL).
 
 ## Acceptance criteria
 
@@ -75,11 +76,15 @@ R27.89–R27.94, DECISIONS (ay); Stage T, R and A‴ record §16, R27.95–R27.9
 - [x] Stage T recorded (T-VOID on a failed check or a cap hit): T-DONE (§16.1)
 - [x] Stage R recorded (R-PREMISE, E-FAIL or R-FAIL escalate, with no clause): R-PASS (§16.2)
 - [x] Stage A‴ recorded (A‴-FAIL escalates, with no clause): **A‴-FAIL** (§16.3); BD and BS do not run
-- [ ] Stage BD recorded, the bar set, and an independent GO posted before Stage BS
-- [ ] Stage BS run; the record, row and DECISIONS rulings reviewed and merged
-- [ ] Evidence in `~/develop/emai/evidence/task092-*/` with `SHA256SUMS`, and two MP4s (one
-  success if any, one failure)
-- [ ] CLAUDE.md entry points (added at Stage 0) and the plan's Progress table updated
+- [x] ~~Stage BD recorded, the bar set, and an independent GO posted before Stage BS~~ — not run:
+  A‴-FAIL is a stop row (R27.97); closed by R27.100
+- [x] ~~Stage BS run; the record, row and DECISIONS rulings reviewed and merged~~ — not run (R27.97,
+  R27.100)
+- [x] Escalation ruled: closed at A‴-FAIL, no clause (§17, R27.100–R27.106, DECISIONS (ba))
+- [x] Evidence in `~/develop/emai/evidence/task092-*/` with `SHA256SUMS` (the two MP4s belonged to
+  BS, which did not run)
+- [x] CLAUDE.md entry points (added at Stage 0, D-RATE's script added at §17) and the plan's
+  Progress table updated
 
 ## Notes
 
@@ -109,3 +114,13 @@ R27.89–R27.94, DECISIONS (ay); Stage T, R and A‴ record §16, R27.95–R27.9
     maximum rate less often than G-v1 (54 / 38 / 23 against 44 / 56 / 53).
   - Escalated with no clause; BD and BS do not run; the escalation needs its own ruling. GPU
     about 2.0 h. Evidence `~/develop/emai/evidence/task092-{t,r,a}/` (`SHA256SUMS`).
+- 2026-10-14, escalation ruling (branch `docs/task092-ruling`; R27.100–R27.106, DECISIONS (ba);
+  protocol §17). **TASK-092 closes at A‴-FAIL as recorded; the clause does not fire; R7 is
+  unchanged.** One development-only closed-loop reading, **D-RATE**, is authorised: M-req-87100
+  against M-v1-87100 on 32 fresh resets **90810–90841** (cohort `dev-drate`), at `64e87f0` through
+  `scripts/dev_task092_drate.py`; not gated, not Stage BD, no claim. Its rule, declared before it
+  runs: D-VOID, D-MOVES (d ≥ +4), D-WORSE (d ≤ −4), D-FLAT (|d| ≤ 3); 32 resets cannot establish
+  an effect. D-MOVES → a powered closed-loop prereg of G-req with a degeneracy-checked,
+  development-calibrated executed-measure gate; D-FLAT or D-WORSE → a planner-side rate
+  projection under R26.33, with its own ruling and prereg. It runs after this PR merges; its
+  record is a second PR (§18, DECISIONS (bb)).
