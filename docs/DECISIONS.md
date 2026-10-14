@@ -63,6 +63,44 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-14 (bc) — D-RATE′ ends D-FLAT: M-req-87100 0 / 32 and M-v1-87100 0 / 32 on resets 90850–90881, no discordant resets; development, one run, simulation only, 32 resets, not gated; the next step is a planner-side rate projection under R26.33, with its own ruling and preregistration (R27.111–R27.114)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_rate_aware_wm_v1.md §19](experiments/grasp_rate_aware_wm_v1.md). This reading is
+development only and makes no claim. 32 resets cannot establish an effect.
+
+**Run conditions.**
+- **When and how.** It ran once, after #218's merge (`d8aa02b`), with the script at `d8aa02b`
+  (sha256 `39ace6cc…`). The working directory was the run tree, clean at `64e87f0`, and the
+  evidence paths were absolute.
+- **GPU rules.** Before each of the three jobs, BOARD.md had no `- v2d:` request, and each job
+  took one `gpu_run.sh --wait --board` lock.
+- **Preflight.** Both models loaded before every job, so before any ledger claim (M-req
+  `bc08bf68…0799`, M-v1 `17921a7f…f273`).
+- **Goals.** 32 (apple 9, can 6, cube 17), with 31 rejected draws.
+
+- **R27.111 — D-FLAT.** d = 0 − 0 = 0, with no discordant resets. The summary printed
+  `{"row": "D-FLAT", "k_req": 0, "k_v1": 0, "problems": []}`.
+  - **Reported** (M-req against M-v1; development, one run, simulation only, 32 resets):
+    - **Successes:** 0 / 32 and 0 / 32 (each 95 % interval 0.000–0.109).
+    - **Grasp contact:** 16 and 20.
+    - **Median maximum rise:** 0.29 and 0.19 cm. One M-req episode rose 5.4 cm.
+    - **First executed close in the grasp phase:** median 9 and 9 (p10–p90 8–11).
+    - **Clip changed the grasp-phase first command's grasp:** **0.72 and 0.78** (over all
+      commands: 0.62 and 0.58).
+    - **Plan steps off support:** 0.56 and 0.47.
+    - **Stopped episodes:** 3 and 1.
+  - Both arms are at the floor, so the reading cannot separate them.
+- **R27.112 — D-FLAT closes nothing** and is not a finding of no effect. G-req's checkpoints stay
+  available, and §8's clause does not fire.
+- **R27.113 — The next step is a planner-side fix**, as R27.104 routes D-FLAT: projecting CEM's
+  candidates onto the rate limit. It is a planner variant under R26.33, so it needs its own
+  ruling and preregistration. This entry makes neither.
+- **R27.114 — R7 does not change.**
+
+GPU: 4 413 s (21, 2 155 and 2 237 s), about 1.23 GPU h. Evidence
+`~/develop/emai/evidence/task092-drate2/` (`SHA256SUMS` sha256 `d1bc12e2…b457`).
+
 ## Decision 2026-10-14 (bb) — D-RATE ends D-VOID: the M-req run stopped at model load before any episode (the driver ran from the wrong working directory, so the frozen loader did not find `third_party/le-wm`); M-v1 did not run; no counts; resets 90810–90841 are spent; D-RATE′ is authorised on fresh resets 90850–90881 with a working-directory guard and a model-load preflight before any ledger claim (R27.107–R27.110)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:

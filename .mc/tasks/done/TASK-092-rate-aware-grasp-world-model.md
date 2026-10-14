@@ -132,3 +132,12 @@ closed at A‴-FAIL).
   everything else unchanged, and two tested guards (the run tree as working directory, and a
   preflight that loads both models before any ledger claim). It runs after this PR is merged.
   GPU 21 s. Evidence `~/develop/emai/evidence/task092-drate/`.
+- 2026-10-14, D-RATE′ record (branch `docs/task092-drate2-record`; R27.111–R27.114, DECISIONS
+  (bc); protocol §19): **D-FLAT** (development, one run, simulation only, 32 resets, not gated).
+  - M-req-87100 0 / 32 and M-v1-87100 0 / 32 on 90850–90881, with no discordant resets. Both
+    arms are at the floor, so the reading closes nothing.
+  - The clip changed the grasp of 0.72 / 0.78 of grasp-phase first commands, and 0.56 / 0.47 of
+    plan steps were off support.
+  - Next: a planner-side rate projection under R26.33, which needs its own ruling and
+    preregistration.
+  - GPU 4 413 s. Evidence `~/develop/emai/evidence/task092-drate2/`.
