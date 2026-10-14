@@ -967,9 +967,15 @@ The #216 review listed four alternatives beside R27.98's recommendation:
   roots, not on A‴'s roots, which have been read.
 - **(c) Go straight to a powered closed-loop gate.** **Not taken now.** Whether that is worth its
   cost (BS's 128 resets were projected at about 13 GPU h) is what D-RATE is for. D-MOVES leads to
-  it.
-- **(d) A planner-side fix.** **Not taken now; it is the D-FLAT and D-WORSE branch (§17.4).** It
-  stays under R26.33 and needs its own ruling and preregistration.
+  it. The review's form of (c) made the offline stage reported-only, since TASK-089's offline
+  measures did not predict the closed loop; the D-MOVES branch keeps an offline gate instead,
+  because a gate on executed measures, checked for degeneracy and calibrated on development
+  roots, addresses what failed at A‴ (request-level bars), and a closed loop run without any
+  offline check would spend BS's budget on a model whose plans were never checked.
+- **(d) A planner-side fix.** **Not taken now; it is the D-FLAT and D-WORSE branch (§17.4).** The
+  review named tie-breaking towards executed requests; this ruling names projecting candidates
+  onto the rate limit, which removes the flat cost rather than breaking its ties. Both are planner
+  variants; either stays under R26.33 and needs its own ruling and preregistration.
 
 ### 17.2 D-RATE: what it is and what it is not
 
@@ -1000,12 +1006,13 @@ The #216 review listed four alternatives beside R27.98's recommendation:
   clean tracked tree, the 7 200 s per-job cap, the exact seed set, the goals' revision, and the
   once-only ledger (`outputs/task092-ledger`: `goals-dev-drate`, `run-dev-drate-M-req-87100`,
   `run-dev-drate-M-v1-87100`). Every report carries a `development` field with the script's
-  sha256. Its `summary` subcommand reads the two runs with the frozen summarizer's own helpers
+  sha256 and the revision of the checkout that holds it. Its `summary` subcommand reads the two runs with the frozen summarizer's own helpers
   (`_arm_table`, `_deferral_and_rate`, `common_checks`) and prints the row of §17.3.
 - **GPU.** Three jobs (goals, M-req, M-v1), each under one `scripts/gpu_run.sh --wait
   --min-free-gib 8 --board` lock; before each job BOARD.md's `## Requests` is read and the job
   waits while a `- v2d:` line is present. Projected about 1.2 GPU h (TASK-091's BD world-model runs
-  on 32 resets took 1 674–2 079 s each); the ceiling is about 1.5 GPU h. The GR00T server,
+  on 32 resets took 1 674–2 079 s each); the ceiling is about 1.5 GPU h. Nothing enforces that ceiling beyond the 7 200 s per-job cap, so
+  the record reports the GPU seconds used against it. The GR00T server,
   `/mnt/data/emai/{archive,models,cache}` and the existing worktrees are not touched.
 - **Evidence.** `~/develop/emai/evidence/task092-drate/` with `SHA256SUMS`.
 - **Order.** D-RATE runs only after this ruling's PR is merged. Its record goes in a second PR.
@@ -1024,7 +1031,10 @@ success definition, as BD), and d = k_req − k_v1. In this order:
 
 **32 resets cannot establish an effect.** No test is run and no row is a finding. At per-arm rates
 near TASK-091's (M-v1 0.05, a hoped-for M-req 0.15), the standard deviation of d at n = 32 is about
-2.4 successes, so even ±4 is under two standard deviations, and BD-sized readings have moved
+2.4 successes (treating the two arms as independent), so even ±4 is under two standard deviations.
+At that alternative, D-MOVES has probability about 0.44 and D-FLAT about 0.56 (exact binomial; at
+0.10 against 0.05, D-FLAT about 0.82), so **D-FLAT or D-WORSE is not evidence that G-req does not
+help, and it closes nothing**: G-req's checkpoints stay available to a later ruling, and BD-sized readings have moved
 before (TASK-091's M-v2g-90100 led M-v1p-90100 5 to 3 of 32 in BD and trailed it 8 to 11 of
 128 in BS). The row
 only routes the next step (§17.4).

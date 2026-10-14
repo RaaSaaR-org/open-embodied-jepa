@@ -92,8 +92,9 @@ and D-WORSE branch and stays under R26.33.
 - **R27.102 — The reading rule is declared before the run.** With d = k_req − k_v1, in this
   order: **D-VOID** (a run incomplete or a check failed; no re-run), **D-MOVES** (d ≥ +4),
   **D-WORSE** (d ≤ −4), **D-FLAT** (−3 ≤ d ≤ +3). **32 resets cannot establish an effect**: no test
-  is run, and at rates near 0.15 and 0.05 the standard deviation of d is about 2.4 successes. The
-  row only routes the next step.
+  is run, and at rates near 0.15 and 0.05 the standard deviation of d is about 2.4 successes
+  (arms treated as independent), and D-MOVES has probability only about 0.44, so D-FLAT is not a
+  finding of no effect and closes nothing. The row only routes the next step.
 - **R27.103 — Reported for both arms:** successes with exact 95 % intervals, grasp contact,
   maximum rise and final subgoal, the executed-close timing (TASK-091 §5.3's measures, with the
   first executed close in the grasp phase), the share of grasp-phase first commands whose grasp

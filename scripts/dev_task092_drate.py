@@ -16,8 +16,8 @@ script and its sha256.
 * ``goals --output DIR`` and ``run --arm {M-req,M-v1} --goals DIR --output DIR``: the runner's own
   subcommands on ``dev-drate`` (``--model-seed 87100`` and ``--workers 6`` are added, as in BD).
   Each is one job under ``scripts/gpu_run.sh --wait --min-free-gib 8 --board``.
-* ``summary --runs DIR --t-summary FILE``: R27.102's reading (CPU): successes, grasp contact,
-  maximum rise, the executed-close timing and the clipped share for both arms, and the row
+* ``summary --runs DIR --t-summary FILE``: R27.102-R27.103's reading (CPU): successes, grasp
+  contact, maximum rise, the executed-close timing and the clipped share for both arms, and the row
   D-MOVES / D-FLAT / D-WORSE from the paired difference, in that declared order.
 
     T=/home/huhn/develop/emai/worktrees/task092-drate
@@ -48,6 +48,23 @@ import run_task092 as run  # noqa: E402  (the frozen runner; it puts RUN_TREE/sr
 
 from embodied_jepa import grasp_rate_aware as ra  # noqa: E402
 
+
+def _main_revision() -> str | None:
+    """The revision of the checkout that holds this script (not the run tree's)."""
+    import subprocess
+
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parent,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 SELF_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 # ----- the one addition: the development cohort ------------------------------------------------
@@ -74,6 +91,7 @@ def _base_report_drate(cohort=None, **kw):
         "gated": False,
         "script": "scripts/dev_task092_drate.py",
         "script_sha256": SELF_SHA256,
+        "script_revision": _main_revision(),
     }
     return report
 
@@ -103,6 +121,8 @@ def summary(runs_dir: Path, t_summary: Path) -> dict:
     problems += st.common_checks(list(runs.values()), COHORT, len(SEEDS))
     goals = st.load(runs_dir / f"goals-{COHORT}.json")
     t = st.load(t_summary)
+    if t.get("row") != "T-DONE":
+        problems.append("Stage T did not end T-DONE")
     for name, r in runs.items():
         if [e["seed"] for e in r["episodes"]] != list(SEEDS):
             problems.append(f"{name}: not the cohort's seeds")
@@ -113,8 +133,8 @@ def summary(runs_dir: Path, t_summary: Path) -> dict:
         if (r.get("development") or {}).get("name") != "D-RATE":
             problems.append(f"{name}: not a D-RATE report")
     req = runs.get("M-req-87100", {})
-    want = t["models"]["G-req-87100"]["checkpoint_sha256"]
-    if (req.get("model") or {}).get("checkpoint_sha256") != want:
+    want = t.get("models", {}).get("G-req-87100", {}).get("checkpoint_sha256")
+    if want is None or (req.get("model") or {}).get("checkpoint_sha256") != want:
         problems.append("M-req-87100: not Stage T's G-req checkpoint")
     out = {
         "name": "D-RATE",
@@ -127,7 +147,7 @@ def summary(runs_dir: Path, t_summary: Path) -> dict:
         "rejected_draws": goals["rejections"],
     }
     if problems or len(runs) != 2:
-        out["row"] = None
+        out["row"] = "D-VOID"  # §17.3 rule 1
         return out
     out["arms"] = st._arm_table(runs)
     out["deferral_and_rate"] = st._deferral_and_rate(runs)
