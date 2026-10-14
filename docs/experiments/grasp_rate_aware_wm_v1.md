@@ -1114,8 +1114,9 @@ D-RATE driver instead ran from the checkout that holds the development script
 affected. The run tree's `third_party` link was valid throughout.
 
 **Row.** By §17.3 rule 1, a run that did not complete is **D-VOID**. The summary printed
-`{"row": "D-VOID", "k_req": null, "k_v1": null, "problems": [...]}`. The listed problems are
-that no run reports exist and that M-req has no checkpoint record. §17.3 says the resets are not
+`{"row": "D-VOID", "k_req": null, "k_v1": null, "problems": [...]}`. The three listed
+problems are that no run reports exist, that their revisions are therefore empty, and that M-req
+has no checkpoint record. §17.3 says the resets are not
 re-run and that another reading needs its own ruling. This record follows that.
 
 **GPU.** Two jobs, 14 s and 7 s, 21 s in all (under 0.01 GPU h). There was no v2d wait, no cap

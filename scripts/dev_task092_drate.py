@@ -110,12 +110,14 @@ def spawned_load(family: str, seed: int) -> dict:
         return pool.apply(_load_in_child, (family, seed))
 
 
-def preflight(load=spawned_load, runs=RUNS) -> dict:
-    """Load every model of the reading; refuse to start if any load fails (R27.109)."""
+def preflight(load=spawned_load, runs=RUNS, families=None) -> dict:
+    """Load every model of the reading; refuse to start if any load fails (R27.109). ``families``
+    is the frozen ``ra.CLOSED_LOOP_ARMS`` after ``install()`` (what the workers load)."""
+    families = FAMILIES if families is None else families
     loaded, failed = {}, {}
     for arm, seed in runs:
         try:
-            loaded[f"{arm}-{seed}"] = load(FAMILIES[arm], seed)
+            loaded[f"{arm}-{seed}"] = load(families[arm], seed)
         except Exception as error:  # noqa: BLE001
             failed[f"{arm}-{seed}"] = f"{type(error).__name__}: {error}"
     if failed:
@@ -251,12 +253,18 @@ def main(argv=None, *, run_tree: Path = RUN_TREE, load=spawned_load, runner=None
         return 0
     if argv[:1] not in (["goals"], ["run"]):
         raise SystemExit("usage: dev_task092_drate.py {goals,run,summary} ...")
+    for flag in ("--output", "--goals"):  # caller-relative paths, before the chdir below
+        if flag in argv[:-1]:
+            i = argv.index(flag) + 1
+            argv[i] = str(Path(argv[i]).resolve())
     enter_run_tree(run_tree)  # G-cwd, before anything is imported from the run tree
+    families = None
     if runner is None:
-        run, _ = install(run_tree)
+        run, ra = install(run_tree)
         _guard_tree(run)
         runner = run.main
-    preflight(load)  # G-preflight, before the runner claims any ledger key
+        families = ra.CLOSED_LOOP_ARMS
+    preflight(load, families=families)  # G-preflight, before the runner claims any ledger key
     if argv[:1] == ["goals"]:
         return runner(argv + ["--cohort", COHORT, "--workers", "8"])
     return runner(argv + ["--cohort", COHORT, "--model-seed", "87100", "--workers", str(WORKERS)])

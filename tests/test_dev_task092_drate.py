@@ -93,3 +93,20 @@ def test_runner_is_not_called_when_a_guard_refuses(drate, tmp_path, command):
 def test_fresh_resets_do_not_reuse_spent_ones(drate):
     assert len(drate.SEEDS) == 32
     assert not set(drate.SEEDS) & set(drate.SPENT)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [["goals", "--output", "x"], ["run", "--arm", "M-v1", "--goals", "g", "--output", "x"]],
+)
+def test_relative_paths_are_resolved_against_the_callers_cwd(drate, tmp_path, command):
+    caller = tmp_path / "caller"
+    caller.mkdir()
+    os.chdir(caller)
+    calls = []
+    drate.main(command, run_tree=_tree(tmp_path), load=lambda f, s: {}, runner=calls.append)
+    argv = calls[0]
+    assert argv[argv.index("--output") + 1] == str(caller.resolve() / "x")
+    if "--goals" in argv:
+        assert argv[argv.index("--goals") + 1] == str(caller.resolve() / "g")
+    assert Path.cwd().resolve() == (tmp_path / "run-tree").resolve()
