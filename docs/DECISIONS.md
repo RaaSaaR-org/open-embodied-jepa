@@ -83,8 +83,9 @@ different kind. It measures the interface between the planner and the model:
   0.78 of its grasp-phase first commands (D-RATE′; development, one run, simulation only, 32
   resets).
 
-The base rate is near the floor. The unprojected G scored 0, 8 and 7 of 64 in TASK-089 BS (one
-run, simulation only) and 1 / 128 for 87100 in TASK-091 BS (reported only). The IK follower
+The base rate is near the floor. The unprojected G scored 0, 8 and 7 of 64 in TASK-089 BS (one run, simulation only; 15/192 ≈
+0.08 pooled) and 1 / 128 for 87100 in TASK-091 BS (reported only); 87100 is about 0.01 over its
+four records, and every M-v1 record pools to 18/384 ≈ 0.05. The IK follower
 scored 82 / 128 there.
 
 - **R27.115 — R26.33's condition ("new evidence of a different kind") is met for exactly one
@@ -134,13 +135,19 @@ scored 82 / 128 there.
   - The reset-level exact sign-flip tests at p < 0.01.
   - Rows B-VOID, B-PASS, B-GAIN, B-BAR, B-FAIL (δ = +0.10) and B-UNDER. The pooled bar is
     156 / 384 and the per-seed floor 26 / 128 at 0.40.
-- **R27.124 — power** (development, 4 000 simulations, TASK-090's code). At the declared
+- **R27.124 — power and n** (development, 4 000 simulations, TASK-090's code; the coordinator's
+  ruling on the #220 review's edit 3). At the declared
   alternative, 0.15 against 0.05 per seed, the power is 0.97 at SD 1 and n = 128.
   - The smallest effect detected at about 0.80 is 0.05 → 0.12 (0.79).
   - 0.05 → 0.10 is not reliably detected (0.49; n = 256 would give 0.86 at about twice BS's cost).
   - At a control rate of 0.08, 0.15 is detected with power 0.63.
-  - n = 128 stands, because a per-seed 0.10 would end in B-GAIN either way. Stage 0 recomputes the
-    table with 20 000 simulations.
+  - n = 128 stands by declaration: a true per-seed 0.10 is below δ, and at n = 128 it ends in
+    B-FAIL (the clause fires) about half the time (development row simulation); Stage 0 recomputes
+    this, and the power table, with 20 000 simulations.
+  - δ = +0.10 is the smallest pooled gain per seed worth keeping the line open for, given ik's
+    82 / 128. The clause risk at true gains below δ is disclosed: 0.48 at 0.05 → 0.10, 0.21 at
+    0.12 vs 0.05 and 0.26 at 0.15 vs 0.08 (TASK-090's `b_row`, SD 1, 400 simulations per cell,
+    development only; the review's `rows.py`, archived with the power script).
 - **R27.125 — rows**, in protocol §7's order: S0-ESCALATE, P-VOID, P-FAIL, BD-ESCALATE, then the B
   rows.
 - **R27.126 — the clause** fires on B-FAIL only. It closes grasp-channel rate projection of CEM's
@@ -151,7 +158,8 @@ scored 82 / 128 there.
   - the corpora and other data kinds;
   - LeWM, DINOv2 and CEM in general;
   - reach, Phase 4 and the product goal.
-- **R27.127 — seeds and salts.** Checked on 114 remote-tracking refs and in the evidence: Stage 0
+- **R27.127 — seeds and salts.** Checked on 114 remote-tracking refs and in the evidence (tokens there are decimal-fraction
+  digits or, for 91900, a TASK-077 training-update index; none is a seed): Stage 0
   roots 916000–916063, Stage P 917000–917063, BD 91900–91931, BS 918000–918127 and debug
   91940–91999. The new salt is 9011.
 - **R27.128 — budget:** about 13–16 GPU h, with a ceiling of about 18; BS is about 11–14 of it.
@@ -159,7 +167,7 @@ scored 82 / 128 there.
   `worktrees/task087-run` stays until TASK-093 closes.
 - **R27.129 — disclosed development** (protocol §12): code reading, the power table and the seed
   checks only, CPU only. Evidence `~/develop/emai/evidence/task093-draft/` (`SHA256SUMS` sha256
-  `0e8991c2…533a`).
+  `0a9d4306…ad81`).
 - **R27.130 — status.** DRAFT in this PR. A Stage 0 PR freezes it at its merge. Gated stages run
   only after that, and BS only after an independent GO on BD's record.
 - **R27.131 — R7 does not change**, whatever row TASK-093 ends in. Not Apple→Plate.

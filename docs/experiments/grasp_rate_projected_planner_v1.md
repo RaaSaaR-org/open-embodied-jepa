@@ -29,8 +29,11 @@ Every number below carries the qualifiers of its record.
 - **D-RATE′** (development, one run, simulation only, 32 resets, not gated): M-v1-87100 0 / 32
   (0.000–0.109).
 
-So the unprojected arm is near the floor. Pooled over its three seeds, its per-seed rate is about
-0.01–0.08 in these records. The IK follower uses the same goals and no world model, and it lifts
+So the unprojected arm is near the floor, and its seeds differ. 87100 scored 3 of 256 over its
+four records (about 0.01). 87101 and 87102 have one record each, 8/64 and 7/64 (0.125 and 0.109,
+TASK-089 BS, reported only). Pooled, that is 15/192 ≈ 0.08 in TASK-089 BS and 18/384 ≈ 0.05 over
+every record above (one run each, simulation only; records of different sizes and cohorts, pooled
+for orientation only). The IK follower uses the same goals and no world model, and it lifts
 on about two thirds of resets. It is the reference, not a competitor.
 
 ### 1.2 The planner queries the model off its grasp-rate support
@@ -171,9 +174,11 @@ bitwise.
     right-hand actuators, with prior targets T_{k−1} and `max_delta = joint_speed_limit_rad_s ×
     control_dt`. Each joint with a non-zero slope gives the interval (T − max_delta − centre) /
     slope … (T + max_delta − centre) / slope. The bounds are the intersection with [−1, 1].
-  - The projected grasp is g_k = clip(u_k[13], ℓ_k, υ_k), in float32 as the embodiment computes it.
-  - T_k is the synergy target of g_k, `opened + (g_k + 1) / 2 × (closed − opened)`, through
-    `_joint_commands`.
+  - The projected grasp is g_k = clip(float(u_k[13]), ℓ_k, υ_k), computed in float64 as
+    `_prepare_side` does. The candidate stores float32(g_k). T_k is computed from the float64 g_k,
+    `opened + (g_k + 1) × 0.5 × (closed − opened)`, and passed through `_joint_commands`, which
+    casts it to float32 and clips it to the command limits; that float32 T_k is the next step's
+    prior.
   - So the clip is cumulative: each step is clipped around the previous *projected* step, from
     the current executed hand state.
 - **Equivalence.** In closed loop, step 1's projected grasp is the grasp the embodiment will
@@ -270,13 +275,16 @@ uses: **916000–916063**.
   - the projected planner on each seed (reported only, so a reader can see whether the bar is in
     reach; it does not set the bar);
   - **open/release:** requests −1 at every step at R1 and at R2, with the vertical command +1 at R2;
-  - **random:** CEM's first-iteration distribution, N(0, 1) clipped to the bounds, with salt 9011.
+    - **random:** CEM's first-iteration distribution, N(0, 1) clipped to the bounds, with salt 9011;
+  - **closed, vertical −1** (H8 only): requests +1 at every step with the vertical command −1 at
+    R2. It must score 0 / 64, which shows that H8's vertical half can fail on its own.
 - **Bar rule** (per measure m): **bar_m = min(48, ⌈0.75 × median over the three M-v1 seeds of
   their development count⌉)** out of 64. The projected planner may lose at most a quarter of the
   control's executed rate, and the bar is capped at TASK-091's 48 / 64.
 - **Degeneracy checks** (per measure; all must hold, or Stage 0 escalates before the freeze, and
   no measure is silently replaced):
-  - (a) open/release scores **0 / 64**, so the measure can fail;
+  - (a) open/release scores **0 / 64**, so the measure can fail, and for H8 the closed,
+    vertical −1 reference also scores 0 / 64;
   - (b) random scores **≤ ⌊bar_m / 2⌋**, so it is not met by chance;
   - (c) the control's median development count is **≥ 16 / 64**, so a no-regression bar means
     something.
@@ -337,8 +345,8 @@ uses: **916000–916063**.
 - **Rows** (first match):
   1. **B-VOID** — any of these:
      - a run did not complete under the rules (including the cap);
-     - a check failed (goal, checkpoint, frozen-file hash, λ, seed, the projector equivalence of
-       §4.1 on any executed command);
+     - a check failed (goal, checkpoint, frozen-file hash, λ, seed, the projector equivalence of §4.1 on any executed command (request channel 13 bitwise
+       equal to the applied channel 13 returned by `zs.execute`));
      - the determinism re-run did not match;
      - a cohort was run twice.
   2. **B-PASS** — all of: k_p ≥ the pooled bar; every M-proj seed ≥ the per-seed floor; M-proj
@@ -358,8 +366,8 @@ uses: **916000–916063**.
   - grasp contact, maximum rise, and subgoals reached or timed out;
   - stopped episodes and planning seconds;
   - TASK-091 §5.3's three deferral measures per seed;
-  - the share of grasp-phase first commands whose grasp the embodiment's clip changed (0 by
-    construction for M-proj; any non-zero value is a B-VOID check);
+  - the share of grasp-phase first commands whose applied channel 13 differs from the requested
+    one (0 by construction for M-proj; any non-zero value is a B-VOID check);
   - the share of chosen plan steps off the training support, and for M-proj the share of
     *requests* beyond the limit;
   - Stage P's results beside each seed;
@@ -387,21 +395,40 @@ They are development figures, 4 000 simulations each, CPU only (§12).
 | 0.12 vs 0.05 | 192 | 0.970 | 0.943 | 0.859 |
 | 0.10 vs 0.05 | 256 | 0.913 | 0.864 | 0.742 |
 
-- **Declared alternative: 0.15 against 0.05 per seed,** as in TASK-092. The control rate is
-  §1.1's recorded range (about 0.01–0.08).
+- **Declared alternative: 0.15 against 0.05 per seed,** as in TASK-092. The control rate 0.05 is about the pool of
+  every M-v1 record in §1.1 (18/384); TASK-089 BS alone pools to about 0.08.
 - **What n = 128 can detect.**
   - At SD 1 it detects a tripling, 0.05 → 0.15, with power 0.97.
   - It detects about 0.05 → 0.12 with power 0.79. That is the smallest effect it detects at about
     0.80.
   - It **cannot** reliably detect a doubling, 0.05 → 0.10 (power 0.49).
-  - If the control's rate is 0.08 (TASK-089's two reported seeds), 0.15 is detected with power
-    only 0.63.
+  - If the control's rate is 0.08 (TASK-089 BS's three seeds pooled, 15/192), 0.15 is detected
+    with power only 0.63.
 - **Why not more resets.** n = 256 would detect 0.05 → 0.10 with power 0.86, at about twice
-  BS's cost (about 25 GPU h). A per-seed rate of 0.10 is a quarter of the plan's 0.40 bar and
-  about a sixth of ik's 82 / 128. It would end in B-GAIN either way, and the next step after
-  B-GAIN is a ruling either way. So n = 128 stands.
-- **Honest reading.** A B-FAIL or B-UNDER at n = 128 does not rule out a gain below about +0.07 per
-  seed.
+  BS's cost (about 25 GPU h). At n = 128 a true doubling to 0.10 is missed about half the time, and
+  then usually ends in B-FAIL, so **the clause can fire on a real doubling** (about 0.48 in a
+  development row simulation, SD 1, 400 simulations; Stage 0 recomputes it with 20 000). This is
+  accepted by declaration: a per-seed 0.10 is a quarter of the plan's 0.40 bar and about a sixth
+  of ik's 82/128, and δ = +0.10 declares it below the gain this line is kept open for. So n = 128
+  stands.
+- **The clause risk at true gains below δ** (TASK-090's `b_row`, SD 1, n = 128, 400 simulations per
+  cell; development only, from the #220 review's `rows.py`, archived in
+  `~/develop/emai/evidence/task093-draft/`). **δ = +0.10 is the smallest pooled gain per seed worth
+  keeping this line open for**, given that ik scores 82 / 128 (TASK-091 BS; one run, simulation
+  only). A true gain below it can end in B-FAIL, and then the clause fires:
+
+  | Per-seed rates, M-proj against M-v1 | n | B-GAIN | B-FAIL (clause) | B-UNDER |
+  | --- | --- | --- | --- | --- |
+  | 0.10 vs 0.05 | 128 | 0.52 | **0.48** | 0.01 |
+  | 0.10 vs 0.05 | 256 | 0.86 | 0.14 | — |
+  | 0.12 vs 0.05 | 128 | 0.78 | **0.21** | 0.02 |
+  | 0.15 vs 0.08 | 128 | 0.64 | **0.26** | 0.11 |
+  | 0.05 vs 0.05 | 128 | 0.01 | 0.99 | — |
+
+  Stage 0 recomputes these row rates (§14).
+- **Honest reading.** A B-FAIL at n = 128 rules out, at the bootstrap's 95 % level, only a pooled
+  gain of +0.10 or more per seed. Any smaller gain, up to its recorded upper bound, stays possible.
+  A true gain below about +0.07 per seed is detected with power below 0.80.
 - **Stage 0** recomputes the table with 20 000 simulations. If the power at the declared
   alternative and SD 1 is below 0.80 at n = 128, it discloses this and escalates before the
   freeze.
@@ -432,7 +459,7 @@ latent and `play-v1`) and, for the reason in §3 rank 4, over TASK-092's G-req c
 fires, no further variant of it is preregistered for grasping over these checkpoints without new
 evidence of a different kind. Variants include:
 
-- the refit space (requests or projected);
+- the refit space (requests or projected); the projected refit is closed without being tested;
 - the elite count or sample count under projection;
 - a projection of only the first steps;
 - a softened or margin-shifted rate set;
@@ -449,6 +476,10 @@ evidence of a different kind. Variants include:
 - the corpora (`play-v1`, play-v2g, play-v1p) as bases, and the kinds of data R27.71 leaves open;
 - reach planning (TASK-088's Z3-REACH stands);
 - Phase 4 as a goal, and the product goal.
+
+**G-req is closed here on an argument, not a test:** under projection every query is on support,
+where Stage R's R2 (recorded commands only) found G-req within δ of G-v1 (§3 rank 4). No arm runs
+G-req with the projector.
 
 **It does not fire on** S0-ESCALATE, P-VOID, P-FAIL, BD-ESCALATE, B-VOID, B-GAIN, B-BAR or
 B-UNDER. M-v1's counts are recorded with the clause. They are not a way around R26.33.
@@ -483,8 +514,11 @@ B-UNDER. M-v1's counts are recorded with the clause. They are not a way around R
   - 9010 occurs only inside `9010{0,1,2}` (TASK-090's model seeds), so it was skipped as a salt.
 - **Evidence.** In `~/develop/emai/evidence/` (`*.json`, `*.txt`, `*.log`, `*.md`, `*.csv`,
   `*.yaml`, `*.py`, `*.sh`):
-  - no token in 916000–918999;
-  - the tokens in 91900–91999 are decimal fractions (for example `11.91914`), not seeds.
+  - tokens in 916000–918999 occur only as digits of decimal fractions (for example `0.916039`),
+    not as seeds;
+  - tokens in 91900–91999 are decimal fractions (for example `11.91914`), except 91900, which
+    occurs as a training-update index in TASK-077's Stage T loss curves
+    (`task077-staget2/…/report.json`). None is a seed or reset.
 - **Nearest ranges in use:**
   - TASK-092: 908000–908063 (A‴), 909000–909127 (BS, unused), 90400–90431 (BD, unused),
     90500–90599 (debug), 90810–90841 (D-RATE, spent) and 90850–90881 (D-RATE′);
@@ -529,11 +563,13 @@ read and never written.
 - **Scope.** One scene, arm, hand and camera at 112 px, simulation only. One encoder, latent,
   corpus, recipe, budget and cost. Goals come from a scripted demonstrator (biased to layouts a
   scripted pick can do; almost no banana). Seeds are pooled.
-- **Near the floor.** The control's recorded rate is about 0.01–0.08 per seed (§1.1), and ik's is
+- **Near the floor.** The control's recorded rate is about 0.01 for 87100 and about 0.11–0.125 for
+  87101 and 87102 (§1.1), and ik's is
   about 0.64.
   - Even a large relative gain may leave M-proj far below the 0.40 bar. That is B-GAIN, not
     B-PASS.
-  - n = 128 cannot detect a gain below about +0.07 per seed (§6.4).
+  - n = 128 does not reliably detect (power below 0.80) a gain below about +0.07 per seed, and
+    B-FAIL can fire at such a gain (§6.4).
 - **The mechanism is a hypothesis.** A B-GAIN or B-PASS would be consistent with "the planner
   scored off-support requests". A B-FAIL would say that removing the grasp-rate mismatch on the
   planner side does not, on its own, move the closed loop. The cause would then lie elsewhere:
@@ -544,8 +580,9 @@ read and never written.
   of 128) may come from the arm.
 - **The refit is on requests.** The CEM distribution is refitted on the requested values, as the
   existing code does. Many requests map to one projected grasp, so the distribution can drift
-  towards saturated requests without changing what is scored. This is the existing planner's
-  behaviour, so it is not changed. P-MECH and the request-level off-support share are reported, so
+  towards saturated requests without changing what is scored. This is the existing planner's behaviour, so it is not changed. It is CEM over
+  u ↦ cost(P(u)), a valid optimisation of the projected cost; refitting on projected values would
+  need a planner subclass, a second change. P-MECH and the request-level off-support share are reported, so
   a reader can see it.
 - **A copied limit.** The projector re-implements the grasp half of `_prepare_side` instead of
   calling the embodiment, because full projection is too slow (§3 rank 3) and `embodiment.py` is
@@ -571,8 +608,8 @@ rendering, model load or training was run for this draft.
   `zero_shot_grasp_runtime.py` (TASK-089's controller and step-averaged model).
 - **Power.** The table of §6.4 comes from `grasp_corpus_wm.power` (TASK-090's code, unchanged)
   with 4 000 simulations per cell. The script and its output are archived in
-  `~/develop/emai/evidence/task093-draft/` (`power093.py`, `power093.json`; `SHA256SUMS` sha256
-  `0e8991c2…533a`).
+  `~/develop/emai/evidence/task093-draft/` (`power093.py`, `power093.json`, and the #220 review's row simulation `rows.py`; `SHA256SUMS` sha256
+  `0a9d4306…ad81`).
 - **Seed checks.** §9's checks.
 - **The numbers of §1.** These are quoted from merged records (TASK-089, TASK-091, TASK-092 §1.2,
   §15–§19). None was recomputed.
@@ -612,11 +649,15 @@ are.
   - the closed loop through TASK-091's frozen runtime.
 - **Scripts:** `scripts/{run,summarize}_task093.py` and `scripts/run_task093_stage.sh`.
 - **Tests:**
-  - **Projector against the embodiment:** on random request sequences from debug states (zero arm
-    deltas), the projector's grasp channel equals `robot.project_candidates`' grasp channel at
-    every step, bitwise in float32.
-  - **Projector in closed loop:** on the debug smoke, every M-proj command's grasp passes the
-    embodiment unchanged (no "right grasp rate" clip reason).
+  - **Projector against the embodiment:** on random request sequences from debug states, with zero arm deltas and
+    with non-zero arm deltas, the projector's grasp channel equals `robot.project_candidates`' grasp
+    channel at every step, bitwise in float32 (with non-zero deltas, on the sequences the embodiment
+    marks feasible).
+  - **Projector in closed loop:** on the debug smoke, for every M-proj command, the applied action returned by `zs.execute` has
+    channel 13 bitwise equal to the request's channel 13. The embodiment's reason string is not
+    used, because `zs.execute` pre-projects the request, so `robot.execute` never reports a grasp
+    clip. A negative control: on the same smoke, M-v1 shows at least one command whose channel 13
+    differs.
   - **Pairing:** with an identity projector, `plan` returns bitwise the unprojected planner's plan
     for the same seed, and the first-iteration samples of both arms are identical.
   - The cumulative clip on synthetic sequences.
@@ -631,7 +672,11 @@ are.
 - §9's seed checks and the hash checks (TASK-087's checkpoints, feature report and projection,
   λ, the rate limit);
 - the power simulation of §6.4 with 20 000 simulations;
-- a debug smoke on 91940–91999 of Stage P and every closed-loop arm, timed per command.
+- the row distribution (B-GAIN, B-FAIL, B-UNDER) at 0.10, 0.12 and 0.15 against 0.05 and at 0.15
+  against 0.08, n = 128, SD 0/1/2, with TASK-090's `b_row`, 20 000 simulations;
+- a debug smoke on 91940–91999 of Stage P and every closed-loop arm, timed per command; it also
+  confirms that passing `CandidateProjection`'s read-only arrays to `torch.as_tensor` has no
+  behavioural effect.
 
 **Stage 0 may change only:**
 
@@ -674,11 +719,16 @@ change. The protocol is frozen at the Stage 0 merge.
   - rows B-VOID, B-PASS, B-GAIN, B-BAR, B-FAIL (δ = +0.10) and B-UNDER.
 - **R27.124** — **Power** (§6.4): the declared alternative is 0.15 against 0.05 per seed, with
   power 0.97 at SD 1 and n = 128 (development, 4 000 simulations). The smallest effect detected at
-  about 0.80 is 0.05 → 0.12, and 0.05 → 0.10 is not reliably detected. n = 128 stands, and Stage 0
-  recomputes the table.
+  about 0.80 is 0.05 → 0.12, and 0.05 → 0.10 is not reliably detected. n = 128 stands by declaration: a true per-seed 0.10 is below δ, and at n = 128 it ends in
+  B-FAIL (the clause fires) about half the time (development row simulation); Stage 0 recomputes
+  this. δ = +0.10 is the smallest pooled gain worth keeping the line open for, given ik's 82 / 128;
+  the clause risk below δ is disclosed (0.48 at 0.05 → 0.10, 0.21 at 0.12 vs 0.05, 0.26 at 0.15 vs
+  0.08; SD 1, 400 simulations per cell, development only).
 - **R27.125** — **Rows** (§7) and their order.
 - **R27.126** — **The abandonment clause** (§8) fires on B-FAIL only, with the scope stated there.
-- **R27.127** — **Seeds and salts** (§9), checked on 114 remote-tracking refs and in the evidence.
+- **R27.127** — **Seeds and salts** (§9), checked on 114 remote-tracking refs and in the evidence
+  (where the tokens in these ranges are decimal-fraction digits or, for 91900, a TASK-077
+  training-update index; none is a seed).
   The new salt is 9011.
 - **R27.128** — **Budget** (§10): about 13–16 GPU h, ceiling about 18. Every job runs under the
   7 200 s cap and the shared lock. `worktrees/task087-run` stays until TASK-093 closes.

@@ -4,7 +4,7 @@ aliases:
 - TASK-093
 title: 'Rate-projected planner: project CEM candidates onto the grasp-rate limit before scoring, gate it offline on executed measures, then the closed-loop grasp-and-lift comparison against the unprojected planner on TASK-087''s G'
 slug: rate-projected-grasp-planner
-status: in-progress
+status: todo
 priority: 2
 owner: ''
 projects: []
@@ -56,7 +56,9 @@ The design:
   is min(0.40, 0.9 r), with reset-level sign-flip tests. Rows: B-VOID, B-PASS, B-GAIN, B-BAR,
   B-FAIL (δ = +0.10) and B-UNDER. The clause fires on B-FAIL only.
 - **Power** (development): 0.97 at SD 1 for 0.15 against 0.05 per seed. The smallest effect
-  detected at about 0.80 is 0.05 → 0.12; a doubling to 0.10 is not reliably detected.
+  detected at about 0.80 is 0.05 → 0.12; a doubling to 0.10 is not reliably detected, and ends in B-FAIL (the
+  clause fires) about half the time (development row simulation, SD 1, 400 simulations). n = 128
+  stands by declaration: δ = +0.10 is the smallest pooled gain worth keeping the line open for.
 - **Budget:** about 13–16 GPU h.
 
 This is not Apple→Plate. R7 does not change.
@@ -85,3 +87,6 @@ Protocol: [grasp_rate_projected_planner_v1.md](../../../docs/experiments/grasp_r
 - 2026-10-14, DRAFT (branch `docs/task093-draft`; R27.115–R27.131, DECISIONS (bd)). Development
   before the draft: code reading, the power table and the seed checks only, CPU only. Evidence
   `~/develop/emai/evidence/task093-draft/`.
+- 2026-10-14, independent review of #220 applied: required edits 1–6 (base rate, honest reading,
+  n = 128 by declaration with the clause risk below δ, a failable closed-loop equivalence check,
+  float64 bounds as `_prepare_side`, the evidence seed statements) and the nits.
