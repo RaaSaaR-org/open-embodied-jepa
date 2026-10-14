@@ -97,12 +97,14 @@ Protocol: [grasp_rate_projected_planner_v1.md](../../../docs/experiments/grasp_r
   all degeneracy checks pass; power 0.976 at SD 1 (20 000 simulations), n = 128 stands; 0.54 GPU h.
   Evidence `~/develop/emai/evidence/task093-stage0/`. The protocol freezes at the Stage 0 PR's
   merge; Stage P is next.
-- 2026-10-14, Stage P and Stage BD (branch `docs/task093-p-bd-record`; R27.139–R27.146,
-  DECISIONS (bf); record §17–§18), both at `4d3491e` from a clean tree in
-  `worktrees/task093-run`. **Stage P: P-PASS** (gated, offline, one run, 64 roots
-  917000–917063): M-proj C8@R1 39, 48, 54 (bar 39), H8@R2 58, 61, 58 (bar 48); M-v1 reported
-  C8 43, 55, 54, H8 62, 64, 62; 281 s GPU. **Stage BD** (development, not gated, one run, 32
-  resets 91900–91931): ik 21 / 32, so the bar is 0.40 (BS pooled bar 156 / 384, per-seed floor
-  26 / 128); M-proj-87100 0 / 32, M-v1-87100 0 / 32, ik-nopress 21 / 32, hold 0 / 32, random
-  0 / 32; projector equivalence held on all 11 650 M-proj commands; 4 203 s GPU. Evidence
-  `~/develop/emai/evidence/task093-{p,bd}/`. Stage BS waits for an independent GO on §18.
+- 2026-10-14, Stage P and Stage BD (branch `docs/task093-p-bd-record`; R27.139–R27.146, DECISIONS
+  (bf); record §17–§18), both at `4d3491e` from a clean tree in `worktrees/task093-run`. **Stage P:
+  P-PASS** (gated, offline, one run, 64 roots 917000–917063): M-proj C8@R1 39, 48, 54 (bar 39),
+  H8@R2 58, 61, 58 (bar 48); M-v1 reported C8 43, 55, 54, H8 62, 64, 62; 281 s GPU. **Stage BD**
+  (development, not gated, one run, 32 resets 91900–91931): ik 21 / 32, so the bar is 0.40 (BS
+  pooled bar 156 / 384, per-seed floor 26 / 128); M-proj-87100 0 / 32, M-v1-87100 0 / 32, ik-nopress
+  21 / 32, hold 0 / 32, random 0 / 32; projector equivalence held on all 11 650 M-proj commands;
+  4 203 s GPU; one job waited 120 s for a V2D request on BOARD.md; the V2D session was not told
+  separately before BD, a disclosed deviation from §10 and R27.137 that affects no result, and it is
+  told explicitly before BS. Evidence `~/develop/emai/evidence/task093-{p,bd}/`. Stage BS waits for
+  an independent GO on §18.

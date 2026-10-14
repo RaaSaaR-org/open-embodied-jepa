@@ -1052,26 +1052,29 @@ claim of this task rests on it. R7 does not change.
 
 - **R27.139 — Stage P is recorded.** It ran once at `4d3491e` from a clean tree in two jobs
   (281 s), with no cap hit, no VOID exit and no problem in the summary.
-- **R27.140 — P-PASS.** M-proj's C8@R1 39, 48, 54 (bar 39) and H8@R2 58, 61, 58 (bar 48) of 64
-  on G-87100, 87101, 87102: every seed passes, G-87100 at the C8 bar exactly. Reported: M-v1's
-  C8@R1 43, 55, 54 and H8@R2 62, 64, 62. One run, offline, simulation only, 64 gated roots; a
-  no-regression gate, not a closed-loop result.
+- **R27.140 — P-PASS.** M-proj's C8@R1 39, 48, 54 (bar 39) and H8@R2 58, 61, 58 (bar 48) of 64 on
+  G-87100, 87101, 87102 (G-87102 `last_two_triggered`): every seed passes, G-87100 at the C8 bar
+  exactly. Reported: M-v1's C8@R1 43, 55, 54 and H8@R2 62, 64, 62. One run, offline, simulation
+  only, 64 gated roots; a no-regression gate, not a closed-loop result.
 - **R27.141 — Stage BD runs next** (§6.3, development resets 91900–91931), at the same revision
   from the same clean tree.
 
 ## 18. Stage BD record (development, not gated; R27.142–R27.146; decided by Claude under owner delegation)
 
 **Run conditions.** Stage BD ran once on 2026-10-14 (15:46–16:59 UTC) with
-`scripts/run_task093_stage.sh bd outputs/task093-bd outputs/task093-p/summary-p.json`, at
-`4d3491e` from the same clean tracked tree as §17 (the summarizer checks that Stage P ended
-P-PASS cleanly at the same revision; no problem). Before each of the seven jobs the stage script
-read BOARD.md's `## Requests`; before the M-v1-87100 job a `- v2d:` request was present, and the
-job waited 120 s until it was gone (16:22:48–16:24:48 UTC), as §10 requires. Every job took the
-shared lock with `gpu_run.sh --wait --board`. The V2D session was not sent a separate message by
-this run; the BOARD.md protocol was its channel. Evidence: `~/develop/emai/evidence/task093-bd/`
-(`SHA256SUMS` sha256 `08452d04…ab6f`): the goals report, the six run reports, the summary, the
-stage log, the seven ledger entries and the `gpu_run` log lines. The goal frames
-(`goals-bd-grasp.npz`) stay in `outputs/task093-bd/` on the data disk.
+`scripts/run_task093_stage.sh bd outputs/task093-bd outputs/task093-p/summary-p.json`, at `4d3491e`
+from the same clean tracked tree as §17 (the summarizer checks that Stage P ended P-PASS cleanly at
+the same revision; no problem). Before each of the seven jobs the stage script read BOARD.md's
+`## Requests`; before the M-v1-87100 job a `- v2d:` request was present, and the job waited 120 s until
+it was gone (16:22:48–16:24:48 UTC), as §10 requires. Every job took the shared lock with
+`gpu_run.sh --wait --board`. **Deviation from §10 and R27.137, disclosed:** the V2D session was not
+told separately before BD, as §10 ("The V2D session is told in advance about BD and BS") and R27.137
+require; only the BOARD.md request check ran (it worked: one job waited 120 s for a `- v2d:`
+request). The deviation concerns GPU sharing only and affects no result. Before Stage BS the V2D
+session is told explicitly. Evidence: `~/develop/emai/evidence/task093-bd/` (`SHA256SUMS` sha256
+`08452d04…ab6f`): the goals report, the six run reports, the summary, the stage log, the seven
+ledger entries and the `gpu_run` log lines. The goal frames (`goals-bd-grasp.npz`) stay in
+`outputs/task093-bd/` on the data disk.
 
 **Jobs and GPU time.** Goals (32 resets, 91900–91931, 28 rejected draws; targets can 12, cube 11,
 apple 8, banana 1) 17 s; ik, ik-nopress, hold and random 11–12 s each; M-proj-87100 2 070 s and
@@ -1090,11 +1093,11 @@ M-v1-87100 2 070 s (wall, 6 processes each). No job reached the 7 200 s cap; eve
 }
 ```
 
-BD has no row (it is not gated). **The bar is set:** ik reached 21 / 32 (r = 0.656, at least
-0.30), so bar = min(0.40, 0.9 × 0.656) = **0.40**; at BS's n = 128 the pooled bar is
-**156 / 384** and the per-seed floor **26 / 128** (`summary-bd.json`: `pooled_bar_at_bs` 156,
-`seed_floor_at_bs` 26, `escalate: false`). The summary lists no problems, so BD-ESCALATE does
-not apply.
+BD has no row (it is not gated). **The bar is set:** ik reached 21 / 32 (r = 0.656, at least 0.30),
+so bar = min(0.40, 0.9 × 0.656) = **0.40**; at BS's n = 128 the pooled bar is **156 / 384** and the
+per-seed floor **26 / 128** (`summary-bd.json`: `pooled_bar_at_bs` 156, `seed_floor_at_bs` 26,
+`escalate: false`). r = 0.656 ≥ 0.30, so BD-ESCALATE (§7: r < 0.30) does not apply; the summary
+lists no problems.
 
 **Per arm** (32 development resets, one run, simulation only; exact 95 % intervals; contact is
 thumb plus index or middle on the target; rise is the maximum target rise; "stopped" is the
@@ -1144,29 +1147,35 @@ As TASK-091's BD record read it, the 2 / 11 rate limit lets an executed close re
 open hand only after about 8–9 grasp-phase commands, so both arms' median first close (command 8)
 is near the earliest possible; that deferral caused either arm's failures is not shown.
 
-**What this is and is not.** A development cohort of **32 resets, one run, one model seed
-(G-87100) per world-model arm, simulation only, not gated, not Stage BS**. It sets the bar (0.40)
-and shows that the plumbing and the arms ran under the rules, including the projector
-equivalence that BS checks. It carries no row and no claim, and its counts are not a prediction of
-BS. Both world-model arms scored 0 / 32 (exact 95 % interval 0.000–0.109 each), so BD shows no
-difference between M-proj and M-v1 on these resets: at BS's per-seed floor rate (26 / 128 =
-0.203) a seed would expect about 6.5 successes on 32 resets. The other two seeds of each arm did
-not run in BD. ik's 21 / 32 is below TASK-091 BD's 26 / 32 on other resets, with apple 0 / 8 here.
-No MP4 replay was made in BD (the stage script makes none). No knob changes (§6.3), and R7 does
-not change.
+**What this is and is not.** A development cohort of **32 resets, one run, one model seed (G-87100)
+per world-model arm, simulation only, not gated, not Stage BS**. It sets the bar (0.40) and shows
+that the plumbing and the arms ran under the rules, including the projector equivalence that BS
+checks. It carries no row and no claim, and its counts are not a prediction of BS. Both world-model
+arms scored 0 / 32 (exact 95 % interval 0.000–0.109 each), so BD shows no difference between M-proj
+and M-v1 on these resets: at BS's per-seed floor rate (26 / 128 = 0.203) a seed would expect about
+6.5 successes on 32 resets. G-87100 is also the seed with the weakest prior record (3 of 256 over
+four records, §1.1), so its 0 / 32 says little about G-87101 and G-87102; no futility rule exists in
+§6.3, and none is applied. The other two seeds of each arm did not run in BD. ik's 21 / 32 is below
+TASK-091 BD's 26 / 32 on other resets, with apple 0 / 8 here. No MP4 replay was made in BD (the
+stage script makes none). No knob changes (§6.3), and R7 does not change.
 
 **What the GO review decides** (§6.3): an independent reviewer reads this record and posts GO or
 NO-GO before Stage BS. BD can show a defect, whose fix needs its own ruling; it changes no knob by
-itself. The bar is set (r ≥ 0.30), so the bar rule does not escalate. After a NO-GO, BD is
-recorded again on fresh development seeds named by a ruling. This record does not decide GO.
+itself. §6.3's GO clause reads: "**GO:** an independent reviewer posts GO or NO-GO on BD's record
+before Stage BS. After a NO-GO, BD is recorded again on fresh development seeds named by a ruling."
+§7's BD-ESCALATE row reads: "`| BD-ESCALATE | ik's BD rate r < 0.30 | escalate; no clause |`". The
+bar is set (r ≥ 0.30), so the bar rule does not escalate. After a NO-GO, BD is recorded again on
+fresh development seeds named by a ruling. This record does not decide GO.
 
 **Next.** Stage BS (`scripts/run_task093_stage.sh bs <out> outputs/task093-bd/summary-bd.json
 outputs/task093-p/summary-p.json`, 918000–918127) runs only after an independent GO on this
 record, at `4d3491e` from a clean tree, after the V2D session is told. It has not run.
 
 - **R27.142 — Stage BD is recorded.** It ran once at `4d3491e` from a clean tree in seven jobs
-  (4 203 s, about 1.17 GPU h), with no cap hit, every report complete and no problem in the
-  summary; one job waited 120 s for a V2D request on BOARD.md.
+  (4 203 s, about 1.17 GPU h), with no cap hit, every report complete and no problem in the summary;
+  one job waited 120 s for a V2D request on BOARD.md; the V2D session was not told separately before
+  BD, a disclosed deviation from §10 and R27.137 that affects no result, and it is told explicitly
+  before BS.
 - **R27.143 — The bar is 0.40.** ik 21 / 32 (r = 0.656 ≥ 0.30); pooled bar at BS 156 / 384,
   per-seed floor 26 / 128. Counts, development only (one run, 32 resets, simulation only):
   M-proj-87100 0 / 32, M-v1-87100 0 / 32, ik-nopress 21 / 32, hold 0 / 32, random 0 / 32.

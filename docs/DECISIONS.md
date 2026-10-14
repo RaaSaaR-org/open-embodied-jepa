@@ -83,7 +83,9 @@ once at the frozen revision `4d3491e` (#221's merge) from a clean tree in
 - **R27.141 — Stage BD runs next** at the same revision.
 - **R27.142 — Stage BD is recorded** (resets 91900–91931, 28 rejected draws; seven jobs, 4 203 s,
   about 1.17 GPU h; no cap hit, every report complete, no problem in the summary). One job waited
-  120 s for a V2D request on BOARD.md.
+  120 s for a V2D request on BOARD.md; the V2D session was not told separately before BD, a
+  disclosed deviation from §10 and R27.137 that affects no result, and it is told explicitly before
+  BS.
 - **R27.143 — The bar is 0.40.** ik 21 / 32 (r = 0.656 ≥ 0.30), so BD-ESCALATE does not apply;
   at BS the pooled bar is 156 / 384 and the per-seed floor 26 / 128. Counts, development only
   (one run, 32 resets, one model seed per world-model arm, simulation only; exact 95 %
