@@ -408,10 +408,14 @@ def cmd_pairing_batch(args) -> int:
     )
     # the whole train split: at-limit steps, and that no executed step exceeds the limit (§1.2)
     starts = gd.WindowSampler(train, ra.PAIRING_SEED).starts
-    g = train.actions[:, ra.GRASP_DIM].astype(np.float64)
-    first = np.zeros(len(g), bool)
-    first[train.offsets] = True
-    d = np.abs(np.diff(g))[~first[1:]]
+    d = np.abs(
+        np.concatenate(
+            [
+                np.diff(train.actions[o : o + n - 1, ra.GRASP_DIM].astype(np.float64))
+                for o, n in zip(train.offsets, train.frames, strict=True)
+            ]
+        )
+    )  # T commands per episode (its last frame has no command)
     report |= {
         "seed": ra.PAIRING_SEED,
         "batches": out,
