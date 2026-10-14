@@ -520,8 +520,9 @@ def s0_row(degeneracy_checks: dict, *, equivalence_ok: bool, power_ok: bool) -> 
     }
 
 
-# Stage P's bars, frozen at Stage 0 (§6.1; R27.133): None until the calibration has run.
-P_BARS: dict | None = None
+# Stage P's bars, frozen at Stage 0 (§6.1; R27.133): the rule on cal-roots 916000-916063 at
+# c7cf7f4 (M-v1's C8 counts 33, 58, 51 -> ceil(0.75 x 51) = 39; H8 64, 64, 61 -> min(48, 48)).
+P_BARS: dict | None = {"C8": 39, "H8": 48}
 
 
 def p_gate(counts: dict, bars: dict) -> bool:

@@ -301,6 +301,12 @@ def test_bar_rule_and_degeneracy_checks():
     assert rp.s0_row({"C8": ok}, equivalence_ok=True, power_ok=True)["row"] == "S0-PASS"
 
 
+def test_frozen_bars_follow_the_rule_from_stage_0s_counts():
+    assert rp.P_BARS == {"C8": 39, "H8": 48}
+    assert rp.bar_from_control([33, 58, 51]) == rp.P_BARS["C8"]
+    assert rp.bar_from_control([64, 64, 61]) == rp.P_BARS["H8"]
+
+
 def test_p_gate_and_rows():
     bars = {"C8": 40, "H8": 20}
     assert rp.p_gate({"C8": 40, "H8": 20}, bars) and not rp.p_gate({"C8": 39, "H8": 64}, bars)
