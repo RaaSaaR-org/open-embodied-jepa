@@ -128,5 +128,6 @@ closed at A‴-FAIL).
   protocol §18): **D-VOID** (development, not gated). The M-req run stopped at model load before
   any episode, because the driver ran outside the run tree and the frozen loader resolves
   `third_party/le-wm` relative to the working directory. M-v1 did not run, so there are no counts.
-  Resets 90810–90841 are spent. The recommendation is D-RATE′ on fresh resets with a cwd fix,
-  which needs its own ruling. GPU 21 s. Evidence `~/develop/emai/evidence/task092-drate/`.
+  Resets 90810–90841 are spent. Ruled (R27.109): **D-RATE′** on fresh resets 90850–90881, with
+  everything else unchanged, and two tested guards (the run tree as working directory, and a
+  preflight that loads both models before any ledger claim). It runs after this PR is merged. GPU 21 s. Evidence `~/develop/emai/evidence/task092-drate/`.

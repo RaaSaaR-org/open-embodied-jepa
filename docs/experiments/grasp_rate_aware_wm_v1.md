@@ -1085,7 +1085,7 @@ gated stage.
   carrying "development, one run, simulation only, 32 resets".
 - **R27.106 — R7 does not change.**
 
-## 18. D-RATE record: D-VOID (R27.107–R27.110; decided by Claude under owner delegation)
+## 18. D-RATE record: D-VOID; D-RATE′ authorised on fresh resets (R27.107–R27.110; decided by Claude under owner delegation)
 
 **Development only, not gated, no claim (§17.2). No world-model episode ran, so there is no
 count to restate.**
@@ -1133,14 +1133,33 @@ driver and its log, the `gpu_run` lines, copies of the two ledger entries, and
   There are no counts, and no measure of R27.103 exists.
 - **R27.108 — Resets 90810–90841 are spent.** They are not re-run, as §17.3 requires. The ledger
   entries stay, and neither the ledger nor a guard is bypassed.
-- **R27.109 — A further reading needs its own ruling, which this entry does not make.**
-  - **Recommendation (not a decision):** authorise **D-RATE′**, identical to D-RATE apart from
-    two changes:
-    - 32 fresh development resets, a new range checked as §17.2 checks 90810–90841;
-    - the development script changes into the run tree before it runs, or refuses to run
-      unless the working directory is the run tree. This is a fix to the development script
-      only; no frozen module changes.
-  - Re-using 90810–90841 because no outcome was read would be a waiver of §17.3, so this entry
-    does not recommend it.
-  - §17.3's rule, §17.4's routing and the GPU rules stay as they are.
+- **R27.109 — D-RATE′ is authorised** (ruling by the coordinator under owner delegation,
+  2026-10-14). It is D-RATE again on fresh resets, with two guards added to the development script.
+  - **Resets: 90850–90881**, 32 fresh development resets (cohort `dev-drate2`).
+    - Checked on 2026-10-14 after `git fetch --all`: on all 113 remote-tracking refs, over `src/`,
+      `scripts/`, `docs/`, `.mc/`, `tests/`, `benchmarks/` and `configs/`, `git grep -w` finds no
+      token in 90850–90881. The nearest tokens are 90842, the exclusive end of D-RATE's range, and
+      90900.
+    - In `~/develop/emai/evidence/` the only matches are decimal fractions.
+    - The ledger has no `dev-drate2` key.
+    - 90810–90841 are not reused (R27.108); the script refuses an overlap.
+  - **Unchanged from R27.101–R27.105:** the arms (M-req-87100 against M-v1-87100), the frozen
+    revision `64e87f0`, the planner and λ, the reading rule and its thresholds (§17.3), the
+    reported measures (R27.103), the routing (§17.4), the GPU rules and the order: it runs once,
+    after this record's PR is merged, and its record is a further PR.
+  - **Guard 1, working directory.** `goals` and `run` change into the run tree before anything is
+    imported from it. They refuse to start unless `third_party/le-wm` is a directory there, which
+    is how the frozen loader resolves the LeWM source.
+  - **Guard 2, preflight.** Before the frozen runner is called, so before any ledger key is
+    claimed, the script loads both models (M-req-87100 and M-v1-87100) and the encoder on CUDA in
+    a spawned process, as the runner's workers do. If either load fails, it refuses to start, so a
+    load failure cannot spend resets again.
+  - Both guards are tested in `tests/test_dev_task092_drate.py` (CPU, no run tree).
+    - The script enters the run tree, and refuses when the LeWM source is absent.
+    - The preflight loads both models, and refuses if either fails.
+    - The runner, which claims the ledger, is never called when a guard refuses.
+    - The new resets do not overlap the spent ones.
+  - A CPU dry check against the real run tree, with a failing loader, refused at the preflight
+    and left the ledger unchanged.
+  - No frozen module changes.
 - **R27.110 — R7 does not change.** TASK-092 stays closed at A‴-FAIL (R27.100).

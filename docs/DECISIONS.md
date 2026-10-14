@@ -63,7 +63,7 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
-## Decision 2026-10-14 (bb) — D-RATE ends D-VOID: the M-req run stopped at model load before any episode (the driver ran from the wrong working directory, so the frozen loader did not find `third_party/le-wm`); M-v1 did not run; no counts; resets 90810–90841 are spent; a further reading needs its own ruling (R27.107–R27.110)
+## Decision 2026-10-14 (bb) — D-RATE ends D-VOID: the M-req run stopped at model load before any episode (the driver ran from the wrong working directory, so the frozen loader did not find `third_party/le-wm`); M-v1 did not run; no counts; resets 90810–90841 are spent; D-RATE′ is authorised on fresh resets 90850–90881 with a working-directory guard and a model-load preflight before any ledger claim (R27.107–R27.110)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
 [grasp_rate_aware_wm_v1.md §18](experiments/grasp_rate_aware_wm_v1.md). This is development
@@ -86,11 +86,18 @@ Requests check that found no `- v2d:` line.
     models are not at fault.
   - **Result.** There are no counts and no measures. The summary printed D-VOID.
 - **R27.108 — Resets 90810–90841 are spent and are not re-run** (§17.3). The ledger entries stay.
-- **R27.109 — A further reading needs its own ruling;** this entry does not make it.
-  - **Recommendation (not a decision):** run D-RATE′ on 32 fresh, seed-checked development
-    resets, with the development script changing into the run tree (or refusing to run outside
-    it), and everything else unchanged.
-  - Re-using 90810–90841 would waive §17.3, and this entry does not recommend it.
+- **R27.109 — D-RATE′ is authorised** (the coordinator's ruling under owner delegation).
+  - **Resets: 90850–90881**, 32 fresh development resets (cohort `dev-drate2`). The seed check
+    found no token on any of 113 remote-tracking refs and only decimal fractions in the evidence.
+    90810–90841 are not reused.
+  - **Unchanged from R27.101–R27.105:** the arms, the revision, the planner and λ, the rule and
+    its thresholds, the measures, the routing, the GPU rules, and the order (it runs once, after
+    this PR is merged).
+  - **Two guards are added to the development script.**
+    - It changes into the run tree and refuses unless `third_party/le-wm` resolves there.
+    - Before the frozen runner is called, so before any ledger key is claimed, it loads both
+      models and the encoder in a spawned process, and refuses to start if either load fails.
+    - Both guards are tested (`tests/test_dev_task092_drate.py`). No frozen module changes.
 - **R27.110 — R7 does not change.** TASK-092 stays closed at A‴-FAIL.
 
 GPU: 21 s (two jobs). Evidence `~/develop/emai/evidence/task092-drate/` (`SHA256SUMS` sha256
