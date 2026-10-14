@@ -1212,9 +1212,12 @@ either direction. For comparison only, TASK-091's BD gave M-v1-87100 2 / 32 on o
 **Reading (reported only).** Both arms close in the grasp phase at about the same executed
 command (median 9 for each). G-req's planner still chooses plans whose grasp steps exceed the
 rate limit on most steps: 56 % of plan steps are off support, and the clip changed the first grasp
-on 72 % of grasp-phase commands. Neither arm lifts. Rate fidelity in the model's predictions
-(Stage R) did not change what the frozen planner chose. That is consistent with §16.3's flat-cost
-reading, but 32 resets with no success cannot establish it.
+on 72 % of grasp-phase commands. Neither arm scored a counted success; M-req's one rise above
+5 cm (5.4 cm, reset 90850) was in an episode stopped by the projection's joint-velocity guard. In
+this reading, G-req's rate fidelity in its predictions (Stage R) did not show up as plans that
+respect the rate limit: its share of plan steps off support (0.56) was not lower than M-v1's
+(0.47). That is consistent with §16.3's flat-cost reading, but one run of 32 resets with no
+success cannot establish it, and it does not show that the planner causes the grasp failures.
 
 **GPU.** Three jobs of 21 s, 2 155 s and 2 237 s, 4 413 s in all (about 1.23 GPU h, under the
 ceiling of about 1.5). There was no v2d wait, no cap hit and no incident. The GR00T server,

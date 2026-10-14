@@ -84,7 +84,7 @@ development only and makes no claim. 32 resets cannot establish an effect.
   - **Reported** (M-req against M-v1; development, one run, simulation only, 32 resets):
     - **Successes:** 0 / 32 and 0 / 32 (each 95 % interval 0.000–0.109).
     - **Grasp contact:** 16 and 20.
-    - **Median maximum rise:** 0.29 and 0.19 cm. One M-req episode rose 5.4 cm.
+    - **Median maximum rise:** 0.29 and 0.19 cm. One M-req episode rose 5.4 cm (reset 90850, stopped by the joint-velocity guard; not a success).
     - **First executed close in the grasp phase:** median 9 and 9 (p10–p90 8–11).
     - **Clip changed the grasp-phase first command's grasp:** **0.72 and 0.78** (over all
       commands: 0.62 and 0.58).
