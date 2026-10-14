@@ -4,9 +4,12 @@
 §16, R27.132–R27.138; decided by Claude under owner delegation, 2026-10-14; DECISIONS (bd), (be)).
 Stage 0 ended **S0-PASS**: every degeneracy check of §6.1, the projector's equivalence tests and
 the power rule pass, and Stage P's bars are **C8@R1 ≥ 39 / 64 and H8@R2 ≥ 48 / 64**. Stage 0
-changes none of the other two items §14 lets it change. No gated stage has run. Every later stage
-runs at the merged revision from a clean tree with `scripts/run_task093_stage.sh`; Stage BS runs
-only after an independent GO on Stage BD's record.
+changes none of the other two items §14 lets it change. Every later stage runs at the merged
+revision from a clean tree with `scripts/run_task093_stage.sh`; Stage BS runs only after an
+independent GO on Stage BD's record. **Stage P** (gated, offline, 64 roots, one run) ended
+**P-PASS** (§17, R27.139–R27.141), and **Stage BD** (development, not gated, 32 resets, one run)
+set the bar at **0.40** (§18, R27.142–R27.146). Stage BS has not run; it waits for an independent
+GO on §18.
 
 This is the planner-side fix that R27.104 and R27.113 route to after D-RATE′ read D-FLAT. It is a
 planner variant over TASK-087's checkpoints, so it falls under R26.33. R27.115 (§2) rules that
@@ -976,3 +979,199 @@ re-run). Total about 13–16 GPU h, as §10.
   from a clean tree with `scripts/run_task093_stage.sh`; BS only after an independent GO on BD's
   record. The V2D session is told before BD and BS.
 - **R27.138 — R7 does not change.** TASK-093 is not an Apple→Plate experiment.
+
+## 17. Stage P record (gated, offline; R27.139–R27.141; decided by Claude under owner delegation)
+
+**Run conditions.** Stage P ran once on 2026-10-14 (15:41–15:46 UTC) with
+`scripts/run_task093_stage.sh p outputs/task093-p ~/develop/emai/evidence/task093-stage0/summary-0.json`,
+at the frozen revision `4d3491e` (#221's merge), from a clean tracked tree in
+`worktrees/task093-run` (detached at `4d3491e`; the job ran in that tree's root, where
+`third_party/le-wm` is; its `.venv` was synced from `uv.lock` with the same package set as the
+Stage 0 worktree's, checked by `uv pip freeze`). Before each of the two jobs the `## Requests`
+section of `~/.local/state/gpu/BOARD.md` had no `- v2d:` line, and each job took the shared lock
+with `gpu_run.sh --wait --board`. Evidence: `~/develop/emai/evidence/task093-p/` (`SHA256SUMS`
+sha256 `9446499b…e2cd`): the roots report, the plans report, the summary, the stage log, the two
+ledger entries and the `gpu_run` log lines. The root frames (`roots-p-roots.npz`) stay in
+`outputs/task093-p/` on the data disk.
+
+**Jobs and GPU time.** `roots` (64 roots, 917000–917063, 62 rejected draws; targets cube 28,
+apple 18, can 18) 65 s; `plans` (six models × 64 roots × R1 and R2) 216 s. In total 2 jobs,
+**281 s (about 0.08 GPU h)**, no cap hit, no VOID exit.
+
+**The summarizer's output, as `summarize_task093.py --stage p` printed it:**
+
+```
+{
+ "stage": "p",
+ "row": "P-PASS",
+ "bar": null,
+ "bars": {
+  "C8": 39,
+  "H8": 48
+ },
+ "problems": []
+}
+```
+
+**Per seed** (64 fresh gated roots; executed terms; bars frozen at Stage 0, R27.133: C8@R1 ≥ 39,
+H8@R2 ≥ 48; one run, offline, simulation only):
+
+| Seed | M-proj C8@R1 | M-proj H8@R2 | Gate | M-v1 C8@R1 (reported) | M-v1 H8@R2 (reported) |
+| --- | --- | --- | --- | --- | --- |
+| G-87100 | **39** | 58 | pass (C8 at the bar) | 43 | 62 |
+| G-87101 | 48 | 61 | pass | 55 | 64 |
+| G-87102 ¹ | 54 | 58 | pass | 54 | 62 |
+
+¹ `last_two_triggered: true` (TASK-087's training flag, recorded in `plans-p-roots.json`).
+
+- **Why this is the row.** No M-proj seed fails the gate, so the P-FAIL rule (two or more
+  failing seeds) does not apply; the summary lists no problem, so the plumbing checks of §6.2
+  (every M-proj grasp step inside the rate set, identical first-iteration samples for both arms,
+  the root, checkpoint, λ and frozen-file hashes, and R27.135's bitwise M-v1 = `pr.a2_plan`)
+  held, and the row is not P-VOID. **P-PASS.** M-proj-87100's C8@R1 is exactly at its bar
+  (39 / 64): it passes by zero roots of margin.
+- **References on these roots** (reported; the degeneracy checks are Stage 0's): open/release
+  C8 0, H8 0; closed, vertical −1 H8 0; random (salt 9011) C8 0, H8 3; maximum rate, vertical 0
+  C8 64, H8 0.
+- **P-MECH (reported)**, mean |predicted − executed hand synergy| over steps 1–8 at R1: M-proj
+  0.286, 0.285 and 0.290; M-v1 0.450, 0.514 and 0.405 (G-87100, 87101, 87102). As on the
+  calibration roots, under projection G predicts a hand that closes more slowly than executed
+  (mean predicted synergy at step 8: 0.07–0.11, executed grasp 0.35–0.44), and under its own
+  unprojected plans one that closes faster (predicted 0.60–0.63, executed 0.38–0.44).
+- **M-proj's requests beyond the limit (reported):** 500, 500 and 503 of 512 requested grasp
+  steps at R1, 192, 212 and 178 of 512 at R2.
+- **TASK-089's request terms (reported, first command):** close@R1 0 / 64 for every M-proj seed
+  (its first projected grasp from the open hand is −0.818 by construction) and 62, 64 and 64 for
+  M-v1; lift@R2 64 for every M-proj seed and 62, 46 and 60 for M-v1.
+- The A1 comparisons are model-only and were not re-run (§6.2).
+
+**What this is and is not.** One run, offline, simulation only, 64 fresh roots. Stage P is an
+executed-measure **no-regression gate** on the chosen plans at two fixed states per root. It is not
+a closed-loop result; it does not show that M-proj closes, grasps or lifts in closed loop, and no
+claim of this task rests on it. R7 does not change.
+
+- **R27.139 — Stage P is recorded.** It ran once at `4d3491e` from a clean tree in two jobs
+  (281 s), with no cap hit, no VOID exit and no problem in the summary.
+- **R27.140 — P-PASS.** M-proj's C8@R1 39, 48, 54 (bar 39) and H8@R2 58, 61, 58 (bar 48) of 64
+  on G-87100, 87101, 87102: every seed passes, G-87100 at the C8 bar exactly. Reported: M-v1's
+  C8@R1 43, 55, 54 and H8@R2 62, 64, 62. One run, offline, simulation only, 64 gated roots; a
+  no-regression gate, not a closed-loop result.
+- **R27.141 — Stage BD runs next** (§6.3, development resets 91900–91931), at the same revision
+  from the same clean tree.
+
+## 18. Stage BD record (development, not gated; R27.142–R27.146; decided by Claude under owner delegation)
+
+**Run conditions.** Stage BD ran once on 2026-10-14 (15:46–16:59 UTC) with
+`scripts/run_task093_stage.sh bd outputs/task093-bd outputs/task093-p/summary-p.json`, at
+`4d3491e` from the same clean tracked tree as §17 (the summarizer checks that Stage P ended
+P-PASS cleanly at the same revision; no problem). Before each of the seven jobs the stage script
+read BOARD.md's `## Requests`; before the M-v1-87100 job a `- v2d:` request was present, and the
+job waited 120 s until it was gone (16:22:48–16:24:48 UTC), as §10 requires. Every job took the
+shared lock with `gpu_run.sh --wait --board`. The V2D session was not sent a separate message by
+this run; the BOARD.md protocol was its channel. Evidence: `~/develop/emai/evidence/task093-bd/`
+(`SHA256SUMS` sha256 `08452d04…ab6f`): the goals report, the six run reports, the summary, the
+stage log, the seven ledger entries and the `gpu_run` log lines. The goal frames
+(`goals-bd-grasp.npz`) stay in `outputs/task093-bd/` on the data disk.
+
+**Jobs and GPU time.** Goals (32 resets, 91900–91931, 28 rejected draws; targets can 12, cube 11,
+apple 8, banana 1) 17 s; ik, ik-nopress, hold and random 11–12 s each; M-proj-87100 2 070 s and
+M-v1-87100 2 070 s (wall, 6 processes each). No job reached the 7 200 s cap; every report is
+`completed: true`, `cap_hit: false`. In total 7 jobs, **4 203 s (about 1.17 GPU h)**.
+
+**The summarizer's output, as `summarize_task093.py --stage bd` printed it:**
+
+```
+{
+ "stage": "bd",
+ "row": null,
+ "bar": 0.4,
+ "bars": null,
+ "problems": []
+}
+```
+
+BD has no row (it is not gated). **The bar is set:** ik reached 21 / 32 (r = 0.656, at least
+0.30), so bar = min(0.40, 0.9 × 0.656) = **0.40**; at BS's n = 128 the pooled bar is
+**156 / 384** and the per-seed floor **26 / 128** (`summary-bd.json`: `pooled_bar_at_bs` 156,
+`seed_floor_at_bs` 26, `escalate: false`). The summary lists no problems, so BD-ESCALATE does
+not apply.
+
+**Per arm** (32 development resets, one run, simulation only; exact 95 % intervals; contact is
+thumb plus index or middle on the target; rise is the maximum target rise; "stopped" is the
+embodiment's measured-joint-velocity stop):
+
+| Arm | Successes | 95 % interval | Grasp contact | Median max rise | Stopped | Plan s / command |
+| --- | --- | --- | --- | --- | --- | --- |
+| ik | **21 / 32** | 0.468–0.814 | 31 | 6.1 cm | 2 | — |
+| ik-nopress | 21 / 32 | 0.468–0.814 | 30 | 5.8 cm | 2 | — |
+| hold | 0 / 32 | 0.000–0.109 | 0 | 0.0 cm | 0 | — |
+| random | 0 / 32 | 0.000–0.109 | 0 | 0.0 cm | 0 | — |
+| **M-proj-87100** | **0 / 32** | 0.000–0.109 | 16 | 0.27 cm | 5 | 0.98 |
+| **M-v1-87100** | **0 / 32** | 0.000–0.109 | 13 | 0.19 cm | 5 | 1.00 |
+
+- **Per object.** ik succeeded on can 11 / 12, cube 10 / 11, apple 0 / 8 and banana 0 / 1
+  (ik-nopress the same). Neither world-model arm succeeded on any object. The largest maximum
+  rise was 4.4 cm for M-proj-87100 (next 0.95 cm) and 2.1 cm for M-v1-87100 (next 0.89 cm).
+- **Final subgoal reached:** the lift subgoal (3) on 27 of 32 resets for both world-model arms,
+  the grasp subgoal (2) on 5; ik reached the lift subgoal on 31.
+- **Executed close per phase** (share of executed commands with the right-grasp channel > 0.5):
+  grasp phase 0.75 (M-proj-87100), 0.71 (M-v1-87100), 0.88 (ik); lift phase 0.89, 0.85 and 1.0.
+- **The projector equivalence (a B-VOID check at BS, recorded here):** M-proj-87100's applied
+  channel 13 equalled the request on **all 11 650** commands (2 750 in the grasp phase); for the
+  unprojected control M-v1-87100 it differed on 6 803 of 11 659 (2 192 of 2 743 in the grasp
+  phase).
+- **Support and requests (reported):** M-proj-87100's chosen plan steps off the training support
+  0.0 (every plan wholly on support), and 0.528 of its *requested* grasp steps lie beyond the
+  limit; M-v1-87100's plan steps off support 0.453 (plans wholly on support 0.099), its first
+  grasp step clipped on 0.58 of commands (0.80 in the grasp phase).
+- **Velocity stops.** 5 per world-model arm and 2 per ik arm, all the embodiment's frozen
+  measured-joint-velocity rule, a declared failure, not a harness defect.
+
+**§6.3's deferral measures (TASK-091 §5.3; reported only, no row reads them; per reset over the
+32 episodes; medians with the 10th–90th percentiles):**
+
+| Measure | M-proj-87100 | M-v1-87100 |
+| --- | --- | --- |
+| (1) closing commands before first contact, episodes with contact | median 3 (p10 0.5, p90 20, max 33); n = 16 | median 3 (p10 1, p90 27.4, max 72); n = 13 |
+| (1) episodes with no contact (counted to the end, flagged) | 16 | 19 |
+| (2) first executed close in the grasp phase, command index | median 8 (p10 8, p90 9, max 11) | median 8 (p10 8, p90 11, max 12) |
+| (2) never closed in the grasp phase / grasp phase not reached | 3 / 0 | 3 / 0 |
+| (3) share of grasp-phase re-plans with k = 1, per reset | median 0.785 (p10 0.26, p90 0.85); pooled 0.750 | median 0.59 (p10 0.53, p90 0.75); pooled 0.585 |
+| (3) median planned close step k, per reset | median 1 (p90 3.95, max 4.5) | median 1 (max 1) |
+| (3) longest run of re-plans with k > 1, per reset | median 7.5 (p10 7, p90 8, max 34) | median 3 (p10 2, p90 5, max 6) |
+
+As TASK-091's BD record read it, the 2 / 11 rate limit lets an executed close register from an
+open hand only after about 8–9 grasp-phase commands, so both arms' median first close (command 8)
+is near the earliest possible; that deferral caused either arm's failures is not shown.
+
+**What this is and is not.** A development cohort of **32 resets, one run, one model seed
+(G-87100) per world-model arm, simulation only, not gated, not Stage BS**. It sets the bar (0.40)
+and shows that the plumbing and the arms ran under the rules, including the projector
+equivalence that BS checks. It carries no row and no claim, and its counts are not a prediction of
+BS. Both world-model arms scored 0 / 32 (exact 95 % interval 0.000–0.109 each), so BD shows no
+difference between M-proj and M-v1 on these resets: at BS's per-seed floor rate (26 / 128 =
+0.203) a seed would expect about 6.5 successes on 32 resets. The other two seeds of each arm did
+not run in BD. ik's 21 / 32 is below TASK-091 BD's 26 / 32 on other resets, with apple 0 / 8 here.
+No MP4 replay was made in BD (the stage script makes none). No knob changes (§6.3), and R7 does
+not change.
+
+**What the GO review decides** (§6.3): an independent reviewer reads this record and posts GO or
+NO-GO before Stage BS. BD can show a defect, whose fix needs its own ruling; it changes no knob by
+itself. The bar is set (r ≥ 0.30), so the bar rule does not escalate. After a NO-GO, BD is
+recorded again on fresh development seeds named by a ruling. This record does not decide GO.
+
+**Next.** Stage BS (`scripts/run_task093_stage.sh bs <out> outputs/task093-bd/summary-bd.json
+outputs/task093-p/summary-p.json`, 918000–918127) runs only after an independent GO on this
+record, at `4d3491e` from a clean tree, after the V2D session is told. It has not run.
+
+- **R27.142 — Stage BD is recorded.** It ran once at `4d3491e` from a clean tree in seven jobs
+  (4 203 s, about 1.17 GPU h), with no cap hit, every report complete and no problem in the
+  summary; one job waited 120 s for a V2D request on BOARD.md.
+- **R27.143 — The bar is 0.40.** ik 21 / 32 (r = 0.656 ≥ 0.30); pooled bar at BS 156 / 384,
+  per-seed floor 26 / 128. Counts, development only (one run, 32 resets, simulation only):
+  M-proj-87100 0 / 32, M-v1-87100 0 / 32, ik-nopress 21 / 32, hold 0 / 32, random 0 / 32.
+- **R27.144 — the projector equivalence held in closed loop:** M-proj-87100's applied channel 13
+  equalled its request on all 11 650 commands (development).
+- **R27.145 — Stage BS waits for an independent GO** on this record (R27.137); nothing of §2–§12
+  changes.
+- **R27.146 — R7 does not change.**
