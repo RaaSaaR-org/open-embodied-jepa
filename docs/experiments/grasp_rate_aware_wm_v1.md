@@ -1084,3 +1084,63 @@ gated stage.
   rules of §17.2; its record (§18, DECISIONS (bb)) is a second PR, with every restated number
   carrying "development, one run, simulation only, 32 resets".
 - **R27.106 — R7 does not change.**
+
+## 18. D-RATE record: D-VOID (R27.107–R27.110; decided by Claude under owner delegation)
+
+**Development only, not gated, no claim (§17.2). No world-model episode ran, so there is no
+count to restate.**
+
+**What ran.** On 2026-10-14, after #217's merge (`c2e21d4`), the driver ran the jobs of §17.2 in
+order. It used `scripts/dev_task092_drate.py` (sha256 `50cfd42f…cff6`, revision `c2e21d4`) with
+the run tree `worktrees/task092-drate` at `64e87f0`, which was clean. Before each job it read
+BOARD.md's `## Requests`, which held no `- v2d:` line, and each job took one `gpu_run.sh --wait
+--board` lock.
+
+1. **`goals`** completed: 32 goals on 90810–90841, 35 rejected draws, 14 s. The report is at
+   revision `64e87f0` from a clean tree and carries the `development` field. The ledger key
+   `goals-dev-drate` is claimed.
+2. **`run --arm M-req`** claimed the ledger key `run-dev-drate-M-req-87100` and started its six
+   workers. Each worker stopped while loading the model, before its first episode, with
+   `ContractError: LeWM source missing`. The job ended with status 1 after 7 s. **No episode was
+   simulated and no outcome was read**: the log has no episode line, and no run report was
+   written.
+3. The driver stopped there (`set -e`). **M-v1 did not run.**
+
+**Cause: an operator error in the driver, not in the frozen code or the models.** The frozen LeWM
+loader (`models/lewm.py`, `source_path: third_party/le-wm`) resolves the upstream source
+relative to the working directory. `run_task092_stage.sh` changes into the run tree first. The
+D-RATE driver instead ran from the checkout that holds the development script
+(`worktrees/task092-ruling`), which has no `third_party/`. `goals` loads no model, so it was not
+affected. The run tree's `third_party` link was valid throughout.
+
+**Row.** By §17.3 rule 1, a run that did not complete is **D-VOID**. The summary printed
+`{"row": "D-VOID", "k_req": null, "k_v1": null, "problems": [...]}`. The listed problems are
+that no run reports exist and that M-req has no checkpoint record. §17.3 says the resets are not
+re-run and that another reading needs its own ruling. This record follows that.
+
+**GPU.** Two jobs, 14 s and 7 s, 21 s in all (under 0.01 GPU h). There was no v2d wait, no cap
+hit and no other incident. The GR00T server, `/mnt/data/emai/{archive,models,cache}` and the
+earlier worktrees were not touched.
+
+**Evidence.** `~/develop/emai/evidence/task092-drate/` holds the goals report and frames, the
+driver and its log, the `gpu_run` lines, copies of the two ledger entries, and
+`summary-dev-drate.json`. `SHA256SUMS` has sha256 `a62ef82d…90efe`.
+
+### 18.1 Rulings (R27.107–R27.110)
+
+- **R27.107 — D-RATE is recorded: D-VOID** (§17.3 rule 1). The M-req run stopped at model load
+  before any episode because the driver ran from the wrong working directory. M-v1 did not run.
+  There are no counts, and no measure of R27.103 exists.
+- **R27.108 — Resets 90810–90841 are spent.** They are not re-run, as §17.3 requires. The ledger
+  entries stay, and neither the ledger nor a guard is bypassed.
+- **R27.109 — A further reading needs its own ruling, which this entry does not make.**
+  - **Recommendation (not a decision):** authorise **D-RATE′**, identical to D-RATE apart from
+    two changes:
+    - 32 fresh development resets, a new range checked as §17.2 checks 90810–90841;
+    - the development script changes into the run tree before it runs, or refuses to run
+      unless the working directory is the run tree. This is a fix to the development script
+      only; no frozen module changes.
+  - Re-using 90810–90841 because no outcome was read would be a waiver of §17.3, so this entry
+    does not recommend it.
+  - §17.3's rule, §17.4's routing and the GPU rules stay as they are.
+- **R27.110 — R7 does not change.** TASK-092 stays closed at A‴-FAIL (R27.100).
