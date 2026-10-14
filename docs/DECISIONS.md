@@ -63,6 +63,66 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-14 (be) — TASK-093 Stage 0 ends S0-PASS: the projector is bitwise the embodiment's grasp clip and the executed commands, every degeneracy check passes, Stage P's bars are C8@R1 ≥ 39 and H8@R2 ≥ 48 of 64, n = 128 stands (power 0.976); the protocol is frozen at the Stage 0 PR's merge (R27.132–R27.138)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_rate_projected_planner_v1.md §16](experiments/grasp_rate_projected_planner_v1.md).
+Evidence: `~/develop/emai/evidence/task093-stage0/` (`SHA256SUMS` sha256 `3e64082f…7adc`). No
+gated stage ran; Stage P's roots and the BD and BS resets were not touched.
+
+- **R27.132 — Stage 0 is recorded and ends S0-PASS.**
+  - **Code.** Opt-in modules `grasp_rate_projected{,_runtime}.py`, scripts
+    `{run,summarize}_task093.py` and `run_task093_stage.sh`, and 27 tests. No existing file
+    changes except CLAUDE.md's entry points; `planning.py`, `embodiment.py`, the action manifest
+    and TASK-087–TASK-092's files are checked against sha256 pins before any job runs.
+  - **Equivalence.** Against `robot.project_candidates` on 40 debug states (zero and non-zero
+    right-arm deltas): 15 360 grasp steps, 12 792 clipped, 0 mismatches (bitwise float32). In the
+    debug closed loop M-proj-87100's applied channel 13 equalled the request on all 2 400
+    commands; the negative control M-v1-87100 differed on 1 454 of 2 206. An identity projector
+    reproduces the unprojected plan bitwise, and read-only candidate arrays give bitwise the
+    costs of writable ones.
+  - **Calibration** (cal-roots 916000–916063, development, at `c7cf7f4`, clean tree): M-v1's
+    C8@R1 33, 58, 51 and H8@R2 64, 64, 61. References: open/release 0 and 0, closed-vertical-−1
+    H8 0, random (salt 9011) 0 and 6. All degeneracy checks pass. Reported only: M-proj's C8 36,
+    53, 47 and H8 57, 61, 55.
+  - **Checks.** Hashes, λ, the rate limit, CEM and every frozen file pass. The seed check over 116
+    remote-tracking refs finds no use of 916000–918999, 91900–91999 or 9011 outside TASK-093's
+    files; the evidence tokens are TASK-077's update index 91900 and frame offsets in TASK-087's
+    episode table, none a seed. G-87102's checkpoint has `last_two_triggered: true`.
+  - **Power** (20 000 simulations, 0.15 against 0.05): 0.988, 0.976 and 0.915 at n = 128 and SD 0,
+    1 and 2. B-FAIL rates at SD 1 (20 000 simulations): 0.486 at 0.10 vs 0.05, 0.190 at 0.12 vs
+    0.05, 0.229 at 0.15 vs 0.08, 0.021 at 0.15 vs 0.05.
+  - **Debug smoke** (debug seeds 91940–91999; not results): Stage P's plumbing on 6 roots; every
+    closed-loop arm on 6 resets (ik 4, ik-nopress 4, hold 0, random 0, M-v1 0, M-proj 0); the
+    M-proj determinism re-run matched its split run bitwise. One debug `plans` job exited VOID on
+    an over-strict rate-set check (bitwise re-projection of a float32 plan); `c7cf7f4` restores
+    §6.2's |Δg| bound.
+  - **Compute.** 0.54 GPU h in 18 jobs (one of them a 4 s render-test run), all under the shared lock
+    after a BOARD.md check.
+- **R27.133 — Stage P's bars are frozen: C8@R1 ≥ 39 / 64, H8@R2 ≥ 48 / 64** (§6.1's rule:
+  ⌈0.75 × 51⌉ and min(48, ⌈0.75 × 64⌉)).
+- **R27.134 — Stage 0 changes none of the other §14 items.** Process counts 8 / 6 / 4; BS stays
+  two 64-reset jobs (projection 4 873 s ≤ 5 400 s); n stays 128.
+- **R27.135 — readings of points the DRAFT left open** (protocol §16.7): the debug split, the
+  rate-set check as the |Δg| bound, T₀ from `_projection_targets`, the random reference's draw
+  order, the name S0-PASS, the row simulation's random at 0 and its generator tag, and the
+  request-terms measures on the first command. Also:
+  - the deterministic references (open/release, closed-vertical-−1, maximum-rate) keep every
+    unused channel at 0 and the left grasp at −1; the random reference draws every channel from
+    N(0, 1) clipped to TASK-088's bounds (left arm and left grasp fixed);
+  - Stage P's plumbing checks also require every M-v1 plan to equal TASK-091's `pr.a2_plan`
+    bitwise (the control is the recorded A2 planner); a mismatch is a P-VOID. It held on all 384
+    calibration root calls;
+  - after review, the runners claim the ledger only after the roots or goals are loaded and
+    checked and the G checkpoints and the DINOv2 encoder are loaded (a CPU test checks the order);
+    a stage whose job exits VOID is still summarised. No Stage 0 number depends on this.
+- **R27.136 — the debug smoke is not evidence;** the development calibration counts are not a
+  Stage P result.
+- **R27.137 — frozen at the Stage 0 PR's merge.** Stages P, BD and BS run at the merged revision
+  from a clean tree with `scripts/run_task093_stage.sh`; BS only after an independent GO on BD's
+  record. The V2D session is told before BD and BS.
+- **R27.138 — R7 does not change.** TASK-093 is not an Apple→Plate experiment.
+
 ## Decision 2026-10-14 (bd) — the planner-side fix after D-RATE′ is TASK-093: R26.33's condition is met for one variant only, grasp-channel rate projection of CEM's candidates over TASK-087's unchanged G; an executed-measure offline gate calibrated on development roots, then the closed loop against the unprojected planner at n = 128; DRAFT preregistration (R27.115–R27.131; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30).** Protocol (DRAFT):

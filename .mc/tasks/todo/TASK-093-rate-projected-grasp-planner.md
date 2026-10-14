@@ -68,7 +68,7 @@ Protocol: [grasp_rate_projected_planner_v1.md](../../../docs/experiments/grasp_r
 
 ## Acceptance criteria
 
-- [ ] DRAFT preregistration and the R26.33 ruling reviewed independently and merged
+- [x] DRAFT preregistration and the R26.33 ruling reviewed independently and merged (#220)
 - [ ] Stage 0, reviewed, with the protocol frozen at its merge. It covers:
   - opt-in modules for the projector, Stage P, the rows and the controller;
   - the projector's bitwise equivalence with `robot.project_candidates` and with executed
@@ -90,3 +90,10 @@ Protocol: [grasp_rate_projected_planner_v1.md](../../../docs/experiments/grasp_r
 - 2026-10-14, independent review of #220 applied: required edits 1–6 (base rate, honest reading,
   n = 128 by declaration with the clause risk below δ, a failable closed-loop equivalence check,
   float64 bounds as `_prepare_side`, the evidence seed statements) and the nits.
+- 2026-10-14, Stage 0 (branch `feat/task093-stage0`; R27.132–R27.138, DECISIONS (be); record
+  §16): **S0-PASS**. Projector bitwise against `robot.project_candidates` (15 360 steps, 0
+  mismatches) and in the debug closed loop (M-proj 0 of 2 400 commands differ; M-v1 1 454 of
+  2 206); calibration on cal-roots 916000–916063 sets Stage P's bars C8@R1 ≥ 39, H8@R2 ≥ 48 of 64,
+  all degeneracy checks pass; power 0.976 at SD 1 (20 000 simulations), n = 128 stands; 0.54 GPU h.
+  Evidence `~/develop/emai/evidence/task093-stage0/`. The protocol freezes at the Stage 0 PR's
+  merge; Stage P is next.
