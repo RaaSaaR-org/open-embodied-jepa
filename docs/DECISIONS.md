@@ -63,6 +63,101 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-15 (bi) — TASK-094's DRAFT preregistration: a measurement-only grasp-closure locus diagnostic (K, the IK follower at held closures ± a 1.2 cm palm offset on 128 paired resets; M, the frozen cost's ranking of a squeeze over the measured-hand closure on G's predictions and on real frames at roots in and at the end of the close; S, the frozen planner offline at the same roots); rows route only to a ruling; K-CAUSAL with L-COST is put forward, not ruled met, as R26.33 evidence for option C (R27.160–R27.176; DRAFT)
+
+**Decided by Claude under owner delegation (2026-09-30).** Protocol:
+[grasp_closure_locus_v1.md](experiments/grasp_closure_locus_v1.md) (DRAFT). Development behind
+it: `~/develop/emai/evidence/task094-draft/` (`SHA256SUMS` sha256 `f1b5b608…4ba4`; CPU only, a
+power simulation and the seed checks). No GPU job, simulation, model load or planner call ran.
+
+- **R27.160 — The DRAFT is written** as R27.156 asked. It is measurement only: no controller, no
+  training, no planner or cost variant, no world-model closed loop. Checked against every fired
+  clause (TASK-054, TASK-057 §7, TASK-062 §10, TASK-065 §10, TASK-075 §7, R26.33, R27.71, R27.149;
+  protocol §2), it engages none. R27.154 stands: R26.33's condition is not ruled met.
+- **R27.161 — Part K** (§4): TASK-088's IK follower (with e9's press) with its closing command
+  held at +1.0 (as frozen), 0.9, 0.8, 0.7 and s\* (the goal's measured close-subgoal synergy),
+  0.6 (reported, and part of K-NULL's condition), an open-hand degeneracy reference, and palm
+  offsets of 1.2 cm along pelvis +x and +y (a rigidly displaced goal) at +1.0 and s\*, all on 128
+  paired gated resets. The level 0.6 and the
+  second offset direction are added to R27.156's list as reported arms, because the WM arms'
+  per-run levels reach below s\* and their error direction is not logged.
+- **R27.162 — Part M** (§5): 64 gated root seeds; scripted branches at +1.0, 0.9, 0.8, 0.7, s\* and
+  a control, simulated to their true outcome; the frozen step-averaged cost (λ = 2.0552) on
+  G-87100–87102's predictions (G-87102 `last_two_triggered`) and on the real frames (the ceiling);
+  the ranking of the squeeze over s\* read on roots where only the squeeze lifts, a root type read
+  only when there are at least 16 of them.
+- **R27.163 — Roots in the close: yes.** M and S use Rs, the demonstrator's state 8 of its 35 close
+  commands in, beside R2 (the end of the close). TASK-089's R1 is not used: under the 2 / 11 rate
+  limit every level ≥ 0.4545 executes identically for 8 commands from an open hand, so the cost
+  could not rank them; 8 commands in is the earliest point where the squeeze and s\* branches differ
+  at 7 of the 8 window steps.
+- **R27.164 — Part S** (§6): TASK-089's frozen, unprojected step-averaged planner, one CEM call per
+  root and seed; the plan's executed hold level at step 8 (read with TASK-093's projector
+  arithmetic, which scores nothing); a search miss is a partial hold that G rates worse than the
+  squeeze branch.
+- **R27.165 — K's rows** (§4.3): **K-VOID** (K-1.0 outside 63–114 of 128, the pooled earlier BS
+  rate 221 / 320 ± 0.20; K-open above 3 / 128; a plumbing, hash, seed, determinism or budget check);
+  **K-NULL** (the upper ends of the two-sided 95 % reset-bootstrap percentile intervals (§4.2) of
+  both the K-1.0 minus K-s\* and the K-1.0 minus K-0.6 lift rates below δ_K = 0.15; salt 9014;
+  the upper end is the 97.5th percentile), because s\* (about 0.68) lies at the top of the WM arms'
+  per-run levels (0.53–0.73) and 739 of 982 contact episodes commanded below 0.7, so a null at s\*
+  alone would not show those closures harmless; **K-CAUSAL** (the K-1.0 minus K-s\* difference
+  ≥ 0.15 and the exact one-sided McNemar test at p < 0.01); **K-UNCLEAR** otherwise (including
+  the s\* bound below δ_K with the 0.6 bound not). δ_K's basis compares conditional-on-contact
+  rates (10.7 % against 72.8 %); ik makes contact on 302 / 320, so the two scales are close.
+- **R27.166 — The L rows** (§5.5, §6, §7.1), read only after K-CAUSAL, first match over the root
+  types that are read: **L-VOID** (an M or S check; K's row stands); **L-UNREAD** (no root type
+  is read, fewer than 16 discordant roots at both; routed like L-MIXED, named so that an unread M is
+  not restated as a mixed pattern); **L-COST** (the ceiling ranks the squeeze above s\* on fewer than 0.75 of the discordant roots, TASK-089's threshold, at some
+  root type); **L-MODEL** (the ceiling does at every read root type, and G does not, on two of three
+  seeds, reach ⌈(0.5 + 0.75 (ĉ − 0.5)) n_d⌉ at some); **L-SEARCH** (both do, and the search misses
+  on at least a quarter of the discordant roots on two of three seeds at some); **L-MIXED**
+  otherwise. The positive control (squeeze over re-open or release on real frames, at least 56 / 64,
+  28 / 32 at Stage 0, because TASK-089's A-K0 found the analogous contrasts at 1.000) must hold.
+  G's factor is 0.75, not TASK-089's 0.9, because the 0.9 rule would read a G at 0.9 against a ceiling of 1.0 as L-MODEL with probability 0.93 (32 discordant roots; development
+  simulation).
+- **R27.167 — Routing.** No row admits a controller. K-NULL pauses the grasp line and the owner is
+  told (R27.157; the palm-offset arms beside it). K-CAUSAL with L-COST routes to option C (only
+  through a ruling that finds R26.33's condition met) or option B with a grasp term; with L-MODEL to
+  option B or a kind of data R27.71 leaves open; with L-SEARCH to a planner ruling under R26.33;
+  L-UNREAD, L-MIXED and K-UNCLEAR to a ruling. **K-CAUSAL with L-COST is put forward as candidate
+  "new evidence of a different kind" for option C** (a paired intervention and an action-level ranking on real
+  frames, neither of which existed when R26.33 fired), limited to a goal-specification change that
+  targets the measured flatness; K-CAUSAL with L-SEARCH likewise for a planner ruling at the close.
+  Neither is ruled met here. The record names the root type(s) at which L-COST was read: Rs's
+  8-step window lies inside the close and holds no lift, so an L-COST at Rs alone shows that the
+  goal's hand term is flat during the close, not that the cost cannot see a failed hold, and the
+  ruling may find it narrower evidence than an L-COST at R2.
+- **R27.168 — No abandonment clause:** TASK-094 preregisters nothing for a clause to close.
+- **R27.169 — Power** (§8; development, CPU only): at n = 128, a true lift loss of 0.30 or more
+  reads K-CAUSAL with probability ≥ 0.997 and no loss reads K-NULL with ≥ 0.986; a loss near 0.15
+  splits between K-CAUSAL and K-UNCLEAR, and a loss of 0.10 reads K-NULL with 0.24–0.35 (these
+  K-NULL figures are for the s\* contrast alone). A flat ceiling reads L-COST with ≥ 0.96 at 16 or
+  more discordant roots; a ceiling of 0.7–0.8 is often misread, so ĉ is reported with its interval.
+  The two-of-three seed figures assume independent seeds, which they are not (the same roots, one
+  training run), so they are an approximation. Stage 0 recomputes K's table with 20 000
+  simulations, simulating K-NULL's joint condition with the 0.6 loss at least the s\* loss, and
+  escalates if K-CAUSAL at a loss of 0.30 or K-NULL at no loss at either level falls below 0.95.
+- **R27.170 — Seeds and salts:** Stage 0 development K resets 94100–94131 and roots
+  940000–940031; gated K resets 941000–941127 and root seeds 942000–942063; debug 94500–94599; new
+  salt 9014 (9015 reserved); TASK-088's 8801–8803 reused. Checked free on 120 remote-tracking refs
+  and every local branch; in the evidence only 94100 and 94500 occur, as TASK-077 training-update
+  indices.
+- **R27.171 — Budget:** about 0.5 GPU h (0.4–0.7; gated K about 0.09–0.13 GPU h, 11 jobs of
+  29–43 s, before goal generation), ceiling 1.0; per-job cap 1 800 s; Stage 0 escalates if it projects the gated stage above 0.6 GPU h or itself exceeds 0.4; every job under
+  `gpu_run.sh --wait --board` after a BOARD.md check, the V2D session told in advance;
+  `worktrees/task087-run` stays until TASK-094 closes.
+- **R27.172 — Stage 0** (§14): opt-in modules, scripts and tests only; development K and M/S
+  degeneracy and positive-control checks; nothing it measures sets a bar; it may change only the
+  process count and the job split. The protocol freezes at its merge.
+- **R27.173 — Disclosed development** (§12): the draft's power simulation first used TASK-089's
+  0.9 factor and a ± 0.15 K-VOID band, changed before submission on the simulation's evidence.
+- **R27.174 — What it cannot show** (§11) goes with every restatement of its row: no grasp
+  success; the demonstrator's states, not the WM arms'; scripted, constant hold levels; two offset
+  directions of one size; one scene, camera, encoder and corpus, simulation only.
+- **R27.175 — Status:** DRAFT, for an independent review; a Stage 0 PR freezes it.
+- **R27.176 — R7 does not change.** TASK-094 is not an Apple→Plate experiment.
+
 ## Decision 2026-10-15 (bh) — after TASK-093: the grasp failure most plausibly sits in the objective at the close-and-lift transition (the world-model arms command a partial closure near the demonstrator's object-blocked hand; association, read after the fact); the next task is TASK-094, a measurement-only diagnostic of about 0.5 GPU h; no controller is admitted (R27.152–R27.159)
 
 **Decided by Claude under owner delegation (2026-09-30).** Design note:
