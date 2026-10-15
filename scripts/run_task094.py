@@ -345,7 +345,7 @@ def cmd_seeds(args) -> int:
     branches = [b for b in branches if not b.endswith("/HEAD")]
     locals_ = git("for-each-ref", "--format=%(refname:short)", "refs/heads").split()
     paths = ["src", "scripts", "docs", ".mc", "tests", "benchmarks", "configs"]
-    hits = {}
+    hits, own_lines = {}, {}
     pattern = r"94[0-26][0-9]{3}|941[0-9]{2}|945[0-9]{2}|901[45]"
     for branch in branches + locals_ + ["HEAD"]:
         res = subprocess.run(
@@ -359,9 +359,12 @@ def cmd_seeds(args) -> int:
             if len(parts) < 4:
                 continue
             _, file, _, text = parts
+            # a line that names TASK-094 is TASK-094's own (for example its row in
+            # docs/JEPA_ZERO_SHOT_PLAN.md), whatever file it is in
+            where = own_lines if "TASK-094" in text else hits
             for m in SEED_PATTERN.finditer(text):
                 if _in_ranges(int(m.group(1))):
-                    hits.setdefault(file, {}).setdefault(m.group(1), set()).add(branch)
+                    where.setdefault(file, {}).setdefault(m.group(1), set()).add(branch)
     classified = {"own": {}, "other": {}}
     for file, nums in hits.items():
         own = any(m in file for m in OWN_MARKERS) or file in (
@@ -393,6 +396,9 @@ def cmd_seeds(args) -> int:
         "ranges": {k: [r.start, r.stop - 1] for k, r in CHECK_RANGES.items()},
         "hits_in_task094_files": classified["own"],
         "hits_elsewhere": classified["other"],
+        "hits_on_lines_naming_task094": {
+            f: {n: sorted(b) for n, b in nums.items()} for f, nums in own_lines.items()
+        },
         "evidence_dir": str(args.evidence),
         "evidence_hits": ev_hits,
         "evidence_hits_in_seed_fields": seed_fields,

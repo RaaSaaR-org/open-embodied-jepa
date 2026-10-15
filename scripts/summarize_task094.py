@@ -646,6 +646,7 @@ def stage_0p(args):
             "ranges": seeds.get("ranges"),
             "hits_elsewhere": seeds.get("hits_elsewhere"),
             "hits_in_task094_files": sorted(seeds.get("hits_in_task094_files", {})),
+            "hits_on_lines_naming_task094": seeds.get("hits_on_lines_naming_task094"),
             "evidence_hits": [(h["file"], h["token"]) for h in seeds.get("evidence_hits", [])],
             "evidence_hits_in_seed_fields": seeds.get("evidence_hits_in_seed_fields"),
         },
