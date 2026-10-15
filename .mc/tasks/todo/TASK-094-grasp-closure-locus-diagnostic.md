@@ -43,7 +43,7 @@ the results. It finds:
   (median synergy about 0.68), not near its +1 command.
 - **Success by commanded closure.** Given contact, successes are 21 / 739 below 0.7 and 17 / 23
   at 0.9 or above (commanded before the object rose).
-- **The corpus.** Partial closures at contact are nearly absent from `play-v1` (97.1 % of contact
+- **The corpus.** Partial closures at contact are rare in `play-v1` (97.1 % of contact
   commands are ≥ 0.8).
 
 **The question.** Is that closure the physical cause of the failures? If it is, does the failure
@@ -64,7 +64,12 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
   and G's cost of that plan against the squeeze branch.
 
 **Rows** (declared with bars and margins in the preregistration; routing only, no claim):
-- K-NULL means the grasp line pauses (R27.157).
+- K-VOID: the run is void, for example when ik at c = +1.0 does not reproduce its frozen BS
+  rate within a declared margin, or when a degeneracy check fails.
+- K-NULL: if TASK-094 reads K-NULL, the grasp line pauses and the owner is told. D's work (for
+  example a Phase 4 precursor with a scripted closure rule) still needs its own ruling, because
+  Phase 4 is not admitted (R25.27, R27.148) (R27.157). The palm-offset arm is reported beside
+  K-NULL, so that a placement-dominant result is visible to the pause ruling.
 - K-CAUSAL is followed by one of:
   - L-COST (b);
   - L-MODEL (a);
@@ -92,7 +97,8 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
   branches on development roots, and a debug smoke. The protocol is frozen at the Stage 0 merge.
 - [ ] K, M and S recorded at the frozen revision from a clean tree, with evidence in
   `~/develop/emai/evidence/task094-*`.
-- [ ] Row recorded with a next-step ruling (K-NULL pauses the grasp line); R7 unchanged.
+- [ ] Row recorded with a next-step ruling (K-NULL pauses the grasp line; D still needs its own
+  ruling); R7 unchanged.
 
 ## Notes
 

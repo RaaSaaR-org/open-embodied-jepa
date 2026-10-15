@@ -111,12 +111,12 @@ association, not an intervention.
     - G separates coarse contrasts at the demonstrator's states (TASK-089 A1);
     - G's cost separates held states from failed ones;
     - the goal's hand term is the object-blocked measured hand;
-    - partial closures at contact are nearly absent from `play-v1`.
+    - partial closures at contact are rare in `play-v1`.
   - **The action-level ranking** (a squeeze against a partial close from one contact state) is
     **not measured**.
   - **Reading.** The most plausible locus is the objective at the close-and-lift transition,
     (b) with (a). The goal asks for a hand posture that a partial close also satisfies, and G has
-    almost no data on partial closes at contact. That this causes the failures is **inferred**.
+    little data on partial closes at contact. That this causes the failures is **inferred**.
 - **R27.154 — R26.33's condition is not ruled met** for any planner, cost, horizon or
   action-parametrisation variant over TASK-087's checkpoints. R27.152 is an association read after
   the results. No grasp controller is admitted by this entry.
@@ -145,13 +145,14 @@ association, not an intervention.
   cost, horizon or action-parametrisation variant for grasping, and its scripted probes are not
   learned results.
 
-  **Rows.** Its rows (K-NULL; K-CAUSAL with L-COST, L-MODEL, L-SEARCH or L-MIXED) only route to a
-  ruling.
+  **Rows.** Its rows (K-VOID; K-NULL, with the palm-offset arm reported beside it; K-CAUSAL with
+  L-COST, L-MODEL, L-SEARCH or L-MIXED) only route to a ruling.
 
   **Next PR.** Its DRAFT preregistration fixes the seeds, bars, margins and rows before anything
   runs. It is its own PR, with an independent review.
-- **R27.157 — The fallback.** If TASK-094 reads K-NULL, the grasp line pauses under D, and the
-  owner is told. No further grasp controller over TASK-087's checkpoints is proposed until a
+- **R27.157 — The fallback.** If TASK-094 reads K-NULL, the grasp line pauses and the owner is
+  told. D's work (for example a Phase 4 precursor with a scripted closure rule) still needs its own
+  ruling, because Phase 4 is not admitted (R25.27, R27.148). No further grasp controller over TASK-087's checkpoints is proposed until a
   ruling cites evidence of a different kind.
 - **R27.158 — No claim.** No success is claimed by this entry. "LeWM needed" is not claimed, and
   Phase 4 is not admitted.

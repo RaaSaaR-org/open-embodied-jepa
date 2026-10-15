@@ -91,10 +91,16 @@ right grasp:
 - **Most common bin.** In 739 of the 982 WM contact episodes (75 %), the closure commanded
   before the rise is below 0.7.
 - **Their success rate.** Those episodes almost never succeed.
-- **The rare full squeeze.** The 23 episodes that command at least 0.9 succeed 17 times. That is
-  near ik's rate given contact (72.8 %).
+- **The rare full squeeze.** The 23 episodes that command at least 0.9 succeed 17 times (exact
+  95 % interval 0.52–0.90; 6 of the 23 come from one run, M-v1p-90102). That is near ik's rate
+  given contact (72.8 %, 0.67–0.78), on few episodes.
 - **Reverse causation.** Reverse causation is possible. A grasp that is already slipping may change
   what CEM selects, so this table does not show that the partial command causes the failure.
+- **Window and selection.** The pre-rise window ends at the first 1 cm rise when there is one, and
+  at lift start + 10 otherwise, so it is defined differently for episodes that rose. Conditioning
+  on contact selects on a variable the closure may itself affect. In each of the 16 WM runs, the
+  < 0.7 bin's success rate is at most the 0.7–0.9 bin's, so pooling across arms does not create
+  the direction, but the counts per run are small.
 
 ### 2.3 Palm placement (measured; association)
 
@@ -104,6 +110,10 @@ Pooled successes / episodes by the minimum palm distance to the close subgoal in
 | --- | --- | --- | --- | --- | --- |
 | WM | 19 / 179 | 56 / 492 | 27 / 519 | 6 / 358 | 0 / 300 |
 | ik | 160 / 241 | 61 / 72 | 0 / 4 | 0 / 0 | 0 / 3 |
+
+The rows cover 1 848 of the 1 856 WM episodes; 8 never enter the close phase in the
+reconstruction. 3 of the 108 WM successes have no contact in the reconstructed close phase, which
+is why §2.1 counts 105.
 
 - **Placement matters.** No WM episode succeeds beyond 2 cm.
 - **But it is not the main gap.** WM episodes placed as well as ik (under 0.5 cm) succeed 19 / 179,
@@ -129,15 +139,16 @@ Pooled successes / episodes by the minimum palm distance to the close subgoal in
   - Commands of 0.5–0.8 at contact occur on 730 steps, and commands below 0.5 on 645.
 - **Lifted steps (27 980; ≥ 5 cm and in contact).** The command is below 0.8 on **402 (1.4 %)**.
 
-So the partial closures at contact that the WM arms command are nearly absent from G's training
-data. G has had almost no chance to learn what a partial close does to the object.
+So the partial closures at contact that the WM arms command are rare in G's training data
+(1 375 of 48 050 contact steps below 0.8, 2.9 %; 402 of 27 980 lifted steps, 1.4 %). *Inferred:*
+G has had little data from which to learn what a partial close does to the object.
 
 ## 3. Where the failure most plausibly sits (R27.153)
 
 | Locus | Measured | Inferred |
 | --- | --- | --- |
-| **(a) G cannot predict grasp outcomes** | **Coarse contrasts.** G separates coarse contrasts at the demonstrator's states: closing or lifting against open or non-lifting branches, 64 / 64 roots (TASK-089 A1; offline). **State level.** G's cost separates a held state from a failed one in the closed loop (§2.4). **Data.** The closure levels the planner picks at contact are nearly absent at contact in `play-v1` (§2.5). | **Partial closes.** G is unlikely to know that a partial close at contact does not hold. The action-level ranking from one contact state (squeeze against partial close) is **not measured**. |
-| **(b) the cost or goal cannot express a grasp** | **The goal.** Its hand term is the demonstrator's *measured* hand, blocked by the object at about 0.68 while it commanded +1 (§2.1). **The commands.** The planner's commands sit near that value (§2.1–§2.2). **The corpus.** A squeeze on an object reaches a hand state close to the one a partial close reaches (§2.5). **A related contrast.** The latent term alone did not separate lift-while-opening from lift-while-closed at h = 8 (TASK-089 A-K0: 15 / 32). | **Flat cost.** The pose term is about equally satisfied by a partial close and by a squeeze. Before the object rises, nothing in the goal asks for squeeze. **The most plausible primary locus, together with (a).** |
+| **(a) G cannot predict grasp outcomes** | **Coarse contrasts.** G separates coarse contrasts at the demonstrator's states: closing or lifting against open or non-lifting branches, 64 / 64 roots (TASK-089 A1; offline). **State level.** G's cost separates a held state from a failed one in the closed loop (§2.4). **Data.** The closure levels the planner picks at contact are rare at contact in `play-v1` (§2.5). | **Partial closes.** G is unlikely to know that a partial close at contact does not hold. The action-level ranking from one contact state (squeeze against partial close) is **not measured**. |
+| **(b) the cost or goal cannot express a grasp** | **The goal.** Its hand term is the demonstrator's *measured* hand, blocked by the object at about 0.68 while it commanded +1 (§2.1). **The commands.** The planner's commands sit near that value (§2.1–§2.2). **The corpus.** A squeeze on an object reaches a hand state close to the one a partial close reaches (§2.5). **A related contrast.** On real frames the latent term alone did not separate lift-while-opening from lift-while-closed at h = 8 (TASK-089 A-K0: 15 / 32). With the pose term, which G's cost includes, it did on 32 / 32, because an opening hand's posture differs. A partial close and a squeeze on an object-blocked hand reach nearly the same posture, so that contrast is not measured. | **Flat cost.** The pose term is about equally satisfied by a partial close and by a squeeze. Before the object rises, nothing in the goal asks for squeeze. **The most plausible primary locus, together with (a).** |
 | **(c) CEM cannot find plans that G rates well** | **Push-T.** Our CEM is not the bottleneck there (TASK-084 P0-PASS). **The roots.** CEM chooses to close and lift on 62 and 61 of 64 roots (TASK-089 A2; offline). | **Unlikely to be primary.** The closures CEM chooses sit where the goal's hand term is lowest, so CEM appears to find what the cost asks for. **Not measured** at contact states. |
 | **(d) a mismatch between plan and execution** | **Grasp channel.** TASK-093 removed its mismatch: the plans were wholly on the training support, and 0 of 139 825 commands differed. There was no gain (p = 0.810). That mismatch is therefore **not the bottleneck** (one run, simulation only, 128 resets). **Palm precision.** It is worse than ik's (§2.1, §2.3). | **Arm channels.** The arm's plan against its execution is **not measured**: `plan_log` keeps the grasp only. Palm imprecision contributes, but it is secondary (§2.3). |
 
@@ -145,7 +156,7 @@ data. G has had almost no chance to learn what a partial close does to the objec
 in (b) together with (a).
 - **The goal.** It specifies the hand's measured posture, and a partial close also satisfies that
   posture.
-- **The model.** G has almost no data on what a partial close at contact does.
+- **The model.** G has little data on what a partial close at contact does.
 - **The result.** The planner commands closures of about 0.55–0.65, and those do not hold.
 
 The chain from these commands to the failure is **inferred**. The individual measures are listed
@@ -176,7 +187,9 @@ Every candidate was checked against §1.
   offline gates that passed. Spending 0.5 GPU h first to learn which locus is real is the
   measurement-first step.
 - **Not D yet.** The evidence does not yet point to pausing, because §2's lead has not been
-  tested. D is TASK-094's declared fallback (R27.157).
+  tested. If TASK-094 reads K-NULL, the grasp line pauses and the owner is told. D's work (for
+  example a Phase 4 precursor with a scripted closure rule) still needs its own ruling, because
+  Phase 4 is not admitted (R25.27, R27.148) (R27.157).
 
 ## 5. TASK-094 in outline (its preregistration fixes the details)
 
@@ -212,8 +225,15 @@ the preregistration checks.
      branch.
 
 **Reading rule (sketch; the preregistration declares it with bars before any run).**
+- **K-VOID.** The run is void, for example when ik at c = +1.0 does not reproduce its frozen BS
+  rate within a declared margin, or when a degeneracy check fails (the preregistration declares
+  the conditions).
 - **K-NULL.** At an exact pose, c = s\* lifts within a declared margin of c = +1.0. Then §2.2 is
-  not a physics cause, and the grasp line pauses under D.
+  not a physics cause. If TASK-094 reads K-NULL, the grasp line pauses and the owner is told. D's
+  work (for example a Phase 4 precursor with a scripted closure rule) still needs its own ruling,
+  because Phase 4 is not admitted (R25.27, R27.148). The palm-offset arm (c = +1.0 and c = s\*
+  at about 1.2 cm) is reported beside K-NULL, so that a placement-dominant result is visible to
+  the pause ruling.
 - **K-CAUSAL**, and then the first matching row of M and S applies:
   - **L-COST (b):** the ceiling does not rank the squeeze above s\* on the declared bar of roots.
   - **L-MODEL (a):** the ceiling does, and G does not.
@@ -221,14 +241,22 @@ the preregistration checks.
     squeeze branch.
   - **L-MIXED:** any other pattern.
 - **Routing only.** Each row routes to a ruling. None of them admits a controller by itself:
-  - L-COST routes to C, or to B with a grasp term (a ruling under R26.33);
+  - L-COST routes to C or to B with a grasp term. C is a cost variant over TASK-087's
+    checkpoints, so it goes only through a ruling that finds R26.33's condition (new evidence of a
+    different kind) met; TASK-094's preregistration states whether a K-CAUSAL with L-COST reading
+    is put forward as such evidence. B is a model change, open under TASK-092 §2 and R27.71, with
+    its own ruling on simulator-truth labels;
   - L-MODEL routes to B, or to a data kind that R27.71 leaves open;
   - L-SEARCH routes to a planner ruling under R26.33;
   - L-MIXED routes to a ruling.
 
 **What it cannot show.** It runs no closed-loop world-model controller, so it cannot show a grasp
 success. Its roots are the demonstrator's states, not the WM arms' states. Its contrasts are
-scripted. It covers one scene, camera, encoder and corpus, in simulation only.
+scripted. It covers one scene, camera, encoder and corpus, in simulation only. The WM arms
+choose their closure during the close, from an open or closing hand. M's and S's roots at the end
+of the demonstrator's full close start from a hand that has already squeezed. The preregistration
+states whether M and S also use roots at the start of the close (as TASK-089's R1), and if not,
+why.
 
 **Budget.** K costs well under 0.1 GPU h: ik ran 128 resets in 29–43 s per job. M and S together
 cost about 0.2–0.3 GPU h; TASK-089's Stage A took 6 minutes. Stage 0 checks add about 0.2 GPU h.
