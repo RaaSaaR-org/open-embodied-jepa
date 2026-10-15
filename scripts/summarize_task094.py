@@ -112,10 +112,12 @@ def arm_table(runs):
                     [x["measured_synergy_grasp_phase_last"] for x in m]
                 ),
                 "level_median": float(np.median([e["level"] for e in eps])),
-                "plumbing_ok": bool(all(e["plumbing"]["ok"] for e in eps)),
+                "plumbing_ok": bool(all(gl.replumb(e)["ok"] for e in eps)),
+                "plumbing_job_ok": bool(all(e["plumbing"]["ok"] for e in eps)),
                 "applied_reaches_c_after_max": int(
-                    max(e["plumbing"]["applied_reaches_c_after"] for e in eps)
+                    max(gl.replumb(e)["applied_reaches_c_after"] for e in eps)
                 ),
+                "path_deviation_max": float(max(gl.replumb(e)["path_deviation_max"] for e in eps)),
             }
             if any(e.get("displacement_ok") is not None for e in eps):
                 row["displacement_ok"] = bool(all(e["displacement_ok"] for e in eps))
@@ -162,7 +164,11 @@ def k_summary(d, cohort, *, expect_n=None):
         if [e["seed"] for e in r["episodes"]] != seeds:
             problems.append(f"{arm}: not the cohort's goals in order")
     missing = [a for a in gl.K_ARMS if a not in runs]
-    plumbing = {a: r.get("plumbing_ok") for a, r in runs.items() if a in gl.K_ARMS}
+    # §4.3's plumbing check re-read from the recorded episodes (the summarizer's reading; the
+    # job's own reading is reported beside it)
+    plumbing = {a: all(gl.replumb(e)["ok"] for e in r["episodes"])
+                for a, r in runs.items() if a in gl.K_ARMS}  # fmt: skip
+    plumbing_job = {a: r.get("plumbing_ok") for a, r in runs.items() if a in gl.K_ARMS}
     displaced = {a: r.get("displacement_ok") for a, r in runs.items()
                  if a in gl.K_ARMS and gl.K_ARMS[a][1]}  # fmt: skip
     out = {
@@ -171,6 +177,7 @@ def k_summary(d, cohort, *, expect_n=None):
         "arms": arm_table(runs),
         "missing_arms": missing,
         "plumbing": plumbing,
+        "plumbing_job": plumbing_job,
         "displacement": displaced,
         "determinism": k_determinism(runs, det),
         "s_star": {

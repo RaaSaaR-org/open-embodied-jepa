@@ -166,6 +166,22 @@ def test_k_plumbing(level):
     assert p["ok"], p
     assert p["after_ramp_requests_at_c"] == p["after_ramp_commands"] > 0
     assert 0 <= p["applied_reaches_c_after"] <= 12
+    assert p["allowed_applied_at_c"] == p["allowed_commands"] > 0
+    # an episode stopped by the embodiment before the rate limit lets the hand reach c
+    short = INDICES[:13]
+    log_s, applied_s = _episode(short, level)
+    assert gl.k_plumbing(log_s, applied_s, level)["ok"]
+    if level > 0.5:
+        assert gl.k_plumbing(log_s, applied_s, level)["allowed_commands"] == 0
+    rec = {
+        "subgoal_index": [e["index"] for e in log],
+        "requested": [e["requested"] for e in log],
+        "applied": applied.tolist(),
+        "level": level,
+        "plumbing": {"decision_ok": True},
+    }
+    assert gl.replumb(rec)["ok"]
+    assert not gl.replumb(rec | {"plumbing": {"decision_ok": False}})["ok"]
     assert not gl.k_plumbing(*_episode(INDICES, level, wrong=True), level)["ok"]
     if level != -1.0:
         assert not gl.k_plumbing(*_episode(INDICES, level, lag_extra=1), level)["ok"]

@@ -277,12 +277,30 @@ def _bits(x) -> np.ndarray:
     return np.asarray(x, np.float32).view(np.uint32)
 
 
+PATH_TOLERANCE = 1e-5  # the applied right grasp against the rate-limited request path
+REACH_TOLERANCE = 1e-6
+
+
+def executed_path(requests) -> np.ndarray:
+    """The executed right grasp the embodiment's rate limit allows for a request sequence: the
+    cumulative clip at 2/11 per command from the settled open hand (-1), in grasp units (the
+    steepest hand joint binds; float64)."""
+    g, out = -1.0, []
+    for r in np.asarray(requests, np.float64):
+        g = float(np.clip(r, g - RATE_LIMIT, g + RATE_LIMIT))
+        out.append(g)
+    return np.asarray(out, np.float64)
+
+
 def k_plumbing(log: list, applied, level: float) -> dict:
     """§4.3's plumbing check for one K episode: (a) every request is the frozen ramp towards the
     held level on the grasp and lift subgoals and towards -1 elsewhere (bitwise float32), so on
     every command of those phases after the ramp the request equals c; (b) the applied right grasp
-    reaches float32(c) on those phases and, once it does, stays bitwise c (the rate limit allows
-    it); (c) the follower's closing decision is exactly the grasp and lift subgoals."""
+    follows the rate-limited path of the requests (within 1e-5) and equals float32(c) bitwise on
+    every command of those phases once the rate limit allows it (the path has reached c); an
+    episode stopped before that has no such command; (c) the follower's closing decision is
+    exactly the grasp and lift subgoals (log entries without ``closing`` are read as deciding by
+    the subgoal, for re-reading recorded episodes)."""
     applied = np.asarray(applied, np.float32).reshape(-1, 14)
     t = len(applied)
     if len(log) not in (t, t + 1):  # a stopped episode logs one request it did not execute
@@ -290,39 +308,53 @@ def k_plumbing(log: list, applied, level: float) -> dict:
     log = log[:t]
     idx = np.asarray([e["index"] for e in log], np.int64)
     req = np.asarray([e["requested"] for e in log], np.float32)
-    closing = np.asarray([e["closing"] for e in log], bool)
+    phase = np.isin(idx, CLOSING_SUBGOALS)
+    closing = np.asarray([e.get("closing", i in CLOSING_SUBGOALS) for e, i in
+                          zip(log, idx, strict=True)], bool)  # fmt: skip
     c_bits = np.asarray(level, np.float32).view(np.uint32)
     exp = expected_requests(idx, level)
     ramp_ok = bool(np.array_equal(_bits(req), _bits(exp)))
-    phase = np.isin(idx, CLOSING_SUBGOALS)
     decision_ok = bool(np.array_equal(closing, phase))
     after_ramp = phase & (_bits(exp) == c_bits)
     req_at_c = int((after_ramp & (_bits(req) == c_bits)).sum())
-    at_c = phase & (_bits(applied[:, GRASP_DIM]) == c_bits)
-    first = int(np.flatnonzero(at_c)[0]) if at_c.any() else -1
+    path = executed_path(req)
+    deviation = float(np.abs(applied[:, GRASP_DIM].astype(np.float64) - path).max()) if t else 0.0
+    allowed = phase & (np.abs(path - float(np.float32(level))) < REACH_TOLERANCE)
+    applied_at_c = int((allowed & (_bits(applied[:, GRASP_DIM]) == c_bits)).sum())
     start = int(np.flatnonzero(phase)[0]) if phase.any() else -1
-    if first >= 0:
-        tail = phase & (np.arange(t) >= first)
-        stays = bool(np.all(_bits(applied[tail, GRASP_DIM]) == c_bits))
-    else:
-        stays = False
-    phase_commands = int(phase.sum())
+    first = int(np.flatnonzero(allowed)[0]) if allowed.any() else -1
     ok = (
         ramp_ok
         and decision_ok
-        and (phase_commands == 0 or (first >= 0 and stays and req_at_c == int(after_ramp.sum())))
+        and req_at_c == int(after_ramp.sum())
+        and deviation <= PATH_TOLERANCE
+        and applied_at_c == int(allowed.sum())
     )
     return {
         "ok": bool(ok),
         "ramp_ok": ramp_ok,
         "decision_ok": decision_ok,
-        "phase_commands": phase_commands,
+        "phase_commands": int(phase.sum()),
         "after_ramp_commands": int(after_ramp.sum()),
         "after_ramp_requests_at_c": req_at_c,
+        "allowed_commands": int(allowed.sum()),
+        "allowed_applied_at_c": applied_at_c,
+        "path_deviation_max": deviation,
         "ramp_commands": int(np.flatnonzero(after_ramp)[0] - start) if after_ramp.any() else -1,
         "applied_reaches_c_after": first - start if first >= 0 else -1,
-        "applied_stays_at_c": stays,
     }
+
+
+def replumb(episode: dict) -> dict:
+    """§4.3's plumbing check re-read from a recorded K episode (its requests, subgoal indices and
+    applied commands), keeping the job's own closing-decision reading."""
+    log = [{"index": i, "requested": r} for i, r in
+           zip(episode["subgoal_index"], episode["requested"], strict=True)]  # fmt: skip
+    out = k_plumbing(log, episode["applied"], episode["level"])
+    job = episode.get("plumbing", {})
+    out["job_decision_ok"] = bool(job.get("decision_ok", False))
+    out["ok"] = bool(out["ok"] and out["job_decision_ok"])
+    return out
 
 
 def slipped(rise, contact) -> bool:
