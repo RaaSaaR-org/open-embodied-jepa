@@ -2,6 +2,11 @@
 
 Status: PROPOSAL (2026-10-08). This is a research-backed plan and recommendation, not a decision record. Each phase still needs its own preregistration and ruling in `docs/DECISIONS.md`. Nothing here changes R7's canonical status sentence. Editable copy: [JEPA Zero-Shot Robot Plan](https://claude.ai/code/artifact/963ec689-7b14-491d-93a8-1fec6faa63d2).
 
+> **Paused 2026-10-15.** The owner paused the project after TASK-094's K-NULL (DECISIONS 2026-10-15
+> (bo), R27.209–R27.215). The grasp line stays paused; TASK-095, recommended by R27.205, is not
+> confirmed and not started; Phase 4 is not admitted. Resume options, including a hybrid grasp, a
+> sensing change and an SO-101 branch, are in [RESUME.md](RESUME.md).
+
 ## Short answer
 
 Yes, continue with JEPA, but change the method. Stop the moving-plate line. Build one robot-grounded world model, trained once on broad G1+Dex3 play data, then plan short steps toward goals.
