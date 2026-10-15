@@ -33,9 +33,11 @@ time: MuJoCo Menagerie `robotstudio_so101/` (Apache-2.0; preferred), derived fro
 `trs_so_arm100` is the SO-100 and is not used.
 
 Delivers `scripts/fetch_so101.py` (pinned revision, per-file SHA-256, into ignored `assets/`), a
-tabletop scene (table, cube, target region, a wrist camera and a fixed front/overview camera),
-`configs/so101_sim_action.json`, an `so101` embodiment adapter with IK-free joint-position control
-and a MuJoCo transport, registered lazily as `"module:attr"` strings. Simulation only; real
+tabletop scene (table, cube, target region, Menagerie's existing `wrist_cam` and a fixed
+front/overview camera), `configs/so101_sim_action.json`, an `so101` embodiment adapter with IK-free
+joint-position control and a MuJoCo transport in new modules, registered lazily as `"module:attr"`
+strings. The G1 files pinned by frozen protocols (`simulation.py`, `embodiment.py`,
+`constraints.py`, `configs/g1_sim_action.json`, see SO101_PLAN.md S0) stay byte-identical. Simulation only; real
 execution stays disabled (R28.3). Software only; no experiment.
 
 ## Acceptance Criteria
@@ -47,6 +49,7 @@ execution stays disabled (R28.3). Software only; no experiment.
 - [ ] Action normalize/denormalize round-trip is exact; joint-limit and rate guards are tested
   and recorded, never applied silently to stored actions; a zero action holds pose; a fixed
   seed is deterministic.
+- [ ] Every G1 hash-pinned runtime check still passes at HEAD (each `frozen_files_check`).
 - [ ] The core-import check, ruff and pytest stay green; graphics tests are behind
   `JEPA_TEST_RENDER=1`.
 - [ ] PR reviewed independently and merged.

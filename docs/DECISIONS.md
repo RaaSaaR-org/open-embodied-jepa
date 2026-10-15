@@ -78,7 +78,10 @@ it"); the defaults are Claude's choices under owner delegation; recorded by Clau
 - **R28.3 — Defaults, chosen by Claude under owner delegation** (the owner may overrule any):
   - SO-101 runs **beside** G1 + Dex3 as a **stepping stone**, not a replacement. G1 code, configs,
     checkpoints and results are untouched; the product goal (LeWM-driven control of G1 + dual
-    Dex3) stays the end goal.
+    Dex3) stays the end goal. R27.213's premise concerned *moving the main line* to the SO-101,
+    which would change the product goal; a branch beside G1 does not, so that premise does not
+    apply here (its other requirements, a ruling, a plan and preregistrations, are met by R28.1
+    and R28.6).
   - **Simulation first.** No real-hardware execution until a separate owner ruling; buying
     hardware is the owner's decision.
   - **Action schema `joint_delta_so101_v0`:** five arm joint-position deltas plus one gripper
@@ -90,10 +93,23 @@ it"); the defaults are Claude's choices under owner delegation; recorded by Clau
   - **First task family:** cube pick-and-lift (`so101_cube_lift_v0`), then pick-and-place into a
     target (`so101_cube_place_v0`).
   - **Community Hugging Face Hub datasets deferred**, each needing its own licence check.
-- **R28.4 — Invariants.** The backend-swap invariant and the core-import check (no `torch` or
-  `mujoco` imported by `import embodied_jepa`) are kept. The action-dimension generalisation must
-  not change any G1 model's implementation hash, or must commit a reviewed compatibility manifest
-  as TASK-072 did.
+- **R28.4 — Invariants and the G1 hash coupling.** The backend-swap invariant and the
+  core-import check (no `torch` or `mujoco` imported by `import embodied_jepa`) are kept. The
+  files a naive action-dimension generalisation would edit are byte-pinned: `models/base.py`,
+  `models/native.py`, `models/lewm.py`, the readout files, `models/frozen_encoder.py`,
+  `models/frozen_tokens.py` and `policy.py` feed model implementation hashes (every native/LeWM
+  checkpoint since TASK-072, TASK-077/080/081/083's included), `models/lewm.py` also feeds
+  TASK-087's G hash checked by `zero_shot_runtime.py` and `grasp_corpus_wm_runtime.py` (the
+  paused grasp line's resume path), and TASK-091–TASK-094's frozen modules pin `contracts.py`,
+  `planning.py`, `models/lewm.py`, `embodiment.py`, `simulation.py`, `constraints.py`,
+  `devices.py`, `run_tools.py` and `configs/g1_sim_action.json`, asserted by tests. **Design
+  (chosen):** those files stay byte-identical, `ee_delta_grasp_v0` stays on the existing
+  classes, and the SO-101 path goes through new files (a schema module, schema-parametrised
+  backend subclasses overriding only the action input, a schema-aware CEM wrapper). Fallback,
+  only if that proves impossible: a TASK-072-style compatibility manifest naming the invalidated
+  checkpoint families, hash-checking runtimes and frozen protocols and the last compatible
+  revision, recorded by a ruling before merge; frozen pins are never edited. TASK-096 and
+  TASK-097 must show every G1 hash-pinned check still passing at HEAD.
 - **R28.5 — Upstream.** The preferred upstream model is MuJoCo Menagerie's `robotstudio_so101`
   (Apache-2.0), derived from TheRobotStudio's `SO-ARM100` `Simulation/SO101/so101_new_calib.xml`
   (Apache-2.0); Menagerie's `trs_so_arm100` is the SO-100 and is not used. Paths, revisions and

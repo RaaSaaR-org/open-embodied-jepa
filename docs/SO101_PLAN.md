@@ -49,9 +49,9 @@ preregistration, independent review and ruling ([AGENTS.md](../AGENTS.md)).
    lifted far more often than every world-model arm; "LeWM needed" was never shown. The SO-101
    studies keep a scripted follower and non-learned rule arms beside the learned ones.
 5. **Implementation hashes are a contract.** The TASK-072 edit to `models/base.py` made older
-   checkpoints load only at their recorded revision. S0 must not change the hash of any G1 model
-   path, or must record a compatibility manifest like
-   `benchmarks/manifests/task072-checkpoint-compatibility.json`.
+   checkpoints load only at their recorded revision. S0 keeps every G1 hash-pinned file
+   byte-identical (see S0's coupling note); the fallback is a compatibility manifest like
+   `benchmarks/manifests/task072-checkpoint-compatibility.json` plus a ruling.
 6. **Training budgets that do not saturate** (`last_two_triggered`) weakened several G1 readings;
    S4 declares a saturation check.
 
@@ -62,19 +62,49 @@ hours (GPU h) on the shared RTX 5080.
 
 ### S0 — Foundations: action-dimension generalisation and `joint_delta_so101_v0` (TASK-096)
 
-- **Delivers.** The core takes the action dimension from the action schema instead of the module
-  constant `ACTION_DIM = 14`: `contracts.py` (an `ActionSchema` registry with
-  `ee_delta_grasp_v0` unchanged and `joint_delta_so101_v0` added, names and order fixed),
-  `config.py` (lines 201–206 accept a registered schema instead of rejecting all but
-  `ee_delta_grasp_v0`), `planning.py` (CEM bounds and sample shapes from the schema), `data.py`
-  (feature shapes and the final-row padding from the manifest's schema), `policy.py`, and the
-  literal 14s in `models/native.py`, `models/lewm.py` (`input_dim=14`), `models/frozen_encoder.py`
-  and `models/latent_critic.py`. G1 task-line modules stay as they are.
+- **Coupling with G1 hashes (named by the independent review of #231).** Two kinds of byte
+  pins reach the files a naive generalisation would edit:
+  - *Model implementation hashes.* `VisualModel.implementation_sha256` (`models/base.py`) hashes
+    `base.py`, the concrete backend's file (`models/native.py` or `models/lewm.py`), `readout.py`
+    and `readout_labels.py`; `models/frozen_encoder.py` and `models/frozen_tokens.py` add their
+    own files; `policy.py` hashes itself; TASK-087's `grounded_wm_model.implementation_sha256()`
+    hashes `grounded_wm_model.py`, `grounded_wm.py` and **`models/lewm.py`**, and
+    `zero_shot_runtime.py` and `grasp_corpus_wm_runtime.py` check it. A byte change to any of
+    these files invalidates every native/LeWM checkpoint since TASK-072 (TASK-077/080/081/083's
+    W, N and twin checkpoints included) or TASK-087's G checkpoints, the paused grasp line's
+    resume path (TASK-095).
+  - *Frozen-protocol file pins.* TASK-091–TASK-094's frozen modules pin the SHA-256 of
+    `contracts.py`, `planning.py`, `models/lewm.py`, `embodiment.py`, `simulation.py`,
+    `constraints.py`, `devices.py`, `run_tools.py` and `configs/g1_sim_action.json`
+    (`FROZEN_FILES_SHA256`), and `tests/test_grasp_*.py` assert those pins, so editing any of
+    them fails CI as well as the G1 runners' pre-stage check.
+- **Design (chosen).** Every file above stays **byte-identical**. `ee_delta_grasp_v0` stays on
+  the existing classes and constants. The SO-101 path lives in new files: a schema module that
+  registers `joint_delta_so101_v0` (names, order, dimension 6) beside the frozen 14-D one,
+  schema-parametrised subclasses of the native and LeWM backends in new files that override
+  only the action-input construction (the action embedder width), and a schema-aware CEM
+  wrapper or subclass in a new file. Unpinned core files (`config.py`, `data.py`, `audit.py`)
+  may change additively, with the `ee_delta_grasp_v0` path unchanged. **Fallback**, only if a
+  pinned file cannot stay byte-identical: a TASK-072-style compatibility manifest naming the
+  invalidated checkpoint families (the VisualModel backends and TASK-087's G), the hash-checking
+  runtimes and frozen protocols, and the last compatible revision, recorded by a ruling before
+  merge; frozen modules' pins are never edited to make tests pass.
+- **Delivers.** Configs, data, planning and both backends take the action dimension from the
+  action schema for the SO-101 path, including but not limited to the hard-coded 14s and
+  `ACTION_*` constants used by `contracts.py` (`ACTION_NAMES`, `ACTION_DIM` and the
+  validators), `config.py` (lines 201–206 accept only `ee_delta_grasp_v0`), `planning.py` (CEM
+  bounds and sample shapes), `data.py` (feature shapes, the final-row padding, the `[T,14]`
+  messages at lines 94 and 127), `policy.py`, `audit.py` (`ACTION_NAMES`), `models/native.py`,
+  `models/lewm.py` (`input_dim=14`), `models/frozen_encoder.py`, `models/frozen_tokens.py`
+  (`[..., 14]`) and `models/latent_critic.py`, reached through the new files where the file is
+  pinned. G1 task-line modules stay as they are.
 - **Check.** Every existing test passes unchanged; new tests cover a 6-D schema through config
   validation, data round-trip, CEM and both backends' `train_step`/`predict` on synthetic data;
   the core-import check (no `torch`/`mujoco` in `sys.modules` after `import embodied_jepa`) still
-  passes; G1 model implementation hashes are unchanged, or a compatibility manifest is committed
-  and reviewed; a G1 config still resolves to the same 14-D path.
+  passes; every G1 hash-pinned runtime check still passes at HEAD (each `frozen_files_check`,
+  and the G1 model implementation hashes of native, LeWM, frozen-encoder, frozen-token, policy
+  and TASK-087's G are unchanged, compared against `origin/main` before the change); a G1 config
+  still resolves to the same 14-D path.
 - **Effort (estimate).** 2–4 d.
 
 ### S1 — Pinned SO-101 MuJoCo embodiment (TASK-097)
@@ -93,14 +123,16 @@ hours (GPU h) on the shared RTX 5080.
   - The pinned SHA, file hashes and licence go into [DEPENDENCIES.md](DEPENDENCIES.md) only when
     the fetch script actually fetches them; the SHAs above are re-checked then.
 - **Delivers.** `scripts/fetch_so101.py` (pinned revision, per-file SHA-256, into ignored
-  `assets/`); an SO-101 tabletop scene (table, cube, target region, a wrist camera on the gripper
-  mount and a fixed front/overview camera); `configs/so101_sim_action.json` (joint limits, delta
-  scales, gripper range, control rate); an `so101` embodiment adapter implementing the
-  `Embodiment` protocol (`observe`, `state`, `execute`, `normalize_action`,
-  `denormalize_action`, `stop`) with **IK-free joint-position control** (deltas added to the
-  current target and clipped to joint limits, which are recorded, never silently applied to the
-  stored action); a MuJoCo transport; registry entries as `"module:attr"` strings, imported
-  lazily.
+  `assets/`); an SO-101 tabletop scene (table, cube, target region, the wrist camera that
+  Menagerie's `so101.xml` already defines (`wrist_cam` on its `camera_mount` body, reused rather
+  than new geometry) and a fixed front/overview camera); `configs/so101_sim_action.json` (joint
+  limits, delta scales, gripper range, control rate); an `so101` embodiment adapter implementing
+  the `Embodiment` protocol (`action_schema`, `state_schema`, `observe`, `state`, `execute`,
+  `normalize_action`, `denormalize_action`, `stop`) with **IK-free joint-position control**
+  (deltas added to the current target and clipped to joint limits, which are recorded, never
+  silently applied to the stored action); a MuJoCo transport in a new module (the pinned
+  `simulation.py` and `embodiment.py` stay byte-identical); registry entries as `"module:attr"`
+  strings, imported lazily.
 - **Check.** Fetch is reproducible from a clean checkout and hash-verified; the scene loads and
   steps under `MUJOCO_GL=egl`; both cameras render and their frames are inspected (cube visible
   in the wrist view at grasp distance); action round-trip (normalize/denormalize) is exact;
