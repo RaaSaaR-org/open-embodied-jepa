@@ -63,6 +63,101 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-15 (bh) — after TASK-093: the grasp failure most plausibly sits in the objective at the close-and-lift transition (the world-model arms command a partial closure near the demonstrator's object-blocked hand; association, read after the fact); the next task is TASK-094, a measurement-only diagnostic of about 0.5 GPU h; no controller is admitted (R27.152–R27.159)
+
+**Decided by Claude under owner delegation (2026-09-30).** Design note:
+[grasp_next_step_v1.md](experiments/grasp_next_step_v1.md). This entry chooses the next task that
+R27.150 left open.
+
+**Evidence.** `~/develop/emai/evidence/grasp-next-step/` (`SHA256SUMS` sha256 `04487926…374f`).
+It holds an offline read of existing run reports and `play-v1`, done on the CPU only. No model,
+simulator or planner ran, and nothing was trained.
+
+**Qualifiers.** Every number below comes from one run per stage, in simulation only. Pooled
+numbers pool arms, model seeds, checkpoints and cohorts, and are for orientation only. The read
+was chosen after the results were known. Each link between a measure and success is an
+association, not an intervention.
+
+- **R27.152 — The offline read is recorded** (note §2). Its inputs are the Stage BS reports of
+  TASK-089, TASK-091 and TASK-093. That is 1 856 world-model episodes, every arm that ran
+  TASK-089's step-averaged planner over a G checkpoint, and 320 IK-follower episodes on the same
+  resets.
+  - **Contact without a hold.** The world-model arms made grasp contact in the close phase on
+    982 / 1 856 episodes and succeeded on 105 of those. ik made contact on 302 / 320 and
+    succeeded on 220 of those.
+  - **Commanded closure.** The world-model arms' median lift-phase mean commanded grasp was
+    0.53–0.73 per run, against ik's 1.00. The demonstrator's *measured* hand at the close subgoal
+    has a median synergy of 0.675–0.683 per cohort, blocked by the object while it commanded +1.0.
+  - **Success by commanded closure.** Given contact, sorted by the closure commanded before the
+    object rose, successes were:
+    - **21 / 739** below 0.7;
+    - 67 / 220 at 0.7–0.9;
+    - **17 / 23** at 0.9 or above.
+  - **Palm placement.** The median minimum palm distance at the close was 0.89–1.61 cm per run,
+    against ik's 0.21–0.24 cm. World-model episodes placed within 0.5 cm still succeeded only
+    19 / 179, against ik's 160 / 241.
+  - **G's own cost.** In the lift phase, G's predicted cost of the chosen plan was lower in
+    succeeding episodes than in failing ones (medians 0.58–0.97 against 1.17–1.62).
+  - **The corpus.** At grasp contact in `play-v1`, 97.1 % of commands are ≥ 0.8 (46 675 / 48 050
+    steps). Only 402 of 27 980 lifted steps have a command below 0.8.
+- **R27.153 — Where the failure sits.** Measured and inferred are kept apart, as in note §3.
+  - **(d), the grasp channel.** TASK-093 measured that the grasp-rate mismatch is not the
+    bottleneck: the mismatch was removed bitwise, with no gain (p = 0.810).
+  - **(d), the arm channels.** Not measured. Palm imprecision is measured as a secondary
+    association.
+  - **(c), the search.** Not measured at contact states. It is inferred unlikely to be primary,
+    because the chosen closures sit where the goal's hand term is lowest.
+  - **(a) and (b), the model and the cost.** They are measured only in part:
+    - G separates coarse contrasts at the demonstrator's states (TASK-089 A1);
+    - G's cost separates held states from failed ones;
+    - the goal's hand term is the object-blocked measured hand;
+    - partial closures at contact are rare in `play-v1`.
+  - **The action-level ranking** (a squeeze against a partial close from one contact state) is
+    **not measured**.
+  - **Reading.** The most plausible locus is the objective at the close-and-lift transition,
+    (b) with (a). The goal asks for a hand posture that a partial close also satisfies, and G has
+    little data on partial closes at contact. That this causes the failures is **inferred**.
+- **R27.154 — R26.33's condition is not ruled met** for any planner, cost, horizon or
+  action-parametrisation variant over TASK-087's checkpoints. R27.152 is an association read after
+  the results. No grasp controller is admitted by this entry.
+- **R27.155 — Candidates** (note §4; each one checked against every fired clause):
+  - **A. TASK-094, a measurement-only diagnostic:** ≈ 0.5 GPU h, ceiling 1.0.
+  - **B. A grasp-outcome head and cost:** a model change, open under TASK-092 §2. It needs its own
+    ruling on simulator-truth labels in a learned cost. ≈ 17–18 GPU h.
+  - **C. A goal-specification change over TASK-087's G:** a cost variant under R26.33, whose
+    condition is not met now. ≈ 15 GPU h.
+  - **D. Pause the grasp line** and work from Z3-REACH, for example a Phase 4 precursor with a
+    scripted closure rule. It needs its own ruling, because Phase 4 is not admitted. ≈ 10–15 GPU h.
+
+  **Considered and not proposed:**
+  - full-embodiment projection (open under R26.33, but palm precision is measured as secondary);
+  - more `play_policy_grasp_v0` data (closed, R27.71);
+  - rate projection or G-req variants (closed, R27.149);
+  - the moving-plate line (stopped by the owner, 2026-10-08).
+- **R27.156 — TASK-094 is chosen** (card in `.mc/tasks/todo/`, DRAFT). It has three parts:
+  - **K:** a scripted physics dose of the IK follower's closing command (+1.0, 0.9, 0.8, 0.7 and
+    the subgoal's measured synergy), with and without a palm offset of about 1.2 cm;
+  - **M:** the frozen G's cost and the cost's real-frame ceiling over scripted hold-level branches
+    at fresh close-state roots;
+  - **S:** the frozen step-averaged planner, offline at the same roots.
+
+  **Limits.** It runs no world-model closed loop and trains nothing. It preregisters no planner,
+  cost, horizon or action-parametrisation variant for grasping, and its scripted probes are not
+  learned results.
+
+  **Rows.** Its rows (K-VOID; K-NULL, with the palm-offset arm reported beside it; K-CAUSAL with
+  L-COST, L-MODEL, L-SEARCH or L-MIXED) only route to a ruling.
+
+  **Next PR.** Its DRAFT preregistration fixes the seeds, bars, margins and rows before anything
+  runs. It is its own PR, with an independent review.
+- **R27.157 — The fallback.** If TASK-094 reads K-NULL, the grasp line pauses and the owner is
+  told. D's work (for example a Phase 4 precursor with a scripted closure rule) still needs its own
+  ruling, because Phase 4 is not admitted (R25.27, R27.148). No further grasp controller over TASK-087's checkpoints is proposed until a
+  ruling cites evidence of a different kind.
+- **R27.158 — No claim.** No success is claimed by this entry. "LeWM needed" is not claimed, and
+  Phase 4 is not admitted.
+- **R27.159 — R7 does not change.** None of this is an Apple→Plate experiment.
+
 ## Decision 2026-10-15 (bg) — TASK-093 Stage BS ends B-FAIL: M-proj 20 / 384 (3, 3, 14 of 128) against M-v1 24 / 384 (1, 10, 13), pooled bar 156 / 384 and per-seed floor 26 / 128 not met, "M-proj beats M-v1" p = 0.810, bootstrap upper bound +0.018 below δ = +0.10; ik 91 / 128; the §8 clause fires; TASK-093 closes; one run, simulation only (R27.147–R27.151)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
