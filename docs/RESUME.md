@@ -37,20 +37,26 @@ the [experiment index](experiments/README.md), and it is unchanged by the pause.
   difference −7/128, 95 % interval −13/128 to −2/128). The solver's effect is not shown. TASK-083
   replicated L-PASS with the two other model seeds of the same training run, 124/128 and 120/128
   on 128 further fresh gated resets (one run, simulation only; H-rule 123/128 on that cohort, not
-  measurably better than either seed). The three seeds share one corpus, recipe and encoder.
-- **World-model reach.** In TASK-088, CEM over TASK-087's models reached new image + pose goals:
-  P 53/64 (exact 95 % 0.71–0.91; bar 52/64) and G 62/64 (0.89–1.00), on 64 fresh gated resets,
-  one model seed gated, simulation only. The row is Z3-REACH.
+  measurably better than either seed; W-66800, reported only, 123/128 on the same resets). The
+  three seeds share one corpus, recipe and encoder. The privileged look-ahead ceiling scored
+  126/128 on both cohorts, and TASK-081's 128-reset cohort was chosen after TASK-080's L-NEAR
+  (58/64 against H-rule's 63/64). R7 carries the full qualifiers.
+- **World-model reach.** In TASK-088, CEM over TASK-087's models reached new goals: the gated
+  arm P (plain LeWM, an image-only cost) 53/64 (exact 95 % 0.71–0.91; bar 52/64, cleared by one
+  reset), and the declared second arm G (image + pose) 62/64 (0.89–1.00), on 64 fresh gated
+  resets, one model seed gated, simulation only. The row is Z3-REACH. "LeWM needed" is not shown:
+  the scripted IK follower, with the same goal poses and no world model, reached 64/64.
 
 ### What does not work
 
 - **Whole-task world-model planning.** Image-goal CEM on the frozen v1 MVP benchmark (TASK-020)
   scored 0/150 per backend (`native_jepa` and LeWM); every learned episode ended on a joint-rate
-  guard stop, so that failure is confounded. LeWM's only closed-loop Apple→Plate runs on v1 have 0
+  guard stop (the zero-shot plan reads that failure as confounded). LeWM's only closed-loop Apple→Plate runs on v1 have 0
   successes.
-- **World-model grasping.** Every gated world-model grasp-and-lift attempt failed its bar, while
-  the scripted IK follower, which uses the same goal poses and no world model, lifted far more
-  often. Each is one run, in simulation only:
+- **World-model grasping.** Every gated world-model grasp-and-lift closed loop failed its bar,
+  while the scripted IK follower, which uses the same goal poses and no world model, lifted far
+  more often; the offline gates and the diagnostics on the grasp line did not open a way past
+  that. Each is one run, in simulation only:
   - TASK-088: 0/64 for every world-model arm (0.00–0.06; bar 26/64) against 50/64 for the
     follower.
   - TASK-089 (B-FAIL): G (seed 87100) 0/64 (0.00–0.06; bar 26/64) against 48/64; G's other two
@@ -58,12 +64,16 @@ the [experiment index](experiments/README.md), and it is unchanged by the pause.
     horizon variants over TASK-087's checkpoints for grasping.
   - TASK-090 (A′-FAIL) and TASK-091 (B-FAIL): grasp-enriched play data lifted 22/384 pooled over
     three seeds against 26/384 for the equal-size control (sign-flip p = 0.77); follower 82/128.
+    TASK-090 Stage C's data measures apply: the added data held 2.38× the lift windows of the
+    equal-size control (C1) and 1.69× in the combined training sets (C2).
     Its clause fired (R27.71): no more scripted grasp-and-lift play of that collector's kind.
-  - TASK-092 (A‴-FAIL; its development reading D-RATE′ ended D-FLAT, 0/32 against 0/32).
+  - TASK-092 (A‴-FAIL, an offline no-regression gate; no gated closed loop ran). Its
+    development reading D-RATE′ (not gated, 32 resets, which cannot establish an effect) ended
+    D-FLAT, 0/32 against 0/32.
   - TASK-093 (B-FAIL): rate-projected planning 20/384 against 24/384 unprojected (bootstrap 95 %
     interval of the pooled rate difference −0.039 to +0.018); follower 91/128. Its clause fired
     (R27.149).
-  - TASK-094 (K-NULL; measurement only, no model in K): at the follower's exact pose, partial
+  - TASK-094 (K-NULL; a measurement, not a world-model attempt; no model in K): at the follower's exact pose, partial
     closure is not shown to cause the lost lifts (K-1.0 88/128, exact 95 % 0.600–0.766; losses
     +0.031 and +0.055, both bounded below 0.15). A rigid 1.2 cm +y palm offset cut the follower to
     31/128 (Δ +0.445, reset-bootstrap 95 % +0.352 to +0.539; a scripted dose of one size, not the
@@ -82,7 +92,8 @@ perception and placement at contact: TASK-075's OBS-NONE, and TASK-094's 1.2 cm 
 (88/128 → 31/128 for the scripted follower), to which the frozen planning cost's pose term is
 nearly blind (a median change of 0.0065, against 1.09 for a full closure change; R27.203,
 arithmetic, a best case for G). The WM arms' held palm error during the close was a median 2.62 cm
-(R27.200; from run reports, an association read after the results). The realistic directions
+(R27.200; from run reports, pooled over arms, seeds and cohorts for orientation only, read after
+the results; its direction and orientation were not logged). The realistic directions
 are a hybrid controller, better sensing, or a different embodiment. None is decided.
 
 ### Open MC tasks
@@ -124,8 +135,10 @@ are a hybrid controller, better sensing, or a different embodiment. None is deci
 - **GPU sharing.** The GPU is shared with other projects. Every GPU job goes through
   `scripts/gpu_run.sh --wait --board -- <cmd>`, which takes the machine-wide lock
   `~/.local/state/gpu/lock` and records the holder in `~/.local/state/gpu/BOARD.md`. Before a GPU
-  job, read the board's "Requests" section; another project's V2D session posts `- v2d: ...` lines
-  there and goes first. Tell that session in advance about any multi-hour job. Resident services
+  job, read the board's "Requests" section. It works both ways: anyone may add a
+  `- <who>: <what>, <how long>` line, and the V2D queue of another project pauses between jobs
+  until that line is removed; when the V2D session has posted a `- v2d: ...` line, start with
+  `--wait` so that its job goes first. Tell that session in advance about any multi-hour job. Resident services
   (the GR00T server, other queues) are never stopped or reconfigured. CPU-only stages do not take
   the lock.
 - **Workflow.** [AGENTS.md](../AGENTS.md): branch → commit → PR → independent review → merge.
@@ -165,16 +178,19 @@ Every gated v2 LeWM success is under C1-M, which the owner stopped after TASK-08
 the owner's call. A new task needs fresh seeds and its own preregistration; R18.32 recommends
 against repeating TASK-080's Stage S design.
 
-### A hybrid or a sensing change (W in R27.204; about 30–60 GPU h plus collection)
+### A hybrid controller or a sensing change
 
-Open under R27.71. Two shapes, which can combine:
+Two shapes, which can combine; they fall under different rulings:
 
 - **Hybrid:** LeWM chooses the goal, approach and placement; a local grasp controller (scripted
   or learned, possibly with contact feedback) closes the last centimetre. TASK-081's structure,
-  where LeWM chooses one aim and other components execute, is the precedent.
-- **Sensing:** a wrist camera on the Dex3 hand, a higher-resolution camera, or contact signals.
-  The current scenes have no wrist camera; one has to be added to the MJCF and its frames
-  checked before any corpus is collected.
+  where LeWM chooses one aim and other components execute, is the precedent. Over TASK-087's
+  checkpoints this is a new grasp controller: R26.33 and R27.157 apply, as for D, and its
+  admissibility needs its own ruling citing evidence of a different kind.
+- **Sensing (W in R27.204; open under R27.71; about 30–60 GPU h plus collection, an estimate):**
+  a wrist camera on the Dex3 hand, a higher-resolution camera, or contact signals. The current
+  scenes have no wrist camera; one has to be added to the MJCF and its frames checked before any
+  corpus is collected.
 
 First step: a design note that states which centimetre the new piece must resolve, measured
 against TASK-094's K-style tolerance envelope, before anything is trained.
@@ -184,22 +200,23 @@ against TASK-094's K-style tolerance envelope, before anything is trained.
 The LeRobot SO-101 is a low-cost arm with six Feetech STS3215 servos: five arm joints
 (`shoulder_pan`, `shoulder_lift`, `elbow_flex`, `wrist_flex`, `wrist_roll`) and a jaw gripper
 (per `so_follower.py` in the pinned LeRobot v0.4.4 checkout). Wrist cameras are a common mount in
-LeRobot setups. Its jaw gripper is more forgiving of centimetre placement errors than a dexterous
-hand, and the hardware is cheap enough to own, so real data and real closed loops become
-possible. It is **a change of the product goal** (LeWM on G1 + dual Dex3), so it needs an owner
+LeRobot setups. The expectation, not measured here, is that its jaw gripper is more forgiving of
+centimetre placement errors than a dexterous hand, and that the hardware is cheap enough to own,
+so that real data and real closed loops become possible. It is **a change of the product goal** (LeWM on G1 + dual Dex3), so it needs an owner
 ruling, its own plan and its own first preregistration (R27.213). Its results would transfer to
 G1 + Dex3 only in part.
 
 ### What already supports it
 
 - **Registries.** `EMBODIMENTS`, `TASKS`, `MODELS` and `PLANNERS` in `config.py` hold
-  `"module:attr"` strings, so an `so101` embodiment and its tasks register next to
-  `unitree_g1_dex3` without touching the models or the planner.
+  `"module:attr"` strings, so an `so101` embodiment and its tasks can be registered next to
+  `unitree_g1_dex3`.
 - **The `Embodiment` and `Transport` protocols** (`contracts.py`) already separate the robot (IK,
   limits, scaling, frames) from the model and planner. The SO-101 adapter implements
   `observe`, `state`, `execute`, `normalize_action`, `denormalize_action` and `stop`.
 - **The backend-swap invariant.** Both world-model backends, the CEM planner (normalized actions
-  only, no backend branches) and the evaluator are robot-agnostic by design.
+  only, no backend branches) and the evaluator are robot-agnostic in design intent, but **not yet
+  in code**: they assume the 14-D `ee_delta_grasp_v0` (see item 1 below).
 - **Data.** `data.py` stores LeRobot v3 datasets, and the pinned LeRobot checkout reads and
   records SO-101 datasets. `real_g1_convert.py` (TASK-086) is a precedent for converting external
   LeRobot data into our profile.
@@ -213,8 +230,12 @@ G1 + Dex3 only in part.
    delta, so the choice is a joint-delta schema (`joint_delta_so101_v0`: five joint deltas plus a
    jaw command) or a new reduced end-effector schema, which needs a contract change and a
    versioned migration. LeRobot records absolute joint-position targets, so either needs a
-   conversion. About 13 modules in `src/embodied_jepa/` reference `ACTION_DIM` or
-   `ee_delta_grasp_v0` and need auditing; the task-line modules are G1-specific and stay as
+   conversion. The core code assumes 14-D actions and must take the action dimension from the
+   schema: `contracts.py`, `config.py` (lines 201–206 reject any schema other than
+   `ee_delta_grasp_v0`), `planning.py` (`ACTION_DIM`), `data.py` and `policy.py`, plus literal
+   14s in `models/native.py` (`dim + 14`), `models/lewm.py` (`input_dim=14`),
+   `models/frozen_encoder.py` and `models/latent_critic.py`. Of the 13 files that match
+   `ACTION_DIM|ee_delta_grasp_v0`, the rest are G1-specific task-line modules, which stay as
    they are.
 2. **An embodiment adapter** with the arm's limits, scales and frames in its own config (like
    `configs/g1_sim_action.json`), a MuJoCo transport, and later a LeRobot-backed real transport,
@@ -249,7 +270,8 @@ G1 + Dex3 only in part.
   dominates; the collection itself is likely short. For scale, TASK-085's `play-v1` (3 194
   episodes, 16.06 h) took 1 025 s of wall time with 12 workers and EGL rendering on the GPU, but
   the SO-101 scene is new and untimed.
-- Training: TASK-087's Stage T (18 training jobs) was projected at 9.3 GPU h; a comparable first
+- Training: TASK-087's Stage T (18 training jobs) was projected at 9.3 GPU h and used about 10 GPU
+  h; a comparable first
   SO-101 study is plausibly 10–20 GPU h.
 - First gated simulation result: plausibly 3–6 weeks from the ruling, with real hardware
   adding procurement, calibration and safety commissioning on top.

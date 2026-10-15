@@ -89,10 +89,11 @@ rules on no research question and admits no task.
     about 10–15 GPU h, an estimate; R27.204 judged its chance low);
   - **X**, a return to the v2 Apple→Plate LeWM line; its gated successes are under C1-M, which the
     owner stopped after TASK-083, so reopening it is the owner's call;
-  - **a hybrid or sensing change**: LeWM choosing goals, approach and placement while a local
-    grasp controller closes the last centimetre, possibly with a wrist camera, higher resolution
-    or contact feedback (W in R27.204, open under R27.71; about 30–60 GPU h plus collection, an
-    estimate);
+  - **a hybrid controller**: LeWM choosing goals, approach and placement while a local grasp
+    controller closes the last centimetre; over TASK-087's checkpoints R26.33 and R27.157 apply to
+    it as to D, so its admissibility needs its own ruling;
+  - **a sensing change**: a wrist camera, higher resolution or contact signals (W in R27.204,
+    open under R27.71; about 30–60 GPU h plus collection, an estimate);
   - **an SO-101 branch** (R27.213).
 - **R27.213 — An SO-101 branch would change the product goal.** The product goal is LeWM-driven
   control of the G1 with dual Dex3 hands. Moving the main line to the LeRobot SO-101 arm (a
@@ -110,7 +111,9 @@ rules on no research question and admits no task.
   lifts (K-1.0 against K-off-y-1.0, Δ +0.445, reset-bootstrap 95 % +0.352 to +0.539; one run,
   simulation only, a scripted dose of one size, not the world-model arms' errors). The
   frozen cost's pose term changes by a median 0.0065 for that offset, against 1.09 for a full
-  closure change (R27.203; arithmetic, a best case for G). This is an opinion that informs the
+  closure change (R27.203; arithmetic, a best case for G). The WM arms' held palm error during
+  the close was a median 2.62 cm (R27.200; pooled for orientation only, read after the results,
+  direction and orientation unlogged). This is an opinion that informs the
   owner's options; it closes nothing and fires no clause.
 - **R27.215 — No claim; R7 does not change.** Nothing here is an experiment or a result.
 
