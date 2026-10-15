@@ -63,6 +63,73 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-15 (bj) — TASK-094 Stage 0 ends S0-ESCALATE on §14's n_d rule alone: on 32 development roots the s\* branch lifted where the squeeze did on all but 6 (Rs) and 1 (R2), below 8 at both root types, so M would most likely not be read; every other Stage 0 check passes (K plumbing on all 11 arms, K-1.0 bitwise the frozen ik, roots and squeeze bitwise, positive control 32 / 32 at both, power 0.997 / 0.978, 0.108 GPU h used, 0.257 projected); the protocol is not frozen and a ruling decides how TASK-094 goes on (R27.177–R27.182)
+
+**Decided by Claude under owner delegation (2026-09-30).** Record:
+[grasp_closure_locus_v1.md §16](experiments/grasp_closure_locus_v1.md). Evidence:
+`~/develop/emai/evidence/task094-s0/` (`SHA256SUMS` sha256 `5c944848…77b1`). Development and debug
+only: one run, simulation only, 32 resets or roots, scripted probes. No gated cohort was touched
+(941000–941127, 942000–942063).
+
+- **R27.177 — Stage 0 is recorded and ends S0-ESCALATE.** The one failing rule is §14's: n_d, the
+  development roots where the squeeze branch lifts and the s\* branch does not, is 6 of 32 at Rs and
+  1 of 32 at R2, below 8 at both root types. At these rates 64 gated root seeds would give about 12
+  and 2, below the 16 at which a root type is read, so M and S would most likely end L-UNREAD after
+  a K-CAUSAL.
+- **R27.178 — Every other Stage 0 check passes.**
+  - **Code.** Opt-in modules `grasp_closure_locus{,_runtime}.py`, scripts
+    `{run,summarize}_task094.py` and `run_task094_stage.sh`, 38 tests; no existing file changes
+    except CLAUDE.md's entry points and the record; every earlier file TASK-094 imports is checked
+    against a sha256 pin before any job runs. The whole suite: 2 494 passed, 35 skipped; with
+    `JEPA_TEST_RENDER=1` the new file's 38 tests pass.
+  - **Hashes and seeds.** `verify` passes (G-87100–87102 pinned, G-87102 `last_two_triggered`;
+    λ = 2.0552; CEM; the rate limit; every frozen file). The seed check over 121 remote-tracking
+    refs, 93 local branches and HEAD finds no use of TASK-094's ranges or salts 9014 and 9015
+    outside its own files; in the evidence only TASK-077's update indices 94100 and 94500.
+  - **K** (resets 94100–94131, every arm): the plumbing check passes on all 11 arms (§16.4 for its
+    correction); TASK-088's frozen follower `ik` gives applied commands bitwise equal to K-1.0's on
+    all 32 resets; the displaced goals are the K-1.0 goals moved by exactly v; K-1.0 23 / 32 and
+    K-open 0 / 32, inside Stage 0's proportional band (16–28, 0).
+  - **M and S** (roots 940000–940031): every re-run root and every squeeze branch bitwise the
+    demonstrator's states; the squeeze and s\* branches differ at 7 (Rs) and 8 (R2) of 8 window
+    steps on every root; the positive control 32 / 32 at both root types (bar 28); the ceiling the
+    same under every seed's standardisation; S's re-runs bitwise (12 / 12).
+  - **Power** (20 000 simulations, 10 000 resamples, K-NULL's joint condition with K-s\* and
+    K-0.6 independent given K-1.0): K-CAUSAL 0.997 at a loss of 0.30 (d₀ = 0.08); joint K-NULL
+    1.000 and 0.978 at no loss (d₀ = 0.03, 0.08). The rule passes. With a small loss at both levels
+    the joint K-NULL is rarer than §8.1's s\*-only table (0.841 / 0.528 at 0.05).
+  - **Budget.** Stage 0 used 387 s of GPU time in 36 jobs (0.108 GPU h, below 0.4); the gated stage
+    projects to 0.257 GPU h (below 0.6).
+- **R27.179 — Incidents and readings are disclosed** (§16.4).
+  - The job's K plumbing check at `bf6dc58` also required the applied grasp to *reach* c, so 9
+    development episodes of the offset arms, stopped by the embodiment's 5 rad/s velocity stop
+    before the rate limit let the hand reach c, made four jobs exit VOID. §4.3 asks for c "once the
+    rate limit allows"; `e94e2bf` follows that wording and the summarizer re-reads the check from
+    the recorded episodes. No run was repeated and no count changed. This is recorded as a
+    correction of the check, not a failed check; the review should confirm it. Stage 0 escalates
+    on the n_d rule either way.
+  - The summarizer's first projection skipped those VOID-coded jobs (`e94e2bf`); `8bd74ca` counts
+    them, since they completed.
+  - Readings the protocol leaves open: §4.3's band at 32 resets in the same proportions (16–28 and
+    0), at most 4 of 32 roots excluded by the executed-difference check, the joint power model, and
+    the added check of K-1.0 against `ik`. None sets a bar.
+- **R27.180 — The protocol is not frozen.** It stays DRAFT with its Stage 0 record. The gated
+  stage does not run. The development cohorts 94100–94131 and 940000–940031 are spent (ledgered);
+  the gated cohorts are untouched.
+- **R27.181 — The escalation goes to a ruling, which this entry does not make.** The options the
+  record lists, unranked: run the gated stage as preregistered and accept that M is most likely
+  unread (L-UNREAD is a named row; K still answers the physics question); amend M before the freeze
+  (for example more root seeds, about 24 discordant Rs roots from 128 at the development rate for
+  about 0.1 GPU h more, or roots where s\* is marginal), each with its own power and seed checks and
+  a new Stage 0 reading of n_d; run K alone; or close TASK-094.
+  - Development numbers, reported only (32 resets or roots, one run, simulation only; they set
+    nothing and are not K's row): K-1.0 23, K-s\* 21, K-0.6 19, K-open 0, K-off-x-1.0 19,
+    K-off-y-1.0 7 of 32; K-1.0 minus K-s\* 0.0625 (bootstrap 95 % −0.0625 to 0.1875). At Rs the
+    ceiling ranked the squeeze above s\* on 5 of the 6 discordant roots and G-87100–87102 on 6, 6
+    and 3; the frozen planner missed on none and held partial with G rating it at least as well as
+    the squeeze on 5, 6 and 6 of them.
+- **R27.182 — R7 does not change** (R27.176). Nothing here is a grasp success or a learned result.
+
 ## Decision 2026-10-15 (bi) — TASK-094's DRAFT preregistration: a measurement-only grasp-closure locus diagnostic (K, the IK follower at held closures ± a 1.2 cm palm offset on 128 paired resets; M, the frozen cost's ranking of a squeeze over the measured-hand closure on G's predictions and on real frames at roots in and at the end of the close; S, the frozen planner offline at the same roots); rows route only to a ruling; K-CAUSAL with L-COST is put forward, not ruled met, as R26.33 evidence for option C (R27.160–R27.176; DRAFT)
 
 **Decided by Claude under owner delegation (2026-09-30).** Protocol:
