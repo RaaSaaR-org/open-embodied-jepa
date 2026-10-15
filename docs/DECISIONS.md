@@ -63,6 +63,129 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-15 (bn) — after TASK-094's K-NULL: the 19 / 179 figure conditions on a transient minimum distance, and the WM arms' held palm error during the close (median 2.6 cm, direction and orientation unlogged) lies where K showed placement decides the lift; the frozen cost's pose term is nearly blind to 1.2 cm (CPU arithmetic); the next task is TASK-095, a measurement-only placement-resolution diagnostic of about 0.5 GPU h; D is not chosen, X is the owner's; no controller is admitted; R7 unchanged (R27.200–R27.208)
+
+**Decided by Claude under owner delegation (2026-09-30), as asked on 2026-10-15.** Design note:
+[grasp_line_next_v2.md](experiments/grasp_line_next_v2.md). This entry chooses the next direction
+that R27.197 left open. It makes no Phase 4 precursor ruling (the TASK-094 card reserves that to
+the owner).
+
+**Evidence.** `~/develop/emai/evidence/grasp-next-v2/` (`SHA256SUMS` sha256 `2990e3d5…10a3`). It holds a CPU read of the
+Stage BS run reports of TASK-089, TASK-091 and TASK-093 and of TASK-094's gated K reports, and one
+arithmetic check: MuJoCo forward kinematics on the CPU, with no simulation step and no rendering,
+and G-87100's stored state moments read from the checkpoint, with the network not run. No GPU was
+used, nothing was trained and no episode ran.
+
+**Qualifiers.** Every number below comes from one run per stage, in simulation only. Pooled
+numbers pool arms, model seeds, checkpoints and cohorts, and are for orientation only. The read was
+chosen after the results were known. Each link between a measure and success is an association,
+not an intervention. The run reports log the palm's distance only, not its direction, orientation
+or the object's pose. ik's distance during the close includes its 5 cm press.
+
+- **R27.200 — The offline read is recorded** (note §2). Over 1 856 world-model (WM) episodes and
+  320 ik episodes:
+  - **The grasp is lost before the lift.** An established grasp (grasp contact at the last close
+    command) occurred on 194 / 1 848 WM episodes (0.105; exact 95 % 0.091–0.120), against
+    236 / 320 for ik (0.738; 0.686–0.785). Given one, WM succeeded 103 / 194 (0.531;
+    0.458–0.603) and ik 220 / 236 (0.932; 0.892–0.961). Without one, 5 / 1 654 and 1 / 84.
+  - **Touch, then lose.** Failing episodes that touched the target kept contact on a median of 5 %
+    (WM) and 7 % (ik) of the close commands after the first touch. The failing WM palms then rose
+    to the lift pose empty (1 400 / 1 435 came within 6 cm of it).
+  - **The held placement.** From the first touch, the WM palm sat a median 2.62 cm from the grasp
+    subgoal's palm (p25–p75 1.96–3.37), against ik's 1.23 cm (0.70–1.73).
+  - **Arm motion while closing.** In the first 20 commands after the first touch, the WM arms
+    commanded a median lateral path of 12.3–12.7 cm, with a net-to-path ratio of 0.32–0.34;
+    ik commanded 3.9–4.8 cm, with 0.86. Within WM this does not separate successes from failures.
+  - **By object.** Cube: WM 14 / 592, ik 86 / 104. Can: 64 / 707 and 113 / 127. Apple: 30 / 536
+    and 22 / 86. In K, K-1.0 lifted the apple on 6 / 31 resets.
+- **R27.201 — 19 / 179 is reconciled with K-NULL** (note §2.2).
+  - **A transient, not a placement.** The earlier figure (WM episodes whose *minimum* close-phase
+    palm distance was below 0.5 cm succeeded 19 / 179, exact 0.065–0.161, against ik's
+    160 / 241) conditions on a single-step pass. In those episodes the palm was within 1 cm for a
+    median of 8–9 of about 100 close commands. It was a median 2.03 cm away at the end of the
+    close in the failures. Only 20 of the 179 met the close subgoal's switch condition.
+  - **The failures** were mostly touch-then-lose: of the 160, 39 never touched the target, 96
+    touched it without raising it 1 cm, 19 raised it but did not hold it, and 6 were stopped.
+  - **Direction matters, and is unlogged.** K's offsets cost 0.445 at +y and 0.047 at +x, both at
+    1.2 cm. Even at a matched held distance, WM and ik are not matched placements: below 1 cm, WM
+    13 / 53 against ik 106 / 126.
+  - **Closure compounds misplacement.** That is the post hoc +x result (+0.102, p = 0.0036; not
+    preregistered), and in the 179: a commanded grasp ≥ 0.9 at the minimum gave 4 / 9 successes,
+    below 0.7 gave 12 / 133.
+  - **Reading.** The WM arms' held palm error during the close (median about 2.6 cm, direction
+    and orientation unknown) lies in the range where K showed that placement, not closure, decides
+    the lift. Both figures point to **placement held through the close** as the main locus, with
+    partial closure as a secondary, compounding factor once the palm is off. The causal link for
+    the WM arms is **inferred**.
+- **R27.202 — Besides closure and placement** (note §2.3):
+  - **Implicated:** holding the palm still while closing (part of placement; the WM arms command
+    about three times the follower's lateral path, which is not shown to cause failures); and the
+    object, as a ceiling (the follower rarely lifts the apple; the WM gap is largest on the cube).
+  - **Plausible, unmeasured:** palm orientation. G's median reach orientation error was 0.16 rad,
+    and the close subgoal's switch condition is 0.17 rad.
+  - **Not implicated:** the press (ik-nopress ≈ ik in TASK-088, TASK-089 and TASK-093; the WM arms
+    also press down); the lift (the grasp is already lost).
+  - **Not separable from placement in these logs:** approach timing.
+- **R27.203 — The frozen cost's pose term is nearly blind to cm-scale placement** (note §2.5;
+  arithmetic, a best case for G). The term is λ times the mean squared *standardised* joint
+  difference, and G-87100's arm joint standard deviations are 0.25–0.70 rad. On TASK-094's 128
+  gated K goals, a palm offset of +y 1.2 cm changes it by a median 0.0065 (p10–p90 0.0048–0.018),
+  +x 1.2 cm by 0.0081, and a 0.17 rad yaw by 0.073. A full hand-closure change moves it by a
+  median 1.09. Whether the latent term resolves 1.2 cm is **not measured**.
+- **R27.204 — Candidates weighed** (note §3; each checked against R26.33, R27.71, R27.149 and the
+  apple-line clauses):
+  - **P, TASK-095:** legal; ≈ 0.5 GPU h; moves no closed-loop number directly, and decides which
+    fix family can work.
+  - **D, a Phase 4 precursor** (WM reach plus a scripted closure rule): Phase 4 is not admitted;
+    R26.33 applies, because the planner over TASK-087's checkpoints no longer commands the grasp
+    (an action-parametrisation variant), and its condition is not met; ≈ 10–15 GPU h; low chance,
+    since it inherits the 2.6 cm held error.
+  - **X, the v2 Apple→Plate LeWM line:** not open to this ruling. Every gated v2 LeWM success is
+    under the moving-plate condition C1-M, which the owner stopped after TASK-083; reopening it is
+    the owner's call.
+  - **B, a grasp-outcome head:** open, ≈ 17–18 GPU h; low chance now, since closure is not the
+    primary locus.
+  - **C′, a Cartesian palm term:** R26.33 applies; ≈ 15 GPU h.
+  - **F, full-embodiment projection:** R26.33; ≈ 15 GPU h.
+  - **W, a sensor or data change:** open under R27.71; ≈ 30–60 GPU h plus collection.
+  - **Z, stay paused:** 0 GPU h, no progress.
+- **R27.205 — TASK-095 is chosen** (card in `.mc/tasks/todo/`, DRAFT): a measurement-only
+  placement-resolution diagnostic.
+  - **K′:** TASK-094's K-1.0 follower with rigid palm offsets {±x, ±y} × {0.5, 1.2, 2.5 cm} and
+    ±0.17 rad yaw, on 128 fresh paired resets. It reports the tolerance envelope and checks that
+    the primary offset, +y 1.2 cm (fixed now), still costs at least 0.15.
+  - **R:** at fresh roots at the start of the close (TASK-089's R1), the follower's close-and-lift
+    with the palm at the goal and at each offset, simulated to the true outcome. Each branch is
+    scored by the frozen step-averaged cost from G-87100–87102's predictions and from real frames
+    (the ceiling), over the planner's 8-command horizon (16 reported), with the latent and pose
+    terms reported apart.
+  - **S′:** the frozen planner at the same roots, reported.
+
+  **Rows (sketch):** R-VOID, R-UNREAD, R-COST (the ceiling ranks exact first on fewer than 0.75 of
+  the discordant roots), R-MODEL (the ceiling does and G does not, on two of three seeds) and
+  R-RESOLVED. They route only:
+  - R-COST to C′ or W;
+  - R-MODEL to W or a model change;
+  - R-RESOLVED to F or a search variant.
+
+  Each goes through its own ruling. R26.33's condition is judged there, and the preregistration
+  states which rows are put forward as evidence of a different kind.
+
+  **Budget:** ≈ 0.5 GPU h, ceiling 1.0, every job under `gpu_run.sh --wait --board`.
+
+  **Disclosed expectation:** after R27.203, R-COST or R-MODEL is the likelier row, unless the
+  latent term carries the placement.
+
+  **Next PR:** its DRAFT preregistration, with seeds checked by the seed check, bars, margins and
+  row order fixed before anything runs, and an independent review.
+- **R27.206 — The pause stands for controllers.** TASK-095 lifts it for this measurement only.
+  No grasp controller, training run or world-model closed loop is admitted (R27.157). D is not
+  chosen now, and any Phase 4 precursor ruling stays the owner's. X is noted for the owner, not
+  proposed.
+- **R27.207 — No claim.** No success is claimed by this entry. "LeWM needed" is not claimed, and
+  Phase 4 is not admitted. The scripted probes are not learned results.
+- **R27.208 — R7 does not change.** None of this is an Apple→Plate experiment.
+
 ## Decision 2026-10-15 (bm) — TASK-094's gated stage reads K-NULL by §4.3's frozen text: the lift losses at s\* (+0.031, bootstrap 95 % −0.031 to +0.094) and at 0.6 (+0.055, −0.016 to +0.125) are both bounded below 0.15 against K-1.0's 88 / 128; the summarizer's K-VOID rests only on a size check of the determinism re-run reports that §4.3 does not contain (a size-check defect; K-NULL binding, confirmed by review); the roots job exited VOID at one root (L-VOID; M and S reported, not read); a 1.2 cm +y palm offset cost 0.45; the grasp line pauses and the owner is told; R7 unchanged (R27.193–R27.199)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
