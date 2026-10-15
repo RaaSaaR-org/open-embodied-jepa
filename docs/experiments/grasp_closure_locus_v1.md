@@ -11,9 +11,9 @@ against the plan with the squeeze branch's right-grasp requests. **Stage 0′ en
 with no new development cohort, the development rates project n_d = 24 at Rs (4 at R2) at 128
 roots, every check passes, and the gated stage projects to 0.352 GPU h. §5, §6, §9, §10.2 and §14
 carry the amendment; K is unchanged. **The gated stage ran once (§19; R27.193–R27.199): K-NULL** by
-§4.3's text (the summarizer reads K-VOID on a size check of the determinism re-run reports that §4.3
-does not contain; pending confirmation), with the roots job VOID at one root (L-VOID; M and S
-reported, not read). The grasp line pauses and the owner is told (§7.2).
+§4.3's text (the summary's K-VOID is a size-check defect; K-NULL binding by R27.195), with the
+roots job VOID at one root (L-VOID; M and S reported, not read). The grasp line pauses and the owner
+is told (§7.2), and TASK-094 closes at K-NULL.
 
 This is the diagnostic that R27.156 chose after TASK-093 closed at B-FAIL (design note
 [grasp_next_step_v1.md](grasp_next_step_v1.md), §4–§5). **It is measurement only.** It runs no
@@ -1249,6 +1249,10 @@ summary after a VOID job. There were two events, and both are recorded, not fixe
    - So the trajectory from the re-run Rs reproduced the draw's later states. That the
      difference is confined to the Rs record (for example its frame) is **inferred, not
      measured**.
+   - **Inferred, not measured:** `state28` is the measured joints, a function of the simulator
+     state, so a bitwise-identical continuation makes a differing frame (EGL rendering) the
+     likelier cause; no other GPU application ran (`gpu_run.log`). The record stores only the last
+     re-run's Rs record, so the evidence cannot separate frame from state.
    - Every other root (127 of 128) and every other M or S check passed (below).
    - This is an L-VOID trigger of §7.1 ("a root's bitwise re-run"). §7.1 says that K's row
      stands, and that M and S run again only on fresh roots named by a ruling.
@@ -1266,9 +1270,11 @@ summary after a VOID job. There were two events, and both are recorded, not fixe
 
 **K's row by §4.3's frozen text is K-NULL** (§19.2). **The summarizer's mechanical row is K-VOID.**
 This record reads K-NULL, because the protocol's text defines the rows and its code implements
-them. The reading needs confirmation (R27.195). If a ruling instead holds the summarizer's output
-binding, the row is K-VOID, which routes to "fix under its own ruling; the gated stage runs again
-on fresh seeds named by it" (§7.2).
+them; the size check is not in §4.3, contradicts §9, and fires whatever K's counts are. The
+independent review of #228 confirmed the reading (R27.195): the frozen summarizer re-run on the CPU
+reproduces `summary-gated.json` byte for byte, and a copy patched only at that check reads K-NULL
+with every other field unchanged (`~/develop/emai/evidence/task094-gated-recompute/`; `SHA256SUMS`
+sha256 `3d3b0380…3d63`).
 
 ### 19.2 K (128 paired gated resets 941000–941127; exact 95 % intervals)
 
@@ -1325,9 +1331,9 @@ The +1.0 pairs are in the table above (K-1.0 against K-off-x-1.0 and K-off-y-1.0
 2. **K-NULL — holds.** Δ_{s\*}'s bootstrap upper bound is 0.094 and Δ_{0.6}'s is 0.125. Both are
    below δ_K = 0.15.
 
-**K's row: K-NULL** (by §4.3's text; the summarizer reads K-VOID, §19.1). At the scripted
-follower's exact pose, holding the closure at s\* or at 0.6 lost less than 0.15 of the lifts
-against the +1 squeeze on these 128 resets. The point estimates are +0.031 and +0.055, and
+**K's row: K-NULL** (by §4.3's text, confirmed, R27.195; the frozen summarizer printed K-VOID on a
+size-check defect, §19.1). At the scripted follower's exact pose, holding the closure at s\* or at
+0.6 lost less than 0.15 of the lifts against the +1 squeeze on these 128 resets. The point estimates are +0.031 and +0.055, and
 neither is significant.
 
 **The palm-offset arms, reported beside K-NULL as §7.2 asks.** A rigid 1.2 cm palm offset in +y
@@ -1340,6 +1346,13 @@ cost far more than any closure level:
 
 On these resets the loss from placement is larger than the loss from closure. It also depends on
 the direction of the offset.
+
+Computed by the review of #228, post hoc and not preregistered (no row, no bar): under the +x
+offset, holding at s\* lost +0.102 against +1.0 (K-off-x-1.0 82 against K-off-x-s\* 69; discordant
+17 / 4, exact one-sided McNemar p = 0.0036, reset bootstrap 95 % +0.039 to +0.172, salt 9014); under
++y +0.039 (6 / 1, p = 0.063, 0.000 to +0.078). K-NULL is a finding at the follower's exact pose; it
+does not show that partial closure is harmless when the palm is misplaced, and the pause ruling
+should weigh the two together.
 
 **What these figures do not show:**
 - The offset is a dose of two directions of one size, imposed on the demonstrator's goals. It is
@@ -1418,16 +1431,25 @@ was re-run and no cohort was touched twice.
 
 **After the run.** The only change made after the run is the comment on line 4 of
 `scripts/run_task094_stage.sh` ("the Stage 0 merge" becomes "the Stage 0′ merge, 2eacacf"), as the
-review of #227 asked. It changes no behaviour, and it lands after the gated stage.
+review of #227 asked. It changes no behaviour, and it lands after the gated stage. TASK-094 does not
+hash-pin the script; its sha256 is
+`ec205e1f2437bdc72af1b1f03ef4c5b1cdd85431edc15f2d0a061ae40d5a54da` at `2eacacf` and
+`9f4562b32d0f1651e67887800ab9caf71056934df400148d4083306240cc2b79` after the edit.
 
 ### 19.6 Row and routing
 
-**K-NULL** (§4.3, by the frozen text; pending confirmation of §19.1 (2)). M and S are reported,
-not read. Their own state is L-VOID (root 946073), and Rs's reading has the L-MIXED pattern.
+**K-NULL** (by §4.3's text, confirmed, R27.195; the frozen summarizer printed K-VOID on a size-check
+defect, §19.1). M and S are reported, not read. Their own state is L-VOID (root 946073), and Rs's reading has the L-MIXED pattern.
 §7.2 routes K-NULL as follows: **the grasp line pauses and the owner is told** (R27.157). D's work
 (for example a Phase 4 precursor with a scripted closure rule) still needs its own ruling, because
 Phase 4 is not admitted (R25.27, R27.148). The palm-offset arms are reported beside the row
 (§19.2) for that pause ruling to weigh.
+
+R27.185's development expectation (K-UNCLEAR likely; Δ_s\* 0.0625 [−0.06, 0.19], Δ_0.6 0.125 [0,
+0.28] on 32 resets) did not hold: at 128 gated resets both upper bounds are below 0.15. The
+development +y palm effect (−16 / 32) recurred in direction on the gated resets (−57 / 128).
+
+TASK-094 closes at K-NULL; no M or S re-run follows (§7.2 routes one only after K-CAUSAL + L-VOID).
 
 **No row admits a controller, a training run or a closed loop.** "LeWM needed" is not claimed,
 and no grasp success is claimed. There is no abandonment clause (§7.2). **R7 does not change**

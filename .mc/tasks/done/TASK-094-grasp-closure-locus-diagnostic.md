@@ -4,7 +4,7 @@ aliases:
 - TASK-094
 title: 'Grasp-closure locus diagnostic: does the partial closure the world-model arms command cause the grasp failures, and is it the goal and cost, the model or the search (measurement only, no controller)'
 slug: grasp-closure-locus-diagnostic
-status: todo
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -43,10 +43,12 @@ roots, every check passes, the gated stage projects to 0.352 GPU h; the protocol
 Stage 0′ merge. **Gated stage** (§19, R27.193–R27.199, DECISIONS (bm); gated, one run, simulation
 only): **K-NULL** by §4.3's text — K-1.0 88/128 (exact 95 % 0.600–0.766), K-s\* 84, K-0.6 81;
 losses +0.031 (bootstrap 95 % −0.031 to +0.094) and +0.055 (−0.016 to +0.125), both below 0.15.
-The summarizer reads K-VOID only on a size check of the four-reset determinism re-run reports,
-which §4.3 does not contain (disclosed; the review must confirm). Palm offset +y 1.2 cm cost
-+0.445 (31/128). The roots job exited VOID at root 946073, so M and S are L-VOID and reported
+(the summary's K-VOID is a size-check defect; K-NULL binding by R27.195). Palm offset: a 1.2 cm +y
+offset cost more than any closure level (+0.445, 31/128); +x cost +0.047 (n.s.) at +1.0 and
++0.148 with s\* (reported only; a scripted dose of one size in two directions, not the world-model
+arms' errors). The roots job exited VOID at root 946073, so M and S are L-VOID and reported
 only (G-87102 `last_two_triggered`). The grasp line pauses and the owner is told; R7 unchanged.
+TASK-094 closes at K-NULL; no M or S re-run follows.
 
 **Why.** An offline read of the Stage BS reports of TASK-089, TASK-091 and TASK-093 (R27.152)
 has these qualifiers: one run per stage, simulation only, pooled, an association, and read after
@@ -120,8 +122,8 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
 - [x] K, M and S recorded at the frozen revision from a clean tree, with evidence in
   `~/develop/emai/evidence/task094-*` (`task094-gated/`; §19).
 - [x] Row recorded with a next-step ruling (K-NULL pauses the grasp line; D still needs its own
-  ruling); R7 unchanged. (K-NULL by §4.3's text, R27.194–R27.197; the summarizer's K-VOID is
-  disclosed and the reading needs the review's confirmation, R27.195.)
+  ruling); R7 unchanged. (K-NULL by §4.3's text, R27.194–R27.197; the summary's K-VOID is a
+  size-check defect; K-NULL binding by R27.195.)
 
 ## Notes
 
@@ -190,6 +192,11 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
   `~/develop/emai/evidence/task094-gated/`). 17 jobs, 0.286 GPU h (task total 0.395). The stage exited
   3 on two events, recorded and not fixed: the roots job VOID at root 946073 (Rs re-run not bitwise;
   L-VOID), and the summary's K-VOID on a size check of the determinism re-run reports. By §4.3's text
-  K reads K-NULL, so the grasp line pauses and the owner is told. Next: the independent review
-  confirms or rejects the K-NULL reading; a pause ruling, and any Phase 4 precursor ruling, are the
-  owner's.
+  K reads K-NULL (the summary's K-VOID is a size-check defect; K-NULL binding by R27.195), so the
+  grasp line pauses and the owner is told. A pause ruling, and any Phase 4 precursor ruling, are
+  the owner's.
+- 2026-10-15, the independent review of #228 confirmed K-NULL (R27.195): the frozen summarizer
+  re-run on the CPU reproduces `summary-gated.json` byte for byte; a copy patched only at the
+  determinism reports' size check reads K-NULL and differs at the six K-VOID fields only
+  (`~/develop/emai/evidence/task094-gated-recompute/`, `SHA256SUMS` sha256 `3d3b0380…3d63`).
+  TASK-094 closes at K-NULL (done); no M or S re-run follows.

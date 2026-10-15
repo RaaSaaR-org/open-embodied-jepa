@@ -63,12 +63,13 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
-## Decision 2026-10-15 (bm) — TASK-094's gated stage reads K-NULL by §4.3's frozen text: the lift losses at s\* (+0.031, bootstrap 95 % −0.031 to +0.094) and at 0.6 (+0.055, −0.016 to +0.125) are both bounded below 0.15 against K-1.0's 88 / 128; the summarizer's K-VOID rests only on a size check of the determinism re-run reports that §4.3 does not contain (disclosed, to be confirmed); the roots job exited VOID at one root (L-VOID; M and S reported, not read); a 1.2 cm +y palm offset cost 0.45; the grasp line pauses and the owner is told; R7 unchanged (R27.193–R27.199)
+## Decision 2026-10-15 (bm) — TASK-094's gated stage reads K-NULL by §4.3's frozen text: the lift losses at s\* (+0.031, bootstrap 95 % −0.031 to +0.094) and at 0.6 (+0.055, −0.016 to +0.125) are both bounded below 0.15 against K-1.0's 88 / 128; the summarizer's K-VOID rests only on a size check of the determinism re-run reports that §4.3 does not contain (a size-check defect; K-NULL binding, confirmed by review); the roots job exited VOID at one root (L-VOID; M and S reported, not read); a 1.2 cm +y palm offset cost 0.45; the grasp line pauses and the owner is told; R7 unchanged (R27.193–R27.199)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
 [grasp_closure_locus_v1.md §19](experiments/grasp_closure_locus_v1.md). Evidence:
-`~/develop/emai/evidence/task094-gated/` (`SHA256SUMS` sha256 `1569fe63…0e31`). The stage is
-gated, one run, simulation only. K is the scripted IK follower on 128 paired resets
+`~/develop/emai/evidence/task094-gated/` (`SHA256SUMS` sha256 `1569fe63…0e31`); CPU
+recomputation of the summary `~/develop/emai/evidence/task094-gated-recompute/` (`SHA256SUMS`
+sha256 `3d3b0380…3d63`). The stage is gated, one run, simulation only. K is the scripted IK follower on 128 paired resets
 941000–941127, with no model. M and S use 128 root seeds 946000–946127 and TASK-087's G-87100,
 G-87101 and G-87102 (**G-87102 `last_two_triggered`**). Nothing here is a learned result or a
 world-model grasp success.
@@ -105,16 +106,30 @@ world-model grasp success.
     - So placement outweighed closure on these resets, and its cost depended on the direction.
       This is a scripted dose of two directions of one size, not a measurement of the world-model
       arms' errors.
-- **R27.195 — The summarizer's K-VOID is disclosed, and this record reads past it; the reading
-  needs confirmation.**
+    - Computed by the review of #228, post hoc and not preregistered (no row, no bar): under the +x
+      offset, holding at s\* lost +0.102 against +1.0 (K-off-x-1.0 82 against K-off-x-s\* 69;
+      discordant 17 / 4, exact one-sided McNemar p = 0.0036, reset bootstrap 95 % +0.039 to +0.172,
+      salt 9014); under +y +0.039 (6 / 1, p = 0.063, 0.000 to +0.078). K-NULL is a finding at the
+      follower's exact pose; it does not show that partial closure is harmless when the palm is
+      misplaced, and the pause ruling should weigh the two together.
+- **R27.195 — The summarizer's K-VOID is a size-check defect; K-NULL is binding.**
   - `summarize_task094.py` (frozen, not edited) applies its n = 128 cohort-size check to the two
     determinism re-run reports. §4.3 and §9 define those reports on four resets.
   - Its only K-VOID reason is "K-1.0: n = 4; K-s\*: n = 4". §4.3 contains no such condition.
     Without the size argument on those two reports, the same function finds no problem.
-  - **The independent review of this PR must confirm the reading.** If it, or a later ruling,
-    holds the summarizer's output binding, the row is K-VOID, which §7.2 routes to a fix under
-    its own ruling and a re-run on fresh seeds named by that ruling. This entry does not make
-    that ruling.
+  - **Ruling: K-NULL is the binding row** (confirmed by the independent review of #228,
+    https://github.com/RaaSaaR-org/open-embodied-jepa/pull/228#issuecomment-6194731497). The
+    summarizer's K-VOID is an implementation defect, not a VOID event: §4.3 lists the
+    determinism re-run as a trigger only if it is not bitwise, §9 and `DETERMINISM_K` define it on
+    four resets, and the size check fires on every gated run whatever the counts, so reading past
+    it cannot select on the outcome. The frozen summarizer, re-run on the CPU on the evidence,
+    reproduces `summary-gated.json` byte for byte; a copy patched only so that the determinism
+    reports are checked at four resets reads K-NULL and differs from the record at the six K-VOID
+    fields only (`/row`, `/k_row/row`, `/k_row/void_reasons`, `/k/k_row/row`,
+    `/k/k_row/void_reasons`, `/k/problems`). Recomputation archived in
+    `~/develop/emai/evidence/task094-gated-recompute/` (`SHA256SUMS` sha256 `3d3b0380…3d63`).
+    `scripts/summarize_task094.py` stays unedited; a later summarizer in this family carries the fix under its own ruling. No re-run
+    follows.
 - **R27.196 — M and S are reported, not read.**
   - K is not K-CAUSAL, so no L row is read (§7.1). The roots job's VOID at 946073 makes M and S's
     own state L-VOID in any case.
@@ -134,6 +149,11 @@ world-model grasp success.
     makes neither ruling.
   - K-NULL puts nothing forward under R26.33 (§7.3).
   - No controller, training run or closed loop is admitted. "LeWM needed" is not claimed.
+  - R27.185's development expectation (K-UNCLEAR likely; Δ_s\* 0.0625 [−0.06, 0.19], Δ_0.6 0.125 [0,
+    0.28] on 32 resets) did not hold: at 128 gated resets both upper bounds are below 0.15. The
+    development +y palm effect (−16 / 32) recurred in direction on the gated resets (−57 / 128).
+  - TASK-094 closes at K-NULL; no M or S re-run follows (§7.2 routes one only after K-CAUSAL +
+    L-VOID).
 - **R27.198 — Incidents and a comment fix.**
   - The incidents are the two VOID events of R27.193. No file was edited before the record, no
     job was re-run, and no cohort was touched twice.
@@ -141,7 +161,10 @@ world-model grasp success.
     worktrees and evidence were not touched. `MANIFEST.tsv` was not written, because nothing was
     moved.
   - The comment on line 4 of `scripts/run_task094_stage.sh` now names the Stage 0′ merge, as
-    #227's review asked. This changes no behaviour and lands after the run.
+    #227's review asked. This changes no behaviour and lands after the run. TASK-094 does not
+    hash-pin the script; its sha256 is
+    `ec205e1f2437bdc72af1b1f03ef4c5b1cdd85431edc15f2d0a061ae40d5a54da` at `2eacacf` and
+    `9f4562b32d0f1651e67887800ab9caf71056934df400148d4083306240cc2b79` after the edit.
 - **R27.199 — R7 does not change** (R27.176). Nothing here is a grasp success or a learned result.
 
 ## Decision 2026-10-15 (bl) — TASK-094 Stage 0′ ends S0-PASS: with no new development cohort, the development rates project n_d = 24 at Rs (4 at R2) at 128 root seeds, above §14's 16; the code carries R27.183 (946000–946127, 942000–942063 retired and refused, 112 / 128, 16 / 128, ℓ over steps 3–7, the substituted-request comparator); every check passes; one 6 s GPU job; the gated stage projects to 0.352 GPU h; the protocol is frozen at this PR's merge; R7 unchanged (R27.187–R27.192)
