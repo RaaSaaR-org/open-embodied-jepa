@@ -19,6 +19,7 @@ from embodied_jepa.action_schemas import (
     schema_record,
 )
 from embodied_jepa.config import ExperimentConfig
+from embodied_jepa.constraints import CandidateProjection
 from embodied_jepa.contracts import (
     ACTION_DIM,
     EE_DELTA_GRASP_V0,
@@ -347,6 +348,32 @@ def test_schema_cem_matches_the_pinned_planner_on_fourteen_d():
     np.testing.assert_array_equal(pinned.costs, mirror.costs)
     assert pinned.evaluations == mirror.evaluations
     assert type(create_planner(SchemaCEMConfig(EE_DELTA_GRASP_V0, **budget))) is CEMPlanner
+
+
+def _clip_projector(requested):
+    actions = np.clip(requested, -0.5, 0.5).astype(np.float32)
+    feasible = np.abs(requested[..., 0]).mean(-1) < 0.6
+    return CandidateProjection(actions, feasible)
+
+
+def test_schema_cem_matches_the_pinned_planner_with_projection_on_fourteen_d():
+    budget = {"horizon": 3, "samples": 32, "iterations": 4, "elites": 5, "seed": 11}
+    model = Integrator()
+    initial = np.zeros((2, 2), np.float32)
+    goal = np.array([[0.7, -0.3], [-0.4, 0.9]], np.float32)
+    pinned = CEMPlanner(CEMConfig(project_candidates=True, **budget)).plan(
+        model, initial, goal, batch_size=2, projector=_clip_projector
+    )
+    mirror = SchemaCEMPlanner(
+        SchemaCEMConfig(EE_DELTA_GRASP_V0, project_candidates=True, **budget)
+    ).plan(model, initial, goal, batch_size=2, projector=_clip_projector)
+    assert np.abs(pinned.actions).max() <= 0.5
+    np.testing.assert_array_equal(pinned.actions, mirror.actions)
+    np.testing.assert_array_equal(pinned.requested_actions, mirror.requested_actions)
+    np.testing.assert_array_equal(pinned.costs, mirror.costs)
+    assert pinned.evaluations == mirror.evaluations
+    assert pinned.feasible_candidates == mirror.feasible_candidates
+    assert 0 < pinned.feasible_candidates < pinned.evaluations
 
 
 @pytest.mark.parametrize(
