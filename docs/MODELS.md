@@ -210,8 +210,9 @@ These modules sit beside the two world-model adapters, not inside them, and none
 `NativeJEPA`, `LeWM` and `models/base.py` are sized by the 14-D `ee_delta_grasp_v0`, and they
 stay that way: those files feed the implementation hash every native/LeWM checkpoint since
 TASK-072 enforces (and `models/lewm.py` also TASK-087's G hash), and `contracts.py`,
-`planning.py` and `models/lewm.py` are byte-pinned by TASK-091–TASK-094's frozen protocols. A
-second schema therefore enters through new files only ([SO101_PLAN.md](SO101_PLAN.md) S0):
+`planning.py` and `models/lewm.py` are byte-pinned by TASK-091–TASK-094's frozen protocols (and
+`data.py` by TASK-065's). A second schema therefore enters through new files only
+([SO101_PLAN.md](SO101_PLAN.md) S0):
 
 - `embodied_jepa.action_schemas` registers schemas by version. `joint_delta_so101_v0` is the
   SO-101's 6-D schema, `[shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll,
@@ -236,9 +237,14 @@ second schema therefore enters through new files only ([SO101_PLAN.md](SO101_PLA
 - `ExperimentConfig` accepts `embodiment.action_schema` naming a registered schema the
   embodiment executes (`config.EMBODIMENT_ACTION_SCHEMAS`; G1 executes only
   `ee_delta_grasp_v0`), checks the action manifest's per-schema fields and, for a non-14-D
-  schema, builds a `SchemaCEMConfig`. `DatasetStore.create(..., action_schema=...)` stores any
-  registered schema (feature shapes, names and the final-row placeholder follow it) and reopening
-  matches the stored record exactly; `Episode.action_schema` defaults to `ee_delta_grasp_v0`.
+  schema, builds a `SchemaCEMConfig`.
+- `data.py` is byte-pinned too (TASK-065's frozen manifest), so
+  `embodied_jepa.schema_data.SchemaEpisode`/`SchemaDatasetStore` are the same LeRobot v3
+  PNG/Parquet profile with the action width, names and final-row placeholder taken from a
+  registered schema (on `ee_delta_grasp_v0` a test holds them to `DatasetStore`'s exact files).
+  `open_dataset` opens a 14-D corpus with the pinned `DatasetStore` and any other with
+  `SchemaDatasetStore`. Encoded forks, and `audit` (pinned by the v1 apple manifests), are
+  not yet schema-sized.
 
 Not yet schema-sized (pinned or G1 task-line; to be added by the phase that needs them, through
 new files): the frozen-encoder and frozen-token mixins (`models/frozen_encoder.py`,

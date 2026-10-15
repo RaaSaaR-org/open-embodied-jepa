@@ -2,7 +2,8 @@
 CEM. Software contract evidence on synthetic data only; no manipulation or learning claim."""
 
 import json
-from dataclasses import asdict, replace
+from dataclasses import asdict
+from dataclasses import fields as dataclass_fields
 
 import numpy as np
 import pytest
@@ -31,6 +32,7 @@ from embodied_jepa.contracts import (
 from embodied_jepa.data import DatasetStore, deterministic_fixture
 from embodied_jepa.planning import CEMConfig, CEMPlanner
 from embodied_jepa.registry import EMBODIMENTS
+from embodied_jepa.schema_data import SchemaDatasetStore, SchemaEpisode, open_dataset
 from embodied_jepa.schema_planning import SchemaCEMConfig, SchemaCEMPlanner, create_planner
 
 SO101 = JOINT_DELTA_SO101_V0
@@ -108,16 +110,16 @@ def storage():
         pytest.importorskip(name)
 
 
-def _so101_episode():
-    episode = deterministic_fixture()
+def _so101_episode(**changes):
+    base = deterministic_fixture()
     actions = np.linspace(-0.5, 0.5, 4 * 6, dtype=np.float32).reshape(4, 6)
-    return replace(
-        episode, actions=actions, raw_actions=actions * np.float32(0.02), action_schema=SO101
-    )
+    fields = {f.name: getattr(base, f.name) for f in dataclass_fields(base)}
+    fields |= {"actions": actions, "raw_actions": actions * np.float32(0.02)}
+    return SchemaEpisode(**(fields | {"action_schema": SO101} | changes))
 
 
-def _store(path, episode, **kwargs):
-    return DatasetStore.create(
+def _store(path, episode, cls=SchemaDatasetStore, **kwargs):
+    return cls.create(
         path,
         fps=20,
         state_schema=episode.state_schema,
@@ -136,13 +138,14 @@ def test_six_d_episode_round_trips_through_the_store_with_a_placeholder_final_ro
     episode = _so101_episode()
     store = _store(tmp_path / "so101", episode, action_schema=SO101)
     store.write_episode(episode)
-    reloaded = DatasetStore(store.root)
-    assert reloaded.action_schema is SO101
+    reloaded = open_dataset(store.root)
+    assert type(reloaded) is SchemaDatasetStore and reloaded.action_schema is SO101
     assert reloaded.manifest["action_schema"] == schema_record(SO101)
     restored = reloaded.read_episode(episode.episode_id)
     assert restored.action_schema is SO101
     np.testing.assert_array_equal(restored.actions, episode.actions)
     np.testing.assert_array_equal(restored.raw_actions, episode.raw_actions)
+    np.testing.assert_array_equal(restored.observations["head"], episode.observations["head"])
     info = json.loads((store.root / "meta/info.json").read_text())
     assert info["features"]["action"]["shape"] == [6]
     assert info["features"]["action"]["names"] == list(SO101.names)
@@ -152,35 +155,49 @@ def test_six_d_episode_round_trips_through_the_store_with_a_placeholder_final_ro
     assert table["action"][-1] == [0.0] * 6
     windows = list(reloaded.windows(3))
     assert [w.action_schema for w in windows] == [SO101, SO101]
+    assert windows[1].terminated.tolist() == [[False, False, True]]
     np.testing.assert_array_equal(windows[1].actions[0], episode.actions[1:])
+    with pytest.raises(ContractError):
+        DatasetStore(store.root)  # the pinned 14-D store refuses a 6-D corpus
 
 
-def test_store_rejects_mixed_schemas_and_unregistered_ones(tmp_path, storage):
+def test_schema_store_rejects_mixed_and_unregistered_schemas(tmp_path, storage):
     so101 = _so101_episode()
     store = _store(tmp_path / "so101", so101, action_schema=SO101)
     with pytest.raises(ContractError, match="action schema differs"):
         store.write_episode(deterministic_fixture())
-    g1 = _store(tmp_path / "g1", so101)  # default stays ee_delta_grasp_v0
-    assert g1.action_schema is EE_DELTA_GRASP_V0
     with pytest.raises(ContractError, match="action schema differs"):
-        g1.write_episode(so101)
+        store.write_episode(
+            _so101_episode(
+                action_schema=EE_DELTA_GRASP_V0,
+                actions=np.zeros((4, 14), np.float32),
+                raw_actions=None,
+            )
+        )
     with pytest.raises(ContractError):
         _store(tmp_path / "other", so101, action_schema=ActionSchema("joint_delta_x_v0", ("a",)))
     with pytest.raises(ContractError, match=r"\[T,6\]"):
-        replace(so101, actions=np.zeros(6, np.float32))
+        _so101_episode(actions=np.zeros(6, np.float32))
+    with pytest.raises(ContractError, match="6 components"):
+        _so101_episode(actions=np.zeros((4, 14), np.float32), raw_actions=None)
 
 
-def test_ee_delta_manifest_record_is_unchanged(tmp_path, storage):
+def test_schema_store_on_fourteen_d_writes_the_pinned_store_bytes(tmp_path, storage):
+    """The mirrored write/read paths are held to data.py's exact files on ee_delta_grasp_v0."""
     episode = deterministic_fixture()
-    store = _store(tmp_path / "g1", episode)
-    assert store.manifest["action_schema"] == json.loads(json.dumps(asdict(EE_DELTA_GRASP_V0)))
-    store.write_episode(episode)
-    info = json.loads((store.root / "meta/info.json").read_text())
-    assert info["features"]["action"] == {
-        "dtype": "float32",
-        "shape": [14],
-        "names": list(EE_DELTA_GRASP_V0.names),
-    }
+    pinned = _store(tmp_path / "pinned", episode, cls=DatasetStore)
+    mirror = _store(tmp_path / "mirror", episode, action_schema=EE_DELTA_GRASP_V0)
+    pinned.write_episode(episode)
+    fields = {f.name: getattr(episode, f.name) for f in dataclass_fields(episode)}
+    mirror.write_episode(SchemaEpisode(**fields))
+    assert pinned.manifest["sha256"] == mirror.manifest["sha256"]
+    assert (pinned.root / "meta/jepa_manifest.json").read_bytes() == (
+        mirror.root / "meta/jepa_manifest.json"
+    ).read_bytes()
+    assert type(open_dataset(pinned.root)) is DatasetStore
+    restored = mirror.read_episode(episode.episode_id)
+    np.testing.assert_array_equal(restored.actions, episode.actions)
+    assert restored.action_schema is EE_DELTA_GRASP_V0
 
 
 # ----- config -----------------------------------------------------------------------------------
@@ -353,7 +370,8 @@ def test_core_import_stays_light():
 
     code = (
         "import sys, embodied_jepa, embodied_jepa.action_schemas, embodied_jepa.schema_planning,"
-        " embodied_jepa.config, embodied_jepa.data;"
+        " embodied_jepa.config, embodied_jepa.data,"
+        " embodied_jepa.schema_data, embodied_jepa.audit;"
         "assert 'torch' not in sys.modules and 'mujoco' not in sys.modules, sorted(sys.modules)"
     )
     subprocess.run([sys.executable, "-c", code], check=True)

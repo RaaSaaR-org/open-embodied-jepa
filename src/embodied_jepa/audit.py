@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
+from embodied_jepa.contracts import ACTION_NAMES
 from embodied_jepa.data import DatasetStore
 
 
@@ -34,7 +35,7 @@ def audit_dataset(root):
                 "max": float(action[:, i].max()),
                 "std": float(action[:, i].std()),
             }
-            for i, name in enumerate(store.action_schema.names)
+            for i, name in enumerate(ACTION_NAMES)
         },
         "state_coverage": {
             name: {

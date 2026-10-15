@@ -19,11 +19,9 @@ from typing import Any
 
 import numpy as np
 
-from embodied_jepa.action_schemas import action_schema_from_record, schema_record
 from embodied_jepa.contracts import (
     ACTION_DIM,
     EE_DELTA_GRASP_V0,
-    ActionSchema,
     ContractError,
     SequenceBatch,
     StateSchema,
@@ -83,8 +81,6 @@ class Episode:
     truncated: bool = True
     raw_actions: np.ndarray | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
-    # The normalized action schema of ``actions``; ``ee_delta_grasp_v0`` unless declared.
-    action_schema: ActionSchema = EE_DELTA_GRASP_V0
 
     def __post_init__(self) -> None:
         for key in ("episode_id", "session_id", "task", "object_id", "container_id"):
@@ -94,11 +90,8 @@ class Episode:
             raise ContractError("terminated and truncated must be booleans")
         if self.terminated == self.truncated:
             raise ContractError("a stored episode must have exactly one terminal/truncation reason")
-        if not isinstance(self.action_schema, ActionSchema):
-            raise ContractError("episode action_schema must be an ActionSchema")
-        width = self.action_schema.dimension
         if not isinstance(self.actions, np.ndarray) or self.actions.ndim != 2:
-            raise ContractError(f"episode actions must be an array [T,{width}]")
+            raise ContractError("episode actions must be an array [T,14]")
         boundary = np.zeros((1, self.actions.shape[0]), dtype=np.bool_)
         if boundary.shape[1]:
             boundary[0, -1] = True
@@ -112,7 +105,6 @@ class Episode:
             terminated=boundary,
             episode_ids=(self.episode_id,),
             state_schema=self.state_schema,
-            action_schema=self.action_schema,
         )
         object.__setattr__(
             self, "observations", {name: frames[0] for name, frames in batch.observations.items()}
@@ -132,9 +124,7 @@ class Episode:
                 or raw.shape != self.actions.shape
                 or not np.isfinite(raw).all()
             ):
-                raise ContractError(
-                    f"raw_actions must be finite float32 [T,{width}] physical commands"
-                )
+                raise ContractError("raw_actions must be finite float32 [T,14] physical commands")
             raw = raw.copy()
             raw.flags.writeable = False
             object.__setattr__(self, "raw_actions", raw)
@@ -164,7 +154,6 @@ class Episode:
             terminated=boundary,
             episode_ids=(self.episode_id,),
             state_schema=self.state_schema,
-            action_schema=self.action_schema,
         )
 
 
@@ -204,11 +193,8 @@ class DatasetStore:
         if self.manifest.get("format") != "jepa_lerobot_v3_png_v0":
             raise ContractError("unsupported dataset schema")
         self.state_schema = StateSchema(**self.manifest["state_schema"])
-        # Any registered schema (embodied_jepa.action_schemas), matched exactly by record.
-        try:
-            self.action_schema = action_schema_from_record(self.manifest["action_schema"])
-        except ContractError as error:
-            raise ContractError("dataset action ordering/schema is incompatible") from error
+        if self.manifest["action_schema"] != json.loads(_json_bytes(asdict(EE_DELTA_GRASP_V0))):
+            raise ContractError("dataset action ordering/schema is incompatible")
         self.verify()
 
     @classmethod
@@ -221,13 +207,8 @@ class DatasetStore:
         action_manifest: Mapping[str, Any],
         provenance: Mapping[str, Any],
         robot_type: str = "unitree_g1_dex3",
-        action_schema: ActionSchema = EE_DELTA_GRASP_V0,
     ) -> DatasetStore:
         _positive(fps, "fps")
-        if not isinstance(action_schema, ActionSchema):
-            raise ContractError("action_schema must be an ActionSchema")
-        record = schema_record(action_schema)
-        action_schema_from_record(record)  # only registered schemas are stored
         root = Path(root)
         if root.exists() and any(root.iterdir()):
             raise FileExistsError(f"refusing to overwrite nonempty dataset {root}")
@@ -239,7 +220,7 @@ class DatasetStore:
             "fps": fps,
             "robot_type": robot_type,
             "state_schema": asdict(state_schema),
-            "action_schema": record,
+            "action_schema": asdict(EE_DELTA_GRASP_V0),
             "action_manifest": dict(action_manifest),
             "provenance": dict(provenance),
             "episodes": [],
@@ -344,13 +325,13 @@ class DatasetStore:
             },
             "action": {
                 "dtype": "float32",
-                "shape": [self.action_schema.dimension],
-                "names": list(self.action_schema.names),
+                "shape": [ACTION_DIM],
+                "names": list(EE_DELTA_GRASP_V0.names),
             },
             "action.physical": {
                 "dtype": "float32",
-                "shape": [self.action_schema.dimension],
-                "names": list(self.action_schema.names),
+                "shape": [ACTION_DIM],
+                "names": list(EE_DELTA_GRASP_V0.names),
             },
         }
         for key in ("index", "episode_index", "frame_index", "task_index"):
@@ -378,8 +359,6 @@ class DatasetStore:
             raise ContractError("duplicate episode_id")
         if episode.state_schema != self.state_schema:
             raise ContractError("episode state order/units/schema differs from dataset")
-        if episode.action_schema != self.action_schema:
-            raise ContractError("episode action schema differs from dataset")
         delta = np.diff(episode.timestamps)
         if not np.allclose(delta, 1 / self.manifest["fps"], atol=1e-6, rtol=1e-3):
             raise ContractError(
@@ -397,9 +376,7 @@ class DatasetStore:
         tasks = list(dict.fromkeys([row["task"] for row in episodes] + [episode.task]))
         n = episode.transitions + 1
         offset = sum(row["length"] for row in episodes)
-        actions = np.concatenate(
-            [episode.actions, np.zeros((1, self.action_schema.dimension), dtype=np.float32)]
-        )
+        actions = np.concatenate([episode.actions, np.zeros((1, ACTION_DIM), dtype=np.float32)])
         physical = np.zeros_like(actions)
         if episode.raw_actions is not None:
             physical[:-1] = episode.raw_actions
@@ -601,7 +578,6 @@ class DatasetStore:
                 else None
             ),
             metadata=row["metadata"],
-            action_schema=self.action_schema,
         )
 
     def freeze_splits(
