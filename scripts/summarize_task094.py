@@ -406,7 +406,8 @@ def projection(jobs) -> dict:
     dev = {}
     for j in jobs:
         kind, cohort, arm = _job_kind(j["command"])
-        if cohort in ("dev-k", "dev-roots") and str(j["status"]) == "0":
+        # a job that exited VOID (3) ran to completion; only its checks differed
+        if cohort in ("dev-k", "dev-roots") and str(j["status"]) in ("0", "3"):
             dev[(kind, arm)] = j["seconds"]
     k_arms = [dev.get(("k-run", gl.arm_slug(a)), dev.get(("k-run", a))) for a in gl.K_ARMS]
     if None in k_arms or ("goals", None) not in dev:
