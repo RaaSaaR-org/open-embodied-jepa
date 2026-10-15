@@ -63,6 +63,57 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-15 (bo) — the owner pauses the project: TASK-095 is not started (it stays recommended and unconfirmed), the grasp line stays paused, nothing gated is running, and the resume options are recorded, including an SO-101 branch as a product-goal change that needs its own owner ruling; R7 unchanged (R27.209–R27.215)
+
+**Decided by the owner (2026-10-15, in chat); recorded by Claude.** Handoff document:
+[RESUME.md](RESUME.md). This entry records the owner's pause and the options for resuming. It
+rules on no research question and admits no task.
+
+- **R27.209 — The project is paused.** On 2026-10-15 the owner asked to pause the project and
+  to leave it in a state from which it can be continued, or branched to an SO-101 arm, later.
+  No experiment, gated stage, training job or closed loop is running or queued for this project.
+  The worktree and disk cleanup of the same day was a separate pass and is not recorded here.
+- **R27.210 — TASK-095 is not started.** The owner did not confirm TASK-095 (R27.205–R27.206).
+  It stays in `.mc/tasks/todo/` as recommended and unconfirmed, on hold. No preregistration, code
+  or GPU work for it exists. If the project resumes on the grasp line, the owner's confirmation
+  is still the first step.
+- **R27.211 — The grasp line stays paused** (R27.157, R27.197). Every clause that has fired stays
+  in force: R26.33 (planner, cost and horizon variants over TASK-087's checkpoints for grasping),
+  R27.71 (more scripted grasp-and-lift play of TASK-090's kind) and R27.149 (grasp-channel rate
+  projection). Phase 4 is not admitted.
+- **R27.212 — Resume options, none chosen.** Each needs its own owner ruling, and each research
+  step needs its own preregistration and review:
+  - **TASK-095**, the measurement-only placement-resolution diagnostic (about 0.6 GPU h, an
+    estimate; R27.205);
+  - **D**, a Phase 4 precursor (world-model reach plus a scripted closure rule; R26.33 applies;
+    about 10–15 GPU h, an estimate; R27.204 judged its chance low);
+  - **X**, a return to the v2 Apple→Plate LeWM line; its gated successes are under C1-M, which the
+    owner stopped after TASK-083, so reopening it is the owner's call;
+  - **a hybrid or sensing change**: LeWM choosing goals, approach and placement while a local
+    grasp controller closes the last centimetre, possibly with a wrist camera, higher resolution
+    or contact feedback (W in R27.204, open under R27.71; about 30–60 GPU h plus collection, an
+    estimate);
+  - **an SO-101 branch** (R27.213).
+- **R27.213 — An SO-101 branch would change the product goal.** The product goal is LeWM-driven
+  control of the G1 with dual Dex3 hands. Moving the main line to the LeRobot SO-101 arm (a
+  jaw gripper instead of a dexterous hand) changes that goal, so it needs an explicit owner
+  ruling, its own plan and its own first preregistration. It needs a new embodiment adapter, an
+  action schema, a MuJoCo scene, a collector and a corpus, and its results would transfer to
+  G1 + Dex3 only in part. [RESUME.md](RESUME.md#branching-to-so-101) lists what exists and what
+  must be built.
+- **R27.214 — Assessment on record, not a ruling.** In the pause discussion Claude assessed
+  that end-to-end world-model dexterous grasping from the one 112 px onboard camera is unlikely
+  on the current path. The constraint that keeps binding is centimetre-level perception and
+  placement at contact. TASK-075 ended OBS-NONE: no view read the apple-minus-plate offset within
+  τ = 1.0 cm with the frozen readout family (linear and kernel-ridge readouts of single frames).
+  In TASK-094's K, a rigid 1.2 cm +y palm offset cut the scripted follower from 88/128 to 31/128
+  lifts (K-1.0 against K-off-y-1.0, Δ +0.445, reset-bootstrap 95 % +0.352 to +0.539; one run,
+  simulation only, a scripted dose of one size, not the world-model arms' errors). The
+  frozen cost's pose term changes by a median 0.0065 for that offset, against 1.09 for a full
+  closure change (R27.203; arithmetic, a best case for G). This is an opinion that informs the
+  owner's options; it closes nothing and fires no clause.
+- **R27.215 — No claim; R7 does not change.** Nothing here is an experiment or a result.
+
 ## Decision 2026-10-15 (bn) — after TASK-094's K-NULL: the 19 / 179 figure conditions on a transient minimum distance, and the WM arms' held palm error during the close (median 2.6 cm, direction and orientation unlogged) is of a size at which K's +y offset decided the follower's lift; the frozen cost's pose term is nearly blind to 1.2 cm (CPU arithmetic); TASK-095, a measurement-only placement-resolution diagnostic of about 0.6 GPU h with a CPU-only command replay, is recommended to the owner and waits for the owner's confirmation; D is not chosen, X is the owner's; no controller is admitted; R7 unchanged (R27.200–R27.208)
 
 **Decided by Claude under owner delegation (2026-09-30), as asked on 2026-10-15.** Design note:

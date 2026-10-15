@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Current status (2026-10-15): paused
+
+The owner paused the project on 2026-10-15 ([DECISIONS 2026-10-15 (bo)](docs/DECISIONS.md), R27.209–R27.215). Nothing is running or queued. TASK-095 (the grasp placement-resolution diagnostic) is recommended but not confirmed and not started; the grasp line stays paused. Before resuming, read [docs/RESUME.md](docs/RESUME.md): the current state with its qualifiers, where evidence lives, the GPU and worktree conventions, the resume options and what a branch to the LeRobot SO-101 arm would need. Every resume option needs an owner ruling first.
+
 ## Workflow authority
 
 [AGENTS.md](AGENTS.md) is the authoritative contributor/agent workflow (branch → commit → PR → review → merge, architecture rules, research-quality rules). Read it before non-trivial changes; this file only summarizes commands and architecture.

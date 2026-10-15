@@ -28,6 +28,11 @@ updated: 2026-10-15
 
 ## Description
 
+**Status: on hold — owner paused 2026-10-15; not confirmed.** The owner paused the project
+instead of confirming this task (DECISIONS 2026-10-15 (bo), R27.209–R27.215). It stays in todo;
+nothing for it has been written or run. Resume from [RESUME.md](../../../docs/RESUME.md); the
+owner's confirmation is still the first acceptance criterion.
+
 **DRAFT; recommended to the owner, not yet confirmed.** Recommended by R27.205 (DECISIONS (bn),
 R27.200–R27.208; design note
 [grasp_line_next_v2.md](../../../docs/experiments/grasp_line_next_v2.md)), after TASK-094's
@@ -146,3 +151,5 @@ CPU only), with every GPU job under `gpu_run.sh --wait --board`.
   request; the TASK-094 card reserves a pause ruling to the owner); ±z added to K′ (21 arms);
   the primary offset's post-K selection disclosed; R's roots and window limits stated; V, a
   CPU-only command replay, added as a reported part.
+- 2026-10-15, on hold: the owner paused the project (DECISIONS (bo), R27.209–R27.215) without
+  confirming this task. No preregistration, code or GPU work exists for it.

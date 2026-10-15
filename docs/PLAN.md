@@ -1,5 +1,9 @@
 # Next-steps plan (from 2026-10-02)
 
+> **Paused 2026-10-15.** The owner paused the project (DECISIONS 2026-10-15 (bo), R27.209–R27.215).
+> TASK-095 is not confirmed and not started. Resume from [RESUME.md](RESUME.md). This plan is
+> kept as written; the work from TASK-084 on followed [JEPA_ZERO_SHOT_PLAN.md](JEPA_ZERO_SHOT_PLAN.md).
+
 This is the working plan of the next tasks toward the product goal: a LeWM-driven closed-loop
 policy for the Unitree G1 with Dex3 hands. It is a plan, not a result. Each task still needs its
 own preregistration and review, and every outcome below is open. [MVP_PLAN.md](MVP_PLAN.md) is
