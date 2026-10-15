@@ -1,8 +1,13 @@
 # TASK-094 — grasp-closure locus diagnostic: does the partial closure the world-model arms command cause their grasp failures, and does the failure sit in the goal and cost, the model or the search (measurement only; no controller)
 
-**Status: DRAFT** (R27.160–R27.176; decided by Claude under owner delegation, 2026-10-15;
-DECISIONS (bi)). Nothing here has run. A Stage 0 PR freezes this protocol at its merge (§14). The
-gated stage runs after that, at the merged revision, from a clean tree.
+**Status: DRAFT, Stage 0 ended S0-ESCALATE** (R27.160–R27.176; Stage 0 record §16, R27.177–R27.182;
+escalation ruling §17, R27.183–R27.186; decided by Claude under owner delegation, 2026-10-15;
+DECISIONS (bi), (bj), (bk)). **The protocol is not frozen.** Stage 0's one failing rule is §14's
+n_d rule: on the 32 development roots the s\* branch lifted where the squeeze did on all but 6 (Rs)
+and 1 (R2), so M would most likely not be read. No gated cohort was touched. The ruling (§17)
+amends M and S before the freeze (128 gated root seeds 946000–946127; S's ℓ and search miss
+redefined); a Stage 0′ checks the amendment and freezes the protocol at its merge. Until then
+nothing gated runs, and §17 governs where it differs from §5, §6, §9, §10.2 and §14.
 
 This is the diagnostic that R27.156 chose after TASK-093 closed at B-FAIL (design note
 [grasp_next_step_v1.md](grasp_next_step_v1.md), §4–§5). **It is measurement only.** It runs no
@@ -757,3 +762,257 @@ development number. The protocol is frozen at the Stage 0 merge.
   at its merge; the gated stage runs only after that.
 - **R27.176** — **R7 does not change**, whatever row TASK-094 ends in. TASK-094 is not an
   Apple→Plate experiment.
+
+## 16. Stage 0 record (R27.177–R27.182; decided by Claude under owner delegation)
+
+Everything below is Stage 0: checks, development K on resets 94100–94131, development M and S on
+roots 940000–940031 (the squeeze, s\* and control branches only), the power recompute and a debug
+smoke on debug seeds 94500–94599. **Stage 0 ends S0-ESCALATE** on one rule (§14: n_d below 8 of 32
+at both root types). The gated K resets 941000–941127 and root seeds 942000–942063 were not
+touched. Every number here is development: one run, simulation only, 32 resets or roots, scripted
+probes; none is a learned result, none sets a bar, and K's development counts are reported only.
+Evidence: `~/develop/emai/evidence/task094-s0/` (`SHA256SUMS` sha256 `5c944848…77b1`); root and
+goal frames in `outputs/task094-s0{,-debug}/` on the data disk.
+
+**Revisions** (from the reports and `gpu_run.log`; every report records `tracked_tree_dirty:
+false`, and every job ran in its worktree's root, where `third_party/le-wm` is):
+
+- `bf6dc58` (the code): the debug smoke (from the implementation worktree), the first opt-in render
+  test, and, from a clean run tree at that commit (`worktrees/task094-s0run`, with the data,
+  checkpoint, `third_party` and output links of `worktrees/task093-run`), `verify`, `seeds`,
+  `power` and the development stage (`scripts/run_task094_stage.sh dev`).
+- `e94e2bf` (K's plumbing check corrected; §16.4): the first Stage 0 summary, kept as
+  `summary-0.at-e94e2bf-projection-incomplete.json`.
+- `8bd74ca` (the projection counts completed jobs that exited VOID): `summary-0.json`, the record's
+  source; the full test suite and the opt-in render tests.
+- The record commit changes documentation only.
+
+### 16.1 Code
+
+- `src/embodied_jepa/grasp_closure_locus.py` (NumPy at import): the cohorts and seeds; the K arms
+  (`HeldIKController`, TASK-088's `IKController` with its closing target replaced by the arm's
+  level, the frozen code's arithmetic otherwise; the displaced goal); K's plumbing check, measures,
+  paired contrasts (exact one-sided McNemar; one shared set of 10 000 reset resamples from
+  `default_rng([9014, n])`, `np.percentile`'s linear percentiles) and rows; the root types, the
+  branch builder (TASK-089's `_Demo` run from the reset, re-checked bitwise, frames and states kept
+  for the 8 window steps only), the executed-difference arithmetic, the discordant roots, wins,
+  bars and positive control; S's executed level (TASK-093's `project_grasp` from the root's
+  recorded last accepted hand targets), measures and bar; the L rows, the task row and the S0 row;
+  the power recompute; sha256 pins of every earlier file TASK-094 imports (TASK-093's pins,
+  TASK-093's modules and scripts, `run_tools.py`, `devices.py`).
+- `src/embodied_jepa/grasp_closure_locus_runtime.py` (torch): M's roll-out and ceiling costs
+  through the planner model's own `distance`, with the latent, pose, arm, hand and per-hand-joint
+  terms (checked to add up to the planner's cost); S's CEM call, `pr.a2_plan`'s call with the best
+  candidate's cost kept.
+- `scripts/run_task094.py` (`verify`, `seeds`, `power`, `goals`, `k-run`, `roots`, `rank`,
+  `search`), `scripts/summarize_task094.py` (stages 0 and gated) and `scripts/run_task094_stage.sh`
+  (stages gated, dev, debug; the gated stage stops at the 1.0 GPU h ceiling, counting Stage 0's
+  time from its summary). Every job refuses another working directory or a missing
+  `third_party/le-wm`, loads and checks its goals or roots and, for M and S, the three G
+  checkpoints and TASK-087's DINOv2 encoder (preflight, CPU) before its ledger claim; CPU tests fail
+  if a claim comes first.
+- `tests/test_grasp_closure_locus.py`, 38 tests: the follower bitwise `IKController` at +1.0, the
+  held level after the ramp with every other channel unchanged, the displaced goal, the plumbing
+  check (including an episode stopped before the hand reaches c), K's rows in first-match order,
+  the band and the bootstrap, the root types' step counts and the executed-difference arithmetic
+  (≥ 7 of 8 at Rs for every s\* below 0.818, 8 at R2), the squeeze branch's reproduction of the
+  demonstrator (graphics opt-in), wins, bars, positive control, S's measures and executed level, the
+  L rows (first match, n_d < 16), the S0 and task rows, the power model's marginals and rule, the
+  runtime's decomposition and the A2 call (small model, CPU), the seed ranges, the pins, the
+  working-directory guard, the ledger claim's place and the core-import check. The whole suite at
+  `8bd74ca`: 2 494 passed, 35 skipped (graphics opt-in, MPS unavailable, the LeRobot-source
+  opt-in); with `JEPA_TEST_RENDER=1` this file's 38 tests passed.
+- No existing file changes except CLAUDE.md's entry points and this record.
+
+### 16.2 Checks
+
+| Check | Result |
+| --- | --- |
+| **Hashes** (`verify`) | G-87100–87102 against their pins, reports and evidence copies; the feature report and store files; the projection; the pinned moments; TASK-087's implementation hash; λ = 2.0552; the step-mean setting; the rate limit 2 / 11; CEM (8, 300, 10, 30, 0.05); the levels, offsets, branches and Rs's 8 commands; every frozen file: **all pass**. G-87102 has `last_two_triggered: true` |
+| **Seeds** (`seeds`; 121 remote-tracking refs, 93 local branches and HEAD) | no token in 94100–94131, 94500–94599, 940000–940031, 941000–941127, 942000–942063, 9014 or 9015 outside TASK-094's files. In the evidence: 12 tokens, 94100 and 94500 as TASK-077 training-update indices; none in a seed field |
+| **K plumbing** (every arm, 32 development resets; §16.4) | requests bitwise the frozen ramp towards c; after the ramp every request equals c; the applied grasp within 2.3 × 10⁻⁷ of the rate-limited request path and bitwise c on every command once that path reaches c (8–10 commands into the grasp subgoal); the closing decision exactly the grasp and lift subgoals: **all 11 arms pass** |
+| **K-1.0 against TASK-088's frozen follower** (an added Stage 0 check) | `ik` run on the same 32 resets: applied commands **bitwise equal** to K-1.0's on all 32 |
+| **Displaced goals** | every offset arm's goals are the K-1.0 goals with every subgoal palm moved by exactly v, everything else bitwise the same: pass |
+| **K-1.0 and K-open** (§4.3's band at Stage 0's proportions, 16–28 and 0 of 32) | K-1.0 23 / 32, K-open 0 / 32: pass |
+| **Roots and the squeeze** (M) | every re-run root bitwise the draw's state and frame at both root types; every squeeze branch bitwise the demonstrator's grasp-subgoal state (Rs, after 27 commands) and lift-subgoal state (end): **0 problems** on 32 roots. Rs's root: the demonstrator's request 0.6 and last accepted target synergy 0.4545 on every root |
+| **Executed difference** | squeeze and s\* differ at 7 (Rs) and 8 (R2) of the 8 window steps on all 32 roots; none excluded |
+| **Positive control** (bar 28 / 32) | the ceiling ranks the squeeze above re-open (Rs) and release (R2) on **32 / 32** and **32 / 32** |
+| **Ceiling across seeds** | identical under the three seeds' (pinned) standardisations |
+| **S determinism** (2 roots × 2 root types × 3 seeds) | 12 / 12 re-runs bitwise |
+| **Debug smoke** (4 debug resets and 4 debug roots with all six branches; not results) | every K arm and the frozen `ik` ran; plumbing and displacement pass; K-1.0 bitwise `ik`; K-1.0's and K-s\*'s determinism re-runs bitwise; M and S ran with every branch; S's plans equal `pr.a2_plan`'s bitwise (`--check-a2`) |
+| **Power** (§8.4) | passes (§16.3) |
+| **n_d** (§14: escalate if below 8 of 32 at both root types) | **Rs 6, R2 1: fails** |
+| **Budget** (§10.2) | Stage 0: 36 `gpu_run` jobs, 387 s (0.108 GPU h; the summary's 371 s precede the final render-test run), below 0.4. The gated stage projected from the development jobs (K's goals and arms × 4, two determinism jobs, M's roots and ranking × 4, S × 2): 924 s, **0.257 GPU h**, below 0.6 |
+
+### 16.3 Power (§8.4; 20 000 simulations per cell, 10 000 bootstrap resamples each, CPU)
+
+The joint condition needs a model of the three arms together, which §8.4 does not fix. Stage 0 uses
+K-1.0 lifting with 0.69, the cells (Δ + d₀, d₀) and (Δ_0.6 + d₀, d₀), and K-s\* and K-0.6
+**independent given K-1.0's outcome** (the rule's model), and reports the most correlated case
+(**nested**: K-0.6 fails wherever K-s\* fails) beside it. Generator
+`default_rng([9014, 94, n, …])`.
+
+| Δ = Δ_0.6 | d₀ | K-CAUSAL | K-NULL (joint) | K-UNCLEAR |
+| --- | --- | --- | --- | --- |
+| 0.00 | 0.03 / 0.08 | 0.000 / 0.000 | **1.000 / 0.978** | 0.000 / 0.022 |
+| 0.05 | 0.03 / 0.08 | 0.001 / 0.005 | 0.841 / 0.528 | 0.158 / 0.467 |
+| 0.10 | 0.03 / 0.08 | 0.066 / 0.119 | 0.133 / 0.071 | 0.801 / 0.810 |
+| 0.15 | 0.03 / 0.08 | 0.475 / 0.478 | 0.002 / 0.002 | 0.523 / 0.519 |
+| 0.20 | 0.03 / 0.08 | 0.877 / 0.827 | 0.000 / 0.000 | 0.123 / 0.173 |
+| 0.30 | 0.03 / 0.08 | 0.999 / **0.997** | 0.000 / 0.000 | 0.001 / 0.003 |
+| 0.50 | 0.03 / 0.08 | 1.000 / 1.000 | 0.000 / 0.000 | 0.000 / 0.000 |
+
+- **The rule passes:** K-CAUSAL at Δ = 0.30 (d₀ = 0.08) 0.997 ≥ 0.95; joint K-NULL at
+  Δ = Δ_0.6 = 0 1.000 (d₀ = 0.03) and 0.978 (d₀ = 0.08) ≥ 0.95. Nested model: 1.000 and 0.987, and
+  K-CAUSAL 0.999 and 0.997.
+- **What the joint condition costs** (disclosed): with a small real loss at both levels K-NULL is
+  rarer than §8.1's s\*-only table says (0.841 / 0.528 at 0.05 against 0.920 / 0.698; 0.133 /
+  0.071 at 0.10 against 0.349 / 0.240). With Δ_0.6 = Δ + 0.10 K-NULL falls to 0.350 / 0.223 at
+  Δ = 0, and K-CAUSAL is unchanged (it reads Δ only).
+
+### 16.4 Incidents and corrections
+
+- **K's plumbing check (job reading).** At `bf6dc58` the job's check also required every
+  episode's applied grasp to *reach* c. Nine development episodes of the four offset arms
+  (K-off-x-1.0: 94111, 94120; K-off-x-s\*: 94111; K-off-y-1.0: 94102, 94111, 94120; K-off-y-s\*:
+  94102, 94111) were stopped by the embodiment's measured-joint-velocity stop 9–10 commands into the
+  grasp subgoal, before the rate limit could let the hand reach c, so those four jobs exited VOID
+  (3). §4.3 asks that the applied grasp equal c "once the rate limit allows", which these episodes
+  meet with no such command. `e94e2bf` makes the check follow that wording (the rate-limited path of
+  the requests decides when c is allowed; the applied grasp must follow that path and then equal c
+  bitwise), and the summarizer re-reads the check from each episode's recorded requests, subgoal
+  indices and applied commands (`replumb`), reporting the job's reading beside it. On every
+  development and debug episode of every arm the applied grasp reached c on exactly the command the
+  path did. No run was repeated and no count changed. **The reviewer should confirm that this is a
+  correction of the check, not a failed check** (§14 makes a failed check S0-ESCALATE); Stage 0
+  escalates on the n_d rule either way.
+- **The projection.** At `e94e2bf` the summarizer's projection skipped jobs that exited VOID, so it
+  was incomplete (and the summary escalated on it as well); `8bd74ca` counts them, since they ran to
+  completion.
+- **Stage 0 readings the protocol leaves open** (disclosed, set nothing): §4.3's band and K-open
+  maximum at Stage 0's 32 resets are the same proportions rounded inwards (16–28 and 0); the
+  executed-difference check at Stage 0 allows 4 of 32 excluded roots (8 of 64); the joint power
+  model (§16.3); and the added check of K-1.0 against TASK-088's frozen follower. The debug smoke
+  ran M with all six branches, to time them.
+- No job reached its cap; no `- v2d:` request was on BOARD.md before any job; the GR00T server,
+  `/mnt/data/emai/{archive,models,cache}`, `worktrees/task087-run` and other worktrees were not
+  touched. Process counts: 8 workers for K and the roots (4 in the debug smoke), as planned.
+
+### 16.5 Development measurements (reported; one run, simulation only; they set nothing)
+
+**K** (resets 94100–94131, 32 paired resets; exact 95 % intervals; s\* median 0.674, p10–p90
+0.651–0.693):
+
+| Arm | Lifts / 32 | Interval | Contact | Stopped | Slip | Measured hand, close and lift (median) | Grasp subgoal timed out |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| K-1.0 (`ik` 23 / 32, bitwise the same) | 23 | 0.53–0.86 | 32 | 1 | 1 | 0.66 | 19 |
+| K-0.9 | 23 | 0.53–0.86 | 32 | 1 | 1 | 0.60 | 21 |
+| K-0.8 | 24 | 0.57–0.89 | 32 | 0 | 0 | 0.54 | 23 |
+| K-0.7 | 23 | 0.53–0.86 | 32 | 0 | 0 | 0.48 | 29 |
+| K-s\* | 21 | 0.47–0.81 | 32 | 0 | 1 | 0.47 | 30 |
+| K-0.6 | 19 | 0.41–0.76 | 32 | 1 | 2 | 0.43 | 30 |
+| K-open | 0 | 0.00–0.11 | 0 | 0 | 0 | −1.00 | 32 |
+| K-off-x-1.0 | 19 | 0.41–0.76 | 30 | 4 | 2 | 0.66 | 14 |
+| K-off-x-s\* | 16 | 0.32–0.68 | 30 | 3 | 2 | 0.47 | 28 |
+| K-off-y-1.0 | 7 | 0.09–0.40 | 23 | 6 | 2 | 1.00 | 23 |
+| K-off-y-s\* | 8 | 0.11–0.43 | 25 | 3 | 0 | 0.66 | 28 |
+
+The switching rule's hand-RMS test makes lower held levels time out on the grasp subgoal more
+often, so the dose arms also differ in grasp-phase duration (§4.2 measure).
+
+- K-1.0 minus K-s\*: 0.0625 (3 against 1 discordant; reset-bootstrap 95 % −0.0625 to 0.1875);
+  K-1.0 minus K-0.6: 0.125 (5 against 1; 0.000 to 0.281); K-1.0 minus K-off-y-1.0: 0.50 (16
+  against 0). These are 32 development resets; they are not K's row and §4.3's rows are not read
+  on them.
+
+**M** (roots 940000–940031; squeeze, s\* and control branches; 43 rejected draws; targets cube 17,
+can 9, apple 6):
+
+| Root type | Squeeze lifts | s\* lifts | Control lifts | **n_d** | Ceiling wins on discordant | G wins (87100, 87101, 87102) | Ceiling squeeze < s\* on all roots | Positive control |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Rs | 32 | 26 | 0 | **6** | 5 / 6 | 6, 6, 3 of 6 | 30 / 32 | 32 / 32 |
+| R2 | 32 | 31 | 0 | **1** | 1 / 1 | 1, 1, 1 of 1 | 28 / 32 | 32 / 32 |
+
+- Every s\* branch that failed kept grasp contact; at Rs the target rose 0.7–2.2 cm, at R2 (one
+  root) 6.0 cm without holding 20 commands.
+- Term decomposition (medians on the discordant roots, reported): at Rs the ceiling's cost of the
+  squeeze and s\* branches is 0.76 against 0.86, the hand part of the pose term 0.15 against 0.29
+  (the pose term 0.17 against 0.31), the latent term 0.60 against 0.58.
+
+**S** (the frozen planner, one call per root, type and seed): no search miss on any discordant root
+at either type for any seed; the plan holds partial and G rates it at least as well as the squeeze
+branch ("partial preferred") on 5, 6 and 6 of Rs's 6 discordant roots and on R2's one. Plans that
+squeeze (ℓ ≥ 0.9) on all 32 roots: Rs 6, 4, 1; R2 4, 6, 0. Median ℓ: Rs 0.70, 0.72, 0.70; R2 0.69,
+0.77, 0.71. At Rs the first command requests a median grasp of 0.94–0.97 and executes 0.636 (the
+rate limit).
+
+These S figures do not show that G prefers a partial closure. CEM's best candidate, scored on its
+requests over all 14 channels, cost less than the scripted squeeze branch's applied commands on
+every call (192 / 192; ratio median 0.62–0.78, maximum 0.94), so a miss as §6 defines it could not
+occur, and "partial preferred" here means only ℓ < 0.9. ℓ is read at step 8, the end of the
+horizon, where the plans' requests were lowest and most dispersed (median 0.52–0.69, IQR
+0.17–0.31, against about 0.8–0.9 at steps 3–7). By the median executed grasp over steps 3–7, 4, 3
+and 2 Rs plans and 14, 16 and 14 R2 plans of 32 squeeze. The median ℓ of about 0.70 is not a
+reproduction of the WM arms' 0.53–0.73 (§1.1).
+
+### 16.6 The escalation and what the ruling decides (R27.181)
+
+§14's n_d rule fired: at the demonstrator's exact states the s\* branch lifts where the squeeze
+does on 26 of 32 Rs roots and 31 of 32 R2 roots, so the discordant roots M reads are rare (6 and 1
+of 32). At these rates 64 gated root seeds would give about 12 (Rs) and 2 (R2), below the 16 at
+which a root type is read, so M and S would most likely end L-UNREAD after a K-CAUSAL. K is not
+part of this rule; its development numbers are reported only. As §7.2 says, S0-ESCALATE routes to a
+ruling before the freeze. This record does not decide it. The options it sees, without ranking
+them:
+
+- run the gated stage as preregistered, accepting that M is most likely unread (K still answers
+  the physics question; L-UNREAD is a named row);
+- amend M before the freeze, for example more root seeds (at Rs's development rate, 128 roots would
+  give about 24 discordant roots, at roughly 0.1 GPU h more) or roots where s\* is marginal, each a
+  protocol change with its own power and seed checks and a new Stage 0 reading of n_d;
+- run K alone and drop M and S;
+- close TASK-094 without a gated stage.
+
+Spent: the development cohorts 94100–94131 and 940000–940031 (ledgered). Untouched: 941000–941127
+and 942000–942063; of the debug range 94500–94599 nine seeds were used (94500–94503,
+94550–94553 and 94599, the render test), and debug seeds are never counted.
+
+**R7 does not change** (R27.176). Nothing here is a grasp success or a learned result.
+
+## 17. Stage 0 escalation ruling (R27.183–R27.186; decided by Claude under owner delegation)
+
+S0-ESCALATE (§16.6) is resolved by **option 2, extended** (DECISIONS (bk)), adopting items 1–7 of
+the amendment proposed in the independent review of PR #226 word for word (R27.183):
+
+1. **Root seeds.** M and S use 128 gated root seeds **946000–946127**; 942000–942063 are retired
+   (named, never generated, never run, not reused). S's determinism re-run moves to
+   946000–946001. n_d(t) ≥ 16 is unchanged; positive control 112 / 128, at most 16 / 128 roots
+   excluded by the executed-difference check.
+2. **R2 stays, reported.** Every R2 check still voids M (L-VOID); at the development rate its
+   expected n_d is 4, so it is expected to be unread.
+3. **S's ℓ** is the median of the plan's executed right grasp over window steps 3–7 (cumulative
+   clip as before); step 8 and the full path are reported; squeeze at ℓ ≥ 0.9, unchanged.
+4. **S's search miss**: the plan holds partial and G-i's cost of the plan with its right-grasp
+   requests replaced by the squeeze branch's over steps 1–8 is strictly lower than the plan's cost;
+   *partial preferred* otherwise when partial. Bar ⌈0.25 n_d⌉ on two of three seeds, unchanged;
+   the previous comparison is reported.
+5. **Stage 0′**, with no new development cohort: code and tests for 3–4, ℓ recomputed on the stored
+   development plans, the substituted costs on 940000–940031 (one GPU job, reported), the seed
+   check of 946000–946127, and the budget projection (about 0.35 GPU h, within 0.6). It escalates
+   only if the development rates project n_d below 16 at both root types at 128 roots.
+6. **K unchanged** (941000–941127, every arm, band and bar).
+7. **R7 unchanged.**
+
+**Why (R27.184).** Before the freeze, before any gated data, on development evidence, through the
+ruling §7.2 names; no level, offset, root type, bar, margin or row changes, and §14's frozen list
+does not include the root count. **Disclosed:** items 3 and 4 are motivated by the development plans
+(step-8 dispersion; CEM's best candidate below the squeeze branch's cost on 192 / 192 calls).
+
+**For the gated ruling to weigh (R27.185).** The development K pattern (Δ_s\* 0.0625 [−0.06, 0.19],
+Δ_0.6 0.125 [0, 0.28]) makes K-UNCLEAR the likely gated K row, in which case M and S are reported,
+not read; and the +y palm-placement effect (−16 / 32) is larger than any closure effect. Both are
+development numbers and set nothing.
+
+**Status (R27.186).** The protocol stays **DRAFT, not frozen**. The edits of §5, §6, §9, §10.2 and
+§14 that carry items 1–5 are made in the Stage 0′ PR, which is reviewed independently and freezes
+the protocol at its merge. **R7 does not change** (R27.176).

@@ -31,7 +31,14 @@ updated: 2026-10-15
 **DRAFT.** Chosen by R27.156 (DECISIONS (bh); design note
 [grasp_next_step_v1.md](../../../docs/experiments/grasp_next_step_v1.md)). DRAFT preregistration:
 [grasp_closure_locus_v1.md](../../../docs/experiments/grasp_closure_locus_v1.md) (R27.160–R27.176,
-DECISIONS (bi)); under review, not frozen, nothing run.
+DECISIONS (bi)); merged (#225). **Stage 0 ended S0-ESCALATE** (§16, R27.177–R27.182, DECISIONS
+(bj)) on §14's n_d rule: 6 (Rs) and 1 (R2) of 32 development roots discordant; every other check
+passed. **Escalation ruling** (§17, R27.183–R27.186, DECISIONS (bk)): option 2, extended — M and S
+move to 128 gated root seeds 946000–946127 (942000–942063 retired unused), R2 stays reported, S's ℓ
+is the median executed right grasp over window steps 3–7 and its search miss compares the plan with
+its right-grasp requests replaced by the squeeze branch's; K, every bar and row unchanged. A
+Stage 0′ (no new development cohort) checks this and freezes the protocol at its merge. Not frozen;
+nothing gated has run.
 
 **Why.** An offline read of the Stage BS reports of TASK-089, TASK-091 and TASK-093 (R27.152)
 has these qualifiers: one run per stage, simulation only, pooled, an association, and read after
@@ -92,11 +99,13 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
 
 ## Acceptance criteria
 
-- [ ] DRAFT preregistration (`docs/experiments/grasp_closure_locus_v1.md`; written, R27.160–R27.176), reviewed
+- [x] DRAFT preregistration (`docs/experiments/grasp_closure_locus_v1.md`; written, R27.160–R27.176), reviewed
   independently and merged. It fixes the seeds (checked by the seed check), the hold levels, the
   palm offset, the roots, the bars and margins and the row order before anything runs.
 - [ ] Stage 0: opt-in code with no frozen file edited, tests, the degeneracy checks of M's
   branches on development roots, and a debug smoke. The protocol is frozen at the Stage 0 merge.
+  (Code, tests, checks and smoke done; ended S0-ESCALATE on the n_d rule, so not frozen; R27.177–R27.182.
+  The ruling R27.183–R27.186 adds a Stage 0′, which freezes the protocol at its merge.)
 - [ ] K, M and S recorded at the frozen revision from a clean tree, with evidence in
   `~/develop/emai/evidence/task094-*`.
 - [ ] Row recorded with a next-step ruling (K-NULL pauses the grasp line; D still needs its own
@@ -140,3 +149,23 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
   56 / 64 (28 / 32 at Stage 0), the seed-independence approximation disclosed, a named L-UNREAD
   row, ik's contact 302 / 320 in δ_K's basis, gated K at 0.09–0.13 GPU h. The power evidence in
   `task094-draft/` is unchanged; Stage 0's recompute simulates K-NULL's joint condition.
+- 2026-10-15, Stage 0 run and recorded (branch `feat/task094-stage0`; §16; R27.177–R27.182,
+  DECISIONS (bj); evidence `~/develop/emai/evidence/task094-s0/`). Development, one run,
+  simulation only: K on 94100–94131 (all 11 arms plus the frozen `ik`; plumbing passes on every arm
+  after the check's correction, K-1.0 bitwise `ik`, K-1.0 23 / 32, K-open 0 / 32), M and S on
+  940000–940031 (roots and squeeze bitwise, positive control 32 / 32 at both root types), power
+  0.997 / 0.978, 0.108 GPU h used and 0.257 projected. **S0-ESCALATE:** n_d 6 (Rs) and 1 (R2) of
+  32, below 8 at both. The protocol is not frozen; gated cohorts untouched. Next: a ruling on the
+  options of §16.6 (run as preregistered with M likely unread, amend M, K alone, or close).
+- 2026-10-15, independent review of PR #226 (REQUEST-CHANGES, textual) applied in the record:
+  K-off-y-s\* interval 0.11–0.43; §16.5 states that S's figures do not show G preferring a partial
+  closure (CEM's best candidate cost less than the squeeze branch on 192 / 192 calls, so §6's miss
+  could not fire; ℓ read at step 8); R27.181's last bullet reworded; the pose term beside its hand
+  part; a "grasp subgoal timed out" column in the K table.
+- 2026-10-15, escalation ruling recorded (R27.183–R27.186, DECISIONS (bk); protocol §17): option 2,
+  extended, adopting the review's amendment items 1–7 word for word. Disclosed: the S definition
+  changes are motivated by development plans; the development K pattern makes K-UNCLEAR the likely
+  gated K row; the +y placement effect is larger than the closure effect. Protocol stays DRAFT.
+  Next: the Stage 0′ PR (code and tests for S's ℓ and comparator, ℓ recomputed on CPU, one GPU job
+  for the substituted costs on 940000–940031, seed check of 946000–946127, budget projection), which
+  freezes the protocol at its merge.
