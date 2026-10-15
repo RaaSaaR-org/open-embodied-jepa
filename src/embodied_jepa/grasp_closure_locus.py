@@ -52,18 +52,24 @@ COHORTS = {
     "dev-k": range(94100, 94132),
     "dev-roots": range(940000, 940032),
     "gated-k": range(941000, 941128),
-    "gated-roots": range(942000, 942064),
+    "gated-roots": range(946000, 946128),  # R27.183 (1): 128 root seeds
 }
+# R27.183 (1): the DRAFT's gated root seeds, retired before the freeze -- named, never generated,
+# never run and not reused. Every seed check refuses them.
+RETIRED_ROOTS = range(942000, 942064)
 K_COHORTS = ("debug-k", "dev-k", "gated-k")
 ROOT_COHORTS = ("debug-roots", "dev-roots", "gated-roots")
 GATED_K_N = len(COHORTS["gated-k"])  # 128
-GATED_ROOTS_N = len(COHORTS["gated-roots"])  # 64
+GATED_ROOTS_N = len(COHORTS["gated-roots"])  # 128
+DEV_ROOTS_N = len(COHORTS["dev-roots"])  # 32
 DETERMINISM_K = (("K-1.0", "K-s*"), 4)  # 941000-941003, inside the gated K cohort (§9)
-DETERMINISM_S = 2  # 942000-942001, inside the gated roots (§9)
+DETERMINISM_S = 2  # 946000-946001, inside the gated roots (§9; R27.183 (1))
 EARLIER_RANGES = dict(rp.EARLIER_RANGES) | {f"TASK-093 {k}": v for k, v in rp.COHORTS.items()}
 
 
 def check_seed(cohort: str, seed: int) -> None:
+    if int(seed) in RETIRED_ROOTS:
+        raise ContractError(f"seed {seed} is a retired root seed (942000-942063, R27.183)")
     if cohort not in COHORTS:
         raise ContractError(f"unknown cohort {cohort}")
     if int(seed) not in COHORTS[cohort]:
@@ -521,12 +527,20 @@ BRANCH_SEGMENTS = {
 BRANCH_LENGTH = {t: sum(s for _, s in segs) for t, segs in BRANCH_SEGMENTS.items()}  # 97, 70
 WINDOW = HORIZON  # 8 steps stored and scored
 MIN_DIFFERING = 7  # of the 8 window steps (§5.1, §7.1)
-EXEC_DIFF_VOID = 8  # more than 8 of 64 roots below MIN_DIFFERING at a root type: L-VOID (§7.1)
+EXEC_DIFF_FRACTION = (1, 8)  # at most 1 / 8 of a root type's roots below MIN_DIFFERING (§7.1)
+EXEC_DIFF_VOID = 16  # more than 16 of 128 roots below MIN_DIFFERING at a root type: L-VOID
 READ_MIN_ND = 16  # a root type is read only when n_d >= 16 (§5.4)
 CEILING_BAR = (3, 4)  # ĉ >= 0.75, exact (§5.5)
 G_FACTOR = 0.75
-POSITIVE_CONTROL = (7, 8)  # 56 / 64; 28 / 32 at Stage 0 (§5.5)
-STAGE0_MIN_ND = 8  # of 32 development roots at either root type (§14)
+POSITIVE_CONTROL = (7, 8)  # 112 / 128; 28 / 32 at Stage 0 (§5.5; R27.183 (1))
+STAGE0_MIN_ND = 8  # of 32 development roots at either root type (§14, Stage 0)
+
+
+def exec_diff_limit(n: int) -> int:
+    """The most roots of ``n`` at a root type that may differ at fewer than 7 window steps (1 / 8:
+    16 of 128 gated, 4 of 32 at Stage 0)."""
+    num, den = EXEC_DIFF_FRACTION
+    return int(n) * num // den
 
 
 def branch_level(name: str, s_star: float) -> float:
@@ -753,23 +767,67 @@ def positive_control_need(n: int) -> int:
 # ===== Part S (§6) =============================================================================
 SQUEEZE_LEVEL = 0.9  # the plan squeezes when ℓ >= 0.9 (§1.1's top bin)
 MISS_FRACTION = (1, 4)
+LEVEL_STEPS = (3, 7)  # ℓ: the median executed right grasp over window steps 3-7 (R27.183 (3))
 
 
 def executed_level(geometry, plan, t0) -> np.ndarray:
     """The plan's executed right grasp at steps 1-8 from the root's last accepted hand targets T₀
-    (TASK-093's cumulative clip, used only to read the plan); ℓ is the value at step 8."""
+    (TASK-093's cumulative clip, used only to read the plan). ℓ is ``window_level`` of it."""
     _, g = rp.project_grasp(geometry, np.asarray(plan, np.float32), np.asarray(t0, np.float64))
     return g
 
 
-def search_measures(level_8: float, plan_cost: float, squeeze_cost: float) -> dict:
-    squeezes = bool(level_8 >= SQUEEZE_LEVEL)
-    return {
-        "level": float(level_8),
+def window_level(path) -> float:
+    """ℓ (§6; R27.183 (3)): the median of the executed right grasp over window steps 3-7."""
+    a, b = LEVEL_STEPS
+    return float(np.median(np.asarray(path, np.float64)[a - 1 : b]))
+
+
+def squeeze_requests(root: str) -> np.ndarray:
+    """The squeeze branch's right-grasp requests at window steps 1-8 (float32): the
+    demonstrator's request arithmetic (the 0.2 ramp from -1 towards +1) continued from the root,
+    8 (Rs) or 35 (R2) close commands in. ``_Branch`` and ``zg._Demo`` compute the request the same
+    way; ``tracking_action`` puts it on channel 13 as float32."""
+    before = RS_CLOSE if root == "Rs" else CLOSE
+    g, out = -1.0, []
+    for k in range(before + WINDOW):
+        g = float(np.clip(zs.GRASP_CLOSURE, g - zs.GRASP_RAMP, g + zs.GRASP_RAMP))
+        if k >= before:
+            out.append(np.float32(g))
+    return np.asarray(out, np.float32)
+
+
+def substituted_plan(plan, root: str) -> np.ndarray:
+    """The plan with its right-grasp requests replaced by the squeeze branch's over steps 1-8;
+    every other channel the plan's own, bitwise (R27.183 (4))."""
+    out = np.array(plan, np.float32, copy=True)
+    if out.shape != (WINDOW, 14):
+        raise ContractError("a plan is [8, 14]")
+    out[:, GRASP_DIM] = squeeze_requests(root)
+    return out
+
+
+def search_measures(level: float, plan_cost: float, substituted_cost: float,
+                    squeeze_branch_cost: float | None = None,
+                    cem_cost: float | None = None) -> dict:  # fmt: skip
+    """S's measures at one root and seed (§6; R27.183 (3)-(4)). ``level`` is ℓ (steps 3-7);
+    ``plan_cost`` and ``substituted_cost`` are G-i's step-averaged costs of the plan and of the
+    plan with the squeeze branch's right-grasp requests, from one roll-out call. A miss: the plan
+    holds partial and the substituted plan costs strictly less. Reported only: the previous
+    comparison (CEM's best-candidate cost against G-i's cost of the squeeze branch's applied
+    commands)."""
+    squeezes = bool(level >= SQUEEZE_LEVEL)
+    out = {
+        "level": float(level),
         "squeezes": squeezes,
-        "miss": bool((not squeezes) and plan_cost > squeeze_cost),
-        "partial_preferred": bool((not squeezes) and plan_cost <= squeeze_cost),
+        "miss": bool((not squeezes) and substituted_cost < plan_cost),
+        "partial_preferred": bool((not squeezes) and substituted_cost >= plan_cost),
     }
+    if squeeze_branch_cost is not None:
+        ref = plan_cost if cem_cost is None else cem_cost
+        out["miss_v0"] = bool((not squeezes) and ref > squeeze_branch_cost)
+        out["partial_preferred_v0"] = bool((not squeezes) and ref <= squeeze_branch_cost)
+    return out
 
 
 def miss_need(n_d: int) -> int:
@@ -867,6 +925,57 @@ def s0_row(checks: dict, *, n_d: dict, power_ok: bool, stage0_gpu_hours: float,
         "stage0_over_budget": over_s0,
         "projection_over_budget": over_proj,
     }
+
+
+def projected_nd(n_d_dev: int, n_dev: int = DEV_ROOTS_N, n: int = GATED_ROOTS_N) -> float:
+    """n_d at the gated root count, at the development rate (R27.183 (5)): 6 / 32 x 128 = 24."""
+    return float(n_d_dev) * int(n) / int(n_dev)
+
+
+def s0p_row(checks: dict, *, n_d_dev: dict, stage0_gpu_hours: float,
+            projected_gpu_hours: float) -> dict:  # fmt: skip
+    """Stage 0′ (§17; R27.183 (5)): S0-ESCALATE when a check fails, the development rates project
+    n_d below 16 at both root types at 128 roots, TASK-094's Stage 0 and Stage 0′ GPU time
+    exceeds 0.4 GPU h, or the gated stage projects above 0.6 GPU h; otherwise S0-PASS (the
+    protocol freezes at the merge)."""
+    failing = sorted(k for k, ok in checks.items() if not ok)
+    proj = {t: projected_nd(v) for t, v in n_d_dev.items()}
+    low_nd = all(v < READ_MIN_ND for v in proj.values())
+    over_s0 = stage0_gpu_hours > STAGE0_GPU_HOURS_MAX
+    over_proj = projected_gpu_hours > PROJECTION_GPU_HOURS_MAX
+    escalate = bool(failing or low_nd or over_s0 or over_proj)
+    return {
+        "row": "S0-ESCALATE" if escalate else "S0-PASS",
+        "failing_checks": failing,
+        "n_d_dev": dict(n_d_dev),
+        "n_d_projected_at_128": proj,
+        "n_d_projected_below_16_at_both": low_nd,
+        "stage0_gpu_hours": float(stage0_gpu_hours),
+        "projected_gated_gpu_hours": float(projected_gpu_hours),
+        "stage0_over_budget": over_s0,
+        "projection_over_budget": over_proj,
+    }
+
+
+def read_probability(rate: float, n: int = GATED_ROOTS_N, need: int = READ_MIN_ND) -> float:
+    """P(n_d >= 16) for n_d ~ Binomial(n, rate) (reported only)."""
+    return float(sum(math.comb(n, k) * rate**k * (1 - rate) ** (n - k) for k in range(need, n + 1)))
+
+
+def read_probability_jeffreys(k: int, n_dev: int = DEV_ROOTS_N, n: int = GATED_ROOTS_N,
+                              need: int = READ_MIN_ND, grid: int = 20_000) -> float:  # fmt: skip
+    """P(n_d >= 16) at ``n`` roots with the development rate's uncertainty integrated over its
+    Jeffreys posterior Beta(k + 1/2, n_dev - k + 1/2) (midpoint rule; reported only)."""
+    x = (np.arange(grid) + 0.5) / grid
+    a, b = k + 0.5, n_dev - k + 0.5
+    logw = (a - 1) * np.log(x) + (b - 1) * np.log1p(-x)
+    w = np.exp(logw - logw.max())
+    w /= w.sum()
+    ks = np.arange(need, n + 1)
+    logc = np.array([math.lgamma(n + 1) - math.lgamma(j + 1) - math.lgamma(n - j + 1) for j in ks])
+    tail = np.exp(logc[None] + ks[None] * np.log(x)[:, None]
+                  + (n - ks)[None] * np.log1p(-x)[:, None]).sum(1)  # fmt: skip
+    return float((w * tail).sum())
 
 
 # ===== power (§8.4) ============================================================================

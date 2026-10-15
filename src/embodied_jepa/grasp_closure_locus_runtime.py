@@ -6,7 +6,9 @@ G-87101 and G-87102 under TASK-093's loader and pins; the planner model is
 ``grasp_corpus_wm_runtime.planner_model`` (λ = 2.0552); the step-averaged cost is
 ``zero_shot_grasp_runtime.wrap``'s step-mean setting; the CEM call is the one
 ``grasp_corpus_wm_planned_close_runtime.a2_plan`` makes (``zgr.make_planner``, CEM seed
-``8803 * 10**7 + root``, unprojected), keeping the cost its best candidate received. The term
+``8803 * 10**7 + root``, unprojected), keeping the cost its best candidate received; S's search
+miss (§6; R27.183 (4)) compares G-i's step-averaged cost of the plan with that of the plan carrying
+the squeeze branch's right-grasp requests, both from one roll-out call. The term
 decomposition is a reported analysis of the same cost (TASK-089 A1 reported G-lat the same way),
 not a cost variant; its total is checked against the planner's own ``distance``.
 
@@ -115,3 +117,19 @@ def search_plan(pm, seed, root_latent, root_state, goal_latent, goal_state):
         float(plan.costs[0]),
         plan.requested_actions[0].astype(np.float32),
     )
+
+
+def substitution_costs(pm, root_latent, root_state, goal_latent, goal_state, plan, root) -> dict:
+    """S's comparator (§6; R27.183 (4)): G-i's step-averaged cost of the plan and of the plan with
+    its right-grasp requests replaced by the squeeze branch's over steps 1-8 (every other channel
+    the plan's own), scored on requests as CEM scores them, in one roll-out call (TASK-089 A1's
+    roll-out with the step-averaged cost). Returns both totals and their latent and pose terms."""
+    plan = np.asarray(plan, np.float32)
+    subst = gl.substituted_plan(plan, root)
+    terms = step_mean(
+        rollout_terms(pm, root_latent, root_state, goal_latent, goal_state, np.stack([plan, subst]))
+    )
+    out = {}
+    for i, name in enumerate(("plan", "substituted")):
+        out[name] = {t: float(terms[t][i]) for t in TERMS}
+    return out

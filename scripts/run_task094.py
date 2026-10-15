@@ -18,8 +18,12 @@ cap:
   and checked bitwise.
 * ``rank --cohort``: M's costs (§5.3) -- G-87100-87102's roll-outs and the ceiling on real frames,
   with the term decomposition.
-* ``search --cohort``: S's CEM calls (§6), one per root type, root and seed, and the determinism
-  re-run on the first two roots.
+* ``search --cohort``: S's CEM calls (§6), one per root type, root and seed, with ℓ (the median
+  executed right grasp over window steps 3-7) and the search miss's comparator (G-i's cost of the
+  plan and of the plan with the squeeze branch's right-grasp requests; R27.183 (3)-(4)), and the
+  determinism re-run on the first two roots.
+* ``substitute --cohort dev-roots``: Stage 0′ (§17; R27.183 (5)): the comparator's costs for the
+  stored development plans of Stage 0's search on 940000-940031 (no CEM call; reported only).
 
 TASK-087's to TASK-093's frozen code is imported, never edited, and checked against its pins
 before anything runs (``grasp_closure_locus.FROZEN_FILES_SHA256``). Every job must start in this
@@ -312,14 +316,15 @@ def cmd_verify(args) -> int:
 
 # ----- §9: the seed uniqueness check -----------------------------------------------------------
 SEED_PATTERN = re.compile(
-    r"(?<![0-9A-Za-z.])(94[0-2][0-9]{3}|941[0-9]{2}|945[0-9]{2}|901[45])(?![0-9A-Za-z])"
+    r"(?<![0-9A-Za-z.])(94[0-26][0-9]{3}|941[0-9]{2}|945[0-9]{2}|901[45])(?![0-9A-Za-z])"
 )
 CHECK_RANGES = {
     "dev-k": range(94100, 94132),
     "debug": range(94500, 94600),
     "dev-roots": range(940000, 940032),
     "gated-k": range(941000, 941128),
-    "gated-roots": range(942000, 942064),
+    "gated-roots": range(946000, 946128),
+    "retired-roots": range(942000, 942064),
     "salt 9014": range(9014, 9015),
     "salt 9015": range(9015, 9016),
 }
@@ -341,7 +346,7 @@ def cmd_seeds(args) -> int:
     locals_ = git("for-each-ref", "--format=%(refname:short)", "refs/heads").split()
     paths = ["src", "scripts", "docs", ".mc", "tests", "benchmarks", "configs"]
     hits = {}
-    pattern = r"94[0-2][0-9]{3}|941[0-9]{2}|945[0-9]{2}|901[45]"
+    pattern = r"94[0-26][0-9]{3}|941[0-9]{2}|945[0-9]{2}|901[45]"
     for branch in branches + locals_ + ["HEAD"]:
         res = subprocess.run(
             ["git", "grep", "-n", "-I", "-E", pattern, branch, "--"] + paths,
@@ -676,6 +681,8 @@ def cmd_roots(args) -> int:
         if p.exists():
             raise rt.GuardError(f"refusing to overwrite {p}")
     seeds = _limit(args, list(gl.COHORTS[args.cohort]))
+    for s in seeds:  # refuses the retired root seeds 942000-942063 (R27.183 (1))
+        gl.check_seed(args.cohort, s)
     branches = gl.BRANCHES_BY_COHORT[args.cohort]
     if not debug_cohort(args.cohort):
         ledger_claim(f"roots-{args.cohort}")
@@ -742,6 +749,8 @@ def cmd_roots(args) -> int:
 
 
 def load_roots(folder, cohort, revision):
+    """A roots job's report and arrays, checked against each other and the cohort; ``revision``
+    None (Stage 0′'s ``substitute`` on Stage 0's stored roots) skips the revision check only."""
     folder = Path(folder)
     rep = json.loads((folder / f"roots-{cohort}.json").read_text())
     if not rep.get("completed"):
@@ -755,7 +764,7 @@ def load_roots(folder, cohort, revision):
     if not debug_cohort(cohort):
         if seeds != list(gl.COHORTS[cohort]):
             raise rt.GuardError("G-roots: the cohort's seeds are not exactly its roots")
-        if rep["revision"] != revision:
+        if revision is not None and rep["revision"] != revision:
             raise rt.GuardError("G-roots: the roots were made at another revision")
     return rep, np.load(npath), sha(folder / f"roots-{cohort}.json")
 
@@ -868,6 +877,17 @@ def cmd_rank(args) -> int:
     return EXIT_VOID if problems else 0
 
 
+def _squeeze_request_deviation(geometry, data, s, root) -> float:
+    """The comparator's plumbing check: the squeeze branch's right-grasp requests that S
+    substitutes (``gl.squeeze_requests``), executed through the cumulative clip from the root's
+    T₀, must give the squeeze branch's recorded applied right grasp over the window."""
+    plan = np.zeros((gl.WINDOW, 14), np.float32)
+    plan[:, gl.GRASP_DIM] = gl.squeeze_requests(root)
+    path = gl.executed_level(geometry, plan, data[f"{s}/{root}/t0"])
+    applied = np.asarray(data[f"{branch_key(s, root, gl.SQUEEZE)}/applied"], np.float64)
+    return float(np.abs(path - applied[: gl.WINDOW, gl.GRASP_DIM]).max())
+
+
 # ----- S: the search (§6) ----------------------------------------------------------------------
 def cmd_search(args) -> int:
     if args.cohort not in gl.ROOT_COHORTS:
@@ -916,14 +936,23 @@ def cmd_search(args) -> int:
                     plan, cost, req = lr.search_plan(pm, s, *xin)
                     t0 = data[f"{s}/{root}/t0"]
                     path = gl.executed_level(geometry, plan, t0)
+                    sub = lr.substitution_costs(pm, *xin, plan, root)
                     res["roots"][f"{s}/{root}"] = {
+                        # reported; Stage 0′ checked it on the development roots
+                        "squeeze_request_path_deviation": _squeeze_request_deviation(
+                            geometry, data, s, root
+                        ),  # fmt: skip
                         "plan": plan.tolist(),
                         "cost": cost,
                         "requests_equal_plan": bool(rp.bits_equal(req, plan)),
                         "executed": path.tolist(),
-                        "level": float(path[gl.HORIZON - 1]),
+                        "level": gl.window_level(path),
+                        "level_step8": float(path[gl.HORIZON - 1]),
                         "first_requested_grasp": float(plan[0, gl.GRASP_DIM]),
                         "first_executed_grasp": float(path[0]),
+                        "plan_cost": sub["plan"]["total"],
+                        "substituted_cost": sub["substituted"]["total"],
+                        "substitution_terms": sub,
                     }
                     if args.check_a2:
                         ref = pr.a2_plan(pm, gl.SETTING, s, *xin)
@@ -931,7 +960,9 @@ def cmd_search(args) -> int:
                             problems.append(f"G-v1-{seed} root {s} {root}: plan != a2_plan")
                     if s in det_roots:
                         again, cost2, _ = lr.search_plan(pm, s, *xin)
-                        same = bool(rp.bits_equal(again, plan) and cost2 == cost)
+                        sub2 = lr.substitution_costs(pm, *xin, again, root)
+                        same = bool(rp.bits_equal(again, plan) and cost2 == cost
+                                    and sub2 == sub)  # fmt: skip
                         res["determinism"][f"{s}/{root}"] = same
                         if not same:
                             problems.append(f"G-v1-{seed} root {s} {root}: re-run differs")
@@ -953,6 +984,88 @@ def cmd_search(args) -> int:
     log(f"search on {args.cohort}: {report['n']} roots, {len(problems)} problems, "
         f"{report['seconds']:.0f} s")  # fmt: skip
     return EXIT_VOID if problems else 0
+
+
+# ----- Stage 0′: the comparator on the stored development plans (§17; R27.183 (5)) ------------
+def cmd_substitute(args) -> int:
+    """G-i's step-averaged cost of each stored development plan and of the same plan with the
+    squeeze branch's right-grasp requests (one roll-out call per root, type and seed), with ℓ
+    recomputed. Reported only; it sets nothing. No CEM call: the plans are Stage 0's."""
+    if args.cohort != "dev-roots":
+        raise rt.GuardError("substitute is Stage 0′'s job on the development roots only")
+    report = base_report(args.cohort)
+    out = Path(args.output) / f"substitute-{args.cohort}.json"
+    if out.exists():
+        raise rt.GuardError(f"refusing to overwrite {out}")
+    _lambda_check()
+    rep, data, roots_sha = load_roots(args.roots, args.cohort, None)
+    search_path = Path(args.search)
+    search = json.loads(search_path.read_text())
+    if search.get("roots_sha256") != roots_sha or not search.get("completed"):
+        raise rt.GuardError("G-search: the stored search is not over these roots, or incomplete")
+    if search.get("task") != gl.TASK or search.get("cohort") != args.cohort:
+        raise rt.GuardError("G-search: not TASK-094's development search")
+    report["preflight"] = preflight(gl.MODEL_SEEDS)
+    ledger_claim(f"substitute-{args.cohort}")
+    with Job(out, report, _cap(args)) as job:
+        from embodied_jepa import devices
+        from embodied_jepa import grasp_closure_locus_runtime as lr
+
+        devices.configure_determinism("cuda", strict=False)
+        from embodied_jepa import grasp_rate_projected as rp
+        from embodied_jepa import play_corpus as pc
+
+        robot = pc.make_play_robot()
+        geometry = rp.RateGeometry.from_robot(robot)
+        robot.close()
+        enc = _encode_roots(lr.encoder("cuda"), rep, data)
+        results, problems = {}, []
+        for seed in gl.MODEL_SEEDS:
+            model, info = lr.load_model(seed, "cuda")
+            pm = lr.planner_model(model)
+            stored = search["results"][f"G-v1-{seed}"]["roots"]
+            res = {"model": info, "roots": {}}
+            for r in rep["roots"]:
+                s = r["seed"]
+                for root in gl.ROOT_TYPES:
+                    k = gl.ROOT_GOAL[root]
+                    xin = (enc[f"{s}/{root}"], data[f"{s}/{root}/state28"],
+                           enc[f"{s}/goal/{root}"], data[f"{s}/subgoal{k}/state28"])  # fmt: skip
+                    st = stored[f"{s}/{root}"]
+                    plan = np.asarray(st["plan"], np.float32)
+                    sub = lr.substitution_costs(pm, *xin, plan, root)
+                    path = np.asarray(st["executed"], np.float64)
+                    dev_sq = _squeeze_request_deviation(geometry, data, s, root)
+                    if dev_sq > gl.PATH_TOLERANCE:
+                        problems.append(f"{s} {root}: squeeze requests off its applied grasp")
+                    res["roots"][f"{s}/{root}"] = {
+                        "squeeze_request_path_deviation": dev_sq,
+                        "cem_cost": st["cost"],
+                        "plan_cost": sub["plan"]["total"],
+                        "substituted_cost": sub["substituted"]["total"],
+                        "substitution_terms": sub,
+                        "level": gl.window_level(path),
+                        "level_step8": float(path[gl.HORIZON - 1]),
+                    }
+            results[f"G-v1-{seed}"] = res
+            log(f"G-v1-{seed}: {len(res['roots'])} substituted costs")
+            del model, pm
+        report |= {
+            "roots_sha256": roots_sha,
+            "roots_revision": rep.get("revision"),
+            "search_sha256": sha(search_path),
+            "search_revision": search.get("revision"),
+            "n": len(rep["roots"]),
+            "results": results,
+            "problems": problems,
+            "seconds": time.time() - job.t0,
+            "completed": True,
+            "cap_hit": False,
+            "finished_utc": utc(),
+        }
+        write_json(out, report)
+    log(f"substitute on {args.cohort}: {report['n']} roots, {report['seconds']:.0f} s")
+    return 0
 
 
 def main(argv=None) -> int:
@@ -1001,6 +1114,12 @@ def main(argv=None) -> int:
         p.add_argument("--cap-seconds", type=int)
         if name == "search":
             p.add_argument("--check-a2", action="store_true", help="debug: plan == pr.a2_plan")
+    su = sub.add_parser("substitute")
+    su.add_argument("--cohort", required=True, choices=("dev-roots",))
+    su.add_argument("--roots", required=True)
+    su.add_argument("--search", required=True)
+    su.add_argument("--output", required=True)
+    su.add_argument("--cap-seconds", type=int)
     args = parser.parse_args(argv)
     return {
         "verify": cmd_verify,
@@ -1011,6 +1130,7 @@ def main(argv=None) -> int:
         "roots": cmd_roots,
         "rank": cmd_rank,
         "search": cmd_search,
+        "substitute": cmd_substitute,
     }[args.command](args)
 
 

@@ -8,7 +8,14 @@
   check, the positive control at 28 / 32 per root type, n_d at each root type, G's wins and S's
   measures, reported), the power rule (``power.json``), the debug smoke, Stage 0's GPU time from
   ``gpu_run``'s log and the gated stage's projection.
-* ``--stage gated --runs DIR --s0-summary FILE``: the gated stage's rows: K's row (§4.3), M's and
+* ``--stage 0p --runs DIR --s0-runs DIR --gpu-log FILE``: Stage 0′'s row (§17; R27.183 (5)): ℓ
+  recomputed on Stage 0's stored development plans (the median executed right grasp over window
+  steps 3-7), the new search miss from ``substitute-dev-roots.json`` (reported; it sets nothing),
+  the previous comparison beside it, the seed check of 946000-946127 (``seeds.json``), the hash
+  checks (``verify-task094.json``), §14's n_d rule read at 128 roots, TASK-094's GPU time so far
+  and the gated stage's projection at 128 root seeds.
+* ``--stage gated --runs DIR --s0-summary FILE``: the gated stage's rows (it needs Stage 0′'s
+  summary with S0-PASS): K's row (§4.3), M's and
   S's readings per root type, the L row (§7.1, read only after K-CAUSAL) and the task row, with
   every K arm, the contrasts, the determinism re-runs and the term decomposition.
 
@@ -214,7 +221,30 @@ def _branch_rows(roots_rep):
     return {r["seed"]: r for r in roots_rep["roots"]}
 
 
-def ms_summary(d, cohort, *, expect_n=None):
+def _s_entry(search, substitute, seed, key):
+    """S's per-root quantities: from the search report (gated: ℓ and the comparator's costs are
+    recorded by the job), or from Stage 0's stored search with Stage 0′'s ``substitute`` report."""
+    st = search["results"][f"G-v1-{seed}"]["roots"][key]
+    path = np.asarray(st["executed"], np.float64)
+    if "plan_cost" in st:
+        plan_cost, sub_cost = st["plan_cost"], st["substituted_cost"]
+    elif substitute is not None:
+        sb = substitute["results"][f"G-v1-{seed}"]["roots"][key]
+        plan_cost, sub_cost = sb["plan_cost"], sb["substituted_cost"]
+    else:
+        plan_cost = sub_cost = None
+    return {
+        "level": gl.window_level(path),
+        "level_step8": float(path[gl.HORIZON - 1]),
+        "cem_cost": float(st["cost"]),
+        "plan_cost": plan_cost,
+        "substituted_cost": sub_cost,
+        "first_requested_grasp": st["first_requested_grasp"],
+        "first_executed_grasp": st["first_executed_grasp"],
+    }
+
+
+def ms_summary(d, cohort, *, expect_n=None, substitute=None):
     d = Path(d)
     roots = load(d / f"roots-{cohort}.json")
     rank = load(d / f"rank-{cohort}.json") if (d / f"rank-{cohort}.json").exists() else None
@@ -290,29 +320,64 @@ def ms_summary(d, cohort, *, expect_n=None):
             if search is not None:
                 misses, s_rep = [], {}
                 for seed in gl.MODEL_SEEDS:
-                    sres = search["results"][f"G-v1-{seed}"]["roots"]
+                    ent = [_s_entry(search, substitute, seed, f"{s}/{t}") for s in seeds]
+                    if any(e["plan_cost"] is None for e in ent):
+                        problems.append(f"G-v1-{seed} {t}: no comparator costs")
+                        misses.append(0)
+                        continue
                     meas = [
-                        gl.search_measures(sres[f"{s}/{t}"]["level"], sres[f"{s}/{t}"]["cost"],
-                                           g_costs[seed][gl.SQUEEZE][i])
-                        for i, s in enumerate(seeds)
+                        gl.search_measures(e["level"], e["plan_cost"], e["substituted_cost"],
+                                           g_costs[seed][gl.SQUEEZE][i], e["cem_cost"])
+                        for i, e in enumerate(ent)
                     ]  # fmt: skip
                     m_d = [m for m, x in zip(meas, disc, strict=True) if x]
+                    # the DRAFT's reading, reported only: ℓ at step 8 and CEM's cost against the
+                    # squeeze branch's applied commands
+                    prev = [
+                        gl.search_measures(e["level_step8"], e["cem_cost"], e["cem_cost"],
+                                           g_costs[seed][gl.SQUEEZE][i], e["cem_cost"])
+                        for i, e in enumerate(ent)
+                    ]  # fmt: skip
+                    p_d = [m for m, x in zip(prev, disc, strict=True) if x]
                     misses.append(int(sum(m["miss"] for m in m_d)))
                     levels = np.array([m["level"] for m in meas])
+                    l8 = np.array([e["level_step8"] for e in ent])
+                    l8_d = l8[disc]
+                    gap = np.array([e["plan_cost"] - e["cem_cost"] for e in ent])
                     s_rep[str(seed)] = {
                         "misses_discordant": misses[-1],
+                        "misses_all": int(sum(m["miss"] for m in meas)),
                         "squeezes_all": int(sum(m["squeezes"] for m in meas)),
                         "squeezes_discordant": int(sum(m["squeezes"] for m in m_d)),
                         "partial_preferred_all": int(sum(m["partial_preferred"] for m in meas)),
                         "partial_preferred_discordant": int(
                             sum(m["partial_preferred"] for m in m_d)
                         ),
-                        "misses_all": int(sum(m["miss"] for m in meas)),
                         "level_quantiles": np.percentile(levels, [10, 50, 90]).round(3).tolist(),
+                        "substituted_below_plan_all": int(sum(
+                            e["substituted_cost"] < e["plan_cost"] for e in ent)),
+                        "substituted_over_plan_median": float(np.median(
+                            [e["substituted_cost"] / e["plan_cost"] for e in ent])),
+                        "plan_cost_minus_cem_cost_max_abs": float(np.abs(gap).max()),
+                        "previous": {  # reported only: the DRAFT's ℓ (step 8) and comparison
+                            "misses_discordant": int(sum(m["miss_v0"] for m in p_d)),
+                            "misses_all": int(sum(m["miss_v0"] for m in prev)),
+                            "partial_preferred_discordant": int(
+                                sum(m["partial_preferred_v0"] for m in p_d)),
+                            "partial_preferred_all": int(
+                                sum(m["partial_preferred_v0"] for m in prev)),
+                            "squeezes_all_step8": int((l8 >= gl.SQUEEZE_LEVEL).sum()),
+                            "squeezes_discordant_step8": int((l8_d >= gl.SQUEEZE_LEVEL).sum()),
+                            "level_step8_quantiles": np.percentile(l8, [10, 50, 90])
+                            .round(3).tolist(),
+                            "cem_below_squeeze_branch_all": int(sum(
+                                e["cem_cost"] < g_costs[seed][gl.SQUEEZE][i]
+                                for i, e in enumerate(ent))),
+                        },
                         "first_requested_median": float(np.median(
-                            [sres[f"{s}/{t}"]["first_requested_grasp"] for s in seeds])),
+                            [e["first_requested_grasp"] for e in ent])),
                         "first_executed_median": float(np.median(
-                            [sres[f"{s}/{t}"]["first_executed_grasp"] for s in seeds])),
+                            [e["first_executed_grasp"] for e in ent])),
                     }  # fmt: skip
                 entry["search"] = s_rep
                 readings["s_misses"] = misses
@@ -398,11 +463,13 @@ def _job_kind(command):
     return m.group(1), cohort.group(1) if cohort else None, arm.group(1) if arm else None
 
 
-def projection(jobs) -> dict:
+def projection(jobs, *, roots_factor=4, search_factor=2, extra=None) -> dict:
     """§10.2: the gated stage projected from Stage 0's development jobs (their whole durations,
     start-up included): K's goals and every arm x 4 (32 -> 128 resets), each determinism re-run as
-    one development arm job; M's roots and ranking x 4 (32 -> 64 roots, 3 -> 6 branches); S x 2
-    (32 -> 64 roots)."""
+    one development arm job; M's roots and ranking x ``roots_factor`` (Stage 0: x 4, 32 -> 64
+    roots and 3 -> 6 branches; Stage 0′: x 8, 32 -> 128 roots and 3 -> 6 branches); S x
+    ``search_factor`` (x 2 at 64 roots, x 4 at 128); ``extra`` adds named seconds (Stage 0′: the
+    comparator's roll-outs, its development job x 4)."""
     dev = {}
     for j in jobs:
         kind, cohort, arm = _job_kind(j["command"])
@@ -416,10 +483,10 @@ def projection(jobs) -> dict:
         "goals": 4 * dev[("goals", None)],
         "k_arms": 4 * sum(k_arms),
         "k_determinism": 2 * dev.get(("k-run", "K-1.0"), max(k_arms)),
-        "roots": 4 * dev[("roots", None)],
-        "rank": 4 * dev[("rank", None)],
-        "search": 2 * dev[("search", None)],
-    }
+        "roots": roots_factor * dev[("roots", None)],
+        "rank": roots_factor * dev[("rank", None)],
+        "search": search_factor * dev[("search", None)],
+    } | dict(extra or {})
     total = float(sum(parts.values()))
     return {"complete": True, "seconds": parts, "total_seconds": total, "gpu_hours": total / 3600,
             "dev_jobs": {f"{k}:{a}": v for (k, a), v in dev.items()}}  # fmt: skip
@@ -451,8 +518,7 @@ def stage_0(args):
         "k_reports": not k["problems"],
         "m_roots_and_squeeze_bitwise": not [p for p in m["problems"]],
         "m_executed_difference": all(
-            v["excluded_below_7"] <= len(gl.COHORTS["dev-roots"]) * gl.EXEC_DIFF_VOID
-            // gl.GATED_ROOTS_N for v in m["per_type"].values()
+            v["excluded_below_7"] <= gl.exec_diff_limit(v["n"]) for v in m["per_type"].values()
         ),
         "m_positive_control": all(
             v.get("positive_control", -1) >= v.get("positive_control_need", 10**9)
@@ -515,13 +581,104 @@ def stage_0(args):
     }
 
 
+# ----- Stage 0′ (§17; R27.183 (5)) -------------------------------------------------------------
+SEARCH_FACTOR_0P = 4  # 32 -> 128 roots
+ROOTS_FACTOR_0P = 8  # 32 -> 128 roots, 3 -> 6 branches
+
+
+def stage_0p(args):
+    d, d0 = Path(args.runs), Path(args.s0_runs)
+    s0 = load(d0 / "summary-0.json")
+    verify = load(d / "verify-task094.json")
+    seeds = load(d / "seeds.json")
+    sub = load(d / "substitute-dev-roots.json")
+    search_path = d0 / "search-dev-roots.json"
+    m = ms_summary(d0, "dev-roots", expect_n=gl.DEV_ROOTS_N, substitute=sub)
+    sub_problems = common_checks([sub], "dev-roots", gl.DEV_ROOTS_N) + list(sub["problems"])
+    jobs = gpu_jobs(args.gpu_log, args.who_prefix)
+    s0_jobs = [j for j in jobs if not j["who"].endswith("-0p")]
+    p_jobs = [j for j in jobs if j["who"].endswith("-0p")]
+    used = float(sum(j["seconds"] for j in jobs))
+    sub_seconds = max((j["seconds"] for j in p_jobs if "substitute" in j["command"]), default=0)
+    proj = projection(s0_jobs, roots_factor=ROOTS_FACTOR_0P, search_factor=SEARCH_FACTOR_0P,
+                      extra={"comparator": SEARCH_FACTOR_0P * sub_seconds})  # fmt: skip
+    ranges_ok = (
+        list(gl.COHORTS["gated-roots"]) == list(range(946000, 946128))
+        and list(gl.RETIRED_ROOTS) == list(range(942000, 942064))
+        and seeds.get("ranges", {}).get("gated-roots") == [946000, 946127]
+    )
+    checks = {
+        "verify": bool(verify.get("all_pass")),
+        "seeds_no_hits_elsewhere": not seeds.get("hits_elsewhere")
+        and not seeds.get("evidence_hits_in_seed_fields"),
+        "seed_ranges": bool(ranges_ok),
+        "substitute_report": not sub_problems,
+        "substitute_over_stage0_search": sub.get("search_sha256") == gd_sha(search_path)
+        and sub.get("roots_sha256") == gd_sha(d0 / "roots-dev-roots.json"),
+        "dev_records_unchanged": s0.get("row") == "S0-ESCALATE"
+        and {t: v["n_d"] for t, v in s0["ms_dev"]["per_type"].items()}
+        == {t: v["n_d"] for t, v in m["per_type"].items()},
+        "projection_complete": bool(proj["complete"]),
+    }  # fmt: skip
+    nd = {t: v["n_d"] for t, v in m["per_type"].items()}
+    row = gl.s0p_row(checks, n_d_dev=nd, stage0_gpu_hours=used / 3600,
+                     projected_gpu_hours=proj.get("gpu_hours", float("inf")))  # fmt: skip
+    read = {
+        t: {
+            "rate": v / gl.DEV_ROOTS_N,
+            "projected_n_d": gl.projected_nd(v),
+            "p_read_at_point_rate": gl.read_probability(v / gl.DEV_ROOTS_N),
+            "p_read_jeffreys": gl.read_probability_jeffreys(v),
+        }
+        for t, v in nd.items()
+    }
+    return {
+        "stage": "0p",
+        "row": row["row"],
+        "s0p_row": row,
+        "checks": checks,
+        "n_d_reading": read,
+        "ms_dev": m,
+        "substitute_problems": sub_problems,
+        "seeds": {
+            "branches": seeds.get("branches"),
+            "local_branches": seeds.get("local_branches"),
+            "ranges": seeds.get("ranges"),
+            "hits_elsewhere": seeds.get("hits_elsewhere"),
+            "hits_in_task094_files": sorted(seeds.get("hits_in_task094_files", {})),
+            "evidence_hits": [(h["file"], h["token"]) for h in seeds.get("evidence_hits", [])],
+            "evidence_hits_in_seed_fields": seeds.get("evidence_hits_in_seed_fields"),
+        },
+        "verify": verify.get("checks"),
+        "gpu": {
+            "jobs_stage0": len(s0_jobs),
+            "jobs_stage0p": p_jobs,
+            "stage0_only_seconds": float(sum(j["seconds"] for j in s0_jobs)),
+            "stage0p_seconds": float(sum(j["seconds"] for j in p_jobs)),
+            # TASK-094's GPU time before the gated stage (Stage 0 and Stage 0′); the gated stage
+            # script counts it towards the 1.0 GPU h ceiling
+            "stage0_seconds": used,
+            "stage0_gpu_hours": used / 3600,
+            "projection": proj,
+        },
+        "s0_revision": s0.get("revision"),
+        "revision": verify.get("revision"),
+    }
+
+
+def gd_sha(path):
+    import hashlib
+
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
 # ----- the gated stage (§4.3, §7) --------------------------------------------------------------
 def stage_gated(args):
     d = Path(args.runs)
     s0 = load(args.s0_summary)
     problems = []
-    if s0.get("row") != "S0-PASS":
-        problems.append("Stage 0 did not pass")
+    if s0.get("stage") != "0p" or s0.get("row") != "S0-PASS":
+        problems.append("Stage 0′ did not pass (Stage 0 ended S0-ESCALATE; §17)")
     budget_stop = (d / "BUDGET-STOP").exists()
     k = k_summary(d, "gated-k", expect_n=gl.GATED_K_N)
     if k.get("k_row") is None:
@@ -542,7 +699,7 @@ def stage_gated(args):
         m = ms_summary(d, "gated-roots", expect_n=gl.GATED_ROOTS_N)
         void = list(m["problems"])
         for t, v in m["per_type"].items():
-            if v["excluded_below_7"] > gl.EXEC_DIFF_VOID:
+            if v["excluded_below_7"] > gl.exec_diff_limit(v["n"]):
                 void.append(f"{t}: {v['excluded_below_7']} roots differ at fewer than 7 steps")
             if v.get("positive_control", -1) < v.get("positive_control_need", 10**9):
                 void.append(f"{t}: the positive control failed")
@@ -571,19 +728,22 @@ def stage_gated(args):
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--stage", required=True, choices=("0", "gated"))
+    p.add_argument("--stage", required=True, choices=("0", "0p", "gated"))
     p.add_argument("--runs", required=True)
     p.add_argument("--debug-runs")
     p.add_argument("--gpu-log", default=str(Path.home() / ".local/state/gpu/oej-gpu_run.log"))
     p.add_argument("--who-prefix", default="oej:task094-")
     p.add_argument("--s0-summary")
+    p.add_argument("--s0-runs", help="Stage 0′: Stage 0's development folder")
     args = p.parse_args(argv)
     if args.stage == "gated" and not args.s0_summary:
         p.error("--stage gated needs --s0-summary")
+    if args.stage == "0p" and not args.s0_runs:
+        p.error("--stage 0p needs --s0-runs")
     out = Path(args.runs) / f"summary-{args.stage}.json"
     if out.exists():
         raise SystemExit(f"refusing to overwrite {out}")
-    summary = stage_0(args) if args.stage == "0" else stage_gated(args)
+    summary = {"0": stage_0, "0p": stage_0p, "gated": stage_gated}[args.stage](args)
     gl.write_json(out, summary)
     print(json.dumps({k: summary[k] for k in ("stage", "row")}, indent=1))
     return 0
