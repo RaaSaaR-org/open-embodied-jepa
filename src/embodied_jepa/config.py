@@ -11,6 +11,8 @@ from typing import Any
 
 import yaml
 
+from embodied_jepa.action_schemas import ACTION_SCHEMAS, JOINT_DELTA_SO101_V0
+from embodied_jepa.contracts import ACTION_SCHEMA, ContractError
 from embodied_jepa.planning import CEMConfig
 from embodied_jepa.registry import EMBODIMENTS, MODELS, PLANNERS, POLICIES, TASKS
 
@@ -40,6 +42,48 @@ PLANNERS.register("cem", "embodied_jepa.planning:CEMPlanner")
 POLICIES.register("cloned_bc_v1", "embodied_jepa.policy:ClonedPolicy")
 TASKS.register("reach", "embodied_jepa.task:ReachTask")
 TASKS.register("apple_to_plate", "embodied_jepa.task:AppleToPlateTask")
+# The action schema each embodiment executes (SO-101 S0, TASK-096). A config naming another
+# schema for that embodiment is rejected; an embodiment absent here cannot be configured.
+EMBODIMENT_ACTION_SCHEMAS = {"unitree_g1_dex3": ACTION_SCHEMA}
+
+
+def _positive_scalar(value) -> bool:
+    return (
+        not isinstance(value, bool)
+        and isinstance(value, (float, int))
+        and math.isfinite(value)
+        and value > 0
+    )
+
+
+def _check_action_manifest(schema_name: str, manifest: dict) -> None:
+    """Required resolved physical fields per schema; scales live here, never in the schema."""
+    if schema_name == ACTION_SCHEMA:
+        for field in (
+            "translation_per_step_m",
+            "rotation_per_step_rad",
+            "control_dt_s",
+            "joint_speed_limit_rad_s",
+        ):
+            if not _positive_scalar(manifest.get(field)):
+                raise ValueError(f"unresolved or invalid action manifest {field}")
+        return
+    if schema_name == JOINT_DELTA_SO101_V0.version:
+        if not _positive_scalar(manifest.get("control_dt_s")):
+            raise ValueError("unresolved or invalid action manifest control_dt_s")
+        arm = JOINT_DELTA_SO101_V0.names[:-1]
+        scales = manifest.get("joint_delta_per_step_rad")
+        if (
+            not isinstance(scales, dict)
+            or set(scales) != set(arm)
+            or not all(_positive_scalar(scales[name]) for name in arm)
+        ):
+            raise ValueError(
+                "action manifest joint_delta_per_step_rad must give a positive finite "
+                f"delta for each of {list(arm)}"
+            )
+        return
+    raise ValueError(f"no action manifest rule for schema {schema_name!r}")
 
 
 def _mapping(value, allowed, label):
@@ -128,6 +172,9 @@ class ExperimentConfig:
     output_root: Path
     resolved: dict[str, Any]
     goal_manifest: Path | None = None
+    # Registered action schema version (embodied_jepa.action_schemas); for any schema but
+    # ee_delta_grasp_v0, ``planner`` is a ``SchemaCEMConfig`` sized by it.
+    action_schema: str = ACTION_SCHEMA
 
     @classmethod
     def load(cls, path: str | Path, *, require_checkpoint=True):
@@ -198,26 +245,19 @@ class ExperimentConfig:
         EMBODIMENTS.require(embodiment.get("backend"))
         if embodiment.get("transport") != "mujoco":
             raise ValueError("only MuJoCo execution is enabled")
-        if embodiment.get("action_schema", "ee_delta_grasp_v0") != "ee_delta_grasp_v0":
+        schema_name = embodiment.get("action_schema", ACTION_SCHEMA)
+        if not isinstance(schema_name, str) or schema_name not in ACTION_SCHEMAS:
             raise ValueError("unsupported action schema")
+        if EMBODIMENT_ACTION_SCHEMAS.get(embodiment["backend"]) != schema_name:
+            raise ValueError(
+                f"embodiment {embodiment['backend']!r} does not execute action schema "
+                f"{schema_name!r}"
+            )
         action_manifest = _path(embodiment.get("action_manifest"), path.parent, "action manifest")
         manifest = json.loads(action_manifest.read_text())
-        if not isinstance(manifest, dict) or manifest.get("action_schema") != "ee_delta_grasp_v0":
+        if not isinstance(manifest, dict) or manifest.get("action_schema") != schema_name:
             raise ValueError("action manifest has incompatible schema")
-        for field in (
-            "translation_per_step_m",
-            "rotation_per_step_rad",
-            "control_dt_s",
-            "joint_speed_limit_rad_s",
-        ):
-            value = manifest.get(field)
-            if (
-                isinstance(value, bool)
-                or not isinstance(value, (float, int))
-                or not math.isfinite(value)
-                or value <= 0
-            ):
-                raise ValueError(f"unresolved or invalid action manifest {field}")
+        _check_action_manifest(schema_name, manifest)
         dataset = _mapping(raw.get("dataset", {}), ("root",), "dataset")
         dataset_root = _path(dataset.get("root"), path.parent, "dataset root")
         planner = dict(
@@ -249,7 +289,18 @@ class ExperimentConfig:
             or timeout <= 0
         ):
             raise ValueError("timeout_seconds must be finite and positive")
-        budget = CEMConfig(**planner, seed=seed)
+        if schema_name == ACTION_SCHEMA:
+            budget = CEMConfig(**planner, seed=seed)
+        else:
+            from embodied_jepa.schema_planning import SchemaCEMConfig
+
+            for key in ("lower_bounds", "upper_bounds"):
+                if isinstance(planner.get(key), list):
+                    planner[key] = tuple(planner[key])
+            try:
+                budget = SchemaCEMConfig(ACTION_SCHEMAS[schema_name], **planner, seed=seed)
+            except ContractError as error:
+                raise ValueError(str(error)) from error
         task = _mapping(raw.get("task", {}), ("name", "max_steps", "goal_manifest"), "task")
         TASKS.require(task.get("name"))
         goal_manifest = (
@@ -277,6 +328,7 @@ class ExperimentConfig:
         )
         planner_config = asdict(budget)
         planner_config.pop("seed")  # The experiment seed is the sole CEM seed source.
+        planner_config.pop("action_schema", None)  # recorded once, under embodiment
         resolved = {
             "schema_version": 0,
             "mode": "common",
@@ -291,7 +343,7 @@ class ExperimentConfig:
             "embodiment": {
                 "backend": embodiment["backend"],
                 "transport": "mujoco",
-                "action_schema": "ee_delta_grasp_v0",
+                "action_schema": schema_name,
                 "action_manifest": str(action_manifest),
             },
             "dataset": {"root": str(dataset_root)},
@@ -319,6 +371,7 @@ class ExperimentConfig:
             output,
             resolved,
             goal_manifest=goal_manifest,
+            action_schema=schema_name,
         )
 
     def save(self, path: str | Path):
