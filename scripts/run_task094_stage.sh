@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # TASK-094: run a stage (protocol docs/experiments/grasp_closure_locus_v1.md §10.3, §13), each GPU
 # use its own scripts/gpu_run.sh job under the 1 800 s per-job cap, then summarise. Run from a
-# clean tree at the frozen revision (the Stage 0 merge) for the gated stage.
+# clean tree at the frozen revision (the Stage 0′ merge, 2eacacf) for the gated stage.
 #   scripts/run_task094_stage.sh gated <out> <summary-0p.json>  K, M, S, summary (gated cohorts)
 #   scripts/run_task094_stage.sh dev <out>                      Stage 0's development K, M and S
 #   scripts/run_task094_stage.sh 0p <out> <stage-0-dir>         Stage 0′'s comparator job on the
