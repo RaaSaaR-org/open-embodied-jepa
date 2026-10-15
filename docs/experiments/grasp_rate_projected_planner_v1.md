@@ -1194,8 +1194,10 @@ record, at `4d3491e` from a clean tree, after the V2D session is told. It has no
 closes the deviation disclosed in §18). Stage BS ran once, 2026-10-14 17:31 UTC to 2026-10-15
 07:26 UTC, with `scripts/run_task093_stage.sh bs outputs/task093-bs outputs/task093-bd/summary-bd.json
 outputs/task093-p/summary-p.json`, at the frozen revision `4d3491e` (#221's merge) from the same
-clean tracked tree as §17–§18 (`worktrees/task093-run`, detached at `4d3491e`; every run report
-records `tracked_tree_dirty: false` and `frozen_files_match: true`). Before each of the 18 jobs the
+clean tracked tree as §17–§18 (`worktrees/task093-run`, detached at `4d3491e`;
+the goals report and each of the 17 job reports (twelve parts, four baselines, the determinism
+re-run) record `tracked_tree_dirty: false` and `frozen_files_match: true`; the six combined
+reports record `tracked_tree_dirty: false`). Before each of the 18 jobs the
 stage script read BOARD.md's `## Requests`; twice a `- v2d:` request was present and the next job
 waited until it was gone (90 s at 19:54:54 UTC and 210 s at 05:10:45 UTC), as §10 requires. Every
 job took the shared lock with `gpu_run.sh --wait --board`. Nothing frozen was changed. Evidence:
@@ -1259,7 +1261,8 @@ with the right-grasp channel > 0.5):
 - **Gating tests** (reset level, exact one-sided sign-flip, p < 0.01):
   - "M-proj beats M-v1": **p = 0.810, not met**.
   - "M-proj beats random": p = 3.8 × 10⁻⁶, met.
-- **Reported:** the pooled exact McNemar test, p = 0.819; the reset-cluster bootstrap of
+- **Reported:** the pooled exact McNemar test (one-sided, 13 against 17 discordant pairs),
+  p = 0.819; the reset-cluster bootstrap of
   (k_p − k_c) / 384 (10 000 resamples, salt 9006): **−0.010, 95 % −0.039 to +0.018**; ik (× 3)
   against M-proj per reset, p = 2.5 × 10⁻²⁷.
 - **Why this is the row** (§6.3, first match). Not B-VOID (above). Not B-PASS, B-GAIN or B-BAR,
@@ -1296,7 +1299,7 @@ M-v1-87100 / -87101 / -87102:**
   9 / 9 / 9 / 11 / 13 / 12); never closed in the grasp phase 1 / 2 / 1 / 6 / 1 / 3; grasp phase not
   reached 1 / 2 / 0 / 0 / 0 / 0.
 - (3) share of grasp-phase re-plans with k = 1, per reset: median 0.77 / 0.55 / 0.64 / 0.57 /
-  0.55 / 0.55 (pooled 0.760 / 0.577 / 0.647 / 0.576 / 0.571 / 0.585); median planned close step k
+  0.55 / 0.545 (pooled 0.760 / 0.577 / 0.647 / 0.576 / 0.571 / 0.585); median planned close step k
   1 for every arm (p90 2 / 3.5 / 2.65 / 1 / 1 / 1.5); longest run of re-plans with k > 1, median
   7 / 8 / 8 / 3 / 4 / 4 (max 19 / 24 / 27 / 9 / 9 / 84).
 
@@ -1314,8 +1317,8 @@ first success and the first failure of that run). Both replays matched the run's
 **What this is and is not.** One run, simulation only, 128 fresh gated resets (918000–918127), one
 scene, arm, hand and camera at 112 px, one encoder, latent, corpus, recipe, budget and cost;
 three model seeds pooled, G-87102 `last_two_triggered`. Projecting CEM's grasp candidates onto
-the rate set removed the off-support queries completely (plan steps off support 0.000 against
-0.35–0.49 for M-v1) and the closed-loop equivalence held bitwise, but M-proj did not beat the
+the rate set put every chosen plan on the training support (plan steps off support 0.000 against
+0.35–0.49 for M-v1; every scored candidate is on support by construction) and the closed-loop equivalence held bitwise, but M-proj did not beat the
 unprojected planner (20 / 384 against 24 / 384, p = 0.810; bootstrap −0.010, 95 % −0.039 to
 +0.018), was far below the bar (156 / 384) and far below ik (91 / 128 on the same resets and
 goals, without a world model). At the bootstrap's 95 % level the data are not consistent with a
@@ -1340,7 +1343,8 @@ change.
 - **R27.149 — The §8 clause fires,** with its scope unchanged. It closes grasp-channel rate
   projection of CEM's candidates as the grasp fix, under TASK-089's step-averaged planner, over
   TASK-087's G checkpoints and (on §3 rank 4's argument, not a test) TASK-092's G-req checkpoints:
-  no further variant of it (the refit space, elite or sample count under projection, projecting
+  no further variant of it (the refit space (requests or projected; the projected refit is closed
+  without being tested), elite or sample count under projection, projecting
   only the first steps, a softened or margin-shifted rate set, adding G-req) is preregistered for
   grasping over these checkpoints without new evidence of a different kind. Not closed, as §8
   lists: LeWM, DINOv2 and CEM in general; full-embodiment candidate projection including the arm

@@ -94,11 +94,14 @@ and 210 s waits). Nothing frozen was changed.
   - **Gating tests** (reset-level exact one-sided sign-flip): "M-proj beats M-v1" p = 0.810, not
     met; "M-proj beats random" p = 3.8 × 10⁻⁶, met. Bootstrap of (k_p − k_c) / 384 (salt 9006):
     −0.010, 95 % −0.039 to **+0.018**, below δ = +0.10, so B-FAIL, not B-UNDER. Reported only:
-    pooled McNemar p = 0.819; ik against M-proj p = 2.5 × 10⁻²⁷.
-  - **Mechanism (reported).** M-proj's chosen plans were wholly on the training support (plan
-    steps off support 0.000 on every seed, against 0.486, 0.420 and 0.350 for M-v1), yet grasp
-    contact (71, 64, 98 of 128 against M-v1's 74, 90, 84; ik 120) and median maximum rise
-    (0.37–0.43 cm against 0.32–0.47 cm; ik 6.45 cm) were not higher than M-v1's in this run.
+    the pooled exact McNemar test (one-sided, 13 against 17 discordant pairs), p = 0.819; ik
+    against M-proj p = 2.5 × 10⁻²⁷.
+  - **Support (reported; not a test).** M-proj's chosen plans were wholly on the training support
+    (plan steps off support 0.000 on every seed, against 0.486, 0.420 and 0.350 for M-v1), yet
+    M-proj did not beat M-v1. Grasp contact was 71, 64 and 98 of 128 (pooled 233 / 384) against
+    M-v1's 74, 90 and 84 (248 / 384), with ik at 120. Median maximum rise was 0.37, 0.37 and
+    0.43 cm against 0.32, 0.47 and 0.40 cm, with ik at 6.45 cm. That being on support helps or
+    hurts the grasp is not shown.
   - **Not claimed.** "LeWM needed"; Phase 4 is not admitted.
 - **R27.149 — The §8 clause fires** with its scope unchanged: grasp-channel rate projection of
   CEM's candidates as the grasp fix, under TASK-089's step-averaged planner, over TASK-087's G
