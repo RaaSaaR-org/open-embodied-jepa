@@ -67,11 +67,12 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
 **Rows** (declared with bars and margins in the preregistration; routing only, no claim):
 - K-VOID: the run is void, for example when ik at c = +1.0 does not reproduce its frozen BS
   rate within a declared margin, or when a degeneracy check fails.
-- K-NULL: if TASK-094 reads K-NULL, the grasp line pauses and the owner is told. D's work (for
+- K-NULL (no lift loss of 0.15 or more at s\* or at 0.6): if TASK-094 reads K-NULL, the grasp line pauses and the owner is told. D's work (for
   example a Phase 4 precursor with a scripted closure rule) still needs its own ruling, because
   Phase 4 is not admitted (R25.27, R27.148) (R27.157). The palm-offset arm is reported beside
   K-NULL, so that a placement-dominant result is visible to the pause ruling.
 - K-CAUSAL is followed by one of:
+  - L-UNREAD (no root type read);
   - L-COST (b);
   - L-MODEL (a);
   - L-SEARCH (c);
@@ -108,20 +109,23 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
 - 2026-10-15, DRAFT preregistration written (R27.160–R27.176, DECISIONS (bi); branch
   `docs/task094-prereg`). Fixed there:
   - **K:** TASK-088's IK follower with its closing command held at +1.0, 0.9, 0.8, 0.7, s\*
-    (the goal's measured close-subgoal synergy) and 0.6 (reported), K-open (c = −1, degeneracy
-    reference), and palm offsets v_x = (+1.2, 0, 0) cm and v_y = (0, +1.2, 0) cm (pelvis frame, a
+    (the goal's measured close-subgoal synergy) and 0.6 (reported, and part of K-NULL's condition),
+    K-open (c = −1, degeneracy reference), and palm offsets v_x = (+1.2, 0, 0) cm and v_y = (0, +1.2, 0) cm (pelvis frame, a
     rigidly displaced goal) at +1.0 and s\*; 128 paired gated resets 941000–941127.
   - **M and S:** 64 gated root seeds 942000–942063, two root types: Rs (8 of the demonstrator's 35
     close commands in; roots in the close: yes, R27.163) and R2 (the end of the close); branches at
     +1.0, 0.9, 0.8, 0.7, s\* and a control, simulated to their true outcome; the frozen
     step-averaged cost on G-87100–87102 (G-87102 `last_two_triggered`) and on real frames; S is
     TASK-089's frozen, unprojected planner.
-  - **Rows and bars:** K-VOID (K-1.0 outside 63–114 of 128; K-open > 3 / 128; checks), K-NULL
-    (bootstrap upper bound of the lift loss < 0.15), K-CAUSAL (loss ≥ 0.15 and McNemar p < 0.01),
-    K-UNCLEAR; after K-CAUSAL, first match: L-VOID, L-COST (ceiling < 0.75 on discordant roots),
-    L-MODEL (G below ⌈(0.5 + 0.75 (ĉ − 0.5)) n_d⌉ on two of three seeds), L-SEARCH (search misses
-    on ≥ a quarter of discordant roots, two of three seeds), L-MIXED. Routing only; no controller.
-    K-CAUSAL with L-COST is put forward, not ruled met, as R26.33 evidence for option C.
+  - **Rows and bars:** K-VOID (K-1.0 outside 63–114 of 128; K-open > 3 / 128; checks), **K-NULL**
+    (the reset-bootstrap upper bounds of both the K-1.0 minus K-s\* and the K-1.0 minus K-0.6 lift
+    rates below δ_K = 0.15; salt 9014), K-CAUSAL (loss ≥ 0.15 and McNemar p < 0.01),
+    K-UNCLEAR; after K-CAUSAL, first match: L-VOID, L-UNREAD (no root type read), L-COST (ceiling
+    < 0.75 on discordant roots), L-MODEL (G below ⌈(0.5 + 0.75 (ĉ − 0.5)) n_d⌉ on two of three seeds), L-SEARCH (search misses
+    on ≥ a quarter of discordant roots, two of three seeds), L-MIXED; the positive control at
+    56 / 64 (28 / 32 at Stage 0). Routing only; no controller. K-CAUSAL with L-COST is put forward,
+    not ruled met, as R26.33 evidence for option C; the record names the root type(s) at which
+    L-COST was read (Rs's window holds no lift).
   - **Seeds:** Stage 0 development K 94100–94131 and roots 940000–940031; debug 94500–94599; new
     salt 9014 (9015 reserved).
   - **Budget:** about 0.5 GPU h (0.4–0.7), ceiling 1.0; Stage 0 escalates above a 0.6 GPU h
@@ -129,3 +133,10 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
   - Development behind it (CPU only): `~/develop/emai/evidence/task094-draft/` (power simulation).
   - Next: independent review and merge of the DRAFT, then the Stage 0 PR (code, tests,
     development checks), which freezes the protocol.
+- 2026-10-15, independent review of PR #225 (REQUEST-CHANGES, textual) applied in the DRAFT: K-NULL
+  also requires the K-0.6 contrast's bound below 0.15 (else K-UNCLEAR); the bootstrap bound is the
+  97.5th percentile of the two-sided 95 % percentile interval; Rs's window holds no lift, and the
+  record names the root type of an L-COST. Non-blocking suggestions adopted: positive control
+  56 / 64 (28 / 32 at Stage 0), the seed-independence approximation disclosed, a named L-UNREAD
+  row, ik's contact 302 / 320 in δ_K's basis, gated K at 0.09–0.13 GPU h. The power evidence in
+  `task094-draft/` is unchanged; Stage 0's recompute simulates K-NULL's joint condition.
