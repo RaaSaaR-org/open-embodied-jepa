@@ -1,7 +1,8 @@
 # Visual world model adapters
 
 `NativeJEPA` and `LeWM` implement the same frozen `WorldModel` contract. They accept
-canonical `SequenceBatch` data and normalized `ee_delta_grasp_v0` actions, predict
+canonical `SequenceBatch` data and normalized `ee_delta_grasp_v0` actions (other registered
+schemas go through the schema-sized subclasses below), predict
 all future steps recursively, and return finite NumPy float32 image-goal costs
 `[batch, candidates, horizon]`. Both are explicitly **visual-only baselines**:
 robot state is validated for batch/schema identity but ignored by the encoder.
@@ -203,6 +204,47 @@ These modules sit beside the two world-model adapters, not inside them, and none
 - **The observation ceiling (TASK-075).** `obs_ceiling_v2{,_offline,_runtime}.py`: readouts of the
   apple-minus-plate offset from four views on frozen DINOv2 features. Outcome OBS-NONE; the clause
   fired ([results](experiments/apple_obs_ceiling_v2_results.md)).
+
+## Action schemas other than `ee_delta_grasp_v0` (SO-101 S0, TASK-096)
+
+`NativeJEPA`, `LeWM` and `models/base.py` are sized by the 14-D `ee_delta_grasp_v0`, and they
+stay that way: those files feed the implementation hash every native/LeWM checkpoint since
+TASK-072 enforces (and `models/lewm.py` also TASK-087's G hash), and `contracts.py`,
+`planning.py` and `models/lewm.py` are byte-pinned by TASK-091–TASK-094's frozen protocols. A
+second schema therefore enters through new files only ([SO101_PLAN.md](SO101_PLAN.md) S0):
+
+- `embodied_jepa.action_schemas` registers schemas by version. `joint_delta_so101_v0` is the
+  SO-101's 6-D schema, `[shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll,
+  gripper]` (LeRobot `so_follower` motor order): five arm joint-position deltas and one gripper
+  command, normalized float32 in `[-1, 1]` and validated, never clipped. The schema is identity
+  only; per-joint delta scales, joint limits, the gripper's mapping and the control rate belong
+  to the embodiment's action manifest (S1, TASK-097).
+- `embodied_jepa.models.schema_backends.SchemaNativeJEPA` and `SchemaLeWM` take
+  `action_schema=` and build the backend's modules with that action width, in the backend's own
+  order and RNG stream (given `ee_delta_grasp_v0`, a test holds them to the pinned backend's
+  exact initial weights and update). Their `capabilities`, `predict`, `save` and `load` carry the
+  declared schema; training and rollout are the backend's. Their `implementation_sha256` covers
+  `base.py`, `schema_backends.py`, the readout files and the backend's file, so their checkpoints
+  and the pinned backends' never load into each other. `action_chunk` > 1 is refused for a
+  non-14-D schema (the chunk encoder in `base.py` is sized by `ee_delta_grasp_v0`).
+- `create_model(backend, state_schema=..., action_schema=...)` returns the pinned class through
+  `MODELS` for `ee_delta_grasp_v0` and the schema-sized subclass otherwise, so the backend swap
+  stays a one-line config change on either schema.
+- `embodied_jepa.schema_planning.SchemaCEMConfig`/`SchemaCEMPlanner` are `CEMConfig`/`CEMPlanner`
+  sized by the schema (bounds default to `[-1, 1]` per component); `create_planner` keeps the
+  14-D path on the pinned `CEMPlanner`. `planning.MPC` runs either.
+- `ExperimentConfig` accepts `embodiment.action_schema` naming a registered schema the
+  embodiment executes (`config.EMBODIMENT_ACTION_SCHEMAS`; G1 executes only
+  `ee_delta_grasp_v0`), checks the action manifest's per-schema fields and, for a non-14-D
+  schema, builds a `SchemaCEMConfig`. `DatasetStore.create(..., action_schema=...)` stores any
+  registered schema (feature shapes, names and the final-row placeholder follow it) and reopening
+  matches the stored record exactly; `Episode.action_schema` defaults to `ee_delta_grasp_v0`.
+
+Not yet schema-sized (pinned or G1 task-line; to be added by the phase that needs them, through
+new files): the frozen-encoder and frozen-token mixins (`models/frozen_encoder.py`,
+`models/frozen_tokens.py`), the behaviour-cloning policy (`policy.py`), the latent critic
+(`models/latent_critic.py`), `jepa_wms` and the sensor backends, and the `training`/`benchmark`
+CLIs, which still construct the 14-D path. No SO-101 embodiment, task or data exists yet.
 
 ## Optional LeWM source
 
