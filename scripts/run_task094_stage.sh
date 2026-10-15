@@ -2,15 +2,18 @@
 # TASK-094: run a stage (protocol docs/experiments/grasp_closure_locus_v1.md §10.3, §13), each GPU
 # use its own scripts/gpu_run.sh job under the 1 800 s per-job cap, then summarise. Run from a
 # clean tree at the frozen revision (the Stage 0 merge) for the gated stage.
-#   scripts/run_task094_stage.sh gated <out> <summary-0.json>   K, M, S, summary (gated cohorts)
+#   scripts/run_task094_stage.sh gated <out> <summary-0p.json>  K, M, S, summary (gated cohorts)
 #   scripts/run_task094_stage.sh dev <out>                      Stage 0's development K, M and S
+#   scripts/run_task094_stage.sh 0p <out> <stage-0-dir>         Stage 0′'s comparator job on the
+#                                                               stored development plans (§17)
 #   scripts/run_task094_stage.sh debug <out>                    Stage 0's debug smoke (not counted)
 # Every output file is refused if it exists, and the runner's ledger refuses a cohort run twice.
 # The runner starts in this checkout's root (where third_party/le-wm is; R27.107) and loads its
 # goals or roots and models before any ledger claim. Before each GPU job the "## Requests" section
 # of ~/.local/state/gpu/BOARD.md is read; while it has a "- v2d: ..." line the job waits (up to
 # 15 min), and every job takes the lock with gpu_run.sh --wait. In the gated stage no job starts
-# once TASK-094's GPU time (Stage 0's, from its summary, plus this stage's jobs) reaches 1.0 GPU h:
+# once TASK-094's GPU time (Stage 0's and Stage 0′'s, from Stage 0′'s summary, plus this stage's
+# jobs) reaches 1.0 GPU h:
 # the stage writes <out>/BUDGET-STOP and its summary reads K-VOID (budget) (§10.2).
 set -euo pipefail
 STAGE=${1:?stage}; OUT=${2:?output dir}
@@ -30,7 +33,7 @@ BOARD=${GPU_BOARD:-$HOME/.local/state/gpu/BOARD.md}
 USED=0
 if [ "$STAGE" = gated ]; then
   S0=${3:?Stage 0 summary}
-  USED=$("$PYB" -c "import json,sys; s=json.load(open(sys.argv[1])); assert s['row']=='S0-PASS', s['row']; print(int(s['gpu']['stage0_seconds']))" "$S0")
+  USED=$("$PYB" -c "import json,sys; s=json.load(open(sys.argv[1])); assert s['stage']=='0p' and s['row']=='S0-PASS', s['row']; print(int(s['gpu']['stage0_seconds']))" "$S0")
 fi
 v2d_waiting() {
   [ -f "$BOARD" ] || return 1
@@ -105,6 +108,10 @@ case "$STAGE" in
     gpuv "${PY[@]}" roots --cohort dev-roots --output "$OUT" --workers 8
     gpuv "${PY[@]}" rank --cohort dev-roots --roots "$OUT" --output "$OUT"
     gpuv "${PY[@]}" search --cohort dev-roots --roots "$OUT" --output "$OUT" ;;
+  0p)
+    S0DIR=$(realpath -m "${3:?Stage 0 development folder}")
+    gpu "${PY[@]}" substitute --cohort dev-roots --roots "$S0DIR" \
+      --search "$S0DIR/search-dev-roots.json" --output "$OUT" ;;
   debug)
     N=${3:-4}
     gpu "${PY[@]}" goals --cohort debug-k --output "$OUT" --workers 4 --limit "$N"

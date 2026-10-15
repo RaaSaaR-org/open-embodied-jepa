@@ -1,13 +1,16 @@
 # TASK-094 — grasp-closure locus diagnostic: does the partial closure the world-model arms command cause their grasp failures, and does the failure sit in the goal and cost, the model or the search (measurement only; no controller)
 
-**Status: DRAFT, Stage 0 ended S0-ESCALATE** (R27.160–R27.176; Stage 0 record §16, R27.177–R27.182;
-escalation ruling §17, R27.183–R27.186; decided by Claude under owner delegation, 2026-10-15;
-DECISIONS (bi), (bj), (bk)). **The protocol is not frozen.** Stage 0's one failing rule is §14's
-n_d rule: on the 32 development roots the s\* branch lifted where the squeeze did on all but 6 (Rs)
-and 1 (R2), so M would most likely not be read. No gated cohort was touched. The ruling (§17)
-amends M and S before the freeze (128 gated root seeds 946000–946127; S's ℓ and search miss
-redefined); a Stage 0′ checks the amendment and freezes the protocol at its merge. Until then
-nothing gated runs, and §17 governs where it differs from §5, §6, §9, §10.2 and §14.
+**Status: FROZEN at the merge of the Stage 0′ PR** (R27.160–R27.176; Stage 0 record §16,
+R27.177–R27.182; escalation ruling §17, R27.183–R27.186; Stage 0′ record §18, R27.187–R27.192;
+decided by Claude under owner delegation, 2026-10-15; DECISIONS (bi), (bj), (bk), (bl)). Stage 0
+ended S0-ESCALATE on §14's n_d rule (6 of 32 development roots discordant at Rs, 1 at R2). The
+ruling (§17) amended M and S before the freeze: 128 gated root seeds 946000–946127 (942000–942063
+retired, never generated), the positive control at 112 / 128 and the executed-difference limit at
+16 / 128, S's ℓ the median executed right grasp over window steps 3–7, and S's search miss read
+against the plan with the squeeze branch's right-grasp requests. **Stage 0′ ended S0-PASS** (§18):
+with no new development cohort, the development rates project n_d = 24 at Rs (4 at R2) at 128
+roots, every check passes, and the gated stage projects to 0.352 GPU h. §5, §6, §9, §10.2 and §14
+carry the amendment; K is unchanged. No gated cohort has been touched.
 
 This is the diagnostic that R27.156 chose after TASK-093 closed at B-FAIL (design note
 [grasp_next_step_v1.md](grasp_next_step_v1.md), §4–§5). **It is measurement only.** It runs no
@@ -107,7 +110,7 @@ cost (b), from G (a) or from the search (c)?
 | Part | What runs | Model | Cohort |
 | --- | --- | --- | --- |
 | **K, the physics dose** | TASK-088's IK follower with its closing command held at a level c, ± a palm offset | none | 128 fresh gated resets |
-| **M, the ranking** | scripted hold-level branches from fresh roots, simulated to their true outcome, scored by the frozen step-averaged cost on G's predictions and on the branch's real frames (the ceiling) | G-87100, G-87101, G-87102 (frozen) | 64 fresh gated root seeds, two root types |
+| **M, the ranking** | scripted hold-level branches from fresh roots, simulated to their true outcome, scored by the frozen step-averaged cost on G's predictions and on the branch's real frames (the ceiling) | G-87100, G-87101, G-87102 (frozen) | 128 fresh gated root seeds (R27.183), two root types |
 | **S, the search** | TASK-089's frozen step-averaged CEM, one call per root | the same | the same roots as M |
 
 **Frozen, unchanged:**
@@ -286,11 +289,16 @@ seven hand joints separately (which term, if any, is flat); the per-step cost at
 ### 5.4 The ranking measure
 
 - **Discordant roots.** At a root type, a root is *discordant* when the squeeze branch lifts and
-  the s\* branch does not. n_d(t) is their number at root type t (of 64).
+  the s\* branch does not. n_d(t) is their number at root type t (of 128; R27.183).
   - The ranking is read **on discordant roots only**. Where both branches lift, neither ranking is
     wrong, and including those roots would cap any cost's win rate below what it can show.
   - **A root type is read only when n_d(t) ≥ 16.** Below that, its rows are reported, not read.
     If neither root type is read, the task's L row is L-UNREAD (§7.1).
+  - **R2 is expected to be unread** (R27.183 (2)). At Stage 0's development rate (1 of 32 roots
+    discordant) its expected n_d at 128 roots is 4. It stays: every R2 check (the bitwise roots,
+    the squeeze branch's reproduction, the executed-difference check, the positive control) still
+    voids M (L-VOID), and its rows and per-level lift rates are reported. The read rule is not
+    changed for it: it is read only if its n_d reaches 16.
 - **A win** at a discordant root: cost(squeeze) < cost(s\*), strictly; ties are not wins.
   - **Ceiling win rate** ĉ(t) = ceiling wins / n_d(t).
   - **G-i wins** per seed, out of n_d(t).
@@ -317,8 +325,9 @@ seven hand joints separately (which term, if any, is flat); the per-step cost at
     partial closures come from, so that rule would misread a near-ceiling G as L-MODEL. With 0.75
     such a G passes with probability 0.89, and one whose seeds are at 0.8 with 0.11.
 - **The positive control holds** at t when the ceiling ranks the squeeze above the control branch
-  on at least **56 / 64** roots (0.875). Otherwise M is void (§7.1).
-  - **Why 56 / 64.** It is a plumbing check, not a measurement: TASK-089's A-K0 found the analogous
+  on at least **112 / 128** roots (0.875; the DRAFT's 56 / 64 in the same proportion, R27.183).
+  Otherwise M is void (§7.1).
+  - **Why 0.875.** It is a plumbing check, not a measurement: TASK-089's A-K0 found the analogous
     contrasts at **1.000** on real frames, so a ceiling that misranks a branch that never lifts on
     more than one root in eight points at the harness, and 0.75 would be lenient.
 
@@ -327,35 +336,55 @@ seven hand joints separately (which term, if any, is flat); the per-step cost at
 At every Rs and R2 root, one CEM call per seed with the frozen planner of §3 (goal as §5.1). This
 is TASK-089's A2 call with the step-averaged cost, the call TASK-093 Stage P ran for M-v1.
 
-- **The chosen hold level ℓ:** the chosen plan's right grasp at step 8 **as executed**, that is
-  after the cumulative rate clip from the root's last accepted grasp target (0.4545 at Rs, +1 at
-  R2). The clip is computed with TASK-093's frozen projector arithmetic (`grasp_rate_projected`),
-  used only to read the plan; the plan itself is unprojected, as M-v1's were. **The plan squeezes**
-  when ℓ ≥ 0.9 (§1.1's top bin), and **holds partial** otherwise.
-- **G's cost of the chosen plan:** the cost CEM's best candidate received (its requests), against
-  G-i's cost of the squeeze branch's applied commands over the same window (§5.3 (i)).
-- **A search miss** at a root: the plan holds partial **and** G-i rates it worse than the squeeze
-  branch (cost(plan) > cost(squeeze)). CEM then failed to find a sequence that its own model rates
-  at least as well as one that squeezes.
+- **The chosen hold level ℓ** (amended by R27.183 (3)): the **median of the chosen plan's
+  executed right grasp over window steps 3–7**, the executed grasp being the plan's requests after
+  the cumulative rate clip from the root's last accepted grasp target (0.4545 at Rs, +1 at R2). The
+  clip is computed with TASK-093's frozen projector arithmetic (`grasp_rate_projected`), used only
+  to read the plan; the plan itself is unprojected, as M-v1's were. **The plan squeezes** when
+  ℓ ≥ 0.9 (§1.1's top bin), and **holds partial** otherwise.
+  - **Why steps 3–7.** At Rs steps 1–2 are bound by the rate limit for every plan that closes.
+    Step 8 is the end of the horizon, where Stage 0's development plans' requests were lowest and
+    most dispersed (median 0.52–0.69, IQR 0.17–0.31, against about 0.8–0.9 at steps 3–7; §16.5).
+    Step 8's executed grasp (the DRAFT's ℓ) and the full executed path are reported.
+- **The comparator** (amended by R27.183 (4)): the **substituted plan** is the chosen plan with its
+  right-grasp requests over steps 1–8 replaced by the squeeze branch's right-grasp requests
+  (`grasp_closure_locus.squeeze_requests`: the demonstrator's 0.2 ramp continued from the root, 0.8
+  then +1 at Rs, +1 at R2), every other channel the plan's own. G-i's step-averaged cost of the
+  plan and of the substituted plan are computed **on requests, as CEM scores its candidates**, in
+  one roll-out call (§5.3 (i)'s roll-out). CEM's own best-candidate cost is reported beside them.
+- **A search miss** at a root: the plan holds partial **and** the substituted plan's cost is
+  **strictly lower** than the plan's. CEM then kept a partial closure although its own model rates
+  the same plan with the squeeze's closing requests better.
+- **Partial preferred**: the plan holds partial and the substituted plan costs at least as much.
+- **Why it changed.** CEM optimises all 14 channels and is scored on its requests, so its best
+  candidate cost less than the scripted squeeze branch's applied commands on every development
+  call (192 / 192; §16.5), and the DRAFT's miss (cost(plan) > cost(squeeze branch)) could not fire.
+  The substituted plan differs from the plan in the right grasp alone, so the comparison isolates
+  the closure. **The DRAFT's comparison** (CEM's best-candidate cost against G-i's cost of the
+  squeeze branch's applied commands) is reported.
 - **The search misses** at root type t when at least **two of the three seeds** miss on
-  ≥ **⌈0.25 × n_d(t)⌉** of the discordant roots.
+  ≥ **⌈0.25 × n_d(t)⌉** of the discordant roots (unchanged).
   - **Why 0.25.** At TASK-089's R1 and R2 the same planner closed and lifted closed on 62 and 61 of
     64 roots (§1.2). A search failure that matters for a closed-loop rate near 0.1 against ik's
     0.7 must be common; a quarter of the decisions at contact is the smallest such share this n
     can tell from a rare one (§8.3).
-- **Reported only:** ℓ's distribution; the share of plans that squeeze; the first command's
-  requested and executed grasp; *partial preferred* (the plan holds partial and G rates it at least
-  as well as the squeeze branch); all of these on every root and on discordant roots.
-- **Determinism:** one CEM call per seed re-run on two roots, bitwise.
+- **Reported only:** ℓ's distribution; the share of plans that squeeze; step 8's executed grasp and
+  the full executed path; the first command's requested and executed grasp; *partial preferred*;
+  the DRAFT's comparison; the substituted plan's cost relative to the plan's; all of these on
+  every root and on discordant roots. A plumbing reading, reported: the squeeze branch's requests,
+  executed through the same clip, reproduce its recorded applied right grasp (checked on the
+  development roots at Stage 0′, §18).
+- **Determinism:** one CEM call per seed re-run on two roots (946000–946001), bitwise, with the
+  comparator's costs.
 
 ## 7. Rows of the task, routing and what is put forward
 
 ### 7.1 The L rows (read only after K-CAUSAL; first match over the read root types)
 
 1. **L-VOID** — an M or S check failed: a root's bitwise re-run, the squeeze branch's bitwise
-   reproduction of the demonstrator, the executed-difference check (more than 8 of 64 roots at a
-   root type where the squeeze and s\* branches differ at fewer than 7 of the 8 window steps; such
-   a root is otherwise excluded from the ranking and counted), the positive control (§5.5), a
+   reproduction of the demonstrator, the executed-difference check (more than 16 of 128 roots, 1 / 8,
+   at a root type where the squeeze and s\* branches differ at fewer than 7 of the 8 window steps;
+   such a root is otherwise excluded from the ranking and counted; R27.183), the positive control (§5.5), a
    checkpoint, λ or seed check, the determinism re-run of S, or a cohort run twice. K's row stands.
    M and S run again only on fresh roots named by a ruling.
 2. **L-UNREAD** — no root type is read (n_d < 16 at both; §5.4). M and S are reported, with the
@@ -468,7 +497,7 @@ recompute (§8.4) simulates that joint condition with Δ_{0.6} ≥ Δ_{s\*}.
 - **K-open (≤ 3 / 128).** If an open hand lifted 1 % of the time, the check would void with
   probability 0.04.
 
-### 8.2 M (n_d discordant roots of 64 per root type)
+### 8.2 M (n_d discordant roots of 128 per root type; R27.183)
 
 - **L-COST misreads.** The probability that the ceiling falls below 0.75 at a true ceiling rate r:
 
@@ -486,9 +515,12 @@ recompute (§8.4) simulates that joint condition with Δ_{0.6} ≥ Δ_{s\*}.
   These two-of-three probabilities treat the three seeds as independent. They are not: the seeds
   are scored on the same roots and come from one training run, so their wins are correlated, and
   the figures are an approximation.
-- **n = 64 root seeds** gives n_d = 32 if s\* fails on half the roots. n_d is not known before the
-  run; it is the one quantity that can leave a root type unread (both unread: L-UNREAD), and
-  Stage 0 reports it on development roots. A root type with n_d < 16 is reported, not read (§5.4).
+- **The root count** (amended by R27.183 from the DRAFT's 64). n_d is not known before the run;
+  it is the one quantity that can leave a root type unread (both unread: L-UNREAD). Stage 0
+  measured it on 32 development roots: 6 at Rs and 1 at R2 (§16.5). At 128 root seeds and Rs's
+  development rate, the expected n_d is 24 and P(n_d ≥ 16) is 0.977 at the point rate, 0.84 with
+  the rate's uncertainty integrated (Jeffreys; 0.96 at 192 roots); at R2 the expected n_d is 4
+  (§18). A root type with n_d < 16 is reported, not read (§5.4).
 
 ### 8.3 S
 
@@ -518,8 +550,9 @@ below 0.95, it discloses this and escalates before the freeze (S0-ESCALATE).
 | Stage 0 development K resets | **94100–94131** |
 | Stage 0 development roots (M, S) | **940000–940031** |
 | Gated K resets | **941000–941127** |
-| Gated M and S root seeds | **942000–942063** |
-| Determinism re-runs | K-1.0 and K-s\* on 941000–941003; S on 942000–942001 (inside the gated cohorts) |
+| Gated M and S root seeds | **946000–946127** (R27.183 (1)) |
+| Retired, never generated or run, not reused | 942000–942063 (the DRAFT's gated root seeds; every seed check refuses them) |
+| Determinism re-runs | K-1.0 and K-s\* on 941000–941003; S on 946000–946001 (inside the gated cohorts) |
 | Debug (Stage 0 plumbing and smoke; never counted) | **94500–94599** |
 
 **Salts.**
@@ -547,7 +580,8 @@ below 0.95, it discloses this and escalates before the freeze (S0-ESCALATE).
   906000–907127, 90300–90331 and 90700–90799; TASK-090 903000–905063, 90200–90231, 910000–913199
   and 920000–923199; TASK-089 89000–89999 and 890000–891063; TASK-088 88000–88999 and
   880000–881063.
-- **Stage 0** repeats both checks at its own revision and records them.
+- **Stage 0** repeats both checks at its own revision and records them; **Stage 0′** repeats them
+  with 946000–946127 and the retired 942000–942063 (§18).
 
 ## 10. Runtime, budget, stop rules, paths and evidence
 
@@ -567,16 +601,19 @@ Every GPU use (rendering, encoding, roll-outs, CEM) is one `scripts/gpu_run.sh -
 | --- | --- | --- |
 | Stage 0 (development K on 32 resets, development M and S on 32 roots with the squeeze, s\* and control branches only, debug smoke, timing, opt-in render tests) | about 0.15–0.2 GPU h | TASK-089 Stage 0; ik ran 128 resets in 29–43 s per job |
 | Gated K (128 goals; 11 arms × 128 resets; the determinism re-run) | about 0.09–0.13 GPU h (11 jobs × 29–43 s), before goal generation | as above; the goals as TASK-093 BS |
-| Gated M (64 root seeds; 2 root types × 6 branches of 70–97 commands, each re-run from its reset; frames encoded at 8 steps; three G roll-outs per branch) | about 0.2–0.3 GPU h | TASK-089 Stage A: 64 roots with 5 branches and 9 models in about 6 minutes; M simulates about three times as many commands |
-| Gated S (3 seeds × 128 root calls; re-run) | about 0.05 GPU h | TASK-093 Stage P: 768 calls in 281 s |
-| **Total** | **about 0.5 GPU h (0.4–0.7); ceiling 1.0 GPU h** | |
+| Gated M (128 root seeds since R27.183; 2 root types × 6 branches of 70–97 commands, each re-run from its reset; frames encoded at 8 steps; three G roll-outs per branch) | the DRAFT's 0.2–0.3 GPU h at 64 roots; Stage 0′ projects it from Stage 0's jobs (§18) | TASK-089 Stage A: 64 roots with 5 branches and 9 models in about 6 minutes; M simulates about three times as many commands |
+| Gated S (3 seeds × 256 root calls with the comparator's roll-outs; re-run) | projected by Stage 0′ (§18) | TASK-093 Stage P: 768 calls in 281 s |
+| **Total** | **the DRAFT's about 0.5 GPU h (0.4–0.7); Stage 0′'s projection in §18; ceiling 1.0 GPU h** | |
 
 - **Per-job cap 1 800 s.** A job that reaches it exits; in the gated stage that is K-VOID (or
   L-VOID for an M or S job).
 - **Stage 0's projection.** Stage 0 times its jobs and projects the gated stage. If the projection
   exceeds **0.6 GPU h**, or Stage 0 itself exceeds 0.4 GPU h, it escalates before the freeze
-  (S0-ESCALATE).
-- **The ceiling.** If the GPU time of all TASK-094 jobs (Stage 0 and gated) reaches **1.0 GPU h**
+  (S0-ESCALATE). **Stage 0′** (§17, §18) projects again at 128 root seeds from Stage 0's
+  development jobs (K's goals and arms × 4; M's roots and ranking × 8, for 4 × the roots and 2 ×
+  the branches; S × 4, plus 4 × Stage 0′'s comparator job) with the same 0.6 GPU h limit, and
+  counts Stage 0's and Stage 0′'s GPU time together against 0.4 GPU h.
+- **The ceiling.** If the GPU time of all TASK-094 jobs (Stage 0, Stage 0′ and gated) reaches **1.0 GPU h**
   before the gated stage completes, no further job starts, and the stage is K-VOID (budget) for a
   ruling.
 
@@ -627,10 +664,17 @@ Every GPU use (rendering, encoding, roll-outs, CEM) is one `scripts/gpu_run.sh -
 - **Read only on discordant roots.** If s\* lifts at the demonstrator's exact states, n_d is small
   and M is not read, even if K reads K-CAUSAL (K's follower is not the demonstrator). That case is
   L-UNREAD (when neither root type is read), and the per-level lift rates at the roots are reported.
-- **Cost on requests against cost on executed commands (S).** CEM scores its candidates' requests,
-  as in the closed loop; the squeeze branch is scored on its applied commands. Both are what the
-  frozen planner and the closed loop actually compare, but they are not the same object. The
-  record reports the plan's executed grasp and the request beside each other.
+- **Cost on requests (S).** CEM scores its candidates' requests, as in the closed loop, and the
+  comparator (R27.183 (4)) scores the plan and the substituted plan on requests too; the executed
+  grasp (ℓ) is read through the rate clip. The DRAFT compared CEM's cost on requests with the
+  squeeze branch's cost on applied commands, which are not the same object; that comparison is
+  reported only. The substituted plan keeps the plan's arm channels, so a miss says that G prefers
+  the squeeze's closing requests *with this plan's arm motion*, not that it prefers the scripted
+  squeeze branch. G was trained on `play-v1`, whose grasp requests never exceed the 2 / 11 rate
+  limit, so at Rs both the plan's early requests (first request median 0.94–0.97, executed 0.636)
+  and the substituted plan's (0.8, then +1, executed 0.636, 0.818, then 1.0) lie off G's training
+  support. The comparison is symmetric in this respect, but a miss or a partial preference at Rs
+  is G's reading of above-clip requests, not of the executed grasp.
 - **The ceiling is the frozen cost on real frames.** It measures what this cost can rank, not what
   any cost could.
 
@@ -660,7 +704,8 @@ TASK-094 quantity.
 ## 13. Order
 
 1. This DRAFT, reviewed independently and merged.
-2. A Stage 0 PR (§14), reviewed. **The protocol is frozen at its merge.**
+2. A Stage 0 PR (§14), reviewed; it ended S0-ESCALATE (§16), and the ruling (§17) added a Stage 0′
+   PR (§18), reviewed. **The protocol is frozen at the Stage 0′ merge** if Stage 0′ passes.
 3. The gated stage (K, M, S) at the frozen revision from a clean tree, with
    `scripts/run_task094_stage.sh`, after the V2D session is told.
 4. Its record PR, with the row and a DECISIONS entry with the next-step ruling (K-NULL pauses the
@@ -710,7 +755,24 @@ are, checked against sha256 pins before any job runs.
 **Stage 0 may change only:** the per-run process count, and the split of a step into more, smaller
 jobs. Each change is recorded. A failed check of the list above is S0-ESCALATE, not a change.
 **Every level, offset, root type, bar, margin and row is frozen here** and is not changed by any
-development number. The protocol is frozen at the Stage 0 merge.
+development number. The protocol was to freeze at the Stage 0 merge, but Stage 0 ended S0-ESCALATE
+(§16); the ruling (§17, R27.183) amended M's root count and S's ℓ and comparator before the freeze.
+
+**Stage 0′** (R27.183 (5); §18) is its own PR. It draws **no new development cohort** and runs:
+
+- the code and tests for S's ℓ and comparator, the 128 gated root seeds 946000–946127, the retired
+  range 942000–942063 (refused by every seed check), the positive control at 112 / 128 and the
+  executed-difference limit at 16 / 128;
+- ℓ recomputed on Stage 0's stored development plans (CPU);
+- the comparator's costs on Stage 0's stored development plans at 940000–940031: one GPU job,
+  `run_task094.py substitute` (reported; it sets nothing), with the squeeze branch's requests
+  checked against its recorded applied grasp;
+- the hash checks (`verify`) and the seed check with 946000–946127 on every ref and in the evidence;
+- the budget projection at 128 root seeds (§10.2) and TASK-094's GPU time so far;
+- **§14's n_d rule read at the gated root count:** Stage 0′ escalates (S0-ESCALATE) only if the
+  development rates project n_d below 16 at both root types at 128 roots (Rs: 6 / 32 × 128 = 24),
+  or if a check above fails, Stage 0 and Stage 0′ together exceed 0.4 GPU h, or the gated stage
+  projects above 0.6 GPU h. **The protocol is frozen at the Stage 0′ merge** if Stage 0′ passes.
 
 ## 15. Rulings this document records (R27.160–R27.176; DRAFT; decided by Claude under owner delegation)
 
@@ -1016,3 +1078,137 @@ development numbers and set nothing.
 **Status (R27.186).** The protocol stays **DRAFT, not frozen**. The edits of §5, §6, §9, §10.2 and
 §14 that carry items 1–5 are made in the Stage 0′ PR, which is reviewed independently and freezes
 the protocol at its merge. **R7 does not change** (R27.176).
+
+## 18. Stage 0′ record (R27.187–R27.192; decided by Claude under owner delegation)
+
+Everything below is Stage 0′ (§14, §17; R27.183 (5)). **No new development cohort was drawn.** It
+ran CPU checks and **one GPU job** on Stage 0's stored development plans and roots (940000–940031),
+which are reported and set nothing. **Stage 0′ ends S0-PASS, and the protocol is frozen at the merge
+of its PR.** The gated cohorts 941000–941127 and 946000–946127 were not touched; 942000–942063 are
+retired and were never generated. Every development number here is one run, simulation only,
+32 roots, scripted branches and three model seeds of one training run (G-87102
+`last_two_triggered`); none is a learned result and none sets a bar. Evidence:
+`~/develop/emai/evidence/task094-s0p/` (`SHA256SUMS` sha256 `86e5f46f…2075`); the reports also stay in
+`outputs/task094-s0p/` on the data disk.
+
+**Revisions** (every report records `tracked_tree_dirty: false`; the jobs ran in the root of a clean
+run tree, `worktrees/task094-s0prun`, detached, with the data, checkpoint, `third_party` and output
+links of `worktrees/task094-s0run`):
+
+- `ef89953` (the code and the amendment of §5, §6, §9, §10.2 and §14): the first `verify` and
+  `seeds`, kept as `verify-task094.at-ef89953.json` and `seeds.at-ef89953.json` (§18.4).
+- `f9d78e5` (the seed check reads a line that names TASK-094 as TASK-094's own): `verify`, `seeds`,
+  the GPU job `run_task094.py substitute` (through `scripts/run_task094_stage.sh 0p`) and
+  `summary-0p.json`, the record's source.
+- The record commit changes documentation only.
+
+### 18.1 Code
+
+- `grasp_closure_locus.py`: the gated root seeds 946000–946127 (`GATED_ROOTS_N` 128) and
+  `RETIRED_ROOTS` 942000–942063, which `check_seed` refuses under every cohort name; the positive
+  control 112 / 128 (unchanged 7 / 8) and the executed-difference limit 1 / 8 (16 / 128;
+  `exec_diff_limit`); `window_level` (ℓ, the median executed grasp over window steps 3–7);
+  `squeeze_requests` and `substituted_plan` (the comparator); `search_measures` with the new miss
+  and, reported, the DRAFT's comparison; `s0p_row` (§14's n_d rule at 128 roots); the read
+  probabilities (reported).
+- `grasp_closure_locus_runtime.py`: `substitution_costs`, G-i's step-averaged cost of the plan and
+  of the substituted plan, on requests, from one roll-out call.
+- `scripts/run_task094.py`: `search` records ℓ, step 8's executed grasp, the comparator's costs and
+  (reported) the squeeze requests' path deviation, and its determinism re-run includes the
+  comparator's costs; `seeds` checks 946000–946127 and 942000–942063; `roots` refuses a retired
+  seed; the new `substitute` job (Stage 0′ only, development roots only; it loads the stored roots
+  and search, checks their digests and the models before its ledger claim).
+- `scripts/summarize_task094.py --stage 0p`; the gated summary needs Stage 0′'s S0-PASS.
+  `scripts/run_task094_stage.sh 0p`; the gated stage reads Stage 0′'s summary and counts Stage 0's
+  and Stage 0′'s GPU time towards the 1.0 GPU h ceiling.
+- `tests/test_grasp_closure_locus.py`: 42 tests (four new: the squeeze requests and the substituted
+  plan, the comparator's costs against the planner's step-mean cost on a small CPU model, the
+  Stage 0′ row and read probabilities, and the `substitute` job's ledger claim after its loads;
+  the seed, ℓ, miss and bar tests extended). The whole suite at `f9d78e5`: 2 498 passed, 35 skipped (graphics opt-in, MPS unavailable, the LeRobot-source opt-in); the opt-in render tests were not re-run (the root builder is unchanged).
+
+### 18.2 Checks
+
+| Check | Result |
+| --- | --- |
+| **Hashes** (`verify` at `f9d78e5`) | every check passes (G-87100–87102 against their pins, reports and evidence copies; the feature store and projection; the moments; TASK-087's implementation hash; λ = 2.0552; the setting; the rate limit; CEM; the levels and offsets; every frozen file); G-87102 `last_two_triggered: true` |
+| **Seeds** (`seeds`; 123 remote-tracking refs, 94 local branches and HEAD) | no token in 94100–94131, 94500–94599, 940000–940031, 941000–941127, **946000–946127**, the retired 942000–942063, 9014 or 9015 outside TASK-094's files and lines; the only line elsewhere is TASK-094's own row in `docs/JEPA_ZERO_SHOT_PLAN.md` (946000 and 946127, R27.183's text; §18.4). In the evidence: the same 12 tokens as at Stage 0 (94100 and 94500, TASK-077 training-update indices), none in a seed field |
+| **Seed ranges in the code** | gated roots exactly 946000–946127; the retired range refused; both disjoint from every cohort and every earlier task's ranges |
+| **The comparator's plumbing** (192 root, type and seed entries) | the squeeze branch's requests (`squeeze_requests`: 0.8 then +1 at Rs, +1 at R2), executed through the cumulative clip from each root's T₀, reproduce the squeeze branch's recorded applied right grasp over the window: maximum deviation 1.6 × 10⁻⁸ (tolerance 10⁻⁵) |
+| **The plan's cost** | G-i's step-averaged cost of each stored plan, re-evaluated in the comparator's roll-out call, equals CEM's recorded best-candidate cost within 3.6 × 10⁻⁷ on all 192 |
+| **Stage 0's records** | the stored roots and search are the ones Stage 0's summary read (digests); n_d re-read: 6 (Rs) and 1 (R2) |
+| **§14's n_d rule at 128 roots** (escalate only if below 16 at both root types) | projected n_d **24 at Rs** (6 / 32 × 128) and 4 at R2: **passes** |
+| **Budget** (§10.2) | Stage 0′: 1 `gpu_run` job, 6 s. Stage 0 and Stage 0′ together: 37 jobs, 393 s (**0.109 GPU h**, below 0.4). The gated stage projected at 128 root seeds: 1 266 s, **0.352 GPU h** (below 0.6): K's goals 72 s and arms 512 s (× 4), K's determinism 22 s, M's roots 424 s and ranking 56 s (× 8), S 156 s (× 4) and the comparator 24 s (4 × Stage 0′'s job) |
+
+### 18.3 Development measurements (reported; one run, simulation only, 32 roots; they set nothing)
+
+**n_d at 128 roots** (§8.2): at Rs's development rate (6 / 32) P(n_d ≥ 16) is 0.977, or 0.84 with
+the rate's uncertainty integrated (Jeffreys posterior); at R2's (1 / 32) the expected n_d is 4 and
+P(n_d ≥ 16) is about 0.05 with the uncertainty integrated, so R2 is expected to be unread, as R27.183
+(2) says.
+
+**ℓ recomputed** on Stage 0's stored plans (per seed G-87100, G-87101, G-87102; plans that squeeze,
+ℓ ≥ 0.9, of 32 roots; the DRAFT's step-8 reading beside it):
+
+| Root type | Squeeze by ℓ (steps 3–7) | Median ℓ | Squeeze by step 8 (DRAFT) | Median step 8 | Discordant roots that squeeze by ℓ |
+| --- | --- | --- | --- | --- | --- |
+| Rs | 4, 3, 2 | 0.849, 0.836, 0.826 | 6, 4, 1 | 0.70, 0.72, 0.70 | 0, 0, 0 of 6 |
+| R2 | 14, 16, 14 | 0.890, 0.900, 0.894 | 4, 6, 0 | 0.69, 0.77, 0.71 | 1, 1, 1 of 1 |
+
+At Rs the first command still requests a median 0.94–0.97 and executes 0.636 (the rate limit).
+
+**The comparator** (the plan against the same plan with the squeeze branch's right-grasp requests,
+G-i's step-averaged cost on requests):
+
+| Root type | Misses on discordant roots (bar ⌈0.25 n_d⌉ on two of three seeds, not read here) | Misses on all 32 roots | Substituted plan cheaper, all 32 (any ℓ) | Substituted / plan cost, median |
+| --- | --- | --- | --- | --- |
+| Rs (n_d 6) | **0, 0, 3** of 6 | 0, 1, 6 | 1, 1, 6 | 1.024, 1.053, 1.015 |
+| R2 (n_d 1) | 0, 0, 0 of 1 (the one root's plans squeeze) | 8, 4, 8 | 16, 11, 16 | 0.997, 1.005, 0.998 |
+
+- **The DRAFT's comparison** (reported): CEM's best candidate cost less than the squeeze branch's
+  applied commands on 192 / 192 calls, so it gave no miss on any root, as §16.5 recorded; by the
+  step-8 ℓ it read "partial preferred" on 5, 6, 6 of Rs's discordant roots and 1, 1, 1 at R2.
+- **What these show, and do not.** The new miss can fire: it did so on development roots, mostly
+  for G-87102 (3 of Rs's 6 discordant roots, 6 of 32 Rs roots). At Rs G-87100 and G-87101 gave the
+  substituted plan a higher cost than the plan (rated it worse) on all but one root (median cost
+  ratios 1.02 and 1.05), so on
+  these roots their plans' partial closures are mostly what G-i prefers given the plans' arm
+  motion; at R2 the ratio is near 1. These are 32 development roots and 6 discordant ones; they do
+  not estimate the gated rates, and no row is read on them.
+
+### 18.4 Incidents, readings and deviations
+
+- **The seed check (job reading).** At `ef89953` `seeds` classified hits by file only, so TASK-094's
+  own row in `docs/JEPA_ZERO_SHOT_PLAN.md`, which quotes R27.183's 946000–946127, counted as a hit
+  outside TASK-094 and would have escalated Stage 0′ on a check of TASK-094's own text. `f9d78e5`
+  reads a matching line that names TASK-094 as TASK-094's own and reports it apart
+  (`hits_on_lines_naming_task094`); `verify` and `seeds` were re-run there, and the first reports
+  are kept. No GPU job ran at `ef89953`. The review should confirm that this is a correction of
+  the check, not a loosening: a line naming TASK-094 elsewhere is a reference to TASK-094.
+- **Readings this record makes** (they set nothing; the review should confirm them):
+  - "The plan's cost" in R27.183 (4) is G-i's step-averaged cost of the plan **re-evaluated in the
+    same roll-out call as the substituted plan**, so the two are compared under identical
+    arithmetic; CEM's recorded best-candidate cost is reported beside it (they agree within
+    3.6 × 10⁻⁷ on the development plans).
+  - R2 is read only if its n_d reaches 16 (§5.4's rule, unchanged); R27.183 (2) expects it unread.
+  - The comparator's plumbing check (the squeeze requests against the squeeze branch's applied
+    grasp) is a Stage 0′ check. In the gated search job it is recorded per root and reported, not
+    added to L-VOID's list (no row trigger is added).
+  - The projection multiplies M's roots and ranking by 8 (4 × the roots, 2 × the branches), S by 4,
+    and adds 4 × Stage 0′'s comparator job; it counts whole job durations, start-up included.
+  - TASK-094's GPU time so far counts every `oej:task094-*` job in `gpu_run`'s log: Stage 0's 36
+    (387 s) and Stage 0′'s one (6 s).
+- No job reached its cap; no `- v2d:` request was on BOARD.md before the job; the GR00T server,
+  `/mnt/data/emai/{archive,models,cache}`, `worktrees/task087-run` and other worktrees and evidence
+  were not touched. Nothing was moved to the data disk, so `MANIFEST.tsv` was not written. Ledger:
+  one new key, `substitute-dev-roots`.
+
+### 18.5 The freeze
+
+**Stage 0′ ends S0-PASS. The protocol is frozen at the merge of this PR**, with §5, §6, §9, §10.2
+and §14 as amended (R27.183) and K as preregistered. The gated stage then runs once, at the merge
+revision from a clean tree, with `scripts/run_task094_stage.sh gated <out>
+outputs/task094-s0p/summary-0p.json`, after the V2D session is told (§10.1, §13). R27.185 stands:
+the development K pattern makes K-UNCLEAR the likely gated K row, in which case M and S are
+reported, not read; the ruling after the gated stage weighs it, and the palm-placement effect, then.
+
+**R7 does not change** (R27.176). Nothing here is a grasp success or a learned result.

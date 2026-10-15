@@ -37,8 +37,10 @@ passed. **Escalation ruling** (§17, R27.183–R27.186, DECISIONS (bk)): option 
 move to 128 gated root seeds 946000–946127 (942000–942063 retired unused), R2 stays reported, S's ℓ
 is the median executed right grasp over window steps 3–7 and its search miss compares the plan with
 its right-grasp requests replaced by the squeeze branch's; K, every bar and row unchanged. A
-Stage 0′ (no new development cohort) checks this and freezes the protocol at its merge. Not frozen;
-nothing gated has run.
+Stage 0′ (no new development cohort) checks this and freezes the protocol at its merge. **Stage 0′
+ended S0-PASS** (§18, R27.187–R27.192, DECISIONS (bl)): projected n_d 24 at Rs and 4 at R2 at 128
+roots, every check passes, the gated stage projects to 0.352 GPU h; the protocol is frozen at the
+Stage 0′ merge. Nothing gated has run; the gated stage runs next, after the V2D session is told.
 
 **Why.** An offline read of the Stage BS reports of TASK-089, TASK-091 and TASK-093 (R27.152)
 has these qualifiers: one run per stage, simulation only, pooled, an association, and read after
@@ -102,10 +104,13 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
 - [x] DRAFT preregistration (`docs/experiments/grasp_closure_locus_v1.md`; written, R27.160–R27.176), reviewed
   independently and merged. It fixes the seeds (checked by the seed check), the hold levels, the
   palm offset, the roots, the bars and margins and the row order before anything runs.
-- [ ] Stage 0: opt-in code with no frozen file edited, tests, the degeneracy checks of M's
+- [x] Stage 0: opt-in code with no frozen file edited, tests, the degeneracy checks of M's
   branches on development roots, and a debug smoke. The protocol is frozen at the Stage 0 merge.
   (Code, tests, checks and smoke done; ended S0-ESCALATE on the n_d rule, so not frozen; R27.177–R27.182.
   The ruling R27.183–R27.186 adds a Stage 0′, which freezes the protocol at its merge.)
+- [x] Stage 0′ (R27.183 (5)): code and tests for the amendment, ℓ recomputed, the comparator's
+  costs on the development plans, the seed check of 946000–946127 and the projection; ended
+  S0-PASS (R27.187–R27.192); the protocol is frozen at its merge.
 - [ ] K, M and S recorded at the frozen revision from a clean tree, with evidence in
   `~/develop/emai/evidence/task094-*`.
 - [ ] Row recorded with a next-step ruling (K-NULL pauses the grasp line; D still needs its own
@@ -169,3 +174,7 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
   Next: the Stage 0′ PR (code and tests for S's ℓ and comparator, ℓ recomputed on CPU, one GPU job
   for the substituted costs on 940000–940031, seed check of 946000–946127, budget projection), which
   freezes the protocol at its merge.
+- 2026-10-15, Stage 0′ (branch `feat/task094-stage0prime`; R27.187–R27.192, DECISIONS (bl)):
+  S0-PASS. No new development cohort; one 6 s GPU job on Stage 0's stored plans; projected n_d
+  24 (Rs) and 4 (R2) at 128 roots; gated stage projected at 0.352 GPU h. Evidence
+  `~/develop/emai/evidence/task094-s0p/`. The protocol freezes at the PR's merge.
