@@ -1,11 +1,13 @@
 # TASK-094 — grasp-closure locus diagnostic: does the partial closure the world-model arms command cause their grasp failures, and does the failure sit in the goal and cost, the model or the search (measurement only; no controller)
 
 **Status: DRAFT, Stage 0 ended S0-ESCALATE** (R27.160–R27.176; Stage 0 record §16, R27.177–R27.182;
-decided by Claude under owner delegation, 2026-10-15; DECISIONS (bi), (bj)). **The protocol is not
-frozen.** Stage 0's one failing rule is §14's n_d rule: on the 32 development roots the s\* branch
-lifted where the squeeze did on all but 6 (Rs) and 1 (R2), so M would most likely not be read. No
-gated cohort was touched. A ruling decides how TASK-094 goes on (§16.6); until then nothing gated
-runs.
+escalation ruling §17, R27.183–R27.186; decided by Claude under owner delegation, 2026-10-15;
+DECISIONS (bi), (bj), (bk)). **The protocol is not frozen.** Stage 0's one failing rule is §14's
+n_d rule: on the 32 development roots the s\* branch lifted where the squeeze did on all but 6 (Rs)
+and 1 (R2), so M would most likely not be read. No gated cohort was touched. The ruling (§17)
+amends M and S before the freeze (128 gated root seeds 946000–946127; S's ℓ and search miss
+redefined); a Stage 0′ checks the amendment and freezes the protocol at its merge. Until then
+nothing gated runs, and §17 governs where it differs from §5, §6, §9, §10.2 and §14.
 
 This is the diagnostic that R27.156 chose after TASK-093 closed at B-FAIL (design note
 [grasp_next_step_v1.md](grasp_next_step_v1.md), §4–§5). **It is measurement only.** It runs no
@@ -901,19 +903,22 @@ K-1.0 lifting with 0.69, the cells (Δ + d₀, d₀) and (Δ_0.6 + d₀, d₀), 
 **K** (resets 94100–94131, 32 paired resets; exact 95 % intervals; s\* median 0.674, p10–p90
 0.651–0.693):
 
-| Arm | Lifts / 32 | Interval | Contact | Stopped | Slip | Measured hand, close and lift (median) |
-| --- | --- | --- | --- | --- | --- | --- |
-| K-1.0 (`ik` 23 / 32, bitwise the same) | 23 | 0.53–0.86 | 32 | 1 | 1 | 0.66 |
-| K-0.9 | 23 | 0.53–0.86 | 32 | 1 | 1 | 0.60 |
-| K-0.8 | 24 | 0.57–0.89 | 32 | 0 | 0 | 0.54 |
-| K-0.7 | 23 | 0.53–0.86 | 32 | 0 | 0 | 0.48 |
-| K-s\* | 21 | 0.47–0.81 | 32 | 0 | 1 | 0.47 |
-| K-0.6 | 19 | 0.41–0.76 | 32 | 1 | 2 | 0.43 |
-| K-open | 0 | 0.00–0.11 | 0 | 0 | 0 | −1.00 |
-| K-off-x-1.0 | 19 | 0.41–0.76 | 30 | 4 | 2 | 0.66 |
-| K-off-x-s\* | 16 | 0.32–0.68 | 30 | 3 | 2 | 0.47 |
-| K-off-y-1.0 | 7 | 0.09–0.40 | 23 | 6 | 2 | 1.00 |
-| K-off-y-s\* | 8 | 0.12–0.43 | 25 | 3 | 0 | 0.66 |
+| Arm | Lifts / 32 | Interval | Contact | Stopped | Slip | Measured hand, close and lift (median) | Grasp subgoal timed out |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| K-1.0 (`ik` 23 / 32, bitwise the same) | 23 | 0.53–0.86 | 32 | 1 | 1 | 0.66 | 19 |
+| K-0.9 | 23 | 0.53–0.86 | 32 | 1 | 1 | 0.60 | 21 |
+| K-0.8 | 24 | 0.57–0.89 | 32 | 0 | 0 | 0.54 | 23 |
+| K-0.7 | 23 | 0.53–0.86 | 32 | 0 | 0 | 0.48 | 29 |
+| K-s\* | 21 | 0.47–0.81 | 32 | 0 | 1 | 0.47 | 30 |
+| K-0.6 | 19 | 0.41–0.76 | 32 | 1 | 2 | 0.43 | 30 |
+| K-open | 0 | 0.00–0.11 | 0 | 0 | 0 | −1.00 | 32 |
+| K-off-x-1.0 | 19 | 0.41–0.76 | 30 | 4 | 2 | 0.66 | 14 |
+| K-off-x-s\* | 16 | 0.32–0.68 | 30 | 3 | 2 | 0.47 | 28 |
+| K-off-y-1.0 | 7 | 0.09–0.40 | 23 | 6 | 2 | 1.00 | 23 |
+| K-off-y-s\* | 8 | 0.11–0.43 | 25 | 3 | 0 | 0.66 | 28 |
+
+The switching rule's hand-RMS test makes lower held levels time out on the grasp subgoal more
+often, so the dose arms also differ in grasp-phase duration (§4.2 measure).
 
 - K-1.0 minus K-s\*: 0.0625 (3 against 1 discordant; reset-bootstrap 95 % −0.0625 to 0.1875);
   K-1.0 minus K-0.6: 0.125 (5 against 1; 0.000 to 0.281); K-1.0 minus K-off-y-1.0: 0.50 (16
@@ -931,8 +936,8 @@ can 9, apple 6):
 - Every s\* branch that failed kept grasp contact; at Rs the target rose 0.7–2.2 cm, at R2 (one
   root) 6.0 cm without holding 20 commands.
 - Term decomposition (medians on the discordant roots, reported): at Rs the ceiling's cost of the
-  squeeze and s\* branches is 0.76 against 0.86, the hand share of the pose term 0.15 against 0.29,
-  the latent term 0.60 against 0.58.
+  squeeze and s\* branches is 0.76 against 0.86, the hand part of the pose term 0.15 against 0.29
+  (the pose term 0.17 against 0.31), the latent term 0.60 against 0.58.
 
 **S** (the frozen planner, one call per root, type and seed): no search miss on any discordant root
 at either type for any seed; the plan holds partial and G rates it at least as well as the squeeze
@@ -940,6 +945,15 @@ branch ("partial preferred") on 5, 6 and 6 of Rs's 6 discordant roots and on R2'
 squeeze (ℓ ≥ 0.9) on all 32 roots: Rs 6, 4, 1; R2 4, 6, 0. Median ℓ: Rs 0.70, 0.72, 0.70; R2 0.69,
 0.77, 0.71. At Rs the first command requests a median grasp of 0.94–0.97 and executes 0.636 (the
 rate limit).
+
+These S figures do not show that G prefers a partial closure. CEM's best candidate, scored on its
+requests over all 14 channels, cost less than the scripted squeeze branch's applied commands on
+every call (192 / 192; ratio median 0.62–0.78, maximum 0.94), so a miss as §6 defines it could not
+occur, and "partial preferred" here means only ℓ < 0.9. ℓ is read at step 8, the end of the
+horizon, where the plans' requests were lowest and most dispersed (median 0.52–0.69, IQR
+0.17–0.31, against about 0.8–0.9 at steps 3–7). By the median executed grasp over steps 3–7, 4, 3
+and 2 Rs plans and 14, 16 and 14 R2 plans of 32 squeeze. The median ℓ of about 0.70 is not a
+reproduction of the WM arms' 0.53–0.73 (§1.1).
 
 ### 16.6 The escalation and what the ruling decides (R27.181)
 
@@ -964,3 +978,41 @@ and 942000–942063; of the debug range 94500–94599 nine seeds were used (9450
 94550–94553 and 94599, the render test), and debug seeds are never counted.
 
 **R7 does not change** (R27.176). Nothing here is a grasp success or a learned result.
+
+## 17. Stage 0 escalation ruling (R27.183–R27.186; decided by Claude under owner delegation)
+
+S0-ESCALATE (§16.6) is resolved by **option 2, extended** (DECISIONS (bk)), adopting items 1–7 of
+the amendment proposed in the independent review of PR #226 word for word (R27.183):
+
+1. **Root seeds.** M and S use 128 gated root seeds **946000–946127**; 942000–942063 are retired
+   (named, never generated, never run, not reused). S's determinism re-run moves to
+   946000–946001. n_d(t) ≥ 16 is unchanged; positive control 112 / 128, at most 16 / 128 roots
+   excluded by the executed-difference check.
+2. **R2 stays, reported.** Every R2 check still voids M (L-VOID); at the development rate its
+   expected n_d is 4, so it is expected to be unread.
+3. **S's ℓ** is the median of the plan's executed right grasp over window steps 3–7 (cumulative
+   clip as before); step 8 and the full path are reported; squeeze at ℓ ≥ 0.9, unchanged.
+4. **S's search miss**: the plan holds partial and G-i's cost of the plan with its right-grasp
+   requests replaced by the squeeze branch's over steps 1–8 is strictly lower than the plan's cost;
+   *partial preferred* otherwise when partial. Bar ⌈0.25 n_d⌉ on two of three seeds, unchanged;
+   the previous comparison is reported.
+5. **Stage 0′**, with no new development cohort: code and tests for 3–4, ℓ recomputed on the stored
+   development plans, the substituted costs on 940000–940031 (one GPU job, reported), the seed
+   check of 946000–946127, and the budget projection (about 0.35 GPU h, within 0.6). It escalates
+   only if the development rates project n_d below 16 at both root types at 128 roots.
+6. **K unchanged** (941000–941127, every arm, band and bar).
+7. **R7 unchanged.**
+
+**Why (R27.184).** Before the freeze, before any gated data, on development evidence, through the
+ruling §7.2 names; no level, offset, root type, bar, margin or row changes, and §14's frozen list
+does not include the root count. **Disclosed:** items 3 and 4 are motivated by the development plans
+(step-8 dispersion; CEM's best candidate below the squeeze branch's cost on 192 / 192 calls).
+
+**For the gated ruling to weigh (R27.185).** The development K pattern (Δ_s\* 0.0625 [−0.06, 0.19],
+Δ_0.6 0.125 [0, 0.28]) makes K-UNCLEAR the likely gated K row, in which case M and S are reported,
+not read; and the +y palm-placement effect (−16 / 32) is larger than any closure effect. Both are
+development numbers and set nothing.
+
+**Status (R27.186).** The protocol stays **DRAFT, not frozen**. The edits of §5, §6, §9, §10.2 and
+§14 that carry items 1–5 are made in the Stage 0′ PR, which is reviewed independently and freezes
+the protocol at its merge. **R7 does not change** (R27.176).

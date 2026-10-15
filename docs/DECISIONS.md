@@ -63,6 +63,74 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-15 (bk) — TASK-094's Stage 0 escalation is resolved by option 2 of R27.181, extended: M and S move to 128 gated root seeds 946000–946127 (942000–942063 retired unused), R2 stays reported, S's executed level ℓ becomes the median over window steps 3–7 and its search miss compares the plan with the plan carrying the squeeze branch's right-grasp requests; a Stage 0′ with no new development cohort checks this and freezes the protocol at its merge; K, every bar and every row unchanged; R7 unchanged (R27.183–R27.186)
+
+**Decided by Claude under owner delegation (2026-09-30).** It adopts items 1–7 of the amendment
+proposed in the independent review of PR #226 (comment 6190186386) word for word as R27.183. Record:
+[grasp_closure_locus_v1.md §17](experiments/grasp_closure_locus_v1.md). No GPU job, simulation,
+model load or planner call ran for this ruling; it reads only Stage 0's development evidence
+(`~/develop/emai/evidence/task094-s0/`). The protocol stays DRAFT.
+
+- **R27.183 — TASK-094 goes on with M and S amended before the freeze (decided by Claude under
+  owner delegation).** S0-ESCALATE (R27.177) is resolved by option 2 of R27.181, extended. The
+  amendment is made on development evidence only (roots 940000–940031: n_d 6 and 1 of 32; the
+  plans' step-8 dispersion; CEM's best candidate below the squeeze branch's G cost on 192 / 192
+  calls) and before any gated datum. It changes no level, offset, root type, bar, margin or row.
+  1. **Root seeds.** M and S use **128 gated root seeds 946000–946127**. 942000–942063 are retired:
+     named, never generated, never run and not reused. S's determinism re-run moves to
+     946000–946001. The read rule n_d(t) ≥ 16 is unchanged. The positive control and the
+     executed-difference limit keep their proportions: **112 / 128** (0.875) and at most
+     **16 / 128** excluded roots (1 / 8).
+  2. **R2 stays, reported.** Every R2 check still voids M (L-VOID). At the development rate
+     (1 / 32) R2's expected n_d is 4, so it is expected to be unread. Its rows and per-level lift
+     rates are reported.
+  3. **S's executed level.** ℓ is the **median of the plan's executed right grasp over window steps
+     3–7** (the cumulative clip from the root's last accepted target, as before). Steps 1–2 at Rs
+     are bound by the rate limit for every plan that closes. Step 8 is the end of the horizon,
+     where the development plans' requests were lowest and most dispersed (median 0.52–0.69, IQR
+     0.17–0.31). Step 8's executed grasp and the full path are reported. The plan squeezes when
+     ℓ ≥ 0.9, unchanged.
+  4. **S's comparator.** A **search miss** at a root: the plan holds partial **and** G-i's
+     step-averaged cost of the plan with its right-grasp requests replaced by the squeeze branch's
+     right-grasp requests over steps 1–8 (every other channel the plan's own) is strictly lower
+     than the plan's cost. **Partial preferred**: the plan holds partial and that substituted plan
+     costs at least as much. The bar (⌈0.25 n_d⌉ on two of three seeds) is unchanged. The previous
+     comparison against the squeeze branch's applied commands is reported. Reason: CEM optimises
+     all 14 channels on requests, so its best candidate cost less than the scripted squeeze branch
+     on every development call, and the previous miss could not fire.
+  5. **Stage 0′.** Before the freeze: code and tests for 3–4; ℓ recomputed on the stored
+     development plans (CPU); the substituted costs on 940000–940031 (one GPU job; reported, sets
+     nothing); the seed check of 946000–946127 on every ref and in the evidence; and the budget
+     projection (expected about 0.35 GPU h, within 0.6). §14's n_d rule is read at the gated root
+     count: Stage 0′ escalates only if the development rates project n_d below 16 at both root
+     types at 128 roots (Rs: 6 / 32 × 128 = 24). No new development cohort is drawn.
+  6. **K is unchanged**: 941000–941127, every arm, band and bar. Disclosed beside it: the
+     development K pattern (Δ_s\* 0.0625 [−0.06, 0.19], Δ_0.6 0.125 [0, 0.28]) makes K-UNCLEAR the
+     most likely gated K row, in which case M and S are reported, not read. The +y offset's
+     development loss (−16 / 32) is larger than any closure contrast.
+  7. R7 does not change (R27.176).
+- **R27.184 — Why this is a legitimate pre-freeze amendment.** It is made before the freeze,
+  through the S0-ESCALATE ruling that §7.2 names, before any gated datum was generated or seen, and
+  on development evidence only. No level, offset, root type, bar, margin or row changes. §14's
+  frozen list ("not changed by any development number") covers levels, offsets, root types, bars,
+  margins and rows; the root count is not on it, and raising it is row-neutral and is the remedy the
+  Stage 0 record itself names (R27.181). **Disclosed:** the changes to S's definitions (items 3
+  and 4) are motivated by the development plans (the step-8 dispersion and CEM's best candidate
+  costing less than the squeeze branch on 192 / 192 development calls); they repair a measure that
+  could not show what §6 meant it to show and move no bar. Options 1 (run as preregistered: an M
+  mostly unread and an S whose miss cannot fire), 3 (K alone: drops the only action-level ranking
+  measurement, which R27.153 records as missing) and 4 (close) are not taken.
+- **R27.185 — What the gated ruling must weigh (disclosed now, decided then).** The development K
+  pattern (flat from K-0.7 to K-1.0; Δ_s\* 0.0625 [−0.06, 0.19], Δ_0.6 0.125 [0, 0.28]) makes
+  K-UNCLEAR the likely gated K row, so M and S would then be reported evidence for the ruling after
+  K-UNCLEAR rather than read rows. The palm-placement effect (+y offset: −16 / 32 against K-1.0)
+  is larger than any closure effect. Both are development numbers (32 resets, one run, simulation
+  only) and set nothing; the ruling on the gated row weighs them.
+- **R27.186 — The protocol stays DRAFT, not frozen.** The text edits of §5, §6, §9, §10.2 and §14
+  that carry R27.183 are made in the Stage 0′ PR, which also carries R27.183 item 5's checks; that
+  PR is reviewed independently and the protocol freezes at its merge. Until then §17 governs where
+  it differs from those sections, and nothing gated runs. R7 does not change (R27.176).
+
 ## Decision 2026-10-15 (bj) — TASK-094 Stage 0 ends S0-ESCALATE on §14's n_d rule alone: on 32 development roots the s\* branch lifted where the squeeze did on all but 6 (Rs) and 1 (R2), below 8 at both root types, so M would most likely not be read; every other Stage 0 check passes (K plumbing on all 11 arms, K-1.0 bitwise the frozen ik, roots and squeeze bitwise, positive control 32 / 32 at both, power 0.997 / 0.978, 0.108 GPU h used, 0.257 projected); the protocol is not frozen and a ruling decides how TASK-094 goes on (R27.177–R27.182)
 
 **Decided by Claude under owner delegation (2026-09-30).** Record:
@@ -126,8 +194,9 @@ only: one run, simulation only, 32 resets or roots, scripted probes. No gated co
     nothing and are not K's row): K-1.0 23, K-s\* 21, K-0.6 19, K-open 0, K-off-x-1.0 19,
     K-off-y-1.0 7 of 32; K-1.0 minus K-s\* 0.0625 (bootstrap 95 % −0.0625 to 0.1875). At Rs the
     ceiling ranked the squeeze above s\* on 5 of the 6 discordant roots and G-87100–87102 on 6, 6
-    and 3; the frozen planner missed on none and held partial with G rating it at least as well as
-    the squeeze on 5, 6 and 6 of them.
+    and 3; the frozen planner missed on none; it 'held partial' by §6's step-8 level on 5, 6 and 6
+    of them, but CEM's best candidate cost less than the scripted squeeze branch on every call, so
+    §6's miss could not fire (§16.5).
 - **R27.182 — R7 does not change** (R27.176). Nothing here is a grasp success or a learned result.
 
 ## Decision 2026-10-15 (bi) — TASK-094's DRAFT preregistration: a measurement-only grasp-closure locus diagnostic (K, the IK follower at held closures ± a 1.2 cm palm offset on 128 paired resets; M, the frozen cost's ranking of a squeeze over the measured-hand closure on G's predictions and on real frames at roots in and at the end of the close; S, the frozen planner offline at the same roots); rows route only to a ruling; K-CAUSAL with L-COST is put forward, not ruled met, as R26.33 evidence for option C (R27.160–R27.176; DRAFT)
