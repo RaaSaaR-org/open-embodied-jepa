@@ -670,7 +670,11 @@ Every GPU use (rendering, encoding, roll-outs, CEM) is one `scripts/gpu_run.sh -
   squeeze branch's cost on applied commands, which are not the same object; that comparison is
   reported only. The substituted plan keeps the plan's arm channels, so a miss says that G prefers
   the squeeze's closing requests *with this plan's arm motion*, not that it prefers the scripted
-  squeeze branch.
+  squeeze branch. G was trained on `play-v1`, whose grasp requests never exceed the 2 / 11 rate
+  limit, so at Rs both the plan's early requests (first request median 0.94–0.97, executed 0.636)
+  and the substituted plan's (0.8, then +1, executed 0.636, 0.818, then 1.0) lie off G's training
+  support. The comparison is symmetric in this respect, but a miss or a partial preference at Rs
+  is G's reading of above-clip requests, not of the executed grasp.
 - **The ceiling is the frozen cost on real frames.** It measures what this cost can rank, not what
   any cost could.
 
@@ -1164,8 +1168,9 @@ G-i's step-averaged cost on requests):
   applied commands on 192 / 192 calls, so it gave no miss on any root, as §16.5 recorded; by the
   step-8 ℓ it read "partial preferred" on 5, 6, 6 of Rs's discordant roots and 1, 1, 1 at R2.
 - **What these show, and do not.** The new miss can fire: it did so on development roots, mostly
-  for G-87102 (3 of Rs's 6 discordant roots, 6 of 32 Rs roots). At Rs G-87100 and G-87101 rated the
-  substituted plan higher than the plan on all but one root (median ratios 1.02 and 1.05), so on
+  for G-87102 (3 of Rs's 6 discordant roots, 6 of 32 Rs roots). At Rs G-87100 and G-87101 gave the
+  substituted plan a higher cost than the plan (rated it worse) on all but one root (median cost
+  ratios 1.02 and 1.05), so on
   these roots their plans' partial closures are mostly what G-i prefers given the plans' arm
   motion; at R2 the ratio is near 1. These are 32 development roots and 6 discordant ones; they do
   not estimate the gated rates, and no row is read on them.
