@@ -10,7 +10,10 @@ retired, never generated), the positive control at 112 / 128 and the executed-di
 against the plan with the squeeze branch's right-grasp requests. **Stage 0′ ended S0-PASS** (§18):
 with no new development cohort, the development rates project n_d = 24 at Rs (4 at R2) at 128
 roots, every check passes, and the gated stage projects to 0.352 GPU h. §5, §6, §9, §10.2 and §14
-carry the amendment; K is unchanged. No gated cohort has been touched.
+carry the amendment; K is unchanged. **The gated stage ran once (§19; R27.193–R27.199): K-NULL** by
+§4.3's text (the summary's K-VOID is a size-check defect; K-NULL binding by R27.195), with the
+roots job VOID at one root (L-VOID; M and S reported, not read). The grasp line pauses and the owner
+is told (§7.2), and TASK-094 closes at K-NULL.
 
 This is the diagnostic that R27.156 chose after TASK-093 closed at B-FAIL (design note
 [grasp_next_step_v1.md](grasp_next_step_v1.md), §4–§5). **It is measurement only.** It runs no
@@ -1212,3 +1215,242 @@ the development K pattern makes K-UNCLEAR the likely gated K row, in which case 
 reported, not read; the ruling after the gated stage weighs it, and the palm-placement effect, then.
 
 **R7 does not change** (R27.176). Nothing here is a grasp success or a learned result.
+
+## 19. Gated stage record (R27.193–R27.199; decided by Claude under owner delegation)
+
+The gated stage ran **once**, on 2026-10-15 between 14:07 and 14:25 UTC, after the V2D session had
+paused and acknowledged it. It ran at the frozen revision `2eacacf` (#227) from a clean, detached
+run tree (`worktrees/task094-run`, with the data, checkpoint, `third_party` and output links of
+`worktrees/task094-s0prun` and its own `.venv`). The command was §18.5's,
+`scripts/run_task094_stage.sh gated outputs/task094-gated outputs/task094-s0p/summary-0p.json`.
+Before it, a CPU `verify` at `2eacacf` passed every check. The gated cohorts were K resets
+941000–941127 and M and S root seeds 946000–946127. 942000–942063 stay retired and were never
+generated.
+
+Every number below is **gated, one run, simulation only**. K is a scripted IK follower with no
+model. M and S use three model seeds of one training run (**G-87102 `last_two_triggered`**).
+Nothing here is a grasp success by a world-model controller or a learned result.
+
+Evidence: `~/develop/emai/evidence/task094-gated/` (`SHA256SUMS` sha256 `1569fe63…0e31`). The
+reports also stay in `outputs/task094-gated/`. The record's source is `summary-gated.json`, read
+as §19.1 sets out.
+
+### 19.1 What the stage reported, and the two VOID events
+
+The stage script exited **3 (`STAGE-gated-VOID`)**. As the script is written, it went on to the
+summary after a VOID job. There were two events, and both are recorded, not fixed:
+
+1. **The roots job exited VOID (3).** At root seed **946073** (an apple; the third draw, the
+   first two rejected), all six re-runs from the reset to **Rs** differed from the draw's recorded
+   Rs record (`same_record`: the measured 28-D state and the onboard frame, bitwise). The report
+   does not say which of the two differed.
+   - At the same root, the squeeze branch's own checks passed. Its state after 27 commands equals
+     the grasp subgoal, and its end state equals the lift subgoal, bitwise. R2's re-runs matched.
+   - So the trajectory from the re-run Rs reproduced the draw's later states. That the
+     difference is confined to the Rs record (for example its frame) is **inferred, not
+     measured**.
+   - **Inferred, not measured:** `state28` is the measured joints, a function of the simulator
+     state, so a bitwise-identical continuation makes a differing frame (EGL rendering) the
+     likelier cause; no other GPU application ran (`gpu_run.log`). The record stores only the last
+     re-run's Rs record, so the evidence cannot separate frame from state.
+   - Every other root (127 of 128) and every other M or S check passed (below).
+   - This is an L-VOID trigger of §7.1 ("a root's bitwise re-run"). §7.1 says that K's row
+     stands, and that M and S run again only on fresh roots named by a ruling.
+2. **The summary's K row reads K-VOID, for one reason only: "K-1.0: n = 4; K-s\*: n = 4".**
+   `summarize_task094.py` applies its cohort-size check (n = 128) to every K report, including
+   the two determinism re-run reports. §4.3 and §9 define those re-runs on exactly four resets
+   (941000–941003). Both re-runs matched bitwise on all four resets.
+   - §4.3's text lists the determinism re-run as a K-VOID trigger only if it is not bitwise. It
+     does not list a size check of the re-run reports.
+   - Run on the 11 arm reports and the goals alone, the same function finds no problem. So does
+     the same function run on the determinism reports without the size argument.
+   - Stage 0 ran its K summary without that check (`expect_n=None`), and the debug smoke was
+     never summarised as gated. So the defect was not exercised before the gated stage.
+   - The summarizer is part of the frozen code and is **not edited** here.
+
+**K's row by §4.3's frozen text is K-NULL** (§19.2). **The summarizer's mechanical row is K-VOID.**
+This record reads K-NULL, because the protocol's text defines the rows and its code implements
+them; the size check is not in §4.3, contradicts §9, and fires whatever K's counts are. The
+independent review of #228 confirmed the reading (R27.195): the frozen summarizer re-run on the CPU
+reproduces `summary-gated.json` byte for byte, and a copy patched only at that check reads K-NULL
+with every other field unchanged (`~/develop/emai/evidence/task094-gated-recompute/`; `SHA256SUMS`
+sha256 `3d3b0380…3d63`).
+
+### 19.2 K (128 paired gated resets 941000–941127; exact 95 % intervals)
+
+The goals were drawn with 146 rejected draws. Targets: cube 51, can 46, apple 31. s\* median
+0.679 (p10–p90 0.649–0.692).
+
+| Arm | Lifts / 128 | Interval | Contact | Stopped | Slip | Measured hand, close and lift (median) | Grasp subgoal timed out |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **K-1.0** | **88** | 0.600–0.766 | 121 | 10 | 4 | 0.66 | 60 |
+| K-0.9 | 89 | 0.608–0.774 | 121 | 8 | 2 | 0.60 | 69 |
+| K-0.8 | 88 | 0.600–0.766 | 119 | 7 | 2 | 0.54 | 79 |
+| K-0.7 | 82 | 0.551–0.723 | 118 | 10 | 3 | 0.48 | 105 |
+| **K-s\*** | **84** | 0.567–0.738 | 118 | 9 | 2 | 0.47 | 111 |
+| **K-0.6** | **81** | 0.543–0.716 | 119 | 7 | 1 | 0.43 | 118 |
+| K-open | 0 | 0.000–0.028 | 0 | 0 | 0 | −1.00 | 128 |
+| K-off-x-1.0 | 82 | 0.551–0.723 | 120 | 3 | 4 | 0.67 | 82 |
+| K-off-x-s\* | 69 | 0.449–0.628 | 120 | 4 | 6 | 0.48 | 115 |
+| K-off-y-1.0 | 31 | 0.171–0.326 | 91 | 14 | 2 | 1.00 | 105 |
+| K-off-y-s\* | 26 | 0.137–0.283 | 99 | 12 | 5 | 0.66 | 111 |
+
+**Paired contrasts against K-1.0** (Δ is the rate difference. "Discordant" counts the resets
+where only K-1.0 lifted, then those where only the other arm lifted. p is the exact one-sided
+McNemar test. The interval is the two-sided 95 % reset-bootstrap percentile interval, 10 000
+resamples, salt 9014.)
+
+| Other arm | Δ | Discordant | p | Bootstrap 95 % |
+| --- | --- | --- | --- | --- |
+| K-0.9 | −0.008 | 4 / 5 | 0.75 | −0.055 to +0.039 |
+| K-0.8 | 0.000 | 5 / 5 | 0.62 | −0.047 to +0.047 |
+| K-0.7 | +0.047 | 11 / 5 | 0.11 | −0.016 to +0.109 |
+| **K-s\*** | **+0.031** | **10 / 6** | **0.23** | **−0.031 to +0.094** |
+| **K-0.6** | **+0.055** | **14 / 7** | **0.095** | **−0.016 to +0.125** |
+| K-open | +0.688 | 88 / 0 | 3 × 10⁻²⁷ | +0.609 to +0.766 |
+| K-off-x-1.0 | +0.047 | 18 / 12 | 0.18 | −0.039 to +0.133 |
+| K-off-x-s\* | +0.148 | 29 / 10 | 0.0017 | +0.055 to +0.242 |
+| K-off-y-1.0 | +0.445 | 60 / 3 | 5 × 10⁻¹⁵ | +0.352 to +0.539 |
+| K-off-y-s\* | +0.484 | 64 / 2 | 3 × 10⁻¹⁷ | +0.391 to +0.570 |
+
+The offset arms against their s\* twin: K-s\* minus K-off-x-s\* is +0.117 (27 / 12; p = 0.012;
++0.023 to +0.211), and K-s\* minus K-off-y-s\* is +0.453 (61 / 3; p = 2 × 10⁻¹⁵; +0.359 to +0.547).
+The +1.0 pairs are in the table above (K-1.0 against K-off-x-1.0 and K-off-y-1.0).
+
+**§4.3, first match:**
+
+1. **K-VOID — no condition holds.**
+   - K-1.0 lifted 88, inside the band of 63–114.
+   - K-open lifted 0, not above 3.
+   - The plumbing passed on all 11 arms, both in the job's reading and in the summarizer's
+     re-reading. The offset goals are the K-1.0 goals displaced by exactly v.
+   - The goal digests, the revision, the clean tree and the frozen files matched.
+   - No cohort ran twice, no job hit its cap, and there was no budget stop.
+   - The determinism re-runs of K-1.0 and K-s\* on 941000–941003 matched bitwise.
+   - The summarizer's "n = 4" is §19.1 (2).
+2. **K-NULL — holds.** Δ_{s\*}'s bootstrap upper bound is 0.094 and Δ_{0.6}'s is 0.125. Both are
+   below δ_K = 0.15.
+
+**K's row: K-NULL** (by §4.3's text, confirmed, R27.195; the frozen summarizer printed K-VOID on a
+size-check defect, §19.1). At the scripted follower's exact pose, holding the closure at s\* or at
+0.6 lost less than 0.15 of the lifts against the +1 squeeze on these 128 resets. The point estimates are +0.031 and +0.055, and
+neither is significant.
+
+**The palm-offset arms, reported beside K-NULL as §7.2 asks.** A rigid 1.2 cm palm offset in +y
+cost far more than any closure level:
+- **+y:** K-1.0 minus K-off-y-1.0 is +0.445 (+0.352 to +0.539), and K-s\* minus K-off-y-s\* is
+  +0.453.
+- **+x:** at +1.0 the offset cost +0.047 (−0.039 to +0.133, not significant). Combined with s\*
+  it cost +0.148 against K-1.0 (+0.055 to +0.242; p = 0.0017), and +0.117 against K-s\*
+  (+0.023 to +0.211).
+
+On these resets the loss from placement is larger than the loss from closure. It also depends on
+the direction of the offset.
+
+Computed by the review of #228, post hoc and not preregistered (no row, no bar): under the +x
+offset, holding at s\* lost +0.102 against +1.0 (K-off-x-1.0 82 against K-off-x-s\* 69; discordant
+17 / 4, exact one-sided McNemar p = 0.0036, reset bootstrap 95 % +0.039 to +0.172, salt 9014); under
++y +0.039 (6 / 1, p = 0.063, 0.000 to +0.078). K-NULL is a finding at the follower's exact pose; it
+does not show that partial closure is harmless when the palm is misplaced, and the pause ruling
+should weigh the two together.
+
+**What these figures do not show:**
+- The offset is a dose of two directions of one size, imposed on the demonstrator's goals. It is
+  not a measurement of the world-model arms' placement errors (§4.1, §11).
+- K is one follower at exact poses, not the world-model arms.
+- The switching rule makes lower held levels time out on the grasp subgoal more often (60 at
+  +1.0 against 111 at s\*), so the arms also differ in grasp-phase duration.
+
+### 19.3 M (128 gated root seeds 946000–946127; reported, not read)
+
+M is reported only. K is not K-CAUSAL, so §7.1's L rows are not read. The roots job's VOID at
+946073 would in any case make the L row L-VOID.
+
+The roots were drawn with 242 rejected draws. Targets: cube 71, can 31, apple 26. s\* median
+0.680. The counts include root 946073.
+
+| Root type | Squeeze lifts | 0.9 | 0.8 | 0.7 | s\* | Control | **n_d** | Excluded (< 7 differing steps) | Ceiling wins on discordant | G wins (87100, 87101, 87102) | Positive control |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Rs | 128 | 127 | 110 | 101 | 102 | 0 | **26** | 2 (limit 16) | **25 / 26** (0.962; exact 0.804–0.999) | 24, 23, 15 of 26 (exact 0.749–0.991, 0.698–0.976, 0.369–0.766); bar 22 | 128 / 128 (need 112) |
+| R2 | 128 | 127 | 127 | 127 | 127 | 0 | **1** | 0 | 1 / 1 (0.025–1.000) | 1, 1, 1 of 1 | 128 / 128 |
+
+Other M checks:
+- S's determinism re-run on 946000–946001 matched.
+- The ceiling is identical across the three seeds.
+
+**Reported only:**
+- At Rs the squeeze also beat 0.7 on 26 of 27 discordant roots (G: 24, 22, 14) and 0.8 on 13 of
+  18 (G: 16, 16, 1).
+- Term medians on the Rs discordant roots (ceiling, squeeze against s\*): total 0.778 against
+  0.852; the hand part of the pose term 0.138 against 0.272; the latent term 0.622 against 0.604.
+  At R2, on one root: total 1.889 against 2.146.
+
+**Each root type's own reading (reported; not read):**
+- **Rs (n_d 26 ≥ 16):** the ceiling ranks the squeeze above s\* (0.962 ≥ 0.75), and G ranks it
+  on two of three seeds (24 and 23 ≥ 22; G-87102 15). The search does not miss (below). The
+  pattern is therefore that of **L-MIXED**.
+- **R2:** unread (n_d 1), as R27.183 (2) expected.
+
+### 19.4 S (the frozen planner, one call per root, root type and seed; reported, not read)
+
+| Root type | Plans that squeeze (ℓ ≥ 0.9), of 128 | Median ℓ | Misses on discordant roots (need ⌈0.25 n_d⌉) | Misses on all 128 | Partial preferred, discordant | Substituted / plan cost, median |
+| --- | --- | --- | --- | --- | --- | --- |
+| Rs | 28, 21, 23 | 0.839, 0.859, 0.833 | **1, 0, 8 of 26** (need 7; one seed) | 6, 4, 25 | 19, 19, 14 | 1.030, 1.047, 1.022 |
+| R2 | 67, 53, 85 | 0.903, 0.893, 0.915 | 0, 0, 0 of 1 | 33, 20, 21 | 0, 1, 0 | 0.994, 1.022, 0.997 |
+
+- At Rs the first command requested a median grasp of 0.949–0.976 and executed 0.636 (the rate
+  limit).
+- G-i's re-evaluated plan cost equals CEM's recorded cost within 4.8 × 10⁻⁷ on every call.
+- The DRAFT's comparison (reported) gave no miss anywhere: CEM's best candidate cost less than
+  the squeeze branch on 128 of 128 calls per seed and root type.
+- On the Rs discordant roots, G-87100 and G-87101 mostly rated the plan's own partial closure at
+  least as well as the substituted squeeze ("partial preferred" 19 and 19 of 26). G-87102 missed
+  on 8 of 26.
+
+### 19.5 Budget, incidents and deviations
+
+**Budget.**
+- 17 `gpu_run` jobs, 1 029 s (**0.286 GPU h**). The job durations were 391 s for the roots, 151 s
+  for the search, 29 s for the ranking, 61 s for the goals, 27–44 s per K arm and 3–4 s per K
+  determinism re-run.
+- TASK-094's total with Stage 0 and Stage 0′ is 1 422 s (**0.395 GPU h**), under the 0.6 GPU h
+  limit and the 1.0 GPU h ceiling.
+- No job reached the 1 800 s cap.
+
+**Incidents.** The two VOID events of §19.1. Nothing was improvised: no file was edited, no job
+was re-run and no cohort was touched twice.
+
+**Ledger.** 17 new keys: `goals-gated-k`, 11 `k-gated-k-*` arm keys, 2 determinism keys, and
+`roots-`, `rank-` and `search-gated-roots`.
+
+**What was not touched.**
+- No `- v2d:` request was on BOARD.md before any job.
+- The GR00T server, `/mnt/data/emai/{archive,models,cache}`, `worktrees/task087-run` and other
+  worktrees and evidence were not touched.
+- Nothing was moved to the data disk, so `MANIFEST.tsv` was not written.
+
+**After the run.** The only change made after the run is the comment on line 4 of
+`scripts/run_task094_stage.sh` ("the Stage 0 merge" becomes "the Stage 0′ merge, 2eacacf"), as the
+review of #227 asked. It changes no behaviour, and it lands after the gated stage. TASK-094 does not
+hash-pin the script; its sha256 is
+`ec205e1f2437bdc72af1b1f03ef4c5b1cdd85431edc15f2d0a061ae40d5a54da` at `2eacacf` and
+`9f4562b32d0f1651e67887800ab9caf71056934df400148d4083306240cc2b79` after the edit.
+
+### 19.6 Row and routing
+
+**K-NULL** (by §4.3's text, confirmed, R27.195; the frozen summarizer printed K-VOID on a size-check
+defect, §19.1). M and S are reported, not read. Their own state is L-VOID (root 946073), and Rs's reading has the L-MIXED pattern.
+§7.2 routes K-NULL as follows: **the grasp line pauses and the owner is told** (R27.157). D's work
+(for example a Phase 4 precursor with a scripted closure rule) still needs its own ruling, because
+Phase 4 is not admitted (R25.27, R27.148). The palm-offset arms are reported beside the row
+(§19.2) for that pause ruling to weigh.
+
+R27.185's development expectation (K-UNCLEAR likely; Δ_s\* 0.0625 [−0.06, 0.19], Δ_0.6 0.125 [0,
+0.28] on 32 resets) did not hold: at 128 gated resets both upper bounds are below 0.15. The
+development +y palm effect (−16 / 32) recurred in direction on the gated resets (−57 / 128).
+
+TASK-094 closes at K-NULL; no M or S re-run follows (§7.2 routes one only after K-CAUSAL + L-VOID).
+
+**No row admits a controller, a training run or a closed loop.** "LeWM needed" is not claimed,
+and no grasp success is claimed. There is no abandonment clause (§7.2). **R7 does not change**
+(R27.176).
