@@ -63,6 +63,54 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-16 (bp) — the owner opens the SO-101 branch: the LeRobot SO-101 arm runs beside G1 + Dex3 as a stepping stone, simulation first; Claude's defaults under delegation (joint_delta_so101_v0, wrist and overview cameras, cube lift then place, Hub datasets deferred); the plan is SO101_PLAN.md; the G1 grasp line stays paused, TASK-095 stays on hold; R7 unchanged (R28.1–R28.9)
+
+**Decided by the owner (2026-10-16, in chat: "setup everything for the so101 and start working on
+it"); the defaults are Claude's choices under owner delegation; recorded by Claude.** Plan:
+[SO101_PLAN.md](SO101_PLAN.md). This entry opens a branch and admits its foundation tasks
+(TASK-096–TASK-098). It rules on no research question, sets no bar and admits no experiment.
+
+- **R28.1 — The SO-101 branch is open.** This is the owner ruling that R27.213 required. The
+  pause of R27.209 is lifted for the SO-101 branch only.
+- **R28.2 — The G1 line is unchanged.** The grasp line on G1 + Dex3 stays paused (R27.211) with
+  every fired clause in force (R26.33, R27.71, R27.149). TASK-095 stays on hold, unconfirmed
+  (R27.210). The resume options of R27.212 other than the SO-101 branch stay unchosen.
+- **R28.3 — Defaults, chosen by Claude under owner delegation** (the owner may overrule any):
+  - SO-101 runs **beside** G1 + Dex3 as a **stepping stone**, not a replacement. G1 code, configs,
+    checkpoints and results are untouched; the product goal (LeWM-driven control of G1 + dual
+    Dex3) stays the end goal.
+  - **Simulation first.** No real-hardware execution until a separate owner ruling; buying
+    hardware is the owner's decision.
+  - **Action schema `joint_delta_so101_v0`:** five arm joint-position deltas plus one gripper
+    command, in LeRobot `so_follower`'s motor order `shoulder_pan`, `shoulder_lift`,
+    `elbow_flex`, `wrist_flex`, `wrist_roll`, `gripper`. Chosen over a reduced end-effector schema
+    because a 5-joint arm cannot follow a full 6-D end-effector delta and the control is IK-free.
+  - **Cameras:** a wrist camera on the gripper and a fixed front/overview camera (R27.214: the
+    binding constraint on G1 was centimetre-level perception at contact).
+  - **First task family:** cube pick-and-lift (`so101_cube_lift_v0`), then pick-and-place into a
+    target (`so101_cube_place_v0`).
+  - **Community Hugging Face Hub datasets deferred**, each needing its own licence check.
+- **R28.4 — Invariants.** The backend-swap invariant and the core-import check (no `torch` or
+  `mujoco` imported by `import embodied_jepa`) are kept. The action-dimension generalisation must
+  not change any G1 model's implementation hash, or must commit a reviewed compatibility manifest
+  as TASK-072 did.
+- **R28.5 — Upstream.** The preferred upstream model is MuJoCo Menagerie's `robotstudio_so101`
+  (Apache-2.0), derived from TheRobotStudio's `SO-ARM100` `Simulation/SO101/so101_new_calib.xml`
+  (Apache-2.0); Menagerie's `trs_so_arm100` is the SO-100 and is not used. Paths, revisions and
+  licences were checked through the GitHub API on 2026-10-16 and are listed in the plan;
+  [DEPENDENCIES.md](DEPENDENCIES.md) records them only when a fetch script actually fetches them.
+- **R28.6 — Phases.** S0 schema generalisation (TASK-096), S1 the simulated embodiment (TASK-097),
+  S2 the tasks (TASK-098), S3 a scripted collector and corpus measured before training, S4 LeWM
+  and `native_jepa` training with offline gates, S5 a first preregistered closed loop in
+  simulation with the scripted follower as the reference arm, S6 real hardware after an owner
+  ruling. S0–S2 are software and measurement; S4 onward each need a preregistration.
+- **R28.7 — Lessons carried.** Bars are calibrated from measured ceilings; the placement
+  tolerance envelope is measured before a learned controller is designed; corpora are measured
+  before training; every closed loop keeps a scripted reference arm.
+- **R28.8 — Effort.** The plan's effort figures are estimates, not measurements.
+- **R28.9 — No claim; R7 does not change.** Nothing here is an experiment or a result. SO-101
+  results, when they exist, are not Apple→Plate results and do not enter R7.
+
 ## Decision 2026-10-15 (bo) — the owner pauses the project: TASK-095 is not started (it stays recommended and unconfirmed), the grasp line stays paused, nothing gated is running, and the resume options are recorded, including an SO-101 branch as a product-goal change that needs its own owner ruling; R7 unchanged (R27.209–R27.215)
 
 **Decided by the owner (2026-10-15, in chat); recorded by Claude.** Handoff document:
