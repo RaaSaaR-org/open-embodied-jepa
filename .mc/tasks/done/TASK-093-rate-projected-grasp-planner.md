@@ -4,7 +4,7 @@ aliases:
 - TASK-093
 title: 'Rate-projected planner: project CEM candidates onto the grasp-rate limit before scoring, gate it offline on executed measures, then the closed-loop grasp-and-lift comparison against the unprojected planner on TASK-087''s G'
 slug: rate-projected-grasp-planner
-status: todo
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -20,7 +20,7 @@ depends_on:
 - "[[TASK-092]]"
 due_date: ''
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 
@@ -79,8 +79,8 @@ Protocol: [grasp_rate_projected_planner_v1.md](../../../docs/experiments/grasp_r
   - the power recomputed with 20 000 simulations;
   - a timed debug smoke on 91940–91999.
 - [x] Stage P recorded (P-FAIL escalates, with no clause)
-- [ ] Stage BD recorded, the bar set, and an independent GO posted before Stage BS
-- [ ] Stage BS recorded with its row; the clause fires on B-FAIL only; R7 unchanged
+- [x] Stage BD recorded, the bar set, and an independent GO posted before Stage BS (GO on #222)
+- [x] Stage BS recorded with its row; the clause fires on B-FAIL only; R7 unchanged (B-FAIL; the clause fires)
 
 ## Notes
 
@@ -108,3 +108,15 @@ Protocol: [grasp_rate_projected_planner_v1.md](../../../docs/experiments/grasp_r
   separately before BD, a disclosed deviation from §10 and R27.137 that affects no result, and it is
   told explicitly before BS. Evidence `~/develop/emai/evidence/task093-{p,bd}/`. Stage BS waits for
   an independent GO on §18.
+- 2026-10-15, Stage BS (branch `docs/task093-bs-record`; R27.147–R27.151, DECISIONS (bg); record
+  §19), after the independent GO on #222, at `4d3491e` from a clean tree in `worktrees/task093-run`.
+  **B-FAIL** (gated, one run, simulation only, 128 fresh resets 918000–918127): M-proj 3, 3, 14 of
+  128 (exact 95 % 0.005–0.067, 0.005–0.067, 0.061–0.177; G-87102 `last_two_triggered`), k_p = 20 /
+  384 (0.032–0.079) against the pooled bar 156 / 384 and per-seed floor 26 / 128; M-v1 1, 10, 13 of
+  128, k_c = 24 / 384 (0.040–0.092); "M-proj beats M-v1" p = 0.810 (not met), "beats random" p =
+  3.8 × 10⁻⁶; bootstrap (k_p − k_c) / 384 −0.010, 95 % −0.039 to +0.018 (below δ = +0.10). Reported:
+  ik 91 / 128 (0.624–0.788), ik-nopress 89 / 128, hold and random 0 / 128. Determinism re-run
+  matched; projector equivalence held on all 139 825 M-proj commands; M-proj plans wholly on
+  support. 18 jobs, 49 731 s (about 13.8 GPU h), no cap hit; two V2D requests let through (90 s,
+  210 s). **The §8 clause fires** with its scope unchanged; TASK-093 closes with this record's
+  merge; no next task chosen; R7 unchanged. Evidence `~/develop/emai/evidence/task093-bs/`.

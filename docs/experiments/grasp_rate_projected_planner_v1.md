@@ -8,8 +8,9 @@ changes none of the other two items §14 lets it change. Every later stage runs 
 revision from a clean tree with `scripts/run_task093_stage.sh`; Stage BS runs only after an
 independent GO on Stage BD's record. **Stage P** (gated, offline, 64 roots, one run) ended
 **P-PASS** (§17, R27.139–R27.141), and **Stage BD** (development, not gated, 32 resets, one run)
-set the bar at **0.40** (§18, R27.142–R27.146). Stage BS has not run; it waits for an independent
-GO on §18.
+set the bar at **0.40** (§18, R27.142–R27.146). After an independent GO on §18 (#222), **Stage
+BS** (gated, 128 resets, one run, simulation only) ended **B-FAIL** and **the §8 clause fires**
+(§19, R27.147–R27.151); TASK-093 closes with that record.
 
 This is the planner-side fix that R27.104 and R27.113 route to after D-RATE′ read D-FLAT. It is a
 planner variant over TASK-087's checkpoints, so it falls under R26.33. R27.115 (§2) rules that
@@ -1184,3 +1185,170 @@ record, at `4d3491e` from a clean tree, after the V2D session is told. It has no
 - **R27.145 — Stage BS waits for an independent GO** on this record (R27.137); nothing of §2–§12
   changes.
 - **R27.146 — R7 does not change.**
+
+## 19. Stage BS record (gated; R27.147–R27.151; decided by Claude under owner delegation)
+
+**Run conditions.** An independent reviewer posted **GO** on §18 (#222, comment
+`issuecomment-6173841109`); its conditions were met before the start: the review edits were merged
+(main `a18fd06`), and the V2D session was told about BS on 2026-10-14 before it started (this
+closes the deviation disclosed in §18). Stage BS ran once, 2026-10-14 17:31 UTC to 2026-10-15
+07:26 UTC, with `scripts/run_task093_stage.sh bs outputs/task093-bs outputs/task093-bd/summary-bd.json
+outputs/task093-p/summary-p.json`, at the frozen revision `4d3491e` (#221's merge) from the same
+clean tracked tree as §17–§18 (`worktrees/task093-run`, detached at `4d3491e`; every run report
+records `tracked_tree_dirty: false` and `frozen_files_match: true`). Before each of the 18 jobs the
+stage script read BOARD.md's `## Requests`; twice a `- v2d:` request was present and the next job
+waited until it was gone (90 s at 19:54:54 UTC and 210 s at 05:10:45 UTC), as §10 requires. Every
+job took the shared lock with `gpu_run.sh --wait --board`. Nothing frozen was changed. Evidence:
+`~/develop/emai/evidence/task093-bs/` (`SHA256SUMS`): the goals report, the 23 run reports (six
+combined world-model runs, their twelve parts, the four baselines and the determinism re-run), the
+summary, the stage log, the 18 ledger entries, the two MP4
+replays with their metadata and the `gpu_run` log lines. The goal frames (`goals-bs-grasp.npz`)
+stay in `outputs/task093-bs/` on the data disk.
+
+**Jobs and GPU time.** Goals (128 resets, 918000–918127, 136 rejected draws; targets can 54, cube
+44, apple 30) 55 s; ik, ik-nopress, hold and random 29–43 s each; twelve world-model jobs of 64
+resets each, 3 754–4 247 s (wall, 6 processes each); the determinism re-run 290 s. No job reached
+the 7 200 s cap; every report is `completed: true`, `cap_hit: false`. In total **18 jobs, 49 731 s
+(about 13.8 GPU h)**, inside §10's estimate of 11–14 GPU h. The two MP4 replays (below) took two
+further `gpu_run` jobs of 3 s and 5 s after the stage.
+
+**The summarizer's output, as `summarize_task093.py --stage bs` printed it:**
+
+```
+{
+ "stage": "bs",
+ "row": "B-FAIL",
+ "bar": 0.4,
+ "bars": null,
+ "problems": []
+}
+```
+
+**Checks (§6.3's B-VOID list).** Every run completed under the rules, with no cap hit; the
+summary lists no problem (goal, checkpoint, frozen-file hash, λ = 2.0552, seed, the split of each
+world-model run into 918000–918063 and 918064–918127 and its combination); the projector
+equivalence held on every executed M-proj command (applied channel 13 bitwise equal to the
+request on **0 of 47 386, 45 902 and 46 537** commands differing, 0 of 11 580, 10 935 and 11 755 in
+the grasp phase); the **determinism re-run** of M-proj-87100 on 918000–918003 **matched** bitwise
+(`determinism_matches: true`); no cohort was run twice (one ledger entry per job). So the row is
+not B-VOID.
+
+**Per arm** (128 fresh gated resets, one run, simulation only; exact 95 % intervals; contact is
+thumb plus index or middle on the target; rise is the maximum target rise; "stopped" is the
+embodiment's measured-joint-velocity stop; "closed in grasp" is the share of grasp-phase commands
+with the right-grasp channel > 0.5):
+
+| Arm | Successes | 95 % interval | Grasp contact | Median max rise | Stopped | Closed in grasp | Plan s / command |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **M-proj-87100** | **3 / 128** | 0.005–0.067 | 71 | 0.37 cm | 14 | 0.76 | 0.99 |
+| **M-proj-87101** | **3 / 128** | 0.005–0.067 | 64 | 0.37 cm | 19 | 0.58 | 0.98 |
+| **M-proj-87102** ¹ | **14 / 128** | 0.061–0.177 | 98 | 0.43 cm | 9 | 0.65 | 1.00 |
+| M-v1-87100 | 1 / 128 | 0.000–0.043 | 74 | 0.32 cm | 16 | 0.71 | 1.01 |
+| M-v1-87101 | 10 / 128 | 0.038–0.139 | 90 | 0.47 cm | 8 | 0.41 | 1.00 |
+| M-v1-87102 ¹ | 13 / 128 | 0.055–0.167 | 84 | 0.40 cm | 24 | 0.54 | 1.00 |
+| ik | 91 / 128 | 0.624–0.788 | 120 | 6.45 cm | 9 | 0.86 | — |
+| ik-nopress | 89 / 128 | 0.608–0.774 | 121 | 6.29 cm | 12 | 0.86 | — |
+| hold | 0 / 128 | 0.000–0.028 | 0 | 0.0 cm | 0 | 0.0 | — |
+| random | 0 / 128 | 0.000–0.028 | 0 | 0.0 cm | 0 | 0.04 | — |
+
+¹ G-87102 is `last_two_triggered: true` (TASK-087's training flag, recorded in its run reports).
+
+- **Pooled.** **k_p = 20 / 384** (exact 95 % 0.032–0.079) against the pooled bar **156 / 384**:
+  not met. k_c = 24 / 384 (0.040–0.092). The per-seed floor is **26 / 128**, and no M-proj seed
+  meets it (3, 3, 14).
+- **Gating tests** (reset level, exact one-sided sign-flip, p < 0.01):
+  - "M-proj beats M-v1": **p = 0.810, not met**.
+  - "M-proj beats random": p = 3.8 × 10⁻⁶, met.
+- **Reported:** the pooled exact McNemar test, p = 0.819; the reset-cluster bootstrap of
+  (k_p − k_c) / 384 (10 000 resamples, salt 9006): **−0.010, 95 % −0.039 to +0.018**; ik (× 3)
+  against M-proj per reset, p = 2.5 × 10⁻²⁷.
+- **Why this is the row** (§6.3, first match). Not B-VOID (above). Not B-PASS, B-GAIN or B-BAR,
+  each of which needs "M-proj beats M-v1" (B-PASS, B-GAIN) or k_p ≥ the pooled bar (B-BAR). B-FAIL
+  needs all of: M-proj does not beat M-v1 (p = 0.810); k_p is below the pooled bar (20 < 156) or
+  M-proj does not beat random; the bootstrap upper bound is below δ = +0.10 (+0.018). All hold, so
+  the row is **B-FAIL**, not B-UNDER. **The clause fires** (§8).
+- **Per object** (successes / resets): ik can 48 / 54, cube 35 / 44, apple 8 / 30 (ik-nopress 47,
+  36, 6). M-proj-87100 can 3 / 54, cube 0, apple 0; M-proj-87101 can 3, cube 0, apple 0;
+  M-proj-87102 can 13, cube 0, apple 1. M-v1-87100 can 0, cube 0, apple 1; M-v1-87101 can 5,
+  cube 2, apple 3; M-v1-87102 can 9, cube 3, apple 1.
+- **Final subgoal reached** (lift 3 / grasp 2 / earlier): M-proj 114 / 13 / 1, 110 / 16 / 2,
+  119 / 9 / 0; M-v1 112 / 16 / 0, 120 / 8 / 0, 105 / 23 / 0; ik 121 / 7 / 0.
+- **Support and requests (reported).** M-proj: chosen plan steps off the training support 0.000 on
+  every seed (every plan wholly on support), first grasp step clipped on 0.000 of commands, and
+  0.545, 0.517 and 0.495 of its *requested* grasp steps lie beyond the limit. M-v1: plan steps off
+  support 0.486, 0.420 and 0.350 (plans wholly on support 0.093, 0.131 and 0.230); first grasp step
+  clipped on 0.629, 0.534 and 0.426 of commands (0.848, 0.867 and 0.796 in the grasp phase); applied
+  channel 13 differed from the request on 29 833 / 47 381, 25 664 / 47 987 and 18 410 / 43 170
+  commands. The per-episode median off-support share of M-v1 was 0.495, 0.455 and 0.340 on failures
+  against 0.197, 0.207 and 0.176 on successes (reported; not a test).
+- **Stage P beside each seed** (§17; offline, 64 roots, one run): M-proj C8@R1 39, 48, 54 and
+  H8@R2 58, 61, 58 of 64 on G-87100, 87101, 87102, all P-PASS. Within M-proj the closed-loop order
+  (3, 3, 14) follows neither C8 nor H8 exactly; with three seeds this is not read.
+
+**§6.3's deferral measures (TASK-091 §5.3; reported only, no row reads them; per reset over the
+128 episodes; medians with the 10th–90th percentiles), M-proj-87100 / -87101 / -87102 /
+M-v1-87100 / -87101 / -87102:**
+
+- (1) closing commands before first contact, episodes with contact: median 2 / 1 / 1 / 2 / 1 / 1
+  (p90 10 / 5.7 / 6.3 / 17.1 / 15.4 / 5; max 91 / 70 / 77 / 94 / 59 / 25), on n = 71 / 64 / 98 /
+  74 / 90 / 84 episodes; episodes with no contact 57 / 64 / 30 / 54 / 38 / 44.
+- (2) first executed close in the grasp phase, command index: median 8 / 8 / 8 / 9 / 9 / 8 (p90
+  9 / 9 / 9 / 11 / 13 / 12); never closed in the grasp phase 1 / 2 / 1 / 6 / 1 / 3; grasp phase not
+  reached 1 / 2 / 0 / 0 / 0 / 0.
+- (3) share of grasp-phase re-plans with k = 1, per reset: median 0.77 / 0.55 / 0.64 / 0.57 /
+  0.55 / 0.55 (pooled 0.760 / 0.577 / 0.647 / 0.576 / 0.571 / 0.585); median planned close step k
+  1 for every arm (p90 2 / 3.5 / 2.65 / 1 / 1 / 1.5); longest run of re-plans with k > 1, median
+  7 / 8 / 8 / 3 / 4 / 4 (max 19 / 24 / 27 / 9 / 9 / 84).
+
+As in §18, the 2 / 11 rate limit lets an executed close register from an open hand only after
+about 8–9 grasp-phase commands, so every arm's median first close (command 8–9) is at or near the
+earliest possible. M-proj's longer runs of k > 1 are what projection makes of a request beyond
+the limit (a projected close spreads over several steps). That deferral caused either arm's
+failures is not shown.
+
+**MP4 replays (reported, not counted).** Two replays of M-proj-87102 with `run_task093.py video`
+at `4d3491e` (each under `gpu_run.sh`): success on reset 918008 and failure on reset 918000 (the
+first success and the first failure of that run). Both replays matched the run's palm distances
+(`replay_matches: true`). They are in the evidence directory.
+
+**What this is and is not.** One run, simulation only, 128 fresh gated resets (918000–918127), one
+scene, arm, hand and camera at 112 px, one encoder, latent, corpus, recipe, budget and cost;
+three model seeds pooled, G-87102 `last_two_triggered`. Projecting CEM's grasp candidates onto
+the rate set removed the off-support queries completely (plan steps off support 0.000 against
+0.35–0.49 for M-v1) and the closed-loop equivalence held bitwise, but M-proj did not beat the
+unprojected planner (20 / 384 against 24 / 384, p = 0.810; bootstrap −0.010, 95 % −0.039 to
++0.018), was far below the bar (156 / 384) and far below ik (91 / 128 on the same resets and
+goals, without a world model). At the bootstrap's 95 % level the data are not consistent with a
+pooled difference (k_p − k_c) / 384 above +0.018, and so not with the gain of δ = +0.10 this line
+was kept open for; a smaller gain is not ruled out. "LeWM needed" is not
+claimed. Phase 4 is not admitted. TASK-093 is not an Apple→Plate experiment, and R7 does not
+change.
+
+- **R27.147 — Stage BS is recorded.** It ran once after the independent GO on #222, at `4d3491e`
+  from a clean tree, in 18 jobs (49 731 s, about 13.8 GPU h), with no cap hit, every report
+  complete, the determinism re-run matching bitwise, the projector equivalence holding on every
+  M-proj command and no problem in the summary. Two V2D requests on BOARD.md were let through
+  (90 s and 210 s waits).
+- **R27.148 — B-FAIL** (§6.3 row 5). M-proj 3, 3, 14 of 128 (exact 95 % 0.005–0.067,
+  0.005–0.067, 0.061–0.177) on G-87100, 87101, 87102 (G-87102 `last_two_triggered`); k_p = 20 /
+  384 (0.032–0.079) against the pooled bar 156 / 384 and the per-seed floor 26 / 128, neither met;
+  M-v1 1, 10, 13 of 128 (0.000–0.043, 0.038–0.139, 0.055–0.167), k_c = 24 / 384 (0.040–0.092);
+  "M-proj beats M-v1" p = 0.810, not met; "M-proj beats random" p = 3.8 × 10⁻⁶, met; bootstrap of
+  (k_p − k_c) / 384 −0.010, 95 % −0.039 to +0.018, upper bound below δ = +0.10. Reported: ik 91 /
+  128 (0.624–0.788), ik-nopress 89 / 128 (0.608–0.774), hold and random 0 / 128 (0.000–0.028).
+  One run, simulation only, 128 gated resets.
+- **R27.149 — The §8 clause fires,** with its scope unchanged. It closes grasp-channel rate
+  projection of CEM's candidates as the grasp fix, under TASK-089's step-averaged planner, over
+  TASK-087's G checkpoints and (on §3 rank 4's argument, not a test) TASK-092's G-req checkpoints:
+  no further variant of it (the refit space, elite or sample count under projection, projecting
+  only the first steps, a softened or margin-shifted rate set, adding G-req) is preregistered for
+  grasping over these checkpoints without new evidence of a different kind. Not closed, as §8
+  lists: LeWM, DINOv2 and CEM in general; full-embodiment candidate projection including the arm
+  channels (it stays under R26.33 and needs its own ruling); every model change of TASK-092 §2 not
+  yet tested; the corpora as bases and the kinds of data R27.71 leaves open; reach planning
+  (Z3-REACH stands); Phase 4 as a goal; the product goal. M-v1's counts are recorded with the
+  clause and are not a way around R26.33.
+- **R27.150 — TASK-093 closes at B-FAIL** with this record's merge. This record chooses no next
+  task.
+- **R27.151 — R7 does not change.** TASK-093 is not an Apple→Plate experiment, and no frozen §7
+  rule touches R7.
