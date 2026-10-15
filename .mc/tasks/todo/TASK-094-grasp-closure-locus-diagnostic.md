@@ -29,8 +29,9 @@ updated: 2026-10-15
 ## Description
 
 **DRAFT.** Chosen by R27.156 (DECISIONS (bh); design note
-[grasp_next_step_v1.md](../../../docs/experiments/grasp_next_step_v1.md)). The preregistration is
-not yet written.
+[grasp_next_step_v1.md](../../../docs/experiments/grasp_next_step_v1.md)). DRAFT preregistration:
+[grasp_closure_locus_v1.md](../../../docs/experiments/grasp_closure_locus_v1.md) (R27.160–R27.176,
+DECISIONS (bi)); under review, not frozen, nothing run.
 
 **Why.** An offline read of the Stage BS reports of TASK-089, TASK-091 and TASK-093 (R27.152)
 has these qualifiers: one run per stage, simulation only, pooled, an association, and read after
@@ -90,7 +91,7 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
 
 ## Acceptance criteria
 
-- [ ] DRAFT preregistration (`docs/experiments/grasp_closure_locus_v1.md`), reviewed
+- [ ] DRAFT preregistration (`docs/experiments/grasp_closure_locus_v1.md`; written, R27.160–R27.176), reviewed
   independently and merged. It fixes the seeds (checked by the seed check), the hold levels, the
   palm offset, the roots, the bars and margins and the row order before anything runs.
 - [ ] Stage 0: opt-in code with no frozen file edited, tests, the degeneracy checks of M's
@@ -104,3 +105,27 @@ sit in the goal and cost (b), in G (a) or in the search (c)?
 
 - 2026-10-15, created as DRAFT by R27.156 (branch `docs/grasp-next-step-ruling`). The offline read
   behind it is in `~/develop/emai/evidence/grasp-next-step/`; it used the CPU only.
+- 2026-10-15, DRAFT preregistration written (R27.160–R27.176, DECISIONS (bi); branch
+  `docs/task094-prereg`). Fixed there:
+  - **K:** TASK-088's IK follower with its closing command held at +1.0, 0.9, 0.8, 0.7, s\*
+    (the goal's measured close-subgoal synergy) and 0.6 (reported), K-open (c = −1, degeneracy
+    reference), and palm offsets v_x = (+1.2, 0, 0) cm and v_y = (0, +1.2, 0) cm (pelvis frame, a
+    rigidly displaced goal) at +1.0 and s\*; 128 paired gated resets 941000–941127.
+  - **M and S:** 64 gated root seeds 942000–942063, two root types: Rs (8 of the demonstrator's 35
+    close commands in; roots in the close: yes, R27.163) and R2 (the end of the close); branches at
+    +1.0, 0.9, 0.8, 0.7, s\* and a control, simulated to their true outcome; the frozen
+    step-averaged cost on G-87100–87102 (G-87102 `last_two_triggered`) and on real frames; S is
+    TASK-089's frozen, unprojected planner.
+  - **Rows and bars:** K-VOID (K-1.0 outside 63–114 of 128; K-open > 3 / 128; checks), K-NULL
+    (bootstrap upper bound of the lift loss < 0.15), K-CAUSAL (loss ≥ 0.15 and McNemar p < 0.01),
+    K-UNCLEAR; after K-CAUSAL, first match: L-VOID, L-COST (ceiling < 0.75 on discordant roots),
+    L-MODEL (G below ⌈(0.5 + 0.75 (ĉ − 0.5)) n_d⌉ on two of three seeds), L-SEARCH (search misses
+    on ≥ a quarter of discordant roots, two of three seeds), L-MIXED. Routing only; no controller.
+    K-CAUSAL with L-COST is put forward, not ruled met, as R26.33 evidence for option C.
+  - **Seeds:** Stage 0 development K 94100–94131 and roots 940000–940031; debug 94500–94599; new
+    salt 9014 (9015 reserved).
+  - **Budget:** about 0.5 GPU h (0.4–0.7), ceiling 1.0; Stage 0 escalates above a 0.6 GPU h
+    projection for the gated stage.
+  - Development behind it (CPU only): `~/develop/emai/evidence/task094-draft/` (power simulation).
+  - Next: independent review and merge of the DRAFT, then the Stage 0 PR (code, tests,
+    development checks), which freezes the protocol.
