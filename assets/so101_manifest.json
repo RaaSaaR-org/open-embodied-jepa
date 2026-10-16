@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/google-deepmind/mujoco_menagerie.git",
   "revision": "3abca2e302625cec9429c49806121ea2855cef81",
-  "local_path": "third_party/mujoco_menagerie",
+  "local_path": "third_party/mujoco_menagerie_so101",
   "sparse_path": "robotstudio_so101",
   "robot": "robotstudio_so101/so101.xml",
   "license": "Apache-2.0",

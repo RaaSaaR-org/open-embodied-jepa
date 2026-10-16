@@ -15,7 +15,8 @@ MUJOCO_GL=egl uv run --no-sync python scripts/dev_so101_reach.py --seeds 0 1 2 -
 ```
 
 `scripts/fetch_assets.py` runs the same fetch after the G1 assets, so the integration CI job
-(which calls it) has the model. The fetch writes into the ignored `third_party/mujoco_menagerie` (the same convention as the G1
+(which calls it) has the model. The fetch writes into the ignored `third_party/mujoco_menagerie_so101` (a sparse checkout of
+this one subtree at this one pin, so another Menagerie model gets its own directory; the same convention as the G1
 assets: the manifest is committed under `assets/`, the checkout is not). Revision, licence and
 per-file hashes: [DEPENDENCIES.md](DEPENDENCIES.md#so-101-simulation-model-task-097-2026-10-16).
 

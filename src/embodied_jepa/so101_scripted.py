@@ -65,7 +65,7 @@ def drive(robot, q_goal, gripper, steps, log):
         action = np.concatenate((np.clip(delta, -1, 1), [gripper])).astype(np.float32)
         result = robot.execute(action)
         log.append(result.status)
-        if result.status in ("stopped", "rejected"):
+        if result.status == "stopped":
             raise RuntimeError(result.reason)
 
 

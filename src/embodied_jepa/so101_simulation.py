@@ -124,7 +124,13 @@ class SO101Simulation:
         ET.SubElement(
             visual, "headlight", diffuse=".5 .5 .5", ambient=".35 .35 .35", specular="0 0 0"
         )
-        ET.SubElement(visual, "global", offwidth="640", offheight="640")
+        # The offscreen buffer is at least 640 px and always fits the requested RGB size.
+        ET.SubElement(
+            visual,
+            "global",
+            offwidth=str(max(640, self.width)),
+            offheight=str(max(640, self.height)),
+        )
         ET.SubElement(
             root.find("asset"),
             "texture",

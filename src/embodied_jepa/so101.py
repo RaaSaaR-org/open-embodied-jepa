@@ -241,6 +241,8 @@ class SO101Embodiment:
             return reject("observation already consumed; observe before replanning")
         if time.monotonic() - self._observation_wall > self.manifest["max_wall_snapshot_age_s"]:
             return reject("wall-clock planning deadline expired")
+        # Reads the simulator's live joint velocity, as the G1 adapter does. The hardware phase
+        # (S6) has no `data`: its transport must expose a measured velocity in its snapshot.
         if np.any(
             np.abs(self.sim.data.qvel[self.sim.vadr])
             > self.manifest["measured_joint_velocity_stop_rad_s"]

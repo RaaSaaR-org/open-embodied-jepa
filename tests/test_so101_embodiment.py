@@ -315,6 +315,63 @@ def test_stale_or_consumed_observations_stop_and_hold(robot):
 
 
 @needs_assets
+def test_measured_joint_velocity_limit_stops_and_holds(robot):
+    robot.observe()
+    limit = robot.manifest["measured_joint_velocity_stop_rad_s"]
+    robot.sim.data.qvel[robot.sim.vadr[1]] = 2 * limit
+    result = robot.execute(robot.hold_action())
+    assert result.status == "stopped" and result.reason == "measured joint velocity limit exceeded"
+    assert result.applied_action is None and robot.sim.stopped_reason == result.reason
+
+
+@needs_assets
+def test_wall_clock_planning_deadline_stops_and_holds(robot, monkeypatch):
+    robot.observe()
+    import embodied_jepa.so101 as so101_module
+
+    later = so101_module.time.monotonic() + robot.manifest["max_wall_snapshot_age_s"] + 1.0
+    monkeypatch.setattr(so101_module.time, "monotonic", lambda: later)
+    result = robot.execute(robot.hold_action())
+    assert result.status == "stopped" and result.reason == "wall-clock planning deadline expired"
+    assert result.applied_action is None
+
+
+@needs_assets
+def test_transport_rejects_an_expired_command_deadline_and_holds(robot):
+    sim = robot.sim
+    before = sim.data.time
+    ack = sim.send_joint_targets(sim.targets.copy(), joint_names=sim.joint_names, deadline=-1.0)
+    assert ack["status"] == "rejected" and ack["reason"] == "command deadline expired"
+    assert sim.data.time == before  # no physics step was taken
+    np.testing.assert_allclose(sim.targets, sim.data.qpos[sim.qadr])
+    ack = sim.send_joint_targets(
+        sim.targets.copy(), joint_names=sim.joint_names, deadline=float("nan")
+    )
+    assert ack["status"] == "rejected"
+    # Through the embodiment, a transport rejection surfaces as a stop with its reason.
+    robot.observe()
+    original = sim.send_joint_targets
+    sim.send_joint_targets = lambda targets, *, joint_names, deadline: original(
+        targets, joint_names=joint_names, deadline=-1.0
+    )
+    result = robot.execute(robot.hold_action())
+    assert result.status == "stopped" and result.reason == "command deadline expired"
+
+
+@needs_assets
+def test_offscreen_buffer_fits_a_wide_render_request():
+    pytest.importorskip("mujoco")
+    from embodied_jepa.so101_simulation import SO101Simulation
+
+    sim = SO101Simulation(width=800, height=480, render=False)
+    try:
+        assert sim.model.vis.global_.offwidth >= 800
+        assert sim.model.vis.global_.offheight >= 640
+    finally:
+        sim.close()
+
+
+@needs_assets
 def test_reset_validates_poses_and_seeds_are_reproducible(robot):
     a = robot.reset(5)
     b = robot.reset(5)

@@ -1,7 +1,9 @@
 """Fetch the pinned SO-101 MuJoCo model (MuJoCo Menagerie) without modifying an existing checkout.
 
 The revision, sparse path, licence and per-file SHA-256 live in ``assets/so101_manifest.json``;
-the checkout goes to the ignored ``third_party/mujoco_menagerie`` (SO-101 S1, TASK-097).
+the checkout goes to the ignored ``third_party/mujoco_menagerie_so101`` (SO-101 S1, TASK-097).
+The directory is SO-101-specific because it is a sparse checkout of one subtree at one pin: a
+later Menagerie model at another revision gets its own directory instead of colliding here.
 """
 
 from __future__ import annotations
