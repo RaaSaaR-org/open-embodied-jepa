@@ -158,10 +158,10 @@ their upper and lower bounds.
 
 | Gate | Passes when (at h) | Bar source |
 | --- | --- | --- |
-| **G1 no collapse** | (i) the collapsed fraction (latent dimensions whose std of X's predictions over the test roots is < 0.01 × the std of the encoded latents at the same frames) ≤ 0.05; **and** (ii) the effective-rank ratio of X's predicted to the encoded latents ≥ **B_rank** and the std ratio ≥ **B_std** | (i) **carried** (TASK-065/066/077); (ii) **calibrated at Stage 0** (§10.4) |
+| **G1 no collapse** | (i) the collapsed fraction (latent dimensions whose std of X's predictions over the test roots is < 0.01 × the std of the encoded latents at the same frames) ≤ 0.05; **and** (ii) the effective-rank ratio of X's predicted to the encoded latents ≥ **B_rank** and the std ratio ≥ **B_std**; **and** (iii) lb of (rank ratio of X − rank ratio of N_X) **> 0**, in the projected basis below | (i) **carried** (TASK-065/066/077); (ii) **calibrated at Stage 0** (§10.4); (iii) **definitional** (TASK-066's owner Ruling 1, carried as TASK-077's G1 (iii)) |
 | **G2 beats copy-last** | ub of acc_h(X) / acc_h(copy-last) **< 1.0** | **definitional** (TASK-087's (d)); the TASK-066 allocation 0.8 is reported beside it |
 | **G3 beats no-action** | ub of acc_h(X) / acc_h(N_X) **< 1.0** | **definitional** |
-| **G4 action sensitivity** | lb of sens_h(X) = Σ wrong-command latent error / Σ true-command latent error **≥ 1.10** | **carried** (TASK-065/066/077), an allocation; calibration L's value is disclosed at Stage 0 and does not move it |
+| **G4 action sensitivity** | lb of sens_h(X) = Σ wrong-command latent error / Σ true-command latent error **≥ 1.10** | **carried** (TASK-065/066/077), an allocation, not calibrated on this corpus; calibration L's value is disclosed at Stage 0 and does not move it, and if its lb on D0-eval is below 1.10 the owner may rule before the freeze (§10.4) |
 | **G5 cube and gripper readable from the prediction** | with the predicted-latent readout R-pred of X (§7.3), for each label ℓ ∈ {cube, jaw}: (a) ub of the median error on all test roots ≤ **B_ℓ**; (b) on the moving subset M_ℓ,h (§7.4), ub of median error(X) / median error(copy-last readout) **< 1.0**; (c) on M_ℓ,h, ub of median error(X) / median error(N_X's R-pred) **< 1.0** | (a) **calibrated at Stage 0** from the encoded-frame readout's measured error (§10.5); (b), (c) **definitional** |
 | **G6 training saturation** | for X **and** N_X of this seed: the val criterion's best value over the last quarter of training is not more than **2 %** below its best value up to 0.75 × the job's final update count, after at most one extension (below) | **declared** |
 
@@ -170,6 +170,21 @@ their upper and lower bounds.
   B_rank and B_std come with TASK-066's owner condition: the combined G1 must **fail** the rank-1,
   rank-2 and rank-4 truncations of calibration L's D0-eval predictions, or the bar is raised (to
   the smallest 0.01 step that fails all three) and the raise is disclosed before the freeze.
+- **G1 (iii), the comparative part.** TASK-066's owner ruled (§6.4, Ruling 1) that a rank bar set
+  from the tested architecture's own calibration alone is circular, and added the requirement that
+  W keep more rank than its no-action twin; TASK-077 carried it as G1 (iii). It is carried here
+  for each eligible X against N_X of the same seed. A cluster bootstrap that recomputes a 5 550 ×
+  5 550 Gram eigendecomposition 10 000 times is too costly, so (iii) is computed, as in TASK-066,
+  in a **projected basis**: the top 256 principal directions of the standardised encoded latents
+  of the fit sample (fitted at Stage F before any model is trained; its SHA-256 recorded). In that
+  basis each test episode contributes the sums and cross-products of its roots' projected
+  predictions (of X and of N_X) and projected encoded targets; each resample of §7.5's bootstrap
+  (the same 10 000 resamples, salt 10014) adds the moments of its episodes, forms the 256 × 256
+  covariances and recomputes both rank ratios, and (iii) reads the lb of their difference. The
+  point value is the same statistic on all test episodes. **This is an approximation** (the
+  effective rank of a 256-direction projection, not of the full 12 288-value latent) and is
+  disclosed as one; the full-width difference is reported beside it. G1 (ii) is unchanged and
+  stays full-width.
 - **G4 uses wrong commands only.** The zero command is not a hold for this schema: the gripper
   channel is absolute, so zero commands the jaw half open. zero / true and hold / true (arm zero,
   gripper at the root's commanded value) are reported, not gated.
@@ -211,20 +226,27 @@ cube centre (3-D, cm) and the jaw angle (rad). The ridge penalty is chosen per r
 salt 10015).
 
 - **R-enc** (the encoded-frame readout): fitted on encoded latents of every fifth frame of the
-  fit-sample episodes. Applied to encoded test frames at t + h, it is the **ceiling** (reported;
-  the ceiling flag below), and applied to X's predictions it is the distribution-shift diagnostic
-  (reported).
+  fit-sample episodes. Applied to encoded test frames at t + h, it is the **ceiling** (reported),
+  and applied to X's predictions it is the distribution-shift diagnostic (reported).
 - **R-pred(X, h)** (the gated readout; one per model and h): fitted on X's own predicted latents
   at h from the **train** roots of the fit-sample episodes (§7.1's rule) under their executed
   commands (N arms: zero commands), against the truth at t + h; applied to X's predictions on the
   test roots.
-- **Copy-last readout(h):** fitted on the encoded latent of the root against the truth at t + h
-  (the best a readout of the start frame alone can do); the floor of G5 (b).
+- **Copy-last readout(h)** (one per h): fitted on the encoded latent of each **train** root of the
+  fit-sample episodes (§7.1's rule) against the truth at t + h, with the same 5-fold
+  episode-grouped cross-validation and fold salt (10015) as R-pred; applied to the encoded latent
+  of each test root (the best a readout of the start frame alone can do); the floor of G5 (b).
 - R's readouts are fitted the same way in R's latent space; they enter only §9's comparison.
-- **The ceiling flag:** if R-enc on the encoded test frames at t + h misses G5 (a)'s bar for a
-  label, G5 cannot test prediction for that label at h; the row is unchanged, and the results say
-  that the latent, not the prediction, bounds the readout there (TASK-066's WM-TOK-CEILING
-  reading).
+- **G5 (a) has no absolute anchor.** B_ℓ is set relative to R-enc's own error on D0 (§10.5), and
+  test episodes are drawn from the same distribution as D0, so R-enc on encoded test frames would
+  miss B_ℓ only if its test error were more than 1.5 × its D0 error. A "ceiling flag" defined
+  against B_ℓ could therefore not fire, and none is declared. What G5 (a) tests is that the
+  prediction keeps what the encoded frame shows, within 1.5 ×; whether that is precise enough for
+  a task is not gated. Reported beside it, against an absolute reference declared now: R-enc's and
+  R-pred's median cube error on the test roots against **0.5 cm** (S2's measured grasp-offset
+  tolerance toward the fixed jaw, the tightest measured direction) and against **3 cm** (S2's
+  place-aim tolerance). The jaw has no measured task tolerance; its errors are reported in rad
+  and degrees without a reference.
 
 ### 7.4 Moving subsets
 
@@ -232,7 +254,9 @@ M_cube,h: test roots where the cube centre moves ≥ **1.0 cm** between t and t 
 M_jaw,h: test roots where the jaw angle changes ≥ **0.2 rad** between t and t + h. Stage 0
 measures their shares on D0-eval; if either share × 5 550 is below 300 roots at h = 8, its
 threshold is halved (once) before the freeze and the change is disclosed. A subset with fewer
-than 100 test roots at E makes that G5 sub-gate uncomputable, and the run is VOID (§8.4).
+than 100 test roots at E makes that G5 sub-gate uncomputable. That depends only on the test split,
+so a repeat would give the same count: the task closes **INCONCLUSIVE** directly, with no `-r2`
+repeat (§11).
 
 ### 7.5 Statistics
 
@@ -247,7 +271,7 @@ than 100 test roots at E makes that G5 sub-gate uncomputable, and the run is VOI
 
 ### 8.1 Budget rule (Stage B, before any gated job)
 
-A scale probe trains L with debug seed 100901 for 60 000 updates, selecting every 2 000 on val.
+A scale probe trains L with probe seed 100920 for 60 000 updates, selecting every 2 000 on val.
 u\* is the first selection point whose val criterion is within 1 % of the probe's minimum.
 **U = max(20 000, min(60 000, ⌈1.5 u\* / 5 000⌉ × 5 000))** (TASK-087's rule). The per-job cap is
 3 × the probe's measured seconds per update × U. The probe is development, not a result.
@@ -256,12 +280,15 @@ u\* is the first selection point whose val criterion is within 1 % of the probe'
 
 | Stage | Estimate (GPU h; estimates, not measurements) |
 | --- | --- |
-| Stage 0 (featurisation probe on D0 with both encoders, grid rule, calibration L, debug smoke, determinism) | 2–3 |
+| Stage 0 (featurisation probe on D0 with both encoders, grid rule, calibration L and N_L, debug smoke, determinism) | 2.5–3.5 |
 | F: featurise train + val, both encoders (about 2.29 M images per encoder, both cameras; TASK-087 measured about 817 frames a second for ViT-S/14) | 1.5–2.5 |
 | B: budget probe (60 000 updates) | 1–1.5 |
 | T: 15 jobs × U updates (about 60–90 ms an update projected for 32–128 tokens at batch 64, 16-step windows; U = 30 000 gives 0.5–0.75 h a job) | 7.5–11 |
-| T′: G6's extension, at most 12 jobs × 0.5 U (only if triggered) | 0–4 |
+| T′: G6's extension, at most 12 jobs × 0.5 U (only if triggered; at U = 30 000 and 60–90 ms an update, 12 × 15 000 updates) | 0, or 3.0–4.5 |
 | V, F′, E: val report, featurise test, gated evaluation and readouts | 1–1.5 |
+
+The upper ends of these estimates sum to more than the cap (about 24.5 GPU h with a full T′);
+the U rule below lowers U before any gated job if the measured projection does not fit.
 
 **Hard cap: 20 GPU h in total** (the plan's 10–20 GPU h), Stage 0 included, Stage 0 itself capped
 at 4 GPU h. After Stage B, if the projection of T plus a full T′ plus V–E exceeds the remainder of
@@ -280,16 +307,21 @@ written and its SHA-256 recorded in the task card and run log. Val numbers are n
 
 ### 8.4 Stages after the freeze
 
-F (featurise train and val, both encoders; the fit-sample pass fits standardisation and, for g8,
-projections; nothing unprojected is stored), B (§8.1), T (15 jobs), T′ (only if G6 triggers), V
+F (featurise train and val, both encoders; the fit-sample pass fits standardisation, for g8 the
+projections, and G1 (iii)'s 256-direction basis, before any model is trained; nothing unprojected
+is stored), B (§8.1), T (15 jobs), T′ (only if G6 triggers), V
 (§8.3), F′ (featurise test with the frozen standardisation and projections, hashes checked), E
 (readouts on train, then the gated evaluation and the row). All run at the merged revision from a
 clean run tree (`scripts/new_worktree.sh <dir>-run --from <frozen sha> --run`).
 
 **Disk.** About 29.6 GB of float16 features per encoder for all splits, 59 GB for both, written
 under `outputs/task100-features-*` (HDD, `/mnt/data`), with a hashed working copy on the SSD for
-training (I/O-heavy random windows; RESUME.md's rule). Nothing is written while `/` has less than
-10 GiB free; the run stops and records it. Checkpoints under `checkpoints/task100-*`, run outputs
+training (I/O-heavy random windows; RESUME.md's rule). The working copy holds train and val for
+both encoders, about **56 GB** (2 850 of 3 000 episodes × 29.6 GB × 2); `/` had about 118 GB free
+on 2026-10-17. The free space is checked **before the copy starts**: the copy proceeds only if
+`/` would keep at least 10 GiB free after it, otherwise the run stops before copying and records
+it (training then reads the HDD store, and the measured per-update time is re-projected against
+the cap). Nothing is written while `/` has less than 10 GiB free; the run stops and records it. Checkpoints under `checkpoints/task100-*`, run outputs
 under `outputs/task100-*`, evidence in `~/develop/emai/evidence/task100-*/` with `SHA256SUMS`.
 Nothing is overwritten; every name is new. Prior evidence under `data/`, `checkpoints/`,
 `outputs/` is never touched; the SSD working copy is deleted after Stage E and its deletion
@@ -313,13 +345,13 @@ recorded.
   all three seeds at h = 8 and h = 16 (ub of the paired difference L − R < 0, 95 %), the results
   say "pretrained features read the predicted cube better than the random-init floor"; otherwise
   "pretraining is not shown to matter here" (the TASK-072/076 reading). Neither changes the row.
-- Every gate quantity at h ∈ {1, 4, 32}; the TASK-066 G2 allocation (ub ≤ 0.8); the comparative
-  rank difference X − N_X; zero / true and hold / true; R-enc on predictions (the
-  distribution-shift diagnostic) and its difference to R-pred; the ceiling flags; G5 split by
-  phase label (reach, descend, close, lift, transport, release) and by camera visibility of the
-  cube; the readout errors against S2's measured envelope (a 5 mm grasp offset toward the fixed
-  jaw kept 64/64, 10 mm did not; a 3 cm place-aim error kept ≥ 63/64): **G5 passing does not mean
-  a readout is precise enough to grasp**, which is S5's question.
+- Every gate quantity at h ∈ {1, 4, 32}; the TASK-066 G2 allocation (ub ≤ 0.8); G1 (iii)'s rank
+  difference X − N_X at full width beside the gated projected value; zero / true and hold / true;
+  R-enc on predictions (the distribution-shift diagnostic) and its difference to R-pred; G5 split
+  by phase label (reach, descend, close, lift, transport, release) and by camera visibility of the
+  cube; the readout errors against S2's measured envelope (§7.3: a 5 mm grasp offset toward the
+  fixed jaw kept 64/64, 10 mm did not; a 3 cm place-aim error kept ≥ 63/64): **G5 passing does not
+  mean a readout is precise enough to grasp**, which is S5's question.
 - Per-update time, peak GPU memory, parameter counts, kept updates, every val curve,
   `last_two_triggered`, GPU hours per stage.
 
@@ -328,6 +360,15 @@ recorded.
 Stage 0 reads **D0 only** (train episodes of shards 00–02) for every calibration, plus val
 episodes only where §10.6's smoke stands val in for test to exercise the code path (its numbers
 are not read as results, and they set nothing). Test is never opened.
+
+**The Stage 0 fit set is D0-fit.** Stage 0 cannot use the fit sample of §3 (most of its about 675
+episodes lie outside D0), so at Stage 0 every fit that the gated stages make on the fit sample is
+made on **D0-fit** (shards 00–01, 180 episodes) instead, by the same rules: the standardisation
+(every D0-fit frame), the g8 projection, G1 (iii)'s 256-direction basis, R-enc (every fifth
+D0-fit frame), and calibration L's R-pred and copy-last readouts (D0-fit roots, §7.1's rule, the
+same cross-validation and fold salt). Everything is then applied to D0-eval (shard 02). These
+Stage 0 fits are recorded with their hashes and are not reused by the gated stages, which refit
+on the fit sample at Stage F.
 
 ### 10.1 Code and tests
 
@@ -339,8 +380,9 @@ scripts `featurise_task100.py`, `train_task100.py`, `evaluate_task100.py` and th
 `run_task100_stage.sh` (one `gpu_run.sh` lock per job). Tests: windows stay inside episodes; the
 root rule; the wrong and candidate tables use other episodes and are fixed by their salts; ties
 count against; the cluster bootstrap on a known case; every gate and row in both directions; the
-test-split guard; G6 and its single extension; the moving-subset rule; R-pred is fitted on train
-roots only; a 6-D schema through the frozen-token class for both backends (`train_step_features`,
+test-split guard; G6 and its single extension; the moving-subset rule; R-pred and the copy-last
+readout are fitted on train roots only; G1 (iii)'s per-episode moments reproduce the direct
+projected rank ratios on a known case; a 6-D schema through the frozen-token class for both backends (`train_step_features`,
 prediction shapes); checkpoints refuse other implementation hashes; every G1 byte-pinned file,
 the G1 model implementation hashes and every `frozen_files_check` match `origin/main`.
 
@@ -362,10 +404,17 @@ the Stage 0 record.
 ### 10.4 G1's bars
 
 A **calibration L** (debug seed 100900, the chosen grid, 20 000 updates on D0-fit, §5's recipe
-otherwise) is rolled out on D0-eval roots (§7.1's rule) at h = 8 and h = 16. Then, as TASK-066:
-**B_rank = max(0.10, ½ × its effective-rank ratio)** and **B_std = max(0.25, ½ × its std ratio)**,
-each the smaller over h ∈ {8, 16}, rounded down to 0.01, followed by the truncation check of §6.
-Calibration L's G2–G5 values on D0-eval are disclosed in the Stage 0 record and move no bar.
+otherwise) and a **calibration N_L** (debug seed 100911, the same windows in the same order as
+calibration L, zero commands) are rolled out on D0-eval roots (§7.1's rule) at h = 8 and h = 16.
+Then, as TASK-066: **B_rank = max(0.10, ½ × calibration L's effective-rank ratio)** and
+**B_std = max(0.25, ½ × its std ratio)**, each the smaller over h ∈ {8, 16}, rounded down to
+0.01, followed by the truncation check of §6, applied to the combined G1 including (iii) against
+calibration N_L (as TASK-066's truncation table). Calibration L's G1 (iii), G2–G5 values on
+D0-eval are disclosed in the Stage 0 record and move no bar. **G4:** if calibration L's lb of
+sens_h on D0-eval is below 1.10 at h = 8 or h = 16, that is disclosed in the Stage 0 record, the
+bar does not move by itself, and the owner (or Claude under delegation, in a recorded ruling) may
+rule on G4 before the freeze; the inert positive wrist_flex commands at the limit and the absolute
+gripper channel make such a miss plausible.
 
 ### 10.5 G5's bars
 
@@ -377,9 +426,16 @@ readout's error at h = 60 (here h ≤ 16). The bars are recorded in the Stage 0 
 calibration L's R-pred misses one on D0-eval, that is disclosed, the bar does not move, and the
 owner may rule before the freeze.
 
+**Disclosed mismatch.** B_ℓ comes from an R-enc fitted on D0-fit (180 episodes), while the gated
+R-enc and R-pred are fitted on the fit sample (about 675 episodes). A readout fitted on less data
+has a larger error, so B_ℓ is probably **looser** than 1.5 × the gated encoded-frame ceiling. The
+gated R-enc's test median is reported beside B_ℓ, and so is the ratio of R-pred's test median to
+it, so a reader can see how much of the 1.5 × the pass used.
+
 ### 10.6 Debug smoke and determinism
 
-Every arm for a few hundred updates on D0 with debug seeds 100901–100910; the readouts, the val
+Every arm for a few hundred updates on D0 with debug seeds 100901–100910 (separate from the
+calibration seeds 100900 and 100911 and the probe seed 100920); the readouts, the val
 report and the evaluation path with val standing in for test (the row logic exercised; numbers
 not results). CUDA determinism: one job trained twice gives identical weights (state SHA-256 both
 times). Cost projection for F, B, T, T′ and E from the measured rates against §8.2's cap.
@@ -395,11 +451,13 @@ the subset thresholds, and is independently reviewed. **The protocol freezes whe
    implementation-hash or split check; test read before the val report's hash was recorded); a job
    failed twice; a stage exceeded its cap; a G5 subset had fewer than 100 test roots; or the
    evaluation did not complete. Nothing is read. One from-scratch repeat of the failed stage is
-   allowed under new output names (`-r2`); a second VOID closes the task **INCONCLUSIVE**.
+   allowed under new output names (`-r2`); a second VOID closes the task **INCONCLUSIVE**. A VOID
+   for a G5 subset under 100 test roots is fixed by the test split, so it gets no repeat and closes
+   the task **INCONCLUSIVE** at once (§7.4).
 2. **WM-PASS** — some eligible arm X ∈ {L, J} passes G1–G6 on **all three seeds at h = 8 and
    h = 16**.
 3. **WM-PARTIAL** — not WM-PASS, and some eligible arm passes **G1–G4 on all three seeds at h = 8**.
-   The results name, per arm, which of G5 (with the ceiling flag), G6, h = 16 or which seeds failed.
+   The results name, per arm, which of G5, G6, h = 16 or which seeds failed.
 4. **WM-FAIL** — otherwise.
 
 What each row leads to (recommendations; the owner, or Claude under delegation, rules):
@@ -450,12 +508,17 @@ What each row leads to (recommendations; the owner, or Claude under delegation, 
   held-out conditions.
 - **One encoder family, one floor seed, one projection, two declared grids, one architecture per
   backend, one budget rule, three model seeds.** A pass is evidence for this recipe on this data.
-- **G5's bars are relative to the encoded-frame readout**, so a pass says the prediction keeps
-  what the latent shows, within 1.5 ×; it does not say that what the latent shows is precise
-  enough for a grasp (S2's envelope is reported beside it, §9).
+- **G5's bars are relative to the encoded-frame readout and have no absolute anchor** (§7.3), so
+  a pass says the prediction keeps what the latent shows, within 1.5 ×; it does not say that what
+  the latent shows is precise enough for a grasp (S2's envelope is reported beside it, §7.3, §9).
+  The bar is set from a readout fitted on 180 episodes and is probably looser than 1.5 × the gated
+  ceiling (§10.5).
+- **G1 (iii) is computed in a 256-direction projection** of the latent, an approximation
+  disclosed as in TASK-066 (§6).
 - **G4's bar is an allocation** carried from the G1 line, not calibrated on this corpus; the
   inert positive wrist_flex commands at the limit and the absolute gripper channel make action
-  sensitivity smaller than on the G1 corpora, and calibration L's value is disclosed at Stage 0.
+  sensitivity smaller than on the G1 corpora; calibration L's value is disclosed at Stage 0, and a
+  miss there may be ruled on before the freeze (§10.4).
 - **The random-init floor shares the recipe**; a difference between L and R is about the features,
   not about prediction alone.
 
@@ -478,16 +541,22 @@ merge. The executing agent reports rows; it does not choose S5.
 - **R28.15** — training as §5: 16-command windows, paired samplers, three model seeds per arm.
 - **R28.16** — U by §8.1's probe rule; checkpoint selection on val at 1 % tolerance.
 - **R28.17** — horizons h = 8 and h = 16 gated; 1, 4 and 32 reported (§6's justification).
-- **R28.18** — G1 calibrated from calibration L's ratios on D0-eval with TASK-066's truncation
-  check; G2 and G3 definitional; G4 carried at 1.10 on wrong commands only.
+- **R28.18** — G1: (i) carried; (ii) calibrated from calibration L's ratios on D0-eval with
+  TASK-066's truncation check; (iii) X keeps more rank than N_X (lb of the rank-ratio difference
+  > 0, 256-direction projected-basis bootstrap, disclosed as an approximation; TASK-066's owner
+  Ruling 1, TASK-077's G1 (iii)); G2 and G3 definitional; G4 carried at 1.10 on wrong commands
+  only, with calibration L's value disclosed and an owner ruling possible before the freeze.
 - **R28.19** — G5 on the predicted-latent readout R-pred, with (a) B_ℓ = 1.5 × R-enc's median error
-  on D0-eval and (b), (c) against the copy-last readout and N_X on moving subsets; R-enc on
-  predictions reported (TASK-077's lesson).
+  on D0-eval (Stage 0 fits on D0-fit; the mismatch with the gated fit sample disclosed; no
+  absolute anchor and no ceiling flag; the cube error reported against S2's 0.5 cm and 3 cm) and
+  (b), (c) against the copy-last readout (fitted on fit-sample train roots) and N_X on moving
+  subsets; R-enc on predictions reported (TASK-077's lesson).
 - **R28.20** — G6: a 2 % last-quarter saturation criterion for X and N_X, one extension to 1.5 U,
   then decided; `last_two_triggered` a flag.
 - **R28.21** — roots, tables, readouts and the cluster bootstrap as §7; 97.5 % gate intervals.
 - **R28.22** — rows VOID, WM-PASS, WM-PARTIAL, WM-FAIL (first match) and their consequences as
-  §11; no abandonment clause; WM-FAIL requires a decomposition record before another variant.
+  §11; a G5-subset VOID closes INCONCLUSIVE without a repeat; no abandonment clause; WM-FAIL
+  requires a decomposition record before another variant.
 - **R28.23** — §9's planning-usefulness measure and the encoder-floor reading are reported only.
 - **R28.24** — budget: a 20 GPU h hard cap including Stage 0 (Stage 0 ≤ 4 GPU h), U lowered to fit
   and escalation below U = 20 000; every GPU job under `scripts/gpu_run.sh --wait --board`.

@@ -83,7 +83,8 @@ merged (#235); the corpus `so101-play-v1` was measured before any training.
   (frozen DINOv2 ViT-S/14 tokens of the wrist and overview cameras at 224 px, a 4 × 4 or 8 × 8 grid
   by a declared Stage 0 rule); arms L (LeWM) and J (`native_jepa`, the one-key swap) eligible, with
   no-action twins, a random-init DINOv2 floor and copy-last; three model seeds (100100–100102);
-  gates G1 no collapse (calibrated), G2 copy-last, G3 no-action, G4 action sensitivity, G5 cube and
+  gates G1 no collapse (calibrated floors with TASK-066's truncation check, and X keeping more
+  rank than its no-action twin), G2 copy-last, G3 no-action, G4 action sensitivity, G5 cube and
   jaw readable from the prediction (the readout fitted on predicted latents, TASK-077's lesson;
   bars 1.5 × the encoded-frame readout's measured error on D0), G6 saturation with one extension;
   h = 8 and h = 16; rows VOID, WM-PASS, WM-PARTIAL, WM-FAIL; a planning-usefulness measure
