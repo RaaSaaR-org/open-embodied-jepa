@@ -11,8 +11,9 @@ hand after the lift), so they are **privileged scripted references**: they measu
 scene and the scorers allow, they set what later bars can be, and their successes are never
 learned results.
 
-``grasp_offset_m`` is a rigid error of the grasp aim, ``(closing, along, up)``: along the
-jaw-closing axis (horizontal), along the horizontal axis perpendicular to it, and world +z. It
+``grasp_offset_m`` is a rigid error of the grasp aim, ``(closing, along, up)`` in the frame of
+the zero-offset grasp pose: along the jaw-closing axis (the fingertip site's +z, from the fixed
+jaw toward the moving jaw; horizontal), along the site's +y (horizontal) and world +z. It
 is applied to every grasp-phase IK target (pre-grasp, descent, close, lift), as a calibration
 error of the gripper would be. ``place_offset_m`` is a world-xy error of the place aim. These
 are the K-style placement-tolerance doses of the S2 envelope (TASK-094's K follower, here with
@@ -38,7 +39,10 @@ class FollowerConfig:
     """Declared follower schedule (control steps at 20 Hz). Fixed on development seeds
     1000-1015 before the reported measurement; never tuned on the reported seeds."""
 
-    version: str = "so101_follower_v0"
+    version: str = "so101_follower_v1"
+    # v1: the fixed jaw clears the cube face by 5 mm on the descent (v0, at 925153f: 0 mm, the
+    # S1 alignment, which left the fixed jaw tangent to the cube); grasp offsets in the jaw frame.
+    fixed_jaw_clearance_m: float = 0.005
     pregrasp_height_m: float = 0.06
     pregrasp_steps: int = 40
     descend_waypoints: int = 6
@@ -133,21 +137,32 @@ def _grasp_frame(cube_position, cube_quaternion):
 
 
 def _pick(run, cfg, grasp_offset):
-    """Pre-grasp, descend, close and lift; returns (closing axis, record)."""
+    """Pre-grasp, descend, close and lift; returns (closing axis, lifted site point, record).
+
+    The fixed jaw's inner face is 2.0 cm along the fingertip site's -z axis. The site goes
+    ``JAW_CENTRE_OFFSET_M - fixed_jaw_clearance_m`` along +z from the cube centre, which leaves
+    ``fixed_jaw_clearance_m`` between the fixed jaw and the cube face (v0: none); the closing
+    moving jaw, which opens toward +z, then pushes the cube onto the fixed jaw. The grasp
+    offset is applied in the frame of that zero-offset grasp pose: ``closing`` along the site's
+    +z (from the fixed jaw toward the moving jaw, so a positive offset moves the fixed jaw toward
+    the cube), ``along`` along the site's +y (horizontal) and ``up`` along world +z.
+    """
     truth = run.sim.task_truth()
     cube = truth["cube_position"]
-    closing, along = _grasp_frame(cube, truth["cube_quaternion"])
-    g = np.asarray(grasp_offset, dtype=float)
-    offset = g[0] * closing + g[1] * along + g[2] * UP
+    closing, _ = _grasp_frame(cube, truth["cube_quaternion"])
     record = {}
+    shift = JAW_CENTRE_OFFSET_M - cfg.fixed_jaw_clearance_m
 
-    def aim(height):
-        point = cube + np.array([0.0, 0.0, height]) + offset
-        # Centre the cube between the jaws (S1): shift the site along the closing axis.
+    def aim(height, offset):
+        point = cube + np.array([0.0, 0.0, height])
         q, _ = solve_ik(run.sim, run.q, point, closing)
-        return point + _closing_axis(run.sim, q) * JAW_CENTRE_OFFSET_M
+        return point + _closing_axis(run.sim, q) * shift + offset
 
-    pre, grasp = aim(cfg.pregrasp_height_m), aim(0.0)
+    rotation = _site_rotation(run, aim(0.0, np.zeros(3)), closing)
+    g = np.asarray(grasp_offset, dtype=float)
+    offset = g[0] * rotation[:, 2] + g[1] * rotation[:, 1] + g[2] * UP
+    record["grasp_offset_world_m"] = offset.round(5).tolist()
+    pre, grasp = aim(cfg.pregrasp_height_m, offset), aim(0.0, offset)
     q, record["pregrasp_ik_residual_m"] = run.ik(pre, closing)
     run.drive(q, 1.0, cfg.pregrasp_steps)
     record["grasp_ik_residual_m"] = run.through(

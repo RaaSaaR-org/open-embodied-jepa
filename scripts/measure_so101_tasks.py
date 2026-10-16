@@ -40,16 +40,21 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-DEV_SEEDS = tuple(range(64))
-GRASP_SIZES_M = (0.005, 0.01, 0.015, 0.02, 0.03)
+# Development seeds of the reported measurement (follower v1). Seeds 0-63 were used by the
+# first measurement (follower v0 at 925153f); the followers were developed on seeds 1000-1015.
+DEV_SEEDS = tuple(range(100, 164))
+GRASP_SIZES_M = (0.0025, 0.005, 0.0075, 0.01, 0.015, 0.02, 0.03)
+# In the zero-offset grasp pose's frame: +closing is the fingertip site's +z (the gripper moves
+# toward the moving jaw's side, so the fixed jaw moves toward the cube), +along its +y.
 GRASP_DIRECTIONS = {
     "+closing": (1, 0, 0),
     "-closing": (-1, 0, 0),
     "+along": (0, 1, 0),
     "-along": (0, -1, 0),
     "+up": (0, 0, 1),
+    "-up": (0, 0, -1),
 }
-PLACE_SIZES_M = (0.01, 0.02, 0.03, 0.04, 0.05)
+PLACE_SIZES_M = (0.01, 0.02, 0.03, 0.035, 0.04, 0.045, 0.05)
 PLACE_DIRECTIONS_DEG = (0, 45, 90, 135, 180, 225, 270, 315)
 
 
@@ -197,13 +202,13 @@ def _cells():
         for name, direction in GRASP_DIRECTIONS.items():
             for size in GRASP_SIZES_M:
                 offset = tuple(size * np.asarray(direction, float))
-                cells.append((task, f"grasp {name} {100 * size:g} cm", offset, (0.0, 0.0)))
+                cells.append((task, f"grasp {name} {1000 * size:g} mm", offset, (0.0, 0.0)))
     for degrees in PLACE_DIRECTIONS_DEG:
         for size in PLACE_SIZES_M:
             angle = math.radians(degrees)
             offset = (size * math.cos(angle), size * math.sin(angle))
             cells.append(
-                ("place", f"place {degrees}deg {100 * size:g} cm", (0.0, 0.0, 0.0), offset)
+                ("place", f"place {degrees}deg {1000 * size:g} mm", (0.0, 0.0, 0.0), offset)
             )
     return cells
 
