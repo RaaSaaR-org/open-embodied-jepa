@@ -4,7 +4,7 @@ aliases:
 - TASK-097
 title: 'SO-101 S1: pinned SO-101 MJCF, tabletop scene with wrist and overview cameras, joint-control embodiment adapter and MuJoCo transport'
 slug: so101-sim-embodiment
-status: todo
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -42,19 +42,29 @@ execution stays disabled (R28.3). Software only; no experiment.
 
 ## Acceptance Criteria
 
-- [ ] The fetch is reproducible and hash-verified; the pinned revision, file hashes and licence
+- [x] The fetch is reproducible and hash-verified; the pinned revision, file hashes and licence
   are recorded in `docs/DEPENDENCIES.md` at that point.
-- [ ] The scene loads and steps under `MUJOCO_GL=egl`; both cameras render, and their frames are
+- [x] The scene loads and steps under `MUJOCO_GL=egl`; both cameras render, and their frames are
   inspected (the cube is visible in the wrist view at grasp distance).
-- [ ] Action normalize/denormalize round-trip: arm channels exact, gripper within 2e-7 (its
+- [x] Action normalize/denormalize round-trip: arm channels exact, gripper within 2e-7 (its
   map is affine); joint-limit and rate guards are tested
   and recorded, never applied silently to stored actions; a zero action holds pose; a fixed
   seed is deterministic.
-- [ ] Every G1 hash-pinned runtime check still passes at HEAD (each `frozen_files_check`).
-- [ ] The core-import check, ruff and pytest stay green; graphics tests are behind
+- [x] Every G1 hash-pinned runtime check still passes at HEAD (each `frozen_files_check`).
+- [x] The core-import check, ruff and pytest stay green; graphics tests are behind
   `JEPA_TEST_RENDER=1`.
-- [ ] PR reviewed independently and merged.
+- [x] PR reviewed independently and merged.
 
 ## Notes
 
 - 2026-10-16, created by R28.6 (branch `docs/so101-plan`).
+- 2026-10-16, done in #233: `scripts/fetch_so101.py` and `assets/so101_manifest.json` (Menagerie
+  `robotstudio_so101` at `3abca2e`, 26 files hash-verified), `so101_simulation.py`, `so101.py`
+  (`SO101Embodiment`), `configs/so101_sim_action.json`, the development-only `so101_scripted.py`
+  and `scripts/dev_so101_reach.py`, and `docs/SO101_SIMULATION.md`; `config.py` additive (an
+  SO-101 config is refused at load until S2 registers tasks). Deviations, as reviewed: the
+  checkout goes to ignored `third_party/` (the G1 convention) rather than `assets/`, with the
+  manifest under `assets/`; a zero *arm* action holds pose, while a zero gripper command means
+  half-open, so `hold_action()` holds the gripper. Every G1 hash-pinned file is byte-identical.
+  Software only, simulation only; the scripted reach (7 of 8 development seeds lifted) is not
+  gated and makes no claim.
