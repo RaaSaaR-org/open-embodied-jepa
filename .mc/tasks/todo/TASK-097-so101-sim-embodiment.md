@@ -46,7 +46,8 @@ execution stays disabled (R28.3). Software only; no experiment.
   are recorded in `docs/DEPENDENCIES.md` at that point.
 - [ ] The scene loads and steps under `MUJOCO_GL=egl`; both cameras render, and their frames are
   inspected (the cube is visible in the wrist view at grasp distance).
-- [ ] Action normalize/denormalize round-trip is exact; joint-limit and rate guards are tested
+- [ ] Action normalize/denormalize round-trip: arm channels exact, gripper within 2e-7 (its
+  map is affine); joint-limit and rate guards are tested
   and recorded, never applied silently to stored actions; a zero action holds pose; a fixed
   seed is deterministic.
 - [ ] Every G1 hash-pinned runtime check still passes at HEAD (each `frozen_files_check`).

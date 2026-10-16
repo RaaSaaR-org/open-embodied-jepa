@@ -1,6 +1,6 @@
 # SO-101 branch plan (opened 2026-10-16)
 
-**Status: PLAN, no code yet.** On 2026-10-16 the owner opened the SO-101 branch
+**Status: PLAN; S0 done (#232, `bcd837c`).** On 2026-10-16 the owner opened the SO-101 branch
 ([DECISIONS 2026-10-16 (bp)](DECISIONS.md), R28.1–R28.9). The defaults below were chosen by
 Claude under owner delegation; the owner can overrule any of them. This page is a plan: it admits
 no experiment, sets no bar and makes no claim. Each research step still needs its own
@@ -62,6 +62,17 @@ hours (GPU h) on the shared RTX 5080.
 
 ### S0 — Foundations: action-dimension generalisation and `joint_delta_so101_v0` (TASK-096)
 
+- **Status: done in #232 (`bcd837c`, TASK-096).** Implemented in new files only:
+  `action_schemas.py` (schema registry, `joint_delta_so101_v0`), `models/schema_backends.py`
+  (`SchemaNativeJEPA`, `SchemaLeWM`), `schema_planning.py` (`SchemaCEMPlanner`) and
+  `schema_data.py` (`SchemaDatasetStore`); `config.py` changed additively. Every pinned file
+  named below is byte-identical, and the G1 implementation hashes and all four
+  `frozen_files_check` results matched `origin/main` (`dc5c686`), so no compatibility manifest
+  was needed. Not yet schema-sized (left to the phase that needs them, per `docs/MODELS.md`):
+  the frozen-encoder and frozen-token mixins, `policy.py`, `models/latent_critic.py`, the
+  `jepa_wms` and sensor backends, `audit`, the `training` and `benchmark` CLIs and encoded
+  dataset forks. The text below is the plan as written before #232.
+
 - **Coupling with G1 hashes (named by the independent review of #231).** Two kinds of byte
   pins reach the files a naive generalisation would edit:
   - *Model implementation hashes.* `VisualModel.implementation_sha256` (`models/base.py`) hashes
@@ -78,13 +89,26 @@ hours (GPU h) on the shared RTX 5080.
     `constraints.py`, `devices.py`, `run_tools.py` and `configs/g1_sim_action.json`
     (`FROZEN_FILES_SHA256`), and `tests/test_grasp_*.py` assert those pins, so editing any of
     them fails CI as well as the G1 runners' pre-stage check.
+  - *Earlier frozen-manifest pins.* `data.py` is byte-pinned in the `hashes`,
+    `source_hashes` or `input_identities` of `apple-look-corpus-v1` and `apple-look-corpus-v1-results`,
+    `apple-token-dynamics-v1`, `apple-latent-dynamics-v1`, `apple-first-policy-v1`,
+    `apple-goal-alignment-v1`, `apple-aligned-cost-v1` and `apple-wide-object-ceiling-v1`;
+    `audit.py` and `benchmark.py` are byte-pinned in `apple-control-development-v1`,
+    `apple-goal-alignment-v1`, `apple-aligned-cost-v1` and `apple-wide-object-ceiling-v1`
+    (all under `benchmarks/manifests/`). The TASK-064/066/067 runners
+    (`collect_apple_look.py`, `train_apple_token_dynamics.py`, `run_first_policy.py`) check
+    their manifest's `hashes` at preflight, and
+    `tests/test_latent_dynamics.py::test_committed_pins_match_the_tree` asserts TASK-065's pins,
+    so editing `data.py` fails CI and breaks those runners' reproduction path.
 - **Design (chosen).** Every file above stays **byte-identical**. `ee_delta_grasp_v0` stays on
   the existing classes and constants. The SO-101 path lives in new files: a schema module that
   registers `joint_delta_so101_v0` (names, order, dimension 6) beside the frozen 14-D one,
   schema-parametrised subclasses of the native and LeWM backends in new files that override
   only the action-input construction (the action embedder width), and a schema-aware CEM
-  wrapper or subclass in a new file. Unpinned core files (`config.py`, `data.py`, `audit.py`)
-  may change additively, with the `ee_delta_grasp_v0` path unchanged. **Fallback**, only if a
+  wrapper or subclass in a new file; the schema-aware dataset path also lives in a new file,
+  so `data.py`, `audit.py` and `benchmark.py` stay byte-identical too. Only `config.py`, which
+  no frozen manifest pins at its current revision, may change additively, with the
+  `ee_delta_grasp_v0` path unchanged. **Fallback**, only if a
   pinned file cannot stay byte-identical: a TASK-072-style compatibility manifest naming the
   invalidated checkpoint families (the VisualModel backends and TASK-087's G), the hash-checking
   runtimes and frozen protocols, and the last compatible revision, recorded by a ruling before
@@ -135,8 +159,9 @@ hours (GPU h) on the shared RTX 5080.
   strings, imported lazily.
 - **Check.** Fetch is reproducible from a clean checkout and hash-verified; the scene loads and
   steps under `MUJOCO_GL=egl`; both cameras render and their frames are inspected (cube visible
-  in the wrist view at grasp distance); action round-trip (normalize/denormalize) is exact;
-  joint-limit and rate guards are tested; a zero action holds pose; determinism with a fixed seed;
+  in the wrist view at grasp distance); action round-trip (normalize/denormalize): arm channels
+  exact, gripper within 2e-7; joint-limit and rate guards are tested; a zero action holds pose;
+  determinism with a fixed seed;
   core-import check still passes.
 - **Effort (estimate).** 3–5 d.
 

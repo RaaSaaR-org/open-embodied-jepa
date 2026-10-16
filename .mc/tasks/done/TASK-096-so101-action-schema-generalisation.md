@@ -4,7 +4,7 @@ aliases:
 - TASK-096
 title: 'SO-101 S0: take the action dimension from the action schema and add joint_delta_so101_v0'
 slug: so101-action-schema-generalisation
-status: todo
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -50,8 +50,10 @@ paused grasp line. TASK-091–TASK-094's frozen modules pin `contracts.py`, `pla
 **Design (chosen; SO101_PLAN.md S0).** Those files stay byte-identical and `ee_delta_grasp_v0`
 stays on the existing classes. The SO-101 path goes through new files: a schema module
 registering `joint_delta_so101_v0`, schema-parametrised native and LeWM subclasses that override
-only the action-input construction, and a schema-aware CEM wrapper; unpinned files (`config.py`,
-`data.py`, `audit.py`) change additively only. Fallback, only if a pinned file cannot stay
+only the action-input construction, and a schema-aware CEM wrapper; `data.py`, `audit.py` and
+`benchmark.py` are byte-pinned by earlier frozen manifests (TASK-064–067 and the v1 apple
+manifests), so the schema-aware dataset path also goes in a new file, and only `config.py`
+changes, additively. Fallback, only if a pinned file cannot stay
 byte-identical: a TASK-072-style compatibility manifest naming the invalidated checkpoint
 families, the hash-checking runtimes and frozen protocols and the last compatible revision,
 recorded by a ruling before merge; frozen modules' pins are never edited. G1 task-line modules
@@ -59,19 +61,23 @@ and every hash-pinned runner stay unedited. Software only; no experiment.
 
 ## Acceptance Criteria
 
-- [ ] `ee_delta_grasp_v0` behaviour is unchanged: every existing test passes without edits to its
+- [x] `ee_delta_grasp_v0` behaviour is unchanged: every existing test passes without edits to its
   expectations, and a G1 config resolves to the same 14-D path.
-- [ ] `joint_delta_so101_v0` is registered with fixed names, order and dimension 6; config
+- [x] `joint_delta_so101_v0` is registered with fixed names, order and dimension 6; config
   validation, the data round-trip (including the `action_valid=False` final row), CEM and both
   backends' training step and prediction are tested with it on synthetic data.
-- [ ] Every G1 hash-pinned runtime check still passes at HEAD: each `frozen_files_check`, and the
+- [x] Every G1 hash-pinned runtime check still passes at HEAD: each `frozen_files_check`, and the
   implementation hashes of the native, LeWM, frozen-encoder, frozen-token and policy models and
   of TASK-087's G are unchanged against `origin/main` (R28.4). Only under the fallback: a
   reviewed compatibility manifest and a ruling, as TASK-072 did.
-- [ ] The core-import check passes (no `torch`/`mujoco` after `import embodied_jepa`); ruff check,
+- [x] The core-import check passes (no `torch`/`mujoco` after `import embodied_jepa`); ruff check,
   ruff format --check and pytest are green.
-- [ ] PR reviewed independently and merged.
+- [x] PR reviewed independently and merged.
 
 ## Notes
 
 - 2026-10-16, created by R28.6 (branch `docs/so101-plan`).
+- 2026-10-16, done in #232 (`bcd837c`): new files `action_schemas.py`,
+  `models/schema_backends.py`, `schema_planning.py`, `schema_data.py`; `config.py` additive;
+  every pinned file byte-identical, G1 implementation hashes and all four `frozen_files_check`
+  results unchanged against `dc5c686`, no compatibility manifest. Software only; no experiment.

@@ -102,7 +102,9 @@ it"); the defaults are Claude's choices under owner delegation; recorded by Clau
   TASK-087's G hash checked by `zero_shot_runtime.py` and `grasp_corpus_wm_runtime.py` (the
   paused grasp line's resume path), and TASK-091–TASK-094's frozen modules pin `contracts.py`,
   `planning.py`, `models/lewm.py`, `embodiment.py`, `simulation.py`, `constraints.py`,
-  `devices.py`, `run_tools.py` and `configs/g1_sim_action.json`, asserted by tests. **Design
+  `devices.py`, `run_tools.py` and `configs/g1_sim_action.json`, asserted by tests; earlier
+  frozen manifests (TASK-064–067 and the v1 apple manifests) also pin `data.py`, `audit.py` and
+  `benchmark.py` (see SO101_PLAN.md S0). **Design
   (chosen):** those files stay byte-identical, `ee_delta_grasp_v0` stays on the existing
   classes, and the SO-101 path goes through new files (a schema module, schema-parametrised
   backend subclasses overriding only the action input, a schema-aware CEM wrapper). Fallback,
