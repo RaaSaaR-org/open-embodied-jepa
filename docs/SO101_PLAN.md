@@ -1,6 +1,6 @@
 # SO-101 branch plan (opened 2026-10-16)
 
-**Status: PLAN; S0 done (#232, `bcd837c`).** On 2026-10-16 the owner opened the SO-101 branch
+**Status: PLAN; S0 done (#232, `bcd837c`); S1 done (#233, `cf2d4b1`); S2 implemented and measured on development seeds (TASK-098, [so101_cube_tasks_dev.md](experiments/so101_cube_tasks_dev.md)).** On 2026-10-16 the owner opened the SO-101 branch
 ([DECISIONS 2026-10-16 (bp)](DECISIONS.md), R28.1–R28.9). The defaults below were chosen by
 Claude under owner delegation; the owner can overrule any of them. This page is a plan: it admits
 no experiment, sets no bar and makes no claim. Each research step still needs its own
@@ -170,6 +170,15 @@ hours (GPU h) on the shared RTX 5080.
 
 ### S2 — Tasks `so101_cube_lift_v0` and `so101_cube_place_v0` (TASK-098)
 
+- **Status: implemented and measured (TASK-098; development only, no gate, no claim).**
+  `so101_tasks.py` (declared resets, held-window scorers on simulator truth), `so101_followers.py`
+  and `scripts/measure_so101_tasks.py`. The privileged scripted follower (v1) scored 64/64 on
+  each task on development seeds 100–163 (exact 95 % 0.944–1.000). Its grasp-offset envelope is
+  direction-dependent (5 mm toward the fixed jaw, 10 mm along the face or upward, 20 mm away
+  from the fixed jaw, each keeping 64/64), and a place-aim error up to 3 cm along any axis keeps
+  at least 63/64. Results, history (a v0 run on seeds 0–63) and caveats are in
+  [so101_cube_tasks_dev.md](experiments/so101_cube_tasks_dev.md). The text below is the plan as
+  written before.
 - **Delivers.** Task modules owning resets (cube pose, and target pose for place, from declared
   distributions), goals, termination and scoring. Scoring uses simulator truth only and never
   reaches model inputs or planning costs. Lift: the cube is held above a declared height for a

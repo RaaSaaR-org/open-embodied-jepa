@@ -4,7 +4,7 @@ aliases:
 - TASK-098
 title: 'SO-101 S2: tasks so101_cube_lift_v0 and so101_cube_place_v0, scored from simulator truth, with the scripted follower and a placement-tolerance envelope measured'
 slug: so101-cube-tasks
-status: todo
+status: review
 priority: 2
 owner: ''
 projects: []
@@ -20,6 +20,7 @@ due_date: ''
 created: 2026-10-16
 updated: 2026-10-16
 ---
+
 
 # SO-101 S2: tasks so101_cube_lift_v0 and so101_cube_place_v0, scored from simulator truth, with the scripted follower and a placement-tolerance envelope measured
 
@@ -38,13 +39,24 @@ bars can be; they are scripted, not learned results, and gate nothing.
 
 ## Acceptance Criteria
 
-- [ ] Both tasks registered lazily; scorer unit tests on synthetic trajectories (a transient
+- [x] Both tasks registered lazily; scorer unit tests on synthetic trajectories (a transient
   crossing and a dropped cube do not count).
-- [ ] The scripted follower's success rates on development seeds are measured and reported with
+- [x] The scripted follower's success rates on development seeds are measured and reported with
   exact intervals, labelled scripted and development-only.
-- [ ] The placement-tolerance envelope is measured and reported on development seeds.
+- [x] The placement-tolerance envelope is measured and reported on development seeds.
 - [ ] ruff and pytest stay green; PR reviewed independently and merged.
 
 ## Notes
 
 - 2026-10-16, created by R28.6 (branch `docs/so101-plan`).
+%% mc-links: [[TASK-097]] %%
+- 2026-10-16, in review on branch `feat/so101-cube-tasks`: `so101_tasks.py` (declared resets from
+  a kinematic reach map; held-window lift and at-rest place scorers on simulator truth; no
+  latched crossings; synthetic-trajectory tests), `so101_followers.py` (privileged scripted lift
+  and place followers with K-style grasp-aim and place-aim offsets), `config.py` additive (tasks
+  registered lazily for `so101` only; SO-101 experiment configs still refused at load, since
+  `benchmark.py` is G1-only), `scripts/measure_so101_tasks.py` and
+  `docs/experiments/so101_cube_tasks_dev.md`. Development only: follower v1 64/64 on each task on
+  seeds 100–163 (exact 95 % 0.944–1.000), direction-dependent grasp envelope, place-aim error up
+  to 3 cm along any axis keeps ≥ 63/64; a first v0 run on seeds 0–63 is recorded. Scripted, not
+  learned; gates nothing. Every G1 hash-pinned file is byte-identical.
