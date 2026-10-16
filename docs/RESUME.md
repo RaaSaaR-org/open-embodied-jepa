@@ -6,6 +6,10 @@ TASK-095 is recommended but **not confirmed and not started**. This page is the 
 works, what does not, where the evidence is, how to work on the machine, and how to resume each
 option, including a branch to the LeRobot SO-101 arm.
 
+**Update 2026-10-16: the SO-101 branch is open.** The owner opened it
+([DECISIONS 2026-10-16 (bp)](DECISIONS.md), R28.1–R28.9); its plan is
+[SO101_PLAN.md](SO101_PLAN.md). The G1 grasp line stays paused and TASK-095 stays on hold.
+
 This page summarises; it is not the record. Every number below is copied from its results
 document or decision with its qualifiers, and those documents win if anything here disagrees.
 The canonical status sentence is R7 (DECISIONS 2026-10-02, as updated by R18.28, R18.31, R19.18,
@@ -196,6 +200,10 @@ First step: a design note that states which centimetre the new piece must resolv
 against TASK-094's K-style tolerance envelope, before anything is trained.
 
 ## Branching to SO-101
+
+**Opened on 2026-10-16** ([DECISIONS (bp)](DECISIONS.md), R28.1–R28.9). The plan, with the
+chosen defaults and phases S0–S6, is [SO101_PLAN.md](SO101_PLAN.md); it supersedes the outline
+and the open decisions below, which are kept as written at the pause.
 
 The LeRobot SO-101 is a low-cost arm with six Feetech STS3215 servos: five arm joints
 (`shoulder_pan`, `shoulder_lift`, `elbow_flex`, `wrist_flex`, `wrist_roll`) and a jaw gripper

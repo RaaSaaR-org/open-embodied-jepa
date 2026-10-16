@@ -2,9 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Current status (2026-10-15): paused
+## Current status (2026-10-16): G1 line paused, SO-101 branch opened
 
-The owner paused the project on 2026-10-15 ([DECISIONS 2026-10-15 (bo)](docs/DECISIONS.md), R27.209–R27.215). Nothing is running or queued. TASK-095 (the grasp placement-resolution diagnostic) is recommended but not confirmed and not started; the grasp line stays paused. Before resuming, read [docs/RESUME.md](docs/RESUME.md): the current state with its qualifiers, where evidence lives, the GPU and worktree conventions, the resume options and what a branch to the LeRobot SO-101 arm would need. Every resume option needs an owner ruling first.
+**2026-10-16:** the owner opened the LeRobot SO-101 branch ([DECISIONS 2026-10-16 (bp)](docs/DECISIONS.md), R28.1–R28.9; plan [docs/SO101_PLAN.md](docs/SO101_PLAN.md)). It runs beside G1 + Dex3 as a stepping stone, simulation first, with the `joint_delta_so101_v0` action schema (5 arm joint deltas + gripper), a wrist and an overview camera, and cube lift then place as the first tasks (Claude's defaults under delegation). Foundation tasks: TASK-096 (S0 schema generalisation), TASK-097 (S1 simulated embodiment), TASK-098 (S2 tasks). The G1 status below, R7 and every fired clause are unchanged.
+
+G1 line: the owner paused the project on 2026-10-15 ([DECISIONS 2026-10-15 (bo)](docs/DECISIONS.md), R27.209–R27.215). Nothing is running or queued. TASK-095 (the grasp placement-resolution diagnostic) is recommended but not confirmed and not started; the grasp line stays paused. Before resuming, read [docs/RESUME.md](docs/RESUME.md): the current state with its qualifiers, where evidence lives, the GPU and worktree conventions, the resume options and what a branch to the LeRobot SO-101 arm would need. Every resume option needs an owner ruling first.
 
 ## Workflow authority
 
