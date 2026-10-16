@@ -63,7 +63,7 @@ class FollowerConfig:
     retreat_steps: int = 35
 
 
-FOLLOWER_V0 = FollowerConfig()
+FOLLOWER_V1 = FollowerConfig()
 
 
 class EpisodeDone(Exception):
@@ -187,7 +187,7 @@ def _finish(run, record, reason_if_running="follower_ended"):
     return record
 
 
-def follow_lift(robot, task, seed, *, grasp_offset_m=(0.0, 0.0, 0.0), config=FOLLOWER_V0):
+def follow_lift(robot, task, seed, *, grasp_offset_m=(0.0, 0.0, 0.0), config=FOLLOWER_V1):
     """Reset ``task`` for ``seed`` and run the lift follower until the task terminates."""
     task.reset(seed)
     run = _Runner(robot, task)
@@ -214,7 +214,7 @@ def follow_place(
     *,
     grasp_offset_m=(0.0, 0.0, 0.0),
     place_offset_m=(0.0, 0.0),
-    config=FOLLOWER_V0,
+    config=FOLLOWER_V1,
 ):
     """Reset ``task`` for ``seed`` and run the place follower until the task terminates.
 
@@ -294,7 +294,7 @@ def _pose_check(robot, q, gripper, cube_position, cube_quaternion, *, cube_penet
     return bad
 
 
-def reach_map(robot, *, xs, ys, yaws, heights, mode, config=FOLLOWER_V0):
+def reach_map(robot, *, xs, ys, yaws, heights, mode, config=FOLLOWER_V1):
     """Kinematic reach of the followers' poses (development, privileged; no physics stepping).
 
     ``mode="grasp"``: for each cube xy and yaw, the follower's top-down grasp poses at each

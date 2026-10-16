@@ -341,3 +341,30 @@ def test_scripted_followers_complete_both_tasks_on_a_development_seed(robot):
     # A place aim 6 cm off the target leaves the cube outside the 4 cm half-square.
     off = follow_place(robot, SO101CubePlaceTask(robot), 1000, place_offset_m=(0.0, 0.06))
     assert not off["success"] and off["score"]["picked"]
+
+
+def test_repeated_scene_constants_match_the_simulation_scene():
+    """so101_tasks.py repeats the scene's constants; they must not drift from the scene."""
+    import xml.etree.ElementTree as ET
+
+    from embodied_jepa import so101_simulation as scene
+    from embodied_jepa import so101_tasks as tasks
+
+    assert tasks.CUBE_HALF_SIZE_M == scene.CUBE_HALF_SIZE_M
+    assert tasks.TABLE_TOP_Z == scene.TABLE_TOP_Z
+    assert PLACE_V0.target_half_size_m == scene.TARGET_HALF_SIZE_M
+    pytest.importorskip("mujoco")
+    if not FETCHED:
+        pytest.skip("pinned SO-101 assets have not been fetched")
+    sim = scene.SO101Simulation(render=False)
+    try:
+        root = ET.fromstring(sim._scene())
+    finally:
+        sim.close()
+    table = root.find(".//geom[@name='table']")
+    cube = root.find(".//geom[@name='cube_geom']")
+    (cx, cy, cz), (sx, sy, sz) = ([float(v) for v in table.get(k).split()] for k in ("pos", "size"))
+    assert np.isclose(cz + sz, tasks.TABLE_TOP_Z)
+    np.testing.assert_allclose(tasks.TABLE_XY, ((cx - sx, cx + sx), (cy - sy, cy + sy)))
+    assert cube is not None
+    assert np.allclose([float(v) for v in cube.get("size").split()], tasks.CUBE_HALF_SIZE_M)

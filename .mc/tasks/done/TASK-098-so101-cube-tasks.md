@@ -4,7 +4,7 @@ aliases:
 - TASK-098
 title: 'SO-101 S2: tasks so101_cube_lift_v0 and so101_cube_place_v0, scored from simulator truth, with the scripted follower and a placement-tolerance envelope measured'
 slug: so101-cube-tasks
-status: review
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -44,7 +44,7 @@ bars can be; they are scripted, not learned results, and gate nothing.
 - [x] The scripted follower's success rates on development seeds are measured and reported with
   exact intervals, labelled scripted and development-only.
 - [x] The placement-tolerance envelope is measured and reported on development seeds.
-- [ ] ruff and pytest stay green; PR reviewed independently and merged.
+- [x] ruff and pytest stay green; PR reviewed independently and merged.
 
 ## Notes
 
@@ -60,3 +60,9 @@ bars can be; they are scripted, not learned results, and gate nothing.
   seeds 100–163 (exact 95 % 0.944–1.000), direction-dependent grasp envelope, place-aim error up
   to 3 cm along any axis keeps ≥ 63/64; a first v0 run on seeds 0–63 is recorded. Scripted, not
   learned; gates nothing. Every G1 hash-pinned file is byte-identical.
+- 2026-10-16, done: PR #234 independently reviewed (APPROVE, no blocking findings). Review
+  fixes: the single-contact `gripper_contact` semantics and the unbounded release height are
+  stated in the results doc, the `clipped` and home-pose frame wording corrected, a test asserts
+  `so101_tasks.py`'s repeated scene constants match the scene, `FOLLOWER_V0` renamed
+  `FOLLOWER_V1` (rename only), and the reach map's development-prompted collision check noted.
+  Merged after green CI.

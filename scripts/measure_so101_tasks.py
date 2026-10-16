@@ -138,7 +138,7 @@ def _write(path: Path, payload) -> None:
 
 # ----- reach ----------------------------------------------------------------------------------
 def reach(args):
-    from embodied_jepa.so101_followers import FOLLOWER_V0, reach_map
+    from embodied_jepa.so101_followers import FOLLOWER_V1, reach_map
 
     out = _new_output(args.output)
     robot = _robot()
@@ -150,7 +150,7 @@ def reach(args):
         xs=xs,
         ys=np.round(np.arange(-0.16, 0.165, 0.02), 4),
         yaws=np.deg2rad([-45, -30, -15, 0, 15, 30, 45]),
-        heights=(0.0, FOLLOWER_V0.pregrasp_height_m),
+        heights=(0.0, FOLLOWER_V1.pregrasp_height_m),
         mode="grasp",
     )
     place = reach_map(
@@ -158,7 +158,7 @@ def reach(args):
         xs=xs,
         ys=np.round(np.arange(-0.20, 0.205, 0.02), 4),
         yaws=(0.0,),
-        heights=(0.0, FOLLOWER_V0.pregrasp_height_m),
+        heights=(0.0, FOLLOWER_V1.pregrasp_height_m),
         mode="place",
     )
     _write(
@@ -287,7 +287,7 @@ def _summary(cell):
 
 
 def measure(args):
-    from embodied_jepa.so101_followers import FOLLOWER_V0
+    from embodied_jepa.so101_followers import FOLLOWER_V1
     from embodied_jepa.so101_tasks import LIFT_V0, PLACE_V0, RESETS_V0, sample_reset
 
     out = _new_output(args.output)
@@ -312,7 +312,7 @@ def measure(args):
                 "lift": {s: sample_reset("so101_cube_lift_v0", s) for s in seeds},
                 "place": {s: sample_reset("so101_cube_place_v0", s) for s in seeds},
             },
-            "follower": asdict(FOLLOWER_V0),
+            "follower": asdict(FOLLOWER_V1),
             "wall_seconds": seconds,
             "workers": args.workers,
             "cells": summary,

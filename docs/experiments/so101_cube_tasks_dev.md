@@ -49,7 +49,9 @@ episode was scored. The order of events is listed under *History* below.
 A centre distance of at least 0.10 m is more than √2 × 0.055 m, so the starting cube lies wholly
 outside the 8 cm target square (half-size 4 cm plus the cube's 1.5 cm).
 
-**How the boxes were chosen: from a kinematic reach map, not from the follower's outcomes.**
+**How the boxes were chosen: from a kinematic reach map, not from the follower's outcomes.** The
+map's collision check was itself prompted by two development-seed lift failures (History,
+item 1); the final boxes were then read from the map, not from any follower outcome.
 `measure_so101_tasks.py reach` solves the follower's own IK on a grid (x 0.12–0.29 m in 1 cm
 steps; y in 2 cm steps), with no physics stepping. For the grasp map it uses the cube at 7 yaws
 from −45° to 45°, the grasp height and the 6 cm pre-grasp height, with the jaw open. For the
@@ -73,7 +75,7 @@ cube). Each declared box is a rectangle of ok cells:
 |---|---|---|
 | Lift height | cube centre ≥ 0.05 m above its resting height (0.015 m) | Clearly off the table: 1.7 cube sizes. No support other than the gripper exists at that height. |
 | Hold | every step of 20 consecutive control steps (1.0 s at 20 Hz) | Long enough that a flick or a toss cannot count. |
-| Gripper contact | required on every step of the hold | "Held", not thrown or balanced on the arm. |
+| Gripper contact | required on every step of the hold | Not thrown or tossed. `gripper_contact` is true when *any one* of the fixed jaw, the moving jaw or the camera mount touches the cube, so a cube held by a single jaw, or resting on the camera mount, also counts. The scripted follower always grips with both jaws; a later version for learned policies may require both jaws (`fixed_jaw_contact` and `moving_jaw_contact` are already in `task_truth()`). The same contact definition applies to the place task's pick. |
 | Lost | cube centre below z = −0.05 m or off the table top | Terminal failure. |
 | Episode | at most 200 control steps (10 s) | The follower needs about 120. |
 
@@ -94,7 +96,9 @@ add up.
 
 Success is the first step that completes such a window. The episode terminates there, or on a
 lost cube, or at 320 steps. The gripper may still hover near the cube at that step; the scorer
-asks only that it has let go.
+asks only that it has let go. The release height is not bounded: after a pick, a cube dropped
+from any height that comes to rest inside the square counts. Only drops that end outside the
+square, or that never settle, fail.
 
 The unit tests (`tests/test_so101_tasks.py`, synthetic per-step truth) check these cases:
 
@@ -103,9 +107,9 @@ The unit tests (`tests/test_so101_tasks.py`, synthetic per-step truth) check the
   above the bar without a gripper contact does not count. A lost cube fails.
 - **Place.** A cube that slides through the square at 0.2 m/s and stops outside does not count.
   At rest inside for 19 steps and then knocked out does not count. Neither does a cube dropped
-  outside, a cube pushed in without a pick, a pick too short for the pick window, or a cube
-  still held, held 1 cm above the table, sliding at 10 mm/s, spinning at 0.5 rad/s or creeping
-  4 mm over the window. Success falls on the step that completes the window, and inputs are
+  so that it lands outside, a cube pushed in without a pick, a pick too short for the pick
+  window, or a cube still held, held 1 cm above the table, sliding at 10 mm/s, spinning at
+  0.5 rad/s or creeping 4 mm over the window. Success falls on the step that completes the window, and inputs are
   validated.
 
 ## The scripted followers (`so101_followers.py`, `FollowerConfig`)
@@ -134,8 +138,8 @@ The unit tests (`tests/test_so101_tasks.py`, synthetic per-step truth) check the
   - A *place-aim offset* is a world-xy error of the place aim. The place follower corrects for
     a grasp offset through its privileged in-hand reading, so on place a grasp offset tests the
     pick only.
-- Every executed step reports the gripper's rate clip as status `clipped`: 11 steps per lift
-  episode and 15 per place episode. No step was stopped.
+- 11 steps per lift episode (of 122) and 15 per place episode (of 221–222) report the gripper's
+  rate clip as status `clipped`. No step was stopped.
 
 ## History (in order)
 
@@ -259,7 +263,8 @@ of each task at steps 0, 45, 70 and 90 (lift) and 0, 70, 120, 170 and 200 (place
 eye:
 
 - **Wrist view.**
-  - At the home pose the cube is only partly in view, at the upper-left edge (seed 101: barely).
+  - At the home pose the cube is at most partly in view, at the upper-left edge: partly for
+    seed 100, a sliver for lift seed 101, and not at all for place seed 101.
   - At pre-grasp the whole cube is in the upper middle; at grasp height and while lifted it fills
     the lower centre beside the fixed jaw.
   - While lowering for the place, the blue target is visible around the held cube. At the
@@ -299,7 +304,8 @@ eye:
 - **Simulation details that matter:**
   - The cube is a 20 g, 3 cm box with friction 1 against the table; the jaw stalls on it at
     about 0.16 rad.
-  - Every step clips the gripper rate (recorded as `clipped`).
+  - The gripper rate is clipped on some steps (11 per lift episode and 15 per place episode,
+    recorded as `clipped`).
   - Contact is MuJoCo's soft contact on Menagerie's primitive collision geometry.
   - Nothing here was checked against real hardware (S6 needs an owner ruling).
 
@@ -317,6 +323,12 @@ MUJOCO_GL=egl scripts/gpu_run.sh --wait --board -- \
 ```
 
 The v0 run used `925153f` with `--seeds 0 … 63` (the default at that revision).
+
+After `ff09958` the review fixes renamed the follower configuration constant `FOLLOWER_V0` to
+`FOLLOWER_V1` (it always held `version="so101_follower_v1"`), in `so101_followers.py` and
+`measure_so101_tasks.py`. That is a rename only, with no behavioural change, but those two
+files' hashes at the PR head therefore differ from the ones `summary.json` records; reproduce
+the recorded hashes from `ff09958`.
 
 Outputs (git-ignored) are under `/mnt/data/emai/projects/open-embodied-jepa/outputs/`. Each
 `summary.json` records the revision, the dirty flag (false for all runs), the file hashes, the
