@@ -349,10 +349,14 @@ class SO101Simulation:
             "cube_position": self.data.body("cube").xpos.copy(),
             "cube_quaternion": self.data.body("cube").xquat.copy(),
             "cube_velocity": self.data.joint("cube_free").qvel[:3].copy(),
+            # S2 (TASK-098): the at-rest scorer also bounds the cube's spin.
+            "cube_angular_velocity": self.data.joint("cube_free").qvel[3:6].copy(),
             "target_position": self.data.body("target").xpos.copy(),
             "gripper_site_position": self.data.site("gripperframe").xpos.copy(),
             "fixed_jaw_contact": "gripper" in contacts,
             "moving_jaw_contact": "moving_jaw_so101_v1" in contacts,
+            # Any gripper collision geom (either jaw or the camera mount) touching the cube.
+            "gripper_contact": bool(contacts),
             "timestamp": float(self.data.time),
         }
 

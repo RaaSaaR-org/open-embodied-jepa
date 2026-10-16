@@ -45,6 +45,10 @@ PLANNERS.register("cem", "embodied_jepa.planning:CEMPlanner")
 POLICIES.register("cloned_bc_v1", "embodied_jepa.policy:ClonedPolicy")
 TASKS.register("reach", "embodied_jepa.task:ReachTask")
 TASKS.register("apple_to_plate", "embodied_jepa.task:AppleToPlateTask")
+# SO-101 S2 (TASK-098): cube lift and place, scored from simulator truth; NumPy-only modules,
+# imported lazily by the registry.
+TASKS.register("so101_cube_lift_v0", "embodied_jepa.so101_tasks:SO101CubeLiftTask")
+TASKS.register("so101_cube_place_v0", "embodied_jepa.so101_tasks:SO101CubePlaceTask")
 # The action schema each embodiment executes (SO-101 S0, TASK-096). A config naming another
 # schema for that embodiment is rejected; an embodiment absent here cannot be configured.
 EMBODIMENT_ACTION_SCHEMAS = {
@@ -52,10 +56,15 @@ EMBODIMENT_ACTION_SCHEMAS = {
     "so101": JOINT_DELTA_SO101_V0.version,
 }
 # Tasks an embodiment may be configured with; an embodiment absent here is unconstrained (the
-# G1 path is unchanged). The registered tasks (reach, apple_to_plate) and the benchmark runner
-# are G1-only, so an SO-101 config is refused at load until S2 (TASK-098) registers its tasks
-# and an SO-101 entry point, rather than failing late inside benchmark.py.
-EMBODIMENT_TASKS = {"so101": ()}
+# G1 path is unchanged). The G1 tasks (reach, apple_to_plate) are refused for the SO-101; since
+# S2 (TASK-098) an SO-101 config may name an SO-101 task. benchmark.py stays G1-only and is not
+# an SO-101 entry point (the SO-101 tasks also refuse a non-SO-101 embodiment).
+EMBODIMENT_TASKS = {"so101": ("so101_cube_lift_v0", "so101_cube_place_v0")}
+# The embodiment each embodiment-specific task needs; any other embodiment is refused at load.
+TASK_EMBODIMENTS = {
+    "so101_cube_lift_v0": "so101",
+    "so101_cube_place_v0": "so101",
+}
 
 
 def _positive_scalar(value) -> bool:
@@ -319,6 +328,11 @@ class ExperimentConfig:
             raise ValueError(
                 f"embodiment {embodiment['backend']!r} has no task {task['name']!r}; "
                 f"registered: {list(allowed_tasks)}"
+            )
+        needed = TASK_EMBODIMENTS.get(task["name"])
+        if needed is not None and embodiment["backend"] != needed:
+            raise ValueError(
+                f"task {task['name']!r} needs embodiment {needed!r}, not {embodiment['backend']!r}"
             )
         goal_manifest = (
             _path(task["goal_manifest"], path.parent, "goal manifest")
