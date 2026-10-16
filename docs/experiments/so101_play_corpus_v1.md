@@ -107,7 +107,9 @@ within a few percentage points.
   matches `corpus.json`. There is one revision and one pair of salts. Every seed lies inside its
   shard with no duplicates, every frozen split equals the rule, and every holdout is empty.
 - Leakage is 0 for every pair of train, val and test, on each of: episode ids, session ids,
-  seeds, reset cube xy, and the SHA-256 of the first PNG frame of each camera.
+  seeds, reset cube xy, and the SHA-256 of the first PNG frame of each camera. The cube-xy and
+  first-frame checks are trivially 0 for continuous random resets; they would only catch a
+  duplicated or mis-split episode.
 
 ### Action-range coverage per channel (normalized commands)
 
@@ -152,7 +154,7 @@ about ±0.88 rad except in the wander segments.
 
 ### Lift and place windows (S2's scorers, `so101_tasks.py`, on the sidecar truth)
 
-| Split | Episodes | Lift windows (cube ≥ 5 cm up with a gripper contact for ≥ 20 steps) | Episodes with `so101_cube_lift_v0` success | Steps held (≥ 5 cm, contact) | Episodes picked (place-task pick) | Episodes with `so101_cube_place_v0` success at the marker | Placements anywhere (after a pick, at rest and free for ≥ 20 steps) |
+| Split | Episodes | Lift windows (cube ≥ 5 cm up with a gripper contact for ≥ 20 steps) | Episodes with `so101_cube_lift_v0` success | Steps held (≥ 5 cm, contact) | Episodes picked (place-task pick) | Episodes with `so101_cube_place_v0` success at the marker | Free resting after a pick (anywhere, at rest and free for ≥ 20 steps; includes drops) |
 |---|---|---|---|---|---|---|---|
 | train | 2 700 | 2 939 | 2 160 | 146 310 | 2 254 | 914 | 3 240 |
 | val | 150 | 162 | 114 | 8 141 | 119 | 46 | 171 |
@@ -167,8 +169,11 @@ a play episode. It does not mean a task episode succeeded.
 ### Grasps (per pick attempt)
 
 An attempt counts as *grasped* when, at the end of its lift, the cube is at least 2 cm up with
-both jaws in contact. Of 6 414 attempts, 5 171 reached the end of their lift; the others were
-aborts or were cut off by the end of the episode. Of those 5 171, 3 380 were grasped (65.4 %).
+both jaws in contact. Aborted picks (the injected `abort` failure, which leaves after the
+descent; 389 in the skill log) create no attempt and are not counted here. Of the 6 414 attempts,
+5 171 reached the end of their lift; the other 1 243 (19 %) were all cut off by the end of the
+episode (none 861, offset 106, miss 95, early_close 80, drop 57, no_close 44). Of those 5 171,
+3 380 were grasped (65.4 %).
 
 | Attempt | Grasped / attempts reaching the lift end |
 |---|---|
@@ -229,12 +234,21 @@ cameras with state and actions.
   top-down grasps plus noise and wander. Nearly half of the arm commands are near zero (holds
   and settled tracking).
 - **Clipped commands are frequent** (26 %, mostly the wrist_flex limit and the gripper rate).
-  The stored action is the executed one, so action and state agree. But at the wrist_flex limit,
-  a positive command and a zero command have the same effect.
+  The stored action is the executed one, so action and state agree, up to float32 rounding of
+  the clipped channels: re-executing a stored clipped action gives joint targets that differ by
+  at most about 1.2e-7 rad, and contact dynamics amplify this, so open-loop replay of the stored
+  actions is not bit-exact (the review's 6 regenerated episodes: position differences up to
+  0.021 rad), while replay of the sidecar's `requested` actions is. At the wrist_flex limit, a
+  positive command and a zero command have the same effect.
 - **`gripper_contact`** follows S2: any one of the fixed jaw, the moving jaw or the camera mount
   touching the cube. The per-attempt grasp fact requires both jaws.
 - **Place successes at the marker** include incidental ones, because 40 % of placements aim at
-  a random table point.
+  a random table point. They, and the "free resting after a pick" count (3 592), also count
+  drops: pick_lift's 50 % drop branch, the injected `drop` failure and cubes that fell out of a
+  failed grasp, when the cube comes to rest (on the marker, for the place scorer).
+- **Wall-clock stop.** `execute` can stop an episode on `max_wall_snapshot_age_s` (wall clock), so
+  an episode could in principle depend on machine load. No episode stopped early in this run
+  (0 early stops), and a stop does not step the simulator.
 - **Val and test are random episodes** of the same distribution. A closed-loop evaluation (S5)
   needs its own fresh reset seeds from the S2 task streams, which this corpus did not use.
 - **The timing projection was optimistic** by a factor of 1.7 at 12 workers (see Runs).
