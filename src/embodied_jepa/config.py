@@ -56,10 +56,17 @@ EMBODIMENT_ACTION_SCHEMAS = {
     "so101": JOINT_DELTA_SO101_V0.version,
 }
 # Tasks an embodiment may be configured with; an embodiment absent here is unconstrained (the
-# G1 path is unchanged). The G1 tasks (reach, apple_to_plate) are refused for the SO-101; since
-# S2 (TASK-098) an SO-101 config may name an SO-101 task. benchmark.py stays G1-only and is not
-# an SO-101 entry point (the SO-101 tasks also refuse a non-SO-101 embodiment).
+# G1 path is unchanged). The G1 tasks (reach, apple_to_plate) are refused for the SO-101.
 EMBODIMENT_TASKS = {"so101": ("so101_cube_lift_v0", "so101_cube_place_v0")}
+# Embodiments whose experiment configs are still refused at load, and why. The benchmark runner
+# is G1-only, so an SO-101 config must not reach it (S1 review of #232); S2 (TASK-098) adds the
+# SO-101 tasks, which run through embodied_jepa.so101_tasks directly, but no SO-101 entry point.
+EMBODIMENT_CONFIG_REFUSED = {
+    "so101": (
+        "no SO-101 experiment entry point exists yet (benchmark.py is G1-only); "
+        "run the SO-101 tasks through embodied_jepa.so101_tasks"
+    )
+}
 # The embodiment each embodiment-specific task needs; any other embodiment is refused at load.
 TASK_EMBODIMENTS = {
     "so101_cube_lift_v0": "so101",
@@ -334,6 +341,9 @@ class ExperimentConfig:
             raise ValueError(
                 f"task {task['name']!r} needs embodiment {needed!r}, not {embodiment['backend']!r}"
             )
+        refused = EMBODIMENT_CONFIG_REFUSED.get(embodiment["backend"])
+        if refused is not None:
+            raise ValueError(f"embodiment {embodiment['backend']!r} config refused: {refused}")
         goal_manifest = (
             _path(task["goal_manifest"], path.parent, "goal manifest")
             if "goal_manifest" in task

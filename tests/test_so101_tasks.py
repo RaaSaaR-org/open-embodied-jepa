@@ -267,10 +267,12 @@ def _config(tmp_path, embodiment, schema, task):
     return path
 
 
-def test_so101_config_loads_with_an_so101_task_and_g1_cannot_name_one(tmp_path):
+def test_configs_route_so101_tasks_only_to_the_so101_and_refuse_so101_configs(tmp_path):
+    # An SO-101 task in an SO-101 config passes the task checks but is refused at load: the
+    # benchmark runner is G1-only and there is no SO-101 entry point yet.
     for task in ("so101_cube_lift_v0", "so101_cube_place_v0"):
-        cfg = ExperimentConfig.load(_config(tmp_path, "so101", "joint_delta_so101_v0", task))
-        assert cfg.task == task
+        with pytest.raises(ValueError, match="no SO-101 experiment entry point"):
+            ExperimentConfig.load(_config(tmp_path, "so101", "joint_delta_so101_v0", task))
     with pytest.raises(ValueError, match="has no task 'apple_to_plate'"):
         ExperimentConfig.load(_config(tmp_path, "so101", "joint_delta_so101_v0", "apple_to_plate"))
     with pytest.raises(ValueError, match="needs embodiment 'so101'"):
