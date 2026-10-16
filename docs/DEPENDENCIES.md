@@ -10,6 +10,7 @@ Initial discovery and feasibility audit checked on 2026-09-20. The overview belo
 | LeRobot | Canonical dataset compatibility | [Official source](https://github.com/huggingface/lerobot); selected revision/license audit pending | Dataset provenance is independent of library license |
 | MuJoCo Python bindings | Required local simulator | [Official source](https://github.com/google-deepmind/mujoco), [Python documentation](https://mujoco.readthedocs.io/en/stable/python.html); selected revision audit pending | Verify macOS stepping, rendering, and viewer in TASK-003 |
 | Unitree MuJoCo assets | Candidate G1/Dex3 MJCF and meshes | [Official source](https://github.com/unitreerobotics/unitree_mujoco); exact asset provenance/terms pending | Complete dual-Dex3/EDU4 compatibility has not been established |
+| SO-101 MuJoCo model (MuJoCo Menagerie `robotstudio_so101`) | SO-101 simulated arm (S1, TASK-097) | [Official source](https://github.com/google-deepmind/mujoco_menagerie/tree/main/robotstudio_so101), Apache-2.0 per its `LICENSE` | Pinned revision and per-file SHA-256 in [assets/so101_manifest.json](../assets/so101_manifest.json); see the audit section below |
 | Unitree Isaac Lab environment | Future G1/Dex3 simulator port | [Official source](https://github.com/unitreerobotics/unitree_sim_isaaclab); full audit pending | G1-29dof-dex3 is listed; EDU4 correspondence and asset terms unverified |
 | Unitree SDK2 / Python interface | Physical transport | [SDK2](https://github.com/unitreerobotics/unitree_sdk2), [Python interface](https://github.com/unitreerobotics/unitree_sdk2_python); selected revision audit pending | Firmware/robot compatibility unverified |
 | PyTorch, array/config/test libraries | Planned macOS CPU/MPS implementation dependencies | Versions, selected package licenses, and transitive inventory pending TASK-005 | No packages installed by this scaffold |
@@ -56,6 +57,15 @@ The installed macOS transitive closure of torch/einops/transformers was inspecte
 ## Unitree simulation assets (TASK-003)
 
 The adopted dual-Dex3 asset revision, SHA-256 hashes, and BSD-3-Clause license provenance are recorded in [assets/manifest.json](../assets/manifest.json) and [MUJOCO_SPIKE.md](MUJOCO_SPIKE.md). Native MuJoCo 3.13.0 stepping, deterministic reset, RGB rendering, and the macOS passive viewer passed. EDU4 serial-specific calibration and physical contact fidelity remain unverified. Current upstream rubber-hand assets are not substituted for the pinned articulated model.
+
+## SO-101 simulation model (TASK-097, 2026-10-16)
+
+`scripts/fetch_so101.py` sparse-clones [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie) at `3abca2e302625cec9429c49806121ea2855cef81` (2026-09-28, "Fix SO101 wrist_roll joint range upper limit (#324)", the last change to `robotstudio_so101/`, re-checked through the GitHub API on 2026-10-16) into the ignored `third_party/mujoco_menagerie_so101`, and checks that `robotstudio_so101/` holds exactly the 26 files listed in [assets/so101_manifest.json](../assets/so101_manifest.json), each with its SHA-256 (the MJCF `so101.xml`, the 19 STL meshes, `scene.xml`, `scene_box.xml`, `README.md`, `CHANGELOG.md`, `so101.png` and `LICENSE`). `so101.xml` SHA-256: `982c02c027ec0c62d3459d0a6eb00dfb7dc13a451992e72ce99addc71f209805`.
+
+- **Licence:** Apache-2.0 (`robotstudio_so101/LICENSE` at the pinned revision). Nothing is vendored; preserve the licence with any redistributed asset.
+- **Provenance:** Menagerie derived it from TheRobotStudio [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100/tree/main/Simulation/SO101) `Simulation/SO101/so101_new_calib.xml` (Apache-2.0; commit `aec17bbc256d1a7342d53aaa4950595d4c30b40d` per Menagerie's README), adding primitive collision geometry, gripper contact parameters and a camera mount with `wrist_cam`. Menagerie's `trs_so_arm100` is the SO-100 and is not used. TheRobotStudio's own files stay the fallback source.
+- **Runtime:** requires MuJoCo ≥ 3.1.3; loaded with the locked MuJoCo 3.13.0. The model is loaded unchanged; `so101_simulation.py` adds the table, cube, target marker, lights and overview camera in memory.
+- **Fidelity:** simulation only. Menagerie's `sts3215` position gains are its own estimate ("not a 1-to-1 mapping of the servo gains used in LeRobot"); no real-arm calibration is implied.
 
 ## Adopted dataset and hardware compatibility sources
 

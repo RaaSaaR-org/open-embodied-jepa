@@ -36,6 +36,9 @@ BACKEND_KEYS = (
     "state_goal_sensor_wm_v1",
 )
 EMBODIMENTS.register("unitree_g1_dex3", "embodied_jepa.embodiment:G1Embodiment")
+# SO-101 S1 (TASK-097): simulated SO-101 with wrist and overview cameras; mujoco loads lazily
+# in its transport (embodied_jepa.so101_simulation), never at import.
+EMBODIMENTS.register("so101", "embodied_jepa.so101:SO101Embodiment")
 PLANNERS.register("cem", "embodied_jepa.planning:CEMPlanner")
 # A policy is the control-side sibling of a planner: both turn an observation into an
 # action through the model contract, and a run selects one by config (TASK-056).
@@ -44,7 +47,15 @@ TASKS.register("reach", "embodied_jepa.task:ReachTask")
 TASKS.register("apple_to_plate", "embodied_jepa.task:AppleToPlateTask")
 # The action schema each embodiment executes (SO-101 S0, TASK-096). A config naming another
 # schema for that embodiment is rejected; an embodiment absent here cannot be configured.
-EMBODIMENT_ACTION_SCHEMAS = {"unitree_g1_dex3": ACTION_SCHEMA}
+EMBODIMENT_ACTION_SCHEMAS = {
+    "unitree_g1_dex3": ACTION_SCHEMA,
+    "so101": JOINT_DELTA_SO101_V0.version,
+}
+# Tasks an embodiment may be configured with; an embodiment absent here is unconstrained (the
+# G1 path is unchanged). The registered tasks (reach, apple_to_plate) and the benchmark runner
+# are G1-only, so an SO-101 config is refused at load until S2 (TASK-098) registers its tasks
+# and an SO-101 entry point, rather than failing late inside benchmark.py.
+EMBODIMENT_TASKS = {"so101": ()}
 
 
 def _positive_scalar(value) -> bool:
@@ -303,6 +314,12 @@ class ExperimentConfig:
                 raise ValueError(str(error)) from error
         task = _mapping(raw.get("task", {}), ("name", "max_steps", "goal_manifest"), "task")
         TASKS.require(task.get("name"))
+        allowed_tasks = EMBODIMENT_TASKS.get(embodiment["backend"])
+        if allowed_tasks is not None and task["name"] not in allowed_tasks:
+            raise ValueError(
+                f"embodiment {embodiment['backend']!r} has no task {task['name']!r}; "
+                f"registered: {list(allowed_tasks)}"
+            )
         goal_manifest = (
             _path(task["goal_manifest"], path.parent, "goal manifest")
             if "goal_manifest" in task

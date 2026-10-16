@@ -1,10 +1,13 @@
-"""Fetch the pinned official G1/Dex3 assets without modifying an existing checkout."""
+"""Fetch the pinned robot assets without modifying an existing checkout: the official G1/Dex3
+model, then the SO-101 model (``scripts/fetch_so101.py``, SO-101 S1, TASK-097), so every
+caller of this script, the integration CI job included, gets both."""
 
 from __future__ import annotations
 
 import hashlib
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,4 +41,5 @@ def fetch() -> Path:
 
 
 if __name__ == "__main__":
-    print(fetch())
+    print(fetch(), flush=True)
+    subprocess.run([sys.executable, str(ROOT / "scripts/fetch_so101.py")], check=True)
