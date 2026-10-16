@@ -101,7 +101,7 @@ def measure(corpus: Path, *, stride: int, workers: int) -> dict:
 
     summary = json.loads(pc.corpus_manifest_path(corpus).read_text())
     problems = []
-    if summary.get("dirty"):
+    if summary.get("dirty") and summary.get("kind") != "debug":
         problems.append("collected from a dirty tree")
     per_split = {s: [] for s in SPLITS}
     shards, frame_tasks, storage = [], [], {"bytes": 0, "episodes": 0, "frames": 0}

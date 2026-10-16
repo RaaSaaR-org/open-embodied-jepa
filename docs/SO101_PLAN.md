@@ -1,6 +1,6 @@
 # SO-101 branch plan (opened 2026-10-16)
 
-**Status: PLAN; S0 done (#232, `bcd837c`); S1 done (#233, `cf2d4b1`); S2 done (#234; TASK-098, development measurement only, [so101_cube_tasks_dev.md](experiments/so101_cube_tasks_dev.md)).** On 2026-10-16 the owner opened the SO-101 branch
+**Status: PLAN; S0 done (#232, `bcd837c`); S1 done (#233, `cf2d4b1`); S2 done (#234; TASK-098, development measurement only, [so101_cube_tasks_dev.md](experiments/so101_cube_tasks_dev.md)); S3 in review (TASK-099, development data only, [so101_play_corpus_v1.md](experiments/so101_play_corpus_v1.md)).** On 2026-10-16 the owner opened the SO-101 branch
 ([DECISIONS 2026-10-16 (bp)](DECISIONS.md), R28.1–R28.9). The defaults below were chosen by
 Claude under owner delegation; the owner can overrule any of them. This page is a plan: it admits
 no experiment, sets no bar and makes no claim. Each research step still needs its own
@@ -192,6 +192,16 @@ hours (GPU h) on the shared RTX 5080.
 - **Effort (estimate).** 3–5 d plus CPU runs.
 
 ### S3 — Scripted collector and play corpus, measured before training
+
+- **Status: in review (TASK-099, branch `feat/so101-play-corpus`; development data, no gate,
+  no claim).** `so101_play_corpus.py` (the privileged scripted collector `so101_play_policy_v0`),
+  `scripts/collect_so101_play.py` and `scripts/measure_so101_play.py`. The corpus
+  `so101-play-v1` has 3 000 episodes of 400 commands at 224 px for both cameras, split
+  2 700 / 150 / 150 by episode, 26.5 GiB, collected in 14.4 min with 12 workers. Its measures
+  before training: every action bin covered, no split leakage, 3 262 lift windows, 65.4 % of
+  pick attempts grasped, and the joint coverage partial (wrist_flex and shoulder_pan). Results
+  and caveats are in [so101_play_corpus_v1.md](experiments/so101_play_corpus_v1.md). The text
+  below is the plan as written before.
 
 - **Delivers.** A scripted collector (privileged, like `play_corpus.py`) that records reach,
   approach, close, lift and place segments with injected perturbations into a `DatasetStore`

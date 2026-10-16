@@ -38,13 +38,13 @@ learned results, and nothing here is gated.
 
 ## Acceptance Criteria
 
-- [ ] Collector, collection and measurement scripts in new files; every G1 hash-pinned file
+- [x] Collector, collection and measurement scripts in new files; every G1 hash-pinned file
   byte-identical; the core-import check passes; tests on a tiny CPU corpus.
-- [ ] A development pilot is collected and timed.
-- [ ] Corpus measures before any training (the plan's S3 check): action-range coverage per joint,
+- [x] A development pilot is collected and timed.
+- [x] Corpus measures before any training (the plan's S3 check): action-range coverage per joint,
   gripper open/close balance, lift and place window counts, camera frame checks, split leakage
   check (plus the successful-grasp fraction and storage per episode).
-- [ ] If the pilot's projection fits the time and disk budget, `so101-play-v1` is collected under
+- [x] If the pilot's projection fits the time and disk budget, `so101-play-v1` is collected under
   `data/` through `scripts/gpu_run.sh --wait --board` and measured.
 - [ ] Results in `docs/experiments/so101_play_corpus_v1.md`; ruff and pytest green; PR reviewed
   independently.
@@ -53,3 +53,10 @@ learned results, and nothing here is gated.
 
 - 2026-10-16, created for S3 (branch `feat/so101-play-corpus`).
 %% mc-links: [[TASK-098]] %%
+- 2026-10-16, in review on branch `feat/so101-play-corpus`: `so101_play_corpus.py`
+  (`so101_play_policy_v0`), `collect_so101_play.py`, `measure_so101_play.py`, tests on a tiny CPU
+  corpus, `benchmarks/manifests/so101-play-v1.json` and
+  `docs/experiments/so101_play_corpus_v1.md`. Pilot 64 episodes (66 s, 2 workers); corpus
+  `so101-play-v1` 3 000 episodes (866 s, 12 workers, 26.5 GiB, collected at `bf12d37`), measured
+  before training. Development data from a privileged scripted collector; gates nothing. Every
+  G1 hash-pinned file is byte-identical.

@@ -1,0 +1,91 @@
+{
+  "action_schema": "joint_delta_so101_v0",
+  "cameras": [
+    "wrist_rgb",
+    "overview_rgb"
+  ],
+  "code_sha256": {
+    "assets/so101_manifest.json": "a85bd9c599965f22ac861ae1c0dfbb4fea53bb5f3a27870ef9d97f2f6739c717",
+    "configs/so101_sim_action.json": "c573b64ae4ae3860d3465a4f5cc334c746fece36c3dc2fcc670223f71e40016e",
+    "scripts/collect_so101_play.py": "4fe91d139898c6e239c02ce7a03769a443fc17164b7122a1f2953e500facf18d",
+    "src/embodied_jepa/action_schemas.py": "e83a3804baaeb4b57aecd8074a85e71cd3c70be8d2da8240e9e7df287ba74357",
+    "src/embodied_jepa/data.py": "6104192c0c54e8fef748290ce6bc8e5a6c2f30f45231c39252e23901ebb7bf71",
+    "src/embodied_jepa/schema_data.py": "59b6f425570bcd614c5cb74d120ce6007dc89af28367960a7209496e6ded6708",
+    "src/embodied_jepa/so101.py": "7e7baf5d24dff380e1199d333d05b0438af87220222475799a722c2706966930",
+    "src/embodied_jepa/so101_play_corpus.py": "cb8a6d0f72216f06c3d2a82cf2101a5c0ef7a1f0f732ef40e75cdcc3472463c3",
+    "src/embodied_jepa/so101_scripted.py": "04c7b1490942bd35e03d002e68e7c5a7863040e3e31e22a801b42d752c07269b",
+    "src/embodied_jepa/so101_simulation.py": "a5143d9e0979ba042d7c9123742dfc634dc8838276d9ffce243daa1a42837ec8",
+    "src/embodied_jepa/so101_tasks.py": "b6fcb852a89217e55ee7a8e8025c3bbdb46c98358ae13711523b4f7ee8f7246e"
+  },
+  "commands_per_episode": 400,
+  "corpus_json_sha256": "c81571de2bebe76704129d2814f39959d341ec8cba169fc310f7c22d8dd45b69",
+  "doc": "docs/experiments/so101_play_corpus_v1.md",
+  "episodes": 3000,
+  "evidence": "~/develop/emai/evidence/task099-so101-play (SHA256SUMS)",
+  "fps": 20,
+  "image_size": 224,
+  "location": "data/so101-play-v1 (-> /mnt/data/emai/projects/open-embodied-jepa/data/so101-play-v1)",
+  "measure_report_sha256": "8a5a5e09223bf2ce4c82b8e38ee3b0dfed8a654f8341ea8493ba97d1859f7afe",
+  "name": "so101-play-v1",
+  "pilot": {
+    "corpus_json_sha256": "f341c8a17a00763297c63eac4686ad4056224fa9f9083c6e783435a0c8b942ee",
+    "episodes": 64,
+    "location": "data/so101-play-pilot-v1",
+    "measure_report_sha256": "552e6cbb8bdfdee2b502973a9099e45bad3654c7cb7567076ab67655d3acbaf2",
+    "revision": "bf12d37b707ccbb8cbde62082799a1d950665f25",
+    "seeds": [
+      990100,
+      990163
+    ],
+    "shard_manifest_sha256": {
+      "shard-00": "c95f59141afdca8472a156286eb7bb8a10a6ca2819adef534095e136aa10b5cb",
+      "shard-01": "4786a36358e40d057fc42823f29341b6d69a2015dfb194571cc203b68cc0293d"
+    }
+  },
+  "policy_salt": 9901,
+  "revision": "bf12d37b707ccbb8cbde62082799a1d950665f25",
+  "seeds": [
+    991000,
+    993999
+  ],
+  "shard_manifest_sha256": {
+    "shard-00": "27a25aee8370ab54e00ae688b3d499bd72f61970c36a45010767c1dd295667ab",
+    "shard-01": "279436c9f878fd36713275ae2ef891bc5ab201e6721b084a9c8037a8ac8cc490",
+    "shard-02": "2f4c07e0f8a8657023e2f8e78d5c46a4a64c99b60fb1a8a89f895c6b99d930f3",
+    "shard-03": "1c9057f5ac50b577ed2cb29e6f60064d014b3920219cf24b25dc40edd53614a9",
+    "shard-04": "b3b94420a4416ac599136b4f261ff3d54d9ee37e941d5dc8dbeec876df57047d",
+    "shard-05": "ba5ece071547aeb86e20e092006520bccdc8be0243adacf58cc36c25e8cb4888",
+    "shard-06": "a0441fbbc9abd876fd6714e7c56ae949e6242b85188cdcd1ce8d93b3618579bf",
+    "shard-07": "e58636b92e2cbd0e551c336186595183086dcab8545667eb804f172b6ae597af",
+    "shard-08": "ca85de96b7296ad474b4deb163b345af37c2b6ff50f1449543b0c368e70ae2f5",
+    "shard-09": "fcf15b5f783675ae47ec69ce1e742cbfbff0fcdbad9aeba3ae60f306b346368c",
+    "shard-10": "2258cddcd3b56632f7b6768b92cea3ed63f9c36a25feb54b502d837819526b19",
+    "shard-11": "7e49adc1e5edeaf80f53e15ce8f88bdf53ec037f23c02264912e9c3343ac8746",
+    "shard-12": "91694cba6b92d20508ecf507fb54f213616c485be94f430206c9c1b4b0b56b21",
+    "shard-13": "1ae6c05b6240ccd4dd7b485b6828abcb69f5e83ad054d63166466ee95247fa63",
+    "shard-14": "760c022c32e342b5711e632da1ca51b37bf3c63e1c071ed13a15d74d853c4ed3",
+    "shard-15": "4b2f444e102c10709ad46c758939a9eb9d2569046f584c54b9b2dabda9f5b854",
+    "shard-16": "cbdc1d1b0846771d4b47c0d8f6bcb906cf11f08cb2767d97c70c14fbf87cb66b",
+    "shard-17": "ea1f1e8df655a287f6c4731bae5c78add7292291bc8196a9ed753ab58c6565c9",
+    "shard-18": "d769d9ba5febd813478745206ae9c130fb9e39e774f785d0a91081b6c13868aa",
+    "shard-19": "ac3576673628e2bc2fc31fef674a6e49b439217bc8e0b3294380a39f0bf11ee2",
+    "shard-20": "2816c84c366fa0ddb4d03979746be9d54fe28ee131b885b65f5a177a0cb7d435",
+    "shard-21": "8de59708f604d8d4a4cc440a85f2ad5c292db2048bf718f25736131a5ec91be9",
+    "shard-22": "d32c88196c3aa3425fdea7e6b19f3f412f9a1f7b85357499c6e14974a0781d0e",
+    "shard-23": "afa0509533d1988b5773005b7fcca408bae1076980075202f2e583432f955ac2",
+    "shard-24": "e4a6264410da21373cf114f83ca6a980b4d04a2b4d462b741f981edaa93fea81",
+    "shard-25": "ba6495b0e87b98334392b4e3ccea4ccd4aec4cc664975cd8bd50eaa538fd824f",
+    "shard-26": "b516cfda97d48fb4fab417da62a3bcf808fd8f7a3ae6df5fb168eab827a3cba4",
+    "shard-27": "8542977adb9d4ce621fb88dca822235250665213f4347b9a7d3087060b2d9a48",
+    "shard-28": "2eeed6d0db365e1dcf0eccb72ffdf79d3a216b50178cd39dcf888313e9fa0126",
+    "shard-29": "ae4dd65c16762e7311498bb82cce2b0e81d99dc67709cc6be726f32ea9795105"
+  },
+  "split_salt": 9902,
+  "splits": {
+    "test": 150,
+    "train": 2700,
+    "val": 150
+  },
+  "status": "development data; not gated; privileged scripted collector, not a learned result",
+  "task": "TASK-099"
+}
