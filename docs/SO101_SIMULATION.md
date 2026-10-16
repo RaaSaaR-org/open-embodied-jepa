@@ -94,7 +94,8 @@ on declared seeds.
 
 ## Not done here
 
-Task modules, scoring and reset distributions (S2, TASK-098); a collector and corpus (S3); any
-model, planner run or closed loop; real hardware (S6, owner ruling). The models' default
+A collector and corpus (S3); any model, planner run or closed loop; real hardware (S6, owner
+ruling). The task modules, scorers and reset distributions are S2's (TASK-098,
+[so101_cube_tasks_dev.md](experiments/so101_cube_tasks_dev.md)). The models' default
 camera key is G1's `onboard_rgb` (`models/base.py`); choosing `wrist_rgb` and/or `overview_rgb`
 belongs to the first SO-101 data step.
