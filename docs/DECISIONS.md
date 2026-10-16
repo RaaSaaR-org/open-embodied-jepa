@@ -80,8 +80,8 @@ it"); the defaults are Claude's choices under owner delegation; recorded by Clau
     checkpoints and results are untouched; the product goal (LeWM-driven control of G1 + dual
     Dex3) stays the end goal. R27.213's premise concerned *moving the main line* to the SO-101,
     which would change the product goal; a branch beside G1 does not, so that premise does not
-    apply here (its other requirements, a ruling, a plan and preregistrations, are met by R28.1
-    and R28.6).
+    apply here (its other requirements, a ruling, a plan and preregistrations, are met or
+    committed to by R28.1 and R28.6).
   - **Simulation first.** No real-hardware execution until a separate owner ruling; buying
     hardware is the owner's decision.
   - **Action schema `joint_delta_so101_v0`:** five arm joint-position deltas plus one gripper

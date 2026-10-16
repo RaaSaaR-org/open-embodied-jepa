@@ -16,7 +16,8 @@ preregistration, independent review and ruling ([AGENTS.md](../AGENTS.md)).
   arm (follower, and a leader for teleoperation) is the owner's decision (S6).
 - **Why SO-101.** The binding constraint on the G1 line was centimetre-level perception and
   placement at contact (TASK-075 OBS-NONE; TASK-094's 1.2 cm +y palm offset cut the scripted
-  follower from 88/128 to 31/128 lifts; R27.214). The expectation, **not measured**, is that a jaw
+  follower from 88/128 to 31/128 lifts in one simulation-only run with a scripted offset of one
+  size; R27.214). The expectation, **not measured**, is that a jaw
   gripper with a wrist camera tolerates more placement error than a dexterous hand seen from one
   112 px onboard camera, and that a cheap arm makes real data possible later. S1–S3 measure that
   tolerance before any model is trained.
@@ -45,8 +46,9 @@ preregistration, independent review and ruling ([AGENTS.md](../AGENTS.md)).
 3. **Measure before gating.** Corpora are measured (coverage, lift windows, action ranges) before
    training (TASK-085, TASK-090 Stage C); offline gates (collapse, action sensitivity, copy-last,
    no-action baseline) come before any closed loop (TASK-065, TASK-066, TASK-077).
-4. **A scripted reference arm in every closed loop.** On G1 the scripted IK follower reached or
-   lifted far more often than every world-model arm; "LeWM needed" was never shown. The SO-101
+4. **A scripted reference arm in every closed loop.** On G1 the scripted IK follower lifted far
+   more often than every world-model grasp arm (and reached 64/64, against 62/64 and 53/64 for
+   the TASK-088 reach arms); "LeWM needed" was never shown. The SO-101
    studies keep a scripted follower and non-learned rule arms beside the learned ones.
 5. **Implementation hashes are a contract.** The TASK-072 edit to `models/base.py` made older
    checkpoints load only at their recorded revision. S0 keeps every G1 hash-pinned file
@@ -120,8 +122,9 @@ hours (GPU h) on the shared RTX 5080.
   bounds and sample shapes), `data.py` (feature shapes, the final-row padding, the `[T,14]`
   messages at lines 94 and 127), `policy.py`, `audit.py` (`ACTION_NAMES`), `models/native.py`,
   `models/lewm.py` (`input_dim=14`), `models/frozen_encoder.py`, `models/frozen_tokens.py`
-  (`[..., 14]`) and `models/latent_critic.py`, reached through the new files where the file is
-  pinned. G1 task-line modules stay as they are.
+  (`[..., 14]`) and `models/latent_critic.py` (itself byte-pinned by the TASK-073–076 v2
+  manifests), reached through the new files where the file is pinned. G1 task-line modules stay
+  as they are.
 - **Check.** Every existing test passes unchanged; new tests cover a 6-D schema through config
   validation, data round-trip, CEM and both backends' `train_step`/`predict` on synthetic data;
   the core-import check (no `torch`/`mujoco` in `sys.modules` after `import embodied_jepa`) still
