@@ -298,7 +298,7 @@ def reach_map(robot, *, xs, ys, yaws, heights, mode, config=FOLLOWER_V0):
     """Kinematic reach of the followers' poses (development, privileged; no physics stepping).
 
     ``mode="grasp"``: for each cube xy and yaw, the follower's top-down grasp poses at each
-    height above the cube centre (its closing-axis rule and jaw centring), with the jaw open.
+    height above the cube centre (its closing-axis rule and fixed-jaw clearance), jaw open.
     ``mode="place"``: for each target xy, the place pose (jaw closing across the base-to-target
     ray) at each height above the release height, with the cube moved away. A cell is ``ok``
     when every pose's IK residual is below 1 mm and no pose has a robot-robot or robot-table
@@ -327,7 +327,8 @@ def reach_map(robot, *, xs, ys, yaws, heights, mode, config=FOLLOWER_V0):
                     point = base + np.array([0.0, 0.0, height])
                     q, _ = solve_ik(sim, robot.home[:5], point, closing)
                     if mode == "grasp":
-                        point = point + _closing_axis(sim, q) * JAW_CENTRE_OFFSET_M
+                        shift = JAW_CENTRE_OFFSET_M - config.fixed_jaw_clearance_m
+                        point = point + _closing_axis(sim, q) * shift
                     q, residual = solve_ik(sim, q, point, closing)
                     worst = max(worst, residual)
                     collisions += int(
