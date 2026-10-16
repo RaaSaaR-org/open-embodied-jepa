@@ -63,6 +63,36 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-17 (bq) — Claude, under owner delegation, opens TASK-100 as SO-101 S4: a DRAFT preregistration of an offline world-model study on `so101-play-v1` (LeWM and `native_jepa` token predictors over frozen DINOv2 tokens of both cameras, gates G1–G6 on the test split); nothing runs before review, merge and a Stage 0 freeze; R7 unchanged (R28.10–R28.26)
+
+**Decided by Claude under owner delegation (2026-09-30 delegation; the SO-101 branch opened by
+R28.1); recorded by Claude.** Preregistration (DRAFT):
+[so101_world_model_v1.md](experiments/so101_world_model_v1.md); card TASK-100. S3 (TASK-099) is
+merged (#235); the corpus `so101-play-v1` was measured before any training.
+
+- **R28.10 — TASK-100 is opened as S4** of [SO101_PLAN.md](SO101_PLAN.md) (R28.6): LeWM and
+  `native_jepa` on `so101-play-v1` with offline gates. It is offline only; it runs no planner,
+  controller or closed loop.
+- **R28.11 — Status and freeze path.** The preregistration is a DRAFT: independent review, merge,
+  then a Stage 0 PR (code in new files, calibration of every bar on D0 = train shards 00–02 only, a
+  debug smoke and a CUDA determinism check), independently reviewed; the protocol freezes at the
+  Stage 0 merge. No featurisation, training or evaluation has run. Every GPU job goes through
+  `scripts/gpu_run.sh --wait --board`, inside a 20 GPU h hard cap that includes Stage 0.
+- **R28.12–R28.25 — the design choices**, listed in §15 of the preregistration: the splits' roles
+  (train fits, D0 calibrates, val selects, test gated after the val report's hash); the latent
+  (frozen DINOv2 ViT-S/14 tokens of the wrist and overview cameras at 224 px, a 4 × 4 or 8 × 8 grid
+  by a declared Stage 0 rule); arms L (LeWM) and J (`native_jepa`, the one-key swap) eligible, with
+  no-action twins, a random-init DINOv2 floor and copy-last; three model seeds (100100–100102);
+  gates G1 no collapse (calibrated floors with TASK-066's truncation check, and X keeping more
+  rank than its no-action twin), G2 copy-last, G3 no-action, G4 action sensitivity, G5 cube and
+  jaw readable from the prediction (the readout fitted on predicted latents, TASK-077's lesson;
+  bars 1.5 × the encoded-frame readout's measured error on D0), G6 saturation with one extension;
+  h = 8 and h = 16; rows VOID, WM-PASS, WM-PARTIAL, WM-FAIL; a planning-usefulness measure
+  reported for S5. No row fires an abandonment clause; WM-FAIL requires a development
+  decomposition record before another variant of this recipe on this corpus.
+- **R28.26 — No claim; R7 does not change**, whatever the row. SO-101 results are not
+  Apple→Plate results (R28.9). The G1 line stays paused and TASK-095 stays on hold (R28.2).
+
 ## Decision 2026-10-16 (bp) — the owner opens the SO-101 branch: the LeRobot SO-101 arm runs beside G1 + Dex3 as a stepping stone, simulation first; Claude's defaults under delegation (joint_delta_so101_v0, wrist and overview cameras, cube lift then place, Hub datasets deferred); the plan is SO101_PLAN.md; the G1 grasp line stays paused, TASK-095 stays on hold; R7 unchanged (R28.1–R28.9)
 
 **Decided by the owner (2026-10-16, in chat: "setup everything for the so101 and start working on
