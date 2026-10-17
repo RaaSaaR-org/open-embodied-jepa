@@ -837,18 +837,15 @@ def gate_and_row(args, pairs, moving, quantities, er) -> dict:
             if moving[str(h)][lab]["roots"] < sw.MOVING_MIN_TEST_ROOTS:
                 small.append(f"M_{lab},{h}: {moving[str(h)][lab]['roots']} roots")
     out = {"bars_used": bars, "gates": gates, "g6": g6}
-    if args.purpose in ("test", "smoke"):
-        complete = all(
-            arm in gates and len(gates[arm]) == len(sw.MODEL_SEEDS) for arm in sw.ELIGIBLE
-        )
-        if complete:
-            out["row"] = sw.decide(void_reasons=[], small_subsets=small, gates=gates, g6=g6)
-        else:
-            out["row"] = {
-                "row": "NOT-COMPUTED",
-                "reason": "the smoke has fewer seeds than §5",
-                "small_subsets": small,
-            }
+    if args.purpose == "test":
+        out["row"] = sw.decide(void_reasons=[], small_subsets=small, gates=gates, g6=g6)
+    elif args.purpose == "smoke":
+        # §10.6: the row logic exercised on the smoke's seeds (not §5's three; not a row)
+        seeds = sorted({int(s) for arm in gates.values() for s in arm})
+        if all(arm in gates and len(gates[arm]) == len(seeds) for arm in sw.ELIGIBLE):
+            out["row_exercised"] = sw.decide(
+                void_reasons=[], small_subsets=small, gates=gates, g6=g6, seeds=seeds
+            )
     return out
 
 

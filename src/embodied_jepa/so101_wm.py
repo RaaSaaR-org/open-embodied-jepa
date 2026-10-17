@@ -900,14 +900,14 @@ def gates_for(entry: dict, bars: dict) -> dict:
     }
 
 
-def decide(*, void_reasons, small_subsets, gates: dict, g6: dict) -> dict:
+def decide(*, void_reasons, small_subsets, gates: dict, g6: dict, seeds=MODEL_SEEDS) -> dict:
     """§11, first match. ``gates[arm][seed][h]`` from :func:`gates_for`; ``g6[arm][seed]`` is the
     seed's G6 (X and N_X both saturated); ``small_subsets``: G5 subsets under 100 test roots."""
     if void_reasons:
         return {"row": "VOID", "reasons": list(void_reasons)}
     if small_subsets:
         return {"row": "INCONCLUSIVE", "reasons": list(small_subsets)}
-    seeds = [str(s) for s in MODEL_SEEDS]
+    seeds = [str(s) for s in seeds]  # MODEL_SEEDS; the smoke passes its debug seed only
     passing = [
         arm
         for arm in ELIGIBLE

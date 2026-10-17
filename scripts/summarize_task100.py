@@ -90,6 +90,8 @@ def main(argv=None) -> int:
     ]
     if "row" in report:
         out += ["", f"**Row: {report['row'].get('row')}** — {json.dumps(report['row'])}"]
+    if "row_exercised" in report:
+        out += ["", f"Smoke (not a row): {json.dumps(report['row_exercised'])}"]
     if "calibration" in report:
         c = report["calibration"]
         out += [

@@ -46,13 +46,13 @@
  },
  "document": "docs/experiments/so101_world_model_v1.md",
  "files_sha256": {
-  "scripts/evaluate_task100.py": "92a04243e5ec7047109389459a089293d0c8b832cde44fd3eb71afcd825dfcd3",
+  "scripts/evaluate_task100.py": "ba62a053ac9b0893c75de84028699306f50e08c5a06727ecdf2085eb7ca177a5",
   "scripts/featurise_task100.py": "51ffe9efb56f14d7345c8ff0d9b67835e0f8a9e780d19f45c4f10d1e693f279f",
   "scripts/run_task100_stage.sh": "d198c78c29eb59907b76642a88fb55d8e68583ca2b81b799c9694262ccf0ed22",
-  "scripts/summarize_task100.py": "5c05061f25616368bd0f6cbbcb02055aa9b057283049804cefe9324dcbac71d3",
+  "scripts/summarize_task100.py": "a4fd726ad90557f20609cea9ed0b6410b29f25b2dc4286f7ee3f0682cb3b3448",
   "scripts/train_task100.py": "a5bcc0bbeb0a78f74ab45cf4f6aa2f4b010ca0a98044ff858441f0000daac924",
   "src/embodied_jepa/models/schema_frozen_tokens.py": "5c600fd4aeabc947352001212338cb8afc477a970104c08c8bb352296b62fd94",
-  "src/embodied_jepa/so101_wm.py": "3b6999bd7aedde8ab78f069ad11d16a70d46c319e32e3969b93b34600fecbc0a",
+  "src/embodied_jepa/so101_wm.py": "0dc95387523c4a2322587c14d7f08fc93ad2e7a919a273801c07e08dce559eea",
   "src/embodied_jepa/so101_wm_data.py": "61027c6c09af34ee0e48ba521d3e7155d22b9a68c46e277d9f4e4e130a1a4ddf",
   "src/embodied_jepa/so101_wm_runtime.py": "65e3b69e2b00d05b915dc3f0b374cd57276b71fe3e424bdfd70fff5d87b41e58"
  },
