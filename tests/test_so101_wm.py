@@ -537,3 +537,14 @@ def test_seeds_and_salts_are_declared():
 def test_twin_seed_pairs_calibration_l_with_calibration_n_l():
     assert sw.twin_seed(sw.CAL_L_SEED) == sw.CAL_N_SEED
     assert sw.twin_seed(100101) == 100101
+
+
+def test_frozen_manifest_pins_match_the_tree_and_the_module():
+    from embodied_jepa import so101_wm_runtime as runtime
+
+    manifest = json.loads(runtime.MANIFEST.read_text())
+    assert manifest["status"] == "FROZEN"
+    check = runtime.frozen_files_check(ROOT)
+    assert check and all(check.values()), [k for k, v in check.items() if not v]
+    assert manifest["composed_files_sha256"] == sw.COMPOSED_FILES_SHA256
+    assert manifest["choices"] == sw.frozen_choices()

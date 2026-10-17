@@ -1,0 +1,85 @@
+{
+ "budget": {
+  "hard_cap_gpu_h": 20.0,
+  "stage0_cap_gpu_h": 4.0
+ },
+ "choices": {
+  "bars": {
+   "B_cube": 2.3971800330193003,
+   "B_jaw": 0.16663716817741248,
+   "B_rank": 0.11,
+   "B_std": 0.37
+  },
+  "grid": "g4",
+  "moving": {
+   "cube": 1.0,
+   "jaw": 0.2
+  }
+ },
+ "composed_files_sha256": {
+  "configs/so101_sim_action.json": "c573b64ae4ae3860d3465a4f5cc334c746fece36c3dc2fcc670223f71e40016e",
+  "src/embodied_jepa/action_schemas.py": "e83a3804baaeb4b57aecd8074a85e71cd3c70be8d2da8240e9e7df287ba74357",
+  "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
+  "src/embodied_jepa/devices.py": "0976ccc0fb6d3c64d8128dbc152dcb2ebd3aee2211bc3ab5e25a772518e2fb72",
+  "src/embodied_jepa/models/base.py": "310a509d5f8043ad3cbdf85a0568d15bb4ed2e4faeddf6e10bed63abf8ee0549",
+  "src/embodied_jepa/models/frozen_encoder.py": "c1a4622a0765e44fc060c5313a85e4f727f51dc361acd5de50cb6990845e6011",
+  "src/embodied_jepa/models/frozen_tokens.py": "33e8e819ad557d4fec6167482f91b5aa0c5da5a1169e7f8e6e8f050390c9a3a2",
+  "src/embodied_jepa/models/lewm.py": "a99e000436da627916dcc8449b43f7ea77518cc99ef82824844d82ac23b200f1",
+  "src/embodied_jepa/models/native.py": "95e112e13b0bf4d587fd5c35008e99b1e0a3759fb4f458c24bdd20304d0fadf3",
+  "src/embodied_jepa/models/readout.py": "5eb6ac4734ed08f9c2531bd1f37154102bf506c487e34019fb090b51035b8bc2",
+  "src/embodied_jepa/models/schema_backends.py": "85a6e4d2158b10b7162cba5d6bd1fb598f7414875b5c648ba42ea6fa4fad7f8e",
+  "src/embodied_jepa/pretrained_encoder.py": "8b2b238ba8ead2e2e64d79f081014292d03967ebab0d88fd5bf10ffec437f27b",
+  "src/embodied_jepa/readout_labels.py": "be8fb2acd26b4f5f921ba7883be2145ea189bc24c64e6bcc7931d48d9f563f1f",
+  "src/embodied_jepa/run_tools.py": "1b3b61f89ca50e5d12650312c374bdcd07f1eb394ffb413c19eb844eb5ff5394",
+  "src/embodied_jepa/schema_data.py": "59b6f425570bcd614c5cb74d120ce6007dc89af28367960a7209496e6ded6708",
+  "src/embodied_jepa/so101_play_corpus.py": "cb8a6d0f72216f06c3d2a82cf2101a5c0ef7a1f0f732ef40e75cdcc3472463c3"
+ },
+ "corpus": {
+  "corpus_json_sha256": "c81571de2bebe76704129d2814f39959d341ec8cba169fc310f7c22d8dd45b69",
+  "manifest": "benchmarks/manifests/so101-play-v1.json",
+  "path": "data/so101-play-v1",
+  "splits": {
+   "test": 150,
+   "train": 2700,
+   "val": 150
+  }
+ },
+ "document": "docs/experiments/so101_world_model_v1.md",
+ "files_sha256": {
+  "scripts/evaluate_task100.py": "92a04243e5ec7047109389459a089293d0c8b832cde44fd3eb71afcd825dfcd3",
+  "scripts/featurise_task100.py": "51ffe9efb56f14d7345c8ff0d9b67835e0f8a9e780d19f45c4f10d1e693f279f",
+  "scripts/run_task100_stage.sh": "d198c78c29eb59907b76642a88fb55d8e68583ca2b81b799c9694262ccf0ed22",
+  "scripts/summarize_task100.py": "5c05061f25616368bd0f6cbbcb02055aa9b057283049804cefe9324dcbac71d3",
+  "scripts/train_task100.py": "a5bcc0bbeb0a78f74ab45cf4f6aa2f4b010ca0a98044ff858441f0000daac924",
+  "src/embodied_jepa/models/schema_frozen_tokens.py": "5c600fd4aeabc947352001212338cb8afc477a970104c08c8bb352296b62fd94",
+  "src/embodied_jepa/so101_wm.py": "3b6999bd7aedde8ab78f069ad11d16a70d46c319e32e3969b93b34600fecbc0a",
+  "src/embodied_jepa/so101_wm_data.py": "61027c6c09af34ee0e48ba521d3e7155d22b9a68c46e277d9f4e4e130a1a4ddf",
+  "src/embodied_jepa/so101_wm_runtime.py": "65e3b69e2b00d05b915dc3f0b374cd57276b71fe3e424bdfd70fff5d87b41e58"
+ },
+ "frozen_at": "the merge of the Stage 0 PR (DECISIONS 2026-10-17 (br)); before that merge this manifest is a candidate",
+ "name": "so101-world-model-v1",
+ "salts": {
+  "bootstrap": 10014,
+  "candidates": 10013,
+  "folds": 10015,
+  "sampler": 10011,
+  "wrong": 10012
+ },
+ "seeds": {
+  "calibration_l": 100900,
+  "calibration_n_l": 100911,
+  "debug": [
+   100901,
+   100910
+  ],
+  "model": [
+   100100,
+   100101,
+   100102
+  ],
+  "probe": 100920
+ },
+ "stage0_record": "docs/experiments/so101_world_model_v1_stage0.md",
+ "status": "FROZEN",
+ "task": "TASK-100"
+}

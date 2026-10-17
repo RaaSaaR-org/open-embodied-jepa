@@ -938,9 +938,18 @@ def decide(*, void_reasons, small_subsets, gates: dict, g6: dict) -> dict:
 
 
 # ----- set by Stage 0 before the freeze (§10.7) ---------------------------------------------------
-CHOSEN_GRID: str | None = None
-BARS: dict | None = None  # B_rank, B_std, B_cube, B_jaw
-MOVING: dict | None = None  # {"cube": cm, "jaw": rad} after §7.4's halving rule
+# docs/experiments/so101_world_model_v1_stage0.md: §10.3's rule chose g4 (g8 / g4 = 1.016 > 0.85);
+# B_rank = max(0.10, floor(0.1187)) and B_std = max(0.25, floor(0.3791)) from calibration L, no
+# truncation raised them; B_l = 1.5 x R-enc's D0-eval median (1.598 cm, 0.1111 rad); neither
+# moving subset was halved (projected 1 107 and 1 345 test roots at h = 8).
+CHOSEN_GRID: str | None = "g4"
+BARS: dict | None = {
+    "B_rank": 0.11,
+    "B_std": 0.37,
+    "B_cube": 2.3971800330193003,
+    "B_jaw": 0.16663716817741248,
+}
+MOVING: dict | None = {"cube": 1.0, "jaw": 0.2}  # cm, rad (§7.4, unchanged)
 
 
 def frozen_choices() -> dict:
