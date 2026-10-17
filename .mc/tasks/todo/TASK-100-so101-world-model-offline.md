@@ -42,8 +42,8 @@ Offline only; no control claim; not an Apple→Plate experiment; R7 does not cha
 
 ## Acceptance Criteria
 
-- [ ] DRAFT preregistration independently reviewed and merged
-- [ ] Stage 0: code in new files only (G1 byte-pinned files, `config.py` and existing model files
+- [x] DRAFT preregistration independently reviewed and merged (#236)
+- [ ] Stage 0 (PR open; S0-DONE recorded in `docs/experiments/so101_world_model_v1_stage0.md`): code in new files only (G1 byte-pinned files, `config.py` and existing model files
   unchanged; core-import check passes), tests, D0 featurisation probe, grid rule, G1 and G5 bar
   calibration on D0 only, debug smoke and CUDA determinism; independently reviewed and merged
   (the freeze)
@@ -59,3 +59,11 @@ Offline only; no control claim; not an Apple→Plate experiment; R7 does not cha
 - 2026-10-17, created with the DRAFT preregistration (branch `docs/so101-s4-draft`). Nothing
   featurised, trained or evaluated.
 %% mc-links: [[TASK-099]] %%
+- 2026-10-17, DRAFT merged (#236). Stage 0 run on branch `feat/so101-s4-stage0` (D0 only; test
+  never opened): S0-DONE. Grid g4; B_rank 0.11, B_std 0.37, B_cube 2.397 cm, B_jaw 0.1666 rad;
+  moving subsets 1.0 cm and 0.2 rad (not halved); calibration L's G4 lower bounds 1.769 / 2.083
+  (h = 8 / 16) and R-pred medians inside both G5 bars, so no ruling needed; CUDA determinism
+  bit-identical; 1.98 GPU h used of the 4 GPU h Stage 0 cap; gated stages projected at 12.1–17.7
+  GPU h against 18.0 left. Evidence `~/develop/emai/evidence/task100-stage0/` (SHA256SUMS
+  `7bee61cf…`). DECISIONS 2026-10-17 (br), R28.27–R28.33. The protocol freezes at the Stage 0 PR's
+  merge; the gated stages have not run.

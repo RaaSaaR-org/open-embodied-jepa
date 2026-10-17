@@ -79,6 +79,26 @@
   ],
   "probe": 100920
  },
+ "stage0": {
+  "calibration_report_sha256": "a2def1416d139a74795ad255c1a7bf4f6575c9e42ccfba72b1a141c7d92c254d",
+  "determinism_final_state_sha256": "64b9b4c20525b630db502c654fded737dc22d4072e8c751f4ba56c9ecb20b79e",
+  "evidence": "~/develop/emai/evidence/task100-stage0 (SHA256SUMS 7bee61cf1e021809a6a4afd28dff765cdf486dff5f69faebff49a012908369c2)",
+  "gpu_h_used": 1.979,
+  "grid_report_sha256": "8bd2a4849e8b8093fe433ed874d75d41fc997bddfc33d3846f2a33b4d6b57859",
+  "implementation_sha256_prefix": {
+   "leworldmodel": "e5cda6ee1a89",
+   "native_jepa": "78ba9dbe00eb"
+  },
+  "projection_gpu_h": {
+   "gated_min_max": [
+    12.1,
+    17.7
+   ],
+   "remaining_cap": 18.0
+  },
+  "row": "S0-DONE",
+  "smoke_row_report_sha256": "24dfae21f71b4cb3c9b16c294d36c5817b38a26eb9d7db40e3dbdcadc11a42f0"
+ },
  "stage0_record": "docs/experiments/so101_world_model_v1_stage0.md",
  "status": "FROZEN",
  "task": "TASK-100"

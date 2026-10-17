@@ -63,6 +63,49 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-17 (br) — Claude, under owner delegation, records TASK-100's Stage 0 (S0-DONE): grid g4, B_rank 0.11, B_std 0.37, B_cube 2.397 cm, B_jaw 0.1666 rad, subset thresholds unchanged, determinism bit-identical, 1.98 GPU h used; the protocol freezes at this PR's merge; nothing gated has run; R7 unchanged (R28.27–R28.33)
+
+**Decided by Claude under owner delegation (2026-09-30 delegation; the SO-101 branch opened by
+R28.1); recorded by Claude.** Record:
+[so101_world_model_v1_stage0.md](experiments/so101_world_model_v1_stage0.md); protocol
+[so101_world_model_v1.md](experiments/so101_world_model_v1.md) (DRAFT until this PR merges);
+manifest `benchmarks/manifests/so101-world-model-v1.json`. Stage 0 read D0 (train shards 00–02)
+for every calibration and val episodes only as the smoke's stand-ins; the test split was never
+opened. Nothing here is a result.
+
+- **R28.27 — Stage 0 row S0-DONE.** No Stage 0 rule escalates: the grid rule, G1's bars and the
+  truncation check, G5's bars and the subset rule were applied as declared; calibration L's G4
+  lower bounds (1.769 at h = 8, 2.083 at h = 16) are above 1.10 and its R-pred medians are inside
+  both G5 bars at both horizons, so neither §10.4's G4 ruling nor §10.5's G5 ruling is taken.
+- **R28.28 — The frozen choices.** Grid **g4** (R-enc's D0-eval median cube error 1.598 cm at g4,
+  1.624 cm at g8; ratio 1.016 > 0.85). **B_rank = 0.11** and **B_std = 0.37** (½ × calibration
+  L's smaller ratio over h ∈ {8, 16}: 0.237 and 0.758, rounded down); every rank-1, -2 and -4
+  truncation fails the combined G1, so B_rank is not raised. **B_cube = 2.397 cm** and **B_jaw =
+  0.1666 rad** (1.5 × R-enc's D0-eval median, 1.598 cm and 0.1111 rad). Moving subsets **1.0 cm**
+  and **0.2 rad**, not halved (projected 1 107 and 1 345 test roots at h = 8).
+- **R28.29 — Calibration checkpoints.** Stage 0 does not open val, so calibration L and N_L keep
+  their final state at 20 000 updates; their D0-eval curves are recorded. This is a reading of
+  §10.4, which names no selection for the calibration models; disclosed.
+- **R28.30 — Implementation choices disclosed in the record (§8)** and adopted as the frozen
+  procedure: standardisation in the data layer; one ridge per label with the penalty chosen by the
+  label's summed squared CV error (ties: the smaller), primal or dual form; the evaluation split
+  into four passes so the GPU lock is never held for CPU work, R-pred fitted once on train at
+  Stage V and reused at E; weighted-median definition; hold commands; the jaw ranking ceiling from
+  the sidecar's gripper target; the truncation check at both gate horizons; two runner files not
+  named in §10.1 (`so101_wm_runtime.py`, `summarize_task100.py`).
+- **R28.31 — The DRAFT review's four optional clarifications** are folded into the protocol before
+  the freeze, each marked "Clarified at Stage 0": the samplers' seeds (calibration N_L draws
+  calibration L's stream), R-pred fitted on in-sample predictions, the jaw command leak in G5 (c),
+  and g8's two passes. None changes a gate, a bar or a row.
+- **R28.32 — Budget.** Stage 0 used 1.98 of its 4 GPU h. The gated stages are projected at
+  12.1–17.7 GPU h against the remaining 18.0 of the 20 GPU h hard cap (the record's §7); §8.2's U
+  rule after Stage B decides the final U, and escalates if U = 20 000 does not fit.
+- **R28.33 — The freeze and what follows.** The protocol freezes when this PR merges; the gated
+  stages F, B, T (T′ only if G6 triggers), V, F′ and E then run from a clean run tree at the merge
+  revision, every GPU job under `scripts/gpu_run.sh --wait --board`. Running them is the next step
+  and needs no further ruling unless a declared rule escalates. R7 does not change, whatever the row
+  (R28.9, R28.26).
+
 ## Decision 2026-10-17 (bq) — Claude, under owner delegation, opens TASK-100 as SO-101 S4: a DRAFT preregistration of an offline world-model study on `so101-play-v1` (LeWM and `native_jepa` token predictors over frozen DINOv2 tokens of both cameras, gates G1–G6 on the test split); nothing runs before review, merge and a Stage 0 freeze; R7 unchanged (R28.10–R28.26)
 
 **Decided by Claude under owner delegation (2026-09-30 delegation; the SO-101 branch opened by

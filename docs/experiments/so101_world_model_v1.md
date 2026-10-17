@@ -3,7 +3,11 @@
 **Status: DRAFT preregistration** (R28.12–R28.26 in §15, decided by Claude under owner delegation;
 opened by R28.10–R28.11, [DECISIONS](../DECISIONS.md) 2026-10-17 (bq)). It becomes **FROZEN when
 the Stage 0 PR merges**; after that merge nothing in §2–§12 changes without its own reviewed
-ruling. Nothing has been trained, featurised or evaluated for this document.
+ruling. **Stage 0 is done** ([so101_world_model_v1_stage0.md](so101_world_model_v1_stage0.md);
+DECISIONS 2026-10-17 (br), R28.27–R28.33; S0-DONE on D0 only): grid g4, B_rank 0.11, B_std 0.37,
+B_cube 2.397 cm, B_jaw 0.1666 rad, moving-subset thresholds 1.0 cm and 0.2 rad, pinned in
+`benchmarks/manifests/so101-world-model-v1.json`. No gated stage has run and the test split has
+not been opened.
 
 This is phase S4 of [SO101_PLAN.md](../SO101_PLAN.md) ("LeWM and `native_jepa` training with
 offline gates") on the S3 corpus `so101-play-v1` ([so101_play_corpus_v1.md](so101_play_corpus_v1.md),

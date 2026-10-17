@@ -1,6 +1,6 @@
 # SO-101 branch plan (opened 2026-10-16)
 
-**Status: PLAN; S0 done (#232, `bcd837c`); S1 done (#233, `cf2d4b1`); S2 done (#234; TASK-098, development measurement only, [so101_cube_tasks_dev.md](experiments/so101_cube_tasks_dev.md)); S3 done (#235; TASK-099, development data only, [so101_play_corpus_v1.md](experiments/so101_play_corpus_v1.md)); S4 DRAFT preregistration (TASK-100, [so101_world_model_v1.md](experiments/so101_world_model_v1.md); nothing run).** On 2026-10-16 the owner opened the SO-101 branch
+**Status: PLAN; S0 done (#232, `bcd837c`); S1 done (#233, `cf2d4b1`); S2 done (#234; TASK-098, development measurement only, [so101_cube_tasks_dev.md](experiments/so101_cube_tasks_dev.md)); S3 done (#235; TASK-099, development data only, [so101_play_corpus_v1.md](experiments/so101_play_corpus_v1.md)); S4 Stage 0 done, protocol frozen at its merge (TASK-100, [so101_world_model_v1.md](experiments/so101_world_model_v1.md), [Stage 0 record](experiments/so101_world_model_v1_stage0.md); no gated stage run).** On 2026-10-16 the owner opened the SO-101 branch
 ([DECISIONS 2026-10-16 (bp)](DECISIONS.md), R28.1–R28.9). The defaults below were chosen by
 Claude under owner delegation; the owner can overrule any of them. This page is a plan: it admits
 no experiment, sets no bar and makes no claim. Each research step still needs its own
@@ -213,9 +213,12 @@ hours (GPU h) on the shared RTX 5080.
 
 ### S4 — LeWM and `native_jepa` training with offline gates
 
-- **Status: DRAFT preregistration (TASK-100, [so101_world_model_v1.md](experiments/so101_world_model_v1.md);
-  DECISIONS 2026-10-17 (bq), R28.10–R28.26).** Nothing has been featurised, trained or evaluated;
-  the protocol freezes at its Stage 0 merge. The text below is the plan as written before.
+- **Status: Stage 0 done (TASK-100, [so101_world_model_v1.md](experiments/so101_world_model_v1.md),
+  [so101_world_model_v1_stage0.md](experiments/so101_world_model_v1_stage0.md); DECISIONS
+  2026-10-17 (bq) and (br), R28.10–R28.33).** S0-DONE on D0 only: grid g4, B_rank 0.11, B_std
+  0.37, B_cube 2.397 cm, B_jaw 0.1666 rad, subset thresholds 1.0 cm and 0.2 rad; the protocol
+  freezes at the Stage 0 merge; no gated stage has run. The text below is the plan as written
+  before.
 
 - **Delivers.** A preregistered offline study: both backends (a one-line backend swap) on the S3
   corpus, likely with frozen DINOv2 token latents as the reference encoder plus a random-init
