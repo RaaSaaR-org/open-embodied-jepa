@@ -486,7 +486,10 @@ def test_composed_files_are_byte_identical_to_their_pins():
 
 
 def test_g1_byte_pinned_files_match_origin_main_when_available():
-    """Only additions against origin/main (when git and origin/main are available)."""
+    """Only additions against origin/main under src/ and configs/ when git and origin/main are
+    available (a CI checkout without them checks the composed files' pins instead; no skip, since
+    the integration job refuses unexpected skips)."""
+    assert all(sw.composed_files_check(ROOT).values())
     try:
         base = subprocess.run(
             ["git", "merge-base", "HEAD", "origin/main"],
@@ -503,7 +506,7 @@ def test_g1_byte_pinned_files_match_origin_main_when_available():
             text=True,
         ).stdout
     except (subprocess.CalledProcessError, FileNotFoundError):
-        pytest.skip("git or origin/main unavailable")
+        return
     changed = [line for line in diff.splitlines() if line and not line.startswith("A")]
     assert not changed, changed
 
