@@ -3,7 +3,11 @@
 **Status: DRAFT preregistration** (R28.12–R28.26 in §15, decided by Claude under owner delegation;
 opened by R28.10–R28.11, [DECISIONS](../DECISIONS.md) 2026-10-17 (bq)). It becomes **FROZEN when
 the Stage 0 PR merges**; after that merge nothing in §2–§12 changes without its own reviewed
-ruling. Nothing has been trained, featurised or evaluated for this document.
+ruling. **Stage 0 is done** ([so101_world_model_v1_stage0.md](so101_world_model_v1_stage0.md);
+DECISIONS 2026-10-17 (br), R28.27–R28.33; S0-DONE on D0 only): grid g4, B_rank 0.11, B_std 0.37,
+B_cube 2.397 cm, B_jaw 0.1666 rad, moving-subset thresholds 1.0 cm and 0.2 rad, pinned in
+`benchmarks/manifests/so101-world-model-v1.json`. No gated stage has run and the test split has
+not been opened.
 
 This is phase S4 of [SO101_PLAN.md](../SO101_PLAN.md) ("LeWM and `native_jepa` training with
 offline gates") on the S3 corpus `so101-play-v1` ([so101_play_corpus_v1.md](so101_play_corpus_v1.md),
@@ -80,7 +84,12 @@ whose roll-outs carry the quantities a lift controller would be judged on.
     grid), 384 channels: 32 tokens × 384.
   - **g8:** each camera pooled to 8 × 8, then the 384 channels projected to **k = 96** by principal
     components of the standardised channels (pooled over cameras and grid positions), fitted on
-    the fit sample, without whitening (TASK-087's form): 128 tokens × 96.
+    the fit sample, without whitening (TASK-087's form): 128 tokens × 96. *(Clarified at Stage
+    0, review note 4.)* g8 takes **two GPU passes over the fit sample**: pass A accumulates the
+    per-dimension moments and the per-slot channel second moments of the pooled 8 × 8 tokens and
+    fits the projection; pass B featurises every train and val episode (the fit sample again) and
+    writes the projected tokens. The flat-latent standardisation below is then fitted on the CPU
+    from the stored latents of the fit sample. g4 takes one pass.
 - **The frame latent** is the wrist tokens followed by the overview tokens, flat, 12 288 values
   for either grid. Camera identity is carried by the predictor's per-token position embedding.
 - **Standardisation:** per latent dimension, mean and std (floor 10⁻⁶) from the **fit sample**:
@@ -126,7 +135,11 @@ whose roll-outs carry the quantities a lift controller would be judged on.
 
 - **Windows:** 16 commands and their 17 frames, wholly inside one train episode, start drawn
   uniformly over all valid (episode, start) pairs; batch 64. The sampler of model seed m is
-  `default_rng(SeedSequence([10011, m]))`, shared by every arm of seed m.
+  `default_rng(SeedSequence([10011, m]))`, shared by every arm of seed m. *(Clarified at Stage
+  0, review note 1.)* Model seed m also initialises each arm's predictor. Calibration N_L
+  (§10.4) initialises from its own seed 100911 but draws from calibration L's stream,
+  `SeedSequence([10011, 100900])`, so the two calibration models see the same windows in the same
+  order; every other job's stream is its own seed.
 - **Loss and optimiser:** the backend's own `train_step` (TASK-066's recipe: teacher-forced
   one-step and the backend's multistep term over the window), AdamW at the adapter's defaults,
   no schedule.
@@ -191,7 +204,12 @@ their upper and lower bounds.
 - **G5 is gated on R-pred, not R-enc** (TASK-077's decomposition lesson; it is the readout an S5
   controller would use on predictions). R-enc applied to X's predictions is reported beside it as
   the distribution-shift diagnostic. (b) asks that the prediction carry more than the start frame
-  where the label moves; (c) asks that it carry the commands' effect on the label.
+  where the label moves; (c) asks that it carry the commands' effect on the label. *(Clarified
+  at Stage 0, review note 3.)* For the jaw, (c) is partly met by the schema rather than by
+  learned dynamics: X receives the absolute gripper command, which names the jaw's target
+  directly, while N_X receives zero commands. A pass of G5 (c) on the jaw therefore shows that
+  the prediction carries the commanded target, not that the model learned the jaw's motion from
+  images (disclosed in §13).
 - **G6's one extension.** At the end of Stage T, for each eligible arm X: if any of the six models
   X-m and N_X-m (the three seeds m) fails G6, **all six** resume from their final state to 1.5 U, with the
   same sampler stream, and selection is redone over the whole curve (Stage T′). There is no second
@@ -231,7 +249,12 @@ salt 10015).
 - **R-pred(X, h)** (the gated readout; one per model and h): fitted on X's own predicted latents
   at h from the **train** roots of the fit-sample episodes (§7.1's rule) under their executed
   commands (N arms: zero commands), against the truth at t + h; applied to X's predictions on the
-  test roots.
+  test roots. *(Clarified at Stage 0, review note 2.)* The fit-sample episodes are training data
+  of every model, so R-pred is fitted on **in-sample predictions** (roll-outs from windows the
+  model trained on), as in TASK-077's decomposition. If X's predictions are better on train than
+  on test, R-pred's fit is made on a cleaner input than it is applied to; that would make G5
+  harder to pass, not easier, but it also means R-pred's own fit error is not an estimate of its
+  test error. Disclosed in §13.
 - **Copy-last readout(h)** (one per h): fitted on the encoded latent of each **train** root of the
   fit-sample episodes (§7.1's rule) against the truth at t + h, with the same 5-fold
   episode-grouped cross-validation and fold salt (10015) as R-pred; applied to the encoded latent
@@ -515,6 +538,9 @@ What each row leads to (recommendations; the owner, or Claude under delegation, 
   ceiling (§10.5).
 - **G1 (iii) is computed in a 256-direction projection** of the latent, an approximation
   disclosed as in TASK-066 (§6).
+- **R-pred is fitted on in-sample predictions** (§7.3), and **G5 (c) on the jaw is partly met by
+  the schema**: X sees the absolute gripper command, which names the jaw's target, and N_X does
+  not (§6).
 - **G4's bar is an allocation** carried from the G1 line, not calibrated on this corpus; the
   inert positive wrist_flex commands at the limit and the absolute gripper channel make action
   sensitivity smaller than on the G1 corpora; calibration L's value is disclosed at Stage 0, and a
