@@ -410,6 +410,54 @@ def paired_median_difference(a, b, boot: Bootstrap, level: float) -> dict:
     return {"value": float(np.median(a) - np.median(b)), "ci": interval(d, level), "level": level}
 
 
+        libs = Path(np.__file__).parents[1] / "numpy.libs"
+        for path in glob.glob(str(libs / "*openblas*.so*")):
+_OPENBLAS: list = []
+
+
+def _openblas():
+    """NumPy's bundled OpenBLAS (ctypes), or None when it cannot be found."""
+    if not _OPENBLAS:
+        import ctypes
+        import glob
+        from pathlib import Path
+
+        lib = None
+        for path in glob.glob(str(Path(np.__file__).parents[1] / "numpy.libs" / "*openblas*.so*")):
+            try:
+                candidate = ctypes.CDLL(path)
+            except OSError:
+                continue
+            if hasattr(candidate, "scipy_openblas_set_num_threads64_"):
+                candidate.scipy_openblas_get_num_threads64_.restype = ctypes.c_int
+                lib = candidate
+                break
+        _OPENBLAS.append(lib)
+    return _OPENBLAS[0]
+
+
+class blas_threads:
+    """Run a block with ``n`` BLAS threads (speed only: a batch of small eigendecompositions is
+    many times faster single-threaded than with every core contending); a no-op without
+    NumPy's bundled OpenBLAS."""
+
+    def __init__(self, n: int):
+        self.n, self.old = int(n), None
+
+    def __enter__(self):
+        lib = _openblas()
+        if lib is not None:
+            self.old = lib.scipy_openblas_get_num_threads64_()
+            lib.scipy_openblas_set_num_threads64_(self.n)
+        return self
+
+    def __exit__(self, *_exc):
+        lib = _openblas()
+        if lib is not None and self.old is not None:
+            lib.scipy_openblas_set_num_threads64_(self.old)
+        return False
+
+
 # ----- G1: collapse and rank (§6) -----------------------------------------------------------------
 def effective_rank_from_energy(energy) -> float:
     energy = np.clip(np.asarray(energy, np.float64), 0.0, None)
@@ -496,7 +544,8 @@ class ProjectedMoments:
         k = self.s2.shape[1]
         second = (counts @ self.s2.reshape(len(self.s2), -1)).reshape(-1, k, k) / n[:, None, None]
         cov = second - mean[:, :, None] * mean[:, None, :]
-        values = np.linalg.eigvalsh(cov)
+        with blas_threads(1):
+            values = np.linalg.eigvalsh(cov)
         return np.array([effective_rank_from_energy(v) for v in values])
 
 
