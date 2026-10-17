@@ -61,6 +61,7 @@ def require_clean(report: dict, strict: bool) -> None:
     if strict and tree_dirty():
         raise rt.GuardError("G-tree: the tracked tree is dirty")
     report["tracked_tree_dirty_checked"] = bool(strict)
+    check_frozen(report, strict)
 
 
 def write_json(path, payload) -> str:
@@ -179,3 +180,34 @@ def criterion(model, view: sd.FeatureView, arm: str, *, chunk: int = 512) -> flo
     if not np.isfinite(value):
         raise rt.GuardError("G-finite: non-finite val criterion")
     return value
+
+
+# ----- the freeze (§10.7, §12) -------------------------------------------------------------------
+MANIFEST = ROOT / "benchmarks" / "manifests" / "so101-world-model-v1.json"
+
+
+def frozen_files_check(root=ROOT, manifest=MANIFEST) -> dict:
+    """``{path: bool}`` for every file the manifest pins (own code and composed files)."""
+    import hashlib
+
+    pins = json.loads(Path(manifest).read_text())
+    files = dict(pins["files_sha256"]) | dict(pins["composed_files_sha256"])
+    return {
+        rel: (Path(root) / rel).exists()
+        and hashlib.sha256((Path(root) / rel).read_bytes()).hexdigest() == pin
+        for rel, pin in files.items()
+    }
+
+
+def check_frozen(report: dict, strict: bool) -> None:
+    """Gated stages refuse unless every pinned file matches the frozen manifest (G-frozen)."""
+    if not strict:
+        return
+    if not MANIFEST.exists():
+        raise rt.GuardError("G-frozen: no frozen manifest")
+    status = json.loads(MANIFEST.read_text()).get("status")
+    check = frozen_files_check()
+    report["frozen_manifest"] = {"status": status, "sha256": sd.sha256_file(MANIFEST)}
+    if status != "FROZEN" or not all(check.values()):
+        bad = [k for k, v in check.items() if not v]
+        raise rt.GuardError(f"G-frozen: status {status}, files differing from their pins: {bad}")
