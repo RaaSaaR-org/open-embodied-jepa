@@ -410,8 +410,7 @@ def paired_median_difference(a, b, boot: Bootstrap, level: float) -> dict:
     return {"value": float(np.median(a) - np.median(b)), "ci": interval(d, level), "level": level}
 
 
-        libs = Path(np.__file__).parents[1] / "numpy.libs"
-        for path in glob.glob(str(libs / "*openblas*.so*")):
+# ----- BLAS threads ------------------------------------------------------------------------------
 _OPENBLAS: list = []
 
 
@@ -423,7 +422,8 @@ def _openblas():
         from pathlib import Path
 
         lib = None
-        for path in glob.glob(str(Path(np.__file__).parents[1] / "numpy.libs" / "*openblas*.so*")):
+        libs = Path(np.__file__).parents[1] / "numpy.libs"
+        for path in glob.glob(str(libs / "*openblas*.so*")):
             try:
                 candidate = ctypes.CDLL(path)
             except OSError:
