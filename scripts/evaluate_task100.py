@@ -660,7 +660,8 @@ def cmd_score(args) -> int:
             (
                 n
                 for n, t in quantities.items()
-                if t["meta"]["arm"] == sw.NO_ACTION_TWIN[arm] and t["meta"]["seed"] == seed
+                if t["meta"]["arm"] == sw.NO_ACTION_TWIN[arm]
+                and t["meta"]["seed"] == sw.twin_seed(seed)
             ),
             None,
         )

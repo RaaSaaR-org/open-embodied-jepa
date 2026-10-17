@@ -532,3 +532,8 @@ def test_seeds_and_salts_are_declared():
         assert seed in sw.DEV_SEEDS
     with pytest.raises(ContractError):
         sw.check_seed(100900)
+
+
+def test_twin_seed_pairs_calibration_l_with_calibration_n_l():
+    assert sw.twin_seed(sw.CAL_L_SEED) == sw.CAL_N_SEED
+    assert sw.twin_seed(100101) == 100101

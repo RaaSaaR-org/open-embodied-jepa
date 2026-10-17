@@ -176,6 +176,12 @@ def sampler_stream_for(arm: str, seed: int) -> int:
     return CAL_L_SEED if int(seed) == CAL_N_SEED else int(seed)
 
 
+def twin_seed(seed: int) -> int:
+    """The no-action twin's seed: the same model seed, except calibration L (100900), whose twin
+    is calibration N_L (100911, §10.4)."""
+    return CAL_N_SEED if int(seed) == CAL_L_SEED else int(seed)
+
+
 def is_fit_sample(seed: int) -> bool:
     return int(seed) % FIT_SAMPLE_MODULUS == 0
 
