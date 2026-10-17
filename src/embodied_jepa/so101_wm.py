@@ -487,7 +487,8 @@ class ProjectedMoments:
         counts = np.atleast_2d(np.asarray(counts, np.float64))
         n = counts @ self.n
         mean = (counts @ self.s1) / n[:, None]
-        second = np.einsum("be,eij->bij", counts, self.s2) / n[:, None, None]
+        k = self.s2.shape[1]
+        second = (counts @ self.s2.reshape(len(self.s2), -1)).reshape(-1, k, k) / n[:, None, None]
         cov = second - mean[:, :, None] * mean[:, None, :]
         values = np.linalg.eigvalsh(cov)
         return np.array([effective_rank_from_energy(v) for v in values])
