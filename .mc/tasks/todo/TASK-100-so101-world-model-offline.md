@@ -67,3 +67,8 @@ Offline only; no control claim; not an Apple→Plate experiment; R7 does not cha
   GPU h against 18.0 left. Evidence `~/develop/emai/evidence/task100-stage0/` (SHA256SUMS
   `7bee61cf…`). DECISIONS 2026-10-17 (br), R28.27–R28.33. The protocol froze at the Stage 0 PR's
   merge (#237); the gated stages have not run.
+- 2026-10-18, gated stages F, B, T, T′ and V run at `f0da5bf` from the clean run tree
+  `worktrees/task100-run`. **Val report SHA-256
+  `b3c3eddef04da3e29a1fad952ce619af6f65714574a0e749f8f8f4c6f633aa31`**
+  (`outputs/task100-run/val_report.json`), recorded here and in `outputs/task100-run/runlog.txt`
+  before Stage F′ featurises the test split.
