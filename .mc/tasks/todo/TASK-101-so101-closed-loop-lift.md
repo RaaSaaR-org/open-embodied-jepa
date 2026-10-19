@@ -104,3 +104,18 @@ and the LeWM long-budget re-run is a separate recommendation (R28.57) that has n
   Stage 0's 6). Records `docs/experiments/so101_closed_loop_lift_v1_stage0b.md` and
   `docs/experiments/so101_closed_loop_lift_v1_null_diagnostic.md`; evidence
   `~/develop/emai/evidence/task101-stage0b` (SHA256SUMS `e29b2cd3…`). Awaiting a ruling (R28.82).
+- 2026-10-19 ruling on Δ-MIXED (DECISIONS (bx), R28.83–R28.89; decided by Claude under owner
+  delegation; branch `docs/task101-a2`): amendment A2 (protocol §19). The 0.04 rad / 3-command
+  switching tolerance was declared, not calibrated; Δ puts J's cost minimum about 0.05 rad off the
+  subgoal pose. A2 measures the privileged follower's pose-error envelope on fresh seeds E
+  102000–102031 (salt 10109; levels 0.02–0.16 rad RMS, 32 each; hand-over at subgoal 1 "pre" and
+  subgoal 2 "carry", "reaim" reported only; CPU only) and sets τ_s = the largest level with every
+  level up to it ≥ 30/32 on both readings. Under A2-TAU: Stage 0″ on K″ 102100–102131 and D″
+  102200–102263 with τ_s, freeze only on S0-DONE. Under A2-NOT-BINDING (L < 0.06): τ_s stays 0.04,
+  escalate to the owner (hybrid grasp controller or LeWM retrain). Stage 0 cap raised to 7.5 GPU h
+  cumulative. The rule was committed before the measurement.
+- 2026-10-19 envelope (R28.90; record `docs/experiments/so101_closed_loop_lift_v1_envelope.md`,
+  evidence `~/develop/emai/evidence/task101-envelope`, SHA256SUMS `a536ac96…`): run at `ea19cbb`
+  after the rule's commit. "pre" 32/32 at every level to 0.16 rad; "carry" 32/32 at 0.02, 20/32 at
+  0.04, 2/32 at 0.16; row **A2-NOT-BINDING**, τ_s stays 0.04 rad, K″ not run. Awaiting the owner's
+  choice: hybrid local grasp controller or LeWM longer-budget retrain.

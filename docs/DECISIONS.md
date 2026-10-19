@@ -63,6 +63,66 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-19 (bx) — Claude, under owner delegation, rules on TASK-101's Δ-MIXED: amendment A2 — the 0.04 rad switching tolerance was declared, not calibrated; measure the follower's pose-error envelope on fresh seeds E and set τ_s by a rule fixed before the measurement; Stage 0″ on fresh K″ and D″ with τ_s under A2-TAU, escalation to the owner (hybrid grasp controller or LeWM retrain) under A2-NOT-BINDING; envelope measured: A2-NOT-BINDING (subgoal 2 lifts 20/32 already at 0.04 rad), τ_s stays 0.04, escalated to the owner; not frozen; R7 unchanged (R28.83–R28.90)
+
+**Decided by Claude under owner delegation (the 2026-09-30 delegation; the SO-101 branch opened by
+R28.1).** It answers R28.82. Protocol [so101_closed_loop_lift_v1.md](experiments/so101_closed_loop_lift_v1.md)
+§19 (amendment A2); card TASK-101. **This entry and §19 are committed before any envelope episode
+runs; the envelope's record is a later commit of the same PR.**
+
+- **R28.83 — The ruling.** Δ showed J's cost ranking the demonstration's commands ahead of every
+  random candidate (m2 0.000) and CEM finding commands J scores cheaper than the demonstration's
+  on 99/112 states (m1 0.116); at the pre-grasp pose those commands moved the arm to 0.048–0.055 rad
+  RMS, while §5.3's tolerance is 0.04 rad held for 3 commands, and K′ never held it. That
+  tolerance was declared, not calibrated against what the task needs (TASK-074's lesson). A2
+  measures the task's pose-error envelope and sets the tolerance from it. J, goals, cost, planner,
+  projection, timeouts, jaw tolerance, the 3-command hold, the scorer and the arms are unchanged.
+  A planner variant, a cost or goal change, a hybrid controller, R28.57's LeWM retrain and closing
+  now were considered and not adopted (§19.1).
+- **R28.84 — The envelope (§19.3).** On fresh development cohort E 102000–102031 (reserve
+  102032–102047), `so101_cube_lift_v1`, CPU and MuJoCo only: the privileged follower v1's grasp
+  and lift is handed over at the pre-grasp pose (subgoal 1, "pre") or at the end of the descent
+  (subgoal 2, "carry": the jaw closes at the perturbed pose; "reaim", reported only: the follower
+  drives back while closing), with the five arm joints offset by δ of RMS exactly r along a
+  per-seed direction (salt 10109), r ∈ {0.02, 0.04, 0.06, 0.08, 0.12, 0.16} rad, 32 seeds each.
+  Guard G-zero: δ = 0 executes the demonstration's commands exactly.
+- **R28.85 — The rule (§19.4).** A level passes when "pre" and "carry" both lift on ≥ 30/32.
+  τ_s is the largest level L with every level up to L passing. If no level passes or L < 0.06 rad,
+  τ_s stays 0.04 rad, the row is **A2-NOT-BINDING** ("tolerance not the binding constraint"),
+  K″ does not run, and the owner chooses between a hybrid local grasp controller and R28.57's
+  LeWM longer-budget retrain. Otherwise the row is **A2-TAU** with τ_s = L. A failed guard is
+  **A2-VOID**.
+- **R28.86 — Stage 0″ (§19.5).** Under A2-TAU: fresh K″ 102100–102131 (reserve 102132–102139)
+  and D″ 102200–102263 (reserve 102264–102299), named here as §7.6 row 1 requires;
+  `SWITCH_ARM_RMS_RAD = τ_s` for every arm using §5.3's rule, nothing else changed; §18.5's ledger
+  and ordering rule; the same four configurations and §7.3's rule on K″; §7.6's rows on K″ and D″.
+  The protocol freezes at the Stage 0″ PR's merge only on S0-DONE; any other row escalates
+  (S0-NULL on K″ reruns neither D″ nor Δ).
+- **R28.87 — Budget (§19.6).** The envelope uses no GPU. The Stage 0 cap is raised explicitly
+  from 6 to 7.5 GPU h cumulative (2.87 used; Stage 0″ projected at about 3.7); the 20 GPU h total
+  cap is unchanged.
+- **R28.88 — Limitations (§19.7).** τ_s is task-calibrated on the follower, a privileged
+  controller: necessary for the closed loop, not sufficient. Loosening the switching rule changes
+  when the controller moves on, not the scoring of lift success (the simulator-truth scorer is
+  unchanged). K′'s logs are not re-read to choose τ_s.
+- **R28.89 — Process (§19.8).** One PR: first this ruling, §19 and the envelope code and tests;
+  then the measurement at that revision and its record
+  `docs/experiments/so101_closed_loop_lift_v1_envelope.md`. Independent review, then merge. R7
+  does not change (R28.9).
+- **R28.90 — The envelope's row: A2-NOT-BINDING (recorded in the second commit, after the
+  measurement).** Run at `ea19cbb` from a clean tree (E: 32/32 kept; G-zero held on all 96 pairs;
+  CPU, 115 s). "pre" (subgoal 1) lifted 32/32 at every level up to 0.16 rad. "carry" (subgoal 2,
+  jaw closing at the perturbed pose) lifted 32/32 at 0.02 rad, **20/32 at 0.04** (exact 95 %
+  0.437–0.789), 14/32 at 0.06, 10/32 at 0.08, 4/32 at 0.12 and 2/32 at 0.16. Reported only, "reaim"
+  31, 29, 26, 28 and 25 of 32 from 0.04 to 0.16. The largest level with every level up to it
+  passing is 0.02 rad < 0.06, so **τ_s stays 0.04 rad**, K″ does not run, and the current 0.04 rad
+  tolerance itself fails the 30/32 bar at subgoal 2. **Escalated to the owner**: a hybrid local
+  grasp controller or R28.57's LeWM longer-budget retrain, each under its own preregistration. A
+  reading, not a row: the grasp pose needs about 0.02 rad RMS when the jaw closes where the arm
+  stands, while J's cost minimum lies about 0.05 rad off the pre-grasp pose. No switching tolerance
+  satisfies both. Record [so101_closed_loop_lift_v1_envelope.md](experiments/so101_closed_loop_lift_v1_envelope.md);
+  evidence `~/develop/emai/evidence/task101-envelope/` (`SHA256SUMS` `a536ac96…`). R7 unchanged.
+
 ## Decision 2026-10-19 (bw) — TASK-101 Stage 0′: every §7.2 check passed before any count and the runner enforced it (R-enc 0.912 cm on K′'s frames); K′ 0/32 in all four configurations, so the row is S0-NULL and D′ did not run; the declared diagnostic Δ read Δ-MIXED (m1 0.116, m2 0.000); escalated; not frozen; R7 unchanged (R28.76–R28.82)
 
 **Recorded by Claude under owner delegation (the 2026-09-30 delegation; the SO-101 branch opened

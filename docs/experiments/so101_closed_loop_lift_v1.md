@@ -13,6 +13,16 @@ four configurations, D′ did not run, and the diagnostic Δ ([record](so101_clo
 read Δ-MIXED. Escalated for a ruling. **Not frozen** (R28.81): there is no gated stage under
 S0-NULL, and nothing may run on S.
 
+**Amendment A2 (2026-10-19, [DECISIONS](../DECISIONS.md) (bx), R28.83–R28.89; decided by Claude
+under owner delegation).** The ruling on Δ-MIXED: the 0.04 rad switching tolerance was declared,
+not calibrated, and Δ puts J's cost minimum about 0.05 rad off the subgoal pose. A2 measures the
+task's pose-error envelope on the privileged follower on fresh seeds, sets the switching tolerance
+τ_s by a rule fixed before the measurement, and reruns the calibration on fresh cohorts K″ and D″
+(Stage 0″). Not frozen. §19 holds the amendment. **Envelope result
+([record](so101_closed_loop_lift_v1_envelope.md), R28.90): A2-NOT-BINDING.** Subgoal 1 lifted
+32/32 up to 0.16 rad, but subgoal 2 ("carry") lifted only 20/32 at 0.04 rad, so τ_s stays 0.04,
+K″ does not run, and the choice goes to the owner.
+
 **Amendment A1 (2026-10-19, [DECISIONS](../DECISIONS.md) (bv), R28.65–R28.75; decided by Claude
 under owner delegation).** Stage 0 ended S0-VOID ([record](so101_closed_loop_lift_v1_stage0.md),
 R28.59): the lift scene's inert target marker lay outside the play corpus's marker range. A1 moves
@@ -553,6 +563,9 @@ independent couplings, TASK-081's form).
   simulation), 10106 (the permutation reading of §10). None appears anywhere in the same check.
   TASK-100's 10011–10015 are not reused. **A1:** 10107 (the v1 marker stream) and 10108 (§18.6's
   random candidates and planner seeds), unused on every remote ref (`git grep -w`, 2026-10-19).
+- **A2 (§19):** envelope cohort E 102000–102031 (reserve 102032–102047), salt **10109** (the
+  envelope's offset directions), and Stage 0″'s K″ 102100–102131 (reserve 102132–102139) and D″
+  102200–102263 (reserve 102264–102299), all unused on every remote ref (`git grep -w`, 2026-10-19).
 - **A1 cohorts:** K′ and D′ are in use (§18.5). Diagnostic cohort **X 101700–101715 (reserve
   101716–101731)**, used only by §18.6 and unused on every remote ref (2026-10-19).
 - **Guards (each a VOID):** the tracked tree clean and at the frozen revision at every job's start
@@ -1032,3 +1045,181 @@ the 20 GPU h cap.
   brings the code, the tests, the checks, K′ and D′ and the record
   `docs/experiments/so101_closed_loop_lift_v1_stage0b.md`, and is independently reviewed. **The
   protocol freezes when the Stage 0′ PR merges.** R7 does not change (R28.9).
+
+## 19. Amendment A2 (2026-10-19): the ruling on Δ-MIXED, a calibrated switching tolerance, and Stage 0″
+
+**Decided by Claude under owner delegation** ([DECISIONS](../DECISIONS.md) 2026-10-19 (bx),
+R28.83–R28.89). It answers the escalation R28.82 of the [Stage 0′ record](so101_closed_loop_lift_v1_stage0b.md)
+(row S0-NULL, Δ-MIXED). The protocol is still not frozen. **This section is committed before any
+envelope episode runs, and the commit order is the evidence:** the measurement of §19.3 runs at
+the revision that adds this section, and its record (§19.8) is a later commit.
+
+### 19.1 What Δ showed, and the ruling (R28.83)
+
+Δ ([record](so101_closed_loop_lift_v1_null_diagnostic.md)) read m2 = 0.000 and m1 = 0.116: J's
+cost ranks the demonstration's own commands ahead of every projected random candidate at the
+median state, and CEM finds commands that J scores as cheaper than the demonstration's on 99 of
+112 states. At the pre-grasp pose itself (t = 20, 30, arm RMS 0.000 to subgoal 1), CEM's cheaper
+commands moved the arm to 0.048–0.055 rad RMS. K′'s closed loops came within 0.26–0.48 rad of
+subgoal 1 in median (the best single episode within 0.035 rad) but no episode held §5.3's
+0.04 rad for 3 consecutive commands, so every switch was a timeout.
+
+**The 0.04 rad / 3-command switching tolerance was declared, not calibrated** (§5.3: "of the order
+of a centimetre of fingertip motion"). TASK-074's lesson is that bars and tolerances are set from
+measured ceilings. Δ places the cost's minimum about 0.05 rad off the subgoal pose, just outside
+that tolerance, and nothing has measured how much pose error the task can absorb at a switch.
+
+**Ruling (R28.83): measure the task's pose-error envelope on the privileged follower, set the
+switching tolerance τ_s from it by a rule declared now (§19.4), and rerun the calibration on fresh
+seeds (K″, §19.5).** J, the goals, the cost, the planner, the projection, the timeouts, the jaw
+tolerance, the 3-command hold, the scorer and every arm are unchanged. Only `SWITCH_ARM_RMS_RAD`
+can change, and only to the value §19.4's rule gives.
+
+Not adopted, and why:
+
+- **A planner variant** (more samples, warm start): Δ-MIXED admits none by default, and Δ's m1
+  says CEM already finds what J scores cheapest; more search would find the off-pose minimum more
+  reliably, not the pose.
+- **A goal-form or cost change** (for example joints in the cost): J has no state input, and a
+  cost change is a new controller needing its own preregistration. It stays a candidate if A2
+  escalates.
+- **A hybrid local grasp controller, or R28.57's LeWM longer-budget retrain:** larger changes. They
+  are the two options §19.4 puts to the owner if the tolerance turns out not to be the binding
+  constraint.
+- **Closing TASK-101 now:** the switching tolerance is a declared, uncalibrated knob that Δ
+  implicates, and calibrating it costs CPU minutes. Closing first would leave that untested.
+- **Simply loosening the tolerance to, say, 0.06 rad:** that would be a knob turned on K′'s seen
+  logs. The value must come from a measurement on fresh seeds, by a rule fixed before it runs.
+
+### 19.2 What the switching tolerance controls
+
+The rule of §5.3 moves the controller from subgoal k to k + 1 when the measured arm is within the
+tolerance of subgoal k's joints (and the jaw within 0.15 rad) for 3 consecutive commands. A looser
+tolerance lets the controller move on with a larger pose error. The task can absorb that error only
+if the remaining phases still lift the cube from there. That is what §19.3 measures, with the
+privileged follower standing in for the remaining phases. **Loosening the switching rule changes
+when the controller moves on. It does not change what counts as a success: `lift_outcome` and
+`LIFT_V0`'s thresholds, read on simulator truth, are unchanged.**
+
+### 19.3 The envelope measurement (R28.84)
+
+- **Seeds.** Fresh development cohort **E = 102000–102031 (reserve 102032–102047)** of the lift
+  stream on `so101_cube_lift_v1`. E is disjoint from K, K′, D, D′, S, X, the debug seeds and S2's
+  seeds, and was unused on every remote ref (`git grep -w`, 2026-10-19). For each seed the
+  unperturbed goal demonstration (follower v1, `FOLLOWER_V1`, no offset) runs first, under §4's
+  rejection rule, with replacement from E's reserve. Its measured joints after commands 40 and 70
+  are the reference poses q₁ and q₂ (the goal store's subgoal 1 and 2 joints).
+- **Offsets.** For seed s and subgoal k ∈ {1, 2}, a direction u = n / RMS(n), with n a standard
+  normal draw over the five arm joints from `default_rng([10109, s, k])` (salt **10109**, new,
+  unused on every remote ref). δ = r · u, so δ's RMS over the five arm joints is exactly r. The
+  same direction is used at every level, so a seed's levels differ only in size. The jaw is not
+  perturbed. **Levels r ∈ {0.02, 0.04, 0.06, 0.08, 0.12, 0.16} rad, N = 32 seeds each.**
+- **Hand-over, exactly** (`so101_switch_envelope.perturbed_lift`):
+  - **"pre" (subgoal 1, a rule reading).** The pre-grasp phase drives to q_pre + δ instead of
+    q_pre for its 40 commands, jaw open. The follower then runs its own schedule unchanged: the
+    descent's Cartesian waypoints, the close and the lift, aimed from simulator truth as always.
+    This models a switch off subgoal 1 at pose error δ, after which the next phase tracks subgoal 2
+    (whose own switch is governed by the same tolerance, read by "carry").
+  - **"carry" (subgoal 2, a rule reading).** The descent's six waypoint targets are offset by
+    δ · j / 6 (j = 1 … 6), so the arm arrives at q_grasp + δ at command 70. The close phase holds
+    the arm there while the jaw closes (its arm target is q_grasp + δ, not q_grasp). The lift's
+    waypoints are the follower's own. This models a switch off subgoal 2 at pose error δ, after
+    which the jaw closes where the arm is.
+  - **"reaim" (subgoal 2, reported only).** As "carry", but the close phase drives the arm back to
+    the follower's own q_grasp while the jaw closes.
+  - With δ = 0 every variant executes exactly the goal demonstration's commands. That is guard
+    G-zero, checked on every kept seed for every variant.
+- **Recorded per episode:** success by `lift_outcome` (unchanged), termination reason, success
+  step, commands, the measured arm RMS and jaw error to q_k after the hand-over command (the
+  achieved perturbation, which joint limits or contact can change), δ and the SHA-256 of the
+  executed commands. Per level and variant: the count of 32 with its exact (Clopper–Pearson) 95 %
+  interval and the median achieved hand-over RMS.
+- **Compute:** CPU and MuJoCo only, rendering off, no GPU, so no lock is taken. 32 demonstrations
+  plus 32 × 3 × 7 follower episodes, a few minutes. Script `scripts/measure_task101_envelope.py`,
+  module `src/embodied_jepa/so101_switch_envelope.py` (NumPy only at import; no registry entry),
+  tests `tests/test_so101_switch_envelope.py`, all new files. No G1, TASK-100 or TASK-101 Stage 0′
+  file changes. The script refuses a dirty tracked tree and an existing output.
+- **Guards (each A2-VOID):** fewer than 32 seeds kept from E with its reserve; G-zero fails; the
+  tracked tree is dirty or the revision changes during the run; a run does not complete.
+
+### 19.4 The rule for τ_s (R28.85; fixed now, applied mechanically to §19.3's counts)
+
+A level **passes** when **both** rule readings lift on **at least 30 of 32**: "pre" (subgoal 1) and
+"carry" (subgoal 2). Both are needed because the one tolerance governs every switch. "reaim" is
+reported only.
+
+1. **A2-VOID**: a guard of §19.3 failed. Escalate.
+2. Let L be the largest level such that **every level up to and including L passes** (a level
+   above a failing one does not count, so a non-monotone count cannot pick a larger tolerance).
+   **A2-NOT-BINDING**: no level passes, or L < 0.06 rad. **τ_s stays 0.04 rad**, and A2 records
+   that **the switching tolerance is not the binding constraint**. K″ does not run. Escalate to the
+   owner with the choice: **a hybrid local grasp controller** (its own preregistration) **or R28.57's
+   LeWM longer-budget retrain**. If 0.04 itself fails the 30/32 bar, that is recorded too.
+3. **A2-TAU**: otherwise. **τ_s = L** (0.06, 0.08, 0.12 or 0.16 rad), and Stage 0″ (§19.5) runs
+   with `SWITCH_ARM_RMS_RAD = τ_s`.
+
+The bar 30/32 means a level passes with probability 0.79 at a true lift rate of 0.95 and 0.97 at
+0.98 (0.62 and 0.95 for both readings together, if independent). It asks the remaining phases to
+be nearly as reliable from the perturbed pose as the demonstration is from its own (64/64 in S2;
+32/32 on K′ and 16/16 on X). Levels are not interpolated.
+
+### 19.5 Stage 0″ under A2-TAU (R28.86)
+
+- **Cohorts.** Fresh calibration cohort **K″ = 102100–102131 (reserve 102132–102139)** and fresh
+  development cohort **D″ = 102200–102263 (reserve 102264–102299)**, both unused on every remote
+  ref (2026-10-19) and disjoint from E and every TASK-101 cohort. This ruling is the one §7.6 row 1
+  requires to name further seeds for a second post-count change. K′, D′ (never drawn) and X are
+  not used again.
+- **What changes.** Only `SWITCH_ARM_RMS_RAD`, from 0.04 to τ_s, for every arm that uses §5.3's
+  rule (W, its controls and H-pose alike), and the cohort table. The jaw tolerance (0.15 rad), the
+  3-command hold and the timeouts are unchanged.
+- **Order and checks.** §18.5's ordering rule and check ledger, unchanged, at the Stage 0″
+  revision: 7.2.0, 7.2.1, 7.2.3 (on K″'s reset states), 7.2.4 and 7.2.6 once, and 7.2.2 on each of
+  K″'s and D″'s own goal stores, all passing in the ledger before that cohort's first episode.
+- **K″.** §7.3's rule, unchanged: W (J-100101) runs **the same four configurations** (H ∈ {8, 16}
+  × cost ∈ {last, mean}) on K″'s 32 resets; the most successes wins, ties to mean, then to H = 8.
+- **Rows.** §7.6's rows, unchanged, read on K″ and D″ in place of K′ and D′: **if K″ and D″ meet the
+  existing Stage 0 rule (S0-DONE), the protocol freezes at the Stage 0″ PR's merge**, with the bar
+  of §7.5 from W(D″), and S runs as §8 says. **Any other row escalates.** In particular, S0-NULL on
+  K″ (every configuration 0/32) does not run D″ and does not rerun Δ (Δ is spent); it escalates
+  with the record, and the candidates are those of §19.4 row 2.
+
+### 19.6 Budget (R28.87)
+
+The envelope uses no GPU. Stage 0 has used 2.87 GPU h of its 6 GPU h cap. K′'s measured throughput
+projects Stage 0″ at about 0.3 h (goals and checks), 1.1 h (K″) and 2.3 h (D″ with the 16-reset
+diagnostic), about 3.7 h, or 6.6 h cumulative. **A2 raises the Stage 0 cap explicitly from 6 to
+7.5 GPU h cumulative.** The reason: Stage 0′ ended at K′, and a new calibration is a second
+Stage 0 pass. The 20 GPU h total cap is unchanged; S's projection (5.86–6.94 GPU h) still fits its
+remainder. §18.7's drop order applies (the single-goal diagnostic first, then S0-OVER). Every GPU job
+runs under `scripts/gpu_run.sh --wait --board` and respects `- v2d:` lines.
+
+### 19.7 What A2 cannot show (R28.88)
+
+- **τ_s is task-calibrated on the follower, a privileged controller.** The follower re-aims from
+  simulator truth after a "pre" hand-over, and its descent, close and lift are scripted. A tolerance
+  the follower absorbs is necessary for the closed loop, not sufficient: the CEM controller must
+  still reach the next subgoals on its own.
+- **A looser tolerance changes when the controller moves on, not what counts as a lift.** The
+  scorer and its thresholds, on simulator truth, are unchanged. It can let W leave subgoal 1 from
+  where Δ found J's cost minimum; whether the later phases then lift is what K″ measures.
+- **One direction per seed and subgoal, 32 seeds per level, two hand-over points.** The switch off
+  subgoal 3 (close to lift) is not perturbed separately. "carry" lifts from a perturbed grasp,
+  which covers the pose the controller holds through the close.
+- **The levels and the 30/32 bar are declared.** The envelope is a measured ceiling for the
+  tolerance, under this follower and this perturbation model, and nothing more.
+- **K′'s logs are not re-read to choose or check τ_s.** No count of a spent cohort selects anything.
+- Simulation only; not Apple→Plate; R7 does not change (R28.9).
+
+### 19.8 Process and record (R28.89)
+
+One PR (branch `docs/task101-a2`): **first commit**, this section, the DECISIONS entry (bx) and the
+envelope code and tests; **second commit**, the measurement at the first commit's revision from a
+clean tracked tree, the rule applied mechanically, and the record
+[`so101_closed_loop_lift_v1_envelope.md`](so101_closed_loop_lift_v1_envelope.md) (counts with exact
+intervals per level and reading, seeds, revision, hashes; evidence under
+`~/develop/emai/evidence/task101-envelope/` with `SHA256SUMS`) with τ_s and the row. Independent
+review, then merge. Under A2-TAU, a Stage 0″ PR then sets `SWITCH_ARM_RMS_RAD = τ_s` and the
+cohorts, runs §19.5, and is independently reviewed; **the protocol freezes at its merge only if
+§19.5's rule gives S0-DONE**. Under A2-NOT-BINDING or A2-VOID, A2 escalates and nothing further
+runs.
