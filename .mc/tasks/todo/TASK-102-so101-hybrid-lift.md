@@ -90,3 +90,10 @@ override the ruling that opened this task (R28.97).
   A: a_A = 0/32 in all four configurations (every approach timed out), so the **row is
   S0-APPROACH**. D did not run, nothing is frozen (manifest CANDIDATE), and the study escalates.
   1.246 GPU h. Evidence `~/develop/emai/evidence/task102-stage0/`.
+- 2026-10-20, after S0-APPROACH (DECISIONS (ca), R28.119–R28.125; branch
+  `docs/task102-approach-diag`): a development decomposition of the approach failure, Δa, is
+  declared before any measurement in `docs/experiments/so101_approach_diagnostic_v1.md` (Λ0 A-log
+  re-read; Λ1 cost landscape on cohort L 104000–104015; Λ2 J at three budgets and two privileged
+  oracle costs in closed loop on L's slots 0–7; Λ3 per camera). Rows Δa-VOID / NOT-REPRODUCED /
+  PLANNER-BOUND / GEOMETRY / PLANNER / MODEL / MIXED. Cap 2 GPU h. No controller variant is
+  admitted by it.

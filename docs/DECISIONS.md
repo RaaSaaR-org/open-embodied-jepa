@@ -63,6 +63,46 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-20 (ca) — after S0-APPROACH: a development decomposition of the approach failure (Δa) before any further controller variant; its cohort, measures, readings and rows are declared before any measurement; R7 unchanged (R28.119–R28.125)
+
+**Decided by Claude under owner delegation** (the 2026-09-30 delegation; the SO-101 branch opened
+by R28.1). It answers R28.116's escalation. **The owner can override this ruling.** Declaration:
+[so101_approach_diagnostic_v1.md](experiments/so101_approach_diagnostic_v1.md). Docs only: nothing
+ran for this entry.
+
+- **R28.119 — The ruling.** TASK-102's S0-APPROACH is followed by a **development decomposition of
+  the approach failure (Δa)**, not by any of the three candidates R28.116 names. The precedent is
+  TASK-100/101's consequence rules (a decomposition record before a second variant; TASK-101's Δ,
+  R28.72) and R28.94's reading that the failing phase must be named by measurement. Stage 0 names
+  the approach as the failing phase but not the component inside it: the image-goal cost's
+  geometry, J's prediction of that cost, or the planner. Each of the three candidates fixes a
+  different one.
+- **R28.120 — What Δa measures** (declaration §2–§4): Λ0, a re-reading of Stage 0's A logs (the
+  true-frame cost along CEM's own trajectories; reported only); Λ1, the cost landscape on 16 fresh
+  seeds, the true-frame cost and J's predicted cost along the demonstration's approach path and
+  along straight joint-space lines from the reset pose to subgoal 1, with 64 executed candidates
+  at five line states; Λ2, phase 1 in closed loop on 8 of those seeds with J at TASK-101's budget
+  (J-ref, Stage 0's H16-last), J at two larger budgets (1 024 × 12 at H = 16 and at H = 32), and
+  two privileged oracle costs at TASK-101's budget, the true-frame cost of simulated candidates
+  (O-img, a perfect model) and the true pose cost (O-pose); Λ3, every cost per camera.
+- **R28.121 — Rows, first match** (declaration §6): Δa-VOID; Δa-NOT-REPRODUCED (J-ref ≥ 4/8);
+  Δa-PLANNER-BOUND (O-pose < 6/8); Δa-GEOMETRY (O-img < 6/8); Δa-PLANNER (a larger J budget
+  ≥ 6/8); Δa-MODEL (every J arm ≤ 2/8 and Δρ ≥ 0.20); Δa-MIXED. Each names what it leads to; each
+  next study needs its own ruling.
+- **R28.122 — Seeds and salts.** Cohort L 104000–104015 (reserve 104016–104031), Λ2 on L's slots
+  0–7, debug 104900–104909; salts 10116 (Λ2's planner) and 10117 (Λ1's random candidates). They
+  are disjoint from every SO-101 range used before, which the declaration lists (checked on every
+  ref on 2026-10-20).
+- **R28.123 — Budget.** A cap of 2.0 GPU h of lock time for the whole diagnostic, every GPU job
+  under `scripts/gpu_run.sh --wait --board`. CPU-only jobs (Λ0, O-pose) take no lock. Δa is not
+  one of TASK-102's protocol stages and is accounted separately from its Stage 0 cap.
+- **R28.124 — Code.** New files only. Every pinned file (G1, TASK-100, TASK-101, TASK-102's
+  CANDIDATE manifest and its listed files) stays byte-identical; TASK-102's protocol is not
+  amended and stays unfrozen.
+- **R28.125 — Status.** No claim either way. TASK-102 stays in progress with row S0-APPROACH; no
+  gated seed of TASK-102 is drawn. R7 does not change (R28.9). The G1 line stays paused, and
+  TASK-095 stays on hold (R28.2).
+
 ## Decision 2026-10-20 (bz) — TASK-102 Stage 0: G_loc trained (primary G-0); every §7.3 check passed before any count and the runner enforced it; P set τ_h = 0.08 rad (S+G 30/32 at r = 0); on A no configuration of CEM over J handed over by tolerance (a_A = 0/32 in all four), so the row is S0-APPROACH, D did not run, nothing is frozen and the study escalates; R7 unchanged (R28.110–R28.118)
 
 **Recorded by Claude under owner delegation** (the 2026-09-30 delegation; the SO-101 branch opened
