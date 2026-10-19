@@ -26,13 +26,17 @@ Apple→Plate. R7 does not change (R28.9).
 - **This is S0-VOID (§7.6 row 1). It cannot be fixed in code without changing the declared scene or
   observation** (§2: the scene and cameras are unchanged; R28.43). A fix is a ruling on a
   condition change, so the row is escalated and Stage 0 stops here.
-- **K ran before the cause was found, and every configuration scored 0/32** (H8-last, H8-mean,
+- **K ran before checks 7.2.2 and 7.2.3 had been executed, and every configuration scored 0/32**
+  (H8-last, H8-mean,
   H16-last and H16-mean; 128 episodes; exact 95 % interval 0.000–0.109 each). No episode reached a
   single subgoal by the switching tolerance: all 3 × 128 switches were timeouts. On H8-mean the
   median closest arm RMS to subgoal 1 was 0.41 rad, against 0.04 required. By §7.3's tie rule the
   configuration would be H8-mean, with K "null". **K ran under the void condition, so its 0/128 is
   not attributable to J or to the planner**; the marker shift may account for some or all of it.
-  K's counts have been read, so any rerun after a fix uses K′ (§7.6 row 1).
+  K's counts have been read, so any rerun after a fix uses K′ (§7.6 row 1). **This ordering is a
+  deviation (deviation 7):** K's 128 counts were read while two §7.2 checks had never run, and it
+  is what spends K and forces K′. 7.2.2 as written needs D's goals, so it could not run before D's
+  goal job; 7.2.3 could have.
 - **Every other check passed**, three of them after a fix made under §7.6 row 1 before any count was
   read (items 1–3 of the deviations below): the live latent equals the stored latent bit for bit
   (64/64 frames), the adapter equals TASK-100's `predict_features` + latent error, N's costs tie
@@ -95,7 +99,12 @@ reader.
 | renderer stability (reported, `check render`) | `a7ea306` | 1 288 states × 2 cameras, rendered 3 times each: 12 wrist and 1 overview states gave different images (up to 19 pixels); follower states 0 of 488 |
 | 7.2.5 timing (K, pool of 6) | `a7ea306` | planning s per command, median / 95th percentile: H8-last 0.233 / 0.295, H8-mean 0.231 / 0.294, H16-last 0.390 / 0.461, H16-mean 0.391 / 0.463; longest whole command (observe, encode, plan, execute) 1.50 s against the 30 s deadline |
 
-## 3. K (§7.3; ran under the void condition)
+## 3. K (§7.3; ran under the void condition, before 7.2.2 and 7.2.3)
+
+**Deviation 7 applies here.** K's episodes ran 14:27–15:31Z; D's goal job ended at 15:31Z and
+checks 7.2.2 (`check-renc`) and 7.2.3 (`check-projector`) ran at 15:33Z. So K's counts were read
+before two §7.2 checks had been executed, and each failure of such a check is S0-VOID. K is spent
+by that ordering, not only by the cause being found late.
 
 Goal store `d6a891a3…5c255c`: 32 kept of 32 drawn (no rejection). W (J-100101), pool of 6 workers,
 one fresh process per episode, 1.07 h of lock time for 128 episodes.
@@ -120,11 +129,20 @@ job's evidence episodes on D's first 8 slots read **F 8/8 (each equal to the dem
 H-pose 8/8, rand 0/8, hold 0/8**. These arms read no image, so the scene finding does not touch
 them. They are disclosed because they are D counts that have now been read. **W, N, W-shuf, W-mean
 and the single-goal diagnostic did not run on D**, so no D count of a CEM arm has been read. The bar
-(§7.5) needs W(D) and is not computed. The rerun rule (§7.6 row 1) therefore lets a fix rerun D's
-CEM arms on D's seeds; whether the eight CPU-arm counts read on D affect that is left to the ruling
-(R28.63).
+(§7.5) needs W(D) and is not computed.
 
-## 5. Deviations from the DRAFT (disclosed; decided by Claude under owner delegation, R28.60–R28.62)
+**§7.6 row 1's text points to D′.** It reads "once D's counts have been read … on the fresh
+development cohort D′" and limits this neither to CEM arms nor to counts that set the bar. Four D
+arm counts have been read (F, H-pose, rand, hold). So any rerun after a fix runs D on **D′**
+(101600–101663, reserve 101664–101699; unused). The record recommends D′; running D's seeds again
+would need a ruling that waives the clause explicitly, with its reason (R28.63).
+
+**H-pose 8/8 is an input for the ruling.** H-pose reads only the subgoal joint positions (no image,
+no model) and lifted on all 8 D slots it ran. This confirms the protocol's §4 ("what the goal gives
+away") more strongly than the DRAFT assumed: "J needed" is very unlikely to be shown, and a CL-PASS
+would mainly show that CEM over J can track pose subgoals through images.
+
+## 5. Deviations from the DRAFT (disclosed; decided by Claude under owner delegation, R28.59–R28.62)
 
 1. **The live latent uses TASK-100's fixed featuriser batch of 64 (§3, §7.2.1).** The first run of
    7.2.1 (`check-latent-void1`, revision `5b2c01d`) encoded one frame per camera per call and failed.
@@ -168,6 +186,10 @@ CEM arms on D's seeds; whether the eight CPU-arm counts read on D affect that is
    sends the projected action instead. Because `execute` applies the same `preview`, sending the
    requested action makes the executed action exactly the scored one. The guard never fired in
    K's 25 600 commands.
+7. **K ran before checks 7.2.2 and 7.2.3 had been executed** (§3). The protocol does not order the
+   steps in words, but §7.2 makes each check failure S0-VOID, and reading K's counts first is what
+   spent K and forces K′. 7.2.2 as written needs D's goals, so it could not run before D's goal job;
+   7.2.3 could have. **Lesson: run every §7.2 check before any count of a cohort is read.**
 
 The plumbing outputs that predate these fixes are kept and are not results:
 `debug-goals-a`, `debug-ep-a-crashed`, `debug-ep-b`, `debug-goals-batch1`, `check-*-void*`,
@@ -183,19 +205,34 @@ put it. Options for the ruling:
   cube) from a new salt, or fixed at one declared in-box point. The marker has no contact and plays
   no role in the lift scorer. The amendment must be preregistered and named in every restatement
   ("the lift scene with its target marker inside the corpus's range"). Then:
-  - Re-run 7.2.2 on regenerated D goals. Pass bar unchanged (the diagnostic read 1.048 cm).
+  - **Every §7.2 check runs before any count of a cohort is read** (deviation 7). In particular
+    7.2.2 is applied to K′'s goal store before any K′ episode runs, and to D′'s goal store before
+    any D′ episode runs; the amendment states this order explicitly. Pass bar unchanged (the
+    diagnostic read 1.048 cm).
   - Run K on **K′** (K's counts are read).
-  - Run D on D's seeds. W's D counts are unread; the ruling decides whether the eight read CPU-arm
-    counts force D′.
+  - Run D on **D′** (§7.6 row 1's text: four D arm counts have been read; §4 of this record), unless the ruling
+    waives the clause explicitly with a reason.
   - Every check that reads frames is re-run.
+  - **The amendment compares the whole lift scene with the corpus, not only the marker,** and
+    records the comparison: the home pose (the corpus jitters it by ±0.06 rad with the gripper at
+    0.2–1.2 rad; the task starts at the exact `home_rad`), the cube's reset region against the
+    corpus's, the lighting and the cameras. The next 7.2.2 must not be the first place a mismatch
+    shows up.
+  - **The conditional determinism check (deviation 3, R28.61) is written into the protocol text**
+    (§7.2.4, and §13 and §14: S runs are not guaranteed bit-reproducible) and ruled on explicitly,
+    not only disclosed. The reviewer's rerun of two K episodes at pool size 2 against K's 6 was
+    bit-identical in every logged array except timing, which supports the conditional form.
+  - **The ruling should weigh H-pose 8/8 on D (§4 of this record).** One option is to reconsider the goal design
+    before a re-freeze rather than after S, for example image subgoals without the subgoal-joint
+    switching input, or a different comparator.
 - **(b) Remove the marker from the lift scene.** This is also outside the corpus's distribution
   (every corpus episode shows a marker), so it is not recommended without its own check.
 - **(c) Close TASK-101 as INCONCLUSIVE** and carry the lesson into a redesign: a task's scene must be
   checked against the training corpus's scene before Stage 0.
 
-**Lesson (for RESUME.md's list): check that the closed-loop task renders frames from the training
-corpus's distribution before Stage 0. Here an inert scene element was enough to move a linear
-readout by 5 cm.**
+**Lessons (for RESUME.md's list): check that the closed-loop task renders frames from the training
+corpus's distribution before Stage 0; here an inert scene element was enough to move a linear
+readout by 5 cm. And run every §7.2 check before any count of a cohort is read (deviation 7).**
 
 ## 7. Evidence
 

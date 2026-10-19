@@ -76,6 +76,11 @@ protocol [so101_closed_loop_lift_v1.md](experiments/so101_closed_loop_lift_v1.md
   1.048 cm. The frames the controller would see lie outside the distribution of TASK-100's
   training corpus in one scene element. The fix needs a change of the declared scene or
   observation, so it is a ruling, not a code fix; Stage 0 stops before D's closed loop.
+  **Deviation: K was run before checks 7.2.2 and 7.2.3 had been executed** (K's episodes
+  14:27–15:31Z, `check-renc` and `check-projector` 15:33Z). 7.2.2 as written needs D's goals, so
+  it could not run before D's goal job; 7.2.3 could have. That ordering, not only the late finding
+  of the cause, is what spent K and forces K′. Lesson: run every §7.2 check before any count of a
+  cohort is read.
 - **R28.60 — Fixed under §7.6 row 1 before any count was read: the live latent uses TASK-100's
   fixed featuriser batch of 64.** With it the live path reproduces the stored latents bit for bit
   (64/64 frames). The check's frames lie in the store's full batches of 64.
@@ -84,24 +89,33 @@ protocol [so101_closed_loop_lift_v1.md](experiments/so101_closed_loop_lift_v1.md
   renderer returns different images for one physics state on some frames on this machine. Every
   episode runs in a fresh process. The literal form is reported (W and N reruns bit-identical; pool
   1 vs 6 identical on 3 of 4 episodes, the fourth differing only in 10 frames' latents and in no
-  action). This changes a check's definition and is disclosed for review.
+  action). This changes a check's definition: the amendment writes it into the protocol text
+  (§7.2.4, and §13 and §14: S runs are not guaranteed bit-reproducible) and the ruling rules on it
+  explicitly.
 - **R28.62 — Implementation choices disclosed:** a 6-D projection value object (the pinned
   `CandidateProjection` validates 14-D only), a vectorised `preview` held bit-identical to chained
   `preview` and `execute`, and W sending the requested first action with a guard that the applied
   action equals the scored projection (never fired in 25 600 commands).
 - **R28.63 — Escalation, recommendation only.** (a) Recommended: a declared scene amendment that
   puts the lift scene's marker inside the corpus's marker box (per reset by the corpus's rule from
-  a new salt, or one declared in-box point). Then 7.2.2 is re-run on regenerated D goals, K runs
-  on K′ (K's counts are read), and D runs on D. W's D counts are unread; the ruling decides whether
-  the eight CPU-arm evidence counts already read on D (F 8/8, H-pose 8/8, rand 0/8, hold 0/8; arms
-  that read no image) require D′. (b) Removing the marker is also off-distribution. (c) Close
-  INCONCLUSIVE. **K's 0/32 in every configuration ran under the void condition and is not
+  a new salt, or one declared in-box point). Then every §7.2 check runs before any count is read
+  (7.2.2 on K′'s goal store before any K′ episode, and on D′'s before any D′ episode), K runs on
+  K′ (K's counts are read), and D runs on **D′**: §7.6 row 1's text ("once D's counts have been
+  read … on D′") is not limited to CEM arms or bar-setting counts, and four D arm counts have been
+  read (F 8/8, H-pose 8/8, rand 0/8, hold 0/8). Recommended: D′, unless the ruling waives the
+  clause explicitly with a reason. The amendment compares the whole scene with the corpus (marker,
+  home pose and its jitter, cube region, lighting, cameras) and records it. The ruling should weigh
+  H-pose 8/8 (subgoal joint positions only, no image or model): "J needed" is very unlikely to be
+  shown, and the goal design (for example image subgoals without the subgoal-joint switching
+  input, or a different comparator) may be reconsidered before a re-freeze. (b) Removing the
+  marker is also off-distribution. (c) Close INCONCLUSIVE. **K's 0/32 in every configuration ran under the void condition and is not
   attributed to J or the planner.**
 - **R28.64 — No claim; not frozen; R7 does not change.** The manifest
   `so101-closed-loop-lift-v1.json` is a CANDIDATE. Stage 0 used 1.66 GPU h (cap 6). K's
   throughput projects Stage S at about 5.9 GPU h (H = 8) to 6.9 GPU h (H = 16) for six CEM arms,
-  inside the remaining cap. Lesson: check before Stage 0 that a closed-loop task's frames come
-  from the training corpus's scene distribution.
+  inside the remaining cap. Lessons: check before Stage 0 that a closed-loop task's frames come
+  from the training corpus's scene distribution, and run every §7.2 check before any count of a
+  cohort is read.
 
 ## Decision 2026-10-19 (bt) — Claude, under owner delegation, opens TASK-101 as SO-101 S5: a DRAFT preregistration of a first closed loop on `so101_cube_lift_v0` in simulation (CEM over TASK-100's J, projected onto executable actions, toward image subgoals of a per-reset demonstration); a LeWM long-budget re-run of TASK-100's L is recommended as a separate later task, not started; nothing runs before review, merge and a Stage 0 freeze; R7 unchanged (R28.41–R28.58)
 
