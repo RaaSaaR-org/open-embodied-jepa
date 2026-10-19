@@ -8,6 +8,11 @@ training, development closed loops, calibration of τ_h and of the bar on develo
 independently reviewed. **The protocol freezes when the Stage 0 PR merges, and only on S0-DONE
 (§7.7).** No gated reset is drawn, rendered or run before then.
 
+*Revised after the first independent review of the DRAFT (2026-10-19):* phase 1's configuration is
+now chosen among TASK-101's four on a development approach cohort A instead of carrying H8-mean
+(§0, §5.1, §7.5), and S0-APPROACH gates on H's hand-overs by tolerance, not on W+F's lift count
+(§6, §7.7).
+
 This is phase S5 of [SO101_PLAN.md](../SO101_PLAN.md) after TASK-101
 ([so101_closed_loop_lift_v1.md](so101_closed_loop_lift_v1.md)) closed with no claim (R28.93). **It
 is a simulation-only control study on the SO-101 cube-lift task. It is not an Apple→Plate
@@ -19,7 +24,7 @@ Closest precedents, and what is taken from each:
 - **TASK-101** ([protocol](so101_closed_loop_lift_v1.md), [envelope](so101_closed_loop_lift_v1_envelope.md),
   [Δ](so101_closed_loop_lift_v1_null_diagnostic.md)): the task `so101_cube_lift_v1`, the per-reset
   goal demonstration and its goal store, J-100101 and N_J-100101 with their hash checks, the live
-  latent, the projected `SchemaCEMPlanner` at H8-mean, the switching form, the checks and the
+  latent, the projected `SchemaCEMPlanner` with its four declared configurations, the switching form, the checks and the
   check ledger with its ordering rule, F as a determinism guard, H-pose, the statistics and the
   row ladder. TASK-101's code is imported, never edited.
 - **TASK-071/072, P-3** ([apple_first_policy_v2.md](apple_first_policy_v2.md), [v1 §5.2](apple_first_policy_v1.md)):
@@ -49,10 +54,16 @@ Closest precedents, and what is taken from each:
   32/32 at 0.02 rad, 20/32 at 0.04 rad and 2/32 at 0.16 rad. With the pose corrected while closing
   ("reaim", reported only) it lifted 31/32 at 0.04 rad and 25/32 at 0.16 rad.
 - **What has not been shown: that CEM over J reaches the pre-grasp neighbourhood from the reset
-  pose.** On K′ the median closest arm RMS to subgoal 1 was 0.26–0.48 rad, and the best single
-  episode came within 0.035 rad (R28.77). Δ's 0.05 rad offset was measured from the pose itself.
-  This is the hybrid's main risk on the approach side. Arm W+F measures it on development seeds,
-  and row S0-APPROACH (§7.7) stops the study before any gated stage if it fails.
+  pose.** On K′ (Stage 0′ record §3) the median closest arm RMS to subgoal 1 was 0.26–0.48 rad
+  over the four configurations. **For H8-mean, the configuration TASK-101's tie rule chose at
+  0/32, the median was 0.45 rad and the closest single episode 0.21 rad: no H8-mean episode came
+  within τ_max = 0.12 rad (§5.2) of subgoal 1.** The `last` configurations came closer (H8-last
+  0.35 rad median, best 0.035 rad; H16-last 0.26 rad, best 0.083 rad). H8-mean was chosen by a tie
+  rule at 0/32, not on any approach measure. Δ's 0.05 rad offset was measured from the pose itself.
+  **This is the hybrid's main risk, and on K′'s evidence it is large.** Stage 0 therefore chooses
+  phase 1's configuration among TASK-101's four on approach data from a fresh development cohort A
+  (§5.1, §7.5), and row S0-APPROACH (§7.7) stops the study before any gated stage unless H itself
+  hands over by tolerance on at least half of D's resets.
 - **The grasp precision S2 measured** (TASK-098's grasp-offset envelope for follower v1): 5 mm toward the fixed
   jaw, 10 mm along the face or upward, 20 mm away from the fixed jaw. J's predicted cube reads to
   about 1.6–1.8 cm (R28.39). This is why the close is given to a policy that reads the current
@@ -74,7 +85,8 @@ world-model approach and a learned grasp policy succeeds"** at lifting the cube 
 `so101_cube_lift_v1` (the lift scene with its inert target marker drawn inside the play corpus's
 marker range) in simulation, with every qualifier of §14. Two qualifiers are part of the claim and
 are never dropped when it is restated: **the approach is aimed at an image subgoal of a privileged
-per-reset demonstration, and G_loc is cloned from privileged scripted play.** It is not "LeWM", not
+per-reset demonstration and the hand-over reads that demonstration's subgoal-1 joints, and G_loc
+is cloned from privileged scripted play.** It is not "LeWM", not
 "LeWM-driven", not "the world model grasps" and not "J needed" (R28.96).
 
 ## 2. Task, scene and scorer
@@ -127,10 +139,17 @@ sees frames and proprioception only.
 TASK-101's controller W, **unchanged in every planner setting**, aimed at subgoal 1 only:
 `SchemaCEMPlanner` over `joint_delta_so101_v0`, 256 samples, 6 iterations, 32 elites, minimum std
 0.05, action penalty 0, replanned every command (MPC), with candidates projected by the
-embodiment's chained `preview` (TASK-101 §5.2). **Configuration H8-mean** (horizon 8, step-mean
-latent cost): the configuration TASK-101 §7.3's rule chose on K′, by its tie rule, and the one Δ was
-measured at. It is not recalibrated here (§15). Planner seed `10110 · 10⁶ + reset seed` (salt 10110;
+embodiment's chained `preview` (TASK-101 §5.2). Planner seed `10110 · 10⁶ + reset seed` (salt 10110;
 the same seed for every CEM arm on a reset).
+
+**Configuration: one of TASK-101's four declared configurations (H8-last, H8-mean, H16-last,
+H16-mean), chosen in Stage 0 on approach data (§7.5) by a rule fixed now.** No other setting
+(samples, iterations, elites, cost form beyond these four) is turned. *Why not carry H8-mean:*
+TASK-101 chose it by its tie rule at 0/32 on K′, not on any approach measure, and on K′ no H8-mean
+episode came within 0.12 rad of subgoal 1 (median 0.45 rad, minimum 0.21 rad), while the `last`
+configurations came closer (§0). Choosing among the four declared configurations on fresh
+development seeds, by a phase-1 measure declared now and before D, is not a new knob: the set is
+TASK-101's, and nothing about it is read from D or S.
 
 ### 5.2 The hand-over rule and τ_h
 
@@ -208,8 +227,10 @@ while closing). Which one G_loc does is reported (§10), not gated.
   injected with `early_close` are excluded (their close is a scripted error), as are attempts
   with no `lift_end_step`. The success label selects windows only. It is never an input. *This is
   filtered behaviour cloning, disclosed:* G_loc imitates the collector's grasps that worked.
-  Expected size, from TASK-099's counts: about 3 300 windows of about 60–100 commands each,
-  roughly 200 000–300 000 frames. Stage 0 records the exact counts.
+  Expected size, from TASK-099's counts: the corpus has 3 380 grasped attempts over **all**
+  splits (65.4 % of 6 414); the train split's 90 %, less the `early_close` attempts, gives
+  **about 3 000 windows** of about 60–100 commands each, roughly 180 000–300 000 frames. Stage 0
+  records the exact counts.
 - **Features.** The latents are read from TASK-100's pretrained g4 feature store
   (`outputs/task100-features-pretrained`, HDD; read only; every file hash-checked against TASK-100's
   feature report). Proprioception, targets, phase labels and attempt facts are read from the corpus
@@ -242,7 +263,7 @@ while closing). Which one G_loc does is reported (§10), not gated.
 | **G_loc-only** | none | primary G_loc from the reset pose, clock from 0, for all 200 commands | control: no approach |
 | **N_J+G** | the same planner over N_J-100101 (zero commands to the model for every candidate), §5.2's hand-over | primary G_loc | control: action-blind approach |
 | **S+G** | privileged scripted approach: the goal demonstration's own first 40 commands, replayed | primary G_loc, from command 41 | G_loc's ceiling given an exact approach (reported; enters the bar's cap) |
-| **W+F** | as H | privileged follower v1 from the hand-over pose: its descent waypoints, close and lift, aimed from simulator truth (the envelope's "pre" path) | the world-model approach's ceiling given a privileged grasp (reported; enters the bar's cap) |
+| **W+F** | as H | privileged follower v1 from the hand-over pose: its descent waypoints, close and lift, aimed from simulator truth (the envelope's "pre" path) | the world-model approach's ceiling given a privileged grasp (reported; enters the bar's cap). **Not an approach measure:** the follower re-aims from simulator truth and lifts from wide approach errors (§6, below) |
 | **F** | the privileged follower v1 for the whole episode | — | determinism guard on the goal pipeline (TASK-101 §6); scores every kept reset by construction |
 | H-pose+G | TASK-101's non-learned pose follower toward subgoal 1's joints (no image, no model), §5.2's hand-over | primary G_loc | "J needed" for the approach; reported only |
 | **rand** | every channel uniform on [−1, 1] each command (salt 10111) | — | floor |
@@ -266,15 +287,25 @@ while closing). Which one G_loc does is reported (§10), not gated.
   and failed demonstrations are replaced, so it lifts on every kept reset. F's executed actions or
   outcome differing from the demonstration's on any kept reset is a guard failure.
 - **S+G and W+F are the measured component ceilings.** H is in practice limited by both its
-  approach (which W+F measures with a privileged grasp) and its grasp (which S+G measures with a
-  privileged approach). This is not a strict bound: a reset where W+F fails could still be one where
-  G_loc lifts. That is why the bar uses them only as a cap with a 0.9 factor (§7.6).
+  approach and its grasp (which S+G measures with a privileged approach). This is not a strict
+  bound: a reset where W+F fails could still be one where G_loc lifts. That is why the bar uses them
+  only as a cap with a 0.9 factor (§7.6).
+- **W+F does not measure the approach.** After the hand-over the privileged follower re-aims its
+  descent from simulator truth, and the envelope's "pre" column lifted 32/32 at every level up to
+  0.16 rad; on a timeout it takes over from wherever the arm stands and may lift from there too. So
+  W+F can lift on resets where phase 1 never reached τ_h. **The approach is measured directly** by
+  a_H, the number of H's episodes that hand over **by tolerance** within T₁ = 60 commands (phase 1
+  is the same controller in H and W+F; H's own episodes are counted, because EGL rendering is not
+  bit-stable and W+F's phase 1 need not equal H's on every reset). Row S0-APPROACH
+  (§7.7) gates on a_H. W+F is reported split by hand-over type (by tolerance or by timeout) and by
+  hand-over RMS, beside H's.
 
 ## 7. Stage 0 (development; before the freeze)
 
 Stage 0 runs on **development cohort P** (103000–103031, reserve 103032–103047), **development
-cohort D** (103100–103163, reserve 103164–103199), the fresh replacements P′ and D′ of §7.7 row 1 if
-called for, and debug seeds 103900–103999 for plumbing (never counted). No gated seed is drawn,
+cohort A** (103500–103531, reserve 103532–103547; phase 1's configuration, §7.5), **development
+cohort D** (103100–103163, reserve 103164–103199), the fresh replacements P′, A′ and D′ of §7.7 row 1
+if called for, and debug seeds 103900–103999 for plumbing (never counted). No gated seed is drawn,
 rendered or run before the freeze.
 
 ### 7.1 Code and tests (new files only)
@@ -302,16 +333,21 @@ the test split; train, val and test windows share no episode; the store-corpus a
 G_loc's live `act()` equals the batched offline prediction within 10⁻⁴; the policy never receives
 task truth (sentinel); the follower-from-hand-over path, handed over at the demonstration's exact
 command-40 state, reproduces the demonstration's commands 41 onward bit for bit (guard G-zero);
-S+G's replayed approach equals the demonstration's first 40 commands; seeds outside a cohort are
+S+G's replayed approach equals the demonstration's first 40 commands; the configuration rule of
+§7.5 and the approach count a_H (by tolerance against timeout) on synthetic logs, in every branch;
+seeds outside a cohort are
 refused; a cohort cannot be run twice into one output; hash mismatches are refused; McNemar,
 bootstrap and every row of §7.7 and §9 in both directions on synthetic counts; the core-import
 check; the byte-identity checks above.
 
 ### 7.2 G_loc's training (§5.4)
 
-One GPU job per seed, before any closed loop of P or D. The Stage 0 record states the window counts
-per split, the selected update and val MSE per seed, the eligibility outcome, `last_two_triggered`,
-the primary seed and the checkpoint hashes. Checkpoints go to `checkpoints/task102-stage0/G-<i>/`
+One GPU job per seed, before any closed loop of P, A or D. The Stage 0 record states the window
+counts per split, the selected update and val MSE per seed, the eligibility outcome,
+`last_two_triggered`, the primary seed and the checkpoint hashes. It also reports (not a gate) the
+share of training windows in which the cube rises at least 5 cm and is held with a gripper contact
+for 20 consecutive steps inside the window (the task's success condition; the per-attempt grasp
+fact is only a 2 cm rise), so that a low S+G count can be told apart from missing demonstrations. Checkpoints go to `checkpoints/task102-stage0/G-<i>/`
 (new names only).
 
 ### 7.3 Checks (each failure is S0-VOID until fixed under its own record)
@@ -329,7 +365,7 @@ episode, and the runner refuses otherwise.
    because EGL rendering is not bit-stable on some states: one H episode and one S+G episode, each
    run twice, and four H episodes in a pool of 1 and in the pool size used.
 6. **Timing:** median and 95th-percentile seconds per command in phase 1 and in phase 2, the worker
-   count, and the projection of P, D and S (§13). Every command finishes inside the embodiment's
+   count, and the projection of P, A, D and S (§13). Every command finishes inside the embodiment's
    30 s wall-clock deadline.
 
 ### 7.4 P: G_loc's tolerance at the hand-over, and τ_h
@@ -343,12 +379,24 @@ Recorded: k(r) of 32 with exact 95 % intervals, and the achieved hand-over RMS. 
 §5.2 step 2, mechanically.** P's counts set τ_h and nothing else. If k(0) < 16/32, the row is
 S0-GLOC-WEAK (§7.7), and D does not run.
 
-### 7.5 D: the development closed loop
+### 7.5 A: phase 1's configuration, then D: the development closed loop
 
-Every arm of §6 except H-G1 and H-G2 runs on D's 64 resets with τ_h from P: H, G_loc-only, N_J+G,
-S+G, W+F, F, H-pose+G, rand and hold. The Stage 0 record reports each count with its exact 95 %
-interval, the per-phase decomposition (§10) and timing. **D changes no knob.** It sets the bar
-(§7.6) and the Stage 0 row (§7.7).
+**A (after P, so τ_h is known; before D).** On A's 32 resets, phase 1 alone runs in each of
+TASK-101's four configurations (H8-last, H8-mean, H16-last, H16-mean; 128 approach episodes over
+J-100101), each until §5.2's hand-over fires or T₁ = 60 commands pass; no phase 2 runs. Recorded
+per configuration: a_A, the hand-overs **by tolerance** (at τ_h) of 32, with exact 95 % intervals;
+the commands used; the closest and the hand-over arm RMS to subgoal 1 (median and minimum).
+**Rule, fixed now:** the configuration with the largest a_A; ties broken by the lower median
+closest arm RMS to subgoal 1, then by TASK-101 §7.3's order (mean over last, then H = 8). If the
+chosen configuration's a_A is below 16/32, the row is S0-APPROACH (§7.7) and D does not run. A's
+counts choose the configuration and nothing else.
+
+**D.** Every arm of §6 except H-G1 and H-G2 runs on D's 64 resets with τ_h from P and the
+configuration from A: H, G_loc-only, N_J+G, S+G, W+F, F, H-pose+G, rand and hold. The Stage 0 record
+reports each count with its exact 95 % interval, the per-phase decomposition (§10), **a_H (H's
+hand-overs by tolerance within 60 commands, of 64), W+F's count split by hand-over type and by
+hand-over RMS**, and timing. **D changes no knob.** It sets the bar (§7.6) and the Stage 0 row
+(§7.7).
 
 ### 7.6 The bar (rule fixed now, applied to D's numbers)
 
@@ -365,6 +413,10 @@ of the exact 95 % interval of H's D count of 64.
 - **LCB(H(D)):** between the floor and the cap, the gated stage asks H to confirm the level its
   development run showed, at the conservative end of that run's interval.
 - If c < 0.50, no bar at or above the claim floor is admissible: row S0-CEILING (§7.7).
+- **r_WF in c counts every W+F lift, whatever the hand-over type** (decided now). c caps the bar at
+  what the two components deliver, and a lift after a timeout is a lift the task scores. The
+  approach itself is gated separately, by a_H (§7.7 row 3), not through c. W+F counted only on
+  hand-overs by tolerance is reported beside it.
 
 What the rule gives when the cap does not bind (exact binomial; power = P(X ≥ bar) at a true rate p):
 
@@ -384,17 +436,22 @@ table with c applied.)
    run did not complete. Fixed under its own record. Same-seed reruns are allowed only for a VOID
    raised before any success count of the affected cohort was read. **Once P's counts have been
    read, a fix that changes code, configuration or G_loc is rerun on P′ (103060–103091, reserve
-   103092–103099); once D's counts have been read, on D′ (103600–103663, reserve 103664–103699).**
-   P′ and D′ are used at most once each. A second post-count fix needs a ruling that names further
+   103092–103099); once A's counts have been read, on A′ (103700–103731, reserve 103732–103747);
+   once D's counts have been read, on D′ (103600–103663, reserve 103664–103699).** P′, A′ and D′ are
+   used at most once each. A second post-count fix needs a ruling that names further
    seeds.
 2. **S0-GLOC-WEAK** — no G_loc seed has an eligible checkpoint, or k(0) on P is below 16/32, or
    S+G on D is below 32/64. The learned grasp does not lift half the time even after an exact
    approach. Escalate. Named candidates, each needing its own amendment or preregistration: DAgger
    with the privileged follower's "reaim" path as the labeller (P-3's precedent), more or different
    training windows, or a wrist-only input. No gated stage.
-3. **S0-APPROACH** — W+F on D is below 32/64. The world-model approach does not deliver the
-   pre-grasp pose within τ_h, even with a privileged grasp after it. Escalate. Named candidates:
-   R28.57's LeWM retrain, a cost or goal change for the approach, a planner variant. No gated stage.
+3. **S0-APPROACH** — the configuration chosen on A hands over by tolerance on fewer than 16/32 of
+   A's resets (§7.5; D then does not run), **or a_H on D is below 32/64** (H's episodes handing
+   over by tolerance within T₁ = 60 commands), or W+F on D is below 32/64. The world-model approach
+   does not deliver the pre-grasp pose within τ_h on at least half of the resets (the bar matches
+   the claim floor: G_loc was trained only from pre-grasp poses, so a timeout hand-over is not
+   expected to lift). Escalate. Named candidates: R28.57's LeWM retrain, a cost or goal change for
+   the approach, a planner variant. No gated stage.
 4. **S0-CEILING** — c < 0.50 although neither row 2 nor row 3 fired (min(r_SG, r_WF) between 0.50
    and 0.555). Escalate. No gated stage.
 5. **S0-LOW** — the bar's power at H's D rate is below 0.80. Escalate. A ruling either runs the
@@ -403,7 +460,7 @@ table with c applied.)
 6. **S0-OVER** — the projected gated stage does not fit the cap even without H-G1 and H-G2 (§13).
    Escalate (cloud GPU time is the owner's decision).
 7. **S0-DONE** — otherwise. The Stage 0 record states G_loc's training outcome and the primary seed,
-   τ_h with P's counts, D's counts for every arm, c, b and the bar count, H-pose+G's D count beside
+   τ_h with P's counts, A's counts and the chosen configuration, D's counts for every arm, a_H, c, b and the bar count, H-pose+G's D count beside
    the bar, the demonstration's rejection counts on P and D, the recomputed power table (bar and
    McNemar, from D's rates) and the projection. **The protocol freezes when the Stage 0 PR
    merges**, and the gated stage then runs without a further ruling unless a declared rule escalates.
@@ -429,7 +486,8 @@ table with c applied.)
 
   G_loc-only and N_J+G are expected to be low, since G_loc was trained only from pre-grasp poses,
   and then 64 would suffice. But that expectation is exactly what the tests check, and a control
-  near 0.3 needs 128 for power near 0.8. TASK-081/083 and TASK-101 used 128 as well. The Stage 0
+  near 0.3 needs 128 for power near 0.8. TASK-081/083 used 128 as well, and TASK-101 declared 128
+  (it never ran a gated stage). The Stage 0
   record recomputes the power from D's rates.
 
 ## 9. Rows (first match) and what each leads to
@@ -484,7 +542,8 @@ What each row leads to (recommendations; the owner, or Claude under delegation, 
   this is H's failure count against a constant arm. Read by no row.
 - **"J needed" for the approach:** H against H-pose+G, paired difference with bootstrap interval and
   two-sided exact McNemar p. Read by no row.
-- **Component readings:** S+G and W+F on S, against H.
+- **Component readings:** S+G and W+F on S, against H; W+F split by hand-over type (by tolerance
+  or by timeout) and by hand-over RMS, and a_H on S.
 - **Replication:** H-G1 and H-G2 against the bar, and McNemar against G_loc-only, rand and hold.
 - **Per-phase decomposition**, per arm: phase-1 commands used, hand-over by tolerance or timeout,
   hand-over arm RMS and jaw error; in phase 2, the jaw's offset from the cube centre in the grasp
@@ -508,7 +567,8 @@ percentiles. Power for the Stage 0 record by exact binomial sums (bar) and simul
 - **Seeds** (the lift stream, `default_rng([9801, seed])`, with the v1 marker from
   `default_rng([10107, seed])`): P 103000–103031 (reserve 103032–103047); P′ 103060–103091
   (reserve 103092–103099); D 103100–103163 (reserve 103164–103199); **gated S 103200–103327**
-  (reserve 103400–103463); D′ 103600–103663 (reserve 103664–103699); debug 103900–103999. P′ and D′
+  (reserve 103400–103463); A 103500–103531 (reserve 103532–103547); D′ 103600–103663 (reserve
+  103664–103699); A′ 103700–103731 (reserve 103732–103747); debug 103900–103999. P′, A′ and D′
   are used only under §7.7 row 1. **Checked on 2026-10-19 with `git grep -w` over every remote ref**
   (`docs/`, `src/`, `scripts/`, `tests/`, `benchmarks/`, `configs/`, `.mc/`): no six-digit number in
   103000–103999 appears as a seed. The only matches are the digits of two decimals in
@@ -541,6 +601,7 @@ its own seed and model state.
 | G_loc training | 3 seeds × 30 000 updates on stored features | 0.3–1.0 |
 | Checks, debug, goals for P and D | — | 0.3–0.6 |
 | P | 128 S+G episodes (G_loc only, no CEM) | 0.2–0.5 |
+| A | goals; 4 configurations × 32 phase-1 episodes of at most 60 CEM commands | 0.2–0.5 |
 | D | 64 × (H, G_loc-only, N_J+G, S+G, W+F, H-pose+G) with frames | 0.7–2.0 |
 | S | goals; 128 × (H, G_loc-only, N_J+G, S+G, W+F, H-pose+G, H-G1, H-G2) | 2.0–4.5 |
 
@@ -581,8 +642,13 @@ TASK-101's outputs are read only.
 - **The controls are weak where they are expected to be weak.** N_J+G executes the zero command and
   then G_loc from home (§6). G_loc-only starts from a pose G_loc never trained from. H beating them
   shows that an approach is needed and that J's supplies one, not more.
-- **One configuration of each part:** H8-mean, carried from TASK-101 and not recalibrated; one
-  G_loc recipe; τ_h from one development cohort of 32 resets per level.
+- **The approach was weak on TASK-101's evidence.** On K′, H8-mean's closest arm RMS to subgoal 1
+  was 0.45 rad in median and 0.21 rad at best, so no H8-mean episode came within τ_max = 0.12 rad;
+  the `last` configurations came closer (0.26–0.35 rad in median). S0-APPROACH is a likely Stage 0
+  outcome, and it is declared as one.
+- **One configuration of each part:** one of TASK-101's four planner configurations, chosen on 32
+  development resets of A per configuration; one G_loc recipe; τ_h from one development cohort of 32
+  resets per level.
 - **τ_h's cap was written after the envelope's counts were published** (§5.2). It reads only the
   "pre" column and takes a margin below it.
 - **F is not a measured ceiling** (§6). S+G and W+F are measured with one half privileged each, and
@@ -602,9 +668,13 @@ TASK-101's outputs are read only.
   learned grasp.
 - **A hand-written jaw rule on top of J for the whole task:** TASK-101 §6 considered it. A rule
   cannot correct the pose while closing from images.
-- **Recalibrating phase 1 (horizon, cost form, samples) or using J-100100/J-100102:** that would turn
-  TASK-101's knobs on new seeds. The approach is measured as TASK-101 left it, and W+F tells whether
-  it suffices.
+- **Recalibrating phase 1 beyond TASK-101's four declared configurations (samples, iterations,
+  new cost forms) or using J-100100/J-100102:** that would turn new knobs on new seeds. The choice
+  among the four declared configurations on A (§7.5) is adopted instead, because TASK-101's own
+  choice was a tie rule at 0/32 and K′'s approach readings favoured the `last` configurations;
+  a_H tells whether the chosen one suffices.
+- **Carrying H8-mean unchanged** (this DRAFT's first version): not adopted after review, because no
+  H8-mean episode on K′ came within 0.12 rad of subgoal 1 (§0).
 - **Wrist camera only for G_loc:** the wrist view shows the cube large between the jaws at the grasp,
   but the overview shows height and the arm. The two-camera latent is the one whose live path has been
   checked bit for bit (TASK-101 7.2.1), and it is shared with phase 1. Wrist-only is a named
@@ -630,8 +700,10 @@ merge. The executing agent reports rows. It does not choose the next study.
   scorer and the 200-command budget as TASK-101's A1 (§2).
 - **R28.99** — models: J-100101 and N_J-100101, unchanged and hash-checked; the live latent shared by
   both phases (§3); TASK-101's goal store format, with only subgoal 1 read by the approach (§4).
-- **R28.100** — phase 1: TASK-101's planner at H8-mean, unchanged, toward subgoal 1; hand-over by
-  τ_h RMS arm, 0.15 rad jaw, 3 commands, or a 60-command timeout (§5.1, §5.2).
+- **R28.100** — phase 1: TASK-101's planner, unchanged in every setting, toward subgoal 1, in one
+  of TASK-101's four declared configurations chosen on development cohort A by the most hand-overs
+  by tolerance (§7.5); hand-over by τ_h RMS arm, 0.15 rad jaw, 3 commands, or a 60-command timeout
+  (§5.1, §5.2).
 - **R28.101** — τ_h: capped at 0.12 rad (one level below the envelope's "pre" limit of 0.16 rad),
   then set on P by "every level up to r within 3 of k(0)", with 0.04 rad as the fallback (§5.2,
   §7.4).
@@ -641,11 +713,12 @@ merge. The executing agent reports rows. It does not choose the next study.
   lowest val MSE (§5.3, §5.4).
 - **R28.103** — arms H, G_loc-only, N_J+G, S+G, W+F, F, H-pose+G, rand, hold, H-G1 and H-G2, with
   their roles (§6).
-- **R28.104** — Stage 0: training, checks under TASK-101's ledger, P for τ_h, D for the bar;
-  rows S0-VOID, S0-GLOC-WEAK, S0-APPROACH, S0-CEILING, S0-LOW, S0-OVER and S0-DONE; P′ and D′ for
-  post-count fixes; the freeze only on S0-DONE (§7).
-- **R28.105** — the bar: c = 0.9 × min(r_SG, r_WF), b = min(c, max(0.50, LCB(H(D)))), ⌈b × 128⌉ of
-  128 (§7.6).
+- **R28.104** — Stage 0: training, checks under TASK-101's ledger, P for τ_h, A for phase 1's
+  configuration, D for the bar; rows S0-VOID, S0-GLOC-WEAK, S0-APPROACH (gated on hand-overs by
+  tolerance: at least 16/32 on A and 32/64 on D, and W+F at least 32/64), S0-CEILING, S0-LOW,
+  S0-OVER and S0-DONE; P′, A′ and D′ for post-count fixes; the freeze only on S0-DONE (§7).
+- **R28.105** — the bar: c = 0.9 × min(r_SG, r_WF), with r_WF counting every W+F lift whatever the
+  hand-over type, b = min(c, max(0.50, LCB(H(D)))), ⌈b × 128⌉ of 128 (§7.6).
 - **R28.106** — the gated stage: 128 fresh resets, one run, every arm (§8).
 - **R28.107** — rows VOID, HY-PASS, HY-UNSPECIFIC, HY-LOW and HY-FAIL (first match); exact one-sided
   McNemar at p < 0.01 against G_loc-only, N_J+G, rand and hold; a decomposition before any second

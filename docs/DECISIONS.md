@@ -83,8 +83,15 @@ TASK-101 (closed) and TASK-102 (opened). Docs and cards only: nothing ran for th
     it (CEM's commands from the pose itself moved the arm to 0.048–0.055 rad RMS). That offset lies
     well inside the tolerant range. *What this does not show:* that CEM over J **reaches** that
     neighbourhood from the reset pose. In K′'s closed loops the median closest arm RMS to subgoal 1
-    was 0.26–0.48 rad, and the best single episode came within 0.035 rad. TASK-102 measures this
-    directly (arm W+F in its Stage 0, with a row that stops before any gated stage).
+    was 0.26–0.48 rad over the four configurations. For H8-mean, the configuration TASK-101's tie
+    rule chose at 0/32, it was 0.45 rad in median and 0.21 rad at best, so no H8-mean episode came
+    within 0.12 rad of subgoal 1; the `last` configurations came closer (H8-last 0.35 rad median,
+    best 0.035 rad). The approach is therefore the hybrid's main risk. TASK-102 measures it
+    directly: Stage 0 chooses phase 1's configuration among TASK-101's four on a fresh development
+    cohort A by hand-overs by tolerance, and row S0-APPROACH stops before any gated stage unless H
+    hands over by tolerance on at least 16/32 of A's resets and 32/64 of D's. W+F is not that
+    measure: its privileged follower re-aims from simulator truth and lifts from wide approach
+    errors.
   - **The grasp needs about 0.02 rad, or closed-loop correction.** With the jaw closing where the
     arm stands ("carry"), the lift rate fell from 32/32 at 0.02 rad to 20/32 at 0.04 rad and 2/32
     at 0.16 rad. With the pose corrected while the jaw closes ("reaim", reported only), it was
@@ -124,15 +131,17 @@ TASK-101 (closed) and TASK-102 (opened). Docs and cards only: nothing ran for th
   closed loops, which never reached a subgoal by tolerance.
 - **R28.95 — TASK-102 opens (DRAFT, docs and card only).** Preregistration
   [so101_hybrid_lift_v1.md](experiments/so101_hybrid_lift_v1.md) on `so101_cube_lift_v1` in
-  simulation. Controller **H**: phase 1, TASK-101's CEM over J-100101 (H8-mean, unchanged) toward
-  the pre-grasp image subgoal of the per-reset demonstration, handing over when the measured arm is
-  within τ_h of subgoal 1's joints for 3 commands (τ_h ≤ 0.12 rad, by a rule written in §5.3 of the
-  protocol), or at a 60-command timeout; phase 2, **G_loc**, a learned local grasp-and-lift policy
+  simulation. Controller **H**: phase 1, TASK-101's CEM over J-100101 (settings unchanged; one of
+  TASK-101's four declared configurations, chosen on development cohort A by hand-overs by
+  tolerance) toward the pre-grasp image subgoal of the per-reset demonstration, handing over when
+  the measured arm is within τ_h of subgoal 1's joints for 3 commands (τ_h ≤ 0.12 rad, by a rule
+  written in §5.2 of the protocol), or at a 60-command timeout; phase 2, **G_loc**, a learned local grasp-and-lift policy
   trained by behaviour cloning (TASK-071/072's P-3 recipe) on frozen DINOv2 g4 features of both
   cameras plus proprioception, on `so101-play-v1` train-split grasp windows (episode-grouped; val for
   selection; test never opened). Arms: H, G_loc-only, N_J + G_loc, S + G (privileged approach),
   W + F (privileged grasp), F, H-pose + G, rand and hold. Stage 0 trains G_loc (three seeds),
-  calibrates τ_h on development cohort P and the bar on development cohort D by rules fixed now,
+  calibrates τ_h on development cohort P, phase 1's configuration on development cohort A and the
+  bar on development cohort D by rules fixed now,
   and freezes at its merge. The gated stage runs 128 fresh resets once. Rows VOID / HY-PASS /
   HY-UNSPECIFIC / HY-LOW / HY-FAIL; no abandonment clause; a decomposition record before any second
   variant. Seeds 103000–103999 and salts 10110–10115 (unused on every remote ref, 2026-10-19).
@@ -141,7 +150,8 @@ TASK-101 (closed) and TASK-102 (opened). Docs and cards only: nothing ran for th
 - **R28.96 — Naming.** A pass is named **"a hybrid with a `native_jepa` world-model approach and a
   learned grasp policy succeeds"** (with the protocol's §14 qualifiers: in simulation, on
   `so101_cube_lift_v1`, the approach aimed at an image subgoal of a privileged per-reset
-  demonstration, G_loc cloned from privileged scripted play). It is not LeWM, not "LeWM-driven",
+  demonstration and its joints read for the hand-over, G_loc cloned from privileged scripted
+  play). It is not LeWM, not "LeWM-driven",
   not "the world model grasps" and not "J needed".
 - **R28.97 — The owner can override.** This ruling was made by Claude under delegation. The owner
   may instead start R28.57's LeWM retrain first, run both, or stop the SO-101 line. Until TASK-102's

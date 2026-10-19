@@ -35,8 +35,11 @@ that the approach to the pre-grasp pose is tolerant (the follower lifted 32/32 u
 from it), while the grasp needs about 0.02 rad when the jaw closes where the arm stands, or
 correction while closing. J's cost does not resolve that.
 
-Controller **H**: phase 1 is TASK-101's CEM over J-100101 (H8-mean, unchanged) toward the pre-grasp
-image subgoal of the per-reset demonstration. It hands over at τ_h (at most 0.12 rad, set on
+Controller **H**: phase 1 is TASK-101's CEM over J-100101 (settings unchanged; one of TASK-101's
+four declared configurations, chosen on development cohort A by hand-overs by tolerance) toward the
+pre-grasp image subgoal of the per-reset demonstration. On K′ no H8-mean episode came within
+0.12 rad of subgoal 1 (median 0.45, best 0.21 rad), so the approach is the main risk, gated by
+S0-APPROACH on hand-overs by tolerance. It hands over at τ_h (at most 0.12 rad, set on
 development cohort P by a declared rule) or after a 60-command timeout. Phase 2 is **G_loc**, a
 learned local grasp-and-lift policy: behaviour cloning (P-3's recipe) of an MLP on the frozen
 DINOv2 g4 latent of both cameras plus proprioception and a clock. It is trained on grasped attempt
@@ -62,7 +65,8 @@ override the ruling that opened this task (R28.97).
   `run_task102_stage.sh`, manifest `benchmarks/manifests/so101-hybrid-lift-v1.json`). G1, TASK-100
   and TASK-101 pinned files and `config.py` byte-identical; core-import check passes. Tests; G_loc
   trained (3 seeds, primary by lowest val MSE); §7.3's checks in the ledger before counts; P
-  (103000–103031) sets τ_h; D (103100–103163) runs every arm; bar, power and GPU projection; Stage 0
+  (103000–103031) sets τ_h; A (103500–103531) chooses phase 1's configuration; D (103100–103163)
+  runs every arm; bar, power and GPU projection; Stage 0
   row and record `docs/experiments/so101_hybrid_lift_v1_stage0.md`; independently reviewed and
   merged (the freeze, on S0-DONE only)
 - [ ] Gated stage S on 103200–103327 (reserve 103400–103463) at the frozen revision in a clean run
