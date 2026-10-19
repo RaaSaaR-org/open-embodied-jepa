@@ -685,6 +685,75 @@ def check_render(args, report) -> dict:
     }
 
 
+def check_marker(args, report) -> dict:
+    """Reported diagnostic of a §7.2.2 miss: D's goal demonstrations replayed, each subgoal state
+    rendered twice -- as the task declares it (the lift scene's target marker at x 0.30, y -0.20 m)
+    and with only the marker (no contact, ``contype`` 0) moved to a point drawn from the play
+    corpus's marker box (x 0.16-0.22, |y| <= 0.14, >= 8 cm from the cube; rng 0) -- and R-enc's
+    cube error read on both. The marker is restored before the next physics step."""
+    from embodied_jepa import so101_wm as sw
+    from embodied_jepa.so101_followers import follow_lift
+    from embodied_jepa.so101_tasks import SO101CubeLiftTask
+
+    goals = cl.load_goal_store(args.goals, args.goals_sha256)
+    if goals["report"]["cohort"] != "D":
+        raise cl.GuardError("the marker diagnostic reads D's goal demonstrations")
+    shared = rt.shared_root()
+    rr = json.loads((shared / cl.TASK100_READOUTS / "report.json").read_text())
+    path = shared / cl.TASK100_READOUTS / cl.RENC_FILE
+    if cl.sha256_file(path) != rr["files_sha256"][cl.RENC_FILE]:
+        raise cl.GuardError("G-readouts: renc_pretrained.npz differs from TASK-100's report")
+    fits = sw.load_readouts(path)
+    feat = rt.LiveFeaturiser(args.device)
+    rng = np.random.default_rng(0)
+    errors = {"declared": [], "marker_in_corpus_box": []}
+    stored = goals["arrays"]["latents_raw"].reshape(-1, cl.TOKENS, cl.WIDTH)
+    rerendered = []
+    for seed in [int(s) for s in goals["arrays"]["seeds"]]:
+        robot = rt.make_robot(True)
+        task = SO101CubeLiftTask(robot)
+        sim = robot.sim
+        cube_xy = np.array(task.sample_reset(seed)["cube_xy"])
+        while True:
+            marker = np.array([rng.uniform(0.16, 0.22), rng.uniform(-0.14, 0.14)])
+            if np.linalg.norm(marker - cube_xy) >= 0.08:
+                break
+        caps = []
+
+        def on_command(n, result, sim=sim, marker=marker, caps=caps):
+            if n not in cl.SUBGOAL_COMMANDS:
+                return
+            declared = {c: sim.render(c) for c in cl.CAMERAS}
+            old = sim.model.body("target").pos.copy()
+            sim.model.body("target").pos[:2] = marker
+            sim.mj.mj_kinematics(sim.model, sim.data)
+            moved = {c: sim.render(c) for c in cl.CAMERAS}
+            sim.model.body("target").pos[:] = old
+            sim.mj.mj_kinematics(sim.model, sim.data)
+            caps.append((declared, moved, sim.data.body("cube").xpos.copy() * 100.0))
+
+        try:
+            follow_lift(rt.Recorder(robot, on_command), task, seed)
+        finally:
+            robot.close()
+        for declared, moved, truth in caps:
+            for key, frames in (("declared", declared), ("marker_in_corpus_box", moved)):
+                raw, z = feat.encode({c: frames[c][None] for c in cl.CAMERAS})
+                if key == "declared":
+                    rerendered.append(raw[0])
+                pred = sw.apply_readout(fits["cube"], z)
+                errors[key].append(float(sw.label_errors("cube", pred, truth[None])[0]))
+    same = int(sum(np.array_equal(a, b) for a, b in zip(rerendered, stored, strict=True)))
+    bar = sw.frozen_choices()["bars"]["B_cube"]
+    return {
+        "frames": len(errors["declared"]),
+        "median_cm": {k: float(np.median(v)) for k, v in errors.items()},
+        "B_cube": bar,
+        "declared_latents_equal_goal_store": same,
+        "passes": None,
+    }
+
+
 CHECKS = {
     "latent": check_latent,
     "renc": check_renc,
@@ -693,6 +762,7 @@ CHECKS = {
     "adapter": check_adapter,
     "determinism": check_determinism,
     "render": check_render,
+    "marker": check_marker,
 }
 
 
