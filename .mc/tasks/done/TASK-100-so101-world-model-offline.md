@@ -23,7 +23,6 @@ updated: 2026-10-19
 ---
 
 
-
 # SO-101 S4: offline world-model study on so101-play-v1 (LeWM and native_jepa token predictors over frozen DINOv2 tokens of both cameras, gates G1–G6)
 
 ## Description
@@ -61,7 +60,8 @@ Offline only; no control claim; not an Apple→Plate experiment; R7 does not cha
 ## Notes
 
 - 2026-10-17, created with the DRAFT preregistration (branch `docs/so101-s4-draft`). Nothing
-  featurised, trained or evaluated.- 2026-10-17, DRAFT merged (#236). Stage 0 run on branch `feat/so101-s4-stage0` (D0 only; test
+  featurised, trained or evaluated.
+- 2026-10-17, DRAFT merged (#236). Stage 0 run on branch `feat/so101-s4-stage0` (D0 only; test
   never opened): S0-DONE. Grid g4; B_rank 0.11, B_std 0.37, B_cube 2.397 cm, B_jaw 0.1666 rad;
   moving subsets 1.0 cm and 0.2 rad (not halved); calibration L's G4 lower bounds 1.769 / 2.083
   (h = 8 / 16) and R-pred medians inside both G5 bars, so no ruling needed; CUDA determinism

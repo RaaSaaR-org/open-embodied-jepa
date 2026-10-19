@@ -179,10 +179,10 @@ copy-last readout (start frame only; pretrained) reads the cube at t + h to 1.75
 2.044 cm (h = 16), the jaw to 0.187 and 0.332 rad.
 
 How much of G5 (a)'s 1.5 × the pass used (R-pred's test median over the gated R-enc's test
-median at the same h): **cube 1.17–1.28 × for J and 1.19–1.26 × for L**; **jaw 0.49–0.54 ×** for
-both. The jaw ratio below 1 is the schema at work, as §6 and §13 disclose: X receives the
-absolute gripper command, which names the jaw's target, so the prediction can read the jaw
-better than the start frame's encoder; it does not show that the model learned the jaw's motion
+median at the same h): **cube 1.16–1.28 × for J and 1.19–1.26 × for L**; **jaw 0.49–0.53 × for J
+and 0.48–0.54 × for L**. The jaw ratio below 1 is the schema at work, as §6 and §13 disclose:
+X receives the absolute gripper command, which names the jaw's target, so the prediction can
+read the jaw better than the start frame's encoder; it does not show that the model learned the jaw's motion
 from images. B_ℓ came from a readout fitted on 180 D0 episodes and is looser than 1.5 × the gated
 ceiling (§10.5): against the gated ceiling, 1.5 × would be 2.07 cm (h = 8) and 2.10 cm (h = 16),
 and every J and L R-pred cube upper bound (1.687–1.882 cm) is also below those.
@@ -223,7 +223,7 @@ Per model, 95 % intervals (the copy ratio here is the 95 % reported interval; G2
 | R-100102 | 16 | 0.313 [0.305, 0.322] | — | 3.266 [3.172, 3.356] | 3.042 [2.957, 3.126] | 2.077 [1.952, 2.241] | 3.015 [2.873, 3.164] | 0.0676 [0.0637, 0.0716] | 0.2982 [0.2879, 0.3083] | 0.039 | 0.683 | — |
 
 - **R-enc on predictions** (the readout fitted on encoded frames, applied to predicted latents)
-  reads the cube at 1.90–2.43 cm for J and 2.54–2.90 cm for L, and the jaw at 0.17–0.27 rad,
+  reads the cube at 1.90–2.43 cm for J and 2.54–2.90 cm for L, and the jaw at 0.16–0.27 rad,
   against R-pred's 1.61–1.80 cm and 0.046–0.053 rad: TASK-077's distribution shift is present for
   both backends, larger for L, and R-pred (the gated readout) removes most of it.
 - **Against S2's envelope** (§7.3, §9): R-pred's median cube error is 1.6–1.8 cm, about 3 × S2's
@@ -360,7 +360,11 @@ J's predictor has about 1/16 of L's parameters and trains about 22 % faster per 
   working copy `~/develop/emai/ssd-work/task100-features-pretrained` (28 166 073 721 bytes, 20
   files) and `…-random_init` (28 140 907 423 bytes, 19 files) were deleted at
   2026-10-19T11:50:57Z; `/` went from 51.3 GB to 107.6 GB free. Record:
-  `ssd-working-copy-deletion.txt` in the evidence.
+  `ssd-working-copy-deletion.txt` in the evidence. The HDD hash lists' modification times
+  (11:50:49Z, 66 s after the checkpoint hash list) record when the lists were written, not when
+  hashing began; the start time of the HDD re-hash (about 56 GB) was not recorded (it
+  presumably ran before or alongside the checkpoint hashing). The independent review re-hashed both
+  `latents_train.npy` files and every HDD file under 50 MB and found them matching.
 - Nothing was re-thresholded, retrained, re-selected or re-chosen after the test numbers were seen.
 
 ## Evidence
