@@ -18,7 +18,10 @@ under owner delegation).** The ruling on Δ-MIXED: the 0.04 rad switching tolera
 not calibrated, and Δ puts J's cost minimum about 0.05 rad off the subgoal pose. A2 measures the
 task's pose-error envelope on the privileged follower on fresh seeds, sets the switching tolerance
 τ_s by a rule fixed before the measurement, and reruns the calibration on fresh cohorts K″ and D″
-(Stage 0″). Not frozen. §19 holds the amendment.
+(Stage 0″). Not frozen. §19 holds the amendment. **Envelope result
+([record](so101_closed_loop_lift_v1_envelope.md), R28.90): A2-NOT-BINDING.** Subgoal 1 lifted
+32/32 up to 0.16 rad, but subgoal 2 ("carry") lifted only 20/32 at 0.04 rad, so τ_s stays 0.04,
+K″ does not run, and the choice goes to the owner.
 
 **Amendment A1 (2026-10-19, [DECISIONS](../DECISIONS.md) (bv), R28.65–R28.75; decided by Claude
 under owner delegation).** Stage 0 ended S0-VOID ([record](so101_closed_loop_lift_v1_stage0.md),

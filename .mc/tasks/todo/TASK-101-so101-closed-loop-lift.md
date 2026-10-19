@@ -114,3 +114,8 @@ and the LeWM long-budget re-run is a separate recommendation (R28.57) that has n
   102200–102263 with τ_s, freeze only on S0-DONE. Under A2-NOT-BINDING (L < 0.06): τ_s stays 0.04,
   escalate to the owner (hybrid grasp controller or LeWM retrain). Stage 0 cap raised to 7.5 GPU h
   cumulative. The rule was committed before the measurement.
+- 2026-10-19 envelope (R28.90; record `docs/experiments/so101_closed_loop_lift_v1_envelope.md`,
+  evidence `~/develop/emai/evidence/task101-envelope`, SHA256SUMS `a536ac96…`): run at `ea19cbb`
+  after the rule's commit. "pre" 32/32 at every level to 0.16 rad; "carry" 32/32 at 0.02, 20/32 at
+  0.04, 2/32 at 0.16; row **A2-NOT-BINDING**, τ_s stays 0.04 rad, K″ not run. Awaiting the owner's
+  choice: hybrid local grasp controller or LeWM longer-budget retrain.

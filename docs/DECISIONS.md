@@ -63,7 +63,7 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
-## Decision 2026-10-19 (bx) — Claude, under owner delegation, rules on TASK-101's Δ-MIXED: amendment A2 — the 0.04 rad switching tolerance was declared, not calibrated; measure the follower's pose-error envelope on fresh seeds E and set τ_s by a rule fixed before the measurement; Stage 0″ on fresh K″ and D″ with τ_s under A2-TAU, escalation to the owner (hybrid grasp controller or LeWM retrain) under A2-NOT-BINDING; not frozen; R7 unchanged (R28.83–R28.89)
+## Decision 2026-10-19 (bx) — Claude, under owner delegation, rules on TASK-101's Δ-MIXED: amendment A2 — the 0.04 rad switching tolerance was declared, not calibrated; measure the follower's pose-error envelope on fresh seeds E and set τ_s by a rule fixed before the measurement; Stage 0″ on fresh K″ and D″ with τ_s under A2-TAU, escalation to the owner (hybrid grasp controller or LeWM retrain) under A2-NOT-BINDING; envelope measured: A2-NOT-BINDING (subgoal 2 lifts 20/32 already at 0.04 rad), τ_s stays 0.04, escalated to the owner; not frozen; R7 unchanged (R28.83–R28.90)
 
 **Decided by Claude under owner delegation (the 2026-09-30 delegation; the SO-101 branch opened by
 R28.1).** It answers R28.82. Protocol [so101_closed_loop_lift_v1.md](experiments/so101_closed_loop_lift_v1.md)
@@ -109,6 +109,19 @@ runs; the envelope's record is a later commit of the same PR.**
   then the measurement at that revision and its record
   `docs/experiments/so101_closed_loop_lift_v1_envelope.md`. Independent review, then merge. R7
   does not change (R28.9).
+- **R28.90 — The envelope's row: A2-NOT-BINDING (recorded in the second commit, after the
+  measurement).** Run at `ea19cbb` from a clean tree (E: 32/32 kept; G-zero held on all 96 pairs;
+  CPU, 115 s). "pre" (subgoal 1) lifted 32/32 at every level up to 0.16 rad. "carry" (subgoal 2,
+  jaw closing at the perturbed pose) lifted 32/32 at 0.02 rad, **20/32 at 0.04** (exact 95 %
+  0.437–0.789), 14/32 at 0.06, 10/32 at 0.08, 4/32 at 0.12 and 2/32 at 0.16. Reported only, "reaim"
+  31, 29, 26, 28 and 25 of 32 from 0.04 to 0.16. The largest level with every level up to it
+  passing is 0.02 rad < 0.06, so **τ_s stays 0.04 rad**, K″ does not run, and the current 0.04 rad
+  tolerance itself fails the 30/32 bar at subgoal 2. **Escalated to the owner**: a hybrid local
+  grasp controller or R28.57's LeWM longer-budget retrain, each under its own preregistration. A
+  reading, not a row: the grasp pose needs about 0.02 rad RMS when the jaw closes where the arm
+  stands, while J's cost minimum lies about 0.05 rad off the pre-grasp pose. No switching tolerance
+  satisfies both. Record [so101_closed_loop_lift_v1_envelope.md](experiments/so101_closed_loop_lift_v1_envelope.md);
+  evidence `~/develop/emai/evidence/task101-envelope/` (`SHA256SUMS` `a536ac96…`). R7 unchanged.
 
 ## Decision 2026-10-19 (bw) — TASK-101 Stage 0′: every §7.2 check passed before any count and the runner enforced it (R-enc 0.912 cm on K′'s frames); K′ 0/32 in all four configurations, so the row is S0-NULL and D′ did not run; the declared diagnostic Δ read Δ-MIXED (m1 0.116, m2 0.000); escalated; not frozen; R7 unchanged (R28.76–R28.82)
 
