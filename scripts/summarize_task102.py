@@ -417,6 +417,9 @@ def cmd_stage0(args) -> int:
             used_gpu_h=gh["gpu_h"],
         ) | {"lock_seconds_per_episode": lock}
         row_args["s_fits_without_replication"] = out["projection"]["fits_without_replication"]
+    if "gpu" not in out:
+        gh = gpu_hours()
+        out["gpu"] = {k_: v for k_, v in gh.items() if k_ != "list"} | {"jobs_list": gh["list"]}
     out["row"] = hy.stage0_row(void_reasons=void, **row_args)
     out["void_reasons"] = void
     Path(args.output).write_text(json.dumps(out, indent=1, default=cl._json_default))

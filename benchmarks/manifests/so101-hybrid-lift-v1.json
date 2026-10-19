@@ -1,0 +1,166 @@
+{
+ "name": "so101-hybrid-lift-v1",
+ "task": "TASK-102",
+ "document": "docs/experiments/so101_hybrid_lift_v1.md",
+ "stage0_record": "docs/experiments/so101_hybrid_lift_v1_stage0.md",
+ "status": "CANDIDATE",
+ "frozen_at": "not frozen: Stage 0 row S0-APPROACH (no configuration handed over by tolerance on A; D did not run); the protocol freezes only on S0-DONE (\u00a77.7)",
+ "run_revision": "c586eb14 (checks, P, A); G_loc trained at 07bb8b0, windows at 4d81c56",
+ "files_sha256": {
+  "src/embodied_jepa/so101_hybrid.py": "3f2e9f10b4ffce31f9332813ada4a2a6b788e960bef277ece90e5be45cf5f592",
+  "src/embodied_jepa/so101_hybrid_runtime.py": "9bde02fa7f32c48cb8ef438fd3df858313ef5fd432925517569758f370b3c012",
+  "src/embodied_jepa/so101_grasp_policy.py": "ebf119677d0cb8eca129ad0c44db738cbcc3108674f8b5f090f4412f617a2935",
+  "scripts/train_task102.py": "d33fe6e09859c6cd8d59c3b71a07fdd5bc4b51f8dc6eed76e401ac01595aba2f",
+  "scripts/run_task102.py": "a768c8fcadaf3a9a7c0b40c9424df33c900973ca0548945f8931d831dcbf2335",
+  "scripts/summarize_task102.py": "ebfcc79a98523eb904a385729b7bb98fde521665e9bd310396b7f14682b18de0",
+  "scripts/run_task102_stage.sh": "8a06d1ddb06eef3706588ac0f77fce64b9ac4eadbf46a24394004c627df50807"
+ },
+ "composed_files_sha256": {
+  "src/embodied_jepa/so101_closed_loop.py": "9187a3e143ef137fda4b3c255dc5eaa5bad55df1d7bb1b5dc3e6766fe3ad1e95",
+  "src/embodied_jepa/so101_closed_loop_runtime.py": "9097d8cef02215c61cd12a23de0584ef569e2289ddfba4e67ceaded939404e31",
+  "src/embodied_jepa/so101_tasks_lift_v1.py": "5bb47aa77561c664d2c95b44179d7d63b1cf72d01c8a1d0241404af5e3f6d671",
+  "src/embodied_jepa/schema_planning.py": "bcfc76b45d4697b90188ce5b61909ec036d7059d41bebd07c76462850910796a",
+  "src/embodied_jepa/so101.py": "7e7baf5d24dff380e1199d333d05b0438af87220222475799a722c2706966930",
+  "src/embodied_jepa/so101_simulation.py": "a5143d9e0979ba042d7c9123742dfc634dc8838276d9ffce243daa1a42837ec8",
+  "src/embodied_jepa/so101_tasks.py": "b6fcb852a89217e55ee7a8e8025c3bbdb46c98358ae13711523b4f7ee8f7246e",
+  "src/embodied_jepa/so101_followers.py": "fe086b8980464898f18f47e14e991d389e6796d8e2b854c797179381c43c5828",
+  "src/embodied_jepa/so101_scripted.py": "04c7b1490942bd35e03d002e68e7c5a7863040e3e31e22a801b42d752c07269b",
+  "src/embodied_jepa/so101_play_corpus.py": "cb8a6d0f72216f06c3d2a82cf2101a5c0ef7a1f0f732ef40e75cdcc3472463c3",
+  "src/embodied_jepa/so101_switch_envelope.py": "6cf863d6283f84e8e19fe9aa83240d8cac14325a3bbc03836e0d24e1752314c5",
+  "src/embodied_jepa/config.py": "0a6544a0230ecb7a156da03efbafb0759a494bddb85f82dbd9f6d0427bb69e57",
+  "configs/so101_sim_action.json": "c573b64ae4ae3860d3465a4f5cc334c746fece36c3dc2fcc670223f71e40016e",
+  "benchmarks/manifests/so101-closed-loop-lift-v1.json": "83813c1bc36be9a8ba354c884a7ef5ace4837062574687f18f6be003f17392d2",
+  "benchmarks/manifests/so101-world-model-v1.json": "e35929a308ef485d8acbccdf07e5b532c457b5a936dfb3eeb27264428d682503",
+  "benchmarks/manifests/so101-play-v1.json": "a644453c5b690817cd15318306fd246e996841649a4899a469301b18945de9d6"
+ },
+ "seeds": {
+  "P": [
+   103000,
+   103031,
+   [
+    103032,
+    103047
+   ]
+  ],
+  "Pp": [
+   103060,
+   103091,
+   [
+    103092,
+    103099
+   ]
+  ],
+  "D": [
+   103100,
+   103163,
+   [
+    103164,
+    103199
+   ]
+  ],
+  "S": [
+   103200,
+   103327,
+   [
+    103400,
+    103463
+   ]
+  ],
+  "A": [
+   103500,
+   103531,
+   [
+    103532,
+    103547
+   ]
+  ],
+  "Dp": [
+   103600,
+   103663,
+   [
+    103664,
+    103699
+   ]
+  ],
+  "Ap": [
+   103700,
+   103731,
+   [
+    103732,
+    103747
+   ]
+  ],
+  "debug": [
+   103900,
+   103999
+  ]
+ },
+ "salts": {
+  "cem": 10110,
+  "rand": 10111,
+  "offset": 10112,
+  "bootstrap": 10113,
+  "power": 10114,
+  "gloc": 10115,
+  "marker": 10107
+ },
+ "model": {
+  "J": "J-100101",
+  "N_J": "N_J-100101",
+  "checkpoint_sha256": {
+   "J-100101": "0e04d495ef39bc1b4a44ace607a6c749c53a4df010308f747230927526180061",
+   "N_J-100101": "a8fe58a4bd7cf7b7e39efe27f003756832f40d6c8157e6d21f696788cef90c3c"
+  },
+  "implementation_sha256": "78ba9dbe00eb1efba5ec6ecb2f99821e6817aa8e5aa7e5b7fdaaa115ea426220",
+  "moments_sha256": "b303cd09ecc105473693ad317b90e209c2d1fd9d4e78ae344cdf6e52ef613b89"
+ },
+ "gloc": {
+  "primary": "G-0",
+  "replication": [
+   "G-1",
+   "G-2"
+  ],
+  "checkpoint_sha256": {
+   "G-0": "656f26d5193d666fadc7a9e564a255ddc271cc5d68d7e47e8d6f4a0b131f9bc1",
+   "G-1": "c38a24098575952734ad1b583d9362243a0f6a6aeb7dd25eddaf92389766b7ff",
+   "G-2": "7ba6b715a013ef654d986fa8ad1777244f4f44f662898f1532116aeab80a7dc0"
+  },
+  "implementation_sha256": "ebf119677d0cb8eca129ad0c44db738cbcc3108674f8b5f090f4412f617a2935",
+  "selected_update": {
+   "G-0": 7000,
+   "G-1": 7000,
+   "G-2": 5000
+  },
+  "val_mse": {
+   "G-0": 0.027119794984739043,
+   "G-1": 0.027616051236926235,
+   "G-2": 0.027555749973920043
+  }
+ },
+ "feature_report_sha256": "afe605d5994e1cbe5b09cd2486aa42c971fc4e41dca034945c5e237b46e1508f",
+ "stage0": {
+  "row": "S0-APPROACH",
+  "tau_h": 0.08,
+  "P_k": {
+   "0.0": 30,
+   "0.04": 31,
+   "0.08": 28,
+   "0.12": 19
+  },
+  "A_a": {
+   "H8-last": 0,
+   "H8-mean": 0,
+   "H16-last": 0,
+   "H16-mean": 0
+  },
+  "A_chosen": "H16-last",
+  "tau_file_sha256": "38ecccaec787f2a476410a578b434efd560a82e97987e7a3d89009eed3f629dd",
+  "config_file_sha256": "bcc7f620c4445079e5f8d1c4d53e3523a466cfc856bedbf3653e16cc4fc2ac25",
+  "summary_sha256": "51898127e5bad1077efb723e5e8ba74be3b468775ab510b8e9970045da968376",
+  "gpu_h": 1.246
+ },
+ "budget": {
+  "hard_cap_gpu_h": 12.0,
+  "stage0_cap_gpu_h": 5.0
+ }
+}

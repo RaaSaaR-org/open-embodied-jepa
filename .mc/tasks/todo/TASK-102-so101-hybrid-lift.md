@@ -21,7 +21,7 @@ depends_on:
 - "[[TASK-101]]"
 due_date: ''
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-20
 ---
 
 
@@ -83,3 +83,10 @@ override the ruling that opened this task (R28.97).
   only matches are digits of two decimals in an apple results table, which are not seeds.
 - Read only: TASK-100's checkpoints (`checkpoints/task100-run/`) and pretrained feature store
   (`outputs/task100-features-pretrained`), and `data/so101-play-v1` (HDD).
+- 2026-10-20, Stage 0 (branch `feat/so101-hybrid-stage0`; record
+  `docs/experiments/so101_hybrid_lift_v1_stage0.md`; DECISIONS (bz), R28.110–R28.118). G_loc
+  trained (3 029 train windows; primary G-0, val MSE 0.0271). Every §7.3 check passed at `c586eb1`
+  before any count. P: S+G 30/32 at r = 0, 31, 28, 19 at 0.04/0.08/0.12 rad, so τ_h = 0.08 rad.
+  A: a_A = 0/32 in all four configurations (every approach timed out), so the **row is
+  S0-APPROACH**. D did not run, nothing is frozen (manifest CANDIDATE), and the study escalates.
+  1.246 GPU h. Evidence `~/develop/emai/evidence/task102-stage0/`.
