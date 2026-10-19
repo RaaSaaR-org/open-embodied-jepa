@@ -35,10 +35,13 @@ executed, using TASK-100's J checkpoints (primary J-100101 by the lowest val cri
 and J-100102 reported). The cost is the latent error to four image subgoals from a privileged
 per-reset demonstration by follower v1, and switching reads proprioception and the goal pose. Arms:
 W, the action-blind twin N, goal-blind W-shuf, scene-blind W-mean, rand, hold, the privileged
-follower F (ceiling) and the non-learned pose follower H-pose. Stage 0 calibrates the horizon and
+follower F (it replays the goal demonstration, so it scores every kept reset by construction and is a
+determinism guard, not a measured ceiling) and the non-learned pose follower H-pose (the measured
+reference). Stage 0 calibrates the horizon and
 the cost form on calibration seeds and sets the bar from a development closed loop:
-b = min(0.9 × r_F(D), max(0.50, LCB(W(D)))). The gated stage runs 128 fresh resets. Rows: VOID /
-S-VOID-CEILING / CL-PASS / CL-UNSPECIFIC / CL-LOW / CL-FAIL. There is no abandonment clause; a
+b = min(0.9 × r_F(D), max(0.50, LCB(W(D)))), where r_F(D) = 1 by construction, so the cap is 0.90
+and LCB(W(D)) binds. The gated stage runs 128 fresh resets. Rows: VOID /
+CL-PASS / CL-UNSPECIFIC / CL-LOW / CL-FAIL. There is no abandonment clause; a
 development decomposition comes before any second variant.
 
 **The preregistration (DRAFT):**

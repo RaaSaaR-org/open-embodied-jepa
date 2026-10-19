@@ -72,8 +72,10 @@ From TASK-100's gated record (offline, one run, simulation, a privileged scripte
 frames, its own joint state and image subgoals of a demonstration of the same reset? And does its
 success depend on the actions, the scene and the goal, as it should?
 
-**The primary claim**, made only by row CL-PASS (§9): **"J-driven closed-loop lift success"** on
-`so101_cube_lift_v0` in simulation, with every qualifier of §14. It is not "LeWM-driven", it is not
+**The primary claim**, made only by row CL-PASS (§9): **"J-driven closed-loop lift success toward
+image subgoals of a privileged per-reset demonstration"** on `so101_cube_lift_v0` in simulation,
+with every qualifier of §14. The goal source is part of the claim's name and is never dropped when
+the claim is restated. It is not "LeWM-driven", it is not
 "J needed" (the privileged follower and a non-learned pose follower given the same goal pose are
 reported beside it), and it is not a placement claim.
 
@@ -104,6 +106,11 @@ guard) ends the episode as a failure and is reported; it is not a VOID.
   (100101)** and 0.53383 (100102), so the **primary model is J-100101**; J-100100 and J-100102 are
   replication arms, reported only. *Disclosed:* this rule is written after TASK-100's test numbers
   were published. It reads no test number, and all three seeds passed every gate with close values.
+  *Also disclosed:* J-100101 happens to have the best test values among the J seeds on G2, G3 and
+  G4, by small margins (h = 8 copy-last ratio 0.740 against 0.741 and 0.744; h = 16 no-action
+  ratio 0.899 against 0.903 and 0.909; h = 16 action sensitivity 1.264 against 1.253 and 1.236).
+  The rule does not read these values and would pick the same seed without them; the coincidence
+  is stated so that the post-hoc disclosure is complete.
 - **The action-blind twin N** is N_J-100101 (`a8fe58a4…0c3c`), trained in TASK-100 on the same
   windows with zero commands; as in TASK-100 it receives zero commands for every candidate.
 - **The live latent** is TASK-100's pipeline, unchanged: each camera's 224 px frame through the
@@ -129,10 +136,13 @@ hashed), their encoded standardised latent (§3) and the demonstration's measure
 (5 arm joints and the jaw). The goal store of a cohort is written by one job before any arm runs,
 hashed, and checked by every arm's runner, so every arm sees the same goals (paired).
 
-- **Rejection and replacement.** If the demonstration does not succeed by the task's scorer, or
-  stops, the reset is replaced by the next unused seed of the cohort's reserve range (§12),
-  recorded with the reason; every arm then runs the replaced cohort. Follower v1 lifted on 64/64
-  development seeds (S2), so replacement is expected to be rare. Its count is reported.
+- **Rejection and replacement.** The reset is rejected if the demonstration does not succeed by
+  the task's scorer, or stops, **or terminates (success, lost cube or timeout) or stops before
+  command 120 has executed**, so that subgoal 4 would not exist. (In S2 follower v1's success came
+  at step 121, a margin of one step.) A rejected reset is replaced by the next unused seed of the
+  cohort's reserve range (§12), recorded with the reason; every arm then runs the replaced cohort.
+  Follower v1 lifted on 64/64 development seeds (S2), so replacement is expected to be rare. Its
+  count per cohort is reported, and on D it is the measured ceiling check of §7.6 (S0-CEILING).
 - **Why demonstration goals.** The lift task's goal is a state of the cube ("held 5 cm up"), not an
   image. An image-goal planner needs a concrete instance of that state for this reset, and an
   image-goal benchmark supplies it the same way: a goal observation from a demonstration of the
@@ -224,16 +234,31 @@ rule is in §7.3.
 | **W-mean** | W with the current-frame latent replaced at every planning call by the fit-sample mean latent (zero in the standardised space); goals unchanged | scene-blind control |
 | **rand** | every channel uniform on [−1, 1], fresh every command (salt 10102); the embodiment clips as usual | floor |
 | **hold** | `SO101Embodiment.hold_action()` every command | floor |
-| **F** | the privileged scripted follower v1 (`follow_lift`, no offset); reads simulator truth | **reference ceiling** (not learned) |
+| **F** | the privileged scripted follower v1 (`follow_lift`, no offset); reads simulator truth | determinism guard on the goal pipeline (not learned; scores every kept reset by construction, §6) |
 | H-pose | non-learned pose follower: each command moves the arm targets toward subgoal k's measured arm joints with the follower's own law, `clip((q_k − target) / scale, ±1)`, and commands the jaw +1 if subgoal k's jaw angle is above 0.785 rad (mid-range), else −1; §5.3's switching; no image, no model | "J needed" comparator, reported only |
 
 - **N is a weak control by construction, disclosed now.** N's predictions do not depend on the
   candidate, so every candidate ties; `SchemaCEMPlanner` then keeps its initial mean, and N
   executes the zero command (arm held, jaw half open) at every step. This is what an action-blind
-  model can do with this planner. W-shuf and W-mean are the informative controls.
-- **F** runs the same deterministic program as the goal demonstration, so F's count is expected to
-  equal the number of resets kept (§4). It is run and counted anyway, because it is the ceiling the
-  bar is capped by (§7.5) and the comparator of the reported non-inferiority (§10).
+  model can do with this planner. W-shuf and W-mean are the informative controls, and W > N adds
+  little beyond W > hold. **Exact ties are made by construction, not left to the GPU:** because
+  every candidate gives N the same inputs (the same encoded frame and zero commands), N's adapter
+  rolls the model out once per planning call and broadcasts that roll-out to every candidate, so
+  the costs are bit-identical whatever the GPU's batched arithmetic does. A Stage 0 test (§7.1)
+  checks the ties on real CUDA outputs. If the ties were nevertheless broken (a defect), N would
+  still be action-blind, since its costs carry no information about the commands, but it would
+  execute an argmin over float noise rather than the zero command; the Stage 0 record states which
+  N ran.
+- **F is not a measured ceiling on the kept resets, by construction.** F runs the same
+  deterministic program as the goal demonstration, and §4 replaces every reset whose
+  demonstration fails, so on the kept resets k_F equals the number kept and r_F = 1 by
+  construction. F is run and counted anyway, as a determinism check of the goal pipeline: **F's
+  executed actions or outcome differing from the goal demonstration's on any kept reset is a
+  guard failure** (S0-VOID in Stage 0, VOID in S; §12), never a ceiling finding. The measured
+  ceiling quantity is the demonstration's rejection count on the drawn seeds (§4, §7.6). The
+  measured non-trivial reference is **H-pose**, a non-learned follower given the same goal
+  information (TASK-088's analogue); its D count is reported beside the bar in the Stage 0 record,
+  but it does not enter the bar.
 - **No hybrid arm.** A world model for the arm with a hand-written jaw rule, or a world-model
   approach with a scripted grasp, was considered and is not an arm here. The first SO-101 closed
   loop should say what the model-driven controller does alone. A hybrid becomes a candidate only
@@ -241,9 +266,10 @@ rule is in §7.3.
 
 ## 7. Stage 0 (development; before the freeze)
 
-Stage 0 runs on **calibration seeds K** (101010–101041) and **development seeds D**
-(101100–101163) only, and on debug seeds 101900–101999 for plumbing (never counted). No gated seed
-is drawn, rendered or run before the freeze.
+Stage 0 runs on **calibration seeds K** (101010–101041, reserve 101042–101059) and **development
+seeds D** (101100–101163, reserve 101164–101199) only, on the fresh replacement cohorts K′ and D′
+of §7.6 if a rule there calls for them, and on debug seeds 101900–101999 for plumbing (never
+counted). No gated seed is drawn, rendered or run before the freeze.
 
 ### 7.1 Code and tests (new files only)
 
@@ -263,7 +289,9 @@ module constant, TASK-066's and TASK-100's precedent). A new manifest
 
 Tests: the switching rule in both directions and its timeouts; the derangement has no fixed point
 and is fixed by its salt; the chained projector equals `execute`'s applied actions on random
-sequences; the mean-cost wrapper; ties in N's planner return the initial mean; the controller
+sequences; the mean-cost wrapper; ties in N's planner return the initial mean, checked on real
+CUDA outputs of N_J-100101 (bit-identical costs across the batch) as well as on synthetic costs;
+F's executed actions equal the goal demonstration's on the debug seeds; the controller
 object never receives task truth (a sentinel); seeds outside a cohort are refused; a cohort cannot
 be run twice into the same output; checkpoints and goal stores are refused on a hash mismatch; the
 bar rule, the McNemar tests, the bootstrap and every row in both directions on synthetic counts;
@@ -281,7 +309,9 @@ the core-import check; TASK-100's `frozen_files_check` and the G1 frozen-file ch
    pipeline or rendering mismatch, not a model result.
 3. **Projector:** the test of §7.1 on 1 000 random 16-step sequences from D's first frames.
 4. **Determinism:** one W episode and one N episode, each run twice, give identical executed
-   action sequences and identical outcomes.
+   action sequences and identical outcomes; and the same four W episodes run in a pool of 1
+   worker and in a pool of the size used for K, D and S give identical executed action sequences
+   and outcomes (pool-size independence, §13).
 5. **Timing:** median and 95th-percentile planning seconds per command for each configuration of
    §5.4, the worker count used, and the projection of K, D and S (§13). Every command must finish
    inside the embodiment's 30 s wall-clock deadline (`max_wall_snapshot_age_s`).
@@ -301,17 +331,22 @@ Every arm of §6 except the replication seeds runs on the 64 D resets at the cho
 W, N, W-shuf, W-mean, rand, hold, F and H-pose. Reported in the Stage 0 record with exact 95 %
 intervals, per-phase decomposition (§10) and timing. **Development diagnostic only (not an arm,
 read by nothing):** W with the single final subgoal (4) from the first command, on the first 16 D
-resets, to record what the phasing contributes. D changes no knob of §5 by itself; a defect found
-in D needs its own recorded fix and fresh development seeds named by that record.
+resets, to record what the phasing contributes. D changes no knob of §5 by itself. When a fix
+may be rerun on the same seeds and when it needs fresh ones is fixed in §7.6, row 1.
 
 ### 7.5 The bar (rule fixed now, applied to D's numbers)
 
 **b = min(0.9 × r_F(D), max(0.50, LCB(W(D))))**, and the gated bar is **⌈b × 128⌉ successes of
-128**, where r_F(D) is F's success rate on D and LCB(W(D)) the lower end of the exact
-(Clopper–Pearson) 95 % interval of W's D count out of 64.
+128**, where r_F(D) is F's success rate on D's kept resets and LCB(W(D)) the lower end of the
+exact (Clopper–Pearson) 95 % interval of W's D count out of 64. **Because F replays the goal
+demonstration and failed demonstrations are replaced (§4, §6), r_F(D) = 1 by construction, so the
+cap is the constant 0.90, and the binding calibration is LCB(W(D)) between the 0.50 floor and
+that cap.** F does not measure a ceiling here; the formula keeps TASK-088's form only so that the
+cap is written down.
 
-- **0.9 × r_F(D), the ceiling cap:** no bar may ask more than the privileged follower allows on
-  the same goals (TASK-074's lesson; TASK-088's form).
+- **0.9 × r_F(D) = 0.90, the cap:** no bar may ask more than 90 % of what the privileged follower
+  achieves on the same goals (TASK-074's lesson; TASK-088's form). On the kept resets that is
+  0.90; the measured check on the follower is S0-CEILING's rejection count (§7.6).
 - **0.50, the claim floor:** "closed-loop lift success" means at least half of the resets (TASK-088
   used half as its stop level). A lower rate is reported as what it is (CL-LOW), never as success.
 - **LCB(W(D)), the development level:** between the floor and the cap, the gated stage asks W to
@@ -331,14 +366,28 @@ What the rule gives (exact binomial; power is P(X ≥ bar) at a true rate p):
 | 62/64 | 0.89 | 0.89 | 115 | > 0.99 | 0.84 |
 | 64/64 | 0.94 | 0.90 | 116 | > 0.99 | 0.99 |
 
-(Assuming r_F(D) = 1; computed for this draft, recomputed in the Stage 0 record.)
+(r_F(D) = 1, as it is by construction; computed for this draft, recomputed in the Stage 0 record.)
+The last column is not monotone in W(D) (0.84 at 62/64, 0.99 at 64/64). That is not an error: the
+0.90 cap binds only at 64/64, where it lowers the bar from ⌈0.94 × 128⌉ to 116 while the
+evaluated rate stays 0.95.
 
 ### 7.6 Stage 0 rows (first match) and the freeze
 
-1. **S0-VOID** — a check of §7.2 failed or a run did not complete. Fixed under its own record,
-   then rerun on the same development seeds (they set nothing until Stage 0 is accepted).
-2. **S0-CEILING** — F scores below 58/64 on D (r_F(D) < 0.9), or 0.9 × r_F(D) < 0.50: the scene,
-   the goal procedure or the task is in doubt, not the model. Escalate to a ruling; no gated stage.
+1. **S0-VOID** — a check of §7.2 failed, a guard of §12 failed (including F diverging from the
+   goal demonstration), or a run did not complete. Fixed under its own record. **Same-seed reruns
+   are allowed only for a VOID raised before any success or failure count of the affected cohort
+   (K or D) was read**: a §7.2 check, a crash, a guard. **Once K's counts have been read, any fix
+   that changes code or configuration is rerun on the fresh calibration cohort K′ (101060–101091,
+   reserve 101092–101099); once D's counts have been read, on the fresh development cohort D′
+   (101600–101663, reserve 101664–101699).** K and D set the configuration and the bar, so a fix
+   made after their counts were seen and rerun on the same seeds would be a knob turned on seen
+   seeds. K′ and D′ are used at most once each; a second post-count fix needs a ruling that names
+   further seeds. The Stage 0 record states which cohorts set the configuration and the bar.
+2. **S0-CEILING** — the goal demonstration was rejected (§4) on **8 or more** of the D seeds drawn
+   to keep 64 (its rate on the drawn seeds, 64 / (64 + rejections), below 0.9). This is the
+   measured follower check, since F itself scores every kept reset by construction (§6): the
+   scene, the goal procedure or the task is in doubt, not the model. Escalate to a ruling; no
+   gated stage. (F diverging from the demonstration is not this row but S0-VOID.)
 3. **S0-NULL** — every K configuration scored 0/32. No gated stage; the next step is a development
    decomposition record (§9's form) on K's and D's logs.
 4. **S0-LOW** — the bar's power at W's D rate is below 0.80 (by the table, W(D) ≤ 34/64). Escalate:
@@ -347,7 +396,9 @@ What the rule gives (exact binomial; power is P(X ≥ bar) at a true rate p):
 5. **S0-OVER** — the projected gated stage does not fit the cap even without the replication arms
    (§13). Escalate (cloud GPU time is the owner's decision).
 6. **S0-DONE** — otherwise. The Stage 0 record states the chosen configuration, D's counts, b, the
-   bar count, the recomputed power table (bar and McNemar, from D's rates) and the projection.
+   bar count, H-pose's D count beside the bar (the measured non-trivial reference, §6; it does not
+   enter b), the demonstration's rejection counts on K and D, the recomputed power table (bar and
+   McNemar, from D's rates) and the projection.
    **The protocol freezes when the Stage 0 PR merges**; the gated stage then runs without a further
    ruling unless a declared rule escalates.
 
@@ -369,24 +420,26 @@ What the rule gives (exact binomial; power is P(X ≥ bar) at a true rate p):
 ## 9. Rows (first match) and what each leads to
 
 k_X is arm X's successes out of 128; "beats" is an exact one-sided McNemar test on the paired
-resets at **p < 0.01**. The five tests of row 3 are conjunctive (all must pass), an
+resets at **p < 0.01**. The five tests of row 2 are conjunctive (all must pass), an
 intersection-union test, so no multiplicity correction is needed.
 
-1. **VOID** — a guard of §12 failed, a run did not complete, a stage exceeded 1.5 × its measured
-   projection, or a cohort was run twice. Nothing is read. One repeat on fresh seeds named by a
-   ruling; a second VOID closes the task **INCONCLUSIVE**.
-2. **S-VOID-CEILING** — k_F < bar: the follower itself did not reach the bar on these resets.
-   Escalate; no claim; no clause.
-3. **CL-PASS** — k_W ≥ bar, **and** W beats each of **N, W-shuf, W-mean, rand and hold**. The
-   primary claim, "J-driven closed-loop lift success", with §14's qualifiers.
-4. **CL-UNSPECIFIC** — k_W ≥ bar, but W does not beat at least one of the five. W lifts, but its
+1. **VOID** — a guard of §12 failed (including F's executed actions or outcome differing from the
+   goal demonstration's on any kept reset), a run did not complete, a stage exceeded 1.5 × its
+   measured projection, or a cohort was run twice. Nothing is read. One repeat on fresh seeds
+   named by a ruling; a second VOID closes the task **INCONCLUSIVE**.
+2. **CL-PASS** — k_W ≥ bar, **and** W beats each of **N, W-shuf, W-mean, rand and hold**. The
+   primary claim, "J-driven closed-loop lift success toward image subgoals of a privileged
+   per-reset demonstration", with §14's qualifiers.
+3. **CL-UNSPECIFIC** — k_W ≥ bar, but W does not beat at least one of the five. W lifts, but its
    success is not shown to depend on what the failed control removes (the commands, the goal or
    the scene). Escalate; no claim.
-5. **CL-LOW** — k_W < bar, and W beats rand and hold. Escalate; no claim.
-6. **CL-FAIL** — otherwise (W does not beat rand or hold).
+4. **CL-LOW** — k_W < bar, and W beats rand and hold. Escalate; no claim.
+5. **CL-FAIL** — otherwise (W does not beat rand or hold).
 
-The rows are exhaustive: 2 against the ceiling, 3–4 split k_W ≥ bar by the tests, 5–6 split
-k_W < bar by the floors.
+The rows are exhaustive: 2–3 split k_W ≥ bar by the tests, 4–5 split k_W < bar by the floors.
+There is no ceiling row in S. An earlier draft had S-VOID-CEILING (k_F < bar), but it could fire
+only if F diverged from the demonstration, which is a determinism defect and is now a VOID guard.
+The demonstration's rejection count on S's drawn seeds is reported (§10).
 
 What each row leads to (recommendations; the owner, or Claude under delegation, rules):
 
@@ -413,10 +466,18 @@ What each row leads to (recommendations; the owner, or Claude under delegation, 
 
 - Every arm's count with its exact 95 % interval; every paired difference against W with its
   discordant counts and McNemar p (and N, W-shuf, W-mean against rand).
-- **Non-inferiority against F:** the paired difference k_W − k_F with a reset-bootstrap 95 %
-  interval (10 000 resamples, salt 10104); "not detectably inferior beyond δ" if its lower bound is
-  above **−16/128** (TASK-081's allocation, carried as a fraction; not calibrated here). The same
-  against H-pose. Reported, read by no row.
+- **Non-inferiority against H-pose:** the paired difference k_W − k_H-pose with a reset-bootstrap
+  95 % interval (10 000 resamples, salt 10104); "not detectably inferior beyond δ" if its lower
+  bound is above **−16/128** (TASK-081's allocation, carried as a fraction; not calibrated here).
+  The same against F, with the note that F scores every kept reset by construction (§6), so this
+  comparison is W's failure count against a constant arm. Reported, read by no row.
+- **The demonstration's rejection count** on S's drawn seeds, with reasons (§4).
+- **Action dependence beyond N (reported only, not an arm).** Because N executes the zero command,
+  W > N adds little to W > hold. As a non-degenerate reading, on every 10th planning call of W on
+  S, J's cost of the executed best candidate is compared with J's cost of the same candidate with
+  its H steps randomly permuted (8 permutations, salt 10106) and re-projected; reported as the
+  fraction of calls on which the unpermuted candidate is cheaper than every permutation, per
+  phase. It reads W's own state at those calls and changes nothing W executes.
 - **The replication seeds** W-100100 and W-100102: counts against the bar, and McNemar against
   rand, hold, N and W-shuf.
 - **Per-phase decomposition**, per arm: subgoals reached or timed out and when; the fingertip site's
@@ -441,26 +502,30 @@ independent couplings, TASK-081's form).
 ## 12. Seeds, salts, guards
 
 - **Seeds** (the `so101_cube_lift_v0` stream, `default_rng([9801, seed])`): calibration K
-  101010–101041; development D 101100–101163; gated S 101200–101327; S's reserve 101400–101463;
-  debug 101900–101999. None appears in `docs/`, `src/`, `scripts/`, `tests/`, `benchmarks/`,
-  `configs/` or `.mc/` on any branch (`git grep -w` over every remote ref, 2026-10-19). S2 used
-  100–163, 1000–1015 and 0–63.
+  101010–101041 (reserve 101042–101059); fresh calibration K′ 101060–101091 (reserve
+  101092–101099); development D 101100–101163 (reserve 101164–101199); gated S 101200–101327 (S's
+  reserve 101400–101463); fresh development D′ 101600–101663 (reserve 101664–101699); debug
+  101900–101999. K′ and D′ are used only under §7.6 row 1. None appears in `docs/`, `src/`,
+  `scripts/`, `tests/`, `benchmarks/`, `configs/` or `.mc/` on any branch (`git grep -w` over every
+  remote ref, 2026-10-19). S2 used 100–163, 1000–1015 and 0–63.
 - **Salts:** 10101 (CEM), 10102 (rand), 10103 (derangement), 10104 (bootstrap), 10105 (power
-  simulation), 10106 (reserved). None appears anywhere in the same check. TASK-100's 10011–10015
-  are not reused.
+  simulation), 10106 (the permutation reading of §10). None appears anywhere in the same check.
+  TASK-100's 10011–10015 are not reused.
 - **Guards (each a VOID):** the tracked tree clean and at the frozen revision at every job's start
   and end; this task's manifest and TASK-100's `frozen_files_check`; the checkpoint file hashes and
   implementation hashes (§3); the DINOv2 weight pins; the fit-moments hash; the goal-store hash
   read by every arm; seeds inside their cohort; no cohort run twice; every latent, cost and action
-  finite; every GPU job under `scripts/gpu_run.sh --wait --board`.
+  finite; F's executed action sequence and outcome equal to the goal demonstration's on every kept
+  reset; every GPU job under `scripts/gpu_run.sh --wait --board`.
 
 ## 13. Budget, disk and evidence
 
 **Hard cap: 20 GPU h in total, Stage 0 included, Stage 0 itself capped at 6 GPU h.** GPU hours are
-lock time. CPU arms (F, H-pose, rand, hold need no frames and run without rendering) do not take
-the lock. CEM arms run as a pool of worker processes inside one lock, each episode on its own seed
-and model state, so the pool size does not change any episode (checked by §7.2.4 at two pool
-sizes).
+lock time. CPU arms (F, H-pose, rand, hold) need no frames to act and run without rendering
+outside the lock, **except their first 8 episodes on each cohort**, which render frames for the
+evidence (§13, disk) and run inside that cohort's goal job under its lock. CEM arms run as a pool
+of worker processes inside one lock, each episode on its own seed and model state, so the pool
+size does not change any episode (checked by §7.2.4 at two pool sizes).
 
 | Stage | Episodes on the GPU | Estimate (GPU h; estimates, not measurements) |
 |---|---|---|
@@ -502,7 +567,11 @@ overwritten; TASK-100's checkpoints are read only.
   commands. Whether it generalises to other grasp styles is not tested.
 - **"J needed" is not tested by any row.** F (privileged) and H-pose (the goal pose, no images, no
   model) stand beside W; if H-pose lifts as often, the goal pose alone solves what W solved.
-- **N is weak by construction** (§6): it executes the zero command.
+- **N is weak by construction** (§6): it executes the zero command, so W > N adds little beyond
+  W > hold; the permutation reading of §10 is the reported-only action-dependence measure.
+- **F is not a measured ceiling** (§6): it replays the goal demonstration, so it scores every kept
+  reset by construction; the bar's cap is 0.90 by construction, and the follower's measured check
+  is the demonstration's rejection count.
 - **Non-inferiority uses a carried allocation** (δ = 16/128) and is reported only.
 - **SO-101 results are not Apple→Plate results**; R7 does not change.
 
@@ -540,23 +609,32 @@ review → merge. The executing agent reports rows; it does not choose the next 
   moments, checked against the stored latents at Stage 0 (§3, §7.2).
 - **R28.46** — goals: a per-reset demonstration by follower v1, four image subgoals after commands
   40, 70, 90 and 120 with their joint positions, written once per cohort and hashed; replacement
-  from a reserve if the demonstration fails; what each arm may read (§4).
+  from a reserve if the demonstration fails or terminates or stops before command 120; what each
+  arm may read (§4).
 - **R28.47** — the controller: `SchemaCEMPlanner` unchanged, MPC every command, 256 samples, 6
   iterations, 32 elites; candidates projected by the embodiment's chained `preview` (plan on what
   is executable); latent cost, last or step-mean; H ∈ {8, 16} (§5).
 - **R28.48** — subgoal switching on proprioception and the goal pose: 0.04 rad RMS arm, 0.15 rad
   jaw, 3 consecutive commands, or timeouts 60 / 45 / 30 (§5.3).
 - **R28.49** — arms W, W-100100, W-100102, N, W-shuf, W-mean, rand, hold, F and H-pose; no hybrid
-  arm (§6).
+  arm; N's ties exact by construction (one roll-out broadcast to every candidate); F replays the
+  goal demonstration and is a determinism guard, not a measured ceiling; H-pose is the measured
+  non-trivial reference (§6).
 - **R28.50** — Stage 0 on calibration and development seeds only: checks, K's configuration rule,
-  D's development closed loop, rows S0-VOID, S0-CEILING, S0-NULL, S0-LOW, S0-OVER and S0-DONE; the
-  freeze at the Stage 0 merge (§7).
-- **R28.51** — the bar: b = min(0.9 × r_F(D), max(0.50, LCB(W(D)))), ⌈b × 128⌉ of 128 (§7.5).
+  D's development closed loop, rows S0-VOID, S0-CEILING (the demonstration rejected on 8 or more
+  drawn D seeds), S0-NULL, S0-LOW, S0-OVER and S0-DONE; same-seed reruns only for a VOID raised
+  before the cohort's counts were read, otherwise the fresh cohorts K′ or D′; the freeze at the
+  Stage 0 merge (§7).
+- **R28.51** — the bar: b = min(0.9 × r_F(D), max(0.50, LCB(W(D)))), ⌈b × 128⌉ of 128, where
+  r_F(D) = 1 by construction, so the cap is 0.90 and LCB(W(D)) is the binding calibration (§7.5).
 - **R28.52** — the gated stage: 128 fresh resets, one run, every arm (§8).
-- **R28.53** — rows VOID, S-VOID-CEILING, CL-PASS, CL-UNSPECIFIC, CL-LOW and CL-FAIL (first
-  match), exact one-sided McNemar at p < 0.01 against N, W-shuf, W-mean, rand and hold; a
-  decomposition record before any second variant; no abandonment clause (§9).
-- **R28.54** — reported only: non-inferiority against F and H-pose at δ = 16/128, replication
+- **R28.53** — rows VOID (including F diverging from the demonstration), CL-PASS ("J-driven
+  closed-loop lift success toward image subgoals of a privileged per-reset demonstration"),
+  CL-UNSPECIFIC, CL-LOW and CL-FAIL (first match), exact one-sided McNemar at p < 0.01 against N,
+  W-shuf, W-mean, rand and hold; a decomposition record before any second variant; no
+  abandonment clause (§9).
+- **R28.54** — reported only: non-inferiority against H-pose and F at δ = 16/128, the
+  demonstration's rejection counts, a permutation reading of action dependence, replication
   seeds, the per-phase decomposition and the model-in-the-loop measures (§10).
 - **R28.55** — seeds, salts and guards as §12.
 - **R28.56** — budget: a 20 GPU h hard cap with Stage 0 ≤ 6 GPU h, replication arms dropped first

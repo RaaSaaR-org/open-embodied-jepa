@@ -76,7 +76,7 @@ R28.1); recorded by Claude.** Preregistration (DRAFT):
   LeWM-driven study, and no row of it can make a LeWM claim.
 - **R28.42 — Status and freeze path.** The preregistration is a DRAFT: independent review and
   merge, then a Stage 0 PR (code in new files, the checks, the calibration of horizon and cost form
-  on calibration seeds 101010–101041, a development closed loop of every arm on 101100–101163,
+  on calibration seeds 101010–101041, a development closed loop of every arm except the replication seeds on 101100–101163,
   the bar, the power and the GPU projection), independently reviewed; the protocol freezes at the
   Stage 0 merge. No closed loop, goal demonstration or GPU job has run. Every GPU job goes through
   `scripts/gpu_run.sh --wait --board`, inside a 20 GPU h hard cap that includes Stage 0 (≤ 6).
@@ -93,11 +93,17 @@ R28.1); recorded by Claude.** Preregistration (DRAFT):
   the latent cost at the last step or averaged over the horizon, and H ∈ {8, 16}, chosen on
   calibration seeds by a declared rule; subgoal switching on proprioception and the goal pose;
   arms W, two replication seeds, the action-blind twin N, goal-blind W-shuf, scene-blind W-mean,
-  rand, hold, the privileged follower F (ceiling) and a non-learned pose follower H-pose (the "J
-  needed" comparator); the bar b = min(0.9 × r_F(D), max(0.50, LCB(W(D)))) on 128 fresh gated resets
-  (101200–101327); rows VOID, S-VOID-CEILING, CL-PASS (the bar plus exact one-sided McNemar wins
-  at p < 0.01 over N, W-shuf, W-mean, rand and hold), CL-UNSPECIFIC, CL-LOW and CL-FAIL;
-  non-inferiority against F and H-pose at δ = 16/128 reported only. **No abandonment clause**:
+  rand, hold, the privileged follower F (it replays the goal demonstration, so it scores every
+  kept reset by construction and is a determinism guard, not a measured ceiling) and a non-learned
+  pose follower H-pose (the "J needed" comparator and the measured reference); the bar
+  b = min(0.9 × r_F(D), max(0.50, LCB(W(D)))) on 128 fresh gated resets (101200–101327), where
+  r_F(D) = 1 by construction, so the cap is 0.90 and LCB(W(D)) binds; S0-CEILING reads the
+  demonstration's rejection count on D; same-seed Stage 0 reruns only before a cohort's counts are
+  read, fresh cohorts K′ (101060–101091) and D′ (101600–101663) otherwise; rows VOID (including F
+  diverging from the demonstration), CL-PASS ("J-driven closed-loop lift success toward image
+  subgoals of a privileged per-reset demonstration": the bar plus exact one-sided McNemar wins at
+  p < 0.01 over N, W-shuf, W-mean, rand and hold), CL-UNSPECIFIC, CL-LOW and CL-FAIL;
+  non-inferiority against H-pose and F at δ = 16/128 reported only. **No abandonment clause**:
   this is the first SO-101 closed loop, and the binding consequence of any non-pass row is a
   development decomposition record before any second controller variant is preregistered.
 - **R28.57 — A LeWM long-budget re-run of TASK-100's L is recommended as a separate later task,
