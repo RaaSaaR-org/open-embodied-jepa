@@ -39,6 +39,7 @@ case "$stage" in
     name=${1:?check}; goals=${2:-}
     extra=()
     if [ -n "$goals" ]; then extra=(--goals "$goals" --goals-sha256 "$(sha "$goals")"); fi
+    if [ "$name" = render ]; then extra+=(--replay "$S0/check-determinism/pool-1"); fi
     "${GPU[@]}" $PY scripts/run_task101.py check "$name" "${extra[@]}" --workers "$WORKERS" \
       --output "$S0/check-$name" </dev/null 2>&1 | tee -a "$S0/check-$name.log" ;;
   k)

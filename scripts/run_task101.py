@@ -648,6 +648,32 @@ def check_render(args, report) -> dict:
         finally:
             robot.close()
         rows.append({"seed": seed} | counts)
+    for path in sorted(Path(args.replay).glob("*.npz")) if args.replay else []:
+        with np.load(path) as log:
+            requested = log["requested"]
+        seed = int(path.stem)
+        robot = rt.make_robot(True)
+        task = SO101CubeLiftTask(robot)
+        counts = {"states": 0, "unstable": {c: 0 for c in cl.CAMERAS}, "max_pixels": 0}
+        try:
+            task.reset(seed)
+            for action in requested:
+                robot.observe()
+                if robot.execute(action).status == "stopped":
+                    break
+                counts["states"] += 1
+                for c in cl.CAMERAS:
+                    images = [robot.sim.render(c) for _ in range(args.render_repeats)]
+                    if any(not np.array_equal(images[0], x) for x in images[1:]):
+                        counts["unstable"][c] += 1
+                        px = max(
+                            int((np.abs(images[0].astype(int) - x).max(-1) > 0).sum())
+                            for x in images[1:]
+                        )
+                        counts["max_pixels"] = max(counts["max_pixels"], px)
+        finally:
+            robot.close()
+        rows.append({"seed": seed, "replay": str(path)} | counts)
     states = sum(r["states"] for r in rows)
     unstable = {c: sum(r["unstable"][c] for r in rows) for c in cl.CAMERAS}
     return {
@@ -720,6 +746,7 @@ def main(argv=None) -> int:
     c.add_argument("--workers", type=int, default=6)
     c.add_argument("--render-seeds", type=int, default=4)
     c.add_argument("--render-repeats", type=int, default=3)
+    c.add_argument("--replay", default=None)
     c.add_argument("--output", required=True)
     args = p.parse_args(argv)
     return {"goals": cmd_goals, "episodes": cmd_episodes, "check": cmd_check}[args.cmd](args)
