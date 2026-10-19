@@ -63,6 +63,46 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-19 (bu) — Claude, under owner delegation, records TASK-101's Stage 0 as S0-VOID and escalates: the live latent does not read the cube on the lift task's frames (R-enc 6.11 cm against 2.40 cm) because the lift scene's inert target marker sits outside the play corpus's marker range (1.05 cm with only the marker moved); K scored 0/32 in all four configurations under that condition; D's closed loop not run; 1.66 of 6 Stage 0 GPU h; not frozen; R7 unchanged (R28.59–R28.64)
+
+**Decided by Claude under owner delegation; recorded by Claude. The escalation (R28.63) needs an
+owner ruling.** Record: [so101_closed_loop_lift_v1_stage0.md](experiments/so101_closed_loop_lift_v1_stage0.md);
+protocol [so101_closed_loop_lift_v1.md](experiments/so101_closed_loop_lift_v1.md); card TASK-101.
+
+- **R28.59 — Stage 0 row S0-VOID (§7.6 row 1), on check 7.2.2.** TASK-100's pretrained R-enc reads
+  the cube on the live-encoded subgoal frames of D's 64 goal demonstrations at 6.106 cm in median
+  (B_cube 2.397 cm). A diagnostic re-render of the same 256 states with only the inert target marker
+  moved from the lift scene's fixed x 0.30, y −0.20 m into the play corpus's marker box reads
+  1.048 cm. The frames the controller would see lie outside the distribution of TASK-100's
+  training corpus in one scene element. The fix needs a change of the declared scene or
+  observation, so it is a ruling, not a code fix; Stage 0 stops before D's closed loop.
+- **R28.60 — Fixed under §7.6 row 1 before any count was read: the live latent uses TASK-100's
+  fixed featuriser batch of 64.** With it the live path reproduces the stored latents bit for bit
+  (64/64 frames). The check's frames lie in the store's full batches of 64.
+- **R28.61 — Check 7.2.4 is read in a conditional form** (actions never diverge before the live
+  latent does; identical latents give identical actions and outcomes), because MuJoCo's EGL
+  renderer returns different images for one physics state on some frames on this machine. Every
+  episode runs in a fresh process. The literal form is reported (W and N reruns bit-identical; pool
+  1 vs 6 identical on 3 of 4 episodes, the fourth differing only in 10 frames' latents and in no
+  action). This changes a check's definition and is disclosed for review.
+- **R28.62 — Implementation choices disclosed:** a 6-D projection value object (the pinned
+  `CandidateProjection` validates 14-D only), a vectorised `preview` held bit-identical to chained
+  `preview` and `execute`, and W sending the requested first action with a guard that the applied
+  action equals the scored projection (never fired in 25 600 commands).
+- **R28.63 — Escalation, recommendation only.** (a) Recommended: a declared scene amendment that
+  puts the lift scene's marker inside the corpus's marker box (per reset by the corpus's rule from
+  a new salt, or one declared in-box point). Then 7.2.2 is re-run on regenerated D goals, K runs
+  on K′ (K's counts are read), and D runs on D. W's D counts are unread; the ruling decides whether
+  the eight CPU-arm evidence counts already read on D (F 8/8, H-pose 8/8, rand 0/8, hold 0/8; arms
+  that read no image) require D′. (b) Removing the marker is also off-distribution. (c) Close
+  INCONCLUSIVE. **K's 0/32 in every configuration ran under the void condition and is not
+  attributed to J or the planner.**
+- **R28.64 — No claim; not frozen; R7 does not change.** The manifest
+  `so101-closed-loop-lift-v1.json` is a CANDIDATE. Stage 0 used 1.66 GPU h (cap 6). K's
+  throughput projects Stage S at about 5.9 GPU h (H = 8) to 6.9 GPU h (H = 16) for six CEM arms,
+  inside the remaining cap. Lesson: check before Stage 0 that a closed-loop task's frames come
+  from the training corpus's scene distribution.
+
 ## Decision 2026-10-19 (bt) — Claude, under owner delegation, opens TASK-101 as SO-101 S5: a DRAFT preregistration of a first closed loop on `so101_cube_lift_v0` in simulation (CEM over TASK-100's J, projected onto executable actions, toward image subgoals of a per-reset demonstration); a LeWM long-budget re-run of TASK-100's L is recommended as a separate later task, not started; nothing runs before review, merge and a Stage 0 freeze; R7 unchanged (R28.41–R28.58)
 
 **Decided by Claude under owner delegation (2026-09-30 delegation; the SO-101 branch opened by

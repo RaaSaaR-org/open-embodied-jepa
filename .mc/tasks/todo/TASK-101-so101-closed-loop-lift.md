@@ -4,7 +4,7 @@ aliases:
 - TASK-101
 title: 'SO-101 S5: first closed loop on so101_cube_lift_v0 in simulation (CEM over TASK-100''s native_jepa token model J toward image subgoals of a per-reset demonstration)'
 slug: so101-closed-loop-lift
-status: todo
+status: in-progress
 priority: 2
 owner: ''
 projects: []
@@ -51,7 +51,7 @@ and the LeWM long-budget re-run is a separate recommendation (R28.57) that has n
 
 ## Acceptance Criteria
 
-- [ ] DRAFT preregistration independently reviewed and merged
+- [x] DRAFT preregistration independently reviewed and merged (#239, `d628fae`)
 - [ ] Stage 0 PR: code in new files only (`so101_closed_loop.py`, `so101_closed_loop_runtime.py`,
   `run_task101.py`, `summarize_task101.py`, `run_task101_stage.sh`, manifest
   `benchmarks/manifests/so101-closed-loop-lift-v1.json`). G1 byte-pinned files, TASK-100's pinned
@@ -70,3 +70,13 @@ and the LeWM long-budget re-run is a separate recommendation (R28.57) that has n
 
 - Seeds and salts (10101–10106) checked unused across all remote refs on 2026-10-19.
 - TASK-100's checkpoints are read only (`checkpoints/task100-run/`, HDD); nothing is retrained.
+- 2026-10-19 Stage 0 (branch `feat/so101-s5-stage0`): code, tests and checks done; row **S0-VOID,
+  escalated** (R28.59–R28.64). Check 7.2.2 failed: R-enc reads the cube at 6.106 cm on D's goal
+  frames (bar 2.397 cm) because the lift scene's inert target marker (x 0.30, y −0.20 m) lies
+  outside the play corpus's marker box; with only the marker moved, 1.048 cm. K scored 0/32 in all
+  four configurations under that condition (not attributed to J). D's goals (64/64 kept) and CPU-arm
+  evidence ran; D's CEM closed loop did not. Fixes under §7.6 row 1 before any count: the live
+  latent uses TASK-100's batch of 64 (bit-identical), a fresh process per episode, and the
+  determinism check in its conditional form (EGL rendering is not bit-stable). 1.66 GPU h used.
+  Record `docs/experiments/so101_closed_loop_lift_v1_stage0.md`; evidence
+  `~/develop/emai/evidence/task101-stage0` (SHA256SUMS `9ee6638d…`). Awaiting a ruling (R28.63).
