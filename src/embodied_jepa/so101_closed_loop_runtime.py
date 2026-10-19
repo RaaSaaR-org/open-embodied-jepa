@@ -823,24 +823,22 @@ def _worker_episode(task_spec: dict) -> dict:
 def run_pool(
     specs: list[dict], *, goals_dir, goals_sha256, device: str, workers: int, on_result=None
 ) -> list[dict]:
-    """Episodes in a spawn pool; each episode depends only on its own spec (pool-size free)."""
+    """Episodes in a spawn pool, **one fresh worker process per episode** (``maxtasksperchild=1``)
+    for every pool size, 1 included: MuJoCo's EGL renderer is not bit-stable across a process's
+    history (a frame rendered after earlier episodes in the same process can differ by one
+    intensity level in a pixel; Stage 0 record, §7.2.4), so every episode starts from the same
+    process state and depends only on its own spec, whatever the pool size or order."""
     import multiprocessing as mp
 
-    if workers <= 1:
-        init_worker(str(goals_dir), goals_sha256, device)
-        out = []
-        for s in specs:
-            r = _worker_episode(s)
-            out.append(r)
-            if on_result:
-                on_result(r)
-        return out
     ctx = mp.get_context("spawn")
     with ctx.Pool(
-        int(workers), initializer=init_worker, initargs=(str(goals_dir), goals_sha256, device)
+        max(1, int(workers)),
+        initializer=init_worker,
+        initargs=(str(goals_dir), goals_sha256, device),
+        maxtasksperchild=1,
     ) as pool:
         out = []
-        for r in pool.imap(_worker_episode, specs):
+        for r in pool.imap(_worker_episode, specs, chunksize=1):
             out.append(r)
             if on_result:
                 on_result(r)
