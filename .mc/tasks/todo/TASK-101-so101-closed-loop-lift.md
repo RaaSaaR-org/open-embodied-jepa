@@ -93,3 +93,14 @@ and the LeWM long-budget re-run is a separate recommendation (R28.57) that has n
   7.2.4 conditional, and a runner check ledger that refuses episodes before passing checks. If K′
   is null: diagnostic Δ on X 101700–101715 (salt 10108), with rows Δ-MODEL / Δ-PLANNER / Δ-MIXED.
   The Stage 0 cap stays 6 GPU h. Next: the Stage 0′ PR (freeze at its merge).
+- 2026-10-19 Stage 0′ (branch `feat/task101-stage0prime`, code `88a014b`, run tree
+  `worktrees/task101-stage0b-run`; DECISIONS (bw), R28.76–R28.82): row **S0-NULL, with Δ-MIXED,
+  escalated; not frozen.** On `so101_cube_lift_v1`, every §7.2 check (7.2.0 scene comparison, 7.2.1,
+  7.2.2 on K′'s goal store at 0.912 cm, 7.2.3, 7.2.4 conditional, 7.2.6 the marker is inert) passed
+  and was in the ledger before K′'s episodes started, which the runner enforced. K′ (101060–101091,
+  32/32 demonstrations kept) scored 0/32 in all four configurations, and no subgoal was reached.
+  D′ was not run. Δ on X (101700–101715, 16/16 kept) at H8-mean: m1 0.116, m2 0.000, m3 0.509
+  (reported); row Δ-MIXED, so no variant is admitted by default. 1.21 GPU h (2.87 cumulative of
+  Stage 0's 6). Records `docs/experiments/so101_closed_loop_lift_v1_stage0b.md` and
+  `docs/experiments/so101_closed_loop_lift_v1_null_diagnostic.md`; evidence
+  `~/develop/emai/evidence/task101-stage0b` (SHA256SUMS `e29b2cd3…`). Awaiting a ruling (R28.82).

@@ -5,6 +5,7 @@
  },
  "composed_files_sha256": {
   "assets/so101_manifest.json": "a85bd9c599965f22ac861ae1c0dfbb4fea53bb5f3a27870ef9d97f2f6739c717",
+  "benchmarks/manifests/so101-play-v1.json": "a644453c5b690817cd15318306fd246e996841649a4899a469301b18945de9d6",
   "benchmarks/manifests/so101-world-model-v1.json": "e35929a308ef485d8acbccdf07e5b532c457b5a936dfb3eeb27264428d682503",
   "configs/so101_sim_action.json": "c573b64ae4ae3860d3465a4f5cc334c746fece36c3dc2fcc670223f71e40016e",
   "src/embodied_jepa/action_schemas.py": "e83a3804baaeb4b57aecd8074a85e71cd3c70be8d2da8240e9e7df287ba74357",
@@ -17,6 +18,7 @@
   "src/embodied_jepa/schema_planning.py": "bcfc76b45d4697b90188ce5b61909ec036d7059d41bebd07c76462850910796a",
   "src/embodied_jepa/so101.py": "7e7baf5d24dff380e1199d333d05b0438af87220222475799a722c2706966930",
   "src/embodied_jepa/so101_followers.py": "fe086b8980464898f18f47e14e991d389e6796d8e2b854c797179381c43c5828",
+  "src/embodied_jepa/so101_play_corpus.py": "cb8a6d0f72216f06c3d2a82cf2101a5c0ef7a1f0f732ef40e75cdcc3472463c3",
   "src/embodied_jepa/so101_scripted.py": "04c7b1490942bd35e03d002e68e7c5a7863040e3e31e22a801b42d752c07269b",
   "src/embodied_jepa/so101_simulation.py": "a5143d9e0979ba042d7c9123742dfc634dc8838276d9ffce243daa1a42837ec8",
   "src/embodied_jepa/so101_tasks.py": "b6fcb852a89217e55ee7a8e8025c3bbdb46c98358ae13711523b4f7ee8f7246e",
@@ -26,13 +28,14 @@
  },
  "document": "docs/experiments/so101_closed_loop_lift_v1.md",
  "files_sha256": {
-  "scripts/run_task101.py": "b48e42530ef0d6580467248ebb8eff69530ed6aa534d533ae0945d09b403e9b6",
-  "scripts/run_task101_stage.sh": "2672a47b4023a11230e20fe00a92d13c6ce60f6247e1623527e49b651949f3ed",
-  "scripts/summarize_task101.py": "f52c8cb9bcf4ff2fbc333756a80117e9b9b814e293389f992d102f50835bf19a",
-  "src/embodied_jepa/so101_closed_loop.py": "42cc823f7a959a6e31837a752a989890542c7b89de629651397df967f26e29d5",
-  "src/embodied_jepa/so101_closed_loop_runtime.py": "f25ae751aac038523b11bad4349295a32c296e89f3ad75f1f7d20388ea39376e"
+  "scripts/run_task101.py": "a62bb587e1cb90f2f46390a3816fd1976959cf8465b53f8f43d1d0830d83b22e",
+  "scripts/run_task101_stage.sh": "dca40aa74e6f553d9dcd61c98a91fa7f7dd90fcf9bde10eee24715a46e8f254e",
+  "scripts/summarize_task101.py": "efbf54e48c7d3b749d16fb3dfb6c270cd2781078191a152066bbad74b3c6b0d3",
+  "src/embodied_jepa/so101_closed_loop.py": "9187a3e143ef137fda4b3c255dc5eaa5bad55df1d7bb1b5dc3e6766fe3ad1e95",
+  "src/embodied_jepa/so101_closed_loop_runtime.py": "9097d8cef02215c61cd12a23de0584ef569e2289ddfba4e67ceaded939404e31",
+  "src/embodied_jepa/so101_tasks_lift_v1.py": "5bb47aa77561c664d2c95b44179d7d63b1cf72d01c8a1d0241404af5e3f6d671"
  },
- "frozen_at": "not frozen: Stage 0 row S0-VOID (check 7.2.2) escalated for a ruling; the protocol freezes only when a Stage 0 PR with row S0-DONE merges",
+ "frozen_at": "not frozen: Stage 0 S0-VOID (ruled by A1); Stage 0′ S0-NULL with Δ-MIXED, escalated (R28.76–R28.82); no gated stage under S0-NULL",
  "model": {
   "checkpoint_sha256": {
    "J-100100": "41fa52ad3211880ff79d6c7153f00b3a183532b1010323f7777e65bd2c18cd16",
@@ -51,7 +54,9 @@
  "salts": {
   "bootstrap": 10104,
   "cem": 10101,
+  "delta": 10108,
   "derangement": 10103,
+  "marker": 10107,
   "permutation": 10106,
   "power": 10105,
   "rand": 10102
@@ -97,9 +102,21 @@
    101400,
    101463
   ],
+  "X": [
+   101700,
+   101715
+  ],
+  "X_reserve": [
+   101716,
+   101731
+  ],
   "debug": [
    101900,
    101999
+  ],
+  "spent": [
+   "K",
+   "D"
   ]
  },
  "stage0": {
@@ -128,6 +145,48 @@
   ]
  },
  "stage0_record": "docs/experiments/so101_closed_loop_lift_v1_stage0.md",
+ "stage0b": {
+  "D_prime": "not run (S0-NULL)",
+  "K_prime_counts": {
+   "H16-last": 0,
+   "H16-mean": 0,
+   "H8-last": 0,
+   "H8-mean": 0
+  },
+  "checks_passed_before_counts": [
+   "7.2.0",
+   "7.2.1",
+   "7.2.2 (Kp)",
+   "7.2.3",
+   "7.2.4 (conditional)",
+   "7.2.6"
+  ],
+  "configuration_by_tie_rule": "H8-mean",
+  "delta": {
+   "kept": 16,
+   "m1": 0.11607142857142858,
+   "m2": 0.0,
+   "m3": 0.5089285714285714,
+   "states": 112
+  },
+  "delta_json_sha256": "5fd62bed3555eed5e51d5be3d399e3aca302f04467784a6d440c60539b1215b0",
+  "delta_row": "Δ-MIXED",
+  "diagnostic_record": "docs/experiments/so101_closed_loop_lift_v1_null_diagnostic.md",
+  "evidence": "~/develop/emai/evidence/task101-stage0b (SHA256SUMS e29b2cd30ac858f920e1870c4f9e9d26f93ac7607fed7badb2308c14d13fbe71)",
+  "goal_stores_sha256": {
+   "Kp": "e5c6ec569de2b071ef7f1228671a0729463628bec2796837641b97ef9a0f97e8",
+   "X": "82a67c57711db8a30eb784ef4c30279d3ae816d1b75a04bb4ab741076caa2e27",
+   "debug": "f628823c347d3399d8a6f8f999e4aa0d62845817604a724364992ef075e4ee98"
+  },
+  "gpu_h_cumulative": 2.867,
+  "gpu_h_stage0b": 1.209,
+  "record": "docs/experiments/so101_closed_loop_lift_v1_stage0b.md",
+  "renc_Kp_median_cm": 0.9115561210770864,
+  "revision": "88a014ba6f6f9b4eec40a95cbb1c3c917e22920e",
+  "row": "S0-NULL",
+  "summary_json_sha256": "69974ac48356166c64a9af3fc6823b41dcfce17be34b606c9fa52c508ba5cec9"
+ },
  "status": "CANDIDATE",
- "task": "TASK-101"
+ "task": "TASK-101",
+ "task_name": "so101_cube_lift_v1"
 }
