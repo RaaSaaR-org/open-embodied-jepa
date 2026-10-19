@@ -44,10 +44,11 @@ def test_cohorts_are_the_declared_ranges_and_disjoint():
         101663,
         (101664, 101699),
     )
+    assert (c["X"].seeds[0], c["X"].seeds[-1], c["X"].reserve) == (101700, 101715, (101716, 101731))
     assert (c["debug"].seeds[0], c["debug"].seeds[-1]) == (101900, 101999)
     every = [s for x in c.values() for s in (*x.seeds, *x.reserve_seeds)]
     assert len(every) == len(set(every))
-    assert set(cl.SALTS.values()) == {10101, 10102, 10103, 10104, 10105, 10106}
+    assert set(cl.SALTS.values()) == {10101, 10102, 10103, 10104, 10105, 10106, 10107, 10108}
 
 
 def test_seeds_outside_a_cohort_are_refused():
@@ -686,3 +687,45 @@ def test_checkpoints_are_refused_on_a_hash_mismatch(tmp_path, monkeypatch):
         rt.load_model("J-100101", "cpu", checkpoints=tmp_path)
     with pytest.raises(ContractError):
         rt.load_model("J-999", "cpu", checkpoints=tmp_path)
+
+
+def test_delta_queries_the_planner_on_the_demonstrations_states(robot, tiny, monkeypatch, tmp_path):
+    """§18.6 plumbing on one X seed, without rendering and with a tiny model: the replay equals
+    the goal demonstration, the seven states are queried, a_demo's window is the demonstration's
+    own executed commands, and every candidate is scored."""
+    from embodied_jepa import so101_closed_loop_runtime as rt
+
+    original = rt.make_robot
+    monkeypatch.setattr(rt, "make_robot", lambda render: original(False))
+    seed = 101700
+    d = rt.demonstrate(seed, render=False)
+    assert d["kept"]
+    arrays = _store_arrays(1) | {
+        "seeds": np.array([seed]),
+        "joints": np.stack([c["joints"] for c in d["captured"]])[None],
+        "demo_actions": d["applied"][None],
+        "demo_lengths": np.array([d["commands"]]),
+    }
+    sha = cl.save_goal_store(tmp_path, arrays, {"cohort": "X", "task_name": cl.LIFT_TASK_NAME})
+    goals = cl.load_goal_store(tmp_path, sha)
+
+    class Feat:
+        def encode(self, frames):
+            v = float(np.asarray(frames["wrist_rgb"]).mean())
+            return None, np.full((1, 96), v, np.float32)
+
+    ctx = {
+        "featuriser": Feat(),
+        "goal_latents": np.random.default_rng(0).normal(size=(1, 4, 96)).astype(np.float32),
+        "adapter": lambda name, cost: rt.LatentCost(tiny, cost),
+    }
+    out = rt.delta_seed(seed, 0, goals, ctx, "H8-mean")
+    assert [r["t"] for r in out["states"]] == list(cl.DELTA_STATES)
+    for r in out["states"]:
+        assert np.isfinite([r["cost_demo"], r["cost_cem"], r["rank"]]).all()
+        assert 0.0 <= r["rank"] <= 1.0 and isinstance(r["m3"], bool)
+        assert r["cost_cem"] == pytest.approx(r["cost_cem_planner"], rel=1e-5)
+        assert r["branch_executed_equals_a_cem"]
+    goals["arrays"]["demo_actions"][0, 3, 0] += 0.5
+    with pytest.raises(cl.GuardError, match="G-delta"):
+        rt.delta_seed(seed, 0, goals, ctx, "H8-mean")

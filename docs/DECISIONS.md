@@ -63,6 +63,59 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-19 (bw) — TASK-101 Stage 0′: every §7.2 check passed before any count and the runner enforced it (R-enc 0.912 cm on K′'s frames); K′ 0/32 in all four configurations, so the row is S0-NULL and D′ did not run; the declared diagnostic Δ read Δ-MIXED (m1 0.116, m2 0.000); escalated; not frozen; R7 unchanged (R28.76–R28.82)
+
+**Recorded by Claude under owner delegation (the 2026-09-30 delegation; the SO-101 branch opened
+by R28.1).** It records rows and deviations. It does not choose the next study: Δ-MIXED escalates
+by §18.6's text. Record [so101_closed_loop_lift_v1_stage0b.md](experiments/so101_closed_loop_lift_v1_stage0b.md);
+diagnostic [so101_closed_loop_lift_v1_null_diagnostic.md](experiments/so101_closed_loop_lift_v1_null_diagnostic.md);
+protocol [so101_closed_loop_lift_v1.md](experiments/so101_closed_loop_lift_v1.md) §7 and §18; card
+TASK-101.
+
+- **R28.76 — Checks and order.** At revision `88a014b`, from a clean tracked tree, 7.2.0 (scene
+  comparison: every element inside the corpus's support; all 364 K′, D′, S and X seeds drawn
+  inside it), 7.2.6 (the marker is inert: 16 debug seeds bit-identical between v0 and v1), 7.2.1
+  (64/64 bit-identical), 7.2.4 (conditional form; literal false), 7.2.3 (1 000/1 000 on K′'s reset
+  states) and 7.2.2 on K′'s goal store (**R-enc 0.912 cm** in median against B_cube 2.397; reset
+  frames 1.21 cm) passed, and were recorded in the check ledger before K′'s episodes started
+  (17:44:54Z against 17:45:10Z). `episodes` checked the ledger before building anything, and the
+  summariser checked the order before reading K′'s counts. Stage 0's deviation 7 did not recur.
+- **R28.77 — K′ and the row.** W (J-100101) scored **0/32 in each of H8-last, H8-mean, H16-last and
+  H16-mean** (exact 95 % interval 0.000–0.109 each). No episode reached a subgoal by the switching
+  tolerance; every switch was a timeout. The median closest arm RMS to subgoal 1 was 0.26–0.48 rad
+  against 0.04. The tie rule gives H8-mean. **Row S0-NULL** (§7.6 row 3 as amended by A1). There is
+  no gated stage, and **D′ did not run** (not drawn, rendered or run). The demonstration was kept on
+  32/32 drawn K′ seeds. With the readout check passing, K's null is not explained by the marker
+  alone (R28.67's open question). That is a development reading of 32 resets per configuration.
+- **R28.78 — Budget.** Stage 0′ took 1.21 GPU h of lock time in 9 jobs. Cumulative Stage 0 is
+  2.87 GPU h of its 6 GPU h cap, and 17.1 GPU h of the 20 GPU h total remain. K′'s throughput
+  projects S at 5.86 GPU h (H8) or 6.94 GPU h (H16) for all six CEM arms, recorded only.
+- **R28.79 — Δ.** On X 101700–101715 (16 kept of 16), at H8-mean, 112 queried states:
+  **m1 = 0.116** (the demonstration's next commands cheaper than CEM's best under J on 13/112
+  states), **m2 = 0.000** (median normalised rank of the demonstration's commands among 255
+  projected random candidates), m3 = 0.509 (reported only). **Row Δ-MIXED.** Neither Δ-MODEL (m2 ≥ 0.25)
+  nor Δ-PLANNER (m2 ≤ 0.10 and m1 ≥ 0.50) holds. By §18.6, **no controller variant is admitted by
+  default**, and the record escalates. A development reading, not a row, is in the diagnostic
+  record: CEM finds commands J scores as cheaper than the demonstration's on 99 of 112 states, and
+  at the pre-grasp pose those commands move the arm about 0.05 rad away from it.
+- **R28.80 — Deviations, disclosed in the record (§5).** (1) TASK-100's test
+  `test_g1_byte_pinned_files_match_origin_main_when_available` now exempts the files of TASK-101's
+  own manifest while that manifest is not FROZEN. A1 changed TASK-101's own unfrozen Stage 0
+  modules rather than only adding files. No G1 or TASK-100 pinned file changed. (2) 7.2.4 ran at
+  H8-mean. (3) 7.2.2's reset-frame reading re-renders the reset state. (4) CPU-only checks ran
+  outside the lock. (5) Δ's random candidates use `default_rng([10108, seed, t])`, and its rank
+  counts ties as half. (6) The ledger also requires a clean tracked tree. (7) Δ's first launch was
+  refused by `gpu_run.sh` (GPU utilisation 56 %) before it started, and was relaunched.
+- **R28.81 — Not frozen.** The manifest stays CANDIDATE, with Stage 0′'s pins, goal-store hashes
+  and rows recorded. The protocol's freeze at the Stage 0′ merge (R28.75) presupposed a gated stage.
+  Under S0-NULL there is none, so merging this record does not freeze the protocol, and nothing
+  may run on S.
+- **R28.82 — Escalation.** The next step needs a ruling, by the owner or by Claude under
+  delegation. The candidates the record lists are a goal-form or cost change, a model or
+  representation change (for example R28.57's LeWM long-budget rerun), or closing TASK-101.
+  Δ-MIXED admits none by default, and each needs its own preregistration. The executing agent
+  does not choose. R7 does not change (R28.9).
+
 ## Decision 2026-10-19 (bv) — Claude, under owner delegation, rules on TASK-101's S0-VOID: a declared condition change to `so101_cube_lift_v1` (v0 with the inert target marker drawn per reset from the play corpus's marker distribution, salt 10107); Stage 0′ on K′ and D′, with every §7.2 check enforced by the runner before any count is read; a declared planner-vs-model diagnostic Δ if K′ is null again; the claim narrowed to in-distribution scenes; K's 0/128 not attributed to the marker; not frozen; R7 unchanged (R28.65–R28.75)
 
 **Decided by Claude under owner delegation (the 2026-09-30 delegation; the SO-101 branch opened by

@@ -1,7 +1,8 @@
-"""TASK-101's runtime (protocol ``docs/experiments/so101_closed_loop_lift_v1.md`` §3-§6, §12):
-the live featuriser, the J/N planner-model adapter with the last and mean cost forms and the
+"""TASK-101's runtime (protocol ``docs/experiments/so101_closed_loop_lift_v1.md`` §3-§6, §12,
+§18): the live featuriser, the J/N planner-model adapter with the last and mean cost forms and the
 scene-blind substitution, the chained-preview projector, the controllers, the goal demonstration,
-the episode loop and the worker pool.
+the episode loop, the worker pool and the S0-NULL diagnostic Delta's planning queries. Every
+episode, demonstration and check runs ``so101_cube_lift_v1`` (A1, §18.2) through ``lift_task``.
 
 NumPy at import; torch, MuJoCo and the TASK-100 model are imported inside the functions that need
 them. Nothing in ``import embodied_jepa`` loads this module.
@@ -487,16 +488,29 @@ def truth_row(sim) -> dict:
     }
 
 
+# ----- the task (A1, §18.2) --
+def lift_task(robot, variant: str = cl.LIFT_TASK_NAME):
+    """The lift task every TASK-101 job runs: ``so101_cube_lift_v1`` (A1). ``so101_cube_lift_v0``
+    is constructed only by check 7.2.6 (the marker is inert), which compares the two."""
+    from embodied_jepa.so101_tasks import LIFT_TASK, SO101CubeLiftTask
+    from embodied_jepa.so101_tasks_lift_v1 import LIFT_V1_TASK, SO101CubeLiftTaskV1
+
+    if variant == LIFT_V1_TASK:
+        return SO101CubeLiftTaskV1(robot)
+    if variant == LIFT_TASK:
+        return SO101CubeLiftTask(robot)
+    raise ContractError(f"unknown lift task {variant!r}")
+
+
 # ----- the goal demonstration (§4) --
 def demonstrate(seed: int, *, render: bool = True) -> dict:
     """Follower v1 (no offset) on ``seed``'s declared reset in its own simulation; captures both
     frames, the measured joints and (for reports only) the cube and fingertip truth after
     commands 40, 70, 90 and 120."""
     from embodied_jepa.so101_followers import follow_lift
-    from embodied_jepa.so101_tasks import SO101CubeLiftTask
 
     robot = make_robot(render)
-    task = SO101CubeLiftTask(robot)
+    task = lift_task(robot)
     captured = []
 
     def on_command(n, result):
@@ -551,8 +565,6 @@ def run_episode(task_spec: dict, ctx: dict) -> dict:
     """One arm on one reset. ``task_spec``: arm, seed, slot, config, keep_frames, output.
     ``ctx``: the worker's goal store, featuriser and adapters. Writes ``<output>/<seed>.npz`` (per
     step logs; frames only when ``keep_frames``) and returns the episode summary."""
-    from embodied_jepa.so101_tasks import SO101CubeLiftTask
-
     arm, seed, slot = task_spec["arm"], int(task_spec["seed"]), int(task_spec["slot"])
     cl.check_arm(arm)
     out_dir = Path(task_spec["output"])
@@ -567,7 +579,7 @@ def run_episode(task_spec: dict, ctx: dict) -> dict:
     if arm == "F":
         return run_follower(seed, slot, goals, path, render=keep, started=started)
     robot = make_robot(render)
-    task = SO101CubeLiftTask(robot)
+    task = lift_task(robot)
     task.reset(seed)
     sentinel = TruthSentinel(robot.sim)
     params = cl.PreviewParams.of(robot)
@@ -722,13 +734,12 @@ def run_follower(seed, slot, goals, path, *, render: bool, started: float) -> di
     """F: follower v1 replays the goal demonstration; its executed actions and outcome must equal
     the demonstration's on every kept reset (a guard, §6)."""
     from embodied_jepa.so101_followers import follow_lift
-    from embodied_jepa.so101_tasks import SO101CubeLiftTask
 
     a = goals["arrays"]
     if int(a["seeds"][slot]) != seed:
         raise cl.GuardError("G-goals: the slot's goal belongs to another reset")
     robot = make_robot(render)
-    task = SO101CubeLiftTask(robot)
+    task = lift_task(robot)
     frames = []
 
     def on_command(n, result):
@@ -843,3 +854,181 @@ def run_pool(
             if on_result:
                 on_result(r)
         return out
+
+
+# ----- the S0-NULL diagnostic Delta (§18.6, R28.72) --
+class _StopAt(Exception):
+    """Raised by ``_Snapshots`` to leave the demonstration at the state after command t."""
+
+
+class _Snapshots:
+    """Proxies an embodiment through a goal demonstration: records every applied action and, at
+    the states after commands ``at`` (0 = the reset state), the measured joints, the joint
+    targets and (when rendering) both frames. With ``stop_at`` it raises ``_StopAt`` when
+    command ``stop_at + 1`` would be sent, leaving the simulation at the state after ``stop_at``."""
+
+    def __init__(self, robot, at=(), *, render: bool = False, stop_at: int | None = None):
+        self._robot, self.at, self.render, self.stop_at = robot, set(at), bool(render), stop_at
+        self.applied: list[np.ndarray] = []
+        self.statuses: list[str] = []
+        self.states: dict[int, dict] = {}
+
+    def __getattr__(self, name):
+        return getattr(self._robot, name)
+
+    def _snap(self, n: int) -> None:
+        sim = self._robot.sim
+        self.states[n] = {
+            "q": sim.data.qpos[sim.qadr].copy(),
+            "targets": sim.targets.copy(),
+            "frames": {c: sim.render(c) for c in cl.CAMERAS} if self.render else None,
+        }
+
+    def execute(self, action):
+        n = len(self.applied)
+        if n == 0 and 0 in self.at:
+            self._snap(0)
+        if self.stop_at is not None and n == self.stop_at:
+            raise _StopAt
+        result = self._robot.execute(action)
+        self.statuses.append(result.status)
+        applied = result.applied_action
+        self.applied.append(
+            np.full(cl.JOINTS, np.nan, np.float32) if applied is None else np.asarray(applied)
+        )
+        if n + 1 in self.at and result.status != "stopped":
+            self._snap(n + 1)
+        return result
+
+
+def delta_open_loop(seed: int, t: int, requested, goal_q) -> dict:
+    """m3 (reported only): in a fresh copy of the simulation, the demonstration is run to the
+    state after command t, a_cem's requested commands are executed open-loop, and the arm RMS to
+    subgoal k's joints is compared before and after."""
+    from embodied_jepa.so101_followers import follow_lift
+
+    robot = make_robot(False)
+    task = lift_task(robot)
+    snap = _Snapshots(robot, stop_at=int(t))
+    try:
+        try:
+            follow_lift(snap, task, int(seed))
+        except _StopAt:
+            pass
+        else:  # pragma: no cover -- every kept demonstration runs at least 120 commands
+            raise cl.GuardError(f"G-delta: the demonstration of {seed} ended before command {t}")
+
+        def rms():
+            q = np.asarray(robot.observe().state.values[0, : cl.ARM_JOINTS], np.float64)
+            d = q - np.asarray(goal_q, np.float64)[: cl.ARM_JOINTS]
+            return float(np.sqrt(np.mean(d * d)))
+
+        before = rms()
+        applied, stopped = [], False
+        for step in np.asarray(requested, np.float32):
+            r = robot.execute(step)
+            if r.status == "stopped":
+                stopped = True
+                break
+            applied.append(np.asarray(r.applied_action, np.float32))
+            robot.observe()
+        after = rms()
+    finally:
+        robot.close()
+    return {
+        "rms_before": before,
+        "rms_after": after,
+        "m3": bool(after < before and not stopped),
+        "stopped": stopped,
+        "applied": np.asarray(applied, np.float32),
+    }
+
+
+def delta_seed(seed: int, slot: int, goals: dict, ctx: dict, config: str) -> dict:
+    """Delta's seven planning states on one kept X seed (§18.6): the goal demonstration is replayed
+    with rendering (its executed actions must equal the goal store's: a guard), and at the states
+    after commands 0, 10, ..., 60 the planner is queried, not executed. Every candidate (a_demo,
+    a_cem and 255 random projected candidates) is scored by J's cost as W scores it, toward the
+    demonstration's own subgoal latent."""
+    from embodied_jepa.action_schemas import JOINT_DELTA_SO101_V0
+    from embodied_jepa.schema_planning import SchemaCEMConfig, SchemaCEMPlanner
+    from embodied_jepa.so101_followers import follow_lift
+
+    cl.check_seed("X", seed)
+    a = goals["arrays"]
+    if int(a["seeds"][slot]) != seed:
+        raise cl.GuardError("G-goals: the slot's goal belongs to another reset")
+    h, cost = cl.parse_config(config)
+    robot = make_robot(True)
+    task = lift_task(robot)
+    snap = _Snapshots(robot, cl.DELTA_STATES, render=True)
+    params = cl.PreviewParams.of(robot)
+    try:
+        follow_lift(snap, task, int(seed))
+    finally:
+        robot.close()
+    applied = np.asarray(snap.applied, np.float32).reshape(-1, cl.JOINTS)
+    demo = a["demo_actions"][slot, : int(a["demo_lengths"][slot])]
+    if not np.array_equal(applied, demo):
+        raise cl.GuardError(f"G-delta: the replay of {seed} differs from its goal demonstration")
+    adapter = ctx["adapter"](cl.PRIMARY, cost)
+    featuriser = ctx["featuriser"]
+    rows = []
+    for t in cl.DELTA_STATES:
+        state = snap.states[t]
+        k = cl.delta_subgoal(t)
+        goal = ctx["goal_latents"][slot, k]
+        _, z = featuriser.encode({c: state["frames"][c][None] for c in cl.CAMERAS})
+        z = z[0]
+        planner = SchemaCEMPlanner(
+            SchemaCEMConfig(
+                action_schema=JOINT_DELTA_SO101_V0,
+                horizon=h,
+                samples=cl.CEM["samples"],
+                iterations=cl.CEM["iterations"],
+                elites=cl.CEM["elites"],
+                seed=cl.delta_planner_seed(seed, t),
+                action_penalty=cl.CEM["action_penalty"],
+                minimum_std=cl.CEM["minimum_std"],
+                project_candidates=True,
+            )
+        )
+        plan = planner.plan(adapter, z, goal, projector=Projector(params, state["targets"]))
+        a_cem = np.asarray(plan.actions[0], np.float32)
+        a_cem_requested = np.asarray(plan.requested_actions[0], np.float32)
+        a_demo = applied[t : t + h]
+        if a_demo.shape != (h, cl.JOINTS):  # pragma: no cover -- kept demos run >= 120 commands
+            raise cl.GuardError(f"G-delta: no full a_demo window at {seed}, t = {t}")
+        rand = (
+            cl.delta_random_rng(seed, t)
+            .uniform(-1.0, 1.0, (cl.DELTA_RANDOM, h, cl.JOINTS))
+            .astype(np.float32)
+        )
+        rand, _ = cl.project_sequences(rand, state["targets"], params)
+        cand = np.concatenate([a_demo[None], a_cem[None], rand])[None]
+        costs = adapter.distance(adapter.predict(z, cand), goal)[0, :, -1].astype(np.float64)
+        if not np.isfinite(costs).all():
+            raise cl.GuardError("G-finite: a non-finite Delta cost")
+        branch = delta_open_loop(seed, t, a_cem_requested, a["joints"][slot, k])
+        rows.append(
+            {
+                "seed": int(seed),
+                "t": int(t),
+                "subgoal": k + 1,
+                "cost_demo": float(costs[0]),
+                "cost_cem": float(costs[1]),
+                "cost_cem_planner": float(plan.costs[0]),
+                "random_cost_median": float(np.median(costs[2:])),
+                "random_cost_min": float(costs[2:].min()),
+                "rank": cl.normalised_rank(costs[0], costs[2:]),
+                "crosses_boundary": cl.delta_crosses_boundary(t, h),
+                "m3": branch["m3"],
+                "rms_before": branch["rms_before"],
+                "rms_after": branch["rms_after"],
+                "branch_stopped": branch["stopped"],
+                "branch_executed_equals_a_cem": bool(
+                    not branch["stopped"] and np.array_equal(branch["applied"], a_cem)
+                ),
+            }
+        )
+    return {"seed": int(seed), "slot": int(slot), "states": rows}

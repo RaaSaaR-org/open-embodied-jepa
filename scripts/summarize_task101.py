@@ -6,6 +6,12 @@ the GPU-lock log; writes ``stage0_summary.json`` and ``stage0_summary.md`` (refu
 overwrite).
 
 Usage: summarize_task101.py --stage0 <outputs/task101-stage0> --output <dir>
+       summarize_task101.py --stage0b <outputs/task101-stage0b> --output <dir>
+
+``--stage0b`` (A1, §18.5-§18.7) reads K', D' (or, under S0-NULL, Delta) and the check ledger, and
+**refuses to print or write a count of any cohort whose first episode started before the latest
+required passing check report** (§18.5 (3)). Run after K' alone, it writes K′'s section, the
+D' projection (§18.7) and, if K' is null, the S0-NULL row.
 """
 
 from __future__ import annotations
@@ -369,6 +375,347 @@ def summarize(s0: Path) -> dict:
     return out
 
 
+# ----- Stage 0' (A1) ---------------------------------------------------------------------------
+def ordered_counts(root: Path, rep: dict, goals_sha256: str) -> dict:
+    """§18.5 (3): the ordering reading of one episodes job; ``SystemExit`` when out of order."""
+    entries = cl.ledger_read(root / cl.LEDGER_FILE)
+    verdict = cl.ledger_verdict(
+        entries, revision=rep["revision"], goals_sha256=goals_sha256, block_on_failures=False
+    )
+    ok = cl.ordered_after_checks(rep["started_utc"], verdict) and not rep["tracked_tree_dirty"]
+    if not ok:
+        raise SystemExit(
+            f"refusing to read counts of {rep['cohort']} ({rep.get('arms')}): its episodes started "
+            f"{rep['started_utc']}, the ledger reads {verdict}"
+        )
+    return {
+        "started_utc": rep["started_utc"],
+        "latest_required_check_utc": verdict["latest_required_utc"],
+        "revision": rep["revision"],
+    }
+
+
+def closest_rms(paths, eps, goals) -> dict:
+    """From K′'s logs (Delta's reported reading): per subgoal, the closest arm RMS to its joints
+    while the controller worked on it; and the chosen cost by 40-command bins."""
+    joints = goals["arrays"]["joints"]
+    closest = {k: [] for k in range(3)}
+    costs = {b: [] for b in range(5)}
+    for path, e in zip(paths, eps, strict=True):
+        with np.load(path) as d:
+            q, sub, cost = d["q"], d["subgoal"], d["cost"]
+        for k in range(3):
+            on = sub == k
+            if on.any():
+                diff = q[on, : cl.ARM_JOINTS] - joints[e["slot"], k, : cl.ARM_JOINTS]
+                closest[k].append(float(np.sqrt((diff * diff).mean(1)).min()))
+        for b in range(5):
+            part = cost[40 * b : 40 * (b + 1)]
+            if len(part):
+                costs[b].append(float(np.median(part)))
+    return {
+        "closest_arm_rms_median_rad": {
+            str(k + 1): (float(np.median(v)) if v else None) for k, v in closest.items()
+        },
+        "closest_arm_rms_min_rad": {
+            str(k + 1): (float(np.min(v)) if v else None) for k, v in closest.items()
+        },
+        "cost_median_by_40_commands": {
+            f"{40 * b}-{40 * b + 39}": (float(np.median(v)) if v else None)
+            for b, v in costs.items()
+        },
+    }
+
+
+def summarize_b(root: Path) -> dict:
+    out: dict = {"task": cl.TASK, "protocol": cl.PROTOCOL, "stage": "0'", "task_name": None}
+    entries = cl.ledger_read(root / cl.LEDGER_FILE)
+    out["ledger"] = entries
+    out["checks"] = {}
+    for e in entries:
+        out["checks"].setdefault(e["check"], []).append(
+            {k: e[k] for k in ("passes", "revision", "finished_utc", "goals_sha256", "cohort")}
+            | {"result": load(e["report"])["result"]}
+        )
+    failing = [e for e in entries if e.get("passes") is False]
+    gpu = gpu_hours()
+    out["gpu"] = {"cumulative_gpu_h": gpu["gpu_h"], "jobs": len(gpu["jobs"])}
+    # K' (§7.3 on K')
+    k_goals = cl.load_goal_store(root / "Kp-goals")
+    out["task_name"] = k_goals["report"]["task_name"]
+    k_rep = load(root / "Kp-episodes" / "report.json")
+    order_k = ordered_counts(root, k_rep, k_goals["sha256"])
+    k_arms = by_arm(episodes(k_rep))
+    k_counts = {c: count_row(k_arms[f"W@{c}"])["k"] for c in cl.CONFIGS}
+    eps_sec = {
+        c: float(np.mean([e["episode_seconds"] for e in k_arms[f"W@{c}"]])) for c in cl.CONFIGS
+    }
+    k_factor = k_rep["wall_seconds"] / sum(e["episode_seconds"] for e in episodes(k_rep))
+    k_timing = {}
+    for c in cl.CONFIGS:
+        ps = plan_seconds(root / "Kp-episodes" / f"W@{c}")
+        k_timing[c] = {
+            "plan_seconds_median": float(np.median(ps)),
+            "plan_seconds_p95": float(np.percentile(ps, 95)),
+            "step_seconds_max": step_seconds_max(root / "Kp-episodes" / f"W@{c}"),
+            "episode_seconds_mean": eps_sec[c],
+            "wall_seconds_per_episode": k_factor * eps_sec[c],
+            "projected_S_cem_gpu_h": k_factor * 6 * cl.S_RESETS * eps_sec[c] / 3600.0,
+        }
+    eligible = {
+        c: k_timing[c]["projected_S_cem_gpu_h"] <= cl.HARD_CAP_GPU_H - cl.STAGE0_CAP_GPU_H
+        for c in cl.CONFIGS
+    }
+    choice = cl.choose_config(k_counts, eligible)
+    chosen = choice["chosen"] or "H8-mean"
+    k_paths = {
+        c: [root / "Kp-episodes" / f"W@{c}" / e["file"] for e in k_arms[f"W@{c}"]]
+        for c in cl.CONFIGS
+    }
+    out["K"] = {
+        "cohort": "Kp",
+        "goals_sha256": k_goals["sha256"],
+        "kept": len(k_goals["arrays"]["seeds"]),
+        "drawn": k_goals["report"]["drawn"],
+        "rejected": k_goals["report"]["rejected"],
+        "ordering": order_k,
+        "counts": {c: count_row(k_arms[f"W@{c}"]) for c in cl.CONFIGS},
+        "decomposition": {c: decompose(k_paths[c], k_arms[f"W@{c}"], k_goals) for c in cl.CONFIGS},
+        "closest": {c: closest_rms(k_paths[c], k_arms[f"W@{c}"], k_goals) for c in cl.CONFIGS},
+        "timing": k_timing,
+        "workers": k_rep["workers"],
+        "wall_seconds": k_rep["wall_seconds"],
+        "eligible": eligible,
+        "choice": choice,
+        "revision": k_rep["revision"],
+    }
+    goals_job_s = load(root / "Kp-goals" / "job.json")["seconds_total"]
+    out["Dp_projection"] = cl.project_dprime(
+        used_gpu_h=gpu["gpu_h"],
+        goals_and_checks_gpu_h=(2.0 * goals_job_s + 120.0) / 3600.0,
+        seconds_per_cem_episode_wall=k_timing[chosen]["wall_seconds_per_episode"],
+        cpu_evidence_gpu_h=0.05,
+    )
+    if failing:
+        out["row"] = {"row": "S0-VOID", "void_reasons": [e["check"] for e in failing]}
+        return out
+    if choice["null"]:
+        out["row"] = {"row": "S0-NULL", "configuration_for_delta": chosen}
+        delta = root / "delta" / "delta.json"
+        if delta.exists():
+            dr = load(delta)
+            m = dr["measures"]["all"]
+            out["delta"] = {
+                "config": dr["config"],
+                "goals_sha256": dr["goals_sha256"],
+                "kept": dr["kept"],
+                "drawn": dr["drawn"],
+                "rejected": dr["rejected"],
+                "measures": dr["measures"],
+                "revision": dr["revision"],
+                "row": cl.delta_row(kept=dr["kept"], m1=m["m1"], m2=m["m2"]),
+            }
+        return out
+    if not (root / "Dp-cem" / "report.json").exists():
+        out["row"] = {"row": None, "stopped_before": "D'"}
+        return out
+    # D' (§7.4 on D')
+    d_path = root / "Dp-goals"
+    d_goals = cl.load_goal_store(d_path)
+    n = len(d_goals["arrays"]["seeds"])
+    reps = {name: load(root / name / "report.json") for name in ("Dp-cem", "Dp-cpu-ev", "Dp-cpu")}
+    single_path = root / "Dp-single" / "report.json"
+    if single_path.exists():
+        reps["Dp-single"] = load(single_path)
+    order_d = {k: ordered_counts(root, r, d_goals["sha256"]) for k, r in reps.items()}
+    cfg = reps["Dp-cem"]["configs"]
+    folder_of = {}
+    all_eps = []
+    for name, r in reps.items():
+        for e in episodes(r):
+            key = e["arm"] if e.get("config") is None else f"{e['arm']}@{e['config']}"
+            folder_of[(key, e["slot"])] = root / name / key / e["file"]
+            all_eps.append(e)
+    arms = by_arm(all_eps)
+    name = {a: (f"{a}@{cfg}" if a in cl.CEM_ARMS else a) for a in cl.D_ARMS}
+    for a in cl.D_ARMS:
+        if len(arms[name[a]]) != n:
+            raise SystemExit(f"D': {a} has {len(arms[name[a]])} episodes, not {n}")
+    vec = {a: outcome_vector(arms[name[a]], n) for a in cl.D_ARMS}
+    counts = {a: count_row(arms[name[a]]) for a in cl.D_ARMS}
+    w_d, r_f = counts["W"]["k"], counts["F"]["k"] / n
+    bar = cl.bar_rule(w_d, n, r_f)
+    pairs = {a: cl.paired(vec["W"], vec[a]) for a in cl.D_ARMS if a != "W"}
+    pairs_vs_rand = {a: cl.paired(vec[a], vec["rand"]) for a in ("N", "W-shuf", "W-mean")}
+    decomposition = {
+        a: decompose(
+            [folder_of[(name[a], e["slot"])] for e in arms[name[a]]], arms[name[a]], d_goals
+        )
+        for a in ("W", "N", "W-shuf", "W-mean", "H-pose")
+    }
+    single = None
+    if "Dp-single" in reps:
+        single_w = [e for e in arms[name["W"]] if e["slot"] < cl.DIAGNOSTIC_RESETS]
+        single = {
+            "W-single": count_row(arms[f"{cl.DIAGNOSTIC}@{cfg}"]),
+            "W_same_resets": count_row(single_w),
+        }
+    rate_w = w_d / n
+    table = cl.mcnemar_pass_table(cl.S_RESETS)
+    power = {
+        "bar_at_wd": cl.bar_power(rate_w, bar["bar"]),
+        "bar_at_wd_minus_0.05": cl.bar_power(max(rate_w - 0.05, 0.0), bar["bar"]),
+        "bar_table": cl.bar_table(),
+        "mcnemar": {},
+    }
+    for i, a in enumerate(cl.CONTROLS):
+        p_c = counts[a]["k"] / n
+        power["mcnemar"][a] = {
+            "p_w": rate_w,
+            "p_control": p_c,
+            **{
+                cp: cl.mcnemar_power(rate_w, p_c, cp, index=10 * i + j, table=table)
+                for j, cp in enumerate(cl.COUPLINGS)
+            },
+        }
+    d_timing = {}
+    for a in ("W", "N", "W-shuf", "W-mean"):
+        ps = plan_seconds(root / "Dp-cem" / name[a])
+        d_timing[a] = {
+            "plan_seconds_median": float(np.median(ps)),
+            "plan_seconds_p95": float(np.percentile(ps, 95)),
+            "step_seconds_max": step_seconds_max(root / "Dp-cem" / name[a]),
+            "episode_seconds_mean": float(np.mean([e["episode_seconds"] for e in arms[name[a]]])),
+        }
+    cem = reps["Dp-cem"]
+    cem_ep_sec = {a: d_timing[a]["episode_seconds_mean"] for a in ("W", "N", "W-shuf", "W-mean")}
+    cem_ep_sec |= {"W-100100": cem_ep_sec["W"], "W-100102": cem_ep_sec["W"]}
+    speedup = sum(e["episode_seconds"] for e in episodes(cem)) / cem["wall_seconds"]
+    d_goals_seconds = load(d_path / "job.json")["seconds_total"]
+    projection = cl.project_stage_s(
+        seconds_per_episode=cem_ep_sec,
+        workers_speedup=speedup,
+        goals_gpu_h=2.0 * d_goals_seconds / 3600.0,
+        used_gpu_h=gpu["gpu_h"],
+    )
+    row = cl.stage0_row(
+        void_reasons=[],
+        d_rejections=len(d_goals["report"]["rejected"]),
+        k_counts=k_counts,
+        w_d=w_d,
+        n_d=n,
+        s_fits_without_replication=projection["fits_without_replication"],
+    )
+    row["stage0_gpu_h_cumulative"] = gpu["gpu_h"]
+    row["stage0_cap_exceeded"] = gpu["gpu_h"] > cl.STAGE0_CAP_GPU_H
+    if row["stage0_cap_exceeded"] and row["row"] == "S0-DONE":
+        row["row"] = "S0-OVER"  # §18.7: the Stage 0 cap is not extended silently
+    out["D"] = {
+        "cohort": "Dp",
+        "goals_sha256": d_goals["sha256"],
+        "kept": n,
+        "rejected": d_goals["report"]["rejected"],
+        "drawn": d_goals["report"]["drawn"],
+        "ordering": order_d,
+        "config": cfg,
+        "counts": counts,
+        "pairs_w_minus": pairs,
+        "pairs_vs_rand": pairs_vs_rand,
+        "non_inferiority_vs_H_pose": cl.non_inferiority(vec["W"], vec["H-pose"], n),
+        "decomposition": decomposition,
+        "single_goal_diagnostic": single,
+        "timing": d_timing,
+        "workers": cem["workers"],
+        "wall_seconds": cem["wall_seconds"],
+        "revision": cem["revision"],
+        "F_equals_demonstration": all(e.get("equals_demonstration") for e in arms["F"]),
+    }
+    out["bar"] = bar
+    out["power"] = power
+    out["projection"] = projection | {
+        "pool_speedup": speedup,
+        "per_arm_episode_seconds": cem_ep_sec,
+    }
+    out["row"] = row
+    return out
+
+
+def markdown_b(s: dict) -> str:
+    lines = [f"# {cl.TASK} Stage 0' summary ({s['task_name']})", "", "## Check ledger", ""]
+    lines += ["| check | id | passes | revision | cohort | finished |", "|---|---|---|---|---|---|"]
+    for e in s["ledger"]:
+        lines.append(
+            f"| {e['check']} | {e['id']} | {e['passes']} | {e['revision'][:8]} | "
+            f"{e.get('cohort')} | {e['finished_utc']} |"
+        )
+    k = s["K"]
+    lines += [
+        "",
+        f"## K' ({k['kept']} resets, {k['drawn']} drawn)",
+        "",
+        "| configuration | W | exact 95 % | plan s median | p95 | projected S GPU h |",
+        "|---|---|---|---|---|---|",
+    ]
+    for c in cl.CONFIGS:
+        r, t = k["counts"][c], k["timing"][c]
+        lines.append(
+            f"| {c} | {r['k']}/{r['n']} | {r['ci95'][0]:.3f}–{r['ci95'][1]:.3f} | "
+            f"{t['plan_seconds_median']:.3f} | {t['plan_seconds_p95']:.3f} | "
+            f"{t['projected_S_cem_gpu_h']:.2f} |"
+        )
+    lines += ["", f"Chosen: **{k['choice']['chosen']}** (null: {k['choice']['null']})"]
+    p = s["Dp_projection"]
+    lines += [
+        "",
+        f"D' projection: cumulative {p['cumulative_with_diagnostic_gpu_h']:.2f} GPU h with the "
+        f"diagnostic, {p['cumulative_without_diagnostic_gpu_h']:.2f} without (cap "
+        f"{p['cap_gpu_h']}); used so far {p['used_gpu_h']:.2f}",
+    ]
+    if "delta" in s:
+        d = s["delta"]
+        lines += [
+            "",
+            f"## Delta ({d['kept']} X seeds, {d['config']})",
+            "",
+            f"m1 {d['measures']['all']['m1']}, m2 {d['measures']['all']['m2']}, "
+            f"m3 {d['measures']['all']['m3']}; row **{d['row']['row']}**",
+        ]
+    d = s.get("D")
+    if d:
+        lines += [
+            "",
+            f"## D' ({d['kept']} resets, {d['config']})",
+            "",
+            "| arm | successes | exact 95 % | W − arm | W only / arm only | McNemar p |",
+            "|---|---|---|---|---|---|",
+        ]
+        for a, r in d["counts"].items():
+            pr = d["pairs_w_minus"].get(a)
+            extra = (
+                f"{pr['difference']:+d} | {pr['only_first']}/{pr['only_second']} | "
+                f"{pr['p_one_sided']:.2g}"
+                if pr
+                else " | | "
+            )
+            lines.append(
+                f"| {a} | {r['k']}/{r['n']} | {r['ci95'][0]:.3f}–{r['ci95'][1]:.3f} | {extra} |"
+            )
+        b = s["bar"]
+        lines += [
+            "",
+            f"Bar: b = {b['b']:.4f} (LCB {b['lcb']:.4f}), **{b['bar']}/128**; power at W(D') "
+            f"{s['power']['bar_at_wd']:.3f}",
+            "",
+            f"Projected S {s['projection']['with_replication_gpu_h']:.2f} GPU h (without "
+            f"replication {s['projection']['without_replication_gpu_h']:.2f})",
+        ]
+    lines += [
+        "",
+        f"Row: **{s['row']['row']}**; cumulative Stage 0 GPU h {s['gpu']['cumulative_gpu_h']:.2f}",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def markdown(s: dict) -> str:
     lines = [f"# {cl.TASK} Stage 0 summary", ""]
     lines += ["## Checks", "", "| check | passes |", "|---|---|"]
@@ -433,18 +780,24 @@ def markdown(s: dict) -> str:
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--stage0", required=True)
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--stage0")
+    group.add_argument("--stage0b")
     p.add_argument("--output", required=True)
     args = p.parse_args(argv)
     out = Path(args.output)
-    for name in ("stage0_summary.json", "stage0_summary.md"):
+    stem = "stage0b_summary" if args.stage0b else "stage0_summary"
+    for name in (f"{stem}.json", f"{stem}.md"):
         if (out / name).exists():
             raise FileExistsError(f"refusing to overwrite {out / name}")
+    if args.stage0b:
+        s, md = summarize_b(Path(args.stage0b)), markdown_b
+    else:
+        s, md = summarize(Path(args.stage0)), markdown
     out.mkdir(parents=True, exist_ok=True)
-    s = summarize(Path(args.stage0))
-    (out / "stage0_summary.json").write_text(json.dumps(s, indent=1, default=cl._json_default))
-    (out / "stage0_summary.md").write_text(markdown(s))
-    print(markdown(s))
+    (out / f"{stem}.json").write_text(json.dumps(s, indent=1, default=cl._json_default))
+    (out / f"{stem}.md").write_text(md(s))
+    print(md(s))
     return 0
 
 

@@ -7,6 +7,12 @@ Stage 0 PR (code in new files, development closed loops, calibration of the plan
 bar on development seeds only), independently reviewed. **The protocol freezes when the Stage 0
 PR merges.** No gated reset is run before then.
 
+**Stage 0′ (2026-10-19, [record](so101_closed_loop_lift_v1_stage0b.md), [DECISIONS](../DECISIONS.md)
+(bw), R28.76–R28.82): row S0-NULL.** Every §7.2 check passed before any count, K′ scored 0/32 in all
+four configurations, D′ did not run, and the diagnostic Δ ([record](so101_closed_loop_lift_v1_null_diagnostic.md))
+read Δ-MIXED. Escalated for a ruling. **Not frozen** (R28.81): there is no gated stage under
+S0-NULL, and nothing may run on S.
+
 **Amendment A1 (2026-10-19, [DECISIONS](../DECISIONS.md) (bv), R28.65–R28.75; decided by Claude
 under owner delegation).** Stage 0 ended S0-VOID ([record](so101_closed_loop_lift_v1_stage0.md),
 R28.59): the lift scene's inert target marker lay outside the play corpus's marker range. A1 moves
