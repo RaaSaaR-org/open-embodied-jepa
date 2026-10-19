@@ -63,6 +63,97 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-19 (bv) — Claude, under owner delegation, rules on TASK-101's S0-VOID: a declared condition change to `so101_cube_lift_v1` (v0 with the inert target marker drawn per reset from the play corpus's marker distribution, salt 10107); Stage 0′ on K′ and D′, with every §7.2 check enforced by the runner before any count is read; a declared planner-vs-model diagnostic Δ if K′ is null again; the claim narrowed to in-distribution scenes; K's 0/128 not attributed to the marker; not frozen; R7 unchanged (R28.65–R28.75)
+
+**Decided by Claude under owner delegation (the 2026-09-30 delegation; the SO-101 branch opened by
+R28.1); recorded by Claude.** It answers R28.63's escalation. Amendment A1 is §18 of
+[so101_closed_loop_lift_v1.md](experiments/so101_closed_loop_lift_v1.md), which lists every section
+it changes; Stage 0 record [so101_closed_loop_lift_v1_stage0.md](experiments/so101_closed_loop_lift_v1_stage0.md);
+card TASK-101.
+
+- **R28.65 — Condition change (option (a) of R28.63).** TASK-101 runs on a new task variant,
+  `so101_cube_lift_v1`. It is identical to `so101_cube_lift_v0`, with the same cube draws from
+  `default_rng([9801, seed])`, bit for bit, the same scorer `LIFT_V0`, scene, cameras and
+  embodiment, except that the inert target marker is drawn per reset by the play corpus's own rule:
+  uniform on x ∈ [0.16, 0.22] m, |y| ≤ 0.14 m, redrawn until at least 8 cm from the cube, using
+  `so101_play_corpus.TARGET_REGION` and `MIN_CUBE_TARGET_M`, from its own stream
+  `default_rng([10107, seed])`. `so101_tasks.py` and `so101_simulation.py` are pinned by
+  `so101-play-v1.json` and stay byte-identical. The variant goes in a new module
+  `so101_tasks_lift_v1.py`, with **no registry entry**, because `config.py` is byte-pinned by G1
+  manifests (`apple-aligned-cost-v1` and five others, among them `apple-policy-v1`). The run configuration names the task as a
+  module constant (§7.1's precedent). v0 and TASK-098's numbers on it are unchanged.
+- **R28.66 — Why.** The marker has no contact (`contype`/`conaffinity` 0) and plays no part in lift
+  scoring, and moving only it brought R-enc from 6.106 cm to 1.048 cm. Not adopted: retraining on a
+  corpus with the marker at the task pose (a new corpus and a rerun of TASK-100, whose WM-PASS
+  admitted this study, changing the model to fit one scene), removing the marker (every corpus
+  episode shows one, so that is also off-distribution and unmeasured), one fixed in-box point (a
+  degenerate draw from the support), and closing INCONCLUSIVE (the cause is measured and the fix
+  is cheap and declared).
+- **R28.67 — Limitations, stated.** The claim's name gains "…, on `so101_cube_lift_v1` (the lift
+  scene with its inert target marker drawn inside the play corpus's marker range)", and nothing is
+  shown for v0. **The sensitivity is a recorded finding:** one inert element about 10 cm outside its
+  training range moved the frozen-DINOv2 g4 latent's cube readout from 1.048 to 6.106 cm, mostly as
+  a constant bias. **K's 0/128 is not attributed to the marker.** No K episode reached even
+  subgoal 1, a free-space pre-grasp move (median closest arm RMS 0.41 rad against 0.04 on
+  H8-mean). The marker sits at the same place in the current and goal frames, so a latent distance
+  partly cancels it. K′ may be null again (R28.72). The goal design is kept despite H-pose 8/8 on
+  D: changing it now would confound two changes, and the claim already excludes "J needed".
+  W-shuf's borrowed goals now show another reset's marker position, which is disclosed. Scene
+  comparison table in §18.4: marker, cube box (a sub-box of the corpus's), yaw, home pose (the
+  centre of the corpus's jitter box) and jaw (0.6 rad, inside 0.2–1.2) inside; table, lighting and
+  cameras the same pinned files; motion (scripted play against follower v1 and CEM) not comparable
+  by construction.
+- **R28.68 — Cohorts.** K′ 101060–101091 (reserve 101092–101099) and D′ 101600–101663 (reserve
+  101664–101699), as §12 declared them, never drawn. §7.6 row 1's D′ clause is **not waived**: four D
+  arm counts were read, and D's goal store was made in the v0 scene. K's and D's records stand,
+  and K's counts are never pooled.
+- **R28.69 — Checks.** 7.2.0 (new): the scene comparison filled in from the code, with the pins of
+  `so101_simulation.py`, the MJCF and `so101_sim_action.json`. 7.2.2 runs on each cohort's own goal
+  store before that cohort's episodes, with the bar unchanged at 2.397 cm. 7.2.3 runs on K′'s reset
+  states. **7.2.4 is written in its conditional form (R28.61 adopted):** actions never diverge
+  before the live latent does, and identical latents give identical actions and outcomes, because
+  the EGL renderer is not bit-stable on some states. S's runs are not guaranteed to be
+  bit-reproducible (§13, §14). 7.2.6 (new): on 16 debug seeds, v0's and v1's resets give
+  bit-identical arrays under the goal demonstration (the marker is inert), with the arrays named
+  exactly in §18.5: joint positions and velocities, the joint control targets, the executed
+  commands, the cube's pose and velocities, the fingertip site, the contact flags and the time.
+  The marker position is excluded as the one intended difference and must instead equal the drawn
+  `target_xy` in v1 and (0.30, −0.20) in v0 at every step.
+- **R28.70 — The ordering rule, enforced in code (fixes deviation 7).** A goal job writes only the
+  goal store. The CPU arms' evidence episodes leave it. The checks run next (7.2.0, 7.2.1, 7.2.3,
+  7.2.4 and 7.2.6 once before K′, 7.2.2 per cohort), and only then a cohort's episodes. A check
+  ledger in the output directory records each report's pass or fail, revision and, for 7.2.2, the
+  goal-store hash. `run_task101.py episodes` refuses before constructing anything unless every
+  required report passed at the same revision for the goal store it reads. `summarize_task101.py`
+  refuses an out-of-order cohort. Tests cover each refusal.
+- **R28.71 — §7.3–7.6 read on K′ and D′**, unchanged otherwise. The bar reads W(D′).
+- **R28.72 — If K′ is null again: diagnostic Δ, declared now.** There is no gated stage, and D′ is
+  not run. On a new cohort X 101700–101715 (reserve 101716–101731), at 7 states on each goal
+  demonstration's own path (after commands 0, 10, 20 and 30 on subgoal 1, and 40, 50 and 60 on
+  subgoal 2), J's cost is compared for the demonstration's next H commands, CEM's best and 255
+  projected random candidates (salt 10108). m1 is the fraction of states where the demonstration's
+  commands cost less than CEM's best, and m2 is their median normalised rank among the random
+  candidates. Rows: Δ-VOID (a guard, or fewer than 12 kept seeds); **Δ-MODEL** (m2 ≥ 0.25: no
+  planner variant on J with this goal form; next is a model, representation or goal-form change
+  under its own preregistration); **Δ-PLANNER** (m2 ≤ 0.10 and m1 ≥ 0.50: a planner-variant
+  preregistration with J and the goals unchanged is admitted); Δ-MIXED (escalate). The cut-offs are
+  declared, not calibrated. Δ favours the model (the demonstration's commands lead exactly to the
+  goal frame), is a 16-seed development reading and makes no claim. Its window is fixed: a_demo is
+  always the demonstration's full next H commands (never truncated, padded or skipped), scored
+  against the state's own subgoal; the H = 16 windows that cross a subgoal boundary (t = 30 and
+  60) are counted and also reported without them. It is capped at 1.5 GPU h, counted against the
+  Stage 0 cap of 6 GPU h cumulative (about 4.6 h projected under S0-NULL).
+- **R28.73 — Budget.** The Stage 0 cap stays 6 GPU h cumulative (1.66 used; Stage 0′ projected at
+  about 3.7 h from K's measured throughput). The single-goal diagnostic is dropped first if needed,
+  then S0-OVER. The 20 GPU h total cap is unchanged.
+- **R28.74 — Lessons:** compare every scene element of a closed-loop task with its training
+  corpus before Stage 0; make the runner refuse counts before checks; keep evidence episodes out
+  of goal jobs.
+- **R28.75 — Process; no claim; R7 unchanged.** This docs PR is reviewed and merged. The Stage 0′
+  PR (code, tests, checks, K′, D′, record `so101_closed_loop_lift_v1_stage0b.md`) is independently
+  reviewed, and **the protocol freezes at its merge**. Nothing here is a result. R7 does not change
+  (R28.9).
+
 ## Decision 2026-10-19 (bu) — Claude, under owner delegation, records TASK-101's Stage 0 as S0-VOID and escalates: the live latent does not read the cube on the lift task's frames (R-enc 6.11 cm against 2.40 cm) because the lift scene's inert target marker sits outside the play corpus's marker range (1.05 cm with only the marker moved); K scored 0/32 in all four configurations under that condition; D's closed loop not run; 1.66 of 6 Stage 0 GPU h; not frozen; R7 unchanged (R28.59–R28.64)
 
 **Decided by Claude under owner delegation; recorded by Claude. The escalation (R28.63) needs an

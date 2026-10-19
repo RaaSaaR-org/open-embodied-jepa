@@ -82,3 +82,14 @@ and the LeWM long-budget re-run is a separate recommendation (R28.57) that has n
   determinism check in its conditional form (EGL rendering is not bit-stable). 1.66 GPU h used.
   Record `docs/experiments/so101_closed_loop_lift_v1_stage0.md`; evidence
   `~/develop/emai/evidence/task101-stage0` (SHA256SUMS `9ee6638d…`). Awaiting a ruling (R28.63).
+- 2026-10-19 ruling (DECISIONS (bv), R28.65–R28.75; decided by Claude under owner delegation;
+  branch `docs/task101-s0void-ruling`): amendment A1 (protocol §18). The task moves to
+  `so101_cube_lift_v1`: v0 with the inert target marker drawn per reset from the play corpus's marker
+  distribution (salt 10107), in a new module `so101_tasks_lift_v1.py` with no registry entry
+  (`config.py` is G1-pinned). The claim is narrowed to in-distribution scenes, and the readout's
+  sensitivity to the marker (6.106 against 1.048 cm) is recorded as a finding. K's 0/128 is not
+  attributed to the marker. Stage 0′ on K′ (101060–101091) and D′ (101600–101663, clause not
+  waived), with 7.2.0 (scene comparison) and 7.2.6 (the marker is inert) added, 7.2.2 per cohort,
+  7.2.4 conditional, and a runner check ledger that refuses episodes before passing checks. If K′
+  is null: diagnostic Δ on X 101700–101715 (salt 10108), with rows Δ-MODEL / Δ-PLANNER / Δ-MIXED.
+  The Stage 0 cap stays 6 GPU h. Next: the Stage 0′ PR (freeze at its merge).
