@@ -63,6 +63,56 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-19 (bt) — Claude, under owner delegation, opens TASK-101 as SO-101 S5: a DRAFT preregistration of a first closed loop on `so101_cube_lift_v0` in simulation (CEM over TASK-100's J, projected onto executable actions, toward image subgoals of a per-reset demonstration); a LeWM long-budget re-run of TASK-100's L is recommended as a separate later task, not started; nothing runs before review, merge and a Stage 0 freeze; R7 unchanged (R28.41–R28.58)
+
+**Decided by Claude under owner delegation (2026-09-30 delegation; the SO-101 branch opened by
+R28.1); recorded by Claude.** Preregistration (DRAFT):
+[so101_closed_loop_lift_v1.md](experiments/so101_closed_loop_lift_v1.md); card TASK-101. S4
+(TASK-100) is closed at WM-PASS with arm J only (R28.34–R28.40), and R28.39 recommended this step.
+
+- **R28.41 — TASK-101 is opened as S5** of [SO101_PLAN.md](SO101_PLAN.md): the first
+  preregistered closed-loop study on the SO-101, in simulation, on `so101_cube_lift_v0` unchanged.
+  Its model is TASK-100's J (`native_jepa`), as §11 of TASK-100 and R28.35 make it; it is not a
+  LeWM-driven study, and no row of it can make a LeWM claim.
+- **R28.42 — Status and freeze path.** The preregistration is a DRAFT: independent review and
+  merge, then a Stage 0 PR (code in new files, the checks, the calibration of horizon and cost form
+  on calibration seeds 101010–101041, a development closed loop of every arm on 101100–101163,
+  the bar, the power and the GPU projection), independently reviewed; the protocol freezes at the
+  Stage 0 merge. No closed loop, goal demonstration or GPU job has run. Every GPU job goes through
+  `scripts/gpu_run.sh --wait --board`, inside a 20 GPU h hard cap that includes Stage 0 (≤ 6).
+- **R28.43–R28.56 — the design choices**, listed in §17 of the preregistration: the task, resets,
+  scorer and 200-command budget unchanged; J's three kept checkpoints unchanged and hash-checked,
+  with **J-100101 primary by a rule fixed now** (the lowest val criterion at the kept checkpoint:
+  0.53021 against 0.53142 and 0.53383; written after TASK-100's test numbers were public, reading
+  none of them) and the other two seeds reported as replications; TASK-100's live g4 latent; goals
+  from a per-reset demonstration by the privileged follower v1 (image subgoals after commands 40,
+  70, 90 and 120, with their joint positions; the demonstration is never a counted arm);
+  `SchemaCEMPlanner` unchanged, replanned every command at 256 samples, 6 iterations and 32 elites,
+  with candidates projected by the embodiment's chained `preview` so the planner scores the
+  actions that will be executed (the corpus stores executed actions; TASK-092/093's rate lesson);
+  the latent cost at the last step or averaged over the horizon, and H ∈ {8, 16}, chosen on
+  calibration seeds by a declared rule; subgoal switching on proprioception and the goal pose;
+  arms W, two replication seeds, the action-blind twin N, goal-blind W-shuf, scene-blind W-mean,
+  rand, hold, the privileged follower F (ceiling) and a non-learned pose follower H-pose (the "J
+  needed" comparator); the bar b = min(0.9 × r_F(D), max(0.50, LCB(W(D)))) on 128 fresh gated resets
+  (101200–101327); rows VOID, S-VOID-CEILING, CL-PASS (the bar plus exact one-sided McNemar wins
+  at p < 0.01 over N, W-shuf, W-mean, rand and hold), CL-UNSPECIFIC, CL-LOW and CL-FAIL;
+  non-inferiority against F and H-pose at δ = 16/128 reported only. **No abandonment clause**:
+  this is the first SO-101 closed loop, and the binding consequence of any non-pass row is a
+  development decomposition record before any second controller variant is preregistered.
+- **R28.57 — A LeWM long-budget re-run of TASK-100's L is recommended as a separate later task,
+  and is not started.** R28.39's recommendation is carried. L and N_L would be trained × 3 seeds
+  at the probe rule's U = 60 000 (about 9.4 GPU h plus selection, or about half that if resumed
+  from the stored 30 000-update states), with G6 and the rest of TASK-100's gates unchanged. That
+  would show whether the product-goal backend passes S4 at saturation, and so whether a
+  LeWM-driven S5 can follow. It needs its own preregistration and budget ruling. Because
+  `so101-play-v1`'s test split has been read, it also needs fresh test episodes from new seeds of
+  the same collector, or an explicit statement that its test is no longer held out. Neither
+  TASK-101's DRAFT nor this decision starts it; its order relative to TASK-101's Stage 0 (both
+  share the GPU) is left to a later ruling.
+- **R28.58 — No claim; R7 does not change**, whatever TASK-101's row. SO-101 results are not
+  Apple→Plate results (R28.9). The G1 line stays paused and TASK-095 stays on hold (R28.2).
+
 ## Decision 2026-10-19 (bs) — Claude, under owner delegation, records TASK-100's gated row WM-PASS with arm J only: `native_jepa` passed G1–G6 on all three seeds at h = 8 and 16; LeWM (L) passed G1–G5 but failed G6 (training saturation) on two seeds, so J, not L, is S5's model; offline only; 16.99 of 20 GPU h; R7 unchanged (R28.34–R28.40)
 
 **Decided by Claude under owner delegation (2026-09-30 delegation; the SO-101 branch opened by
