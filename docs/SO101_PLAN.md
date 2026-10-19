@@ -1,6 +1,6 @@
 # SO-101 branch plan (opened 2026-10-16)
 
-**Status: PLAN; S0 done (#232, `bcd837c`); S1 done (#233, `cf2d4b1`); S2 done (#234; TASK-098, development measurement only, [so101_cube_tasks_dev.md](experiments/so101_cube_tasks_dev.md)); S3 done (#235; TASK-099, development data only, [so101_play_corpus_v1.md](experiments/so101_play_corpus_v1.md)); S4 Stage 0 done, protocol frozen at its merge (TASK-100, [so101_world_model_v1.md](experiments/so101_world_model_v1.md), [Stage 0 record](experiments/so101_world_model_v1_stage0.md); no gated stage run).** On 2026-10-16 the owner opened the SO-101 branch
+**Status: PLAN; S0 done (#232, `bcd837c`); S1 done (#233, `cf2d4b1`); S2 done (#234; TASK-098, development measurement only, [so101_cube_tasks_dev.md](experiments/so101_cube_tasks_dev.md)); S3 done (#235; TASK-099, development data only, [so101_play_corpus_v1.md](experiments/so101_play_corpus_v1.md)); S4 done (TASK-100, offline only, [results](experiments/so101_world_model_v1_results.md): row WM-PASS with `native_jepa` (J) only; LeWM passed G1–G5 but failed training saturation (G6) on two seeds, so J, not LeWM, is S5's model; no control claim); S5 not started.** On 2026-10-16 the owner opened the SO-101 branch
 ([DECISIONS 2026-10-16 (bp)](DECISIONS.md), R28.1–R28.9). The defaults below were chosen by
 Claude under owner delegation; the owner can overrule any of them. This page is a plan: it admits
 no experiment, sets no bar and makes no claim. Each research step still needs its own
@@ -213,12 +213,18 @@ hours (GPU h) on the shared RTX 5080.
 
 ### S4 — LeWM and `native_jepa` training with offline gates
 
-- **Status: Stage 0 done (TASK-100, [so101_world_model_v1.md](experiments/so101_world_model_v1.md),
-  [so101_world_model_v1_stage0.md](experiments/so101_world_model_v1_stage0.md); DECISIONS
-  2026-10-17 (bq) and (br), R28.10–R28.33).** S0-DONE on D0 only: grid g4, B_rank 0.11, B_std
-  0.37, B_cube 2.397 cm, B_jaw 0.1666 rad, subset thresholds 1.0 cm and 0.2 rad; the protocol
-  freezes at the Stage 0 merge; no gated stage has run. The text below is the plan as written
-  before.
+- **Status: done (TASK-100, [so101_world_model_v1.md](experiments/so101_world_model_v1.md),
+  [Stage 0 record](experiments/so101_world_model_v1_stage0.md),
+  [results](experiments/so101_world_model_v1_results.md); DECISIONS 2026-10-17 (bq), (br) and
+  2026-10-19 (bs), R28.10–R28.40).** Row **WM-PASS with arm J only**: the `native_jepa` token step
+  over frozen DINOv2 tokens of both cameras passed G1–G6 on all three seeds at h = 8 and 16 on the
+  test split; the LeWM token predictor passed G1–G5 but failed G6 (training saturation) on two
+  seeds after its one extension, at a budget the 20 GPU h cap set to a third of the probe rule's,
+  so **J, not LeWM, is S5's model** (R28.35); whether LeWM passes at saturation is not shown. The
+  predicted cube reads to about 1.6–1.8 cm in median, under 6 % of roots within S2's 0.5 cm grasp
+  tolerance. Offline, one run, simulation, a privileged scripted corpus; no control claim; 16.99
+  GPU h. Recommended next (R28.39): S5's preregistration with J; a LeWM longer-budget re-run is
+  worth its own ruling. The text below is the plan as written before.
 
 - **Delivers.** A preregistered offline study: both backends (a one-line backend swap) on the S3
   corpus, likely with frozen DINOv2 token latents as the reference encoder plus a random-init
