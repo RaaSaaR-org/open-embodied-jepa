@@ -182,10 +182,10 @@ How much of G5 (a)'s 1.5 × the pass used (R-pred's test median over the gated R
 median at the same h): **cube 1.16–1.28 × for J and 1.19–1.26 × for L**; **jaw 0.49–0.53 × for J
 and 0.48–0.54 × for L**. The jaw ratio below 1 is the schema at work, as §6 and §13 disclose:
 X receives the absolute gripper command, which names the jaw's target, so the prediction can
-read the jaw better than the start frame's encoder; it does not show that the model learned the jaw's motion
-from images. B_ℓ came from a readout fitted on 180 D0 episodes and is looser than 1.5 × the gated
-ceiling (§10.5): against the gated ceiling, 1.5 × would be 2.07 cm (h = 8) and 2.10 cm (h = 16),
-and every J and L R-pred cube upper bound (1.687–1.882 cm) is also below those.
+read the jaw better than the start frame's encoder; it does not show that the model learned the
+jaw's motion from images. B_ℓ came from a readout fitted on 180 D0 episodes and is looser than
+1.5 × the gated ceiling (§10.5): against the gated ceiling, 1.5 × would be 2.07 cm (h = 8) and
+2.10 cm (h = 16), and every J and L R-pred cube upper bound (1.687–1.882 cm) is also below those.
 
 Per model, 95 % intervals (the copy ratio here is the 95 % reported interval; G2's gated one is above):
 
