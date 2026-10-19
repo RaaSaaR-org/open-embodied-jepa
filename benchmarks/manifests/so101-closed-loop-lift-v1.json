@@ -1,0 +1,133 @@
+{
+ "budget": {
+  "hard_cap_gpu_h": 20.0,
+  "stage0_cap_gpu_h": 6.0
+ },
+ "composed_files_sha256": {
+  "assets/so101_manifest.json": "a85bd9c599965f22ac861ae1c0dfbb4fea53bb5f3a27870ef9d97f2f6739c717",
+  "benchmarks/manifests/so101-world-model-v1.json": "e35929a308ef485d8acbccdf07e5b532c457b5a936dfb3eeb27264428d682503",
+  "configs/so101_sim_action.json": "c573b64ae4ae3860d3465a4f5cc334c746fece36c3dc2fcc670223f71e40016e",
+  "src/embodied_jepa/action_schemas.py": "e83a3804baaeb4b57aecd8074a85e71cd3c70be8d2da8240e9e7df287ba74357",
+  "src/embodied_jepa/constraints.py": "b97f82443dedc868bc8da441ce0a737426a8cead673fd9b9aa11cc3680633144",
+  "src/embodied_jepa/contracts.py": "5f3afd25d608c3484d24e6aee1f77bdb1c4b487dfe4261d166048df22bd119e9",
+  "src/embodied_jepa/devices.py": "0976ccc0fb6d3c64d8128dbc152dcb2ebd3aee2211bc3ab5e25a772518e2fb72",
+  "src/embodied_jepa/models/schema_frozen_tokens.py": "5c600fd4aeabc947352001212338cb8afc477a970104c08c8bb352296b62fd94",
+  "src/embodied_jepa/planning.py": "e9aea01c81f07e775a4d83116dadaebf7f723090ca4139c6289a4846d5891297",
+  "src/embodied_jepa/run_tools.py": "1b3b61f89ca50e5d12650312c374bdcd07f1eb394ffb413c19eb844eb5ff5394",
+  "src/embodied_jepa/schema_planning.py": "bcfc76b45d4697b90188ce5b61909ec036d7059d41bebd07c76462850910796a",
+  "src/embodied_jepa/so101.py": "7e7baf5d24dff380e1199d333d05b0438af87220222475799a722c2706966930",
+  "src/embodied_jepa/so101_followers.py": "fe086b8980464898f18f47e14e991d389e6796d8e2b854c797179381c43c5828",
+  "src/embodied_jepa/so101_scripted.py": "04c7b1490942bd35e03d002e68e7c5a7863040e3e31e22a801b42d752c07269b",
+  "src/embodied_jepa/so101_simulation.py": "a5143d9e0979ba042d7c9123742dfc634dc8838276d9ffce243daa1a42837ec8",
+  "src/embodied_jepa/so101_tasks.py": "b6fcb852a89217e55ee7a8e8025c3bbdb46c98358ae13711523b4f7ee8f7246e",
+  "src/embodied_jepa/so101_wm.py": "0dc95387523c4a2322587c14d7f08fc93ad2e7a919a273801c07e08dce559eea",
+  "src/embodied_jepa/so101_wm_data.py": "61027c6c09af34ee0e48ba521d3e7155d22b9a68c46e277d9f4e4e130a1a4ddf",
+  "src/embodied_jepa/so101_wm_runtime.py": "65e3b69e2b00d05b915dc3f0b374cd57276b71fe3e424bdfd70fff5d87b41e58"
+ },
+ "document": "docs/experiments/so101_closed_loop_lift_v1.md",
+ "files_sha256": {
+  "scripts/run_task101.py": "b48e42530ef0d6580467248ebb8eff69530ed6aa534d533ae0945d09b403e9b6",
+  "scripts/run_task101_stage.sh": "2672a47b4023a11230e20fe00a92d13c6ce60f6247e1623527e49b651949f3ed",
+  "scripts/summarize_task101.py": "f52c8cb9bcf4ff2fbc333756a80117e9b9b814e293389f992d102f50835bf19a",
+  "src/embodied_jepa/so101_closed_loop.py": "42cc823f7a959a6e31837a752a989890542c7b89de629651397df967f26e29d5",
+  "src/embodied_jepa/so101_closed_loop_runtime.py": "f25ae751aac038523b11bad4349295a32c296e89f3ad75f1f7d20388ea39376e"
+ },
+ "frozen_at": "not frozen: Stage 0 row S0-VOID (check 7.2.2) escalated for a ruling; the protocol freezes only when a Stage 0 PR with row S0-DONE merges",
+ "model": {
+  "checkpoint_sha256": {
+   "J-100100": "41fa52ad3211880ff79d6c7153f00b3a183532b1010323f7777e65bd2c18cd16",
+   "J-100101": "0e04d495ef39bc1b4a44ace607a6c749c53a4df010308f747230927526180061",
+   "J-100102": "0ae2b6cc099b2ce7d6158a0cb3bafceecccd02273d252759bf74e58452bff3c7",
+   "N_J-100101": "a8fe58a4bd7cf7b7e39efe27f003756832f40d6c8157e6d21f696788cef90c3c"
+  },
+  "encoder_digest": "3a697b872089933d345fd71087af86e85ff31886cf1e2654763dc1884ef2af27",
+  "fit_report_sha256": "64f1b9f7d145ac95ccf933e2285de7f744ba1650520ec5ad04a3fcd0b1d8331c",
+  "implementation_sha256": "78ba9dbe00eb1efba5ec6ecb2f99821e6817aa8e5aa7e5b7fdaaa115ea426220",
+  "moments_sha256": "b303cd09ecc105473693ad317b90e209c2d1fd9d4e78ae344cdf6e52ef613b89",
+  "primary": "J-100101",
+  "twin": "N_J-100101"
+ },
+ "name": "so101-closed-loop-lift-v1",
+ "salts": {
+  "bootstrap": 10104,
+  "cem": 10101,
+  "derangement": 10103,
+  "permutation": 10106,
+  "power": 10105,
+  "rand": 10102
+ },
+ "seeds": {
+  "D": [
+   101100,
+   101163
+  ],
+  "D_reserve": [
+   101164,
+   101199
+  ],
+  "Dp": [
+   101600,
+   101663
+  ],
+  "Dp_reserve": [
+   101664,
+   101699
+  ],
+  "K": [
+   101010,
+   101041
+  ],
+  "K_reserve": [
+   101042,
+   101059
+  ],
+  "Kp": [
+   101060,
+   101091
+  ],
+  "Kp_reserve": [
+   101092,
+   101099
+  ],
+  "S": [
+   101200,
+   101327
+  ],
+  "S_reserve": [
+   101400,
+   101463
+  ],
+  "debug": [
+   101900,
+   101999
+  ]
+ },
+ "stage0": {
+  "configuration_rule_K": {
+   "chosen_by_tie_rule": "H8-mean",
+   "counts": {
+    "H16-last": 0,
+    "H16-mean": 0,
+    "H8-last": 0,
+    "H8-mean": 0
+   },
+   "note": "run under the void condition; K's counts are read, so any fix reruns on K'",
+   "null": true
+  },
+  "evidence": "~/develop/emai/evidence/task101-stage0 (SHA256SUMS 9ee6638dc23dae5d660119f639e8a8a50a486979d10f3269b12ba261e1e6ea0b)",
+  "goal_stores_sha256": {
+   "D": "d98a3b8979b8266982dc2ac5e2c6513e0d6d466fb18341eaaa67f3e9a1f5eed0",
+   "K": "d6a891a35a827926ede9f9dcb0de22690f7e278d89b74c798a90b345fe5c255c",
+   "debug": "a4dec9f03224abd6528cae2079ea4dca49a954983a5d82ea911fdb47d3cf4c43"
+  },
+  "gpu_h_used": 1.658,
+  "row": "S0-VOID",
+  "summary_json_sha256": "c93251d511d7ebabc6e06613c3ee06fe2031c3f792dcfd5ae88f32c4666a8bc7",
+  "void_reasons": [
+   "7.2.2 R-enc on D's goal frames 6.106 cm median > B_cube 2.397 cm (the lift scene's target marker at x 0.30, y -0.20 m is outside the play corpus's marker box; with only the marker moved into it: 1.048 cm)"
+  ]
+ },
+ "stage0_record": "docs/experiments/so101_closed_loop_lift_v1_stage0.md",
+ "status": "CANDIDATE",
+ "task": "TASK-101"
+}
