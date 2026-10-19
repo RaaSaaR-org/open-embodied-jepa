@@ -4,7 +4,7 @@ aliases:
 - TASK-100
 title: 'SO-101 S4: offline world-model study on so101-play-v1 (LeWM and native_jepa token predictors over frozen DINOv2 tokens of both cameras, gates G1–G6)'
 slug: so101-world-model-offline
-status: todo
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -19,8 +19,9 @@ depends_on:
 - "[[TASK-099]]"
 due_date: ''
 created: 2026-10-17
-updated: 2026-10-17
+updated: 2026-10-19
 ---
+
 
 
 # SO-101 S4: offline world-model study on so101-play-v1 (LeWM and native_jepa token predictors over frozen DINOv2 tokens of both cameras, gates G1–G6)
@@ -47,19 +48,20 @@ Offline only; no control claim; not an Apple→Plate experiment; R7 does not cha
   unchanged; core-import check passes), tests, D0 featurisation probe, grid rule, G1 and G5 bar
   calibration on D0 only, debug smoke and CUDA determinism; independently reviewed and merged
   (the freeze)
-- [ ] Stages F, B, T (T′ only if G6 triggers), V, F′, E at the frozen revision in a clean run tree,
+- [x] Stages F, B, T (T′ only if G6 triggers), V, F′, E at the frozen revision in a clean run tree,
   every GPU job under `scripts/gpu_run.sh --wait --board`, within the 20 GPU h cap; val report
   hash recorded here before the test split is read; evidence under
-  `~/develop/emai/evidence/task100-*` with `SHA256SUMS`
-- [ ] Results (VOID / WM-PASS / WM-PARTIAL / WM-FAIL) and DECISIONS entry, reviewed and merged;
-  R7 unchanged
+  `~/develop/emai/evidence/task100-*` with `SHA256SUMS` (29 GPU jobs, all status 0; T′ ran for
+  L and N_L; 16.99 of 20 GPU h; evidence `task100-run/`, SHA256SUMS `4078ad12…4093`)
+- [x] Results (VOID / WM-PASS / WM-PARTIAL / WM-FAIL) and DECISIONS entry, reviewed and merged;
+  R7 unchanged (row **WM-PASS, arm J only**;
+  [so101_world_model_v1_results.md](../../../docs/experiments/so101_world_model_v1_results.md);
+  DECISIONS 2026-10-19 (bs), R28.34–R28.40; closes when the record PR merges)
 
 ## Notes
 
 - 2026-10-17, created with the DRAFT preregistration (branch `docs/so101-s4-draft`). Nothing
-  featurised, trained or evaluated.
-%% mc-links: [[TASK-099]] %%
-- 2026-10-17, DRAFT merged (#236). Stage 0 run on branch `feat/so101-s4-stage0` (D0 only; test
+  featurised, trained or evaluated.- 2026-10-17, DRAFT merged (#236). Stage 0 run on branch `feat/so101-s4-stage0` (D0 only; test
   never opened): S0-DONE. Grid g4; B_rank 0.11, B_std 0.37, B_cube 2.397 cm, B_jaw 0.1666 rad;
   moving subsets 1.0 cm and 0.2 rad (not halved); calibration L's G4 lower bounds 1.769 / 2.083
   (h = 8 / 16) and R-pred medians inside both G5 bars, so no ruling needed; CUDA determinism
@@ -72,3 +74,14 @@ Offline only; no control claim; not an Apple→Plate experiment; R7 does not cha
   `b3c3eddef04da3e29a1fad952ce619af6f65714574a0e749f8f8f4c6f633aa31`**
   (`outputs/task100-run/val_report.json`), recorded here and in `outputs/task100-run/runlog.txt`
   before Stage F′ featurises the test split.
+- 2026-10-19, Stage E had finished on 2026-10-18 (E-DONE; test report SHA-256
+  `9ca7144ef2ba943cfcca1057ed237cf35812e96ca605f05b7d16d249bef20c77`); the run agent's session was
+  then interrupted by a restart, with no effect on any stage. **Row WM-PASS, arms ["J"]:**
+  `native_jepa` (J) passed G1–G6 on seeds 100100–100102 at h = 8 and 16; LeWM (L) passed G1–G5
+  but failed G6 on 100100 and 100102 after T′ (still improving at 30 000 updates; U was capped at
+  20 000 by the GPU budget against the probe rule's 60 000), so **J, not L, is S5's model**
+  (R28.35). Row recomputed on the CPU from the stored report with the frozen code; the SSD working
+  copy (56.3 GB) deleted after both HDD stores hash-verified (§8.4). Offline only, simulation, no
+  control claim; R7 unchanged. Recommended next: S5's preregistration with J; a LeWM
+  longer-budget re-run is worth its own ruling (R28.39, recommendation only).
+%% mc-links: [[TASK-099]] %%

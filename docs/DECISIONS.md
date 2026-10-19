@@ -63,6 +63,65 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-19 (bs) — Claude, under owner delegation, records TASK-100's gated row WM-PASS with arm J only: `native_jepa` passed G1–G6 on all three seeds at h = 8 and 16; LeWM (L) passed G1–G5 but failed G6 (training saturation) on two seeds, so J, not L, is S5's model; offline only; 16.99 of 20 GPU h; R7 unchanged (R28.34–R28.40)
+
+**Decided by Claude under owner delegation (2026-09-30 delegation; the SO-101 branch opened by
+R28.1); recorded by Claude.** Results:
+[so101_world_model_v1_results.md](experiments/so101_world_model_v1_results.md); protocol
+[so101_world_model_v1.md](experiments/so101_world_model_v1.md) (FROZEN at `f0da5bf`); evidence
+`~/develop/emai/evidence/task100-run/` (SHA256SUMS `4078ad12…4093`). An offline world-model
+result in simulation; no planner, controller or closed loop ran.
+
+- **R28.34 — Row WM-PASS, arms ["J"].** Stages F, B, T, T′, V, F′ and E ran at `f0da5bf` from a
+  clean run tree; all 29 GPU jobs ended with status 0; the val report's SHA-256 (`b3c3edde…aa31`)
+  was recorded in the run log and the task card before the test split was featurised; the test
+  report (`9ca7144e…0c77`, outcome E-DONE) gives `{"row": "WM-PASS", "arms": ["J"], "s5_model":
+  "J"}`. The row was recomputed on the CPU from the stored report with the frozen code (the
+  summarizer reproduces `summary.md` byte for byte; `gates_for`, `saturation` on every stored val
+  curve and `decide` give the same gates, G6 flags and row). Every gate quantity, per arm, seed
+  and h, with its interval, is in the results document.
+- **R28.35 — S5's model is J (`native_jepa`), not L (LeWM).** §11 makes the passing arm S5's model
+  and prefers L only if both pass. L passed G1–G5 on all seeds at both horizons but failed G6 on
+  seeds 100100 (2.82 %) and 100102 (2.60 %) after G6's one extension to 30 000 updates (bar 2 %);
+  §6 allows no second extension, so L is not a passing arm. This is a budget finding, not a
+  quality finding: the GPU cap lowered U from the probe rule's 60 000 to 20 000, and L was still
+  improving when training stopped. It does not show that LeWM fails to learn dynamics here, and
+  it does not show that it would pass at saturation.
+- **R28.36 — The 1.5 × rule (§8.2) is read per stage row of the projection.** F 1.04 ×, B 1.07 ×,
+  T 1.05 ×, T′ 1.17 ×, and V, F′ and E together (one row in §8.2 and in the Stage 0 projection)
+  1.708 h against 1.2 h, 1.42 ×: no stage exceeded 1.5 ×, so no VOID. Disclosed: within V, the
+  `fitpred` pass ran about 2.7 × the Stage 0 record's per-model estimate (189 s against about 70 s
+  a model). Total GPU use 16.99 h (Stage 0 1.98, gated stages 15.02) of the 20 GPU h cap.
+- **R28.37 — The run agent's interruption had no effect.** The session running the stages was
+  ended by a restart after Stage E had finished: Stage E's console ends with E-DONE and exit 0,
+  the summary and the test report were written, every ledger job ended with status 0, and the GPU
+  lock was released by the last job. The only trace is a missing closing line in `runlog.txt`;
+  the housekeeping and this record were done afterwards on the CPU.
+- **R28.38 — Evidence and the SSD working copy (§8.4).** The small run outputs, all readout files,
+  every job and feature report, the hashes of all checkpoints and of both HDD feature stores, and
+  the CPU re-checks are in the evidence folder with `SHA256SUMS` (`sha256sum -c` passes). After
+  both HDD stores were re-hashed in full and matched their feature reports and the SSD copy's
+  manifest, the SSD working copy (`~/develop/emai/ssd-work/task100-features-{pretrained,random_init}`,
+  56.3 GB) was deleted on 2026-10-19 at 11:50:57Z; the deletion is recorded in the evidence.
+- **R28.39 — Next step (recommendation; the owner can overrule).** Draft S5's preregistration as
+  §11 describes it, with **J as its model**: a closed loop on `so101_cube_lift_v0` with fresh reset
+  seeds from the S2 task streams, the scripted follower as the reference arm, action-blind,
+  scene-blind and random controls, bars set from measured ceilings, and §9's planning measure as a
+  design input. Two findings constrain that design and must be carried into it: the predicted cube
+  is read to about 1.6–1.8 cm in median (under 6 % of roots within S2's 0.5 cm grasp tolerance),
+  so an S5 controller should not take its grasp point from this readout alone; and J's physical
+  ranking separates coarse but not fine command differences. **A LeWM longer-budget re-run is
+  worth its own ruling, as a recommendation only**: L and N_L × 3 seeds at the probe rule's
+  U = 60 000 (about 6 × 60 000 × 0.094 s ≈ 9.4 GPU h plus selection, or about half that resumed
+  from the stored 30 000-update states; G6 and the rest unchanged), which would answer whether the
+  product-goal backend passes at saturation. It would need its own preregistration and budget
+  ruling, and because this corpus's test split has now been read, either fresh test episodes from
+  new seeds of the same collector or an explicit statement that its test is no longer held out.
+  Neither step is started by this decision.
+- **R28.40 — R7 does not change.** SO-101 results are not Apple→Plate results (R28.9, R28.26); R7's
+  canonical sentence is unchanged. TASK-100 closes when this record merges. LeWM, `native_jepa`,
+  DINOv2, the corpus, the SO-101 branch and the product goal are not closed by this row.
+
 ## Decision 2026-10-17 (br) — Claude, under owner delegation, records TASK-100's Stage 0 (S0-DONE): grid g4, B_rank 0.11, B_std 0.37, B_cube 2.397 cm, B_jaw 0.1666 rad, subset thresholds unchanged, determinism bit-identical, 1.98 GPU h used; the protocol freezes at this PR's merge; nothing gated has run; R7 unchanged (R28.27–R28.33)
 
 **Decided by Claude under owner delegation (2026-09-30 delegation; the SO-101 branch opened by
