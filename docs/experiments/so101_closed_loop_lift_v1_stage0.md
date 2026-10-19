@@ -9,6 +9,13 @@ first 8 episodes of its CPU arms ran; **W's closed loop on D did not run, and no
 exists.** No gated seed was drawn, rendered or run. This is a simulation-only SO-101 study, not
 Apple→Plate. R7 does not change (R28.9).
 
+**Ruling (2026-10-19, [DECISIONS](../DECISIONS.md) (bv), R28.65–R28.75; decided by Claude under
+owner delegation):** option (a) of §6 is adopted as amendment A1, §18 of the protocol. The study
+moves to `so101_cube_lift_v1` (v0 with the marker drawn per reset from the corpus's marker
+distribution, salt 10107). Stage 0′ runs on K′ and D′, and the D′ clause is not waived. Every §7.2
+check is enforced by the runner before any count, 7.2.4 is written in its conditional form, and a
+diagnostic Δ is declared in case K′ is null again. This record is unchanged below.
+
 ## Summary
 
 - **Check 7.2.2 failed: the live latent does not read the cube on the lift task's frames.** TASK-100's
