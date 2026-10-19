@@ -475,14 +475,64 @@ def check_adapter(args, report) -> dict:
     return out
 
 
-def compare_runs(a: Path, b: Path, keys=("applied", "requested", "status", "subgoal")) -> bool:
-    with np.load(a) as x, np.load(b) as y:
-        return all(np.array_equal(x[k], y[k], equal_nan=True) for k in keys)
+ACTION_KEYS = ("applied", "requested", "status", "subgoal")
+
+
+def _first_difference(x, y) -> int | None:
+    """First index at which two per-step arrays differ (a length difference counts there)."""
+    n = min(len(x), len(y))
+    a = np.asarray(x[:n]).reshape(n, -1)
+    b = np.asarray(y[:n]).reshape(n, -1)
+    same = np.all((a == b) | (np.isnan(a) & np.isnan(b)) if a.dtype.kind == "f" else a == b, 1)
+    bad = np.flatnonzero(~same)
+    if len(bad):
+        return int(bad[0])
+    return None if len(x) == len(y) else n
+
+
+def pair_divergence(path_a: Path, path_b: Path, ra: dict, rb: dict) -> dict:
+    """Where two runs of one episode first differ: in the live latent (the rendered frames) and
+    in the executed actions; the outcome keys."""
+    with np.load(path_a) as x, np.load(path_b) as y:
+        latent = _first_difference(x["latents_raw16"], y["latents_raw16"])
+        actions = [_first_difference(x[k], y[k]) for k in ACTION_KEYS]
+        unstable = int(
+            sum(
+                not np.array_equal(u, v)
+                for u, v in zip(x["latents_raw16"], y["latents_raw16"], strict=False)
+            )
+        )
+    acts = [a for a in actions if a is not None]
+    action = min(acts) if acts else None
+    outcome_keys = ("success", "termination", "success_step", "commands")
+    same_outcome = all(ra[k] == rb[k] for k in outcome_keys)
+    identical = latent is None and action is None and same_outcome
+    # the controller and the physics are deterministic: actions never diverge before the frames
+    # do, and with identical frames throughout, the outcome is identical
+    conditional = (action is None and same_outcome) or (
+        latent is not None and action is not None and action >= latent
+    )
+    return {
+        "first_latent_difference": latent,
+        "first_action_difference": action,
+        "steps_with_different_latents": unstable,
+        "same_outcome": same_outcome,
+        "bit_identical": identical,
+        "conditional_determinism": bool(conditional),
+    }
 
 
 def check_determinism(args, report) -> dict:
     """§7.2.4: one W and one N episode run twice; four W episodes in a pool of 1 and of
-    ``--workers``; identical executed sequences and outcomes."""
+    ``--workers``.
+
+    As declared, the executed sequences and outcomes must be identical ("literal"). MuJoCo's EGL
+    renderer returns different images for the same physics state on some frames (one pixel, one
+    intensity level; Stage 0 record), so the literal form cannot hold whenever such a frame
+    occurs. The check passes on the conditional form (Stage 0 record's deviation): in every pair
+    the executed actions never diverge before the live latent (the rendered frames) does, and
+    with identical latents at every step the actions and the outcome are identical. Both forms
+    are reported."""
     goals = cl.load_goal_store(args.goals, args.goals_sha256)
     if goals["report"]["cohort"] != "debug":
         raise cl.GuardError("the determinism check runs on debug seeds")
@@ -524,15 +574,21 @@ def check_determinism(args, report) -> dict:
     pk = run(f"pool-{args.workers}", "W", [0, 1, 2, 3], args.workers)
     s0 = seeds[0]
 
-    def same(x, y, tag_x, tag_y, seed):
-        files = compare_runs(base / tag_x / f"{seed}.npz", base / tag_y / f"{seed}.npz")
-        keys = ("success", "termination", "success_step", "commands")
-        return files and all(x[seed][k] == y[seed][k] for k in keys)
+    def pair(x, y, tag_x, tag_y, seed):
+        return pair_divergence(
+            base / tag_x / f"{seed}.npz", base / tag_y / f"{seed}.npz", x[seed], y[seed]
+        )
 
+    pk_tag = f"pool-{args.workers}"
+    pairs = {
+        "W_rerun": pair(w1, w2, "W-a", "W-b", s0),
+        "N_rerun": pair(n1, n2, "N-a", "N-b", s0),
+        **{f"pool_{s}": pair(p1, pk, "pool-1", pk_tag, s) for s in seeds[:4]},
+    }
     out = {
-        "W_rerun_identical": same(w1, w2, "W-a", "W-b", s0),
-        "N_rerun_identical": same(n1, n2, "N-a", "N-b", s0),
-        "pool_identical": all(same(p1, pk, "pool-1", f"pool-{args.workers}", s) for s in seeds[:4]),
+        "pairs": pairs,
+        "literal_identical": all(v["bit_identical"] for v in pairs.values()),
+        "conditional_determinism": all(v["conditional_determinism"] for v in pairs.values()),
         "workers": args.workers,
         "runs": {
             k: {
@@ -555,8 +611,52 @@ def check_determinism(args, report) -> dict:
             for k, v in runs.items()
         },
     }
-    out["passes"] = out["W_rerun_identical"] and out["N_rerun_identical"] and out["pool_identical"]
+    out["passes"] = out["conditional_determinism"]
     return out
+
+
+def check_render(args, report) -> dict:
+    """Reported (Stage 0 record): how often MuJoCo's EGL renderer returns different images for
+    one physics state. Follower v1 on the first ``--render-seeds`` debug resets; after every
+    command both cameras are rendered ``--render-repeats`` times."""
+    from embodied_jepa.so101_followers import follow_lift
+    from embodied_jepa.so101_tasks import SO101CubeLiftTask
+
+    goals = cl.load_goal_store(args.goals, args.goals_sha256)
+    if goals["report"]["cohort"] != "debug":
+        raise cl.GuardError("the render check runs on debug seeds")
+    rows = []
+    for seed in [int(x) for x in goals["arrays"]["seeds"][: args.render_seeds]]:
+        robot = rt.make_robot(True)
+        task = SO101CubeLiftTask(robot)
+        counts = {"states": 0, "unstable": {c: 0 for c in cl.CAMERAS}, "max_pixels": 0}
+
+        def on_command(n, result, robot=robot, counts=counts):
+            counts["states"] += 1
+            for c in cl.CAMERAS:
+                images = [robot.sim.render(c) for _ in range(args.render_repeats)]
+                if any(not np.array_equal(images[0], x) for x in images[1:]):
+                    counts["unstable"][c] += 1
+                    px = max(
+                        int((np.abs(images[0].astype(int) - x).max(-1) > 0).sum())
+                        for x in images[1:]
+                    )
+                    counts["max_pixels"] = max(counts["max_pixels"], px)
+
+        try:
+            follow_lift(rt.Recorder(robot, on_command), task, seed)
+        finally:
+            robot.close()
+        rows.append({"seed": seed} | counts)
+    states = sum(r["states"] for r in rows)
+    unstable = {c: sum(r["unstable"][c] for r in rows) for c in cl.CAMERAS}
+    return {
+        "rows": rows,
+        "states": states,
+        "unstable": unstable,
+        "repeats": args.render_repeats,
+        "passes": True,
+    }
 
 
 CHECKS = {
@@ -566,6 +666,7 @@ CHECKS = {
     "ties": check_ties,
     "adapter": check_adapter,
     "determinism": check_determinism,
+    "render": check_render,
 }
 
 
@@ -617,6 +718,8 @@ def main(argv=None) -> int:
     c.add_argument("--sequences", type=int, default=1000)
     c.add_argument("--config", default="H16-mean")
     c.add_argument("--workers", type=int, default=6)
+    c.add_argument("--render-seeds", type=int, default=4)
+    c.add_argument("--render-repeats", type=int, default=3)
     c.add_argument("--output", required=True)
     args = p.parse_args(argv)
     return {"goals": cmd_goals, "episodes": cmd_episodes, "check": cmd_check}[args.cmd](args)

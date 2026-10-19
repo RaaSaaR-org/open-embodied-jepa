@@ -345,6 +345,45 @@ def test_a_cohort_cannot_be_run_twice_into_the_same_output(tmp_path):
         )
 
 
+def test_the_determinism_pairs_read_where_frames_and_actions_diverge(tmp_path):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import run_task101
+    finally:
+        sys.path.pop(0)
+    rng = np.random.default_rng(0)
+    base = {
+        "latents_raw16": rng.normal(size=(6, 2, 3)).astype(np.float16),
+        "applied": rng.normal(size=(5, 6)).astype(np.float32),
+        "requested": rng.normal(size=(5, 6)).astype(np.float32),
+        "status": np.zeros(5, np.int64),
+        "subgoal": np.zeros(5, np.int64),
+    }
+    out = {"success": False, "termination": "timeout", "success_step": None, "commands": 5}
+
+    def save(name, **change):
+        arrays = {k: v.copy() for k, v in base.items()}
+        for key, (step, value) in change.items():
+            arrays[key][step] = value
+        np.savez(tmp_path / name, **arrays)
+        return tmp_path / name
+
+    a = save("a.npz")
+    same = run_task101.pair_divergence(a, save("b.npz"), out, out)
+    assert same["bit_identical"] and same["conditional_determinism"]
+    later = run_task101.pair_divergence(
+        a, save("c.npz", latents_raw16=(2, 0.0), applied=(3, 0.5)), out, out
+    )
+    assert not later["bit_identical"] and later["conditional_determinism"]
+    assert (later["first_latent_difference"], later["first_action_difference"]) == (2, 3)
+    early = run_task101.pair_divergence(
+        a, save("d.npz", latents_raw16=(4, 0.0), applied=(1, 0.5)), out, out
+    )
+    assert not early["conditional_determinism"]
+    other = out | {"success": True}
+    assert not run_task101.pair_divergence(a, save("e.npz"), out, other)["conditional_determinism"]
+
+
 def test_core_import_stays_torch_free_and_does_not_load_this_task():
     code = (
         "import sys, embodied_jepa, embodied_jepa.config, embodied_jepa.so101_closed_loop;"
