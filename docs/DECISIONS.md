@@ -63,6 +63,54 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-20 (bz) — TASK-102 Stage 0: G_loc trained (primary G-0); every §7.3 check passed before any count and the runner enforced it; P set τ_h = 0.08 rad (S+G 30/32 at r = 0); on A no configuration of CEM over J handed over by tolerance (a_A = 0/32 in all four), so the row is S0-APPROACH, D did not run, nothing is frozen and the study escalates; R7 unchanged (R28.110–R28.118)
+
+**Recorded by Claude under owner delegation** (the 2026-09-30 delegation; the SO-101 branch opened
+by R28.1). Record: [so101_hybrid_lift_v1_stage0.md](experiments/so101_hybrid_lift_v1_stage0.md).
+Protocol: [so101_hybrid_lift_v1.md](experiments/so101_hybrid_lift_v1.md) (DRAFT, merged; not
+frozen). These rulings record the row and the deviations. They do not choose the next study.
+
+- **R28.110 — G_loc's training outcome.** 3 029 train windows (210 022 frames) and 168 val windows
+  of `so101-play-v1` (test split never opened). All three seeds had eligible checkpoints. The
+  selected val MSEs were G-0 0.02712 (update 7 000), G-1 0.02762 (7 000) and G-2 0.02756 (5 000),
+  so **the primary G_loc is G-0**. No seed set `last_two_triggered`.
+- **R28.111 — The checks.** Every §7.3 check passed at the running revision `c586eb1`, from a clean
+  tracked tree, before P's first episode. The runner enforced the order for P and for A. 7.3.1 had
+  64/64 frames bit identical, 7.3.3 1 000/1 000, 7.3.4 a max |Δ| of 7.2 × 10⁻⁷, 7.3.5 all pairs bit
+  identical, and 7.3.6 a longest command of 0.98 s. 7.3.2 read the cube at 0.95–0.97 cm on P's,
+  A's and D's subgoal frames, against 2.397 cm.
+- **R28.112 — P and τ_h.** S+G lifted 30/32 at r = 0 (exact 95 % 0.792–0.992), 31/32 at 0.04, 28/32
+  at 0.08 and 19/32 at 0.12 rad. τ_max = 0.12 rad (the envelope's "pre" column, 32/32 at every
+  level), so by §5.2 **τ_h = 0.08 rad**. S0-GLOC-WEAK does not fire. This is a privileged-approach
+  development count, not a hybrid result.
+- **R28.113 — Deviations accepted as disclosed** (record §8): a superseded first round of checks at
+  `e0412e5` (TASK-101's 7.2.1 was restated in the runtime, because runners may not load other
+  scripts); 7.3.5 at plumbing values H8-mean with τ_h = 0.04 rad; 7.3.4 on stored val latents; the
+  window rule's boundaries as implemented; S+G's approach as follower v1's own drive, guarded equal
+  to the demonstration at r = 0; D's demonstrations rendered and checked although D did not run;
+  two debug plumbing jobs; and the summariser edited after the run.
+- **R28.114 — A and the row.** Phase 1 alone timed out on all 128 of A's episodes:
+  **a_A = 0/32 in every configuration** (0.000–0.109). The tie-break chose H16-last (median closest
+  arm RMS 0.354 rad), whose a_A = 0 < 16. **The row is S0-APPROACH** (§7.7 row 3). D does not run,
+  and no bar, a_H or W+F count exists. Reported only: the arm came within 0.08 rad of subgoal 1 in
+  3 of 128 episodes, never with the jaw inside 0.15 rad. The median closest arm RMS was
+  0.35–0.52 rad, as on TASK-101's K′.
+- **R28.115 — Not frozen.** The protocol freezes only on S0-DONE. The manifest
+  `so101-hybrid-lift-v1.json` is **CANDIDATE**. No gated seed was drawn, rendered or run.
+  Development seeds P, A and D are spent for this design. P′, A′ and D′ stay unused.
+- **R28.116 — Escalation.** §7.7 row 3 names the candidates: R28.57's LeWM longer-budget retrain,
+  a cost or goal change for the approach, and a planner variant. Each needs its own amendment or
+  preregistration and a ruling. This record does not choose among them. The executing agent
+  reports rows (§16).
+- **R28.117 — What this does and does not say.** Nothing here is a result for or against J,
+  LeWM, the hybrid or the task. The development readings are these: G_loc, cloned from privileged
+  scripted play, lifts after an exact privileged approach, and TASK-101's CEM over J does not bring
+  the arm and jaw to the pre-grasp pose within 60 commands. So the failing component in this design
+  is the approach, not the grasp.
+- **R28.118 — Budget.** 1.246 GPU h in Stage 0 (23 jobs) against the 5 GPU h Stage 0 cap and the
+  12 GPU h hard cap.
+- **R7 does not change** (R28.9). The G1 line stays paused, and TASK-095 stays on hold (R28.2).
+
 ## Decision 2026-10-19 (by) — Claude, under owner delegation, rules on TASK-101's A2-NOT-BINDING: the hybrid local grasp controller, not R28.57's LeWM retrain, is the next study; TASK-101 closes with no claim (S0-NULL, Δ-MIXED, A2-NOT-BINDING; never frozen, no gated run); TASK-102 opens as a DRAFT preregistration of a hybrid (J + CEM approach to the pre-grasp subgoal, then a learned local grasp-and-lift policy G_loc); the owner can override; R7 unchanged (R28.91–R28.109)
 
 **Decided by Claude under owner delegation (the 2026-09-30 delegation, whose recorded preference is
