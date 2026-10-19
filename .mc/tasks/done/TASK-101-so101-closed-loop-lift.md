@@ -4,7 +4,7 @@ aliases:
 - TASK-101
 title: 'SO-101 S5: first closed loop on so101_cube_lift_v0 in simulation (CEM over TASK-100''s native_jepa token model J toward image subgoals of a per-reset demonstration)'
 slug: so101-closed-loop-lift
-status: in-progress
+status: done
 priority: 2
 owner: ''
 projects: []
@@ -48,6 +48,17 @@ development decomposition comes before any second variant.
 [`docs/experiments/so101_closed_loop_lift_v1.md`](../../../docs/experiments/so101_closed_loop_lift_v1.md).
 Simulation only. Not an Apple→Plate experiment; R7 does not change (R28.9). Not LeWM: J passed S4,
 and the LeWM long-budget re-run is a separate recommendation (R28.57) that has not been started.
+
+## Closure (2026-10-19, DECISIONS (by), R28.91–R28.97)
+
+**Closed with no claim, by ruling, not by meeting its acceptance criteria.** Rows as recorded:
+Stage 0 **S0-VOID** (R28.59–R28.64), Stage 0′ **S0-NULL** with Δ-**MIXED** (R28.76–R28.82), envelope
+**A2-NOT-BINDING** (R28.90). The protocol was **never frozen** (manifest stays `CANDIDATE`); no gated
+stage ran and no gated seed was drawn, rendered or run. Every TASK-101 seed range is retired (R28.93).
+2.87 GPU h used. Claude, under owner delegation, chose the hybrid local grasp controller as the next
+study (TASK-102, [so101_hybrid_lift_v1.md](../../../docs/experiments/so101_hybrid_lift_v1.md));
+R28.57's LeWM retrain stays a separate recommended task, not started. The owner can override
+(R28.97). R7 unchanged. The unchecked boxes below stay unchecked: they were not reached.
 
 ## Acceptance Criteria
 
@@ -119,3 +130,6 @@ and the LeWM long-budget re-run is a separate recommendation (R28.57) that has n
   after the rule's commit. "pre" 32/32 at every level to 0.16 rad; "carry" 32/32 at 0.02, 20/32 at
   0.04, 2/32 at 0.16; row **A2-NOT-BINDING**, τ_s stays 0.04 rad, K″ not run. Awaiting the owner's
   choice: hybrid local grasp controller or LeWM longer-budget retrain.
+- 2026-10-19 ruling on A2-NOT-BINDING (DECISIONS (by), R28.91–R28.97; decided by Claude under owner
+  delegation; branch `docs/so101-hybrid-draft`): the hybrid, not the LeWM retrain; TASK-101 closed
+  with no claim and moved to done; TASK-102 opened as a DRAFT preregistration.

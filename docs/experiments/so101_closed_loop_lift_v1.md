@@ -13,6 +13,12 @@ four configurations, D′ did not run, and the diagnostic Δ ([record](so101_clo
 read Δ-MIXED. Escalated for a ruling. **Not frozen** (R28.81): there is no gated stage under
 S0-NULL, and nothing may run on S.
 
+**Closed (2026-10-19, [DECISIONS](../DECISIONS.md) (by), R28.91–R28.97; decided by Claude under
+owner delegation): no claim, never frozen, no gated run.** Rows S0-VOID, S0-NULL with Δ-MIXED, and
+A2-NOT-BINDING stand as recorded. Every TASK-101 seed range is retired. The next study is TASK-102, a
+hybrid ([so101_hybrid_lift_v1.md](so101_hybrid_lift_v1.md)); R28.57's LeWM retrain stays a separate
+recommendation. Everything below is kept as written.
+
 **Amendment A2 (2026-10-19, [DECISIONS](../DECISIONS.md) (bx), R28.83–R28.89; decided by Claude
 under owner delegation).** The ruling on Δ-MIXED: the 0.04 rad switching tolerance was declared,
 not calibrated, and Δ puts J's cost minimum about 0.05 rad off the subgoal pose. A2 measures the

@@ -63,6 +63,92 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-19 (by) — Claude, under owner delegation, rules on TASK-101's A2-NOT-BINDING: the hybrid local grasp controller, not R28.57's LeWM retrain, is the next study; TASK-101 closes with no claim (S0-NULL, Δ-MIXED, A2-NOT-BINDING; never frozen, no gated run); TASK-102 opens as a DRAFT preregistration of a hybrid (J + CEM approach to the pre-grasp subgoal, then a learned local grasp-and-lift policy G_loc); the owner can override; R7 unchanged (R28.91–R28.109)
+
+**Decided by Claude under owner delegation (the 2026-09-30 delegation, whose recorded preference is
+to pick the recommended option; the SO-101 branch opened by R28.1).** It answers R28.90's
+escalation. **The owner can override this ruling** (R28.97). Records: the envelope
+[so101_closed_loop_lift_v1_envelope.md](experiments/so101_closed_loop_lift_v1_envelope.md), the Δ
+diagnostic [so101_closed_loop_lift_v1_null_diagnostic.md](experiments/so101_closed_loop_lift_v1_null_diagnostic.md)
+and the Stage 0′ record [so101_closed_loop_lift_v1_stage0b.md](experiments/so101_closed_loop_lift_v1_stage0b.md).
+New DRAFT preregistration [so101_hybrid_lift_v1.md](experiments/so101_hybrid_lift_v1.md); cards
+TASK-101 (closed) and TASK-102 (opened). Docs and cards only: nothing ran for this entry.
+
+- **R28.91 — The ruling: the hybrid.** Of the two options R28.85 put to the owner, the next study
+  is **a hybrid local grasp controller** (TASK-102), and R28.57's LeWM longer-budget retrain is not
+  started by this ruling. The reasons are the envelope's two columns and Δ:
+  - **The approach to the pre-grasp pose is tolerant.** With the hand-over at subgoal 1 ("pre"),
+    the follower lifted 32/32 at every perturbation level up to 0.16 rad RMS (exact 95 % lower
+    bound 0.891 at each level). Δ found J's cost minimum near the pre-grasp pose about 0.05 rad off
+    it (CEM's commands from the pose itself moved the arm to 0.048–0.055 rad RMS). That offset lies
+    well inside the tolerant range. *What this does not show:* that CEM over J **reaches** that
+    neighbourhood from the reset pose. In K′'s closed loops the median closest arm RMS to subgoal 1
+    was 0.26–0.48 rad, and the best single episode came within 0.035 rad. TASK-102 measures this
+    directly (arm W+F in its Stage 0, with a row that stops before any gated stage).
+  - **The grasp needs about 0.02 rad, or closed-loop correction.** With the jaw closing where the
+    arm stands ("carry"), the lift rate fell from 32/32 at 0.02 rad to 20/32 at 0.04 rad and 2/32
+    at 0.16 rad. With the pose corrected while the jaw closes ("reaim", reported only), it was
+    31/32 at 0.04 rad and 25/32 at 0.16 rad. J's cost does not resolve the pose to 0.02 rad (Δ's
+    0.05 rad minimum; TASK-100's §9 planning measure: J ranks coarse command differences, not fine
+    ones; its predicted cube reads to 1.6–1.8 cm in median). A local policy that reads the wrist
+    camera at every step and corrects the pose while it closes is the component the envelope
+    names.
+  - **So the hybrid assigns each phase to what the measurements say can do it:** the world-model
+    planner where the task is tolerant, and a learned closed-loop policy where it is not. Both
+    parts are learned. The privileged follower appears only as a ceiling and as a goal source.
+- **R28.92 — Why not R28.57's LeWM retrain now.** A retrain changes the predictor backend. It keeps
+  the frozen DINOv2 g4 latent (32 tokens × 384, 4 × 4 pooled per camera), the image-subgoal cost,
+  the planner and the 0.02 rad requirement at the close. It is therefore **not expected** to close
+  the precision gap. That is an expectation from the measurements above, not a measured result,
+  and it could be wrong: a different predictor could move the cost's minimum. R28.57 **stays a
+  separate recommended task** for the product-goal backend (whether LeWM passes S4 at a saturating
+  budget). It is not started, and it needs its own preregistration, budget ruling and fresh test
+  episodes (R28.57's text). If LeWM later passes S4, it could replace J in TASK-102's approach phase
+  as a one-key backend swap.
+- **R28.93 — TASK-101 closes, with no claim.** Its rows stand as recorded: Stage 0 **S0-VOID**
+  (R28.59–R28.64), Stage 0′ **S0-NULL** with Δ-**MIXED** (R28.76–R28.82), and the envelope
+  **A2-NOT-BINDING** (R28.90). **The protocol was never frozen** (R28.81). No gated stage ran, and
+  no gated seed was drawn, rendered or run. Its manifest stays `CANDIDATE`, and its files are not
+  edited. Every TASK-101 seed range is **retired**, including the never-drawn D′ 101600–101663, S
+  101200–101327 with reserve 101400–101463, and K″ 102100–102131 and D″ 102200–102263 with their
+  reserves; none is reused by TASK-102. GPU used: 2.87 GPU h (Stage 0 and Stage 0′; the envelope
+  was CPU only). Nothing in TASK-101 is a result for or against J, the planner or the task. What it
+  leaves is development knowledge: the scene sensitivity of A1, Δ's reading and the envelope. The
+  card moves to done with acceptance criteria marked as not reached, not as met. No abandonment
+  clause existed (TASK-101 §9), and none fires.
+- **R28.94 — TASK-101 §6's condition for a hybrid is met, by the envelope, not by W's logs.**
+  §6 admitted a hybrid "only after a decomposition record (§9) names the failing phase". No gated
+  stage ran, so there is no §9 decomposition of S's logs. The envelope (A2) and Δ together name
+  the phase: the grasp's pose precision at the close. This is a reading of a follower-based
+  measurement and of planner queries, disclosed as such. It is not a decomposition of W's own
+  closed loops, which never reached a subgoal by tolerance.
+- **R28.95 — TASK-102 opens (DRAFT, docs and card only).** Preregistration
+  [so101_hybrid_lift_v1.md](experiments/so101_hybrid_lift_v1.md) on `so101_cube_lift_v1` in
+  simulation. Controller **H**: phase 1, TASK-101's CEM over J-100101 (H8-mean, unchanged) toward
+  the pre-grasp image subgoal of the per-reset demonstration, handing over when the measured arm is
+  within τ_h of subgoal 1's joints for 3 commands (τ_h ≤ 0.12 rad, by a rule written in §5.3 of the
+  protocol), or at a 60-command timeout; phase 2, **G_loc**, a learned local grasp-and-lift policy
+  trained by behaviour cloning (TASK-071/072's P-3 recipe) on frozen DINOv2 g4 features of both
+  cameras plus proprioception, on `so101-play-v1` train-split grasp windows (episode-grouped; val for
+  selection; test never opened). Arms: H, G_loc-only, N_J + G_loc, S + G (privileged approach),
+  W + F (privileged grasp), F, H-pose + G, rand and hold. Stage 0 trains G_loc (three seeds),
+  calibrates τ_h on development cohort P and the bar on development cohort D by rules fixed now,
+  and freezes at its merge. The gated stage runs 128 fresh resets once. Rows VOID / HY-PASS /
+  HY-UNSPECIFIC / HY-LOW / HY-FAIL; no abandonment clause; a decomposition record before any second
+  variant. Seeds 103000–103999 and salts 10110–10115 (unused on every remote ref, 2026-10-19).
+  Budget: a hard cap of 12 GPU h, Stage 0 at most 5. The design choices are R28.98–R28.109 in the
+  protocol's §17.
+- **R28.96 — Naming.** A pass is named **"a hybrid with a `native_jepa` world-model approach and a
+  learned grasp policy succeeds"** (with the protocol's §14 qualifiers: in simulation, on
+  `so101_cube_lift_v1`, the approach aimed at an image subgoal of a privileged per-reset
+  demonstration, G_loc cloned from privileged scripted play). It is not LeWM, not "LeWM-driven",
+  not "the world model grasps" and not "J needed".
+- **R28.97 — The owner can override.** This ruling was made by Claude under delegation. The owner
+  may instead start R28.57's LeWM retrain first, run both, or stop the SO-101 line. Until TASK-102's
+  Stage 0 starts, an override costs nothing: no code, seed or GPU time has been spent on it.
+- **R7 does not change** (R28.9): SO-101 results are not Apple→Plate results. The G1 line stays
+  paused, and TASK-095 stays on hold (R28.2).
+
 ## Decision 2026-10-19 (bx) — Claude, under owner delegation, rules on TASK-101's Δ-MIXED: amendment A2 — the 0.04 rad switching tolerance was declared, not calibrated; measure the follower's pose-error envelope on fresh seeds E and set τ_s by a rule fixed before the measurement; Stage 0″ on fresh K″ and D″ with τ_s under A2-TAU, escalation to the owner (hybrid grasp controller or LeWM retrain) under A2-NOT-BINDING; envelope measured: A2-NOT-BINDING (subgoal 2 lifts 20/32 already at 0.04 rad), τ_s stays 0.04, escalated to the owner; not frozen; R7 unchanged (R28.83–R28.90)
 
 **Decided by Claude under owner delegation (the 2026-09-30 delegation; the SO-101 branch opened by
