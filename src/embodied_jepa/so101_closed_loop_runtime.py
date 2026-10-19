@@ -156,9 +156,24 @@ class LiveFeaturiser:
             raise cl.GuardError("G-weights: the DINOv2 weights digest differs from TASK-100's")
 
     def raw16(self, frames: dict) -> np.ndarray:
-        """``{camera: uint8 [N, 224, 224, 3]}`` -> float16 [N, 32, 384]."""
-        pooled = self.featuriser.pooled({c: np.asarray(frames[c]) for c in cl.CAMERAS}, ("g4",))
-        return pooled["g4"].astype(np.float16)
+        """``{camera: uint8 [N, 224, 224, 3]}`` -> float16 [N, 32, 384].
+
+        TASK-100's featuriser runs a fixed batch of 64 frames per camera; GPU arithmetic depends
+        on the batch size, so every call is padded to whole batches of 64 (the last frame
+        repeated) and the first N rows are kept. With it, a frame encoded live is bit-identical
+        to the stored latent of a frame the store encoded in a full batch (Stage 0 record,
+        §7.2.1's VOID and its fix)."""
+        n = len(np.asarray(frames[cl.CAMERAS[0]]))
+        batch = self.featuriser.batch
+        padded = {}
+        for c in cl.CAMERAS:
+            x = np.asarray(frames[c])
+            if len(x) != n:
+                raise ContractError("both cameras need the same number of frames")
+            extra = (-n) % batch
+            padded[c] = np.concatenate([x, np.repeat(x[-1:], extra, 0)]) if extra else x
+        pooled = self.featuriser.pooled(padded, ("g4",))
+        return pooled["g4"][:n].astype(np.float16)
 
     def standardise(self, raw16) -> np.ndarray:
         return standardise(self.moments, raw16)

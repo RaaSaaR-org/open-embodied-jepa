@@ -260,7 +260,11 @@ def cmd_episodes(args) -> int:
 # ----- checks (§7.2) --
 def check_latent(args, report) -> dict:
     """§7.2.1: 64 stored frames per camera from 8 val episodes, encoded live (one frame per camera
-    per call, as the controller does), equal to the stored float16 within 2 float16 ulps."""
+    per call, as the controller does), equal to the stored float16 within 2 float16 ulps.
+
+    The frames are 8 per episode, evenly spaced over the frames the store encoded in full
+    batches of 64 (TASK-100's featuriser encoded each episode's last 401 mod 64 = 17 frames in a
+    smaller batch, whose GPU arithmetic a live batch of 64 cannot reproduce; Stage 0 record)."""
     from embodied_jepa import so101_wm_data as sd
 
     feat = rt.LiveFeaturiser(args.device)
@@ -272,7 +276,8 @@ def check_latent(args, report) -> dict:
     for row in table[:8]:
         ep = sd.load_episode(shared / "data/so101-play-v1", row["shard"], row["episode_id"])
         n = row["frames"]
-        for f in np.linspace(0, n - 1, 8).astype(int):
+        last_full = (n // feat.featuriser.batch) * feat.featuriser.batch - 1
+        for f in np.linspace(0, last_full, 8).astype(int):
             live = feat.raw16({c: ep["frames"][c][f][None] for c in cl.CAMERAS})[0]
             stored = np.asarray(latents[row["offset"] + f])
             ulp = np.spacing(np.abs(stored)).astype(np.float32)
@@ -285,10 +290,17 @@ def check_latent(args, report) -> dict:
                     "episode": row["episode_id"],
                     "frame": int(f),
                     "max_ulps": ratio,
+                    "bit_identical": bool(np.array_equal(live, stored)),
                     "exact_fraction": float((diff == 0).mean()),
                 }
             )
-    return {"frames": count, "max_ulps": worst, "passes": bool(worst <= 2.0), "rows": rows}
+    return {
+        "frames": count,
+        "max_ulps": worst,
+        "bit_identical_frames": sum(r["bit_identical"] for r in rows),
+        "passes": bool(worst <= 2.0),
+        "rows": rows,
+    }
 
 
 def check_renc(args, report) -> dict:
