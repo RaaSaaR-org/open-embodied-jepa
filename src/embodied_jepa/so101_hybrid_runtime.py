@@ -278,6 +278,48 @@ def load_split_frames(folder, split: str, latent_moments, *, in_memory: bool = T
     )
 
 
+# ----- 7.3.1: the live latent equals the stored latent (TASK-101 7.2.1's check, carried) --
+def check_live_latent(device: str) -> dict:
+    """64 stored val frames per camera from 8 val episodes, encoded live one frame per camera per
+    call, equal to TASK-100's stored float16 within 2 float16 ulps; the frames are 8 per episode,
+    evenly spaced over the frames the store encoded in full batches of 64 (TASK-101's 7.2.1,
+    ``scripts/run_task101.py check_latent``, restated here because runners may not load other
+    scripts)."""
+    from embodied_jepa import so101_wm_data as sd
+
+    feat = rt.LiveFeaturiser(device)
+    shared = shared_root()
+    folder = shared / cl.TASK100_FEATURES
+    table = json.loads((folder / "episodes_val.json").read_text())
+    latents = np.load(folder / "latents_val.npy", mmap_mode="r")
+    worst, rows = 0.0, []
+    for row in table[:8]:
+        ep = sd.load_episode(shared / hy.CORPUS, row["shard"], row["episode_id"])
+        last_full = (row["frames"] // feat.featuriser.batch) * feat.featuriser.batch - 1
+        for f in np.linspace(0, last_full, 8).astype(int):
+            live = feat.raw16({c: ep["frames"][c][f][None] for c in cl.CAMERAS})[0]
+            stored = np.asarray(latents[row["offset"] + f])
+            ulp = np.spacing(np.abs(stored)).astype(np.float32)
+            diff = np.abs(live.astype(np.float32) - stored.astype(np.float32))
+            ratio = float((diff / ulp).max())
+            worst = max(worst, ratio)
+            rows.append(
+                {
+                    "episode": row["episode_id"],
+                    "frame": int(f),
+                    "max_ulps": ratio,
+                    "bit_identical": bool(np.array_equal(live, stored)),
+                }
+            )
+    return {
+        "frames": len(rows),
+        "max_ulps": worst,
+        "bit_identical_frames": sum(r["bit_identical"] for r in rows),
+        "passes": bool(worst <= 2.0),
+        "rows": rows,
+    }
+
+
 # ----- the privileged aims (S+G's scripted approach, W+F's follower; §6) --
 def follower_aims(sim, home, config=None) -> dict:
     """Follower v1's grasp aims on the reset scene, exactly as ``so101_followers._pick`` (and

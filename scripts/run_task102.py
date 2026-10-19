@@ -7,7 +7,7 @@ output):
   and goal-store format), §4's replacement from the reserve, the subgoal frames encoded by the
   live latent, the hashed goal store.
 * ``check``    -- §7.3's checks, each appended to the check ledger: ``latent`` (7.3.1, TASK-101's
-  7.2.1 imported), ``renc`` (7.3.2, per cohort), ``projector`` (7.3.3, on P's reset states),
+  7.2.1 restated), ``renc`` (7.3.2, per cohort), ``projector`` (7.3.3, on P's reset states),
   ``gloc`` (7.3.4), ``determinism`` (7.3.5, conditional form; it also writes 7.3.6 ``timing``).
 * ``episodes`` -- arms on a cohort's kept resets in one pool of workers. For P, A and D (and P′,
   A′, D′) it refuses, before any controller, simulator or seed is constructed, unless the check
@@ -21,7 +21,6 @@ Stage 0 runs on P, A, D and debug seeds; S refuses until the manifest is FROZEN 
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import sys
 import time
@@ -33,15 +32,6 @@ from embodied_jepa import so101_closed_loop as cl
 from embodied_jepa import so101_closed_loop_runtime as rt
 from embodied_jepa import so101_hybrid as hy
 from embodied_jepa import so101_hybrid_runtime as hr
-
-
-def _task101_runner():
-    """TASK-101's runner, imported unchanged (its 7.2.1 check is reused as 7.3.1)."""
-    path = hr.ROOT / "scripts/run_task101.py"
-    spec = importlib.util.spec_from_file_location("run_task101", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def gpu_prelude(report: dict, device: str) -> None:
@@ -331,9 +321,9 @@ def cmd_episodes(args) -> int:
 
 # ----- checks (§7.3) --
 def check_latent(args, report) -> dict:
-    """7.3.1 = TASK-101's 7.2.1 (imported unchanged): 64 stored val frames per camera, encoded
-    live one frame at a time, equal to the stored float16 within 2 ulps."""
-    return _task101_runner().check_latent(args, report)
+    """7.3.1 = TASK-101's 7.2.1: 64 stored val frames per camera, encoded live one frame at a
+    time, equal to the stored float16 within 2 ulps."""
+    return hr.check_live_latent(args.device)
 
 
 def check_renc(args, report) -> dict:
