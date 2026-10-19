@@ -741,8 +741,8 @@ that TASK-100's J and readout were fitted on, in this element as in the others c
   calls `so101_tasks.sample_reset(LIFT_TASK, seed)` for the cube and replaces `target_xy`) and
   `SO101CubeLiftTaskV1(SO101CubeLiftTask)`, which overrides only `name` and `sample_reset`.
   **No registry entry.** `config.py` is byte-pinned by G1 manifests (`apple-aligned-cost-v1`,
-  `apple-control-development-v1`, `apple-goal-alignment-v1`, `apple-wide-object-ceiling-v1`,
-  `task072-checkpoint-compatibility`), so an additive `TASKS.register` would change pinned bytes.
+  `apple-control-development-v1`, `apple-goal-alignment-v1`, `apple-policy-v1`,
+  `apple-wide-object-ceiling-v1`, `task072-checkpoint-compatibility`), so an additive `TASKS.register` would change pinned bytes.
   As §7.1 already fixes, the run configuration names the task as a module constant (the precedent
   of TASK-066 and TASK-100). `config.py` keeps refusing an `so101` experiment config. Tests: v1's
   cube draws equal v0's for 1 000 seeds; every marker lies in the box and at least 8 cm from its
@@ -860,8 +860,18 @@ post-count fix needs a ruling that names further seeds (§7.6 row 1, unchanged).
 - **7.2.5** unchanged.
 - **7.2.6 (new) the marker is inert.** On 16 debug seeds (101900–101915), the goal demonstration
   runs twice with rendering off, once with v0's reset and once with v1's for the same seed. The
-  joint, target, cube and contact arrays must be bit-identical at every step. It reads no frame and
-  no count of any cohort, and debug seeds are never counted.
+  arrays compared, after the reset and after every command, are named exactly: the arm and jaw
+  joint positions and velocities (`read()`'s `qpos` and `qvel`), the transport's joint control
+  targets (`SO101Simulation.targets`), the demonstration's executed commands, and from
+  `task_truth()` the cube's `cube_position`, `cube_quaternion`, `cube_velocity` and
+  `cube_angular_velocity`, the `gripper_site_position`, the three contact flags
+  (`fixed_jaw_contact`, `moving_jaw_contact`, `gripper_contact`) and `timestamp`. Each must be
+  bit-identical between v0 and v1 at every step. **The marker position (`task_truth()`'s
+  `target_position`) is excluded from that comparison, because it is the one intended
+  difference;** instead it must equal `(target_xy, TABLE_TOP_Z)` exactly at every step, with
+  `target_xy` the drawn point in v1 and (0.30, −0.20) in v0 (the marker is a fixed child of the
+  world body, so its position is set, never integrated). It reads no frame and no count of any
+  cohort, and debug seeds are never counted.
 
 **The ordering rule (R28.70; fixes deviation 7, enforced by the runner, not by prose).**
 
@@ -911,6 +921,17 @@ read in advance by the rows below.
   10108 · 10⁶ + 1 000 · (seed − 101700) + t); and 255 random candidates uniform on [−1, 1],
   projected by §5.2's projector (salt **10108**, new). Every candidate is scored by J's cost as W
   scores it.
+- **The a_demo window, fixed now.** The subgoal boundaries are fixed command indices of the
+  demonstration (§4: subgoal 1 is the state after command 40, subgoal 2 after command 70), not
+  per-seed switch points, and every kept demonstration executes at least 120 commands (§4's
+  rejection rule). a_demo is always the demonstration's commands t … t + H − 1, untruncated and
+  unpadded: the last state (t = 60) needs commands up to 75 at H = 16, so a full window always
+  exists, and no state is skipped. The goal is the subgoal the state belongs to (subgoal 1 for
+  t ≤ 30, subgoal 2 for t ≥ 40), whatever the window's end. At H = 16 the windows at t = 30 and
+  t = 60 run past that subgoal's boundary (into commands 40–45 and 70–75), so a_demo overshoots the
+  goal frame there; those 2 × 16 = 32 states are kept and counted in m1 and m2, and m1 and m2 are
+  also reported without them (reported only; the rows read the full 112). At H = 8 no window
+  crosses a boundary.
 - **Measures.** m1, the fraction of states where J's cost of a_demo is **lower** than that of
   a_cem (the model prefers what the search did not find). m2, the median normalised rank of a_demo
   among a_demo and the 255 random candidates under J's cost (0 = best, chance 0.5). Reported only:
@@ -935,7 +956,11 @@ read in advance by the rows below.
   leads exactly to the subgoal frame it is scored against, from states on the demonstration's own
   path, so a Δ-MODEL row is strong evidence and a Δ-PLANNER row is weaker. Δ is a development
   reading on 16 seeds. It is not a gate, and it makes no claim. **Budget:** at most 1.5 GPU h,
-  inside the 20 GPU h total cap (S does not run under S0-NULL), under `gpu_run.sh --wait --board`.
+  counted against **the Stage 0 cap of 6 GPU h cumulative** (§18.7), and so also inside the 20 GPU h
+  total cap (S does not run under S0-NULL), under `gpu_run.sh --wait --board`. Under S0-NULL D′
+  does not run, so the projection is 1.66 (used) + about 0.3 (goals and checks) + 1.1 (K′) + 1.5
+  (Δ) ≈ 4.6 GPU h, inside the cap; if it would not fit, the row is Δ-VOID (escalate) and the cap
+  is not extended silently.
 
 If K′ is not null, Δ does not run, and D′ follows as §18.5 says.
 

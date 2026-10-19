@@ -80,7 +80,7 @@ card TASK-101.
   `default_rng([10107, seed])`. `so101_tasks.py` and `so101_simulation.py` are pinned by
   `so101-play-v1.json` and stay byte-identical. The variant goes in a new module
   `so101_tasks_lift_v1.py`, with **no registry entry**, because `config.py` is byte-pinned by G1
-  manifests (`apple-aligned-cost-v1` and four others). The run configuration names the task as a
+  manifests (`apple-aligned-cost-v1` and five others, among them `apple-policy-v1`). The run configuration names the task as a
   module constant (§7.1's precedent). v0 and TASK-098's numbers on it are unchanged.
 - **R28.66 — Why.** The marker has no contact (`contype`/`conaffinity` 0) and plays no part in lift
   scoring, and moving only it brought R-enc from 6.106 cm to 1.048 cm. Not adopted: retraining on a
@@ -114,7 +114,11 @@ card TASK-101.
   before the live latent does, and identical latents give identical actions and outcomes, because
   the EGL renderer is not bit-stable on some states. S's runs are not guaranteed to be
   bit-reproducible (§13, §14). 7.2.6 (new): on 16 debug seeds, v0's and v1's resets give
-  bit-identical physics arrays under the goal demonstration (the marker is inert).
+  bit-identical arrays under the goal demonstration (the marker is inert), with the arrays named
+  exactly in §18.5: joint positions and velocities, the joint control targets, the executed
+  commands, the cube's pose and velocities, the fingertip site, the contact flags and the time.
+  The marker position is excluded as the one intended difference and must instead equal the drawn
+  `target_xy` in v1 and (0.30, −0.20) in v0 at every step.
 - **R28.70 — The ordering rule, enforced in code (fixes deviation 7).** A goal job writes only the
   goal store. The CPU arms' evidence episodes leave it. The checks run next (7.2.0, 7.2.1, 7.2.3,
   7.2.4 and 7.2.6 once before K′, 7.2.2 per cohort), and only then a cohort's episodes. A check
@@ -134,7 +138,11 @@ card TASK-101.
   under its own preregistration); **Δ-PLANNER** (m2 ≤ 0.10 and m1 ≥ 0.50: a planner-variant
   preregistration with J and the goals unchanged is admitted); Δ-MIXED (escalate). The cut-offs are
   declared, not calibrated. Δ favours the model (the demonstration's commands lead exactly to the
-  goal frame), is a 16-seed development reading and makes no claim; it is capped at 1.5 GPU h.
+  goal frame), is a 16-seed development reading and makes no claim. Its window is fixed: a_demo is
+  always the demonstration's full next H commands (never truncated, padded or skipped), scored
+  against the state's own subgoal; the H = 16 windows that cross a subgoal boundary (t = 30 and
+  60) are counted and also reported without them. It is capped at 1.5 GPU h, counted against the
+  Stage 0 cap of 6 GPU h cumulative (about 4.6 h projected under S0-NULL).
 - **R28.73 — Budget.** The Stage 0 cap stays 6 GPU h cumulative (1.66 used; Stage 0′ projected at
   about 3.7 h from K's measured throughput). The single-goal diagnostic is dropped first if needed,
   then S0-OVER. The 20 GPU h total cap is unchanged.
