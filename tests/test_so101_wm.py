@@ -507,7 +507,16 @@ def test_g1_byte_pinned_files_match_origin_main_when_available():
         ).stdout
     except (subprocess.CalledProcessError, FileNotFoundError):
         return
-    changed = [line for line in diff.splitlines() if line and not line.startswith("A")]
+    # TASK-101's own Stage 0 modules (pinned by its manifest, not by any G1 or TASK-100 manifest)
+    # changed after Stage 0 under its amendment A1, before its freeze; everything else must be an
+    # addition.
+    task101 = json.loads((ROOT / "benchmarks/manifests/so101-closed-loop-lift-v1.json").read_text())
+    own = set(task101["files_sha256"]) if task101.get("status") != "FROZEN" else set()
+    changed = [
+        line
+        for line in diff.splitlines()
+        if line and not line.startswith("A") and line.split("\t")[-1] not in own
+    ]
     assert not changed, changed
 
 

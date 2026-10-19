@@ -1,19 +1,22 @@
-"""TASK-101's runner (protocol docs/experiments/so101_closed_loop_lift_v1.md §7, §8, §12).
+"""TASK-101's runner (protocol docs/experiments/so101_closed_loop_lift_v1.md §7, §8, §12, §18).
 
-Subcommands (each refuses an existing output):
+Every job runs ``so101_cube_lift_v1`` (amendment A1, §18.2). Subcommands (each refuses an
+existing output):
 
 * ``goals``    -- the cohort's goal demonstrations (follower v1, rendered), §4's replacement
-  from the reserve, the subgoal frames encoded by the live latent, the hashed goal store; with
-  ``--evidence N`` also the first N episodes of the CPU arms (rand, hold, F, H-pose) rendered for
-  the evidence (GPU job: EGL rendering and DINOv2).
+  from the reserve, the subgoal frames encoded by the live latent, the hashed goal store, and
+  nothing else (A1, §18.5 (i): the CPU arms' evidence episodes run in the cohort's episode jobs).
 * ``episodes`` -- arms on a cohort's kept resets, one pool of workers (GPU for CEM arms; CPU arms
-  run with ``--device none`` outside the lock, without frames).
-* ``check``    -- §7.2's checks: ``latent`` (live = stored), ``renc`` (the live latent reads the
-  cube), ``projector`` (chained preview = execute), ``ties`` (N's costs, CUDA), ``adapter`` (the
-  adapter against ``predict_features``) and ``determinism`` (reruns and pool sizes).
+  run with ``--device none``). For K' and D' it refuses, before any controller, simulator or seed
+  is constructed, unless the check ledger admits it (§18.5's ordering rule, R28.70).
+* ``check``    -- §7.2's checks, each appended to the ledger: ``scene`` (7.2.0), ``latent``
+  (7.2.1), ``renc`` (7.2.2, per cohort), ``projector`` (7.2.3), ``determinism`` (7.2.4,
+  conditional form), ``inert`` (7.2.6); reported: ``ties``, ``adapter``, ``render``, ``marker``.
+* ``delta``    -- §18.6's S0-NULL diagnostic on cohort X's goal store (planning queried, not
+  executed).
 
-Stage 0 runs on K, D (K', D' only under §7.6 row 1) and debug seeds; S refuses until the
-manifest is FROZEN (``--gated``).
+Stage 0' runs on K', D', X and debug seeds (K and D are spent); S refuses until the manifest is
+FROZEN (``--gated``).
 """
 
 from __future__ import annotations
@@ -47,7 +50,22 @@ def guards(report: dict, gated: bool) -> None:
     rt.check_manifest(report, strict=gated)
 
 
+def ledger_path(args) -> Path:
+    """§18.5 (2): the ledger lives in the run's output directory (the stage root, the parent of
+    every job's output folder) unless ``--ledger`` names it."""
+    return Path(args.ledger) if args.ledger else Path(args.output).parent / cl.LEDGER_FILE
+
+
+def require_v1(goals: dict, cohorts) -> None:
+    """A check reads a goal store of the named cohorts, made on ``so101_cube_lift_v1``."""
+    if goals["report"]["cohort"] not in cohorts:
+        raise cl.GuardError(f"this check reads a goal store of {cohorts}")
+    if goals["report"].get("task_name") != cl.LIFT_TASK_NAME:
+        raise cl.GuardError(f"G-goals: the goal store was not made on {cl.LIFT_TASK_NAME}")
+
+
 def check_cohort(name: str, gated: bool) -> None:
+    cl.check_cohort_unspent(name)
     if name in cl.GATED_COHORTS and not gated:
         raise cl.GuardError(
             "G-gated: the gated cohort runs only from the frozen revision (--gated)"
@@ -62,7 +80,7 @@ def cmd_goals(args) -> int:
     check_cohort(args.cohort, args.gated)
     out.mkdir(parents=True, exist_ok=False)
     t0 = time.monotonic()
-    report = rt.header("goals", cohort=args.cohort, evidence=args.evidence)
+    report = rt.header("goals", cohort=args.cohort, task_name=cl.LIFT_TASK_NAME)
     guards(report, args.gated)
     gpu_prelude(report, args.device)
     featuriser = rt.LiveFeaturiser(args.device)
@@ -139,25 +157,6 @@ def cmd_goals(args) -> int:
     report["goals_seconds"] = time.monotonic() - t0
     sha = cl.save_goal_store(out, arrays, report)
     rt.log(f"goal store {sha[:12]}: kept {n}, rejected {len(kept['rejected'])}")
-    if args.evidence:
-        ev = out / "cpu-evidence"
-        ev.mkdir()
-        specs = []
-        for arm in cl.CPU_ARMS:
-            (ev / arm).mkdir()
-            for slot in range(min(args.evidence, n)):
-                specs.append(
-                    {
-                        "arm": arm,
-                        "seed": seeds[slot],
-                        "slot": slot,
-                        "config": None,
-                        "keep_frames": True,
-                        "output": str(ev / arm),
-                    }
-                )
-        results = rt.run_pool(specs, goals_dir=out, goals_sha256=sha, device="none", workers=1)
-        rt.write_json(ev / "report.json", {"episodes": results, "seconds": time.monotonic() - t0})
     report2 = {
         "goals_sha256": sha,
         "seconds_total": time.monotonic() - t0,
@@ -183,6 +182,15 @@ def cmd_episodes(args) -> int:
     goals = cl.load_goal_store(args.goals, args.goals_sha256)
     if goals["report"]["cohort"] != args.cohort:
         raise cl.GuardError("G-goals: the goal store belongs to another cohort")
+    if goals["report"].get("task_name") != cl.LIFT_TASK_NAME:
+        raise cl.GuardError(f"G-goals: the goal store was not made on {cl.LIFT_TASK_NAME}")
+    verdict = None
+    if args.cohort in cl.LEDGER_COHORTS:  # §18.5 (2): before any controller, simulator or seed
+        if rt.tree_dirty():
+            raise cl.GuardError("G-ledger: the tracked tree is dirty")
+        verdict = cl.require_ledger(
+            ledger_path(args), revision=rt.git("rev-parse", "HEAD"), goals_sha256=goals["sha256"]
+        )
     out.mkdir(parents=True)
     t0 = time.monotonic()
     report = rt.header(
@@ -195,6 +203,9 @@ def cmd_episodes(args) -> int:
         slots=args.slots,
         evidence=args.evidence,
         device=args.device,
+        task_name=cl.LIFT_TASK_NAME,
+        ledger=None if verdict is None else str(ledger_path(args)),
+        ledger_verdict=verdict,
     )
     guards(report, args.gated)
     if args.device == "cuda":
@@ -304,13 +315,16 @@ def check_latent(args, report) -> dict:
 
 
 def check_renc(args, report) -> dict:
-    """§7.2.2: TASK-100's pretrained R-enc on the live-encoded subgoal frames of D's goal
-    demonstrations reads the cube within B_cube = 2.397 cm in median."""
+    """§7.2.2, per cohort (A1, §18.5): TASK-100's pretrained R-enc on the live-encoded subgoal
+    frames of the cohort's own goal store reads the cube within B_cube = 2.397 cm in median.
+    Reported beside it: the per-subgoal medians and the median on each goal demonstration's
+    first frame (the reset frame, re-rendered from the declared reset)."""
     from embodied_jepa import so101_wm as sw
 
     goals = cl.load_goal_store(args.goals, args.goals_sha256)
-    if goals["report"]["cohort"] != "D":
-        raise cl.GuardError("the R-enc check reads D's goal demonstrations")
+    require_v1(goals, cl.LEDGER_COHORTS)
+    report["goals_sha256"] = goals["sha256"]
+    report["cohort"] = goals["report"]["cohort"]
     shared = rt.shared_root()
     rr = json.loads((shared / cl.TASK100_READOUTS / "report.json").read_text())
     path = shared / cl.TASK100_READOUTS / cl.RENC_FILE
@@ -325,27 +339,43 @@ def check_renc(args, report) -> dict:
     median = float(np.median(err))
     per_subgoal = {str(k + 1): float(np.median(err.reshape(-1, 4)[:, k])) for k in range(4)}
     bar = sw.frozen_choices()["bars"]["B_cube"]
+    feat = rt.LiveFeaturiser(args.device)
+    reset_err = []
+    for seed in [int(x) for x in a["seeds"]]:
+        robot = rt.make_robot(True)
+        try:
+            rt.lift_task(robot).reset(seed)
+            frames = {c: robot.sim.render(c)[None] for c in cl.CAMERAS}
+            truth = robot.sim.data.body("cube").xpos.copy() * 100.0
+        finally:
+            robot.close()
+        _, z = feat.encode(frames)
+        pred_r = sw.apply_readout(fits["cube"], z)
+        reset_err.append(float(sw.label_errors("cube", pred_r, truth[None])[0]))
     return {
         "frames": int(len(err)),
         "median_cm": median,
         "B_cube": bar,
         "per_subgoal_median_cm": per_subgoal,
+        "reset_frame_median_cm": float(np.median(reset_err)),
+        "reset_frames": len(reset_err),
         "passes": bool(median <= bar),
     }
 
 
 def check_projector(args, report) -> dict:
-    """§7.2.3: 1 000 random 16-step sequences from D's first frames: the vectorised chained
-    projection equals ``preview`` chained step by step and the applied actions ``execute``
-    returns."""
-    from embodied_jepa.so101_tasks import SO101CubeLiftTask
-
+    """§7.2.3 (A1: on K′'s reset states): 1 000 random 16-step sequences from the goal store's
+    reset states: the vectorised chained projection equals ``preview`` chained step by step and
+    the applied actions ``execute`` returns."""
     goals = cl.load_goal_store(args.goals, args.goals_sha256)
+    require_v1(goals, ("Kp",))
+    report["goals_sha256"] = goals["sha256"]
+    report["cohort"] = goals["report"]["cohort"]
     seeds = [int(s) for s in goals["arrays"]["seeds"]]
     rng = np.random.default_rng([cl.SALTS["rand"], 7])  # plumbing draws for the check only
     preview_equal = execute_equal = stopped = compared = 0
     robot = rt.make_robot(False)
-    task = SO101CubeLiftTask(robot)
+    task = rt.lift_task(robot)
     params = cl.PreviewParams.of(robot)
     try:
         for i in range(args.sequences):
@@ -534,8 +564,7 @@ def check_determinism(args, report) -> dict:
     with identical latents at every step the actions and the outcome are identical. Both forms
     are reported."""
     goals = cl.load_goal_store(args.goals, args.goals_sha256)
-    if goals["report"]["cohort"] != "debug":
-        raise cl.GuardError("the determinism check runs on debug seeds")
+    require_v1(goals, ("debug",))
     seeds = [int(s) for s in goals["arrays"]["seeds"]]
     base = Path(args.output)
     cfg = args.config
@@ -620,7 +649,6 @@ def check_render(args, report) -> dict:
     one physics state. Follower v1 on the first ``--render-seeds`` debug resets; after every
     command both cameras are rendered ``--render-repeats`` times."""
     from embodied_jepa.so101_followers import follow_lift
-    from embodied_jepa.so101_tasks import SO101CubeLiftTask
 
     goals = cl.load_goal_store(args.goals, args.goals_sha256)
     if goals["report"]["cohort"] != "debug":
@@ -628,7 +656,7 @@ def check_render(args, report) -> dict:
     rows = []
     for seed in [int(x) for x in goals["arrays"]["seeds"][: args.render_seeds]]:
         robot = rt.make_robot(True)
-        task = SO101CubeLiftTask(robot)
+        task = rt.lift_task(robot)
         counts = {"states": 0, "unstable": {c: 0 for c in cl.CAMERAS}, "max_pixels": 0}
 
         def on_command(n, result, robot=robot, counts=counts):
@@ -653,7 +681,7 @@ def check_render(args, report) -> dict:
             requested = log["requested"]
         seed = int(path.stem)
         robot = rt.make_robot(True)
-        task = SO101CubeLiftTask(robot)
+        task = rt.lift_task(robot)
         counts = {"states": 0, "unstable": {c: 0 for c in cl.CAMERAS}, "max_pixels": 0}
         try:
             task.reset(seed)
@@ -690,10 +718,11 @@ def check_marker(args, report) -> dict:
     rendered twice -- as the task declares it (the lift scene's target marker at x 0.30, y -0.20 m)
     and with only the marker (no contact, ``contype`` 0) moved to a point drawn from the play
     corpus's marker box (x 0.16-0.22, |y| <= 0.14, >= 8 cm from the cube; rng 0) -- and R-enc's
-    cube error read on both. The marker is restored before the next physics step."""
+    cube error read on both. The marker is restored before the next physics step. (Stage 0's
+    diagnostic on D's v0 goal store; it runs ``so101_cube_lift_v0`` and D is spent under A1.)"""
     from embodied_jepa import so101_wm as sw
     from embodied_jepa.so101_followers import follow_lift
-    from embodied_jepa.so101_tasks import SO101CubeLiftTask
+    from embodied_jepa.so101_tasks import LIFT_TASK, SO101CubeLiftTask
 
     goals = cl.load_goal_store(args.goals, args.goals_sha256)
     if goals["report"]["cohort"] != "D":
@@ -712,6 +741,7 @@ def check_marker(args, report) -> dict:
     for seed in [int(s) for s in goals["arrays"]["seeds"]]:
         robot = rt.make_robot(True)
         task = SO101CubeLiftTask(robot)
+        assert task.name == LIFT_TASK
         sim = robot.sim
         cube_xy = np.array(task.sample_reset(seed)["cube_xy"])
         while True:
@@ -754,6 +784,291 @@ def check_marker(args, report) -> dict:
     }
 
 
+# ----- A1's new checks (§18.5) --
+def _sha(rel: str) -> str:
+    import hashlib
+
+    return hashlib.sha256((rt.ROOT / rel).read_bytes()).hexdigest()
+
+
+def check_scene(args, report) -> dict:
+    """§7.2.0 (A1): every declared scene element of ``so101_cube_lift_v1`` against the
+    ``so101-play-v1`` corpus's scene distribution, filled in from the code; the simulation, MJCF
+    and action configuration against their TASK-099 pins; the cube and marker of every K', D', S
+    and X seed (main and reserve) drawn without a simulator. Reads no frame and no count."""
+    from embodied_jepa import so101_play_corpus as play
+    from embodied_jepa import so101_tasks as tasks
+    from embodied_jepa import so101_tasks_lift_v1 as v1
+
+    play_pins = json.loads((rt.ROOT / "benchmarks/manifests/so101-play-v1.json").read_text())
+    action = json.loads((rt.ROOT / "configs/so101_sim_action.json").read_text())
+    assets = json.loads((rt.ROOT / "assets/so101_manifest.json").read_text())
+    home = np.asarray(action["home_rad"], float)
+    d = tasks.RESETS_V0
+
+    def sub(inner, outer):
+        return bool(outer[0] <= inner[0] <= inner[1] <= outer[1])
+
+    rows = []
+
+    def row(element, corpus, lift, inside):
+        rows.append({"element": element, "corpus": corpus, "lift_v1": lift, "inside": bool(inside)})
+
+    row(
+        "target marker xy",
+        {"box": play.TARGET_REGION, "min_cube_m": play.MIN_CUBE_TARGET_M},
+        {"box": v1.MARKER_REGION, "min_cube_m": v1.MIN_CUBE_MARKER_M, "salt": v1.MARKER_SALT},
+        v1.MARKER_REGION is play.TARGET_REGION and v1.MIN_CUBE_MARKER_M == play.MIN_CUBE_TARGET_M,
+    )
+    row(
+        "cube xy",
+        {"x": play.CUBE_REGION[0], "y": play.CUBE_REGION[1]},
+        {"x": d.cube_x_m, "y": d.cube_y_m},
+        sub(d.cube_x_m, play.CUBE_REGION[0]) and sub(d.cube_y_m, play.CUBE_REGION[1]),
+    )
+    corpus_yaw = (-np.pi / 4, np.pi / 4)  # so101_play_corpus.sample_reset's literal
+    row("cube yaw", {"rad": corpus_yaw}, {"rad": d.cube_yaw_rad}, sub(d.cube_yaw_rad, corpus_yaw))
+    arm_box = np.stack([home[:5] - play.HOME_JITTER_RAD, home[:5] + play.HOME_JITTER_RAD], 1)
+    row(
+        "arm at reset",
+        {"home_rad": home[:5], "jitter_rad": play.HOME_JITTER_RAD},
+        {"rad": home[:5]},
+        bool(np.all((arm_box[:, 0] <= home[:5]) & (home[:5] <= arm_box[:, 1]))),
+    )
+    row(
+        "jaw at reset",
+        {"rad": play.HOME_GRIPPER_RAD},
+        {"rad": float(home[5])},
+        play.HOME_GRIPPER_RAD[0] <= home[5] <= play.HOME_GRIPPER_RAD[1],
+    )
+    pinned = {}
+    for rel in (
+        "src/embodied_jepa/so101_simulation.py",
+        "configs/so101_sim_action.json",
+        "assets/so101_manifest.json",
+    ):
+        pinned[rel] = {"sha256": _sha(rel), "pin": play_pins["code_sha256"][rel]}
+    mjcf = assets["robot"]
+    mjcf_path = Path(rt.ROOT / assets["local_path"]) / mjcf
+    import hashlib
+
+    pinned[f"{assets['local_path']}/{mjcf}"] = {
+        "sha256": hashlib.sha256(mjcf_path.read_bytes()).hexdigest(),
+        "pin": assets["sha256"][mjcf],
+    }
+    files_ok = all(v["sha256"] == v["pin"] for v in pinned.values())
+    row(
+        "table, cube size and colour, marker size and colour, lighting",
+        {"so101_simulation.py": pinned["src/embodied_jepa/so101_simulation.py"]["pin"]},
+        {"so101_simulation.py": pinned["src/embodied_jepa/so101_simulation.py"]["sha256"]},
+        pinned["src/embodied_jepa/so101_simulation.py"]["sha256"]
+        == pinned["src/embodied_jepa/so101_simulation.py"]["pin"],
+    )
+    row(
+        "cameras, 224 x 224, renderer",
+        {"cameras": play_pins["cameras"], "image_size": play_pins["image_size"]},
+        {"cameras": list(cl.CAMERAS), "image_size": cl.IMAGE_SIZE, "files": pinned},
+        files_ok
+        and list(play_pins["cameras"]) == list(cl.CAMERAS)
+        and int(np.ravel(play_pins["image_size"])[0]) == cl.IMAGE_SIZE,
+    )
+    # every seed the amended study can draw: cubes equal v0's, markers inside the box and >= 8 cm
+    draws = {"seeds": 0, "cube_equals_v0": 0, "marker_in_box": 0, "marker_far": 0, "cube_in": 0}
+    for name in ("Kp", "Dp", "S", "X"):
+        c = cl.COHORTS[name]
+        for seed in (*c.seeds, *c.reserve_seeds):
+            spec = v1.sample_reset_lift_v1(seed)
+            v0 = tasks.sample_reset(tasks.LIFT_TASK, seed)
+            cube, marker = np.asarray(spec["cube_xy"]), np.asarray(spec["target_xy"])
+            draws["seeds"] += 1
+            draws["cube_equals_v0"] += int(
+                spec["cube_xy"] == v0["cube_xy"] and spec["cube_yaw"] == v0["cube_yaw"]
+            )
+            draws["marker_in_box"] += int(
+                play.TARGET_REGION[0][0] <= marker[0] <= play.TARGET_REGION[0][1]
+                and play.TARGET_REGION[1][0] <= marker[1] <= play.TARGET_REGION[1][1]
+            )
+            draws["marker_far"] += int(np.linalg.norm(marker - cube) >= play.MIN_CUBE_TARGET_M)
+            draws["cube_in"] += int(
+                play.CUBE_REGION[0][0] <= cube[0] <= play.CUBE_REGION[0][1]
+                and play.CUBE_REGION[1][0] <= cube[1] <= play.CUBE_REGION[1][1]
+            )
+    row(
+        "drawn resets (K', D', S, X with reserves)",
+        "inside the corpus's support",
+        draws,
+        all(v == draws["seeds"] for v in draws.values()),
+    )
+    rows.append(
+        {
+            "element": "motion",
+            "corpus": "scripted play so101_play_policy_v0",
+            "lift_v1": "follower v1 demonstrations; CEM's own commands",
+            "inside": None,
+            "note": "not compared by construction (§18.4); §14's caveat stands",
+        }
+    )
+    return {
+        "rows": rows,
+        "files": pinned,
+        "task": v1.LIFT_V1_TASK,
+        "passes": all(r["inside"] for r in rows if r["inside"] is not None),
+    }
+
+
+INERT_TRUTH = (
+    "cube_position",
+    "cube_quaternion",
+    "cube_velocity",
+    "cube_angular_velocity",
+    "gripper_site_position",
+    "fixed_jaw_contact",
+    "moving_jaw_contact",
+    "gripper_contact",
+    "timestamp",
+)
+
+
+def _inert_trace(seed: int, variant: str) -> dict:
+    """The goal demonstration on ``variant``'s reset, rendering off; after the reset and after
+    every command: ``qpos``, ``qvel``, the transport's targets, the executed commands and the
+    named ``task_truth()`` arrays, plus the marker position."""
+    from embodied_jepa.so101_followers import follow_lift
+
+    robot = rt.make_robot(False)
+    task = rt.lift_task(robot, variant)
+    trace: dict = {k: [] for k in ("qpos", "qvel", "targets", "target_position", *INERT_TRUTH)}
+    commands: list = []
+
+    def snap():
+        sim = robot.sim
+        truth = sim.task_truth()
+        trace["qpos"].append(sim.data.qpos[sim.qadr].copy())
+        trace["qvel"].append(sim.data.qvel[sim.vadr].copy())
+        trace["targets"].append(sim.targets.copy())
+        trace["target_position"].append(np.asarray(truth["target_position"]).copy())
+        for k in INERT_TRUTH:
+            trace[k].append(np.asarray(truth[k]).copy())
+
+    class Tap:
+        def __getattr__(self, name):
+            return getattr(robot, name)
+
+        def execute(self, action):
+            if not commands:
+                snap()  # the state after the reset
+            result = robot.execute(action)
+            commands.append(
+                np.asarray(action, np.float32).copy()
+                if result.applied_action is None
+                else np.asarray(result.applied_action, np.float32).copy()
+            )
+            snap()
+            return result
+
+    try:
+        record = follow_lift(Tap(), task, seed)
+    finally:
+        robot.close()
+    out = {k: np.asarray(v) for k, v in trace.items()}
+    out["commands"] = np.asarray(commands, np.float32)
+    out["target_xy"] = np.asarray(task.reset_spec["target_xy"], float)
+    out["success"] = bool(record["success"])
+    return out
+
+
+def check_inert(args, report) -> dict:
+    """§7.2.6 (A1): the marker is inert. On debug seeds 101900-101915 the goal demonstration runs
+    with v0's and with v1's reset, rendering off; every named array must be bit-identical between
+    them after the reset and after every command, and the marker position must equal
+    ``(target_xy, TABLE_TOP_Z)`` exactly at every step (the drawn point in v1, (0.30, -0.20) in
+    v0). Reads no frame and no count."""
+    from embodied_jepa.so101_tasks import LIFT_TASK, TABLE_TOP_Z
+    from embodied_jepa.so101_tasks_lift_v1 import LIFT_V1_TASK, V0_MARKER_XY
+
+    rows = []
+    for seed in range(cl.COHORTS["debug"].first, cl.COHORTS["debug"].first + args.inert_seeds):
+        cl.check_seed("debug", seed)
+        a, b = _inert_trace(seed, LIFT_TASK), _inert_trace(seed, LIFT_V1_TASK)
+        keys = ("qpos", "qvel", "targets", "commands", *INERT_TRUTH)
+        differing = [k for k in keys if not np.array_equal(a[k], b[k])]
+        marker_ok = {}
+        for name, tr, want in (("v0", a, np.asarray(V0_MARKER_XY)), ("v1", b, b["target_xy"])):
+            if name == "v0" and not np.array_equal(tr["target_xy"], want):
+                marker_ok[name] = False
+                continue
+            expected = np.array([*tr["target_xy"], TABLE_TOP_Z])
+            marker_ok[name] = bool(np.all(tr["target_position"] == expected))
+        rows.append(
+            {
+                "seed": seed,
+                "steps": len(a["qpos"]),
+                "commands": len(a["commands"]),
+                "differing": differing,
+                "marker_exact": marker_ok,
+                "v1_marker_xy": b["target_xy"].tolist(),
+                "success": [a["success"], b["success"]],
+            }
+        )
+    return {
+        "seeds": len(rows),
+        "rows": rows,
+        "passes": bool(
+            rows and all(not r["differing"] and all(r["marker_exact"].values()) for r in rows)
+        ),
+    }
+
+
+# ----- the S0-NULL diagnostic Delta (§18.6) --
+def cmd_delta(args) -> int:
+    """Delta on cohort X's goal store, at the configuration K′'s rule chose (H8-mean when all
+    tie at 0). One GPU job, one process; writes ``delta.json`` and the per-state rows."""
+    out = Path(args.output)
+    if out.exists():
+        raise cl.GuardError(f"G-twice: {out} exists")
+    goals = cl.load_goal_store(args.goals, args.goals_sha256)
+    if goals["report"]["cohort"] != "X":
+        raise cl.GuardError("Delta reads cohort X's goal store")
+    if goals["report"].get("task_name") != cl.LIFT_TASK_NAME:
+        raise cl.GuardError(f"G-goals: the goal store was not made on {cl.LIFT_TASK_NAME}")
+    cl.parse_config(args.config)
+    out.mkdir(parents=True)
+    t0 = time.monotonic()
+    report = rt.header("delta", config=args.config, goals_sha256=goals["sha256"])
+    guards(report, False)
+    gpu_prelude(report, args.device)
+    featuriser = rt.LiveFeaturiser(args.device)
+    ctx = rt.goal_context(goals, featuriser) | {"featuriser": featuriser}
+    models: dict = {}
+
+    def adapter(name, cost):
+        if name not in models:
+            models[name] = rt.load_model(name, args.device)[0]
+        return rt.LatentCost(models[name], cost)
+
+    ctx["adapter"] = adapter
+    seeds = [int(s) for s in goals["arrays"]["seeds"]]
+    rows = []
+    for slot, seed in enumerate(seeds):
+        r = rt.delta_seed(seed, slot, goals, ctx, args.config)
+        rows.extend(r["states"])
+        rt.log(f"delta {seed}: {[round(x['rank'], 3) for x in r['states']]}")
+    h, _ = cl.parse_config(args.config)
+    measures = cl.delta_measures(rows, h)
+    report |= {
+        "kept": len(seeds),
+        "drawn": goals["report"]["drawn"],
+        "rejected": goals["report"]["rejected"],
+        "measures": measures,
+        "states": rows,
+        "seconds": time.monotonic() - t0,
+        "finished_utc": rt.utc(),
+    }
+    rt.write_json(out / "delta.json", report)
+    rt.log(f"delta: m1 {measures['all']['m1']}, m2 {measures['all']['m2']}")
+    return 0
+
+
 CHECKS = {
     "latent": check_latent,
     "renc": check_renc,
@@ -763,6 +1078,8 @@ CHECKS = {
     "determinism": check_determinism,
     "render": check_render,
     "marker": check_marker,
+    "scene": check_scene,
+    "inert": check_inert,
 }
 
 
@@ -779,7 +1096,22 @@ def cmd_check(args) -> int:
     report["result"] = CHECKS[args.check](args, report)
     report["seconds"] = time.monotonic() - t0
     report["finished_utc"] = rt.utc()
-    rt.write_json(out / "report.json", report)
+    sha = rt.write_json(out / "report.json", report)
+    # §18.5 (2): every check writes a ledger entry into the run's output directory
+    cl.ledger_append(
+        ledger_path(args),
+        cl.ledger_entry(
+            check=args.check,
+            passes=report["result"].get("passes"),
+            revision=report["revision"],
+            dirty=report["tracked_tree_dirty"],
+            finished_utc=report["finished_utc"],
+            goals_sha256=report.get("goals_sha256"),
+            cohort_name=report.get("cohort"),
+            report_sha256=sha,
+        )
+        | {"report": str(out / "report.json")},
+    )
     rt.log(f"check {args.check}: passes={report['result'].get('passes')}")
     return 0
 
@@ -791,7 +1123,6 @@ def main(argv=None) -> int:
     g.add_argument("--cohort", required=True, choices=sorted(cl.COHORTS))
     g.add_argument("--output", required=True)
     g.add_argument("--device", default="cuda")
-    g.add_argument("--evidence", type=int, default=0)
     g.add_argument("--limit", type=int, default=None)
     g.add_argument("--gated", action="store_true")
     e = sub.add_parser("episodes")
@@ -806,20 +1137,31 @@ def main(argv=None) -> int:
     e.add_argument("--device", default="cuda")
     e.add_argument("--output", required=True)
     e.add_argument("--gated", action="store_true")
+    e.add_argument("--ledger", default=None)
     c = sub.add_parser("check")
     c.add_argument("check", choices=sorted(CHECKS))
     c.add_argument("--goals", default=None)
     c.add_argument("--goals-sha256", default=None)
     c.add_argument("--device", default="cuda")
     c.add_argument("--sequences", type=int, default=1000)
-    c.add_argument("--config", default="H16-mean")
+    c.add_argument("--config", default="H8-mean")
     c.add_argument("--workers", type=int, default=6)
     c.add_argument("--render-seeds", type=int, default=4)
     c.add_argument("--render-repeats", type=int, default=3)
     c.add_argument("--replay", default=None)
+    c.add_argument("--inert-seeds", type=int, default=16)
+    c.add_argument("--ledger", default=None)
     c.add_argument("--output", required=True)
+    x = sub.add_parser("delta")
+    x.add_argument("--goals", required=True)
+    x.add_argument("--goals-sha256", required=True)
+    x.add_argument("--config", default="H8-mean")
+    x.add_argument("--device", default="cuda")
+    x.add_argument("--output", required=True)
     args = p.parse_args(argv)
-    return {"goals": cmd_goals, "episodes": cmd_episodes, "check": cmd_check}[args.cmd](args)
+    return {"goals": cmd_goals, "episodes": cmd_episodes, "check": cmd_check, "delta": cmd_delta}[
+        args.cmd
+    ](args)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
-"""TASK-101 (SO-101 S5): a first closed loop on ``so101_cube_lift_v0`` in simulation -- cohorts,
-seeds, salts, the goal store, the subgoal switching rule, the derangement, the projector, the
-non-learned arms, statistics, the bar rule and the rows
+"""TASK-101 (SO-101 S5): a first closed loop on ``so101_cube_lift_v1`` (amendment A1: v0 with the
+inert target marker drawn inside the play corpus's marker range) in simulation -- cohorts, seeds,
+salts, the goal store, the subgoal switching rule, the derangement, the projector, the non-learned
+arms, statistics, the bar rule, the rows, Stage 0′'s check ledger (the ordering rule, §18.5) and
+the S0-NULL diagnostic Delta's measures and rows (§18.6)
 (``docs/experiments/so101_closed_loop_lift_v1.md``).
 
 NumPy only at import. The torch runtime (the live featuriser, the planner-model adapters, the
@@ -58,10 +60,18 @@ COHORTS = {
     "D": Cohort("D", 101100, 64, (101164, 101199)),
     "S": Cohort("S", 101200, 128, (101400, 101463)),
     "Dp": Cohort("Dp", 101600, 64, (101664, 101699)),  # D', used only under §7.6 row 1
+    "X": Cohort("X", 101700, 16, (101716, 101731)),  # §18.6's diagnostic cohort (Delta only)
     "debug": Cohort("debug", 101900, 100, None),  # plumbing only; never counted
 }
-STAGE0_COHORTS = ("K", "Kp", "D", "Dp", "debug")
+STAGE0_COHORTS = ("K", "Kp", "D", "Dp", "X", "debug")
 GATED_COHORTS = ("S",)
+# A1 (§18.5): K's and D's counts were read under Stage 0's void condition, in the v0 scene; they
+# are spent and are never run again (no goals, no episodes).
+SPENT_COHORTS = ("K", "D")
+# §18.5's ordering rule: these cohorts' episodes need the check ledger.
+LEDGER_COHORTS = ("Kp", "Dp")
+# The task every Stage 0' and gated job runs (A1, §18.2); a module constant, not a registry entry.
+LIFT_TASK_NAME = "so101_cube_lift_v1"
 
 
 def cohort(name: str) -> Cohort:
@@ -87,6 +97,8 @@ SALTS = {
     "bootstrap": 10104,
     "power": 10105,
     "permutation": 10106,
+    "marker": 10107,  # A1: the v1 marker stream (so101_tasks_lift_v1.MARKER_SALT)
+    "delta": 10108,  # A1: Delta's random candidates and planner seeds (§18.6)
 }
 
 
@@ -689,3 +701,236 @@ def project_stage_s(
         "fits_without_replication": without <= remainder,
         "drop_replication": full > remainder,
     }
+
+
+def check_cohort_unspent(name: str) -> str:
+    """A1 (§18.5): K and D are spent; neither is drawn, demonstrated or run again."""
+    cohort(name)
+    if name in SPENT_COHORTS:
+        raise GuardError(f"G-spent: cohort {name} is spent (A1, §18.5); use K' (Kp) or D' (Dp)")
+    return name
+
+
+# ----- the check ledger: §18.5's ordering rule (R28.70) --
+LEDGER_FILE = "ledger.jsonl"
+CHECK_IDS = {
+    "scene": "7.2.0",
+    "latent": "7.2.1",
+    "renc": "7.2.2",
+    "projector": "7.2.3",
+    "determinism": "7.2.4",
+    "inert": "7.2.6",
+}
+# (ii): run once, before K′'s first episode; 7.2.2 (renc) runs on each cohort's own goal store
+ONCE_CHECKS = ("scene", "latent", "projector", "determinism", "inert")
+PER_COHORT_CHECK = "renc"
+
+
+def ledger_entry(
+    *,
+    check: str,
+    passes,
+    revision: str,
+    dirty: bool,
+    finished_utc: str,
+    goals_sha256=None,
+    cohort_name=None,
+    report_sha256=None,
+) -> dict:
+    return {
+        "check": check,
+        "id": CHECK_IDS.get(check),
+        "passes": passes,
+        "revision": revision,
+        "tracked_tree_dirty": bool(dirty),
+        "finished_utc": finished_utc,
+        "goals_sha256": goals_sha256,
+        "cohort": cohort_name,
+        "report_sha256": report_sha256,
+    }
+
+
+def ledger_append(path, entry: dict) -> None:
+    with Path(path).open("a") as stream:
+        stream.write(json.dumps(entry, default=_json_default) + "\n")
+
+
+def ledger_read(path) -> list[dict]:
+    path = Path(path)
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
+def ledger_verdict(
+    entries: list[dict], *, revision: str, goals_sha256: str, block_on_failures: bool = True
+) -> dict:
+    """§18.5 (2): episodes may run only if the ledger holds a passing report at ``revision``, from
+    a clean tracked tree, for every check of (ii) and a passing 7.2.2 report naming the goal store
+    the episodes read; any failing report (of any check, at any revision) blocks every episodes
+    job (``block_on_failures``; the summariser's ordering reading sets it False, since a later
+    failure does not reorder what ran before it). Returns ``{"ok", "reasons",
+    "latest_required_utc"}``."""
+    reasons = []
+    failing = [e for e in entries if e.get("passes") is False]
+    if failing and block_on_failures:
+        reasons.append(
+            "a failing check report blocks every episodes job until a ruling: "
+            + ", ".join(f"{e['check']}@{str(e['revision'])[:8]}" for e in failing)
+        )
+
+    def passing(e):
+        return e.get("passes") is True and e["revision"] == revision and not e["tracked_tree_dirty"]
+
+    required_utc = []
+    for name in ONCE_CHECKS:
+        ok = [e for e in entries if e["check"] == name and passing(e)]
+        if not ok:
+            reasons.append(f"no passing {CHECK_IDS[name]} ({name}) report at {revision[:8]}")
+        else:
+            required_utc.append(max(e["finished_utc"] for e in ok))
+    renc = [
+        e
+        for e in entries
+        if e["check"] == PER_COHORT_CHECK and passing(e) and e.get("goals_sha256") == goals_sha256
+    ]
+    if not renc:
+        reasons.append(
+            f"no passing 7.2.2 (renc) report at {revision[:8]} for goal store {goals_sha256[:12]}"
+        )
+    else:
+        required_utc.append(max(e["finished_utc"] for e in renc))
+    return {
+        "ok": not reasons,
+        "reasons": reasons,
+        "latest_required_utc": max(required_utc) if required_utc else None,
+    }
+
+
+def require_ledger(path, *, revision: str, goals_sha256: str) -> dict:
+    """Raise a ``GuardError`` (before any controller, simulator or seed exists) unless the ledger
+    admits these episodes."""
+    verdict = ledger_verdict(ledger_read(path), revision=revision, goals_sha256=goals_sha256)
+    if not verdict["ok"]:
+        raise GuardError("G-ledger: " + "; ".join(verdict["reasons"]))
+    return verdict
+
+
+def ordered_after_checks(episodes_started_utc: str, verdict: dict) -> bool:
+    """§18.5 (3): a cohort's counts are readable only if its first episode started after the
+    latest required passing check report (ISO-8601 UTC strings compare in time order)."""
+    latest = verdict.get("latest_required_utc")
+    return bool(verdict.get("ok")) and latest is not None and episodes_started_utc > latest
+
+
+# ----- Stage 0′'s budget after K′ (§18.7, R28.73) --
+def project_dprime(
+    *,
+    used_gpu_h: float,
+    goals_and_checks_gpu_h: float,
+    seconds_per_cem_episode_wall: float,
+    cem_episodes: int = 4 * 64,
+    diagnostic_episodes: int = DIAGNOSTIC_RESETS,
+    cpu_evidence_gpu_h: float = 0.0,
+    cap: float = STAGE0_CAP_GPU_H,
+) -> dict:
+    """D′'s projected lock time from K′'s measured wall seconds per CEM episode (pool throughput);
+    the single-goal diagnostic is dropped first if the Stage 0 cap would be exceeded, then the row
+    is S0-OVER."""
+    base = goals_and_checks_gpu_h + cpu_evidence_gpu_h
+    main = cem_episodes * seconds_per_cem_episode_wall / 3600.0
+    diag = diagnostic_episodes * seconds_per_cem_episode_wall / 3600.0
+    with_diag = used_gpu_h + base + main + diag
+    without = used_gpu_h + base + main
+    return {
+        "used_gpu_h": used_gpu_h,
+        "cap_gpu_h": cap,
+        "cumulative_with_diagnostic_gpu_h": with_diag,
+        "cumulative_without_diagnostic_gpu_h": without,
+        "drop_diagnostic": with_diag > cap,
+        "over": without > cap,
+    }
+
+
+# ----- the S0-NULL diagnostic Delta (§18.6, R28.72) --
+DELTA_STATES = (0, 10, 20, 30, 40, 50, 60)
+DELTA_RANDOM = 255
+DELTA_MIN_KEPT = 12
+DELTA_MODEL_RANK = 0.25
+DELTA_PLANNER_RANK = 0.10
+DELTA_PLANNER_M1 = 0.50
+DELTA_ROWS = ("Δ-VOID", "Δ-MODEL", "Δ-PLANNER", "Δ-MIXED")
+DELTA_CAP_GPU_H = 1.5
+
+
+def delta_subgoal(t: int) -> int:
+    """0-based subgoal a Delta state belongs to: subgoal 1 for t <= 30, subgoal 2 for t >= 40."""
+    if t not in DELTA_STATES:
+        raise ContractError(f"{t} is not a Delta state")
+    return 0 if t <= 30 else 1
+
+
+def delta_planner_seed(seed: int, t: int) -> int:
+    """§18.6: a_cem's planner seed 10108 * 10^6 + 1 000 * (seed - 101700) + t."""
+    check_seed("X", seed)
+    return SALTS["delta"] * 10**6 + 1000 * (int(seed) - COHORTS["X"].first) + int(t)
+
+
+def delta_random_rng(seed: int, t: int) -> np.random.Generator:
+    """§18.6: the 255 random candidates of a state, from ``default_rng([10108, seed, t])``."""
+    return np.random.default_rng([SALTS["delta"], int(seed), int(t)])
+
+
+def delta_crosses_boundary(t: int, horizon: int) -> bool:
+    """At H = 16 the windows at t = 30 and t = 60 run past their subgoal's boundary (40, 70)."""
+    end = SUBGOAL_COMMANDS[delta_subgoal(t)]
+    return t + horizon > end
+
+
+def normalised_rank(cost_demo: float, random_costs) -> float:
+    """Rank of a_demo among a_demo and the random candidates under J's cost: the fraction of
+    random candidates strictly cheaper, ties counted half (0 = best, 1 = worst, chance 0.5)."""
+    r = np.asarray(random_costs, np.float64)
+    return float(((r < cost_demo).sum() + 0.5 * (r == cost_demo).sum()) / len(r))
+
+
+def delta_measures(states: list[dict], horizon: int) -> dict:
+    """m1, m2 (the rows read the full set) and m3 (reported), overall, per subgoal and without the
+    boundary-crossing windows. Each state: ``t``, ``cost_demo``, ``cost_cem``, ``rank``,
+    optionally ``m3`` (bool)."""
+
+    def summary(rows):
+        if not rows:
+            return {"states": 0, "m1": None, "m2": None, "m3": None}
+        m3 = [r["m3"] for r in rows if r.get("m3") is not None]
+        return {
+            "states": len(rows),
+            "m1": float(np.mean([r["cost_demo"] < r["cost_cem"] for r in rows])),
+            "m2": float(np.median([r["rank"] for r in rows])),
+            "m3": float(np.mean(m3)) if m3 else None,
+        }
+
+    return {
+        "all": summary(states),
+        "per_subgoal": {
+            str(k + 1): summary([s for s in states if delta_subgoal(s["t"]) == k]) for k in (0, 1)
+        },
+        "without_boundary_windows": summary(
+            [s for s in states if not delta_crosses_boundary(s["t"], horizon)]
+        ),
+    }
+
+
+def delta_row(*, kept: int, m1, m2, guard_failed: bool = False, over_budget: bool = False) -> dict:
+    """§18.6's rows, first match: Δ-VOID (a guard failed, fewer than 12 X seeds kept a
+    demonstration, or the budget would be exceeded); Δ-MODEL (m2 >= 0.25); Δ-PLANNER (m2 <= 0.10
+    and m1 >= 0.50); Δ-MIXED otherwise."""
+    if guard_failed or over_budget or kept < DELTA_MIN_KEPT or m1 is None or m2 is None:
+        row = "Δ-VOID"
+    elif m2 >= DELTA_MODEL_RANK:
+        row = "Δ-MODEL"
+    elif m2 <= DELTA_PLANNER_RANK and m1 >= DELTA_PLANNER_M1:
+        row = "Δ-PLANNER"
+    else:
+        row = "Δ-MIXED"
+    return {"row": row, "kept": int(kept), "m1": m1, "m2": m2}
