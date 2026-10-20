@@ -63,6 +63,39 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-20 (cb) — TASK-102 Δa ends Δa-PLANNER-BOUND: with no arm handing over by tolerance (O-pose 0/8, O-img 0/8, J at three budgets 0/8), the planner binds before any cost question; the jaw, never within 0.15 rad in any episode, is where it fails; escalated; R7 unchanged (R28.126–R28.130)
+
+**Recorded by Claude under owner delegation.** Record:
+[so101_approach_diagnostic_v1_results.md](experiments/so101_approach_diagnostic_v1_results.md);
+declaration [so101_approach_diagnostic_v1.md](experiments/so101_approach_diagnostic_v1.md) (`fbab0b0`,
+pushed before any measurement). These rulings record the row. They do not choose the next study.
+
+- **R28.126 — The row.** Every job ran at `5e5ffdc` from a clean tracked tree, 16/16 L seeds were
+  kept, and every guard held (G-replay 16/16; G-rollout bit-identical on 1 280 Λ1 and 960 Λ2
+  commands). On L's slots 0–7, hand-overs by tolerance were J-ref 0/8, J-big16 0/8, J-big32 0/8,
+  O-img 0/8 and O-pose 0/8 (each 0.000–0.369). First match: Δa-NOT-REPRODUCED does not fire;
+  **Δa-PLANNER-BOUND fires (O-pose < 6/8)**; Δa-GEOMETRY also fires but is not first.
+- **R28.127 — What the logs show (reported, not a row).** No episode of any arm brought the jaw
+  within 0.15 rad of subgoal 1's open jaw (0/40; median absolute jaw error 0.90–0.95 rad). The arm
+  did get close: O-pose's closest arm RMS was 0.035–0.069 rad, and it held ≤ 0.08 rad for 3
+  commands on 7/8 (post hoc). For O-img the closest median was 0.076 rad (2/8 held), for J-ref
+  0.170, J-big16 0.149 (2/8 held) and J-big32 0.260. The record reads this as the receding-horizon
+  planner postponing the jaw under a `last` cost (the gripper moves 0.25 rad per command). That is
+  an inference from planned against executed commands, not an intervention.
+- **R28.128 — Λ1 and Λ3 (reported).** The true-frame cost and J's predicted cost resolve every
+  distance band from 0.08 to 0.64 rad on straight lines from the reset pose (d_flat > 0.64), and
+  J ranks the pose-law approach candidate first at far states. Δρ = 0.11 (below Δa-MODEL's 0.20).
+  The wrist half of the true-frame cost flattens beyond 0.40 rad, while the overview half does
+  not.
+- **R28.129 — Recommendation, not a ruling.** As §6 row 3 names: a planner change measured first
+  with O-pose (a cost read over the horizon or a shorter horizon, multi-command commitment, or a
+  warm start), or taking the jaw out of phase 1 (a scripted opening, or an arm-only hand-over
+  with a P-like check of G_loc). R28.57's LeWM retrain is not indicated by this record as the next
+  step. Each option needs its own ruling, declaration and fresh seeds.
+- **R28.130 — Budget and status.** 0.810 GPU h of lock time (11 jobs) against the 2.0 GPU h cap.
+  O-pose and Λ0 ran on the CPU. TASK-102 stays in progress at S0-APPROACH, not frozen. No claim.
+  R7 does not change (R28.9).
+
 ## Decision 2026-10-20 (ca) — after S0-APPROACH: a development decomposition of the approach failure (Δa) before any further controller variant; its cohort, measures, readings and rows are declared before any measurement; R7 unchanged (R28.119–R28.125)
 
 **Decided by Claude under owner delegation** (the 2026-09-30 delegation; the SO-101 branch opened

@@ -1,7 +1,7 @@
 # TASK-102 Δa: why CEM over J does not deliver the pre-grasp pose (development decomposition)
 
-**Status: DECLARED (measures, cohort, readings and rows fixed before any measurement; this commit
-runs nothing).** Development diagnostic of TASK-102's Stage 0 row S0-APPROACH
+**Status: DECLARED (measures, cohort, readings and rows fixed before any measurement, `fbab0b0`);
+run, row Δa-PLANNER-BOUND, see the [record](so101_approach_diagnostic_v1_results.md) (R28.126–R28.130).** Development diagnostic of TASK-102's Stage 0 row S0-APPROACH
 ([record](so101_hybrid_lift_v1_stage0.md), DECISIONS 2026-10-20 (bz), R28.114–R28.116), declared
 by Claude under owner delegation (DECISIONS 2026-10-20 (ca), R28.119–R28.125). It is not a gate,
 freezes nothing, makes no claim and admits no controller variant. Simulation only,
