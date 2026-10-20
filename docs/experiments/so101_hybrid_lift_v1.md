@@ -8,6 +8,14 @@ training, development closed loops, calibration of τ_h and of the bar on develo
 independently reviewed. **The protocol freezes when the Stage 0 PR merges, and only on S0-DONE
 (§7.7).** No gated reset is drawn, rendered or run before then.
 
+**Stage 0 (2026-10-20, [record](so101_hybrid_lift_v1_stage0.md), R28.110–R28.118): row
+S0-APPROACH** (a_A = 0/32 in all four configurations; not frozen). **Δa (2026-10-20,
+[record](so101_approach_diagnostic_v1_results.md), R28.126–R28.130): row Δa-PLANNER-BOUND.**
+**Amendment A1 (2026-10-20, §18, R28.131–R28.140):** the jaw is taken out of the approach (a
+scripted opening, the planner plans the 5 arm channels, an arm-only hand-over), a planner grid on a
+fresh development cohort Q chooses phase 1's configuration by a rule fixed before it ran, and
+Stage 0′ runs on P′, A′ and D′ under A1-CONFIG only.
+
 *Revised after the first independent review of the DRAFT (2026-10-19):* phase 1's configuration is
 now chosen among TASK-101's four on a development approach cohort A instead of carrying H8-mean
 (§0, §5.1, §7.5), and S0-APPROACH gates on H's hand-overs by tolerance, not on W+F's lift count
@@ -727,3 +735,206 @@ merge. The executing agent reports rows. It does not choose the next study.
   arms, the replication seeds and the per-phase decomposition (§10).
 - **R28.109** — seeds, salts, guards and budget: §12 and §13; a 12 GPU h hard cap with Stage 0 at
   most 5.
+
+## 18. Amendment A1 (2026-10-20): the ruling on Δa-PLANNER-BOUND, the jaw out of the approach, a planner grid on Q, and Stage 0′
+
+**Decided by Claude under owner delegation** ([DECISIONS](../DECISIONS.md) 2026-10-20 (cc),
+R28.131–R28.140). It answers the escalation of Stage 0's S0-APPROACH (R28.116) after the approach
+diagnostic Δa ([record](so101_approach_diagnostic_v1_results.md), row Δa-PLANNER-BOUND, R28.126).
+**The owner can override this ruling.** This section was committed and pushed before any
+measurement it declares. The protocol stays **not frozen**: it still freezes only when a Stage 0
+PR merges on S0-DONE (§7.7), and the manifest stays `CANDIDATE`.
+
+**Sections A1 changes** (the text above is kept as written; where it disagrees with this
+section, this section applies): the claim's qualifiers (§1, §14), phase 1 (§5.1), the hand-over
+rule (§5.2), the phase-1 arms (§6: H, N_J+G, W+F, H-pose+G, H-G1, H-G2), Stage 0's cohorts and its
+order (§7, §7.4, §7.5), row S0-APPROACH (§7.7 row 3), seeds and salts (§12) and the budget (§13).
+Unchanged: the task, scene and scorer (§2), the models (§3), the goals (§4), G_loc and its training
+(§5.3, §5.4; the trained G-0 is kept, not retrained), the checks (§7.3), the bar (§7.6), the gated
+stage (§8), its rows (§9), the statistics (§11) and every pinned file.
+
+### 18.1 What Δa found, and what A1 does
+
+On cohort L, no phase-1 arm handed over by tolerance, the privileged true-pose cost O-pose
+included (0/8). In every episode the jaw failed: no episode brought it within 0.15 rad of subgoal
+1's open jaw (median error 0.90–0.95 rad), while O-pose brought the arm within 0.035–0.069 rad and
+held it within 0.08 rad for 3 commands on 7/8 (post hoc). The record's inference, not tested by
+intervention: under a terminal (`last`) cost with a 16-command horizon, the receding-horizon
+planner can always close a 1 rad jaw error in the plan's last commands, so it postpones the
+opening indefinitely. J's cost and the true-frame cost rank distance correctly (Λ1), so the model
+is not shown to be the binding component here. A1 makes two changes, in this order:
+
+1. **The jaw is taken out of the approach** (§18.2). This removes the failure Δa observed by
+   construction, and it is declared as a scripted component of the controller.
+2. **A small planner grid on a fresh development cohort Q** (§18.3), measured first with O-pose (a
+   planner check: can this planner reach the arm pose given an exact cost?) and then with J, with a
+   selection rule and rows fixed now (§18.4). Only then does Stage 0′ run, on the reserved fresh
+   cohorts P′, A′ and D′ (§18.5).
+
+### 18.2 (i) The jaw out of the approach (amends §5.1, §5.2, §6)
+
+- **The scripted jaw rule.** On every phase-1 command, from the first, the gripper channel of the
+  command is **+1 (fully open) if subgoal 1's jaw is above 0.785 rad, else −1**. This is TASK-101's
+  H-pose jaw law (`so101_closed_loop.pose_action`) and the goal demonstration's own gripper command
+  during its approach (follower v1 drives to the pre-grasp pose with the gripper at +1 from its
+  first command). The rate is the embodiment's: the gripper target moves at most 0.25 rad per
+  command (`gripper_max_delta_per_step_rad`), so from `home_rad`'s 0.6 rad it reaches the open limit
+  (1.745 rad) on the 5th command. The rule reads no measured state. It reads subgoal 1's jaw through
+  one threshold, which the hand-over already read (§5.2).
+- **The planner plans the 5 arm channels only.** The gripper channel's lower and upper CEM bounds
+  are both set to the scripted value, so every sampled candidate carries it on every step and CEM's
+  search runs over the 5 arm channels alone. Every candidate is projected by TASK-101's chained
+  projector as before, so the gripper's rate limit is in every candidate, and the jaw a candidate
+  is scored with is the jaw that is executed. Nothing else in the planner changes, except the grid's
+  factors (§18.3).
+- **The hand-over reads the arm only.** Phase 1 ends when, for 3 consecutive commands, the
+  measured arm joints are within τ_h rad RMS of subgoal 1's, or after T₁ = 60 commands. The 0.15 rad
+  jaw condition is dropped, because the jaw is at its scripted value. The measured jaw at every
+  hand-over is recorded and reported.
+- **It applies to every phase-1 arm:** H, N_J+G, W+F, H-G1 and H-G2 (the planner's gripper channel
+  scripted, the hand-over arm-only) and H-pose+G (its jaw was already +1; its hand-over becomes
+  arm-only). S+G (the demonstration's own approach) and G_loc-only, F, rand and hold have no phase 1
+  and are unchanged.
+- **Declared as a scripted component.** The approach's jaw opening is no longer chosen by the world
+  model or the planner. Every restatement of the primary claim (§1) adds the qualifier **"the jaw's
+  opening during the approach is scripted, and the planner chooses the 5 arm channels"**, beside the
+  two qualifiers §1 already fixes.
+
+### 18.3 (ii) The planner grid on Q (development; not a protocol stage)
+
+- **Cohort Q: 105000–105007** (8 resets), reserve **105008–105023**; **debug 105900–105909**
+  (plumbing and timing only, never read). Q's goals are TASK-101's goal demonstrations with its
+  keep rule (a rejected seed's slot takes the next reserve seed), encoded with the live featuriser,
+  in a TASK-101-format goal store, as Δa's L. Only subgoal 1 is read.
+- **Salt 10118:** the planner seed is `10118 · 10⁶ + reset seed`, the same for every configuration
+  and both costs on a reset (paired). The planner object, and so its random stream, persists across
+  an episode's replans, as in TASK-101.
+- **Ranges used before, all disjoint from Q and its debug range** (checked with `git grep -w` over
+  `src/`, `scripts/`, `docs/`, `benchmarks/`, `tests/`, `configs/` and `.mc/` on every local and
+  remote ref on 2026-10-20; the only six-digit `105xxx` matches are the decimals "0.105481" and
+  "0.105059" in the apple policy-diagnostics manifest and document): S2's development seeds 0–63,
+  100–163 and 1000–1015; the play corpus's streams 990000–990027, 990100–990163 and 991000–993999;
+  TASK-100's 100100–100102 and 100900–100920; TASK-101's 101010–101999 and 102000–102299; TASK-102's
+  103000–103999 (P, P′, D, S, A, D′, A′, debug and reserves); Δa's 104000–104031 and 104900–104909.
+  Salts used before: 9801, 9802, 9901, 9902, 10011–10015, 10101–10117; 10118 appears on no ref.
+- **The grid: 16 configurations, 2 × 2 × 2 × 2.**
+  - **cost ∈ {last, mean}:** `last` reads the cost after the horizon's last command; `mean` reads
+    the mean of the per-step costs over the horizon's commands (TASK-101's two forms).
+  - **H ∈ {8, 16}** commands.
+  - **execute-k ∈ {1, 4}:** the first k commands of each plan are executed before the next plan
+    (k = 1 is MPC as before). The hand-over rule is read before every command, so a hand-over or the
+    timeout can end phase 1 inside a k-command chunk. Every executed command must equal its scored
+    projection (G-projection), as before.
+  - **warm start ∈ {off, on}:** off, CEM's initial mean is the cold mean (zero arm deltas, the
+    scripted gripper channel), as before. On, after m executed commands the next plan's initial mean
+    is the previous plan's best requested sequence shifted by m commands, its last m rows filled with
+    the cold mean. The initial standard deviation is 1 in both, so the warm start changes the first
+    iteration's mean candidate (CEM always scores the mean as candidate 0), not the spread.
+  - **Fixed:** 256 samples, 6 iterations, 32 elites, minimum std 0.05, action penalty 0, the
+    chained projector, τ_h = 0.08 rad (Stage 0's P value, R28.112), T₁ = 60 and the arm-only
+    hand-over of §18.2.
+  - **Names:** `<cost>-H<h>-k<k>-w<0|1>`, for example `last-H16-k1-w0` (Stage 0's H16-last with the
+    jaw scripted).
+- **Two costs, measured in this order.**
+  1. **O-pose (privileged, a planner check, never a controller or an arm of the protocol)** on all
+     16 configurations × Q's 8 resets (128 episodes, CPU, no lock): every projected candidate is
+     executed in a copy of the episode's simulation from the current state (Δa's `Scratch`; its
+     G-rollout guard re-executes every executed command and requires bit-identical qpos and qvel),
+     and its per-step cost is c_t = (arm RMS to subgoal 1 after command t / τ_h)². The jaw term of
+     Δa's O-pose is dropped, because every candidate carries the same scripted jaw.
+  2. **J** (J-100101's predicted latent error to subgoal 1's latent, TASK-101's `LatentCost`, GPU)
+     on **every configuration that O-pose admits** (§18.4: O-pose ≥ 7/8), × Q's 8 resets.
+  3. **One larger budget, only if needed:** if no admitted configuration reaches J ≥ 4/8 at
+     256 × 6, J runs once more at **1 024 samples × 12 iterations (128 elites)**, Δa's J-big
+     budget, on the single admitted configuration ranked first by §18.4's order (8 episodes).
+     Nothing else is run at a larger budget.
+- **Recorded per configuration and cost:** the hand-overs by tolerance h of 8 with exact 95 %
+  intervals; the closest arm RMS to subgoal 1 (median, minimum, maximum); the arm RMS and the
+  measured jaw error at the hand-over; the phase-1 commands to the hand-over (a timeout counts 60);
+  how many episodes held the arm within τ_h for 3 commands; seconds per command and per plan;
+  guard counts.
+
+### 18.4 (iii) The selection rule and rows (fixed now)
+
+**Admitted:** a configuration is admitted if O-pose hands over by tolerance on **at least 7 of 8**
+Q resets.
+
+**Order among admitted configurations** (the chosen configuration is the first):
+(1) the most J hand-overs by tolerance (of 8); (2) the most O-pose hand-overs; (3) the lower median
+J phase-1 commands to the hand-over; (4) the lower median J closest arm RMS; (5) the grid's declared
+order: k = 1 before k = 4, warm start off before on, H = 16 before H = 8, `last` before `mean` (the
+configuration nearest Stage 0's H16-last first).
+
+**Rows, first match:**
+
+1. **A1-VOID** — a guard failed, a job did not complete, Q's reserve ran out (fewer than 8 kept
+   resets), or the grid's lock time would exceed 3.0 GPU h (the job that would exceed it is not
+   started). Fixed under its own record; a rerun after any count was read uses fresh seeds named
+   by a ruling. Nothing is read.
+2. **A1-PLANNER-STILL-BOUND** — no configuration is admitted (O-pose < 7/8 in all 16). Even an exact
+   pose cost does not carry this planner to the arm pose with the jaw scripted. Escalate; no Stage
+   0′. Named candidates, each needing its own ruling: a larger planning budget measured with
+   O-pose, a different planner family, or the approach given to a non-planner controller.
+3. **A1-MODEL-BOUND** — at least one configuration is admitted, but J hands over by tolerance on
+   fewer than 4 of 8 resets in every admitted configuration, including the larger-budget run of
+   §18.3 step 3. The planner reaches the pose with an exact cost, and J's cost does not. Escalate; no
+   Stage 0′. **R28.57's LeWM retrain, or another model change, then becomes the recommended next
+   step**, with its own ruling and preregistration.
+4. **A1-CONFIG** — otherwise. The chosen configuration (the first admitted one in the order above
+   with J ≥ 4/8; at 1 024 × 12 if it came from §18.3 step 3) becomes phase 1's configuration for
+   every phase-1 arm, and Stage 0′ runs (§18.5).
+
+*Why these bars.* 7/8 for O-pose asks the planner check to work nearly always (an exact one-sided
+95 % lower bound of 0.53 at 7/8); a configuration that fails it with an exact cost is not a fair
+test of J. 4/8 for J is the claim floor of §7.7 row 3 (half of the resets) applied to the grid's
+8 resets; it chooses which configuration A′ tests, and A′'s 32 resets, not Q's 8, gate the
+approach. Q's counts choose the configuration and nothing else.
+
+### 18.5 Stage 0′ under A1-CONFIG (amends §7, §7.4, §7.5, §7.7)
+
+Stage 0′ runs only under A1-CONFIG, in its own PR, on the reserved fresh cohorts §7.7 row 1
+declared and R28.115 left unused: **P′ = 103060–103091 (reserve 103092–103099), A′ =
+103700–103731 (reserve 103732–103747) and D′ = 103600–103663 (reserve 103664–103699)**. Each is used
+at most once. A, P and D stay spent. Every check of §7.3 is re-run and ledgered before a cohort's
+first episode, as in Stage 0, at Stage 0′'s running revision. G-0 is G_loc, unchanged.
+
+1. **P′ (G_loc's tolerance with the jaw scripted open; first).** §7.4 on P′'s 32 resets: S+G with
+   the privileged scripted approach driven to subgoal 1's joints plus δ, r ∈ {0, 0.04, 0.08, 0.12}
+   rad, directions from `default_rng([10112, seed])`. The approach's gripper channel is A1's rule
+   (+1 from the first command), which is the follower's own gripper command on its approach; a guard
+   checks it on every approach command, and at r = 0 the approach equals the demonstration's first
+   40 commands, as in P. **τ_h is re-derived by §5.2 step 2 from P′'s counts** and replaces P's
+   0.08 rad for A′ and D′. S0-GLOC-WEAK applies to P′ as to P (k(0) < 16/32).
+2. **A′ (the chosen configuration's approach; no choice).** Phase 1 alone with the chosen
+   configuration and the arm-only hand-over at P′'s τ_h, on A′'s 32 resets (32 episodes). a_A′ is
+   the hand-overs by tolerance of 32, with its exact interval, and the jaw at each hand-over is
+   reported. **§7.7 row 3 reads a_A′: S0-APPROACH if a_A′ < 16/32**, and D′ does not run.
+3. **D′ (the development closed loop).** §7.5's D on D′'s 64 resets, every arm of §6 except H-G1 and
+   H-G2, with P′'s τ_h and the chosen configuration (A1's jaw rule and arm-only hand-over in every
+   phase-1 arm). §7.6's bar and §7.7's rows apply to D′'s numbers as they would have to D's
+   (S0-APPROACH also if a_H on D′ < 32/64 or W+F on D′ < 32/64).
+4. **The freeze.** On S0-DONE the Stage 0′ PR's merge freezes the protocol with A1, and the gated
+   stage §8 runs on 103200–103327 as declared, with A1's phase 1.
+
+### 18.6 Budget, code and evidence (amends §13)
+
+- **The grid: at most 3.0 GPU h of lock time** (goals, J episodes, debug), accounted separately
+  from Stage 0's 5 GPU h cap, as Δa's was (R28.123). O-pose runs on the CPU and takes no lock.
+  Every GPU job runs under `scripts/gpu_run.sh --wait --board`.
+- **Stage 0′** counts against Stage 0's remaining cap (5 − 1.246 = 3.754 GPU h) and the 12 GPU h
+  hard cap. If its projection after P′ does not fit, the row is S0-OVER.
+- **Code: new files only.** Every pinned file (G1; TASK-100's `so101-world-model-v1.json`;
+  TASK-101's `so101-closed-loop-lift-v1.json`; TASK-102's `so101-hybrid-lift-v1.json`, still
+  `CANDIDATE`, and its listed files; Δa's code and declaration; `schema_planning.py`) stays
+  byte-identical, and every grid job checks the pins at its start and end.
+- **Record:** `docs/experiments/so101_hybrid_lift_v1_a1_planner.md` with a DECISIONS entry; evidence
+  under `~/develop/emai/evidence/task102-a1/` with `SHA256SUMS`; outputs under the shared checkout's
+  `outputs/task102-a1/`.
+
+### 18.7 What A1 does not do
+
+- It is not a result. Q's counts are development readings on 8 resets; O-pose is a privileged
+  instrument. No claim follows from any A1 row. R7 does not change (R28.9).
+- It does not test whether a learned planner would open the jaw at the right time; that question
+  is removed by construction, and the claim says so (§18.2).
+- It does not change G_loc, J, the goal, the scorer, the bar rule or the gated stage.

@@ -103,3 +103,11 @@ override the ruling that opened this task (R28.97).
   0.035–0.069 rad. Λ1: the image cost and J's cost resolve distance to the reset pose (Δρ 0.11).
   0.81 GPU h. Evidence `~/develop/emai/evidence/task102-approach-diag/`. Escalated; next study needs
   a ruling.
+- 2026-10-20, ruling on Δa-PLANNER-BOUND (DECISIONS (cc), R28.131–R28.140; branch
+  `docs/task102-a1`): **amendment A1** (protocol §18), committed before any measurement. The jaw is
+  taken out of the approach (gripper +1 from the first command at the embodiment's rate; the
+  planner plans the 5 arm channels; arm-only hand-over); a 16-configuration planner grid (cost ×
+  H × execute-k × warm start at 256 × 6) on fresh cohort Q 105000–105007 (reserve 105008–105023,
+  debug 105900–105909, salt 10118), O-pose first, J on admitted configurations (O-pose ≥ 7/8); rows
+  A1-VOID / A1-PLANNER-STILL-BOUND / A1-MODEL-BOUND / A1-CONFIG; Stage 0′ on P′, A′, D′ only under
+  A1-CONFIG, in its own PR. Grid cap 3 GPU h. Not frozen.
