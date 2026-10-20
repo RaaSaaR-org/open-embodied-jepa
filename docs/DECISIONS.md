@@ -63,6 +63,41 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-20 (cd) — TASK-102 A1's planner grid ends A1-MODEL-BOUND: with the jaw scripted open, the exact pose cost hands over in every configuration (O-pose 8/8 in 15 of 16, 7/8 in one), while J hands over at most 1/8 at 256 × 6 and 3/8 at 1 024 × 12; no Stage 0′; a model change becomes the recommended next step; escalated; R7 unchanged (R28.141–R28.147)
+
+**Recorded by Claude under owner delegation.** Record:
+[so101_hybrid_lift_v1_a1_planner.md](experiments/so101_hybrid_lift_v1_a1_planner.md); declaration
+[so101_hybrid_lift_v1.md §18](experiments/so101_hybrid_lift_v1.md) (`45aca25`, pushed before any
+measurement). These rulings record the row. They do not choose the next study.
+
+- **R28.141 — The row.** Every counted job ran at `2f8459d` from a clean tracked tree. 8/8 Q seeds
+  were kept, every pin held at the start and end of every job, and every guard held (G-projection
+  and G-jaw on every command and plan; G-rollout bit-identical on 2 797 O-pose commands). First
+  match: A1-VOID no; A1-PLANNER-STILL-BOUND no (16 of 16 admitted); **A1-MODEL-BOUND fires**.
+- **R28.142 — O-pose (privileged planner check).** O-pose handed over by tolerance on 8/8 in 15
+  configurations (exact 95 % 0.631–1.000) and 7/8 in `last-H16-k4-w0` (0.473–0.997). The median
+  closest arm RMS was 0.017–0.064 rad. The measured jaw was within 0.15 rad of subgoal 1's at every
+  hand-over (median error 0.000 rad), so the scripted jaw removed Δa's failure as declared.
+- **R28.143 — J.** At 256 × 6, J handed over on 1/8 in `last-H8-k1-w1` and `last-H16-k4-w0` and on
+  0/8 in the other 14 configurations. The median closest arm RMS was 0.132–0.534 rad. At the one
+  larger budget (§18.3 step 3: 1 024 × 12 on `last-H8-k1-w1`, first in §18.4's order) J handed over
+  on 3/8 (0.085–0.755), with a median closest of 0.182 rad. All of these are below the 4/8 floor.
+- **R28.144 — What follows (§18.4 row 3).** No Stage 0′ runs. P′, A′ and D′ stay unused, and A1
+  chooses no configuration. **R28.57's LeWM retrain, or another model change, becomes the
+  recommended next step.** It needs its own ruling and preregistration, and this record does not
+  choose it.
+- **R28.145 — What the record does not separate** (record §6). The true-frame image cost (Δa's
+  O-img) was not re-run with the jaw scripted, because §18.3 did not declare it. So whether the
+  binding component is J's prediction or the image-goal cost's precision near 0.08 rad is not
+  measured. The record recommends that the next declaration include such an arm.
+- **R28.146 — Reported only.** Under the exact cost, `mean` beat `last` in all 8 pairings. Under J,
+  `mean` was worse in all 8. The warm start lowered the closest median in all 8 pairings under
+  both costs.
+- **R28.147 — Budget and status.** 0.338 GPU h of lock time (5 jobs, 2 of them debug) against the
+  3.0 GPU h cap; O-pose ran on the CPU. TASK-102 stays in progress, not frozen (manifest
+  `CANDIDATE`). Stage 0's recorded row is still S0-APPROACH, and A1's is A1-MODEL-BOUND. No gated
+  seed was drawn. No claim. R7 does not change (R28.9).
+
 ## Decision 2026-10-20 (cc) — Claude, under owner delegation, rules on Δa-PLANNER-BOUND: TASK-102 amendment A1 — the jaw is taken out of the approach (a scripted opening, the planner plans the 5 arm channels, an arm-only hand-over), a 16-configuration planner grid on a fresh development cohort Q measured first with O-pose and then with J, a selection rule and rows fixed before any measurement, and Stage 0′ on P′, A′ and D′ only under A1-CONFIG; not frozen; R7 unchanged (R28.131–R28.140)
 
 **Decided by Claude under owner delegation** (the 2026-09-30 delegation, whose recorded preference

@@ -111,3 +111,9 @@ override the ruling that opened this task (R28.97).
   debug 105900–105909, salt 10118), O-pose first, J on admitted configurations (O-pose ≥ 7/8); rows
   A1-VOID / A1-PLANNER-STILL-BOUND / A1-MODEL-BOUND / A1-CONFIG; Stage 0′ on P′, A′, D′ only under
   A1-CONFIG, in its own PR. Grid cap 3 GPU h. Not frozen.
+- 2026-10-20, A1's grid ran at `2f8459d` (record `docs/experiments/so101_hybrid_lift_v1_a1_planner.md`;
+  DECISIONS (cd), R28.141–R28.147): **row A1-MODEL-BOUND**. Q's 8/8 kept. O-pose 8/8 in 15 of 16
+  configurations (7/8 in `last-H16-k4-w0`), jaw within 0.15 rad at every hand-over; J at most 1/8
+  at 256 × 6 (`last-H8-k1-w1`, `last-H16-k4-w0`), 3/8 at 1 024 × 12 on `last-H8-k1-w1`. No Stage
+  0′; P′, A′, D′ unused; a model change (R28.57's LeWM retrain or another) is the recommended next
+  step, needing its own ruling. 0.338 GPU h. Evidence `~/develop/emai/evidence/task102-a1/`.

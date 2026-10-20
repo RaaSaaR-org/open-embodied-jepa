@@ -16,6 +16,10 @@ scripted opening, the planner plans the 5 arm channels, an arm-only hand-over), 
 fresh development cohort Q chooses phase 1's configuration by a rule fixed before it ran, and
 Stage 0′ runs on P′, A′ and D′ under A1-CONFIG only.
 
+**A1's grid (2026-10-20, [record](so101_hybrid_lift_v1_a1_planner.md), R28.141–R28.147): row
+A1-MODEL-BOUND.** O-pose handed over in every configuration, J at most 1/8 (3/8 at 1 024 × 12), so
+Stage 0′ does not run and the study escalates.
+
 *Revised after the first independent review of the DRAFT (2026-10-19):* phase 1's configuration is
 now chosen among TASK-101's four on a development approach cohort A instead of carrying H8-mean
 (§0, §5.1, §7.5), and S0-APPROACH gates on H's hand-overs by tolerance, not on W+F's lift count
