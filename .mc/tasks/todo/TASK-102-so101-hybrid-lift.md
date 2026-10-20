@@ -90,3 +90,16 @@ override the ruling that opened this task (R28.97).
   A: a_A = 0/32 in all four configurations (every approach timed out), so the **row is
   S0-APPROACH**. D did not run, nothing is frozen (manifest CANDIDATE), and the study escalates.
   1.246 GPU h. Evidence `~/develop/emai/evidence/task102-stage0/`.
+- 2026-10-20, after S0-APPROACH (DECISIONS (ca), R28.119–R28.125; branch
+  `docs/task102-approach-diag`): a development decomposition of the approach failure, Δa, is
+  declared before any measurement in `docs/experiments/so101_approach_diagnostic_v1.md` (Λ0 A-log
+  re-read; Λ1 cost landscape on cohort L 104000–104015; Λ2 J at three budgets and two privileged
+  oracle costs in closed loop on L's slots 0–7; Λ3 per camera). Rows Δa-VOID / NOT-REPRODUCED /
+  PLANNER-BOUND / GEOMETRY / PLANNER / MODEL / MIXED. Cap 2 GPU h. No controller variant is
+  admitted by it.
+- 2026-10-20, Δa ran at `5e5ffdc` (record `docs/experiments/so101_approach_diagnostic_v1_results.md`;
+  DECISIONS (cb), R28.126–R28.130): **row Δa-PLANNER-BOUND** (O-pose 0/8; O-img, J-ref, J-big16,
+  J-big32 also 0/8). The jaw never came within 0.15 rad in any episode, while O-pose's arm reached
+  0.035–0.069 rad. Λ1: the image cost and J's cost resolve distance to the reset pose (Δρ 0.11).
+  0.81 GPU h. Evidence `~/develop/emai/evidence/task102-approach-diag/`. Escalated; next study needs
+  a ruling.
