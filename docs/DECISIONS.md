@@ -63,6 +63,34 @@ line this investigation belongs to — image-goal costs consumed by a sampling p
 subsequently abandoned as the primary control line by the decision below. The record above
 is kept as written.
 
+## Decision 2026-10-21 (ce) — the owner pauses the project again; the SO-101 branch stops at TASK-102 A1 (A1-MODEL-BOUND, PR #247 open and not yet independently reviewed); nothing is running; resume options recorded; R7 unchanged (R28.148–R28.152)
+
+**Decided by the owner ("lets do a pause for this. update docs and prepare everything to continue
+later"); recorded by Claude.**
+
+- **R28.148 — Pause.** On 2026-10-21 the owner paused the project. No job is running or queued; the
+  GPU lock is free. The G1 line stays paused as recorded in (bo).
+- **R28.149 — PR #247 stays open.** Its A1 record (R28.131–R28.147, row A1-MODEL-BOUND) and this
+  pause entry are on branch `docs/task102-a1`. CI passed, but **no independent review has been
+  posted**: the review agents could not run (a usage limit). It must not be merged before an
+  independent review and green CI on its head. Until then, A1-MODEL-BOUND is an unreviewed
+  development reading.
+- **R28.150 — Where the SO-101 branch stands** (all simulation, development only, no gated
+  closed loop has run): TASK-100 WM-PASS with `native_jepa` (J) only (offline); TASK-101 closed
+  with no claim; TASK-102: the learned wrist-camera grasp G_loc lifts after an exact approach
+  (S+G 30/32 at r = 0, 28/32 at 0.08 rad), but J + CEM does not approach: with the jaw scripted
+  open, the exact pose cost O-pose hands over 8/8 in 15 of 16 planner configurations while J
+  hands over at most 1/8 at 256 × 6 and 3/8 at 1 024 × 12 (8 seeds per cell). So the planner is no
+  longer the limit; J's predicted cost is.
+- **R28.151 — Resume options (none chosen; each needs a ruling).** (1) Review and merge #247
+  first. (2) A model change, which A1-MODEL-BOUND recommends: R28.57's LeWM longer-budget retrain
+  of TASK-100's L, or a model whose cost resolves the arm pose better (for example a
+  proprioceptive or pose-readout term in the cost), each with its own preregistration. (3) The
+  G1 options in RESUME.md are unchanged. See [RESUME.md](RESUME.md).
+- **R28.152 — Nothing else changes.** No result is claimed; R7 is unchanged; SO-101 results do not
+  enter R7; worktree `worktrees/task087-run` is kept; `worktrees/task102-a1` holds the open PR's
+  branch.
+
 ## Decision 2026-10-20 (cd) — TASK-102 A1's planner grid ends A1-MODEL-BOUND: with the jaw scripted open, the exact pose cost hands over in every configuration (O-pose 8/8 in 15 of 16, 7/8 in one), while J hands over at most 1/8 at 256 × 6 and 3/8 at 1 024 × 12; no Stage 0′; a model change becomes the recommended next step; escalated; R7 unchanged (R28.141–R28.147)
 
 **Recorded by Claude under owner delegation.** Record:

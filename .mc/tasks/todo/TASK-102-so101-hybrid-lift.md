@@ -117,3 +117,10 @@ override the ruling that opened this task (R28.97).
   at 256 × 6 (`last-H8-k1-w1`, `last-H16-k4-w0`), 3/8 at 1 024 × 12 on `last-H8-k1-w1`. No Stage
   0′; P′, A′, D′ unused; a model change (R28.57's LeWM retrain or another) is the recommended next
   step, needing its own ruling. 0.338 GPU h. Evidence `~/develop/emai/evidence/task102-a1/`.
+- 2026-10-20, amendment A1 (branch `docs/task102-a1`, PR #247; record
+  `docs/experiments/so101_hybrid_lift_v1_a1_planner.md`; R28.131–R28.147): row A1-MODEL-BOUND
+  (development; O-pose 8/8 in 15 of 16 configurations, J at most 1/8, 3/8 at 1 024 × 12). No
+  Stage 0′; P′, A′, D′ and the gated seeds unused.
+- 2026-10-21, **paused by the owner** (R28.148–R28.152). PR #247 needs an independent review before
+  merging. The next step needs a ruling: a model change (LeWM longer-budget retrain, or a cost that
+  resolves the arm pose).
