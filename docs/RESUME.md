@@ -10,6 +10,30 @@ option, including a branch to the LeRobot SO-101 arm.
 ([DECISIONS 2026-10-16 (bp)](DECISIONS.md), R28.1–R28.9); its plan is
 [SO101_PLAN.md](SO101_PLAN.md). The G1 grasp line stays paused and TASK-095 stays on hold.
 
+**Update 2026-10-21: paused again ([DECISIONS 2026-10-21 (ce)](DECISIONS.md), R28.148–R28.152).**
+The SO-101 branch stops at TASK-102 amendment A1. To resume the SO-101 line:
+
+1. **Get PR #247 independently reviewed, then merge it** (branch `docs/task102-a1`, worktree
+   `worktrees/task102-a1`; CI was green, but no review was posted). It carries the A1 record
+   `experiments/so101_hybrid_lift_v1_a1_planner.md` (row **A1-MODEL-BOUND**, unreviewed) and
+   this pause entry.
+2. **Where it stands** (simulation, development only, no gated closed loop has run):
+   - TASK-100: WM-PASS offline with `native_jepa` (J) only; LeWM failed only G6, the
+     training-saturation check, at a capped budget.
+   - TASK-101: closed with no claim.
+   - TASK-102: the learned wrist-camera grasp G_loc lifts after an exact approach (30/32, and
+     28/32 at 0.08 rad off). With the jaw scripted open, the privileged exact-pose cost
+     hands over 8/8 in 15 of 16 planner configurations, but J's predicted cost hands over at
+     most 1/8, and 3/8 with a 4× larger search (8 seeds per cell). So J's cost, not the planner,
+     is the limit.
+3. **Next (needs a ruling):** a model change. Either R28.57's LeWM longer-budget retrain of
+   TASK-100's L, or a cost that resolves the arm pose better. Each needs its own
+   preregistration. TASK-102 stays in progress, not frozen; its reserved cohorts P′, A′, D′ and
+   the gated seeds 103200–103327 are unused.
+4. Evidence: `~/develop/emai/evidence/task100-*`, `task101-*`, `task102-*` (each with
+   `SHA256SUMS`); TASK-100's checkpoints `checkpoints/task100-run/` and feature stores
+   `outputs/task100-features-*` on `/mnt/data`.
+
 This page summarises; it is not the record. Every number below is copied from its results
 document or decision with its qualifiers, and those documents win if anything here disagrees.
 The canonical status sentence is R7 (DECISIONS 2026-10-02, as updated by R18.28, R18.31, R19.18,
